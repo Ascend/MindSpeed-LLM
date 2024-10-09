@@ -1244,19 +1244,15 @@ ModelLink预训练支持张量并行、流水线并行等多种加速算法和�
 ModelLink支持指令微调，方案与<a href="https://github.com/hiyouga/LLaMA-Factory/tree/main">DeepSpeed</a>统一，在微调效果保持一致的前提下，ModelLink可以表现出优异性能
 
 【与<a href="https://github.com/hiyouga/LLaMA-Factory/tree/main">DeepSpeed</a>微调Loss对比】
-<table border:none>
-<tbody>
-    <tr>
-        <th rowspan="1">Llama2-7b模型与<a href="https://github.com/hiyouga/LLaMA-Factory/tree/main">DeepSpeed</a>微调5个epoch后的loss对比图
-
-  <p align="center"> <img src="sources/images/tune_llama2_7b_ModelLink_DeepSpeed_compare.png" height="270px" width="500px"> </p>
-        </th>
-        <th rowspan="1">Qwen-7b模型与<a href="https://github.com/hiyouga/LLaMA-Factory/tree/main">DeepSpeed</a>微调4个epoch后的loss对比图
-
+<table>
+<tr>
+<th rowspan="1">Llama2-7b模型与<a href="https://github.com/hiyouga/LLaMA-Factory/tree/main">DeepSpeed</a>微调5个epoch后的loss对比图
+<p align="center"> <img src="sources/images/tune_llama2_7b_ModelLink_DeepSpeed_compare.png" height="270px" width="500px"> </p>
+</th>
+<th>
+<th rowspan="1">Qwen-7b模型与<a href="https://github.com/hiyouga/LLaMA-Factory/tree/main">DeepSpeed</a>微调4个epoch后的loss对比图
 <p align="center"> <img src="sources/images/tune_qwen_7b_ModelLink_DeepSpeed_compare.png" height="270px" width="500px"> </p>
-        </th>
-    </tr>
-</tbody>
+</tr>
 </table>
 
 
@@ -1358,22 +1354,22 @@ My soul is full and my heart does soep.</th>
     <tr>
         <td rowspan="1">llama2-7b</td>
         <td rowspan="1">llama2</td>
-        <th>-</th>
-        <th>-</th>
-        <th>-</th>
-        <th>-</th>
-        <th>-</th>
-        <th>-</th>
+        <th>dynamic</th>
+        <th>45.7</th>
+        <th>dynamic</th>
+        <th>40.4</th>
+        <th>dynamic</th>
+        <th>46.5</th>
     </tr>
     <tr>
-        <td rowspan="1">qwen-7b</td>
-        <td rowspan="1">qwen</td>
-        <th>-</th>
-        <th>-</th>
-        <th>-</th>
-        <th>-</th>
-        <th>-</th>
-        <th>-</th>
+        <td rowspan="1">llama2-13b</td>
+        <td rowspan="1">llama2</td>
+        <th>dynamic</th>
+        <th>28.4</th>
+        <th>dynamic</th>
+        <th>17.8</th>
+        <th>dynamic</th>
+        <th>24.9</th>
     </tr>
 
 </table>

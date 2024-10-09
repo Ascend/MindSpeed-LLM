@@ -4,7 +4,7 @@ source /usr/local/Ascend/ascend-toolkit/set_env.sh
 mkdir ./finetune_dataset
 
 python ./preprocess_data.py \
-    --input ./dataset/train-00000-of-00042-d964455e17e96d5a.parquet \
+    --input ./dataset/train-00000-of-00001-a09b74b3ef9c3b56.parquet \
     --tokenizer-name-or-path ./model_from_hf/Llama2-hf/ \
     --output-prefix ./finetune_dataset/alpaca \
     --workers 4 \
