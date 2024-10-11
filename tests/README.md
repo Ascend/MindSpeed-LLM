@@ -164,12 +164,14 @@
         <td></td>
         <td></td>
     </tr>
+    <tr>
         <td>ring_attn</td>
         <td><a href="ut/dist_algo/context_parallel/test_ringattn_context_parallel.py">test_ringattn_context_parallel.py</a></td>
         <td>Y</td>
         <td></td>
         <td></td>
     </tr>
+    <tr>
         <td>ulysses</td>
         <td><a href="ut/dist_algo/context_parallel/test_ulysses_context_parallel.py"> test_ulysses_context_parallel.py </a></td>
         <td>Y</td>
