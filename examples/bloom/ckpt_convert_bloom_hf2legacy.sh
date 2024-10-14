@@ -8,8 +8,8 @@ python convert_ckpt.py \
     --save-model-type mg \
     --target-tensor-parallel-size 8 \
     --target-pipeline-parallel-size 1 \
-    --load-dir --load-dir ./model_from_hf/Bloom-hf/ \
-    --save-dir --save-dir ./model_weights/Bloom-legacy/ \
+    --load-dir ./model_from_hf/Bloom-hf/ \
+    --save-dir ./model_weights/Bloom-legacy/ \
     --tokenizer-model None \
     --model-type-hf bloom \
     --add-qkv-bias \

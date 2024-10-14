@@ -203,8 +203,6 @@ def _get_message_layer_mlp(message, model, layer_idx, md=None, tp_size=1, is_moe
         else:
             mlp_l0_bias.append(model.get_layers_mlp_linear_fc1_bias(layer_idx=layer_idx, **kwargs))
 
-    if md.linear_bias:
-        mlp_l0_bias.append(model.get_layers_mlp_linear_fc1_bias(layer_idx=layer_idx, **kwargs))
     # Handle gated linear units.
     if md.swiglu:
         # Concat all the first halves ('W's) and all the second halves ('V's).
