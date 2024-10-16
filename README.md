@@ -67,7 +67,7 @@ ModelLink已发布版本维护策略：
 |          Driver           |         Ascend HDK 24.1.RC3          |
 |         Firmware          |         Ascend HDK 24.1.RC3          |
 |           CANN            |             CANN 8.0.RC3             |
-|           Torch           |            2.1.0、2.2.0             |
+|           Torch           |            2.1.0             |
 |         Torch_npu         |           release v6.0.RC3           |
 
 【预训练集群性能与线性度】

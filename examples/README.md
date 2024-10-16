@@ -45,7 +45,7 @@
 |  Driver   |         在研版本          |
 | Firmware  |         在研版本          |
 |   CANN    |             在研版本             |
-|   Torch   |            2.1.0、2.2.0             |
+|   Torch   |            2.1.0             |
 | Torch_npu |           在研版本           |
 
 
@@ -53,6 +53,7 @@
 
 ```shell
     git clone https://gitee.com/ascend/ModelLink.git 
+    git checkout 1.0.RC3
     git clone https://github.com/NVIDIA/Megatron-LM.git
     cd Megatron-LM
     git checkout core_r0.6.0
