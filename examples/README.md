@@ -197,10 +197,10 @@ bash examples/llama2/ckpt_convert_llama2_hf2legacy.sh
 
 ModelLink Huggingface到Megatron-Mcore权重转换脚本命名风格及启动方法为：
 ```shell
-# 命名及启动：bash examples/model_name/ckpt_convert_xxx_hf2mcore.sh
+# 命名及启动：bash examples/mcore/model_name/ckpt_convert_xxx_hf2mcore.sh
 # 需要配置并行参数以及权重词表加载保存等路径
 
-bash examples/llama2/ckpt_convert_llama2_hf2mcore.sh
+bash examples/mcore/llama2/ckpt_convert_llama2_hf2mcore.sh
 ```
 
 ##### 2.2 Megatron-LM权重转换到Huggingface格式
@@ -233,10 +233,10 @@ bash examples/llama2/ckpt_convert_llama2_legacy2hf.sh
 
 ModelLink Megatron-Mcore到Huggingface的权重转换脚本命名风格及启动方法为：
 ```shell
-# 命名及启动：bash examples/model_name/ckpt_convert_xxx_mcore2hf.sh
+# 命名及启动：bash examples/mcore/model_name/ckpt_convert_xxx_mcore2hf.sh
 # 需要配置并行参数以及权重词表加载保存等路径
 
-bash examples/llama2/ckpt_convert_llama2_mcore2hf.sh
+bash examples/mcore/llama2/ckpt_convert_llama2_mcore2hf.sh
 ```
 
 ##### 2.3 Megatron-LM格式权重互转
@@ -312,6 +312,19 @@ mcore转legacy时设置此参数以指定保存权重格式为legacy
 --lora-alpha 32 \
 --lora-target-modules query_key_value dense dense_h_to_4h dense_4h_to_h \
 ```
+
+【lora-r】
+
+`--lora_r`参数指的是LoRA中的秩（rank），它决定了低秩矩阵的大小。
+
+【--lora-alpha】
+
+`--lora_alpha`参数定义了LoRA适应的学习率缩放因子。这个参数影响了低秩矩阵的更新速度。
+
+【--lora-target-modules】
+
+`--lora-target-modules`定义了Lora目标模块，字符串列表，由空格隔开，无默认值。每一个字符串是需要进行LoRA微调的层的名称。
+
 
 【合并后转换为Megatron-Legacy权重】
 
