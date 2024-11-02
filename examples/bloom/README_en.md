@@ -221,7 +221,7 @@ Here's a hardware summary of pre-training Bloom-176B:
 
 | **Hardware** | **Value**       |
 | ------------ | --------------- |
-| NPU          | 12x8 Ascend 910 |
+| NPU          | 12x8 Atlas 900 A2 PODc |
 
 
 ## Script
