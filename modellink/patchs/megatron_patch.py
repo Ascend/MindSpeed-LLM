@@ -132,7 +132,7 @@ def patch_core_models(args):
     from ..core import rotary_embedding_forward, apply_rotary_pos_emb_bshd
     from ..core.models.gpt.gpt_layer_specs import get_gpt_layer_local_spec_wrapper
     from ..core.transformer.dot_product_attention import dot_product_attention_init_wrapper, \
-        dot_product_attention_forward_wrapper
+        dot_product_attention_forward_wrapper, ulysses_context_parallel_forward_wrapper
     from ..core.transformer.attention import attention_init_wrapper
     from ..core.models.gpt.gpt_model import gpt_model_init_wrapper
     from ..core import rotary_embedding_init_wrapper
@@ -150,6 +150,8 @@ def patch_core_models(args):
     PatchManager.register_patch('megatron.core.transformer.dot_product_attention.DotProductAttention.forward', dot_product_attention_forward_wrapper)
     PatchManager.register_patch('megatron.core.transformer.custom_layers.transformer_engine.TEDotProductAttention.__init__', dot_product_attention_init_wrapper)
     PatchManager.register_patch('megatron.core.transformer.custom_layers.transformer_engine.TEDotProductAttention.forward', dot_product_attention_forward_wrapper)
+    # For GQA in ulysses and hybrid
+    PatchManager.register_patch('mindspeed.core.context_parallel.ulysses_context_parallel.UlyssesContextAttention.forward', ulysses_context_parallel_forward_wrapper)
 
     # Layer Definition
     # For NPU, we use local-mcore-structrue in te layer.

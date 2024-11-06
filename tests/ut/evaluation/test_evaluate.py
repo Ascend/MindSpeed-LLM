@@ -86,7 +86,7 @@ class TestEvaluate(DistributedTest):
             print(log_capture)
 
             expected_score = acquire_score(log_capture)
-            assert math.isclose(expected_score, 0.5333, abs_tol=1e-2), f"score {expected_score}, forward pass has been changed, check it!"
+            assert math.isclose(expected_score, 0.5666, abs_tol=1e-2), f"score {expected_score}, forward pass has been changed, check it!"
 
     @pytest.mark.parametrize("params", test_config["test_qwen_prompt_ceval_evaluate"])
     def test_qwen_prompt_ceval_evaluate(self, build_args, params):

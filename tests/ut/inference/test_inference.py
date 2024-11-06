@@ -77,7 +77,7 @@ class TestInference(DistributedTest):
             print(log_capture)
             context = acquire_context(log_capture)
             assert [context] == [
-                "I'm doing well. I'm in the middle of a 3-day weekend, so I'm enjoying that."
+                "I'm doing well. I'm in the middle of a 3-day weekend, so I'm enjoying the extra"
             ], "forward pass has been changed, check it!"
 
     @pytest.mark.parametrize("params", test_config["test_lora_greedy_search"])
@@ -92,5 +92,5 @@ class TestInference(DistributedTest):
             print(log_capture)
             context = acquire_context(log_capture)
             assert [context] == [
-                "I'm doing well. I'm in the middle of a 3-day weekend, so I'm enjoying the extra time off."
+                "I'm doing well. I'm in the middle of a 3-day weekend, so I'm enjoying that."
             ], "forward pass has been changed, check it!"

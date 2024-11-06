@@ -116,6 +116,24 @@ def get_alibi(self, seq_length):
     self.alibi.alibi = alibi
 
 
+def ulysses_context_parallel_forward_wrapper(fn):
+    """
+    Do repeat KV to support GQA+Ulysses. This wrapper would be remove if mindspeed-core support ulysses+GQA.
+    """
+    @wraps(fn)
+    def wrapper(self, query: Tensor, key: Tensor, value: Tensor, *args, **kwargs):
+        heads_per_gqa_group = self.local_attn.num_attention_heads_per_partition // self.local_attn.num_query_groups_per_partition
+        global_args = get_args()
+        should_kv_repeat_before_uly = global_args.use_flash_attn and global_args.kv_head_repeat_before_uly_alltoall
+
+        if heads_per_gqa_group > 1 and should_kv_repeat_before_uly:
+            key = key.repeat_interleave(heads_per_gqa_group, dim=2)
+            value = value.repeat_interleave(heads_per_gqa_group, dim=2)
+
+        return fn(self, query, key, value, *args, **kwargs)
+    return wrapper
+
+
 def dot_product_attention_forward_wrapper(fn):
     @wraps(fn)
     def wrapper(self, query, key, value, attention_mask, attn_mask_type, packed_seq_params):
@@ -135,19 +153,14 @@ def dot_product_attention_forward_wrapper(fn):
 
         args = get_args()
         heads_per_gqa_group = self.num_attention_heads_per_partition // self.num_query_groups_per_partition
-
         if not args.use_flash_attn:
             if heads_per_gqa_group > 1:
                 key = key.repeat_interleave(heads_per_gqa_group, dim=2)
                 value = value.repeat_interleave(heads_per_gqa_group, dim=2)
         else:
-            # Do repeat KV to support GQA+Ulysses and PFA
-            should_kv_repeat_before_uly = args.context_parallel_size > 1 and \
-                            args.context_parallel_algo in ['ulysses_cp_algo', 'hybrid_cp_algo'] and \
-                            args.kv_head_repeat_before_uly_alltoall
+            # Do repeat KV to support PFA
             should_kv_repeat_before_pfa = hasattr(args, 'use_kv_cache') and args.use_kv_cache
-
-            if heads_per_gqa_group > 1 and (should_kv_repeat_before_uly or should_kv_repeat_before_pfa):
+            if heads_per_gqa_group > 1 and should_kv_repeat_before_pfa:
                 key = key.repeat_interleave(heads_per_gqa_group, dim=2)
                 value = value.repeat_interleave(heads_per_gqa_group, dim=2)
 
