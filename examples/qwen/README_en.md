@@ -41,7 +41,7 @@ Here's a hardware summary of pre-training  Qwen-7B:
     ```shell
     git clone https://gitee.com/ascend/ModelLink.git
     cd ModelLink
-    git checkout 1.1
+    git checkout 1.0.RC2
     cd ..
     git clone https://github.com/NVIDIA/Megatron-LM.git
     cd Megatron-LM

@@ -62,15 +62,46 @@ ModelLink已发布版本维护策略：
 ## 配套版本与支持模型
 
 【需要注意模型使用时的配套环境版本，参考如下】
+<table border="0">
+  <tr>
+    <th>依赖软件</th>
+    <th>版本</th>
+    <th>软件安装指南</th>
+    <th>推荐硬件形态</th>
+  </tr>
 
-|           软件            | [版本](https://www.hiascend.com/zh/) |
-| :-----------------------: |:----------------------------------:|
-|          Python           |                3.8                 |
-|          driver           |        Ascend HDK 24.1.RC2          |
-|         firmware          |        Ascend HDK 24.1.RC2          |
-|           CANN            |            CANN 8.0.RC2             |
-|           torch           |            2.1.0、2.2.0             |
-|         torch_npu         |        release v6.0.RC2           |
+  <tr>
+    <td>昇腾NPU驱动</td>
+    <td rowspan="2">Ascend HDK 24.1.RC2</td>
+    <td rowspan="2">《<a href="https://www.hiascend.com/document/detail/zh/canncommercial/80RC2/softwareinst/instg/instg_0003.html?Mode=PmIns&OS=Ubuntu&Software=cannToolKit">驱动固件安装指南</a>》</td>
+    <td rowspan="8">Atlas 900 A2 PODc</td>
+  </tr>
+  <tr>
+    <td>昇腾NPU固件</td>
+  </tr>
+  <tr>
+    <td>Toolkit（开发套件）</td>
+    <td rowspan="2">CANN 8.0.RC2</td>
+    <td rowspan="2">《<a href="https://www.hiascend.com/document/detail/zh/canncommercial/80RC2/softwareinst/instg/instg_0000.html">CANN 软件安装指南</a>》</td>
+  </tr>
+  <tr>
+    <td>Kernel（算子包）</td>
+  </tr>
+  <tr>
+  </tr>
+  <tr>
+    <td>PyTorch</td>
+    <td rowspan="3">release v6.0.RC2</td>
+    <td rowspan="3">《<a href="https://www.hiascend.com/document/detail/zh/Pytorch/60RC2/configandinstg/instg/insg_0001.html">Ascend Extension for PyTorch 配置与安装</a>》</td>
+  </tr>
+  <tr>
+    <td>torch_npu插件</td>
+  </tr>
+  <tr>
+    <td>apex</td>
+  </tr>
+</table>
+
 
 
 【基于现版本我们实测的性能情况统计如下（硬件信息：Atlas 900 A2 PODc）】

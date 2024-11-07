@@ -41,6 +41,7 @@ Here's a hardware summary of pre-training Baichuan2-7B:
     cp -r megatron ../ModelLink/
     cd ..
     cd ModelLink
+    git checkout 1.0.RC2
     mkdir logs
     mkdir model_from_hf
     mkdir dataset

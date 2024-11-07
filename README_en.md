@@ -63,14 +63,46 @@ ModelLink release has the following five maintenance phases:
 
 【Please note the corresponding environment versions for model usage, as follows】
 
-|           Software            | [Version](https://www.hiascend.com/zh/) |
-| :-----------------------: |:----------------------------------:|
-|          Python           |                3.8                 |
-|          driver           |         Ascend HDK 24.1.RC2          |
-|         firmware          |         Ascend HDK 24.1.RC2          |
-|           CANN            |             CANN 8.0.RC2             |
-|           torch           |             2.1.0、2.2.0             |
-|         torch_npu         |           release v6.0.RC2           |
+
+<table border="0">
+  <tr>
+    <th>Software</th>
+    <th>Version</th>
+    <th>Software Installation Guide</th>
+    <th>Recommended Hardware Form</th>
+  </tr>
+
+  <tr>
+    <td>Ascend NPU Driver</td>
+    <td rowspan="2">Ascend HDK 24.1.RC2</td>
+    <td rowspan="2">《<a href="https://www.hiascend.com/document/detail/zh/canncommercial/80RC2/softwareinst/instg/instg_0003.html?Mode=PmIns&OS=Ubuntu&Software=cannToolKit">Driver And Firm Installation Guide</a>》</td>
+    <td rowspan="8">Atlas 900 A2 PODc</td>
+  </tr>
+  <tr>
+    <td>Ascend NPU Firm</td>
+  </tr>
+  <tr>
+    <td>Toolkit</td>
+    <td rowspan="2">CANN 8.0.RC2</td>
+    <td rowspan="2">《<a href="https://www.hiascend.com/document/detail/zh/canncommercial/80RC2/softwareinst/instg/instg_0000.html">CANN Installation Guide</a>》</td>
+  </tr>
+  <tr>
+    <td>Kernel</td>
+  </tr>
+  <tr>
+  </tr>
+  <tr>
+    <td>PyTorch</td>
+    <td rowspan="3">release v6.0.RC2</td>
+    <td rowspan="3">《<a href="https://www.hiascend.com/document/detail/zh/Pytorch/60RC2/configandinstg/instg/insg_0001.html">Ascend Extension for PyTorch Installation Guide</a>》</td>
+  </tr>
+  <tr>
+    <td>torch_npu</td>
+  </tr>
+  <tr>
+    <td>apex</td>
+  </tr>
+</table>
 
 
 【Based on the current version of megatron, the performance statistics from our testing are as follows (Hardware info：Atlas 900 A2 PODc)】
