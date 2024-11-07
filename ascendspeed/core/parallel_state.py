@@ -71,14 +71,14 @@ def initialize_model_parallel(
 
     Arguments:
         tensor_model_parallel_size (int, default = 1):
-            The number of GPUs to split individual tensors across.
+            The number of NPUs to split individual tensors across.
 
         pipeline_model_parallel_size (int, default = 1):
-            The number of tensor parallel GPU groups to split the
+            The number of tensor parallel NPU groups to split the
             Transformer layers across. For example, if
             tensor_model_parallel_size is 4 and
             pipeline_model_parallel_size is 2, the model will be split
-            into 2 groups of 4 GPUs.
+            into 2 groups of 4 NPUs.
 
         virtual_pipeline_model_parallel_size (int, optional):
             The number of stages that each pipeline group will have,
@@ -87,13 +87,13 @@ def initialize_model_parallel(
             pipeline_model_parallel_size is 4,
             virtual_pipeline_model_parallel_size is 2, and there are
             16 transformer layers in the model, the model will be
-            split into 8 stages with two layers each and each GPU
+            split into 8 stages with two layers each and each NPU
             would get 2 stages as such (layer number starting with 1):
 
-            GPU 0: [1, 2] [9, 10]
-            GPU 1: [3, 4] [11, 12]
-            GPU 2: [5, 6] [13, 14]
-            GPU 3: [7, 8] [15, 16]
+            NPU 0: [1, 2] [9, 10]
+            NPU 1: [3, 4] [11, 12]
+            NPU 2: [5, 6] [13, 14]
+            NPU 3: [7, 8] [15, 16]
 
         pipeline_model_parallel_split_rank (int, optional):
             For models with both an encoder and decoder, the rank in
@@ -106,12 +106,12 @@ def initialize_model_parallel(
             will be the encoder and ranks 3-7 will be the decoder.
 
         use_fp8 (bool, default = False):
-            Construct GPU groups needed for FP8 training, namely for
+            Construct NPU groups needed for FP8 training, namely for
             amax reduction across the product of the data-parallel and
             tensor-parallel groups.
 
-    Let's say we have a total of 16 GPUs denoted by g0 ... g15 and we
-    use 2 GPUs to parallelize the model tensor, and 4 GPUs to parallelize
+    Let's say we have a total of 16 NPUs denoted by g0 ... g15 and we
+    use 2 NPUs to parallelize the model tensor, and 4 NPUs to parallelize
     the model pipeline. The present function will
     create 8 tensor model-parallel groups, 4 pipeline model-parallel groups
     and 8 data-parallel groups as:
@@ -123,7 +123,7 @@ def initialize_model_parallel(
             [g0, g4, g8, g12], [g1, g5, g9, g13], [g2, g6, g10, g14], [g3, g7, g11, g15]
     Note that for efficiency, the caller should make sure adjacent ranks
     are on the same DGX box. For example if we are using 2 DGX-1 boxes
-    with a total of 16 GPUs, rank 0 to 7 belong to the first box and
+    with a total of 16 NPUs, rank 0 to 7 belong to the first box and
     ranks 8 to 15 belong to the second box.
     """
     ensure_valid(not use_fp8, error_message="FP8 not supported by AscendSpeed")

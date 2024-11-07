@@ -947,18 +947,18 @@ Cadam是基于谷歌提出的[Lion优化器](https://arxiv.org/abs/2302.06675)�
 
 | Model    | Algorithm            | Performance     | Compress HBM | Performance Error | Precision Error | Hardware |
 |----------|----------------------|-----------------|---------------|-------------------|-----------------|----------|
-| LLama-7B | baseline             | 5.39s/iteration | --            | --                | --              | 910B*8P  |
-|          | O1 algorithm         | 5.40s/iteration | ↓ 13.5%       | ↓ 0.17%           | < 0.05%         | 910B*8P  |
-| LLama-13B| baseline             | 8.95s/iteration | --            | --                | --              | 910B*8P  |
-|          | O1 algorithm         | 8.92s/iteration | ↓ 14.90%      | ↑ 0.34%           | < 0.2%          | 910B*8P  |
-| LLama2-7B| baseline             | 6.48s/iteration | --            | --                | --              | 910B*8P  |
-|          | O1 algorithm         | 6.48s/iteration | ↓ 10.87%      | ↓ 0.00%           | < 0.2%          | 910B*8P  |
-| Bloom-7B | baseline             | 5.45s/iteration | --            | --                | --              | 910B*8P  |
-|          | O1 algorithm         | 5.49s/iteration | ↓ 12.68%      | ↓ 0.7%            | < 0.01%         | 910B*8P  |
-| LLama-32B| baseline             | 5.23s/iteration | --            | --                | --              | 910B*16P |
-|          | O1 argorithm         | 5.28s/iteration | ↓ 15.93%      | ↓ 0.95%           | < 0.02%         | 910B*16P |
-| LLama-7B | distributed baseline | 5.18s/iteration | --            | --                | --              | 910B*8P  |
-|          | O1 distributed algorithm | 5.19s/iteration | ↓ 9.50%       | ↓ 0.2%            | < 0.1%          | 910B*8P  |
+| LLama-7B | baseline             | 5.39s/iteration | --            | --                | --              | Atlas 900 A2 PODc*8P  |
+|          | O1 algorithm         | 5.40s/iteration | ↓ 13.5%       | ↓ 0.17%           | < 0.05%         | Atlas 900 A2 PODc*8P  |
+| LLama-13B| baseline             | 8.95s/iteration | --            | --                | --              | Atlas 900 A2 PODc*8P  |
+|          | O1 algorithm         | 8.92s/iteration | ↓ 14.90%      | ↑ 0.34%           | < 0.2%          | Atlas 900 A2 PODc*8P  |
+| LLama2-7B| baseline             | 6.48s/iteration | --            | --                | --              | Atlas 900 A2 PODc*8P  |
+|          | O1 algorithm         | 6.48s/iteration | ↓ 10.87%      | ↓ 0.00%           | < 0.2%          | Atlas 900 A2 PODc*8P  |
+| Bloom-7B | baseline             | 5.45s/iteration | --            | --                | --              | Atlas 900 A2 PODc*8P  |
+|          | O1 algorithm         | 5.49s/iteration | ↓ 12.68%      | ↓ 0.7%            | < 0.01%         | Atlas 900 A2 PODc*8P  |
+| LLama-32B| baseline             | 5.23s/iteration | --            | --                | --              | Atlas 900 A2 PODc*16P |
+|          | O1 argorithm         | 5.28s/iteration | ↓ 15.93%      | ↓ 0.95%           | < 0.02%         | Atlas 900 A2 PODc*16P |
+| LLama-7B | distributed baseline | 5.18s/iteration | --            | --                | --              | Atlas 900 A2 PODc*8P  |
+|          | O1 distributed algorithm | 5.19s/iteration | ↓ 9.50%       | ↓ 0.2%            | < 0.1%          | Atlas 900 A2 PODc*8P  |
 
 
 ## 致谢

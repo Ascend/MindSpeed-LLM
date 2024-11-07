@@ -324,14 +324,14 @@ class FlashLlamaForCausalLM(torch.nn.Module):
                 head_size=1,
                 lm_head=True,
             )
-        else:  # 310P 暂不支持all-gather
+        else:  # Atalas推理系列产品 暂不支持all-gather
             self.lm_head = TensorParallelHead.load_weight(
                 config,
                 prefix="lm_head",
                 weights=weights,
                 is_norm=False,
             )
-        # for 310p quant
+        # for Atalas推理系列产品 quant
         self.transdata_operation = torch.classes.OperationTorch.OperationTorch("TransdataOperation")
         self.transdata_param = json.dumps({})
         self.transdata_operation.set_param(self.transdata_param)    
@@ -506,9 +506,9 @@ class FlashLlamaForCausalLM(torch.nn.Module):
             "layerNum": self.num_layers,
             "rank": self.tp_rank,
             "rankSize": self.tp_world_size,
-            "isLmHeadParallel": not self.soc_info.need_nz,  # 310P 暂不支持all-gather
+            "isLmHeadParallel": not self.soc_info.need_nz,  # Atalas推理系列产品 暂不支持all-gather
             "isPrefill": True,
-            "backend": "hccl" if self.soc_info.need_nz else os.getenv("BACKEND", "lccl"),  # 310P 暂不支持lccl
+            "backend": "hccl" if self.soc_info.need_nz else os.getenv("BACKEND", "lccl"),  # Atalas推理系列产品 暂不支持lccl
             "isQuant": self.is_quant,
             "qkvInputScale": self.qkv_input_scale, "qkvInputOffset": self.qkv_input_offset,
             "denseInputScale": self.dense_input_scale, "denseInputOffset": self.dense_input_offset,
@@ -541,9 +541,9 @@ class FlashLlamaForCausalLM(torch.nn.Module):
                 "layerNum": config.num_hidden_layers,
                 "rank": self.tp_rank,
                 "rankSize": self.tp_world_size,
-                "isLmHeadParallel": not self.soc_info.need_nz,  # 310P 暂不支持all-gather
+                "isLmHeadParallel": not self.soc_info.need_nz,  # Atalas推理系列产品 暂不支持all-gather
                 "isPrefill": True,
-                "backend": "hccl" if self.soc_info.need_nz else os.getenv("BACKEND", "lccl"),  # 310P 暂不支持lccl
+                "backend": "hccl" if self.soc_info.need_nz else os.getenv("BACKEND", "lccl"),  # Atalas推理系列产品 暂不支持lccl
                 "isQuant": self.is_quant,
             })
             self.acl_param_decoder = json.dumps({

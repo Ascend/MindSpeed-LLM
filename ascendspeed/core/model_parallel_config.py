@@ -13,15 +13,15 @@ class ModelParallelConfig:
     Model Parallelism
     -----------------
 
-    tensor_model_parallel_size (int): Intra-layer model parallelism. Splits tensors across GPU ranks. Defaults to 1.
+    tensor_model_parallel_size (int): Intra-layer model parallelism. Splits tensors across NPU ranks. Defaults to 1.
 
-    pipeline_model_parallel_size (int): Inter-layer model parallelism. Splits transformer layers across GPU
+    pipeline_model_parallel_size (int): Inter-layer model parallelism. Splits transformer layers across NPU
         ranks. Defaults to 1.
 
     virtual_pipeline_model_parallel_size (int): Interleaved pipeline parallelism is used to improve performance by
         reducing the pipeline bubble.  Considers a transformer block as a list of smaller transformer (virtual) blocks.
         The number of virtual blocks per pipeline model parallel rank is the virtual model parallel size.  See Efficient
-        Large-Scale Language Model Training on GPU Clusters Using Megatron-LM for more details.  Defaults to None.
+        Large-Scale Language Model Training on NPU Clusters Using Megatron-LM for more details.  Defaults to None.
 
     sequence_parallel (bool): Makes tensor parallelism more memory efficient for LLMs (20B+) by
         parallelizing layer norms and dropout sequentially.  See Reducing Activation Recomputation in Large Transformer
@@ -33,8 +33,8 @@ class ModelParallelConfig:
     perform_initialization (bool, default=True): If true, weights are initialized. This option can be useful when you
         know you are going to load values from a checkpoint.
 
-    use_cpu_initialization: (bool, default=False): When set to False, we initialize the weights directly on the GPU.
-        Transferring weights from CPU to GPU can take a significant amount of time for large models. Defaults to False.
+    use_cpu_initialization: (bool, default=False): When set to False, we initialize the weights directly on the NPU.
+        Transferring weights from CPU to NPU can take a significant amount of time for large models. Defaults to False.
 
     Training
     --------

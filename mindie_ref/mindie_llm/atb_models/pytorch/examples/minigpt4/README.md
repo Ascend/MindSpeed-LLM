@@ -34,7 +34,7 @@ MiniGPT-4使用先进的大型语言模型增强视觉语言理解，将语言�
 
 | CPU     | Device |
 |---------|--------|
-| aarch64 | 910B3  |
+| aarch64 | Atlas 800T A2  |
 
 ### 安装NPU环境
 
@@ -48,14 +48,14 @@ MiniGPT-4使用先进的大型语言模型增强视觉语言理解，将语言�
 
 | 包名                                             |
 |------------------------------------------------|
-| Ascend-hdk-910b-npu-firmware_7.0.t9.0.b221.run |
+| Ascend-hdk-{型号}-npu-firmware_7.0.t9.0.b221.run |
 
 根据芯片型号选择相应的安装包安装
 
 ```bash
-# 安装firmwire 以910b为例
-chmod +x Ascend-hdk-910b-npu-firmware_7.0.t9.0.b221.run
-./Ascend-hdk-910b-npu-firmware_7.0.t9.0.b221.run --full
+# 安装firmwire
+chmod +x Ascend-hdk-{型号}-npu-firmware_7.0.t9.0.b221.run
+./Ascend-hdk-{型号}-npu-firmware_7.0.t9.0.b221.run --full
 ```
 
 ##### 安装driver
@@ -64,15 +64,13 @@ chmod +x Ascend-hdk-910b-npu-firmware_7.0.t9.0.b221.run
 
 | cpu     | 包名                                                         |
 |---------|------------------------------------------------------------|
-| aarch64 | Ascend-hdk-910b-npu-driver_23.0.rc3.b060_linux-aarch64.run |
-| x86     | Ascend-hdk-910b-npu-driver_23.0.rc3.b060_linux-x86_64.run  |
-| aarch64 | Ascend-hdk-310p-npu-driver_23.0.rc3.b060_linux-aarch64.run |
-| x86     | Ascend-hdk-310p-npu-driver_23.0.rc3.b060_linux-x86-64.run  |
+| aarch64 | Ascend-hdk-{型号}-npu-driver_23.0.rc3.b060_linux-aarch64.run |
+| x86     | Ascend-hdk-{型号}-npu-driver_23.0.rc3.b060_linux-x86_64.run  |
 
 ```bash
 # 根据CPU架构 以及npu型号 安装对应的 driver
-chmod +x Ascend-hdk-910b-npu-driver_23.0.rc3.b060_*.run
-./Ascend-hdk-910b-npu-driver_23.0.rc3.b060_*.run --full
+chmod +x Ascend-hdk-{型号}-npu-driver_23.0.rc3.b060_*.run
+./Ascend-hdk-{型号}-npu-driver_23.0.rc3.b060_*.run --full
 ```
 
 #### 安装CANN
@@ -101,12 +99,12 @@ source /usr/local/Ascend/ascend-toolkit/set_env.sh
 
 | 包名                                         |
 |--------------------------------------------|
-| Ascend-cann-kernels-910b_7.0.T10_linux.run |
+| Ascend-cann-kernels-{型号}_7.0.T10_linux.run |
 
 ```bash
-# 安装 kernel 以910B 为例
-chmod +x Ascend-cann-kernels-910b_7.0.T10_linux.run
-./Ascend-cann-kernels-910b_7.0.T10_linux.run --install
+# 安装 kernel
+chmod +x Ascend-cann-kernels-{型号}_7.0.T10_linux.run
+./Ascend-cann-kernels-{型号}_7.0.T10_linux.run --install
 ```
 
 #### 安装PytorchAdapter
@@ -470,9 +468,7 @@ OM模型转换使用昇腾ATC工具，使用流程参考该链接https://www.hia
 
 1. 环境准备：安装并source CANN包；可参考上述链接中环境搭建的部分；
 
-2. 模型转换：参考快速入门中ONNX网络模型转换成离线模型章节，或下面执行参考转换命令。
-
-参考转换命令： `atc --model=eva_vit_g.onnx --framework=5 --output=${output_path}/eva_vit_g --soc_version=Ascend910B3 --input_shape="input:1,3,224,224"`
+2. 模型转换：参考快速入门中ONNX网络模型转换成离线模型章节
 
 注：om模型转换时，要进入到已转换好的onnx模型目录中执行转成om模型的命令，否则会找不到权重文件。
 

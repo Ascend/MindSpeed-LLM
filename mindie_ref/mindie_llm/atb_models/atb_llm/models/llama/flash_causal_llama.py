@@ -121,9 +121,9 @@ class FlashLlamaForCausalLM(FlashForCausalLM):
                     "layerNum": config.num_hidden_layers,
                     "rank": self.tp_rank,
                     "rankSize": self.tp_world_size,
-                    "isLmHeadParallel": not self.soc_info.need_nz,  # 310P 暂不支持all-gather
+                    "isLmHeadParallel": not self.soc_info.need_nz,  # Atalas推理系列产品 暂不支持all-gather
                     "isPrefill": True,
-                    "backend": "hccl" if self.soc_info.need_nz else os.getenv("BACKEND", "lccl"),  # 310P 暂不支持lccl,
+                    "backend": "hccl" if self.soc_info.need_nz else os.getenv("BACKEND", "lccl"),  # Atalas推理系列产品 暂不支持lccl,
                     "isBF16": self.dtype == torch.bfloat16,
                 })
                 self.acl_param_decoder = json.dumps({

@@ -832,7 +832,7 @@ class FlashQwenForCausalLM(QWenPreTrainedModel):
         self.transformer = QWenModel(config, weights)
         self.soc_info = NPUSocInfo()
         logger.info(self.soc_info)
-        self.parallel_lm_head = not self.soc_info.need_nz  # 310P 暂时不支持ALLGather算子
+        self.parallel_lm_head = not self.soc_info.need_nz  # Atalas推理系列产品 暂时不支持ALLGather算子
         self.lm_head = (TensorParallelHead.load if self.parallel_lm_head else TensorParallelHead.load_weight)(
             config,
             prefix="lm_head",

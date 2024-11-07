@@ -212,7 +212,7 @@ LD_PRELOAD=/root/miniconda3/envs/wqh39/bin/../lib/libgomp.so.1 MAX_SEQ_LEN=2048 
 ```
 # 竞品对比
 
-# 910B3
+# Atlas 800T A2
 
 ## 精度
 
@@ -257,7 +257,7 @@ LD_PRELOAD=/root/miniconda3/envs/wqh39/bin/../lib/libgomp.so.1 MAX_SEQ_LEN=2048 
 
 暂无数据
 
-# 310P3
+# Atalas推理系列产品
 
 ## 精度
 

@@ -38,15 +38,14 @@ Vicuna是由 LMSYS 发布的基于Llama 2用ShareGPT收集的125K对话集微调
 
 | 包名                                   |
 |--------------------------------------|
-| Ascend-hdk-910b-npu-firmware_{version}.run |
-| Ascend-hdk-310p-npu-firmware_{version}.run |
+| Ascend-hdk-{型号}-npu-firmware_{version}.run |
 
 根据芯片型号选择相应的安装包安装
 
 ```bash
 # 安装firmwire
-chmod +x Ascend-hdk-910b-npu-firmware_{version}.run
-./Ascend-hdk-910b-npu-firmware_{version}.run --full
+chmod +x Ascend-hdk-{型号}-npu-firmware_{version}.run
+./Ascend-hdk-{型号}-npu-firmware_{version}.run --full
 ```
 
 #### 1.2 安装driver
@@ -55,15 +54,13 @@ chmod +x Ascend-hdk-910b-npu-firmware_{version}.run
 
 | cpu     | 包名                                               | 
 |---------|--------------------------------------------------|
-| aarch64 | Ascend-hdk-910b-npu-driver_{version}_linux-aarch64.run |
-| x86     | Ascend-hdk-910b-npu-driver_{version}_linux-x86_64.run  |
-| aarch64 | Ascend-hdk-310p-npu-driver_{version}_linux-aarch64.run |
-| x86     | Ascend-hdk-310p-npu-driver_{version}_linux-x86-64.run  |
+| aarch64 | Ascend-hdk-{型号}-npu-driver_{version}_linux-aarch64.run |
+| x86     | Ascend-hdk-{型号}-npu-driver_{version}_linux-x86_64.run  |
 
 ```bash
 # 根据CPU架构 以及npu型号 安装对应的 driver
-chmod +x Ascend-hdk-910b-npu-driver_{version}_*.run
-./Ascend-hdk-910b-npu-driver_{version}_*.run --full
+chmod +x Ascend-hdk-{型号}-npu-driver_{version}_*.run
+./Ascend-hdk-{型号}-npu-driver_{version}_*.run --full
 ```
 
 ### 2 安装CANN
@@ -92,13 +89,12 @@ source /usr/local/Ascend/ascend-toolkit/set_env.sh
 
 | 包名                                         |
 |--------------------------------------------|
-| Ascend-cann-kernels-910b_{version}_linux.run |
-| Ascend-cann-kernels-310p_{version}_linux.run |
+| Ascend-cann-kernels-{型号}_{version}_linux.run |
 
 ```bash
-# 安装 kernel 以910b 为例
-chmod +x Ascend-cann-kernels-910b_{version}_linux.run
-./Ascend-cann-kernels-910b_{version}_linux.run --install
+# 安装 kernel
+chmod +x Ascend-cann-kernels-{型号}_{version}_linux.run
+./Ascend-cann-kernels-{型号}_{version}_linux.run --install
 ```
 
 ### 3 安装PytorchAdapter

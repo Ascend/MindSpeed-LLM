@@ -21,7 +21,7 @@ from transformers.models.llama.configuration_llama import LlamaConfig
 import torch_npu
 
 
-#量化权重310P修正
+#量化权重Atalas推理系列产品修正
 def bias_correction(fp_bias, quant_weight, input_offset, deq_scale):
     new_bias = fp_bias.npu() / deq_scale.npu() - quant_weight.to(torch.float32).npu().sum(dim=1) * float(input_offset)
     return new_bias

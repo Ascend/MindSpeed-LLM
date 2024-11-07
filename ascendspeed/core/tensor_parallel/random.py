@@ -72,13 +72,13 @@ def reset_checkpointed_activations_memory_buffer():
 
 
 def _set_cuda_rng_state(new_state, device=-1):
-    """Sets the random number generator state of the current GPU.
+    """Sets the random number generator state of the current NPU.
 
     Argumentss:
         new_state (torch.ByteTensor): The desired state
     This function is adapted from PyTorch repo (torch.cuda.set_rng_state)
     with a single change: the input state is not cloned. Cloning caused
-    major performance issues for +4 GPU cases.
+    major performance issues for +4 NPU cases.
     """
     if hasattr(_C, '_cuda_setRNGState') and callable(_C._cuda_setRNGState):
         # older PyTorch
@@ -199,11 +199,11 @@ def model_parallel_cuda_manual_seed(seed):
     function.
     Two set of RNG states are tracked:
         default state: This is for data parallelism and is the same among a
-                       set of model parallel GPUs but different across
+                       set of model parallel NPUs but different across
                        different model paralle groups. This is used for
                        example for dropout in the non-tensor-model-parallel regions.
         tensor-model-parallel state: This state is different among a set of model
-                              parallel GPUs, but the same across data parallel
+                              parallel NPUs, but the same across data parallel
                               groups. This is used for example for dropout in
                               model parallel regions.
     """

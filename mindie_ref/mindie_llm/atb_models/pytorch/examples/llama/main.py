@@ -67,11 +67,11 @@ def trans_data_format(model_in):
             if isinstance(module, torch.nn.Linear):
                 module.weight.data = torch_npu.npu_format_cast(module.weight.data, 2)
         if npu_num >= 2 and not torch.distributed.get_rank():
-            print("soc version: ", soc_version, " is 910B, support ND")
+            print("soc version: ", soc_version, " is Atlas 900 A2 PODc, support ND")
         elif npu_num < 2:
-            print("soc version: ", soc_version, " is 910B, support ND")
+            print("soc version: ", soc_version, " is Atlas 900 A2 PODc, support ND")
     else:
-        # if on 910A or 310P chip, eliminate the TransData and Transpose ops by converting weight data types
+        # if on Atlas or Atalas推理系列产品 chip, eliminate the TransData and Transpose ops by converting weight data types
         for name, module in model_in.named_modules():
             if isinstance(module, torch.nn.Linear):
                 if name == 'lm_head':
@@ -79,9 +79,9 @@ def trans_data_format(model_in):
                     module.weight.data = torch.nn.parameter.Parameter(module.weight.data)
                 module.weight.data = torch_npu.npu_format_cast(module.weight.data, 29)
         if npu_num >= 2 and not torch.distributed.get_rank():
-            print("soc version: ", soc_version, " is not 910B, support NZ")
+            print("soc version: ", soc_version, " is not Atlas 900 A2 PODc, support NZ")
         elif npu_num < 2:
-            print("soc version: ", soc_version, " is not 910B, support NZ")
+            print("soc version: ", soc_version, " is not Atlas 900 A2 PODc, support NZ")
 
     for name, module in model_in.named_modules():
         if isinstance(module, torch.nn.Embedding):

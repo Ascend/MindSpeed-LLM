@@ -8,14 +8,13 @@ from torch_npu.contrib import transfer_to_npu
 from initialize import initialize, initialize_model_and_tokenizer
 
 
-soc_version_map = {
-    -1: "unknown soc version",
-    100: "910PremiumA", 101: "910ProA", 102: "910A", 103: "910ProB", 104: "910B",
-    200: "310P1", 201: "310P2", 202:  "310P3", 203: "310P4",
-    220: "910B1", 221: "910B2", 222: "910B3", 223: "910B4",
-    240: "310B1", 241: "310B2", 242: "310B3",
-    250: "910C1", 251: "910C2", 252: "910C3", 253: "910C4"
-}
+soc_version_map = {-1: "unknown soc version",
+                   100: "Ascend100", 101: "Ascend101", 102: "Ascend102", 103: "Ascend103", 104: "Ascend104",
+                   200: "Ascend200", 201: "Ascend201", 202: "Ascend202", 203: "Ascend203",
+                   220: "Ascend220", 221: "Ascend221", 222: "Ascend222", 223: "Ascend223",
+                   240: "Ascend240", 241: "Ascend241", 242: "Ascend242",
+                   250: "Ascend250", 251: "Ascend251", 252: "Ascend252", 253: "Ascend253"
+                   }
 
 
 def add_performance_specific_args(parser):

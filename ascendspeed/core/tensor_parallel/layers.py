@@ -96,9 +96,9 @@ def copy_tensor_model_parallel_attributes(destination_tensor, source_tensor):
         maybe_copy(attribute)
 
 
-def _initialize_affine_weight_gpu(weight, init_method,
+def _initialize_affine_weight_npu(weight, init_method,
                                   partition_dim, stride=1):
-    """Initialize affine weight for model parallel on GPU."""
+    """Initialize affine weight for model parallel on NPU."""
 
     set_tensor_model_parallel_attributes(tensor=weight,
                                          is_parallel=True,
@@ -217,7 +217,7 @@ class VocabParallelEmbedding(torch.nn.Module):
             )
 
             if config.perform_initialization:
-                _initialize_affine_weight_gpu(self.weight, init_method, partition_dim=0, stride=1)
+                _initialize_affine_weight_npu(self.weight, init_method, partition_dim=0, stride=1)
 
     def forward(self, input_):
         if self.tensor_model_parallel_size > 1:
@@ -238,7 +238,7 @@ class VocabParallelEmbedding(torch.nn.Module):
         # Mask the output embedding.
         if self.tensor_model_parallel_size > 1:
             output_parallel *= input_mask[..., None].to(output_parallel.dtype)
-        # Reduce across all the model parallel GPUs.
+        # Reduce across all the model parallel NPUs.
         output = reduce_from_tensor_model_parallel_region(output_parallel)
         if hasattr(self, 'norm'):
             output = self.norm(output)
@@ -496,7 +496,7 @@ class ColumnParallelLinear(torch.nn.Module):
     Keyword Arguments
         bias: If true, add bias
         gather_output: If true, call all-gather on output and make Y available
-                       to all GPUs, otherwise, every GPU will have its output
+                       to all NPUs, otherwise, every NPU will have its output
                        which is Y_i = XA_i
         init_method: method to initialize weights. Note that bias is always set
                      to zero.
@@ -585,7 +585,7 @@ class ColumnParallelLinear(torch.nn.Module):
                     )
                 )
                 if config.perform_initialization:
-                    _initialize_affine_weight_gpu(
+                    _initialize_affine_weight_npu(
                         self.weight, init_method, partition_dim=0, stride=stride
                     )
         else:
@@ -722,7 +722,7 @@ class RowParallelLinear(torch.nn.Module):
     Keyword Arguments:
         bias: If true, add bias. Note that bias is not parallelized.
         input_is_parallel: If true, we assume that the input is already
-                           split across the GPUs and we do not split
+                           split across the NPUs and we do not split
                            again.
         init_method: method to initialize weights. Note that bias is always set
                      to zero.
@@ -811,7 +811,7 @@ class RowParallelLinear(torch.nn.Module):
                 )
             )
             if config.perform_initialization:
-                _initialize_affine_weight_gpu(
+                _initialize_affine_weight_npu(
                     self.weight, init_method, partition_dim=1, stride=stride
                 )
         if bias:

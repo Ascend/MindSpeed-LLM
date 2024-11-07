@@ -200,7 +200,7 @@ NPU输出结果：
 #### OM转换
 
 ```bash
-  atc --model=$MODEL_PATH/transfer_model/blip2.onnx --framework=5 --output=$MODEL_PATH/blip2 --soc_version=Ascend910B3 --input_shape="input:1,224,224,3"
+  atc --model=$MODEL_PATH/transfer_model/blip2.onnx --framework=5 --output=$MODEL_PATH/blip2 --soc_version={soc-version} --input_shape="input:1,224,224,3"
   ```
   
 该过程需要运行在NPU环境中；

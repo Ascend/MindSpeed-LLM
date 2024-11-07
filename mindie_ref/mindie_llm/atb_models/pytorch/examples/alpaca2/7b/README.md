@@ -54,8 +54,8 @@ Alpaca-2是基于Meta发布的可商用大模型Llama-2开发的指令精调大�
 
 | CPU     | Device |
 |---------|--------|
-| aarch64 | 910B3  |
-| aarch64 | 310P3  |
+| aarch64 | Atlas 800 A2  |
+| aarch64 | Atalas推理系列产品  |
 
 # 快速上手
 
@@ -73,15 +73,14 @@ Alpaca-2是基于Meta发布的可商用大模型Llama-2开发的指令精调大�
 
 | 包名                                             |
 |------------------------------------------------|
-| Ascend-hdk-910b-npu-firmware_7.0.t9.0.b221.run |
-| Ascend-hdk-310p-npu-firmware_7.0.t9.0.b221.run |
+| Ascend-hdk-xxx-npu-firmware_7.0.t9.0.b221.run |
 
 根据芯片型号选择相应的安装包安装
 
 ```bash
-# 安装firmwire 以910b为例
-chmod +x Ascend-hdk-910b-npu-firmware_7.0.t9.0.b221.run
-./Ascend-hdk-910b-npu-firmware_7.0.t9.0.b221.run --full
+# 安装firmwire
+chmod +x Ascend-hdk-xxx-npu-firmware_7.0.t9.0.b221.run
+./Ascend-hdk-xxx-npu-firmware_7.0.t9.0.b221.run --full
 ```
 
 ##### 1.1.2 安装driver
@@ -90,15 +89,13 @@ chmod +x Ascend-hdk-910b-npu-firmware_7.0.t9.0.b221.run
 
 | cpu     | 包名                                                         |
 |---------|------------------------------------------------------------|
-| aarch64 | Ascend-hdk-910b-npu-driver_23.0.rc3.b060_linux-aarch64.run |
-| x86     | Ascend-hdk-910b-npu-driver_23.0.rc3.b060_linux-x86_64.run  |
-| aarch64 | Ascend-hdk-310p-npu-driver_23.0.rc3.b060_linux-aarch64.run |
-| x86     | Ascend-hdk-310p-npu-driver_23.0.rc3.b060_linux-x86-64.run  |
+| aarch64 | Ascend-hdk-xxxx-npu-driver_23.0.rc3.b060_linux-aarch64.run |
+| x86     | Ascend-hdk-xxxx-npu-driver_23.0.rc3.b060_linux-x86_64.run  |
 
 ```bash
 # 根据CPU架构 以及npu型号 安装对应的 driver
-chmod +x Ascend-hdk-910b-npu-driver_23.0.rc3.b060_*.run
-./Ascend-hdk-910b-npu-driver_23.0.rc3.b060_*.run --full
+chmod +x Ascend-hdk-xxxx-npu-driver_23.0.rc3.b060_*.run
+./Ascend-hdk-xxxx-npu-driver_23.0.rc3.b060_*.run --full
 ```
 
 #### 1.2 安装CANN
@@ -127,13 +124,12 @@ source /usr/local/Ascend/ascend-toolkit/set_env.sh
 
 | 包名                                         |
 |--------------------------------------------|
-| Ascend-cann-kernels-910b_7.0.T10_linux.run |
-| Ascend-cann-kernels-310p_7.0.T10_linux.run |
+| Ascend-cann-kernels-xxxx_7.0.T10_linux.run |
 
 ```bash
-# 安装 kernel 以910B 为例
-chmod +x Ascend-cann-kernels-910b_7.0.T10_linux.run
-./Ascend-cann-kernels-910b_7.0.T10_linux.run --install
+# 安装 kernel
+chmod +x Ascend-cann-kernels-xxxx_7.0.T10_linux.run
+./Ascend-cann-kernels-xxxx_7.0.T10_linux.run --install
 ```
 
 #### 1.3 安装PytorchAdapter
@@ -320,7 +316,7 @@ python main.py --task inference
 
 ## 精度
 
-| 精度             | 910B3（313T）         | A100                | 对比         |
+| 精度             | Atlas 800T A2（313T）         | A100                | 对比         |
 |----------------|---------------------|---------------------|------------|
 | STEM           | 0.38372093023255816 | 0.38372093023255816 | 1.00000000 |
 | Social Science | 0.48                | 0.48                | 1.00000000 |
@@ -333,7 +329,7 @@ python main.py --task inference
 | 芯片型号        | batch_size | 首token推理速度(token/s) | 增量推理速度(token/s)    |
 |-------------|------------|---------------------|--------------------|
 | A100        | 1          | 44.09995588         | 11.25243064        |
-| 910B3（313T） | 1          | 59.44401735729642   | 14.25532105233934  |
+| Atlas 800T A2（313T） | 1          | 59.44401735729642   | 14.25532105233934  |
 | 对比          | 1          | 0.7418737467713726  | 0.7893495066639305 |
 
 # 附录：

@@ -222,7 +222,7 @@ bash examples/alpaca/finetune_chinese_llama_alpaca_7_13_33b_tp1_pp1_deepspeed.sh
 
 ### Machine performance
 
-The performance of the Chinese LLaMA Alpaca-13B in **Ascend910 NPUs** and **A100 GPUs**:
+The performance of the Chinese LLaMA Alpaca-13B in **Ascend910 NPUs** and **参考**:
 Parameter Configuration Reference:finetune_chinese_llama_alpaca_7_13_33b_tp1_pp1_deepspeed.sh
 
 |  Device  |   Model   | total Iterations | throughput rate (samples/s/p) | throughput rate (tokens/s/p) | floating point operation (TFLOPs/s) |

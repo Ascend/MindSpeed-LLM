@@ -49,7 +49,7 @@ def _build_key_size_numel_dictionaries(keys, data):
                 sizes[i + offset] = s
             offset += max_dim
 
-    # Move to GPU and broadcast.
+    # Move to NPU and broadcast.
     sizes_cuda = get_accelerator().LongTensor(sizes)
     torch.distributed.broadcast(sizes_cuda, get_tensor_model_parallel_src_rank(),
                                 group=get_tensor_model_parallel_group())

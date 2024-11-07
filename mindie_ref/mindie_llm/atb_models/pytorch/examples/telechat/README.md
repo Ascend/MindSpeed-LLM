@@ -46,12 +46,12 @@
 
    ```bash
    # 安装驱动，以arm为例
-   chmod +x ./Ascend-hdk-310p-npu-driver_23.0.0_linux-aarch64.run
-   ./Ascend-hdk-310p-npu-driver_23.0.0_linux-aarch64.run --full
+   chmod +x ./Ascend-hdk-{型号}-npu-driver_23.0.0_linux-aarch64.run
+   ./Ascend-hdk-{型号}-npu-driver_23.0.0_linux-aarch64.run --full
    
    # 安装固件
-   chmod +x ./Ascend-hdk-310p-npu-firmware_7.1.0.3.220.run
-   ./Ascend-hdk-310p-npu-firmware_7.1.0.3.220.run --full
+   chmod +x ./Ascend-hdk-{型号}-npu-firmware_7.1.0.3.220.run
+   ./Ascend-hdk-{型号}-npu-firmware_7.1.0.3.220.run --full
    ```
 
 2. 下载安装cann-toolkit和cann-kernels
@@ -62,8 +62,8 @@
    ./Ascend-cann-toolkit_7.0.0_linux-aarch64.run --full
    
    # 安装kernels
-   chmod +x ./Ascend-cann-kernels-310p_7.0.0_linux.run
-   ./Ascend-cann-kernels-310p_7.0.0_linux.run --install
+   chmod +x ./Ascend-cann-kernels-{型号}_7.0.0_linux.run
+   ./Ascend-cann-kernels-{型号}_7.0.0_linux.run --install
    
    # 激活环境变量
    source /usr/local/Ascend/ascend-toolkit/set_env.sh

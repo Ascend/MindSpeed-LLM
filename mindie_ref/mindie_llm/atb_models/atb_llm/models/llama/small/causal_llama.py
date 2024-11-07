@@ -1027,7 +1027,7 @@ class LlamaModel(nn.Module):
                 self.attention_mask_max_incre = torch.zeros((self.batch_num, 1, self.max_sequence_length), dtype=self.dtype).npu()
                 if self.format_nz:
                     soc_version = torch_npu._C._npu_get_soc_version()
-                    raise ValueError(f"{soc_version=} not supports LONG_SEQ_ENABLE=1")
+                    raise ValueError(f"{soc_version} not supports LONG_SEQ_ENABLE=1")
                 if self.batch_num > 1:
                     raise ValueError(f"batch_size must be 1, but got {self.batch_num}")
             return

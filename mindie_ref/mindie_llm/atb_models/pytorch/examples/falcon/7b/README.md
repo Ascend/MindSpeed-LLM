@@ -35,8 +35,8 @@ Falcon7B 是一个7B参数量的decoder-only模型，使用1,500B tokens训练�
 
 |   CPU   |  Device  |
 | :-----: | :------: |
-| aarch64 |   910B3  |
-|   x86   |   910B3  |
+| aarch64 |   Atlas 800T A2  |
+|   x86   |   Atlas 800T A2  |
 
 # 快速上手
 
@@ -65,7 +65,7 @@ Falcon7B 是一个7B参数量的decoder-only模型，使用1,500B tokens训练�
 
      - Ascend-cann-toolkit_7.0.RC1_linux-{arch}.run
 
-     - Ascend-cann-kernels-310p_7.0.RC1_linux.run
+     - Ascend-cann-kernels-xxx_7.0.RC1_linux.run
 
      - Ascend-cann-atb_7.0.RC1_cxx11abi{flag}_linux-{arch}.run
 
@@ -150,5 +150,5 @@ export INF_NAN_MODE_ENABLE=0
 
 | 硬件形态 | 模型 | Batch | 首token(ms) | 非首token(ms) |
 | :----:| :---: | :----: |:----: |:----: |
-| 910B3 | Falcon-7B | 1 | 59.18 | 17.24 |
+| Atlas 800T A2 | Falcon-7B | 1 | 59.18 | 17.24 |
 |  A100 | Falcon-7B | 1 | 31.23  | 10.73 |

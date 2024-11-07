@@ -42,16 +42,16 @@ if soc_version in [104, 220, 221, 222, 223, 224]:
     for name, module in model.named_modules():
         if isinstance(module, torch.nn.Linear):
             module.weight.data = torch_npu.npu_format_cast(module.weight.data,2)
-    print("soc version: ", soc_version, " is 910B, support ND")
+    print("soc version: ", soc_version, " is Atlas 900 A2 PODc, support ND")
 else: 
-    # if on 910A or 310P chip, eliminate the TransData and Transpose ops by converting weight data types 
+    # if on Atlas or Atalas推理系列产品 chip, eliminate the TransData and Transpose ops by converting weight data types 
     for name, module in model.named_modules():
         if isinstance(module, torch.nn.Linear):
             if name == 'lm_head':
             # eliminate TransData op before lm_head calculation
                 module.weight.data = torch.nn.parameter.Parameter(module.weight.data)
             module.weight.data = torch_npu.npu_format_cast(module.weight.data,29)
-    print("soc version: ", soc_version, " is not 910B, support NZ")
+    print("soc version: ", soc_version, " is not Atlas 900 A2 PODc, support NZ")
 
         
 print("===== warm up =====")

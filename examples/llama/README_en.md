@@ -214,10 +214,10 @@ The performance of LLaMA-7B/13B in **Ascend NPU** and **Reference**:
 
 | Device    | Hardware  | Model     | total Iterations | throughput rate (samples/s/p) | throughput rate (tokens/s/p) | single-step time (s/step) | floating point operation (TFLOPs/s) |
 |-----------|-----------|-----------|------------------|-------------------------------|------------------------------|---------------------------|-------------------------------------|
-| NPUs      | 910 1*8p  | LLaMA-7B  | 2048             | 1.83                          | 3763                         | 4.35                      | 159.9                               |
+| NPUs      | Atlas 900 A2 PODc 1*8p  | LLaMA-7B  | 2048             | 1.83                          | 3763                         | 4.35                      | 159.9                               |
 | Reference | -         | LLaMA-7B  | 2048             | 1.85                          | 3804                         | 4.31                      | 161.5                               |
-| NPUs      | 910 1*8p  | LLaMA-13B | 2048             | 0.925                         | 1894                         | 17.27                     | 205.57                              |
-| NPUs      | 910 1*16p | LLaMA-13B | 2048             | 0.88                          | 1800                         | 36.32                     | 195.58                              |
+| NPUs      | Atlas 900 A2 PODc 1*8p  | LLaMA-13B | 2048             | 0.925                         | 1894                         | 17.27                     | 205.57                              |
+| NPUs      | Atlas 900 A2 PODc 1*16p | LLaMA-13B | 2048             | 0.88                          | 1800                         | 36.32                     | 195.58                              |
 | Reference | -         | LLaMA-13B | 2048             | 0.98                          | 2012                         | 16.33                     | 217.37                              |
 
 

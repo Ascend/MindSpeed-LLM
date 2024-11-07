@@ -40,8 +40,8 @@ Bloom7B 是由BigScience训练的开源语言模型，BLOOM 通过 46 种自然�
 
 |   CPU   |  Device  |
 | :-----: | :------: |
-| aarch64 | 310P Duo |
-|   x86   | 310P Duo |
+| aarch64 | Atalas推理系列产品 Duo |
+|   x86   | Atalas推理系列产品 Duo |
 
 # 快速上手
 
@@ -67,7 +67,7 @@ Bloom7B 是由BigScience训练的开源语言模型，BLOOM 通过 46 种自然�
 
    - 安装CANN
 
-     使用测试的python运行`python -c "import torch;print(torch.compiled_with_cxx11_abi())"`，若返回True，则flag=1；若返回False则flag=0；Linux中执行`arch`获取平台架构arch。version为当前使用版本，hardware根据实际执行硬件选择310p或者910b，pta_version为使用的python环境中的torch版本。
+     使用测试的python运行`python -c "import torch;print(torch.compiled_with_cxx11_abi())"`，若返回True，则flag=1；若返回False则flag=0；Linux中执行`arch`获取平台架构arch。version为当前使用版本，hardware根据实际执行硬件选择Atalas推理系列产品或者Atlas 900 A2 PODc，pta_version为使用的python环境中的torch版本。
 
      - Ascend-cann-toolkit\_{version}\_linux-{arch}.run
 
@@ -250,6 +250,6 @@ cpupower frequency-set -g performance
 
 | 硬件形态 | 数据类型 | Batch | 首token(ms) | 非首token(ms) |
 | :----:| :---: | :----: |:----: |:----: |
-|  310P | W8A8 | 1 | 184.68 | 45.52 |
-| 310P | W16A16 | 1 | 165.08 | 61.79 |
+|  Atalas推理系列产品 | W8A8 | 1 | 184.68 | 45.52 |
+| Atalas推理系列产品 | W16A16 | 1 | 165.08 | 61.79 |
 

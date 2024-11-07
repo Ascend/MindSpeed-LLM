@@ -27,7 +27,7 @@ from ascendspeed.error_utils import check_divisible
 def _reduce(input_):
     """All-reduce the the input tensor across model parallel group."""
 
-    # Bypass the function if we are using only 1 GPU.
+    # Bypass the function if we are using only 1 NPU.
     if get_tensor_model_parallel_world_size() == 1:
         return input_
 
@@ -42,7 +42,7 @@ def _split_along_last_dim(input_):
     corresponding slice."""
 
     world_size = get_tensor_model_parallel_world_size()
-    # Bypass the function if we are using only 1 GPU.
+    # Bypass the function if we are using only 1 NPU.
     if world_size == 1:
         return input_
 
@@ -60,7 +60,7 @@ def _gather_along_last_dim(input_):
     """Gather tensors and concatinate along the last dimension."""
 
     world_size = get_tensor_model_parallel_world_size()
-    # Bypass the function if we are using only 1 GPU.
+    # Bypass the function if we are using only 1 NPU.
     if world_size == 1:
         return input_
 
@@ -82,7 +82,7 @@ def _gather_along_first_dim(input_):
     """Gather tensors and concatinate along the first dimension."""
 
     world_size = get_tensor_model_parallel_world_size()
-    # Bypass the function if we are using only 1 GPU.
+    # Bypass the function if we are using only 1 NPU.
     if world_size == 1:
         return input_
 
@@ -100,7 +100,7 @@ def _gather_along_first_dim(input_):
 def _reduce_scatter_along_first_dim(input_):
     """Reduce-scatter the input tensor across model parallel group."""
     world_size = get_tensor_model_parallel_world_size()
-    # Bypass the function if we are using only 1 GPU.
+    # Bypass the function if we are using only 1 NPU.
     if world_size == 1:
         return input_
 
@@ -123,7 +123,7 @@ def _split_along_first_dim(input_):
     corresponding slice."""
 
     world_size = get_tensor_model_parallel_world_size()
-    # Bypass the function if we are using only 1 GPU.
+    # Bypass the function if we are using only 1 NPU.
     if world_size == 1:
         return input_
 

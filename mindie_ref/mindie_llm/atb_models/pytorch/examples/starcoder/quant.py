@@ -82,7 +82,6 @@ soc_version = torch_npu._C._npu_get_soc_version()
 print("Current soc version: ", soc_version)
 
 
-#310P和910B都用该方法重定义bias
 def bias_correction(fp_bias, quant_weight, input_offset, deq_scale):
     _bias_correction = fp_bias.npu() / deq_scale.npu() - quant_weight.to(torch.float32).npu().sum(dim=1) * float(input_offset)
     return _bias_correction

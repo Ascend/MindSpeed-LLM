@@ -562,7 +562,7 @@ bash tasks/evaluation/evaluate_bloom_176b.sh
 2. bloom 176b
 ![bloom_176b_generate.png](..%2F..%2Fsources%2Fimages%2Fbloom_176b_generate.png)
 
-All the provided scripts are tested on 910 64GB NPUs for BLOOM 7B and BLOOM 176B (fp16). These scripts might not work for other models or a different number of NPUs.
+All the provided scripts are tested on Atlas 900 A2 PODc 64GB NPUs for BLOOM 7B and BLOOM 176B (fp16). These scripts might not work for other models or a different number of NPUs.
 
 > Note: Sometimes NPUs memory is not freed when inference deployment crashes. You can free this memory by running kill all python in terminal.
 

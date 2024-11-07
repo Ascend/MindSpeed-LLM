@@ -516,13 +516,13 @@ class GPTBigCodeModel(GPTBigCodePreTrainedModel):
         self.k_cache_input = None
         self.v_cache_input = None
         self.batch = 0
-        self.is_910b = False
+        self.is_910 = False
         soc_version = torch_npu._C._npu_get_soc_version()
         if soc_version in [104, 220, 221, 222, 223, 224]:
-            self.is_910b = True
-            print(">>>> device is 910b")
+            self.is_910 = True
+            print(">>>> device is Atlas 900 A2 PODc	")
         else:
-            print(">>>> device is 310p")
+            print(">>>> device is Atalas推理系列产品")
 
         self.lm_head_weight = None
 
@@ -579,7 +579,7 @@ class GPTBigCodeModel(GPTBigCodePreTrainedModel):
                                                dtype=torch.int32, device=input_ids.device)
 
             self.attention_mask_encoder = self.attention_mask_generator.get_attn_mask(seq_length, dtype=torch.half, device="npu")
-            if not self.is_910b:
+            if not self.is_910:
                 self.attention_mask_encoder = self.attention_mask_encoder.unsqueeze(0)
                 self.attention_mask_encoder = self.attention_mask_encoder.repeat(batch_size,1,1)
                 self.attention_mask_encoder = self.attention_mask_encoder.view(batch_size, self.max_position_embeddings, self.max_position_embeddings // 16, 16)
@@ -606,7 +606,7 @@ class GPTBigCodeModel(GPTBigCodePreTrainedModel):
             self.token_offset[:] = self.token_num
             self.seq_len_tensor = torch.tensor([1] * batch_size, dtype=torch.int32, device=input_ids.device)
 
-            if self.is_910b:
+            if self.is_910:
                 self.attention_mask_decoder = torch.full((self.max_position_embeddings, self.max_position_embeddings), 0, dtype=torch.half).npu()
             else:
                 self.attention_mask_decoder = torch.full((batch_size, self.max_position_embeddings, self.max_position_embeddings), 0, dtype=torch.half).npu()
@@ -698,8 +698,8 @@ class GPTBigCodeModel(GPTBigCodePreTrainedModel):
         if batch_size != self.batch:
             self.batch = batch_size
 
-            if self.is_910b:
-                print("init kv_cache for 910b")
+            if self.is_910:
+                print("init kv_cache for Atlas 900 A2 PODc")
                 self.k_cache_input = torch.zeros(self.layerNum,
                                                 batch_size,
                                                 self.max_position_embeddings,
@@ -709,7 +709,7 @@ class GPTBigCodeModel(GPTBigCodePreTrainedModel):
                                                 self.max_position_embeddings,
                                                 self.head_dim).half().npu() #[40,bsz,8192,128]         
             else:     
-                print("init kv_cache for 310p") 
+                print("init kv_cache for Atalas推理系列产品") 
                 self.k_cache_input = torch.zeros(self.layerNum,
                                                 batch_size,
                                                 self.head_dim // 16,

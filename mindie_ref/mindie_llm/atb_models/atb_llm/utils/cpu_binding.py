@@ -111,7 +111,7 @@ def _get_pcie_info(devices: List[int], keyword="PCIeBusInfo"):
             f"npu-smi info -t board -i {device_info.npu_id} -c {device_info.chip_id}"
         ).read().strip().split("\n")
         for _ in pcie_info:
-            line = ''.join(_.split())  # 此处是因为310P的关键字是 PCIe Bus Info 910是 PCIeBusInfo，故去掉空格以此兼容
+            line = ''.join(_.split())  # 此处是因为Atalas推理系列产品的关键字是 PCIe Bus Info 910是 PCIeBusInfo，故去掉空格以此兼容
             if line.startswith(keyword):
                 device_pcie_tbl[device] = line[len(keyword) + 1:]
                 break

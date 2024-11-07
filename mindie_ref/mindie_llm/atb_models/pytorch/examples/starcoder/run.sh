@@ -18,7 +18,7 @@ export ATB_OPERATION_EXECUTE_ASYNC=1
 export TASK_QUEUE_ENABLE=1
 export ATB_WORKSPACE_MEM_ALLOC_GLOBAL=0
 export ATB_CONTEXT_WORKSPACE_RING=1
-export ATB_USE_TILING_COPY_STREAM=0 # 该环境变量910B需要保持关闭，310P可开启
+export ATB_USE_TILING_COPY_STREAM=0 # 该环境变量Atlas 900 A2 PODc需要保持关闭，Atalas推理系列产品可开启
 export ATB_LAYER_INTERNAL_TENSOR_REUSE=1
 export PYTORCH_NPU_ALLOC_CONF="max_split_size_mb:2048"
 
@@ -44,7 +44,6 @@ SEQLEN_OUT_PAIR=[64,256,512,1024]
 
 transformers_package_path=$(python3 -c 'import transformers; import os; print(os.path.dirname(transformers.__file__))')
 cp $SCRIPT_DIR/modeling_gpt_bigcode_simple.py $transformers_package_path/models/gpt_bigcode/modeling_gpt_bigcode.py
-# cp $SCRIPT_DIR/patch/model/modeling_gpt_bigcode_parallel_model_910b.py $transformers_package_path/models/gpt_bigcode/modeling_gpt_bigcode.py
 
 function fn_run_parallel()
 {

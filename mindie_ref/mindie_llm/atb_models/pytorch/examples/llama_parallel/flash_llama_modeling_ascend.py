@@ -392,7 +392,7 @@ class FlashLlamaForCausalLM(torch.nn.Module):
                 head_size=1,
                 lm_head=True,
             )
-        else:  # 310P 暂不支持all-gather
+        else:  # Atalas推理系列产品 暂不支持all-gather
             self.lm_head = TensorParallelHead.load_weight(
                 config,
                 prefix="lm_head",
@@ -449,7 +449,7 @@ class FlashLlamaForCausalLM(torch.nn.Module):
             "quantType": 2 if self.quantize == "smooth_quant" else 0,
             "isPack": False if self.quantize == "smooth_quant" else True,
             "isEmbeddingParallel": False,
-            "isLmHeadParallel": not self.soc_info.need_nz,  # 310P 暂不支持all-gather
+            "isLmHeadParallel": not self.soc_info.need_nz,  # Atalas推理系列产品 暂不支持all-gather
             "rank": self.tp_rank,
             "worldSize": self.tp_world_size,
             "backend": "lccl"
@@ -466,7 +466,7 @@ class FlashLlamaForCausalLM(torch.nn.Module):
             "quantType": 2 if self.quantize == "smooth_quant" else 0,
             "isPack": False if self.quantize == "smooth_quant" else True,
             "isEmbeddingParallel": False,
-            "isLmHeadParallel": not self.soc_info.need_nz,  # 310P 暂不支持all-gather
+            "isLmHeadParallel": not self.soc_info.need_nz,  # Atalas推理系列产品 暂不支持all-gather
             "rank": self.tp_rank,
             "worldSize": self.tp_world_size,
             "backend": "lccl"

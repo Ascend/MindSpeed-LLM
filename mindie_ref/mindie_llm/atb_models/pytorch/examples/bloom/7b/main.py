@@ -146,14 +146,14 @@ def cast_nz_weight(model):
         for name, module in model.named_modules():
             if isinstance(module, torch.nn.Linear):
                 module.weight.data = torch_npu.npu_format_cast(module.weight.data, 2)
-        print("soc_version:", soc_version, " is 910B, support ND")
+        print("soc_version:", soc_version, " is Atlas 900 A2 PODc, support ND")
     else:
         for name, module in model.named_modules():
             if isinstance(module, torch.nn.Linear):
                 if name == 'lm_head':
                     module.weight = torch.nn.parameter.Parameter(module.weight.data)
                 module.weight.data = torch_npu.npu_format_cast(module.weight.data, 29)
-        print("soc_version:", soc_version, " is not 910B, support NZ")
+        print("soc_version:", soc_version, " is not Atlas 900 A2 PODc, support NZ")
 
     for name, module in model.named_modules():
         if isinstance(module, torch.nn.Embedding):

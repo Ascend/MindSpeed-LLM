@@ -78,12 +78,12 @@ StarCoder模型是在The Stack (v1.2)的80+种编程语言上训练的15.5B参�
 
 | 包名                                             |
 |------------------------------------------------|
-| Ascend-hdk-310p-npu-firmware_7.0.0.5.242.run |
+| Ascend-hdk-xxxx-npu-firmware_7.0.0.5.242.run |
 
   ```bash
   # 安装firmwire
-  chmod +x Ascend-hdk-310p-npu-firmware_7.0.0.5.242.run
-  ./Ascend-hdk-310p-npu-firmware_7.0.0.5.242.run --full
+  chmod +x Ascend-hdk-xxxx-npu-firmware_7.0.0.5.242.run
+  ./Ascend-hdk-xxxx-npu-firmware_7.0.0.5.242.run --full
   ```
 
   1.1.2. 安装driver
@@ -92,13 +92,13 @@ StarCoder模型是在The Stack (v1.2)的80+种编程语言上训练的15.5B参�
 
 | cpu     | 包名                                                         |
 |---------|------------------------------------------------------------|
-| aarch64 | Ascend-hdk-310p-npu-driver_23.0.rc3.b082_linux-aarch64.run |
-| x86     | Ascend-hdk-310p-npu-driver_23.0.rc3.b082_linux-x86-64.run |
+| aarch64 | Ascend-hdk-xxxx-npu-driver_23.0.rc3.b082_linux-aarch64.run |
+| x86     | Ascend-hdk-xxxx-npu-driver_23.0.rc3.b082_linux-x86-64.run |
 
   ```bash
   # 根据CPU架构安装对应的 driver
-  chmod +x Ascend-hdk-310p-npu-driver_23.0.rc3.b082_*.run
-  ./Ascend-hdk-310p-npu-driver_23.0.rc3.b082_*.run --full
+  chmod +x Ascend-hdk-xxxx-npu-driver_23.0.rc3.b082_*.run
+  ./Ascend-hdk-xxxx-npu-driver_23.0.rc3.b082_*.run --full
   ```
 
 - 1.2. 安装CANN
@@ -126,12 +126,12 @@ StarCoder模型是在The Stack (v1.2)的80+种编程语言上训练的15.5B参�
 
 | 包名                                         |
 |--------------------------------------------|
-| Ascend-cann-kernels-310p_7.0.RC1_linux.run |
+| Ascend-cann-kernels-{型号}_7.0.RC1_linux.run |
 
   ```bash
   # 安装 kernel
-  chmod +x Ascend-cann-kernels-310p_7.0.RC1_linux.run
-  ./Ascend-cann-kernels-310p_7.0.RC1_linux.run --install
+  chmod +x Ascend-cann-kernels-{型号}_7.0.RC1_linux.run
+  ./Ascend-cann-kernels-{型号}_7.0.RC1_linux.run --install
   ```
 
 - 1.3. 安装PytorchAdapter
@@ -234,7 +234,7 @@ StarCoder模型是在The Stack (v1.2)的80+种编程语言上训练的15.5B参�
 
 ## 模型推理
 
-1. 切分模型权重 **首次跑模型时**，需要先对模型权重进行**切分**，切分方法如下 (在启动脚本run.sh中，world size为切分数，310P中每芯记为1，例：单卡双芯时WORLD SIZE为2)
+1. 切分模型权重 **首次跑模型时**，需要先对模型权重进行**切分**，切分方法如下 (在启动脚本run.sh中，world size为切分数，Atalas推理系列产品中每芯记为1，例：单卡双芯时WORLD SIZE为2)
 
 - 修改代码
 
@@ -251,14 +251,14 @@ StarCoder模型是在The Stack (v1.2)的80+种编程语言上训练的15.5B参�
   # run.sh中第44行
   cp $SCRIPT_DIR/modeling_gpt_bigcode_simple.py $transformers....
   modeling_gpt_bigcode_simple.p用于初始切分
-  后续需使用modeling_gpt_bigcode_parallel_model_310p.py进行模型库的310P双芯推理
-  patch/model路径下有各类modeling脚本，根据需要替换(例：如要使用910B,则替换为 modeling_gpt_bigcode_parallel_model_910b.py)
+  后续需使用modeling_gpt_bigcode_parallel_model_{型号}.py进行模型库的Atalas推理系列产品双芯推理
+  patch/model路径下有各类modeling脚本，根据需要替换
   ```
 
 2. **执行模型推理** 模型切分完成后，run_parallel.sh会加载`output_idr`下切分好的模型权重（`output_dir/part_model/0`和`output_dir/part_model/1`）进行推理
 
 - 配置可选参数：最大输入输出长度
-  默认值为2048，可以根据用户需要, 在脚本中手动**配置最大输入输出长度**，把`modeling_gpt_bigcode_parallel_model_310p.py`脚本中的变量**MAX_SEQ_LENGTH**改为：**期望的最大输入长度 + 最大输出长度**
+  默认值为2048，可以根据用户需要, 在脚本中手动**配置最大输入输出长度**，把`modeling_gpt_bigcode_parallel_model_{型号}.py`脚本中的变量**MAX_SEQ_LENGTH**改为：**期望的最大输入长度 + 最大输出长度**
 
 - 修改配置参数&执行推理
   当前支持单case推理和多case推理。
@@ -305,7 +305,7 @@ StarCoder模型是在The Stack (v1.2)的80+种编程语言上训练的15.5B参�
 - 自定义运行可参考`run_parallel.py`
 
 3. **优化选项** 
-- 开启多stream性能优化，修改run.sh中以下环境变量为1，并执行推理（注意：910B不涉及，不要打开）
+- 开启多stream性能优化，修改run.sh中以下环境变量为1，并执行推理（注意：Atlas 800T A2不涉及，不要打开）
   ```
   export ATB_USE_TILING_COPY_STREAM=1
   ```
@@ -334,7 +334,7 @@ StarCoder模型是在The Stack (v1.2)的80+种编程语言上训练的15.5B参�
 3.  运行量化modeling
 
    将 `run.sh` 中的 `cp $SCRIPT_DIR/modeling_gpt_bigcode_simple.py $transformers_package_path/models/gpt_bigcode/modeling_gpt_bigcode.py` 
-   改为 ``cp  $SCRIPT_DIR/patch/model/modeling_gpt_bigcode_model_quant_310p.py $transformers_package_path/models/gpt_bigcode/modeling_gpt_bigcode.py``
+   改为 ``cp  $SCRIPT_DIR/patch/model/modeling_gpt_bigcode_model_quant_{型号}.py $transformers_package_path/models/gpt_bigcode/modeling_gpt_bigcode.py``
 
 # 模型推理性能
 

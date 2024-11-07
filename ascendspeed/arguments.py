@@ -632,7 +632,7 @@ def _add_logging_args(parser):
     group.add_argument('--log-optimizer-states-to-tensorboard',
                        action='store_true',
                        help='If set, write various optimizer states to '
-                       'tensorboard. This feature may consume extra GPU memory.')
+                       'tensorboard. This feature may consume extra NPU memory.')
 
     return parser
 
@@ -1330,7 +1330,7 @@ def _add_activation_checkpoint_args(parser):
     group.add_argument('--deepspeed-activation-checkpointing', action='store_true',
                        help='uses activation checkpointing from deepspeed')
     group.add_argument('--partition-activations', action='store_true',
-                       help='partition Activations across GPUs before checkpointing.')
+                       help='partition Activations across NPUs before checkpointing.')
     group.add_argument('--contigious-checkpointing', action='store_true',
                        help='Contigious memory checkpointing for activatoins.')
     group.add_argument('--checkpoint-in-cpu', action='store_true',

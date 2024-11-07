@@ -152,7 +152,7 @@ The performance of Aquila-7B in **Ascend NPU** and **Reference**:
 
 | Device    | Hardware | Model     | total Iterations | throughput rate (samples/s/p) | throughput rate (tokens/s/p) | single-step time (s/step) | floating point operation (TFLOPs/s) |
 |------|---------------|------------|------|------------------|----------------------|-----------------|------------------|
-| NPU  | 910b 1node*8p | Aquila-7B  | 1024 | 13.260            | 3394.56              | 4.8266           | 148.41           |
+| NPU  | Atlas 900 A2 PODc 1node*8p | Aquila-7B  | 1024 | 13.260            | 3394.56              | 4.8266           | 148.41           |
 | Reference  |  | Aquila-7B  |  |          | 4078             |           |            |
 
 

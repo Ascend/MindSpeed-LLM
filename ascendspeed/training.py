@@ -429,7 +429,7 @@ def get_model(model_provider_func, model_type=ModelType.encoder_or_decoder, wrap
                  for model_module in model])), flush=True)
 
     if not args.deepspeed:
-        # GPU allocation.
+        # NPU allocation.
         for model_module in model:
             device_name = get_accelerator().current_device_name()
             print_rank_0(f"model to {device_name}")
@@ -953,7 +953,7 @@ def training_log(loss_dict, total_loss_dict, learning_rate, iteration,
 
     if iteration % args.tensorboard_log_interval == 0:
         # This logging write various optimizer states to tensorboard. This
-        # feature may consume extra GPU memory thus is set at false by default.
+        # feature may consume extra NPU memory thus is set at false by default.
         if args.log_optimizer_states_to_tensorboard and optimizer is not None:
             opt_stats = [0.0] * 8
             opt_stats_2 = [0.0] * 4

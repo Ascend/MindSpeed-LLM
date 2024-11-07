@@ -23,12 +23,12 @@ class NPUSocInfo:
 
     def __post_init__(self):
         soc_version_map = {-1: "unknown soc version",
-                           100: "910PremiumA", 101: "910ProA", 102: "910A", 103: "910ProB", 104: "910B",
-                           200: "310P1", 201: "310P2", 202: "310P3", 203: "310P4",
-                           220: "910B1", 221: "910B2", 222: "910B2C", 223: "910B3", 224: "910B4",
-                           240: "310B1", 241: "310B2", 242: "310B3",
-                           250: "910C1", 251: "910C2", 252: "910C3", 253: "910C4"
-                           }
+                        100: "Ascend100", 101: "Ascend101", 102: "Ascend102", 103: "Ascend103", 104: "Ascend104",
+                        200: "Ascend200", 201: "Ascend201", 202: "Ascend202", 203: "Ascend203",
+                        220: "Ascend220", 221: "Ascend221", 222: "Ascend222", 223: "Ascend223",
+                        240: "Ascend240", 241: "Ascend241", 242: "Ascend242",
+                        250: "Ascend250", 251: "Ascend251", 252: "Ascend252", 253: "Ascend253"
+                        }
         self.soc_version = torch_npu._C._npu_get_soc_version()
         self.soc_name = soc_version_map.get(self.soc_version, soc_version_map[-1])
         if self.soc_version in (100, 101, 102, 103, 104, 200, 201, 202, 203):
@@ -69,7 +69,7 @@ class Launcher(BaseLauncher):
                     module.weight.data = torch_npu.npu_format_cast(module.weight.data, 2)
             self.logger.info(f"soc info: {self.soc_info.soc_version} , {self.soc_info.soc_name}, support ND")
         else:
-            # if on 910A or 310P chip, eliminate the TransData and Transpose ops by converting weight data types
+            # if on Atlas or Atalas推理系列产品 chip, eliminate the TransData and Transpose ops by converting weight data types
             for name, module in model.named_modules():
                 if isinstance(module, torch.nn.Linear):
                     if name == 'lm_head':

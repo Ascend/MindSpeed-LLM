@@ -178,7 +178,7 @@ class BloomCommonForCausalLM(BloomPreTrainedModel):
 
         self.model_none = nn.Embedding(1, 1)
 
-        self.is_910b = (config.hardware == "910")
+        self.is_910 = (config.hardware == "910")
         self.is_float = (config.data_dtype == "fp16")
 
         self.rank, self.world_size = get_distributed_info()
@@ -250,13 +250,13 @@ class BloomCommonForCausalLM(BloomPreTrainedModel):
         torch.npu.empty_cache()
     
     def maybe_transdata(self, x):
-        if self.is_910b:
+        if self.is_910:
             return x
         else:
             return self.transdata_operation.execute([x])[0]
     
     def maybe_formatcast(self, x):
-        if self.is_910b:
+        if self.is_910:
             return x
         else:
             return torch_npu.npu_format_cast(x, 29)
@@ -507,14 +507,14 @@ class BloomCommonForCausalLM(BloomPreTrainedModel):
                 self.attention_mask_max = torch_npu.npu_format_cast(torch.full((batch_size, self.num_heads, self.total_seqlen, self.total_seqlen), -10000, dtype=torch.float16, device=device), 2)
             self.attention_mask_max[:, :, :self.seq_len, :self.seq_len] = alibi_new + causal_mask
             if self.cache_k is None or batch_size != self.cache_k.shape[1] or self.total_seqlen != self.cache_k.shape[-2]:
-                if not self.is_910b:
+                if not self.is_910:
                     self.cache_k = torch_npu.npu_format_cast(torch.zeros(self.num_hidden_layers, batch_size, self.hidden_size // self.world_size // 16, self.total_seqlen, 16, dtype=torch.float16, device=device), 29)
                     self.cache_v = torch_npu.npu_format_cast(torch.zeros(self.num_hidden_layers, batch_size, self.hidden_size // self.world_size // 16, self.total_seqlen, 16, dtype=torch.float16, device=device), 29)
                 else:
                     self.cache_k = torch.zeros(self.num_hidden_layers, batch_size, self.total_seqlen, self.hidden_size // self.world_size, dtype=torch.float16, device=device)
                     self.cache_v = torch.zeros(self.num_hidden_layers, batch_size, self.total_seqlen, self.hidden_size // self.world_size, dtype=torch.float16, device=device)
 
-            attention_mask_max = torch_npu.npu_format_cast(self.attention_mask_max.view(-1, self.attention_mask_max.shape[-2], self.attention_mask_max.shape[-1]), 2) if not self.is_910b else self.attention_mask_max
+            attention_mask_max = torch_npu.npu_format_cast(self.attention_mask_max.view(-1, self.attention_mask_max.shape[-2], self.attention_mask_max.shape[-1]), 2) if not self.is_910 else self.attention_mask_max
             self.attn_mask_in = self.maybe_transdata(attention_mask_max)
 
         else:
@@ -543,12 +543,12 @@ class BloomCommonForCausalLM(BloomPreTrainedModel):
             )
 
             alibi_new_inc = alibi_inc.view(batch_size, self.num_heads, 1, causal_mask_inc.shape[-1])
-            if self.attention_mask_max.shape[-2] != 1 and not self.is_910b:
+            if self.attention_mask_max.shape[-2] != 1 and not self.is_910:
                 self.attention_mask_max = alibi_new_inc + causal_mask_inc
             else:
                 self.attention_mask_max[:, :, :1, :] = alibi_new_inc + causal_mask_inc
             
-            attention_mask_max = torch_npu.npu_format_cast(self.attention_mask_max.view(-1, self.attention_mask_max.shape[-2], self.attention_mask_max.shape[-1]), 2) if not self.is_910b else self.attention_mask_max
+            attention_mask_max = torch_npu.npu_format_cast(self.attention_mask_max.view(-1, self.attention_mask_max.shape[-2], self.attention_mask_max.shape[-1]), 2) if not self.is_910 else self.attention_mask_max
             self.attn_mask_in = self.maybe_transdata(attention_mask_max)
         
         loss = None

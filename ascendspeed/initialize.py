@@ -142,7 +142,7 @@ def _initialize_distributed():
     """Initialize torch.distributed and mpu."""
     args = get_args()
 
-    # 当前进程所在的node上可使用的GPU的数量
+    # 当前进程所在的node上可使用的NPU的数量
     device_count = get_accelerator().device_count()
 
     # 如果已创建好分布式环境
@@ -160,7 +160,7 @@ def _initialize_distributed():
         if args.rank == 0:
             print('> initializing torch distributed ...', flush=True)
         # Manually set the device ids.
-        # 1. 初始化进程，分配GPU，并设置进程大组（group）
+        # 1. 初始化进程，分配NPU，并设置进程大组（group）
         if device_count > 0:
             device = args.rank % device_count
             if args.local_rank is not None:

@@ -43,7 +43,7 @@ Falcon-40B是由TII构建的一个40B参数的因果解码器模型。
 
 | CPU     | Device |
 | ------- | ------ |
-| aarch64 | 910B3  |
+| aarch64 | Atlas 800T A2  |
 
 ## 多卡模型推理
 
@@ -102,12 +102,12 @@ assert cos_output > 0.999
 
 | Model      | Data | Platform | STEM   | Social sciences | Humanities | Other  | Avg     |
 | ---------- | ---- | -------- | ------ | --------------- | ---------- | ------ | ------- |
-| Falcon-40B | MMLU | A100     | 0.4112 | 0.6498          | 0.4980     | 0.6535 | 54.9305 |
-| Falcon-40B | MMLU | 910B     | 0.4049 | 0.6528          | 0.5019     | 0.6507 | 54.9302 |
+| Falcon-40B | MMLU | 参考     | 0.4112 | 0.6498          | 0.4980     | 0.6535 | 54.9305 |
+| Falcon-40B | MMLU | Atlas 900 A2 PODc     | 0.4049 | 0.6528          | 0.5019     | 0.6507 | 54.9302 |
 
 ### 推理性能
 
-NPU 910B3 测试结果：
+NPU Atlas 800T A2 测试结果：
 
 | Batch | TokensPerSecond | ResponseTime(ms) | FirstTokenTime(ms) | TimePerTokens(ms) |
 | ----- | --------------- | ---------------- | ------------------ | ----------------- |

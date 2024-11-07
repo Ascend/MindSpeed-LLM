@@ -36,7 +36,7 @@ VLMo 是由微软提出的一种多模态 Transformer 模型，Mixture-of-Modali
 
 | CPU     | Device |
 |---------|--------|
-| aarch64 | 910B3  |
+| aarch64 | Atlas 800T A2  |
 
 
 # 快速上手
@@ -55,15 +55,14 @@ VLMo 是由微软提出的一种多模态 Transformer 模型，Mixture-of-Modali
 
 | 包名                                   |
 |--------------------------------------|
-| Ascend-hdk-910b-npu-firmware_xxx.run |
-| Ascend-hdk-310p-npu-firmware_xxx.run |
+| Ascend-hdk-{型号}-npu-firmware_xxx.run |
 
 根据芯片型号选择相应的安装包安装
 
 ```bash
 # 安装firmwire
-chmod +x Ascend-hdk-310p-npu-firmware_xxx.run
-./Ascend-hdk-310p-npu-firmware_xxx.run --full
+chmod +x Ascend-hdk-{型号}-npu-firmware_xxx.run
+./Ascend-hdk-{型号}-npu-firmware_xxx.run --full
 ```
 
 ##### 1.1.2 安装driver
@@ -72,15 +71,13 @@ chmod +x Ascend-hdk-310p-npu-firmware_xxx.run
 
 | cpu     | 包名                                               | 
 |---------|--------------------------------------------------|
-| aarch64 | Ascend-hdk-910b-npu-driver_xxx_linux-aarch64.run |
-| x86     | Ascend-hdk-910b-npu-driver_xxx_linux-x86_64.run  |
-| aarch64 | Ascend-hdk-310p-npu-driver_xxx_linux-aarch64.run |
-| x86     | Ascend-hdk-310p-npu-driver_xxx_linux-x86-64.run  |
+| aarch64 | Ascend-hdk-{型号}-npu-driver_xxx_linux-aarch64.run |
+| x86     | Ascend-hdk-{型号}-npu-driver_xxx_linux-x86_64.run  |
 
 ```bash
 # 根据CPU架构 以及npu型号 安装对应的 driver
-chmod +x Ascend-hdk-310p-npu-driver_23.0.rc3.b060_*.run
-./Ascend-hdk-310p-npu-driver_23.0.rc3.b060_*.run --full
+chmod +x Ascend-hdk-{型号}-npu-driver_23.0.rc3.b060_*.run
+./Ascend-hdk-{型号}-npu-driver_23.0.rc3.b060_*.run --full
 ```
 
 #### 1.2 安装CANN
@@ -109,13 +106,12 @@ source /usr/local/Ascend/ascend-toolkit/set_env.sh
 
 | 包名                                     |
 |----------------------------------------|
-| Ascend-cann-kernels-910b_xxx_linux.run |
-| Ascend-cann-kernels-310p_xxx_linux.run |
+| Ascend-cann-kernels-{型号}_xxx_linux.run |
 
 ```bash
-# 安装 kernel 以310P 为例
-chmod +x Ascend-cann-kernels-310p_xxx_linux.run
-./Ascend-cann-kernels-310p_xxx_linux.run --install
+# 安装 kernel
+chmod +x Ascend-cann-kernels-{型号}_xxx_linux.run
+./Ascend-cann-kernels-{型号}_xxx_linux.run --install
 ```
 
 #### 1.3 安装PytorchAdapter

@@ -80,15 +80,6 @@ def cut_bias(weight, world_size, is_bias=False, cut_row_keys=['c_fc'], cut_col_k
             state_dict_list[i][key] = cut_tensor_list[i]
     return state_dict_list
 
-def is_310p():
-    torch.npu.set_device(0)
-    soc_version = torch_npu._C._npu_get_soc_version()
-    print("Current soc version: ", soc_version)
-    if soc_version == -1:
-        exit()
-    if soc_version not in [104, 220, 221, 222, 223, 224]:
-        return True
-    return False
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

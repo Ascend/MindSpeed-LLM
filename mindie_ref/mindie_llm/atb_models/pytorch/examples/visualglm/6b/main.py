@@ -69,7 +69,7 @@ def load_model(model_path, device_id):
     soc_version = torch_npu._C._npu_get_soc_version()
     model = ChatGLMForConditionalGenerationWithImage.from_pretrained(model_path, trust_remote_code=True).half().npu().eval()
     if soc_version not in [104, 220, 221, 222, 223, 224]:
-        # if on 910A or 310P chip, eliminate the TransData and Transpose ops by converting weight data types
+        # if on Atlas or Atalas推理系列产品 chip, eliminate the TransData and Transpose ops by converting weight data types
         for name, module in model.named_modules():
             if isinstance(module, torch.nn.Linear):
                 if name == 'lm_head':
@@ -80,7 +80,7 @@ def load_model(model_path, device_id):
                     module.weight.data = torch.nn.parameter.Parameter(module.weight.data)
                     module.weight.data = torch.cat((module.weight.data, lmhead_weight_offset), dim=0)
                 module.weight.data = torch_npu.npu_format_cast(module.weight.data, 29)
-        print("soc version: ", soc_version, " is not 910B, support NZ")
+        print("soc version: ", soc_version, " is not Atlas 900 A2 PODc, support NZ")
     return model, tokenizer
 
 

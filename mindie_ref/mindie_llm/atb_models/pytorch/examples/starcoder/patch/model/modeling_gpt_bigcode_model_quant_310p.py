@@ -261,15 +261,6 @@ class AttentionMask(nn.Module):
         self._update_attn_cache(dtype, device, max_s)
         return self.atten_mask_cache
 
-    def make_mask_suit310p(self, batch_size: int, mask, dtype: torch.dtype, device: torch.device):
-        mask = mask.unsqueeze(0) #[1, ms] > [1, ms, ms]   [bs,seq]
-        mask = mask.repeat(batch_size,1,1)
-        mask_shape = mask.shape #[ms,ms]
-        mask = mask.view(mask_shape[0], mask_shape[1], mask_shape[2] // 16, 16)
-        mask = mask.permute(0,2,1,3).contiguous()
-        mask.data = torch_npu.npu_format_cast(mask.data,29).to(dtype).to(device)
-        return mask
-
 
 class GPTBigCodeBlock(nn.Module):
     def __init__(self, config, layer_idx=None):

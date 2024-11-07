@@ -103,8 +103,8 @@
 
      - 直接下载量化权重
 
-       - [A300I DUO 量化权重下载](https://model-weight.obs.cn-north-4.myhuaweicloud.com/chatglm2_6B_310p.tar.gz)
-       - [A800I A2 量化权重下载](https://model-weight.obs.cn-north-4.myhuaweicloud.com/chatglm2_6B_910b.tar.gz)
+       - [Atlas 推理系列产品 量化权重下载](https://model-weight.obs.cn-north-4.myhuaweicloud.com/chatglm2_6B_310x.tar.gz)
+       - [Atlas 900 A2 PODc 量化权重下载](https://model-weight.obs.cn-north-4.myhuaweicloud.com/chatglm2_6B_910x.tar.gz)
 
        请使用wget下载，下载完成后请将文件解压到任意路径`QUANT_WEIGHT_PATH=${path-to-quant-weight}`
 

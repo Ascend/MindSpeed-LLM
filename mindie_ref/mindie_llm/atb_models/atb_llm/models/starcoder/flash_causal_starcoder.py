@@ -112,7 +112,7 @@ class FlashStarCoderModel(torch.nn.Module):
         self.layer_num = config.num_layers
         self.kv_head_num = 2
 
-        self.soc_info = NPUSocInfo()  # 判定310p与否，进行NZ转置
+        self.soc_info = NPUSocInfo()  # 判定Atalas推理系列产品与否，进行NZ转置
         self.filenames = weights.filenames
         self.dtype = dtype
         self.device = weights.device

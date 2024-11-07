@@ -30,7 +30,7 @@ class _VocabParallelCrossEntropy(torch.autograd.Function):
 
     @staticmethod
     def forward(ctx, vocab_parallel_logits, target, label_smoothing=0.0):
-        # Maximum value along vocab dimension across all GPUs.
+        # Maximum value along vocab dimension across all NPUs.
         logits_max = torch.max(vocab_parallel_logits, dim=-1)[0]
         torch.distributed.all_reduce(logits_max,
                                      op=torch.distributed.ReduceOp.MAX,
@@ -63,12 +63,12 @@ class _VocabParallelCrossEntropy(torch.autograd.Function):
         predicted_logits_1d = predicted_logits_1d.clone().contiguous()
         predicted_logits = predicted_logits_1d.view_as(target)
         predicted_logits *= ~target_mask
-        # All reduce is needed to get the chunks from other GPUs.
+        # All reduce is needed to get the chunks from other NPUs.
         torch.distributed.all_reduce(predicted_logits,
                                      op=torch.distributed.ReduceOp.SUM,
                                      group=get_tensor_model_parallel_group())
 
-        # Sum of exponential of logits along vocab dimension across all GPUs.
+        # Sum of exponential of logits along vocab dimension across all NPUs.
         exp_logits = vocab_parallel_logits
         torch.exp(vocab_parallel_logits, out=exp_logits)
         sum_exp_logits = exp_logits.sum(dim=-1)

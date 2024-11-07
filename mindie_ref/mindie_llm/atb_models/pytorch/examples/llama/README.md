@@ -79,12 +79,12 @@ LLaMA（Large Language Model Meta AI），由 Meta AI 发布的一个开放且�
 
 | 包名                                             |
 |------------------------------------------------|
-| Ascend-hdk-310p-npu-firmware_7.0.0.5.242.run |
+| Ascend-hdk-{型号}-npu-firmware_7.0.0.5.242.run |
 
   ```bash
   # 安装firmwire
-  chmod +x Ascend-hdk-310p-npu-firmware_7.0.0.5.242.run
-  ./Ascend-hdk-310p-npu-firmware_7.0.0.5.242.run --full
+  chmod +x Ascend-hdk-{型号}-npu-firmware_7.0.0.5.242.run
+  ./Ascend-hdk-{型号}-npu-firmware_7.0.0.5.242.run --full
   ```
 
   1.1.2. 安装driver
@@ -93,13 +93,13 @@ LLaMA（Large Language Model Meta AI），由 Meta AI 发布的一个开放且�
 
 | cpu     | 包名                                                         |
 |---------|------------------------------------------------------------|
-| aarch64 | Ascend-hdk-310p-npu-driver_23.0.rc3.b082_linux-aarch64.run |
-| x86     | Ascend-hdk-310p-npu-driver_23.0.rc3.b082_linux-x86-64.run |
+| aarch64 | Ascend-hdk-{型号}-npu-driver_23.0.rc3.b082_linux-aarch64.run |
+| x86     | Ascend-hdk-{型号}-npu-driver_23.0.rc3.b082_linux-x86-64.run |
 
   ```bash
   # 根据CPU架构安装对应的 driver
-  chmod +x Ascend-hdk-310p-npu-driver_23.0.rc3.b082_*.run
-  ./Ascend-hdk-310p-npu-driver_23.0.rc3.b082_*.run --full
+  chmod +x Ascend-hdk-{型号}-npu-driver_23.0.rc3.b082_*.run
+  ./Ascend-hdk-{型号}-npu-driver_23.0.rc3.b082_*.run --full
   ```
 
 - 1.2. 安装CANN
@@ -127,12 +127,12 @@ LLaMA（Large Language Model Meta AI），由 Meta AI 发布的一个开放且�
 
 | 包名                                         |
 |--------------------------------------------|
-| Ascend-cann-kernels-310p_7.0.RC1_linux.run |
+| Ascend-cann-kernels-{型号}_7.0.RC1_linux.run |
 
   ```bash
   # 安装 kernel
-  chmod +x Ascend-cann-kernels-310p_7.0.RC1_linux.run
-  ./Ascend-cann-kernels-310p_7.0.RC1_linux.run --install
+  chmod +x Ascend-cann-kernels-{型号}_7.0.RC1_linux.run
+  ./Ascend-cann-kernels-{型号}_7.0.RC1_linux.run --install
   ```
 
 - 1.3. 安装PytorchAdapter
