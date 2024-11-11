@@ -39,14 +39,45 @@
 
 【模型开发时推荐使用配套的环境版本】
 
-|    软件     | [版本](https://www.hiascend.com/zh/) |
-|:---------:|:----------------------------------:|
-|  Python   |                3.8                 |
-|  Driver   |         在研版本          |
-| Firmware  |         在研版本          |
-|   CANN    |             在研版本             |
-|   Torch   |            2.1.0             |
-| Torch_npu |           在研版本           |
+<table border="0">
+  <tr>
+    <th>依赖软件</th>
+    <th>版本</th>
+    <th>软件安装指南</th>
+    <th>推荐硬件形态</th>
+  </tr>
+
+  <tr>
+    <td>昇腾NPU驱动</td>
+    <td rowspan="2">Ascend HDK 24.1.RC3</td>
+    <td rowspan="2">《<a href="https://www.hiascend.com/document/detail/zh/canncommercial/80RC2/softwareinst/instg/instg_0003.html?Mode=PmIns&OS=Ubuntu&Software=cannToolKit">驱动固件安装指南</a>》</td>
+    <td rowspan="8">Atlas 900 A2 PODc</td>
+  </tr>
+  <tr>
+    <td>昇腾NPU固件</td>
+  </tr>
+  <tr>
+    <td>Toolkit（开发套件）</td>
+    <td rowspan="2">CANN 8.0.RC3</td>
+    <td rowspan="2">《<a href="https://www.hiascend.com/document/detail/zh/canncommercial/80RC2/softwareinst/instg/instg_0000.html">CANN 软件安装指南</a>》</td>
+  </tr>
+  <tr>
+    <td>Kernel（算子包）</td>
+  </tr>
+  <tr>
+  </tr>
+  <tr>
+    <td>PyTorch</td>
+    <td rowspan="3">release v6.0.RC3</td>
+    <td rowspan="3">《<a href="https://www.hiascend.com/document/detail/zh/Pytorch/60RC2/configandinstg/instg/insg_0001.html">Ascend Extension for PyTorch 配置与安装</a>》</td>
+  </tr>
+  <tr>
+    <td>torch_npu插件</td>
+  </tr>
+  <tr>
+    <td>apex</td>
+  </tr>
+</table>
 
 
 #### <span id="jump1.1"> 1. 仓库拉取
