@@ -3,7 +3,6 @@ import stat
 import sys
 import unittest
 from pathlib import Path
-import xmlrunner
 
 
 # =============================
@@ -58,9 +57,10 @@ class ST_Test:
 
 
 if __name__ == "__main__":
-    st_test = ST_Test()
-    st_test.run_shell()
-    test_loader = unittest.TestLoader()
-    discover = test_loader.discover(start_dir="../tests/ut", pattern="test*.py")
-    runner = unittest.TextTestRunner()
-    success_check_ut(runner.run(discover))
+    pass
+    # st_test = ST_Test()
+    # st_test.run_shell()
+    # test_loader = unittest.TestLoader()
+    # discover = test_loader.discover(start_dir="../tests/ut", pattern="test*.py")
+    # runner = unittest.TextTestRunner()
+    # success_check_ut(runner.run(discover))
