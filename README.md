@@ -1079,186 +1079,158 @@ ModelLink支持Huggingface、Megatron-Legacy以及Megatron-Core之间的权重�
 
 ## <span id="jump2"> 预训练加速算法与融合算子
 
-ModelLink预训练支持张量并行、流水线并行等多种加速算法和融合算子，下表为各种加速特性对应的使能开关：
+ModelLink预训练支持张量并行、流水线并行等多种加速算法和融合算子：
 
 <table><thead>
   <tr>
-    <th>使用场景</th>
+    <th>场景</th>
     <th>特性名称</th>
-    <th>具体参数</th>
     <th>Mcore</th>
     <th>Legacy</th>
+    <th>贡献方</th>
   </tr></thead>
 <tbody>
   <tr>
-    <td rowspan="6">PTD并行</td>
-    <td>张量并行</td>
-    <td>--tensor-model-parallel-size</td>
-    <td>Yes</td>
-    <td>Yes</td>
+    <td rowspan="4">SPTD并行</td>
+    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/tensor-parallel.md">张量并行</a></td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>【昇腾】</td>
   </tr>
   <tr>
-    <td>流水线并行</td>
-    <td>--pipeline-model-parallel-size</td>
-    <td>Yes</td>
-    <td>Yes</td>
+    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/pipeline-parallel.md">流水线并行</a></td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>【昇腾】</td>
   </tr>
   <tr>
-    <td>流水线并行动态划分</td>
-    <td>--num-layer-list</td>
-    <td>Yes</td>
-    <td>Yes</td>
+    <td><a href="https://portrait.gitee.com/ascend/ModelLink/blob/master/docs/features/virtual_pipeline_parallel.md">虚拟流水并行</a></td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>【昇腾】</td>
   </tr>
   <tr>
-    <td>虚拟流水并行</td>
-    <td>--num-layers-per-virtual-pipeline-stage</td>
-    <td>Yes</td>
-    <td>Yes</td>
-  </tr>
-  <tr>
-    <td>序列并行</td>
-    <td>--sequence-parallel</td>
-    <td>Yes</td>
-    <td>Yes</td>
-  </tr>
-  <tr>
-    <td>分布式优化器</td>
-    <td>--use-distributed-optimizer</td>
-    <td>Yes</td>
-    <td>Yes</td>
+    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/sequence-parallel.md">序列并行</a></td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>【昇腾】</td>
   </tr>
   <tr>
     <td rowspan="3">长序列并行</td>
-    <td>长序列并行</td>
-    <td>--context-parallel-size</td>
-    <td>Yes</td>
-    <td>No</td>
+    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/ring-attention-context-parallel.md">Ascend Ring Attention 长序列并行</a></td>
+    <td>✅</td>
+    <td>❌</td>
+    <td>【昇腾】</td>
   </tr>
   <tr>
-    <td>多并行方案</td>
-    <td>--context-parallel-algo</td>
-    <td>Yes</td>
-    <td>No</td>
+    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/ulysses-context-parallel.md">Ulysses 长序列并行</a></td>
+    <td>✅</td>
+    <td>❌</td>
+    <td>【昇腾】</td>
   </tr>
   <tr>
-    <td>Send/recv掩盖加速</td>
-    <td>--cp-send-recv-overlap</td>
-    <td>Yes</td>
-    <td>No</td>
+    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/hybrid-context-parallel.md">混合长序列并行</a></td>
+    <td>✅</td>
+    <td>❌</td>
+    <td>【昇腾】</td>
   </tr>
   <tr>
-    <td rowspan="3">MOE</td>
-    <td>MOE专家并行</td>
-    <td>--expert-model-parallel-size</td>
-    <td>Yes</td>
-    <td>No</td>
+    <td rowspan="2">MOE</td>
+    <td><a href="https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/core/transformer/moe/README.md">MOE 专家并行</a></td>
+    <td>✅</td>
+    <td>❌</td>
+    <td>【昇腾】</td>
   </tr>
   <tr>
-    <td>MOE重排通信优化</td>
-    <td>--moe-permutation-async-comm</td>
-    <td>Yes</td>
-    <td>No</td>
+    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/megatron_moe/megatron-moe-allgather-dispatcher.md">MOE 重排通信优化</a></td>
+    <td>✅</td>
+    <td>❌</td>
+    <td>【计算研究部】</td>
   </tr>
   <tr>
-    <td>GEMM</td>
-    <td>--moe-grouped-gemm</td>
-    <td>Yes</td>
-    <td>No</td>
+    <td rowspan="4">显存优化</td>
+    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/reuse-fp32-param.md">参数副本复用</a></td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>【计算算法部】</td>
+  </tr>
+    <tr>
+    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/distributed-optimizer.md">分布式优化器</a></td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>【昇腾】</td>
   </tr>
   <tr>
-    <td rowspan="7">显存优化</td>
-    <td>参数副本复用</td>
-    <td>--reuse-fp32-param</td>
-    <td>Yes</td>
-    <td>Yes</td>
+    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/swap_attention.md">Swap Attention</a></td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>【计算研究部】</td>
   </tr>
   <tr>
-    <td>激活函数重计算</td>
-    <td>--recompute-activation-function</td>
-    <td>Yes</td>
-    <td>Yes</td>
-  </tr>
- <tr>
-    <td>Swap Attention</td>
-    <td>--swap-attention</td>
-    <td>Yes</td>
-    <td>Yes</td>
-  </tr>
-  <tr>
-    <td>重计算程度</td>
-    <td>--recompute-granularity</td>
-    <td>Yes</td>
-    <td>Yes</td>
-  </tr>
-  <tr>
-    <td>重计算层数</td>
-    <td>--recompute-num-layers</td>
-    <td>Yes</td>
-    <td>Yes</td>
-  </tr>
-  <tr>
-    <td>重计算方法</td>
-    <td>--recompute-method</td>
-    <td>Yes</td>
-    <td>Yes</td>
-  </tr>
-  <tr>
-    <td>PP-Stage重计算</td>
-    <td>--enable-recompute-layers-per-pp-rank</td>
-    <td>Yes</td>
-    <td>Yes</td>
+    <td><a href="https://portrait.gitee.com/ascend/ModelLink/blob/master/docs/features/recompute_relative.md">重计算</a></td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>【计算研究部】</td>
   </tr>
   <tr>
     <td rowspan="5">融合算子</td>
-    <td>Flash attention</td>
-    <td>--use-flash-attn</td>
-    <td>Yes</td>
-    <td>Yes</td>
+    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/flash-attention.md">Flash attention</a></td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>【昇腾】</td>
   </tr>
   <tr>
-    <td>Fused rmsnorm</td>
-    <td>--use-fused-rmsnorm</td>
-    <td>Yes</td>
-    <td>Yes</td>
+    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/rms_norm.md">Fused rmsnorm</a></td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>【昇腾】</td>
   </tr>
   <tr>
-    <td>Fused swiglu</td>
-    <td>--use-fused-swiglu</td>
-    <td>Yes</td>
-    <td>Yes</td>
+    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/swiglu.md">Fused swiglu</a></td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>【昇腾】</td>
   </tr>
   <tr>
-    <td>Fused rotary position embedding</td>
-    <td>--use-fused-rotary-pos-emb</td>
-    <td>Yes</td>
-    <td>Yes</td>
+    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/rotary-embedding.md">Fused rotary position embedding</a></td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>【昇腾】</td>
   </tr>
   <tr>
-    <td>Sliding window attention</td>
-    <td>--sliding-window</td>
-    <td>Yes</td>
-    <td>Yes</td>
+    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/megatron_moe/megatron-moe-gmm.md">GMM</a></td>
+    <td>✅</td>
+    <td>❌</td>
+    <td>【昇腾】</td>
   </tr>
   <tr>
-    <td rowspan="3">通信</td>
-    <td>梯度reduce通算掩盖</td>
-    <td>--overlap-grad-reduce</td>
-    <td>Yes</td>
-    <td>Yes</td>
+    <td rowspan="4">通信掩盖</td>
+    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/async-ddp-param-gather.md">梯度reduce通算掩盖</a></td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>【昇腾】</td>
   </tr>
   <tr>
-    <td>权重all-gather通算掩盖</td>
-    <td>--overlap-param-gather</td>
-    <td>Yes</td>
-    <td>No</td>
+    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/recompute_independent_pipelining.md">Recompute in advance</a></td>
+    <td>✅</td>
+    <td>❌</td>
+    <td>【昇腾】</td>
   </tr>
   <tr>
-    <td>MC2</td>
-    <td>--use-mc2</td>
-    <td>Yes</td>
-    <td>Yes</td>
+    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/async-ddp-param-gather.md">权重all-gather通算掩盖</a></td>
+    <td>✅</td>
+    <td>❌</td>
+    <td>【昇腾】</td>
+  </tr>
+  <tr>
+    <td><a href="https://portrait.gitee.com/ascend/ModelLink/blob/master/docs/features/mc2.md">MC2</a></td>
+    <td>✅</td>
+    <td>✅</td>
+    <td>【昇腾】</td>
   </tr>
 </tbody></table>
+
+---
 
 
 **注意事项**
