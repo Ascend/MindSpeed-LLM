@@ -1539,24 +1539,22 @@ export HCCL_DETERMINISTIC=True
 
 
 ## <span id="jump7"> 基于昇腾芯片的高可用特性
-分布式优化器的思想是通过将优化器状态均匀地分布在数据并行组中来节省内存。基于该思想，设计了将数据并行组切分成两个副本数据并行组的方案，副本优化器将优化器状态均匀分布在副本数据并行组，实现优化器状态均有备份。结合华为自研的高可用框架，可实现以下功能：
-1. 训练过程中，支持故障场景保存临终checkpoint，训练结果0损失。
-2. 训练过程中，支持HBM的UCE故障检测，并完成在线修复，达到Step级重计算。
+分布式优化器的思想是通过将优化器状态均匀地分布在数据并行组中来节省内存。基于该思想，设计了将数据并行组切分成两个副本数据并行组的方案，副本优化器将优化器状态均匀分布在副本数据并行组，实现优化器状态均有备份。结合华为自研的高可用框架，可实现训练过程中，支持故障场景保存临终checkpoint，训练结果0损失。
 
-开启高可用特性时，副本优化器使用的静态内存有所增加，每个参数的理论字节数为（其中“d”是数据并行大小）：
+
+开启高可用特性时，副本优化器使用的静态内存有所增加，每个参数的理论字节数为（其中“d”是数据并行大小，增长关系仅供参考）：
 
 |                                  | Non-distributed optim | Distributed optim | Replica optim |
 |----------------------------------| ------ | ------ |---------------|
-| fp16/bf16 param, fp16/bf16 grads | 20 | 4 + 16/d | 4 + 32/d       |
-| fp16/bf16 param, fp32 grads      | 18 | 6 + 12/d | Supporting      |
-| fp32 param, fp32 grads           | 16 | 8 + 8/d  | Supporting      |
+| fp16/bf16 param, fp16/bf16 grads | 20 | 4 + 16/d | 4 + 32/d      |
+| fp16/bf16 param, fp32 grads      | 18 | 6 + 12/d | 6 + 24/d      |
+| fp32 param, fp32 grads           | 16 | 8 + 8/d  | 8 + 16/d      |
 
 
-- 启动命令中加入开关，并安装华为自研高可用框架mindio_ttp.whl
-- mindio_ttp相关说明：https://www.hiascend.com/document/detail/zh/mindx-dl/60rc1/mindio/mindiottp
+- 启动命令中加入开关，并安装华为自研高可用框架 [mindio_ttp.whl](https://www.hiascend.com/document/detail/zh/mindx-dl/60rc3/clusterscheduling/ref/mindiottp/mindiotft009.html)
+- mindio_ttp相关说明：[MindIO TTP 官网介绍](https://www.hiascend.com/document/detail/zh/mindx-dl/60rc3/clusterscheduling/ref/mindiottp/mindiotft001.html)
 ```shell
 --enable-high-availability           #使能高可用特性的总开关
---enable-optimizer-state-local-copy  #使能保存上一步优化器状态，内存会进一步增加，默认可关闭
 ```
 
 ---
