@@ -164,14 +164,7 @@ class DecoderPackedMTFDataset(torch.utils.data.Dataset):
         item = self.mtf_dataset[doc_idx]
 
         if self.args.is_pairwise_dataset:
-            res = {
-                "chosen_input_ids": self._cut_token(item["chosen_input_ids"], np.int64),
-                "chosen_attention_mask": self._cut_token(item["chosen_attention_mask"], np.int64),
-                "chosen_labels": self._cut_token(item["chosen_labels"], np.int64),
-                "rejected_input_ids": self._cut_token(item["rejected_input_ids"], np.int64),
-                "rejected_attention_mask": self._cut_token(item["rejected_attention_mask"], np.int64),
-                "rejected_labels": self._cut_token(item["rejected_labels"], np.int64)
-            }
+            return self._cut_pairwise_token(item, np.int64)
         elif self.args.reset_position_ids:
             position_ids = self._get_reset_position_ids(torch.from_numpy(item['input_ids']))
             return {
@@ -181,19 +174,83 @@ class DecoderPackedMTFDataset(torch.utils.data.Dataset):
                 "position_ids": self._cut_token(position_ids.numpy(), np.int64)
             }
         else:
-            res = {
-                "input_ids": self._cut_token(item["input_ids"], np.int64),
-                "attention_mask": self._cut_token(item["attention_mask"], np.int64),
-                "labels": self._cut_token(item["labels"], np.int64),
-            }
+            return self._cut_instruction_token(item, np.int64)
+
+
+    def _cut_instruction_token(self, item, dtype):
+        IGNORE_INDEX = -100
+        prompt_length = (item["labels"] != IGNORE_INDEX).nonzero()[0][0]
+        prompt_ids = item["input_ids"][:prompt_length]
+        label_ids = item["labels"][prompt_length:]
+        source_len, target_len = _infer_seqlen(
+            len(prompt_ids), len(label_ids), self.seq_length
+        )
+        prompt_ids = prompt_ids[:source_len]
+        label_ids = label_ids[:target_len]
+        input_ids = np.append(prompt_ids, label_ids)
+        labels = np.append(IGNORE_INDEX * np.ones(source_len), label_ids)
+        res = {
+            "input_ids": input_ids.astype(dtype),
+            "attention_mask": np.ones_like(input_ids).astype(dtype),
+            "labels": labels.astype(dtype)
+        }
 
         return res
+
     
     def _cut_token(self, token, dtype):
         token_length = len(token)
         if token_length >= self.seq_length:
             token = token[:self.seq_length]
         return token.astype(dtype)
+
+
+    def _cut_pairwise_token(self, item, dtype):
+        """Cut prompt and response proportionally for pairwise datasets."""
+        IGNORE_INDEX = -100
+        prompt_length = (item["chosen_labels"] != IGNORE_INDEX).nonzero()[0][0]
+        prompt_ids = item["chosen_input_ids"][:prompt_length]
+        chosen_ids = item["chosen_input_ids"][prompt_length:]
+        rejected_ids = item["rejected_input_ids"][prompt_length:]
+        source_len, target_len = _infer_seqlen(
+            len(prompt_ids), max(len(chosen_ids), len(rejected_ids)), self.seq_length
+        )
+        prompt_ids = prompt_ids[:source_len]
+        chosen_ids = chosen_ids[:target_len]
+        rejected_ids = rejected_ids[:target_len]
+
+        chosen_input_ids = np.append(prompt_ids, chosen_ids)
+        chosen_labels = np.append(IGNORE_INDEX * np.ones(source_len), chosen_ids)
+        rejected_input_ids = np.append(prompt_ids, rejected_ids)
+        rejected_labels = np.append(IGNORE_INDEX * np.ones(source_len), rejected_ids)
+
+        res = {
+            "chosen_input_ids": chosen_input_ids.astype(dtype),
+            "chosen_attention_mask": np.ones_like(chosen_input_ids).astype(dtype),
+            "chosen_labels": chosen_labels.astype(dtype),
+            "rejected_input_ids": rejected_input_ids.astype(dtype),
+            "rejected_attention_mask": np.ones_like(rejected_input_ids).astype(dtype),
+            "rejected_labels": rejected_labels.astype(dtype)
+        }
+
+        return res
+
+
+def _infer_seqlen(source_len: int, target_len: int, cutoff_len: int):
+    r"""
+    Computes the real sequence length after truncation by the cutoff_len.
+    """
+    if target_len * 2 < cutoff_len:  # truncate source
+        max_target_len = cutoff_len
+    elif source_len * 2 < cutoff_len:  # truncate target
+        max_target_len = cutoff_len - source_len
+    else:  # truncate both
+        max_target_len = int(cutoff_len * (target_len / (source_len + target_len)))
+
+    new_target_len = min(max_target_len, target_len)
+    max_source_len = max(cutoff_len - new_target_len, 0)
+    new_source_len = min(max_source_len, source_len)
+    return new_source_len, new_target_len
 
 
 def _build_index_mappings(
