@@ -188,6 +188,7 @@ class BaseDatasetHandler(object):
                 for j, sentences in enumerate(batch):
                     for k, sentence in enumerate(sentences):
                         if (j, k) in skip_indices:
+                            skip_num = skip_num + 1
                             continue
 
                         total_bytes_processed += len(sentence) * np.int32().itemsize
@@ -201,7 +202,7 @@ class BaseDatasetHandler(object):
                 mbs = total_bytes_processed / elapsed / 1024 / 1024
                 logger.info("Processed %s documents (%s docs/s, %s MB/s).", batch_id, batch_id / elapsed, mbs)
 
-        logger.info("Skip %s sample exceeded seq-length(%s)", skip_num, self.args.seq_length)
+        logger.info("Skip %s sample exceeded seq-length(%s)", skip_num / len(self.args.json_keys), self.args.seq_length)
         for key in self.args.json_keys:
             builders[key].finalize(output_idx_files[key])
 
