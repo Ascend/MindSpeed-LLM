@@ -38,13 +38,13 @@ Baichuan2-7B 训练的硬件配置如下：
 1. 克隆仓库到本地服务器
 
 ```shell
-git clone https://gitee.com/ascend/ModelLink.git
+git clone https://gitee.com/ascend/MindSpeed-LLM.git
 git clone https://github.com/NVIDIA/Megatron-LM.git
 cd Megatron-LM
 git checkout -f bcce6f
-cp -r megatron ../ModelLink/
+cp -r megatron ../MindSpeed-LLM/
 cd ..
-cd ModelLink
+cd MindSpeed-LLM
 git checkout 1.0
 mkdir logs
 mkdir model_from_hf
@@ -269,13 +269,13 @@ Baichuan2-13B 训练的硬件配置如下:
 1. 克隆仓库到本地服务器
 
 ```shell
-git clone https://gitee.com/ascend/ModelLink.git 
+git clone https://gitee.com/ascend/MindSpeed-LLM.git 
 git clone https://github.com/NVIDIA/Megatron-LM.git
 cd Megatron-LM
 git checkout -f bcce6f
-cp -r megatron ../ModelLink/
+cp -r megatron ../MindSpeed-LLM/
 cd ..
-cd ModelLink
+cd MindSpeed-LLM
 git checkout 1.0
 mkdir logs
 mkdir model_from_hf

@@ -27,13 +27,13 @@ Here's a hardware summary of pre-training Aquila-7B:
 1. Clone the repository to your local server and switch to modellink branch:
 
 ```shell
-git clone https://gitee.com/ascend/ModelLink.git
+git clone https://gitee.com/ascend/MindSpeed-LLM.git
 git clone https://github.com/NVIDIA/Megatron-LM.git
 cd Megatron-LM
 git checkout -f bcce6f
-cp -r megatron ../ModelLink/
+cp -r megatron ../MindSpeed-LLM/
 cd ..
-cd ModelLink
+cd MindSpeed-LLM
 git checkout 1.0
 mkdir logs
 mkdir model_from_hf
@@ -68,11 +68,11 @@ pip install -r requirements.txt
 
 3. Download the Aquila-7B model, config, and tokenizer from [here](https://huggingface.co/BAAI/Aquila-7B/tree/main)
 
-save to ModelLink/HF_Aquila7B_downloaded/ directory.
+save to MindSpeed-LLM/HF_Aquila7B_downloaded/ directory.
 
 4. Prepare dataset.
 
-step1: Download the datasets from [here](https://huggingface.co/datasets/tatsu-lab/alpaca/resolve/main/data/train-00000-of-00001-a09b74b3ef9c3b56.parquet), save to ModelLink/dataset/ directory.
+step1: Download the datasets from [here](https://huggingface.co/datasets/tatsu-lab/alpaca/resolve/main/data/train-00000-of-00001-a09b74b3ef9c3b56.parquet), save to MindSpeed-LLM/dataset/ directory.
 
 ```shell
 cd dataset/
@@ -170,7 +170,7 @@ The performance of Aquila-7B in Ascend NPU and reference device:
 
 | Device    | Hardware      | Model     | Iterations | throughput rate (tokens/p/s) | single iteration step time (s/step) |
 | --------- | ------------- | --------- | ---------- | ---------------------------- | ----------------------------------- |
-| NPU       | 910b 1node*8p | Aquila-7B | 1000       | 2849                         | 5.75                                |
+| NPU       | Atlas 900 A2 PODc 1node*8p | Aquila-7B | 1000       | 2849                         | 5.75                                |
 | Reference |               | Aquila-7B | 1000       | 2874                         | 5.70                                |
 
 ## Inference
@@ -197,7 +197,7 @@ Sample results of Aquila-7B Inference:
 
 ## Evaluation with Benchmark
 
-We use BoolQ benchmark to evaluate our model. You can [go to the BoolQ Benchmark page](https://github.com/google-research-datasets/boolean-questions) and find the [dataset](https://storage.cloud.google.com/boolq/dev.jsonl), download it and save it. For example, save to "ModelLink/boolq/test" directory
+We use BoolQ benchmark to evaluate our model. You can [go to the BoolQ Benchmark page](https://github.com/google-research-datasets/boolean-questions) and find the [dataset](https://storage.cloud.google.com/boolq/dev.jsonl), download it and save it. For example, save to "MindSpeed-LLM/boolq/test" directory
 
 Evaluation task is similar to inference task too，it also requires loading the pre-trained model weights. Please note that the model structure parameters used in converting weights should be consistent with those used in running the evaluation task.
 

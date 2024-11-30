@@ -1,7 +1,7 @@
 # Aquila-7B  $\color{black}{\bf\tiny{【昇腾贡献模型】}}$
 <p align="left">
         <b>简体中文</b> |
-        <b><a href="https://gitee.com/ascend/ModelLink/blob/modellink/examples/bloom/README_en.md">English</a> </b> 
+        <b><a href="https://gitee.com/ascend/MindSpeed-LLM/blob/modellink/examples/bloom/README_en.md">English</a> </b> 
     </p>
 </p>
 
@@ -27,13 +27,13 @@ Aquila-7B 训练的硬件配置如下:
 1. 克隆仓库到本地服务器
 
 ```shell
-git clone https://gitee.com/ascend/ModelLink.git
+git clone https://gitee.com/ascend/MindSpeed-LLM.git
 git clone https://github.com/NVIDIA/Megatron-LM.git
 cd Megatron-LM
 git checkout -f bcce6f
-cp -r megatron ../ModelLink/
+cp -r megatron ../MindSpeed-LLM/
 cd ..
-cd ModelLink
+cd MindSpeed-LLM
 git checkout 1.0
 mkdir logs
 mkdir model_from_hf
@@ -71,11 +71,11 @@ pip install -r requirements.txt
 
 3. 使用浏览器下载 [Aquila-7B模型的配置，tokenizer，和预训练权重](https://huggingface.co/BAAI/Aquila-7B/tree/main)
 
-保存在 ModelLink/model_from_hf/Aquila-7B/ 目录。
+保存在 MindSpeed-LLM/model_from_hf/Aquila-7B/ 目录。
 
 4. 数据预处理
 
-第一步，使用浏览器 [下载数据集](https://huggingface.co/datasets/tatsu-lab/alpaca/resolve/main/data/train-00000-of-00001-a09b74b3ef9c3b56.parquet)， 保存在ModelLink/dataset/ 目录
+第一步，使用浏览器 [下载数据集](https://huggingface.co/datasets/tatsu-lab/alpaca/resolve/main/data/train-00000-of-00001-a09b74b3ef9c3b56.parquet)， 保存在MindSpeed-LLM/dataset/ 目录
 
 ```shell
 cd dataset/
@@ -175,7 +175,7 @@ Aquila-7B 在 **昇腾芯片** 和 **参考芯片** 上的性能对比：
 
 | 设备 | 硬件           | 模型       | 迭代数| token吞吐 (tokens/p/s) | 单步迭代时间 (s/step) |
 |------|---------------|------------|------|------------------------|----------------------|
-| NPU  | 910b 1node*8p | Aquila-7B  | 1000 | 2849                  | 5.75                  | 
+| NPU  | Atlas 900 A2 PODc 1node*8p | Aquila-7B  | 1000 | 2849                  | 5.75                  | 
 | 参考  |              | Aquila-7B  | 1000 | 2874                   |    5.70               | 
 
 
@@ -208,7 +208,7 @@ Aquila-7B:
 
 ## 评估
 
-我们使用 BoolQ benchmark 来评估我们的模型。在[Benchmark下载页面](https://github.com/google-research-datasets/boolean-questions)找到[数据集](https://storage.cloud.google.com/boolq/dev.jsonl)下载后保存。例如，保存在ModelLink/boolq/test目录下。
+我们使用 BoolQ benchmark 来评估我们的模型。在[Benchmark下载页面](https://github.com/google-research-datasets/boolean-questions)找到[数据集](https://storage.cloud.google.com/boolq/dev.jsonl)下载后保存。例如，保存在MindSpeed-LLM/boolq/test目录下。
 
 评估与推理类似，也必须加载转换后的权重，请注意：在转换权重时使用的模型结构参数，和运行评估任务时使用的模型结构参数，应保持一致。
 

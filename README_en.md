@@ -1,4 +1,4 @@
-<p align="center"> <img src="sources/images/logo.png" height="90px" width="400px"> </p>
+<p align="center"> <img src="sources/images/logo.png" height="110px" width="500px"> </p>
 
 <p align="center">
     <a>
@@ -19,15 +19,15 @@
         <b>English</b>
 </p>
 
-ModelLink provides end-to-end solutions for large language models on Ascend chips, including models, algorithms and tasks.
+MindSpeed-LLM, originally named ModelLink, provides end-to-end solutions for large language models on Ascend chips, including models, algorithms and tasks.
 
-## ModelLink Solution Overview
+## MindSpeed-LLM Solution Overview
 
 ---
 
 
 ## supported features
-Current ModelLink supported features for large model usage:
+Current MindSpeed-LLM supported features for large model usage:
 * [Dataset Preparation for Pre-training](#jump11)/[Fine-tuning Instruction Dataset Preparation](#jump12)
 * [Pre-training](#jump13)/[Full-parameter Fine-tuning](#jump14)/[Low-parameter Fine-tuning](#jump15)
 * [Inference: human-machine dialogue](#jump16)
@@ -38,7 +38,7 @@ More novel and useful features are developing for LLMs training on Ascend ...
 
 
 ## Supported Models
-Current ModelLink supports pre-training and fine-tuning for the following models:
+Current MindSpeed-LLM supports pre-training and fine-tuning for the following models:
 
 <table>
   <thead>
@@ -644,7 +644,7 @@ After using Lora to fine-tune the Llama model, the instruction dialogue effect i
 ```shell
 You >> Give three tips for staying healthy.
 
-ModelLink:
+MindSpeed-LLM:
 
 - Start exercising regularly and eat healthy food.
 - Get a good eight hours of sleep each night.
@@ -949,7 +949,7 @@ As [C-Eval](https://cevalbenchmark.com/) shows, C-Eval is a comprehensive Chines
 you want to evaluate on test data, you should email your results to [C-Eval](https://cevalbenchmark.com/).
 
 ### <span id="jump18">Acceleration Features
-ModelLink supports various acceleration algorithms such as tensor parallelism, pipeline parallelism, sequence parallelism, recomputation, distributed optimizer, and more. The table below shows the enable switches corresponding to each acceleration feature:
+MindSpeed-LLM supports various acceleration algorithms such as tensor parallelism, pipeline parallelism, sequence parallelism, recomputation, distributed optimizer, and more. The table below shows the enable switches corresponding to each acceleration feature:
 
 |   Acceleration Feature    |   Enable Parameter   |
 |:---------:|:--------:|
@@ -974,7 +974,7 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
 In model training and downstream tasks, you can use --tensor-model-parallel-size and --pipeline-model-parallel-size to distribute the model across different devices, reducing memory usage per device.
 Using --sequence-parallel to split the data enables the model to train on extremely long sequences. The options recompute-granularity or use-distributed-optimizer can also reduce memory usage per device.
 
-ModelLink supports multiple fused operators such as attn, rmsnorm, swiglu, rotary-pos-emb, mlp, etc., to improve model training performance:
+MindSpeed-LLM supports multiple fused operators such as attn, rmsnorm, swiglu, rotary-pos-emb, mlp, etc., to improve model training performance:
 ```bash
 torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     --use-flash-attn \
@@ -990,7 +990,7 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
 ## Acknowledgments
 
 ---
-ModelLink is jointly contributed by the following departments of Huawei Corporation:
+MindSpeed-LLM is jointly contributed by the following departments of Huawei Corporation:
 - Ascend Computing Product Unit
 - Algorithm Unit of Computing Product Unit
 - Research Unit of Computing Product Unit
@@ -998,9 +998,9 @@ ModelLink is jointly contributed by the following departments of Huawei Corporat
 - General Development Department
 - Global Technical Service Department
 
-We appreciate every PR from community, and welcome to contribute to ModelLink.
+We appreciate every PR from community, and welcome to contribute to MindSpeed-LLM.
 
 ## Appendix
 
 ---
-- Safety Statement: [Safety Statement](https://gitee.com/ascend/ModelLink/wikis/%E5%AE%89%E5%85%A8%E5%A3%B0%E6%98%8E)
+- Safety Statement: [Safety Statement](https://gitee.com/ascend/MindSpeed-LLM/wikis/%E5%AE%89%E5%85%A8%E5%A3%B0%E6%98%8E)

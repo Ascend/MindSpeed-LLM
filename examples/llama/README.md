@@ -39,13 +39,13 @@ LLaMA-7B/13B 训练的硬件配置如下:
 1. 克隆仓库到本地服务器
 
    ```shell
-   git clone https://gitee.com/ascend/ModelLink.git 
+   git clone https://gitee.com/ascend/MindSpeed-LLM.git 
    git clone https://github.com/NVIDIA/Megatron-LM.git
    cd Megatron-LM
    git checkout -f bcce6f
-   cp -r megatron ../ModelLink/
+   cp -r megatron ../MindSpeed-LLM/
    cd ..
-   cd ModelLink
+   cd MindSpeed-LLM
    git checkout 1.0
    mkdir logs
    mkdir model_from_hf
@@ -356,9 +356,9 @@ LLaMA-7B/13B 在 **昇腾芯片** 和 **参考芯片** 上的性能对比：
 
 | 设备   | 硬件        | 模型        | 迭代数  | 样本吞吐 (samples/p/s) | token吞吐 (tokens/p/s) | 单步迭代时间 (s/step) |
 |------|-----------|-----------|------|--------------------|----------------------|-----------------|
-| NPUs | 910 1*8p  | LLaMA-7B  | 2048 | 1.75               | 3600                 | 18.2            |
+| NPUs | Atlas 900 A2 PODc 1*8p  | LLaMA-7B  | 2048 | 1.75               | 3600                 | 18.2            |
 | 参考 | -         | LLaMA-7B  | 2048 | 1.85               | 3804                 | 18.5            |
-| NPUs | 910 1*8p  | LLaMA-13B | 2048 | 0.92               | 1895                 | 17.2            |
+| NPUs | Atlas 900 A2 PODc 1*8p  | LLaMA-13B | 2048 | 0.92               | 1895                 | 17.2            |
 | 参考 | -         | LLaMA-13B | 2048 | 0.96               | 2012                 | 16.65           |
 
 
@@ -476,13 +476,13 @@ LLaMA-33B/65B 训练的硬件配置:
 1. 克隆仓库到本地服务器
 
    ```shell
-   git clone https://gitee.com/ascend/ModelLink.git 
+   git clone https://gitee.com/ascend/MindSpeed-LLM.git 
    git clone https://github.com/NVIDIA/Megatron-LM.git
    cd Megatron-LM
    git checkout -f bcce6f
-   cp -r megatron ../ModelLink/
+   cp -r megatron ../MindSpeed-LLM/
    cd ..
-   cd ModelLink
+   cd MindSpeed-LLM
    git checkout 1.0
    mkdir logs
    mkdir model_from_hf
