@@ -1,5 +1,6 @@
 #!/bin/bash
 export CUDA_DEVICE_MAX_CONNECTIONS=1
+export HCCL_DETERMINISTIC=true
 
 NPUS_PER_NODE=8
 MASTER_ADDR=localhost
@@ -81,6 +82,7 @@ GPT_ARGS="
     --no-load-rng \
     --vocab-size 256000 \
     --log-throughput \
+    --use-deter-comp \
     --finetune \
     --bf16
 "
