@@ -14,7 +14,7 @@ class MoEAlltoAllTokenDispatcher(MoETokenDispatcher):
     """
     Mainly migrated from megatron r0.7.0. for drop and pad feature, and add few optimizations controlled
         by args.moe_permutation_async_comm.
-    This would be removed after ModelLink switches to megatron r0.7.0.
+    This would be removed after MindSpeed-LLM switches to megatron r0.7.0.
 
     AlltoAll Based Token dispatcher.
     """

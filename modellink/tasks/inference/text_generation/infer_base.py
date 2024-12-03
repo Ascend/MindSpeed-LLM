@@ -101,7 +101,7 @@ def task_greedy_search(args, model):
 
     if dist.get_rank() == 0:
         logging.info("\n=============== Greedy Search ================")
-        logging.info("\nYou:\n%s\n\nModelLink:\n%s", instruction, output)
+        logging.info("\nYou:\n%s\n\nMindSpeed-LLM:\n%s", instruction, output)
         logging.info("==============================================")
         logging.info("\nElapsed: %ss", round(time.time() - t, 2))
 
@@ -124,7 +124,7 @@ def task_do_sample(args, model):
 
     if dist.get_rank() == 0:
         logging.info("\n================ Do Sample =================")
-        logging.info("\nYou:\n%s\n\nModelLink:\n%s", instruction, output)
+        logging.info("\nYou:\n%s\n\nMindSpeed-LLM:\n%s", instruction, output)
         logging.info("============================================")
         logging.info("\nElapsed: %ss", round(time.time() - t, 2))
 
@@ -147,7 +147,7 @@ def task_beam_search(args, model):
 
     if dist.get_rank() == 0:
         logging.info("\n=============== Beam Search =================")
-        logging.info("\nYou:\n%s\n\nModelLink:\n%s", instruction, output)
+        logging.info("\nYou:\n%s\n\nMindSpeed-LLM:\n%s", instruction, output)
         logging.info("=============================================")
         logging.info("\nElapsed: %ss", round(time.time() - t, 2))
 
@@ -171,7 +171,7 @@ def task_beam_search_with_sampling(args, model):
 
     if dist.get_rank() == 0:
         logging.info("\n======== Beam Search with sampling ==========")
-        logging.info("\nYou:\n%s\n\nModelLink:\n%s", instruction, output)
+        logging.info("\nYou:\n%s\n\nMindSpeed-LLM:\n%s", instruction, output)
         logging.info("=============================================")
         logging.info("\nElapsed: %ss", round(time.time() - t, 2))
 
@@ -251,7 +251,7 @@ def chat_get_instruction(args, histories_no_template, histories_template, prompt
 
 
 def chat_print_and_update_histories(args, responses, histories_no_template, histories_template, prompt):
-    response_template = "\nModelLink:\n"
+    response_template = "\nMindSpeed-LLM:\n"
     output = ""
 
     if dist.get_rank() == 0:

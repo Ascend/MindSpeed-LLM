@@ -60,7 +60,7 @@ def topk_softmax_with_capacity(
     drop_policy: str = "probs",
 ):
     """
-        Migrated from megatron r0.7.0,. This would be removed after ModelLink switches to megatron r0.7.0.
+        Migrated from megatron r0.7.0,. This would be removed after MindSpeed-LLM switches to megatron r0.7.0.
 
         Apply capacity and padding to the top-k selection.
         Args:

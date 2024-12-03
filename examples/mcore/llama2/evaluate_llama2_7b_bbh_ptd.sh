@@ -9,7 +9,7 @@ source /usr/local/Ascend/ascend-toolkit/set_env.sh
 
 # modify script model path and tokenizer path
 TOKENIZER_PATH=/../llama2-7b-hf/  #tokenizer path
-CHECKPOINT=/../llama2-7b-modellink-tp1  #model path
+CHECKPOINT=/../llama2-7b-mindspeed-llm-tp1  #model path
 # configure task and data path
 DATA_PATH="/../bbh/test"
 TASK="bbh"

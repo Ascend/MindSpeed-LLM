@@ -11,7 +11,7 @@ from tests.test_tools.utils import build_args, create_testconfig, setup_logger
 from ut.inference.test_inference import acquire_context
 
 
-PATTERN = r"ModelLink:\n(.*)"
+PATTERN = r"MindSpeed-LLM:\n(.*)"
 
 
 class TestInferenceWorldSize2(DistributedTest):

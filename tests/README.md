@@ -1,4 +1,4 @@
-## ModelLink 测试用例贡献说明
+## MindSpeed-LLM 测试用例贡献说明
 
 ### 门禁看护列表
 <table>

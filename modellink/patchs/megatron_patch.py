@@ -61,7 +61,7 @@ def get_modellink_args():
     """
     global _ARGS
     if _ARGS is None:
-        parser = argparse.ArgumentParser(description='ModelLink Arguments', allow_abbrev=False)
+        parser = argparse.ArgumentParser(description='MindSpeed-LLM Arguments', allow_abbrev=False)
         _ARGS, _ = process_args(parser).parse_known_args()
     return _ARGS
 

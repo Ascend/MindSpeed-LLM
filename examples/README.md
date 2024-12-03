@@ -1,4 +1,4 @@
-# ModelLink 使用指南
+# MindSpeed-LLM 使用指南
 
 <p align="left">
 </p>
@@ -83,13 +83,13 @@
 #### <span id="jump1.1"> 1. 仓库拉取
 
 ```shell
-    git clone https://gitee.com/ascend/ModelLink.git 
+    git clone https://gitee.com/ascend/MindSpeed-LLM.git 
     git clone https://github.com/NVIDIA/Megatron-LM.git
     cd Megatron-LM
     git checkout core_r0.6.0
-    cp -r megatron ../ModelLink/
+    cp -r megatron ../MindSpeed-LLM/
     cd ..
-    cd ModelLink
+    cd MindSpeed-LLM
     git checkout 1.0.RC3
     mkdir logs
     mkdir model_from_hf
@@ -142,7 +142,7 @@
 
 更多社区资源可以在`模型`列链接中获取，如`Chat/Instruct`权重等
 
-权重可以基于网页直接下载，也可以基于命令行下载，保存到ModelLink/model_from_hf目录，比如：
+权重可以基于网页直接下载，也可以基于命令行下载，保存到MindSpeed-LLM/model_from_hf目录，比如：
 
 
 ```shell
@@ -206,7 +206,7 @@ python convert_ckpt.py \
 
 【--model-type-hf】
 
-huggingface模型类别，默认为llama2，目前支持的模型见 [model_cfg.json](https://gitee.com/ascend/ModelLink/blob/master/modellink/tasks/checkpoint/model_cfg.json)
+huggingface模型类别，默认为llama2，目前支持的模型见 [model_cfg.json](https://gitee.com/ascend/MindSpeed-LLM/blob/master/modellink/tasks/checkpoint/model_cfg.json)
 
 【--tokenizer-model】
 
@@ -218,7 +218,7 @@ huggingface模型类别，默认为llama2，目前支持的模型见 [model_cfg.
 
 【启动脚本】
 
-ModelLink Huggingface到Megatron-Legacy权重转换脚本命名风格及启动方法为：
+MindSpeed-LLM Huggingface到Megatron-Legacy权重转换脚本命名风格及启动方法为：
 ```shell
 # 命名及启动：bash examples/model_name/ckpt_convert_xxx_hf2legacy.sh
 # 需要配置并行参数以及权重词表加载保存等路径
@@ -226,7 +226,7 @@ ModelLink Huggingface到Megatron-Legacy权重转换脚本命名风格及启动�
 bash examples/llama2/ckpt_convert_llama2_hf2legacy.sh
 ```
 
-ModelLink Huggingface到Megatron-Mcore权重转换脚本命名风格及启动方法为：
+MindSpeed-LLM Huggingface到Megatron-Mcore权重转换脚本命名风格及启动方法为：
 ```shell
 # 命名及启动：bash examples/mcore/model_name/ckpt_convert_xxx_hf2mcore.sh
 # 需要配置并行参数以及权重词表加载保存等路径
@@ -254,7 +254,7 @@ python convert_ckpt.py \
 
 【启动脚本】
 
-ModelLink Megatron-Legacy到Huggingface的权重转换脚本命名风格及启动方法为：
+MindSpeed-LLM Megatron-Legacy到Huggingface的权重转换脚本命名风格及启动方法为：
 ```shell
 # 命名及启动：bash examples/model_name/ckpt_convert_xxx_legacy2hf.sh
 # 需要配置并行参数以及权重词表加载保存等路径
@@ -262,7 +262,7 @@ ModelLink Megatron-Legacy到Huggingface的权重转换脚本命名风格及启�
 bash examples/llama2/ckpt_convert_llama2_legacy2hf.sh
 ```
 
-ModelLink Megatron-Mcore到Huggingface的权重转换脚本命名风格及启动方法为：
+MindSpeed-LLM Megatron-Mcore到Huggingface的权重转换脚本命名风格及启动方法为：
 ```shell
 # 命名及启动：bash examples/mcore/model_name/ckpt_convert_xxx_mcore2hf.sh
 # 需要配置并行参数以及权重词表加载保存等路径
@@ -331,7 +331,7 @@ mcore转legacy时设置此参数以指定保存权重格式为legacy
 
 其余参数意义参考2.1
 
-注：上述权重legacy和mcore互转为高阶功能，modellink基于llama2提供基础能力，并进行版本迭代看护，其余模型的支持需要用户自行修改支持
+注：上述权重legacy和mcore互转为高阶功能，MindSpeed-LLM基于llama2提供基础能力，并进行版本迭代看护，其余模型的支持需要用户自行修改支持
 
 ##### 2.4 lora权重与base权重合并
 
@@ -416,7 +416,7 @@ bash examples/llama2/ckpt_convert_llama2_legacy2hf_lora.sh
 
 #### <span id="jump3.1"> 1. 数据集下载
 
-从Huggingface等网站下载开源数据集，保存到ModelLink/dataset/ 目录
+从Huggingface等网站下载开源数据集，保存到MindSpeed-LLM/dataset/ 目录
 
 常用的预训练数据集有：
 - [Enwiki数据集](https://huggingface.co/datasets/lsb/enwiki20230101)
@@ -487,7 +487,7 @@ python ./preprocess_data.py \
 数据预处理并行加速参数。当需要预处理的数据集比较大时，可以通过并行处理进行加速，方法为设置参数`--n-subs`，通过该参数设置并行处理数量。在数据预处理过程会将原始数据集切分为`n_sub`个子集，对子集进行并行处理，然后合并，从而实现加速。建议预处理数据集超过GB级别时加上该参数。
 
 
-ModelLink预训练数据集处理脚本命名风格及启动方法为：
+MindSpeed-LLM预训练数据集处理脚本命名风格及启动方法为：
 ```shell
 # Legacy
 # 命名及启动：examples/model_name/data_convert_xxx_pretrain.sh
@@ -714,7 +714,7 @@ python ./preprocess_data.py \
 则会提取数据集里的`"messages"`列，其中角色格式可以为：`"role": "user"、"role": "assistant"`，内容格式为`"content": "具体内容"`
 
 
-ModelLink微调数据集处理脚本命名风格及启动方法为：
+MindSpeed-LLM微调数据集处理脚本命名风格及启动方法为：
 ```shell
 # Legacy
 # 命名及启动：examples/model_name/data_convert_xxx_instruction.sh
@@ -990,7 +990,7 @@ DATA_PATH="./finetune_dataset/alpaca"  #数据集路径
 
 #### <span id="jump6.1"> 1. Generate：流式推理
 
-ModelLink 流式推理脚本命名风格及启动方法为：
+MindSpeed-LLM 流式推理脚本命名风格及启动方法为：
 ```shell
 # Legacy
 # 命名及启动：examples/model_name/generate_xxx.sh
@@ -1011,7 +1011,7 @@ bash examples/llama2/generate_llama2_7b_ptd.sh
 ```
 #### <span id="jump6.2"> 2. Chat：指令微调后chat对话
 
-ModelLink 指令微调后chat对话脚本命名风格及启动方法为：
+MindSpeed-LLM 指令微调后chat对话脚本命名风格及启动方法为：
 ```shell
 # Legacy
 # 命名及启动：examples/model_name/chat_xxx.sh
@@ -1048,7 +1048,7 @@ bash examples/llama2/chat_llama2_7b_ptd.sh
 ## <span id="jump7">大模型分布式评估
 
 #### <span id="jump7.1"> 1. 基准评估
-ModelLink 基准评估脚本命名风格及启动方法为：
+MindSpeed-LLM 基准评估脚本命名风格及启动方法为：
 ```shell
 # Legacy
 # 命名及启动：examples/model_name/evaluate_xxx.sh

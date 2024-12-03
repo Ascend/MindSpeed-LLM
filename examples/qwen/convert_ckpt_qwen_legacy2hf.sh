@@ -1,4 +1,4 @@
-# 修改modellink_qwen.py文件第39行，将：
+# 修改modelling_qwen.py文件第39行，将：
 # SUPPORT_FP16 = SUPPORT_CUDA and torch.cuda.get_device_capability(0)[0] >= 7
 # 修改为：
 # SUPPORT_FP16 = True

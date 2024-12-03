@@ -26,13 +26,13 @@ from tests.test_tools.dist_test import DistributedTest
 from tests.test_tools.utils import build_args, create_testconfig, setup_logger
 
 
-PATTERN = r"ModelLink:\n(.*)"
+PATTERN = r"MindSpeed-LLM:\n(.*)"
 
 
 def acquire_context(log_capture):
     # Acquire the final score for evaluation tasks, still universal.
     context_str = log_capture[0]
-    context_pattern = r"ModelLink:\s*(.*?)(?=\n|$)"
+    context_pattern = r"MindSpeed-LLM:\s*(.*?)(?=\n|$)"
     match = re.search(context_pattern, context_str)
     if match:
         context = match.group(1)

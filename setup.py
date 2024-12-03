@@ -19,12 +19,12 @@ import sys
 import setuptools
 
 if sys.version_info < (3,):
-    raise Exception("Python 2 is not supported by ModelLink.")
+    raise Exception("Python 2 is not supported by MindSpeed-LLM.")
 
-__description__ = 'ModelLink for LLMs of Ascend'
+__description__ = 'MindSpeed-LLM for LLMs of Ascend'
 __version__ = '0.0.1'
 __author__ = 'Ascend'
-__long_description__ = 'ModelLink for LLMs of Ascend'
+__long_description__ = 'MindSpeed-LLM for LLMs of Ascend'
 __keywords__ = 'Ascend, langauge, deep learning, NLP'
 __package_name__ = 'modellink'
 __contact_names__ = 'Ascend'

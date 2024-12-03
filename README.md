@@ -1,4 +1,4 @@
-  <p align="center"> <img src="sources/images/logo.png" height="103px" width="700px"> </p>
+  <p align="center"> <img src="sources/images/logo.png" height="110px" width="500px"> </p>
 
 <p align="center">
     <a href="https://gitee.com/ascend/MindSpeed/blob/master/LICENSE">
@@ -13,14 +13,14 @@
     </a>
 </p>
 
-ModelLink旨在为华为 [昇腾芯片](https://www.hiascend.com/) 上提供端到端的大语言模型方案, 包含模型，算法，以及下游任务。
+MindSpeed-LLM，原仓名ModelLink，旨在为华为 [昇腾芯片](https://www.hiascend.com/) 上提供端到端的大语言模型方案, 包含模型，算法，以及下游任务。
 
 ---
 
-## ModelLink大模型方案概览
+## MindSpeed-LLM大模型方案概览
 
 
-当前ModelLink支撑大模型使用功能:
+当前MindSpeed-LLM支撑大模型使用功能:
 * 权重转换：[Huggingface与Megatron-LM权重转换](#jump1) 【昇腾】【OCK】【GTS】
 * 数据集处理：[预训练数据集/指令微调数据集](./examples/README.md) 【NAIE】【昇腾】
 * 分布式预训练：[加速算法/融合算子/并行策略](#jump2)【昇腾】【计算算法部】【计算研究部】
@@ -34,22 +34,22 @@ LoRA、DPO、奖励模型、PPO等特性即将上线
 ---
 
 
-## ModelLink版本维护策略
+## MindSpeed-LLM版本维护策略
 
-ModelLink版本有以下五个维护阶段：
+MindSpeed-LLM版本有以下五个维护阶段：
 
 | **状态**            | **时间** | **说明**                                                               |
 | ------------------- | -------- |----------------------------------------------------------------------|
 | 计划                | 1—3 个月 | 计划特性                                                                 |
 | 开发                | 3 个月   | 开发特性                                                                 |
-| 维护                | 6-12 个月| 合入所有已解决的问题并发布版本，针对不同的ModelLink版本采取不同的维护策略，常规版本和长期支持版本维护周期分别为6个月和12个月 |
+| 维护                | 6-12 个月| 合入所有已解决的问题并发布版本，针对不同的MindSpeed-LLM版本采取不同的维护策略，常规版本和长期支持版本维护周期分别为6个月和12个月 |
 | 无维护              | 0—3 个月 | 合入所有已解决的问题，无专职维护人员，无版本发布                                             |
 | 生命周期终止（EOL） | N/A      | 分支不再接受任何修改                                                           |
 
 
-ModelLink已发布版本维护策略：
+MindSpeed-LLM已发布版本维护策略：
 
-| **ModelLink版本** | **维护策略** | **当前状态** | **发布时间**   | **后续状态**         | **EOL日期** |
+| **MindSpeed-LLM版本** | **维护策略** | **当前状态** | **发布时间**   | **后续状态**         | **EOL日期** |
 |-----------------|-----------|--------|------------|-----------------------|-----------|
 | bk_origin_23    |  Demo     | EOL    | 2023       | 生命周期终止           | 2024/6/30 |
 | 1.0.RC1         |  常规版本  | 维护   | 2024/03/30 | 预计2024/9/30起无维护  |           |
@@ -101,13 +101,14 @@ ModelLink已发布版本维护策略：
   </tr>
 </table>
 
+
 【预训练集群性能与线性度】
 
-ModelLink 通过模型并行与数据并行来训练大语言模型，为了演示如何使用多个昇腾芯片和模型大小进行扩展性训练，我们使用 `GPT3-175B` 稠密大模型，从128颗 NPU 扩展到 7968颗 NPU 进行实验，下图是实验数据：
+MindSpeed-LLM 通过模型并行与数据并行来训练大语言模型，为了演示如何使用多个昇腾芯片和模型大小进行扩展性训练，我们使用 `GPT3-175B` 稠密大模型，从128颗 NPU 扩展到 7968颗 NPU 进行实验，下图是实验数据：
 <p align="center"> <img src="sources/images/linearity&mfu.png" height="485px" width="710px"> </p>
 报告的吞吐量是针对端到端训练进行测量的，涵盖所有操作，包括数据加载、优化器步骤、通信，甚至日志记录。请注意，示例大模型没有训练至收敛。
 
-图中呈现了对应集群规模下的 `MFU` 值与集群整体的 `线性度`情况. 计算公式已经放到社区，点击链接可进行参考：[MFU计算公式](https://gitee.com/ascend/ModelLink/wikis/%E6%9C%AF%E8%AF%AD%E5%AE%9A%E4%B9%89/%E5%A4%A7%E6%A8%A1%E5%9E%8B%20MFU%20%E8%AE%A1%E7%AE%97%E5%85%AC%E5%BC%8F)，[线性度计算公式](https://gitee.com/ascend/ModelLink/wikis/%E6%9C%AF%E8%AF%AD%E5%AE%9A%E4%B9%89/%E7%BA%BF%E6%80%A7%E5%BA%A6%E5%85%AC%E5%BC%8F)
+图中呈现了对应集群规模下的 `MFU` 值与集群整体的 `线性度`情况. 计算公式已经放到社区，点击链接可进行参考：[MFU计算公式](https://gitee.com/ascend/MindSpeed-LLM/wikis/%E6%9C%AF%E8%AF%AD%E5%AE%9A%E4%B9%89/%E5%A4%A7%E6%A8%A1%E5%9E%8B%20MFU%20%E8%AE%A1%E7%AE%97%E5%85%AC%E5%BC%8F)，[线性度计算公式](https://gitee.com/ascend/MindSpeed-LLM/wikis/%E6%9C%AF%E8%AF%AD%E5%AE%9A%E4%B9%89/%E7%BA%BF%E6%80%A7%E5%BA%A6%E5%85%AC%E5%BC%8F)
 
 下述列表中支持的模型，我们在[examples/README.md](./examples/README.md)中提供了相应的使用说明，里面有详细的模型训练、推理、评估流程
 
@@ -898,7 +899,7 @@ ModelLink 通过模型并行与数据并行来训练大语言模型，为了演�
 
 ## <span id="jump1"> Huggingface与Megatron-LM权重转换
 
-ModelLink支持Huggingface、Megatron-Legacy以及Megatron-Core之间的权重格式互转，具体功能列表如下：
+MindSpeed-LLM支持Huggingface、Megatron-Legacy以及Megatron-Core之间的权重格式互转，具体功能列表如下：
 
 
 <table>
@@ -1079,7 +1080,7 @@ ModelLink支持Huggingface、Megatron-Legacy以及Megatron-Core之间的权重�
 
 ## <span id="jump2"> 预训练加速算法与融合算子
 
-ModelLink预训练支持张量并行、流水线并行等多种加速算法和融合算子：
+MindSpeed-LLM预训练支持张量并行、流水线并行等多种加速算法和融合算子：
 
 <table><thead>
   <tr>
@@ -1104,7 +1105,7 @@ ModelLink预训练支持张量并行、流水线并行等多种加速算法和�
     <td>【昇腾】</td>
   </tr>
   <tr>
-    <td><a href="https://portrait.gitee.com/ascend/ModelLink/blob/master/docs/features/virtual_pipeline_parallel.md">虚拟流水并行</a></td>
+    <td><a href="https://portrait.gitee.com/ascend/MindSpeed-LLM/blob/master/docs/features/virtual_pipeline_parallel.md">虚拟流水并行</a></td>
     <td>✅</td>
     <td>✅</td>
     <td>【昇腾】</td>
@@ -1167,7 +1168,7 @@ ModelLink预训练支持张量并行、流水线并行等多种加速算法和�
     <td>【计算研究部】</td>
   </tr>
   <tr>
-    <td><a href="https://portrait.gitee.com/ascend/ModelLink/blob/master/docs/features/recompute_relative.md">重计算</a></td>
+    <td><a href="https://portrait.gitee.com/ascend/MindSpeed-LLM/blob/master/docs/features/recompute_relative.md">重计算</a></td>
     <td>✅</td>
     <td>✅</td>
     <td>【计算研究部】</td>
@@ -1223,7 +1224,7 @@ ModelLink预训练支持张量并行、流水线并行等多种加速算法和�
     <td>【昇腾】</td>
   </tr>
   <tr>
-    <td><a href="https://portrait.gitee.com/ascend/ModelLink/blob/master/docs/features/mc2.md">MC2</a></td>
+    <td><a href="https://portrait.gitee.com/ascend/MindSpeed-LLM/blob/master/docs/features/mc2.md">MC2</a></td>
     <td>✅</td>
     <td>✅</td>
     <td>【昇腾】</td>
@@ -1244,17 +1245,17 @@ ModelLink预训练支持张量并行、流水线并行等多种加速算法和�
 ---
 
 ## <span id="jump3"> 分布式指令微调
-ModelLink支持指令微调，方案与<a href="https://github.com/hiyouga/LLaMA-Factory/tree/main">DeepSpeed</a>统一，在微调效果保持一致的前提下，ModelLink可以表现出优异性能
+MindSpeed-LLM支持指令微调，方案与<a href="https://github.com/hiyouga/LLaMA-Factory/tree/main">DeepSpeed</a>统一，在微调效果保持一致的前提下，MindSpeed-LLM可以表现出优异性能
 
 【与<a href="https://github.com/hiyouga/LLaMA-Factory/tree/main">DeepSpeed</a>微调Loss对比】
 <table>
 <tr>
 <th rowspan="1">Llama2-7b模型与<a href="https://github.com/hiyouga/LLaMA-Factory/tree/main">DeepSpeed</a>微调5个epoch后的loss对比图
-<p align="center"> <img src="sources/images/tune_llama2_7b_ModelLink_DeepSpeed_compare.png" height="270px" width="500px"> </p>
+<p align="center"> <img src="sources/images/tune_llama2_7b_MindSpeed-LLM_DeepSpeed_compare.png" height="270px" width="500px"> </p>
 </th>
 <th>
 <th rowspan="1">Qwen-7b模型与<a href="https://github.com/hiyouga/LLaMA-Factory/tree/main">DeepSpeed</a>微调4个epoch后的loss对比图
-<p align="center"> <img src="sources/images/tune_qwen_7b_ModelLink_DeepSpeed_compare.png" height="270px" width="500px"> </p>
+<p align="center"> <img src="sources/images/tune_qwen_7b_MindSpeed-LLM_DeepSpeed_compare.png" height="270px" width="500px"> </p>
 </tr>
 </table>
 
@@ -1263,7 +1264,7 @@ ModelLink支持指令微调，方案与<a href="https://github.com/hiyouga/LLaMA
 <table>
     <tr>
         <th rowspan="1">Question</th>
-        <th rowspan="1">ModelLink</th>
+        <th rowspan="1">MindSpeed-LLM</th>
         <th colspan="1"><a href="https://github.com/hiyouga/LLaMA-Factory/tree/main">DeepSpeed</a></th>
     </tr>
     <tr>
@@ -1342,7 +1343,7 @@ My soul is full and my heart does soep.</th>
     <tr>
         <th rowspan="2">模型</th>
         <th rowspan="2">--prompt-type</th>
-        <th colspan="2">ModelLink + NPU</th>
+        <th colspan="2">MindSpeed-LLM + NPU</th>
         <th colspan="2"><a href="https://github.com/hiyouga/LLaMA-Factory/tree/main">DeepSpeed</a> + NPU</th>
         <th colspan="2"><a href="https://github.com/hiyouga/LLaMA-Factory/tree/main">DeepSpeed</a> + 参考</th>
     </tr>
@@ -1457,9 +1458,9 @@ My soul is full and my heart does soep.</th>
 
 ## <span id="jump4"> 大模型Benchmark基线评估
 
-ModelLink支持大模型在公开基准数据集上进行准确率评估，当前支持的Benchmark如下：
+MindSpeed-LLM支持大模型在公开基准数据集上进行准确率评估，当前支持的Benchmark如下：
 
-| Benchmark | 下载链接                                                                                     | 验证集  | ModelLink                                                            | OpenCompass                                                      |
+| Benchmark | 下载链接                                                                                     | 验证集  | MindSpeed-LLM                                                            | OpenCompass                                                      |
 |-----------|------------------------------------------------------------------------------------------|------|----------------------------------------------------------------------|------------------------------------------------------------------|
 | MMLU      | [GitHub](https://people.eecs.berkeley.edu/~hendrycks/data.tar)                           | test | [45.73%](./examples/mcore/llama2/evaluate_llama2_7b_mmlu_ptd.sh)     | [45.3%](https://hub.opencompass.org.cn/dataset-detail/MMLU)      |
 | CEval     | [HuggingFace](https://huggingface.co/datasets/ceval/ceval-exam/blob/main/ceval-exam.zip) | val  | [33.87%](./examples/mcore/llama2/evaluate_llama2_7b_ceval_ptd.sh)    | [32.5%](https://hub.opencompass.org.cn/dataset-detail/C-Eval)    |
@@ -1468,9 +1469,9 @@ ModelLink支持大模型在公开基准数据集上进行准确率评估，当�
 | AGIEval   | [GitHub](https://github.com/ruixiangcui/AGIEval/tree/main)                               | test | [20.6%](./examples/mcore/llama2/evaluate_llama2_7b_agieval_ptd.sh)   | [20.6%](https://hub.opencompass.org.cn/dataset-detail/AGIEval)   |
 | HumanEval | [GitHub](https://github.com/openai/human-eval/tree/master/data)                          | test | [12.8%](./examples/mcore/llama2/evaluate_llama2_7b_humaneval_ptd.sh) | [12.2%](https://hub.opencompass.org.cn/dataset-detail/HumanEval) |
 
-ModelLink已支持模型的评估数据统计如下：
+MindSpeed-LLM已支持模型的评估数据统计如下：
 
-| 模型            | 任务     | ModelLink | 社区                                                                   | 模型               | 任务     | ModelLink | 社区                                                                                |
+| 模型            | 任务     | MindSpeed-LLM | 社区                                                                   | 模型               | 任务     | MindSpeed-LLM | 社区                                                                                |
 |---------------|--------|-----------|----------------------------------------------------------------------|------------------|--------|-----------|-----------------------------------------------------------------------------------|
 | Aquila-7B     | BoolQ  | 77.3%     | --                                                                   | Aquila2-7B       | BoolQ  | 77.8%     | --                                                                                |
 | Aquila2-34B   | BoolQ  | 88.0%     | --                                                                   | Baichuan-7B      | BoolQ  | 69.0%     | [67.0%](https://hub.opencompass.org.cn/dataset-detail/BoolQ)                      |
@@ -1505,7 +1506,7 @@ MiniCPM-2B    | MMLU   | 51.6%     | [53.4%](https://github.com/OpenBMB/MiniCPM?
 
 
 ## <span id="jump5"> 基于昇腾芯片采集Profiling数据
-Modellink支持基于昇腾芯片采集profiling数据，以提供对模型运行情况的分析，主要API如下：
+MindSpeed-LLM支持基于昇腾芯片采集profiling数据，以提供对模型运行情况的分析，主要API如下：
 
 
 ```bash
@@ -1524,7 +1525,7 @@ Modellink支持基于昇腾芯片采集profiling数据，以提供对模型运�
 ---
 
 ## <span id="jump6"> 基于昇腾芯片的确定性计算功能
-昇腾芯片默认采用了不确定计算加速模型训练，有时为了重复实验与对比实验需要确定性的计算结果，ModelLink使能确定性计算的开关如下：
+昇腾芯片默认采用了不确定计算加速模型训练，有时为了重复实验与对比实验需要确定性的计算结果，MindSpeed-LLM使能确定性计算的开关如下：
 
 - 启动命令中加入开关
 ```shell
@@ -1561,7 +1562,7 @@ export HCCL_DETERMINISTIC=True
 
 ## 致谢
 
-ModelLink由华为公司的下列部门联合贡献 ：
+MindSpeed-LLM由华为公司的下列部门联合贡献 ：
 - 昇腾计算产品部
 - 计算算法部
 - 计算研究部
@@ -1569,10 +1570,10 @@ ModelLink由华为公司的下列部门联合贡献 ：
 - 公共开发部：NAIE
 - 全球技术服务部：GTS
 
-感谢来自社区的每一个PR，欢迎贡献 ModelLink
+感谢来自社区的每一个PR，欢迎贡献 MindSpeed-LLM
 
 ---
 
 ## 安全声明
 
-[ModelLink安全声明](https://gitee.com/ascend/ModelLink/wikis/%E5%AE%89%E5%85%A8%E7%9B%B8%E5%85%B3/%E5%AE%89%E5%85%A8%E5%A3%B0%E6%98%8E)
+[MindSpeed-LLM安全声明](https://gitee.com/ascend/MindSpeed-LLM/wikis/%E5%AE%89%E5%85%A8%E7%9B%B8%E5%85%B3/%E5%AE%89%E5%85%A8%E5%A3%B0%E6%98%8E)
