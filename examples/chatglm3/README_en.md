@@ -29,16 +29,16 @@ Here's a hardware summary of pre-training  ChatGLM3-6B:
 1. Clone the repository to your local server:
 
     ```shell
-    git clone https://gitee.com/ascend/ModelLink.git 
-    cd ModelLink
+    git clone https://gitee.com/ascend/MindSpeed-LLM.git 
+    cd MindSpeed-LLM
     git checkout 1.0.RC2
     cd ..
     git clone https://github.com/NVIDIA/Megatron-LM.git
     cd Megatron-LM
     git checkout core_r0.6.0
-    cp -r megatron ../ModelLink/
+    cp -r megatron ../MindSpeed-LLM/
     cd .. 
-    cd ModelLink
+    cd MindSpeed-LLM
     mkdir logs
     mkdir model_from_hf
     mkdir dataset
@@ -250,7 +250,7 @@ bash ./examples/chatglm3/generate_chatglm3_6B.sh
 ```
 
 Some inference samples are as follows:
-![ChatGLM3-6B-generate.png](https://gitee.com/ascend/ModelLink/raw/master/sources/images/chatglm3/ChatGLM3-6B-generate.png)
+![ChatGLM3-6B-generate.png](https://gitee.com/ascend/MindSpeed-LLM/raw/master/sources/images/chatglm3/ChatGLM3-6B-generate.png)
 
 ## Evaluation
 

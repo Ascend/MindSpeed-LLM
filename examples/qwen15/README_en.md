@@ -53,16 +53,16 @@ Here's a hardware summary of pre-training  Qwen-0.5B:
 1. Clone the repository to your local server
 
     ```shell
-    git clone https://gitee.com/ascend/ModelLink.git 
-    cd ModelLink
+    git clone https://gitee.com/ascend/MindSpeed-LLM.git 
+    cd MindSpeed-LLM
     git checkout 1.0.RC2
     cd ..
     git clone https://github.com/NVIDIA/Megatron-LM.git
     cd Megatron-LM
     git checkout core_r0.6.0
-    cp -r megatron ../ModelLink/
+    cp -r megatron ../MindSpeed-LLM/
     cd ..
-    cd ModelLink
+    cd MindSpeed-LLM
     mkdir logs
     mkdir model_from_hf
     mkdir dataset
@@ -290,16 +290,16 @@ Here's a hardware summary of pre-training  Qwen-1.8B:
 1. Clone the repository to your local server
 
     ```shell
-    git clone https://gitee.com/ascend/ModelLink.git 
-    cd ModelLink
+    git clone https://gitee.com/ascend/MindSpeed-LLM.git 
+    cd MindSpeed-LLM
     git checkout 1.1
     cd ..
     git clone https://github.com/NVIDIA/Megatron-LM.git
     cd Megatron-LM
     git checkout core_r0.6.0
-    cp -r megatron ../ModelLink/
+    cp -r megatron ../MindSpeed-LLM/
     cd ..
-    cd ModelLink
+    cd MindSpeed-LLM
     mkdir logs
     mkdir model_from_hf
     mkdir dataset
@@ -528,16 +528,16 @@ Here's a hardware summary of pre-training  Qwen-4B:
 1. Clone the repository to your local server
 
     ```shell
-    git clone https://gitee.com/ascend/ModelLink.git 
-    cd ModelLink
+    git clone https://gitee.com/ascend/MindSpeed-LLM.git 
+    cd MindSpeed-LLM
     git checkout 1.1
     cd ..
     git clone https://github.com/NVIDIA/Megatron-LM.git
     cd Megatron-LM
     git checkout core_r0.6.0
-    cp -r megatron ../ModelLink/
+    cp -r megatron ../MindSpeed-LLM/
     cd ..
-    cd ModelLink
+    cd MindSpeed-LLM
     mkdir logs
     mkdir model_from_hf
     mkdir dataset
@@ -772,16 +772,16 @@ Here's a hardware summary of pre-training  Qwen1.5-7B:
 1. Clone the repository to your local server:
 
     ```shell
-    git clone https://gitee.com/ascend/ModelLink.git
-    cd ModelLink
+    git clone https://gitee.com/ascend/MindSpeed-LLM.git
+    cd MindSpeed-LLM
     git checkout 1.1
     cd ..
     git clone https://github.com/NVIDIA/Megatron-LM.git
     cd Megatron-LM
     git checkout core_r0.6.0
-    cp -r megatron ../ModelLink/
+    cp -r megatron ../MindSpeed-LLM/
     cd ..
-    cd ModelLink
+    cd MindSpeed-LLM
     mkdir logs
     mkdir model_from_hf
     mkdir dataset
@@ -980,7 +980,7 @@ bash examples/qwen15/generate_qwen15_7b_ptd.sh
 ```
 
 Some inference samples are as follows:
-![Inference](../../../../qwen1.5/ModelLink/sources/images/qwen15/qwen1.5_7b_inference.png)
+![Inference](../../../../qwen1.5/MindSpeed-LLM/sources/images/qwen15/qwen1.5_7b_inference.png)
 
 ## Evaluation
 
@@ -1027,16 +1027,16 @@ Here's a hardware summary of pre-training  Qwen1.5-14B:
 1. Clone the repository to your local server:
 
     ```shell
-    git clone https://gitee.com/ascend/ModelLink.git
-    cd ModelLink
+    git clone https://gitee.com/ascend/MindSpeed-LLM.git
+    cd MindSpeed-LLM
     git checkout 1.1
     cd ..
     git clone https://github.com/NVIDIA/Megatron-LM.git
     cd Megatron-LM
     git checkout core_r0.6.0
-    cp -r megatron ../ModelLink/
+    cp -r megatron ../MindSpeed-LLM/
     cd ..
-    cd ModelLink
+    cd MindSpeed-LLM
     mkdir logs
     mkdir model_from_hf
     mkdir dataset
@@ -1277,16 +1277,16 @@ bash examples/qwen15/evaluate_qwen15_14b_ptd.sh
 ### Script
 1. Clone the repository to your local server:
    ```shell
-    git clone https://gitee.com/ascend/ModelLink.git 
-    cd ModelLink
+    git clone https://gitee.com/ascend/MindSpeed-LLM.git 
+    cd MindSpeed-LLM
     git checkout 1.1
     cd ..
     git clone https://github.com/NVIDIA/Megatron-LM.git
     cd Megatron-LM
     git checkout core_r0.6.0
-    cp -r megatron ../ModelLink/
+    cp -r megatron ../MindSpeed-LLM/
     cd ..
-    cd ModelLink
+    cd MindSpeed-LLM
     mkdir logs
     mkdir model_from_hf
     mkdir dataset
@@ -1562,16 +1562,16 @@ bash examples/qwen15/evaluate_qwen15_32b_ptd.sh
 ### Script
 1. Clone the repository to your local server:
    ```shell
-    git clone https://gitee.com/ascend/ModelLink.git 
-    cd ModelLink
+    git clone https://gitee.com/ascend/MindSpeed-LLM.git 
+    cd MindSpeed-LLM
     git checkout 1.1
     cd ..
     git clone https://github.com/NVIDIA/Megatron-LM.git
     cd Megatron-LM
     git checkout core_r0.6.0
-    cp -r megatron ../ModelLink/
+    cp -r megatron ../MindSpeed-LLM/
     cd ..
-    cd ModelLink
+    cd MindSpeed-LLM
     mkdir logs
     mkdir model_from_hf
     mkdir dataset

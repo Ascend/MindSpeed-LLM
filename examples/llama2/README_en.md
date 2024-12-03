@@ -39,16 +39,16 @@ Here's a hardware summary of pre-training  LLAMA2-7B:
 1. Clone the repository to your local server:
 
     ```shell
-    git clone https://gitee.com/ascend/ModelLink.git 
-    cd ModelLink
+    git clone https://gitee.com/ascend/MindSpeed-LLM.git 
+    cd MindSpeed-LLM
     git checkout 1.0.RC2
     cd ..
     git clone https://github.com/NVIDIA/Megatron-LM.git
     cd Megatron-LM
     git checkout core_r0.6.0
-    cp -r megatron ../ModelLink/
+    cp -r megatron ../MindSpeed-LLM/
     cd ..
-    cd ModelLink
+    cd MindSpeed-LLM
     mkdir logs
     mkdir model_from_hf
     mkdir dataset
@@ -300,7 +300,7 @@ bash examples/llama2/generate_llama2_7b_lora_ptd.sh
 ```
 
 Some inference samples are as follows:
-![Inference](https://gitee.com/ascend/ModelLink/raw/master/sources/images/llama2/llama2-7B-generate.png)
+![Inference](https://gitee.com/ascend/MindSpeed-LLM/raw/master/sources/images/llama2/llama2-7B-generate.png)
 
 ## Evaluation-7B
 
@@ -405,16 +405,16 @@ Here's a hardware summary of pre-training  LLaMA2-13B:
 1. Clone the repository to your local server:
 
     ```shell
-    git clone https://gitee.com/ascend/ModelLink.git 
-    cd ModelLink
+    git clone https://gitee.com/ascend/MindSpeed-LLM.git 
+    cd MindSpeed-LLM
     git checkout 1.1
     cd ..
     git clone https://github.com/NVIDIA/Megatron-LM.git
     cd Megatron-LM
     git checkout core_r0.6.0
-    cp -r megatron ../ModelLink/
+    cp -r megatron ../MindSpeed-LLM/
     cd ..
-    cd ModelLink 
+    cd MindSpeed-LLM 
     mkdir logs
     mkdir model_from_hf
     mkdir dataset
@@ -634,7 +634,7 @@ bash examples/llama2/generate_llama2_13b_lora_ptd.sh
 ```
 
 Some inference samples are as follows:
-![llama2-13B-generate.png](https://gitee.com/ascend/ModelLink/raw/master/sources/images/llama2/llama2-13B-generate.png)
+![llama2-13B-generate.png](https://gitee.com/ascend/MindSpeed-LLM/raw/master/sources/images/llama2/llama2-13B-generate.png)
 
 ## Evaluation
 
@@ -688,16 +688,16 @@ Here's a hardware summary of pre-training  LLaMA2-34B/70B:
 1. Clone the repository to your local server:
 
     ```shell
-    git clone https://gitee.com/ascend/ModelLink.git 
-    cd ModelLink
+    git clone https://gitee.com/ascend/MindSpeed-LLM.git 
+    cd MindSpeed-LLM
     git checkout 1.1
     cd ..
     git clone https://github.com/NVIDIA/Megatron-LM.git
     cd Megatron-LM
     git checkout core_r0.6.0
-    cp -r megatron ../ModelLink/
+    cp -r megatron ../MindSpeed-LLM/
     cd ..
-    cd ModelLink
+    cd MindSpeed-LLM
     mkdir logs
     mkdir model_from_hf
     mkdir dataset
@@ -1085,10 +1085,10 @@ bash ./examples/llama2/generate_llama2_70b_lora_ptd.sh
 
 Some inference samples of LLaMA2-34B are as follows:
 
-![llama2-34B-generate](https://gitee.com/ascend/ModelLink/raw/master/sources/images/llama2/llama2-34B-generate.png)
+![llama2-34B-generate](https://gitee.com/ascend/MindSpeed-LLM/raw/master/sources/images/llama2/llama2-34B-generate.png)
 
 Some inference samples of LLaMA2-70B are as follows:
-![llama2-70B_generate.png](https://gitee.com/ascend/ModelLink/raw/master/sources/images/llama2/llama2-70B-generate.png)
+![llama2-70B_generate.png](https://gitee.com/ascend/MindSpeed-LLM/raw/master/sources/images/llama2/llama2-70B-generate.png)
 
 ## Evaluation-2
 

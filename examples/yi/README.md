@@ -29,16 +29,16 @@ Yi-34B 训练的硬件配置如下:
 1. 克隆仓库到本地服务器
 
     ```shell
-    git clone https://gitee.com/ascend/ModelLink.git 
-    cd ModelLink
+    git clone https://gitee.com/ascend/MindSpeed-LLM.git 
+    cd MindSpeed-LLM
     git checkout 1.0.RC2
     cd ..
     git clone https://github.com/NVIDIA/Megatron-LM.git
     cd Megatron-LM
     git checkout core_r0.6.0
-    cp -r megatron ../ModelLink/
+    cp -r megatron ../MindSpeed-LLM/
     cd ..
-    cd ModelLink
+    cd MindSpeed-LLM
     mkdir logs
     mkdir model_from_hf
     mkdir dataset
@@ -244,7 +244,7 @@ bash examples/yi/generate_yi_34b_ptd.sh
 ```
 推理的示例如下:
 
-![Inference](https://gitee.com/ascend/ModelLink/raw/master/sources/images/yi/yi-34b-generate.png)
+![Inference](https://gitee.com/ascend/MindSpeed-LLM/raw/master/sources/images/yi/yi-34b-generate.png)
 
 ## 评估
 

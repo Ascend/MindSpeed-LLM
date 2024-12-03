@@ -40,16 +40,16 @@ LLAMA2-7B 训练的硬件配置:
 1. 克隆仓库到本地服务器
 
     ```shell
-    git clone https://gitee.com/ascend/ModelLink.git 
-    cd ModelLink
+    git clone https://gitee.com/ascend/MindSpeed-LLM.git 
+    cd MindSpeed-LLM
     git checkout 1.0.RC2
     cd ..
     git clone https://github.com/NVIDIA/Megatron-LM.git
     cd Megatron-LM
     git checkout core_r0.6.0
-    cp -r megatron ../ModelLink/
+    cp -r megatron ../MindSpeed-LLM/
     cd ..
-    cd ModelLink
+    cd MindSpeed-LLM
     mkdir logs
     mkdir model_from_hf
     mkdir dataset
@@ -279,7 +279,7 @@ bash examples/llama2/generate_llama2_7b_lora_ptd.sh
 ```
 
 推理的示例如下:
-![Inference](https://gitee.com/ascend/ModelLink/raw/master/sources/images/llama2/llama2-7B-generate.png)
+![Inference](https://gitee.com/ascend/MindSpeed-LLM/raw/master/sources/images/llama2/llama2-7B-generate.png)
 
 ## 评估-7B
 
@@ -386,16 +386,16 @@ LLaMA2-13B 训练的硬件配置:
 1. 克隆仓库到本地服务器
 
    ```shell
-   git clone https://gitee.com/ascend/ModelLink.git 
-   cd ModelLink
+   git clone https://gitee.com/ascend/MindSpeed-LLM.git 
+   cd MindSpeed-LLM
    git checkout 1.1
    cd ..
    git clone https://github.com/NVIDIA/Megatron-LM.git
    cd Megatron-LM
    git checkout core_r0.6.0
-   cp -r megatron ../ModelLink/
+   cp -r megatron ../MindSpeed-LLM/
    cd ..
-   cd ModelLink 
+   cd MindSpeed-LLM 
    mkdir logs
    mkdir model_from_hf
    mkdir dataset
@@ -619,7 +619,7 @@ bash ./examples/llama2/generate_llama2_13b_lora_ptd.sh
 ```
 
 推理结果示例如下:
-![llama2-13B-generate.png](https://gitee.com/ascend/ModelLink/raw/master/sources/images/llama2/llama2-13B-generate.png)
+![llama2-13B-generate.png](https://gitee.com/ascend/MindSpeed-LLM/raw/master/sources/images/llama2/llama2-13B-generate.png)
 
 ## 评估
 
@@ -672,16 +672,16 @@ LLaMA2-34B/70B 训练的硬件配置:
 1. 克隆仓库到本地服务器:
 
     ```shell
-    git clone https://gitee.com/ascend/ModelLink.git 
-    cd ModelLink
+    git clone https://gitee.com/ascend/MindSpeed-LLM.git 
+    cd MindSpeed-LLM
     git checkout 1.1
     cd ..
     git clone https://github.com/NVIDIA/Megatron-LM.git
     cd Megatron-LM
     git checkout core_r0.6.0
-    cp -r megatron ../ModelLink/
+    cp -r megatron ../MindSpeed-LLM/
     cd ..
-    cd ModelLink
+    cd MindSpeed-LLM
     mkdir logs
     mkdir model_from_hf
     mkdir dataset
@@ -1067,10 +1067,10 @@ bash ./examples/llama2/generate_llama2_70b_lora_ptd.sh
 
 LLaMA2-34B推理样例:
 
-![llama2-34B-generate](https://gitee.com/ascend/ModelLink/raw/master/sources/images/llama2/llama2-34B-generate.png)
+![llama2-34B-generate](https://gitee.com/ascend/MindSpeed-LLM/raw/master/sources/images/llama2/llama2-34B-generate.png)
 
 LLaMA2-70B推理样例：
-![llama2-70B_generate.png](https://gitee.com/ascend/ModelLink/raw/master/sources/images/llama2/llama2-70B-generate.png)
+![llama2-70B_generate.png](https://gitee.com/ascend/MindSpeed-LLM/raw/master/sources/images/llama2/llama2-70B-generate.png)
 
 ## 评估-2
 

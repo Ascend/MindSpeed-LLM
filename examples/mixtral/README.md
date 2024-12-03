@@ -37,16 +37,16 @@
 1. 克隆仓库到本地服务器
 
     ```shell
-    git clone https://gitee.com/ascend/ModelLink.git
-    cd ModelLink
+    git clone https://gitee.com/ascend/MindSpeed-LLM.git
+    cd MindSpeed-LLM
     git checkout 1.0.RC2
     cd ..
     git clone https://github.com/NVIDIA/Megatron-LM.git
     cd Megatron-LM
     git checkout core_r0.6.0
-    cp -r megatron ../ModelLink/
+    cp -r megatron ../MindSpeed-LLM/
     cd ..
-    cd ModelLink
+    cd MindSpeed-LLM
     mkdir logs
     mkdir model_from_hf
     mkdir dataset
@@ -278,7 +278,7 @@ bash examples/mixtral/generate_mixtral_8x7b_ptd.sh
 ```
 
 推理的示例如下:
-![Inference](https://gitee.com/ascend/ModelLink/raw/master/sources/images/mixtral/generate_demo.png)
+![Inference](https://gitee.com/ascend/MindSpeed-LLM/raw/master/sources/images/mixtral/generate_demo.png)
 
 ## 模型评估
 

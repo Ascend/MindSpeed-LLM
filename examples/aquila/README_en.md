@@ -22,19 +22,19 @@ Here's a hardware summary of pre-training Aquila-7B:
 
 ### Script
 
-1. Clone the repository to your local server and switch to modellink 1.1 branch:
+1. Clone the repository to your local server and switch to MindSpeed-LLM 1.1 branch:
 
     ```shell
-    git clone https://gitee.com/ascend/ModelLink.git
-    cd ModelLink
+    git clone https://gitee.com/ascend/MindSpeed-LLM.git
+    cd MindSpeed-LLM
     git checkout 1.0.RC2
     cd ..
     git clone https://github.com/NVIDIA/Megatron-LM.git
     cd Megatron-LM
     git checkout core_r0.6.0
-    cp -r megatron ../ModelLink/
+    cp -r megatron ../MindSpeed-LLM/
     cd ..
-    cd ModelLink
+    cd MindSpeed-LLM
     mkdir logs
     mkdir model_from_hf
     mkdir dataset
@@ -68,12 +68,12 @@ Here's a hardware summary of pre-training Aquila-7B:
 
 3. Download the Aquila-7B model, config, and tokenizer from [here](https://huggingface.co/BAAI/Aquila-7B/tree/main)
 
-    save to ModelLink/model_from_hf/Aquila7B/ directory.
+    save to MindSpeed-LLM/model_from_hf/Aquila7B/ directory.
 
 
     Prepare dataset.
     
-    step1: Download the datasets from [here](https://huggingface.co/datasets/tatsu-lab/alpaca/resolve/main/data/train-00000-of-00001-a09b74b3ef9c3b56.parquet), save to ModelLink/dataset/ directory.
+    step1: Download the datasets from [here](https://huggingface.co/datasets/tatsu-lab/alpaca/resolve/main/data/train-00000-of-00001-a09b74b3ef9c3b56.parquet), save to MindSpeed-LLM/dataset/ directory.
     
     ```shell
     cd dataset/
@@ -184,11 +184,11 @@ bash ./examples/aquila/generate_aquila_7b_ptd.sh
 
 Sample results of Aquila-7B Inference:
 
-![aquila-7B_generate.png](https://gitee.com/ascend/ModelLink/raw/master/sources/images/aquila/aquila_7B_generate.png)
+![aquila-7B_generate.png](https://gitee.com/ascend/MindSpeed-LLM/raw/master/sources/images/aquila/aquila_7B_generate.png)
 
 ## Evaluation with Benchmark
 
-We use BoolQ benchmark to evaluate our model. You can [go to the BoolQ Benchmark page](https://github.com/google-research-datasets/boolean-questions) and find the [dataset](https://storage.cloud.google.com/boolq/dev.jsonl), download it and save it. For example, save to "ModelLink/boolq/test" directory
+We use BoolQ benchmark to evaluate our model. You can [go to the BoolQ Benchmark page](https://github.com/google-research-datasets/boolean-questions) and find the [dataset](https://storage.cloud.google.com/boolq/dev.jsonl), download it and save it. For example, save to "MindSpeed-LLM/boolq/test" directory
 
 Evaluation task is similar to inference task too，it also requires loading the pre-trained model weights. Please note that the model structure parameters used in converting weights should be consistent with those used in running the evaluation task.
 

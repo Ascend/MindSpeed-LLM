@@ -35,16 +35,16 @@ LLaMA-7B/13B 训练的硬件配置如下:
 1. 克隆仓库到本地服务器
 
     ```shell
-    git clone https://gitee.com/ascend/ModelLink.git 
-    cd ModelLink
+    git clone https://gitee.com/ascend/MindSpeed-LLM.git 
+    cd MindSpeed-LLM
     git checkout 1.0.RC2
     cd ..
     git clone https://github.com/NVIDIA/Megatron-LM.git
     cd Megatron-LM
     git checkout core_r0.6.0
-    cp -r megatron ../ModelLink/
+    cp -r megatron ../MindSpeed-LLM/
     cd ..
-    cd ModelLink
+    cd MindSpeed-LLM
     mkdir logs
     mkdir model_from_hf
     mkdir dataset
@@ -397,11 +397,11 @@ bash ./examples/llama/generate_llama_13b_lora_ptd.sh
 
 LLaMA-7B:
 
-![llama-7B_generate.png](https://gitee.com/ascend/ModelLink/raw/master/sources/images/llama/llama-7B_generate.png)
+![llama-7B_generate.png](https://gitee.com/ascend/MindSpeed-LLM/raw/master/sources/images/llama/llama-7B_generate.png)
 
 LLaMA-13B:
 
-![llama-13B_generate.png](https://gitee.com/ascend/ModelLink/raw/master/sources/images/llama/llama-13B_generate.png)
+![llama-13B_generate.png](https://gitee.com/ascend/MindSpeed-LLM/raw/master/sources/images/llama/llama-13B_generate.png)
 
 ## 使用基线数据集进行评估
 
@@ -461,16 +461,16 @@ LLaMA-33B/65B 训练的硬件配置:
 1. 克隆仓库到本地服务器
 
     ```shell
-    git clone https://gitee.com/ascend/ModelLink.git 
-    cd ModelLink
+    git clone https://gitee.com/ascend/MindSpeed-LLM.git 
+    cd MindSpeed-LLM
     git checkout 1.1
     cd ..
     git clone https://github.com/NVIDIA/Megatron-LM.git
     cd Megatron-LM
     git checkout core_r0.6.0
-    cp -r megatron ../ModelLink/
+    cp -r megatron ../MindSpeed-LLM/
     cd .. 
-    cd ModelLink
+    cd MindSpeed-LLM
     mkdir logs
     mkdir model_from_hf
     mkdir dataset
@@ -833,11 +833,11 @@ bash ./examples/llama/generate_llama_65b_lora_ptd.sh
 
 LLaMA-33B:
 
-![llama-13B_generate.png](https://gitee.com/ascend/ModelLink/raw/master/sources/images/llama/llama33B_generate.png)
+![llama-13B_generate.png](https://gitee.com/ascend/MindSpeed-LLM/raw/master/sources/images/llama/llama33B_generate.png)
 
 LLaMA-65B:
 
-![llama-65B_generate.png](https://gitee.com/ascend/ModelLink/raw/master/sources/images/llama/llama-65B_generate.png)
+![llama-65B_generate.png](https://gitee.com/ascend/MindSpeed-LLM/raw/master/sources/images/llama/llama-65B_generate.png)
 
 ## 使用基线数据集进行评估
 

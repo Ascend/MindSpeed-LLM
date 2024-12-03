@@ -54,16 +54,16 @@ Qwen1.5-0.5B 训练的硬件配置:
 1. 克隆仓库到本地服务器
 
     ```shell
-    git clone https://gitee.com/ascend/ModelLink.git 
-    cd ModelLink
+    git clone https://gitee.com/ascend/MindSpeed-LLM.git 
+    cd MindSpeed-LLM
     git checkout 1.0.RC2
     cd ..
     git clone https://github.com/NVIDIA/Megatron-LM.git
     cd Megatron-LM
     git checkout core_r0.6.0
-    cp -r megatron ../ModelLink/
+    cp -r megatron ../MindSpeed-LLM/
     cd ..
-    cd ModelLink
+    cd MindSpeed-LLM
     mkdir logs
     mkdir model_from_hf
     mkdir dataset
@@ -294,16 +294,16 @@ Qwen1.5-1.8B 训练的硬件配置:
 1. 克隆仓库到本地服务器
 
     ```shell
-    git clone https://gitee.com/ascend/ModelLink.git 
-    cd ModelLink
+    git clone https://gitee.com/ascend/MindSpeed-LLM.git 
+    cd MindSpeed-LLM
     git checkout 1.1
     cd ..
     git clone https://github.com/NVIDIA/Megatron-LM.git
     cd Megatron-LM
     git checkout core_r0.6.0
-    cp -r megatron ../ModelLink/
+    cp -r megatron ../MindSpeed-LLM/
     cd ..
-    cd ModelLink
+    cd MindSpeed-LLM
     mkdir logs
     mkdir model_from_hf
     mkdir dataset
@@ -535,16 +535,16 @@ Qwen1.5-4B 训练的硬件配置:
 1. 克隆仓库到本地服务器
 
     ```shell
-    git clone https://gitee.com/ascend/ModelLink.git 
-    cd ModelLink
+    git clone https://gitee.com/ascend/MindSpeed-LLM.git 
+    cd MindSpeed-LLM
     git checkout 1.1
     cd ..
     git clone https://github.com/NVIDIA/Megatron-LM.git
     cd Megatron-LM
     git checkout core_r0.6.0
-    cp -r megatron ../ModelLink/
+    cp -r megatron ../MindSpeed-LLM/
     cd ..
-    cd ModelLink
+    cd MindSpeed-LLM
     mkdir logs
     mkdir model_from_hf
     mkdir dataset
@@ -780,16 +780,16 @@ Qwen1.5-7B 训练的硬件配置:
 1. 克隆仓库到本地服务器
 
    ```shell
-   git clone https://gitee.com/ascend/ModelLink.git
-   cd ModelLink
+   git clone https://gitee.com/ascend/MindSpeed-LLM.git
+   cd MindSpeed-LLM
    git checkout 1.1
    cd ..
    git clone https://github.com/NVIDIA/Megatron-LM.git
    cd Megatron-LM
    git checkout core_r0.6.0
-   cp -r megatron ../ModelLink/
+   cp -r megatron ../MindSpeed-LLM/
    cd ..
-   cd ModelLink
+   cd MindSpeed-LLM
    mkdir logs
    mkdir model_from_hf
    mkdir dataset
@@ -1037,16 +1037,16 @@ Qwen1.5-14B 训练的硬件配置:
 1. 克隆仓库到本地服务器
 
    ```shell
-   git clone https://gitee.com/ascend/ModelLink.git
-   cd ModelLink
+   git clone https://gitee.com/ascend/MindSpeed-LLM.git
+   cd MindSpeed-LLM
    git checkout 1.1
    cd ..
    git clone https://github.com/NVIDIA/Megatron-LM.git
    cd Megatron-LM
    git checkout core_r0.6.0
-   cp -r megatron ../ModelLink/
+   cp -r megatron ../MindSpeed-LLM/
    cd ..
-   cd ModelLink
+   cd MindSpeed-LLM
    mkdir logs
    mkdir model_from_hf
    mkdir dataset
@@ -1286,16 +1286,16 @@ bash examples/qwen15/evaluate_qwen15_14b_ptd.sh
 ### 脚本-32B
 1. 克隆仓库到本地服务器
    ```shell
-    git clone https://gitee.com/ascend/ModelLink.git 
-    cd ModelLink
+    git clone https://gitee.com/ascend/MindSpeed-LLM.git 
+    cd MindSpeed-LLM
     git checkout 1.1
     cd ..
     git clone https://github.com/NVIDIA/Megatron-LM.git
     cd Megatron-LM
     git checkout core_r0.6.0
-    cp -r megatron ../ModelLink/
+    cp -r megatron ../MindSpeed-LLM/
     cd ..
-    cd ModelLink
+    cd MindSpeed-LLM
     mkdir logs
     mkdir model_from_hf
     mkdir dataset
@@ -1576,16 +1576,16 @@ bash examples/qwen15/evaluate_qwen15_32b_ptd.sh
 ### 脚本-72B
 1. 克隆仓库到本地服务器
    ```shell
-    git clone https://gitee.com/ascend/ModelLink.git 
-    cd ModelLink
+    git clone https://gitee.com/ascend/MindSpeed-LLM.git 
+    cd MindSpeed-LLM
     git checkout 1.1
     cd ..
     git clone https://github.com/NVIDIA/Megatron-LM.git
     cd Megatron-LM
     git checkout core_r0.6.0
-    cp -r megatron ../ModelLink/
+    cp -r megatron ../MindSpeed-LLM/
     cd ..
-    cd ModelLink
+    cd MindSpeed-LLM
     mkdir logs
     mkdir model_from_hf
     mkdir dataset

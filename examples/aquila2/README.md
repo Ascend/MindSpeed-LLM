@@ -29,19 +29,19 @@ Aquila2-7B 训练的硬件配置如下:
 
 <h3 id="7b-script">脚本</h3>
 
-1. 克隆仓库到本地服务器并切换到modellink 1.1分支
+1. 克隆仓库到本地服务器并切换到MindSpeed-LLM 1.1分支
 
     ```shell
-    git clone https://gitee.com/ascend/ModelLink.git
-    cd ModelLink
+    git clone https://gitee.com/ascend/MindSpeed-LLM.git
+    cd MindSpeed-LLM
     git checkout 1.0.RC2
     cd ..
     git clone https://github.com/NVIDIA/Megatron-LM.git
     cd Megatron-LM
     git checkout core_r0.6.0
-    cp -r megatron ../ModelLink/
+    cp -r megatron ../MindSpeed-LLM/
     cd ..
-    cd ModelLink
+    cd MindSpeed-LLM
     mkdir logs
     mkdir model_from_hf
     mkdir dataset
@@ -77,7 +77,7 @@ Aquila2-7B 训练的硬件配置如下:
 
 3. 使用浏览器下载 [Aquila2-7B模型的配置，tokenizer，和预训练权重](https://huggingface.co/BAAI/Aquila2-7B/tree/main)
 
-    保存在 ModelLink/model_from_hf/Aquila2-7B/ 目录。
+    保存在 MindSpeed-LLM/model_from_hf/Aquila2-7B/ 目录。
 
 4. 权重转换
 
@@ -230,11 +230,11 @@ bash examples/aquila2/generate_aquila2_7b_ptd.sh
 
 Aquila2-7B:
 
-![Inference](https://gitee.com/ascend/ModelLink/raw/master/sources/images/aquila2/aquila2-7b-generate.png)
+![Inference](https://gitee.com/ascend/MindSpeed-LLM/raw/master/sources/images/aquila2/aquila2-7b-generate.png)
 
 <h2 id="7b-evaluation">评估</h2>
 
-我们使用 BoolQ benchmark 来评估我们的模型。在[Benchmark下载页面](https://github.com/google-research-datasets/boolean-questions)找到[数据集](https://storage.cloud.google.com/boolq/dev.jsonl)下载后保存。例如，保存在ModelLink/boolq/test目录下。
+我们使用 BoolQ benchmark 来评估我们的模型。在[Benchmark下载页面](https://github.com/google-research-datasets/boolean-questions)找到[数据集](https://storage.cloud.google.com/boolq/dev.jsonl)下载后保存。例如，保存在MindSpeed-LLM/boolq/test目录下。
 
 评估与推理类似，也必须加载转换后的权重，请注意：在转换权重时使用的模型结构参数，和运行评估任务时使用的模型结构参数，应保持一致。
 
@@ -272,19 +272,19 @@ Aquila2-34B 训练的硬件配置如下:
 
 <h3 id="34b-script">脚本</h3>
 
-1. 克隆仓库到本地服务器并切换到modellink 1.1分支
+1. 克隆仓库到本地服务器并切换到MindSpeed-LLM 1.1分支
 
     ```shell
-    git clone https://gitee.com/ascend/ModelLink.git
-    cd ModelLink
+    git clone https://gitee.com/ascend/MindSpeed-LLM.git
+    cd MindSpeed-LLM
     git checkout 1.1
     cd ..
     git clone https://github.com/NVIDIA/Megatron-LM.git
     cd Megatron-LM
     git checkout core_r0.6.0
-    cp -r megatron ../ModelLink/
+    cp -r megatron ../MindSpeed-LLM/
     cd ..
-    cd ModelLink
+    cd MindSpeed-LLM
     mkdir logs
     mkdir model_from_hf
     mkdir dataset
@@ -320,7 +320,7 @@ Aquila2-34B 训练的硬件配置如下:
 
 3. 使用浏览器下载 [Aquila2-34B模型的配置，tokenizer，和预训练权重](https://huggingface.co/BAAI/Aquila2-34B/tree/main)
 
-    保存在 ModelLink/model_from_hf/Aquila2-34B/ 目录。
+    保存在 MindSpeed-LLM/model_from_hf/Aquila2-34B/ 目录。
 
 4. 权重转换
 
@@ -475,11 +475,11 @@ bash examples/aquila2/generate_aquila2_34b_ptd.sh
 
 Aquila2-34B:
 
-![Inference](https://gitee.com/ascend/ModelLink/raw/master/sources/images/aquila2/aquila2-34b-generate.png)
+![Inference](https://gitee.com/ascend/MindSpeed-LLM/raw/master/sources/images/aquila2/aquila2-34b-generate.png)
 
 <h2 id="34b-evaluation">评估</h2>
 
-我们使用 BoolQ benchmark 来评估我们的模型。在[Benchmark下载页面](https://github.com/google-research-datasets/boolean-questions)找到[数据集](https://storage.cloud.google.com/boolq/dev.jsonl)下载后保存。例如，保存在ModelLink/boolq/test目录下。
+我们使用 BoolQ benchmark 来评估我们的模型。在[Benchmark下载页面](https://github.com/google-research-datasets/boolean-questions)找到[数据集](https://storage.cloud.google.com/boolq/dev.jsonl)下载后保存。例如，保存在MindSpeed-LLM/boolq/test目录下。
 
 评估与推理类似，也必须加载转换后的权重，请注意：在转换权重时使用的模型结构参数，和运行评估任务时使用的模型结构参数，应保持一致。
 

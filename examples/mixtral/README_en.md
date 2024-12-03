@@ -37,16 +37,16 @@ Recommended hardware configuration for inference:
 1. Clone the code repository to the local server
 
     ```shell
-    git clone https://gitee.com/ascend/ModelLink.git
-    cd ModelLink
+    git clone https://gitee.com/ascend/MindSpeed-LLM.git
+    cd MindSpeed-LLM
     git checkout 1.0.RC2
     cd ..
     git clone https://github.com/NVIDIA/Megatron-LM.git
     cd Megatron-LM
     git checkout core_r0.6.0
-    cp -r megatron ../ModelLink/
+    cp -r megatron ../MindSpeed-LLM/
     cd ..
-    cd ModelLink
+    cd MindSpeed-LLM
     mkdir logs
     mkdir model_from_hf
     mkdir dataset
@@ -153,7 +153,7 @@ Recommended hardware configuration for inference:
 
 1. Prepare dataset
 
-    Download the datasets from [here](https://huggingface.co/datasets/tatsu-lab/alpaca/resolve/main/data/train-00000-of-00001-a09b74b3ef9c3b56.parquet), save to ModelLink/dataset/ directory.
+    Download the datasets from [here](https://huggingface.co/datasets/tatsu-lab/alpaca/resolve/main/data/train-00000-of-00001-a09b74b3ef9c3b56.parquet), save to MindSpeed-LLM/dataset/ directory.
 
     ```shell
     # download datasets
@@ -279,7 +279,7 @@ bash examples/mixtral/generate_mixtral_8x7b_ptd.sh
 ```
 
 An example of inference is as follows:
-![Inference](https://gitee.com/ascend/ModelLink/raw/master/sources/images/mixtral/generate_demo.png)
+![Inference](https://gitee.com/ascend/MindSpeed-LLM/raw/master/sources/images/mixtral/generate_demo.png)
 
 ## Model-Evaluation
 

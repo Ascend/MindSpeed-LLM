@@ -156,7 +156,7 @@ def _build_document_sample_shuffle_indices(
         )
         
         if any(sample_index[:, 0] < 0):
-            _url = "https://gitee.com/ascend/ModelLink/wikis/megatron%20data%20helpers%E5%8F%AF%E8%83%BD%E5%BC%95%E5%85%A5%E7%9A%84%E9%97%AE%E9%A2%98"
+            _url = "https://gitee.com/ascend/MindSpeed-LLM/wikis/megatron%20data%20helpers%E5%8F%AF%E8%83%BD%E5%BC%95%E5%85%A5%E7%9A%84%E9%97%AE%E9%A2%98"
             raise GPTDatasetSampleIndexError(f"Bad sample index. Visit {_url} for more information")
         
         numpy.save(path_to_sample_index, sample_index, allow_pickle=True)
@@ -212,7 +212,7 @@ def _build_document_sample_shuffle_indices(
     sample_index = numpy.load(path_to_sample_index, allow_pickle=True, mmap_mode='r')
     
     if any(sample_index[:, 0] < 0):
-        _url = "https://gitee.com/ascend/ModelLink/wikis/megatron%20data%20helpers%E5%8F%AF%E8%83%BD%E5%BC%95%E5%85%A5%E7%9A%84%E9%97%AE%E9%A2%98"
+        _url = "https://gitee.com/ascend/MindSpeed-LLM/wikis/megatron%20data%20helpers%E5%8F%AF%E8%83%BD%E5%BC%95%E5%85%A5%E7%9A%84%E9%97%AE%E9%A2%98"
         raise GPTDatasetSampleIndexError(f"Bad sample index. Visit {_url} for more information")
     
     t_end = time.time()

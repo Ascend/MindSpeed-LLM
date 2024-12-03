@@ -31,16 +31,16 @@ Here's a hardware summary of pre-training Yi-34B:
 1. Clone the repository to your local server:
 
     ```bash
-    git clone https://gitee.com/ascend/ModelLink.git 
-    cd ModelLink
+    git clone https://gitee.com/ascend/MindSpeed-LLM.git 
+    cd MindSpeed-LLM
     git checkout 1.0.RC2
     cd ..
     git clone https://github.com/NVIDIA/Megatron-LM.git
     cd Megatron-LM
     git checkout core_r0.6.0
-    cp -r megatron ../ModelLink/
+    cp -r megatron ../MindSpeed-LLM/
     cd ..
-    cd ModelLink
+    cd MindSpeed-LLM
     mkdir logs
     mkdir model_from_hf
     mkdir dataset
@@ -246,7 +246,7 @@ bash examples/yi/generate_yi_34b_ptd.sh
 ```
 
 Some inference samples are as follows:
-![Inference](https://gitee.com/ascend/ModelLink/raw/master/sources/images/yi/yi-34b-generate.png)
+![Inference](https://gitee.com/ascend/MindSpeed-LLM/raw/master/sources/images/yi/yi-34b-generate.png)
 
 ## Evaluation
 

@@ -1,4 +1,4 @@
-<p align="center"> <img src="sources/images/logo.png" height="90px" width="400px"> </p>
+<p align="center"> <img src="sources/images/logo.png" height="110px" width="500px"> </p>
 
 <p align="center">
     <a href="https://gitee.com/ascend/MindSpeed/blob/master/LICENSE">
@@ -16,13 +16,13 @@
         <b>English</b>
 </p>
 
-ModelLink aims to provide end-to-end large language model solutions for Huawei Ascend chips, including models, algorithms, and downstream tasks.
+MindSpeed-LLM, originally named ModelLink, aims to provide end-to-end large language model solutions for Huawei Ascend chips, including models, algorithms, and downstream tasks.
 
 ---
 
-## ModelLink Solution Overview
+## MindSpeed-LLM Solution Overview
 
-Current ModelLink supported features for large model usage:
+Current MindSpeed-LLM supported features for large model usage:
 * [Dataset Preparation for Pre-training](#jump11)/[Fine-tuning Instruction Dataset Preparation](#jump12)
 * [Pre-training](#jump13)/[Full-parameter Fine-tuning](#jump14)/[Low-parameter Fine-tuning](#jump15)
 * [Inference: human-machine dialogue](#jump16)
@@ -37,22 +37,22 @@ More novel and useful features are developing for LLMs training on Ascend ...
 ---
 
 
-## ModelLink Maintenance Policies
+## MindSpeed-LLM Maintenance Policies
 
-ModelLink release has the following five maintenance phases:
+MindSpeed-LLM release has the following five maintenance phases:
 
 | **Status**        | **Duration** | **Description**                                                                                                                |
 |-------------------|--------------|--------------------------------------------------------------------------------------------------------------------------------|
 | Planning          | 1-3 months   | Plan features.                                                                                                                 |
 | Development       | 3 months     | Develop features.                                                                                                              |
-| Maintained        | 6-12 months | Allow the incorporation of all resolved issues and release the version, Different versions of ModelLink adopt varying support policies. The maintenance periods for Regular Releases and Long-Term Support versions are 6 months and 12 months, respectively. |
+| Maintained        | 6-12 months | Allow the incorporation of all resolved issues and release the version, Different versions of MindSpeed-LLM adopt varying support policies. The maintenance periods for Regular Releases and Long-Term Support versions are 6 months and 12 months, respectively. |
 | Unmaintained      | 0-3 months   | Allow the incorporation of all resolved issues. No dedicated maintenance personnel are available. No version will be released. |
 | End Of Life (EOL) | N/A          | Do not accept any modification to a branch.                                                                                    |
 
 
- The Released Version Maintenance Policy for ModelLink is as follows:
+ The Released Version Maintenance Policy for MindSpeed-LLM is as follows:
 
-| **ModelLink** |  **Maintenance Policies** | **Status** | **Launch Date** | **Subsequent Status**             | **EOL Date**     |
+| **MindSpeed-LLM** |  **Maintenance Policies** | **Status** | **Launch Date** | **Subsequent Status**             | **EOL Date**     |
 |---------------|--------------------|--------------|-----------------|-----------------------------------|-----------|
 | 1.0           |  Regular Release  | Maintained   | 2024/03/30      | Unmaintained 2024/09/30 estimated |           |
 | 1.1           |  Regular Release  | Maintained   | 2024/06/30      | Unmaintained 2024/12/30 estimated |           |
@@ -495,7 +495,7 @@ The following is the measured performance after turning on the mc2 acceleration 
 
 
 ## Acceleration Features
-ModelLink supports various acceleration algorithms such as tensor parallelism, pipeline parallelism, sequence parallelism, recomputation, distributed optimizer, and more. The table below shows the enable switches corresponding to each acceleration feature:
+MindSpeed-LLM supports various acceleration algorithms such as tensor parallelism, pipeline parallelism, sequence parallelism, recomputation, distributed optimizer, and more. The table below shows the enable switches corresponding to each acceleration feature:
 
 |         Acceleration Feature         |        Enable Parameter        |
 |:------------------------------------:|:------------------------------:|
@@ -548,7 +548,7 @@ To enable mc2, ensure the following:
 
 
 ## Analyze profiling data based on Ascend chips 
-Modellink supports analyze profiling data based on Ascend chips, which is useful for modelling:
+MindSpeed-LLM supports analyze profiling data based on Ascend chips, which is useful for modelling:
 
 ```bash
 --profile                        # enable profiling
@@ -580,7 +580,7 @@ export HCCL_DETERMINISTIC=True
 
 ## Acknowledgments
 
-ModelLink is jointly contributed by the following departments of Huawei Corporation:
+MindSpeed-LLM is jointly contributed by the following departments of Huawei Corporation:
 - Ascend Computing Product Unit
 - Algorithm Unit of Computing Product Unit
 - Research Unit of Computing Product Unit
@@ -588,9 +588,9 @@ ModelLink is jointly contributed by the following departments of Huawei Corporat
 - General Development Department
 - Global Technical Service Department
 
-We appreciate every PR from community, and welcome to contribute to ModelLink.
+We appreciate every PR from community, and welcome to contribute to MindSpeed-LLM.
 
 ## Appendix
 
 ---
-- Safety Statement: [Safety Statement](https://gitee.com/ascend/ModelLink/wikis/%E5%AE%89%E5%85%A8%E5%A3%B0%E6%98%8E)
+- Safety Statement: [Safety Statement](https://gitee.com/ascend/MindSpeed-LLM/wikis/%E5%AE%89%E5%85%A8%E5%A3%B0%E6%98%8E)

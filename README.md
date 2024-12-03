@@ -1,4 +1,4 @@
-  <p align="center"> <img src="sources/images/logo.png" height="90px" width="400px"> </p>
+  <p align="center"> <img src="sources/images/logo.png" height="110px" width="500px"> </p>
 
 <p align="center">
     <a href="https://gitee.com/ascend/MindSpeed/blob/master/LICENSE">
@@ -17,13 +17,13 @@
         <b><a href="README_en.md">English</a> </b>
 </p>
 
-ModelLink旨在为华为 [昇腾芯片](https://open.codehub.huawei.com/OpenBaize/Ascend/ascendspeed/files?ref=master&filePath=examples%2Fbaichuan%2Fpretrain_baichuan_zero_7B.sh&isFile=true) 上提供端到端的大语言模型方案, 包含模型，算法，以及下游任务。
+MindSpeed-LLM，原仓名ModelLink，旨在为华为 [昇腾芯片](https://open.codehub.huawei.com/OpenBaize/Ascend/ascendspeed/files?ref=master&filePath=examples%2Fbaichuan%2Fpretrain_baichuan_zero_7B.sh&isFile=true) 上提供端到端的大语言模型方案, 包含模型，算法，以及下游任务。
 
 ---
 
-## ModelLink解决方案概览
+## MindSpeed-LLM解决方案概览
 
-当前ModelLink支撑大模型使用功能:
+当前MindSpeed-LLM支撑大模型使用功能:
 * [制作预训练数据集](#jump11)/[制作指令微调数据集](#jump12)
 * [预训练](#jump13)/[全参微调](#jump14)/[低参微调](#jump15)
 * [流式推理/人机对话](#jump16)
@@ -37,22 +37,22 @@ ModelLink旨在为华为 [昇腾芯片](https://open.codehub.huawei.com/OpenBaiz
 
 ---
 
-## ModelLink版本维护策略
+## MindSpeed-LLM版本维护策略
 
-ModelLink版本有以下五个维护阶段：
+MindSpeed-LLM版本有以下五个维护阶段：
 
 | **状态**            | **时间** | **说明**                                                               |
 | ------------------- | -------- |----------------------------------------------------------------------|
 | 计划                | 1—3 个月 | 计划特性                                                                 |
 | 开发                | 3 个月   | 开发特性                                                                 |
-| 维护                | 6-12 个月| 合入所有已解决的问题并发布版本，针对不同的ModelLink版本采取不同的维护策略，常规版本和长期支持版本维护周期分别为6个月和12个月 |
+| 维护                | 6-12 个月| 合入所有已解决的问题并发布版本，针对不同的MindSpeed-LLM版本采取不同的维护策略，常规版本和长期支持版本维护周期分别为6个月和12个月 |
 | 无维护              | 0—3 个月 | 合入所有已解决的问题，无专职维护人员，无版本发布                                             |
 | 生命周期终止（EOL） | N/A      | 分支不再接受任何修改                                                           |
 
 
-ModelLink已发布版本维护策略：
+MindSpeed-LLM已发布版本维护策略：
 
-| **ModelLink版本** | **维护策略** | **当前状态** | **发布时间**   | **后续状态**         | **EOL日期** |
+| **MindSpeed-LLM版本** | **维护策略** | **当前状态** | **发布时间**   | **后续状态**         | **EOL日期** |
 |-----------------|-----------|--------|------------|------------------|-----------|
 | 1.0.RC1         |  常规版本  | 维护   | 2024/03/30 | 预计2024/9/30起无维护  |           |
 | 1.0.RC2         |  常规版本  | 维护   | 2024/06/30 | 预计2024/12/30起无维护 |           |
@@ -101,7 +101,6 @@ ModelLink已发布版本维护策略：
     <td>apex</td>
   </tr>
 </table>
-
 
 
 【基于现版本我们实测的性能情况统计如下（硬件信息：Atlas 900 A2 PODc）】
@@ -494,7 +493,7 @@ ModelLink已发布版本维护策略：
 ---
 
 ## 加速算法与融合算子
-ModelLink支持张量并行、流水线并行、序列并行、重计算、分布式优化器等多种加速算法和融合算子，下表为各种加速特性对应的使能开关：
+MindSpeed-LLM支持张量并行、流水线并行、序列并行、重计算、分布式优化器等多种加速算法和融合算子，下表为各种加速特性对应的使能开关：
 
 |                 加速特性                 |              使能参数              |
 |:------------------------------------:|:------------------------------:|
@@ -545,7 +544,7 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
 ---
 
 ## 基于昇腾芯片采集Profiling数据
-Modellink支持基于昇腾芯片采集profiling数据，以提供对模型运行情况的分析，主要API如下：
+MindSpeed-LLM支持基于昇腾芯片采集profiling数据，以提供对模型运行情况的分析，主要API如下：
 
 
 ```bash
@@ -564,7 +563,7 @@ Modellink支持基于昇腾芯片采集profiling数据，以提供对模型运�
 ---
 
 ## 基于昇腾芯片的确定性计算功能
-昇腾芯片默认采用了不确定计算加速模型训练，有时为了重复实验与对比实验需要确定性的计算结果，ModelLink使能确定性计算的开关如下：
+昇腾芯片默认采用了不确定计算加速模型训练，有时为了重复实验与对比实验需要确定性的计算结果，MindSpeed-LLM使能确定性计算的开关如下：
 
 - 启动命令中加入开关
 ```shell
@@ -580,7 +579,7 @@ export HCCL_DETERMINISTIC=True
 
 ## 致谢
 
-ModelLink由华为公司的下列部门联合贡献 ：
+MindSpeed-LLM由华为公司的下列部门联合贡献 ：
 - 昇腾计算产品部
 - 计算算法部
 - 计算研究部
@@ -588,10 +587,10 @@ ModelLink由华为公司的下列部门联合贡献 ：
 - 公共开发部
 - 全球技术服务部
 
-感谢来自社区的每一个PR，欢迎贡献 ModelLink
+感谢来自社区的每一个PR，欢迎贡献 MindSpeed-LLM
 
 ---
 
 ## 安全声明
 
-[ModelLink安全声明](https://gitee.com/ascend/ModelLink/wikis/%E5%AE%89%E5%85%A8%E5%A3%B0%E6%98%8E)
+[MindSpeed-LLM安全声明](https://gitee.com/ascend/MindSpeed-LLM/wikis/%E5%AE%89%E5%85%A8%E5%A3%B0%E6%98%8E)

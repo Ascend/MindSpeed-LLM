@@ -35,16 +35,16 @@ Here's a hardware summary of pre-training  LLAMA3-8B:
 1. Clone the repository to your local server:
 
     ```shell
-    git clone https://gitee.com/ascend/ModelLink.git 
-    cd ModelLink
+    git clone https://gitee.com/ascend/MindSpeed-LLM.git 
+    cd MindSpeed-LLM
     git checkout 1.0.RC2
     cd ..
     git clone https://github.com/NVIDIA/Megatron-LM.git
     cd Megatron-LM
     git checkout core_r0.6.0
-    cp -r megatron ../ModelLink/
+    cp -r megatron ../MindSpeed-LLM/
     cd ..
-    cd ModelLink
+    cd MindSpeed-LLM
     mkdir logs
     mkdir model_from_hf
     mkdir dataset
@@ -261,12 +261,12 @@ Download the LLAMA3-8B-Instruct weight from [here](https://huggingface.co/unslot
 Chat example：
 ```
 You >> 你好
-ModelLink:
+MindSpeed-LLM:
 你好！我是你的中文语言模型，很高兴和你交流！有什么想聊的题目或问题，请随时问我！
 
 You >> 介绍一下llama3
 
-ModelLink:
+MindSpeed-LLM:
 LLaMA 3 is a large-scale language model developed by Meta AI, a leading artificial intelligence research organization. It's a significant upgrade to the previous LLaMA models, offering improved performance and capabilities.
 
 Here are some key features and facts about LLaMA 3:
@@ -279,7 +279,7 @@ Conversational capabilities: The model can engage in conversations, answering qu
 Creative writing: LLaMA
 You >> 能用中文回答吗
 
-ModelLink:
+MindSpeed-LLM:
 
 LLaMA 3 是 Meta AI 开发的一种大规模语言模型，是之前 LLama 模型的升级版本，提供了改进的性能和能力。
 
@@ -337,16 +337,16 @@ Here's a hardware summary of pre-training  LLAMA3-70B:
 1. Clone the repository to your local server:
 
     ```shell
-    git clone https://gitee.com/ascend/ModelLink.git 
-    cd ModelLink
+    git clone https://gitee.com/ascend/MindSpeed-LLM.git 
+    cd MindSpeed-LLM
     git checkout 1.1
     cd ..
     git clone https://github.com/NVIDIA/Megatron-LM.git
     cd Megatron-LM
     git checkout core_r0.6.0
-    cp -r megatron ../ModelLink/
+    cp -r megatron ../MindSpeed-LLM/
     cd ..
-    cd ModelLink
+    cd MindSpeed-LLM
     mkdir logs
     mkdir model_from_hf
     mkdir dataset
