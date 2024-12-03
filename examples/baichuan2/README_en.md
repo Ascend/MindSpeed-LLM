@@ -38,13 +38,13 @@ Here's a hardware summary of pre-training Baichuan2-7B:
 1. Clone the repository to your local server:
 
 ```shell
-git clone https://gitee.com/ascend/ModelLink.git
+git clone https://gitee.com/ascend/MindSpeed-LLM.git
 git clone https://github.com/NVIDIA/Megatron-LM.git
 cd Megatron-LM
 git checkout -f bcce6f
-cp -r megatron ../ModelLink/
+cp -r megatron ../MindSpeed-LLM/
 cd ..
-cd ModelLink
+cd MindSpeed-LLM
 git checkout 1.0
 mkdir logs
 mkdir model_from_hf
@@ -266,13 +266,13 @@ Here's a hardware summary of pre-training Baichuan2-13B:
 1. Clone the repository to your local server:
 
 ```shell
-git clone https://gitee.com/ascend/ModelLink.git 
+git clone https://gitee.com/ascend/MindSpeed-LLM.git 
 git clone https://github.com/NVIDIA/Megatron-LM.git
 cd Megatron-LM
 git checkout -f bcce6f
-cp -r megatron ../ModelLink/
+cp -r megatron ../MindSpeed-LLM/
 cd ..
-cd ModelLink
+cd MindSpeed-LLM
 git checkout 1.0
 mkdir logs
 mkdir model_from_hf

@@ -38,13 +38,13 @@ Here's a hardware summary of pre-training LLaMA-7B/13B:
 1. Clone the repository to your local server:
 
 ```shell
-git clone https://gitee.com/ascend/ModelLink.git 
+git clone https://gitee.com/ascend/MindSpeed-LLM.git 
 git clone https://github.com/NVIDIA/Megatron-LM.git
 cd Megatron-LM
 git checkout -f bcce6f
-cp -r megatron ../ModelLink/
+cp -r megatron ../MindSpeed-LLM/
 cd ..
-cd ModelLink
+cd MindSpeed-LLM
 git checkout 1.0
 mkdir logs
 mkdir model_from_hf
@@ -359,7 +359,7 @@ The performance of LLaMA-7B/13B in **Ascend NPU** and **Reference**:
 
 ## Inference
 
-We support ModelLink Inference for text generation with LLaMA-7B and LLaMA-13B.
+We support MindSpeed-LLM Inference for text generation with LLaMA-7B and LLaMA-13B.
 Inference different from pre-training, such as we need to Load pre-training checkpoint and the length of the output samples:
 
 Config LLaMA-7B inference script `tasks/inference/generate_llama_7b_ptd.sh` and LLaMA-13B inference script `tasks/inference/generate_llama_13b_ptd.sh`.
@@ -435,7 +435,7 @@ The evaluation performance of LLaMA-7B/13B in **Ascend NPU**:
 
 # LLaMA-33B/65B
 
-This directory contains some of the scripts that were used to produce the results in the ModelLink. These scripts is to show the example how to run llama-65B in terminal.
+This directory contains some of the scripts that were used to produce the results in the MindSpeed-LLM. These scripts is to show the example how to run llama-65B in terminal.
 
 LLaMA model is from: [LLaMA: OPen and Efficient Foundation Language Models](https://arxiv.org/pdf/2302.13971v1.pdf)
 
@@ -460,13 +460,13 @@ The model was trained using alpaca datasets.
 1. Clone the repository to your local server
 
 ```shell
-git clone https://gitee.com/ascend/ModelLink.git 
+git clone https://gitee.com/ascend/MindSpeed-LLM.git 
 git clone https://github.com/NVIDIA/Megatron-LM.git
 cd Megatron-LM
 git checkout -f bcce6f
-cp -r megatron ../ModelLink/
+cp -r megatron ../MindSpeed-LLM/
 cd ..
-cd ModelLink
+cd MindSpeed-LLM
 git checkout 1.0
 mkdir logs
 mkdir model_from_hf
@@ -474,7 +474,7 @@ mkdir dataset
 mkdir ckpt
 ```
 
-2. Install ModelLink requirement environment.
+2. Install MindSpeed-LLM requirement environment.
 
 ```bash
 # python3.8
@@ -663,13 +663,13 @@ SAVE_CHECKPOINT_PATH="./ckpt/llama-65b-hf/"
 
 **Note**: If using multi machine training, and no data sharing configuration on the mechines, it's necessary to add the parameter `--no-shared-storage`. This parameter will determine whether non master nodes need to load data based on distributed parameters, and check the corresponding cache and generated data.
 
-Launch llama-33B pre-training script : ModelLink/examples/llama/pretrain_llama_33B_ptd_32p.sh
+Launch llama-33B pre-training script : MindSpeed-LLM/examples/llama/pretrain_llama_33B_ptd_32p.sh
 
 ```bash
 bash examples/llama/pretrain_llama_33B_ptd_32p.sh
 ```
 
-Launch llama-65B pre-training script : ModelLink/examples/llama/pretrain_llama_65b_ptd.sh
+Launch llama-65B pre-training script : MindSpeed-LLM/examples/llama/pretrain_llama_65b_ptd.sh
 
 ```bash
 bash examples/llama/pretrain_llama_65b_ptd.sh
@@ -766,13 +766,13 @@ Add the fine-tuning parameter `--finetune` so that fine-tuning starts from the f
 
 6.3 Launch fine-tune script:
 
-Launch llama-33B pre-training script : ModelLink/examples/llama/tune_llama_33B_ptd_32p.sh
+Launch llama-33B pre-training script : MindSpeed-LLM/examples/llama/tune_llama_33B_ptd_32p.sh
 
 ```bash
 bash tasks/finetune/tune_llama_33B_ptd_32p.sh
 ```
 
-Launch llama-65B pre-training script : ModelLink/examples/llama/tune_llama_65b_ptd.sh
+Launch llama-65B pre-training script : MindSpeed-LLM/examples/llama/tune_llama_65b_ptd.sh
 
 ```bash
 bash tasks/finetune/tune_llama_65b_ptd.sh
@@ -804,7 +804,7 @@ The performance of the NPUs in **Ascend** and Reference:
 
 ## Inference
 
-We support ModelLink Inference for text generation with LLaMA-33B and LLaMA-65B.
+We support MindSpeed-LLM Inference for text generation with LLaMA-33B and LLaMA-65B.
 Inference different from pre-training, such as we need to Load pre-training checkpoint and the length of the output samples:
 
 Config LLaMA-33B inference script `tasks/inference/generate_llama_33b_ptd.sh`.

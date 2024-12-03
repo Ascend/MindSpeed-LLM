@@ -39,13 +39,13 @@ Recommended hardware configuration for inference:
 1. Clone the code repository to the local server
 
     ```shell
-    git clone https://gitee.com/ascend/ModelLink.git
+    git clone https://gitee.com/ascend/MindSpeed-LLM.git
     git clone https://github.com/NVIDIA/Megatron-LM.git
     cd Megatron-LM
     git checkout -f bcce6f
-    cp -r megatron ../ModelLink/
+    cp -r megatron ../MindSpeed-LLM/
     cd ..
-    cd ModelLink
+    cd MindSpeed-LLM
 	git checkout 1.0
     mkdir logs
     mkdir model_from_hf
@@ -153,7 +153,7 @@ Recommended hardware configuration for inference:
 
 1. Prepare dataset
 
-    Download the datasets from [here](https://huggingface.co/datasets/tatsu-lab/alpaca/resolve/main/data/train-00000-of-00001-a09b74b3ef9c3b56.parquet), save to ModelLink/dataset/ directory.
+    Download the datasets from [here](https://huggingface.co/datasets/tatsu-lab/alpaca/resolve/main/data/train-00000-of-00001-a09b74b3ef9c3b56.parquet), save to MindSpeed-LLM/dataset/ directory.
 
     ```shell
     # download datasets

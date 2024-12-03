@@ -1,5 +1,4 @@
-<p align="center"> <img src="sources/images/logo.png" height="90px" width="400px"> </p>
-
+<p align="center"> <img src="sources/images/logo.png" height="110px" width="500px"> </p>
 <p align="center">
     <a>
         <img alt="Docs" src="https://readthedocs.org/projects/internlm/badge/?version=latest">
@@ -20,15 +19,15 @@
         <b><a href="README_en.md">English</a> </b>
 </p>
 
-ModelLink旨在为华为 [昇腾芯片](https://open.codehub.huawei.com/OpenBaize/Ascend/ascendspeed/files?ref=master&filePath=examples%2Fbaichuan%2Fpretrain_baichuan_zero_7B.sh&isFile=true) 上的大语言模型提供端到端的解决方案, 包含模型，算法，以及下游任务。
+MindSpeed-LLM，原仓名ModelLink，旨在为华为 [昇腾芯片](https://open.codehub.huawei.com/OpenBaize/Ascend/ascendspeed/files?ref=master&filePath=examples%2Fbaichuan%2Fpretrain_baichuan_zero_7B.sh&isFile=true) 上的大语言模型提供端到端的解决方案, 包含模型，算法，以及下游任务。
 
-## ModelLink解决方案概览
+## MindSpeed-LLM解决方案概览
 
 ---
 
 
 ## 支持功能
-当前ModelLink支撑大模型使用功能:
+当前MindSpeed-LLM支撑大模型使用功能:
 * [制作预训练数据集](#jump11)/[制作指令微调数据集](#jump12)
 * [预训练](#jump13)/[全参微调](#jump14)/[低参微调](#jump15)
 * [推理(人机对话)](#jump16)
@@ -38,7 +37,7 @@ ModelLink旨在为华为 [昇腾芯片](https://open.codehub.huawei.com/OpenBaiz
 强化学习等特性持续研发中....
 
 ## 支持模型
-当前ModelLink支持下列模型的预训练以及微调:
+当前MindSpeed-LLM支持下列模型的预训练以及微调:
 
 <table>
   <thead>
@@ -592,7 +591,7 @@ python tools/preprocess_data.py --input WORKSPACE/alpaca/train-00000-of-00001-a0
 ### <span id="jump15"> 低参微调 </span>
 #### Lora
 
-当前 ModelLink基于 peft 仓库支持对大模型的 Lora 微调功能：
+当前 MindSpeed-LLM基于 peft 仓库支持对大模型的 Lora 微调功能：
 
 ```shell
 pip install peft==0.4.0
@@ -632,7 +631,7 @@ Lora有一些相关参数，在 [PEFT](https://github.com/huggingface/peft) 仓�
 ```shell
 You >> Give three tips for staying healthy.
 
-ModelLink:
+MindSpeed-LLM:
 
 - Start exercising regularly and eat healthy food.
 - Get a good eight hours of sleep each night.
@@ -942,7 +941,7 @@ GSM8K 是一个有8.5k高质量小学数学应用题文本的数据集，每一�
 在很多网站，MMLU 的精度会依据学科进行评估，57个学科主要属于四个大类， 因此该数据集也可以基于四个大类进行打分，[网站](https://github.com/hendrycks/test/blob/master/categories.py) 给出了具体的57个类别。
 
 ### <span id="jump18">使用加速特性
-ModelLink支持张量并行、流水线并行、序列并行、重计算、分布式优化器、等多种加速算法，下表为各种加速特性对应的使能开关：
+MindSpeed-LLM支持张量并行、流水线并行、序列并行、重计算、分布式优化器、等多种加速算法，下表为各种加速特性对应的使能开关：
 
 |   加速特性    |   使能参数   |
 |:---------:|:--------:|
@@ -967,7 +966,7 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
 在模型训练和下游任务中，可以使用--tensor-model-parallel-size和--pipeline-model-parallel-size将模型切分到不同的设备上，降低单设备内存占用。
 使用--sequence-parallel对数据进行切分，使得模型可以训练超长序列数据。recompute-granularity或者use-distributed-optimizer也能降低单设备内存占用。
 
-ModelLink支持attn、rmsnorm、swiglu、rotary-pos-emb、mlp等多个融合算子，提升模型训练性能：
+MindSpeed-LLM支持attn、rmsnorm、swiglu、rotary-pos-emb、mlp等多个融合算子，提升模型训练性能：
 ```bash
 torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     --use-flash-attn \
@@ -984,7 +983,7 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
 
 ---
 
-ModelLink由华为公司的下列部门联合贡献
+MindSpeed-LLM由华为公司的下列部门联合贡献
 ：
 - 昇腾计算产品部
 - 计算算法部
@@ -993,10 +992,10 @@ ModelLink由华为公司的下列部门联合贡献
 - 公共开发部
 - 全球技术服务部
 
-感谢来自社区的每一个PR，欢迎贡献 ModelLink
+感谢来自社区的每一个PR，欢迎贡献 MindSpeed-LLM
 
 ---
 
 ## 安全声明
 
-[ModelLink安全声明](https://gitee.com/ascend/ModelLink/wikis/%E5%AE%89%E5%85%A8%E5%A3%B0%E6%98%8E)
+[MindSpeed-LLM安全声明](https://gitee.com/ascend/MindSpeed-LLM/wikis/%E5%AE%89%E5%85%A8%E5%A3%B0%E6%98%8E)
