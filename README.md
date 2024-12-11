@@ -21,7 +21,8 @@ MindSpeed-LLM，原仓名ModelLink，旨在为华为 [昇腾芯片](https://www.
 
 * MindSpeed-LLM[预置大模型列表](#预置大模型)
 
-## ModelLink大模型方案
+---
+## MindSpeed-LLM大模型方案
 
 
 当前MindSpeed-LLM支撑大模型使用功能:
