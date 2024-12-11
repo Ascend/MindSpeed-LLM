@@ -16,18 +16,22 @@
 MindSpeed-LLM，原仓名ModelLink，旨在为华为 [昇腾芯片](https://www.hiascend.com/) 上提供端到端的大语言模型方案, 包含模型，算法，以及下游任务。
 
 ---
+## 用户使用指南
+* MindSpeed-LLM[使用指南](./examples/README.md)
 
-## MindSpeed-LLM大模型方案概览
+* MindSpeed-LLM[预置大模型列表](#预置大模型)
+
+## ModelLink大模型方案
 
 
 当前MindSpeed-LLM支撑大模型使用功能:
-* 权重转换：[Huggingface与Megatron-LM权重转换](#jump1) 【昇腾】【OCK】【GTS】
+* 权重转换：[Huggingface与Megatron-LM权重转换](#huggingface与megatron-lm权重转换) 【昇腾】【OCK】【GTS】
 * 数据集处理：[预训练数据集/指令微调数据集](./examples/README.md) 【NAIE】【昇腾】
-* 分布式预训练：[加速算法/融合算子/并行策略](#jump2)【昇腾】【计算算法部】【计算研究部】
-* 分布式指令微调：[Prompt模板/动态padding/多轮对话](#jump3)【NAIE】【昇腾】
+* 分布式预训练：[加速算法/融合算子/并行策略](#预训练加速算法与融合算子)【昇腾】【计算算法部】【计算研究部】
+* 分布式指令微调：[Prompt模板/动态padding/多轮对话](#分布式指令微调)【NAIE】【昇腾】
 * 分布式推理：[流式推理/人机对话](./examples/README.md) 【NAIE】【昇腾】【GTS】
-* 分布式评估：[MMLU/CEVAL/HumanEval/BBH/BoolQ/AGIEval](#jump4)【NAIE】
-* 昇腾工具链：[Profiling采集](#jump5)/[确定性计算](#jump6)/[高可用](#jump7)【昇腾】【计算研究部】
+* 分布式评估：[MMLU/CEVAL/HumanEval/BBH/BoolQ/AGIEval](#大模型benchmark基线评估)【NAIE】
+* 昇腾工具链：[Profiling采集](#基于昇腾芯片采集Profiling数据)/[确定性计算](#基于昇腾芯片的确定性计算功能)/[高可用](#基于昇腾芯片的高可用特性)【昇腾】【计算研究部】
 
 LoRA、DPO、奖励模型、PPO等特性即将上线
 
@@ -59,7 +63,7 @@ MindSpeed-LLM已发布版本维护策略：
 
 ## 配套版本与支持模型
 
-【版本配套环境】
+### 【版本配套环境】
 
 <table border="0">
   <tr>
@@ -102,13 +106,15 @@ MindSpeed-LLM已发布版本维护策略：
 </table>
 
 
-【预训练集群性能与线性度】
+### 【预训练集群性能与线性度】
 
 MindSpeed-LLM 通过模型并行与数据并行来训练大语言模型，为了演示如何使用多个昇腾芯片和模型大小进行扩展性训练，我们使用 `GPT3-175B` 稠密大模型，从128颗 NPU 扩展到 7968颗 NPU 进行实验，下图是实验数据：
 <p align="center"> <img src="sources/images/linearity&mfu.png" height="485px" width="710px"> </p>
 报告的吞吐量是针对端到端训练进行测量的，涵盖所有操作，包括数据加载、优化器步骤、通信，甚至日志记录。请注意，示例大模型没有训练至收敛。
 
 图中呈现了对应集群规模下的 `MFU` 值与集群整体的 `线性度`情况. 计算公式已经放到社区，点击链接可进行参考：[MFU计算公式](https://gitee.com/ascend/MindSpeed-LLM/wikis/%E6%9C%AF%E8%AF%AD%E5%AE%9A%E4%B9%89/%E5%A4%A7%E6%A8%A1%E5%9E%8B%20MFU%20%E8%AE%A1%E7%AE%97%E5%85%AC%E5%BC%8F)，[线性度计算公式](https://gitee.com/ascend/MindSpeed-LLM/wikis/%E6%9C%AF%E8%AF%AD%E5%AE%9A%E4%B9%89/%E7%BA%BF%E6%80%A7%E5%BA%A6%E5%85%AC%E5%BC%8F)
+
+### 【预置大模型】
 
 下述列表中支持的模型，我们在[examples/README.md](./examples/README.md)中提供了相应的使用说明，里面有详细的模型训练、推理、评估流程
 
@@ -120,7 +126,7 @@ MindSpeed-LLM 通过模型并行与数据并行来训练大语言模型，为了
 
 `认证`【Pass】表示经过昇腾官方版本测试的模型，【Test】表示待测试模型
 
-表中为开启 mc2 特性【内部在研特性】后预训练实测性能，该特性只在24RC2以上版本支持，本仓库代码层面默认关闭，若要使用，请参考[加速算法与融合算子](#jump2)章节
+表中为开启 mc2 特性【内部在研特性】后预训练实测性能，该特性只在24RC2以上版本支持，本仓库代码层面默认关闭，若要使用，请参考[加速算法与融合算子](#预训练加速算法与融合算子)章节
 
 <table>
   <thead>
@@ -897,7 +903,7 @@ MindSpeed-LLM 通过模型并行与数据并行来训练大语言模型，为了
 
 ---
 
-## <span id="jump1"> Huggingface与Megatron-LM权重转换
+## Huggingface与Megatron-LM权重转换
 
 MindSpeed-LLM支持Huggingface、Megatron-Legacy以及Megatron-Core之间的权重格式互转，具体功能列表如下：
 
@@ -1078,7 +1084,7 @@ MindSpeed-LLM支持Huggingface、Megatron-Legacy以及Megatron-Core之间的权�
 
 ---
 
-## <span id="jump2"> 预训练加速算法与融合算子
+## 预训练加速算法与融合算子
 
 MindSpeed-LLM预训练支持张量并行、流水线并行等多种加速算法和融合算子：
 
@@ -1244,7 +1250,7 @@ MindSpeed-LLM预训练支持张量并行、流水线并行等多种加速算法�
 
 ---
 
-## <span id="jump3"> 分布式指令微调
+## 分布式指令微调
 MindSpeed-LLM支持指令微调，方案与<a href="https://github.com/hiyouga/LLaMA-Factory/tree/main">DeepSpeed</a>统一，在微调效果保持一致的前提下，MindSpeed-LLM可以表现出优异性能
 
 【与<a href="https://github.com/hiyouga/LLaMA-Factory/tree/main">DeepSpeed</a>微调Loss对比】
@@ -1456,7 +1462,7 @@ My soul is full and my heart does soep.</th>
 ---
 
 
-## <span id="jump4"> 大模型Benchmark基线评估
+## 大模型Benchmark基线评估
 
 MindSpeed-LLM支持大模型在公开基准数据集上进行准确率评估，当前支持的Benchmark如下：
 
@@ -1505,7 +1511,7 @@ MiniCPM-2B    | MMLU   | 51.6%     | [53.4%](https://github.com/OpenBMB/MiniCPM?
 ---
 
 
-## <span id="jump5"> 基于昇腾芯片采集Profiling数据
+## 基于昇腾芯片采集Profiling数据
 MindSpeed-LLM支持基于昇腾芯片采集profiling数据，以提供对模型运行情况的分析，主要API如下：
 
 
@@ -1524,7 +1530,7 @@ MindSpeed-LLM支持基于昇腾芯片采集profiling数据，以提供对模型�
 
 ---
 
-## <span id="jump6"> 基于昇腾芯片的确定性计算功能
+## 基于昇腾芯片的确定性计算功能
 昇腾芯片默认采用了不确定计算加速模型训练，有时为了重复实验与对比实验需要确定性的计算结果，MindSpeed-LLM使能确定性计算的开关如下：
 
 - 启动命令中加入开关
@@ -1539,7 +1545,7 @@ export HCCL_DETERMINISTIC=True
 ---
 
 
-## <span id="jump7"> 基于昇腾芯片的高可用特性
+## 基于昇腾芯片的高可用特性
 分布式优化器的思想是通过将优化器状态均匀地分布在数据并行组中来节省内存。基于该思想，设计了将数据并行组切分成两个副本数据并行组的方案，副本优化器将优化器状态均匀分布在副本数据并行组，实现优化器状态均有备份。结合华为自研的高可用框架，可实现训练过程中，支持故障场景保存临终checkpoint，训练结果0损失。
 
 

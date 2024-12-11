@@ -3,38 +3,6 @@
 <p align="left">
 </p>
 
-## 目录
-
-
-- [环境安装](#jump1)
-  * [仓库拉取](#jump1.1)
-  * [环境搭建](#jump1.2)
-- [权重下载及转换](#jump2)
-  * [权重下载](#jump2.1)
-  * [权重转换](#jump2.2)
-- [数据集准备及处理](#jump3)
-  * [数据集下载](#jump3.1)
-  * [数据集处理](#jump3.2)
-  * [数据集合并](#jump3.3)
-- [大模型分布式预训练](#jump4)
-  * [准备工作](#jump4.1)
-  * [配置参数](#jump4.2)
-  * [启动预训练](#jump4.3)
-- [大模型分布式指令微调](#jump5)
-  * [准备工作](#jump5.1)
-  * [配置微调参数](#jump5.2)
-  * [启动全参微调](#jump5.3)
-- [大模型分布式推理](#jump6)
-  * [Generate：流式推理](#jump6.1)
-  * [Chat：指令微调后chat对话](#jump6.2)
-- [大模型分布式评估](#jump7)
-  * [基准评估](#jump7.1)
-  * [指令微调评估](#jump7.2)
-  * [LoRA权重评估](#jump7.3)
-- [社区BUG列表](#jump8)
-
----
-
 ## <span id="jump1"> 环境安装
 
 【模型开发时推荐使用配套的环境版本】
@@ -162,20 +130,18 @@ cd ../../
 ```
 
 #### <span id="jump2.2"> 2. 权重转换
-
+在`example`目录下每个模型都已经预置好权重转换脚本，可以根据需要来进行修改
 ##### 2.1 Huggingface权重转换到Megatron-LM格式
 
 ```shell
-# 请按照您的真实环境修改 set_env.sh 路径
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
 
 python convert_ckpt.py \
     --model-type GPT \
     --load-model-type hf \
     --save-model-type mg \
-    --target-tensor-parallel-size 2 \
-    --target-pipeline-parallel-size 4 \
-    --num-layer-list 8,8,8,8 \
+    --target-tensor-parallel-size 1 \
+    --target-pipeline-parallel-size 2 \
+    --num-layer-list 16,16 \
     --model-type-hf llama2 \
     --load-dir ./model_from_hf/llama-2-7b-hf/ \
     --save-dir ./model_weights/llama-2-7b-legacy/ \
@@ -237,8 +203,7 @@ bash examples/mcore/llama2/ckpt_convert_llama2_hf2mcore.sh
 ##### 2.2 Megatron-LM权重转换到Huggingface格式
 
 ```shell
-# 请按照您的真实环境修改 set_env.sh 路径
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
+# 转换到Huggingface格式时，`target-tensor-parallel-size`与`target-pipeline-parallel-size`均需设为1
 
 python convert_ckpt.py \
     --model-type GPT \
@@ -273,8 +238,6 @@ bash examples/mcore/llama2/ckpt_convert_llama2_mcore2hf.sh
 ##### 2.3 Megatron-LM格式权重互转
 
 ```shell
-# 请按照您的真实环境修改 set_env.sh 路径
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
 
 # legacy转legacy
 python convert_ckpt.py \
@@ -360,8 +323,6 @@ mcore转legacy时设置此参数以指定保存权重格式为legacy
 【合并后转换为Megatron-Legacy权重】
 
 ```shell
-# 请按照您的真实环境修改 set_env.sh 路径
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
 
 python convert_ckpt.py \
     --model-type GPT \
@@ -385,8 +346,6 @@ bash examples/llama2/ckpt_convert_llama2_legacy2legacy_lora.sh
 【合并后转换为Huggingface权重】
 
 ```shell
-# 请按照您的真实环境修改 set_env.sh 路径
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
 
 python convert_ckpt.py \
     --model-type GPT \
@@ -439,12 +398,10 @@ cd ..
 ```
 
 #### <span id="jump3.2"> 2. 数据集处理
-
+在`example`目录下每个模型都已经预置好数据集预处理脚本，可以根据需要来进行修改
 ##### 2.1 预训练数据集处理方法
 
 ```shell
-# 请按照您的真实环境修改 set_env.sh 路径
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
 mkdir ./dataset
 
 python ./preprocess_data.py \
@@ -518,8 +475,6 @@ cd ..
 在指令监督微调时，instruction 列对应的内容会与 input 列对应的内容拼接后作为人类指令，即人类指令为 instruction\ninput。而 output 列对应的内容为模型回答。如果指定了history，则会将历史对话内容也加入进来。如果指定system 列，则对应的内容将被作为系统提示词。
 
 ```shell
-# 请按照您的真实环境修改 set_env.sh 路径
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
 mkdir ./finetune_dataset
 
 python ./preprocess_data.py \
@@ -629,8 +584,6 @@ cd ..
 ```
 Sharegpt格式数据预处理脚本：
 ```shell
-# 请按照您的真实环境修改 set_env.sh 路径
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
 mkdir ./finetune_dataset
 
 python ./preprocess_data.py \
@@ -681,8 +634,6 @@ OpenAI格式示例：
 OpenAI格式数据预处理脚本：
 
 ```shell
-# 请按照您的真实环境修改 set_env.sh 路径
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
 mkdir ./finetune_dataset
 
 python ./preprocess_data.py \
