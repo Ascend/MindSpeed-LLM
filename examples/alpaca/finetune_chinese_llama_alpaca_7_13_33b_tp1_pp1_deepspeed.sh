@@ -5,7 +5,6 @@ export HCCL_OP_BASE_FFTS_MODE_ENABLE=TRUE
 # modify the script according to your own conda and ascend-toolkit path
 export LD_LIBRARY_PATH=/usr/local/lib:/root/anaconda3/lib:$LD_LIBRARY_PATH
 export HCCL_CONNECT_TIMEOUT=1200
-export INF_NAN_MODE_ENABLE=0
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
 
 GPUS_PER_NODE=8
