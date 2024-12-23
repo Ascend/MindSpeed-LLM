@@ -102,6 +102,7 @@ MindSpeed-LLM已发布版本维护策略：
   </tr>
 </table>
 
+已安装好以上配套环境的镜像的获取和使用方法见[镜像使用指南](./docs/DOCKER_GUIDE.md)。
 
 【基于现版本我们实测的性能情况统计如下（硬件信息：Atlas 900 A2 PODc）】
 

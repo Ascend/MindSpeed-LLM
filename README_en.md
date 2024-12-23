@@ -104,6 +104,7 @@ MindSpeed-LLM release has the following five maintenance phases:
   </tr>
 </table>
 
+Follow the [DOCKER_GUIDE.md](./docs/DOCKER_GUIDE.md) to obtain and use the image that has installed a supporting dependency environment.
 
 【Based on the current version of megatron, the performance statistics from our testing are as follows (Hardware info：Atlas 900 A2 PODc)】
 
