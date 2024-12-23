@@ -56,4 +56,4 @@ cp -r megatron ../
 ```
 
 ## 6.单机以及多机模型的预训练任务运行
-基于拉取的镜像和仓库代码，执行单机和多机的预训练任务，具体可参考[MindSpeed-LLM 使用指南](..%2Fexamples%2FREADME.md)
+基于拉取的镜像和仓库代码，执行单机和多机的预训练任务，具体可参考[MindSpeed-LLM 使用指南](../examples/README.md)
