@@ -8,6 +8,7 @@
                 "output-prefix": "/data/tune_dataset/alpaca/alpaca", 
                 "tokenizer-name-or-path": "/data/qwen-7b/",
                 "workers": 4,
+                "overwrite-cache": null,
                 "log-interval": 1000,
                 "prompt-type": "qwen"
             }
@@ -22,7 +23,23 @@
                 "output-prefix": "/data/tune_dataset/alpaca_his/alpaca_his", 
                 "tokenizer-name-or-path": "/data/qwen-7b/",
                 "workers": 4,
+                "overwrite-cache": null,
                 "log-interval": 1000,
+                "prompt-type": "qwen",
+                "map-keys": "{\"history\":\"history\"}"
+            }
+        }, 
+        {
+            "params": {
+                "input": "/data/tune_dataset/oaast_sft.json",
+                "tokenizer-type": "PretrainedFromHF",
+                "handler-name": "AlpacaStyleInstructionHandler",
+                "output-prefix": "/data/tune_dataset/alpaca_his/alpaca_his_seq1024", 
+                "tokenizer-name-or-path": "/data/qwen-7b/",
+                "workers": 4,
+                "overwrite-cache": null,
+                "log-interval": 1000,
+                "seq-length" : 1024,
                 "prompt-type": "qwen",
                 "map-keys": "{\"history\":\"history\"}"
             }
@@ -37,6 +54,7 @@
                 "output-prefix": "/data/tune_dataset/sharegpt/sharegpt", 
                 "tokenizer-name-or-path": "/data/qwen-7b/",
                 "workers": 4,
+                "overwrite-cache": null,
                 "log-interval": 1000,
                 "prompt-type": "qwen",
                 "map-keys": "{\"system\":\"system_prompt\"}"
@@ -52,6 +70,7 @@
                 "output-prefix": "/data/tune_dataset/sharegpt/sharegpt", 
                 "tokenizer-name-or-path": "/data/qwen-7b/",
                 "workers": 4,
+                "overwrite-cache": null,
                 "log-interval": 1000,
                 "prompt-type": "qwen",
                 "map-keys": "{\"messages\":\"messages\", \"tags\": {\"role_tag\": \"role\", \"content_tag\": \"content\", \"user_tag\": \"user\", \"assistant_tag\": \"assistant\", \"system_tag\": \"system\"}}"

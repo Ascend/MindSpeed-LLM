@@ -89,7 +89,7 @@ class UTTest:
                 exsit_ut_files = [file for file in full_path if os.path.exists(file) and file.endswith(".py")]
                 self.ut_files = " ".join(exsit_ut_files)
 
-        command = f"pytest -x {self.ut_files}"
+        command = f"pytest -x --log-cli-level=INFO {self.ut_files}"
         code = acquire_exitcode(command)
         if code == 0:
             print("UT test success")

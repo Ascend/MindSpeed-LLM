@@ -238,7 +238,7 @@ def convert_alpaca_to_intermediate(sample: Dict[str, List[Any]], dataset_attr: "
     outputs = {"prompt": [], "response": [], "system": [], "tools": []}
     prompt = []
     
-    if dataset_attr.history and hasattr(sample, "history") and isinstance(sample[dataset_attr.history], dict):
+    if dataset_attr.history and (isinstance(sample[dataset_attr.history], list) or isinstance(sample[dataset_attr.history], dict)):
         for old_prompt, old_response in sample[dataset_attr.history]:
             prompt.append({"role": Role.USER.value, "content": old_prompt})
             prompt.append({"role": Role.ASSISTANT.value, "content": old_response})
