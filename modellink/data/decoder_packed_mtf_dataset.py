@@ -28,6 +28,8 @@ from modellink.utils import is_rank_0
 from modellink.tokenizer import build_tokenizer
 from modellink.data.mtf_dataset import MTFDataset, get_packed_indexed_dataset
 from modellink.error_utils import check_equal
+from modellink.tasks.preprocess.templates import get_model_template
+
 
 logger = logging.getLogger(__name__)
 
@@ -176,19 +178,64 @@ class DecoderPackedMTFDataset(torch.utils.data.Dataset):
         else:
             return self._cut_instruction_token(item, np.int64)
 
-
     def _cut_instruction_token(self, item, dtype):
         IGNORE_INDEX = -100
-        prompt_length = (item["labels"] != IGNORE_INDEX).nonzero()[0][0]
-        prompt_ids = item["input_ids"][:prompt_length]
-        label_ids = item["labels"][prompt_length:]
-        source_len, target_len = _infer_seqlen(
-            len(prompt_ids), len(label_ids), self.seq_length
-        )
-        prompt_ids = prompt_ids[:source_len]
-        label_ids = label_ids[:target_len]
-        input_ids = np.append(prompt_ids, label_ids)
-        labels = np.append(IGNORE_INDEX * np.ones(source_len), label_ids)
+        token_length = len(item["input_ids"])
+        if token_length <= self.seq_length:
+            return {
+                "input_ids": item["input_ids"].astype(dtype),
+                "attention_mask": np.ones_like(item["input_ids"]).astype(dtype),
+                "labels": item["labels"].astype(dtype)
+            }
+
+        template = None
+        # get model chat template
+        if hasattr(self.args, "prompt_type") and self.args.prompt_type is not None:
+            template = get_model_template(self.args.prompt_type)
+
+        prompt_begin_list, prompt_end_list = get_prompt_index(item["labels"], IGNORE_INDEX)
+
+        multi_turns = len(prompt_begin_list)
+        total_length = 0
+
+        if template is not None and template.efficient_eos:
+            total_length = 1
+            prompt_end_list = [x - 1 for x in prompt_end_list]
+            eos_token_id = item["input_ids"][token_length - 1]
+            item["input_ids"] = item["input_ids"][:token_length]
+            item["labels"] = item["labels"][:token_length]
+
+        cutoff_len = self.seq_length
+        input_ids = np.array([], dtype=dtype)
+        labels = np.array([], dtype=dtype)
+
+        for turn_idx in range(multi_turns):
+            if total_length >= cutoff_len:
+                break
+            source_ids = item["input_ids"][prompt_begin_list[turn_idx]:prompt_end_list[turn_idx]]
+            mask_ids = item["labels"][prompt_begin_list[turn_idx]:prompt_end_list[turn_idx]]
+
+            label_begin_idx = prompt_end_list[turn_idx]
+
+            if turn_idx != multi_turns - 1:
+                target_ids = item["labels"][label_begin_idx:prompt_begin_list[turn_idx + 1]]
+            else:
+                target_ids = item["labels"][label_begin_idx:]
+
+            source_len, target_len = _infer_seqlen(len(source_ids), len(target_ids), cutoff_len - total_length)
+
+            source_ids = source_ids[:source_len]
+            target_ids = target_ids[:target_len]
+            mask_ids = mask_ids[:source_len]
+
+            total_length += source_len + target_len
+            input_ids = np.concatenate((input_ids, source_ids, target_ids), axis=0)
+            labels = np.concatenate((labels, mask_ids, target_ids), axis=0)
+
+        if template is not None and template.efficient_eos:
+            input_ids = np.concatenate((input_ids, np.array([eos_token_id], dtype=dtype)), axis=0)
+            labels = np.concatenate((labels, np.array([eos_token_id], dtype=dtype)), axis=0)
+
         res = {
             "input_ids": input_ids.astype(dtype),
             "attention_mask": np.ones_like(input_ids).astype(dtype),
@@ -234,6 +281,22 @@ class DecoderPackedMTFDataset(torch.utils.data.Dataset):
         }
 
         return res
+
+
+def get_prompt_index(labels, ignored_label):
+    prompt_begin_list = []
+    prompt_end_list = []
+    in_group = False
+    for idx, label in enumerate(labels):
+        if label == ignored_label:
+            if not in_group:
+                prompt_begin_list.append(idx)
+                in_group = True
+        elif in_group:
+            prompt_end_list.append(idx)
+            in_group = False
+
+    return prompt_begin_list, prompt_end_list
 
 
 def _infer_seqlen(source_len: int, target_len: int, cutoff_len: int):
