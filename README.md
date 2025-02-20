@@ -984,3 +984,16 @@ ModelLink由华为公司的下列部门联合贡献
 - 许可描述: 在运行程序之前，建议您对训练所需的文件（如ckpt、日志等）采取权限控制（普通用户而不是root权限）等安全措施
 - 路径描述: 当你使用 `torch.load` 接口时，除非 weights_only 参数被设置为 True， 否则请隐式的使用 pickle 模块，我们不建议您加载和使用任何来源未知或不可信任的数据
 - 通信矩阵: [通信矩阵](https://gitee.com/ascend/AscendSpeed/wikis/Communition%20Matrix/AscendSpeed%20Communication%20Matrix?sort_id=8855822)
+
+# 免责声明
+
+## 致MindSpeed-LLM使用者
+1. MindSpeed-LLM提供的模型仅供您用于非商业目的。
+2. 对于各模型，MindSpeed-LLM平台仅提示性地向您建议可用于训练的数据集，华为不提供任何数据集，如您使用这些数据集进行训练，请您特别注意应遵守对应数据集的License，如您因使用数据集而产生侵权纠纷，华为不承担任何责任。
+3. 如您在使用MindSpeed-LLM模型过程中，发现任何问题（包括但不限于功能问题、合规问题），请在Gitee提交issue，我们将及时审视并解决。
+
+## 致数据集所有者
+如果您不希望您的数据集在MindSpeed-LLM中的模型被提及，或希望更新MindSpeed-LLM中的模型关于您的数据集的描述，请在Gitee提交issue，我们将根据您的issue要求删除或更新您的数据集描述。衷心感谢您对MindSpeed-LLM的理解和贡献。
+
+## License声明
+Ascend MindSpeed-LLM提供的模型，如模型目录下存在License的，以该License为准。如模型目录下不存在License的，以Apache 2.0许可证许可，对应许可证文本可查阅Ascend MindSpeed-LLM根目录。
