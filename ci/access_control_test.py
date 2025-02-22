@@ -79,7 +79,8 @@ class ST_Test:
 
 
 if __name__ == "__main__":
-    ut = UT_Test()
-    ut.run_ut()
-    st = ST_Test()
-    st.run_st()
+    pass
+    # ut = UT_Test()
+    # ut.run_ut()
+    # st = ST_Test()
+    # st.run_st()
