@@ -143,7 +143,7 @@ def _concat_data_proto_or_future(output: List):
 
     # make sure all the elements in output has the same type
     for o in output:
-        if not isinstance(o, output[0]):
+        if type(o) != type(output[0]):
             raise TypeError(f"All elements in output must have the same type. Found {type(o)} and {type(output[0])}")
 
     o = output[0]
@@ -307,7 +307,7 @@ def dispatch_dp_compute_data_proto_with_func(worker_group, *args, **kwargs):
     if not isinstance(worker_group, WorkerGroup):
         raise TypeError(f'worker_group must be an instance of WorkerGroup. Got {type(worker_group)}')
 
-    if not isinstance(args[0], FunctionType):
+    if type(args[0]) != FunctionType:
         raise TypeError(f'The first argument must be a callable function. Got {type(args[0])}')  # NOTE: The first one args is a function!
 
     splitted_args, splitted_kwargs = _split_args_kwargs_data_proto(worker_group.world_size, *args[1:], **kwargs)
