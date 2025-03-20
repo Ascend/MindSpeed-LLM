@@ -1,9 +1,9 @@
 #!/bin/bash
 export CUDA_DEVICE_MAX_CONNECTIONS=1
-export ASCEND_RT_VISIBLE_DEVICES=1
-export LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib:/root/miniconda3/lib:$LD_LIBRARY_PATH
+
+
 export HCCL_CONNECT_TIMEOUT=1200
-export COMBINED_ENABLE=1
+
 export CLOSE_MATMUL_K_SHIFT=1
 
 source /usr/local/Ascend/ascend-toolkit/set_env.sh

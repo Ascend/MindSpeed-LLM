@@ -2,7 +2,7 @@
 
 # The number of parameters is not aligned
 export HCCL_CONNECT_TIMEOUT=1200
-export COMBINED_ENABLE=1
+
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 
 # please fill these path configurations

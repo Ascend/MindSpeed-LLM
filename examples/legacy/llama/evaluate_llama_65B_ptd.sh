@@ -2,8 +2,8 @@
 
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export HCCL_CONNECT_TIMEOUT=1200
-export COMBINED_ENABLE=1
-export LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib:/root/miniconda3/lib:$LD_LIBRARY_PATH
+
+
 
 # Change for multinode config
 MASTER_ADDR=localhost

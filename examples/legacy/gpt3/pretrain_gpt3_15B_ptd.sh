@@ -2,7 +2,7 @@
 
 
 # Runs the "175B" parameter model in deminishing layers for single machine
-export COMBINED_ENABLE=1
+
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export AZUREML_EXPERIMENT_ID=0
 

@@ -1,8 +1,8 @@
 #!/bin/bash
 export CUDA_DEVICE_MAX_CONNECTIONS=1
-export ASCEND_RT_VISIBLE_DEVICES=1
+
 export HCCL_CONNECT_TIMEOUT=1200
-export COMBINED_ENABLE=1
+
 
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
 

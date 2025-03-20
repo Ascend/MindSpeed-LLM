@@ -1,7 +1,7 @@
 #!/bin/bash
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export HCCL_CONNECT_TIMEOUT=1200
-export COMBINED_ENABLE=1
+
 
 # modify script model path and tokenizer path
 TOKENIZER_PATH="your tokenizer path"

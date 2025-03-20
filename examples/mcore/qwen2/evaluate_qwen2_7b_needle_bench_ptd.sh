@@ -1,6 +1,5 @@
 #!/bin/bash
 export CUDA_DEVICE_MAX_CONNECTIONS=1
-export ASCEND_RT_VISIBLE_DEVICES=4,5,6,7
 
 TOKENIZER_PATH="your tokenizer directory path"
 CHECKPOINT="your model directory path"

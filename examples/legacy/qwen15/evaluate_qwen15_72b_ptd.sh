@@ -1,6 +1,6 @@
 #!/bin/bash
 export HCCL_CONNECT_TIMEOUT=1800
-export COMBINED_ENABLE=1
+
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 
 # Change for multinode config
