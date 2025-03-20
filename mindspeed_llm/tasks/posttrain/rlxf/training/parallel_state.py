@@ -283,7 +283,7 @@ def initialize_model_parallel_2megatron(
             ranks, timeout=timeout, pg_options=ps.get_nccl_options('tp_exp', nccl_comm_cfgs)
         )
         if rank in ranks:
-            if ps._TENSOR_AND_EXPERT_PARALLEL_GROUP is None:
+            if ps._TENSOR_AND_EXPERT_PARALLEL_GROUP is not None:
                 raise RuntimeError('Tensor + expert parallel group is already initialized')
             ps._TENSOR_AND_EXPERT_PARALLEL_GROUP = group
 
@@ -292,7 +292,7 @@ def initialize_model_parallel_2megatron(
             ranks, pg_options=ps.get_nccl_options('exp', nccl_comm_cfgs)
         )
         if rank in ranks:
-            if ps._EXPERT_MODEL_PARALLEL_GROUP is None:
+            if ps._EXPERT_MODEL_PARALLEL_GROUP is not None:
                 raise RuntimeError('Expert parallel group is already initialized')
             ps._EXPERT_MODEL_PARALLEL_GROUP = group
 
@@ -302,7 +302,7 @@ def initialize_model_parallel_2megatron(
         )
         group_gloo = torch.distributed.new_group(ranks, backend="gloo")
         if rank in ranks:
-            if ps._DATA_MODULO_EXPERT_PARALLEL_GROUP is None:
+            if ps._DATA_MODULO_EXPERT_PARALLEL_GROUP is not None:
                 raise RuntimeError('Data modulo expert group is already initialized')
             ps._DATA_MODULO_EXPERT_PARALLEL_GROUP = group
             ps._DATA_MODULO_EXPERT_PARALLEL_GROUP_GLOO = group_gloo
