@@ -36,8 +36,8 @@ GPT_ARGS="
     --num-attention-heads 32 \
     --tokenizer-type PretrainedFromHF \
     --tokenizer-name-or-path ${TOKENIZER_MODEL} \
-    --seq-length 16000 \
-    --max-position-embeddings 16000 \
+    --seq-length 16384 \
+    --max-position-embeddings 16384 \
     --micro-batch-size 1 \
     --global-batch-size 16 \
     --make-vocab-size-divisible-by 1 \

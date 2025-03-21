@@ -1,7 +1,7 @@
 #!/bin/bash
 
 export CUDA_DEVICE_MAX_CONNECTIONS=1
-
+export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
 
 NPUS_PER_NODE=8
 MASTER_ADDR=localhost
@@ -16,7 +16,7 @@ TOKENIZER_MODEL="your tokenizer path"
 CKPT_LOAD_DIR="your model ckpt path"
 
 TP=1
-PP=4
+PP=2
 CP=2
 
 DISTRIBUTED_ARGS="
@@ -38,7 +38,8 @@ GPT_ARGS="
     --load ${CKPT_LOAD_DIR} \
     --context-parallel-algo megatron_cp_algo \
     --sequence-parallel \
-    --cp-attention-mask-type causal \
+    --cp-attention-mask-type general \
+    --swap-attention \
     --num-workers 16 \
     --cp-window-size 1 \
     --use-fused-rotary-pos-emb \
@@ -59,7 +60,7 @@ GPT_ARGS="
     --seq-length 16384 \
     --max-position-embeddings 16384 \
     --micro-batch-size 1 \
-    --global-batch-size 64 \
+    --global-batch-size 128 \
     --make-vocab-size-divisible-by 1 \
     --lr 1.0e-6 \
     --train-iters 2000 \

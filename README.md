@@ -156,26 +156,26 @@ MindSpeed-LLM包含分布式预训练、分布式微调、分布式偏好对齐�
       <td>LLAMA2-7B</td>
       <td>Atlas 900 A2 PODc</td>
       <td>1x8</td>
-      <td><a href="./examples/mcore/llama2/pretrain_llama2_7b_pack_ptd.sh">68.8%</a></td>
+      <td><a href="./examples/mcore/llama2/pretrain_llama2_7b_pack_ptd.sh">69.0%</a></td>
     </tr>
     <tr>
       <td>LLAMA2-13B</td>
       <td>Atlas 900 A2 PODc</td>
       <td>1x8</td>
-      <td><a href="./examples/mcore/llama2/pretrain_llama2_13b_pack_ptd.sh">62.2%</a></td>
+      <td><a href="./examples/mcore/llama2/pretrain_llama2_13b_pack_ptd.sh">64.7%</a></td>
     </tr>
     <tr>
       <td>LLAMA2-70B</td>
       <td>Atlas 900 A2 PODc</td>
       <td>4x8</td>
-      <td><a href="./examples/mcore/llama2/pretrain_llama2_70b_pack_ptd.sh">55.8%</a></td>
+      <td><a href="./examples/mcore/llama2/pretrain_llama2_70b_pack_ptd.sh">44.1%</a></td>
     </tr>
     <tr>
       <td>Mixtral</td>
       <td>Mixtral-8x7B</td>
       <td>Atlas 900 A2 PODc</td>
       <td>8x8</td>
-      <td><a href="./examples/mcore/mixtral/pretrain_mixtral_8x7b_ptd.sh">31.0%</a></td>
+      <td><a href="./examples/mcore/mixtral/pretrain_mixtral_8x7b_ptd.sh">31.7%</a></td>
     </tr>
   </tbody>
 </table>
@@ -425,20 +425,20 @@ MindSpeed-LLM包含分布式预训练、分布式微调、分布式偏好对齐�
     <td rowspan="3">1x8</td>
     <td>全参</td>
     <td>dynamic</td>
-    <td><a href="./examples/mcore/llama2/tune_llama2_7b_full_ptd.sh">45.7 samples/s</a></td>
+    <td><a href="./examples/mcore/llama2/tune_llama2_7b_full_ptd.sh">15.87 samples/s</a></td>
     <td>-</td>
   </tr>
   <tr>
     <td>全参</td>
     <td>16K</td>
-    <td><a href="./examples/mcore/llama2/tune_llama2_7b_full_pack_16k.sh">1.78 samples/s</a></td>
-    <td>56.0%</td>
+    <td><a href="./examples/mcore/llama2/tune_llama2_7b_full_pack_16k.sh">1.14 samples/s</a></td>
+    <td>37.4%</td>
   </tr>
   <tr>
     <td>全参</td>
     <td>32K</td>
-    <td><a href="./examples/mcore/llama2/tune_llama2_7b_full_pack_32k.sh">0.79 samples/s</a></td>
-    <td>61.9%</td>
+    <td><a href="./examples/mcore/llama2/tune_llama2_7b_full_pack_32k.sh">0.51 samples/s</a></td>
+    <td>48.4%</td>
   </tr>
   <tr>
     <td rowspan="1">llama2-13B</td>
@@ -446,7 +446,7 @@ MindSpeed-LLM包含分布式预训练、分布式微调、分布式偏好对齐�
     <td rowspan="1">1x8</td>
     <td>全参</td>
     <td>dynamic</td>
-    <td><a href="./examples/mcore/llama2/tune_llama2_13b_full_ptd.sh">28.4 samples/s</a></td>
+    <td><a href="./examples/mcore/llama2/tune_llama2_13b_full_ptd.sh">50.4 samples/s</a></td>
     <td>-</td>
   </tr>
   <tr>
@@ -455,7 +455,7 @@ MindSpeed-LLM包含分布式预训练、分布式微调、分布式偏好对齐�
     <td>1x8</td>
     <td>LoRA</td>
     <td>dynamic</td>
-    <td><a href="./examples/legacy/llama2/tune_llama2_70b_lora_ptd.sh">11.72 samples/s</a></td>
+    <td><a href="./examples/legacy/llama2/tune_llama2_70b_lora_ptd.sh">15.2 samples/s</a></td>
     <td>-</td>
   </tr>
 </table>
@@ -578,12 +578,12 @@ MindSpeed-LLM包含分布式预训练、分布式微调、分布式偏好对齐�
     <td rowspan="3">1x8</td>
     <td>全参</td>
     <td>dynamic</td>
-    <td><a href="./examples/mcore/llama2/dpo_llama2_7b_full_ptd.sh">12.77 samples/s</td>
+    <td><a href="./examples/mcore/llama2/dpo_llama2_7b_full_ptd.sh">12.74 samples/s</td>
   </tr>
   <tr>
     <td>全参</td>
     <td>16K</td>
-    <td><a href="./examples/mcore/llama2/dpo_llama2_7b_full_16k.sh">0.442 samples/s</td>
+    <td><a href="./examples/mcore/llama2/dpo_llama2_7b_full_16k.sh">0.440 samples/s</td>
   </tr>
   <tr>
     <td>Lora</td>
@@ -594,7 +594,7 @@ MindSpeed-LLM包含分布式预训练、分布式微调、分布式偏好对齐�
     <td rowspan="1">2x8</td>
     <td>全参</td>
     <td>32K</td>
-    <td><a href="./examples/mcore/llama2/dpo_llama2_7b_full_32k.sh">0.227 samples/s</td>
+    <td><a href="./examples/mcore/llama2/dpo_llama2_7b_full_32k.sh">0.216 samples/s</td>
   </tr>
 </table>
 
