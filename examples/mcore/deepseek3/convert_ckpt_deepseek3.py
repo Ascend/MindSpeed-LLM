@@ -600,6 +600,7 @@ class CkptConvert(object):
 
                     local_mtp_idx = 0
                     for mtp_layer in mtp_layer_list:
+                        logger.info(f"Converting the weights of mtp layer {mtp_layer}.")
                         self.set_mtp_preprocess(mtp_layer, local_mtp_idx, pp_weights, mg_model)
                         self.set_model_layer_norm(mtp_layer, local_mtp_idx, pp_weights, mg_model, mtp_layer_flag=True)
                         self.set_model_layer_attn(mtp_layer, local_mtp_idx, pp_weights, mg_model, mtp_layer_flag=True)
@@ -649,6 +650,7 @@ class CkptConvert(object):
                         mtp_layer_list = [layer_list.pop() for _ in range(self.num_nextn_predict_layers)]
                         local_mtp_idx = 0
                         for mtp_layer in mtp_layer_list:
+                            logger.info(f"Converting the weights of mtp layer {mtp_layer}.")
                             self.set_mtp_preprocess(mtp_layer, local_mtp_idx, pp_weights, mg_model[vpp_rank])
                             self.set_model_layer_norm(mtp_layer, local_mtp_idx, pp_weights, mg_model[vpp_rank], mtp_layer_flag=True)
                             self.set_model_layer_attn(mtp_layer, local_mtp_idx, pp_weights, mg_model[vpp_rank], mtp_layer_flag=True)
@@ -684,6 +686,8 @@ class CkptConvert(object):
                             model_dict[model_key] = mg_model[vpp_rank][ep_rank][tp_rank]
 
                         torch.save(model_dict, save_file_name, pickle_protocol=4, _use_new_zipfile_serialization=True)
+
+        logger.info("Done!")
 
 
 def get_args():

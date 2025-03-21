@@ -33,7 +33,7 @@ MindSpeed-LLM是基于昇腾生态的大语言模型分布式训练框架，旨�
 **数据处理：[预训练](./examples/mcore/deepseek3/data_convert_deepseek3_pretrain.sh)、
 [指令微调](./examples/mcore/deepseek3/data_convert_deepseek3_instruction.sh)**  😊
 
-**[权重转换（支持HuggingFace转Megatron）](./examples/mcore/deepseek3/ckpt_convert_deepseek3_hf2mcore.sh)** 😊
+**[权重转换](./examples/mcore/deepseek3/ckpt_convert_deepseek3_hf2mcore.sh)** 😊
 
 **[预训练](./examples/mcore/deepseek3/pretrain_deepseek3_671b_4k_ptd.sh)** 😊
 

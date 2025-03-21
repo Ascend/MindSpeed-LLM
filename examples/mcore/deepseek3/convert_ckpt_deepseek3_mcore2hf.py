@@ -99,6 +99,9 @@ class MgCkptConvert(object):
         else:
             self.num_layer_list = list(map(int, num_layer_list.split(',')))
 
+        num_noop_layers = 0 if self.noop_layers is None else len(list(map(int, self.noop_layers.split(","))))
+        self.num_real_layers = self.num_layers - num_noop_layers
+
         self.model_index = {}
         self.pprank_layeridxs = {}
         self.vpprank_layer_idxs = {}
@@ -110,6 +113,7 @@ class MgCkptConvert(object):
         else:
             self.calc_pprank_layeridxs()
             self.calc_layeridx_pprank()
+        self.last_save_hf_layer = self.get_last_hf_layer()
 
         self._valid_parameter()
 
@@ -120,6 +124,8 @@ class MgCkptConvert(object):
         else:
             if sum(self.num_layer_list) != self.num_layers:
                 raise ValueError("Sum of num_layer_list must equal num_layers")
+        if self.last_save_hf_layer == -1:
+            raise ValueError("Does not contain a vaild model layer. Please check the parameters!")
 
     @staticmethod
     def get_iter_path(ckpt_path, iteration=None):
@@ -141,11 +147,23 @@ class MgCkptConvert(object):
 
         return directory
 
+    def get_last_hf_layer(self):
+        """最后一个保存的hf layer, 用于拼接后处理权重"""
+        for pp_rank in range(self.pp_size - 1, -1, -1):
+            if self.vpp_stage is not None:
+                for vpp_rank in range(self.vpp_size - 1, -1, -1):
+                    layer_list = self.vpprank_layer_idxs[pp_rank][vpp_rank]
+                    if layer_list:
+                        return layer_list[-1]
+            else:
+                layer_list = self.pprank_layeridxs[pp_rank]
+                if layer_list:
+                    return layer_list[-1]
+        return -1
+
     def calc_pprank_layeridxs(self) -> None:
         """主模型 pp->hf layers, {pp1: [0,1,2,3]}"""
-        num_noop_layers = 0 if self.noop_layers is None else len(list(map(int, self.noop_layers.split(","))))
-        num_real_layers = self.num_layers - num_noop_layers
-        num_layer_list_ = [i for i in range(num_real_layers)]
+        num_layer_list_ = [i for i in range(self.num_real_layers)]
         layers_each_pp = self.num_layer_list.copy()
 
         if self.noop_layers is not None:
@@ -159,9 +177,7 @@ class MgCkptConvert(object):
 
     def calc_vpprank_layeridxs(self) -> None:
         """vpp rank -> hf layers, {pp1: {vpp1: [0, 2], vpp2: [1, 3]}}"""
-        num_noop_layers = 0 if self.noop_layers is None else len(list(map(int, self.noop_layers.split(","))))
-        num_real_layers = self.num_layers - num_noop_layers
-        num_layer_list_ = [i for i in range(num_real_layers)]
+        num_layer_list_ = [i for i in range(self.num_real_layers)]
 
         layers_each_vpp = [[self.vpp_stage] * self.vpp_size for _ in range(self.pp_size)]
 
@@ -308,12 +324,12 @@ class MgCkptConvert(object):
         q_b_proj = torch.cat(linear_qb_list, dim=0)
         kv_b_proj = torch.cat(linear_kvb_list, dim=0)
 
-        linear_qkv_weights = mg_models[(self.ep_rank_list[0], self.ep_rank_list[0])].pop(linear_qkv_key)
+        linear_qkv_weights = mg_models[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(linear_qkv_key)
         q_a_proj = linear_qkv_weights[:Q_LORA_RANK, :].clone()
         kv_a_proj_with_mqa = linear_qkv_weights[Q_LORA_RANK:, :].clone()
 
-        q_a_layernorm = mg_models[(self.ep_rank_list[0], self.ep_rank_list[0])].pop(q_norm_key)
-        kv_a_layernorm = mg_models[(self.ep_rank_list[0], self.ep_rank_list[0])].pop(k_norm_key)
+        q_a_layernorm = mg_models[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(q_norm_key)
+        kv_a_layernorm = mg_models[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(k_norm_key)
 
         hf_dict[f"model.layers.{hf_layer_idx}.self_attn.q_a_proj.weight"] = q_a_proj
         hf_dict[f"model.layers.{hf_layer_idx}.self_attn.kv_a_proj_with_mqa.weight"] = kv_a_proj_with_mqa
@@ -350,7 +366,7 @@ class MgCkptConvert(object):
         """ dense + moe """
 
         def _generate_moe_layer_key(local_idx, mtp_flag):
-            prefix = f"mtp_layers.{local_idx}.transformer_layer" if mtp_flag else f"decoder.layers.{local_layer_idx}"
+            prefix = f"mtp_layers.{local_idx}.transformer_layer" if mtp_flag else f"decoder.layers.{local_idx}"
 
             router_key = f"{prefix}.mlp.router.weight"
             router_bias_key = f"{prefix}.mlp.router.expert_bias"
@@ -548,7 +564,7 @@ class MgCkptConvert(object):
         safetensors.torch.save_file(hf_dict, os.path.join(self.hf_save_path, safetensors_file_name),
                                     metadata={"format": "pt"})
 
-    def read_cur_pp_weights(self, pp_rank, mg_models):
+    def read_pp_rank_weights(self, pp_rank, mg_models):
         """获得当前pp_rank的所有权重"""
         layer_list = self.pprank_layeridxs[pp_rank]
         global hf_weight_dict
@@ -565,21 +581,25 @@ class MgCkptConvert(object):
             self.set_model_attn(hf_weight_dict, mg_models, layer, local_idx)
             self.set_model_mlp(hf_weight_dict, mg_models, layer, local_idx)
 
-            if pp_rank == self.pp_size - 1 and layer == self.num_layers - 1:
-                self.set_model_postprocess(hf_weight_dict, mg_models)
-
-            if layer >= self.first_k_dense_replace:
+            if layer >= self.first_k_dense_replace and layer != self.last_save_hf_layer:
                 self.save_safetensors(hf_weight_dict, file_idx)
                 file_idx += 1
                 hf_weight_dict = defaultdict()
 
-        if pp_rank == self.pp_size - 1 and self.num_nextn_predict_layers > 0:
-            hf_layer_number = layer_list[-1] + 1
-            logger.info(f"Converting the weights of mtp layer {hf_layer_number}")
-            self.set_mtp_layer(hf_weight_dict, mg_models, hf_layer_number)
+        if pp_rank == self.pp_size - 1:
+            self.set_model_postprocess(hf_weight_dict, mg_models)
             self.save_safetensors(hf_weight_dict, file_idx)
+            file_idx += 1
+            hf_weight_dict = defaultdict()
+            if self.num_nextn_predict_layers > 0:
+                hf_layer_number = self.num_real_layers - 1 + self.num_nextn_predict_layers
+                logger.info(f"Converting the weights of mtp layer {hf_layer_number}")
+                self.set_mtp_layer(hf_weight_dict, mg_models, hf_layer_number)
+                self.save_safetensors(hf_weight_dict, file_idx)
+                file_idx += 1
+                hf_weight_dict = defaultdict()
 
-    def read_cur_vpp_weights(self, pp_rank, vpp_rank, mg_models):
+    def read_vpp_rank_weights(self, pp_rank, vpp_rank, mg_models):
         """获得当前vpp_rank的所有权重"""
         layer_list = self.vpprank_layer_idxs[pp_rank][vpp_rank]
         global hf_weight_dict
@@ -596,19 +616,23 @@ class MgCkptConvert(object):
             self.set_model_attn(hf_weight_dict, mg_models, layer, local_idx)
             self.set_model_mlp(hf_weight_dict, mg_models, layer, local_idx)
 
-            if pp_rank == self.pp_size - 1 and vpp_rank == self.vpp_size - 1 and layer == self.num_layers - 1:
-                self.set_model_postprocess(hf_weight_dict, mg_models)
-
-            if layer >= self.first_k_dense_replace:
+            if layer >= self.first_k_dense_replace and layer != self.last_save_hf_layer:
                 self.save_safetensors(hf_weight_dict, file_idx)
                 file_idx += 1
                 hf_weight_dict = defaultdict()
 
-        if pp_rank == self.pp_size - 1 and vpp_rank == self.vpp_size - 1 and self.num_nextn_predict_layers > 0:
-            hf_layer_number = layer_list[-1] + 1
-            logger.info(f"Converting the weights of mtp layer {hf_layer_number}")
-            self.set_mtp_layer(hf_weight_dict, mg_models, hf_layer_number)
+        if pp_rank == self.pp_size - 1 and vpp_rank == self.vpp_size - 1:
+            self.set_model_postprocess(hf_weight_dict, mg_models)
             self.save_safetensors(hf_weight_dict, file_idx)
+            file_idx += 1
+            hf_weight_dict = defaultdict()
+            if self.num_nextn_predict_layers > 0:
+                hf_layer_number = self.num_real_layers - 1 + self.num_nextn_predict_layers
+                logger.info(f"Converting the weights of mtp layer {hf_layer_number}")
+                self.set_mtp_layer(hf_weight_dict, mg_models, hf_layer_number)
+                self.save_safetensors(hf_weight_dict, file_idx)
+                file_idx += 1
+                hf_weight_dict = defaultdict()
 
     def run(self):
         for pp_rank in self.pp_rank_list:
@@ -627,7 +651,7 @@ class MgCkptConvert(object):
                         self._merge_lora(tmp_model, merge_type=2)
                     mg_weights[(tp_rank, ep_rank)] = tmp_model
 
-                self.read_cur_pp_weights(pp_rank, mg_weights)
+                self.read_pp_rank_weights(pp_rank, mg_weights)
             else:
                 for vpp_rank in range(self.vpp_size):
                     for tp_rank, ep_rank in product(self.tp_rank_list, self.ep_rank_list):
@@ -642,7 +666,7 @@ class MgCkptConvert(object):
                             self._merge_lora(tmp_model, merge_type=2)
                         mg_weights[(tp_rank, ep_rank)] = tmp_model
 
-                    self.read_cur_vpp_weights(pp_rank, vpp_rank, mg_weights)
+                    self.read_vpp_rank_weights(pp_rank, vpp_rank, mg_weights)
 
         model_index_file_path = os.path.join(self.hf_save_path, "model.safetensors.index.json")
         with open(model_index_file_path, 'w', encoding='utf-8') as json_file:
