@@ -18,6 +18,7 @@ llama2-7b:
   use_fused_rmsnorm: true
   swiglu: true
   use_flash_attn: true
+  use_mc2: true
   no_masked_softmax_fusion: true
   attention_softmax_in_fp32: true
   no_gradient_accumulation_fusion: true

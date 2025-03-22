@@ -57,6 +57,7 @@ GPT_ARGS="
     --geglu \
     --input-embeds-norm \
     --use-flash-attn \
+    --use-mc2 \
     --no-masked-softmax-fusion \
     --attention-softmax-in-fp32 \
     --min-lr 1.25e-7 \

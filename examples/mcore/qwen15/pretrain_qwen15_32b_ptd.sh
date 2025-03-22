@@ -33,7 +33,6 @@ GPT_ARGS="
     --pipeline-model-parallel-size ${PP} \
     --sequence-parallel \
     --num-layers 64 \
-    --num-layer-list 14,17,18,15
     --hidden-size 5120 \
     --ffn-hidden-size 27392 \
     --num-attention-heads 40 \

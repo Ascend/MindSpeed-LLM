@@ -48,6 +48,7 @@ GPT_ARGS="
     --rotary-percent 0.5 \
     --normalization RMSNorm \
     --use-fused-rmsnorm \
+    --use-mc2 \
     --swiglu \
     --use-fused-swiglu \
     --use-flash-attn \

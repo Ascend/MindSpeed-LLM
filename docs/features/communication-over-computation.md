@@ -56,6 +56,7 @@ ATB安装方法：
 同时使用coc-parallel-num > 1和coc-fused-kernel参数时，coc-fused-kernel参数优先级更高，会覆盖coc-parallel-num > 1
 
 ## 注意事项
+暂不兼容 --use-mc2 特性。
 
 当前暂未适配MoE模型。
 

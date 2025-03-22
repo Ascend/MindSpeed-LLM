@@ -139,6 +139,10 @@ class MegatronAdaptation:
         from ..core import build_layers_wrapper
         from megatron.core.tensor_parallel import ColumnParallelLinear, RowParallelLinear
         from megatron.core.transformer.transformer_block import TransformerBlock
+        # For MOE + Ascend MC2, here we can only execute this after _transformer_block_build_layers takes effect.
+        TransformerBlock._build_layers = build_layers_wrapper(TransformerBlock._build_layers,
+                                                              ColumnParallelLinear.forward,
+                                                              RowParallelLinear.forward)
 
 
 class MegatronAdaptationABC:

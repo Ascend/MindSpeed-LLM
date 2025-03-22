@@ -56,6 +56,7 @@ GPT_ARGS="
     --position-embedding-type rope \
     --normalization RMSNorm \
     --use-fused-rmsnorm \
+    --use-mc2 \
     --swiglu \
     --use-flash-attn \
     --use-fused-rotary-pos-emb \

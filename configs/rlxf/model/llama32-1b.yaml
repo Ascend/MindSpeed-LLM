@@ -1,6 +1,7 @@
 llama32-1b:
   use_mcore_models: true
   sequence_parallel: true
+  use_mc2: true
   use_flash_attn: true
   use_rotary_position_embeddings: true
   use_fused_rmsnorm: true

@@ -60,6 +60,7 @@ GPT_ARGS="
     --max-position-embeddings 131072 \
     --num-layers ${NUM_LAYERS} \
     --hidden-size 4096 \
+    --use-mc2 \
     --ffn-hidden-size 6400 \
     --num-attention-heads 32 \
     --group-query-attention \

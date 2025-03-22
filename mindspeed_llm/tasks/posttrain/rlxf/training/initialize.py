@@ -15,6 +15,8 @@ from megatron.training.initialize import (
     _set_random_seed,
     _init_autoresume, _initialize_tp_communicators,
 )
+
+from mindspeed.core.tensor_parallel.ascend_turbo.initialize import initialize_cfg_from_args
 from mindspeed_llm.training.arguments import parse_args_decorator
 from mindspeed_llm.tasks.utils.error_utils import ensure_valid
 from mindspeed_llm.training.utils import seed_all
@@ -108,6 +110,8 @@ def initialize_megatron(
         if args.rank == 0:
             print("> setting random seeds to {} ...".format(args.seed))
         _set_random_seed(args.seed, args.data_parallel_random_init)
+        if args.use_mc2:
+            initialize_cfg_from_args(args)
 
     if skip_mpu_initialization:
         return None

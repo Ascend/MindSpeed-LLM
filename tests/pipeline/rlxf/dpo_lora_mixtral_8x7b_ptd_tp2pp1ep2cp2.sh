@@ -72,6 +72,7 @@ GPT_ARGS="
     --overlap-param-gather \
     --use-distributed-optimizer \
     --swiglu \
+    --use-mc2 \
     --untie-embeddings-and-output-weights \
     --group-query-attention \
     --num-query-groups 8 \

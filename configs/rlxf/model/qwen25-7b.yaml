@@ -23,6 +23,7 @@ qwen25-7b:
   normalization: RMSNorm
   use_fused_rmsnorm: true
   swiglu: true
+  use_mc2: true
   use_flash_attn: true
   no_masked_softmax_fusion: true
   attention_softmax_in_fp32: true

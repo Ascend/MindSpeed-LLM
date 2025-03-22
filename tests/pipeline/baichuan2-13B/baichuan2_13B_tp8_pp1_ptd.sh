@@ -55,6 +55,7 @@ GPT_ARGS="
     --hidden-dropout 0.0 \
     --norm-epsilon 1e-6 \
     --normalization RMSNorm \
+    --use-mc2 \
     --use-fused-rmsnorm \
     --use-flash-attn \
     --use-fused-swiglu \

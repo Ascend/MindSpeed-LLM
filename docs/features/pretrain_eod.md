@@ -34,6 +34,7 @@ python ./preprocess_data.py \
 .....
 ACCELERATE_ARGS="
     --swap-attention \
+    --use-mc2 \
     --reuse-fp32-param \
     --reset-position-ids \  # 在普通预训练脚本中添加此参数进行pack模式预训练
     --use-distributed-optimizer \

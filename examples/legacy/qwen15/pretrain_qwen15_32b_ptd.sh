@@ -78,7 +78,6 @@ GPT_ARGS="
     --num-query-groups 8 \
     --rotary-base 1000000 \
     --padded-vocab-size 152064 \
-    --num-layers-per-virtual-pipeline-stage 2
 "
 
 DATA_ARGS="

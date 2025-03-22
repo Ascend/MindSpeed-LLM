@@ -73,6 +73,7 @@ GPT_ARGS="
     --min-lr 0.0 \
     --weight-decay 0.0 \
     --lr-warmup-fraction 0.0 \
+    --use-mc2 \
     --clip-grad 1.0 \
     --adam-beta1 0.9 \
     --adam-beta2 0.999 \

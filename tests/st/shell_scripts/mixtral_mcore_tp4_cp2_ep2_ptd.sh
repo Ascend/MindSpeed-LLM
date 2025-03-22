@@ -67,6 +67,7 @@ GPT_ARGS=(
     --use-flash-attn
     --use-fused-swiglu
     --use-fused-rmsnorm
+    --use-mc2 \
     --no-check-for-nan-in-loss-and-grad
     --overlap-grad-reduce
     --overlap-param-gather
