@@ -65,48 +65,45 @@ MindSpeed-LLM是基于昇腾生态的大语言模型分布式训练框架，旨�
 
 MindSpeed-LLM的以来配套如下表，安装步骤参考[安装指导](./docs/features/install_guide.md)。
 
-<table>
+<table border="0">
   <tr>
     <th>依赖软件</th>
     <th>版本</th>
+    <th>软件安装指南</th>
+    <th>推荐硬件形态</th>
   </tr>
   <tr>
     <td>昇腾NPU驱动</td>
-    <td rowspan="2">在研版本</td>
+    <td rowspan="2">Ascend HDK 25.0.RC1</td>
+    <td rowspan="2">《驱动固件安装指南》</td>
+    <td rowspan="8">Atlas 900 A2 PODc</td>
+  </tr>
   <tr>
     <td>昇腾NPU固件</td>
   </tr>
   <tr>
     <td>Toolkit（开发套件）</td>
-      <td rowspan="3">在研版本</td>
+    <td rowspan="2">CANN 8.0.RC1</td>
+    <td rowspan="2">《CANN 软件安装指南》</td>
   </tr>
   <tr>
     <td>Kernel（算子包）</td>
   </tr>
   <tr>
-    <td>NNAL（Ascend Transformer Boost加速库）</td>
-  </tr>
-  <tr>
-  </tr>
-  <tr>
-    <td>Python</td>
-    <td>>=3.8</td>
   </tr>
   <tr>
     <td>PyTorch</td>
-    <td>2.1</td>
+    <td rowspan="3">7.0.0-pytorch2.1.0</td>
+    <td rowspan="3">《Ascend Extension for PyTorch 配置与安装》</td>
   </tr>
   <tr>
     <td>torch_npu插件</td>
-    <td rowspan="2">在研版本</td>
   </tr>
   <tr>
     <td>apex</td>
   </tr>
 </table>
 
-
-注：由于master分支使用在研版本的驱动以及CANN包，因此master上的一些新特性老版本配套可能有不支持情况，要使用稳定版本，请切换到商发分支并下载对应依赖版本进行安装。
 
 ## 预置模型
 
