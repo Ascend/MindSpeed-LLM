@@ -255,10 +255,10 @@ def symbolic_equal(a, b):
         for f in [parse_latex, parse_expr, latex2sympy]:
             try:
                 return f(s.replace("\\\\", "\\"))
-            except (SyntaxError, ValueError) as e1:
+            except:
                 try:
                     return f(s)
-                except (SyntaxError, ValueError) as e2:
+                except:
                     pass
         return s
 
