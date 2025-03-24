@@ -17,9 +17,10 @@ The function implemented in this file should be used by trainer with different d
 implement PPO
 """
 
+from copy import deepcopy
+
 import numpy as np
 import torch
-from copy import deepcopy
 from transformers import AutoTokenizer
 
 import mindspeed_llm.tasks.posttrain.rlxf.utils.torch_functional as F
@@ -306,7 +307,6 @@ def compute_advantage(data: DataProto, config):
     response_mask = attention_mask[:, -response_length:]
     token_level_rewards = data.batch['token_level_rewards']
 
-    # TODO: add other ways to estimate advantages
     if config.algorithm.adv_estimator == 'gae':
         values = data.batch['values']
         advantages, returns = compute_gae_advantage_return(token_level_rewards=token_level_rewards,
@@ -398,7 +398,7 @@ def compute_verifier_score(batch, metrics, config, valid_mask):
 
     logger.logger.info("=" * 50)
 
-    labels = [label for label, mask in zip(extra_data["labels"], valid_mask) if mask]
+    labels = [label for label, mask in zip(extra_data.get("labels"), valid_mask) if mask]
     scores = verifier(str_responses, labels, config, metrics, infos=None)
 
     scores = torch.tensor(
@@ -485,7 +485,6 @@ def reduce_metrics(metrics: dict):
 
 
 def compute_data_metrics(batch):
-    # TODO: add response length
     sequence_score = batch.batch['rm_scores'].sum(-1)
     sequence_reward = batch.batch['token_level_rewards'].sum(-1)
 

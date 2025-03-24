@@ -51,11 +51,11 @@ def initialize_model_parallel_2megatron(
     if nccl_communicator_config_path is not None:
         try:
             import yaml
-        except ImportError:
-            raise RuntimeError(
+        except ImportError as e:
+            raise ImportError(
                 "Cannot import `yaml`. Setting custom nccl communicator configs "
                 "requires the yaml package."
-            )
+            ) from e
 
         with open(nccl_communicator_config_path, "r") as stream:
             nccl_comm_cfgs = yaml.safe_load(stream)

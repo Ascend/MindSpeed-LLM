@@ -134,7 +134,8 @@ class HunyuanLargeAttention(SelfAttention):
         )
  
     def run_realtime_tests(self):
-        """Performs a consistency check.
+        """
+        Performs a consistency check.
  
         This function makes sure that tensors across devices are the same during an experiment.
         This is often not guaranteed to be so because of silent hardware failures (eg, memory
@@ -142,7 +143,8 @@ class HunyuanLargeAttention(SelfAttention):
  
         (TODO) In the future, more tensors should be checked across the training run and
         checked every X iterations. This is left for future work. Equality of tensors is probably not
-        required; transmitting hashes is sufficient."""
+        required; transmitting hashes is sufficient.
+        """
  
         if not self.config.qk_layernorm:
             return
@@ -169,7 +171,7 @@ class HunyuanLargeAttention(SelfAttention):
                     src == tgt
                 ), f"Discrepancy between {name} in {parallelism} ranks {i} and {rank}. Diff: {torch.norm(src - tgt)}"
  
-        for i, dp in enumerate(dp_list):
+        for _, dp in enumerate(dp_list):
             q_w, q_b, k_w, k_b = torch.unbind(dp)
             _compare(
                 [q_w, q_b, k_w, k_b],
@@ -188,7 +190,7 @@ class HunyuanLargeAttention(SelfAttention):
         tp_list[rank] = inputs
         torch.distributed.all_gather(tp_list, inputs, group=get_tensor_model_parallel_group())
  
-        for i, tp in enumerate(tp_list):
+        for _, tp in enumerate(tp_list):
             q_w, q_b, k_w, k_b = torch.unbind(tp)
             _compare(
                 [q_w, q_b, k_w, k_b],

@@ -59,7 +59,7 @@ class Alibi:
             self.alibi_tensor = alibi_tensor
 
         if args.square_alibi_mask and args.fill_neg_inf:
-            if(len(attention_mask.size()) == 4):
+            if (len(attention_mask.size()) == 4):
                 if attention_mask.shape[0] < batch_size:
                     attention_mask = attention_mask.repeat(batch_size, 1, 1, 1)[:batch_size, :, :, :]
                 else:

@@ -156,7 +156,7 @@ def recv_model_from_train_model(moudle: torch.nn.Module):
     idx = 0
     if args.md5_validate:
         hash_value = hashlib.md5()
-    for name, param in moudle.named_parameters():
+    for _, param in moudle.named_parameters():
         if flag:
             cur_num = int(recv_param_nums[idx])
             cur_group = model_receive_groups[idx]

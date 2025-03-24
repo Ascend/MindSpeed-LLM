@@ -1,4 +1,9 @@
 # Copyright (c) 2024, HUAWEI CORPORATION.  All rights reserved.
+
+"""
+Layer Specification for Phi3.5-MoE
+"""
+
 from megatron.core.fusions.fused_bias_dropout import get_bias_dropout_add
 from megatron.training import get_args
 from megatron.core.tensor_parallel import ColumnParallelLinear, RowParallelLinear
@@ -11,9 +16,6 @@ from megatron.core.transformer.dot_product_attention import DotProductAttention
 from mindspeed_llm.core import PTNorm
 from mindspeed_llm.tasks.models.transformer.attention import SelfAttentionWithDenseBias
 
-"""
-Layer Specification for Phi3.5-MoE
-"""
 
 args = get_args()
 num_experts, moe_grouped_gemm, qk_layernorm = args.num_experts, args.moe_grouped_gemm, args.qk_layernorm

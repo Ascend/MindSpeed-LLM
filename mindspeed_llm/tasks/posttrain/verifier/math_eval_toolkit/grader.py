@@ -1,4 +1,5 @@
 import re
+import warnings
 import multiprocessing
 from math import isclose
 from typing import Union
@@ -53,7 +54,8 @@ def str_to_pmatrix(input_str):
 
     for m in matrix_str:
         m = m.strip("{}")
-        pmatrix = r"\begin{pmatrix}" + m.replace(",", "\\") + r"\end{pmatrix}"
+        m_processed = m.replace(",", "\\")
+        pmatrix = fr"\begin{{{m_processed}}}\end{{pmatrix}}"
         pmatrix_list.append(pmatrix)
 
     return ", ".join(pmatrix_list)
@@ -98,7 +100,8 @@ def math_equal(
                     else:
                         if item == prediction:
                             return True
-                except Exception:
+                except Exception as e:
+                    warnings.warn(f"An exception occurred during comparison: {e}")
                     continue
             return False
     except (ValueError, TypeError, AttributeError) as e:
@@ -164,20 +167,20 @@ def math_equal(
             reference.endswith("\\end{pmatrix}") or reference.endswith("\\end{bmatrix}")
         )
     ):
-        pred_lines = [
-            line.strip()
-            for line in prediction[
-                len("\\begin{pmatrix}") : -len("\\end{pmatrix}")
-            ].split("\\\\")
-            if line.strip()
-        ]
-        ref_lines = [
-            line.strip()
-            for line in reference[
-                len("\\begin{pmatrix}") : -len("\\end{pmatrix}")
-            ].split("\\\\")
-            if line.strip()
-        ]
+        pred_lines = []
+        prediction_processed = prediction[len("\\begin{pmatrix}"): -len("\\end{pmatrix}")]
+        for line in prediction_processed.split("\\\\"):
+            stripped_line = line.strip()
+            if stripped_line:
+                pred_lines.append(stripped_line)
+
+        ref_lines = []
+        reference_processed = reference[len("\\begin{pmatrix}"): -len("\\end{pmatrix}")]
+        for line in reference_processed.split("\\\\"):
+            stripped_line = line.strip()
+            if stripped_line:
+                ref_lines.append(stripped_line)
+
         matched = True
         if len(pred_lines) == len(ref_lines):
             for pred_line, ref_line in zip(pred_lines, ref_lines):
@@ -255,10 +258,10 @@ def symbolic_equal(a, b):
         for f in [parse_latex, parse_expr, latex2sympy]:
             try:
                 return f(s.replace("\\\\", "\\"))
-            except:
+            except (SyntaxError, ValueError) as e1:
                 try:
                     return f(s)
-                except:
+                except (SyntaxError, ValueError) as e2:
                     pass
         return s
 

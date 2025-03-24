@@ -20,7 +20,7 @@ def blending_datasets(
         raise ValueError(f"Length of probabilities ({len(probabilities)}) must match the length of datasets ({len(datasets)})")
 
     train_data_list = []
-    for i, dataset in enumerate(datasets):
+    for _, dataset in enumerate(datasets):
         dataset = dataset.strip()
         strategy.print(f"dataset: {dataset}")
 

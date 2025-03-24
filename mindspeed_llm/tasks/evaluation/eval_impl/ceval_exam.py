@@ -97,8 +97,8 @@ class CEvalExam(DatasetEval):
                 instruction = None
                 # 5-shot
                 if self.prompt_type is not None:
-                    train_dir = os.path.dirname(self.test_dir) + "/dev/"
-                    train_file_path = os.path.join(train_dir, subject_name + "_dev.csv")
+                    train_dir = os.path.join(os.path.dirname(self.test_dir), "dev")
+                    train_file_path = os.path.join(train_dir, f"{subject_name}_dev.csv")
 
                     if not os.path.exists(train_file_path):
                         raise FileExistsError("The file ({}) does not exist !".format(train_file_path))

@@ -329,7 +329,7 @@ class ConvertBase:
 
 class ConvertHf2Mg(ConvertBase):
     def __init__(self, args_cmd):
-        ConvertBase.__init__(self, args_cmd)
+        super().__init__(args_cmd)
 
     def _set_dense_mg_model(self, hf_model, tp_rank, pp_rank):
         """
@@ -568,7 +568,7 @@ class ConvertHf2Mg(ConvertBase):
 
 class ConvertMg2Hf(ConvertBase):
     def __init__(self, args_cmd):
-        ConvertBase.__init__(self, args_cmd)
+        super().__init__(args_cmd)
 
     # ---  setup dense HuggingFace model
     def _set_dense_hf_model(self, pp_rank):
@@ -682,7 +682,9 @@ class ConvertMg2Hf(ConvertBase):
         hf_model[ParamKey.get_hf_attn_value_weight_key(self.model_name, hf_layer_id)] = vw
 
         dense_tp_weights = [
-            m[f'decoder.layers.{mg_layer_id}.self_attention.linear_proj.weight'] for m in vp_mg_tp_models]
+            m[f'decoder.layers.{mg_layer_id}.self_attention.linear_proj.weight']
+            for m in vp_mg_tp_models
+        ]
         dense_w = self.get_tp2d_merge_matrix_weight(dense_tp_weights,
                                                     tp_x=self.args_cmd.tp_x,
                                                     tp_y=self.args_cmd.tp_y,
@@ -694,7 +696,13 @@ class ConvertMg2Hf(ConvertBase):
 
     def _set_hf_model_layer_mlp(self, vp_mg_tp_models, mg_layer_id, hf_layer_id, hf_model):
         gate_up_tp_weights = [
-            torch.chunk(m[f'decoder.layers.{mg_layer_id}.mlp.linear_fc1.weight'], 2, dim=0) for m in vp_mg_tp_models]
+            torch.chunk(
+                m[f'decoder.layers.{mg_layer_id}.mlp.linear_fc1.weight'],
+                2,
+                dim=0
+            )
+            for m in vp_mg_tp_models
+        ]
         gate_tp_weights = [m[0] for m in gate_up_tp_weights]
         up_tp_weights = [m[1] for m in gate_up_tp_weights]
 

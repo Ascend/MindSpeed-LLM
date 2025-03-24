@@ -80,7 +80,12 @@ def parallel_linear_save_to_state_dict_wrapper(fn):
 def parallel_linear_load_from_state_dict_wrapper(fn):
     def wrapper(self, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs):
         if any(['bitsandbytes' in i for i in state_dict.keys()]):  # is quantized linear
-            qs_dict = {key: v for k, v in state_dict.items() if (key := k.replace(prefix, "")) != '_extra_state'}
+            qs_dict = {}
+            for k, v in state_dict.items():
+                key = k.replace(prefix, "")
+                if key != '_extra_state':
+                    qs_dict[key] = v
+
             self.weight = bnb.nn.Params4bit.from_prequantized(
                 data=qs_dict.get('weight'),
                 quantized_stats={key.replace('weight.', ''): qs_dict[key] for key in qs_dict if key != 'weight' and key != 'bias'},

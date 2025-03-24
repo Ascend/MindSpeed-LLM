@@ -25,7 +25,7 @@ def cmmlu_format_example(
         prefex = f'There is a single choice question about {subject_name.replace("_", " ")}. Answer the question by replying A, B, C or D. \nQuestion: '
     else:
         prefex = f'以下是关于{subject_name}的单项选择题，请直接给出正确答案的选项。\n题目：'
-    for idx, row in support_set.iterrows():
+    for _, row in support_set.iterrows():
         prompt, response = _parse_example(row)
         messages += prefex + prompt + response + "\n"
 

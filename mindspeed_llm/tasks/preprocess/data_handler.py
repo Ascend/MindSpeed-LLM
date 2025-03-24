@@ -13,6 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+__all__ = ["get_dataset_handler", "build_dataset"]
+
 import os
 import sys
 import time
@@ -41,8 +43,6 @@ from .utils import (
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-__all__ = ["get_dataset_handler", "build_dataset"]
 
 
 class BaseDatasetHandler(object):
@@ -623,7 +623,7 @@ class PPOAlpacaStyleInstructionHandler(BaseDatasetHandler):
         else:
             messages = example["prompt"] + example["response"]
 
-        for source_ids, target_ids in self.llama_factory_template.encode_multiturn(
+        for source_ids, _ in self.llama_factory_template.encode_multiturn(
                 tokenizer, messages, example["system"][0], example["tools"][0]
         ):
             input_ids += source_ids

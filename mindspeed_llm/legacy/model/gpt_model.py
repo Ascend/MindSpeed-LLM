@@ -34,15 +34,15 @@ def post_language_model_processing(lm_output, labels, logit_weights,
 
     if labels is None:
         # [s b h] => [b s h]
-        return output.transpose(0,1).contiguous()
+        return output.transpose(0, 1).contiguous()
     else:
         # [b s] => [s b]
-        labels = labels.transpose(0,1).contiguous()
+        labels = labels.transpose(0, 1).contiguous()
 
         args = get_args()
         if args.is_instruction_dataset:
             labels = labels[1:, ...].contiguous()
-            output = output[:-1, : , :].contiguous()
+            output = output[:-1, :, :].contiguous()
 
         if fp16_lm_cross_entropy:
             assert output.dtype == torch.half
@@ -50,7 +50,7 @@ def post_language_model_processing(lm_output, labels, logit_weights,
         else:
             loss = tensor_parallel.vocab_parallel_cross_entropy(output.float(), labels)
         # [s b] => [b, s]
-        loss = loss.transpose(0,1).contiguous()
+        loss = loss.transpose(0, 1).contiguous()
         return loss
 
 

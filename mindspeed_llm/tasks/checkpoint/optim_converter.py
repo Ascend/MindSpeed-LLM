@@ -253,7 +253,6 @@ class OptimConverter(abc.ABC):
         ep_rank_list = self.src_optim.ep_ranks
 
         for i in layer_nums:
-            # TODO:Noop_layer特性适配: d = GLOBAL_LAYER[i]
             d = i
             state_dict = OrderedDict()
             if "embedding.word_embeddings.weight" in src_data[(i, tp_rank_list[0], ep_rank_list[0])]:
@@ -468,7 +467,6 @@ class OptimConverter(abc.ABC):
                 shared_experts_linear_fc1_weight = mlp_moe.pop("mlp shared experts linear fc1 weight")
                 shared_experts_linear_fc2_weight = mlp_moe.pop("mlp shared experts linear fc2 weight")
             if self.target_optim.moe_grouped_gemm:
-                # TODO: check TP
                 weight1 = torch.chunk(mlp_moe.pop("mlp experts weight1 module").view(self.target_optim.hidden_size, -1),
                                       self.target_optim.ep_size, dim=0)
                 weight2 = torch.chunk(mlp_moe.pop("mlp experts weight2 module").view(-1, self.target_optim.hidden_size),
@@ -486,7 +484,6 @@ class OptimConverter(abc.ABC):
                         dst_data[(tp_rank, ep_rank)][layer_num][
                             module_layer + "mlp.shared_experts.linear_fc2.weight"] = shared_experts_linear_fc2_weight
                 if self.target_optim.moe_grouped_gemm:
-                    # TODO: check TP
                     dst_data[(tp_rank_list[0], ep_rank)][layer_num][
                         module_layer + "mlp.experts.weight1"] = weight1[ep_rank].view(self.target_optim.hidden_size, -1)
                     dst_data[(tp_rank_list[0], ep_rank)][layer_num][
@@ -533,8 +530,10 @@ class OptimConverter(abc.ABC):
         layer_nums = sorted(list(src_data.keys()))
         tp_rank_list = self.target_optim.tp_ranks
         ep_rank_list = self.target_optim.ep_ranks
-        dst_dict = {(tp_rank, ep_rank): defaultdict(OrderedDict) for tp_rank, ep_rank in
-                    product(tp_rank_list, ep_rank_list)}
+        dst_dict = {
+            (tp_rank, ep_rank): defaultdict(OrderedDict)
+            for tp_rank, ep_rank in product(tp_rank_list, ep_rank_list)
+        }
         out_word_embed_list = []
         for i in layer_nums:
 

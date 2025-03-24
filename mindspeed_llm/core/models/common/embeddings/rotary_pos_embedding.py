@@ -258,10 +258,10 @@ def yarn_get_mscale(scale=1, mscale=1):
     return 0.1 * mscale * math.log(scale) + 1.0
 
 
-def yarn_linear_ramp_mask(min, max, dim):
-    if min == max:
-        max += 0.001  # Prevent singularity
+def yarn_linear_ramp_mask(min_, max_, dim):
+    if min_ == max_:
+        max_ += 0.001  # Prevent singularity
 
-    linear_func = (torch.arange(dim, dtype=torch.float32) - min) / (max - min)
+    linear_func = (torch.arange(dim, dtype=torch.float32) - min_) / (max_ - min_)
     ramp_func = torch.clamp(linear_func, 0, 1)
     return ramp_func

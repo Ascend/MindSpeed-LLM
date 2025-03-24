@@ -111,7 +111,6 @@ class PPOActorWorker(MegatronWorker):
 
         metrics = self.node.actor.update_policy(dataloader=dataloader)
 
-        # TODO: here, we should return all metrics
         output = DataProto(meta_info={'metrics': metrics})
         output = output.to('cpu')
         torch.cuda.empty_cache()
@@ -189,7 +188,8 @@ def pad_to_tensor_dict(data, padding_side="right", pad_multi_of=16):
     pad_id = tokenizer.pad_token_id if tokenizer.pad_token_id else tokenizer.eos_token_id
     context_lengths = [len(val) for val in data]
 
-    for i in range(len(data)):
+    data_length = len(data)
+    for i in range(data_length):
         if context_lengths[i] < max_length:
             if padding_side == "right":
                 data[i].extend([pad_id] * (max_length - context_lengths[i]))
@@ -365,7 +365,7 @@ class PPOActorInferWorker(BaseTrainer):
                     additional_val = batch.get(additional_key).view(-1).cpu().numpy().tolist()
 
                     for _ in range(args.n_samples_per_prompt):
-                        additional_dict_per_step[additional_key].append(copy.deepcopy(additional_val))
+                        additional_dict_per_step.get(additional_key).append(copy.deepcopy(additional_val))
 
                 for _ in range(args.n_samples_per_prompt):
                     idx_list_per_step.append(copy.deepcopy(tokens_list))
@@ -406,7 +406,7 @@ class PPOActorInferWorker(BaseTrainer):
         )
 
         for additional_key in self.args.dataset_additional_keys:
-            tmp_val = additional_dict[additional_key]
+            tmp_val = additional_dict.get(additional_key)
             pad_to_tensor_dict(
                 tmp_val,
                 pad_multi_of=args.pad_to_multiple_of
@@ -590,7 +590,7 @@ class MegatronPPOActor():
             output = self.forward_backward_batch(data, forward_only=True, post_process_fn=compute_logprobs_fn)
             if mpu.is_pipeline_last_stage(ignore_virtual=True):
                 # only on last rank. It should be on every tp rank
-                log_probs = torch.cat([o['log_probs'] for o in output], dim=0)  # (bs, seq_size)
+                log_probs = torch.cat([single_output['log_probs'] for single_output in output], dim=0)  # (bs, seq_size)
                 log_probs = log_probs.to(torch.float32)
             else:
                 log_probs = None
@@ -641,7 +641,6 @@ class MegatronPPOActor():
         - The communication shape is (total_nnz_pad_to_sp // tp_size, 1, hidden_size) if sequence parallel is enabled
         """
         # broadcast from last pp rank to all other pp ranks
-        # TODO: actually, we just need to control the sampling order.
 
         data.batch['attention_mask'] = data.batch['attention_mask'].to(bool)
 

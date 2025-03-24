@@ -142,15 +142,15 @@ def _concat_data_proto_or_future(output: List):
     import ray
 
     # make sure all the elements in output has the same type
-    for o in output:
-        if type(o) != type(output[0]):
-            raise TypeError(f"All elements in output must have the same type. Found {type(o)} and {type(output[0])}")
+    for single_output in output:
+        if not isinstance(single_output, type(output[0])):
+            raise TypeError(f"All elements in output must have the same type. Found {type(single_output)} and {type(output[0])}")
 
-    o = output[0]
+    output_prime = output[0]
 
-    if isinstance(o, DataProto):
+    if isinstance(output_prime, DataProto):
         return DataProto.concat(output)
-    elif isinstance(o, ray.ObjectRef):
+    elif isinstance(output_prime, ray.ObjectRef):
         return DataProtoFuture.concat(output)
     else:
         raise NotImplementedError
@@ -164,9 +164,9 @@ def collect_megatron_compute_data_proto(worker_group, output):
     import ray
 
     output = collect_megatron_compute(worker_group, output)
-    for o in output:
-        if not isinstance(o, (DataProto, ray.ObjectRef)):
-            raise TypeError(f"Expecting {o} to be DataProto or ray.ObjectRef, but got {type(o)}")
+    for single_output in output:
+        if not isinstance(single_output, (DataProto, ray.ObjectRef)):
+            raise TypeError(f"Expecting {single_output} to be DataProto or ray.ObjectRef, but got {type(single_output)}")
 
     return _concat_data_proto_or_future(output)
 
@@ -278,7 +278,7 @@ def dispatch_dp_compute(worker_group, *args, **kwargs):
     for arg in args:
         if not isinstance(arg, (Tuple, List)) or len(arg) != worker_group.world_size:
             raise ValueError(f'Each argument in args must be a Tuple or List of length {worker_group.world_size}')
-    for k, v in kwargs.items():
+    for _, v in kwargs.items():
         if not isinstance(v, (Tuple, List)) or len(v) != worker_group.world_size:
             raise ValueError(f'Each argument in kwargs must be a Tuple or List of length {worker_group.world_size}')
     return args, kwargs
@@ -318,9 +318,9 @@ def dispatch_dp_compute_data_proto_with_func(worker_group, *args, **kwargs):
 def collect_dp_compute_data_proto(worker_group, output):
     import ray
     from mindspeed_llm.tasks.posttrain.rlxf.utils.protocol import DataProto
-    for o in output:
-        if not isinstance(o, (DataProto, ray.ObjectRef)):
-            raise TypeError(f"Expecting {o} to be DataProto or ray.ObjectRef, but got {type(o)}")
+    for single_output in output:
+        if not isinstance(single_output, (DataProto, ray.ObjectRef)):
+            raise TypeError(f"Expecting {single_output} to be DataProto or ray.ObjectRef, but got {type(single_output)}")
 
     output = collect_dp_compute(worker_group, output)
     return _concat_data_proto_or_future(output)
@@ -409,7 +409,7 @@ def get_predefined_dispatch_fn(dispatch_mode):
             'collect_fn': collect_dp_infer,
         },
     }
-    return predefined_dispatch_mode_fn[dispatch_mode]
+    return predefined_dispatch_mode_fn.get(dispatch_mode)
 
 
 def get_predefined_execute_fn(execute_mode):
@@ -431,7 +431,7 @@ def get_predefined_execute_fn(execute_mode):
             'execute_fn_name': 'execute_train'
         }
     }
-    return predefined_execute_mode_fn[execute_mode]
+    return predefined_execute_mode_fn.get(execute_mode)
 
 
 def _check_dispatch_mode(dispatch_mode):

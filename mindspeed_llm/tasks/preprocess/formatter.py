@@ -186,7 +186,7 @@ class ToolFormatter(Formatter):
         content = kwargs.pop("content")
         try:
             tools = json.loads(content)
-            if not len(tools):
+            if not tools:
                 return [""]
 
             if self.tool_format == "default":

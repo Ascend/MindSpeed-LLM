@@ -25,7 +25,7 @@ from megatron.core.dist_checkpointing.strategies.fully_parallel import \
     FullyParallelSaveStrategyWrapper
 from megatron.training.utils import print_rank_0, unwrap_model, append_to_progress_log, is_last_rank
 from megatron.training.async_utils import schedule_async_save
-from megatron.training.checkpointing import (_load_base_checkpoint,get_rng_state, get_checkpoint_name,
+from megatron.training.checkpointing import (_load_base_checkpoint, get_rng_state, get_checkpoint_name,
                                              get_distributed_optimizer_checkpoint_name,
                                              ensure_directory_exists, generate_state_dict, get_checkpoint_tracker_filename)
 from megatron.training.one_logger_utils import on_save_checkpoint_start, on_save_checkpoint_success
@@ -239,7 +239,8 @@ def save_checkpoint_wrapper(fn):
                 torch.save(state_dict, checkpoint_name)
         start_misc = time()
         if not args.async_save:
-            assert async_save_request is None
+            if async_save_request is not None:
+                raise ValueError("async_save_request should be None")
             # Wait so everyone is done (necessary)
             if torch.distributed.is_initialized():
                 torch.distributed.barrier()
@@ -259,7 +260,8 @@ def save_checkpoint_wrapper(fn):
                                            barrier=False)
 
             if args.async_save:
-                assert async_save_request is not None
+                if async_save_request is not None:
+                    raise ValueError("async_save_request should be None")
                 async_save_request.add_finalize_fn(iter_finalize_fn)
             else:
                 iter_finalize_fn()
@@ -271,7 +273,8 @@ def save_checkpoint_wrapper(fn):
                 on_save_checkpoint_success(productive_metrics, args.async_save)
 
             if args.async_save:
-                assert async_save_request is not None
+                if async_save_request is not None:
+                    raise ValueError("async_save_request should be None")
                 async_save_request.add_finalize_fn(onelogger_finalize_fn)
             else:
                 onelogger_finalize_fn()

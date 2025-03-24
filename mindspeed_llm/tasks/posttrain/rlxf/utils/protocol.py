@@ -17,6 +17,8 @@ Implement base data transfer protocol between any two functions, modules.
 We can subclass Protocol to define more detailed batch info with specific keys
 """
 
+__all__ = ['DataProto', 'union_tensor_dict']
+
 import copy
 from dataclasses import dataclass, field
 from typing import Callable, Dict, List, Union
@@ -27,8 +29,6 @@ import torch
 import tensordict
 from tensordict import TensorDict
 from torch.utils.data import DataLoader
-
-__all__ = ['DataProto', 'union_tensor_dict']
 
 try:
     tensordict.set_lazy_legacy(False).set()
@@ -168,7 +168,6 @@ class DataProto:
                 raise ValueError('only support num_batch_dims=1')
 
         if len(self.non_tensor_batch) != 0:
-            # TODO: we can actually lift this restriction if needed
             if len(self.batch.batch_size) != 1:
                 raise ValueError('only support num_batch_dims=1 when non_tensor_batch is not empty.')
 
@@ -515,9 +514,9 @@ class DataProtoFuture:
 
     def get(self):
         output = ray.get(self.futures)  # dp_size.
-        for o in output:
-            if not isinstance(o, DataProto):
-                raise TypeError(f"Expected instance of DataProto, but got {type(o)}.")
+        for single_output in output:
+            if not isinstance(single_output, DataProto):
+                raise TypeError(f"Expected instance of DataProto, but got {type(single_output)}.")
         output = self.collect_fn(output)  # select dp, concat
         if self.dispatch_fn is not None:
             output = self.dispatch_fn(output)  # split in batch dim, select using dp

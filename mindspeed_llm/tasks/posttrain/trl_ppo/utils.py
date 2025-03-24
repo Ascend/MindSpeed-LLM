@@ -110,7 +110,8 @@ def pad_to_tensor_dict(data, padding_side="right", pad_multi_of=16):
         else:
             ori_context_lengths.append(torch.nonzero(torch.tensor(val) == pad_id).min().item() + 1)
 
-    for i in range(len(data)):
+    data_length = len(data)
+    for i in range(data_length):
         if context_lengths[i] < max_length:
             if padding_side == "right":
                 data[i].extend([pad_id] * (max_length - context_lengths[i]))

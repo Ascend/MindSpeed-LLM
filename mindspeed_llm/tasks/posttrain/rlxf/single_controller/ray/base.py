@@ -11,21 +11,22 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+__all__ = ['Worker']
+
 import os
 import time
 from typing import Dict, List, Any
+from unittest.mock import patch
 
 import ray
 from ray.util import list_named_actors
 from ray.util.placement_group import placement_group
 from ray.util.scheduling_strategies import PlacementGroupSchedulingStrategy, NodeAffinitySchedulingStrategy
 from ray.experimental.state.api import get_actor
-from unittest.mock import patch
 
 from mindspeed_llm.tasks.posttrain.rlxf.single_controller.base import WorkerGroup, ResourcePool, ClassWithInitArgs, Worker
 from mindspeed_llm.tasks.posttrain.rlxf.single_controller.base.decorator import MAGIC_ATTR
-
-__all__ = ['Worker']
 
 ACTOR_INFER_WORLD_SIZE = None
 ACTOR_TRAIN_WORLD_SIZE = None
@@ -387,14 +388,11 @@ class RayWorkerGroup(WorkerGroup):
         return self._world_size
 
 
-"""
-Utilities that enables creating workers inside the same ray.Actor, 
-with code written in separate ray.Actors.
-"""
-
-
 def _bind_workers_method_to_parent(cls, key, user_defined_cls):
     """
+    Utilities that enables creating workers inside the same ray.Actor, 
+    with code written in separate ray.Actors.
+    
     Binds the methods of each worker to the WorkerDict. 
     Note that we only bind public methods that are decorated by register
     """
@@ -426,7 +424,7 @@ def _bind_workers_method_to_parent(cls, key, user_defined_cls):
                 method_name_with_prefix = key + '_' + method_name
                 setattr(cls, method_name_with_prefix, func)
             except Exception as e:
-                raise ValueError(f'Fail to set method_name {method_name}')
+                raise ValueError(f'Fail to set method_name {method_name}') from e
 
 
 def _unwrap_ray_remote(cls):

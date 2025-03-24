@@ -7,7 +7,15 @@ import sympy
 from latex2sympy2 import latex2sympy
 from word2number import w2n
 
-from mindspeed_llm.tasks.posttrain.verifier.math_eval_toolkit.utils import *
+from mindspeed_llm.tasks.posttrain.verifier.math_eval_toolkit.utils import (
+    set_seed,
+    load_jsonl,
+    save_jsonl,
+    lower_keys,
+    PROMPT_TEMPLATES,
+    key_map,
+    show_sample
+)
 
 
 def _fix_fracs(string):
@@ -52,7 +60,7 @@ def _fix_a_slash_b(string):
             b = int(b)
         if string != "{}/{}".format(a, b):
             raise ValueError(f"String does not match the expected format: {string}")
-        new_string = "\\frac{" + str(a) + "}{" + str(b) + "}"
+        new_string = f"\\frac{{{a}}}{{{b}}}"
         return new_string
     except ValueError:
         return string

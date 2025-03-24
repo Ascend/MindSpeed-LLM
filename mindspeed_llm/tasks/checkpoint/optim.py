@@ -652,7 +652,6 @@ class OptimTargetProcessor(OptimBaseProcessor):
                 if ep_rank == 0:
                     for idx in range(len(ckpt[0].keys())):
                         if key == "param":
-                            # TODO multi-bucket process
                             non_expert_ckpt[idx][(torch.bfloat16, torch.float32)]['numel_unpadded'] = ckpt[0][idx][0].numel()
                         non_expert_ckpt[idx][(torch.bfloat16, torch.float32)][key] = ckpt[0][idx][0]
                 else:
@@ -661,7 +660,6 @@ class OptimTargetProcessor(OptimBaseProcessor):
                 if self.ep_size > 1:
                     for idx in range(len(ckpt[1].keys())):
                         if key == "param":
-                            # TODO multi-bucket process
                             expert_ckpt[idx][(torch.bfloat16, torch.float32)]['numel_unpadded'] = ckpt[1][idx][0].numel()
                         expert_ckpt[idx][(torch.bfloat16, torch.float32)][key] = ckpt[1][idx][0]
 

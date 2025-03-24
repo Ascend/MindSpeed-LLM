@@ -110,7 +110,7 @@ def get_dataset_list(data_args) -> List["InstructionDatasetAttr"]:
         if len(dataset_names) != 0:
             raise ValueError(
                 "Cannot open {} due to {}.".format(os.path.join(data_args.dataset_dir, DATA_CONFIG), str(err))
-            )
+            ) from err
         dataset_info = None
 
     if dataset_info is not None:
@@ -222,10 +222,19 @@ def convert_alpaca_to_intermediate(sample: Dict[str, List[Any]], dataset_attr: "
     else:
         if dataset_attr.response and isinstance(sample[dataset_attr.response], list):
             response = [
-                {"role": Role.ASSISTANT.value, "content": content} for content in sample[dataset_attr.response]
+                {
+                    "role": Role.ASSISTANT.value,
+                    "content": content
+                }
+                for content in sample[dataset_attr.response]
             ]
         elif dataset_attr.response and isinstance(sample[dataset_attr.response], str):
-            response = [{"role": Role.ASSISTANT.value, "content": sample[dataset_attr.response]}]
+            response = [
+                {
+                    "role": Role.ASSISTANT.value, 
+                    "content": sample[dataset_attr.response]
+                }
+            ]
         else:
             response = []
 

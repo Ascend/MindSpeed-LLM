@@ -184,10 +184,9 @@ class SegmentedColumnParallelLinear(ColumnParallelLinear):
                 )
 
         if self.config._cpu_offloading_context is not None:
-            if self.config._cpu_offloading_context.inside_context == True:
-                assert (
-                        self.config.cpu_offloading == False
-                ), "CPU Offloading cannot be enabled while using non-TE modules"
+            if self.config._cpu_offloading_context.inside_context:
+                if self.config.cpu_offloading:
+                    raise ValueError("CPU Offloading cannot be enabled while using non-TE modules")
 
         bias = self.bias if not self.skip_bias_add else None
 

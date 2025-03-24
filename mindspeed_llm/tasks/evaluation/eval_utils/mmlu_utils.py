@@ -72,7 +72,7 @@ def _format_example(
     """
     messages = ""
     prefex = f'There is a single choice question about {subject_name.replace("_", " ")}. Answer the question by replying A, B, C or D. \nQuestion: '
-    for idx, row in support_set.iterrows():
+    for _, row in support_set.iterrows():
         prompt, response = _parse_example(row)
         messages += prefex + prompt + "\n" + response + "\n\n"
 

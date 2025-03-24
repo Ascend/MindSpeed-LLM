@@ -20,6 +20,10 @@ def clean_up():
     destroy_distributed_environment()
     gc.collect()
     torch.npu.empty_cache()
+    
+
+def dummy_is_rank_0():
+    return True
 
 
 def batch_generate_vllm(args):
@@ -28,7 +32,7 @@ def batch_generate_vllm(args):
 
     dummy_strategy = Empty()
     dummy_strategy.print = print
-    dummy_strategy.is_rank_0 = lambda: True
+    dummy_strategy.is_rank_0 = dummy_is_rank_0
     dummy_strategy.args = args
 
     # configure tokenizer

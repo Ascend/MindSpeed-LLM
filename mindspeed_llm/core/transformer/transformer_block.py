@@ -433,32 +433,32 @@ def share_kvstates_checkpointed_forward_func(
         # Uniformly divide the total number of Transformer layers and checkpoint
         # the input activation of each divided chunk.
         # A method to further reduce memory usage reducing checkpoints.
-        l = 0
-        while l < self.num_layers_per_pipeline_rank:
+        layer = 0
+        while layer < self.num_layers_per_pipeline_rank:
             hidden_states, context, key_value_states = checkpoint_handler(
-                custom(l, l + self.config.recompute_num_layers)
+                custom(layer, layer + self.config.recompute_num_layers)
             )
 
-            l += self.config.recompute_num_layers
+            layer += self.config.recompute_num_layers
 
     elif self.config.recompute_method == 'block':
         # Checkpoint the input activation of only a set number of individual
         # Transformer layers and skip the rest.
         # A method fully use the device memory removing redundant re-computation.
         recompute_skip_num_layers = 0
-        for l in range(self.num_layers_per_pipeline_rank):
+        for layer in range(self.num_layers_per_pipeline_rank):
             # Skip recomputation when input grad computation is not needed.
             # Need to have at least one input tensor with gradient computation
             # for re-enterant autograd engine.
             if self.config.fp8 and not hidden_states.requires_grad:
                 recompute_skip_num_layers += 1
             if (
-                l >= recompute_skip_num_layers
-                and l < self.config.recompute_num_layers + recompute_skip_num_layers
+                layer >= recompute_skip_num_layers
+                and layer < self.config.recompute_num_layers + recompute_skip_num_layers
             ):
-                hidden_states, context, key_value_states = checkpoint_handler(custom(l, l + 1))
+                hidden_states, context, key_value_states = checkpoint_handler(custom(layer, layer + 1))
             else:
-                hidden_states, context, key_value_states = custom(l, l + 1)(
+                hidden_states, context, key_value_states = custom(layer, layer + 1)(
                     hidden_states,
                     attention_mask,
                     context,

@@ -24,11 +24,10 @@ import pandas as pd
 from torch import distributed as dist
 from megatron.training import get_args
 from mindspeed_llm.tasks.preprocess.templates import Role
-from .template import BBH_TEMPLATE_DIR, get_eval_template
 from mindspeed_llm.tasks.evaluation.eval_api.dataset_eval import DatasetEval
 from mindspeed_llm.tasks.evaluation.eval_api.chat import Chat
 from mindspeed_llm.tasks.utils.error_utils import check_divisible_by_zero
-from .template import BBH_TEMPLATE_DIR, get_eval_template
+from mindspeed_llm.tasks.evaluation.eval_impl.template import BBH_TEMPLATE_DIR, get_eval_template
 
 
 logger = logging.getLogger(__name__)
@@ -196,30 +195,30 @@ class BBHEval(DatasetEval):
         pass
 
     def format_instructions(self, instruction_set, instruction_list) -> (list, int):
-            for idx in range(1, len(instruction_set) - 1):
-                if idx == 1:
-                    prompt = instruction_set[0] + " Question: " + instruction_set[1]
-                else:
-                    prompt = instruction_set[idx]
+        for idx in range(1, len(instruction_set) - 1):
+            if idx == 1:
+                prompt = instruction_set[0] + " Question: " + instruction_set[1]
+            else:
+                prompt = instruction_set[idx]
 
-                if prompt[-3:] != '(A)':
-                    answer_index = prompt.rfind('A')
-                else:
-                    answer_index = prompt[:-2].rfind('A')
+            if prompt[-3:] != '(A)':
+                answer_index = prompt.rfind('A')
+            else:
+                answer_index = prompt[:-2].rfind('A')
 
-                instruction_list[-1].extend([
-                    {'role': Role.USER.value, 'content': prompt[:answer_index] + 'Answer: '},
-                    {'role': Role.ASSISTANT.value, 'content': prompt[answer_index + 3:].strip()}
-                ])
+            instruction_list[-1].extend([
+                {'role': Role.USER.value, 'content': prompt[:answer_index] + 'Answer: '},
+                {'role': Role.ASSISTANT.value, 'content': prompt[answer_index + 3:].strip()}
+            ])
 
-            final_answer_index = instruction_set[-1].rfind('A')
-            instruction_list[-1].append({
-                'role': Role.USER.value,
-                'content': instruction_set[-1][:final_answer_index] + 'Answer: '
-            })
+        final_answer_index = instruction_set[-1].rfind('A')
+        instruction_list[-1].append({
+            'role': Role.USER.value,
+            'content': instruction_set[-1][:final_answer_index] + 'Answer: '
+        })
 
-            options = re.findall(r'\(([A-Z])\)', instruction_set[-1][:final_answer_index])
-            return options, final_answer_index
+        options = re.findall(r'\(([A-Z])\)', instruction_set[-1][:final_answer_index])
+        return options, final_answer_index
 
     def get_best_choice(self, idx, model, instruction_set, options) -> str:
         loss_records = []

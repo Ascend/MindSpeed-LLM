@@ -314,7 +314,8 @@ def gpt_model_forward(self, input_ids: Tensor,
         # [s b h] => [b s h]
         return logits.transpose(0, 1).contiguous()
     if args.is_instruction_dataset:
-        for i in range(len(labels)):
+        label_length = len(labels)
+        for i in range(label_length):
             labels[i] = labels[i][:, 1:].contiguous()
         logits = logits[:-1, :, :].contiguous()
     loss += self.compute_language_model_loss(labels[0], logits)

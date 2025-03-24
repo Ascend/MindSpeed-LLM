@@ -35,8 +35,8 @@ def gpt_dataset_getitem_wrapper(fn):
 
             if mpu.get_context_parallel_rank() == 0 and mpu.get_tensor_model_parallel_rank() == 0 and mpu.get_pipeline_model_parallel_rank() == 0:
                 batch_idx = numpy.array([idx], dtype=numpy.int64)
-                document_ids = numpy.pad(document_ids, (0, len(text) - len(document_ids)),'constant',constant_values=(-100, -100))
-                batch_idx = numpy.pad(batch_idx, (0, len(text) - len(batch_idx)),'constant',constant_values=(-100, -100))
+                document_ids = numpy.pad(document_ids, (0, len(text) - len(document_ids)), 'constant', constant_values=(-100, -100))
+                batch_idx = numpy.pad(batch_idx, (0, len(text) - len(batch_idx)), 'constant', constant_values=(-100, -100))
                 batch["document_ids"] = document_ids
                 batch["idx"] = batch_idx
 
@@ -75,7 +75,13 @@ def _build_document_sample_shuffle_indices(
     # here we change from (class)GPTDataset._build_document_sample_shuffle_indices
     # end of megatron_adaptation
 
+    def get_path_temp_func(suffix):
+        return os.path.join(
+            path_to_cache, f"{self.unique_description_hash}-{type(self).__name__}-{suffix}"
+        )
+
     if path_to_cache:
+        get_path_to = get_path_temp_func
         get_path_to = lambda suffix: os.path.join(
             path_to_cache, f"{self.unique_description_hash}-{type(self).__name__}-{suffix}"
         )

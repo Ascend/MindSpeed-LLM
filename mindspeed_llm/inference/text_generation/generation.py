@@ -248,7 +248,8 @@ def beam_search_and_return_on_first_stage(
     tokenizer = get_tokenizer()
 
     batch_size = tokens.size(0)
-    assert(batch_size == 1)
+    if batch_size != 1:
+        raise ValueError(f"batch_size must be 1, but current value is {batch_size}")
     prompt_length = lengths.item()
     final_sequence_length = tokens.size(1)
     final_sequence_length = min(final_sequence_length, args.max_position_embeddings)

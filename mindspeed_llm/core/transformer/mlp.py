@@ -77,7 +77,7 @@ def core_mlp_init(self, config, submodules, is_expert=False, input_size=None, sh
 
     self.config: TransformerConfig = config
 
-    self.input_size = input_size if input_size != None else self.config.hidden_size
+    self.input_size = input_size if input_size else self.config.hidden_size
     # geglu activation function
     _args = get_args()
     if _args.geglu:

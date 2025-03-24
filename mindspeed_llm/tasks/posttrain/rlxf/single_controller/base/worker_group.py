@@ -47,9 +47,16 @@ class ResourcePool:
         return self._store
 
     def local_world_size_list(self) -> List[int]:
-        nested_local_world_size_list = [
-            [local_world_size for _ in range(local_world_size)] for local_world_size in self._store
-        ]
+        nested_local_world_size_list = []
+
+        for local_world_size in self._store:
+            inner_list = []
+            
+            for _ in range(local_world_size):
+                inner_list.append(local_world_size)
+            
+            nested_local_world_size_list.append(inner_list)
+
         return [item for row in nested_local_world_size_list for item in row]
 
     def local_rank_list(self) -> List[int]:
@@ -212,4 +219,4 @@ class WorkerGroup:
                 try:
                     setattr(self, method_name, func)
                 except Exception as e:
-                    raise ValueError(f'Fail to set method_name {method_name}')
+                    raise ValueError(f'Fail to set method_name {method_name}') from e

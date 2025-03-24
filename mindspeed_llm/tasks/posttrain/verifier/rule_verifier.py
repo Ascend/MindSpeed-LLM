@@ -157,15 +157,29 @@ def validate_response_structure(processed_str: str) -> bool:
         if count != expected_count:
             validation_passed = False
 
-    if (positions['think_start'] > positions['think_end'] or
-            positions['think_end'] > positions['answer_start'] or
-            positions['answer_start'] > positions['boxed_start'] or
-            positions['boxed_start'] > positions['answer_end'] or
-            not processed_str.startswith('<think>') or
-            not processed_str.endswith('</answer>')
-    ):
-        validation_passed = False
-    else:
+    think_start = positions.get('think_start')
+    think_end = positions.get('think_end')
+    answer_start = positions.get('answer_start')
+    boxed_start = positions.get('boxed_start')
+    answer_end = positions.get('answer_end')
+
+    is_think_start_valid = think_start > think_end
+    is_think_end_valid = think_end > answer_start
+    is_answer_start_valid = answer_start > boxed_start
+    is_boxed_start_valid = boxed_start > answer_end
+    is_start_with_think = not processed_str.startswith('<think>')
+    is_end_with_answer = not processed_str.endswith('</answer>')
+
+    validation_passed = not (
+        is_think_start_valid or
+        is_think_end_valid or
+        is_answer_start_valid or
+        is_boxed_start_valid or
+        is_start_with_think or
+        is_end_with_answer
+    )
+
+    if not validation_passed:
         pass
 
     return validation_passed

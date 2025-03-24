@@ -1081,7 +1081,7 @@ def _validate_inference_args(args):
 def _validate_evaluation_args(args):
     # five shot only supported on mmlu and ceval now
     if args.prompt_type is not None and hasattr(args, "task") and (args.task == "mmlu" or args.task == "ceval"):
-        train_dir = os.path.dirname(args.task_data_path) + "/dev/"
+        train_dir = os.path.join(os.path.dirname(args.task_data_path), "dev")
         if not os.path.isdir(train_dir) or not os.path.isdir(args.task_data_path):
             raise ValueError(f"Test and dev directory must exists when specify prompt_type in evaluation")
 
@@ -1348,7 +1348,6 @@ def _add_dummy_args(args):
     args.megatron_cp_in_bnsd = False
     args.use_fusion_attn_v2 = False
     args.npu_deterministic = False
-
 
 
 def _validate_noop_layer(args):

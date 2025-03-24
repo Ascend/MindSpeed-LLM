@@ -1,4 +1,9 @@
 # Copyright (c) 2024, HUAWEI CORPORATION.  All rights reserved.
+
+"""
+MultiHeadLatent Layer Specification, which is mainly for Deepseek.
+"""
+
 from megatron.core.fusions.fused_bias_dropout import get_bias_dropout_add
 from megatron.training import get_args
 from megatron.core.tensor_parallel import ColumnParallelLinear, RowParallelLinear
@@ -15,9 +20,6 @@ from mindspeed_llm.tasks.models.transformer.multi_head_latent_attention import (
 from mindspeed_llm.tasks.models.transformer.mla_dot_product_attention import MlaDotProductAttention
 from mindspeed_llm.core import PTNorm
 
-"""
-MultiHeadLatent Layer Specification, which is mainly for Deepseek.
-"""
 
 args = get_args()
 num_experts, moe_grouped_gemm, qk_layernorm, mla_mm_split = (

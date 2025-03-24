@@ -111,7 +111,7 @@ class NeedleBenchEval(DatasetEval):
                 queries = batch["prompt"]
 
                 chat_results, rank = chat.chat(instruction=queries, history=[])
-                for idx, ans in enumerate(batch['answer']):
+                for _, ans in enumerate(batch['answer']):
                     if rank == 0:
                         acc = score(chat_results, ans).get('score')
                         logger.info("#################acc: {0}, chat_results: {1}, ans: {2}#################".format(acc,
