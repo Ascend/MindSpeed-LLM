@@ -8,5 +8,5 @@ ray start --head --port 6344 --dashboard-host=0.0.0.0 --dashboard-port=8260 --re
 ray status
 
 # 启动训练
-python ray_gpt.py --config-name grpo_trainer_qwen25_7b_all
+python ray_gpt.py --config-name grpo_trainer_qwen25_7b_all | tee logs/grpo_trainer_qwen25_7b_all.log
 
