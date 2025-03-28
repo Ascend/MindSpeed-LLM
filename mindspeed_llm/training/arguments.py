@@ -99,7 +99,7 @@ def _add_mla_args(parser):
     group.add_argument('--qk-nope-head-dim', type=int, default=None, help='The qk head dim for only self-attn')
     group.add_argument('--mla-fa-without-pad', action='store_true', default=False, help='Do not pad v_head_dim to q_head_dim in MLA')
     group.add_argument('--mla-mm-split', action='store_true', default=False, help='Split 2 up-proj matmul into 4 in MLA')
-
+    group.add_argument("--mla-zero-memory", action='store_true', default=False, help="Save activation memory in multi-head-latent-attention.")
     return parser
 
 

@@ -26,6 +26,7 @@ from megatron.core.transformer.moe.router import MoEAuxLossAutoScaler
 from megatron.core.transformer.moe.moe_utils import save_to_aux_losses_tracker
 from megatron.core import parallel_state
 from megatron.training import get_args
+from mindspeed.core.tensor_parallel.random import CheckpointWithoutOutput
 
 from mindspeed_llm.core.transformer.moe.moe_utils import topk_softmax_with_capacity
 from mindspeed_llm.tasks.models.common.pai_megatron import pai_megatron_aux_loss
@@ -444,7 +445,14 @@ def apply_seq_aux_loss(self, activation, logits, topk_idx):
 def topk_router_gating_func(self, input: torch.Tensor):
     _args = get_args()
     if _args.router_gating_in_fp32:
-        logits = F.linear(input.type(torch.float32), self.weight.type(torch.float32))
+        def to_fp32(_input, weight):
+            return _input.type(torch.float32), weight.type(torch.float32)
+        self.fp32_checkpoint_manager = CheckpointWithoutOutput()
+        input, weight = self.fp32_checkpoint_manager.checkpoint(to_fp32, False, input, self.weight)
+        logits = torch.nn.functional.linear(input, weight)
+        self.fp32_checkpoint_manager.discard_output()
+        if logits.requires_grad:
+            logits.register_hook(self.fp32_checkpoint_manager.recompute)
     else:
         logits = F.linear(input, self.weight)
 
