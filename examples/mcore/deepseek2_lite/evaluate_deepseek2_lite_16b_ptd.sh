@@ -69,7 +69,7 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS evaluation.py \
     --kv-lora-rank 512 \
     --v-head-dim 128 \
     --qk-layernorm \
-    --expert-model-parallel-size 1 \
+    --expert-model-parallel-size ${EP} \
     --moe-permutation-async-comm \
     --moe-token-dispatcher-type allgather \
     --first-k-dense-replace 1 \

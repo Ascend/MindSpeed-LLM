@@ -87,9 +87,9 @@ GPT_ARGS="
     --seq-length 4096 \
     --max-position-embeddings 163840 \
     --micro-batch-size 1 \
-    --global-batch-size 768 \
+    --global-batch-size 128 \
     --make-vocab-size-divisible-by 1 \
-    --lr 2e-5 \
+    --lr 2e-6 \
     --train-iters 2000 \
     --lr-decay-style cosine \
     --lr-decay-iters 2000 \

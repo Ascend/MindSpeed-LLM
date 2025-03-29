@@ -107,6 +107,10 @@ bash examples/legacy/llama2/evaluate_llama2_7B_mmlu_ptd.sh
 
 可以设置多batch推理，提升模型评估性能
 
+【--broadcast】
+
+在开启Expert Parallel时，需启用该参数进行评估
+
 
 ####  2. 指令微调评估
 

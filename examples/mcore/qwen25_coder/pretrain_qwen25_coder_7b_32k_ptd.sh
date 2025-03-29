@@ -59,7 +59,7 @@ GPT_ARGS="
     --make-vocab-size-divisible-by 1 \
     --padded-vocab-size 152064 \
     --tokenizer-type PretrainedFromHF \
-    --tokenizer-name-or-path ${TOKENIZER_PATH} \
+    --tokenizer-name-or-path ${TOKENIZER_MODEL} \
     --attention-dropout 0.0 \
     --hidden-dropout 0.0 \
     --train-iters 2000 \

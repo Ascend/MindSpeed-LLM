@@ -1011,6 +1011,9 @@ def _validate_position_embedding(args):
         raise AssertionError('Alibi is not support tokenizer-padding-side left now.')
     if args.use_fused_rotary_pos_emb_new and args.stage is not None:
         raise AssertionError('The new fused_rotary_pos_emb supports only pre-trained models.')
+    if not args.use_fused_rmsnorm:
+        if args.swap_attention and len(args.lora_target_modules) != 0:
+            raise AssertionError('When not use_fused_rmsnorm, swap_attention cannot be used in lora fune-tuning.')
 
 
 def _validate_recompute_args(args):

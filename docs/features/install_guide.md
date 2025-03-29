@@ -51,12 +51,12 @@ cd ..
 
 # 准备MindSpeed-LLM及Megatron-LM源码
 git clone https://gitee.com/ascend/MindSpeed-LLM.git 
-git checkout 2.0.0
 git clone https://github.com/NVIDIA/Megatron-LM.git  # megatron从github下载，请确保网络能访问
 cd Megatron-LM
 git checkout core_r0.8.0
 cp -r megatron ../MindSpeed-LLM/
 cd ../MindSpeed-LLM
+git checkout 2.0.0
 
 pip install -r requirements.txt  # 安装其余依赖库
 ```
