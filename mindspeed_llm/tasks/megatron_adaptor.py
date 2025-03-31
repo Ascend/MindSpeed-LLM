@@ -437,7 +437,8 @@ class CoreAdaptation(MegatronAdaptationABC):
             elif args.moe_token_dispatcher_type == 'alltoall':
                 from mindspeed.core.transformer.moe.token_dispatcher import preprocess, alltoall_token_permutation
                 from mindspeed.core.transformer.moe.moe_utils import permute, unpermute
-                from mindspeed.core.transformer.moe.experts import sequential_mlp_forward
+                # Sequential_mlp bugfix, can be implemented with mindspeed after the core version upgrade.
+                from mindspeed_llm.core.transformer.moe.experts import sequential_mlp_forward
 
                 MegatronAdaptation.register('megatron.core.transformer.moe.experts.SequentialMLP.forward', sequential_mlp_forward)
                 MegatronAdaptation.register('megatron.core.transformer.moe.moe_utils.permute', permute)
