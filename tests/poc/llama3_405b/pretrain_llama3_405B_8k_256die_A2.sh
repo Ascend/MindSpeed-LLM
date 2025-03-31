@@ -70,7 +70,7 @@ GPT_ARGS="
     --position-embedding-type rope \
     --normalization RMSNorm \
     --swiglu \
-    --use-fused-rotary-pos-emb-new \
+    --use-fused-rotary-pos-emb \
     --use-fused-rmsnorm \
     --use-fused-swiglu \
     --use-flash-attn \

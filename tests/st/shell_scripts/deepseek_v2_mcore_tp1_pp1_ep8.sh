@@ -106,7 +106,7 @@ GPT_ARGS="
     --hidden-dropout 0.0 \
     --position-embedding-type rope \
     --normalization RMSNorm \
-    --use-fused-rotary-pos-emb-new \
+    --use-fused-rotary-pos-emb \
     --use-rotary-position-embeddings \
     --use-fused-swiglu \
     --use-fused-rmsnorm \

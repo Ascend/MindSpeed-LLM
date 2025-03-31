@@ -74,7 +74,7 @@ GPT_ARGS="
     --initial-loss-scale 4096 \
     --no-gradient-accumulation-fusion \
     --use-flash-attn \
-    --use-fused-rotary-pos-emb-new \
+    --use-fused-rotary-pos-emb \
     --use-rotary-position-embeddings \
     --use-fused-swiglu \
     --use-fused-rmsnorm \

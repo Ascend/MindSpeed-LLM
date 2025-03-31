@@ -81,7 +81,7 @@ GPT_ARGS="
     --use-fused-swiglu \
     --use-fused-rmsnorm \
     --use-fused-ring-attention-update \
-    --use-fused-rotary-pos-emb-new \
+    --use-fused-rotary-pos-emb\
     --use-flash-attn \
     --no-masked-softmax-fusion \
     --attention-softmax-in-fp32 \

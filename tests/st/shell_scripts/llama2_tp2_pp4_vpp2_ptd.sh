@@ -88,7 +88,7 @@ TRAINING_ARGS=(
     --no-load-optim
     --no-load-rng
     --use-fused-swiglu
-    --use-fused-rotary-pos-emb-new
+    --use-fused-rotary-pos-emb
     --overlap-grad-reduce
     --bf16
 )

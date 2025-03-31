@@ -222,8 +222,6 @@ def apply_rotary_pos_emb_bshd(t: Tensor, freqs: Tensor, rotary_interleaved: bool
     sin_ = (torch.sin(freqs) * _mscale).to(t.dtype)
     
     if args.use_fused_rotary_pos_emb:
-        t = torch_npu.npu_rotary_mul(t, cos_, sin_).to(t.dtype)
-    elif args.use_fused_rotary_pos_emb_new:
         mode = 1 if rotary_interleaved else 0
         t = npu_rotary_position_embedding(t.contiguous(), cos_, sin_, mode).to(t.dtype)
     else:
