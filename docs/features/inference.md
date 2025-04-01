@@ -26,6 +26,12 @@ HuggingFace: "I hope you are doing well. I am writing to ask for your help with 
 
 ## 流式推理示例
 
+### 初始化环境变量 
+
+`source /usr/local/Ascend/ascend-toolkit/set_env.sh`
+
+`source /usr/local/Ascend/nnal/atb/set_env.sh`
+
 ### 启动脚本
 
 使用LLaMA2-7B模型目录下的<a href="../../examples/mcore/llama2/generate_llama2_7b_ptd.sh">流式推理脚本</a>。

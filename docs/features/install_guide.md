@@ -13,14 +13,17 @@ bash Ascend-hdk-910b-npu-driver_24.1.rc3_linux-aarch64.run --full --force
 
 ### CANN安装
 
-下载[CANN](https://www.hiascend.com/developer/download/community/result?module=cann)，请根据根据系统选择`aarch64`或`x86_64`对应版本的`cann-toolkit`、`cann-kernel`和`cann-nnal`（CANN大于8.0.rc4需要安装）。参考[CANN安装](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/80RC3alpha003/softwareinst/instg/instg_0001.html?Mode=PmIns&OS=Ubuntu&Software=cannToolKit)或执行以下命令安装：
+下载[CANN](https://www.hiascend.com/developer/download/community/result?module=cann)，请根据根据系统选择`aarch64`或`x86_64`对应版本的`cann-toolkit`、`cann-kernel`和`cann-nnal`。参考[CANN安装](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/80RC3alpha003/softwareinst/instg/instg_0001.html?Mode=PmIns&OS=Ubuntu&Software=cannToolKit)或执行以下命令安装：
 
 ```shell
+# 因为版本迭代，包名存在出入，根据实际修改
 bash Ascend-cann-toolkit_8.0.RC3_linux-aarch64.run --install
 bash Ascend-cann-kernels-910b_8.0.RC3_linux-aarch64.run --install
-# bash Ascend-cann-nnal_8.0.RC4_linux-aarch64.run --install  # cann版本>=8.0RC4时需要安装nnal，小于此版本不需要
+source /usr/local/Ascend/ascend-toolkit/set_env.sh 安装nnal包需要source环境变量
+bash Ascend-cann-nnal_8.0.RC4_linux-aarch64.run --install
 # 设置环境变量
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
+source /usr/local/Ascend/nnal/atb/set_env.sh
 ```
 
 ### PTA安装
@@ -39,7 +42,9 @@ pip install apex-0.1.dev20241015+ascend-cp38-cp38-linux_aarch64.whl
 ### MindSpeed-LLM及相关依赖安装
 
 ```shell
-source /usr/local/Ascend/ascend-toolkit/set_env.sh  # source ascend-toolkit环境变量
+# 设置环境变量
+source /usr/local/Ascend/ascend-toolkit/set_env.sh
+source /usr/local/Ascend/nnal/atb/set_env.sh
 
 # 安装MindSpeed加速库
 git clone https://gitee.com/ascend/MindSpeed.git

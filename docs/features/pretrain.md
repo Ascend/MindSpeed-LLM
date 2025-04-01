@@ -104,6 +104,12 @@ WORLD_SIZE=$(($GPUS_PER_NODE * $NNODES))
 
 #### 3. 启动预训练
 
+#### 初始化环境变量 
+
+`source /usr/local/Ascend/ascend-toolkit/set_env.sh`
+
+`source /usr/local/Ascend/nnal/atb/set_env.sh`
+
 【legacy分支】 
 
 ```shell

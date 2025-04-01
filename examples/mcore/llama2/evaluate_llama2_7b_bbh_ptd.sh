@@ -1,12 +1,7 @@
 #!/bin/bash
 export CUDA_DEVICE_MAX_CONNECTIONS=1
-
-
 export HCCL_CONNECT_TIMEOUT=1200
-
 export CLOSE_MATMUL_K_SHIFT=1
-
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
 
 # modify script model path and tokenizer path
 TOKENIZER_PATH=/../llama2-7b-hf/  #tokenizer path

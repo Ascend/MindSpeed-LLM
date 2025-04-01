@@ -22,6 +22,12 @@
 
 **接下来将以Alpaca数据集作为输入，进行全参数微调示例。**
 
+### 初始化环境变量 
+
+`source /usr/local/Ascend/ascend-toolkit/set_env.sh`
+
+`source /usr/local/Ascend/nnal/atb/set_env.sh`
+
 ### 启动脚本
 
 使用LLaMA2-7B模型目录下的<a href="../../examples/legacy/llama2/tune_llama2_7b_full_ptd.sh">微调脚本</a>。
