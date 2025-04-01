@@ -53,6 +53,7 @@ MLA_ARGS="
 "
 
 MOE_ARGS="
+    --fix-router \
     --router-gating-in-fp32 \
     --moe-grouped-gemm \
     --moe-permutation-async-comm \
@@ -135,7 +136,7 @@ GPT_ARGS="
     --global-batch-size ${GBS} \
     --make-vocab-size-divisible-by 1 \
     --lr 1.0e-5 \
-    --train-iters 2000 \
+    --train-iters 30 \
     --lr-decay-style cosine \
     --untie-embeddings-and-output-weights \
     --disable-bias-linear \
@@ -153,7 +154,7 @@ GPT_ARGS="
     --attention-softmax-in-fp32 \
     --min-lr 1.0e-7 \
     --weight-decay 1e-2 \
-    --lr-warmup-iters 500 \
+    --lr-warmup-iters 0 \
     --clip-grad 1.0 \
     --adam-beta1 0.9 \
     --adam-beta2 0.999 \
@@ -195,4 +196,4 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     --distributed-backend nccl \
     --save $CKPT_SAVE_DIR \
     --load $CKPT_LOAD_DIR \
-    | tee logs/pretrain_deepseek3_671b_4k_ptd.log
+    | tee logs/pretrain_deepseek3_671b_4k_512die_A2_ptd.log
