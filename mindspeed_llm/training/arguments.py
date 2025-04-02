@@ -166,6 +166,8 @@ def _add_mtp_args(parser):
                        help='Multi-Token prediction recompute layer')
     group.add_argument('--share-mtp-embedding-and-output-weight', action='store_true', default=False,
                        help='Main model share embedding and output weight with mtp layer.')
+    group.add_argument('--mtp-mem-efficient-logits', action='store_true', default=False,
+                       help='Optimize ce_loss memory when use mtp block.')
     return parser
 
 

@@ -522,15 +522,26 @@ class CoreAdaptation(MegatronAdaptationABC):
 
     def patch_tensor_parallel(self):
         from mindspeed.core.tensor_parallel.random import _set_cuda_rng_state
-        from mindspeed.core.tensor_parallel.cross_entropy import calculate_predicted_logits
         from ..core import vocab_parallel_embedding_forward, vocab_embedding_init_func, checkpoint_forward_wrapper, checkpoint_backward_wrapper
 
         # default_generators need replace after set_device
         MegatronAdaptation.register('megatron.core.tensor_parallel.random._set_cuda_rng_state', _set_cuda_rng_state)
+        
         # change masked_target for better performance
-        MegatronAdaptation.register(
-            'megatron.core.tensor_parallel.cross_entropy.VocabParallelCrossEntropy.calculate_predicted_logits',
-            calculate_predicted_logits)
+        if MegatronAdaptation.get_args().mtp_mem_efficient_logits:
+            from ..tasks.models.transformer.multi_token_predication import calculate_logits_max, calculate_predicted_logits
+            MegatronAdaptation.register(
+                'megatron.core.tensor_parallel.cross_entropy.VocabParallelCrossEntropy.calculate_logits_max',
+                calculate_logits_max)
+            MegatronAdaptation.register(
+                'megatron.core.tensor_parallel.cross_entropy.VocabParallelCrossEntropy.calculate_predicted_logits',
+                calculate_predicted_logits)
+        else:
+            from mindspeed.core.tensor_parallel.cross_entropy import calculate_predicted_logits
+            MegatronAdaptation.register(
+                'megatron.core.tensor_parallel.cross_entropy.VocabParallelCrossEntropy.calculate_predicted_logits',
+                calculate_predicted_logits)
+        
         MegatronAdaptation.register('megatron.core.tensor_parallel.layers.VocabParallelEmbedding.forward',
                                     vocab_parallel_embedding_forward)
         MegatronAdaptation.register('megatron.core.tensor_parallel.layers.VocabParallelEmbedding.__init__',
