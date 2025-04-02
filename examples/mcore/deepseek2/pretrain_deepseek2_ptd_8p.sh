@@ -67,7 +67,6 @@ ROPE_ARGS="
 "
 
 GPT_ARGS="
-    --load $CKPT_LOAD_DIR \
     --use-distributed-optimizer \
     --use-flash-attn \
     --shape-order BNSD \
@@ -133,7 +132,9 @@ OUTPUT_ARGS="
     --eval-interval 2000 \
     --eval-iters 0 \
     --no-save-optim \
-    --no-save-rng
+    --no-save-rng \
+    --load $CKPT_LOAD_DIR \
+    --save $CKPT_SAVE_DIR \
 "
 
 python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
@@ -144,5 +145,4 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     $ROPE_ARGS \
     $MOE_ARGS \
     --distributed-backend nccl \
-    --save $CKPT_SAVE_DIR \
     | tee logs/pretrain_deepseek2_ptd_8p.log

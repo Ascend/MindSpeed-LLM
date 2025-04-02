@@ -148,7 +148,7 @@ OUTPUT_ARGS="
     --eval-iters 0 \
     --no-save-optim \
     --no-save-rng \
-    --load ${CKPT_LOAD_DIR} \
+    --load $CKPT_LOAD_DIR \
     --save $CKPT_SAVE_DIR \
 "
 

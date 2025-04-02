@@ -159,5 +159,6 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     $ROPE_ARGS \
     $MOE_ARGS \
     --distributed-backend nccl \
+    --load $CKPT_LOAD_DIR \
     --save $CKPT_SAVE_DIR \
     | tee logs/pretrain_deepseek2_236b_8k_ptd.log
