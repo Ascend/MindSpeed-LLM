@@ -244,7 +244,7 @@ def get_message_layer_mlp(message, model, md=None, **kwargs):
         num_layer_list = [int(x) for x in margs.num_layer_list.split(',')]
         layer_idx = sum(num_layer_list[:kwargs["pp_rank"]]) + kwargs["layer_idx"]
     else:
-        layer_idx = kwargs["layer_idx"] + kwargs["pp_rank"] * len(model.get_layers_module(**kwargs))
+        layer_idx = kwargs["layer_idx"] + kwargs["pp_rank"] * len(model.get_layers_module(**kwargs)) + kwargs['vp_rank']
     first_k_dense_replace = model.get_first_k_dense_replace()
     moe_layer_freq = model.get_moe_layer_freq()
     shared_expert_gate = getattr(margs, 'shared_expert_gate', None)

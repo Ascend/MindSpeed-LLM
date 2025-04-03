@@ -351,9 +351,9 @@ def set_model_layer_mlp(model_mg, msg, md, total_layer_num, **kwargs):
                 if margs.moe_grouped_gemm:
                     if margs.moe_tp_extend_ep:
                         model_mg.set_layers_mlp_experts_weight1_module(**kwargs,
-                                                                   data=weight1[ep_rank * 2 + tp_rank].view(margs.hidden_size, -1))
+                                                                   data=weight1[ep_rank * margs.tensor_model_parallel_size + tp_rank].view(margs.hidden_size, -1))
                         model_mg.set_layers_mlp_experts_weight2_module(**kwargs,
-                                                                   data=weight2[ep_rank * 2 + tp_rank].view(-1, margs.hidden_size))
+                                                                   data=weight2[ep_rank * margs.tensor_model_parallel_size + tp_rank].view(-1, margs.hidden_size))
                     else:
                         model_mg.set_layers_mlp_experts_weight1_module(**kwargs,
                                                                     data=weight1[ep_rank][tp_rank].view(margs.hidden_size, -1))
