@@ -253,7 +253,7 @@ class CoreAdaptation(MegatronAdaptationABC):
         from ..core import rotary_embedding_forward, apply_rotary_pos_emb_bshd
         from ..core.models.gpt.gpt_layer_specs import get_gpt_layer_local_spec_wrapper
         from ..core.transformer.dot_product_attention import dot_product_attention_init, \
-            dot_product_attention_forward_wrapper, ulysses_context_parallel_forward
+            dot_product_attention_forward_wrapper, ulysses_context_parallel_forward_wrapper
         from ..core.models.gpt.gpt_model import gpt_model_init_wrapper, shared_embedding_weight
         from ..core import rotary_embedding_init_wrapper, gpt_model_forward
 
@@ -309,7 +309,7 @@ class CoreAdaptation(MegatronAdaptationABC):
         # For GQA in ulysses and hybrid
         MegatronAdaptation.register(
             'mindspeed.core.context_parallel.ulysses_context_parallel.UlyssesContextAttention.forward',
-            ulysses_context_parallel_forward)
+            ulysses_context_parallel_forward_wrapper)
 
         # Layer Definition
         # For NPU, we use local-mcore-structrue in te layer.

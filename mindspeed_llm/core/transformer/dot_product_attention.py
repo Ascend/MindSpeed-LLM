@@ -3,7 +3,6 @@
 
 import math
 from functools import wraps
-from typing import Any
 
 import torch
 import torch_npu
@@ -19,7 +18,6 @@ from megatron.core.utils import divide
 from megatron.core.packed_seq_params import PackedSeqParams
 from mindspeed.core.context_parallel.ring_context_parallel import ringattn_context_parallel
 from mindspeed.core.context_parallel.ulysses_context_parallel import ulyssesattn_context_parallel
-from mindspeed.core.context_parallel.ulysses_context_parallel import _SeqAllToAll
 from mindspeed.core.parallel_state import (get_context_parallel_group_for_hybrid_ring,
                                            get_context_parallel_for_hybrid_ring_world_size,
                                            get_context_parallel_for_hybrid_ring_rank,
@@ -244,58 +242,6 @@ def ulysses_context_parallel_forward_wrapper(fn):
         return fn(self, query, key, value, *args, **kwargs)
 
     return wrapper
-
-
-# bigfix ulysses, needs to be removed when mindspeed is upgraded to 2025.03.04.
-def ulysses_context_parallel_forward(self, query: Tensor, key: Tensor, value: Tensor, *args: Any, **kwargs: Any) -> Tensor:
-    """ forward
-
-    Arguments:
-        query (Tensor): query input to the layer
-        key (Tensor): key input to the layer
-        value (Tensor): value input to the layer
-        args: other args
-
-    Returns:
-        * output (Tensor): context output
-    """
-    heads_per_gqa_group = self.local_attn.num_attention_heads_per_partition // self.local_attn.num_query_groups_per_partition
-    global_args = get_args()
-    should_kv_repeat_before_uly = global_args.use_flash_attn and global_args.kv_head_repeat_before_uly_alltoall
-    
-    if heads_per_gqa_group > 1 and should_kv_repeat_before_uly:
-        key = key.repeat_interleave(heads_per_gqa_group, dim=2)
-        value = value.repeat_interleave(heads_per_gqa_group, dim=2)
-        
-
-    use_custom_ulysses_backward = (
-        global_args.context_parallel_size > 1 and
-        global_args.context_parallel_algo == "ulysses_cp_algo" and
-        not global_args.use_legacy_models and
-        global_args.context_parallel_kv_cache_policy
-    )
-    if use_custom_ulysses_backward:
-        output = self.local_attn(query, key, value, *args, **kwargs)
-    else:
-        spg = self.local_attn.ulysses_comm_para.get('spg')
-        scatter_idx = self.local_attn.ulysses_comm_para.get('scatter_idx')
-        gather_idx = self.local_attn.ulysses_comm_para.get('gather_idx')
-        seq_world_size = torch.distributed.get_world_size(spg)
-        if seq_world_size > key.shape[scatter_idx] and query.shape[scatter_idx] % key.shape[scatter_idx] == 0:
-            key = key.repeat_interleave(query.shape[scatter_idx] // key.shape[scatter_idx], dim=scatter_idx)
-            value = value.repeat_interleave(query.shape[scatter_idx] // value.shape[scatter_idx], dim=scatter_idx)
-        
-        # in shape : e.g.,  [s/p:h:]
-        query_layer = _SeqAllToAll.apply(spg, query, scatter_idx, gather_idx)
-        key_layer = _SeqAllToAll.apply(spg, key, scatter_idx, gather_idx)
-        value_layer = _SeqAllToAll.apply(spg, value, scatter_idx, gather_idx)
-        
-        # out shape : e.g., [s:h/p:]
-        context_layer = self.local_attn(query_layer, key_layer, value_layer, *args, **kwargs)
-        
-        output = _SeqAllToAll.apply(spg, context_layer, gather_idx, scatter_idx)
-
-    return output
 
 
 def dot_product_attention_forward_wrapper(fn):
