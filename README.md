@@ -23,9 +23,9 @@ MindSpeed-LLM是基于昇腾生态的大语言模型分布式训练框架，旨�
 
 🚀🚀🚀**DeepSeek-R1** 系列功能逐步上线！！🚀🚀🚀
 
-**[DeepSeek-R1-ZERO Qwen-7B](./examples/mcore/deepseek_r1_recipes/r1_zero/README.md)** 😊
+**[DeepSeek-R1-ZERO Qwen-7B](https://gitee.com/ascend/MindSpeed-RL/blob/master/docs/solutions/r1_zero_qwen25_7b.md)** 😊
 
-包含数据处理、权重转换、在线推理、全参微调
+**[DeepSeek-R1-ZERO Qwen-32B](https://gitee.com/ascend/MindSpeed-RL/blob/master/docs/solutions/r1_zero_qwen25_32b.md)**
 
 
 🚀🚀🚀**DeepSeek-V3-671B** 模型全家桶已上线！！！🚀🚀🚀
@@ -49,17 +49,6 @@ MindSpeed-LLM是基于昇腾生态的大语言模型分布式训练框架，旨�
 
 **[DeepSeek-R1-Distill-LLaMA](./examples/mcore/deepseek_r1_distill_llama/)** 😊
 
-
-## COMING SOON !!! 📣📣📣
-
-
-🚀🚀 **DeepSeek-R1-Zero** 👋👋
-
-🚀🚀 **DeepSeek-R1**：SFT、GRPO、Reward、Rejection Sampling 👋👋
-
-🚀🚀 **[MindSpeed-RL](https://gitee.com/ascend/MindSpeed-RL)** 👋👋
-
----
 
 ## 版本配套表
 
@@ -558,174 +547,6 @@ MindSpeed-LLM包含分布式预训练、分布式微调、分布式偏好对齐�
   </tr>
 </tbody></table>
 
-
-
-### 分布式偏好对齐
-
-基于MindSpeed-LLM的实测偏好对齐性能如下：
-
-<table>
-  <tr>
-    <th>模型</th>
-    <th>硬件</th>
-    <th>算法</th>
-    <th>集群</th>
-    <th>方案</th>
-    <th>序列</th>
-    <th>吞吐</th>
-  </tr>
-  <tr>
-    <td rowspan="4">llama2-7B</td>
-    <td rowspan="4">Atlas 900 A2 PODc</td>
-    <td rowspan="4">Offline DPO</td>
-    <td rowspan="3">1x8</td>
-    <td>全参</td>
-    <td>dynamic</td>
-    <td><a href="./examples/mcore/llama2/dpo_llama2_7b_full_ptd.sh">12.74 samples/s</td>
-  </tr>
-  <tr>
-    <td>全参</td>
-    <td>16K</td>
-    <td><a href="./examples/mcore/llama2/dpo_llama2_7b_full_16k.sh">0.440 samples/s</td>
-  </tr>
-  <tr>
-    <td>Lora</td>
-    <td>dynamic</td>
-    <td><a href="./examples/mcore/llama2/dpo_llama2_7b_lora_ptd.sh">14.22 samples/s</td>
-  </tr>
-  <tr>
-    <td rowspan="1">2x8</td>
-    <td>全参</td>
-    <td>32K</td>
-    <td><a href="./examples/mcore/llama2/dpo_llama2_7b_full_32k.sh">0.216 samples/s</td>
-  </tr>
-</table>
-
-
-#### 偏好对齐方案
-
-<table><thead>
-  <tr>
-    <th>算法分类</th>
-    <th>方案名称</th>
-    <th>Mcore</th>
-    <th>Legacy</th>
-    <th><a href="./docs/features/lora_finetune.md">LoRA</a></th>
-    <th><a href="./docs/features/qlora.md">QLoRA</a></th>
-    <th>Released</th>
-    <th>贡献方</th>
-  </tr></thead>
-<tbody>
-  <tr>
-    <td rowspan="2">偏好对齐</td>
-    <td><a href="./docs/features/offline_dpo.md">Offline DPO</a></td>
-    <td>✅</td>
-    <td>❌</td>
-    <td>✅</td>
-    <td>❌</td>
-    <td>❌</td>
-    <td>【NAIE】</td>
-  </tr>
-  <tr>
-    <td><a href="./docs/features/simpo.md">SimPO</a></td>
-    <td>✅</td>
-    <td>❌</td>
-    <td>✅</td>
-    <td>❌</td>
-    <td>❌</td>
-    <td>【China Mobile Cloud】</td>
-  </tr>
-  <tr>
-    <td rowspan="4">奖励模型</td>
-    <td><a href="./docs/features/outcome_reward_model.md">ORM</a></td>
-    <td>✅</td>
-    <td>❌</td>
-    <td>✅</td>
-    <td>❌</td>
-    <td>❌</td>
-    <td rowspan="1">【Ascend】</td>
-  </tr>
-  <tr>
-    <td><a href="./docs/features/process_reward_model.md">PRM</a></td>
-    <td>✅</td>
-    <td>❌</td>
-    <td>✅</td>
-    <td>❌</td>
-    <td>❌</td>
-    <td rowspan="1">【Ascend】</td>
-  </tr>
-  <tr>
-    <td><a href="./docs/features/ray_ppo.md">Ray PPO</a></td>
-    <td>✅</td>
-    <td>❌</td>
-    <td>✅</td>
-    <td>❌</td>
-    <td>❌</td>
-    <td>【Ascend】</td>
-  </tr>
-  <tr>
-    <td><a href="./docs/features/trl_ppo.md">Trl PPO</a></td>
-    <td>✅</td>
-    <td>❌</td>
-    <td>✅</td>
-    <td>❌</td>
-    <td>❌</td>
-    <td>【Ascend】</td>
-  </tr>
-</tbody></table>
-
-
-#### 加速特性
-
-<table><thead>
-  <tr>
-    <th>场景</th>
-    <th>特性</th>
-    <th>Mcore</th>
-    <th>Legacy</th>
-    <th>Released</th>
-    <th>贡献方</th>
-  </tr></thead>
-<tbody>
-  <tr>
-    <td rowspan="2">LoRA</td>
-    <td><a href="./docs/features/cc_lora.md">CCLoRA</a></td>
-    <td>✅</td>
-    <td>❌</td>
-    <td>✅</td>
-    <td>【Ascend】</td>
-  </tr>
-  <tr>
-    <td><a href="./docs/features/fused_mlp.md">Fused_MLP</a></td>
-    <td>✅</td>
-    <td>❌</td>
-    <td>✅</td>
-    <td>【Ascend】</td>
-  </tr>
-  <tr>
-    <td rowspan="2">QLoRA</td>
-    <td><a href="./docs/features/cc_lora.md">CCLoRA</a></td>
-    <td>✅</td>
-    <td>❌</td>
-    <td>❌</td>
-    <td>【Ascend】</td>
-  </tr>
-  <tr>
-    <td><a href="./docs/features/fused_mlp.md">Fused_MLP</a></td>
-    <td>❌</td>
-    <td>❌</td>
-    <td>❌</td>
-    <td>【Ascend】</td>
-  </tr>
-  <tr>
-    <td>长序列</td>
-    <td><a href="./docs/features/fine-tuning-with-context-parallel.md">长序列CP方案</a></td>
-    <td>✅</td>
-    <td>❌</td>
-    <td>❌</td>
-    <td>【Ascend】</td>
-  </tr>
-</tbody></table>
 
 ## 开发工具链
 
