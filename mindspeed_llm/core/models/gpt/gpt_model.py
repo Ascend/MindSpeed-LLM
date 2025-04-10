@@ -107,7 +107,7 @@ def gpt_model_init_wrapper(fn):
         else:
             self.final_layernorm = None
 
-        if self.pre_process or self.post_process:
+        if not arguments.schedules_method == 'dualpipev' and (self.pre_process or self.post_process):
             setup_mtp_embeddings_layer(self)
 
     return wrapper
@@ -124,7 +124,11 @@ def shared_embedding_weight(self) -> Tensor:
     if self.pre_process:
         return self.embedding.word_embeddings.weight
     elif self.post_process:
-        return self.mtp_layers[0].embedding.word_embeddings.weight
+        if get_args().schedules_method == 'dualpipev':
+            from mindspeed.core.pipeline_parallel.dualpipev.dualpipev_schedules import get_shared_embedding_from_dual_chunk
+            return get_shared_embedding_from_dual_chunk()
+        else:
+            return self.mtp_layers[0].embedding.word_embeddings.weight
     return None
 
 

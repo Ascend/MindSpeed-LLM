@@ -119,7 +119,8 @@ def _transformer_block_build_layers(self):
         for layer in self.layers:
             if isinstance(layer, NoopTransformerLayer):
                 continue
-            if should_recompute_norm(layer):
+            # 1F1B overlap has its own implementation for recompute_norm
+            if should_recompute_norm(layer) and not args.moe_fb_overlap:
                 layer.forward = types.MethodType(norm_recompute_forward, layer)
 
 

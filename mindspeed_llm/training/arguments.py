@@ -73,6 +73,7 @@ def process_args(parser):
     parser = _add_default_model_args(parser)
     parser = _add_megatron2_args(parser)
     parser = _add_inference_args(parser)
+    parser = _add_dualpipe_args(parser)
 
     return parser
 
@@ -171,6 +172,14 @@ def _add_mtp_args(parser):
     return parser
 
 
+def _add_dualpipe_args(parser):
+    group = parser.add_argument_group(title='dualpipe')
+    group.add_argument('--moe-fb-overlap', action='store_true', default=False)
+    group.add_argument('--schedules-method', type=str, default=None, choices=['dualpipev'])
+
+    return parser
+
+
 def _add_profile_args(parser):
     group = parser.add_argument_group(title='profiler')
     group.add_argument('--profile-ranks', nargs='+', type=int, default=[-1],
@@ -238,6 +247,16 @@ def _add_coc_args(parser):
                        help='data slice size on each dp rank in distributed optimizer')
     return parser
 
+
+def _validate_dualpipe_args(args):
+    if args.moe_fb_overlap:
+        from mindspeed.features_manager.pipeline_parallel.fb_overlap_feature import FwdBwdOverlapFeature
+        FwdBwdOverlapFeature().validate_args(args)
+    if args.schedules_method == 'dualpipev':
+        assert args.moe_fb_overlap, 'dualpipev currently can only be used with 1f1b overlap'
+        from mindspeed.features_manager.pipeline_parallel.dualpipev_feature import DualpipeVFeature
+        DualpipeVFeature().validate_args(args)
+    
 
 def _validate_varlen_fa_args(args):
     # varlen FA layout must be TND
@@ -877,6 +896,13 @@ def _add_training_args(parser):
                        help='Disable final layer norm.')
     group.add_argument('--return-document-ids', action='store_true', default=False,
                        help='Return document ids when get batch.')
+
+    # for swap-optimizer
+    group.add_argument('--swap-optimizer', action='store_true', default=False,
+                       help='swap optimizer to cpu.')
+    group.add_argument('--swap-optimizer-times', type=int, default=16,
+                       help='Each swap will be moved (len(shard_fp32_from_float16) // swap_optimizer_times) elements')
+
     return parser
 
 
@@ -1119,8 +1145,8 @@ def _validate_moe_args(args):
             raise AssertionError('`--moe-zero-memory-num-layers` must be between 0 and num layers per pipeline stage')
         if args.moe_zero_memory == "disable":
             raise AssertionError('`--moe-zero-memory` must be enabled when using `--moe-zero-memory-num-layers`')
-    if args.moe_zero_memory != "disable" and not args.moe_alltoall_overlap_comm:
-        raise AssertionError('`--moe-zero-memory` only supports `--moe-alltoall-overlap-comm` for now.')
+    if args.moe_zero_memory != "disable" and not (args.moe_alltoall_overlap_comm or args.moe_fb_overlap):
+        raise AssertionError('`--moe-zero-memory` only supports `--moe-alltoall-overlap-comm` and `--moe-fb-overlap` for now.')
     if args.moe_zero_memory != "disable" and args.recompute_method is not None:
         raise AssertionError('`--moe-zero-memory` does not support full recomputation for now.')
     if args.moe_allgather_overlap_comm and not args.moe_token_dispatcher_type == 'allgather':
@@ -1265,6 +1291,8 @@ def core_transformer_config_from_args_wrapper(fn):
 def _validate_optimizer(args):
     if args.reuse_fp32_param and not args.bf16:
         raise AssertionError('--reuse-fp32-param only support for `bf16`')
+    if args.reuse_fp32_param and args.swap_optimizer:
+        raise AssertionError('--swap-optimizer dose not support `--reuse-fp32-param`')
 
 
 def _store_variables(args):
@@ -1518,6 +1546,7 @@ def validate_args_decorator(megatron_validate_args):
         _validate_long_rope(args)
         _validate_mlp_fusion(args)
         _validate_fused_opts(args)
+        _validate_dualpipe_args(args)
 
         _validate_noop_layer(args)
         _valid_tp_2d_args(args)

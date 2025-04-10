@@ -9,6 +9,10 @@ from mindspeed.core.context_parallel.ulysses_context_parallel import UlyssesCont
 from mindspeed.core.parallel_state import get_context_parallel_group_for_hybrid_ulysses
 from mindspeed.core.tensor_parallel.random import CheckpointWithoutOutput
 from mindspeed.utils import set_actual_seq_len, set_position_ids, get_actual_seq_len, get_position_ids
+try:
+    from mindspeed.core.pipeline_parallel.fb_overlap.modules.attention import launch_async_all2all_hook, launch_async_all2all
+except ImportError:
+    pass
 
 from megatron.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb
 from megatron.core.tensor_parallel.mappings import gather_from_sequence_parallel_region
@@ -210,6 +214,12 @@ class MultiHeadLatentAttention(SelfAttention):
             is_expert=False,
             tp_comm_buffer_name="proj",
         )
+        # hook async A2A launcher inside mla forward when TP > 1.
+        # a2a should be launched after TP communication finished to avoid bandwidth compete.
+        if args.moe_fb_overlap and parallel_state.get_tensor_model_parallel_world_size() > 1:
+            self.a2a_hooked_on_attention = True
+        else:
+            self.a2a_hooked_on_attention = False
 
     def forward(
         self,
@@ -291,6 +301,9 @@ class MultiHeadLatentAttention(SelfAttention):
                 value, _ = self.linear_v(compressed_kv_norm)
                 k_nope = k_nope.view(q_len, bsz, self.num_attention_heads_per_partition, -1)
                 value = value.view(q_len, bsz, self.num_attention_heads_per_partition, -1)
+
+            if self.a2a_hooked_on_attention:
+                launch_async_all2all()
             
             if rotary_pos_emb is not None:
                 q_pos_emb, k_pos_emb = rotary_pos_emb
@@ -391,6 +404,8 @@ class MultiHeadLatentAttention(SelfAttention):
         # =================
         # Output. [sq, b, h]
         # =================
+        if self.a2a_hooked_on_attention and core_attn_out.requires_grad:
+            core_attn_out.register_hook(launch_async_all2all_hook)
 
         output, bias = self.linear_proj(core_attn_out)
 

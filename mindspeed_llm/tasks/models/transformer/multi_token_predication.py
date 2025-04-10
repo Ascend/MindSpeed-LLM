@@ -76,12 +76,14 @@ class MultiTokenPredication(MegatronModule):
         self.recompute_layer_norm = args.recompute_mtp_norm
         self.recompute_mtp_layer = args.recompute_mtp_layer
 
+        skip_embedding_allocation = (args.schedules_method == 'dualpipev' and self.share_mtp_embedding_and_output_weight) or \
+                                    (self.pre_process and self.share_mtp_embedding_and_output_weight)
         self.embedding = LanguageModelEmbedding(
             config=self.config,
             vocab_size=self.vocab_size,
             max_sequence_length=self.max_sequence_length,
             position_embedding_type=self.position_embedding_type,
-            skip_weight_param_allocation=self.pre_process and self.share_mtp_embedding_and_output_weight
+            skip_weight_param_allocation=skip_embedding_allocation
         )
 
         if self.position_embedding_type == 'rope':
