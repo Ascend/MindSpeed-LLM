@@ -10,7 +10,7 @@ python convert_ckpt.py \
     --save-model-type mg \
     --params-dtype bf16 \
     --qlora-nf4 \
-    --target-tensor-parallel-size 4 \
+    --target-tensor-parallel-size 2 \
     --target-pipeline-parallel-size 1 \
     --target-expert-parallel-size 1 \
     --load-dir ./model_from_hf/Mixtral-hf/ \

@@ -18,9 +18,7 @@ def dequantize(weight, dtype, device):
     """
     if not hasattr(weight, "quant_state"):
         return weight, True
-    torch.npu.synchronize()
     dequantize_weight = bnb.functional.dequantize_4bit(weight.data, weight.quant_state).to(device).to(dtype)
-    torch.npu.synchronize()
     return dequantize_weight, False
 
 

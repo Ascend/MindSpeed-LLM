@@ -33,9 +33,7 @@ def linear_with_frozen_weight_forward(
     ctx.save_for_backward(weight)
     ctx.allreduce_dgrad = allreduce_dgrad
     if hasattr(weight, "quant_state"):
-        torch.npu.synchronize()
         weight_tmp = bnb.functional.dequantize_4bit(weight.data, weight.quant_state).to(input_.dtype)
-        torch.npu.synchronize()
     else:
         weight_tmp = weight
     output = torch.matmul(input_, weight_tmp.t())
@@ -47,9 +45,7 @@ def linear_with_frozen_weight_forward(
 def linear_with_frozen_weight_backward(ctx, grad_output):
     (weight,) = ctx.saved_tensors
     if hasattr(weight, "quant_state"):
-        torch.npu.synchronize()
         weight_tmp = bnb.functional.dequantize_4bit(weight.data, weight.quant_state).to(grad_output.dtype)
-        torch.npu.synchronize()
     else:
         weight_tmp = weight
     grad_input = grad_output.matmul(weight_tmp)
