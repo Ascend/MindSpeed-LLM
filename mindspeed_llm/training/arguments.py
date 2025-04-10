@@ -1377,7 +1377,6 @@ def _add_dummy_args(args):
     args.megatron_cp_in_bnsd = False
     args.use_fusion_attn_v2 = False
     args.npu_deterministic = False
-    args.schedules_method = None
 
 
 def _validate_noop_layer(args):
