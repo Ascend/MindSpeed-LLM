@@ -110,6 +110,6 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     $DATA_ARGS \
     $OUTPUT_ARGS \
     --distributed-backend nccl \
-    --load ${CKPT_LOAD_DIR}
+    --load ${CKPT_LOAD_DIR} \
     --save ${CKPT_SAVE_DIR} \
     | tee logs/train_llama31_mcore_200b_8k.log
