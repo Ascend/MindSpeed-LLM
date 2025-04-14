@@ -419,7 +419,6 @@ def flash_attention_forward(
     if args.shape_order == "TND":  # varlen FA
         query, key, value = [rearrange(x, 's b h d -> (s b) h d') for x in [query, key, value]]
         args.sparse_mode = 4
-        attention_mask = torch.triu(torch.ones([2048, 2048], dtype=bool, device=torch.cuda.current_device()), diagonal=1)
     elif args.shape_order == "BNSD":
         query, key, value = [rearrange(x, 's b h d -> b h s d') for x in [query, key, value]]
     else:
