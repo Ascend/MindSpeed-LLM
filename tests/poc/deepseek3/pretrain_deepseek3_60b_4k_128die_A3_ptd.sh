@@ -66,6 +66,7 @@ MOE_ARGS="
     --moe-router-score-function sigmoid \
     --moe-router-enable-expert-bias \
     --moe-tp-extend-ep \
+    --fix-router \
 "
 
 MTP_ARGS="

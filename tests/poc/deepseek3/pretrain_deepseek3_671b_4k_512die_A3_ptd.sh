@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 
 # 需要切换MindSpeed版本
 # git checkout f2acbe71a47b9307c2425bc51f9565802bd901cf  # checkout commit from MindSpeed core_r0.8.0 in 2025.03.30
@@ -85,10 +85,11 @@ DUALPIPE_ARGS="
     --schedules-method dualpipev \
 "
 
-RECOMPUTE_ARGS="
-    --recompute-granularity full \
-    --recompute-method block \
-    --recompute-num-layers 4 \
+MEM_ARGS="
+    --mla-zero-memory \
+    --moe-zero-memory level0 \
+    --recompute-activation-function \
+    --swap-optimizer \
 "
 
 ROPE_ARGS="
@@ -131,7 +132,7 @@ GPT_ARGS="
     --global-batch-size ${GBS} \
     --make-vocab-size-divisible-by 1 \
     --lr 1.0e-5 \
-    --train-iters 2000 \
+    --train-iters 30 \
     --lr-decay-style cosine \
     --untie-embeddings-and-output-weights \
     --disable-bias-linear \
@@ -149,7 +150,7 @@ GPT_ARGS="
     --attention-softmax-in-fp32 \
     --min-lr 1.0e-7 \
     --weight-decay 1e-2 \
-    --lr-warmup-iters 500 \
+    --lr-warmup-iters 0 \
     --clip-grad 1.0 \
     --adam-beta1 0.9 \
     --adam-beta2 0.999 \
@@ -161,6 +162,7 @@ GPT_ARGS="
     --no-load-optim \
     --no-load-rng \
     --bf16 \
+    --fix-router \
     --distributed-timeout-minutes 120 \
 "
 
@@ -184,10 +186,10 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     $OUTPUT_ARGS \
     $MLA_ARGS \
     $DUALPIPE_ARGS \
-    $RECOMPUTE_ARGS \
+    $MEM_ARGS \
     $ROPE_ARGS \
     $MOE_ARGS \
     $MTP_ARGS \
     --save $CKPT_SAVE_DIR \
     --load $CKPT_LOAD_DIR \    
-    --distributed-backend nccl | tee logs/pretrain_deepseek3_671b_4k_A3_ptd.log
+    --distributed-backend nccl | tee logs/pretrain_deepseek3_671b_4k_512die_A3_ptd.log
