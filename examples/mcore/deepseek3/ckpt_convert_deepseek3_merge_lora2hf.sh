@@ -10,7 +10,6 @@ python examples/mcore/deepseek3/convert_ckpt_deepseek3_mcore2hf.py \
     --num-layers 61 \
     --first-k-dense-replace 3 \
     --num-layer-list 16,15,15,15 \
-    --num-nextn-predict-layers 1 \
     --lora-r 8 \
     --lora-alpha 16 \
 
