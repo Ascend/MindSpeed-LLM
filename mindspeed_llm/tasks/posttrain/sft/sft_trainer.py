@@ -31,14 +31,16 @@ class SFTTrainer(BaseTrainer):
         data_type = torch.int64
 
         if (not mpu.is_pipeline_first_stage()) and (not mpu.is_pipeline_last_stage()):
-            tokens, attention_mask = get_finetune_data_on_this_tp_rank(data_iterator)
             if args.variable_seq_lengths and args.pipeline_model_parallel_size > 2:
+                tokens, attention_mask = get_finetune_data_on_this_tp_rank(data_iterator)
                 return tokens, None, None, attention_mask, None
             else:
+                # Broadcast data.
+                data_b = tensor_parallel.broadcast_data(keys, next(data_iterator), data_type)
                 if args.reset_position_ids:
-                    # Broadcast data.
-                    data_b = tensor_parallel.broadcast_data(keys, next(data_iterator), data_type)
                     generate_actual_seq_len(data_b)
+                attention_mask_1d = data_b.get('attention_mask').long()
+                attention_mask = get_tune_attention_mask(attention_mask_1d)
                 batch = {'attention_mask': attention_mask}
                 batch = get_batch_on_this_cp_rank(batch)
                 return None, None, None, batch['attention_mask'], None
@@ -160,8 +162,8 @@ class SFTTrainer(BaseTrainer):
         output_tensor = model(tokens, position_ids, attention_mask,
                               labels=labels)
 
-        if self.args.num_nextn_predict_layers:
+        if self.args.num_nextn_predict_layers and loss_mask is not None:
             return output_tensor, partial(self.loss_func,
-                                          loss_mask[:, :labels.shape[-1] - self.args.num_nextn_predict_layers])
+                                          loss_mask[:, :loss_mask.shape[-1] - self.args.num_nextn_predict_layers])
         else:
             return output_tensor, partial(self.loss_func, loss_mask)

@@ -53,14 +53,16 @@ class DPOTrainer(BaseTrainer):
         data_type = torch.int64
 
         if (not mpu.is_pipeline_first_stage()) and (not mpu.is_pipeline_last_stage()):
-            tokens, attention_mask = get_finetune_data_on_this_tp_rank(data_iterator)
             if args.variable_seq_lengths and args.pipeline_model_parallel_size > 2:
+                tokens, attention_mask = get_finetune_data_on_this_tp_rank(data_iterator)
                 return tokens, None, attention_mask, None
             else:
+                # Broadcast data.
+                data_b = tensor_parallel.broadcast_data(keys, next(data_iterator), data_type)
                 if args.reset_position_ids:
-                    # Broadcast data.
-                    data_b = tensor_parallel.broadcast_data(keys, next(data_iterator), data_type)
                     generate_actual_seq_len(data_b)
+                attention_mask_1d = data_b.get('attention_mask').long()
+                attention_mask = get_tune_attention_mask(attention_mask_1d)
                 batch = {'attention_mask': attention_mask}
                 batch = get_batch_on_this_cp_rank(batch)
                 return None, None, batch['attention_mask'], None
