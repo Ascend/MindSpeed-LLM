@@ -13,3 +13,4 @@ python examples/mcore/deepseek3/convert_ckpt_deepseek3.py \
     --num-layers-per-virtual-pipeline-stage 2 \
     --noop-layers 47,62,63
     # --num-layer-list, --moe-tp-extend-ep 等参数根据任务需要进行配置
+    # 当前分支不支持dualpipe，仅在微调、推理、评估任务中使用转换后权重

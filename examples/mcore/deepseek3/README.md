@@ -6,6 +6,8 @@
 
 支持将训练好的megatron mcore格式的权重转换回huggingface格式。
 
+**注意：**  当前分支权重转换不支持dualpipe功能。
+
 ### 1.1 启动脚本
 
 使用DeepSeek-V3模型目录下的<a href="../../mcore/deepseek3/ckpt_convert_deepseek3_hf2mcore.sh">huggingface转megatron脚本</a>、<a href="../../mcore/deepseek3/ckpt_convert_deepseek3_mcore2hf.sh">megatron转huggingface脚本</a>和<a href="../../mcore/deepseek3/ckpt_convert_deepseek3_merge_lora2hf.sh">lora转huggingface脚本</a>
