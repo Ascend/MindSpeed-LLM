@@ -1,3 +1,5 @@
+# 注意： deepseek2_60b非全参公版模型，请使用随机初始化权重，请勿与deepseek2_236b全参huggingface权重转换减参权重配合使用。
+
 #!/bin/bash
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
