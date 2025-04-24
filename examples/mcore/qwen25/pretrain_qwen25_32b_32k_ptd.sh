@@ -1,5 +1,6 @@
 #!/bin/bash
 export CUDA_DEVICE_MAX_CONNECTIONS=1
+export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
 
 # Change for multinode config
 NPUS_PER_NODE=8
@@ -35,6 +36,7 @@ GPT_ARGS="
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \
     --use-distributed-optimizer \
+    --reuse-fp32-param \
     --num-layer-list 11,13,19,21 \
     --micro-batch-size ${MBS} \
     --global-batch-size ${GBS} \
