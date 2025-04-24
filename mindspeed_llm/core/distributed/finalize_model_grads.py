@@ -4,13 +4,62 @@
 from typing import List, Optional
 
 import torch
+from torch._utils import _flatten_dense_tensors, _unflatten_dense_tensors
 
 from megatron.core import parallel_state
 from megatron.core.distributed.finalize_model_grads import _allreduce_layernorm_grads, _allreduce_embedding_grads
 from megatron.core.transformer.transformer_config import TransformerConfig
 from megatron.core.utils import get_attr_wrapped_model, get_model_config
 from megatron.training import get_args
+from mindspeed.core.tensor_parallel.comm_group_api import TPXCollectiveComm
 from mindspeed_llm.core.transformer.moe.moe_utils import get_updated_expert_bias
+
+
+def allreduce_layernorm_grads(model: List[torch.nn.Module], config: TransformerConfig):
+    """
+    All-reduce layernorm grads (for sequence parallelism).
+    """
+
+    # All-reduce layernorm parameters across model parallel nodes
+    # when sequence parallelism is used
+    if parallel_state.get_tensor_model_parallel_world_size() > 1 and (
+            config.sequence_parallel or config.qk_layernorm
+    ):
+        grads = []
+        for model_chunk in model:
+            for name, param in get_attr_wrapped_model(model_chunk, 'named_parameters')():
+                if not param.requires_grad:
+                    continue
+                if (
+                        param.requires_grad
+                        and getattr(param, 'sequence_parallel', False)
+                        or 'q_layernorm' in name
+                        or 'k_layernorm' in name
+                ):
+                    grad = param.main_grad
+                    grads.append(grad.data)
+        if grads:
+            coalesced = _flatten_dense_tensors(grads)
+            torch.distributed.all_reduce(
+                coalesced, group=parallel_state.get_tensor_model_parallel_group()
+            )
+            for buf, synced in zip(grads, _unflatten_dense_tensors(coalesced, grads)):
+                buf.copy_(synced)
+
+    layer_norm_2d_grads = []
+    for model_chunk in model:
+        for name, param in get_attr_wrapped_model(model_chunk, "named_parameters")():
+            if param.requires_grad and getattr(param, "2d_tp", False):
+                layer_norm_2d_grad = param.main_grad
+                layer_norm_2d_grads.append(layer_norm_2d_grad.data)
+
+    if layer_norm_2d_grads:
+        coalesced = _flatten_dense_tensors(layer_norm_2d_grads)
+        torch.distributed.all_reduce(coalesced, group=TPXCollectiveComm.get_comm_group())
+        for buf, synced in zip(
+                layer_norm_2d_grads, _unflatten_dense_tensors(coalesced, layer_norm_2d_grads)
+        ):
+            buf.copy_(synced)
 
 
 def _allreduce_word_embedding_grads(model: List[torch.nn.Module], config: TransformerConfig):
@@ -39,11 +88,15 @@ def _allreduce_word_embedding_grads(model: List[torch.nn.Module], config: Transf
         model_module = get_attr_wrapped_model(model_module, 'pre_process', return_model_obj=True)
         if model_module.share_embeddings_and_output_weights:
             weight = model_module.shared_embedding_or_output_weight()
+            if not weight.requires_grad:
+                return
             grad = weight.main_grad
             torch.distributed.all_reduce(grad, group=parallel_state.get_embedding_group())
         if hasattr(model_module,
                    "share_mtp_embedding_and_output_weight") and model_module.share_mtp_embedding_and_output_weight:
             weight = model_module.shared_embedding_weight()
+            if not weight.requires_grad:
+                return
             grad = weight.main_grad
             torch.distributed.all_reduce(grad, group=parallel_state.get_embedding_group())
 

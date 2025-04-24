@@ -179,9 +179,9 @@ class CoreAdaptation(MegatronAdaptationABC):
     def patch_core_distributed(self):
         import megatron.core
         megatron.core.jit.jit_fuser = dummy_jit
-        from mindspeed.core.tensor_parallel.tp_2d.norm_factory import _allreduce_layernorm_grads_wrapper
+        from mindspeed_llm.core.distributed.finalize_model_grads import allreduce_layernorm_grads
         MegatronAdaptation.register('megatron.core.distributed.finalize_model_grads._allreduce_layernorm_grads',
-                                    _allreduce_layernorm_grads_wrapper)
+                                    allreduce_layernorm_grads)
         # Mtp share embedding
         from mindspeed_llm.core.distributed.finalize_model_grads import _allreduce_word_embedding_grads
         MegatronAdaptation.register('megatron.core.distributed.finalize_model_grads._allreduce_word_embedding_grads',
