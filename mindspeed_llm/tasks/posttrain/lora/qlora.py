@@ -67,7 +67,7 @@ def parallel_linear_save_to_state_dict_wrapper(fn):
 
         if args.qlora_save_dequantize and getattr(self.weight, "quant_state", None) is not None:
             device = self.weight.device
-            dequantized_weight = Parameter(bnb.functional.dequantize_4bit(self.weight.data.to(device), self.weight.quant_state))
+            dequantized_weight = Parameter(bnb.functional.dequantize_4bit(self.weight.data.to(device), self.weight.quant_state)).cpu()
             destination[prefix + "weight"] = dequantized_weight.detach()
 
         if getattr(self.weight, "quant_state", None) is not None and not args.qlora_save_dequantize:
