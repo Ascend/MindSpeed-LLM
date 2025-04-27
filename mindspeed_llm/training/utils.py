@@ -17,6 +17,7 @@
 import os
 import stat
 import random
+import warnings
 from functools import wraps
 from typing import Optional, Union, List
 
@@ -207,7 +208,12 @@ def unwrap_model_wrapper(fn):
 
 
 def get_finetune_data_on_this_tp_rank(data_iterator):
-    ds = next(data_iterator)
+    try:
+        ds = next(data_iterator)
+    except StopIteration as e:
+        warnings.warn(f"An exception occurred in dataloader: {e}")
+        data_iterator = iter(data_iterator)
+        ds = next(data_iterator)
     tokens = ds.get('input_ids').long().cuda(non_blocking=True)
     tokens_shape = tokens.shape
     micro_batch_size = tokens_shape[0]
