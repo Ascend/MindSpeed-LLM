@@ -94,6 +94,16 @@
       <td>【Test】</td>
     </tr>
     <tr>
+      <td rowspan="1"><a href="https://huggingface.co/deepseek-ai/DeepSeek-V3">DeepSeek-V3</a></td>
+      <td><a href="https://huggingface.co/deepseek-ai/DeepSeek-V3/tree/main">671B</a></td>
+      <td><a href="../../examples/mcore/deepseek3">deepseek3</a></td>
+      <td> 4K </td>
+      <th>Mcore</th>
+      <td> 64x8 </td>
+      <td>【Ascend】</td>
+      <td>【Test】</td>
+    </tr>
+    <tr>
       <td rowspan="1"><a href="https://github.com/OpenBMB/MiniCPM">MiniCPM</a></td>
       <td> <a href="https://huggingface.co/openbmb/MiniCPM-MoE-8x2B/tree/main">8x2B</a> </td>
       <td><a href="../../examples/mcore/minicpm">minicpm</a></td>
@@ -116,17 +126,39 @@
   </tbody>
 </table>
 
-## 以上模型脚本环境变量声明：
-ASCEND_LAUNCH_BLOCKING：将Host日志输出到串口,0-关闭/1-开启<br>
-ASCEND_SLOG_PRINT_TO_STDOUT：设置默认日志级别,0-debug/1-info/2-warning/3-error<br>
-HCCL_WHITELIST_DISABLE：HCCL白名单开关,1-关闭/0-开启<br>
-HCCL_CONNECT_TIMEOUT：设置HCCL超时时间，默认值为120<br>
-CUDA_DEVICE_MAX_CONNECTIONS：定义了任务流能够利用或映射到的硬件队列的数量<br>
-TASK_QUEUE_ENABLE： 用于控制开启task_queue算子下发队列优化的等级，0：关闭，1：开启Level 1优化，2：开启Level 2优化<br>
-COMBINED_ENABLE： 设置combined标志。设置为0表示关闭此功能；设置为1表示开启，用于优化非连续两个算子组合类场景<br>
-PYTORCH_NPU_ALLOC_CONF：内存碎片优化开关，默认是expandable_segments:False，使能时expandable_segments:True<br>
-ASCEND_RT_VISIBLE_DEVICES：指定哪些Device对当前进程可见，支持一次指定一个或多个Device ID。通过该环境变量，可实现不修改应用程序即可调整所用Device的功能。<br>
-NPUS_PER_NODE： 配置一个计算节点上使用的NPU数量<br>
+## 说明
+
+### 环境变量
+
+以上模型列表中脚本的环境变量说明具体如下：
+
+| 环境变量名称                      | 环境变量描述                                                                    |
+|-----------------------------|---------------------------------------------------------------------------|
+| ASCEND_LAUNCH_BLOCKING      | 将Host日志输出到串口,0-关闭/1-开启。                                                   |
+| ASCEND_SLOG_PRINT_TO_STDOUT | 设置默认日志级别,0-debug/1-info/2-warning/3-error。                                |
+| HCCL_WHITELIST_DISABLE      | HCCL白名单开关,1-关闭/0-开启。                                                      |
+| HCCL_CONNECT_TIMEOUT        | 设置HCCL超时时间，默认值为120。                                                       |
+| CUDA_DEVICE_MAX_CONNECTIONS | 定义了任务流能够利用或映射到的硬件队列的数量。                                                   |
+| TASK_QUEUE_ENABLE           | 用于控制开启task_queue算子下发队列优化的等级，0：关闭，1：开启Level 1优化，2：开启Level 2优化。             |
+| COMBINED_ENABLE             | 设置combined标志。设置为0表示关闭此功能；设置为1表示开启，用于优化非连续两个算子组合类场景。                       |
+| PYTORCH_NPU_ALLOC_CONF      | 内存碎片优化开关，默认是expandable_segments:False，使能时expandable_segments:True。        |
+| ASCEND_RT_VISIBLE_DEVICES   | 指定哪些Device对当前进程可见，支持一次指定一个或多个Device ID。通过该环境变量，可实现不修改应用程序即可调整所用Device的功能。 |
+| NPUS_PER_NODE               | 配置一个计算节点上使用的NPU数量。                                                        |
+
+### DeepSeek3模型
+    
+版本要求：CANN版本≥8.1.RC1，PTA版本≥7.0.RC1。
+
+MTP说明：2.0.0分支参考论文实现，使能方式如下：
+
+  ```shell
+  # MTP层数
+  --num-nextn-predict-layers
+  # MTP loss系数
+  --mtp-loss-scale
+  # MTP与主模型共享embeding和output权重
+  --share-mtp-embedding-and-output-weight
+  ```
 
 ## 社区BUG列表
 
@@ -136,5 +168,3 @@ NPUS_PER_NODE： 配置一个计算节点上使用的NPU数量<br>
     # 查询host内存，通过free字段确定当前可用host内存
     free -h
     ```
-
-    
