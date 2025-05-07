@@ -41,6 +41,7 @@ DISTRIBUTED_ARGS="
 
 GPT_ARGS="
     --use-mcore-models \
+    --swap-attention \
     --reuse-fp32-param \
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \
