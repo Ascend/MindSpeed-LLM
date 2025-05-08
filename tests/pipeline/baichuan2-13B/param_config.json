@@ -24,7 +24,7 @@
                 "fp16": null,
                 "no-load-rng": null,
                 "no-load-optim": null,
-                "load": "/data/pipeline/Baichuan2-13B-tp8pp1-mcore-hf-layer2",
+                "load": "/data/pipeline/baichuan2-13b-tp8pp1-legacy-base",
                 "tokenizer-type": "PretrainedFromHF",
                 "tokenizer-name-or-path": "/data/hf/baichuan2-13B-hf/",
                 "use-deter-comp": null
