@@ -77,10 +77,17 @@ def process_args(parser):
     parser = _add_dualpipe_args(parser)
     parser = _add_ai_framework_args(parser)
     parser = _add_communication_overlap_args(parser)
+    parser = _add_zerc_args(parser)
 
     for feature in FEATURES_LIST:
         feature.register_args(parser)
 
+    return parser
+
+
+def _add_zerc_args(parser):
+    group = parser.add_argument_group(title='zerc')
+    group.add_argument('--moe-zerc', action='store_true', default=False)
     return parser
 
 
@@ -210,7 +217,7 @@ def _add_dualpipe_args(parser):
     group.add_argument('--dualpipev-dw-detach', action='store_true', help='detach dw in cooldown to reduce bubble')
     group.add_argument('--moe-unperm2-mem-optim', action='store_true', default=False,
                        help='deallocate unperm2 activation memory by multiplying prob after act func.')
-
+    group.add_argument('--moe-unperm2-mem-optim-swap', action='store_true', default=False)
     return parser
 
 
@@ -899,8 +906,7 @@ def _add_training_args(parser):
     group.add_argument('--swap-optimizer', action='store_true', default=False,
                        help='swap optimizer to cpu.')
     group.add_argument('--swap-optimizer-times', type=int, default=16,
-                        help='Each swap will be moved (len(shard_fp32_from_float16) // swap_optimizer_times) elements')
-
+                       help='Each swap will be moved (len(shard_fp32_from_float16) // swap_optimizer_times) elements')
     return parser
 
 

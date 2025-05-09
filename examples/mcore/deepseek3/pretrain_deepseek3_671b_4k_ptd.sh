@@ -70,7 +70,6 @@ MOE_ARGS="
     --routed-scaling-factor 2.5 \
     --moe-aux-loss-coeff 0.0001 \
     --seq-aux \
-    --moe-aux-loss-coeff 0.001 \
     --norm-topk-prob \
     --moe-router-score-function sigmoid \
     --moe-router-enable-expert-bias \

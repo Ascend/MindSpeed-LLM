@@ -452,6 +452,31 @@ class CoreAdaptation(MegatronAdaptationABC):
                         MegatronAdaptation.register(
                             'megatron.core.transformer.moe.token_dispatcher.MoEAlltoAllTokenDispatcher.token_unpermutation',
                             alltoall_token_unpermutation_tp_extend_ep)
+                    if args.moe_fb_overlap and args.schedules_method == 'dualpipev' and args.moe_zerc:
+                        from mindspeed.core.transformer.moe.moe_zerc.token_dispatcher import zerc_alltoall_token_perm1, \
+                            zerc_alltoall_token_perm2, zerc_alltoall_token_unperm1, zerc_alltoall_token_unperm2
+                        from mindspeed.core.transformer.moe.moe_zerc.fwdbwd import (
+                            transformer_layer_forward_moe_backward_moe_overlaping_zerc,
+                            transformer_layer_forward_moe_backward_dense_overlaping_zerc
+                        )
+                        MegatronAdaptation.register(
+                            'mindspeed.core.pipeline_parallel.fb_overlap.modules.token_dispatcher.alltoall_token_perm1',
+                            zerc_alltoall_token_perm1)
+                        MegatronAdaptation.register(
+                            'mindspeed.core.pipeline_parallel.fb_overlap.modules.token_dispatcher.alltoall_token_perm2',
+                            zerc_alltoall_token_perm2)
+                        MegatronAdaptation.register(
+                            'mindspeed.core.pipeline_parallel.fb_overlap.modules.token_dispatcher.alltoall_token_unperm1',
+                            zerc_alltoall_token_unperm1)
+                        MegatronAdaptation.register(
+                            'mindspeed.core.pipeline_parallel.fb_overlap.modules.token_dispatcher.alltoall_token_unperm2',
+                            zerc_alltoall_token_unperm2)
+                        MegatronAdaptation.register(
+                            'mindspeed.core.pipeline_parallel.fb_overlap.overlap_funcs.fwdbwd.transformer_layer_forward_moe_backward_moe_overlaping',
+                            transformer_layer_forward_moe_backward_moe_overlaping_zerc)
+                        MegatronAdaptation.register(
+                            'mindspeed.core.pipeline_parallel.fb_overlap.overlap_funcs.fwdbwd.transformer_layer_forward_moe_backward_dense_overlaping',
+                            transformer_layer_forward_moe_backward_dense_overlaping_zerc)
                 else:
                     from mindspeed.core.transformer.moe.token_dispatcher import preprocess, alltoall_token_permutation
                     MegatronAdaptation.register(
@@ -662,7 +687,7 @@ class CoreAdaptation(MegatronAdaptationABC):
     def patch_swap_optimizer(self):
         args = MegatronAdaptation.get_args()
         if args.swap_optimizer:
-            from mindspeed.core.optimizer.swap_optimizer import SwapDistributedOptimizer, swap_adamw_step
+            from mindspeed.core.optimizer.swap_optimizer.swap_optimizer import SwapDistributedOptimizer, swap_adamw_step
             MegatronAdaptation.register('megatron.core.optimizer.distrib_optimizer.DistributedOptimizer',
                                          SwapDistributedOptimizer)
             MegatronAdaptation.register('mindspeed.optimizer.adamw.AdamW.step', swap_adamw_step)
