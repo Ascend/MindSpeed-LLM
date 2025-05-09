@@ -178,7 +178,6 @@ class CoreAdaptation(MegatronAdaptationABC):
         self.patch_utils()
         self.mcore_tensor_parallel_adaptation()
         self.patch_pipeline_parallel_schedules()
-        self.coc_adaptation()
         self.patch_swap_optimizer()
 
     def patch_core_distributed(self):
@@ -659,11 +658,6 @@ class CoreAdaptation(MegatronAdaptationABC):
                 'megatron.core.pipeline_parallel.schedules.forward_backward_pipelining_with_interleaving',
                 forward_backward_pipelining_with_interleaving_patch)
 
-    def coc_adaptation(self):
-        args = MegatronAdaptation.get_args()
-        from mindspeed.initialize import coc_registration_wrapper
-        if args.use_ascend_coc:
-            MegatronAdaptation.register('megatron.training.initialize.initialize_megatron', coc_registration_wrapper)
 
     def patch_swap_optimizer(self):
         args = MegatronAdaptation.get_args()

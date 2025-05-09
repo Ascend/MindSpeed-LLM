@@ -71,7 +71,6 @@ def process_args(parser):
     parser = _add_ndmm_args(parser)
     parser = _add_2d_tp_args(parser)
     parser = _add_hccl_group_buffer_args(parser)
-    parser = _add_coc_args(parser)
     parser = _add_default_model_args(parser)
     parser = _add_megatron2_args(parser)
     parser = _add_inference_args(parser)
@@ -261,21 +260,6 @@ def _add_cp_args(parser):
                        help='manually set pre-cooked attention mask list')
     group.add_argument('--kv-head-repeat-before-uly-alltoall', action='store_true', default=True,
                        help='use it to expand key and value for ulysses when GQA/MQA is used.')
-    return parser
-
-
-def _add_coc_args(parser):
-    group = parser.add_argument_group(title='coc')
-
-    # ascend coc arguments
-    group.add_argument("--use-ascend-coc", action='store_true',
-                       help="Use ascend coc")
-    group.add_argument('--coc-mode', type=int, default=-1,
-                       help='coc-mode: 0=original, 1=rewrite, 2=coc default')
-    group.add_argument('--coc-parallel-num', type=int, default=1,
-                       help='coc parallel num')
-    group.add_argument('--coc-fused-kernel', action='store_true',
-                       help='use coc fused kernel')
     return parser
 
 
