@@ -18,7 +18,7 @@ class TestProcessInstructionData:
             "--tokenizer-type", "PretrainedFromHF",
             "--handler-name", "GeneralInstructionHandler",
             "--output-prefix", "/data/tune_pack_dataset/alpaca_pack",
-            "--tokenizer-name-or-path", "/data/llama-2-7b-hf",
+            "--tokenizer-name-or-path", "/data/hf/llama-2-7b-hf",
             "--workers", "4",
             "--log-interval", "1000",
             "--append-eod",

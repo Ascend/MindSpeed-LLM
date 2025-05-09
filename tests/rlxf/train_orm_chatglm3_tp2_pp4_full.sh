@@ -12,7 +12,7 @@ basepath=$(cd `dirname $0`; cd ../../../; pwd)
 
 CKPT_SAVE_DIR="./chatglm3_reward_ckpt"
 DATA_PATH="/data/pairwise_dataset/baseline/dpo_en/dpo_en"
-TOKENIZER_PATH="/data/chatglm3-6b-base-hf/"
+TOKENIZER_PATH="/data/hf/chatglm3-6b-base-hf/"
 CKPT_LOAD_DIR="/data/chatglm3_reward_ckpt"
 
 TP=2

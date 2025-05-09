@@ -24,7 +24,7 @@
                 "fp16": null,
                 "no-load-rng": null,
                 "no-load-optim": null,
-                "load": "/data/pipeline/baichuan2-13b-tp8pp1-legacy-base",
+                "load": "/data/pipeline/Baichuan2-13B-tp8pp1-mcore-hf-layer2",
                 "tokenizer-type": "PretrainedFromHF",
                 "tokenizer-name-or-path": "/data/hf/baichuan2-13B-hf/",
                 "use-deter-comp": null
@@ -85,7 +85,7 @@
                 "load-model-type": "hf",
                 "save-model-type": "mg",
                 "target-tensor-parallel-size": "8",
-                "load-dir": "/data/datasets/baichuan2-13B-data/enwiki/",
+                "load-dir": "/data/hf/baichuan2-13B-hf",
                 "save-dir": "/data/cache",
                 "tokenizer-model": "/data/hf/baichuan2-13B-hf/tokenizer.model",
                 "params-dtype": "bf16",

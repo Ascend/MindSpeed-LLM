@@ -292,10 +292,10 @@
                 "target-tensor-parallel-size": "2",
                 "target-pipeline-parallel-size": "4",
                 "num-layer-list": "6,8,8,10",
-                "load-dir":"/data/llama-2-7b-hf",
-                "save-dir":"/data/llama-2-7b-hf-hf2ml-tp2pp4dypp-test",
+                "load-dir":"/data/hf/llama-2-7b-hf",
+                "save-dir":"/data/hf/llama-2-7b-hf-hf2ml-tp2pp4dypp-test",
                 "model-type-hf": "llama2",
-                "tokenizer-model":"/data/llama-2-7b-hf/tokenizer.model"
+                "tokenizer-model":"/data/hf/llama-2-7b-hf/tokenizer.model"
             }
         },
         {
@@ -321,7 +321,7 @@
                 "target-tensor-parallel-size": "1",
                 "target-pipeline-parallel-size": "1",
                 "load-dir":"/data/llama-2-7b-hf-hf2ml-tp2pp4dypp-test",
-                "save-dir":"/data/llama-2-7b-hf",
+                "save-dir":"/data/hf/llama-2-7b-hf",
                 "model-type-hf": "llama2"
             }
         },

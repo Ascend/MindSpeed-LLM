@@ -11,7 +11,7 @@ WORLD_SIZE=$((NPUS_PER_NODE*$NNODES))
 basepath=$(cd `dirname $0`; cd ../../../; pwd)
 
 DATA_PATH="/data/llama2_prm_data/math_shepherd_prm"
-TOKENIZER_MODEL="/data/llama-2-7b-hf/"
+TOKENIZER_MODEL="/data/hf/llama-2-7b-hf/"
 CKPT_LOAD_DIR="/data/llama-2-7b-mcore-tp1-pp8/"
 
 TP=1
