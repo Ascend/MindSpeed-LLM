@@ -105,7 +105,7 @@
                 "target-tensor-parallel-size": "2",
                 "target-pipeline-parallel-size": "4",
                 "load-dir": "/data/hf/chatglm3-6b-base-hf/",
-                "save-dir": "/data/cache/",
+                "save-dir": "/data/cache/chatglm3_tp2pp4",
                 "tokenizer-model": "/data/hf/chatglm3-6b-base-hf/tokenizer.model"
             }
         },

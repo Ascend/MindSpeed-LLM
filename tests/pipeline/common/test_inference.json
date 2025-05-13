@@ -201,7 +201,7 @@
                 "swiglu": null,
                 "load": "/data/Baichuan2-13B-tp8pp1-mcore-hf",
                 "tokenizer-type": "PretrainedFromHF",
-                "tokenizer-name-or-path": "/data/baichuan2-13B-hf/",
+                "tokenizer-name-or-path": "/data/hf/baichuan2-13B-hf/",
                 "tokenizer-not-use-fast": null,
                 "fp16": null,
                 "normalization": "RMSNorm" ,
@@ -219,7 +219,7 @@
             }
         }
     ],
-    
+
     "test_baichuan2_legacy_greedy_search": [
         {
             "param": {
@@ -242,7 +242,7 @@
                 "swiglu": null,
                 "load": "/data/pipe/baichuan2-13b-tp8pp1-legacy-base",
                 "tokenizer-type": "PretrainedFromHF",
-                "tokenizer-name-or-path": "/data/baichuan2-13B-hf/",
+                "tokenizer-name-or-path": "/data/hf/baichuan2-13B-hf/",
                 "tokenizer-not-use-fast": null,
                 "fp16": null,
                 "normalization": "RMSNorm" ,

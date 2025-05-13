@@ -9,12 +9,12 @@
                 "target-pipeline-parallel-size": "2", 
                 "target-expert-parallel-size": "2",
                 "num-layer-list": "6,10",
-                "load-dir":"/data/Mixtral-8x7B-v0.1",
+                "load-dir":"/data/hf/Mixtral-legacy-hf",
                 "save-dir":"/data/wttest/test/hf2mc_mixtral_tp2pp2ep2dypp",
                 "use-mcore-models": null,
                 "model-type-hf": "mixtral",
                 "params-dtype": "bf16",
-                "tokenizer-model":"/data/Mixtral-8x7B-v0.1/tokenizer.model"
+                "tokenizer-model":"/data/hf/Mixtral-legacy-hf/tokenizer.model"
             }
         },
         {
@@ -40,7 +40,7 @@
                 "target-tensor-parallel-size": "1",
                 "target-pipeline-parallel-size": "1",
                 "target-expert-parallel-size": "1",
-                "save-dir":"/data/Mixtral-8x7B-v0.1/",
+                "save-dir":"/data/hf/Mixtral-legacy-hf/",
                 "load-dir":"/data/wttest/base/hf2mc_mixtral_tp1pp4ep2vpp2",
                 "use-mcore-models": null,
                 "model-type-hf": "mixtral",
@@ -127,13 +127,13 @@
                 "save-model-type": "mg",
                 "target-tensor-parallel-size": "8",
                 "target-pipeline-parallel-size": "1",
-                "load-dir": "/data/gemma2-9b-hf/",
+                "load-dir": "/data/hf/gemma2-9b-hf/",
                 "save-dir": "/data/gemma2-9b-mg-tp8pp1-mcore-test/",
                 "use-mcore-models": null,
                 "post-norm": null,
                 "model-type-hf": "gemma2",
                 "params-dtype": "bf16",
-                "tokenizer-model": "/data/gemma2-9b-hf/tokenizer.json",
+                "tokenizer-model": "/data/hf/gemma2-9b-hf/tokenizer.json",
                 "spec":"mindspeed_llm.tasks.models.spec.gemma2_spec layer_spec"
             }
         },
@@ -266,7 +266,7 @@
                 "target-tensor-parallel-size": "2",
                 "target-pipeline-parallel-size": "2",
                 "save-dir":"/data/llama-3-8b-hf-nooplayer-tp2pp2vpp2-mcore-test/",
-                "load-dir":"/data/llama-3-8b-hf-layer14/",
+                "load-dir":"/data/hf/llama-3-8b-hf-layer14/",
                 "num-layers-per-virtual-pipeline-stage": "2",
                 "noop-layers": "1,15",
                 "params-dtype": "bf16",
@@ -426,7 +426,7 @@
                 "target-expert-parallel-size": "2",
                 "load-dir":"/data/ci/orm/mixtral-8x7b-layers4-rm-hf/",
                 "save-dir":"/data/ci/orm/mixtral-8x7b-layers4-rm-mcore_tp2pp2ep2_test/",
-                "tokenizer-model":"/data/Mixtral-8x7B-v0.1/tokenizer.model",
+                "tokenizer-model":"/data/hf/Mixtral-legacy-hf/tokenizer.model",
                 "use-mcore-models": null,
                 "model-type-hf": "mixtral",
                 "orm": null

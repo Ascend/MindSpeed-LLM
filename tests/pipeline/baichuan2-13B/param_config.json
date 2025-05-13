@@ -86,7 +86,7 @@
                 "save-model-type": "mg",
                 "target-tensor-parallel-size": "8",
                 "load-dir": "/data/hf/baichuan2-13B-hf",
-                "save-dir": "/data/cache",
+                "save-dir": "/data/cache/baichuan2",
                 "tokenizer-model": "/data/hf/baichuan2-13B-hf/tokenizer.model",
                 "params-dtype": "bf16",
                 "w-pack":"True",
