@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.nn.init as init
 
 from peft.tuners.lora.layer import LoraLayer
+from mindspeed_llm.core.transformer.moe.layers import SEColumnParallelLinear, SERowParallelLinear
 
 
 class LoraParallelLinearMoE(nn.Module, LoraLayer):
@@ -40,7 +41,8 @@ class LoraParallelLinearMoE(nn.Module, LoraLayer):
         self.is_parallel_a = isinstance(base_layer, backend.RowParallelLinear)
         self.fan_in_fan_out = fan_in_fan_out
         self._active_adapter = adapter_name       
-        self.is_expert = base_layer.is_expert        
+        self.is_expert = base_layer.is_expert
+        self.shared_expert = getattr(base_layer, "shared_expert", False)
 
         megatron_config = kwargs["megatron_config"]
         parallel_linear_kwargs = {"megatron_config": megatron_config}
@@ -99,28 +101,51 @@ class LoraParallelLinearMoE(nn.Module, LoraLayer):
         # lora needs to be forced to upgrade to 32-bit precision, otherwise it will overflow
         megatron_config.params_dtype = torch.float32
         if self.is_parallel_a:
-            lora_a = self.backend.RowParallelLinear(
-                input_size=self.in_features,
-                output_size=r,
-                bias=False,
-                input_is_parallel=input_is_parallel,
-                skip_bias_add=True,
-                init_method=init_method,
-                config=megatron_config,
-                is_expert=self.is_expert,
-            )
+            if self.shared_expert:
+                lora_a = SERowParallelLinear(input_size=self.in_features,
+                            output_size=r,
+                            bias=False,
+                            input_is_parallel=input_is_parallel,
+                            skip_bias_add=True,
+                            init_method=init_method,
+                            config=megatron_config,
+                            is_expert=self.is_expert,
+                            shared_expert=self.shared_expert)
+            else:
+                lora_a = self.backend.RowParallelLinear(
+                    input_size=self.in_features,
+                    output_size=r,
+                    bias=False,
+                    input_is_parallel=input_is_parallel,
+                    skip_bias_add=True,
+                    init_method=init_method,
+                    config=megatron_config,
+                    is_expert=self.is_expert,
+                )
             lora_b = nn.Linear(in_features=r, out_features=self.out_features, bias=False, dtype=torch.float32)
         else:
             lora_a = nn.Linear(in_features=self.in_features, out_features=r, bias=False, dtype=torch.float32)
-            lora_b = self.backend.ColumnParallelLinear(
-                input_size=r,
-                output_size=self.out_features,
-                bias=False,
-                gather_output=gather_output,
-                init_method=init_method,
-                config=megatron_config,
-                is_expert=self.is_expert,
-            )
+            if self.shared_expert:
+                lora_b = SEColumnParallelLinear(
+                    input_size=r,
+                    output_size=self.out_features,
+                    bias=False,
+                    gather_output=gather_output,
+                    init_method=init_method,
+                    config=megatron_config,
+                    is_expert=self.is_expert,
+                    shared_expert=self.shared_expert
+                )
+            else:
+                lora_b = self.backend.ColumnParallelLinear(
+                    input_size=r,
+                    output_size=self.out_features,
+                    bias=False,
+                    gather_output=gather_output,
+                    init_method=init_method,
+                    config=megatron_config,
+                    is_expert=self.is_expert,
+                )
 
         self.lora_A[adapter_name] = lora_a
         self.lora_B[adapter_name] = lora_b

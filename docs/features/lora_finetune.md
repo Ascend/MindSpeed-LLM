@@ -213,7 +213,7 @@ bash examples/legacy/llama2/evaluate_llama2_7B_lora_mmlu_ptd.sh
 - **对话模板选择**：根据模型和数据需求选择合适模板，确保微调和评估一致性。
 - **语言匹配**：设定数据集语言以优化评估效果。
 - **内置模板使用**：启用 `--hf-chat-template` 时简化输入格式，确保评估的准确性。
-- **使用限制**：MOE 场景下，Lora 微调暂不支持开启 --moe-grouped-gemm 使用 gmm 算子。
+- **使用限制**：MOE 场景下，Lora 微调开启 `--moe-grouped-gemm` GMM算子时需同步开启 `--moe-alltoall-overlap-comm` 特性。
 ## 参考文献
 
 - [LoRA: Low-Rank Adaptation of Large Language Models](https://arxiv.org/abs/2106.09685)

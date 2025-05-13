@@ -15,6 +15,7 @@ from megatron.core.transformer.moe.moe_utils import save_to_aux_losses_tracker
 from megatron.training import get_args
 from mindspeed.core.transformer.moe.moe_layer_overlap_all2all import MoELayerOverlapAll2All
 from mindspeed.core.transformer.moe.moe_layer_overlap_allgather import MoELayerOverlapAllGather
+from mindspeed_llm.tasks.posttrain.lora.utils import is_enable_lora
 
 
 def moe_layer_init_wrapper(init_func):
@@ -30,7 +31,21 @@ def moe_layer_init_wrapper(init_func):
         self = args[0]
 
         if moe_config.moe_grouped_gemm:
-            self.experts = GroupedMLP(self.num_local_experts, moe_config)
+            if is_enable_lora():
+                from peft import LoraConfig
+                lora_config = LoraConfig(
+                    r=global_args.lora_r,
+                    lora_alpha=global_args.lora_alpha,
+                    target_modules=global_args.lora_target_modules,
+                    lora_dropout=0.0,
+                    bias="none",
+                    megatron_config=self.config,
+                    megatron_core="megatron.core",
+                )
+                from mindspeed_llm.tasks.posttrain.lora.moe.experts import LoraParallelGroupedMLP
+                self.experts = LoraParallelGroupedMLP(self.num_local_experts, moe_config, lora_config)
+            else:
+                self.experts = GroupedMLP(self.num_local_experts, moe_config)
         else:
             assert isinstance(self.submodules, MLPSubmodules)
             self.experts = SequentialMLP(self.num_local_experts, moe_config, self.submodules)
@@ -40,8 +55,16 @@ def moe_layer_init_wrapper(init_func):
             shared_expert_config.ffn_hidden_size = global_args.n_shared_experts * moe_config.ffn_hidden_size
 
             if global_args.moe_allgather_overlap_comm or global_args.moe_alltoall_overlap_comm:
-                from mindspeed.core.transformer.moe.layers import ColumnParallelLinear, RowParallelLinear
-                self.shared_experts = MLP(shared_expert_config, MLPSubmodules(linear_fc1=ColumnParallelLinear, linear_fc2=RowParallelLinear), shared_expert=True)
+                if is_enable_lora():
+                    from mindspeed_llm.core.transformer.moe.layers import SEColumnParallelLinear, SERowParallelLinear
+                    self.shared_experts = MLP(shared_expert_config, MLPSubmodules(linear_fc1=SEColumnParallelLinear,
+                                                                                  linear_fc2=SERowParallelLinear),
+                                              shared_expert=True)
+                else:
+                    from mindspeed.core.transformer.moe.layers import ColumnParallelLinear, RowParallelLinear
+                    self.shared_experts = MLP(shared_expert_config, MLPSubmodules(linear_fc1=ColumnParallelLinear,
+                                                                                  linear_fc2=RowParallelLinear),
+                                              shared_expert=True)
             elif global_args.moe_fb_overlap:
                 from mindspeed.core.pipeline_parallel.fb_overlap import ColumnParallelLinear, RowParallelLinear
                 self.shared_experts = MLP(shared_expert_config, MLPSubmodules(linear_fc1=ColumnParallelLinear, linear_fc2=RowParallelLinear), shared_expert=True)

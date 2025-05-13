@@ -42,7 +42,7 @@ class TransformerLayer(MegatronTransformerLayer):
 
         # For mcore activation re-computation
         if self.mlp.__class__ is MoELayer:
-            if self.mlp.experts.__class__ is GroupedMLP:
+            if isinstance(self.mlp.experts, GroupedMLP):
                 self.mlp.experts.layer_number = self.layer_number
             if self.mlp.experts.__class__ is SequentialMLP:
                 for expert in self.mlp.experts.local_experts:
