@@ -41,6 +41,7 @@ from megatron.core.tensor_parallel.mappings import (
     reduce_scatter_to_sequence_parallel_region,
     reduce_from_tensor_model_parallel_region,
 )
+from mindspeed.utils import get_actual_seq_len, set_actual_seq_len
 
 
 def vocab_embedding_init_func(
@@ -237,3 +238,19 @@ class SegmentedColumnParallelLinear(ColumnParallelLinear):
             output = output_parallel
         output_bias = self.bias if self.skip_bias_add else None
         return output, output_bias
+
+
+def checkpoint_forward_wrapper(fn):
+    def wrapper(ctx, run_function, distribute_saved_activations, *args):
+        ctx.actual_seq_len = get_actual_seq_len()
+        return fn(ctx, run_function, distribute_saved_activations, *args)
+
+    return wrapper
+
+
+def checkpoint_backward_wrapper(fn):
+    def wrapper(ctx, *args):
+        set_actual_seq_len(ctx.actual_seq_len)
+        return fn(ctx, *args)
+
+    return wrapper

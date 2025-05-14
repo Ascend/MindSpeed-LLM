@@ -532,7 +532,8 @@ class CoreAdaptation(MegatronAdaptationABC):
 
     def patch_tensor_parallel(self):
         from mindspeed.core.tensor_parallel.random import _set_cuda_rng_state
-        from ..core import vocab_embedding_init_func, vocab_parallel_embedding_forward
+        from ..core import vocab_parallel_embedding_forward, vocab_embedding_init_func, checkpoint_forward_wrapper, \
+            checkpoint_backward_wrapper
 
         # default_generators need replace after set_device
         MegatronAdaptation.register('megatron.core.tensor_parallel.random._set_cuda_rng_state', _set_cuda_rng_state)
@@ -556,6 +557,10 @@ class CoreAdaptation(MegatronAdaptationABC):
                                     vocab_parallel_embedding_forward)
         MegatronAdaptation.register('megatron.core.tensor_parallel.layers.VocabParallelEmbedding.__init__',
                                     vocab_embedding_init_func)
+        MegatronAdaptation.register('megatron.core.tensor_parallel.random.CheckpointFunction.forward',
+                                    checkpoint_forward_wrapper)
+        MegatronAdaptation.register('megatron.core.tensor_parallel.random.CheckpointFunction.backward',
+                                    checkpoint_backward_wrapper)
         # For recompute-in-advance
         from mindspeed.core.tensor_parallel.random import checkpoint_wrapper
         MegatronAdaptation.register('megatron.core.tensor_parallel.random.checkpoint', checkpoint_wrapper)
