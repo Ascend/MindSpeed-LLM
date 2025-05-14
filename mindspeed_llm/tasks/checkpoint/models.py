@@ -1076,6 +1076,7 @@ class MegatronModel(ModelBase):
         self.args.add_dense_bias = self.args_cmd.add_dense_bias
         self.args.post_norm = self.args_cmd.post_norm
         self.args.save_lora_to_hf = self.args_cmd.save_lora_to_hf
+        self.args.load_checkpoint_loosely = self.args_cmd.load_checkpoint_loosely
         self.args.tokenizer_model = getattr(self.args_cmd, 'tokenizer_model', None)
         self.args.make_vocab_size_divisible_by = getattr(self.args_cmd, 'make_vocab_size_divisible_by', None)
         if self.args_cmd.params_dtype == 'bf16':
@@ -1237,8 +1238,7 @@ class MegatronModel(ModelBase):
             '--save-interval', '1',
             '--mock-data',  # To pass the "blend data checks" in arguments.py
             '--load', self.args_cmd.load_dir,
-            '--finetune',
-            '--load-checkpoint-loosely'
+            '--finetune'
         ]
         
         if hasattr(self.args_cmd, 'add_bias_linear') and not self.args_cmd.add_bias_linear:
