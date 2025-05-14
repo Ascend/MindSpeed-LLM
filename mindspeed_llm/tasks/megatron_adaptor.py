@@ -229,7 +229,7 @@ class CoreAdaptation(MegatronAdaptationABC):
         from mindspeed.core.models.common.embeddings.rotary_pos_embedding import get_pos_emb_on_this_cp_rank
         from mindspeed.core.data_parallel.distributed_data_parallel import distributed_data_parallel_init_with_cp
         from mindspeed.core.transformer.attention import attention_init, self_attention_init_wrapper
-        from ..training.utils import get_batch_on_this_cp_rank, get_batch_on_this_tp_rank, get_device_wrapper
+        from ..training.utils import get_batch_on_this_cp_rank, get_device_wrapper
         from ..core.models.gpt.gpt_layer_specs import get_gpt_layer_local_spec_wrapper
         from ..core.transformer.dot_product_attention import dot_product_attention_init, \
             dot_product_attention_forward_wrapper, ulysses_context_parallel_forward_wrapper
@@ -279,7 +279,6 @@ class CoreAdaptation(MegatronAdaptationABC):
                                     get_gpt_layer_local_spec_wrapper)
 
         MegatronAdaptation.register('megatron.training.utils.get_batch_on_this_cp_rank', get_batch_on_this_cp_rank)
-        MegatronAdaptation.register('megatron.training.utils.get_batch_on_this_tp_rank', get_batch_on_this_tp_rank)
         MegatronAdaptation.register('megatron.training.dist_signal_handler.get_device', get_device_wrapper)
         # moe_fb_overlap will shadow this forward impl
         MegatronAdaptation.register('megatron.core.models.gpt.gpt_model.GPTModel', GPTModel)

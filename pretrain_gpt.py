@@ -33,7 +33,7 @@ from megatron.core.models.gpt.gpt_layer_specs import (
     get_gpt_layer_local_spec,
     get_gpt_layer_with_transformer_engine_spec,
 )
-from mindspeed_llm.training.utils import generate_actual_seq_len, tensor_slide
+from mindspeed_llm.training.utils import generate_actual_seq_len
 
 
 def model_provider(pre_process=True, post_process=True) -> Union[GPTModel, megatron.legacy.model.GPTModel]:
@@ -104,16 +104,18 @@ def model_provider(pre_process=True, post_process=True) -> Union[GPTModel, megat
 def get_batch(data_iterator):
     """Generate a batch."""
 
-    # get batches based on the TP rank you are on
-    batch = get_batch_on_this_tp_rank(data_iterator)
     args = get_args()
+
+    # get batches based on the TP rank you are on
+    batch, actual_seq_len = get_batch_on_this_tp_rank(data_iterator)
+
     if args.return_document_ids and mpu.get_context_parallel_rank() == 0 and mpu.get_tensor_model_parallel_rank() == 0 and mpu.get_pipeline_model_parallel_rank() == 0:
         print("current idx: {}, current rank: {}, data_parallel_rank: {}, document_ids: {}".format(batch['idx'], torch.distributed.get_rank(), mpu.get_data_parallel_rank(), batch['document_ids']))
         batch.pop('document_ids', None)
         batch.pop('idx', None)
 
     if args.reset_position_ids:
-        generate_actual_seq_len(batch)
+        generate_actual_seq_len(batch, actual_seq_len)
     # slice batch along sequence dimension for context parallelism
     batch = get_batch_on_this_cp_rank(batch)
     return batch.values()

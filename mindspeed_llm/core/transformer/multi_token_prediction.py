@@ -6,6 +6,7 @@ from typing import List, Optional, Union
 
 import torch
 from torch import Tensor
+import acl
 
 from megatron.core import InferenceParams, mpu, parallel_state, tensor_parallel
 from megatron.core.dist_checkpointing.mapping import ShardedStateDict
@@ -26,7 +27,7 @@ from megatron.core.utils import make_tp_sharded_tensor_for_checkpoint, make_view
 from megatron.training import get_args
 from mindspeed.core.tensor_parallel.random import CheckpointWithoutOutput
 from mindspeed_llm.core.transformer.custom_layers.transformer_engine import PTNorm
-from mindspeed_llm.training.utils import regenerate_position_ids
+from mindspeed_llm.training.utils import regenerate_position_ids, get_mtp_position_ids
 
 SUPPORTED_ATTN_MASK = [
     AttnMaskType.padding,
@@ -700,8 +701,15 @@ class MultiTokenPredictionBlock(MegatronModule):
             # Calc logits for the current Multi-Token Prediction (MTP) layers.
             input_ids, _ = roll_tensor(input_ids, shifts=-1, dims=-1)
             if args.reset_position_ids:
-                position_ids, _ = roll_tensor(position_ids, shifts=-1, dims=-1)
-                position_ids = regenerate_position_ids(position_ids, 1)
+                if '910B' not in acl.get_soc_name() and args.enable_share_memory:
+                    position_ids, shm_manager = get_mtp_position_ids()
+                    if mpu.get_tensor_model_parallel_rank() == 0:
+                        shm_manager.write(position_ids)
+                    else:
+                        position_ids = shm_manager.read()
+                else:
+                    position_ids, _ = roll_tensor(position_ids, shifts=-1, dims=-1)
+                    position_ids = regenerate_position_ids(position_ids, 1)
             # embedding
             decoder_input = embedding(input_ids=input_ids, position_ids=position_ids)
             # norm, linear projection and transformer

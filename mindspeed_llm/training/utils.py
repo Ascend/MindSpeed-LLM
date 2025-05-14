@@ -20,15 +20,16 @@ import random
 import warnings
 from functools import wraps
 from typing import Optional, Union, List
-
 from itertools import takewhile
+
+import acl
 import torch
 import torch_npu
 from torch import distributed as dist
 import numpy as np
 import megatron
-from megatron.training import get_args, get_tokenizer
-from megatron.core import mpu, tensor_parallel
+from megatron.training import get_args
+from megatron.core import mpu
 from tqdm import tqdm
 
 from mindspeed.utils import (set_actual_seq_len, set_position_ids,
@@ -41,12 +42,34 @@ from mindspeed.utils import (set_actual_seq_len, set_position_ids,
 from mindspeed.core.tensor_parallel_y_union_cp import TensorParallelYUnionCP
 from mindspeed.model.transformer import set_attention_mask
 from mindspeed.utils import _get_batch_on_this_tp_y_cp_rank_in_megatron_cp
+from mindspeed_llm.tasks.dataset.shared_memory_manager import SharedMemoryManager
+
+try:
+    from mindspeed.core.pipeline_parallel.dualpipev.dualpipev_schedules import get_post_process_flag
+except Exception:
+    pass
 
 WRITE_FILE_DEFAULT_FLAGS = os.O_WRONLY | os.O_CREAT
 WRITE_FILE_DEFAULT_MODES = stat.S_IWUSR | stat.S_IRUSR
 
+_MTP_POSITION_ID = None
 
-def compute_actual_seq_len(origin_seq):
+
+def set_mtp_position_ids(position_ids_mtp):
+    """set_postprocess_chunk for mtp position id"""
+    global _MTP_POSITION_ID
+    _MTP_POSITION_ID = position_ids_mtp
+
+
+def get_mtp_position_ids():
+    global _MTP_POSITION_ID
+    if _MTP_POSITION_ID is not None:
+        return _MTP_POSITION_ID
+    else:
+        raise AssertionError("_MTP_POSITION_ID is None")
+
+
+def _compute_actual_seq_len(origin_seq):
     seq = origin_seq.view(-1)
     zero_pos = (seq == 0).nonzero()[1:].squeeze(dim=1)
     res = zero_pos.tolist()
@@ -54,14 +77,11 @@ def compute_actual_seq_len(origin_seq):
     return res
 
 
-def generate_actual_seq_len(batch):
+def compute_actual_seq_len(origin_seq):
     args = get_args()
-    position_ids = batch.get('position_ids').transpose(0, 1).contiguous()
-    set_position_ids(position_ids)
-    position_ids = batch.get('position_ids')
-    actual_seq_len = compute_actual_seq_len(position_ids)
+    actual_seq_len = _compute_actual_seq_len(origin_seq)
     if args.mtp_num_layers:
-        seq_len = position_ids.shape[1]
+        seq_len = origin_seq.shape[1]
         mtp_res = [actual_seq_len]
         for i in range(1, args.mtp_num_layers + 1):
             next_actual_seq_len = []
@@ -71,8 +91,18 @@ def generate_actual_seq_len(batch):
                 else:
                     next_actual_seq_len.append(j - i)
             mtp_res.append(next_actual_seq_len)
-        set_actual_seq_len(mtp_res)
+        return mtp_res
+    return actual_seq_len
+
+
+def generate_actual_seq_len(batch, actual_seq_len=None):
+    position_ids = batch.get('position_ids').transpose(0, 1).contiguous()
+    set_position_ids(position_ids)
+    if actual_seq_len is not None:
+        set_actual_seq_len(actual_seq_len)
     else:
+        position_ids = batch.get('position_ids')
+        actual_seq_len = compute_actual_seq_len(position_ids)
         set_actual_seq_len(actual_seq_len)
 
 
@@ -257,6 +287,109 @@ def get_finetune_data_on_this_tp_rank(data_iterator):
     return tokens, attention_mask
 
 
+_GLOBAL_SHM_MANAGER = None  # Shared Memory Manager Instance
+_SHM_SKIP_FLAG = False  # Whether to not use shared memory
+BASE_SHM_NAME = "g_shm"
+
+
+def reset_sharedmem_mgr():
+    """
+    Reset the shared memory manager and status flags.
+    """
+    global _GLOBAL_SHM_MANAGER, _SHM_SKIP_FLAG
+
+    if _GLOBAL_SHM_MANAGER is not None:
+        try:
+            _GLOBAL_SHM_MANAGER.close()
+        except Exception as e:
+            print(f"[SharedMemoryManager] [WARN] Error during SharedMemoryManager shutdown: {e}")
+
+    _GLOBAL_SHM_MANAGER = None
+    _SHM_SKIP_FLAG = False
+
+
+def get_sharedmem_mgr(base_shm_name="g_shm", buffer_length=4096):
+    """
+    Retrieve the global shared memory manager for data transfer through shared memory.
+    :param base_shm_name: Base name of the shared memory
+    :param buffer_length: Size of the shared memory buffer, default: 4K
+    :return: `SharedMemoryManager` instance
+    """
+    global _GLOBAL_SHM_MANAGER, _SHM_SKIP_FLAG
+
+    if _SHM_SKIP_FLAG:
+        return None
+
+    if _GLOBAL_SHM_MANAGER is not None:
+        return _GLOBAL_SHM_MANAGER
+
+    rank = mpu.get_tensor_model_parallel_rank()
+    global_rank = torch.distributed.get_rank() if torch.distributed.is_initialized() else -1
+
+    if not torch.distributed.is_initialized():
+        print(
+            f"[SharedMemoryManager][Rank {rank}][global_rank {global_rank}]"
+            f"[Func: get_sharedmem_mgr] <ERROR> "
+            f"torch.distributed not initialized, skipping..."
+        )
+        return None
+
+    args = get_args()
+    reset_position_ids = args.reset_position_ids
+    enable_shm = args.enable_share_memory
+    tp_size = mpu.get_tensor_model_parallel_world_size()
+    device_count = torch.cuda.device_count()
+
+    if not (reset_position_ids and enable_shm and tp_size > 1 and tp_size <= device_count):
+        print(
+            f"[SharedMemoryManager][Rank {rank}][global_rank {global_rank}]"
+            f"[Func: get_sharedmem_mgr] <INFO> Skip creation. "
+            f"reset_position_ids={reset_position_ids}, enable_shm={enable_shm}, "
+            f"tp_size={tp_size}, device_count={device_count}"
+        )
+        _SHM_SKIP_FLAG = True
+        return None
+
+    if rank == 0:
+        pid = os.getpid()
+        _GLOBAL_SHM_MANAGER = SharedMemoryManager(
+            base_shm_name, rank0_pid=pid, buffer_length=buffer_length, tp_size=tp_size
+        )
+        print(
+            f"[SharedMemoryManager][Rank {rank}][global_rank {global_rank}] <INFO> Created: "
+            f"{_GLOBAL_SHM_MANAGER.shm_name}, TP_size: {tp_size}, TP_Group: {_GLOBAL_SHM_MANAGER.tp_group_id}"
+        )
+
+    try:
+        torch.distributed.barrier(group=mpu.get_tensor_model_parallel_group())
+    except RuntimeError as e:
+        print(
+            f"[SharedMemoryManager][Rank {rank}][global_rank {global_rank}]"
+            f"[Func: get_sharedmem_mgr] <ERROR> Barrier timeout: {e}"
+        )
+
+    if rank == 0:
+        pid = os.getpid()
+        pid_tensor = torch.tensor([pid], dtype=torch.int32, device="cuda")
+        torch.distributed.broadcast(pid_tensor, mpu.get_tensor_model_parallel_src_rank(),
+                                    group=mpu.get_tensor_model_parallel_group())
+    else:
+        pid_tensor = torch.zeros(1, dtype=torch.int32, device="cuda")
+        torch.distributed.broadcast(pid_tensor, mpu.get_tensor_model_parallel_src_rank(),
+                                    group=mpu.get_tensor_model_parallel_group())
+        pid = pid_tensor.item()
+        _GLOBAL_SHM_MANAGER = SharedMemoryManager(
+            base_shm_name, rank0_pid=pid, buffer_length=buffer_length, tp_size=tp_size, existing=True
+        )
+        print(
+            f"[SharedMemoryManager][Rank {rank}][global_rank {global_rank}] <INFO> Connected to: "
+            f"{_GLOBAL_SHM_MANAGER.shm_name}, TP_size: {tp_size}, TP_Group: {_GLOBAL_SHM_MANAGER.tp_group_id}"
+        )
+
+    torch.distributed.barrier(group=mpu.get_tensor_model_parallel_group())
+    return _GLOBAL_SHM_MANAGER
+
+
 def get_batch_on_this_tp_rank(data_iterator):
     args = get_args()
 
@@ -265,11 +398,31 @@ def get_batch_on_this_tp_rank(data_iterator):
             torch.distributed.broadcast(item, mpu.get_tensor_model_parallel_src_rank(),
                                         group=mpu.get_tensor_model_parallel_group())
 
+    shm_manager = None
+    actual_seq_len = None
+    if args.enable_share_memory:
+        shm_manager = get_sharedmem_mgr(BASE_SHM_NAME, args.micro_batch_size * args.seq_length)
+
     if mpu.get_tensor_model_parallel_rank() == 0:
         if data_iterator is not None:
             data = next(data_iterator)
         else:
             data = None
+
+        if args.enable_share_memory and shm_manager is not None:
+            position_ids = data["position_ids"]
+            actual_seq_len = compute_actual_seq_len(position_ids)
+            shm_manager.write(actual_seq_len)
+
+            if '910B' not in acl.get_soc_name() and args.mtp_num_layers and get_post_process_flag():
+                from mindspeed_llm.core.transformer.multi_token_prediction import roll_tensor
+                position_ids_mtp = []
+                cur_position_id = data["position_ids"]
+                for _ in range(args.mtp_num_layers):
+                    cur_position_id, _ = roll_tensor(cur_position_id, shifts=-1, dims=-1)
+                    cur_position_id = regenerate_position_ids(cur_position_id, 1)
+                    position_ids_mtp.append(cur_position_id)
+                set_mtp_position_ids((position_ids_mtp, shm_manager))
 
         if args.return_document_ids and mpu.get_context_parallel_rank() == 0 and mpu.get_pipeline_model_parallel_rank() == 0:
             document_ids = [
@@ -333,6 +486,10 @@ def get_batch_on_this_tp_rank(data_iterator):
                 _broadcast(batch['position_ids'])
 
     else:
+        if args.enable_share_memory and shm_manager is not None:
+            actual_seq_len = shm_manager.read()
+            if '910B' not in acl.get_soc_name() and args.mtp_num_layers and get_post_process_flag():
+                set_mtp_position_ids((None, shm_manager))
 
         tokens = torch.empty((args.micro_batch_size, args.seq_length),
                              dtype=torch.int64,
@@ -404,7 +561,7 @@ def get_batch_on_this_tp_rank(data_iterator):
             'position_ids': position_ids
         }
 
-    return batch
+    return batch, actual_seq_len
 
 
 def get_batch_on_this_cp_rank(batch):

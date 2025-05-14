@@ -5,6 +5,8 @@ from mindspeed_llm.features_manager.communication.gloo import DisableGlooFeature
 from mindspeed_llm.features_manager.common.rotary import RotaryPositionEmbeddingFeature
 from mindspeed_llm.features_manager.common.embedding import LanguageModelEmbeddingFeature
 from mindspeed_llm.features_manager.communication.coc import AscendCocFeature
+from mindspeed_llm.features_manager.common.data import DataFeature
+from mindspeed_llm.features_manager.communication.coc import AscendCocFeature
 
 FEATURES_LIST = [
     # MindSpeed Legacy Features
@@ -15,6 +17,7 @@ FEATURES_LIST = [
     
     # MindSpeed-LLM Mcore Features
     TrainingDefaultFeature(),
+    DataFeature(),
     DisableGlooFeature(),
     RotaryPositionEmbeddingFeature(),
     LanguageModelEmbeddingFeature(),
