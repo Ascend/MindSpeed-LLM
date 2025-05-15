@@ -1,8 +1,9 @@
 #!/bin/bash
 
 # 需要切换MindSpeed版本
-# git checkout f2acbe71a47b9307c2425bc51f9565802bd901cf  # checkout commit from MindSpeed core_r0.8.0 in 2025.03.30
+# git checkout ca70c1338f1b3d1ce46a0ea426e5779ae1312e2e  # checkout commit from MindSpeed core_r0.8.0
 
+export CPU_AFFINITY_CONF=1
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
 export TASK_QUEUE_ENABLE=2
@@ -79,7 +80,6 @@ MOE_ARGS="
 MTP_ARGS="
     --mtp-num-layers 1 \
     --mtp-loss-scaling-factor 0.3 \
-    --recompute-mtp-norm \
     --mtp-mem-efficient-logits \
 "
 
@@ -100,11 +100,11 @@ DUALPIPE_ARGS="
 
 MEM_ARGS="
     --swap-optimizer \
+    --swap-optimizer-times 4 \
     --use-distributed-optimizer \
-    --mla-zero-memory \
-    --moe-zero-memory level0 \
-    --recompute-norm \
-    --recompute-activation-function \
+    --recompute-method uniform \
+    --recompute-granularity full \
+    --recompute-num-layers 1 \
 "
 
 GPT_ARGS="
@@ -165,6 +165,8 @@ GPT_ARGS="
     --no-load-optim \
     --no-load-rng \
     --bf16 \
+    --use-ascend-coc \
+    --coc-fused-kernel \
     --distributed-timeout-minutes 120
 "
 

@@ -1,8 +1,10 @@
 #!/bin/bash
 
 # 需要切换MindSpeed版本
-# git checkout f2acbe71a47b9307c2425bc51f9565802bd901cf  # checkout commit from MindSpeed core_r0.8.0 in 2025.03.30
+# git checkout ca70c1338f1b3d1ce46a0ea426e5779ae1312e2e  # checkout commit from MindSpeed core_r0.8.0
+# 数据集使用alpaca数据集
 
+export CPU_AFFINITY_CONF=1
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
 export TASK_QUEUE_ENABLE=2
@@ -31,7 +33,7 @@ CP_TYPE='ulysses_cp_algo'
 NUM_LAYERS=64
 SEQ_LEN=4096
 MBS=1
-GBS=3840
+GBS=7680
 
 DISTRIBUTED_ARGS="
     --nproc_per_node $NPUS_PER_NODE \
@@ -80,7 +82,6 @@ MOE_ARGS="
 MTP_ARGS="
     --mtp-num-layers 1 \
     --mtp-loss-scaling-factor 0.3 \
-    --recompute-mtp-norm \
     --mtp-mem-efficient-logits \
 "
 
@@ -101,10 +102,10 @@ DUALPIPE_ARGS="
 
 MEM_ARGS="
     --swap-optimizer \
+    --swap-optimizer-times 4 \
     --use-distributed-optimizer \
-    --mla-zero-memory \
     --moe-zero-memory level0 \
-    --recompute-norm \
+    --moe-unperm2-mem-optim \
     --recompute-activation-function \
 "
 
@@ -166,6 +167,11 @@ GPT_ARGS="
     --no-load-optim \
     --no-load-rng \
     --bf16 \
+    --use-ascend-coc \
+    --coc-fused-kernel \
+    --moe-zerc \
+    --async-log-allreduce \
+    --enable-share-memory \
     --distributed-timeout-minutes 120
 "
 

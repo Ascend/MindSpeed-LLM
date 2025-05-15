@@ -11,4 +11,5 @@ python ./preprocess_data.py \
     --output-prefix ./dataset/enwiki \
     --json-keys text \
     --workers 4 \
-    --log-interval 1000
+    --log-interval 1000 \
+    --append-eod
