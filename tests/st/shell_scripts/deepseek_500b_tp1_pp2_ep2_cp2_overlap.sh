@@ -13,7 +13,7 @@ basepath=$(cd `dirname $0`; cd ../../../; pwd)
 
 CKPT_LOAD_DIR="/data/deepseek-500b-tp1-pp2-ep2-cp2-overlap-base/"
 DATA_PATH="/data/pretrain_dataset/alpaca_text_document"
-TOKENIZER_MODEL="/data/llama-2-7b-hf/"
+TOKENIZER_MODEL="/data/hf/llama-2-7b-hf"
 
 TP=1
 PP=2

@@ -14,7 +14,7 @@ basepath=$(cd `dirname $0`; cd ../../../; pwd)
 
 
 DATA_PATH="/data/pretrain_dataset/alpaca_text_document"
-TOKENIZER_MODEL="/data/llama-2-7b-hf/tokenizer.model"
+TOKENIZER_MODEL="/data/hf/llama-2-7b-hf/tokenizer.model"
 CKPT_LOAD_DIR="/data/llama2-2dtp-tp4pp2vp2tpx2tpy2"
 
 TP=4

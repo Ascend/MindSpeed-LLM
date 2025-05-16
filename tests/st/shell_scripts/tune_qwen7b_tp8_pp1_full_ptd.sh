@@ -12,7 +12,7 @@ WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
 DATA_PATH="/data/tune_dataset/alpaca/alpaca"
 TOKENIZER_PATH="/data/qwen-7b/"
-CKPT_LOAD_DIR="/data/Qwen-7B-tp8-pp1/"
+CKPT_LOAD_DIR="/data/pipeline/Qwen-7B-tp8-pp1/"
 
 basepath=$(cd `dirname $0`; cd ../../../; pwd)
 

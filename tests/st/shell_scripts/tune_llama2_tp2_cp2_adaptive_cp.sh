@@ -15,7 +15,7 @@ basepath=$(cd `dirname $0`; cd ../../../; pwd)
 
 CKPT_LOAD_DIR="/data/ci/Llama2-mcore-tp2/"
 DATA_PATH="/data/ci/llama2_pack/alpaca"
-TOKENIZER_MODEL="/data/llama-2-7b-hf"
+TOKENIZER_MODEL="/data/hf/llama-2-7b-hf"
 
 TP=2
 PP=1
