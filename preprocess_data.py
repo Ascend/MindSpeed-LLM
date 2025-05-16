@@ -156,7 +156,7 @@ def add_tokenizer_args(parser):
     group = parser.add_argument_group(title='tokenizer')
     group.add_argument('--tokenizer-type', type=str, default='PretrainedFromHF',
                        choices=['BertWordPieceLowerCase', 'BertWordPieceCase',
-                                'GPT2BPETokenizer', 'PretrainedFromHF'],
+                                'GPT2BPETokenizer', 'GPTSentencePieceTokenizer', 'PretrainedFromHF'],
                        help='What type of tokenizer to use.')
     group.add_argument("--tokenizer-not-use-fast", action='store_false',
                        help="HuggingFace tokenizer not use the fast version.")

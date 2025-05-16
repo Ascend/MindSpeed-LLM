@@ -119,6 +119,10 @@ MindSpeed-LLM目前已内置支持百余个业界常用稠密和MOE大模型的�
     <td rowspan="1">MOE模型</td>
     <td><a href="./docs/models/moe_model.md">MOE</a></td>
   </tr>
+  <tr>
+    <td rowspan="1">SSM模型</td>
+    <td><a href="./docs/models/ssm_model.md">SSM</a></td>
+  </tr>  
 </tbody></table>
 
 ## 训练方案与特性

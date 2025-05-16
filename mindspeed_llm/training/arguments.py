@@ -63,7 +63,6 @@ def process_args(parser):
     parser = _add_high_availability_args(parser)
     parser = _add_cp_args(parser)
     parser = _add_mla_args(parser)
-    parser = _add_mamba_args(parser)
     parser = _add_yarn_args(parser)
     parser = _add_deepseek_moe_args(parser)
     parser = _add_mtp_args(parser)
@@ -124,14 +123,6 @@ def _add_mla_args(parser):
     group.add_argument("--mla-up-proj-tp-overlap", action='store_true', default=False, help='overlap up proj tp comm')
     group.add_argument("--recompute-mla-up-proj", action='store_true', default=False, help='recompute up projection in mla')
     group.add_argument('--mla-swap-core-attn-out', action='store_true', default=False, help='swap core_attn_out only in mla.')
-
-    return parser
-
-
-def _add_mamba_args(parser):
-    group = parser.add_argument_group(title='mamba')
-
-    group.add_argument('--mamba-ngroups', type=int, default=8, help='Specifies the number of groups in mamba')
 
     return parser
 

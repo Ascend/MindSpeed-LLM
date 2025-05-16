@@ -7,6 +7,7 @@ from einops import rearrange
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from megatron.training import get_args
 from mindspeed_llm.tasks.models.ssm.state_space_duality import StateSpaceProcessor, ProcessInputs, StateOptions
 
 
@@ -18,9 +19,13 @@ def mamba_mixer_init_wrapper(fn):
         self.rmsnorm = True
         dt_min = kwargs.pop('dt_min', 0.001)
         dt_max = kwargs.pop('dt_max', 0.1)
+        args = get_args()
         self.use_mem_eff_path = False
+        self.d_ssm = args.mamba_d_ssm
+        self.chunk_size = args.mamba_chunk_size
         self.dt_min = dt_min
         self.dt_max = dt_max
+        self.d_ssm_local = self.d_inner_local if self.d_ssm is None else self.d_ssm // self.tensor_model_parallel_size
 
         if self.rmsnorm:
             self.norm = Mamba2RMSNorm(
@@ -34,12 +39,17 @@ def mamba_mixer_init_wrapper(fn):
     return wrapper
 
 
-def mamba_mixer_forward(self, hidden_states, inference_params=None):
+def mamba_mixer_forward(self, hidden_states, seqlen=None, seq_idx=None, cu_seqlens=None, inference_params=None):
     """
     hidden_states: (nL, B, D) / (L B D)
     Returns: same shape as hidden_states
     """
-    _, batch, dim = hidden_states.shape
+    seqlen_og = seqlen
+    if seqlen is None:
+        seqlen, batch, dim = hidden_states.shape
+    else:
+        batch_seqlen, dim = hidden_states.shape
+        batch = batch_seqlen // seqlen
 
     conv_state, ssm_state = None, None
     if inference_params is not None:
@@ -56,11 +66,17 @@ def mamba_mixer_forward(self, hidden_states, inference_params=None):
     xz, _ = self.in_proj(hidden_states)
 
     # transpose: l b pd --> b l pd
-    xz = rearrange(xz, "l b d -> b l d").contiguous()
+    if seqlen_og is not None:
+        xz = rearrange(xz, "(l b) d -> b l d", l=seqlen)
+    else:
+        xz = rearrange(xz, "l b d -> b l d").contiguous()
 
-    z, xBC, dt = torch.split(
+    d_mlp = (xz.shape[-1] - 2 * self.d_ssm_local - 2 * self.ngroups_local * self.d_state - self.nheads_local) // 2
+    z0, x0, z, xBC, dt = torch.split(
         xz,
         [
+            d_mlp,
+            d_mlp,
             self.d_inner_local,
             self.d_inner_local + 2 * self.ngroups_local * self.d_state,
             self.nheads_local,
@@ -73,6 +89,8 @@ def mamba_mixer_forward(self, hidden_states, inference_params=None):
 
     # Compute short convolution
     if conv_state is not None:
+        if cu_seqlens:
+            raise('Variable length inputs in convolution are not currently supported')
         # If we just take x[:, :, -self.d_conv :], it will error if seqlen < self.d_conv
         # Instead F.pad will pad with zeros if seqlen < self.d_conv, and truncate otherwise.
         conv_state.copy_(
@@ -80,6 +98,8 @@ def mamba_mixer_forward(self, hidden_states, inference_params=None):
         )  # Update state (B D W)
 
     seqlen = xBC.size(2)
+    if seq_idx:
+        raise('Variable length inputs in convolution are not currently supported')    
     xBC = self.act(self.conv1d(xBC)[..., :seqlen])
 
     # transpose b pd l --> b l pd
@@ -123,8 +143,12 @@ def mamba_mixer_forward(self, hidden_states, inference_params=None):
     y = state_space_duality.process(inputs, state_opts)          
 
     if ssm_state is not None:
-        y, last_state = y
-        ssm_state.copy_(last_state)
+        y, last_state, *rest = y
+        if cu_seqlens is None:
+            ssm_state.copy_(last_state)
+        else:
+            varlen_states = rest[0]
+            ssm_state.copy_(varlen_states)
 
     if self.rmsnorm:
         y = rearrange(y, "b l h p -> b l (h p)").contiguous()
@@ -132,10 +156,16 @@ def mamba_mixer_forward(self, hidden_states, inference_params=None):
     else:
         y = rearrange(y, "b l h p -> b l (h p)").contiguous()
 
+    if d_mlp > 0:
+        y = torch.cat([F.silu(z0) * x0, y], dim=-1) 
+
+    if seqlen_og is not None:
+        y = rearrange(y, "b l d -> (b l) d")          
+
     y = rearrange(y, "b l d -> l b d").contiguous()
     out, out_bias = self.out_proj(y)
 
-    return out, out_bias
+    return out, out_bias 
 
 
 class Mamba2RMSNorm(nn.Module):

@@ -18,13 +18,15 @@ class ProcessInputs:
 
 class StateOptions:
     def __init__(self, initial_states=None, return_final_state=False, cached_start=False):
+        """State management options"""
         self.initial_states = initial_states
         self.return_final_state = return_final_state
         self.cached_start = cached_start
         self.final_state = None  # Added for state persistence
 
     @property
-    def should_return_final(self):
+    def should_return_final(self) -> bool:
+        """Determine if final state should be returned"""
         return self.return_final_state or self.cached_start
 
 
@@ -83,8 +85,8 @@ class StateSpaceProcessor:
         x_pad, A_pad, B_pad, C_pad = self._chunk_and_pad(x, dt_proc, A, B_exp, C_exp, pad_size)
 
         # Core computations
-        Y_diag, states, A_cum = self._compute_diagonal_blocks(A_pad, B_pad, C_pad, x_pad)
-        Y_off, final_state = self._compute_inter_chunk_blocks(A_cum, C_pad, states, initial_states)
+        Y_diag, states, A_cum, C_br = self._compute_diagonal_blocks(A_pad, B_pad, C_pad, x_pad)
+        Y_off, final_state = self._compute_inter_chunk_blocks(A_cum, C_br, states, initial_states)
 
         # Output synthesis
         state_opts.final_state = final_state
@@ -146,27 +148,45 @@ class StateSpaceProcessor:
         A_cum = torch.cumsum(A, dim=-1)
         L = torch.exp(self._segmented_sum(A)).to(torch.bfloat16)
 
-        # Diagonal term calculation
-        Y_diag = torch.einsum("bclhn,bcshn,bhcls,bcshp->bclhp", C, B, L, x)
+        C_r = C.permute(0, 3, 1, 2, 4)
+        B_r = B.permute(0, 3, 1, 2, 4)
+        x_r = x.permute(0, 3, 1, 2, 4)        
+        C_b = C_r.reshape(-1, C_r.shape[3], C_r.shape[4])
+        B_b = B_r.reshape(-1, B_r.shape[3], B_r.shape[4]).transpose(1, 2)
+        x_b = x_r.reshape(-1, x_r.shape[3], x_r.shape[4])
+        CB_b = torch.bmm(C_b, B_b)
+        L_b = L.reshape(-1, L.shape[3], L.shape[4])
+        CBL_b = CB_b * L_b
+        # 对角项计算
+        Y_diag = torch.bmm(CBL_b, x_b).reshape(x_r.shape).permute(0, 2, 3, 1, 4).contiguous()
 
-        # State initialization
+        # 状态初始化
         decay = torch.exp(A_cum[:, :, :, -1:] - A_cum).to(torch.bfloat16)
-        states = torch.einsum("bclhn,bhcl,bclhp->bchpn", B, decay, x)
-        return Y_diag, states, A_cum
+        decay_states_us = decay.unsqueeze(-1)
+        Bd_r = B_r * decay_states_us
+        Bd_b = Bd_r.reshape(-1, Bd_r.shape[3], Bd_r.shape[4]).transpose(1, 2)
 
-    def _compute_inter_chunk_blocks(self, A, C, states, initial_states):
+        states = torch.bmm(Bd_b, x_b).transpose(1, 2).reshape(Bd_r.shape[0], Bd_r.shape[1], Bd_r.shape[2], x_r.shape[4], Bd_r.shape[4]).permute(0, 2, 1, 3, 4).contiguous()
+        return Y_diag, states, A_cum, (C_b, C_r)
+
+    def _compute_inter_chunk_blocks(self, A_cum, C_br, states, initial_states):
         """Inter-chunk computation"""
-        # State propagation
+        C_b, C_r = C_br
+        # 状态递推
         if initial_states is None:
             initial_states = torch.zeros_like(states[:, :1])
         states = torch.cat([initial_states, states], dim=1)
-        decay = torch.exp(self._segmented_sum(nn.functional.pad(A[:, :, :, -1], (1, 0)))).to(torch.bfloat16)
+        decay = torch.exp(self._segmented_sum(nn.functional.pad(A_cum[:, :, :, -1], (1, 0)))).to(torch.bfloat16)
         new_states = torch.einsum("bhzc,bchpn->bzhpn", decay, states)
         states, final_state = new_states[:, :-1], new_states[:, -1]
 
-        # State transformation to output
-        state_decay = torch.exp(A).to(torch.bfloat16)
-        return torch.einsum("bclhn,bchpn,bhcl->bclhp", C, states, state_decay), final_state
+        # 状态转换输出
+        state_decay_out = torch.exp(A_cum).to(torch.bfloat16)
+        states_b = states.permute(0, 2, 1, 3, 4).reshape(-1, states.shape[3], states.shape[4]).transpose(-1, -2) 
+        Cs_b = torch.bmm(C_b, states_b).reshape(C_r.shape[0], C_r.shape[1], C_r.shape[2], C_r.shape[3], states_b.shape[2])
+        state_decay_out_us = state_decay_out.unsqueeze(-1)  
+        Y_off = (Cs_b * state_decay_out_us).permute(0, 2, 3, 1, 4).contiguous()
+        return Y_off, final_state
 
     def _synthesize_output(
         self,
