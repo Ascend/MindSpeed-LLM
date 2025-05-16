@@ -43,7 +43,7 @@ class MegatronAdaptation:
         """
         from mindspeed_llm.mindspore.mindspore_adaptor import MindSporeAdaptation
         MegatronAdaptation.pre_execute()
-        for adaptation in [CoreAdaptation(), LegacyAdaptation(), MindSporeAdaptation()]:
+        for adaptation in [CoreAdaptation(), LegacyAdaptation()]:
             adaptation.execute()
             MegatronAdaptation.apply()
         
@@ -54,6 +54,9 @@ class MegatronAdaptation:
                 feature.register_patches(MindSpeedPatchesManager, args)
         MindSpeedPatchesManager.apply_patches()
         MegatronAdaptation.post_execute()
+
+        MindSporeAdaptation().execute()
+        MegatronAdaptation.apply()
 
     @classmethod
     def register(cls, orig_func_name, new_func=None, force_patch=False, create_dummy=False):
