@@ -1,11 +1,11 @@
 #!/bin/bash
 
 # 需要切换MindSpeed版本
-# git checkout f2acbe71a47b9307c2425bc51f9565802bd901cf  # checkout commit from MindSpeed core_r0.8.0 in 2025.03.30
+# git checkout ca70c1338f1b3d1ce46a0ea426e5779ae1312e2e  # checkout commit from MindSpeed core_r0.8.0
 
 export CUDA_DEVICE_MAX_CONNECTIONS=1
+export CPU_AFFINITY_CONF=1
 export TASK_QUEUE_ENABLE=2
-export HCCL_OP_BASE_FFTS_MODE=TRUE
 export PYTORCH_NPU_ALLOC_CONF="expandable_segments:True"
 export HCCL_CONNECT_TIMEOUT=3600
 
@@ -72,12 +72,12 @@ MOE_ARGS="
     --moe-router-score-function sigmoid \
     --moe-router-enable-expert-bias \
     --moe-tp-extend-ep \
+    --router-gating-in-fp32 \
 "
 
 MTP_ARGS="
     --mtp-num-layers 1 \
     --mtp-loss-scaling-factor 0.3 \
-    --mtp-mem-efficient-logits \
 "
 
 DUALPIPE_ARGS="
@@ -85,10 +85,12 @@ DUALPIPE_ARGS="
     --schedules-method dualpipev \
 "
 
-RECOMPUTE_ARGS="
+MEM_ARGS="
+    --mtp-mem-efficient-logits \
+    --swap-optimizer \
     --recompute-granularity full \
     --recompute-method block \
-    --recompute-num-layers 4 \
+    --recompute-num-layers 8 \
 "
 
 ROPE_ARGS="
@@ -104,7 +106,6 @@ ROPE_ARGS="
 GPT_ARGS="
     --spec mindspeed_llm.tasks.models.spec.deepseek_spec layer_spec \
     --reset-position-ids \
-    --router-gating-in-fp32 \
     --gemm-gradient-accumulation-fusion \
     --noop-layers 61,62,63 \
     --manual-gc \
@@ -184,7 +185,7 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     $OUTPUT_ARGS \
     $MLA_ARGS \
     $DUALPIPE_ARGS \
-    $RECOMPUTE_ARGS \
+    $MEM_ARGS \
     $ROPE_ARGS \
     $MOE_ARGS \
     $MTP_ARGS \

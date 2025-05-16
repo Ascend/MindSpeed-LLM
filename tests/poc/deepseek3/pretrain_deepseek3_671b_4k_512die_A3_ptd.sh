@@ -1,13 +1,14 @@
 #!/bin/bash
 
 # 需要切换MindSpeed版本
-# git checkout f2acbe71a47b9307c2425bc51f9565802bd901cf  # checkout commit from MindSpeed core_r0.8.0 in 2025.03.30
+# git checkout ca70c1338f1b3d1ce46a0ea426e5779ae1312e2e  # checkout commit from MindSpeed core_r0.8.0
+# 数据集使用alpaca数据集
 
 export CUDA_DEVICE_MAX_CONNECTIONS=1
-export TASK_QUEUE_ENABLE=2
-export HCCL_OP_BASE_FFTS_MODE=TRUE
-export PYTORCH_NPU_ALLOC_CONF="expandable_segments:True"
+export CPU_AFFINITY_CONF=1
+export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
 export HCCL_CONNECT_TIMEOUT=3600
+export TASK_QUEUE_ENABLE=2
 
 NPUS_PER_NODE=16
 MASTER_ADDR=localhost #主节点IP
@@ -22,14 +23,14 @@ TOKENIZER_PATH="your tokenizer path"
 CKPT_LOAD_DIR="your model ckpt path"
 
 TP=2
-PP=8
-EP=32
+PP=4
+EP=64
 CP=1
 CP_TYPE='ulysses_cp_algo'
 NUM_LAYERS=64
 SEQ_LEN=4096
 MBS=1
-GBS=3840
+GBS=7680
 
 DISTRIBUTED_ARGS="
     --nproc_per_node $NPUS_PER_NODE \
@@ -72,12 +73,12 @@ MOE_ARGS="
     --moe-router-score-function sigmoid \
     --moe-router-enable-expert-bias \
     --moe-tp-extend-ep \
+    --router-gating-in-fp32 \
 "
 
 MTP_ARGS="
     --mtp-num-layers 1 \
     --mtp-loss-scaling-factor 0.3 \
-    --mtp-mem-efficient-logits \
 "
 
 DUALPIPE_ARGS="
@@ -85,11 +86,19 @@ DUALPIPE_ARGS="
     --schedules-method dualpipev \
 "
 
+OTHERS_ARGS="
+    --mla-up-proj-tp-overlap \
+    --enable-share-memory \
+"
+
 MEM_ARGS="
-    --mla-zero-memory \
-    --moe-zero-memory level0 \
+    --mtp-mem-efficient-logits \
+    --moe-unperm2-mem-optim \
     --recompute-activation-function \
+    --recompute-mla-up-proj \
+    --moe-zero-memory level0 \
     --swap-optimizer \
+    --mla-swap-core-attn-out \
 "
 
 ROPE_ARGS="
@@ -105,7 +114,6 @@ ROPE_ARGS="
 GPT_ARGS="
     --spec mindspeed_llm.tasks.models.spec.deepseek_spec layer_spec \
     --reset-position-ids \
-    --router-gating-in-fp32 \
     --gemm-gradient-accumulation-fusion \
     --noop-layers 61,62,63 \
     --manual-gc \
@@ -190,6 +198,7 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     $ROPE_ARGS \
     $MOE_ARGS \
     $MTP_ARGS \
+    $OTHERS_ARGS \
     --save $CKPT_SAVE_DIR \
     --load $CKPT_LOAD_DIR \    
     --distributed-backend nccl | tee logs/pretrain_deepseek3_671b_4k_512die_A3_ptd.log
