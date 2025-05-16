@@ -176,7 +176,11 @@ def get_message_layer_attn(message, model, layer_idx, md=None, args=None):
     dense_weight.append(model.get_layers_self_attention_linear_proj_weight(layer_idx=layer_idx))
 
     if getattr(model.get_args(), "qk_layernorm", False):
-        message["q layernorm"] = model.get_layers_self_attention_q_layernorm_weight(layer_idx=layer_idx)
+        if getattr(model.get_args(), "multi_head_latent_attention", False):
+            if getattr(model.get_args(), "q_lora_rank", None):
+                message["q layernorm"] = model.get_layers_self_attention_q_layernorm_weight(layer_idx=layer_idx)
+        else:
+            message["q layernorm"] = model.get_layers_self_attention_q_layernorm_weight(layer_idx=layer_idx)
         message["k layernorm"] = model.get_layers_self_attention_k_layernorm_weight(layer_idx=layer_idx)
     if getattr(model.get_args(), "multi_head_latent_attention", False):
         if getattr(model.get_args(), "q_lora_rank", None):

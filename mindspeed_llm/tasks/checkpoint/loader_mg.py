@@ -181,7 +181,11 @@ def get_message_layer_attn(message, model, md=None, **kwargs):
     # Handle gated linear units
     # simple concat of the rest
     if getattr(model.get_args(), "qk_layernorm", False):
-        message["q layernorm"] = model.get_layers_self_attention_q_layernorm_weight(**kwargs)
+        if getattr(model.get_args(), "multi_head_latent_attention", False):
+            if getattr(model.get_args(), "q_lora_rank", None):
+                message["q layernorm"] = model.get_layers_self_attention_q_layernorm_weight(**kwargs)
+        else:
+            message["q layernorm"] = model.get_layers_self_attention_q_layernorm_weight(**kwargs)           
         message["k layernorm"] = model.get_layers_self_attention_k_layernorm_weight(**kwargs)
     if getattr(model.get_args(), "multi_head_latent_attention", False):
         if getattr(model.get_args(), "q_lora_rank", None):
