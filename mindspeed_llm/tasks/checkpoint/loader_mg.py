@@ -55,8 +55,6 @@ def add_arguments(parser):
     group.add_argument("--noop-layers", type=str, default=None, help='Specity the noop layers.')
     group.add_argument("--add-output-layer-bias", action="store_true", default=False,
                        help='Configuration for the output layer bias.')
-    group.add_argument('--load-checkpoint-loosely', action='store_true', default=False,
-                       help='Enable loading checkpoint not strictly.')
                        
 
 def build_metadata(args, margs):
