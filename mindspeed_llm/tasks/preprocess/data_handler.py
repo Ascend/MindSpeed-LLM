@@ -31,6 +31,7 @@ from megatron.core.datasets import indexed_dataset
 
 from mindspeed_llm.tasks.preprocess.templates import Prompter, AlpacaTemplate, get_model_template
 from mindspeed_llm.tasks.posttrain.utils import convert_token_to_id
+from .decoder_packed_mtf_dataset import _infer_seqlen
 
 from .utils import (
     get_dataset_list,
@@ -360,6 +361,13 @@ class LlamaFactoryInstructionHandler(BaseDatasetHandler):
                 source_mask = [tokenizer.eos_token_id] + [self.ignored_label] * (len(source_ids) - 1)
             else:
                 source_mask = [self.ignored_label] * len(source_ids)
+
+            if self.args.neat_pack:
+                # 只针对单轮超长数据，多轮对话功能待完善
+                source_len, target_len = _infer_seqlen(len(source_ids), len(target_ids), self.args.seq_length - 1)
+                source_ids = source_ids[:source_len]
+                source_mask = source_mask[:source_len]
+                target_ids = target_ids[:target_len]
 
             input_ids += source_ids + target_ids
             labels += source_mask + target_ids

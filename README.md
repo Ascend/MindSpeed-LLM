@@ -72,7 +72,7 @@ MindSpeed-LLM的依赖配套如下表，安装步骤参考[安装指导](./docs/
   </tr>
   <tr>
     <td>Toolkit（开发套件）</td>
-    <td rowspan="2">CANN 8.0.RC1</td>
+    <td rowspan="2">CANN 8.1.RC1</td>
     <td rowspan="2">《CANN 软件安装指南》</td>
   </tr>
   <tr>
