@@ -734,8 +734,22 @@ class MultiTokenPredictionBlock(MegatronModule):
             # Calc loss for the current Multi-Token Prediction (MTP) layers.
             labels, _ = roll_tensor(labels, shifts=-1, dims=-1)
             loss_mask, num_tokens = roll_tensor(loss_mask, shifts=-1, dims=-1)
-            mtp_loss = compute_language_model_loss(labels, mtp_logits)
-            mtp_loss = loss_mask * mtp_loss
+
+            if args.is_instruction_dataset:
+                mtp_labels = labels[:, 1:].contiguous()
+                mtp_logits = mtp_logits[:-1, :, :].contiguous()
+                mtp_loss_mask = loss_mask[..., 1:].view(-1).float()
+                num_tokens = torch.sum(mtp_loss_mask)
+            else:
+                mtp_labels = labels
+
+            mtp_loss = compute_language_model_loss(mtp_labels, mtp_logits)
+            
+            if args.is_instruction_dataset:
+                mtp_loss = mtp_loss_mask * mtp_loss
+            else:
+                mtp_loss = loss_mask * mtp_loss
+
             if self.training:
                 MTPLossLoggingHelper.save_loss_to_tracker(
                     torch.sum(mtp_loss) / num_tokens,

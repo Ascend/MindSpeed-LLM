@@ -357,7 +357,7 @@ class MgCkptConvert(object):
         """embedding"""
         emb_list = []
         for tp_rank in self.tp_rank_list:
-            cur_tp_emb = mg_models[(tp_rank, self.ep_rank_list[0])].pop("embedding.word_embeddings.weight")
+            cur_tp_emb = mg_models[(tp_rank, self.ep_rank_list[0])].get("embedding.word_embeddings.weight")
             emb_list.append(cur_tp_emb.clone())
         emb_weights = torch.cat(emb_list, dim=0)
         hf_dict["model.embed_tokens.weight"] = emb_weights
@@ -727,7 +727,7 @@ class MgCkptConvert(object):
         for tp_rank in self.tp_rank_list:
             cur_eh_proj = mg_models[(tp_rank, self.ep_rank_list[0])].pop(f"mtp.layers.{mtp_local_idx}.eh_proj.weight")
             eh_proj_list.append(cur_eh_proj.clone())
-            cur_tp_emb = mg_models[(tp_rank, self.ep_rank_list[0])].pop("embedding.word_embeddings.weight")
+            cur_tp_emb = mg_models[(tp_rank, self.ep_rank_list[0])].get("embedding.word_embeddings.weight")
             emb_list.append(cur_tp_emb.clone())
 
         eh_proj_weights = torch.cat(eh_proj_list, dim=0)
@@ -855,7 +855,7 @@ class MgCkptConvert(object):
                 for mtp_idx in range(self.mtp_num_layers):
                     hf_layer_number = self.num_real_layers + mtp_idx
                     logger.info(f"Converting the weights of mtp layer {hf_layer_number}")
-                    self.set_mtp_layer(hf_weight_dict, mg_models, hf_layer_number)
+                    self.set_mtp_layer(hf_weight_dict, mg_models, hf_layer_number, mtp_idx)
                     self.save_safetensors(hf_weight_dict, hf_layer_number + 1)
                     hf_weight_dict = defaultdict()
 
@@ -898,7 +898,7 @@ class MgCkptConvert(object):
                 for mtp_idx in range(self.mtp_num_layers):
                     hf_layer_number = self.num_real_layers + mtp_idx
                     logger.info(f"Converting the weights of mtp layer {hf_layer_number}")
-                    self.set_mtp_layer(hf_weight_dict, mg_models, hf_layer_number)
+                    self.set_mtp_layer(hf_weight_dict, mg_models, hf_layer_number, mtp_idx)
                     self.save_safetensors(hf_weight_dict, hf_layer_number + 1)
                     hf_weight_dict = defaultdict()
 
