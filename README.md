@@ -13,7 +13,7 @@
     </a>
 </p>
 
-MindSpeed-LLM是基于昇腾生态的大语言模型分布式训练框架，旨在为华为 [昇腾芯片](https://www.hiascend.com/) 生态合作伙伴提供端到端的大语言模型训练方案，包含分布式预训练、分布式指令微调、分布式偏好对齐以及对应的开发工具链，如：数据预处理、权重转换、在线推理、基线评估。
+MindSpeed-LLM是基于昇腾生态的大语言模型分布式训练框架，旨在为华为 [昇腾芯片](https://www.hiascend.com/) 生态合作伙伴提供端到端的大语言模型训练方案，包含分布式预训练、分布式指令微调以及对应的开发工具链，如：数据预处理、权重转换、在线推理、基线评估。
 
 ***<small>注 : 原仓名ModelLink更改为MindSpeed-LLM，原包名modellink更改为mindspeed_llm </small>***
 
@@ -27,31 +27,17 @@ MindSpeed-LLM是基于昇腾生态的大语言模型分布式训练框架，旨�
 
 🚀🚀🚀**DeepSeek-R1** 系列功能逐步上线！！🚀🚀🚀
 
-**[DeepSeek-R1-ZERO Qwen-7B](https://gitee.com/ascend/MindSpeed-RL/blob/master/docs/solutions/r1_zero_qwen25_7b.md)** 😊
+😊 **[DeepSeek-R1-ZERO Qwen-7B](https://gitee.com/ascend/MindSpeed-RL/blob/master/docs/solutions/r1_zero_qwen25_7b.md)**  **[DeepSeek-R1-ZERO Qwen-32B](https://gitee.com/ascend/MindSpeed-RL/blob/master/docs/solutions/r1_zero_qwen25_32b.md)**
 
-**[DeepSeek-R1-ZERO Qwen-32B](https://gitee.com/ascend/MindSpeed-RL/blob/master/docs/solutions/r1_zero_qwen25_32b.md)**
+🚀🚀🚀 **[DeepSeek-V3-671B模型全家桶](./examples/mcore/deepseek3/)** 已上线！！！🚀🚀🚀
 
-
-🚀🚀🚀**DeepSeek-V3-671B** 模型全家桶已上线！！！🚀🚀🚀
-
-**数据处理：[预训练](./examples/mcore/deepseek3/data_convert_deepseek3_pretrain.sh)、
-[指令微调](./examples/mcore/deepseek3/data_convert_deepseek3_instruction.sh)**  😊
-
-**[权重转换](./examples/mcore/deepseek3/ckpt_convert_deepseek3_hf2mcore.sh)** 😊
-
-**[预训练](./examples/mcore/deepseek3/pretrain_deepseek3_671b_4k_ptd.sh)** 😊
-
-**微调:
-[全参微调](./examples/mcore/deepseek3/tune_deepseek3_671b_4k_full_ptd.sh)、
-[LoRA微调](./examples/mcore/deepseek3/tune_deepseek3_671b_4k_lora_ptd.sh)、
-[QLoRA微调](./examples/mcore/deepseek3/tune_deepseek3_671b_4k_qlora_ptd.sh)** 😊
-
+😊**支持数据集处理、权重转换、预训练、全参微调、lora微调、qlora微调** 
 
 🚀🚀🚀**DeepSeek-R1-Distill** 系列模型已上线！！🚀🚀🚀
 
-**[DeepSeek-R1-Distill-Qwen](./examples/mcore/deepseek_r1_distill_qwen/)** 😊
+😊 **[DeepSeek-R1-Distill-Qwen](./examples/mcore/deepseek_r1_distill_qwen/)**  **[DeepSeek-R1-Distill-LLaMA](./examples/mcore/deepseek_r1_distill_llama/)**
 
-**[DeepSeek-R1-Distill-LLaMA](./examples/mcore/deepseek_r1_distill_llama/)** 😊
+> 注：当前qwen3系列模型功能完善、验证中，非商用版本。
 
 
 ## 版本配套表
@@ -113,25 +99,21 @@ MindSpeed-LLM目前已内置支持百余个业界常用稠密和MOE大模型的�
 <tbody>
   <tr>
     <td rowspan="1">稠密模型</td>
-    <td><a href="./docs/models/dense_model.md">Dense</a></td>
+    <td><a href="docs/pytorch/models/dense_model.md">Dense</a></td>
   </tr>
   <tr>
     <td rowspan="1">MOE模型</td>
-    <td><a href="./docs/models/moe_model.md">MOE</a></td>
+    <td><a href="docs/pytorch/models/moe_model.md">MOE</a></td>
   </tr>
   <tr>
     <td rowspan="1">SSM模型</td>
-    <td><a href="./docs/models/ssm_model.md">SSM</a></td>
+    <td><a href="./docs/pytorch/models/ssm_model.md">SSM</a></td>
   </tr>  
 </tbody></table>
 
 ## 训练方案与特性
 
 MindSpeed-LLM包含分布式预训练、分布式微调、分布式偏好对齐等训练方案。
-
-- legacy是megatron早期方案，与新的mcore方案在代码设计上存在差异，legacy方案不支持moe模型以及长序列CP切分方案，我们建议优先使用mcore方案。
-
-- Released表示是否商用发布，未商用发布特性处于内部开发状态，不推荐开发者使用。
 
 ### 分布式预训练
 
@@ -150,38 +132,32 @@ MindSpeed-LLM包含分布式预训练、分布式微调、分布式偏好对齐�
   <tbody>
     <tr>
       <td rowspan="3">LLAMA2</td>
-      <td>LLAMA2-7B</td>
+      <td><a href="./examples/mcore/llama2/pretrain_llama2_7b_pack_ptd.sh">LLAMA2-7B</a></td>
       <td>Atlas 900 A2 PODc</td>
       <td>1x8</td>
-      <td><a href="./examples/mcore/llama2/pretrain_llama2_7b_pack_ptd.sh">69.0%</a></td>
+      <td>69.0%</td>
     </tr>
     <tr>
-      <td>LLAMA2-13B</td>
+      <td><a href="./examples/mcore/llama2/pretrain_llama2_13b_pack_ptd.sh">LLAMA2-13B</a></td>
       <td>Atlas 900 A2 PODc</td>
       <td>1x8</td>
-      <td><a href="./examples/mcore/llama2/pretrain_llama2_13b_pack_ptd.sh">64.7%</a></td>
+      <td>64.7%</td>
     </tr>
     <tr>
-      <td>LLAMA2-70B</td>
+      <td><a href="./examples/mcore/llama2/pretrain_llama2_70b_pack_ptd.sh">LLAMA2-70B</a></td>
       <td>Atlas 900 A2 PODc</td>
       <td>4x8</td>
-      <td><a href="./examples/mcore/llama2/pretrain_llama2_70b_pack_ptd.sh">44.1%</a></td>
+      <td>44.1%</td>
     </tr>
     <tr>
       <td>Mixtral</td>
-      <td>Mixtral-8x7B</td>
+      <td><a href="./examples/mcore/mixtral/pretrain_mixtral_8x7b_ptd.sh">Mixtral-8x7B</a></td>
       <td>Atlas 900 A2 PODc</td>
       <td>8x8</td>
-      <td><a href="./examples/mcore/mixtral/pretrain_mixtral_8x7b_ptd.sh">31.7%</a></td>
+      <td>31.7%</td>
     </tr>
   </tbody>
 </table>
-
-基于 `GPT3-175B` 稠密大模型，从128颗 NPU 扩展到 7968颗 NPU 进行 MFU 与线性度实验，下图是实验数据：
-
-<p align="center"> <img src="./sources/images/readme/linearity&mfu.png" height="490px" width="715px"> </p>
-
-图中呈现了对应集群规模下的 `MFU` 值与集群整体的 `线性度`情况. 计算公式已经放到社区，点击链接可进行参考：[MFU计算公式](https://gitee.com/ascend/ModelLink/wikis/%E6%9C%AF%E8%AF%AD%E5%AE%9A%E4%B9%89/%E5%A4%A7%E6%A8%A1%E5%9E%8B%20MFU%20%E8%AE%A1%E7%AE%97%E5%85%AC%E5%BC%8F)，[线性度计算公式](https://gitee.com/ascend/ModelLink/wikis/%E6%9C%AF%E8%AF%AD%E5%AE%9A%E4%B9%89/%E7%BA%BF%E6%80%A7%E5%BA%A6%E5%85%AC%E5%BC%8F).
 
 #### 预训练方案
 
@@ -197,14 +173,14 @@ MindSpeed-LLM包含分布式预训练、分布式微调、分布式偏好对齐�
   </thead>
   <tbody>
     <tr>
-      <td><a href="./docs/features/pretrain.md">样本拼接</a></td>
+      <td><a href="docs/pytorch/solutions/pretrain/pretrain.md">多样本集预训练</a></td>
       <td>✅</td>
       <td>✅</td>
       <td>✅</td>
       <td rowspan="2">【Ascend】</td>
     </tr>
     <tr>
-      <td><a href="./docs/features/pretrain_eod.md">样本pack</a></td>
+      <td><a href="docs/pytorch/solutions/pretrain/pretrain_eod.md">多样本pack模式预训练</a></td>
       <td>✅</td>
       <td>✅</td>
       <td>❌</td>
@@ -240,7 +216,7 @@ MindSpeed-LLM包含分布式预训练、分布式微调、分布式偏好对齐�
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="./docs/features/virtual_pipeline_parallel.md">虚拟流水并行</a></td>
+    <td><a href="docs/pytorch/features/virtual_pipeline_parallel.md">虚拟流水并行</a></td>
     <td>✅</td>
     <td>✅</td>
     <td>✅</td>
@@ -252,14 +228,14 @@ MindSpeed-LLM包含分布式预训练、分布式微调、分布式偏好对齐�
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/noop-layers.md">Noop Layers</a></td>
+    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/noop-layers.md">noop layers</a></td>
     <td>✅</td>
     <td>❌</td>
     <td>✅</td>
   </tr>
   <tr>
     <td rowspan="3">长序列并行</td>
-    <td><a href="./docs/features/ring-attention-context-parallel.md">Ascend Ring Attention 长序列并行</a></td>
+    <td><a href="docs/pytorch/features/ring-attention-context-parallel.md">Ascend Ring Attention 长序列并行</a></td>
     <td>✅</td>
     <td>❌</td>
     <td>✅</td>
@@ -309,7 +285,7 @@ MindSpeed-LLM包含分布式预训练、分布式微调、分布式偏好对齐�
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="./docs/features/recompute_relative.md">重计算</a></td>
+    <td><a href="docs/pytorch/features/recompute_relative.md">重计算</a></td>
     <td>✅</td>
     <td>✅</td>
     <td>✅</td>
@@ -321,7 +297,7 @@ MindSpeed-LLM包含分布式预训练、分布式微调、分布式偏好对齐�
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="./docs/features/o2.md">O2 BF16 Optimizer</a></td>
+    <td><a href="docs/pytorch/features/o2.md">O2 BF16 Optimizer</a></td>
     <td>✅</td>
     <td>❌</td>
     <td>❌</td>
@@ -334,7 +310,7 @@ MindSpeed-LLM包含分布式预训练、分布式微调、分布式偏好对齐�
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="./docs/features/variable_length_flash_attention.md">Flash attention variable length</a></td>
+    <td><a href="docs/pytorch/features/variable_length_flash_attention.md">Flash attention variable length</a></td>
     <td>✅</td>
     <td>❌</td>
     <td>✅</td>
@@ -389,13 +365,13 @@ MindSpeed-LLM包含分布式预训练、分布式微调、分布式偏好对齐�
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="./docs/features/mc2.md">MC2</a></td>
+    <td><a href="docs/pytorch/features/mc2.md">MC2</a></td>
     <td>✅</td>
     <td>✅</td>
     <td>❌</td>
   </tr>
   <tr>
-    <td><a href="./docs/features/communication-over-computation.md">CoC</a></td>
+    <td><a href="docs/pytorch/features/communication-over-computation.md">CoC</a></td>
     <td>✅</td>
     <td>✅</td>
     <td>❌</td>
@@ -427,20 +403,20 @@ MindSpeed-LLM包含分布式预训练、分布式微调、分布式偏好对齐�
     <td rowspan="3">Atlas 900 A2 PODc</td>
     <td rowspan="3">1x8</td>
     <td>全参</td>
-    <td>dynamic</td>
-    <td><a href="./examples/mcore/llama2/tune_llama2_7b_full_ptd.sh">15.87 samples/s</a></td>
+    <td><a href="./examples/mcore/llama2/tune_llama2_7b_full_ptd.sh">dynamic</a></td>
+    <td>15.87 samples/s</td>
     <td>-</td>
   </tr>
   <tr>
     <td>全参</td>
-    <td>16K</td>
-    <td><a href="./examples/mcore/llama2/tune_llama2_7b_full_pack_16k.sh">1.14 samples/s</a></td>
+    <td><a href="./examples/mcore/llama2/tune_llama2_7b_full_pack_16k.sh">16K</a></td>
+    <td>1.14 samples/s</td>
     <td>37.4%</td>
   </tr>
   <tr>
     <td>全参</td>
-    <td>32K</td>
-    <td><a href="./examples/mcore/llama2/tune_llama2_7b_full_pack_32k.sh">0.51 samples/s</a></td>
+    <td><a href="./examples/mcore/llama2/tune_llama2_7b_full_pack_32k.sh">32K</a></td>
+    <td>0.51 samples/s</td>
     <td>48.4%</td>
   </tr>
   <tr>
@@ -448,8 +424,8 @@ MindSpeed-LLM包含分布式预训练、分布式微调、分布式偏好对齐�
     <td rowspan="1">Atlas 900 A2 PODc</td>
     <td rowspan="1">1x8</td>
     <td>全参</td>
-    <td>dynamic</td>
-    <td><a href="./examples/mcore/llama2/tune_llama2_13b_full_ptd.sh">50.4 samples/s</a></td>
+    <td><a href="./examples/legacy/llama2/tune_llama2_13b_full_ptd.sh">dynamic</a></td>
+    <td>50.4 samples/s</td>
     <td>-</td>
   </tr>
   <tr>
@@ -457,8 +433,8 @@ MindSpeed-LLM包含分布式预训练、分布式微调、分布式偏好对齐�
     <td>Atlas 900 A2 PODc</td>
     <td>1x8</td>
     <td>LoRA</td>
-    <td>dynamic</td>
-    <td><a href="./examples/legacy/llama2/tune_llama2_70b_lora_ptd.sh">15.2 samples/s</a></td>
+    <td><a href="./examples/legacy/llama2/tune_llama2_70b_lora_ptd.sh">dynamic</a></td>
+    <td>15.2 samples/s</td>
     <td>-</td>
   </tr>
 </table>
@@ -470,14 +446,14 @@ MindSpeed-LLM包含分布式预训练、分布式微调、分布式偏好对齐�
     <th>方案名称</th>
     <th>Mcore</th>
     <th>Legacy</th>
-    <th><a href="./docs/features/lora_finetune.md">LoRA</a></th>
-    <th><a href="./docs/features/qlora.md">QLoRA</a></th>
+    <th><a href="docs/pytorch/solutions/finetune/lora_finetune.md">LoRA</a></th>
+    <th><a href="docs/pytorch/solutions/finetune/qlora_finetune.md">QLoRA</a></th>
     <th>Released</th>
     <th>贡献方</th>
   </tr></thead>
 <tbody>
   <tr>
-    <td><a href="./docs/features/instruction_finetune.md">单样本微调</td>
+    <td><a href="docs/pytorch/solutions/finetune/instruction_finetune.md">单样本微调</td>
     <td>✅</td>
     <td>✅</td>
     <td>✅</td>
@@ -486,7 +462,7 @@ MindSpeed-LLM包含分布式预训练、分布式微调、分布式偏好对齐�
     <td>【Ascend】</td>
   </tr>
   <tr>
-    <td><a href="./docs/features/multi_sample_pack_fine_tuning.md">多样本pack微调</td>
+    <td><a href="docs/pytorch/solutions/finetune/multi_sample_pack_finetune.md">多样本pack微调</td>
     <td>✅</td>
     <td>✅</td>
     <td>✅</td>
@@ -495,7 +471,7 @@ MindSpeed-LLM包含分布式预训练、分布式微调、分布式偏好对齐�
     <td>【NAIE】</td>
   </tr>
     <tr>
-    <td><a href="./docs/features/multi-turn_conversation.md">多轮对话微调</a></td>
+    <td><a href="docs/pytorch/solutions/finetune/multi-turn_conversation.md">多轮对话微调</a></td>
     <td>✅</td>
     <td>✅</td>
     <td>✅</td>
@@ -519,38 +495,31 @@ MindSpeed-LLM包含分布式预训练、分布式微调、分布式偏好对齐�
   </tr></thead>
 <tbody>
   <tr>
-    <td rowspan="2">LoRA微调</td>
-    <td><a href="./docs/features/cc_lora.md">CCLoRA</a></td>
+    <td rowspan="2"><a href="docs/pytorch/solutions/finetune/lora_finetune.md">LoRA微调</a></td>
+    <td><a href="docs/pytorch/features/cc_lora.md">CCLoRA</a></td>
     <td>✅</td>
     <td>✅</td>
     <td>✅</td>
     <td>【Ascend】</td>
   </tr>
   <tr>
-    <td><a href="./docs/features/fused_mlp.md">Fused_MLP</a></td>
+    <td><a href="docs/pytorch/features/fused_mlp.md">Fused_MLP</a></td>
     <td>✅</td>
     <td>✅</td>
     <td>✅</td>
     <td>【Ascend】</td>
   </tr>
   <tr>
-    <td rowspan="2">QLoRA微调</td>
-    <td><a href="./docs/features/cc_lora.md">CCLoRA</a></td>
-    <td>❌</td>
-    <td>❌</td>
-    <td>❌</td>
-    <td>【NAIE】</td>
-  </tr>
+    <td rowspan="2"><a href="docs/pytorch/solutions/finetune/qlora_finetune.md">QLoRA微调</a></td>
+    <td>/</td>
+    <td>/</td>
+    <td>/</td>
+    <td>/</td>
+    <td>/</td>
   <tr>
-    <td><a href="./docs/features/fused_mlp.md">Fused_MLP</a></td>
-    <td>❌</td>
-    <td>❌</td>
-    <td>❌</td>
-    <td>【NAIE】</td>
-  </tr>
   <tr>
     <td>长序列微调</td>
-    <td><a href="./docs/features/fine-tuning-with-context-parallel.md">长序列CP方案</a></td>
+    <td><a href="docs/pytorch/features/fine-tuning-with-context-parallel.md">长序列CP</a></td>
     <td>✅</td>
     <td>❌</td>
     <td>❌</td>
@@ -558,12 +527,109 @@ MindSpeed-LLM包含分布式预训练、分布式微调、分布式偏好对齐�
   </tr>
 </tbody></table>
 
+## 在线推理
+
+<table>
+  <thead>
+    <tr>
+      <th>特性</th>
+      <th>Mcore</th>
+      <th>Legacy</th>
+      <th>Released</th>
+      <th>贡献方</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><a href="docs/pytorch/solutions/inference/inference.md">流式推理</td>
+      <td>✅</td>
+      <td>✅</td>
+      <td>✅</td>
+      <td>【NAIE】</td>
+    </tr>
+    <tr>
+      <td><a href="docs/pytorch/solutions/inference/chat.md"> Chat对话</td>
+      <td>✅</td>
+      <td>✅</td>
+      <td>✅</td>
+      <td>【NAIE】</td>
+    </tr>
+    <tr>
+      <td><a href="docs/pytorch/features/yarn.md"> yarn上下文扩展 </td>
+      <td>✅</td>
+      <td>❌</td>
+      <td>❌</td>
+      <td>【Ascend】</td>
+    </tr>
+  </tbody>
+</table>
+
+## 开源数据集评测
+仓库模型基线见[开源数据集评测基线](docs/pytorch/models/evaluation_baseline.md)
+<table>
+  <thead>
+    <tr>
+      <th>场景</th>
+      <th>数据集</th>
+      <th>Mcore</th>
+      <th>Legacy</th>
+      <th>Released</th>
+      <th>贡献方</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td rowspan="8"><a href="docs/pytorch/solutions/evaluation/evaluation_guide.md">评测</a></td>
+      <td><a href="https://people.eecs.berkeley.edu/~hendrycks/data.tar">MMLU</a></td>
+      <td>✅</td>
+      <td>✅</td>
+      <td>❌</td>
+      <td>【NAIE】</td>
+    </tr>
+    <tr>
+      <td><a href="https://huggingface.co/datasets/ceval/ceval-exam/tree/main">CEval</a></td>
+      <td>✅</td>
+      <td>✅</td>
+      <td>❌</td>
+      <td>【NAIE】</td>
+    </tr>
+    <tr>
+      <td><a href="https://github.com/google-research-datasets/boolean-questions">BoolQ</a></td>
+      <td>✅</td>
+      <td>✅</td>
+      <td>❌</td>
+      <td>【NAIE】</td>
+    </tr>
+    <tr>
+      <td><a href="https://github.com/suzgunmirac/BIG-Bench-Hard/tree/main/bbh">BBH</a></td>
+      <td>✅</td>
+      <td>✅</td>
+      <td>❌</td>
+      <td>【NAIE】</td>
+    </tr>
+    <tr>
+      <td><a href="https://github.com/ruixiangcui/AGIEval/tree/main">AGIEval</a></td>
+      <td>✅</td>
+      <td>✅</td>
+      <td>❌</td>
+      <td>【NAIE】</td>
+    </tr>
+    <tr>
+      <td><a href="https://github.com/openai/human-eval/tree/master/data">HumanEval</a></td>
+      <td>✅</td>
+      <td>✅</td>
+      <td>❌</td>
+      <td>【NAIE】</td>
+    </tr>
+  </tbody>
+</table>
+
 
 ## 开发工具链
 
 ### 权重转换
 
-MindSpeed-LLM支持huggingface、megatron-core、megatron-legacy三种格式的权重互转，支持Lora权重合并。权重转换特性参数和使用说明参考[权重转换](./docs/features/checkpoint.md)。
+MindSpeed-LLM支持huggingface、megatron-core、megatron-legacy三种格式的权重互转，支持Lora权重合并。权重转换特性参数和使用说明参考[权重转换](docs/pytorch/solutions/checkpoint_convert.md)。
 
 <table>
   <thead>
@@ -641,7 +707,7 @@ MindSpeed-LLM支持预训练、指令微调、RLHF等多种任务的数据预处
   <tbody>
     <tr>
       <td>预训练</td>
-      <td><a href="./docs/features/pretrain_dataset.md">预训练数据处理</a></td>
+      <td><a href="docs/pytorch/solutions/pretrain/pretrain_dataset.md">预训练数据处理</a></td>
       <td>✅</td>
       <td>✅</td>
       <td>✅</td>
@@ -649,20 +715,20 @@ MindSpeed-LLM支持预训练、指令微调、RLHF等多种任务的数据预处
     </tr>
     <tr>
       <td rowspan="2">微调</td>
-      <td><a href="./docs/features/alpaca_dataset.md">Alpaca风格</a></td>
+      <td><a href="docs/pytorch/solutions/finetune/datasets/alpaca_dataset.md">Alpaca风格</a></td>
       <td>✅</td>
       <td>✅</td>
       <td>✅</td>
     </tr>
     <tr>
-      <td><a href="./docs/features/sharegpt_dataset.md">ShareGPT风格</a></td>
+      <td><a href="docs/pytorch/solutions/finetune/datasets/sharegpt_dataset.md">ShareGPT风格</a></td>
       <td>✅</td>
       <td>✅</td>
       <td>✅</td>
     </tr>
     <tr>
       <td>DPO</td>
-      <td rowspan="3"><a href="./docs/features/pairwise_dataset.md">Pairwise数据集处理</a></td>
+      <td rowspan="3"><a href="docs/pytorch/solutions/finetune/datasets/pairwise_dataset.md">Pairwise数据集处理</a></td>
       <td>✅</td>
       <td>✅</td>
       <td>✅</td>
@@ -682,7 +748,7 @@ MindSpeed-LLM支持预训练、指令微调、RLHF等多种任务的数据预处
     </tr>
     <tr>
       <td>PRM</td>
-      <td rowspan="1"><a href="./docs/features/process_reward_dataset.md">PRM数据集处理</a></td>
+      <td rowspan="1"><a href="docs/pytorch/solutions/preference-alignment/process_reward_dataset.md">PRM数据集处理</a></td>
       <td>✅</td>
       <td>✅</td>
       <td>❌</td>
@@ -690,106 +756,6 @@ MindSpeed-LLM支持预训练、指令微调、RLHF等多种任务的数据预处
     </tr>
   </tbody>
 </table>
-
-### 在线推理
-
-<table>
-  <thead>
-    <tr>
-      <th>特性</th>
-      <th>Mcore</th>
-      <th>Legacy</th>
-      <th>Released</th>
-      <th>贡献方</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td><a href="./docs/features/inference.md">流式推理</td>
-      <td>✅</td>
-      <td>✅</td>
-      <td>✅</td>
-      <td>【NAIE】</td>
-    </tr>
-    <tr>
-      <td><a href="./docs/features/chat.md"> Chat对话</td>
-      <td>✅</th>
-      <td>✅</th>
-      <td>✅</td>
-      <td>【NAIE】</td>
-    </tr>
-    <tr>
-      <td><a href="./docs/features/yarn.md"> yarn上下文扩展 </td>
-      <td>✅</td>
-      <td>❌</td>
-      <td>❌</td>
-      <td>【Ascend】</td>
-    </tr>
-  </tbody>
-</table>
-
-
-
-### 开源数据集评测
-
-<table>
-  <thead>
-    <tr>
-      <th>特性</th>
-      <th>数据集</th>
-      <th>Mcore</th>
-      <th>Legacy</th>
-      <th>Released</th>
-      <th>贡献方</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td rowspan="8"><a href="./docs/models/evaluation.md">开源测评集评测</a></td>
-      <td><a href="https://people.eecs.berkeley.edu/~hendrycks/data.tar">MMLU</a></td>
-      <td>✅</td>
-      <td>✅</td>
-      <td>❌</td>
-      <td>【NAIE】</td>
-    </tr>
-    <tr>
-      <td><a href="https://huggingface.co/datasets/ceval/ceval-exam/blob/main/ceval-exam.zip">CEval</a></td>
-      <td>✅</td>
-      <td>✅</td>
-      <td>❌</td>
-      <td>【NAIE】</td>
-    </tr>
-    <tr>
-      <td><a href="https://github.com/google-research-datasets/boolean-questions">BoolQ</a></td>
-      <td>✅</td>
-      <td>✅</td>
-      <td>❌</td>
-      <td>【NAIE】</td>
-    </tr>
-    <tr>
-      <td><a href="https://github.com/suzgunmirac/BIG-Bench-Hard/tree/main/bbh">BBH</a></td>
-      <td>✅</td>
-      <td>✅</td>
-      <td>❌</td>
-      <td>【NAIE】</td>
-    </tr>
-    <tr>
-      <td><a href="https://github.com/ruixiangcui/AGIEval/tree/main">AGIEval</a></td>
-      <td>✅</td>
-      <td>✅</td>
-      <td>❌</td>
-      <td>【NAIE】</td>
-    </tr>
-    <tr>
-      <td><a href="https://github.com/openai/human-eval/tree/master/data">HumanEval</a></td>
-      <td>✅</td>
-      <td>✅</td>
-      <td>❌</td>
-      <td>【NAIE】</td>
-    </tr>
-  </tbody>
-</table>
-
 
 
 ### 性能采集
@@ -808,7 +774,7 @@ MindSpeed-LLM支持预训练、指令微调、RLHF等多种任务的数据预处
   <tbody>
     <tr>
       <td rowspan="1">性能采集</td>
-      <td><a href="./docs/features/profiling.md">基于昇腾芯片采集 profiling 数据</a></td>
+      <td><a href="docs/pytorch/features/profiling.md">基于昇腾芯片采集 profiling 数据</a></td>
       <td>✅</td>
       <td>✅</td>
       <td>❌</td>
@@ -834,7 +800,7 @@ MindSpeed-LLM支持预训练、指令微调、RLHF等多种任务的数据预处
   <tbody>
     <tr>
       <td rowspan="2">高可用性</td>
-      <td><a href="./docs/features/deterministic_computation.md">基于昇腾芯片开启确定性计算</a></td>
+      <td><a href="docs/pytorch/features/deterministic_computation.md">基于昇腾芯片开启确定性计算</a></td>
       <td>✅</td>
       <td>✅</td>
       <td>❌</td>

@@ -322,7 +322,7 @@ bash tests/0day/qwen3/qwen3-1.7b/data_convert_qwen3_1.7b_pretrain.sh
 
 ### 声明
 
-0day系列模型处于内部测试阶段，未完成充分的性能测试和验收。在实际使用中可能存在未被发现的问题，待后续充分验证后会发布正式版本。相关使用问题请反馈至ISSUE（链接：https://gitee.com/ascend/MindSpeed-LLM/issues）。
+0day系列模型处于内部测试阶段，未完成充分的性能测试和验收。在实际使用中可能存在未被发现的问题，待后续充分验证后会发布正式版本。相关使用问题请反馈至[MindSpeed-LLM/issues](https://gitee.com/ascend/MindSpeed-LLM/issues)。
 
 MindSpeed-LLM框架将持续支持相关主流模型演进，并根据开源情况面向全体开发者提供支持。
 

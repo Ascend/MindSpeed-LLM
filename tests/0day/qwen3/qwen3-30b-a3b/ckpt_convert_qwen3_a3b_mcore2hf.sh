@@ -10,8 +10,8 @@ python convert_ckpt.py \
     --target-pipeline-parallel-size 1 \
     --target-expert-parallel-size 1 \
     --spec mindspeed_llm.tasks.models.spec.qwen3_spec layer_spec \
-    --save-dir ./model_from_hf/qwen3_moe_hf/ \
-    --load-dir ./model_weights/qwen3_moe_mcore/ \
+    --load-dir ./model_weights/qwen3_a3b_mcore/ \
+    --save-dir ./model_from_hf/qwen3_a3b_hf/ \
     --model-type-hf qwen3-moe \
     --moe-grouped-gemm \
     --params-dtype bf16

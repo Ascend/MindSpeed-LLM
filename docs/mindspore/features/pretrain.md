@@ -1,7 +1,7 @@
 ## 大模型分布式预训练
 ### 1. 准备工作
 
-参考[安装指导](./install_guide.md)，完成环境安装和[预训练数据处理](../../features/pretrain_dataset.md)。
+参考[安装指导](./install_guide.md)，完成环境安装和[预训练数据处理](../../pytorch/solutions/pretrain/pretrain_dataset.md)。
 
 
 ### 2. 配置预训练参数

@@ -11,9 +11,9 @@ python convert_ckpt.py \
     --target-pipeline-parallel-size 8 \
     --target-expert-parallel-size 1 \
     --spec mindspeed_llm.tasks.models.spec.qwen3_spec layer_spec \
-    --load-dir ./model_from_hf/qwen3_moe_hf/ \
-    --save-dir ./model_weights/qwen3_moe_mcore/ \
-    --tokenizer-model ./model_from_hf/qwen3_moe_hf/tokenizer.json \
+    --load-dir ./model_from_hf/qwen3_a3b_hf/ \
+    --save-dir ./model_weights/qwen3_a3b_mcore/ \
+    --tokenizer-model ./model_from_hf/qwen3_a3b_hf/tokenizer.json \
     --model-type-hf qwen3-moe \
     --moe-grouped-gemm \
     --params-dtype bf16
