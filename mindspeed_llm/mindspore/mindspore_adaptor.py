@@ -129,3 +129,8 @@ class MindSporeAdaptation(MegatronAdaptationABC):
         from ..mindspore.core.optimizer.distrib_optimizer import get_parameter_state_dp_zero
         MindSporeAdaptation.register('megatron.core.optimizer.distrib_optimizer.DistributedOptimizer.get_parameter_state_dp_zero',
                             get_parameter_state_dp_zero)
+
+        if args.async_log_allreduce:
+            from mindspeed.mindspore.core.data_parallel.async_log_allreduce import get_async_reduced_loss_value
+            MindSporeAdaptation.register('mindspeed.core.data_parallel.async_log_allreduce.get_async_reduced_loss_value',
+                                get_async_reduced_loss_value)
