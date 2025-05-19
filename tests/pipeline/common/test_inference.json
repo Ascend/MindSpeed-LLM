@@ -240,7 +240,7 @@
                 "square-alibi-mask": null,
                 "fill-neg-inf": null,
                 "swiglu": null,
-                "load": "/data/pipe/baichuan2-13b-tp8pp1-legacy-base",
+                "load": "/data/pipeline/baichuan2-13b-tp8pp1-legacy-base",
                 "tokenizer-type": "PretrainedFromHF",
                 "tokenizer-name-or-path": "/data/hf/baichuan2-13B-hf/",
                 "tokenizer-not-use-fast": null,
