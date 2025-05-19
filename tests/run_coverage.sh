@@ -70,6 +70,15 @@ add_coverage() {
     sed -i "/    main()/a\    cov.stop()" pretrain_gpt.py
     sed -i "/    cov.stop()/a\    cov.save()" pretrain_gpt.py
 
+    sed -i "1a\import random" convert_ckpt.py
+    sed -i "2a\import time" convert_ckpt.py
+    sed -i "3a\import coverage" convert_ckpt.py
+    sed -i '4a\cov = coverage.Coverage(data_suffix=f"usecase-{time.time_ns()}_{random.randint(0, 100)}")' convert_ckpt.py
+
+    sed -i "/    main()/i\    cov.start()" convert_ckpt.py
+    sed -i "/    main()/a\    cov.stop()" convert_ckpt.py
+    sed -i "/    cov.stop()/a\    cov.save()" convert_ckpt.py
+
     sed -i "1a\import random" posttrain_gpt.py
     sed -i "2a\import time" posttrain_gpt.py
     sed -i "3a\import coverage" posttrain_gpt.py
@@ -87,6 +96,15 @@ add_coverage() {
 
     sed -i "/    main()/a\    cov.stop()" ray_gpt.py
     sed -i "/    cov.stop()/a\    cov.save()" ray_gpt.py
+
+    sed -i "1a\import random" preprocess_data.py
+    sed -i "2a\import time" preprocess_data.py
+    sed -i "3a\import coverage" preprocess_data.py
+    sed -i '4a\cov = coverage.Coverage(data_suffix=f"usecase-{time.time_ns()}_{random.randint(0, 100)}")' preprocess_data.py
+
+    sed -i "/def main():/a\    cov.start()" preprocess_data.py
+    sed -i "/                os.remove(idx_file.replace('.idx', '.bin'))/a\    cov.stop()" preprocess_data.py
+    sed -i "/    cov.stop()/a\    cov.save()" preprocess_data.py
 }
 
 remove_coverage() {
@@ -98,6 +116,15 @@ remove_coverage() {
 
     sed -i "/    cov.stop()/d" pretrain_gpt.py
     sed -i "/    cov.save()/d" pretrain_gpt.py
+
+    sed -i "2d" convert_ckpt.py
+    sed -i "2d" convert_ckpt.py
+    sed -i "2d" convert_ckpt.py
+    sed -i "2d" convert_ckpt.py
+
+    sed -i "/    cov.start()/d" convert_ckpt.py
+    sed -i "/    cov.stop()/d" convert_ckpt.py
+    sed -i "/    cov.save()/d" convert_ckpt.py
 
     sed -i "2d" posttrain_gpt.py
     sed -i "2d" posttrain_gpt.py
@@ -116,7 +143,18 @@ remove_coverage() {
 
     sed -i "/    cov.stop()/d" ray_gpt.py
     sed -i "/    cov.save()/d" ray_gpt.py
+
+    sed -i "2d" preprocess_data.py
+    sed -i "2d" preprocess_data.py
+    sed -i "2d" preprocess_data.py
+    sed -i "2d" preprocess_data.py
+
+    sed -i "/    cov.start()/d" preprocess_data.py
+    sed -i "/    cov.stop()/d" preprocess_data.py
+    sed -i "/    cov.save()/d" preprocess_data.py
 }
+
+add_coverage
 
 # run the coverage for python files in the pipeline
 find "$PIPELINE_DIR" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
@@ -132,13 +170,11 @@ pytest -xs ${UT_DIR}
 find "$UT_DIR" -mindepth 0 -maxdepth 1 -type d | while read -r dir; do
     if [ -d "$dir" ]; then
         find "$dir" -type f -name "*.py" | while read -r file; do
-          echo "${file}"
+            echo "${file}"
             coverage run -p --source=$SOURCE_DIR $file
         done
     fi
 done
-
-add_coverage
 
 # run the coverage for shell scripts in the st
 for test_case in "$ST_DIR"/*.sh; do

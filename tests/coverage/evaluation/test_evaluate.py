@@ -45,8 +45,8 @@ class TestEvaluate(DistributedTest):
     world_size = 8
     test_config = create_testconfig(Path(__file__).with_suffix(".json"))
 
-    @pytest.mark.parametrize("test_params", test_config["test_llama2_mcore_agieval_evaluate"])
-    def test_llama2_mcore_agieval_evaluate(self, build_args, test_params):
+    @pytest.mark.parametrize("params", test_config["test_llama2_mcore_agieval_evaluate"])
+    def test_llama2_mcore_agieval_evaluate(self, build_args, params):
         os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
         os.environ["CLOSE_MATMUL_K_SHIFT"] = "1"
 
@@ -62,8 +62,8 @@ class TestEvaluate(DistributedTest):
             assert math.isclose(expected_score, 0.192771,
                                 abs_tol=1e-2), f"score {expected_score}, forward pass has been changed, check it!"
 
-    @pytest.mark.parametrize("test_params", test_config["test_llama2_mcore_bbh_evaluate"])
-    def test_llama2_mcore_bbh_evaluate(self, build_args, test_params):
+    @pytest.mark.parametrize("params", test_config["test_llama2_mcore_bbh_evaluate"])
+    def test_llama2_mcore_bbh_evaluate(self, build_args, params):
         os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
         os.environ["CLOSE_MATMUL_K_SHIFT"] = "1"
         if dist.get_rank() == 0:
@@ -78,8 +78,8 @@ class TestEvaluate(DistributedTest):
             assert math.isclose(expected_score, 0.744186,
                                 abs_tol=1e-2), f"score {expected_score}, forward pass has been changed, check it!"
 
-    @pytest.mark.parametrize("test_params", test_config["test_qwen2_mcore_needlebench_evaluate"])
-    def test_qwen2_mcore_needlebench_evaluate(self, build_args, test_params):
+    @pytest.mark.parametrize("params", test_config["test_qwen2_mcore_needlebench_evaluate"])
+    def test_qwen2_mcore_needlebench_evaluate(self, build_args, params):
 
         os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
         os.environ["CLOSE_MATMUL_K_SHIFT"] = "1"
@@ -99,8 +99,8 @@ class TestEvaluateWorldSize1(DistributedTest):
     world_size = 1
     test_config = create_testconfig(Path(__file__).with_suffix(".json"))
 
-    @pytest.mark.parametrize("test_params", test_config["test_qwen2_mcore_mmlu_evaluate"])
-    def test_qwen2_mcore_mmlu_evaluate(self, build_args, test_params):
+    @pytest.mark.parametrize("params", test_config["test_qwen2_mcore_mmlu_evaluate"])
+    def test_qwen2_mcore_mmlu_evaluate(self, build_args, params):
         os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
         if dist.get_rank() == 0:
             handler, log_capture = setup_logger(PATTERN)
@@ -113,8 +113,8 @@ class TestEvaluateWorldSize1(DistributedTest):
             expected_score = acquire_score(log_capture)
             assert math.isclose(expected_score, 0.0, abs_tol=1e-2), f"score {expected_score}, forward pass has been changed, check it!"
 
-    @pytest.mark.parametrize("test_params", test_config["test_cmmlu_evaluate"])
-    def test_cmmlu_evaluate(self, build_args, test_params):
+    @pytest.mark.parametrize("params", test_config["test_cmmlu_evaluate"])
+    def test_cmmlu_evaluate(self, build_args, params):
         os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
         if dist.get_rank() == 0:
             handler, log_capture = setup_logger(PATTERN)
@@ -127,8 +127,8 @@ class TestEvaluateWorldSize1(DistributedTest):
             expected_score = acquire_score(log_capture)
             assert math.isclose(expected_score, 0.0, abs_tol=1e-2), f"score {expected_score}, forward pass has been changed, check it!"
 
-    @pytest.mark.parametrize("test_params", test_config["test_humaneval_evaluate"])
-    def test_humaneval_evaluate(self, build_args, test_params):
+    @pytest.mark.parametrize("params", test_config["test_humaneval_evaluate"])
+    def test_humaneval_evaluate(self, build_args, params):
         os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
         if dist.get_rank() == 0:
             handler, log_capture = setup_logger(PATTERN)
@@ -141,8 +141,8 @@ class TestEvaluateWorldSize1(DistributedTest):
             expected_score = acquire_score(log_capture)
             assert math.isclose(expected_score, 0.0, abs_tol=1e-2), f"score {expected_score}, forward pass has been changed, check it!"
 
-    @pytest.mark.parametrize("test_params", test_config["test_ceval_evaluate"])
-    def test_ceval_evaluate(self, build_args, test_params):
+    @pytest.mark.parametrize("params", test_config["test_ceval_evaluate"])
+    def test_ceval_evaluate(self, build_args, params):
         os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
         if dist.get_rank() == 0:
             handler, log_capture = setup_logger(PATTERN)
@@ -155,8 +155,8 @@ class TestEvaluateWorldSize1(DistributedTest):
             expected_score = acquire_score(log_capture)
             assert math.isclose(expected_score, 0.0, abs_tol=1e-2), f"score {expected_score}, forward pass has been changed, check it!"
 
-    @pytest.mark.parametrize("test_params", test_config["test_boolq_evaluate"])
-    def test_boolq_evaluate(self, build_args, test_params):
+    @pytest.mark.parametrize("params", test_config["test_boolq_evaluate"])
+    def test_boolq_evaluate(self, build_args, params):
         os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
         if dist.get_rank() == 0:
             handler, log_capture = setup_logger(PATTERN)
@@ -169,8 +169,8 @@ class TestEvaluateWorldSize1(DistributedTest):
             expected_score = acquire_score(log_capture)
             assert math.isclose(expected_score, 0.62171, abs_tol=1e-2), f"score {expected_score}, forward pass has been changed, check it!"
 
-    @pytest.mark.parametrize("test_params", test_config["test_gsm8k_evaluate"])
-    def test_gsm8k_evaluate(self, build_args, test_params):
+    @pytest.mark.parametrize("params", test_config["test_gsm8k_evaluate"])
+    def test_gsm8k_evaluate(self, build_args, params):
         os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
         if dist.get_rank() == 0:
             handler, log_capture = setup_logger(PATTERN)

@@ -1,3 +1,4 @@
+# Copyright (c) 2024, HUAWEI CORPORATION.  All rights reserved.
 import argparse
 import importlib
 import os
