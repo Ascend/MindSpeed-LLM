@@ -1,6 +1,5 @@
 #!/bin/bash
 export CUDA_DEVICE_MAX_CONNECTIONS=1
-export CPU_AFFINITY_CONF=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
 export HCCL_CONNECT_TIMEOUT=3600
 
@@ -11,17 +10,7 @@ NNODES=1
 NODE_RANK=0
 WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
-CKPT_SAVE_DIR="your model save ckpt path"
-DATA_PATH="your data path"
-TOKENIZER_PATH="your tokenizer path"
-CKPT_LOAD_DIR="your model ckpt path"
-
-TP=8
-PP=1
-NUM_LAYERS=56
-SEQ_LEN=4096
-MBS=2
-GBS=8
+basepath=$(cd `dirname $0`; cd ../../../; pwd)
 
 DISTRIBUTED_ARGS="
     --nproc_per_node $NPUS_PER_NODE \
@@ -30,6 +19,19 @@ DISTRIBUTED_ARGS="
     --master_addr $MASTER_ADDR \
     --master_port $MASTER_PORT
 "
+
+echo "NODE_RANK ${NODE_RANK}"
+
+DATA_PATH="/data/mamba2_2.7b_enwiki/enwiki_50288_text_document"
+CKPT_LOAD_DIR="/data/mamba2_2.7b_tp1pp1_ngroup1"
+TOKENIZER_PATH="/data/mamba2-hf/mamba2_2.7b_from_8b.model"
+
+TP=1
+PP=1
+NUM_LAYERS=64
+SEQ_LEN=4096
+MBS=1
+GBS=8
 
 MAMBA_ARGS="
     --spec mindspeed_llm.tasks.models.spec.mamba_spec layer_spec \
@@ -42,28 +44,28 @@ MAMBA_ARGS="
     --pipeline-model-parallel-size ${PP} \
     --sequence-parallel \
     --num-layers ${NUM_LAYERS} \
-    --num-attention-heads 32 \
     --group-query-attention \
     --num-query-groups 8 \
-    --mamba-ngroups 8 \
-    --mamba-chunk-size 128 \
+    --mamba-ngroups 1 \
+    --mamba-chunk-size 256 \
     --mamba-d-state 128 \
     --mamba-d-conv 4 \
     --mamba-expand 2 \
     --mamba-headdim 64 \
     --tokenizer-type  GPTSentencePieceTokenizer \
     --tokenizer-model ${TOKENIZER_PATH} \
-    --hidden-size 4096 \
-    --hybrid-attention-ratio 0.08 \
-    --hybrid-mlp-ratio 0.5 \
+    --hidden-size 2560 \
     --seq-length 4096 \
     --max-position-embeddings 163840 \
     --micro-batch-size ${MBS} \
     --global-batch-size ${GBS} \
+    --recompute-granularity full \
+    --recompute-method block \
+    --recompute-num-layers 48 \
+    --num-attention-heads 16 \
     --make-vocab-size-divisible-by 1 \
-    --train-iters 2000 \
+    --train-iters 15 \
     --lr-decay-style cosine \
-    --untie-embeddings-and-output-weights \
     --disable-bias-linear \
     --attention-dropout 0.0 \
     --init-method-std 0.02 \
@@ -83,7 +85,6 @@ MAMBA_ARGS="
     --min-lr 2.5e-6 \
     --lr-decay-style cosine \
     --weight-decay 0.1 \
-    --lr-warmup-iters 0 \
     --clip-grad 1.0 \
     --adam-beta1 0.9 \
     --adam-beta2 0.95 \
@@ -93,6 +94,8 @@ MAMBA_ARGS="
     --norm-epsilon 1e-6 \
     --no-load-optim \
     --no-load-rng \
+    --finetune \
+    --log-throughput \
     --bf16
 "
 
@@ -107,14 +110,12 @@ OUTPUT_ARGS="
     --eval-interval 500 \
     --eval-iters 0 \
     --load ${CKPT_LOAD_DIR} \
-    --save ${CKPT_SAVE_DIR} \
     --no-save-rng \
     --no-save-optim
 "
 
-python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_mamba.py \
+torchrun $DISTRIBUTED_ARGS $basepath/pretrain_mamba.py \
     $MAMBA_ARGS \
     $DATA_ARGS \
     $OUTPUT_ARGS \
     --distributed-backend nccl \
-    | tee logs/pretrain_mamba2_hybrid_8b_4k_ptd.log

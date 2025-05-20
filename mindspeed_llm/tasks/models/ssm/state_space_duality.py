@@ -106,7 +106,7 @@ class StateSpaceProcessor:
 
     def _calculate_padding(self, seq_len: int) -> int:
         """Calculate padding length"""
-        return self.config['chunk_size'] - (seq_len % self.config['chunk_size'])
+        return (self.config['chunk_size'] - (seq_len % self.config['chunk_size'])) % self.config['chunk_size']
 
     def _expand_groups_to_heads(self, B, C):
         """Dimension expansion: groups -> heads"""
@@ -116,6 +116,8 @@ class StateSpaceProcessor:
 
     def _process_time_step(self, dt):
         """Time step parameter processing"""
+        self.config['dt_min'] = torch.tensor(self.config['dt_min'], dtype=torch.float32, device=dt.device)
+        self.config['dt_max'] = torch.tensor(self.config['dt_max'], dtype=torch.float32, device=dt.device)
         dt_proc = nn.functional.softplus(dt + self.config['dt_bias'])
         return torch.clamp(dt_proc, self.config['dt_min'], self.config['dt_max'])
 
@@ -123,7 +125,8 @@ class StateSpaceProcessor:
         """Residual connection preparation"""
         D = rearrange(D.float(), "(h p) -> h p", p=self.config['headdim']) \
                     if self.config['D_has_hdim'] else D
-        return rearrange(D, "h -> 1 1 h 1") * self._pad_sequence(x, pad_size)
+        x_pad = self._pad_sequence(x, pad_size) if pad_size else x
+        return rearrange(D, "h -> 1 1 h 1") * x_pad
 
     def _chunk_and_pad(self, x, dt, A, B, C, pad_size):
         """Chunking and padding operations"""
@@ -134,7 +137,7 @@ class StateSpaceProcessor:
         # Padding and chunking
         x, A, B, C = [
             rearrange(
-                tensor=self._pad_sequence(tensor, pad_size),
+                tensor=self._pad_sequence(tensor, pad_size) if pad_size else tensor,
                 pattern="b (c l) ... -> b c l ...",
                 l=self.config['chunk_size'] 
             )

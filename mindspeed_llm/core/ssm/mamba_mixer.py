@@ -14,18 +14,24 @@ from mindspeed_llm.tasks.models.ssm.state_space_duality import StateSpaceProcess
 def mamba_mixer_init_wrapper(fn):
     @wraps(fn)
     def wrapper(self, *args, **kwargs):
+        param_args = get_args()
         kwargs["rmsnorm"] = False
+        kwargs["chunk_size"] = param_args.mamba_chunk_size
+        kwargs["d_state"] = param_args.mamba_d_state
+        kwargs["d_conv"] = param_args.mamba_d_conv
+        kwargs["expand"] = param_args.mamba_expand
+        kwargs["headdim"] = param_args.mamba_headdim    
         fn(self, *args, **kwargs)
         self.rmsnorm = True
         dt_min = kwargs.pop('dt_min', 0.001)
         dt_max = kwargs.pop('dt_max', 0.1)
         args = get_args()
         self.use_mem_eff_path = False
-        self.d_ssm = args.mamba_d_ssm
-        self.chunk_size = args.mamba_chunk_size
+        self.d_ssm = param_args.mamba_d_ssm
         self.dt_min = dt_min
         self.dt_max = dt_max
         self.d_ssm_local = self.d_inner_local if self.d_ssm is None else self.d_ssm // self.tensor_model_parallel_size
+
 
         if self.rmsnorm:
             self.norm = Mamba2RMSNorm(

@@ -1,5 +1,6 @@
 #!/bin/bash
 export CUDA_DEVICE_MAX_CONNECTIONS=1
+export CPU_AFFINITY_CONF=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
 export HCCL_CONNECT_TIMEOUT=3600
 
@@ -46,6 +47,10 @@ MAMBA_ARGS="
     --num-query-groups 8 \
     --mamba-ngroups 8 \
     --mamba-chunk-size 128 \
+    --mamba-d-state 128 \
+    --mamba-d-conv 4 \
+    --mamba-expand 2 \
+    --mamba-headdim 64 \
     --tokenizer-type  GPTSentencePieceTokenizer \
     --tokenizer-model ${TOKENIZER_PATH} \
     --hidden-size 4096 \
