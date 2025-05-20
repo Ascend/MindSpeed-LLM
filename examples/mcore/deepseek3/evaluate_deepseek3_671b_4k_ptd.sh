@@ -1,7 +1,11 @@
 #!/bin/bash
 export CUDA_DEVICE_MAX_CONNECTIONS=1
+export HCCL_IF_BASE_PORT=28999
+export CPU_AFFINITY_CONF=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
-export HCCL_CONNECT_TIMEOUT=3600
+export HCCL_CONNECT_TIMEOUT=2400
+export HCCL_EXEC_TIMEOUT=2400
+export TASK_QUEUE_ENABLE=2
 
 NPUS_PER_NODE=8
 MASTER_ADDR=localhost  # 主节点IP
@@ -43,6 +47,7 @@ MLA_ARGS="
 MOE_ARGS="
     --moe-grouped-gemm \
     --moe-permutation-async-comm \
+    --use-fused-moe-token-permute-and-unpermute \
     --moe-token-dispatcher-type alltoall \
     --first-k-dense-replace 3 \
     --moe-layer-freq 1 \
@@ -51,9 +56,15 @@ MOE_ARGS="
     --moe-router-topk 8 \
     --moe-intermediate-size 2048 \
     --moe-router-load-balancing-type noaux_tc \
+    --n-group 8 \
     --topk-group 4 \
     --routed-scaling-factor 2.5 \
-    --norm-topk-prob
+    --moe-aux-loss-coeff 0.0001 \
+    --seq-aux \
+    --norm-topk-prob \
+    --moe-router-score-function sigmoid \
+    --moe-router-enable-expert-bias \
+    --router-gating-in-fp32 \
 "
 
 ROPE_ARGS="
@@ -67,28 +78,27 @@ ROPE_ARGS="
 "
 
 GPT_ARGS="
-    --task-data-path ${DATA_PATH} \
-    --task ${TASK} \
-    --no-chat-template \
-    --router-gating-in-fp32 \
     --spec mindspeed_llm.tasks.models.spec.deepseek_spec layer_spec \
-    --moe-router-score-function sigmoid \
-    --moe-router-enable-expert-bias \
-    --reuse-fp32-param \
+    --num-layer-list 16,16,16,13 \
+    --gemm-gradient-accumulation-fusion \
+    --no-shared-storage \
+    --use-distributed-optimizer \
+    --use-flash-attn \
     --shape-order BNSD \
     --use-mcore-models \
+    --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \
     --expert-model-parallel-size ${EP} \
     --num-layers ${NUM_LAYERS} \
-    --num-layer-list 16,15,15,15 \
     --hidden-size 7168 \
     --ffn-hidden-size 18432 \
     --num-attention-heads 128 \
     --tokenizer-type PretrainedFromHF  \
     --tokenizer-name-or-path ${TOKENIZER_PATH} \
     --seq-length ${SEQ_LEN} \
-    --max-position-embeddings 163840 \
     --micro-batch-size 1 \
+    --max-new-tokens 1 \
+    --max-position-embeddings 163840 \
     --make-vocab-size-divisible-by 1 \
     --untie-embeddings-and-output-weights \
     --disable-bias-linear \
@@ -97,18 +107,23 @@ GPT_ARGS="
     --hidden-dropout 0.0 \
     --position-embedding-type rope \
     --normalization RMSNorm \
+    --use-fused-rotary-pos-emb \
     --use-rotary-position-embeddings \
+    --use-fused-swiglu \
+    --use-fused-rmsnorm \
     --swiglu \
     --no-masked-softmax-fusion \
     --attention-softmax-in-fp32 \
+    --initial-loss-scale 65536 \
     --vocab-size 129280 \
     --padded-vocab-size 129280 \
     --rotary-base 10000 \
-    --no-gradient-accumulation-fusion \
     --norm-epsilon 1e-6 \
-    --max-new-tokens 1 \
+    --no-load-optim \
+    --no-load-rng \
+    --bf16 \
     --broadcast \
-    --bf16
+    --distributed-timeout-minutes 120 \
 "
 
 torchrun $DISTRIBUTED_ARGS evaluation.py \
@@ -117,5 +132,8 @@ torchrun $DISTRIBUTED_ARGS evaluation.py \
     $ROPE_ARGS \
     $MOE_ARGS \
     --load ${CHECKPOINT} \
+    --task-data-path ${DATA_PATH} \
+    --task ${TASK} \
+    --no-chat-template \
     --distributed-backend nccl \
     | tee logs/evaluation_deepseek3_671b.log

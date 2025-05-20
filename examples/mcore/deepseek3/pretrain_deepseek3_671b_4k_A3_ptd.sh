@@ -8,6 +8,7 @@ export CPU_AFFINITY_CONF=1
 export TASK_QUEUE_ENABLE=2
 export PYTORCH_NPU_ALLOC_CONF="expandable_segments:True"
 export HCCL_CONNECT_TIMEOUT=3600
+export STREAMS_PER_DEVICE=32
 
 NPUS_PER_NODE=16
 MASTER_ADDR=localhost #主节点IP
@@ -23,7 +24,7 @@ CKPT_LOAD_DIR="your model ckpt path"
 
 TP=2
 PP=8
-EP=32
+EP=16
 CP=1
 CP_TYPE='ulysses_cp_algo'
 NUM_LAYERS=64

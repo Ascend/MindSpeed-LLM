@@ -42,7 +42,9 @@ MLA_ARGS="
 "
 
 MOE_ARGS="
+    --moe-grouped-gemm \
     --moe-permutation-async-comm \
+    --use-fused-moe-token-permute-and-unpermute \
     --moe-token-dispatcher-type alltoall \
     --first-k-dense-replace 3 \
     --moe-layer-freq 1 \
@@ -51,10 +53,15 @@ MOE_ARGS="
     --moe-router-topk 8 \
     --moe-intermediate-size 2048 \
     --moe-router-load-balancing-type noaux_tc \
+    --n-group 8 \
     --topk-group 4 \
     --routed-scaling-factor 2.5 \
+    --moe-aux-loss-coeff 0.0001 \
+    --seq-aux \
     --norm-topk-prob \
-    --seq-aux
+    --moe-router-score-function sigmoid \
+    --moe-router-enable-expert-bias \
+    --router-gating-in-fp32 \
 "
 
 ROPE_ARGS="
@@ -69,9 +76,10 @@ ROPE_ARGS="
 
 GPT_ARGS="
     --spec mindspeed_llm.tasks.models.spec.deepseek_spec layer_spec \
-    --moe-router-score-function sigmoid \
+    --num-layer-list 16,16,16,13 \
+    --no-shared-storage \
+    --use-distributed-optimizer \
     --prompt-type deepseek3 \
-    --moe-router-enable-expert-bias \
     --reuse-fp32-param \
     --shape-order BNSD \
     --use-mcore-models \
@@ -82,7 +90,6 @@ GPT_ARGS="
     --context-parallel-size ${CP} \
     --context-parallel-algo  ${CP_TYPE} \
     --num-layers ${NUM_LAYERS} \
-    --num-layer-list "15,15,16,15" \
     --hidden-size 7168 \
     --ffn-hidden-size 18432 \
     --num-attention-heads 128 \
