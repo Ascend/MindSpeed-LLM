@@ -69,11 +69,11 @@ MindSpeed-LLM的依赖配套如下表，安装步骤参考[安装指导](./docs/
   </tr>
   <tr>
     <td>Python</td>
-    <td>>=3.8</td>
+    <td>>=3.10</td>
   </tr>
   <tr>
     <td>PyTorch</td>
-    <td>2.1</td>
+    <td>2.6</td>
   </tr>
   <tr>
     <td>torch_npu插件</td>
