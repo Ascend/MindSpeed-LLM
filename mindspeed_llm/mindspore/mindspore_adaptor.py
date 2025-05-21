@@ -97,7 +97,6 @@ class MindSporeAdaptation(MegatronAdaptationABC):
         MindSporeAdaptation.register('megatron.core.pipeline_parallel.schedules.backward_step', backward_step)
         MindSporeAdaptation.register('megatron.core.pipeline_parallel.schedules.forward_backward_no_pipelining', forward_backward_no_pipelining)
         from mindspeed.mindspore.core.pipeline_parallel.schedules import forward_backward_pipelining_with_interleaving, forward_backward_pipelining_without_interleaving
-        MindSporeAdaptation.register('megatron.core.pipeline_parallel.schedules.forward_backward_pipelining_with_interleaving', forward_backward_pipelining_with_interleaving)
         MindSporeAdaptation.register('megatron.core.pipeline_parallel.schedules.forward_backward_pipelining_without_interleaving', forward_backward_pipelining_without_interleaving)
 
         from mindspeed.mindspore.core.tensor_parallel.data import local_build_key_size_numel_dictionaries
@@ -134,3 +133,10 @@ class MindSporeAdaptation(MegatronAdaptationABC):
             from mindspeed.mindspore.core.data_parallel.async_log_allreduce import get_async_reduced_loss_value
             MindSporeAdaptation.register('mindspeed.core.data_parallel.async_log_allreduce.get_async_reduced_loss_value',
                                 get_async_reduced_loss_value)
+
+        from mindspeed.mindspore.core.tensor_parallel.random import CheckpointWithoutOutput, \
+            CheckpointFunctionWithoutOutput
+        MindSporeAdaptation.register('mindspeed.core.tensor_parallel.random.CheckpointWithoutOutput',
+                                     CheckpointWithoutOutput)
+        MindSporeAdaptation.register('mindspeed.core.tensor_parallel.random.CheckpointFunctionWithoutOutput',
+                                     CheckpointFunctionWithoutOutput)
