@@ -29,6 +29,22 @@ def dummy_jit(fn):
     return wrapper
 
 
+def add_safe_globals():
+    from megatron.core.enums import ModelType
+    from argparse import Namespace
+    from numpy.core.multiarray import _reconstruct
+    import numpy as np
+    from _io import BytesIO
+    # for torch2.6, add args to the safe global variables list
+    torch.serialization.add_safe_globals([ModelType])
+    torch.serialization.add_safe_globals([Namespace])
+    torch.serialization.add_safe_globals([_reconstruct])
+    torch.serialization.add_safe_globals([np.ndarray])
+    torch.serialization.add_safe_globals([np.dtype])
+    torch.serialization.add_safe_globals([np.dtypes.UInt32DType])
+    torch.serialization.add_safe_globals([BytesIO])
+
+
 class MegatronAdaptation:
     """
         A module manager supports adaptation registration, application and execution.
@@ -152,21 +168,11 @@ class MegatronAdaptation:
         TransformerBlock._build_layers = build_layers_wrapper(TransformerBlock._build_layers,
                                                               ColumnParallelLinear.forward,
                                                               RowParallelLinear.forward)
-        from megatron.core.enums import ModelType
-        from argparse import Namespace
-        from numpy.core.multiarray import _reconstruct
-        import numpy as np
-        from _io import BytesIO
-        # for torch2.6, add args to the safe global variables list
-        torch.serialization.add_safe_globals([ModelType])
-        torch.serialization.add_safe_globals([Namespace])
-        torch.serialization.add_safe_globals([_reconstruct])
-        torch.serialization.add_safe_globals([np.ndarray])
-        torch.serialization.add_safe_globals([np.dtype])
-        torch.serialization.add_safe_globals([np.dtypes.UInt32DType])
-        torch.serialization.add_safe_globals([BytesIO])
+        from ..training.utils import get_torch_version
+        from packaging.version import Version as PkgVersion
+        if get_torch_version() >= PkgVersion("2.6.0"):
+            add_safe_globals()
         
-
 
 class MegatronAdaptationABC:
     """

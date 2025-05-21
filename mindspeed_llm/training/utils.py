@@ -21,6 +21,7 @@ import warnings
 from functools import wraps
 from typing import Optional, Union, List
 from itertools import takewhile
+from packaging.version import Version as PkgVersion
 
 import acl
 import torch
@@ -49,6 +50,13 @@ try:
 except Exception:
     pass
 
+try:
+    _torch_version = PkgVersion(torch.__version__)
+except Exception:
+    # This is a WAR for building docs, where torch is not actually imported
+    _torch_version = PkgVersion("0.0.0")
+    
+
 WRITE_FILE_DEFAULT_FLAGS = os.O_WRONLY | os.O_CREAT
 WRITE_FILE_DEFAULT_MODES = stat.S_IWUSR | stat.S_IRUSR
 
@@ -59,6 +67,13 @@ def set_mtp_position_ids(position_ids_mtp):
     """set_postprocess_chunk for mtp position id"""
     global _MTP_POSITION_ID
     _MTP_POSITION_ID = position_ids_mtp
+    
+    
+def get_torch_version():
+    """Get torch version from __version__."""
+
+    global _torch_version
+    return _torch_version
 
 
 def get_mtp_position_ids():
