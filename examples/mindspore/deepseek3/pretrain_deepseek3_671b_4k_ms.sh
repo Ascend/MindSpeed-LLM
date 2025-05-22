@@ -7,36 +7,36 @@ export HCCL_BUFFSIZE=400
 
 basepath=$(cd `dirname $0`; cd ../../../; pwd)
 
-GPUS_PER_NODE=8
+NPUS_PER_NODE=8
 MASTER_ADDR=localhost #主节点IP
 MASTER_PORT=9110
-NNODES=4
+NNODES=64
 NODE_RANK=0
-WORLD_SIZE=$(($GPUS_PER_NODE*$NNODES))
+WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
-CKPT_SAVE_DIR="your model save ckpt path" # /***/**${NODE_RANK}
+CKPT_SAVE_DIR="your model save ckpt path"
 DATA_PATH="your data path"
 TOKENIZER_PATH="your tokenizer path"
-CKPT_LOAD_DIR="your model ckpt path" # /***/**${NODE_RANK}
+CKPT_LOAD_DIR="your model ckpt path"
 
-TP=1
-PP=2
-EP=4
+TP=4
+PP=8
+EP=8
 CP=1
 VPP=1
 CP_TYPE='ulysses_cp_algo'
-NUM_LAYERS=8
+NUM_LAYERS=64
 SEQ_LEN=4096
 MBS=1
-GBS=64
+GBS=3840
 
 DISTRIBUTED_ARGS="
     --master_addr $MASTER_ADDR \
     --node_rank $NODE_RANK \
     --worker_num $WORLD_SIZE \
-    --local_worker_num $GPUS_PER_NODE \
+    --local_worker_num $NPUS_PER_NODE \
     --master_port $MASTER_PORT \
-    --log_dir=msrun_log_pretrain \
+    --log_dir=msrun_log \
     --join=False \
     --cluster_time_out=300 \
     --bind_core=True \
@@ -58,7 +58,7 @@ MOE_ARGS="
     --use-fused-moe-token-permute-and-unpermute \
     --moe-token-dispatcher-type alltoall \
     --n-shared-experts 1 \
-    --num-experts 128 \
+    --num-experts 256 \
     --moe-router-topk 8 \
     --moe-layer-freq 1 \
     --n-group 8 \
@@ -76,9 +76,9 @@ MOE_ARGS="
 "
 
 MTP_ARGS="
-    --num-nextn-predict-layers 1 \
-    --share-mtp-embedding-and-output-weight \
-    --recompute-mtp-norm \
+    --mtp-num-layers 1 \
+    --mtp-loss-scaling-factor 0.3 \
+    --mtp-mem-efficient-logits \
 "
 
 ROPE_ARGS="
@@ -91,15 +91,19 @@ ROPE_ARGS="
     --rope-scaling-type yarn
 "
 
+MEM_ARGS="
+    --use-distributed-optimizer \
+    --recompute-method uniform \
+    --recompute-granularity full \
+    --recompute-num-layers 1 \
+"
+
 GPT_ARGS="\
     --no-check-for-nan-in-loss-and-grad \
     --spec mindspeed_llm.tasks.models.spec.deepseek_spec layer_spec \
     --no-gradient-accumulation-fusion \
     --reset-position-ids \
-    --recompute-granularity full \
-    --recompute-method block \
-    --recompute-num-layers 8 \
-    --noop-layers 7 \
+    --noop-layers 61,62,63 \
     --no-shared-storage \
     --reuse-fp32-param \
     --use-flash-attn \
@@ -123,7 +127,7 @@ GPT_ARGS="\
     --global-batch-size ${GBS} \
     --make-vocab-size-divisible-by 1 \
     --lr 1.0e-5 \
-    --train-iters 50 \
+    --train-iters 2000 \
     --lr-decay-style cosine \
     --untie-embeddings-and-output-weights \
     --disable-bias-linear \
@@ -173,11 +177,12 @@ OUTPUT_ARGS="
 msrun $DISTRIBUTED_ARGS $basepath/pretrain_gpt.py \
     $GPT_ARGS \
     $DATA_ARGS \
+    $OUTPUT_ARGS \
     $MLA_ARGS \
     $ROPE_ARGS \
     $MOE_ARGS \
-    $OUTPUT_ARGS \
     $MTP_ARGS \
+    $MEM_ARGS \
     --distributed-backend nccl \
     --ai-framework mindspore \
-    2>&1 | tee logs/ms_pretrain_deepseek3_685b_4k_ptd.log
+    2>&1 | tee logs/ms_pretrain_deepseek3_671b_4k_ptd.log

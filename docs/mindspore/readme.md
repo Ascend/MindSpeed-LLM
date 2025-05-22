@@ -18,7 +18,7 @@ MindSpeed-LLM + MindSpore后端的依赖配套如下表，安装步骤参考[基
 
 ## 模型支持
 
-MindSpore后端现已支持DeepSeek-V3模型预训练，模型指南详见[DeepSeek3预训练](./features/pretrain.md)。
+MindSpore后端现已支持DeepSeek-V3模型预训练，模型指南详见[DeepSeek3预训练](../../examples/mindspore/deepseek3/README.md)。
 更多模型支持即将上线，敬请期待！
 
 ## 特性支持

@@ -37,11 +37,11 @@ source /usr/local/Ascend/ascend-toolkit/set_env.sh
 source /usr/local/Ascend/nnal/atb/set_env.sh --cxxabi=0
 
 # 安装MindSpeed-Core-MS转换工具
-git clone https://gitee.com/ascend/MindSpeed-Core-MS.git -b feature-0.2
+git clone https://gitee.com/ascend/MindSpeed-Core-MS.git -b master
 
 # 使用MindSpeed-Core-MS内部脚本提供配置环境
 cd MindSpeed-Core-MS
 
-source test_convert_llm_ds.sh
+source test_convert_llm_gongcang.sh
 ```
 
