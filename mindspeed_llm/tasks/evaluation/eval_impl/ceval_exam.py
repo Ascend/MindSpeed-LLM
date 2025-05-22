@@ -150,7 +150,7 @@ class CEvalExam(DatasetEval):
                         chat_results = chat_results[:-1]
                     if chat_results:
                         for index, chat_result in enumerate(chat_results):
-                            answer = chat_result[0].lstrip().strip() if not args.alternative_prompt else first_capital_postprocess(chat_result)
+                            answer = chat_result[0].lstrip().strip() if not args.alternative_prompt and self.prompt_type is None else first_capital_postprocess(chat_result)
                             try:
                                 if dist.get_rank() in group[0]:
                                     logger.info("correct: %s, AI: %s", answers[index].strip(), answer.strip())

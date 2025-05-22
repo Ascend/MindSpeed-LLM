@@ -6,8 +6,8 @@ python convert_ckpt.py \
     --model-type GPT \
     --load-model-type hf \
     --save-model-type mg \
-    --target-tensor-parallel-size 1 \
-    --target-pipeline-parallel-size 2 \
+    --target-tensor-parallel-size 8 \
+    --target-pipeline-parallel-size 1 \
     --load-dir ./model_from_hf/llama-2-7b-hf/ \
     --save-dir ./model_weights/Llama2-mcore/ \
     --tokenizer-model ./model_from_hf/llama-2-7b-hf/tokenizer.model \

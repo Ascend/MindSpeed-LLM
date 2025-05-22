@@ -7,7 +7,7 @@ export HCCL_CONNECT_TIMEOUT=1200
 TOKENIZER_PATH=/../llama2-7b-hf/  #tokenizer path
 CHECKPOINT=/../llama2-7b-mindspeed-llm-tp1  #model path
 # configure task and data path
-DATA_PATH="/../boolq/dev"
+DATA_PATH="/../boolq/test"
 TASK="boolq"
 
 # distributed config

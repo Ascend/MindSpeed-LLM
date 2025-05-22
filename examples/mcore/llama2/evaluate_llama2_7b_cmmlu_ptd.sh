@@ -6,8 +6,8 @@ export HCCL_CONNECT_TIMEOUT=1200
 TOKENIZER_PATH=/../llama2-7b-hf/  #tokenizer path
 CHECKPOINT=/../llama2-7b-mindspeed-llm-tp1  #model path
 # configure task and data path
-DATA_PATH="/../ceval/val"
-TASK="ceval"
+DATA_PATH="/../cmmlu/test/"
+TASK="cmmlu"
 
 # distributed config
 MASTER_ADDR=localhost
@@ -21,11 +21,11 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS evaluation.py   \
        --task-data-path $DATA_PATH \
        --task $TASK\
        --seq-length 4096 \
-       --max-new-tokens 3 \
+       --max-new-tokens 5 \
        --evaluation-batch-size 1 \
        --max-position-embeddings 4096 \
-       --tensor-model-parallel-size 1  \
-       --pipeline-model-parallel-size 1  \
+       --tensor-model-parallel-size 1 \
+       --pipeline-model-parallel-size 1 \
        --num-layers 32  \
        --hidden-size 4096  \
        --ffn-hidden-size 11008 \

@@ -16,9 +16,8 @@ CKPT_SAVE_DIR="your model save ckpt path"
 DATA_PATH="your data path"
 TOKENIZER_MODEL="your tokenizer path"
 CKPT_LOAD_DIR="your model ckpt path"
-LORA_CHECKPOINT="your lora ckpt path"
 
-TP=1
+TP=8
 PP=1
 
 DISTRIBUTED_ARGS="
@@ -88,7 +87,6 @@ TRAINING_ARGS="
 FINETUNE_ARGS="
     --finetune \
     --stage sft \
-    --lora-load ${LORA_CHECKPOINT} \
     --is-instruction-dataset \
     --lora-r 16 \
     --lora-alpha 32 \
