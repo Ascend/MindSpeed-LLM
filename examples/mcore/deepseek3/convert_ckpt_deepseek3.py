@@ -629,11 +629,21 @@ class CkptConvert(object):
                                 ep_rank * self.tp_size + tp_rank].reshape(self.hidden_size, -1).clone()
                             mg_model[ep_rank][tp_rank][experts_weight2_key] = gemm_fc2_ep[
                                 ep_rank * self.tp_size + tp_rank].reshape(-1, self.hidden_size).clone()
+                            if self.qlora_nf4:
+                                self.qlora_nf4_quant(mg_model, ep_rank, tp_rank, experts_weight1_key,
+                                                    gemm_fc1_ep[ep_rank * self.tp_size + tp_rank].reshape(self.hidden_size, -1).clone())
+                                self.qlora_nf4_quant(mg_model, ep_rank, tp_rank, experts_weight2_key,
+                                                    gemm_fc2_ep[ep_rank * self.tp_size + tp_rank].reshape(-1, self.hidden_size).clone())
                         else:
                             mg_model[ep_rank][tp_rank][experts_weight1_key] = gemm_fc1_ep_tp[tp_rank].reshape(
                                 self.hidden_size, -1).clone()
                             mg_model[ep_rank][tp_rank][experts_weight2_key] = gemm_fc2_ep_tp[tp_rank].reshape(
                                 -1, self.hidden_size).clone()
+                            if self.qlora_nf4:
+                                self.qlora_nf4_quant(mg_model, ep_rank, tp_rank, experts_weight1_key,
+                                                    gemm_fc1_ep_tp[tp_rank].reshape(self.hidden_size, -1).clone())
+                                self.qlora_nf4_quant(mg_model, ep_rank, tp_rank, experts_weight2_key,
+                                                    gemm_fc2_ep_tp[tp_rank].reshape(-1, self.hidden_size).clone())
             else:
                 num_local_experts = self.num_experts // self.ep_size
                 for ep_rank in range(self.ep_size):

@@ -585,7 +585,10 @@ class CoreAdaptation(MegatronAdaptationABC):
                                                                   linear_with_frozen_weight_forward,
                                                                   linear_with_frozen_weight_backward,
                                                                   parallel_linear_save_to_state_dict_wrapper,
-                                                                  parallel_linear_load_from_state_dict_wrapper)
+                                                                  parallel_linear_load_from_state_dict_wrapper,
+                                                                  groupedmlp_load_from_state_dict_wrapper,
+                                                                  grouped_gemm_util_ops_gmm,
+                                                                  moe_layer_overlap_all2all_gmm_op_wrapper)
             MegatronAdaptation.register('megatron.core.tensor_parallel.layers.ColumnParallelLinear.__init__',
                                         parallel_linear_init_wrapper)
             MegatronAdaptation.register('megatron.core.tensor_parallel.layers.RowParallelLinear.__init__',
@@ -602,6 +605,12 @@ class CoreAdaptation(MegatronAdaptationABC):
                                         parallel_linear_load_from_state_dict_wrapper)
             MegatronAdaptation.register('megatron.core.tensor_parallel.layers.RowParallelLinear._load_from_state_dict',
                                         parallel_linear_load_from_state_dict_wrapper)
+            MegatronAdaptation.register('megatron.core.transformer.moe.experts.GroupedMLP._load_from_state_dict',
+                                    groupedmlp_load_from_state_dict_wrapper)
+            MegatronAdaptation.register('mindspeed.core.transformer.moe.grouped_gemm_util.Ops.gmm',
+                                    grouped_gemm_util_ops_gmm)
+            MegatronAdaptation.register('mindspeed.core.transformer.moe.moe_layer_overlap_all2all.gmm_op',
+                                    moe_layer_overlap_all2all_gmm_op_wrapper)
 
         if MegatronAdaptation.get_args().tp_2d:
             from mindspeed_llm.core.tensor_parallel.tp_2d.parallel_linear_2d import parallell_linear_2D_init_wrapper

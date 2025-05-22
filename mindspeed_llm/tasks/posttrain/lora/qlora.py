@@ -10,6 +10,8 @@ from megatron.core.utils import get_model_config
 from megatron.core.enums import ModelType
 from megatron.core.distributed import DistributedDataParallel as DDP
 from megatron.core.parallel_state import get_tensor_model_parallel_group
+from mindspeed.ops.npu_groupmatmul_add import npu_groupmatmul_add_fp32
+from mindspeed.ops.gmm import GMMFunction
 from mindspeed_llm.training.training import model_provider_func_wrapper
 from mindspeed_llm.tasks.posttrain.lora.utils import is_enable_qlora
 
@@ -225,3 +227,155 @@ def get_model(model_provider_func, model_type=ModelType.encoder_or_decoder, wrap
                 model_module.broadcast_params()
 
     return model
+
+
+def _load_bnb_nf4_weight(state_dict, prefix, weight_name):
+    prefix_name = prefix + weight_name
+    quantized_weight = state_dict.get(prefix_name)
+    if quantized_weight is None:
+        raise ValueError(f"quantized_weight is None, expected a tensor of type torch.uint8.")
+    elif not isinstance(quantized_weight, torch.Tensor) or quantized_weight.dtype != torch.uint8:
+        raise TypeError(f"Expected quantized_weight to be of type torch.uint8, but got {quantized_weight.dtype}")
+    
+    qs_dict = {}
+    for k, v in state_dict.items():
+        if prefix_name not in k or prefix_name == k:
+            continue
+        key = k.replace(prefix_name, "")[1:]
+        qs_dict[key] = v
+
+    return bnb.nn.Params4bit.from_prequantized(
+        data=quantized_weight,
+        quantized_stats=qs_dict,
+        requires_grad=False,
+        device='npu')
+
+
+def groupedmlp_load_from_state_dict_wrapper(fn):
+    def wrapper(self, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs):
+        self.weight1 = _load_bnb_nf4_weight(state_dict, prefix, "weight1")
+        self.weight2 = _load_bnb_nf4_weight(state_dict, prefix, "weight2")
+        fn(self, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs)
+    return wrapper
+
+
+def infer_dequant_shape(hidden_size, weight_shape):
+    num_local_experts = weight_shape[0]
+    out_shape = [num_local_experts]
+    if weight_shape[1] == hidden_size:
+        out_shape.extend([hidden_size, 2 * weight_shape[2]])
+    else:
+        out_shape.extend([2 * weight_shape[1], hidden_size])
+    return out_shape
+
+
+class WeightNf4QuantGMMFunction(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, original_weight, x, weight, bias, group_args):
+        group_list, group_type, gemm_fusion, group_list_type, group_list_data_type = group_args
+        weight_tmp = bnb.functional.dequantize_4bit(
+            original_weight.data,
+            original_weight.quant_state
+        ).to(x.dtype)
+        hidden_size = list(set(weight_tmp.shape) & set(weight.shape))[0]
+        weight_tmp_shape = infer_dequant_shape(hidden_size, weight.shape)
+        weight_tmp = weight_tmp.reshape(*weight_tmp_shape)
+        if bias is not None and bias.requires_grad:
+            raise ValueError("Bias is not supported to compute gradient!")
+        if (x.requires_grad or weight.requires_grad) and group_type != 0:
+            raise ValueError("group_type must be zero to compute gradients of x and weight!")
+        bias = [] if bias is None else [bias]
+        if group_list_type == 0:
+            outputs = GMMFunction.builder.load().npu_gmm([x], [weight_tmp], bias, group_list, group_type, group_list_type)
+        elif group_list_type == 1:
+            outputs = GMMFunction.builder2.load().npu_gmm([x], [weight_tmp], bias, group_list, group_type, group_list_type)
+        if group_list_data_type == 0:
+            ctx.save_for_backward(x, weight, original_weight)
+            ctx.group_list = group_list
+        else:
+            ctx.save_for_backward(x, weight, group_list, original_weight)
+        ctx.weight_tmp_shape = weight_tmp_shape
+        ctx.gemm_fusion = gemm_fusion
+        ctx.group_list_type = group_list_type
+        ctx.group_list_data_type = group_list_data_type
+
+        return outputs[0]
+
+    @staticmethod
+    def backward(ctx, grad_outputs):
+        if ctx.group_list_data_type == 0:
+            x, weight, original_weight = ctx.saved_tensors
+            group_list = ctx.group_list
+        else:
+            x, weight, group_list, original_weight = ctx.saved_tensors
+        weight_tmp = bnb.functional.dequantize_4bit(
+            original_weight.data,
+            original_weight.quant_state
+        ).to(grad_outputs.dtype).reshape(ctx.weight_tmp_shape)
+
+        if ctx.gemm_fusion:
+            if ctx.group_list_type == 0:
+                dx, _, dbias = GMMFunction.builder.load().npu_gmm_backward_fusion([grad_outputs], [weight_tmp], group_list,
+                                                                    ctx.group_list_type)
+                npu_groupmatmul_add_fp32(x, grad_outputs, group_list, original_weight.main_grad)
+                
+            elif ctx.group_list_type == 1:
+                dx, _, dbias = GMMFunction.builder2.load().npu_gmm_backward_fusion([grad_outputs], [weight_tmp], group_list,
+                                                                    ctx.group_list_type)
+                group_list_v2 = torch.cumsum(group_list, dim=0)                                           
+                npu_groupmatmul_add_fp32(x, grad_outputs, group_list_v2, original_weight.main_grad)
+
+            dbias = None if len(dbias) == 0 else dbias[0]
+  
+            if hasattr(original_weight, 'grad_added_to_main_grad'):
+                if getattr(weight, 'zero_out_wgrad', False):
+                    grad_weight = torch.zeros(
+                        weight.shape,
+                        dtype=x.dtype,
+                        device=torch.cuda.current_device(),
+                        requires_grad=False,
+                    )
+                else:
+                    grad_weight = torch.empty(
+                        weight.shape,
+                        dtype=x.dtype,
+                        device=torch.cuda.current_device(),
+                        requires_grad=False,
+                    )
+                original_weight.grad_added_to_main_grad = True
+            else:
+                grad_weight = None
+
+            return None, dx[0], grad_weight, dbias, None
+        else:
+            if ctx.group_list_type == 0:
+                dx, dw, dbias = GMMFunction.builder.load().npu_gmm_backward([grad_outputs], [x], [weight_tmp], group_list,
+                                                                    ctx.group_list_type)
+            elif ctx.group_list_type == 1:
+                dx, dw, dbias = GMMFunction.builder2.load().npu_gmm_backward([grad_outputs], [x], [weight_tmp], group_list,
+                                                                    ctx.group_list_type)
+            dbias = None if len(dbias) == 0 else dbias[0]
+
+            return None, dx[0], dw[0], dbias, None
+
+
+def grouped_gemm_util_ops_gmm(a, b, batch_sizes, trans_b=False, gemm_fusion=False, original_weight=None):
+    if trans_b:
+        b = b.t()
+    group_list = torch.cumsum(batch_sizes, dim=0).to('npu')
+    if isinstance(group_list, (torch.Tensor, type(None))):
+        group_list_data_type = 1
+    else:
+        group_list_data_type = 0
+    group_args = (group_list, 0, gemm_fusion, 0, group_list_data_type)
+    return WeightNf4QuantGMMFunction.apply(original_weight, a, b, bias=None, group_args=group_args)
+
+
+def moe_layer_overlap_all2all_gmm_op_wrapper(fn):
+    def wrapper(x, weight, bias, group_list, group_type):
+        if hasattr(weight, "quant_state"):
+            weight_tmp = bnb.functional.dequantize_4bit(weight.data, weight.quant_state).to(x.dtype)
+        else:
+            weight_tmp = weight
+        return fn(x, weight_tmp, bias, group_list, group_type)
+    return wrapper

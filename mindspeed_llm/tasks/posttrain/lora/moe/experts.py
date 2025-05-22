@@ -32,6 +32,7 @@ from mindspeed.core.transformer.moe.moe_utils import (
     get_gemm_backward_need_tensors,
     set_all2all_experts_output
 )
+from mindspeed_llm.tasks.posttrain.lora.cc_lora_forward import dequantize
 
 
 class LoraParallelGroupedMlpWithCompAndCommOverlapAll2All(torch.autograd.Function):
@@ -130,7 +131,8 @@ class LoraParallelGroupedMlpWithCompAndCommOverlapAll2All(torch.autograd.Functio
 
         # grad of mm2
         if ctx.use_gmm:
-            weights2 = rearrange(weights2, 'n h f -> n f h')
+            weights2_tmp, _ = dequantize(weights2, grad_outs.dtype, grad_outs.device)
+            weights2 = rearrange(weights2_tmp, 'n h f -> n f h')
             weights2_a = rearrange(weights2_a, 'n h f -> n f h')
             weights2_b = rearrange(weights2_b, 'n h f -> n f h')
 
@@ -223,7 +225,8 @@ class LoraParallelGroupedMlpWithCompAndCommOverlapAll2All(torch.autograd.Functio
             )
 
         if ctx.use_gmm:
-            weights1 = rearrange(weights1, 'n h f -> n f h')
+            weights1_tmp, _ = dequantize(weights1, act_inputs.dtype, act_inputs.device)
+            weights1 = rearrange(weights1_tmp, 'n h f -> n f h')
             weights1_a = rearrange(weights1_a, 'n h f -> n f h')
             weights1_b = rearrange(weights1_b, 'n h f -> n f h')
 
@@ -433,6 +436,9 @@ class LoraParallelGroupedMLP(GroupedMLP):
             w1_b = self.weight1_lora_b.view(self.num_local_experts, self.lora_r, -1)
             w2_a = self.weight2_lora_a.view(self.num_local_experts, -1, self.lora_r)
             w2_b = self.weight2_lora_b.view(self.num_local_experts, self.lora_r, -1)
+            if hasattr(self.weight1, "quant_state"):
+                self.weight1.quant_state.shape = (self.num_local_experts, self.config.hidden_size, w1.shape[-1] * 2)
+                self.weight2.quant_state.shape = (self.num_local_experts, w2.shape[1] * 2, self.config.hidden_size)
         else:
             w1 = self.weight1.view(self.config.hidden_size, -1)
             w2 = self.weight2.view(-1, self.config.hidden_size)
@@ -440,6 +446,10 @@ class LoraParallelGroupedMLP(GroupedMLP):
             w1_b = self.weight1_lora_b.view(self.lora_r, -1)
             w2_a = self.weight2_lora_a.view(-1, self.lora_r)
             w2_b = self.weight2_lora_b.view(self.lora_r, -1)
+            if hasattr(self.weight1, "quant_state"):
+                self.weight1.quant_state.shape = (self.config.hidden_size, w1.shape[-1] * 2)
+                self.weight2.quant_state.shape = (w2.shape[0] * 2, self.config.hidden_size)
+        w1, w2 = self.weight1, self.weight2
         group_list = torch.cumsum(tokens_per_expert, dim=0)
 
         return lora_parallel_grouped_mlp_with_comp_and_comm_overlap_all2all(permuted_local_hidden_states,
