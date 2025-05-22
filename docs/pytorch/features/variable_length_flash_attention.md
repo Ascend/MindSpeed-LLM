@@ -31,7 +31,7 @@ python ./preprocess_data.py \
 ### 1.使能前
 初始化atten_mask为压缩下三角矩阵（2048*2048）；
 
-<img alt="casual_mask.png" src="../../../sources/images/variable_length_flash_attention/casual_mask.png" width="400"/>
+<img alt="casual_mask.png" src="../../../sources/images/variable_length_flash_attention/casual_mask.png" width="261"/>
 
 多个文档被视为同一序列，互相间的self attention没有掩盖，所有token均参与计算。
 ### 2.使能后
@@ -41,6 +41,6 @@ python ./preprocess_data.py \
 
 类似的attn_mask可以类似的表示为（实际计算时不生成）：
 
-<img alt="varlen_mask.png" src="../../../sources/images/variable_length_flash_attention/varlen_mask.png" width="400"/>
+<img alt="varlen_mask.png" src="../../../sources/images/variable_length_flash_attention/varlen_mask.png" width="414"/>
 
 其中左下角空白位置不参与计算。

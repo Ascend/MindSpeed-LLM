@@ -16,7 +16,7 @@
     </tr>
   </thead>
   <tbody>
-    </tr>
+    <tr>
        <tr>
        <td rowspan="1"><a href="https://huggingface.co/Qwen">Qwen2</a></td>
       <td><a href="https://huggingface.co/Qwen/Qwen2-57B-A14B/tree/main">57B-A14B</a></td>

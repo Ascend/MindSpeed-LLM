@@ -91,7 +91,7 @@
       <td>【Pass】</td>
     </tr>
     <tr>
-      <td><a href="https://huggingface.co/bigscience/bloom/tree/main">176B</td>
+      <td><a href="https://huggingface.co/bigscience/bloom/tree/main">176B</a></td>
       <td>2K</td>
       <th>Legacy</th>
       <td >12x8</td>
@@ -210,7 +210,7 @@
       <td>【Test】</td>
     </tr>
     <tr>
-      <td rowspan="4"><a href="https://huggingface.co/meta-llama">LLaMA</td>
+      <td rowspan="4"><a href="https://huggingface.co/meta-llama">LLaMA</a></td>
       <td><a href="https://huggingface.co/huggyllama/llama-7b/tree/main">7B</a></td>
       <td rowspan="4"><a href="../../../examples/legacy/llama">llama</a></td>
       <td>2K</td>
@@ -244,7 +244,7 @@
       <td>【Pass】</td>
     </tr>
     <tr>
-      <td rowspan="4"><a href="https://huggingface.co/meta-llama">LLaMA2</td>
+      <td rowspan="4"><a href="https://huggingface.co/meta-llama">LLaMA2</a></td>
       <td><a href="https://huggingface.co/daryl149/llama-2-7b-hf/tree/main">7B</a></td>
       <td rowspan="4"><a href="../../../examples/mcore/llama2">llama2</a></td>
       <td>4K</td>
@@ -278,7 +278,7 @@
       <td>【Pass】</td>
     </tr>
     <tr>
-      <td rowspan="2"><a href="https://huggingface.co/meta-llama">LLaMA3</td>
+      <td rowspan="2"><a href="https://huggingface.co/meta-llama">LLaMA3</a></td>
       <td><a href="https://huggingface.co/unsloth/llama-3-8b/tree/main">8B</a></td>
       <td rowspan="2"><a href="../../../examples/mcore/llama3">llama3</a></td>
       <td> 8K </td>
@@ -296,7 +296,7 @@
       <td>【Pass】</td>
     </tr>
     <tr>
-      <td rowspan="3"><a href="https://modelscope.cn/organization/LLM-Research">LLaMA3.1</td>
+      <td rowspan="3"><a href="https://modelscope.cn/organization/LLM-Research">LLaMA3.1</a></td>
       <td rowspan="2"><a href="https://modelscope.cn/models/LLM-Research/Meta-Llama-3.1-8B">8B</a></td>
       <td rowspan="3"><a href="../../../examples/mcore/llama31">llama31</a></td>
       <td> 8K </td>
@@ -321,7 +321,7 @@
       <td>【Pass】</td>
     </tr>
     <tr>
-      <td rowspan="2"><a href="https://huggingface.co/meta-llama">LLaMA3.2</td>
+      <td rowspan="2"><a href="https://huggingface.co/meta-llama">LLaMA3.2</a></td>
       <td><a href="https://huggingface.co/unsloth/Llama-3.2-1B/tree/main">1B</a></td>
       <td rowspan="2"><a href="../../../examples/mcore/llama32">llama32</a></td>
       <td> 8K </td>
@@ -374,8 +374,8 @@
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
-    </tr>
-       <tr>
+    <tr>
+      <tr>
       <td rowspan="8"><a href="https://huggingface.co/Qwen">Qwen1.5</a></td>
       <td> <a href="https://huggingface.co/Qwen/Qwen1.5-0.5B/tree/main">0.5B</a> </td>
       <td rowspan="9"><a href="../../../examples/mcore/qwen15">qwen15</a></td>
@@ -434,7 +434,7 @@
       <td>【GTS】</td>    
       <td>【Pass】</td>
     </tr>
-    </tr>
+    <tr>
       <td rowspan="1"><a href="https://huggingface.co/Qwen">CodeQwen1.5</a></td>
       <td> <a href="https://huggingface.co/Qwen/CodeQwen1.5-7B">7B</a> </td>
       <td> 8K </td>
@@ -443,9 +443,9 @@
       <td>【GTS】</td>    
       <td>【Pass】</td>
     </tr>
-    </tr>
-       <tr>
-       <td rowspan="7"><a href="https://huggingface.co/Qwen">Qwen2</a></td>
+    <tr>
+      <tr>
+      <td rowspan="7"><a href="https://huggingface.co/Qwen">Qwen2</a></td>
       <td rowspan="2"> <a href="https://huggingface.co/Qwen/Qwen2-0.5B/tree/main">0.5B</a> </td>
       <td rowspan="7"><a href="../../../examples/mcore/qwen2">qwen2</a></td>
       <td> 4K </td>
@@ -509,7 +509,7 @@
       <td>1x8</td>
       <td>【GTS】</td>
       <td>【Pass】</td>
-    </tr>
+    <tr>
       <td><a href="https://huggingface.co/Qwen/Qwen2.5-3B/tree/main">3B</a></td>
       <td> 32K </td>
       <th>Mcore</th>
@@ -585,7 +585,7 @@
       <td>【GTS】</td>
       <td>【Test】</td>
     </tr>
-	</tr>
+	<tr>
 	  <td rowspan="1"><a href="https://huggingface.co/Qwen">CodeQwen2.5</a></td>
       <td> <a href="https://huggingface.co/Qwen/Qwen2.5-Coder-7B">7B</a> </td>
       <td rowspan="1"><a href="../../../examples/mcore/qwen25_coder">qwen25_coder</a></td>

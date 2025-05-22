@@ -173,7 +173,7 @@ ray stop
 我们与 HuggingFace 的强化学习开源仓库 [TRL](https://github.com/huggingface/trl/) 进行了精度对比，来辅助验证算法实现的正确性。为了与基准方法进行精度对齐，在 Actor 推理时采用贪婪（greedy）策略去除随机性，训练过程中的 critic loss和 actor loss对比如下图所示。
 
 <figure>
-  <img src="../../sources/images/ray_ppo/llama32_1b_trl_compare_generate_response.png" alt="Image description" />
+  <img src="../../../../sources/images/ray_ppo/llama32_1b_trl_compare_generate_response.png" alt="Image description" />
   <figcaption style="text-align: center;">未固定 responses 时 loss 对比图 (左为 actor loss，右为 critc loss)</figcaption>
 </figure>
 
@@ -182,7 +182,7 @@ ray stop
 因此，我们额外补充了固定 responses 方式进行精度对齐的实验。可以看到，固定 responses 后 loss 能够较好地实现对齐。
 
 <figure>
-  <img src="../../sources/images/ray_ppo/llama32_1b_trl_compare_fixed_response.png" alt="Image description" />
+  <img src="../../../../sources/images/ray_ppo/llama32_1b_trl_compare_fixed_response.png" alt="Image description" />
   <figcaption style="text-align: center;">固定 responses 后的 loss 对比图 (左为 actor loss，右为 critc loss)</figcaption>
 </figure>
 

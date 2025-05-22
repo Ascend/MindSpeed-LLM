@@ -1,5 +1,5 @@
 MindSpeed-LLM 支持大模型在公开基准数据集上进行准确率评估，当前支持的 Benchmark 如下：
-详细统计信息见[evaluation.md](../../models/evaluation_baseline.md)
+详细统计信息见[evaluation.md](../../models/models_evaluation.md)
 
 ## 以上模型脚本环境变量声明：
 脚本中的环境变量配置见[环境变量说明](../../features/environment_variable.md)

@@ -454,7 +454,7 @@ MindSpeed LLM包含分布式预训练、分布式微调、分布式偏好对齐�
   </tr></thead>
 <tbody>
   <tr>
-    <td><a href="docs/pytorch/solutions/finetune/instruction_finetune.md">单样本微调</td>
+    <td><a href="docs/pytorch/solutions/finetune/instruction_finetune.md">单样本微调</a></td>
     <td>✅</td>
     <td>✅</td>
     <td>✅</td>
@@ -463,7 +463,7 @@ MindSpeed LLM包含分布式预训练、分布式微调、分布式偏好对齐�
     <td>【Ascend】</td>
   </tr>
   <tr>
-    <td><a href="docs/pytorch/solutions/finetune/multi_sample_pack_finetune.md">多样本pack微调</td>
+    <td><a href="docs/pytorch/solutions/finetune/multi_sample_pack_finetune.md">多样本pack微调</a></td>
     <td>✅</td>
     <td>✅</td>
     <td>✅</td>
@@ -542,21 +542,21 @@ MindSpeed LLM包含分布式预训练、分布式微调、分布式偏好对齐�
   </thead>
   <tbody>
     <tr>
-      <td><a href="docs/pytorch/solutions/inference/inference.md">流式推理</td>
+      <td><a href="docs/pytorch/solutions/inference/inference.md">流式推理 </a></td>
       <td>✅</td>
       <td>✅</td>
       <td>✅</td>
       <td>【NAIE】</td>
     </tr>
     <tr>
-      <td><a href="docs/pytorch/solutions/inference/chat.md"> Chat对话</td>
+      <td><a href="docs/pytorch/solutions/inference/chat.md"> Chat对话</a></td>
       <td>✅</td>
       <td>✅</td>
       <td>✅</td>
       <td>【NAIE】</td>
     </tr>
     <tr>
-      <td><a href="docs/pytorch/features/yarn.md"> yarn上下文扩展 </td>
+      <td><a href="docs/pytorch/features/yarn.md"> yarn上下文扩展 </a></td>
       <td>✅</td>
       <td>❌</td>
       <td>❌</td>
@@ -566,7 +566,7 @@ MindSpeed LLM包含分布式预训练、分布式微调、分布式偏好对齐�
 </table>
 
 ## 开源数据集评测
-仓库模型基线见[开源数据集评测基线](docs/pytorch/models/evaluation_baseline.md)
+仓库模型基线见[开源数据集评测基线](docs/pytorch/models/models_evaluation.md)
 <table>
   <thead>
     <tr>

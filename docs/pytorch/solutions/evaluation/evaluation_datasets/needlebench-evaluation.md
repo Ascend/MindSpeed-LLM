@@ -11,18 +11,11 @@ NeedleBench 是由上海人工智能实验室和清华大学的研究团队开�
 目前MindSpeed-LLM仓库仅支持Single-Needle-Retrieval(S-RT)测试，脚本运行参照 examples/mcore/qwen2/evaluate_qwen2_7b_needle_bench_ptd.sh
 
 ## 参数配置
-[--max-new-tokens]
-
-设置为64
-
-[--seq-length] [--max-position-embeddings] [--max-tokens-to-oom]
-
-可设置为4096,8192,32768,131072,262144,524288,1048576，用于测试对应长度的needlebench精度
-
+- --max-new-tokens 设置为64
+- --seq-length, --max-position-embeddings, --max-tokens-to-oom 可设置为4096,8192,32768,131072,262144,524288,1048576，用于测试对应长度的needlebench精度
 
 
 开启yarn，以及yarn的配置参照[yarn](../../../features/yarn.md)的说明文档
-
 
 NeedleBench精度测试如下：
 

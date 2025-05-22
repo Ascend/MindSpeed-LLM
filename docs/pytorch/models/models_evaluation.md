@@ -1,13 +1,13 @@
 MindSpeed-LLM 支持大模型在公开基准数据集上进行准确率评估，当前支持的 Benchmark 如下：
 
-| Benchmark | 下载链接                                                     | 验证集 | MindSpeed-LLM                                                | OpenCompass                                                  |
-| --------- | ------------------------------------------------------------ | ------ | ------------------------------------------------------------ | ------------------------------------------------------------ |
-| MMLU      | [GitHub](https://people.eecs.berkeley.edu/~hendrycks/data.tar) | test   | [45.73%](../../examples/mcore/llama2/evaluate_llama2_7b_mmlu_ptd.sh) | [45.3%](https://hub.opencompass.org.cn/dataset-detail/MMLU)  |
-| CEval     | [HuggingFace](https://huggingface.co/datasets/ceval/ceval-exam/tree/main) | val    | [33.87%](../../examples/mcore/llama2/evaluate_llama2_7b_ceval_ptd.sh) | [32.5%](https://hub.opencompass.org.cn/dataset-detail/C-Eval) |
-| BoolQ     | [Juhe](https://www.juhe.cn/market/product/id/10243)          | dev    | [75.44%](../../examples/mcore/llama2/evaluate_llama2_7b_boolq_ptd.sh) | [74.9%](https://hub.opencompass.org.cn/dataset-detail/BoolQ) |
-| BBH       | [GitHub](https://github.com/suzgunmirac/BIG-Bench-Hard/tree/main/bbh) | test   | [34.4%](../../examples/mcore/llama2/evaluate_llama2_7b_bbh_ptd.sh) | [32.5%](https://hub.opencompass.org.cn/dataset-detail/BBH)   |
-| AGIEval   | [GitHub](https://github.com/ruixiangcui/AGIEval/tree/main)   | test   | [20.6%](../../examples/mcore/llama2/evaluate_llama2_7b_agieval_ptd.sh) | [20.6%](https://hub.opencompass.org.cn/dataset-detail/AGIEval) |
-| HumanEval | [GitHub](https://github.com/openai/human-eval/tree/master/data) | test   | [12.8%](../../examples/mcore/llama2/evaluate_llama2_7b_humaneval_ptd.sh) | [12.2%](https://hub.opencompass.org.cn/dataset-detail/HumanEval) |
+| Benchmark | 下载链接                                                                      | 验证集  | MindSpeed-LLM                                                               | OpenCompass                                                      |
+|-----------|---------------------------------------------------------------------------|------|-----------------------------------------------------------------------------|------------------------------------------------------------------|
+| MMLU      | [GitHub](https://people.eecs.berkeley.edu/~hendrycks/data.tar)            | test | [45.73%](../../../examples/mcore/llama2/evaluate_llama2_7b_mmlu_ptd.sh)     | [45.3%](https://hub.opencompass.org.cn/dataset-detail/MMLU)      |
+| CEval     | [HuggingFace](https://huggingface.co/datasets/ceval/ceval-exam/tree/main) | val  | [33.87%](../../../examples/mcore/llama2/evaluate_llama2_7b_ceval_ptd.sh)    | [32.5%](https://hub.opencompass.org.cn/dataset-detail/C-Eval)    |
+| BoolQ     | [Juhe](https://www.juhe.cn/market/product/id/10243)                       | dev  | [75.44%](../../../examples/mcore/llama2/evaluate_llama2_7b_boolq_ptd.sh)    | [74.9%](https://hub.opencompass.org.cn/dataset-detail/BoolQ)     |
+| BBH       | [GitHub](https://github.com/suzgunmirac/BIG-Bench-Hard/tree/main/bbh)     | test | [34.4%](../../../examples/mcore/llama2/evaluate_llama2_7b_bbh_ptd.sh)       | [32.5%](https://hub.opencompass.org.cn/dataset-detail/BBH)       |
+| AGIEval   | [GitHub](https://github.com/ruixiangcui/AGIEval/tree/main)                | test | [20.6%](../../../examples/mcore/llama2/evaluate_llama2_7b_agieval_ptd.sh)   | [20.6%](https://hub.opencompass.org.cn/dataset-detail/AGIEval)   |
+| HumanEval | [GitHub](https://github.com/openai/human-eval/tree/master/data)           | test | [12.8%](../../../examples/mcore/llama2/evaluate_llama2_7b_humaneval_ptd.sh) | [12.2%](https://hub.opencompass.org.cn/dataset-detail/HumanEval) |
 
 
 MindSpeed-LLM 已支持的大模型评估数据统计如下：
