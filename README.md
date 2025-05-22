@@ -20,6 +20,7 @@ MindSpeed-LLM是基于昇腾生态的大语言模型分布式训练框架，旨�
 ---
 
 ## NEWS !!! 📣📣📣
+🚀🚀🚀**DeepSeek-V3**预训练已支持基于 **[MindSpore AI框架](./docs/mindspore/readme.md)** 运行！！！🚀🚀🚀
 
 🚀🚀🚀**Qwen3** 系列模型同步首发支持！！！🚀🚀🚀
 
