@@ -153,34 +153,45 @@ def mla_up_projection_overlap_tp_comm(q_a, compressed_kv, k_pe, rotary_pos_emb, 
             q_pe = apply_rotary_pos_emb(q_pe, q_pos_emb, config=mla_ctx.config, cu_seqlens=cu_seqlens_q)
             k_pe = apply_rotary_pos_emb(k_pe, k_pos_emb, config=mla_ctx.config, cu_seqlens=cu_seqlens_kv)
 
-        query = torch.cat([q_nope, q_pe], dim=-1)
-        k_pe = k_pe.expand(k_pe.shape[0], k_pe.shape[1], query.shape[2], k_pe.shape[3])
-        key = torch.cat([k_nope, k_pe], dim=-1)
+        k_pe = k_pe.expand(k_pe.shape[0], k_pe.shape[1], q_nope.shape[2], k_pe.shape[3])
 
-        if (
-            mla_ctx.use_flash_attn
-            and mla_ctx.q_head_dim != mla_ctx.v_head_dim
-            and not mla_ctx.mla_fa_without_pad
-        ):
-            if mla_ctx.shape_order == "BNSD":
-                value = F.pad(value, [0, mla_ctx.q_head_dim - mla_ctx.v_head_dim])
-            else:
-                query = F.pad(query, [0, mla_ctx.fa_padding_length - mla_ctx.q_head_dim])
-                key = F.pad(key, [0, mla_ctx.fa_padding_length - mla_ctx.q_head_dim])
-                value = F.pad(value, [0, mla_ctx.fa_padding_length - mla_ctx.v_head_dim])
+        if args.mla_fa_divide_qk:
+            query = [q_nope, q_pe]
+            key = [k_nope, k_pe]
+            return *query, *key, value
+        else:
+            query = torch.cat([q_nope, q_pe], dim=-1)
+            key = torch.cat([k_nope, k_pe], dim=-1)
 
-        return query, key, value
+            if (
+                mla_ctx.use_flash_attn
+                and mla_ctx.q_head_dim != mla_ctx.v_head_dim
+                and not mla_ctx.mla_fa_without_pad
+            ):
+                if mla_ctx.shape_order == "BNSD":
+                    value = F.pad(value, [0, mla_ctx.q_head_dim - mla_ctx.v_head_dim])
+                else:
+                    query = F.pad(query, [0, mla_ctx.fa_padding_length - mla_ctx.q_head_dim])
+                    key = F.pad(key, [0, mla_ctx.fa_padding_length - mla_ctx.q_head_dim])
+                    value = F.pad(value, [0, mla_ctx.fa_padding_length - mla_ctx.v_head_dim])
 
-    if not should_recompute_mla_up_proj(args, mla_ctx.recompute_mla_up_proj):
-        mla_ctx.recompute_mla_up_proj_ckpt = None
-        query, key, value = forward_func(q_a, compressed_kv, k_pe, rotary_pos_emb[0])
+            return query, key, value
+
+    if args.mla_fa_divide_qk:
+        if not mla_ctx.recompute_mla_up_proj:
+            q_nope, q_pe, k_nope, k_pe, value = forward_func(q_a, compressed_kv, k_pe, rotary_pos_emb[0])
+        else:
+            mla_ctx.recompute_mla_up_proj_ckpt = CheckpointWithoutOutput()
+            q_nope, q_pe, k_nope, k_pe, value = mla_ctx.recompute_mla_up_proj_ckpt.checkpoint(forward_func, False, q_a,
+                                                                                              compressed_kv, k_pe,
+                                                                                              rotary_pos_emb[0])
+        return [q_nope, q_pe], [k_nope, k_pe], value
     else:
-        mla_ctx.recompute_mla_up_proj_ckpt = CheckpointWithoutOutput()
-        query, key, value = mla_ctx.recompute_mla_up_proj_ckpt.checkpoint(forward_func, False, q_a, compressed_kv, k_pe, rotary_pos_emb[0])
-
-    return query, key, value
-
-
-
-
-
+        if not should_recompute_mla_up_proj(args, mla_ctx.recompute_mla_up_proj):
+            mla_ctx.recompute_mla_up_proj_ckpt = None
+            query, key, value = forward_func(q_a, compressed_kv, k_pe, rotary_pos_emb[0])
+        else:
+            mla_ctx.recompute_mla_up_proj_ckpt = CheckpointWithoutOutput()
+            query, key, value = mla_ctx.recompute_mla_up_proj_ckpt.checkpoint(forward_func, False, q_a, compressed_kv,
+                                                                              k_pe, rotary_pos_emb[0])
+        return query, key, value

@@ -123,6 +123,8 @@ def _add_mla_args(parser):
     group.add_argument("--mla-up-proj-tp-overlap", action='store_true', default=False, help='overlap up proj tp comm')
     group.add_argument("--recompute-mla-up-proj", action='store_true', default=False, help='recompute up projection in mla')
     group.add_argument('--mla-swap-core-attn-out', action='store_true', default=False, help='swap core_attn_out only in mla.')
+    group.add_argument('--mla-fa-divide-qk', action='store_true', default=False,
+                       help='Flash attn support mla with seperate q and k.')
 
     return parser
 
@@ -1435,6 +1437,14 @@ def _valid_tp_2d_args(args):
             raise AssertionError('2d tp does not support moe')
 
 
+def _valid_fa_div_args(args):
+    if args.mla_fa_divide_qk:
+        if args.context_parallel_size > 1:
+            raise AssertionError('MLA FA currently not support CP>1.')
+        if not args.reset_position_ids:
+            raise AssertionError('MLA FA currently only support TND.')
+
+
 def _validate_vpp(args):
     """validate scenario that vpp is enabled when pp=2."""
     if args.pipeline_model_parallel_size != 2 or args.num_layers_per_virtual_pipeline_stage is None:
@@ -1581,6 +1591,7 @@ def validate_args_decorator(megatron_validate_args):
 
         _validate_noop_layer(args)
         _valid_tp_2d_args(args)
+        _valid_fa_div_args(args)
         _add_dummy_args(args)
         # remove in future megatron version
         _validate_mtp_args(args)

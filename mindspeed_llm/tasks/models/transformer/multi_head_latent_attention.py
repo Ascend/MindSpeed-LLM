@@ -332,34 +332,38 @@ class MultiHeadLatentAttention(SelfAttention):
                     q_pe = apply_rotary_pos_emb(q_pe, q_pos_emb, config=self.config, cu_seqlens=cu_seqlens_q)
                     k_pe = apply_rotary_pos_emb(k_pe, k_pos_emb, config=self.config, cu_seqlens=cu_seqlens_kv)
 
-                query = torch.cat([q_nope, q_pe], dim=-1)
 
-                k_pe = k_pe.expand(k_pe.shape[0], k_pe.shape[1], query.shape[2], k_pe.shape[3])
-                key = torch.cat([k_nope, k_pe], dim=-1)
+                k_pe = k_pe.expand(k_pe.shape[0], k_pe.shape[1], q_nope.shape[2], k_pe.shape[3])
+                if args.mla_fa_divide_qk:
+                    query = [q_nope, q_pe]
+                    key = [k_nope, k_pe]
+                else:
+                    query = torch.cat([q_nope, q_pe], dim=-1)
+                    key = torch.cat([k_nope, k_pe], dim=-1)
 
-                if (
-                    self.use_flash_attn
-                    and self.q_head_dim != self.v_head_dim
-                    and not self.mla_fa_without_pad
-                ):
-                    if self.shape_order == "BNSD":
-                        value = F.pad(value, [0, self.q_head_dim - self.v_head_dim])
-                    else:
-                        query = F.pad(query, [0, self.fa_padding_length - self.q_head_dim])
-                        key = F.pad(key, [0, self.fa_padding_length - self.q_head_dim])
-                        value = F.pad(value, [0, self.fa_padding_length - self.v_head_dim])
+                    if (
+                        self.use_flash_attn
+                        and self.q_head_dim != self.v_head_dim
+                        and not self.mla_fa_without_pad
+                    ):
+                        if self.shape_order == "BNSD":
+                            value = F.pad(value, [0, self.q_head_dim - self.v_head_dim])
+                        else:
+                            query = F.pad(query, [0, self.fa_padding_length - self.q_head_dim])
+                            key = F.pad(key, [0, self.fa_padding_length - self.q_head_dim])
+                            value = F.pad(value, [0, self.fa_padding_length - self.v_head_dim])
 
-                # Do repeat KV to support GQA+Ulysses
-                args = get_args()
-                should_kv_repeat_before_uly = (
-                    args.context_parallel_size > 1
-                    and args.context_parallel_algo in ["ulysses_cp_algo", "hybrid_cp_algo"]
-                    and args.kv_head_repeat_before_uly_alltoall
-                    )
-                heads_per_gqa_group = self.num_attention_heads_per_partition // self.num_query_groups_per_partition
-                if should_kv_repeat_before_uly and heads_per_gqa_group > 1:
-                    key = key.repeat_interleave(heads_per_gqa_group, dim=2)
-                    value = value.repeat_interleave(heads_per_gqa_group, dim=2)
+                    # Do repeat KV to support GQA+Ulysses
+                    args = get_args()
+                    should_kv_repeat_before_uly = (
+                        args.context_parallel_size > 1
+                        and args.context_parallel_algo in ["ulysses_cp_algo", "hybrid_cp_algo"]
+                        and args.kv_head_repeat_before_uly_alltoall
+                        )
+                    heads_per_gqa_group = self.num_attention_heads_per_partition // self.num_query_groups_per_partition
+                    if should_kv_repeat_before_uly and heads_per_gqa_group > 1:
+                        key = key.repeat_interleave(heads_per_gqa_group, dim=2)
+                        value = value.repeat_interleave(heads_per_gqa_group, dim=2)
 
             # ==================================
             # core attention computation

@@ -3,6 +3,7 @@
 
 import math
 from functools import wraps
+from typing import Union, List
 
 import torch
 import torch_npu
@@ -391,8 +392,8 @@ def dot_product_attention_forward_wrapper(fn):
 
 def flash_attention_forward(
         self,
-        query: Tensor,
-        key: Tensor,
+        query: Union[Tensor, List[Tensor]],
+        key: Union[Tensor, List[Tensor]],
         value: Tensor,
         attention_mask,
         attn_mask_type,
@@ -400,6 +401,12 @@ def flash_attention_forward(
 ):
     if packed_seq_params is not None:
         raise AssertionError("packed_seq_params should be None.")
+
+    query_rope, key_rope = None, None
+    if isinstance(query, List):
+        query, query_rope = query[0], query[1]
+    if isinstance(key, List):
+        key, key_rope = key[0], key[1]
 
     args = get_args()
 
@@ -418,7 +425,12 @@ def flash_attention_forward(
             pse_type=self.pse_type, packed_seq_params=packed_seq_params)
 
     if args.shape_order == "TND":  # varlen FA
-        query, key, value = [rearrange(x, 's b h d -> (s b) h d') for x in [query, key, value]]
+        if args.mla_fa_divide_qk:
+            query, key, value = [rearrange(x, 's b h d -> (b s) h d') for x in [query, key, value]]
+            if query_rope is not None and key_rope is not None:
+                query_rope, key_rope = [rearrange(x, 's b h d -> (b s) h d') for x in [query_rope, key_rope]]
+        else:
+            query, key, value = [rearrange(x, 's b h d -> (s b) h d') for x in [query, key, value]]
         args.sparse_mode = 4
     elif args.shape_order == "BNSD":
         query, key, value = [rearrange(x, 's b h d -> b h s d') for x in [query, key, value]]
@@ -490,20 +502,38 @@ def flash_attention_forward(
             )
         output = output.transpose(0, 1)
     else:
-        output = torch_npu.npu_fusion_attention(
-            query, key, value, n_head, args.shape_order,
-            pse=pse,
-            padding_mask=None,
-            atten_mask=self.attention_mask,
-            actual_seq_qlen=actual_seq_len,
-            actual_seq_kvlen=actual_seq_len,
-            scale=scale,
-            pre_tockens=args.pre_tockens,
-            next_tockens=args.next_tockens,
-            keep_prob=1 - self.attention_dropout.p,
-            inner_precise=0,
-            sparse_mode=args.sparse_mode
-        )[0]
+        if not args.mla_fa_divide_qk:
+            output = torch_npu.npu_fusion_attention(
+                query, key, value, n_head, args.shape_order,
+                pse=pse,
+                padding_mask=None,
+                atten_mask=self.attention_mask,
+                actual_seq_qlen=actual_seq_len,
+                actual_seq_kvlen=actual_seq_len,
+                scale=scale,
+                pre_tockens=args.pre_tockens,
+                next_tockens=args.next_tockens,
+                keep_prob=1 - self.attention_dropout.p,
+                inner_precise=0,
+                sparse_mode=args.sparse_mode
+            )[0]
+        else:
+            output = torch_npu.npu_fusion_attention_v2(
+                query, key, value, n_head, args.shape_order,
+                pse=pse,
+                padding_mask=None,
+                atten_mask=self.attention_mask,
+                query_rope=query_rope,
+                key_rope=query_rope,
+                actual_seq_qlen=actual_seq_len,
+                actual_seq_kvlen=actual_seq_len,
+                scale=scale,
+                pre_tokens=args.pre_tockens,
+                next_tokens=args.next_tockens,
+                keep_prob=1 - self.attention_dropout.p,
+                inner_precise=0,
+                sparse_mode=args.sparse_mode
+            )[0]
 
     if args.shape_order == "TND": # varlen FA
         output = rearrange(output, '(s b) h d -> s b (h d)', s=seq_length)
