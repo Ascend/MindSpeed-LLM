@@ -120,7 +120,7 @@ GPT_ARGS="\
     --ffn-hidden-size 18432 \
     --num-attention-heads 128 \
     --tokenizer-type PretrainedFromHF  \
-    --tokenizer-name-or-path ${TOKENIZER_MODEL} \
+    --tokenizer-name-or-path ${TOKENIZER_PATH} \
     --seq-length ${SEQ_LEN} \
     --max-position-embeddings 163840 \
     --micro-batch-size ${MBS} \
