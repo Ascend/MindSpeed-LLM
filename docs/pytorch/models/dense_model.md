@@ -545,7 +545,7 @@
       <td><a href="https://huggingface.co/Qwen/Qwen2.5-72B/tree/main">72B</a></td>
       <td>32K</td>
       <th>Mcore</th>
-      <td>8x8</td>
+      <td>16x8</td>
       <td>【GTS】</td>
       <td>【Test】</td>
     </tr>

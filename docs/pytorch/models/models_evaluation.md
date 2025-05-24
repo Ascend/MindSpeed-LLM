@@ -75,3 +75,7 @@ MindSpeed-LLM 评估操作指导手册请见链接：[evaluation_guide.md](../so
 
 [hellaswag评估介绍](../solutions/evaluation/evaluation_datasets/hellaswag_evaluation.md)
 
+[agi评估介绍](../solutions/evaluation/evaluation_datasets/agi_evaluation.md)
+
+[human_eval_evaluation.md](../solutions/evaluation/evaluation_datasets/human_eval_evaluation.md)
+

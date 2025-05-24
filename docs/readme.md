@@ -42,7 +42,7 @@
       <td rowspan="3">支持的数据集格式包括<a href="pytorch/solutions/finetune/datasets/alpaca_dataset.md">alpaca</a>,<a href="pytorch/solutions/finetune/datasets/pairwise_dataset.md">pairwise</a>,<a href="pytorch/solutions/finetune/datasets/sharegpt_dataset.md">sharegpt</a></td>
     </tr>
     <tr>
-      <td rowspan="1"><a href="pytorch/solutions/finetune/finetune_dataset.md">finetune_dataset</a></td>
+      <td rowspan="1">finetune_dataset(待补充)</td>
     </tr>
     <tr>
       <td rowspan="1"><a href="pytorch/solutions/preference-alignment/process_reward_dataset.md">reward_dataset</a></td>

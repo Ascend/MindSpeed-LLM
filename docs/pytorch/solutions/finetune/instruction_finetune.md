@@ -30,7 +30,7 @@
 
 ### 启动脚本
 
-使用LLaMA2-7B模型目录下的<a href="../../examples/legacy/llama2/tune_llama2_7b_full_ptd.sh">微调脚本</a>。
+使用LLaMA2-7B模型目录下的[微调脚本](../../../../examples/legacy/llama2/tune_llama2_7b_full_ptd.sh)。
 
 #### 模型脚本环境变量声明：
 脚本中的环境变量配置见[环境变量说明](../../features/environment_variable.md)

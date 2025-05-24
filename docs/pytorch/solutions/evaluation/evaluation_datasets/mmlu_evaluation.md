@@ -53,7 +53,7 @@ MMLU（Massive Multitask Language Understanding）评估包含一系列多样化
 
 【--prompt-type】
 
-设置--prompt-type为您在使用MindSpeed-LLM进行微调时的使用的prompt-type名称。
+设置--prompt-type为您在使用MindSpeed-LLM进行微调时使用的prompt-type名称。
 
 ### 3. 平替模板输出模式
 
@@ -61,7 +61,7 @@ MMLU（Massive Multitask Language Understanding）评估包含一系列多样化
 
 与`微调模板评估模式`相同的是，该模式也会使用您评估脚本中的`DATA_PATH`路径中`dev`文件夹中对应问题的以dev_csv的文件，并作为模板问题。
 
-与其他模型不同的是，该模式不会打乱模板问题的顺序。模板问题与需要模型回答的问题连接后，不进行对话字典的处理，并输入到模型中，得到前向输出。
+与其他模式不同的是，该模式不会打乱模板问题的顺序。模板问题与需要模型回答的问题连接后，不进行对话字典的处理，直接输入到模型，得到前向输出。
 
 该模式的优势是可以使用与业界优秀评估方案相同的评估模板进行评估，并获得较好的评估分数。
 

@@ -9,7 +9,7 @@
 #### 模型脚本环境变量声明：
 脚本中的环境变量配置见[环境变量说明](../../features/environment_variable.md)
 
-legacy分支的预训练脚本保存在 example 中各模型文件夹下：pretrain_xxx_xx.sh
+legacy分支的预训练脚本保存在 example/legacy 中各模型文件夹下：pretrain_xxx_xx.sh
 
 mcore分支的预训练脚本保存在 example/mcore 中各模型文件夹下：pretrain_xxx_xx.sh
 
@@ -60,7 +60,7 @@ TOKENIZER_MODEL="./model_from_hf/llama-2-7b-hf/tokenizer.model"
 格式一（数据集权重根据提供的weight参数）
 
 ```shell 
---data-path dataset1-weight dataset1-path dataset2-weight dataset2-path
+--data-path "dataset1-weight dataset1-path dataset2-weight dataset2-path"
 ```
 
 **示例：**
