@@ -1380,7 +1380,6 @@ def _add_dummy_args(args):
     args.recompute_in_bubble = False
     args.use_nanopipe = False
     args.moe_without_activation = False
-    args.disable_gloo_group = None
     args.ampipe_degree = 0
     args.attention_mask_type = args.cp_attention_mask_type
     args.hccl_group_buffer_adaptive = False
