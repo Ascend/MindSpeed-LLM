@@ -512,6 +512,8 @@ bash examples/mcore/llama2/ckpt_convert_llama2_mcore2hf_lora.sh
 
 lora参数值需与lora微调时的参数保持一致,且lora权重的切分方式需与base权重的切分方式保持一致。
 
+由于调用peft库合并lora权重后，权重数据类型为float16，但是部分模型如qwen系列模型，默认数据类型为bfloat16，合并后的权重转回hf格式会有精度损失问题。可以将原始HF模型的config.json中的数据类型改为float16暂时规避。
+
 #### 2.4.3 Lora权重转换为Huggingface权重
 
 通过使能参数--save-lora-to-hf,支持将Lora微调后的lora权重转换为Huggingface格式，下面提供Llama2-7b模型的Lora权重转为Huggingface格式的示例脚本，仅供参考：
