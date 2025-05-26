@@ -20,6 +20,8 @@
 
 `ShareGPT`数据预处理部分详见[**ShareGPT风格数据的说明文档**](datasets/sharegpt_dataset.md)。
 
+`Pairwise`数据预处理部分详见[**Pairwise风格数据的说明文档**](datasets/pairwise_dataset.md)。
+
 **接下来将以Alpaca数据集作为输入，进行全参数微调示例。**
 
 ### 初始化环境变量 

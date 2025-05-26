@@ -12,15 +12,17 @@
 
 # 1 环境搭建
 
-如果已经完成了环境搭建，请跳转2，进行预训练任务拉起
+如果已经完成了环境搭建，请跳转2，进行预训练任务拉起。
+
+请参考MindSpeed-LLM仓首页[“版本配套表”](../README.md#版本配套表)，选择下载对应版本的软件依赖，请参考[install_guide.md](features/install_guide.md)完成环境搭建，本章节通过配图辅助您完成环境安装。
 
 ## 1.1 驱动固件安装
-请参考MindSpeed-LLM仓首页[“版本配套表”](https://gitee.com/ascend/MindSpeed-LLM/blob/2.0.0/README.md#版本配套表)，选择下载对应版本的软件依赖。
 
-下载[驱动固件](https://www.hiascend.com/hardware/firmware-drivers/community?product=4&model=26&cann=8.0.0.beta1&driver=Ascend+HDK+24.1.0)，请根据系统和硬件产品型号选择对应版本的`driver`和`firmware`下载到本地并上传到服务器任意目录，驱动固件下载示意图如下:
+下载[驱动固件](https://www.hiascend.com/hardware/firmware-drivers/community)，请根据系统和硬件产品型号选择对应版本的`driver`和`firmware`下载到本地并上传到服务器任意目录，驱动固件下载示意图如下:
+
 ![](../sources/images/quick_start/1747637900628_image.png)
 
-参考[安装NPU驱动固件](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/81RC1alpha002/softwareinst/instg/instg_0005.html?Mode=PmIns&OS=Ubuntu&Software=cannToolKit)或执行以下命令安装：
+参考[安装NPU驱动固件](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/81RC1alpha002/softwareinst/instg/instg_0005.html?Mode=PmIns&OS=Ubuntu&Software=cannToolKit),选择对应的版本，执行以下命令安装：
 
 ```shell
 # 因为版本迭代，包名存在出入，根据实际下载的包进行修改
@@ -32,10 +34,10 @@ bash Ascend-hdk-910b-npu-driver_24.1.0.3_linux-aarch64.run --full --force
 
 ## 1.2 CANN安装
 
-也可使用仓库提供的docker镜像，参考指导见[DOCKER_GUIDE](https://gitee.com/ascend/MindSpeed-LLM/blob/2.0.0/docs/features/docker_guide.md)，拉取镜像完成安装后，跳到2.huggleface源文件获取。
-
 下载[CANN](https://www.hiascend.com/developer/download/community/result?module=cann)，请根据系统选择`aarch64`或`x86_64`对应版本的`cann-toolkit`、`cann-kernel`和`cann-nnal`下载到本地并上传到服务器任意目录。相关软件下载示意图如下：
+
 ![](../sources/images/quick_start/1747480182437_image.png)
+
 参考[CANN安装](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/81RC1alpha002/softwareinst/instg/instg_0008.html?Mode=PmIns&OS=Ubuntu&Software=cannToolKit)完成cann包安装，若缺少依赖请参考[CANN依赖安装](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/81RC1alpha002/softwareinst/instg/instg_0007.html?Mode=PmIns&OS=Ubuntu&Software=cannToolKit)：
 
 ```shell
@@ -49,7 +51,7 @@ bash Ascend-cann-nnal_8.1.RC1_linux-aarch64.run --install
 
 ## 1.3 PTA安装
 
-准备[torch_npu](https://www.hiascend.com/developer/download/community/result?module=pt)和[apex](https://gitee.com/ascend/apex)，参考[Ascend Extension for PyTorch 配置与安装](https://www.hiascend.com/document/detail/zh/Pytorch/700/configandinstg/instg/insg_0004.html)或执行以下命令安装
+准备[torch_npu](https://www.hiascend.com/developer/download/community/result?module=pt)和[apex](https://gitee.com/ascend/apex)，参考[Ascend Extension for PyTorch](https://www.hiascend.com/document/detail/zh/Pytorch/700/configandinstg/instg/insg_0001.html)或执行以下命令安装
 
 ```shell
 # 安装torch和torch_npu，因为版本迭代，包名存在出入，根据实际修改
@@ -72,7 +74,7 @@ source /usr/local/Ascend/nnal/atb/set_env.sh
 # 安装MindSpeed加速库
 git clone https://gitee.com/ascend/MindSpeed.git
 cd MindSpeed
-git checkout 2.0.0_core_r0.8.0  # checkout commit from MindSpeed 2.0.0_core_r0.8.0
+git checkout master              # 以install_guide.md中的版本为准，此处仅做参考
 pip install -r requirements.txt
 pip3 install -e .
 cd ..
@@ -81,10 +83,10 @@ cd ..
 git clone https://gitee.com/ascend/MindSpeed-LLM.git
 git clone https://github.com/NVIDIA/Megatron-LM.git  # megatron从github下载，请确保网络能访问
 cd Megatron-LM
-git checkout core_r0.8.0
+git checkout core_r0.8.0         # 以install_guide.md中的版本为准，此处仅做参考
 cp -r megatron ../MindSpeed-LLM/
 cd ../MindSpeed-LLM
-git checkout 2.0.0
+git checkout master              # 以install_guide.md中的版本为准，此处仅做参考
 
 pip install -r requirements.txt  # 安装其余依赖库
 ```
@@ -122,6 +124,7 @@ sha256sum model-00003-of-00004.safetensors
 sha256sum model-00004-of-00004.safetensors
 ```
 ![img.png](../sources/images/quick_start/sha256.png)
+
 ![img_1.png](../sources/images/quick_start/sha256_hf.png)
 
 # 3 预训练实战
@@ -135,7 +138,7 @@ sha256sum model-00004-of-00004.safetensors
 ## 3.1 权重转换
 
 昇腾MindSpeed-LLM要求模型权重采用Megatron-LM格式，在这里我们将原始HuggingFace权重格式转换为Megatron-Mcore格式。
-详见[hf2mg权重转换](https://gitee.com/ascend/MindSpeed-LLM/blob/2.0.0/docs/features/checkpoint.md#21-huggingface%E6%9D%83%E9%87%8D%E8%BD%AC%E6%8D%A2%E5%88%B0megatron-lm%E6%A0%BC%E5%BC%8F)
+详见[hf2mg权重转换](./pytorch/solutions/checkpoint_convert.md#21-huggingface权重转换到megatron-lm格式)
 
 使用官方提供的转换脚本，获取对应切分的mg权重。
 
@@ -186,7 +189,7 @@ python convert_ckpt.py \
 
 ## 3.2 预训练数据集处理
 
-通过对各种格式的数据做提前预处理，避免原始数据的反复处理加载，将所有的数据都统一存储到为.bin和.idx两个文件中，详见[预训练数据处理](https://gitee.com/ascend/MindSpeed-LLM/blob/2.0.0/docs/features/pretrain_dataset.md#%E6%95%B0%E6%8D%AE%E9%9B%86%E5%A4%84%E7%90%86)
+通过对各种格式的数据做提前预处理，避免原始数据的反复处理加载，将所有的数据都统一存储到为.bin和.idx两个文件中，详见[预训练数据处理](./pytorch/solutions/pretrain/pretrain_dataset.md)
 
 常用的预训练数据集包括alpaca、enwiki、c4等，链接中提供了数据集下载地址。
 
@@ -323,10 +326,12 @@ TOKENIZER_PATH="./model_from_hf/qwen2.5-7b-hf/"
 ## 常见问题
 - **问题1：训练日志显示"Checkpoint path not found"？**  
   → 检查`CKPT_LOAD_DIR`是否指向正确的权重转换后路径，确认文件夹内包含`.ckpt`或`.bin`文件。
+
 ![img_1.png](../sources/images/quick_start/img_1.png)
 
 **问题2：显示数据集加载out of range？**  
   → 微调脚本，没有读取到数据集，请检查DATA_PATH是否符合上面示例的规范。
+
 ![img_3.png](../sources/images/quick_start/img_3.png)
  
 - **问题3：训练脚本拉起失败？**  
@@ -334,12 +339,13 @@ TOKENIZER_PATH="./model_from_hf/qwen2.5-7b-hf/"
 
 - **问题4：没有生成运行日志文件？**  
   → 需要自行创建logs文件夹。
+
 ![img_2.png](../sources/images/quick_start/img_2.png)
 
 ## 加入昇腾开发者生态
 
 - 🌐 **社区资源**：访问[昇腾开源社区](https://gitee.com/ascend)获取最新模型支持
-- 📈 **性能优化**：参考[MindSpeed Profiling](https://gitee.com/ascend/MindSpeed/blob/master/docs/profiling.md)分析瓶颈
+- 📈 **性能优化**：参考[MindSpeed Profiling](pytorch/features/profiling.md)分析瓶颈
 - 💡 **定制需求**：通过`model_cfg.json`扩展自定义模型
 
 ---

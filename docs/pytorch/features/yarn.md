@@ -41,7 +41,7 @@ yarn通过ntk-by-part调整位置编码，提升序列扩增后的精度。
 | DeepSeek-V2-Lite-16B | MMLU   | 57.4%     | [58.3%](https://huggingface.co/deepseek-ai/DeepSeek-V2-Lite)          |
 | DeepSeek-Math-7B     |MMLU-STEM| 56.5%    | [56.5%](https://github.com/deepseek-ai/DeepSeek-Math)          |
 | DeepSeek-V2-236B     | MMLU   | 78.1%         | [78.5%](https://huggingface.co/deepseek-ai/DeepSeek-V2)          |
-| DeepSeek-V2.5        | MMLU   | 79.3%         | [80.6%](https://github.com/deepseek-ai/DeepSeek-V3)          |
+| DeepSeek-V2.5        | MMLU   | 79.3%         | [80.6%](https://huggingface.co/deepseek-ai/DeepSeek-V2.5)          |
 
 
 

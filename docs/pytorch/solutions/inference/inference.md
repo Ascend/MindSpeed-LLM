@@ -34,7 +34,7 @@ HuggingFace: "I hope you are doing well. I am writing to ask for your help with 
 
 ### 启动脚本
 
-使用LLaMA2-7B模型目录下的<a href="../../examples/mcore/llama2/generate_llama2_7b_ptd.sh">流式推理脚本</a>。
+使用LLaMA2-7B模型目录下的[流式推理脚本](../../../../examples/mcore/llama2/generate_llama2_7b_ptd.sh)。
 
 #### 填写相关路径
 

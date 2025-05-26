@@ -512,12 +512,19 @@ MindSpeed LLM包含分布式预训练、分布式微调、分布式偏好对齐�
   </tr>
   <tr>
     <td rowspan="2"><a href="docs/pytorch/solutions/finetune/qlora_finetune.md">QLoRA微调</a></td>
-    <td>/</td>
-    <td>/</td>
-    <td>/</td>
-    <td>/</td>
-    <td>/</td>
+    <td><a href="docs/pytorch/features/cc_lora.md">CCLoRA</a></td>
+    <td>❌</td>
+    <td>❌</td>
+    <td>❌</td>
+    <td>【NAIE】</td>
+  </tr>
   <tr>
+    <td><a href="docs/pytorch/features/fused_mlp.md">Fused_MLP</a></td>
+    <td>❌</td>
+    <td>❌</td>
+    <td>❌</td>
+    <td>【NAIE】</td>
+  </tr>
   <tr>
     <td>长序列微调</td>
     <td><a href="docs/pytorch/features/fine-tuning-with-context-parallel.md">长序列CP</a></td>

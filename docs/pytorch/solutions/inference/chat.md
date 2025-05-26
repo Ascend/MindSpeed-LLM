@@ -13,8 +13,7 @@
 `source /usr/local/Ascend/nnal/atb/set_env.sh`
 
 ### 启动脚本
-
-使用LLaMA2-7B模型目录下的<a href="../../examples/mcore/llama2/chat_llama2_7b_ptd.sh">chat脚本</a>。
+使用LLaMA2-7B模型目录下的[chat脚本](../../../../examples/mcore/llama2/chat_llama2_7b_ptd.sh)。
 
 #### 填写相关路径
 
@@ -58,7 +57,7 @@ bash examples/mcore/llama2/chat_llama2_7b_ptd.sh
 
 #### Chat对话脚本相关参数
 
-对轮对话脚本与流式推理相关的参数设置可以在[`流式推理`](inference.md)文件内查看。
+多轮对话脚本与流式推理相关的参数设置可以在[`流式推理`](inference.md)文件内查看。
 
 【--task】
 
