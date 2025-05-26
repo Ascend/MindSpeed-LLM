@@ -470,6 +470,11 @@ class LinearNoTP(torch.nn.Linear):
         torch.nn.init.xavier_uniform_(self.weight)
         torch.random.manual_seed(current_seed)
 
+        self._register_load_state_dict_pre_hook(
+            lambda state_dict, prefix, *args, **kwargs: state_dict.pop(
+                f'{prefix}_extra_state', None)
+        )
+
     def forward(self, input_):
         if hasattr(self.weight, "quant_state"):
             output = bnb.matmul_4bit(input_, self.weight.t(), self.weight.quant_state, bias=self.bias)
