@@ -14,4 +14,4 @@ python convert_ckpt.py \
        --save-dir ./model_weights/qwen2.5_mcore/ \
        --tokenizer-model ./model_from_hf/qwen2.5_7b_hf/tokenizer.json \
        --model-type-hf llama2 \
-       --params-dtype bf16 # --num-layer-list 11, 13, 19, 21 参数根据需要添加
+       --params-dtype bf16 # --num-layer-list 11,13,19,21 参数根据需要添加
