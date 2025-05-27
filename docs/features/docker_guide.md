@@ -1,5 +1,5 @@
 
-## 1.镜像下载（待补充昇腾社区的镜像下载地址）
+## 1.镜像下载
 通过uname -a确认自身系统是ubuntu_x86 或者 openeuler
 根据需要下载对应的镜像,如下为下载链接：
 https://www.hiascend.com/developer/ascendhub/detail/e26da9266559438b93354792f25b2f4a
