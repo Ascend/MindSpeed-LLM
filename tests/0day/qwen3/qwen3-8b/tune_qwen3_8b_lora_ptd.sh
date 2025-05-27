@@ -67,6 +67,8 @@ MODEL_PARALLEL_ARGS="
 
 GPT_ARGS="
     --use-mcore-models \
+    --spec mindspeed_llm.tasks.models.spec.qwen3_spec layer_spec \
+    --kv-channels 128 \
     --qk-layernorm \
     --tokenizer-name-or-path ${TOKENIZER_PATH} \
     --max-position-embeddings ${SEQ_LENGTH} \
