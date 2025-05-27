@@ -711,11 +711,14 @@ class CoreAdaptation(MegatronAdaptationABC):
                 'megatron.core.pipeline_parallel.schedules.forward_backward_pipelining_with_interleaving',
                 forward_backward_pipelining_with_interleaving_patch)
 
-
     def patch_swap_optimizer(self):
         args = MegatronAdaptation.get_args()
         if args.swap_optimizer:
-            from mindspeed.core.optimizer.swap_optimizer import SwapDistributedOptimizer, swap_adamw_step
+            try:
+                from mindspeed.core.optimizer.swap_optimizer.swap_optimizer import SwapDistributedOptimizer, \
+                    swap_adamw_step
+            except ImportError:
+                from mindspeed.core.optimizer.swap_optimizer import SwapDistributedOptimizer, swap_adamw_step
             MegatronAdaptation.register('megatron.core.optimizer.distrib_optimizer.DistributedOptimizer',
                                          SwapDistributedOptimizer)
             MegatronAdaptation.register('mindspeed.optimizer.adamw.AdamW.step', swap_adamw_step)

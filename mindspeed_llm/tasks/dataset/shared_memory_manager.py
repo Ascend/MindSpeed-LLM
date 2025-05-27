@@ -133,7 +133,7 @@ class SharedMemoryManager:
             data = torch.tensor(data, dtype=torch.int64)
 
         real_length = data.numel() if data is not None else 0
-        seq_len_num = data.shape[0] if data is not None else 0
+        seq_len_num = data.shape[0] if data is not None and len(data.shape) > 1 else 0
         self.read_flags.zero_()
 
         if data is None or real_length == 0:

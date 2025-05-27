@@ -269,6 +269,9 @@ def _validate_dualpipe_args(args):
         FwdBwdOverlapFeature().validate_args(args)
     if args.schedules_method == 'dualpipev':
         assert args.moe_fb_overlap, 'dualpipev currently can only be used with 1f1b overlap'
+        # The shared embed weight is managed by the dualpipe instead of being initialized by itself.
+        # To avoid load checkpoint with unexpected key, set `load_checkpoint_loosely` to True.
+        args.load_checkpoint_loosely = True
         from mindspeed.features_manager.pipeline_parallel.dualpipev_feature import DualpipeVFeature
         DualpipeVFeature().validate_args(args)
 

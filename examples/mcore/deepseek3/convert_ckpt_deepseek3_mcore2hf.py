@@ -28,6 +28,7 @@ QK_ROPE_HEAD_DIM = 64
 V_HEAD_DIM = 128
 TENSOR_SIZE = 0
 hf_weight_dict = defaultdict()
+GLOBAL_LM_HEAD_WEIGHTS = None
 
 
 def load_data(file_path):
@@ -363,6 +364,7 @@ class MgCkptConvert(object):
         hf_dict["model.embed_tokens.weight"] = emb_weights
 
     def set_model_postprocess(self, hf_dict, mg_models):
+        global GLOBAL_LM_HEAD_WEIGHTS
         """final_norm & output_layer"""
         final_norm_key = "decoder.final_layernorm.weight"
         if self.mtp_num_layers:
@@ -377,6 +379,7 @@ class MgCkptConvert(object):
             lm_head_list.append(cur_tp_head.clone())
         lm_head_weights = torch.cat(lm_head_list, dim=0)
         hf_dict["lm_head.weight"] = lm_head_weights.clone()
+        GLOBAL_LM_HEAD_WEIGHTS = lm_head_weights.clone()
 
     def set_model_layer_norm(self, hf_dict, mg_models, hf_layer_idx, local_layer_idx, mtp_flag=False):
         """input norm & post attn norm"""
@@ -719,6 +722,7 @@ class MgCkptConvert(object):
     def set_mtp_layer(self, hf_dict, mg_models, hf_layer_idx, mtp_local_idx=0):
         """all mtp"""
         # preprocess
+        global GLOBAL_LM_HEAD_WEIGHTS
         enorm = mg_models[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(f"mtp.layers.{mtp_local_idx}.enorm.weight")
         hnorm = mg_models[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(f"mtp.layers.{mtp_local_idx}.hnorm.weight")
 
@@ -742,6 +746,7 @@ class MgCkptConvert(object):
         mtp_final_norm = mg_models[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(
             f"mtp.final_layernorms.{mtp_local_idx}.weight")
         hf_dict[f"model.layers.{hf_layer_idx}.shared_head.norm.weight"] = mtp_final_norm.clone()
+        hf_dict[f"model.layers.{hf_layer_idx}.shared_head.head.weight"] = GLOBAL_LM_HEAD_WEIGHTS.clone()
 
         self.set_model_layer_norm(hf_dict, mg_models, hf_layer_idx, mtp_local_idx, mtp_flag=True)
         self.set_model_attn(hf_dict, mg_models, hf_layer_idx, mtp_local_idx, mtp_flag=True)
