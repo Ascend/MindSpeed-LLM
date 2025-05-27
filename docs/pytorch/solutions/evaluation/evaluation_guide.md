@@ -22,7 +22,7 @@ DATA_PATH="./mmlu/data/test/"
 TASK="mmlu"  # 支持 mmlu、ceval、agieval、bbh、boolq、human_eval
 
 # 启动评估脚本
-bash examples/mcore/llama2/evaluate_llama2_7B_mmlu_ptd.sh
+bash examples/mcore/llama2/evaluate_llama2_7b_mmlu_ptd.sh
 ```
 
 【--max-new-tokens】

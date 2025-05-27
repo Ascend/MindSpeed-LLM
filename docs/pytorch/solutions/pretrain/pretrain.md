@@ -72,7 +72,7 @@ TOKENIZER_MODEL="./model_from_hf/llama-2-7b-hf/tokenizer.model"
 格式二（根据数据集的长度推出数据集的权重）
 
 ```shell 
---data-path dataset1-path dataset2-path
+--data-path "dataset1-path dataset2-path"
 ```
 
 **示例：**
