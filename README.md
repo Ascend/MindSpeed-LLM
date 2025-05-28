@@ -90,7 +90,7 @@ MindSpeed LLM的依赖配套如下表，安装步骤参考[安装指导](./docs/
 
 ## 预置模型
 
-MindSpeed LLM目前已内置支持百余个业界常用稠密和MOE大模型的预训练、微调和偏好对齐，预置模型清单详见下表。
+MindSpeed LLM目前已内置支持百余个业界常用LLM大模型的预训练与微调，预置模型清单详见下表。
 
 <table><thead>
   <tr>
@@ -114,7 +114,7 @@ MindSpeed LLM目前已内置支持百余个业界常用稠密和MOE大模型的�
 
 ## 训练方案与特性
 
-MindSpeed LLM包含分布式预训练、分布式微调、分布式偏好对齐等训练方案。
+MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
 
 ### 分布式预训练
 
@@ -699,7 +699,7 @@ MindSpeed LLM支持huggingface、megatron-core、megatron-legacy三种格式的�
 
 ### 数据预处理
 
-MindSpeed LLM支持预训练、指令微调、RLHF等多种任务的数据预处理。
+MindSpeed LLM支持预训练、指令微调等多种任务的数据预处理。
 
 <table>
   <thead>
@@ -733,34 +733,6 @@ MindSpeed LLM支持预训练、指令微调、RLHF等多种任务的数据预处
       <td>✅</td>
       <td>✅</td>
       <td>✅</td>
-    </tr>
-    <tr>
-      <td>DPO</td>
-      <td rowspan="3"><a href="docs/pytorch/solutions/finetune/datasets/pairwise_dataset.md">Pairwise数据集处理</a></td>
-      <td>✅</td>
-      <td>✅</td>
-      <td>✅</td>
-      <td rowspan="3">【NAIE】</td>
-    </tr>
-    <tr>
-      <td>SimPO</td>
-      <td>✅</td>
-      <td>✅</td>
-      <td>❌</td>
-    </tr>
-    <tr>
-      <td>ORM</td>
-      <td>✅</td>
-      <td>✅</td>
-      <td>❌</td>
-    </tr>
-    <tr>
-      <td>PRM</td>
-      <td rowspan="1"><a href="docs/pytorch/solutions/preference-alignment/process_reward_dataset.md">PRM数据集处理</a></td>
-      <td>✅</td>
-      <td>✅</td>
-      <td>❌</td>
-      <td rowspan="1">【Ascend】</td>
     </tr>
   </tbody>
 </table>
