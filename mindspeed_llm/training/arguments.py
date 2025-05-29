@@ -149,36 +149,8 @@ def _add_deepseek_moe_args(parser):
     group.add_argument('--n-shared-experts', type=int, default=None,
                        help='This value is the number of shared experts, which is equal to the intermediate_size '
                             'of the shared experts divided by the moe_intermediate_size.')
-    group.add_argument('--n-group', type=int, default=None,
-                       help='Number of groups for routed experts.'
-                            'Tips: in deepseek3, set n-group equal to EP to limit each token to experts on a subset of devices,'
-                            'set n-group equal to number of nodes in EP group to limit each token to experts on a subset of nodes.')
-    group.add_argument('--topk-group', type=int, default=None,
-                       help='Choose topK group experts in group_limited_greedy_topK method')
-    group.add_argument('--routed-scaling-factor', type=float, default=None, help='The routed scaling factor')
-    group.add_argument('--norm-topk-prob', action='store_true', default=False, help='Normalize the topk weight')
-    group.add_argument('--seq-aux', action='store_true', default=False, help='Compute aux loss in seq_aux')
     group.add_argument('--first-k-dense-replace', type=int, default=None, help='Set first k layer as dense layer')
     group.add_argument('--moe-layer-freq', type=int, default=None, help='Set the occurrence frequency of the moe layer')
-    group.add_argument('--moe-device-level-aux-loss-coeff', type=float, default=0.,
-                       help='set the coeff for devicie-level balance loss in deepseek moe')
-    group.add_argument('--moe-comm-aux-loss-coeff', type=float, default=0.,
-                       help='set the coeff for communication balance loss in deepseek moe')
-    group.add_argument('--router-gating-in-fp32', action='store_true', default=False,
-                       help='Compute router gating in float32.')
-    group.add_argument('--moe-router-score-function', type=str,
-                       choices=['softmax', 'sigmoid'],
-                       default='softmax',
-                       help='Score function for MoE TopK routing. Can be "softmax" or "sigmoid".')
-    group.add_argument('--moe-router-enable-expert-bias', action='store_true',
-                       help='TopK routing with dynamic expert bias in the aux-loss-free load balancing strategy. '
-                            'The routing decision is based on the sum of the routing scores and the expert bias. ')
-    group.add_argument('--moe-router-bias-update-rate', type=float, default=1e-3,
-                       help='Expert bias update rate in the aux-loss-free load balancing strategy. '
-                            'The expert bias is updated based on the number of assigned tokens to each expert in a '
-                            'global batch, where the bias is increased for the experts with less assigned tokens and '
-                            'decreased for the experts with more assigned tokens. '
-                            'The default value 1e-3 is same as that used in DeepSeekV3.')
     return parser
 
 
@@ -403,22 +375,8 @@ def _add_lora_args(parser):
 
 def _add_moe_args(parser):
     group = parser.add_argument_group(title='moe')
-    group.add_argument('--moe-router-load-balancing-type', type=str,
-                       choices=['aux_loss', "group_limited_greedy", "softmax_topk", "pai_megatron_aux_loss",
-                                "sparsemixer_topk", "noaux_tc"],
-                       default='aux_loss',
-                       help='Determines the load balancing strategy for the router. "aux_loss" corresponds '
-                            'to the load balancing loss used in GShard and SwitchTransformer, "sinkhorn" corresponds '
-                            'to the balancing algorithm used in S-BASE, "softmax_topk" implies no load balancing and '
-                            'softmax before topk , "None" implies no load balancing, and "group_limited_greedy" corresponds '
-                            'to the Device-Limited Routing method in DeepSeekV2. and "pai_megatron_aux_loss" corresponds '
-                            ' to the load balancing loss used in pai-megatron loss, "noaux_tc" corresponds to no aux loss '
-                            'load balancing method in DeepSeekV3'
-                            'The default is "aux_loss".')
     group.add_argument('--expert-interval', type=int, default=1,
                        help='Use experts in every "expert-interval" layers')
-    group.add_argument('--moe-z-loss-coeff', type=float, default=None,
-                       help='Scaling coefficient for the z-loss: a starting value of 1e-3 is recommended.')
     group.add_argument('--moe-train-capacity-factor', type=float, default=1.0,
                        help='The capacity of the MoE expert at training time used in legacy moe layer called SwitchMLP.')
     group.add_argument("--use-fused-moe-token-permute-and-unpermute", action='store_true',
@@ -427,8 +385,6 @@ def _add_moe_args(parser):
                        help="Use gradient-accumulation-fusion in gemm.")
 
     # For megatron_moe drop
-    group.add_argument('--moe-expert-capacity-factor', type=float, default=None,
-                       help='The capacity factor for each expert, None means no token will be dropped.')
     group.add_argument('--moe-token-dispatcher-type', type=str, choices=['allgather', 'alltoall'], default='allgather',
                        help='The dispatcher type for moe token dispatching.')
     group.add_argument('--noisy-gate-policy', type=str, default=None,
@@ -447,13 +403,10 @@ def _add_moe_args(parser):
     group.add_argument("--shared-expert-gate-output-dimension", type=int, default=1,
                        help="moe model shared expert gate output dimension for qwen2 moe, this parameter can only configured with"
                             "1 or hidden_state")
-    group.add_argument("--fix-router", action='store_true', help="fix router for load balancing.")
     group.add_argument('--moe-alltoall-overlap-comm', action='store_true', default=False,
                        help='moe_alltoall_overlap_comm')
     group.add_argument("--cla-share-factor", type=int, default=1,
                        help="Cross-Layer Attention share kv between cla-share-factor layers")
-    group.add_argument("--moe-revert-type-after-topk", action='store_true',
-                       help="revert the type of logits after the topk has been computed")
     group.add_argument("--moe-tp-extend-ep", action='store_true',
                     help="use tp group to extend experts parallism instead of sharding weight tensor of experts in tp group")
     group.add_argument("--moe-zero-memory", type=str, default='disable',
@@ -1125,20 +1078,6 @@ def _validate_evaluation_args(args):
 def _validate_moe_args(args):
     if not args.use_mcore_models and args.num_experts and args.num_experts > 1:
         raise ValueError(f'MOE is not supported in legacy model. Please activate `--use-mcore-models` to enable moe features.')
-    if args.moe_expert_capacity_factor is not None:
-        if args.moe_token_dispatcher_type != "alltoall":
-            raise ValueError(f'moe_expert_capacity_factor only works with alltoall token dispatcher')
-        if args.moe_expert_capacity_factor < 0:
-            args.moe_expert_capacity_factor = None
-            print_rank0_by_args(f'When moe_expert_capacity_factor < 0, no token would be drop, so moe_expert_capacity_factor should be set to false.')
-        if args.moe_router_load_balancing_type not in ["aux_loss", "none"]:
-            raise ValueError(f'moe_expert_capacity_factor only works with aux_loss or none load balancing')
-        if args.moe_expert_capacity_factor is None and args.moe_pad_expert_input_to_capacity:
-            raise ValueError(f'moe_expert_capacity_factor must be set to use moe_pad_expert_input_to_capacity')
-        if args.shared_expert_gate_output_dimension != 1 and args.shared_expert_gate_output_dimension != args.hidden_size:
-            raise AssertionError('shared expert gate output dimension can only be configured with 1 or hidden_size')
-        if hasattr(args, 'use_fused_moe_token_permute_and_unpermute') and args.use_fused_moe_token_permute_and_unpermute:
-            raise AssertionError('moe_expert_capacity_factor mode does not support use_fused_moe_token_permute_and_unpermute')
     if args.moe_alltoall_overlap_comm or args.moe_allgather_overlap_comm:
         if not args.moe_permutation_async_comm or not args.moe_grouped_gemm:
             raise AssertionError(
@@ -1223,27 +1162,6 @@ def _validate_transformer_block_build_layers(args):
         raise AssertionError('--mc2 and coc can not be used together')
 
 
-def _validate_group_limited_greedy(args):
-    if args.moe_router_load_balancing_type == "group_limited_greedy":
-        if args.topk_group is None:
-            raise AssertionError('The parameter topk-group should be set when use group_limited_greedy.')
-        elif args.routed_scaling_factor is None:
-            raise AssertionError('The parameter routed_scaling_factor should be set when use multi_head_latent_attention.')
-        elif args.topk_group >= args.expert_model_parallel_size:
-            raise AssertionError('The topk group ({}) should be less than n-group(EP)({}).'.format(args.topk_group,
-            args.expert_model_parallel_size))
-
-
-def _validate_aux_loss_free(args):
-    if args.moe_router_enable_expert_bias and args.moe_router_score_function != "sigmoid":
-        raise ValueError(
-            "Expert bias for aux-loss-free routing only supports sigmoid score function."
-            "Please set --moe-router-score-function sigmoid for sigmoid score function."
-        )
-
-
-def _validate_rl_training(args):
-    return
 
 
 def get_layer_offset(pp_size, num_layer_list):
@@ -1580,12 +1498,9 @@ def validate_args_decorator(megatron_validate_args):
         _validate_mla(args)
         _validate_yarn(args)
         _validate_transformer_block_build_layers(args)
-        _validate_group_limited_greedy(args)
-        _validate_aux_loss_free(args)
         _validate_evaluation_args(args)
         _validate_output_layer_slice_num(args)
         _validate_optimizer(args)
-        _validate_rl_training(args)
         _validate_long_rope(args)
         _validate_mlp_fusion(args)
         _validate_fused_opts(args)

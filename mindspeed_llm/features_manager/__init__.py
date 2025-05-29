@@ -8,7 +8,7 @@ from mindspeed_llm.features_manager.models.mamba import MambaModel
 
 from mindspeed_llm.features_manager.communication.coc import AscendCocFeature
 from mindspeed_llm.features_manager.common.data import DataFeature
-from mindspeed_llm.features_manager.communication.coc import AscendCocFeature
+from mindspeed_llm.features_manager.common.moe_router import MOERouter
 
 FEATURES_LIST = [
     # MindSpeed Legacy Features
@@ -24,6 +24,7 @@ FEATURES_LIST = [
     RotaryPositionEmbeddingFeature(),
     LanguageModelEmbeddingFeature(),
     MambaModel(),
+    MOERouter(),
     AscendCocFeature()
 
     # MindSpeed-LLM Legacy Features
