@@ -12,7 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import os
 from time import time
 from functools import wraps
 from logging import getLogger
@@ -29,6 +29,8 @@ from megatron.training.checkpointing import (_load_base_checkpoint, get_rng_stat
                                              get_distributed_optimizer_checkpoint_name,
                                              ensure_directory_exists, generate_state_dict, get_checkpoint_tracker_filename)
 from megatron.training.one_logger_utils import on_save_checkpoint_start, on_save_checkpoint_success
+from megatron.training.checkpointing import read_metadata
+from megatron.training.checkpointing import find_checkpoint_rank_0
 
 from mindspeed_llm.tasks.posttrain.lora.utils import is_enable_lora, merge_dicts, modify_keys_with_dict, filter_lora_keys
 from mindspeed_llm.tasks.posttrain.utils import load_checkpoint_loosely
@@ -46,6 +48,100 @@ except Exception:
 
 
 logger = getLogger(__name__)
+
+
+def _load_base_checkpoint(load_dir, rank0=False, sharded_state_dict=None,
+                          exit_on_missing_checkpoint=False, checkpoint_step=None):
+    """ Load the base state_dict from the given directory
+
+    If rank0 is true, just loads rank 0 checkpoint, ignoring arguments.
+    """
+    # Read the tracker file and set the iteration.
+    tracker_filename = get_checkpoint_tracker_filename(load_dir)
+
+    # If no tracker file, return nothing
+    if not os.path.isfile(tracker_filename):
+        if not rank0:
+            print_rank_0('WARNING: could not find the metadata file {} '.format(
+                tracker_filename))
+            print_rank_0('    will not load any checkpoints and will start from '
+                         'random')
+
+        # Conditionally exit if checkpoint not found.
+        if exit_on_missing_checkpoint:
+            print_rank_0(">> '--exit-on-missing-checkpoint' set ... exiting. <<")
+            if torch.distributed.is_initialized():
+                torch.distributed.barrier()
+            sys.exit()
+
+        return None, "", False
+
+    # Otherwise, read the tracker file and either set the iteration or
+    # mark it as a release checkpoint.
+    if checkpoint_step is not None:
+        iteration = checkpoint_step
+        release = False
+    else:
+        iteration, release = read_metadata(tracker_filename)
+
+    # Checkpoint.
+    if rank0:
+        checkpoint_name = find_checkpoint_rank_0(load_dir, iteration, release)
+        is_dist_ckpt = checkpoint_name is not None and dist_checkpointing.check_is_distributed_checkpoint(checkpoint_name)
+    else:
+        checkpoint_name = get_checkpoint_name(load_dir, iteration, release,
+                                              return_base_dir=True)
+        is_dist_ckpt = dist_checkpointing.check_is_distributed_checkpoint(checkpoint_name)
+        if not is_dist_ckpt:
+            checkpoint_name = get_checkpoint_name(load_dir, iteration, release,
+                                                  return_base_dir=False)
+        dist_infix = "distributed " if is_dist_ckpt else ""
+        if release:
+            print_rank_0(f' loading release {dist_infix}checkpoint from {load_dir}')
+        else:
+            print_rank_0(f' loading {dist_infix}checkpoint from {load_dir} at iteration {iteration}')
+
+    # Load the checkpoint.
+    if is_dist_ckpt:
+        if rank0:
+            state_dict = dist_checkpointing.load_common_state_dict(checkpoint_name)
+            return state_dict, checkpoint_name, release
+
+        # at this point args are available
+        args = get_args()
+        if sharded_state_dict is None:
+            assert not args.auto_detect_ckpt_format and not args.use_dist_ckpt, (args.auto_detect_ckpt_format, args.use_dist_ckpt)
+            raise RuntimeError('Detected load from a distributed checkpoint, but neither --use-dist-ckpt nor --auto-detect-ckpt-format is set.')
+
+        load_strategy = get_default_load_sharded_strategy(checkpoint_name)
+        if args.ckpt_fully_parallel_load:
+            load_strategy = FullyParallelLoadStrategyWrapper(load_strategy,
+                                                             mpu.get_data_parallel_group(with_context_parallel=True))
+        state_dict = dist_checkpointing.load(sharded_state_dict, checkpoint_name, load_strategy, strict=args.dist_ckpt_strictness)
+        return state_dict, checkpoint_name, release
+
+    try:
+        state_dict = torch.load(checkpoint_name, map_location='cpu', weights_only=False)
+    except ModuleNotFoundError:
+        from megatron.legacy.fp16_deprecated import loss_scaler
+        # For backward compatibility.
+        if not rank0:
+            print_rank_0(' > deserializing using the old code structure ...')
+        sys.modules['fp16.loss_scaler'] = sys.modules[
+            'megatron.legacy.fp16_deprecated.loss_scaler']
+        sys.modules['megatron.fp16.loss_scaler'] = sys.modules[
+            'megatron.legacy.fp16_deprecated.loss_scaler']
+        sys.modules['megatron.model'] = sys.modules['megatron.legacy.model']
+        state_dict = torch.load(checkpoint_name, map_location='cpu', weights_only=False)
+        sys.modules.pop('fp16.loss_scaler', None)
+        sys.modules.pop('megatron.fp16.loss_scaler', None)
+        sys.modules.pop('megatron.model', None)
+    except BaseException as e:
+        print('could not load the checkpoint')
+        print(e)
+        sys.exit()
+
+    return state_dict, checkpoint_name, release
 
 
 def _load_base_checkpoint_wrapper(fn):

@@ -883,7 +883,7 @@ class LegacyAdaptation(MegatronAdaptationABC):
         from mindspeed_llm.training.utils import print_args_wrapper
         from mindspeed_llm.training.arguments import validate_args_decorator
         from mindspeed_llm.training.arguments import core_transformer_config_from_args_wrapper
-        from ..training.checkpointing import _load_base_checkpoint_wrapper, save_checkpoint_wrapper
+        from ..training.checkpointing import _load_base_checkpoint_wrapper, save_checkpoint_wrapper, _load_base_checkpoint
         from ..training.tokenizer import build_tokenizer
         from ..training.arguments import parse_args_decorator
 
@@ -892,6 +892,9 @@ class LegacyAdaptation(MegatronAdaptationABC):
         # After validating arguments, do arguments printing.
         MegatronAdaptation.register('megatron.training.arguments._print_args', print_args_wrapper)
         MegatronAdaptation.register('megatron.training.global_vars.build_tokenizer', build_tokenizer)
+        # Fix torch2.6+megatorn0.8.0 bug. After switching to a higher version, this patch can be deleted.
+        MegatronAdaptation.register('megatron.training.checkpointing._load_base_checkpoint',
+                                    _load_base_checkpoint)
         MegatronAdaptation.register('megatron.training.checkpointing._load_base_checkpoint',
                                     _load_base_checkpoint_wrapper)
         # fix core0.8.0 bug 切更高版本之后可以删除这个patch

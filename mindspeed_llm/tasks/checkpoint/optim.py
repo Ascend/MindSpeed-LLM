@@ -16,7 +16,7 @@ logger.getLogger().setLevel(logger.INFO)
 
 def load_data(file_path):
     try:
-        data = torch.load(file_path, map_location='cpu')
+        data = torch.load(file_path, map_location='cpu', weights_only=False)
         return data
     except Exception as e:
         logger.info(f"Error while loading file '{file_path}': {e}")
@@ -317,7 +317,7 @@ class OptimSourceProcessor(OptimBaseProcessor):
         
     @staticmethod
     def make_param_index_map(model_path):
-        weights = torch.load(model_path, map_location=torch.device('cpu'))
+        weights = torch.load(model_path, map_location=torch.device('cpu'), weights_only=False)
 
         # Count the number of models in the checkpoint
         model_num = sum([1 if key.startswith("model") else 0 for key in weights.keys()])
@@ -478,7 +478,7 @@ class OptimSourceProcessor(OptimBaseProcessor):
             optim_path = self.optimizer_paths[tp_rank][pp_rank][ep_rank]
             logger.info(f"Splitting from {optim_path} ...")
 
-            merged_ckpt = torch.load(optim_path, map_location="cpu")
+            merged_ckpt = torch.load(optim_path, map_location="cpu", weights_only=False)
             if isinstance(merged_ckpt, dict):
                 merged_ckpt = [merged_ckpt]
 
@@ -643,7 +643,7 @@ class OptimTargetProcessor(OptimBaseProcessor):
             for key in ["param", "exp_avg", "exp_avg_sq"]:
                 load_path = f"{ckpt_name}_{key}{ckpt_ext}"
                 logger.info(f"    {key} is loaded from {load_path}.")
-                optim_ckpt = torch.load(load_path, map_location="cpu")
+                optim_ckpt = torch.load(load_path, map_location="cpu", weights_only=False)
 
                 flatten_ckpt = self.flatten_optimizer_ckpt(optim_ckpt, pp_rank, key)
 

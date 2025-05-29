@@ -33,7 +33,7 @@ GLOBAL_LM_HEAD_WEIGHTS = None
 
 def load_data(file_path):
     logger.info(f"Loading the checkpoint from {file_path}.")
-    return torch.load(file_path, map_location='cpu')
+    return torch.load(file_path, map_location='cpu', weights_only=False)
 
 
 def tensor_memory_size(tensor):
