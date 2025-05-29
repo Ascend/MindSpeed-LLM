@@ -24,7 +24,7 @@ bash examples/mcore/deepseek3/ckpt_convert_deepseek3_mcore2hf.sh
 #### lora/qlora转huggingface
 
 ```bash
-bash examples\mcore\deepseek3\ckpt_convert_deepseek3_merge_lora2hf.sh
+bash examples/mcore/deepseek3/ckpt_convert_deepseek3_merge_lora2hf.sh
 ```
 
 ### 1.2 相关参数说明

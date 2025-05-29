@@ -55,7 +55,6 @@ GPT_ARGS="
     --global-batch-size ${GBS} \
     --disable-bias-linear \
     --swiglu \
-    --use-rotary-position-embeddings \
     --tokenizer-type PretrainedFromHF \
     --tokenizer-name-or-path ${TOKENIZER_PATH} \
     --normalization RMSNorm \

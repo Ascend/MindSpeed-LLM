@@ -49,7 +49,6 @@ torchrun $DISTRIBUTED_ARGS inference.py \
          --micro-batch-size 1 \
          --disable-bias-linear \
          --swiglu \
-         --use-rotary-position-embeddings \
          --tokenizer-type PretrainedFromHF \
          --tokenizer-name-or-path ${TOKENIZER_PATH} \
          --normalization RMSNorm \

@@ -6,7 +6,7 @@ python convert_ckpt.py \
        --target-tensor-parallel-size 1 \
        --target-pipeline-parallel-size 1 \
        --load-dir ./mdoel_from_hf/Qwen3-0.6B-Base/ \
-       --save-dir ./model_weight/Qwen3-0.6B-mcore \
+       --save-dir ./model_weights/Qwen3-0.6B-mcore \
        --tokenizer-model ./mdoel_from_hf/Qwen3-0.6B-Base/tokenizer.json \
        --model-type-hf qwen3 \
        --params-dtype bf16 \

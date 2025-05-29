@@ -67,7 +67,6 @@ torchrun $DISTRIBUTED_ARGS inference.py \
          --swiglu \
          --use-fused-swiglu \
          --use-fused-rmsnorm \
-         --use-rotary-position-embeddings \
          --tokenizer-type PretrainedFromHF \
          --tokenizer-name-or-path ${TOKENIZER_PATH} \
          --normalization RMSNorm \

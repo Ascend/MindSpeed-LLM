@@ -11,5 +11,5 @@ python convert_ckpt.py \
     --spec mindspeed_llm.tasks.models.spec.qwen3_spec layer_spec \
     --target-tensor-parallel-size 1 \
     --target-pipeline-parallel-size 1 \
-    --load-dir ./model_weight/Qwen3-4B-mcore/ \
+    --load-dir ./model_weights/Qwen3-4B-mcore/ \
     --save-dir ./model_from_hf/Qwen3-4B-Base/  # 需要填入原始HF模型路径，新权重会存于./model_from_hf/Qwen3-4B-Base/mg2hg/

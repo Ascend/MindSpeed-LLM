@@ -17,7 +17,7 @@ CKPT_SAVE_DIR="your model save ckpt path"
 DATA_PATH="your data path"
 TOKENIZER_PATH="your tokenizer path"
 
-TP=8
+TP=1
 PP=1
 MBS=1
 GBS=16
@@ -56,7 +56,6 @@ GPT_ARGS="
     --rotary-base 1000000 \
     --disable-bias-linear \
     --swiglu \
-    --use-rotary-position-embeddings \
     --tokenizer-type PretrainedFromHF \
     --tokenizer-name-or-path ${TOKENIZER_PATH} \
     --normalization RMSNorm \

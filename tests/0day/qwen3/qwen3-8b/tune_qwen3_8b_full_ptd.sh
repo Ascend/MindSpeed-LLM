@@ -53,7 +53,6 @@ GPT_ARGS="
     --disable-bias-linear \
     --train-iters 2000 \
     --swiglu \
-    --use-rotary-position-embeddings \
     --tokenizer-type PretrainedFromHF \
     --tokenizer-name-or-path ${TOKENIZER_PATH} \
     --normalization RMSNorm \
