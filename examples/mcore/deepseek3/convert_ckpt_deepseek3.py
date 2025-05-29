@@ -130,6 +130,7 @@ class CkptConvert(object):
     @staticmethod
     def load_hf_model(file_path):
         """Load safetensors file"""
+        logger.info(f"Loading the checkpoint from {file_path}.")
         return safetensors.torch.load_file(file_path)
 
     @staticmethod
@@ -157,29 +158,37 @@ class CkptConvert(object):
 
     def _valid_parameter(self):
 
-        assert self.first_k_dense_replace <= FIRST_K_DENSE_REPLACE, \
-            'first_k_dense_replace should be less than 3'
+        if self.first_k_dense_replace > FIRST_K_DENSE_REPLACE:
+            raise ValueError("first_k_dense_replace should be less than 3")
 
         if self.dualpipe:
             if self.tp_size > 1 and not self.moe_tp_extend_ep:
                 raise ValueError("When dualpipe is enabled, moe-tp-extend-ep should be used at the same time.")
 
         if self.num_layer_list is None:
-            assert self.num_layers % self.pp_size == 0, \
-                'number of layers should be divisible by the pipeline parallel size'
+            if self.num_layers % self.pp_size != 0:
+                raise ValueError("number of layers should be divisible by the pipeline parallel size")
+            
             if self.vpp_stage is not None:
-                assert self.num_layers % self.pp_size % self.vpp_stage == 0, \
-                    'number of pp_stage should bu divisible by the vpp_stage'
+                if (self.num_layers % self.pp_size) % self.vpp_stage != 0:
+                    raise ValueError("number of pp_stage should be divisible by the vpp_stage")
         else:
             layer_list = list(map(int, self.num_layer_list.split(',')))
 
-            assert self.vpp_stage is None, 'num_layer_list and vpp cannot be configured at the same time'
-            assert len(layer_list) == self.pp_size, \
-                'number of layer_list should be equal to pipeline parallel size'
-            assert sum(layer_list) == self.num_layers, \
-                'sum of layer_list should be equal to num_layers'
-            assert self.noop_layers is None, 'num_layer_list and noop_layers cannot be configured at the same time'
-            assert self.num_layers == 61, "num_layer_list supports only full parameters"
+            if self.vpp_stage is not None:
+                raise ValueError("num_layer_list and vpp cannot be configured at the same time")
+
+            if len(layer_list) != self.pp_size:
+                raise ValueError("number of layer_list should be equal to pipeline parallel size")
+
+            if sum(layer_list) != self.num_layers:
+                raise ValueError("sum of layer_list should be equal to num_layers")
+
+            if self.noop_layers is not None:
+                raise ValueError("num_layer_list and noop_layers cannot be configured at the same time")
+
+            if self.num_layers != 61:
+                raise ValueError("num_layer_list supports only full parameters")
 
     def get_layer_files_map(self):
         """layer -> safetensors file map"""
