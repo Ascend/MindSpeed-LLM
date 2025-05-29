@@ -64,9 +64,16 @@ find "$BASE_DIR" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
         # python test testing
         find "$dir" -type f -name "*.py" | while read -r file; do
             echo "running $file"
-            if ! pytest --log-level=INFO "$file"; then
+            tmp_file_name="${file#*MindSpeed-LLM/}"
+            file_name="${tmp_file_name//\//_}"
+            pytest --log-level=INFO "$file" | tee "${GENERATE_LOG_DIR}/${file_name}.log" 2>&1
+            PYTEST_EXITCODE=${PIPESTATUS[0]}
+            if [ $PYTEST_EXITCODE -ne 0 ]; then
                 echo "$file has failed, check it!" >> "$GENERATE_LOG_DIR/exec_error.log"
             fi
         done
     fi
 done
+
+echo "=================tar error log=================="
+tar -czvf "${GENERATE_LOG_DIR}/${CURRENT_TIME}.tar.gz" "${GENERATE_LOG_DIR}/"
