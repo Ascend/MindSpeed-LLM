@@ -23,10 +23,10 @@ bash examples/mcore/deepseek3/ckpt_convert_deepseek3_hf2mcore.sh
 bash examples/mcore/deepseek3/ckpt_convert_deepseek3_mcore2hf.sh
 ```
 
-#### lora转huggingface
+#### lora/qlora转huggingface
 
 ```bash
-bash examples\mcore\deepseek3\ckpt_convert_deepseek3_merge_lora2hf.sh
+bash examples/mcore/deepseek3/ckpt_convert_deepseek3_merge_lora2hf.sh
 ```
 
 ### 1.2 相关参数说明
@@ -34,6 +34,7 @@ bash examples\mcore\deepseek3\ckpt_convert_deepseek3_merge_lora2hf.sh
 【--moe-grouped-gemm】
 
 当每个专家组有多个专家时，可以使用Grouped GEMM功能来提高利用率和性能。
+注意，qlora和lora权重转换不支持该参数。
 
 【--target-tensor-parallel-size】
 
@@ -63,10 +64,12 @@ bash examples\mcore\deepseek3\ckpt_convert_deepseek3_merge_lora2hf.sh
 
 MTP层的层数。如不需要MTP层，可设置为0。最大可设置为1。默认值为0。
 MTP层权重默认存储在最后一个pp stage。
+注意，qlora和lora微调不支持MTP。
 
 【--num-layers】
 
-模型层数，该层数**不包含MTP层**。默认值为61。如配置空操作层，num-layers的值应为总层数（不包含MTP层）加上空操作层层数。
+模型层数，该层数**不包含MTP层**。默认值为61。
+如配置空操作层，num-layers的值应为总层数（不包含MTP层）加上空操作层【--noop-layers】层数。
 
 【--first-k-dense-replace】
 
@@ -74,7 +77,8 @@ moe层前的dense层数，最大可设置为3。默认值为3。
 
 【--num-layer-list】
 
-指定每个pp的层数，相加要等于num-layers。默认值为None。
+指定每个pp的层数，相加要等于num-layers。当前仅支持 num-layers = 61 时使用此参数。
+与--noop-layers互斥，二者选其一使用。默认值为None。
 
 【--noop-layers】
 
@@ -87,6 +91,7 @@ TP拓展EP，专家层TP组不切分专家参数，切分专家数量。默认�
 【--mla-mm-split】
 
 在MLA中，将2个up-proj matmul操作拆分成4个。默认值为False。
+注意，qlora和lora微调不支持该参数。
 
 【--qlora-nf4】
 

@@ -134,12 +134,39 @@ class MgCkptConvert(object):
     def _valid_parameter(self):
         if self.num_layer_list is None:
             if self.num_layers % self.pp_size != 0:
-                raise ValueError("num_layers must be divisible by pp_size")
+                raise ValueError("number of layers should be divisible by the pipeline parallel size")
+            
+            if self.vpp_stage is not None:
+                if (self.num_layers % self.pp_size) % self.vpp_stage != 0:
+                    raise ValueError("number of pp_stage should be divisible by the vpp_stage")
         else:
-            if sum(self.num_layer_list) != self.num_layers:
-                raise ValueError("Sum of num_layer_list must equal num_layers")
+            layer_list = list(map(int, self.num_layer_list.split(',')))
+
+            if self.vpp_stage is not None:
+                raise ValueError("num_layer_list and vpp cannot be configured at the same time")
+
+            if len(layer_list) != self.pp_size:
+                raise ValueError("number of layer_list should be equal to pipeline parallel size")
+
+            if sum(layer_list) != self.num_layers:
+                raise ValueError("sum of layer_list should be equal to num_layers")
+
+            if self.noop_layers is not None:
+                raise ValueError("num_layer_list and noop_layers cannot be configured at the same time")
+
+            if self.num_layers != 61:
+                raise ValueError("num_layer_list supports only full parameters")
+
         if self.last_save_hf_layer == -1:
             raise ValueError("Does not contain a vaild model layer. Please check the parameters!")
+
+        if self.lora_r is not None:
+            if self.moe_grouped_gemm:
+                raise ValueError("moe_grouped_gemm and lora/qlora can not exist together")
+            if self.num_nextn_predict_layers != 0:
+                raise ValueError("num_nextn_predict_layers and lora/qlora can not exist together")
+            if self.mla_mm_split:
+                raise ValueError("mla_mm_split and lora/qlora can not exist together")
 
     @staticmethod
     def get_iter_path(ckpt_path, iteration=None):
