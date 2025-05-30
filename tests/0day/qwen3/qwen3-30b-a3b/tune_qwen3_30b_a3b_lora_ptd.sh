@@ -18,9 +18,9 @@ CKPT_SAVE_DIR="your model save ckpt path"
 DATA_PATH="your data path"
 TOKENIZER_PATH="your tokenizer path"
 
-TP=4
-PP=1
-EP=1
+TP=1
+PP=4
+EP=2
 SEQ_LENGTH=4096
 TRAIN_ITERS=2000
 
@@ -37,6 +37,7 @@ MOE_ARGS="
     --moe-router-topk 8 \
     --moe-intermediate-size 768 \
     --moe-grouped-gemm \
+    --moe-alltoall-overlap-comm \
     --moe-permutation-async-comm \
     --moe-token-dispatcher-type alltoall \
     --moe-router-load-balancing-type aux_loss \

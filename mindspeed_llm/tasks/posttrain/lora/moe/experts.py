@@ -13,6 +13,7 @@ from megatron.core.tensor_parallel.layers import (
 from megatron.core.tensor_parallel.utils import divide
 from megatron.core.transformer.moe.moe_utils import permute
 from megatron.core.transformer.moe.experts import GroupedMLP
+from megatron.core.transformer.moe import grouped_gemm_util as gg
 from megatron.training import get_args
 from megatron.core.parallel_state import (
     get_expert_model_parallel_group,
@@ -422,14 +423,14 @@ class LoraParallelGroupedMLP(GroupedMLP):
         setattr(self.weight1_lora_b, 'allreduce', not self.expert_parallel)
         setattr(self.weight2_lora_a, 'allreduce', not self.expert_parallel)
 
-        if not get_args().moe_alltoall_overlap_comm:
-            raise AssertionError("Currently GMM LoRA Finetune only support moe_alltoall_overlap_comm")
-
         if get_args().moe_hierarchical_alltoallv or get_args().moe_experts_pipeline_degree:
             raise AssertionError("Currently GMM LoRA Finetune not support moe_hierarchical_alltoallv")
 
     def forward(self, permuted_local_hidden_states, tokens_per_expert, ctx=None):
+        args = get_args()
+
         if permuted_local_hidden_states.nelement() != 0:
+            # input is empty
             w1 = self.weight1.view(self.num_local_experts, self.config.hidden_size, -1)
             w2 = self.weight2.view(self.num_local_experts, -1, self.config.hidden_size)
             w1_a = self.weight1_lora_a.view(self.num_local_experts, -1, self.lora_r)
@@ -440,26 +441,59 @@ class LoraParallelGroupedMLP(GroupedMLP):
                 self.weight1.quant_state.shape = (self.num_local_experts, self.config.hidden_size, w1.shape[-1] * 2)
                 self.weight2.quant_state.shape = (self.num_local_experts, w2.shape[1] * 2, self.config.hidden_size)
         else:
+            # input is not empty
             w1 = self.weight1.view(self.config.hidden_size, -1)
             w2 = self.weight2.view(-1, self.config.hidden_size)
-            w1_a = self.weight1_lora_a.view(-1, self.lora_r)
+            w1_a = self.weight1_lora_a.view(self.num_local_experts, -1, self.lora_r)[0]
             w1_b = self.weight1_lora_b.view(self.lora_r, -1)
             w2_a = self.weight2_lora_a.view(-1, self.lora_r)
-            w2_b = self.weight2_lora_b.view(self.lora_r, -1)
+            w2_b = self.weight2_lora_b.view(self.num_local_experts, self.lora_r, -1)[0]
             if hasattr(self.weight1, "quant_state"):
                 self.weight1.quant_state.shape = (self.config.hidden_size, w1.shape[-1] * 2)
                 self.weight2.quant_state.shape = (w2.shape[0] * 2, self.config.hidden_size)
-        w1, w2 = self.weight1, self.weight2
-        group_list = torch.cumsum(tokens_per_expert, dim=0)
+        if hasattr(self.weight1, "quant_state"):
+            w1, w2 = self.weight1, self.weight2
 
-        return lora_parallel_grouped_mlp_with_comp_and_comm_overlap_all2all(permuted_local_hidden_states,
-                                                                            w1_a, w1_b,
-                                                                            w2_a, w2_b,
-                                                                            (w1, w2,
-                                                                             self.weight1_lora_a,
-                                                                             self.weight1_lora_b,
-                                                                             self.weight2_lora_a,
-                                                                             self.weight2_lora_b,
-                                                                             self.activation_func,
-                                                                             group_list, self.layer_number,
-                                                                             self.scaling), ctx=ctx)
+        if args.moe_alltoall_overlap_comm:
+            # alltoall-overlap-comm
+            group_list = torch.cumsum(tokens_per_expert, dim=0)
+            return lora_parallel_grouped_mlp_with_comp_and_comm_overlap_all2all(permuted_local_hidden_states,
+                                                                                w1_a, w1_b,
+                                                                                w2_a, w2_b,
+                                                                                (w1, w2,
+                                                                                 self.weight1_lora_a,
+                                                                                 self.weight1_lora_b,
+                                                                                 self.weight2_lora_a,
+                                                                                 self.weight2_lora_b,
+                                                                                 self.activation_func,
+                                                                                 group_list, self.layer_number,
+                                                                                 self.scaling), ctx=ctx)
+        else:
+            # origin gemm
+            if permuted_local_hidden_states.nelement() != 0:
+                # Reshape the weights for the grouped GEMMs.
+                fc1_output = gg.ops.gmm(permuted_local_hidden_states, w1, tokens_per_expert, trans_b=False)
+                mm1_a = gg.ops.gmm(permuted_local_hidden_states, w1_a, tokens_per_expert, trans_b=False)
+                mm1_b = gg.ops.gmm(mm1_a, w1_b, tokens_per_expert, trans_b=False) * self.scaling
+
+                intermediate_parallel = self.activation_func(fc1_output + mm1_b)
+
+                mm2_a = gg.ops.gmm(intermediate_parallel, w2_a, tokens_per_expert, trans_b=False)
+                mm2_b = gg.ops.gmm(mm2_a, w2_b, tokens_per_expert, trans_b=False) * self.scaling
+                fc2_output = gg.ops.gmm(intermediate_parallel, w2, tokens_per_expert, trans_b=False)
+
+                fc2_output += mm2_b
+            else:
+                h = torch.matmul(permuted_local_hidden_states, w1)
+                mm1_a = torch.matmul(permuted_local_hidden_states, w1_a)
+                mm1_b = torch.matmul(mm1_a, w1_b) * self.scaling
+
+                h = self.activation_func(h + mm1_b)
+
+                mm2_a = torch.matmul(h, w2_a)
+                mm2_b = torch.matmul(mm2_a, w2_b) * self.scaling
+                h = torch.matmul(h, w2)
+
+                fc2_output = h + mm2_b
+
+            return fc2_output, None
