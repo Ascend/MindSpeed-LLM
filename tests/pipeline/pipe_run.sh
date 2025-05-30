@@ -28,7 +28,8 @@ cp -rf /home/master_branch/Megatron-LM/megatron ./
 BASE_DIR=$(dirname "$(readlink -f "$0")")
 CURRENT_TIME=$(date "+%Y-%m-%d")
 BASELINE_DIR="$BASE_DIR/baseline"
-GENERATE_LOG_DIR="/$(echo "$BASE_DIR" | cut -d'/' -f2)/pipeline_log/$CURRENT_TIME"
+GENERATE_LOG_BASE_DIR="/$(echo "$BASE_DIR" | cut -d'/' -f2)/pipeline_log"
+GENERATE_LOG_DIR="$GENERATE_LOG_BASE_DIR/$CURRENT_TIME"
 
 #mkdir cache to store product and will be removed after test
 mkdir -p "$GENERATE_LOG_DIR"
@@ -76,4 +77,4 @@ find "$BASE_DIR" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
 done
 
 echo "=================tar error log=================="
-tar -czvf "${GENERATE_LOG_DIR}/${CURRENT_TIME}.tar.gz" "${GENERATE_LOG_DIR}/"
+tar -czvf "${GENERATE_LOG_BASE_DIR}/${CURRENT_TIME}.tar.gz" "${GENERATE_LOG_DIR}/"
