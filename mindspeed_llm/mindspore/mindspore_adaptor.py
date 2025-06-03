@@ -72,7 +72,7 @@ class MindSporeAdaptation(MegatronAdaptationABC):
                     MindSporeAdaptation.register('megatron.core.transformer.moe.moe_utils.permute', permute_wrapper)
                     MindSporeAdaptation.register('megatron.core.transformer.moe.moe_utils.unpermute', unpermute_wrapper)
 
-        if not args.moe_alltoall_overlap_comm:
+        if not args.moe_alltoall_overlap_comm and not args.moe_fb_overlap:
             MindSporeAdaptation.register('megatron.core.transformer.moe.experts.GroupedMLP.forward',
                                     groupedmlp_forward)
 
@@ -96,8 +96,10 @@ class MindSporeAdaptation(MegatronAdaptationABC):
         MindSporeAdaptation.register('megatron.core.pipeline_parallel.schedules.forward_step', forward_step)
         MindSporeAdaptation.register('megatron.core.pipeline_parallel.schedules.backward_step', backward_step)
         MindSporeAdaptation.register('megatron.core.pipeline_parallel.schedules.forward_backward_no_pipelining', forward_backward_no_pipelining)
-        from mindspeed.mindspore.core.pipeline_parallel.schedules import forward_backward_pipelining_with_interleaving, forward_backward_pipelining_without_interleaving
-        MindSporeAdaptation.register('megatron.core.pipeline_parallel.schedules.forward_backward_pipelining_without_interleaving', forward_backward_pipelining_without_interleaving)
+
+        if not args.moe_fb_overlap:
+            from mindspeed.mindspore.core.pipeline_parallel.schedules import forward_backward_pipelining_with_interleaving, forward_backward_pipelining_without_interleaving
+            MindSporeAdaptation.register('megatron.core.pipeline_parallel.schedules.forward_backward_pipelining_without_interleaving', forward_backward_pipelining_without_interleaving)
 
         from mindspeed.mindspore.core.tensor_parallel.data import local_build_key_size_numel_dictionaries
         MindSporeAdaptation.register('megatron.core.tensor_parallel.data._build_key_size_numel_dictionaries', local_build_key_size_numel_dictionaries) # 1097
@@ -147,3 +149,137 @@ class MindSporeAdaptation(MegatronAdaptationABC):
         MegatronAdaptation.register('mindspeed.ops.lcal_functional.CoCOperations.matmul_reduce_scatter', matmul_reduce_scatter)
         MegatronAdaptation.register('mindspeed.ops.lcal_functional.CoCOperations.matmul_all_reduce', matmul_all_reduce)
         MegatronAdaptation.register('mindspeed.ops.lcal_functional.CoCOperations.pure_matmul', pure_matmul)
+
+
+        if args.moe_fb_overlap:
+            from mindspeed_llm.mindspore.tasks.models.transformer.multi_head_latent_attention import mla_forward
+            MindSporeAdaptation.register('mindspeed_llm.tasks.models.transformer.multi_head_latent_attention.MultiHeadLatentAttention.forward',
+                                        mla_forward)
+
+            from mindspeed_llm.mindspore.core.pipeline_parallel.dualpipe.gpt_model import ModelGraph, gpt_model_forward, gpt_model_forward_backward_overlaping
+            MindSporeAdaptation.register('mindspeed_llm.core.pipeline_parallel.dualpipe.gpt_model.ModelGraph',
+                                        ModelGraph)
+            MindSporeAdaptation.register('mindspeed_llm.core.pipeline_parallel.dualpipe.gpt_model.gpt_model_forward',
+                                        gpt_model_forward)
+            MindSporeAdaptation.register('megatron.core.models.gpt.gpt_model.GPTModel.forward',
+                                        gpt_model_forward_backward_overlaping)
+            from mindspeed_llm.mindspore.core.pipeline_parallel.dualpipe.MTP_overlap import mtp_overlap_backward
+            MindSporeAdaptation.register('mindspeed_llm.core.pipeline_parallel.dualpipe.MTP_overlap.TransformerMTPoverlap.backward',
+                                        mtp_overlap_backward)
+
+            from mindspeed_llm.mindspore.core.transformer.moe.router import apply_seq_aux_loss, topk_router_gating_func
+            MindSporeAdaptation.register('mindspeed_llm.core.transformer.moe.router.apply_seq_aux_loss',
+                                        apply_seq_aux_loss)
+            MindSporeAdaptation.register('megatron.core.transformer.moe.router.TopKRouter.gating', topk_router_gating_func)
+
+            #mindspeed
+            
+            from mindspeed.mindspore.core.pipeline_parallel.dualpipev.dualpipev_schedules import backward_step_with_model_graph, set_shared_embedding_from_dual_chunk, forward_step_with_model_graph, get_shared_embedding_from_dual_chunk, forward_backward_pipelining_with_cutinhalf
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.dualpipev.dualpipev_schedules.backward_step_with_model_graph',
+                                backward_step_with_model_graph)
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.dualpipev.dualpipev_schedules.set_shared_embedding_from_dual_chunk',
+                                set_shared_embedding_from_dual_chunk)
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.dualpipev.dualpipev_schedules.forward_step_with_model_graph',
+                                forward_step_with_model_graph)
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.dualpipev.dualpipev_schedules.get_shared_embedding_from_dual_chunk',
+                                get_shared_embedding_from_dual_chunk)
+            MindSporeAdaptation.register('megatron.core.pipeline_parallel.schedules.forward_backward_pipelining_without_interleaving',
+                                forward_backward_pipelining_with_cutinhalf)
+
+
+            from mindspeed.mindspore.core.pipeline_parallel.fb_overlap.transformer_layer import transformer_layer_backward
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.transformer_layer.transformer_layer_backward',
+                                transformer_layer_backward)
+
+            from mindspeed.mindspore.core.pipeline_parallel.fb_overlap.transformer_block import transformer_block_forward, transformer_block_forward_backward_overlaping
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.transformer_block.transformer_block_forward',
+                                transformer_block_forward)
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.transformer_block.transformer_block_forward_backward_overlaping',
+                                transformer_block_forward_backward_overlaping)
+            
+            from mindspeed.mindspore.core.pipeline_parallel.fb_overlap.adaptor import _make_param_hook
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.adaptor._make_param_hook',
+                                _make_param_hook)
+
+            from mindspeed.mindspore.core.pipeline_parallel.fb_overlap.modules.experts import get_gmm_weight_grad, GroupedMatmulWithWeightGradDetach
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.modules.experts.get_gmm_weight_grad',
+                                get_gmm_weight_grad)
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.modules.experts.GroupedMatmulWithWeightGradDetach',
+                                GroupedMatmulWithWeightGradDetach)
+
+            from mindspeed.mindspore.core.pipeline_parallel.fb_overlap.modules.token_dispatcher import preprocess
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.modules.token_dispatcher.preprocess',
+                                preprocess)
+
+            from mindspeed.mindspore.core.pipeline_parallel.fb_overlap.modules.utils import detach_tensor, run_graph_backward, dummy_forward_step_func, run_graph_forward, NoopLayerGraph, LayerGraph
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.modules.utils.detach_tensor',
+                                detach_tensor)
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.modules.utils.run_graph_backward',
+                                run_graph_backward)
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.modules.utils.dummy_forward_step_func',
+                                dummy_forward_step_func)
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.modules.utils.run_graph_forward',
+                                run_graph_forward)
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.modules.utils.NoopLayerGraph',
+                                NoopLayerGraph)
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.modules.utils.LayerGraph',
+                                LayerGraph)
+
+
+            from mindspeed.mindspore.core.pipeline_parallel.fb_overlap.overlap_funcs.bwd import transformer_layer_backward_moe, transformer_layer_backward_dense, transformer_layer_backward_noop
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.overlap_funcs.bwd.transformer_layer_backward_moe',
+                                transformer_layer_backward_moe)
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.overlap_funcs.bwd.transformer_layer_backward_dense',
+                                transformer_layer_backward_dense)
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.overlap_funcs.bwd.transformer_layer_backward_noop',
+                                transformer_layer_backward_noop)
+
+            from mindspeed.mindspore.core.pipeline_parallel.fb_overlap.overlap_funcs.fwd import transformer_layer_forward_moe, transformer_layer_forward_dense, transformer_layer_forward_noop
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.overlap_funcs.fwd.transformer_layer_forward_moe',
+                                transformer_layer_forward_moe)
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.overlap_funcs.fwd.transformer_layer_forward_dense',
+                                transformer_layer_forward_dense)
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.overlap_funcs.fwd.transformer_layer_forward_noop',
+                                transformer_layer_forward_noop)
+
+            from mindspeed.mindspore.core.pipeline_parallel.fb_overlap.overlap_funcs.fwdbwd import transformer_layer_forward_dense_backward_moe_overlaping,\
+                    transformer_layer_forward_moe_backward_dense_overlaping, transformer_layer_forward_dense_backward_dense_overlaping, transformer_layer_forward_moe_backward_moe_overlaping
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.overlap_funcs.fwdbwd.transformer_layer_forward_dense_backward_moe_overlaping',
+                                transformer_layer_forward_dense_backward_moe_overlaping)
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.overlap_funcs.fwdbwd.transformer_layer_forward_moe_backward_dense_overlaping',
+                                transformer_layer_forward_moe_backward_dense_overlaping)
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.overlap_funcs.fwdbwd.transformer_layer_forward_dense_backward_dense_overlaping',
+                                transformer_layer_forward_dense_backward_dense_overlaping)
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.overlap_funcs.fwdbwd.transformer_layer_forward_moe_backward_moe_overlaping',
+                                transformer_layer_forward_moe_backward_moe_overlaping) 
+
+
+            from mindspeed.mindspore.core.pipeline_parallel.fb_overlap.modules.weight_grad_store import overlap_matmul
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.modules.weight_grad_store.WeightGradStore.overlap_matmul',
+                                overlap_matmul)
+
+
+            from mindspeed.mindspore.core.transformer.moe.comm_utils import async_all_to_all
+            MindSporeAdaptation.register('mindspeed.core.transformer.moe.comm_utils.async_all_to_all',
+                        async_all_to_all)
+            
+            from mindspeed.mindspore.core.transformer.transformer import core_mlp_forward_wrapper
+            MindSporeAdaptation.register('mindspeed.core.transformer.transformer.core_mlp_forward_wrapper',
+                core_mlp_forward_wrapper)
+
+
+
+        if args.swap_optimizer:
+            from mindspeed.mindspore.ops.npu_apply_fused_adamw_v2 import npu_apply_fused_adamw_v2
+            MindSporeAdaptation.register('mindspeed.ops.npu_apply_fused_adamw_v2.npu_apply_fused_adamw_v2',
+                                npu_apply_fused_adamw_v2)
+            from mindspeed.mindspore.core.optimizer.swap_optimizer.swap_optimizer import opt_states_initialization, create_tensor_maps, swap_tensors_to_device, _copy_model_params_to_main_params, swap_adamw_step
+            MindSporeAdaptation.register('mindspeed.core.optimizer.swap_optimizer.swap_optimizer.SwapDistributedOptimizer.opt_states_initialization',
+                opt_states_initialization)
+            MindSporeAdaptation.register('mindspeed.core.optimizer.swap_optimizer.swap_optimizer.SwapDistributedOptimizer.create_tensor_maps',
+                create_tensor_maps)
+            MindSporeAdaptation.register('mindspeed.core.optimizer.swap_optimizer.swap_optimizer.SwapDistributedOptimizer.swap_tensors_to_device',
+                swap_tensors_to_device)
+            MindSporeAdaptation.register('mindspeed.core.optimizer.swap_optimizer.swap_optimizer.SwapDistributedOptimizer._copy_model_params_to_main_params',
+                _copy_model_params_to_main_params)
+            MindSporeAdaptation.register('mindspeed.optimizer.adamw.AdamW.step', swap_adamw_step)
