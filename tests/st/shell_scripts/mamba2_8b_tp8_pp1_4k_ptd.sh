@@ -80,8 +80,6 @@ MAMBA_ARGS="
     --hidden-dropout 0.0 \
     --position-embedding-type none \
     --normalization RMSNorm \
-    --use-fused-rotary-pos-emb \
-    --use-rotary-position-embeddings \
     --use-fused-swiglu \
     --use-fused-rmsnorm \
     --overlap-param-gather \
