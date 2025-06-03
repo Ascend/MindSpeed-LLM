@@ -2,9 +2,9 @@
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 
 NPUS_PER_NODE=8
-MASTER_ADDR=localhost #主节点IP
+MASTER_ADDR=localhost
 MASTER_PORT=6000
-NNODES=2
+NNODES=1
 NODE_RANK=0
 WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
@@ -14,7 +14,7 @@ TOKENIZER_PATH="your tokenizer path"
 CKPT_LOAD_DIR="your model ckpt path"
 
 TP=2
-PP=8
+PP=2
 
 DISTRIBUTED_ARGS="
     --local_worker_num $NPUS_PER_NODE \
@@ -36,19 +36,20 @@ GPT_ARGS="
     --overlap-grad-reduce \
     --overlap-param-gather \
     --use-distributed-optimizer \
-    --num-layers 64 \
-    --hidden-size 6144 \
-    --ffn-hidden-size 23040 \
-    --num-attention-heads 48 \
+    --num-layers 40 \
+    --hidden-size 4096 \
+    --ffn-hidden-size 13696 \
+    --num-attention-heads 32 \
     --seq-length 8192 \
     --micro-batch-size 1 \
-    --global-batch-size 16 \
+    --global-batch-size 64 \
     --max-position-embeddings 8192 \
     --padded-vocab-size 151552 \
     --make-vocab-size-divisible-by 1 \
     --group-query-attention \
     --num-query-groups 2 \
     --disable-bias-linear \
+    --add-qkv-bias \
     --position-embedding-type rope \
     --use-glm-rope \
     --rotary-percent 0.5 \
@@ -78,12 +79,7 @@ GPT_ARGS="
     --no-load-rng \
     --no-gradient-accumulation-fusion \
     --no-bias-swiglu-fusion \
-    --bf16 \
-    --noop-layers 6,7,15 \
-    --no-check-for-nan-in-loss-and-grad \
-    --recompute-granularity full \
-    --recompute-method block \
-    --recompute-num-layers 8
+    --bf16
 "
 
 DATA_ARGS="
@@ -93,7 +89,7 @@ DATA_ARGS="
 
 OUTPUT_ARGS="
     --log-interval 1 \
-    --save-interval 1 \
+    --save-interval 2000 \
     --eval-interval 2000 \
     --eval-iters 0 \
 "
@@ -102,6 +98,8 @@ msrun ${DISTRIBUTED_ARGS} pretrain_gpt.py \
     ${GPT_ARGS} \
     ${DATA_ARGS} \
     ${OUTPUT_ARGS} \
+    --load ${CKPT_LOAD_DIR} \
+    --save ${CKPT_SAVE_DIR} \
     --distributed-backend nccl \
     --ai-framework mindspore \
-    | tee logs/pretrain_glm4_32b_8k_mcore.log
+    | tee logs/pretrain_glm4_9b_8k_mcore.log
