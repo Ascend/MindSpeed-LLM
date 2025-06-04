@@ -86,6 +86,8 @@ GPT_ARGS="
     --reset-position-ids \
     --exit-on-missing-checkpoint \
     --use-fused-rmsnorm \
+    --use-ascend-coc \
+    --coc-fused-kernel \
     --no-shared-storage
 "
 

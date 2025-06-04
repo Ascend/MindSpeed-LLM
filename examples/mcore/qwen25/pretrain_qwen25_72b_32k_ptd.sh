@@ -87,6 +87,8 @@ GPT_ARGS="
     --use-distributed-optimizer \
     --overlap-grad-reduce \
     --exit-on-missing-checkpoint \
+    --use-ascend-coc \
+    --coc-fused-kernel \
     --no-shared-storage
 "
 

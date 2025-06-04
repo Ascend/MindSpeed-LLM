@@ -64,6 +64,7 @@ GPT_ARGS="
     --use-fused-rotary-pos-emb \
     --use-rotary-position-embeddings \
     --use-fused-swiglu \
+    --use-fused-rmsnorm \
     --no-masked-softmax-fusion \
     --attention-softmax-in-fp32 \
     --min-lr 1.25e-7 \
@@ -88,6 +89,8 @@ GPT_ARGS="
     --exit-on-missing-checkpoint \
     --no-shared-storage \
     --reset-position-ids \
+    --use-ascend-coc \
+    --coc-fused-kernel \
     --num-layers-per-virtual-pipeline-stage 4
 "
 
