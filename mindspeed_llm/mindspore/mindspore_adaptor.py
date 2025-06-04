@@ -292,3 +292,9 @@ class MindSporeAdaptation(MegatronAdaptationABC):
             MegatronAdaptation.register(
                 'mindspeed_llm.training.utils._compute_actual_seq_len', _compute_actual_seq_len)
 
+
+        from ..mindspore.core.distributed.finalize_model_grads import _update_router_expert_bias
+        MindSporeAdaptation.register('mindspeed_llm.core.distributed.finalize_model_grads._update_router_expert_bias', _update_router_expert_bias)
+
+        from ..mindspore.core.transformer.module import set_is_first_microbatch
+        MindSporeAdaptation.register('megatron.core.transformer.module.MegatronModule.set_is_first_microbatch', set_is_first_microbatch)
