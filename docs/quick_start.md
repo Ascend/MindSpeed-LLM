@@ -2,7 +2,7 @@
 
 当前文档提供了一个简单示例，方便新接触MindSpeed-LLM的开发者们可以快速上手，将模型训练任务跑起来。下面以Qwen2.5-7B模型为例，指导开发者完成Qwen2.5-7B大语言模型的预训练任务，主要包含如下步骤：
 - 环境搭建：基于仓库指导文件搭建环境
-- huggleface源文件获取：从HuggingFace下载Qwen2.5-7B原始模型
+- 开源模型权重获取：从HuggingFace下载Qwen2.5-7B原始模型
 - 预训练实战：在昇腾NPU上进行模型预训练
 
 开发者入门基础：
@@ -14,7 +14,8 @@
 
 如果已经完成了环境搭建，请跳转2，进行预训练任务拉起。
 
-请参考MindSpeed-LLM仓首页[“版本配套表”](../README.md#版本配套表)，选择下载对应版本的软件依赖，请参考[install_guide.md](features/install_guide.md)完成环境搭建，本章节通过配图辅助您完成环境安装。
+请参考MindSpeed-LLM仓首页[“版本配套表”](../README.md#版本配套表)，选择下载对应版本的软件依赖，如下主要提供一些图示指导说明，完成环境搭建，本章节通过配图辅助您完成环境安装。
+> 如下图示不代表具体配套版本关系，以版本配套表为准。
 
 ## 1.1 驱动固件安装
 
@@ -91,7 +92,7 @@ git checkout master              # 以install_guide.md中的版本为准，此�
 pip install -r requirements.txt  # 安装其余依赖库
 ```
 
-# 2 huggleface源文件获取
+# 2 开源模型权重获取
 
 通过 wget 从HuggingFace下载模型文件。
 
@@ -114,7 +115,7 @@ wget https://huggingface.co/Qwen/Qwen2.5-7B/tree/main/tokenizer_config.json
 wget https://huggingface.co/Qwen/Qwen2.5-7B/tree/main/vocab.json
 ```
 
-## 通过md5sum验证模型权重文件完整性
+通过md5sum验证模型权重文件完整性
 ```bash
 # 利用sha256sum计算 SHA256数值
 # 打开文件明细可获取sha256值，https://huggingface.co/Qwen/Qwen2.5-7B/blob/main/model-00001-of-00004.safetensors
@@ -169,7 +170,7 @@ python convert_ckpt.py \
        --params-dtype bf16
 ```
 
-### 参数解析
+参数解析
 
 | 参数                                  | 说明                                                         | 必填 |
 |-------------------------------------|------------------------------------------------------------|---|
@@ -222,7 +223,7 @@ python ./preprocess_data.py \
 	--log-interval 1000
 ```
 
-### 参数解析
+参数解析
 
 | 参数                       | 说明                                                               | 必填 |
 |---------------------------|------------------------------------------------------------------|--|
@@ -266,7 +267,7 @@ GBS=64              # 设置global-batch-size为64
 # 完成如上修改后保存关闭脚本
  ```
 
-### 启动预训练
+### 启动单机预训练
 
 ```shell
 # 初始化环境变量
@@ -278,7 +279,6 @@ bash examples/mcore/qwen25/pretrain_qwen25_7b_32k_ptd.sh
 ```
 ![img_2.png](../sources/images/quick_start/running_log.png)
 
-### 参数解析
 脚本中特性包含训练参数也包含优化特性，如下部分参数解释
 
 | 参数名                                     | 说明                              |
@@ -296,7 +296,7 @@ bash examples/mcore/qwen25/pretrain_qwen25_7b_32k_ptd.sh
 
 如果需要启动多机预训练任务，那么在单机预训练脚本的基础上
 
-### 配置预训练参数
+#### 配置预训练参数
 
  ```shell
 # vi examples/mcore/qwen25/pretrain_qwen25_7b_32k_ptd.sh 打开示例脚本
@@ -350,4 +350,6 @@ TOKENIZER_PATH="./model_from_hf/qwen2.5-7b-hf/"
 
 ---
 
-通过本教程，您已掌握昇腾生态的基础技能，能够正常使用仓库的模型预训练功能。下一步，不妨尝试更深入理解脚本特性和仓库，进行模型微调、模型性能优化，模型切分调整，或探索[MOE混合专家模型](https://gitee.com/ascend/MindSpeed-LLM/blob/master/README.md)等前沿应用！
+通过本教程，您已掌握昇腾生态的基础技能，能够正常使用仓库的模型预训练功能。下一步，不妨尝试更深入理解脚本特性和仓库。
+- 尝试进阶能力，请参考翻阅[模型迁移指南](https://gitee.com/ascend/MindSpeed-LLM/wikis/%E6%A8%A1%E5%9E%8B%E8%BF%81%E7%A7%BB)
+- 进行模型微调、模型性能优化，模型切分调整，或探索[MOE混合专家模型](https://gitee.com/ascend/MindSpeed-LLM/blob/master/README.md)等前沿应用！

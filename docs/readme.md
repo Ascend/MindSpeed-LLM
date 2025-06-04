@@ -15,6 +15,11 @@
       <td></td>
     </tr>
     <tr>
+      <td rowspan="1">快速入门</td>
+      <td><a href="./quick_start.md">quick_start.md</a></td>
+      <td></td>
+    </tr>
+    <tr>
       <td rowspan="3">仓库支持模型清单</td>
       <td><a href="pytorch/models/dense_model.md">dense_models</a></td>
       <td>稠密模型清单</td>
