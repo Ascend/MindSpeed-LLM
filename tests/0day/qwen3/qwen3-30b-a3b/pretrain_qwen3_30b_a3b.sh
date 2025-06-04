@@ -25,7 +25,7 @@ CP=1
 SEQ_LENGTH=4096
 TRAIN_ITERS=2000
 CP_TYPE='ulysses_cp_algo'
-ROUTER_BALANCING_TYPE='softmax_topk'
+ROUTER_BALANCING_TYPE='aux_loss'
 
 DISTRIBUTED_ARGS="
     --nproc_per_node $NPUS_PER_NODE \
@@ -59,7 +59,7 @@ OPTIMIZE_ARGS="
 
 TRAIN_ARGS="
     --micro-batch-size 1 \
-    --global-batch-size 64 \
+    --global-batch-size 256 \
     --lr 1.25e-6 \
     --lr-decay-style cosine \
     --min-lr 1.25e-7 \

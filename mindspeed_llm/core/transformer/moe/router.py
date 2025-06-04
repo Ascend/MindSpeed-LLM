@@ -480,6 +480,8 @@ def topk_router_routing(self, logits: torch.Tensor):
         scores, indices = self.sinkhorn_load_balancing(logits)
     elif self.routing_type == "aux_loss":
         scores, indices = self.aux_loss_load_balancing(logits)
+        if args.norm_topk_prob:
+            scores /= scores.sum(dim=-1, keepdim=True)
     # add softmax_topk for softmax before topk that difference form routing_type is none
     elif self.routing_type == "softmax_topk":
         if args.moe_revert_type_after_topk:
@@ -487,8 +489,6 @@ def topk_router_routing(self, logits: torch.Tensor):
         else:
             logits_ = torch.softmax(logits, dim=-1, dtype=torch.float32).type_as(logits)
         scores, indices = torch.topk(logits_, k=self.topk, dim=1)
-        if args.norm_topk_prob:
-            scores /= scores.sum(dim=-1, keepdim=True)
     elif self.routing_type == "group_limited_greedy":
         scores, indices = group_limited_greedy_topKgating(self, logits)
     elif self.routing_type == "pai_megatron_aux_loss":

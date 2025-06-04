@@ -18,6 +18,10 @@ CKPT_LOAD_DIR="your model ckpt path"
 TP=8
 PP=2
 CP=1
+VPP=4
+
+MBS=1
+GBS=128
 SEQ_LENGTH=4096
 TRAIN_ITERS=2000
 CP_TYPE='ulysses_cp_algo'
@@ -65,6 +69,7 @@ TRAIN_ARGS="
 MODEL_PARALLEL_ARGS="
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \
+    --num-layers-per-virtual-pipeline-stage ${VPP} \
     --context-parallel-size ${CP} \
     --context-parallel-algo ${CP_TYPE} \
 "
