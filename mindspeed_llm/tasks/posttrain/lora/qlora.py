@@ -242,6 +242,8 @@ def _load_bnb_nf4_weight(state_dict, prefix, weight_name):
         if prefix_name not in k or prefix_name == k:
             continue
         key = k.replace(prefix_name, "")[1:]
+        if "lora_a" == key or "lora_b" == key:
+            continue
         qs_dict[key] = v
 
     return bnb.nn.Params4bit.from_prequantized(
