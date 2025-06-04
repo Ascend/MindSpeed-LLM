@@ -4,7 +4,7 @@ source /usr/local/Ascend/ascend-toolkit/set_env.sh
 python mindspeed_llm/tasks/checkpoint/convert_ckpt_mamba2.py \
     --load-model-type mg \
     --save-model-type hf \
-    --load-dir ./ckpt/mamba2-tp4pp2 \
+    --load-dir ./ckpt/mamba2-mcore \
     --save-dir ./ckpt/mamba2-hf \
     --d-model 2560 \
     --mamba-d-state 128 \

@@ -7,6 +7,7 @@ from collections import OrderedDict
 import logging as logger
 import argparse
 import torch
+import safetensors.torch
 logger.basicConfig(format="")
 logger.getLogger().setLevel(logger.INFO)
 
@@ -15,7 +16,8 @@ class CheckpointConverter:
     def __init__(self, args):
         self.args = args
         self.args.mamba_d_inner = self.args.d_model * 2
-        self.args.mamba2_n_heads = self.args.mamba_d_inner // self.args.mamba2_head_dim        
+        self.args.mamba2_n_heads = self.args.mamba_d_inner // self.args.mamba2_head_dim
+        self._valid_parameter()
         self.tp_split_dim = {
             'word_embeddings.weight': 0,
             'norm.weight': -1,
@@ -51,18 +53,44 @@ class CheckpointConverter:
                 return self.tp_split_dim[key]
         raise Exception(f"Unknown tensor name {tensor_name}")
 
+    def _valid_parameter(self):
+        if self.args.n_groups % self.args.target_tp_size != 0:
+            raise ValueError("target_tp_size must can divide n_groups. Please adjust values.")
+
     @staticmethod
     def load_bin_files_to_dict(directory_path):
         model_dict = {}
+        loaded = False  # Flag to indicate if any file was successfully loaded
+
         for filename in os.listdir(directory_path):
-            if filename.endswith(".bin"):
-                file_path = os.path.join(directory_path, filename)
-                try:
-                    cur_weights = torch.load(file_path, map_location=torch.device('cpu'), weights_only=False)
+            file_path = os.path.join(directory_path, filename)
+
+            try:
+                if filename.endswith(".bin"):
+                    cur_weights = torch.load(file_path, map_location=torch.device('cpu'))
                     model_dict.update(cur_weights)
-                    logger.info(f"Successfully loaded: {filename}")
-                except Exception as e:
-                    logger.info(f"Error loading {filename}: {e}")
+                    print(f"Successfully loaded: {filename}")
+                    loaded = True
+
+                elif filename.endswith(".safetensors"):
+                    try:
+                        from safetensors.torch import load_file as safe_load
+                    except ImportError as e:
+                        raise ImportError(
+                            "Detected a .safetensors file but the 'safetensors' package is not installed. "
+                            "Please install it using `pip install safetensors`."
+                        ) from e
+                    
+                    cur_weights = safe_load(file_path)
+                    model_dict.update(cur_weights)
+                    print(f"Successfully loaded: {filename}")
+                    loaded = True
+
+            except Exception as e:
+                print(f"Error loading {filename}: {e}")
+
+        if not loaded:
+            raise RuntimeError("No valid weight files (.bin or .safetensors) were found or loaded.")
 
         return model_dict
 
@@ -75,10 +103,10 @@ class CheckpointConverter:
 
         with open(config_file_path, 'r') as f:
             config = json.load(f)
-        n_layer = config.get("n_layer", None)
+        n_layer = config.get("num_hidden_layers", None)
 
         if n_layer is None:
-            raise KeyError("'n_layer' key not found in the config file")
+            raise KeyError("'num_hidden_layers' key not found in the config file")
         
         return n_layer
 
@@ -93,7 +121,7 @@ class CheckpointConverter:
             elif "lm_head" in key:
                 new_key = key.replace("lm_head", "output_layer")
             elif "embedding" in key:
-                new_key = key.replace("backbone.embedding", "embedding.word_embeddings")
+                new_key = key.replace("backbone.embeddings", "embedding.word_embeddings")
             elif "backbone" in key:
                 new_key = key.replace("backbone", "decoder")
             modified_dict[new_key] = value

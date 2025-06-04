@@ -6,8 +6,8 @@ python mindspeed_llm/tasks/checkpoint/convert_ckpt_mamba2.py \
     --save-model-type hf \
     --load-dir ./ckpt/mamba2-tp4pp2 \
     --save-dir ./ckpt/mamba2-tp2pp4 \
-    --target-pp-size 4 \
-    --target-tp-size 2 \
+    --target-pp-size 8 \
+    --target-tp-size 1 \
     --d-model 2560 \
     --mamba-d-state 128 \
     --mamba2-head-dim 64 \
