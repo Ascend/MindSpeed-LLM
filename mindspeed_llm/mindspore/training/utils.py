@@ -4,6 +4,7 @@
 """General utilities."""
 from itertools import takewhile
 import torch
+import numpy as np
 from megatron.training import get_args
 from megatron.core import mpu
 import acl
@@ -14,6 +15,18 @@ try:
     from mindspeed.core.pipeline_parallel.dualpipev.dualpipev_schedules import get_post_process_flag
 except Exception:
     pass
+
+
+def _compute_actual_seq_len(origin_seq):
+    origin_seq_np = origin_seq.numpy()
+    seq = origin_seq_np.reshape(-1)
+    tmp = (seq == 0).nonzero()
+    tmp_stack = np.stack(tmp, axis=1)
+    tmp_squeeze = tmp_stack[1:].squeeze(axis=1)
+    res = tmp_squeeze.tolist()
+
+    res.append(len(seq))
+    return res
 
 
 def get_batch_on_this_tp_rank(data_iterator):

@@ -283,3 +283,12 @@ class MindSporeAdaptation(MegatronAdaptationABC):
             MindSporeAdaptation.register('mindspeed.core.optimizer.swap_optimizer.swap_optimizer.SwapDistributedOptimizer._copy_model_params_to_main_params',
                 _copy_model_params_to_main_params)
             MindSporeAdaptation.register('mindspeed.optimizer.adamw.AdamW.step', swap_adamw_step)
+
+        if args.enable_share_memory:
+            from ..mindspore.tasks.dataset.shared_memory_manager import SharedMemoryManager
+            MegatronAdaptation.register(
+                'mindspeed_llm.tasks.dataset.shared_memory_manager.SharedMemoryManager', SharedMemoryManager)
+            from ..mindspore.training.utils import _compute_actual_seq_len
+            MegatronAdaptation.register(
+                'mindspeed_llm.training.utils._compute_actual_seq_len', _compute_actual_seq_len)
+
