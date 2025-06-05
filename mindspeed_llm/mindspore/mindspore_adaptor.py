@@ -297,3 +297,20 @@ class MindSporeAdaptation(MegatronAdaptationABC):
 
         from ..mindspore.core.transformer.module import set_is_first_microbatch
         MindSporeAdaptation.register('megatron.core.transformer.module.MegatronModule.set_is_first_microbatch', set_is_first_microbatch)
+
+
+        if args.moe_zerc:
+            from mindspeed.mindspore.core.transformer.moe.moe_zerc.fwdbwd import transformer_layer_forward_moe_backward_dense_overlaping_zerc, transformer_layer_forward_moe_backward_moe_overlaping_zerc
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.overlap_funcs.fwdbwd.transformer_layer_forward_moe_backward_dense_overlaping',
+                        transformer_layer_forward_moe_backward_dense_overlaping_zerc)
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.overlap_funcs.fwdbwd.transformer_layer_forward_moe_backward_moe_overlaping',
+                        transformer_layer_forward_moe_backward_moe_overlaping_zerc)
+            from mindspeed.mindspore.core.transformer.moe.moe_zerc.token_dispatcher import zerc_alltoall_token_perm1, zerc_alltoall_token_perm2, zerc_alltoall_token_unperm1, zerc_alltoall_token_unperm2
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.modules.token_dispatcher.alltoall_token_perm1',
+                        zerc_alltoall_token_perm1)
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.modules.token_dispatcher.alltoall_token_perm2',
+                        zerc_alltoall_token_perm2)
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.modules.token_dispatcher.alltoall_token_unperm1',
+                        zerc_alltoall_token_unperm1)
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.modules.token_dispatcher.alltoall_token_unperm2',
+                        zerc_alltoall_token_unperm2)
