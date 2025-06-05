@@ -57,14 +57,14 @@ MOE_ARGS="
     --moe-permutation-async-comm \
     --use-fused-moe-token-permute-and-unpermute \
     --moe-token-dispatcher-type alltoall \
+    --first-k-dense-replace 3 \
+    --moe-layer-freq 1 \
     --n-shared-experts 1 \
     --num-experts 256 \
     --moe-router-topk 8 \
-    --moe-layer-freq 1 \
-    --n-group 8 \
-    --first-k-dense-replace 1 \
     --moe-intermediate-size 2048 \
     --moe-router-load-balancing-type noaux_tc \
+    --n-group 8 \
     --topk-group 4 \
     --routed-scaling-factor 2.5 \
     --seq-aux \
@@ -145,7 +145,7 @@ GPT_ARGS="\
     --attention-softmax-in-fp32 \
     --min-lr 1.0e-7 \
     --weight-decay 1e-2 \
-    --lr-warmup-iters 0 \
+    --lr-warmup-iters 500 \
     --clip-grad 1.0 \
     --adam-beta1 0.9 \
     --adam-beta2 0.999 \
@@ -157,6 +157,8 @@ GPT_ARGS="\
     --no-load-optim \
     --no-load-rng \
     --bf16 \
+    --use-ascend-coc \
+    --coc-fused-kernel \
     --distributed-timeout-minutes 120
 "
 

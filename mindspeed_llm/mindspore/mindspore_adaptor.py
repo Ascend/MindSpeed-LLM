@@ -142,14 +142,13 @@ class MindSporeAdaptation(MegatronAdaptationABC):
                                      CheckpointWithoutOutput)
         MindSporeAdaptation.register('mindspeed.core.tensor_parallel.random.CheckpointFunctionWithoutOutput',
                                      CheckpointFunctionWithoutOutput)
-
-        from mindspeed.mindspore.ops.lcal_functional import all_gather_matmul, all_gather_matmul_v2, matmul_reduce_scatter, matmul_all_reduce, pure_matmul
-        MegatronAdaptation.register('mindspeed.ops.lcal_functional.CoCOperations.all_gather_matmul', all_gather_matmul)
-        MegatronAdaptation.register('mindspeed.ops.lcal_functional.CoCOperations.all_gather_matmul_v2', all_gather_matmul_v2)
-        MegatronAdaptation.register('mindspeed.ops.lcal_functional.CoCOperations.matmul_reduce_scatter', matmul_reduce_scatter)
-        MegatronAdaptation.register('mindspeed.ops.lcal_functional.CoCOperations.matmul_all_reduce', matmul_all_reduce)
-        MegatronAdaptation.register('mindspeed.ops.lcal_functional.CoCOperations.pure_matmul', pure_matmul)
-
+        if args.use_ascend_coc:
+            from mindspeed.mindspore.ops.lcal_functional import all_gather_matmul, all_gather_matmul_v2, matmul_reduce_scatter, matmul_all_reduce, pure_matmul
+            MindSporeAdaptation.register('mindspeed.ops.lcal_functional.CoCOperations.all_gather_matmul', all_gather_matmul)
+            MindSporeAdaptation.register('mindspeed.ops.lcal_functional.CoCOperations.all_gather_matmul_v2', all_gather_matmul_v2)
+            MindSporeAdaptation.register('mindspeed.ops.lcal_functional.CoCOperations.matmul_reduce_scatter', matmul_reduce_scatter)
+            MindSporeAdaptation.register('mindspeed.ops.lcal_functional.CoCOperations.matmul_all_reduce', matmul_all_reduce)
+            MindSporeAdaptation.register('mindspeed.ops.lcal_functional.CoCOperations.pure_matmul', pure_matmul)
 
         if args.moe_fb_overlap:
             from mindspeed_llm.mindspore.tasks.models.transformer.multi_head_latent_attention import mla_forward

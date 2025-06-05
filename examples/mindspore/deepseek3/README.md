@@ -1,10 +1,17 @@
 ## DeepSeek-V3 指南
 ### 1. 准备工作
 
-参考[安装指导](./install_guide.md)，完成环境安装和[预训练数据处理](../../pytorch/solutions/pretrain/pretrain_dataset.md)。
+参考[安装指导](../../../docs/mindspore/features/install_guide.md)，完成环境安装和[预训练数据处理](../../../docs/pytorch/solutions/pretrain/pretrain_dataset.md)。
 
 
-### 2. 预训练
+### 2. 权重转换
+MindSpore后端已支持DeepSeek3模型权重转换，使用方式与PyTorch后端一致，详细转换参考[DeepSeek3权重转换](../../mcore/deepseek3/README.md)
+
+**注意：**
+- 当前尚不支持QLoRA权重量化转换，【--qlora-nf4】参数仅可置为False
+
+
+### 3. 预训练
 
 #### 参数配置
 预训练脚本需根据实际情况修改参数配置，包括路径配置、并行配置、模型参数配置等。
