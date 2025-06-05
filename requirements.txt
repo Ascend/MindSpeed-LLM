@@ -1,5 +1,5 @@
 numpy>=1.19.2,<2.0.0
-transformers==4.43.2
+transformers==4.51.0
 transformers_stream_generator
 sympy
 decorator
