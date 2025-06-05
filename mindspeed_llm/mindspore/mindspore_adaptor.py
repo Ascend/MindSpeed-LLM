@@ -291,13 +291,11 @@ class MindSporeAdaptation(MegatronAdaptationABC):
             MegatronAdaptation.register(
                 'mindspeed_llm.training.utils._compute_actual_seq_len', _compute_actual_seq_len)
 
-
         from ..mindspore.core.distributed.finalize_model_grads import _update_router_expert_bias
         MindSporeAdaptation.register('mindspeed_llm.core.distributed.finalize_model_grads._update_router_expert_bias', _update_router_expert_bias)
 
         from ..mindspore.core.transformer.module import set_is_first_microbatch
         MindSporeAdaptation.register('megatron.core.transformer.module.MegatronModule.set_is_first_microbatch', set_is_first_microbatch)
-
 
         if args.moe_zerc:
             from mindspeed.mindspore.core.transformer.moe.moe_zerc.fwdbwd import transformer_layer_forward_moe_backward_dense_overlaping_zerc, transformer_layer_forward_moe_backward_moe_overlaping_zerc
@@ -314,3 +312,7 @@ class MindSporeAdaptation(MegatronAdaptationABC):
                         zerc_alltoall_token_unperm1)
             MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.modules.token_dispatcher.alltoall_token_unperm2',
                         zerc_alltoall_token_unperm2)
+
+        from mindspeed.mindspore.core.pipeline_parallel.fb_overlap.modules.token_dispatcher import PackProb, UnpackProb
+        MegatronAdaptation.register('mindspeed.mindspore.core.pipeline_parallel.fb_overlap.modules.token_dispatcher.PackProb', PackProb)
+        MegatronAdaptation.register('mindspeed.mindspore.core.pipeline_parallel.fb_overlap.modules.token_dispatcher.UnpackProb', UnpackProb)
