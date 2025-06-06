@@ -238,7 +238,9 @@ python ./preprocess_data.py \
 
 完成了数据集处理和权重转换之后，可以开始拉起预训练任务。
 
-### 配置预训练参数
+### 启动单机预训练
+
+#### 配置预训练参数
 
  ```shell
 # 打开示例脚本
@@ -267,8 +269,6 @@ GBS=64              # 设置global-batch-size为64
 # 完成如上修改后保存关闭脚本
  ```
 
-### 启动单机预训练
-
 ```shell
 # 初始化环境变量
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
@@ -294,7 +294,7 @@ bash examples/mcore/qwen25/pretrain_qwen25_7b_32k_ptd.sh
 
 ### 启动多机预训练任务
 
-如果需要启动多机预训练任务，那么在单机预训练脚本的基础上
+如果需要启动多机预训练任务，那么在单机预训练脚本的基础上，做如下修改，
 
 #### 配置预训练参数
 
