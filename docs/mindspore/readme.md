@@ -1,9 +1,13 @@
 ## MindSpore后端支持说明
 
-
-## 介绍
-
 MindSpeed-LLM已支持接入华为自研AI框架MindSpore，旨在提供华为全栈易用的端到端的大语言模型训练解决方案，以此获得更极致的性能体验。MindSpore后端提供了一套对标PyTorch的API，用户无需进行额外代码适配即可无缝切换。
+
+---
+
+## NEWS !!! 📣📣📣
+
+🚀🚀🚀MindSpore后端已支持 **[DeepSeek-V3预训练](../../examples/mindspore/deepseek3/README.md)** ！！！🚀🚀🚀
+
 
 ## 版本配套表
 
@@ -13,13 +17,28 @@ MindSpeed-LLM + MindSpore后端的依赖配套如下表，安装步骤参考[基
 | --------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | 昇腾NPU驱动固件 | [在研版本](https://www.hiascend.com/hardware/firmware-drivers/community?product=1&model=30&cann=8.0.RC3.alpha002&driver=1.0.26.alpha) |
 | 昇腾 CANN       | [在研版本](https://www.hiascend.com/zh/developer/download/community/result?module=cann)                                               |
-| MindSpore       | [2.6.0-rc1](https://www.mindspore.cn/install/)                                                                                        |
+| MindSpore       | [2.6.0](https://www.mindspore.cn/install/)                                                                                        |
 | Python          | >=3.9                                                                                                                              |
 
 ## 模型支持
 
-MindSpore后端现已支持DeepSeek-V3模型预训练，模型指南详见[DeepSeek3预训练](../../examples/mindspore/deepseek3/README.md)。
-更多模型支持即将上线，敬请期待！
+MindSpore后端仅支持以 mcore 模型，当前模型支持详情见下表，更多模型支持将逐步上线，敬请期待！
+
+<table><thead>
+  <tr>
+    <th>模型类别</th>
+    <th>模型列表</th>
+  </tr></thead>
+<tbody>
+  <tr>
+    <td rowspan="1">稠密模型</td>
+    <td><a href="models/dense_model.md">Dense</a></td>
+  </tr>
+  <tr>
+    <td rowspan="1">MOE模型</td>
+    <td><a href="models/moe_model.md">MOE</a></td>
+  </tr>
+</tbody></table>
 
 ## 特性支持
 
@@ -148,7 +167,7 @@ MindSpore后端对MindSpeed的重要加速特性的支持情况如下表所示�
   </tr>
   <tr>
     <td><a href="../docs/features/communication-over-computation.md">CoC</a></td>
-    <td>❌</td>
+    <td>✅</td>
   </tr>
   <tr>
     <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/hccl-replace-gloo.md">Ascend Gloo 存档落盘优化</a></td>
@@ -156,8 +175,41 @@ MindSpore后端对MindSpeed的重要加速特性的支持情况如下表所示�
   </tr>
 </tbody></table>
 
-## 开发工具链
+### 在线推理
 
+<table>
+  <thead>
+    <tr>
+      <th>特性</th>
+      <th>是否支持</th>
+      <th>Released</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><a href="solutions/inference/inference.md">流式推理 </a></td>
+      <td>上线中</td>
+      <td>❌</td>
+    </tr>
+    <tr>
+      <td><a href="solutions/inference/chat.md"> Chat对话</a></td>
+      <td>上线中</td>
+      <td>❌</td>
+    </tr>
+    <tr>
+      <td><a href="../pytorch/features/yarn.md"> yarn上下文扩展 </a></td>
+      <td>✅</td>
+      <td>❌</td>
+    </tr>
+  </tbody>
+</table>
+
+### 开源数据集评测
+
+即将上线，敬请期待！
+
+
+## 开发工具链
 
 ### 数据预处理
 
@@ -169,7 +221,6 @@ MindSpore后端已完全支持MindSpeed-LLM的预训练、指令微调、RLHF等
       <th>任务场景</th>
       <th>数据集</th>
       <th>Mcore</th>
-      <th>Legacy</th>
       <th>Released</th>
       <th>贡献方</th>
     </tr>
@@ -180,7 +231,6 @@ MindSpore后端已完全支持MindSpeed-LLM的预训练、指令微调、RLHF等
       <td><a href="../pytorch/solutions/pretrain/pretrain_dataset.md">预训练数据处理</a></td>
       <td>✅</td>
       <td>✅</td>
-      <td>✅</td>
       <td rowspan="3">【Ascend】</td>
     </tr>
     <tr>
@@ -188,11 +238,9 @@ MindSpore后端已完全支持MindSpeed-LLM的预训练、指令微调、RLHF等
       <td><a href="../pytorch/solutions/finetune/datasets/alpaca_dataset.md">Alpaca风格</a></td>
       <td>✅</td>
       <td>✅</td>
-      <td>✅</td>
     </tr>
     <tr>
       <td><a href="../pytorch/solutions/finetune/datasets/sharegpt_dataset.md">ShareGPT风格</a></td>
-      <td>✅</td>
       <td>✅</td>
       <td>✅</td>
     </tr>
@@ -201,25 +249,22 @@ MindSpore后端已完全支持MindSpeed-LLM的预训练、指令微调、RLHF等
       <td rowspan="3"><a href="../pytorch/solutions/finetune/datasets/pairwise_dataset.md">Pairwise数据集处理</a></td>
       <td>✅</td>
       <td>✅</td>
-      <td>✅</td>
       <td rowspan="3">【NAIE】</td>
     </tr>
     <tr>
       <td>SimPO</td>
-      <td>✅</td>
       <td>✅</td>
       <td>❌</td>
     </tr>
     <tr>
       <td>ORM</td>
       <td>✅</td>
-      <td>✅</td>
       <td>❌</td>
     </tr>
     <tr>
       <td>PRM</td>
-      <td rowspan="1"><a href="../pytorch/solutions/preference-alignment/process_reward_dataset.md">PRM数据集处理</a></td>
-      <td>✅</td>
+      <td rowspan="1"><a href="../pytorch/solut
+      ions/preference-alignment/process_reward_dataset.md">PRM数据集处理</a></td>
       <td>✅</td>
       <td>❌</td>
       <td rowspan="1">【Ascend】</td>
@@ -229,13 +274,85 @@ MindSpore后端已完全支持MindSpeed-LLM的预训练、指令微调、RLHF等
 
 ### 权重转换
 
-即将上线，敬请期待！
+MindSpeed MindSore后端的权重转换与PyTorch后端保持了一致，当前支持huggingface、megatron-core两种格式的权重互转，暂不支持Lora权重合并且无megatron-legacy格式支持计划。权重转换特性参数和使用说明参考[权重转换](../pytorch/solutions/checkpoint_convert.md)。
 
-### 在线推理
+<table>
+  <thead>
+    <tr>
+      <th>源格式</th>
+      <th>目标格式</th>
+      <th>切分特性</th>
+      <th>lora</th>
+      <th>贡献方</th>
+      <th>Released</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>huggingface</td>
+      <td>megatron-core</td>
+      <td>tp、pp、dpp、vpp、cp、ep、loop layer</td>
+      <td>❌</td>
+      <td rowspan="3">【Ascend】</td>
+      <td rowspan="3">❌</td>
+    </tr>
+    <tr>
+      <td rowspan="2">megatron-core</td>
+      <td>huggingface</td>
+      <td></td>
+      <td>❌</td>
+    </tr>
+    <tr>
+      <td>megatron-core</td>
+      <td>tp、pp、dpp、vpp、cp、ep、loop layer</td>
+      <td>❌</td>
+    </tr>
+  </tbody>
+</table>
 
-即将上线，敬请期待！
+### 性能采集
 
-### 开源数据集评测
+<table>
+  <thead>
+    <tr>
+      <th>场景</th>
+      <th>特性</th>
+      <th>Mcore</th>
+      <th>Released</th>
+      <th>贡献方</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td rowspan="1">性能采集</td>
+      <td><a href="docs/pytorch/features/profiling.md">基于昇腾芯片采集 profiling 数据</a></td>
+      <td>✅</td>
+      <td>❌</td>
+      <td>【Ascend】</td>
+    </tr>
+  </tbody>
+</table>
 
-即将上线，敬请期待！
 
+### 高可用性
+
+<table>
+  <thead>
+    <tr>
+      <th>场景</th>
+      <th>特性</th>
+      <th>Mcore</th>
+      <th>Released</th>
+      <th>贡献方</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td rowspan="2">高可用性</td>
+      <td><a href="docs/pytorch/features/deterministic_computation.md">基于昇腾芯片开启确定性计算</a></td>
+      <td>✅</td>
+      <td>❌</td>
+      <td rowspan="2">【Ascend】</td>
+    </tr>
+  </tbody>
+</table>
