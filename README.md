@@ -70,11 +70,11 @@ MindSpeed LLM的依赖配套如下表，安装步骤参考[安装指导](./docs/
   </tr>
   <tr>
     <td>Python</td>
-    <td>>=3.10</td>
+    <td><a href="https://gitee.com/ascend/pytorch#pytorch%E4%B8%8Epython%E7%89%88%E6%9C%AC%E9%85%8D%E5%A5%97%E8%A1%A8">PT配套版本</a></td>
   </tr>
   <tr>
     <td>PyTorch</td>
-    <td>2.6</td>
+    <td>2.1,2.6</td>
   </tr>
   <tr>
     <td>torch_npu插件</td>

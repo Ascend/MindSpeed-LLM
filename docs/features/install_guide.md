@@ -31,7 +31,7 @@ source /usr/local/Ascend/nnal/atb/set_env.sh
 准备[torch_npu](https://www.hiascend.com/developer/download/community/result?module=pt)和[apex](https://gitee.com/ascend/apex)，参考[Ascend Extension for PyTorch 配置与安装](https://www.hiascend.com/document/detail/zh/Pytorch/60RC2/configandinstg/instg/insg_0001.html)或执行以下命令安装：
 
 ```shell
-# 安装torch和torch_npu
+# 安装torch和torch_npu 构建参考 https://gitee.com/ascend/pytorch/releases
 pip install torch-2.6.0-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl 
 pip install torch_npu-2.6.0rc1-cp310-cp310-manylinux_2_28_aarch64.whl
 

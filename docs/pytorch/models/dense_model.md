@@ -550,6 +550,79 @@
       <td>【Test】</td>
     </tr>
     <tr>
+      <td rowspan="8"> <a href="https://huggingface.co/collections/Qwen/qwen3-67dd247413f0e2e4f653967f">Qwen3</a> </td>
+      <td><a href="https://huggingface.co/Qwen/Qwen3-0.6B-Base">0.6B</a></td>
+      <td><a href="./qwen3-0.6b/">Qwen3-0.6B</a></td>
+      <td> 4K </td>
+      <th> Mcore </th>
+      <td> 1x8 </td>
+      <td>【Ascend】</td>
+      <td>【Test】</td>
+    </tr>
+    <tr>
+      <td><a href="https://huggingface.co/Qwen/Qwen3-1.7B-Base">1.7B</a></td>
+      <td><a href="./qwen3-1.7b/">Qwen3-1.7B</a></td>
+      <td> 4K </td>
+      <th> Mcore </th>
+      <td> 1x8 </td>
+      <td>【Ascend】</td>
+      <td>【Test】</td>
+    </tr>
+    <tr>
+      <td><a href="https://huggingface.co/Qwen/Qwen3-4B-Base">4B</a></td>
+      <td><a href="./qwen3-4b/">Qwen3-4B</a></td>
+      <td> 4K </td>
+      <th> Mcore </th>
+      <td> 1x8 </td>
+      <td>【Ascend】</td>
+      <td>【Test】</td>
+    </tr>
+    <tr>
+      <td><a href="https://huggingface.co/Qwen/Qwen3-8B-Base">8B</a></td>
+      <td><a href="./qwen3-8b/">Qwen3-8B</a></td>
+      <td> 4K </td>
+      <th> Mcore </th>
+      <td> 1x8 </td>
+      <td>【Ascend】</td>
+      <td>【Test】</td>
+    </tr>
+    <tr>
+      <td><a href="https://huggingface.co/Qwen/Qwen3-14B-Base">14B</a></td>
+      <td><a href="./qwen3-14b/">Qwen3-14B</a></td>
+      <td> 4K </td>
+      <th> Mcore </th>
+      <td> 1x8 </td>
+      <td>【Ascend】</td>
+      <td>【Test】</td>
+    </tr>
+    <tr>
+      <td><a href="https://huggingface.co/Qwen/Qwen3-30B-A3B-Base">30B</a></td>
+      <td><a href="./qwen3-30b-a3b/">Qwen3-30B-A3B</a></td>
+      <td> 4K </td>
+      <th> Mcore </th>
+      <td> 2x8 </td>
+      <td>【Ascend】</td>
+      <td>【Test】</td>
+    </tr>
+    <tr>
+      <td><a href="https://huggingface.co/Qwen/Qwen3-32B">32B</a></td>
+      <td><a href="./qwen3-32b/">Qwen3-32B</a></td>
+      <td> 4K </td>
+      <th> Mcore </th>
+      <td> 2x8 </td>
+      <td>【Ascend】</td>
+      <td>【Test】</td>
+    </tr>
+    <tr>
+      <td><a href="https://huggingface.co/Qwen/Qwen3-235B-A22B">235B</a></td>
+      <td><a href="./qwen3-235b-a22b/">Qwen3-235B-A22B</a></td>
+      <td> 4K </td>
+      <th> Mcore </th>
+      <td> 16x16 </td>
+      <td>【Ascend】</td>
+      <td>【Test】</td>
+    </tr>
+    <tr>
       <td rowspan="1"><a href="https://huggingface.co/collections/Qwen/qwq-674762b79b75eac01735070a">QwQ</a></td>
       <td><a href="https://huggingface.co/Qwen/QwQ-32B/tree/main">32B</a></td>
       <td rowspan="1"><a href="../../../examples/mcore/qwq">qwq</a></td>
@@ -833,4 +906,12 @@
    # SUPPORT_FP16 = SUPPORT_CUDA and torch.cuda.get_device_capability(0)[0] >= 7
    # 修改为：
    # SUPPORT_FP16 = True
+   ```
+
+## 版本支持
+1. Qwen3系列模型依赖以下特定Python及transformers版本
+ 
+    ```shell
+   Python>=3.10
+   transformers==4.51.0
    ```
