@@ -53,7 +53,6 @@ GPT_ARGS="
     --use-fused-rmsnorm \
     --swiglu \
     --use-flash-attn \
-
     --no-masked-softmax-fusion \
     --attention-softmax-in-fp32 \
     --min-lr 1e-8 \
