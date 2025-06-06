@@ -142,6 +142,7 @@ class MindSporeAdaptation(MegatronAdaptationABC):
                                      CheckpointWithoutOutput)
         MindSporeAdaptation.register('mindspeed.core.tensor_parallel.random.CheckpointFunctionWithoutOutput',
                                      CheckpointFunctionWithoutOutput)
+
         if args.use_ascend_coc:
             from mindspeed.mindspore.ops.lcal_functional import all_gather_matmul, all_gather_matmul_v2, matmul_reduce_scatter, matmul_all_reduce, pure_matmul
             MindSporeAdaptation.register('mindspeed.ops.lcal_functional.CoCOperations.all_gather_matmul', all_gather_matmul)
@@ -149,6 +150,11 @@ class MindSporeAdaptation(MegatronAdaptationABC):
             MindSporeAdaptation.register('mindspeed.ops.lcal_functional.CoCOperations.matmul_reduce_scatter', matmul_reduce_scatter)
             MindSporeAdaptation.register('mindspeed.ops.lcal_functional.CoCOperations.matmul_all_reduce', matmul_all_reduce)
             MindSporeAdaptation.register('mindspeed.ops.lcal_functional.CoCOperations.pure_matmul', pure_matmul)
+
+        from mindspeed_llm.mindspore.core.transformer.moe.router import apply_seq_aux_loss, topk_router_gating_func
+        MindSporeAdaptation.register('mindspeed_llm.core.transformer.moe.router.apply_seq_aux_loss',
+                                    apply_seq_aux_loss)
+        MindSporeAdaptation.register('megatron.core.transformer.moe.router.TopKRouter.gating', topk_router_gating_func)
 
         if args.moe_fb_overlap:
             from mindspeed_llm.mindspore.tasks.models.transformer.multi_head_latent_attention import mla_forward
@@ -166,10 +172,6 @@ class MindSporeAdaptation(MegatronAdaptationABC):
             MindSporeAdaptation.register('mindspeed_llm.core.pipeline_parallel.dualpipe.MTP_overlap.TransformerMTPoverlap.backward',
                                         mtp_overlap_backward)
 
-            from mindspeed_llm.mindspore.core.transformer.moe.router import apply_seq_aux_loss, topk_router_gating_func
-            MindSporeAdaptation.register('mindspeed_llm.core.transformer.moe.router.apply_seq_aux_loss',
-                                        apply_seq_aux_loss)
-            MindSporeAdaptation.register('megatron.core.transformer.moe.router.TopKRouter.gating', topk_router_gating_func)
 
             #mindspeed
             
@@ -263,8 +265,14 @@ class MindSporeAdaptation(MegatronAdaptationABC):
                         async_all_to_all)
             
             from mindspeed.mindspore.core.transformer.transformer import core_mlp_forward_wrapper
-            MindSporeAdaptation.register('mindspeed.core.transformer.transformer.core_mlp_forward_wrapper',
+            MindSporeAdaptation.register('megatron.core.transformer.mlp.MLP.forward',
                 core_mlp_forward_wrapper)
+
+            from mindspeed.mindspore.core.pipeline_parallel.fb_overlap.modules.token_dispatcher import alltoall_token_perm1, overlap_stream
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.modules.token_dispatcher.alltoall_token_perm1',
+                alltoall_token_perm1)           
+            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.modules.token_dispatcher.overlap_stream',
+                overlap_stream)     
 
 
 
