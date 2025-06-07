@@ -8,8 +8,8 @@ python convert_ckpt.py \
     --load-model-type hf \
     --save-model-type mg \
     --target-tensor-parallel-size 1 \
-    --target-pipeline-parallel-size 8 \
-    --target-expert-parallel-size 1 \
+    --target-pipeline-parallel-size 2 \
+    --target-expert-parallel-size 32 \
     --spec mindspeed_llm.tasks.models.spec.qwen3_spec layer_spec \
     --load-dir ./model_from_hf/qwen3_moe_hf/ \
     --save-dir ./model_weights/qwen3_moe_mcore/ \

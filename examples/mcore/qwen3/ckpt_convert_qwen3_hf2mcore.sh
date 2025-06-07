@@ -13,6 +13,5 @@ python convert_ckpt.py \
     --load-dir ./model_from_hf/qwen3_hf/ \
     --save-dir ./model_weights/qwen3_mcore/ \
     --tokenizer-model ./model_from_hf/qwen3_hf/tokenizer.json \
-    --moe-grouped-gemm \
     --params-dtype bf16 \
     --model-type-hf qwen3
