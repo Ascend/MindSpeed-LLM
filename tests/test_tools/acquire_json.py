@@ -53,7 +53,7 @@ def transfer_logs_as_json(log_file, output_json_file):
             data["time info"] = [float(match[0]) for match in log_matches]
             data["throughput"] = [float(match[1]) for match in log_matches]
         else:
-            data["lm loss"] = [float(match[2]) for match in log_matches]
+            data["lm loss"] = [float(match[3]) for match in log_matches]
 
     if memory_matches:
         memo_info = [
