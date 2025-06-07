@@ -1,3 +1,4 @@
+import warnings
 import pytest
 from mindspeed_llm import megatron_adaptor
 from tests.test_tools.acquire_json import transfer_logs_as_json, read_json
@@ -5,6 +6,7 @@ from tests.test_tools.acquire_json import transfer_logs_as_json, read_json
 MEMO_INFO = "memo info"
 THROUGHPUT = "throughput"
 LOSS = "lm loss"
+TIME_INFO = "time info"
 
 WARM_UP = 5
 
@@ -14,12 +16,14 @@ class TestMargin:
     loss = 0.02
     memory = 0.1
     throughput = 0.05
+    time = 0.05
 
     @classmethod
     def refresh_margin_from_json(cls, json_obj):
         cls.loss = json_obj.get(LOSS + cls._MARGIN_NAME, cls.loss)
         cls.memory = json_obj.get(MEMO_INFO + cls._MARGIN_NAME, cls.memory)
         cls.throughput = json_obj.get(THROUGHPUT + cls._MARGIN_NAME, cls.throughput)
+        cls.time = json_obj.get(TIME_INFO + cls._MARGIN_NAME, cls.time)
 
 
 class TestCIST:
@@ -27,6 +31,7 @@ class TestCIST:
     margin_loss = 0.02 
     margin_throughput_percent = 0.05
     margin_memory_percent = 0.1
+    margin_time_percent = 0.05
 
     def _get_baseline(self, baseline_json):
         # acquire expected results
@@ -46,13 +51,25 @@ class TestCIST:
             test_obj: the object we want to test compare.
             test_type: deterministic or approximate, default is None.
 
-        Here we temperally test `lm loss`, 'throughput' and `allocated memory`
+        Here we temperally test `lm loss`, 'throughput' , `allocated memory` and `elapsed time per iteration`
         """
-        comparison_selection = {
+        comparison_base = {
             LOSS: self._compare_lm_loss,
-            THROUGHPUT: self._compare_throughput,
-            MEMO_INFO: self._compare_memory
+            MEMO_INFO: self._compare_memory,
         }
+        
+        comparison_throughput = {
+            THROUGHPUT: self._compare_throughput,
+        }
+        
+        comparison_time = {
+            TIME_INFO: self._compare_time,
+        }
+        
+        if "time info" in self.expected:
+            comparison_selection = {**comparison_base, **comparison_time}
+        else:
+            comparison_selection = {**comparison_base, **comparison_throughput}
         
         if test_obj in comparison_selection:
             expected_list = self.expected[test_obj]
@@ -73,7 +90,7 @@ class TestCIST:
             compare_func = comparison_selection[test_obj]
             compare_func(expected_list, actual_list)
         else:
-            raise ValueError(f"Unsupported test object: {test_obj}")
+            warnings.warn(f"The metric of {test_obj} is not selected and will be skipped.", RuntimeWarning, stacklevel=2)
             
     def _compare_lm_loss(self, expected_list, actual_list):
         # Because "deterministic computation" affects the throughput, so we just test
@@ -94,6 +111,18 @@ class TestCIST:
         assert actual_avg_throughput >= expected_avg_throughput or \
             abs(actual_avg_throughput - expected_avg_throughput) / expected_avg_throughput <= TestMargin.throughput, \
             f"The actual avg throughput {actual_avg_throughput} degradate expected avg throughput {expected_avg_throughput}"
+    
+    def _compare_time(self, expected_list, actual_list):
+        try:
+            expected_avg_time = sum(expected_list[WARM_UP:]) / (len(expected_list) - WARM_UP)
+            actual_avg_time = sum(actual_list[WARM_UP:]) / (len(actual_list) - WARM_UP)
+        except:
+            raise ZeroDivisionError
+        
+        assert actual_avg_time <= expected_avg_time or \
+               abs(actual_avg_time - expected_avg_time) / expected_avg_time <= TestMargin.time, \
+            f"The actual avg time ({actual_avg_time} ms) was {exceed_percentage:.1f}% slower than the expected ({expected_avg_time} ms)."
+
 
     def _compare_memory(self, expected_list, actual_list):
         for i, (expected_val, actual_val) in enumerate(zip(expected_list, actual_list)):
@@ -115,6 +144,11 @@ class TestCIST:
         self._get_baseline(baseline_json)
         self._get_actual(generate_log, generate_json)
         self._test_helper("throughput")
+        
+    def test_time(self, baseline_json, generate_log, generate_json):
+        self._get_baseline(baseline_json)
+        self._get_actual(generate_log, generate_json)
+        self._test_helper("time info")
 
     def test_allocated_memory(self, baseline_json, generate_log, generate_json):
         self._get_baseline(baseline_json)

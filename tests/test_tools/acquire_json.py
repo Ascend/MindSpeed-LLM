@@ -23,7 +23,7 @@ def transfer_logs_as_json(log_file, output_json_file):
     """
 
     log_pattern = re.compile(
-        r"throughput per GPU \(TFLOP/s/GPU\):\s+([0-9.]+)\s+\|.*?lm loss:\s+([0-9.]+E[+-][0-9]+) | .* actor/pg_loss : ([0-9.]+)"
+        r"elapsed time per iteration \(ms\):\s+([0-9.]+)\s+\| throughput per GPU \(TFLOP/s/GPU\):\s+([0-9.]+)\s+\| .*?lm loss:\s+([0-9.]+E[+-][0-9]+) | .* actor/pg_loss : ([0-9.]+)"
     )
 
     if "trl_ppo" in log_file:
@@ -37,8 +37,10 @@ def transfer_logs_as_json(log_file, output_json_file):
 
     data = {
         "lm loss": [],
+        "time info": [],
         "throughput": [],
-        "memo info": []
+        "memo info": [],
+        
     }
     with open(log_file, "r") as f:
         log_content = f.read()
@@ -46,9 +48,10 @@ def transfer_logs_as_json(log_file, output_json_file):
     memory_matches = memory_pattern.findall(log_content)
 
     if log_matches:
-        if log_matches[0][1] != "":
-            data["lm loss"] = [float(match[1]) for match in log_matches]
-            data["throughput"] = [float(match[0]) for match in log_matches]
+        if log_matches[0][1][2] != "":
+            data["lm loss"] = [float(match[2]) for match in log_matches]
+            data["time info"] = [float(match[0]) for match in log_matches]
+            data["throughput"] = [float(match[1]) for match in log_matches]
         else:
             data["lm loss"] = [float(match[2]) for match in log_matches]
 

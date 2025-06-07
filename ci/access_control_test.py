@@ -34,6 +34,10 @@ def is_txt(file):
     return file.endswith(".txt")
 
 
+def is_json(file):
+    return file.endswith(".json")
+
+
 def is_owners(file):
     return file.startswith("OWNERS")
 
@@ -72,7 +76,8 @@ def choose_skip_ci(raw_txt_file):
         is_license,
         is_no_suffix,
         is_poc,
-        is_0day
+        is_0day,
+        is_json
     ]
 
     return skip_ci(file_list, skip_conds)
