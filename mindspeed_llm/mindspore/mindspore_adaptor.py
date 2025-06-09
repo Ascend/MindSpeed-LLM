@@ -314,6 +314,7 @@ class MindSporeAdaptation(MegatronAdaptationABC):
             from mindspeed.mindspore.core.transformer.moe.moe_zerc.token_dispatcher import zerc_alltoall_token_perm1, zerc_alltoall_token_perm2, zerc_alltoall_token_unperm1, zerc_alltoall_token_unperm2
             MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.modules.token_dispatcher.alltoall_token_perm1',
                         zerc_alltoall_token_perm1)
+
             MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.modules.token_dispatcher.alltoall_token_perm2',
                         zerc_alltoall_token_perm2)
             MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.modules.token_dispatcher.alltoall_token_unperm1',
@@ -322,5 +323,16 @@ class MindSporeAdaptation(MegatronAdaptationABC):
                         zerc_alltoall_token_unperm2)
 
         from mindspeed.mindspore.core.pipeline_parallel.fb_overlap.modules.token_dispatcher import PackProb, UnpackProb
-        MegatronAdaptation.register('mindspeed.mindspore.core.pipeline_parallel.fb_overlap.modules.token_dispatcher.PackProb', PackProb)
-        MegatronAdaptation.register('mindspeed.mindspore.core.pipeline_parallel.fb_overlap.modules.token_dispatcher.UnpackProb', UnpackProb)
+        MindSporeAdaptation.register('mindspeed.mindspore.core.pipeline_parallel.fb_overlap.modules.token_dispatcher.PackProb', PackProb)
+        MindSporeAdaptation.register('mindspeed.mindspore.core.pipeline_parallel.fb_overlap.modules.token_dispatcher.UnpackProb', UnpackProb)
+
+        if args.gradient_accumulation_fusion:
+            from mindspeed.mindspore.ops.npu_matmul_add import npu_matmul_add_fp32
+            from mindspeed.patch_utils import MindSpeedPatchesManager
+            MindSpeedPatchesManager.register_patch('fused_weight_gradient_mlp_cuda.wgrad_gemm_accum_fp32', npu_matmul_add_fp32,
+                                create_dummy=True)
+            MindSpeedPatchesManager.apply_patches()
+
+        if args.gemm_gradient_accumulation_fusion:
+            from mindspeed.mindspore.ops.npu_groupmatmul_add import npu_groupmatmul_add_fp32
+            MindSporeAdaptation.register('mindspeed.ops.npu_groupmatmul_add', npu_groupmatmul_add_fp32)
