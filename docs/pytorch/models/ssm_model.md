@@ -17,7 +17,7 @@
   <tbody>
     <tr>
       <td rowspan="2">Mamba2</td>
-      <td><a href="https://huggingface.co/state-spaces/mamba2-2.7b/tree/main">2.7B</a></td>
+      <td><a href="https://www.modelscope.cn/models/mlx-community/mamba2-2.7b/files">2.7B</a></td>
       <td rowspan="2"><a href="../../../examples/mcore/mamba2">mamba2</a></td>
       <td>4K</td>
       <th>Mcore</th>
@@ -47,4 +47,9 @@
 </table>
 
 ## 以上模型脚本环境变量声明：
-关于脚本的环境变量定义见[environment_variable.md](../features/environment_variable.md)。
+HCCL_CONNECT_TIMEOUT：设置HCCL超时时间，默认值为120<br>
+CUDA_DEVICE_MAX_CONNECTIONS：定义了任务流能够利用或映射到的硬件队列的数量<br>
+PYTORCH_NPU_ALLOC_CONF：内存碎片优化开关，默认是expandable_segments:False，使能时expandable_segments:True<br>
+NPUS_PER_NODE： 配置一个计算节点上使用的NPU数量<br>
+CPU_AFFINITY_CONF： cpu绑核环境变量<br>
+TASK_QUEUE_ENABLE：二级流水下发环境变量<br>

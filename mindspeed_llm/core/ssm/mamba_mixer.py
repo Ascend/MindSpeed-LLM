@@ -7,6 +7,7 @@ from einops import rearrange
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch_npu
 from megatron.training import get_args
 from mindspeed_llm.tasks.models.ssm.state_space_duality import StateSpaceProcessor, ProcessInputs, StateOptions
 
@@ -15,33 +16,20 @@ def mamba_mixer_init_wrapper(fn):
     @wraps(fn)
     def wrapper(self, *args, **kwargs):
         param_args = get_args()
-        kwargs["rmsnorm"] = False
         kwargs["chunk_size"] = param_args.mamba_chunk_size
         kwargs["d_state"] = param_args.mamba_d_state
         kwargs["d_conv"] = param_args.mamba_d_conv
         kwargs["expand"] = param_args.mamba_expand
         kwargs["headdim"] = param_args.mamba_headdim    
         fn(self, *args, **kwargs)
-        self.rmsnorm = True
         dt_min = kwargs.pop('dt_min', 0.001)
         dt_max = kwargs.pop('dt_max', 0.1)
-        args = get_args()
         self.use_mem_eff_path = False
         self.d_ssm = param_args.mamba_d_ssm
         self.dt_min = dt_min
         self.dt_max = dt_max
         self.d_ssm_local = self.d_inner_local if self.d_ssm is None else self.d_ssm // self.tensor_model_parallel_size
 
-
-        if self.rmsnorm:
-            self.norm = Mamba2RMSNorm(
-                self.d_inner_local,
-                eps=1e-5,
-                group_size=self.d_inner_local // self.ngroups_local,
-                norm_before_gate=self.norm_before_gate,
-                device=torch.cuda.current_device(),
-                dtype=self.config.params_dtype
-            )
     return wrapper
 
 
@@ -176,7 +164,7 @@ def mamba_mixer_forward(self, hidden_states, seqlen=None, seq_idx=None, cu_seqle
 
 class Mamba2RMSNorm(nn.Module):
 
-    def __init__(self, hidden_size, eps=1e-5, group_size=None, norm_before_gate=True, device=None, dtype=None):
+    def __init__(self, hidden_size, eps=1e-5, group_size=None, norm_before_gate=True, device=None, dtype=None, sequence_parallel: bool = True):
         """If group_size is not None, we do GroupNorm with each group having group_size elements.
         group_size=None is equivalent to group_size=hidden_size (i.e. there's only 1 group).
         """
@@ -190,6 +178,8 @@ class Mamba2RMSNorm(nn.Module):
         self.norm_before_gate = norm_before_gate
         self.reset_parameters()
 
+        setattr(self.weight, 'sequence_parallel', sequence_parallel)
+
     def reset_parameters(self):
         torch.nn.init.ones_(self.weight)
 
@@ -198,18 +188,27 @@ class Mamba2RMSNorm(nn.Module):
         N = x.shape[-1]
         weight = weight.float()
         bias = bias.float() if bias is not None else None
+        args = get_args()
         if upcast:
             x = x.float()
             z = z.float() if z is not None else z
         if z is not None and not norm_before_gate:
             x = x * nn.functional.silu(z)
         if group_size is None:
-            rstd = 1 / torch.sqrt((x.square()).mean(dim=-1, keepdim=True) + eps)
-            out = (x * rstd * weight) + bias if bias is not None else (x * rstd * weight)
+            if args.use_fused_rmsnorm:
+                out = torch_npu.npu_rms_norm(x, weight, epsilon=eps)[0]
+            else:
+                rstd = 1 / torch.sqrt((x.square()).mean(dim=-1, keepdim=True) + eps)
+                out = x * rstd * weight
+            out = out + bias if bias is not None else out
         else:
             x_group = rearrange(x, "... (g d) -> ... g d", d=group_size)
-            rstd = 1 / torch.sqrt((x_group.square()).mean(dim=-1, keepdim=True) + eps)
-            out = rearrange(x_group * rstd, "... g d -> ... (g d)") * weight
+            if args.use_fused_rmsnorm:
+                out = torch_npu.npu_rms_norm(x_group, weight.view(-1, group_size), epsilon=eps)[0]
+            else:
+                rstd = 1 / torch.sqrt((x_group.square()).mean(dim=-1, keepdim=True) + eps)
+                out = x_group * rstd * weight.view(-1, group_size)
+            out = rearrange(out, "... g d -> ... (g d)")
             if bias is not None:
                 out = out + bias
         if z is not None and norm_before_gate:

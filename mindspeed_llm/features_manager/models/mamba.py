@@ -18,11 +18,11 @@ class MambaModel(MindSpeedFeature):
         group.add_argument('--mamba-headdim', type=int, default=80, help='head dim for mamba')          
 
     def register_patches(self, patch_manager, args):
-        from mindspeed_llm.core.ssm.mamba_mixer import mamba_mixer_init_wrapper, mamba_mixer_forward
+        from mindspeed_llm.core.ssm.mamba_mixer import mamba_mixer_init_wrapper, mamba_mixer_forward, Mamba2RMSNorm
         from mindspeed_llm.core.ssm.mamba_block import mamba_block_forward
 
         patch_manager.register_patch(
-                'mamba_ssm.ops.triton.layernorm_gated.RMSNorm', 
+                'mamba_ssm.ops.triton.layernorm_gated.RMSNorm', Mamba2RMSNorm,
                 create_dummy=True)
         patch_manager.register_patch(
                 'mamba_ssm.ops.triton.ssd_combined.mamba_chunk_scan_combined',

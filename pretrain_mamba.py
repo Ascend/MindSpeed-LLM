@@ -94,7 +94,13 @@ def model_provider(pre_process=True, post_process=True) -> MambaModel:
 
 def get_batch(data_iterator):
     """Generate a batch."""
+    args = get_args()
 
+    is_middle_stage = not (mpu.is_pipeline_first_stage() or mpu.is_pipeline_last_stage())
+    pretrain_not_tnd_flags = not args.is_instruction_dataset and not args.reset_position_ids
+    if pretrain_not_tnd_flags and is_middle_stage:
+        return (None,) * 5
+           
     # get batches based on the TP rank you are on
     batch, actual_seq_len = get_batch_on_this_tp_rank(data_iterator)
     args = get_args()
@@ -110,7 +116,7 @@ def get_batch(data_iterator):
         batch.pop('idx', None)
 
     if args.reset_position_ids:
-        generate_actual_seq_len(batch)
+        generate_actual_seq_len(batch, actual_seq_len)
     # slice batch along sequence dimension for context parallelism
     batch = get_batch_on_this_cp_rank(batch)
     return batch.values()
@@ -173,9 +179,7 @@ def forward_step(data_iterator, model: MambaModel):
 
 
 def is_dataset_built_on_rank():
-    return (
-        mpu.is_pipeline_first_stage() or mpu.is_pipeline_last_stage()
-    ) and mpu.get_tensor_model_parallel_rank() == 0
+    return mpu.get_tensor_model_parallel_rank() == 0
 
 
 def core_gpt_dataset_config_from_args(args):

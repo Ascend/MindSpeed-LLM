@@ -106,6 +106,11 @@ def get_batch(data_iterator):
 
     args = get_args()
 
+    is_middle_stage = not (mpu.is_pipeline_first_stage() or mpu.is_pipeline_last_stage())
+    pretrain_not_tnd_flags = not args.is_instruction_dataset and not args.reset_position_ids
+    if pretrain_not_tnd_flags and is_middle_stage:
+        return (None,) * 5
+
     # get batches based on the TP rank you are on
     batch, actual_seq_len = get_batch_on_this_tp_rank(data_iterator)
 
