@@ -90,6 +90,7 @@ class MgCkptConvert(object):
         self.mla_mm_split = mla_mm_split
         self.dualpipe = True if dualpipe == "dualpipev" else False
         self.first_k_dense_replace = num_dense_layers
+        self.num_layer_list_cmd = num_layer_list
         self.mtp_num_layers = mtp_num_layers
 
         self.hidden_size = HIDDEN_SIZE
@@ -141,7 +142,7 @@ class MgCkptConvert(object):
         self._valid_parameter()
 
     def _valid_parameter(self):
-        if self.num_layer_list is None:
+        if self.num_layer_list_cmd is None:
             if self.num_layers % self.pp_size != 0:
                 raise ValueError("number of layers should be divisible by the pipeline parallel size")
             
@@ -149,7 +150,7 @@ class MgCkptConvert(object):
                 if (self.num_layers % self.pp_size) % self.vpp_stage != 0:
                     raise ValueError("number of pp_stage should be divisible by the vpp_stage")
         else:
-            layer_list = list(map(int, self.num_layer_list.split(',')))
+            layer_list = list(map(int, self.num_layer_list_cmd.split(',')))
 
             if self.vpp_stage is not None:
                 raise ValueError("num_layer_list and vpp cannot be configured at the same time")
