@@ -909,7 +909,7 @@
    ```
 
 ## 版本支持
-1. Qwen3系列模型依赖以下特定Python及transformers版本
+1. Qwen3系列模型与llama3.3系列模型依赖以下特定Python及transformers版本
  
     ```shell
    Python>=3.10
