@@ -4,12 +4,12 @@ MindSpeed-LLM 支持大模型在公开基准数据集上进行准确率评估，
 |-------------|---------------------------------------------------------------------------|------|-----------------------------------------------------------------------------|------------------------------------------------------------------|
 | MMLU        | [GitHub](https://people.eecs.berkeley.edu/~hendrycks/data.tar)            | test | [45.73%](../../../examples/mcore/llama2/evaluate_llama2_7b_mmlu_ptd.sh)     | [45.3%](https://hub.opencompass.org.cn/dataset-detail/MMLU)      |
 | CEval       | [HuggingFace](https://huggingface.co/datasets/ceval/ceval-exam/tree/main) | val  | [33.87%](../../../examples/mcore/llama2/evaluate_llama2_7b_ceval_ptd.sh)    | [32.5%](https://hub.opencompass.org.cn/dataset-detail/C-Eval)    |
-| BoolQ       | [Juhe](https://www.juhe.cn/market/product/id/10243)                       | dev  | [75.44%](../../../examples/mcore/llama2/evaluate_llama2_7b_boolq_ptd.sh)    | [74.9%](https://hub.opencompass.org.cn/dataset-detail/BoolQ)     |
+| BoolQ       | [GitHub](https://github.com/google-research-datasets/boolean-questions?tab=readme-ov-file#dataset-links)                       | dev  | [75.44%](../../../examples/mcore/llama2/evaluate_llama2_7b_boolq_ptd.sh)    | [74.9%](https://hub.opencompass.org.cn/dataset-detail/BoolQ)     |
 | BBH         | [GitHub](https://github.com/suzgunmirac/BIG-Bench-Hard/tree/main/bbh)     | test | [34.4%](../../../examples/mcore/llama2/evaluate_llama2_7b_bbh_ptd.sh)       | [32.5%](https://hub.opencompass.org.cn/dataset-detail/BBH)       |
 | AGIEval     | [GitHub](https://github.com/ruixiangcui/AGIEval/tree/main)                | test | [20.6%](../../../examples/mcore/llama2/evaluate_llama2_7b_agieval_ptd.sh)   | [20.6%](https://hub.opencompass.org.cn/dataset-detail/AGIEval)   |
 | HumanEval   | [GitHub](https://github.com/openai/human-eval/tree/master/data)           | test | [12.8%](../../../examples/mcore/llama2/evaluate_llama2_7b_humaneval_ptd.sh) | [12.2%](https://hub.opencompass.org.cn/dataset-detail/HumanEval) |
-| CMMLU       | [HuggingFace](https://huggingface.co/datasets/haonan-li/cmmlu/tree/main)  | test | -- | -- |
-| GSM8k       | [HuggingFace](https://huggingface.co/datasets/openai/gsm8k/tree/main)     | -- | -- | -- |
+| CMMLU       | [Kaggle](https://www.kaggle.com/datasets/ginrawin/ceval-exam)        | test | -- | -- |
+| GSM8k       | [GitHub](https://github.com/openai/grade-school-math/tree/master/grade_school_math/data)     | -- | -- | -- |
 | Hellaswag   | [GitHub](https://github.com/rowanz/hellaswag)                             | -- | -- | -- |
 | Needlebench | [HuggingFace](https://huggingface.co/datasets/opencompass/NeedleBench/tree/main)     | -- | -- | -- |
 
