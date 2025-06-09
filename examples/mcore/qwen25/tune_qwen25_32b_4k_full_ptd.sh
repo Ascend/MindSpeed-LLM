@@ -49,6 +49,7 @@ GPT_ARGS="
     --num-layers 64  \
     --reuse-fp32-param \
     --use-distributed-optimizer \
+    --swap-attention \
     --overlap-grad-reduce \
     --overlap-param-gather \
     --hidden-size 5120  \
