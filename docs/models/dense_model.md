@@ -836,3 +836,12 @@ NPUS_PER_NODE： 配置一个计算节点上使用的NPU数量<br>
    # 修改为：
    # SUPPORT_FP16 = True
    ```
+
+## 版本支持
+
+1.Llama3.3系列模型依赖以下特定Python及transformers版本
+
+```shell
+Python>=3.10
+transformers==4.51.0
+```
