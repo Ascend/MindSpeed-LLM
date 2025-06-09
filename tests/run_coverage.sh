@@ -11,6 +11,13 @@ PIPELINE_DIR="empty"
 UT_DIR="empty"
 ST_DIR="empty"
 
+# 创建日志目录
+GENERATE_LOG_DIR="$UT_DIR/logs"
+mkdir -p "$GENERATE_LOG_DIR"
+touch "$GENERATE_LOG_DIR/exec_error.log"
+echo "core0.8.0 Execution Results" > $GENERATE_LOG_DIR/exec_error.log
+
+
 # 带参1用于区分运行场景
 if [ -z "$1" ]; then
     echo "请提供一个参数（ST、PIPELINE、UT、all）"
@@ -70,6 +77,15 @@ add_coverage() {
     sed -i "/    main()/a\    cov.stop()" pretrain_gpt.py
     sed -i "/    cov.stop()/a\    cov.save()" pretrain_gpt.py
 
+    sed -i "1a\import random" pretrain_mamba.py
+    sed -i "2a\import time" pretrain_mamba.py
+    sed -i "3a\import coverage" pretrain_mamba.py
+    sed -i '4a\cov = coverage.Coverage(data_suffix=f"usecase-{time.time_ns()}_{random.randint(0, 100)}")' pretrain_mamba.py
+    sed -i "5a\cov.start()" pretrain_mamba.py
+
+    sed -i "/    main()/a\    cov.stop()" pretrain_mamba.py
+    sed -i "/    cov.stop()/a\    cov.save()" pretrain_mamba.py
+
     sed -i "1a\import random" convert_ckpt.py
     sed -i "2a\import time" convert_ckpt.py
     sed -i "3a\import coverage" convert_ckpt.py
@@ -78,6 +94,24 @@ add_coverage() {
     sed -i "/    main()/i\    cov.start()" convert_ckpt.py
     sed -i "/    main()/a\    cov.stop()" convert_ckpt.py
     sed -i "/    cov.stop()/a\    cov.save()" convert_ckpt.py
+
+    sed -i "1a\import random" evaluation.py
+    sed -i "2a\import time" evaluation.py
+    sed -i "3a\import coverage" evaluation.py
+    sed -i '4a\cov = coverage.Coverage(data_suffix=f"usecase-{time.time_ns()}_{random.randint(0, 100)}")' evaluation.py
+
+    sed -i "/def main():/a\    cov.start()" evaluation.py
+    sed -i "/            logger.info(f'NeedleBench_eval Running Time: {time.time() - a}')/a\    cov.stop()" evaluation.py
+    sed -i "/    cov.stop()/a\    cov.save()" evaluation.py
+
+    sed -i "1a\import random" inference.py
+    sed -i "2a\import time" inference.py
+    sed -i "3a\import coverage" inference.py
+    sed -i '4a\cov = coverage.Coverage(data_suffix=f"usecase-{time.time_ns()}_{random.randint(0, 100)}")' inference.py
+
+    sed -i "/def main():/a\    cov.start()" inference.py
+    sed -i "/    task_factory(args, model)/a\    cov.stop()" inference.py
+    sed -i "/    cov.stop()/a\    cov.save()" inference.py
 
     sed -i "1a\import random" posttrain_gpt.py
     sed -i "2a\import time" posttrain_gpt.py
@@ -117,6 +151,15 @@ remove_coverage() {
     sed -i "/    cov.stop()/d" pretrain_gpt.py
     sed -i "/    cov.save()/d" pretrain_gpt.py
 
+    sed -i "2d" pretrain_mamba.py
+    sed -i "2d" pretrain_mamba.py
+    sed -i "2d" pretrain_mamba.py
+    sed -i "2d" pretrain_mamba.py
+    sed -i "2d" pretrain_mamba.py
+
+    sed -i "/    cov.stop()/d" pretrain_mamba.py
+    sed -i "/    cov.save()/d" pretrain_mamba.py
+
     sed -i "2d" convert_ckpt.py
     sed -i "2d" convert_ckpt.py
     sed -i "2d" convert_ckpt.py
@@ -125,6 +168,24 @@ remove_coverage() {
     sed -i "/    cov.start()/d" convert_ckpt.py
     sed -i "/    cov.stop()/d" convert_ckpt.py
     sed -i "/    cov.save()/d" convert_ckpt.py
+
+    sed -i "2d" evaluation.py
+    sed -i "2d" evaluation.py
+    sed -i "2d" evaluation.py
+    sed -i "2d" evaluation.py
+
+    sed -i "/    cov.start()/d" evaluation.py
+    sed -i "/    cov.stop()/d" evaluation.py
+    sed -i "/    cov.save()/d" evaluation.py
+
+    sed -i "2d" inference.py
+    sed -i "2d" inference.py
+    sed -i "2d" inference.py
+    sed -i "2d" inference.py
+
+    sed -i "/    cov.start()/d" inference.py
+    sed -i "/    cov.stop()/d" inference.py
+    sed -i "/    cov.save()/d" inference.py
 
     sed -i "2d" posttrain_gpt.py
     sed -i "2d" posttrain_gpt.py
@@ -166,11 +227,18 @@ find "$PIPELINE_DIR" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
 done
 
 # run the coverage for python files in the unit tests
-pytest -xs ${UT_DIR}
 find "$UT_DIR" -mindepth 0 -maxdepth 1 -type d | while read -r dir; do
     if [ -d "$dir" ]; then
         find "$dir" -type f -name "*.py" | while read -r file; do
-            echo "${file}"
+            echo "running ${file}"
+            filename=$(basename "$file")
+            extension="${filename##*.}"
+            name="${filename%.$extension}"
+            pytest -xs $file | tee "$GENERATE_LOG_DIR/$name.log" 2>&1
+            PYTEST_EXITCODE=${PIPESTATUS[0]}
+            if [ $PYTEST_EXITCODE -ne 0 ]; then
+                echo "$file has failed, check it!" >> "$GENERATE_LOG_DIR/exec_error.log"
+            fi
             coverage run -p --source=$SOURCE_DIR $file
         done
     fi
