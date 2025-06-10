@@ -38,6 +38,9 @@ class MindSporeAdaptation(MegatronAdaptationABC):
         args = MegatronAdaptation.get_args()
         if not hasattr(args, "ai_framework") or args.ai_framework != "mindspore":
             return
+
+        args = self.reparse_args()
+
         from ..core.models.gpt.gpt_model import GPTModel
         from ..mindspore.core.transformer.moe.moe_layer import moe_layer_init_wrapper, moe_layer_forward
         from mindspeed.mindspore.core.data_parallel.distributed_data_parallel import distributed_data_parallel_init_with_cp
@@ -329,3 +332,18 @@ class MindSporeAdaptation(MegatronAdaptationABC):
         if args.gemm_gradient_accumulation_fusion:
             from mindspeed.mindspore.ops.npu_groupmatmul_add import npu_groupmatmul_add_fp32
             MindSporeAdaptation.register('mindspeed.ops.npu_groupmatmul_add', npu_groupmatmul_add_fp32)
+
+        if args.use_moba_attn:
+            from mindspeed_llm.mindspore.core.transformer.dot_product_attention import flash_attention_forward
+            MindSporeAdaptation.register('mindspeed_llm.core.transformer.dot_product_attention.flash_attention_forward', flash_attention_forward)
+
+    @staticmethod
+    def reparse_args():
+        """
+        MindSpore extra arguments parser
+        """
+        from mindspeed_llm.mindspore.training.arguments import process_args_decorator
+        MindSporeAdaptation.register('mindspeed_llm.training.arguments.process_args', process_args_decorator)
+        MegatronAdaptation.apply()
+        args = MegatronAdaptation.get_args()
+        return args
