@@ -75,7 +75,8 @@ moe层前的dense层数，最大可设置为3。默认值为3。
 
 【--num-layer-list】
 
-指定每个pp的层数，相加要等于num-layers。当前仅支持 num-layers = 61 时使用此参数
+指定每个pp的层数，相加要等于num-layers。当前仅支持 num-layers = 61 时使用此参数。
+
 与--noop-layers互斥，二者选其一使用。默认值为None。
 
 【--noop-layers】

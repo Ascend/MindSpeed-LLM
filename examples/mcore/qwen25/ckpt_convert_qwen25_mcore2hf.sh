@@ -1,4 +1,5 @@
 # 修改 ascend-toolkit 路径
+export CUDA_DEVICE_MAX_CONNECTIONS=1
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
 
 # 设置并行策略
