@@ -1,483 +1,350 @@
-# MindSpeed MindSpore后端Deepseek R1蒸馏Qwen2.5 math 7B模型指南
+# 🧠 DeepSeek R1 蒸馏模型微调与推理指南
 
-Deepseek R1蒸馏Qwen2.5-Math-7B模型，该指导采用OpenR1-Math-220K数据集（已经过DeepSeek-R1蒸馏）进行微调，基于一台800T A2昇腾服务器进行。
+> **适用场景**：本指南基于华为昇腾 800T A2 服务器，以 Qwen2.5-Math-7B 模型为基础，使用 DeepSeek R1 蒸馏的 OpenR1-Math-220K 数据集为例，演示如何进行模型微调与推理。
 
-## 动态图环境搭建
+---
 
-拉取镜像
-`docker pull swr.cn-central-221.ovaijisuan.com/mindformers/cann8.2.rc1_mindspore2.6.0:20250520`
+## 📚 目录导航
 
-创建容器后续操作在容器中进行。/mnt/data/用于存放方案库，可以根据需要更改
+- [🧰 环境准备](#-环境准备)
+  - [🖥️ 服务器要求](#-服务器要求)
+  - [软件安装](#软件安装)
+- [📦 模型权重下载](#-模型权重下载)
+- [📁 数据集准备](#-数据集准备)
+- [🔁 数据格式转换](#-数据格式转换)
+- [⚙️ 权重格式转换](#-权重格式转换)
+- [🧪 模型推理](#-模型推理)
+- [🔧 关键参数说明](#-关键参数说明)
+- [🖥️ 分布式配置相关参数](#-分布式配置相关参数)
+- [📁 日志与输出控制](#-日志与输出控制)
+- [🔄 常见配置更改建议](#-常见配置更改建议)
+- [💬 生成模式控制](#-生成模式控制)
+- [🎯 全量微调流程](#-全量微调流程)
+- [📌 常见问题](#-常见问题)
+- [✅ 最佳实践](#-最佳实践)
 
-```
-docker run -it --name=msms --ipc=host --network=host --privileged=true \
-        --device=/dev/davinci0 \
-        --device=/dev/davinci1 \
-        --device=/dev/davinci2 \
-        --device=/dev/davinci3 \
-        --device=/dev/davinci4 \
-        --device=/dev/davinci5 \
-        --device=/dev/davinci6 \
-        --device=/dev/davinci7 \
-        --device=/dev/davinci_manager \
-        --device=/dev/devmm_svm \
-        --device=/dev/hisi_hdc \
-        -v /usr/local/sbin/:/usr/local/sbin/ \
-        -v /etc/hccn.conf:/etc/hccn.conf \
-        -v /usr/local/bin/npu-smi:/usr/local/bin/npu-smi \
-        -v /usr/local/dcmi:/usr/local/dcmi \
-        -v /usr/local/Ascend/driver:/usr/local/Ascend/driver \
-        -v /etc/ascend_install.info:/etc/ascend_install.info \
-        -v /etc/vnpu.cfg:/etc/vnpu.cfg \
-        -v /mnt/data/:/mnt/data/ \
-        --pids-limit 409600 \
-        --shm-size="500g" \
-        swr.cn-central-221.ovaijisuan.com/mindformers/cann8.2.rc1_mindspore2.6.0:20250520 \
-        /bin/bash
+---
 
-cd /mnt/data/
-git clone https://gitee.com/ascend/MindSpeed-Core-MS.git
-cd MindSpeed-Core-MS
+## 🧰 环境准备
 
-```
-按顺序执行如下命令
-```
-source /usr/local/Ascend/nnal/atb/set_env.sh
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
-source test_convert_llm.sh
+### 🖥️ 服务器要求
+
+- **型号**：华为昇腾 800T A2（推荐单机部署）
+
+### 软件安装
+
+[基础软件安装指引](https://gitee.com/ascend/MindSpeed-LLM/blob/master/docs/mindspore/features/install_guide.md)
+
+```bash
+# 安装基础依赖
+pip install modelscope pyarrow pandas
+
+# 验证 MindSpore 安装（需与硬件匹配）
+python -c "import mindspore as ms; print(ms.__version__)"
 ```
 
-## 数据集及模型准备
-### 模型权重下载
+---
 
-Qwen25Math7B文件夹用于存放权重文件，可以修改
-```
-cd /mnt/data
+## 📦 模型权重下载
+
+```bash
+# 创建工作目录并下载模型
 mkdir Qwen25Math7B
-pip install modelscope
-modelscope download --model Qwen/Qwen2.5-Math-7B --local_dir /mnt/data/Qwen25Math7B
+cd Qwen25Math7B
 
+modelscope download \
+  --model Qwen/Qwen2.5-Math-7B \
+  --local_dir ./Qwen25Math7B
 ```
-### OpenR1-Math-220K数据集下载
-OpenR1Math220K文件夹用于存放数据，可以修改
 
-```
-cd /mnt/data
+---
+
+## 📁 数据集准备
+
+```bash
+# 创建目录并下载数据
 mkdir OpenR1Math220K
 cd OpenR1Math220K
-wget https://hf-mirror.com/datasets/open-r1/OpenR1-Math-220k/resolve/main/data/train-00000-of-00010.parquet
-wget https://hf-mirror.com/datasets/open-r1/OpenR1-Math-220k/resolve/main/data/train-00001-of-00010.parquet
-wget https://hf-mirror.com/datasets/open-r1/OpenR1-Math-220k/resolve/main/data/train-00002-of-00010.parquet
-wget https://hf-mirror.com/datasets/open-r1/OpenR1-Math-220k/resolve/main/data/train-00003-of-00010.parquet
-wget https://hf-mirror.com/datasets/open-r1/OpenR1-Math-220k/resolve/main/data/train-00004-of-00010.parquet
-wget https://hf-mirror.com/datasets/open-r1/OpenR1-Math-220k/resolve/main/data/train-00005-of-00010.parquet
-wget https://hf-mirror.com/datasets/open-r1/OpenR1-Math-220k/resolve/main/data/train-00006-of-00010.parquet
-wget https://hf-mirror.com/datasets/open-r1/OpenR1-Math-220k/resolve/main/data/train-00007-of-00010.parquet
-wget https://hf-mirror.com/datasets/open-r1/OpenR1-Math-220k/resolve/main/data/train-00008-of-00010.parquet
-wget https://hf-mirror.com/datasets/open-r1/OpenR1-Math-220k/resolve/main/data/train-00009-of-00010.parquet
 
+# 使用循环批量下载数据分片
+for i in {00000..00009}; do
+  wget https://hf-mirror.com/datasets/open-r1/OpenR1-Math-220k/resolve/main/data/train-${i}-of-00010.parquet    
+done
+
+# 验证数据完整性（检查文件数量）
+ls -l | grep parquet | wc -l  # 应输出 10
 ```
 
-## 数据转换
+---
 
-将下载的.parquet格式数据进行处理，首先创建文件夹用于存放处理后的数据。
+## 🔁 数据格式转换
 
-```
-cd /mnt/data
-mkdir OpenR1Math220K_handled
-```
-修改/mnt/data/MindSpeed-Core-MS/MindSpeed-LLM/examples/mcore/qwen25_math/data_convert_qwen25_math_pretrain.sh文件，改成如下。如果要处理多个parquet数据，指定数据文件夹即可。
+在指令监督微调过程中，`instruction` 列的内容会与 `input` 列拼接作为人类指令（格式为 `instruction\ninput`，其中 `\n` 为换行符），`output` 列则为模型的回答。如果指定了 `history` 字段，则历史对话内容也会被加入；若指定 `system` 字段，则其内容将作为系统提示词。
 
-```
+```shell
+# 请根据实际环境 source set_env.sh
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
 
 python ./preprocess_data.py \
-    --input /mnt/data/JRMindSpeed/OpenR1Math220K/train-00000-of-00010.parquet \
-    --tokenizer-name-or-path /mnt/data/JRMindSpeed/Qwen25Math7B/ \
-    --output-prefix /mnt/data/JRMindSpeed/OpenR1Math220K_handled/sharegpt \
+    --input ./OpenR1Math220K/train-00000-of-00010.parquet \
+    --tokenizer-name-or-path ./Qwen25Math7B/ \
+    --output-prefix ./OpenR1Math220K_handled/sharegpt \
     --workers 4 \
     --log-interval 1000 \
     --tokenizer-type PretrainedFromHF \
     --handler-name SharegptStyleInstructionHandler \
     --prompt-type qwen_math_r1 \
-	--map-keys '{"messages":"messages", "tags":{"role_tag": "role","content_tag": "content","user_tag": "user","assistant_tag": "assistant","system_tag": "system"}}'
-```
-执行如下命令运行脚本
-
-```
-cd /mnt/data/MindSpeed-Core-MS/MindSpeed-LLM
-bash /mnt/data/MindSpeed-Core-MS/MindSpeed-LLM/examples/mcore/qwen25_math/data_convert_qwen25_math_pretrain.sh
+    --map-keys '{"messages":"messages", "tags":{"role_tag": "role","content_tag": "content","user_tag": "user","assistant_tag": "assistant","system_tag": "system"}}'
 ```
 
-## 原始权重转换
-将原始的hg权重转换为megatron mcore权重，首先创建文件夹用于存放转换后的权重
+### 参数说明：
 
-```
-cd /mnt/data
-mkdir Qwen25Math7B_transfered
-```
-修改/mnt/data/MindSpeed-Core-MS/MindSpeed-LLM/examples/mcore/qwen25_math/ckpt_convert_qwen25_math_hf2mcore.sh,改成如下
+#### `--input`
+支持 `.parquet`、`.csv`、`.json`、`.jsonl`、`.txt`、`.arrow` 格式。输入可以是具体文件或目录，若是目录，则处理该目录下所有文件，且同一目录中数据格式应保持一致。
 
-```
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
+#### `--map-keys`
+用于配置字段映射，以提取对应列。
 
+#### `--prompt-type`
+指定模型模板，使 base 模型具备更好的对话能力。
+
+#### `--handler-name`
+处理 Alpaca 风格数据集时应设置为 `AlpacaStyleInstructionHandler`，并依据 `--map-keys` 提取相应列。
+
+### 示例：
+
+**示例 1：**
+
+```bash
+--map-keys '{"prompt":"notice","query":"question","response":"answer","system":"system_test","history":"histories"}'
+```
+
+表示从数据集中提取 `"notice"`、`"question"`、`"answer"`、`"system_test"` 和 `"histories"` 列。
+
+**示例 2：**
+
+```bash
+--map-keys '{"history":"histories"}'
+```
+
+表示从数据集中提取默认列 `"instruction"`、`"input"`、`"output"` 以及指定列 `"histories"`。
+
+### 启动脚本：
+
+```bash
+# 执行转换脚本
+bash examples/mindspore/deepseek_r1_distill_qwen/data_convert_distill_qwen_instruction.sh
+```
+
+---
+
+## ⚙️ 权重格式转换
+
+### ✅ 基本命令示例：
+
+```bash
 python convert_ckpt.py \
        --use-mcore-models \
        --model-type GPT \
        --load-model-type hf \
        --save-model-type mg \
        --target-tensor-parallel-size 2 \
-       --target-pipeline-parallel-size 4 \
+       --target-pipeline-parallel-size 1 \
        --add-qkv-bias \
-       --load-dir /mnt/data/Qwen25Math7B/ \
-       --save-dir /mnt/data/Qwen25Math7B_transfered/ \
-       --tokenizer-model /mnt/data/Qwen25Math7B/tokenizer.json \
+       --load-dir ./model_from_hf/distill_qwen_mcore/ \
+       --save-dir ./model_weights/distill_qwen_mcore/ \
+       --tokenizer-model ./model_from_hf/distill_qwen_mcore/tokenizer.json \
        --model-type-hf llama2 \
        --params-dtype bf16
 ```
-执行如下命令运行脚本
 
+### 参数说明：
+
+| 参数名 | 含义 | 示例值 | 修改建议 |
+|--------|------|--------|----------|
+| `--use-mcore-models` | 使用 MCore 架构模型 | - | 若目标为 MCore 支持的模型，请保留此参数。 |
+| `--model-type` | 当前支持的模型类型（如 GPT、BERT 等） | `GPT` | 通常无需更改，除非要转换其他类型模型。 |
+| `--load-model-type` | 加载模型的格式 | `hf` (HuggingFace) | 若加载的是 HF 模型，则保留；否则改为对应格式（如 `megatron`）。 |
+| `--save-model-type` | 目标保存模型格式 | `mg` (Megatron/MCore) | 若目标为 MCore 格式则保留，否则可改为其他格式。 |
+| `--target-tensor-parallel-size` | 张量并行大小（Tensor Parallelism） | `2` | 根据训练/推理设备数量设置，通常是 GPU 数量。 |
+| `--target-pipeline-parallel-size` | 流水线并行大小（Pipeline Parallelism） | `1` | 若模型较小，一般保持为 1。 |
+| `--add-qkv-bias` | 是否添加 QKV 层偏置项 | - | 如果原始模型包含 QKV 偏置项，请加上此参数。 |
+| `--load-dir` | 加载原始模型权重路径 | `./model_from_hf/distill_qwen_mcore/` | 修改为你本地的 HF 模型路径。 |
+| `--save-dir` | 保存转换后模型路径 | `./model_weights/distill_qwen_mcore/` | 修改为你希望保存的目录路径。 |
+| `--tokenizer-model` | tokenizer.json 文件路径 | `./model_from_hf/distill_qwen_mcore/tokenizer.json` | 若使用自定义分词器，请指定其路径。 |
+| `--model-type-hf` | 原始 HF 模型类型 | `llama2` | 若为 LLaMA2 类结构则保留，若为其他结构（如 Qwen、Mistral），请修改为此处支持的名称。 |
+| `--params-dtype` | 权重保存的数据类型 | `bf16` | 可选 `fp32`, `fp16`, `bf16`，推荐使用 `bf16` 以节省空间和计算资源。 |
+| `--num-layer-list` | 分布式模型各阶段中的层数分配（可选） | `--num-layer-list 11,13,19,21` | 多 stage 流水线并行时需手动分配每 stage 的层数列表。 |
+
+### 💡 使用提示：
+
+- 如果不确定某些参数含义，**不要随意更改默认值**。
+- 若目标为多卡分布式训练，请确保 `--target-tensor-parallel-size` 设置正确。
+- 若使用非标准模型架构（如 Qwen、ChatGLM、InternLM 等），请确认是否已在代码中注册支持。
+
+### HuggingFace → MCore 格式转换：
+
+```bash
+bash examples/mindspore/deepseek_r1_distill_qwen/ckpt_convert_distill_qwen_hf2mcore.sh
 ```
-cd /mnt/data/MindSpeed-Core-MS/MindSpeed-LLM
-bash /mnt/data/MindSpeed-Core-MS/MindSpeed-LLM/examples/mcore/qwen25_math/ckpt_convert_qwen25_math_hf2mcore.sh
+
+### MCore → HuggingFace 回转：
+
+```bash
+bash examples/mindspore/deepseek_r1_distill_qwen/ckpt_convert_distill_qwen_mcore2hf.sh
 ```
-## 采用原始权重推理
 
-方法一：生成式推理
+> **注意事项**：
+- 转换后的权重文件大小应与原始权重相近（±5%）
 
-修改/mnt/data/MindSpeed-Core-MS/MindSpeed-LLM/examples/mcore/qwen25_math/generate_qwen25_math_7b_ptd.sh，改成如下,日志路径可以根据需要修改：
+---
 
+## 🧪 模型推理
 
+### 原始权重推理：
+
+```bash
+bash examples/mindspore/deepseek_r1_distill_qwen/generate_distill_qwen_7b.sh
 ```
-#!/bin/bash
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
-export CUDA_DEVICE_MAX_CONNECTIONS=1
 
-# Change for multinode config
-MASTER_ADDR=localhost
-MASTER_PORT=6000
-NNODES=1
-NODE_RANK=0
-NPUS_PER_NODE=8
-WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
+### 微调后权重推理：
 
-# please fill these path configurations
-CHECKPOINT="/mnt/data/Qwen25Math7B_transfered/"
-TOKENIZER_PATH="/mnt/data/Qwen25Math7B/"
+修改推理脚本中的 `CHECKPOINT` 参数：
 
+```bash
+# 示例：替换为微调后的权重路径
+CHECKPOINT=/path/to/fine_tuned_weights
+```
+
+---
+
+## 🔧 关键参数说明
+
+以下是一些在推理过程中需要关注的关键参数及其作用说明：
+
+| 参数名 | 默认值 | 说明 |
+|--------|--------|------|
+| `CHECKPOINT` | `"your model directory path"` | 指定模型权重路径，需根据实际路径修改。支持原始权重或微调后的权重。 |
+| `TOKENIZER_PATH` | `"your tokenizer directory path"` | 指定分词器路径，通常为 HuggingFace 格式 tokenizer 路径。 |
+| `TP` | `1` | Tensor 并行度（Tensor Parallelism），用于控制模型张量切片的数量。多卡推理时可适当增加。 |
+| `PP` | `2` | Pipeline 并行度（Pipeline Parallelism），用于控制模型层之间的并行拆分。 |
+| `SEQ_LENGTH` | `8192` | 最大上下文长度，设置模型支持的最大输入 token 数量。可根据任务需求调整。 |
+| `NPUS_PER_NODE` | `2` | 单个节点使用的 NPU 数量，应根据实际硬件资源进行调整。 |
+| `micro-batch-size` | `1` | 推理时每个 micro batch 的大小，默认为 1。批量较大可以提升吞吐但会增加内存占用。 |
+| `max-new-tokens` | `256` | 控制生成文本的最大 token 数量，可根据生成内容需求调整。 |
+| `prompt-type` | `deepseek3` | 使用的 prompt 类型，决定了输入格式和 prefix 构造方式。 |
+
+---
+
+## 🖥️ 分布式配置相关参数
+
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| `MASTER_ADDR` | `localhost` | 分布式训练/推理主节点地址，多机部署时需改为对应 IP 地址。 |
+| `MASTER_PORT` | `6000` | 主节点通信端口，确保未被占用。 |
+| `NNODES` | `1` | 总节点数，多机部署时需根据机器数量调整。 |
+| `NODE_RANK` | `0` | 当前节点编号，从 0 开始递增。 |
+| `WORLD_SIZE` | 自动计算 | 总设备数 = `NPUS_PER_NODE * NNODES`，用于分布式环境初始化。 |
+
+---
+
+## 📁 日志与输出控制
+
+- 所有日志会被重定向到 `logs/generate_mcore_distill_qwen_7b.log`。
+- 分布式运行日志保存在 `--log_dir=msrun_log_generate` 指定目录下。
+- 可通过 `tee` 实时查看日志输出。
+
+---
+
+## 🔄 常见配置更改建议
+
+### ✅ 修改推理设备数量
+
+```bash
+# 如使用单卡推理
+NPUS_PER_NODE=1
+WORLD_SIZE=1
+```
+
+### ✅ 修改模型并行策略
+
+```bash
+# 如使用 TP=2, PP=1 的并行方式
 TP=2
-PP=4
-MBS=1
+PP=1
+```
+
+### ✅ 更改最大生成长度
+
+```bash
+# 修改生成长度为 512
+--max-new-tokens 512
+```
+
+### ✅ 更改最大上下文长度
+
+```bash
+# 改为支持 4096 长度的上下文
 SEQ_LENGTH=4096
-
-DISTRIBUTED_ARGS="
-    --worker_num $WORLD_SIZE \
-	--local_worker_num $NPUS_PER_NODE \
-    --master_addr $MASTER_ADDR \
-    --master_port $MASTER_PORT \
-    --node_rank $NODE_RANK \
-	--log_dir "/mnt/data/MindSpeed-Core-MS/MindSpeed-LLM/msrunlog" \
-	--join=True
-"
-
-msrun $DISTRIBUTED_ARGS inference.py \
-       --ai-framework mindspore \
-	   --use-mcore-models \
-       --input-layernorm-in-fp32 \
-       --tensor-model-parallel-size ${TP} \
-       --pipeline-model-parallel-size ${PP} \
-       --num-layers 28 \
-       --hidden-size 3584  \
-       --num-attention-heads 28  \
-       --ffn-hidden-size 18944 \
-       --max-position-embeddings ${SEQ_LENGTH} \
-       --seq-length ${SEQ_LENGTH} \
-       --disable-bias-linear \
-       --add-qkv-bias \
-       --group-query-attention \
-       --num-query-groups 4 \
-       --swiglu \
-       --normalization RMSNorm \
-       --norm-epsilon 1e-6 \
-       --position-embedding-type rope \
-       --rotary-base 10000 \
-       --make-vocab-size-divisible-by 1 \
-       --padded-vocab-size 152064 \
-       --micro-batch-size ${MBS} \
-       --max-new-tokens 512 \
-       --tokenizer-type PretrainedFromHF  \
-       --tokenizer-name-or-path ${TOKENIZER_PATH} \
-       --tokenizer-not-use-fast \
-       --hidden-dropout 0 \
-       --attention-dropout 0 \
-       --untie-embeddings-and-output-weights \
-       --no-gradient-accumulation-fusion \
-       --attention-softmax-in-fp32 \
-       --seed 42 \
-       --load ${CHECKPOINT} \
-       --exit-on-missing-checkpoint
-```
-执行如下命令运行脚本
-
-```
-cd /mnt/data/MindSpeed-Core-MS/MindSpeed-LLM
-bash /mnt/data/MindSpeed-Core-MS/MindSpeed-LLM/examples/mcore/qwen25_math/generate_qwen25_math_7b_ptd.sh
 ```
 
+---
 
-方法二：chat推理（暂不支持）
+## 💬 生成模式控制
 
-qwen25_math没有提供chat脚本，可以使用qwen25中的chat脚本。修改/mnt/data/MindSpeed-Core-MS/MindSpeed-LLM/examples/mcore/qwen25/chat_qwen25_7b_ptd.sh  ，改成如下
-```
-#!/bin/bash
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
-export CUDA_DEVICE_MAX_CONNECTIONS=1
+你可以通过修改 `--task` 参数来切换不同的推理任务模式，例如：
 
-# Change for multinode config
-MASTER_ADDR=localhost
-MASTER_PORT=6000
-NNODES=1
-NODE_RANK=0
-NPUS_PER_NODE=8
-WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
-
-# please fill these path configurations
-CHECKPOINT="/mnt/data/Qwen25Math7B_transfered/"
-TOKENIZER_PATH="/mnt/data/Qwen25Math7B/"
-
-TP=2
-PP=4
-
-SEQ_LENGTH=4096
-
-DISTRIBUTED_ARGS="
-    --worker_num $WORLD_SIZE \
-	--local_worker_num $NPUS_PER_NODE \
-    --master_addr $MASTER_ADDR \
-    --master_port $MASTER_PORT \
-    --node_rank $NODE_RANK \
-	--log_dir "/mnt/data/MindSpeed-Core-MS/MindSpeed-LLM/msrunlog" \
-	--join=True
-"
-
-msrun $DISTRIBUTED_ARGS inference.py \
-	   --ai-framework mindspore \
-	   --task chat \
-       --prompt-type qwen \
-       --use-mcore-models \
-       --tensor-model-parallel-size ${TP} \
-       --pipeline-model-parallel-size ${PP} \
-       --num-layers 28 \
-       --hidden-size 3584  \
-       --num-attention-heads 28  \
-       --ffn-hidden-size 18944 \
-       --max-position-embeddings ${SEQ_LENGTH} \
-       --seq-length ${SEQ_LENGTH} \
-       --disable-bias-linear \
-       --add-qkv-bias \
-       --group-query-attention \
-       --num-query-groups 4 \
-       --swiglu \
-       --use-fused-swiglu \
-       --normalization RMSNorm \
-       --norm-epsilon 1e-6 \
-       --use-fused-rmsnorm \
-       --position-embedding-type rope \
-       --rotary-base 1000000 \
-       --use-fused-rotary-pos-emb \
-       --make-vocab-size-divisible-by 1 \
-       --padded-vocab-size 152064 \
-       --micro-batch-size 1 \
-       --max-new-tokens 512 \
-       --tokenizer-type PretrainedFromHF  \
-       --tokenizer-name-or-path ${TOKENIZER_PATH} \
-       --tokenizer-not-use-fast \
-       --hidden-dropout 0 \
-       --attention-dropout 0 \
-       --untie-embeddings-and-output-weights \
-       --no-gradient-accumulation-fusion \
-       --attention-softmax-in-fp32 \
-       --seed 42 \
-       --load ${CHECKPOINT} \
-       --exit-on-missing-checkpoint
-```
-执行如下命令运行脚本
-
-```
-cd /mnt/data/MindSpeed-Core-MS/MindSpeed-LLM
-bash /mnt/data/MindSpeed-Core-MS/MindSpeed-LLM/examples/mcore/qwen25/chat_qwen25_7b_ptd.sh
-```
-## 采用转换后数据进行全量微调
-优于qwen2.5 math 7b没有提供全量微调脚本，因此可以使用qwen2.5 7b的全量微调脚本，两者的模型结构是一致的。
-创建文件夹，用于存放微调后的权重
-```
-cd /mnt/data
-mkdir Qwen25Math7B_tune
+```bash
+# 切换为 chat 模式（适用于对话场景）
+--task chat
 ```
 
-修改/mnt/data/MindSpeed-Core-MS/MindSpeed-LLM/examples/mcore/qwen25/tune_qwen25_7b_full_ptd.sh，改成如下：
+> ⚠️ 注意：不同任务模式可能要求不同的 prompt 构造方式，需配合合适的 `--prompt-type` 使用。
 
+---
+
+## 🎯 全量微调流程
+
+### 配置与执行
+
+1. **参数配置**  
+   修改 `tune_distill_qwen_7b_full.sh` 中的关键参数：
+
+   ```bash
+   CKPT_LOAD_DIR="your model ckpt path"
+   CKPT_SAVE_DIR="your model save ckpt path"
+   DATA_PATH="your data path"
+   TOKENIZER_PATH="your tokenizer path"
+   ```
+
+2. **启动微调**
+
+   ```bash
+   bash examples/mindspore/deepseek_r1_distill_qwen/tune_distill_qwen_7b_full.sh
+   ```
+
+---
+
+## 📌 常见问题
+
+### 1. **权重转换失败**
+
+- **可能原因**：HuggingFace 权重不完整  
+- **解决方案**：重新下载权重并验证文件哈希值
+
+### 2. **数据转换报错**
+
+- **错误示例**：`pyarrow.lib.ArrowException: Unknown error`  
+- **处理方法**：检查 Python 环境是否包含 `pyarrow` 依赖
+
+---
+
+## ✅ 最佳实践
+
+**资源监控**：使用以下命令实时监控硬件负载：
+
+```bash
+watch -n 1 npu-smi info
 ```
-#!/bin/bash
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
-export CUDA_DEVICE_MAX_CONNECTIONS=1
 
-NPUS_PER_NODE=8
-MASTER_ADDR=localhost
-MASTER_PORT=6000
-NNODES=1
-NODE_RANK=0
-WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
-
-# please fill these path configurations
-CKPT_LOAD_DIR="/mnt/data/Qwen25Math7B_transfered/"
-CKPT_SAVE_DIR="/mnt/data/Qwen25Math7B_tune/"
-DATA_PATH="/mnt/data/OpenR1Math220K_handled/sharegpt"
-TOKENIZER_PATH="/mnt/data/Qwen25Math7B/"
-
-
-TP=2
-PP=4
-SEQ_LEN=4096
-MBS=1
-GBS=8
-
-DISTRIBUTED_ARGS="
-    --worker_num $WORLD_SIZE \
-	--local_worker_num $NPUS_PER_NODE \
-    --master_addr $MASTER_ADDR \
-    --master_port $MASTER_PORT \
-    --node_rank $NODE_RANK \
-	--log_dir "/mnt/data/MindSpeed-Core-MS/MindSpeed-LLM/msrunTUNElog" \
-	--join=True
-"
-TUNE_ARGS="
-    --finetune \
-    --stage sft \
-    --is-instruction-dataset \
-    --variable-seq-lengths \
-    --tokenizer-not-use-fast \
-    --prompt-type qwen \
-"
-
-GPT_ARGS="
-    --use-mcore-models \
-    --tensor-model-parallel-size ${TP} \
-    --pipeline-model-parallel-size ${PP} \
-    --num-layers 28  \
-    --hidden-size 3584  \
-    --ffn-hidden-size 18944 \
-    --num-attention-heads 28  \
-    --max-position-embeddings ${SEQ_LEN} \
-    --seq-length ${SEQ_LEN} \
-    --disable-bias-linear \
-    --add-qkv-bias \
-    --group-query-attention \
-    --num-query-groups 4 \
-    --use-flash-attn \
-    --swiglu \
-    --use-fused-swiglu \
-    --normalization RMSNorm \
-    --norm-epsilon 1e-6 \
-    --use-fused-rmsnorm \
-    --position-embedding-type rope \
-    --rotary-base 1000000 \
-    --use-fused-rotary-pos-emb \
-    --untie-embeddings-and-output-weights \
-    --micro-batch-size ${MBS} \
-    --global-batch-size ${GBS} \
-    --make-vocab-size-divisible-by 1 \
-    --padded-vocab-size 152064 \
-    --tokenizer-type PretrainedFromHF \
-    --tokenizer-name-or-path ${TOKENIZER_PATH} \
-    --attention-dropout 0.0 \
-    --hidden-dropout 0.0 \
-    --train-iters 1500 \
-    --lr 1.25e-6 \
-    --lr-decay-style cosine \
-    --min-lr 1.25e-7 \
-    --lr-warmup-fraction 0.01 \
-    --init-method-std 0.01 \
-    --weight-decay 0.0 \
-    --clip-grad 1.0 \
-    --adam-beta1 0.9 \
-    --adam-beta2 0.95 \
-    --initial-loss-scale 4096 \
-    --no-gradient-accumulation-fusion \
-    --no-masked-softmax-fusion \
-    --attention-softmax-in-fp32 \
-    --bf16
-"
-
-DATA_ARGS="
-    --data-path $DATA_PATH \
-    --split 100,0,0
-"
-
-CKPT_ARGS="
-    --no-load-optim \
-    --no-load-rng \
-    --no-save-optim \
-    --no-save-rng \
-    --seed 1234 \
-"
-
-OUTPUT_ARGS="
-    --log-interval 1 \
-    --save-interval 500 \
-    --eval-interval 1500 \
-    --eval-iters 0 \
-    --log-throughput
-"
-
-msrun $DISTRIBUTED_ARGS posttrain_gpt.py \
-    $GPT_ARGS \
-    $DATA_ARGS \
-    $CKPT_ARGS \
-    $OUTPUT_ARGS \
-    $TUNE_ARGS \
-	--ai-framework mindspore \
-    --load ${CKPT_LOAD_DIR} \
-    --save ${CKPT_SAVE_DIR} \
-    --distributed-backend nccl
-```
-执行如下命令运行脚本
-
-```
-cd /mnt/data/MindSpeed-Core-MS/MindSpeed-LLM
-bash /mnt/data/MindSpeed-Core-MS/MindSpeed-LLM/examples/mcore/qwen25/tune_qwen25_7b_full_ptd.sh
-```
-## 微调后权重推理
-
-
-和采用原始权重推理方法一致，generate生成式推理，或者chat推理（暂不支持），只需要在原来基础上修改CHECKPOINT权重路径，改为微调后的权重路径即可。
-
-
-## 微调后权重转换
-将微调后的权重转换为hg权重，转换后的hf权重会保存在原始权重文件夹下面的mg2hf文件夹中。
-
-修改/mnt/data/MindSpeed-Core-MS/MindSpeed-LLM/examples/mcore/qwen25_math/ckpt_convert_qwen25_math_mcore2hf.sh,改成如下
-
-```
-# 修改 ascend-toolkit 路径
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
-
-# 设置并行策略
-python convert_ckpt.py \
-    --use-mcore-models \
-    --model-type GPT \
-    --model-type-hf llama2 \
-    --load-model-type mg \
-    --save-model-type hf \
-    --target-tensor-parallel-size 1 \
-    --target-pipeline-parallel-size 1 \
-    --add-qkv-bias \
-    --load-dir /mnt/data/Qwen25Math7B_tune/ \
-    --save-dir /mnt/data/Qwen25Math7B/  #填入原始HF模型路径，新权重会存于原始权重下的mg2hg文件夹中
-```
-执行如下命令运行脚本
-
-```
-cd /mnt/data/MindSpeed-Core-MS/MindSpeed-LLM
-bash /mnt/data/MindSpeed-Core-MS/MindSpeed-LLM/examples/mcore/qwen25_math/ckpt_convert_qwen25_math_mcore2hf.sh
-```
+---
