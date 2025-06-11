@@ -89,11 +89,11 @@ GPT_ARGS="
     --lr-warmup-fraction 0.01 \
     --micro-batch-size 1 \
     --global-batch-size 8 \
-    --lr 1e-5 \
+    --lr 1.25e-6 \
     --train-iters 15 \
     --lr-decay-iters 1 \
     --lr-decay-style constant \
-    --min-lr 1.0e-6 \
+    --min-lr 1.25e-7 \
     --weight-decay 0 \
     --clip-grad 1.0 \
     --bf16 \
