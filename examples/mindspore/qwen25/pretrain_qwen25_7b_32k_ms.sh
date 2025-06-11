@@ -19,7 +19,7 @@ TP=4
 PP=2
 SEQ_LEN=32768
 MBS=1
-GBS=8
+GBS=64
 
 DISTRIBUTED_ARGS="
     --worker_num $WORLD_SIZE \
