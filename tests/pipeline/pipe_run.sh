@@ -44,7 +44,7 @@ find "$BASE_DIR" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
             extension="${filename##*.}"
             name="${filename%.$extension}"
             echo "running $file"
-            bash $file | tee "$GENERATE_LOG_DIR/$name.log"
+            bash $file 2>&1 | tee "$GENERATE_LOG_DIR/$name.log"
             SCRIPT_EXITCODE=${PIPESTATUS[0]}
             if [ $SCRIPT_EXITCODE -eq 0 ]; then
                 # begin to execute the logic of compare
@@ -67,7 +67,7 @@ find "$BASE_DIR" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
             echo "running $file"
             tmp_file_name="${file#*MindSpeed-LLM/}"
             file_name="${tmp_file_name//\//_}"
-            pytest --log-level=INFO "$file" | tee "${GENERATE_LOG_DIR}/${file_name}.log" 2>&1
+            pytest --log-level=INFO "$file" 2>&1 | tee "${GENERATE_LOG_DIR}/${file_name}.log"
             PYTEST_EXITCODE=${PIPESTATUS[0]}
             if [ $PYTEST_EXITCODE -ne 0 ]; then
                 echo "$file has failed, check it!" >> "$GENERATE_LOG_DIR/exec_error.log"
