@@ -730,7 +730,6 @@ class LegacyAdaptation(MegatronAdaptationABC):
         self.patch_initialize()
         self.patch_inference()
         self.patch_log_handler()
-        self.patch_high_availability_feature()
         self.patch_optimizer()
         self.patch_2megatron()
 
@@ -738,44 +737,6 @@ class LegacyAdaptation(MegatronAdaptationABC):
         from megatron.training.log_handler import CustomHandler
         from mindspeed_llm.training.utils import emit
         CustomHandler.emit = emit
-
-    def patch_high_availability_feature(self):
-        args = MegatronAdaptation.get_args()
-        from ..training import setup_model_and_optimizer_wrapper
-        from ..core import (get_megatron_optimizer_wrapper, clip_grad_norm_fp32_wrapper,
-                            distributed_optimizer_init_wrapper,
-                            start_grad_sync_wrapper, distributed_data_parallel_init_wrapper,
-                            distributed_optimizer_init_for_reuse_fp32_wrapper,
-                            get_parameter_state_dp_zero_with_high_availability_wrapper)
-
-        if args.enable_high_availability:  # already check enable_high_availability inside
-            MegatronAdaptation.register(
-                'megatron.core.distributed.distributed_data_parallel.DistributedDataParallel.__init__',
-                distributed_data_parallel_init_wrapper)
-            MegatronAdaptation.register('megatron.core.distributed.param_and_grad_buffer.Bucket.start_grad_sync',
-                                        start_grad_sync_wrapper)
-            MegatronAdaptation.register('megatron.training.training.get_megatron_optimizer',
-                                        get_megatron_optimizer_wrapper)
-            MegatronAdaptation.register('megatron.core.optimizer.optimizer.clip_grad_norm_fp32',
-                                        clip_grad_norm_fp32_wrapper)
-            MegatronAdaptation.register('megatron.core.optimizer.distrib_optimizer.DistributedOptimizer.__init__',
-                                        distributed_optimizer_init_wrapper)
-            MegatronAdaptation.register('megatron.training.training.setup_model_and_optimizer',
-                                        setup_model_and_optimizer_wrapper)
-            if args.reuse_fp32_param:
-                from mindspeed.optimizer.optimizer import mixed_precision_optimizer_step, reuse_fp32_param_init_wrapper, \
-                    optimizer_config_init_wrapper
-                MegatronAdaptation.register('megatron.core.optimizer.optimizer.MixedPrecisionOptimizer.step',
-                                            mixed_precision_optimizer_step)
-                MegatronAdaptation.register('megatron.core.optimizer.optimizer.Float16OptimizerWithFloat16Params.__init__',
-                                            reuse_fp32_param_init_wrapper)
-                MegatronAdaptation.register('megatron.core.optimizer.optimizer_config.OptimizerConfig.__init__',
-                                            optimizer_config_init_wrapper)
-
-                MegatronAdaptation.register('megatron.core.optimizer.distrib_optimizer.DistributedOptimizer.__init__',
-                                            distributed_optimizer_init_for_reuse_fp32_wrapper)
-                MegatronAdaptation.register('mindio_ttp.adaptor.TTPReplicaOptimizer.get_parameter_state_dp_zero_for_ttp',
-                                            get_parameter_state_dp_zero_with_high_availability_wrapper)
 
     def patch_model(self):
         from mindspeed.core.fusions.fused_layer_norm import (FusedLayerNormAffineFunction, FastLayerNormFN)

@@ -60,7 +60,6 @@ def process_args(parser):
     parser = _add_algorithm_args(parser)
     parser = _add_alibi_args(parser)
     parser = _add_dataset_args(parser)
-    parser = _add_high_availability_args(parser)
     parser = _add_cp_args(parser)
     parser = _add_mla_args(parser)
     parser = _add_yarn_args(parser)
@@ -922,24 +921,6 @@ def _add_alibi_args(parser):
     return parser
 
 
-def _add_high_availability_args(parser):
-    group = parser.add_argument_group(title='high_availability')
-
-    group.add_argument('--enable-high-availability',
-                       action='store_true',
-                       help='switch of the high availability feature')
-
-    group.add_argument('--enable-optimizer-state-local-copy',
-                       action='store_true',
-                       help='high availability feature, enable parameter state local copy of distributed optimizer')
-
-    group.add_argument('--enable-hbmfault-repair',
-                       action='store_true',
-                       help='high availability feature, enable hbmfault repair')
-
-    return parser
-
-
 def _add_dataset_args(parser):
     group = parser.add_argument_group(title='dataset_args')
     group.add_argument('--no-shared-storage',
@@ -1033,22 +1014,6 @@ def _validate_recompute_args(args):
             args.swap_modules = "input_layernorm,self_attention,pre_cross_attn_layernorm"
         else:
             args.swap_modules = "input_norm,self_attention,post_attention_norm"
-
-
-def _validate_high_availability(args):
-
-    if args.enable_high_availability:
-        try:
-            import mindio_ttp
-        except ModuleNotFoundError as e:
-            raise AssertionError(f"High availability feature requires the mindio_ttp package but is not installed.") from e
-    if args.enable_optimizer_state_local_copy and not args.enable_high_availability:
-        raise AssertionError('switch of the local copy is unsupported, please enable high availability feature first.')
-    if args.enable_hbmfault_repair and not args.enable_high_availability:
-        raise AssertionError(
-            'switch of the enable hbmfault repair is unsupported, please enable high availability feature first.')
-    if args.enable_high_availability and args.use_dist_ckpt:
-        raise AssertionError('switch of the high availability feature is unsupported')
 
 
 def _validate_instruction_finetune(args):
@@ -1492,7 +1457,6 @@ def validate_args_decorator(megatron_validate_args):
         _validate_create_attention_mask_in_dataloader(args)
         _validate_instruction_finetune(args)
         _validate_position_embedding(args)
-        _validate_high_availability(args)
         _validate_inference_args(args)
         _validate_moe_args(args)
         _validate_mla(args)
@@ -1505,7 +1469,6 @@ def validate_args_decorator(megatron_validate_args):
         _validate_mlp_fusion(args)
         _validate_fused_opts(args)
         _validate_dualpipe_args(args)
-
         _validate_noop_layer(args)
         _valid_tp_2d_args(args)
         _valid_fa_div_args(args)
