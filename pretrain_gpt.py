@@ -119,10 +119,12 @@ def get_batch(data_iterator):
         batch.pop('document_ids', None)
         batch.pop('idx', None)
 
-    if args.reset_position_ids:
+    if args.reset_position_ids and not args.reset_attention_mask:
         generate_actual_seq_len(batch, actual_seq_len)
-    # slice batch along sequence dimension for context parallelism
-    batch = get_batch_on_this_cp_rank(batch)
+        batch = get_batch_on_this_cp_rank(batch)
+    else:
+        # slice batch along sequence dimension for context parallelism
+        batch = get_batch_on_this_cp_rank(batch)
     return batch.values()
 
 

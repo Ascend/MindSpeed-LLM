@@ -849,6 +849,8 @@ def _add_training_args(parser):
                        help='Disable final layer norm.')
     group.add_argument('--return-document-ids', action='store_true', default=False,
                        help='Return document ids when get batch.')
+    group.add_argument('--reset-attention-mask', action='store_true', default=False,
+                       help='Return document ids when get batch.')
 
     # for swap-optimizer
     group.add_argument('--swap-optimizer', action='store_true', default=False,
@@ -960,12 +962,17 @@ def _validate_create_attention_mask_in_dataloader(args):
     alibi_without_flash_attn = args.position_embedding_type == 'alibi' and not args.use_flash_attn
     if reset_data or alibi_without_flash_attn or args.tokenizer_padding_side == "left":
         args.create_attention_mask_in_dataloader = True
+    if reset_data and args.attention_mask_type == 'causal':
+        args.create_attention_mask_in_dataloader = False
     print_rank0_by_args(args, f"[INFO] Setting args.create_attention_mask_in_dataloader to {args.create_attention_mask_in_dataloader} "
                  f"since reset_data={reset_data} or alibi_without_flash_attn={alibi_without_flash_attn} or "
                  f"args.tokenizer_padding_side={args.tokenizer_padding_side}")
 
     if not args.reset_position_ids and args.neat_pack:
         raise ValueError("Require set `--reset-position-ids` when `--neat-pack` is set.")
+
+    if args.context_parallel_size > 1 and args.reset_attention_mask and args.attention_mask_type == 'causal':
+        assert args.context_parallel_algo == 'megatron_cp_algo', 'accelerated eod reset mode only support ring attention'
 
 
 def _validate_position_embedding(args):

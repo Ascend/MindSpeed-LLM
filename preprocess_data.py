@@ -150,6 +150,8 @@ def add_data_args(parser):
                        help="Use a zigzag attention mask.")
     group.add_argument("--script-data-dir", type=str, default=None,
                        help="Python script dataset direction")
+    group.add_argument("--pad-to-multiple-of", type=int, default=1,
+                       help="Pad each of the data to the multiple of...")
 
 
 def add_tokenizer_args(parser):

@@ -299,8 +299,8 @@ class CoreAdaptation(MegatronAdaptationABC):
             get_gpt_layer_local_spec)
         MegatronAdaptation.register('megatron.core.models.gpt.gpt_layer_specs.get_gpt_layer_local_spec',
                                     get_gpt_layer_local_spec_wrapper)
-
-        MegatronAdaptation.register('megatron.training.utils.get_batch_on_this_cp_rank', get_batch_on_this_cp_rank)
+        if not args.reset_attention_mask:
+            MegatronAdaptation.register('megatron.training.utils.get_batch_on_this_cp_rank', get_batch_on_this_cp_rank)
         MegatronAdaptation.register('megatron.training.dist_signal_handler.get_device', get_device_wrapper)
         # moe_fb_overlap will shadow this forward impl
         MegatronAdaptation.register('megatron.core.models.gpt.gpt_model.GPTModel', GPTModel)
@@ -387,6 +387,28 @@ class CoreAdaptation(MegatronAdaptationABC):
         if args.async_log_allreduce and not args.schedules_method == 'dualpipev':
             from mindspeed.core.training import train_step
             MegatronAdaptation.register('megatron.training.training.train_step', train_step)
+
+        if getattr(args, 'reset_attention_mask', False):
+            from mindspeed.core.datasets.gpt_dataset import _get_ltor_masks_and_position_ids, collate_wrapper
+            from mindspeed.utils import get_batch_on_this_cp_rank, get_batch_on_this_cp_rank_wrapper
+            MegatronAdaptation.register('megatron.training.utils.get_batch_on_this_cp_rank', get_batch_on_this_cp_rank)
+            from mindspeed_llm.training.utils import get_batch_on_this_tp_rank_reset_attn_mask
+            MegatronAdaptation.register('megatron.training.utils.get_batch_on_this_tp_rank', get_batch_on_this_tp_rank_reset_attn_mask)
+            MegatronAdaptation.register('megatron.core.datasets.gpt_dataset._get_ltor_masks_and_position_ids', _get_ltor_masks_and_position_ids)
+            MegatronAdaptation.register('torch.utils.data._utils.collate.default_collate', collate_wrapper)
+            MegatronAdaptation.register('megatron.training.utils.get_batch_on_this_cp_rank', get_batch_on_this_cp_rank_wrapper)
+
+            from mindspeed.core.pipeline_parallel.p2p_communication import _p2p_ops_eod 
+            MegatronAdaptation.register('megatron.core.pipeline_parallel.p2p_communication._p2p_ops', _p2p_ops_eod)
+            from mindspeed_llm.core.models.gpt.gpt_model import gpt_forward_wrapper
+            MegatronAdaptation.register('megatron.core.models.gpt.gpt_model.GPTModel.forward', gpt_forward_wrapper)        
+            from mindspeed.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb_thd
+            MegatronAdaptation.register('megatron.core.models.common.embeddings.rotary_pos_embedding.apply_rotary_pos_emb_thd', apply_rotary_pos_emb_thd)
+            from mindspeed.core.transformer.attention import attention_forward
+            MegatronAdaptation.register('megatron.core.transformer.attention.Attention.forward', attention_forward)
+
+            from mindspeed.core.models.common.embeddings.rotary_pos_embedding import rotary_forward
+            MegatronAdaptation.register('megatron.core.models.common.embeddings.rotary_pos_embedding.RotaryEmbedding.forward', rotary_forward)
 
 
         # For Dualpipe
@@ -661,8 +683,10 @@ class CoreAdaptation(MegatronAdaptationABC):
         )
         MegatronAdaptation.register('megatron.core.datasets.gpt_dataset.GPTDataset.__getitem__',
                                     gpt_dataset_getitem_wrapper)
-        MegatronAdaptation.register('megatron.core.datasets.gpt_dataset._get_ltor_masks_and_position_ids',
-                                    _get_ltor_masks_and_position_ids)
+        args = MegatronAdaptation.get_args()
+        if not args.reset_attention_mask:
+            MegatronAdaptation.register('megatron.core.datasets.gpt_dataset._get_ltor_masks_and_position_ids',
+                                        _get_ltor_masks_and_position_ids)
 
 
     def patch_utils(self):

@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from typing import Literal, Optional, Dict
+from functools import wraps
 
 import torch
 from torch import Tensor
@@ -39,6 +40,7 @@ from mindspeed_llm.core.transformer.multi_token_prediction import (
     tie_output_layer_state_dict,
     tie_word_embeddings_state_dict,
 )
+from mindspeed.utils import get_actual_seq_len, compute_qkv_index, get_position_ids
 
 
 class GPTModel(MegatronCoreGPTModel):
@@ -348,3 +350,25 @@ class GPTModel(MegatronCoreGPTModel):
                 )
 
         return sharded_state_dict
+
+
+def gpt_forward_wrapper(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        actual_seq_len = get_actual_seq_len()
+
+        packed_seq_params = PackedSeqParams(
+            cu_seqlens_q=actual_seq_len, 
+            cu_seqlens_kv=actual_seq_len
+        )
+
+        actual_seq_len = actual_seq_len.clone().tolist() if isinstance(actual_seq_len, Tensor) else actual_seq_len
+        q_index, kv_index = compute_qkv_index(actual_seq_len)
+        packed_seq_params.q_index = q_index
+        packed_seq_params.kv_index = kv_index
+        packed_seq_params.position_ids = get_position_ids()
+
+        kwargs['packed_seq_params'] = packed_seq_params
+        return fn(*args, **kwargs)
+
+    return wrapper

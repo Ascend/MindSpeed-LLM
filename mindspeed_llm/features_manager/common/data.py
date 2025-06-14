@@ -21,6 +21,7 @@ class DataFeature(MindSpeedFeature):
 
     def register_patches(self, patch_manager, args):
         from ...training.utils import get_batch_on_this_tp_rank
-        patch_manager.register_patch(
-            'megatron.training.utils.get_batch_on_this_tp_rank', get_batch_on_this_tp_rank)
+        if not args.reset_attention_mask:
+            patch_manager.register_patch(
+                'megatron.training.utils.get_batch_on_this_tp_rank', get_batch_on_this_tp_rank)
 

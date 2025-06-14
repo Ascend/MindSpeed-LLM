@@ -276,6 +276,15 @@ class GeneralPretrainHandler(BaseDatasetHandler):
                 if len(sentence) > 0:
                     sentence_ids = self._tokenize(sentence)
                     doc_ids.append(sentence_ids)
+            if len(doc_ids) > 0 and self.args.pad_to_multiple_of > 1:
+                # padding each of the input data in the case of context parallel
+                local_length = len(doc_ids[-1]['input_ids'])
+                num_tokens_to_pad = (((local_length // self.args.pad_to_multiple_of) + 1) * self.args.pad_to_multiple_of) - local_length
+                if self.args.append_eod:
+                    num_tokens_to_pad = num_tokens_to_pad - 1
+                doc_ids[-1]['input_ids'].extend([self.tokenizer.vocab_size] * num_tokens_to_pad)
+                doc_ids[-1]['attention_mask'].extend([1] * num_tokens_to_pad)
+                doc_ids[-1]['labels'].extend([self.tokenizer.vocab_size] * num_tokens_to_pad)
             if len(doc_ids) > 0 and self.args.append_eod:
                 doc_ids[-1]['input_ids'].append(self.tokenizer.eod)
                 doc_ids[-1]['attention_mask'].append(1)

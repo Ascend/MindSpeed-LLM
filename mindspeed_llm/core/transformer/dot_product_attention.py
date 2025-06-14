@@ -17,7 +17,6 @@ from megatron.core.transformer.enums import AttnMaskType
 from megatron.core.transformer.utils import attention_mask_func
 from megatron.core.utils import divide
 from megatron.core.packed_seq_params import PackedSeqParams
-from mindspeed.core.context_parallel.ring_context_parallel import ringattn_context_parallel
 from mindspeed.core.context_parallel.ulysses_context_parallel import ulyssesattn_context_parallel
 from mindspeed.core.parallel_state import (get_context_parallel_group_for_hybrid_ring,
                                            get_context_parallel_for_hybrid_ring_world_size,
@@ -36,6 +35,7 @@ from mindspeed.core.context_parallel.context_parallel_kv_cache import get_cache_
 from mindspeed.utils import get_actual_seq_len, compute_qkv_index, get_position_ids
 
 from mindspeed_llm.tasks.models.common.alibi import Alibi
+from mindspeed_llm.core.context_parallel.ring_context_parallel import ringattn_context_parallel
 
 try:
     from einops import rearrange
@@ -249,10 +249,7 @@ def dot_product_attention_forward_wrapper(fn):
     def wrapper(self, query, key, value, attention_mask, attn_mask_type, packed_seq_params):
         if attention_mask is None:
             attention_mask = get_attention_mask()
-        assert packed_seq_params is None, (
-            "Packed sequence is not supported by DotProductAttention."
-            "Please use TEDotProductAttention instead."
-        )
+
         args = get_args()
         if args.use_flash_attn and args.tp_2d:
             from mindspeed.core.transformer.dot_product_attention import dot_product_attention_forward
@@ -399,9 +396,6 @@ def flash_attention_forward(
         attn_mask_type,
         packed_seq_params,
 ):
-    if packed_seq_params is not None:
-        raise AssertionError("packed_seq_params should be None.")
-
     query_rope, key_rope = None, None
     if isinstance(query, List):
         query, query_rope = query[0], query[1]
