@@ -1,20 +1,23 @@
 #!/bin/bash
 export CUDA_DEVICE_MAX_CONNECTIONS=1
+export HCCL_OP_RETRY_ENABLE="L0:0, L1:1, L2:1"
+export HCCL_CONNECT_TIMEOUT=3600
+export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
 
 NPUS_PER_NODE=16
 MASTER_ADDR=localhost #主节点IP
 MASTER_PORT=6001
-NNODES=48
+NNODES=36
 NODE_RANK=0
 WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
-CKPT_SAVE_DIR="your model save ckpt path"
+CKPT_LOAD_DIR="your model ckpt path"
 DATA_PATH="your data path"
 TOKENIZER_MODEL="your tokenizer path"
-CKPT_LOAD_DIR="your model ckpt path"
+CKPT_SAVE_DIR="your model save ckpt path"
 
 TP=16
-PP=12
+PP=9
 CP=4
 
 DISTRIBUTED_ARGS="
@@ -28,7 +31,6 @@ DISTRIBUTED_ARGS="
 GPT_ARGS="
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \
-    --num-layer-list 8,11,11,11,11,11,11,11,11,11,11,8
     --context-parallel-size ${CP} \
     --context-parallel-algo megatron_cp_algo \
     --micro-batch-size 1 \
@@ -41,6 +43,7 @@ GPT_ARGS="
     --use-fused-swiglu \
     --tokenizer-type PretrainedFromHF \
     --tokenizer-name-or-path ${TOKENIZER_MODEL} \
+    --num-layer-list 12,12,12,15,15,15,15,15,15 \
     --num-layers 126 \
     --hidden-size 16384 \
     --ffn-hidden-size 53248 \
@@ -85,6 +88,15 @@ GPT_ARGS="
     --no-shared-storage \
     --bf16 \
     --use-mcore-models \
+    --reuse-fp32-param \
+    --use-cp-send-recv-overlap \
+    --overlap-grad-reduce \
+    --overlap-param-gather \
+    --use-distributed-optimizer \
+    --swap-attention \
+    --recompute-granularity full \
+    --recompute-method uniform \
+    --recompute-num-layers 1 \
 "
 
 DATA_ARGS="
@@ -106,4 +118,4 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     --distributed-backend nccl \
     --load ${CKPT_LOAD_DIR} \
     --save ${CKPT_SAVE_DIR} \
-    | tee logs/train_llama3_1_405b_128k_tp16pp12cp4_gbs16.log
+    | tee logs/train_llama3_1_405b_128k_tp16pp9cp4_gbs64.log
