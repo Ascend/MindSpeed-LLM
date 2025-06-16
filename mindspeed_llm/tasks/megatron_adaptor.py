@@ -202,6 +202,7 @@ class CoreAdaptation(MegatronAdaptationABC):
         self.mcore_tensor_parallel_adaptation()
         self.patch_pipeline_parallel_schedules()
         self.patch_swap_optimizer()
+        self.patch_sft()
 
     def patch_core_distributed(self):
         import megatron.core
@@ -741,6 +742,13 @@ class CoreAdaptation(MegatronAdaptationABC):
                                          SwapDistributedOptimizer)
             MegatronAdaptation.register('mindspeed.optimizer.adamw.AdamW.step', swap_adamw_step)
 
+    def patch_sft(self):
+        args = MegatronAdaptation.get_args()
+        if args.stage == 'sft' and args.schedules_method == 'dualpipev':
+            from mindspeed.core.pipeline_parallel.dualpipev.dualpipev_schedules import set_forward_func
+            from mindspeed_llm.tasks.posttrain.sft.sft_trainer import forward_step_in_sft_with_dualpipe
+
+            set_forward_func(forward_step_in_sft_with_dualpipe)
 
 
 class LegacyAdaptation(MegatronAdaptationABC):

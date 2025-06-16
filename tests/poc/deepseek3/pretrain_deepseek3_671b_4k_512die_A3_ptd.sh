@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 需要切换MindSpeed版本
-# git checkout ca70c1338f1b3d1ce46a0ea426e5779ae1312e2e  # checkout commit from MindSpeed core_r0.8.0
+# git checkout 14893d7337cd43dbbfa237cd5b4a6088d8786666  # checkout commit from MindSpeed core_r0.8.0 in 2025.05.28
 # 数据集使用alpaca数据集
 
 export CUDA_DEVICE_MAX_CONNECTIONS=1

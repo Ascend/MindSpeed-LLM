@@ -10,6 +10,10 @@ from megatron.training.utils import (
     average_losses_across_data_parallel_group
 )
 from megatron.training import get_timers
+try:
+    from mindspeed.core.pipeline_parallel.dualpipev.dualpipev_schedules import set_post_process_flag
+except ImportError:
+    pass
 from mindspeed_llm.training.utils import get_tune_attention_mask, get_finetune_data_on_this_tp_rank, generate_actual_seq_len
 from mindspeed_llm.tasks.posttrain.base import BaseTrainer
 
@@ -102,18 +106,20 @@ class SFTTrainer(BaseTrainer):
         batch = get_batch_on_this_cp_rank(batch)
         return batch.values()
 
-    def loss_func(self, input_tensor: torch.Tensor, output_tensor: torch.Tensor):
+    @staticmethod
+    def loss_func(input_tensor: torch.Tensor, output_tensor: torch.Tensor):
         """Loss function.
 
         Args:
             input_tensor (torch.Tensor): Used to mask out some portions of the loss
             output_tensor (torch.Tensor): The tensor with the losses
         """
+        args = get_args()
         loss_mask = input_tensor
 
         losses = output_tensor.float()
         loss_mask = loss_mask[..., 1:].view(-1).float()
-        if self.args.context_parallel_size > 1:
+        if args.context_parallel_size > 1:
             loss = torch.cat([torch.sum(losses.view(-1) * loss_mask).view(1), loss_mask.sum().view(1)])
             torch.distributed.all_reduce(loss, group=mpu.get_context_parallel_group())
             loss = loss[0] / loss[1]
@@ -121,7 +127,7 @@ class SFTTrainer(BaseTrainer):
             loss = torch.sum(losses.view(-1) * loss_mask) / loss_mask.sum()
 
         # Check individual rank losses are not NaN prior to DP all-reduce.
-        if self.args.check_for_nan_in_loss_and_grad:
+        if args.check_for_nan_in_loss_and_grad:
             global_rank = torch.distributed.get_rank()
             if loss.isnan():
                 raise ValueError(f'Rank {global_rank}: found NaN in local forward loss calculation. '
@@ -130,7 +136,7 @@ class SFTTrainer(BaseTrainer):
         # Reduce loss for logging.
         averaged_loss = average_losses_across_data_parallel_group([loss])
 
-        return loss * self.args.context_parallel_size, {'lm loss': averaged_loss[0]}
+        return loss * args.context_parallel_size, {'lm loss': averaged_loss[0]}
 
     def forward_step(self, data_iterator, model):
         """Forward training step.
@@ -156,3 +162,32 @@ class SFTTrainer(BaseTrainer):
                                   labels=labels, loss_mask=loss_mask)
 
         return output_tensor, partial(self.loss_func, loss_mask)
+
+
+def forward_step_in_sft_with_dualpipe(data_iterator, model, extra_block_kwargs=None):
+    """Forward training step.
+
+    Args:
+        data_iterator : Input data iterator
+        model (GPTModel): The GPT Model
+    """
+
+    timers = get_timers()
+
+    # Get the batch.
+    timers('batch-generator', log_level=2).start()
+    set_post_process_flag(model.module.module.post_process)
+    tokens, labels, loss_mask, attention_mask, position_ids = SFTTrainer.get_batch(
+        data_iterator)
+    timers('batch-generator').stop()
+
+    if extra_block_kwargs is not None:
+        # excute forward backward overlaping
+        output_tensor, model_graph, pp_comm_output = \
+            model(tokens, position_ids, attention_mask, labels=labels, loss_mask=loss_mask,
+                  extra_block_kwargs=extra_block_kwargs)
+        return (output_tensor, model_graph, pp_comm_output), partial(SFTTrainer.loss_func, loss_mask)
+    else:
+        output_tensor, model_graph = model(
+            tokens, position_ids, attention_mask, labels=labels, loss_mask=loss_mask)
+        return (output_tensor, model_graph), partial(SFTTrainer.loss_func, loss_mask)
