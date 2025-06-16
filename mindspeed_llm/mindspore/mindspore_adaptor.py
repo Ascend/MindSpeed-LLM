@@ -326,8 +326,8 @@ class MindSporeAdaptation(MegatronAdaptationABC):
                         zerc_alltoall_token_unperm2)
 
         from mindspeed.mindspore.core.pipeline_parallel.fb_overlap.modules.token_dispatcher import PackProb, UnpackProb
-        MindSporeAdaptation.register('mindspeed.mindspore.core.pipeline_parallel.fb_overlap.modules.token_dispatcher.PackProb', PackProb)
-        MindSporeAdaptation.register('mindspeed.mindspore.core.pipeline_parallel.fb_overlap.modules.token_dispatcher.UnpackProb', UnpackProb)
+        MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.modules.token_dispatcher.PackProb', PackProb)
+        MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.modules.token_dispatcher.UnpackProb', UnpackProb)
 
         if args.gemm_gradient_accumulation_fusion:
             from mindspeed.mindspore.ops.npu_groupmatmul_add import npu_groupmatmul_add_fp32
