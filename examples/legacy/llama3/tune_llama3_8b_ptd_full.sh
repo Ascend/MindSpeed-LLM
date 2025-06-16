@@ -98,4 +98,4 @@ torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     $OUTPUT_ARGS \
     --distributed-backend nccl \
     --load ${CKPT_LOAD_DIR} \
-    | tee logs/train_llama3_8b_full.log
+    | tee logs/tune_llama3_8b_full.log
