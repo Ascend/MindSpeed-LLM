@@ -68,6 +68,8 @@ GPT_ARGS="
     --use-rotary-position-embeddings \
     --use-fused-swiglu \
     --no-masked-softmax-fusion \
+    --use-ascend-coc \
+    --coc-fused-kernel \
     --attention-softmax-in-fp32 \
     --min-lr 1.25e-7 \
     --weight-decay 1e-1 \

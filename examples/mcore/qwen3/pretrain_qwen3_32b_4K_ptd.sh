@@ -48,7 +48,7 @@ OPTIMIZE_ARGS="
 
 TRAIN_ARGS="
     --micro-batch-size 1 \
-    --global-batch-size 16 \
+    --global-batch-size ${GBS} \
     --lr 1.25e-6 \
     --lr-decay-style cosine \
     --min-lr 1.25e-7 \
