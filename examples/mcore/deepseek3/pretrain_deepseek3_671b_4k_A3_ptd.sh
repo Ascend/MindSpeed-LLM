@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 需要切换MindSpeed版本
-# git checkout 14893d7337cd43dbbfa237cd5b4a6088d8786666  # checkout commit from MindSpeed core_r0.8.0 in 2025.05.28
+# git checkout 9648d729e4866f8037d0bd76630029410a60e6a6  # checkout commit from MindSpeed core_r0.8.0 in 2025.06.14
 
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export CPU_AFFINITY_CONF=1
