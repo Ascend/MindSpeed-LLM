@@ -112,11 +112,13 @@
 - [环境配置](#环境配置)
   - [硬件要求](#硬件要求)
   - [环境搭建](#环境搭建)
-- [权重转换](##权重转换)
-- [数据预处理](##数据预处理)
-- [模型训练](##训练)
-- [推理](##推理)
-- [评估](##评估)
+  - [版本声明](#版本声明)
+- [训练全流程参考](#训练全流程参考)
+  - [权重转换](##权重转换)
+  - [数据预处理](##数据预处理)
+  - [模型训练](##训练)
+  - [推理](##推理)
+  - [评估](##评估)
 
 
 
@@ -174,7 +176,7 @@ MindSpeed-LLM的主要依赖配套如下表，安装步骤参考[安装指导](h
   </tr>
   <tr>
     <td>transformers</td>
-    <td >4.51.3</td>
+    <td >4.51.0</td>
   </tr>
 </table>
 
@@ -196,7 +198,7 @@ mkdir ckpt
 
 <a id="jump1.2"></a>
 
-#### 2. 环境搭建
+#### 2. 相关依赖安装
 
 torch npu 与 CANN包参考链接：[安装包参考链接](https://support.huawei.com/enterprise/zh/ascend-computing/cann-pid-251168373/software)
 
@@ -225,12 +227,25 @@ cd ../MindSpeed-LLM
 # 安装其余依赖库
 pip install -r requirements.txt
 ```
-**注意** ： 由于首发最新版本支持，要求transformers版本为4.51.3,用户需执行以下命令：
+**注意** ： 由于首发最新版本支持，要求transformers版本为4.51.0,用户需执行以下命令：
 
 ```
-  pip install transformers == 4.51.3
+  pip install transformers==4.51.0
 ```
 
+## 版本声明
+
+#### 参考实现：
+```shell
+url=https://github.com/huggingface/transformers/tree/v4.51.0
+commit_id=0720e20
+```
+
+#### 变更记录：
+
+- 2025.4.29：首次发布
+
+## 训练全流程参考
 
 ### 权重转换
 

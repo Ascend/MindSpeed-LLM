@@ -17,6 +17,25 @@
   </thead>
   <tbody>
     <tr>
+      <td rowspan="2"> <a href="https://huggingface.co/collections/Qwen/qwen3-67dd247413f0e2e4f653967f">Qwen3</a> </td>
+      <td><a href="https://huggingface.co/Qwen/Qwen3-30B-A3B-Base">30B</a></td>
+      <td><a href="../../../examples/mcore/qwen3_moe/">Qwen3-30B-A3B</a></td>
+      <td> 4K </td>
+      <th> Mcore </th>
+      <td> 2x8 </td>
+      <td>【Ascend】</td>
+      <td>【Test】</td>
+    </tr>
+    <tr>
+      <td><a href="https://huggingface.co/Qwen/Qwen3-235B-A22B">235B</a></td>
+      <td><a href="../../../examples/mcore/qwen3_moe/">Qwen3-235B-A22B</a></td>
+      <td> 4K </td>
+      <th> Mcore </th>
+      <td> 16x16 </td>
+      <td>【Ascend】</td>
+      <td>【Test】</td>
+    </tr>
+    <tr>
        <tr>
        <td rowspan="1"><a href="https://huggingface.co/Qwen">Qwen2</a></td>
       <td><a href="https://huggingface.co/Qwen/Qwen2-57B-A14B/tree/main">57B-A14B</a></td>

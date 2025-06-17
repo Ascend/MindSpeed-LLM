@@ -17,8 +17,8 @@ CKPT_SAVE_DIR="your model save ckpt path"
 DATA_PATH="your data path"
 TOKENIZER_PATH="your tokenizer path"
 
-TP=2
-PP=4
+TP=4
+PP=2
 CP=1
 MBS=1
 GBS=128
@@ -36,8 +36,12 @@ DISTRIBUTED_ARGS="
 
 OPTIMIZE_ARGS="
     --use-flash-attn \
+    --use-fused-rotary-pos-emb \
     --use-rotary-position-embeddings \
+    --use-fused-swiglu \
+    --use-fused-rmsnorm \
     --no-masked-softmax-fusion \
+    --use-distributed-optimizer
 "
 
 TRAIN_ARGS="

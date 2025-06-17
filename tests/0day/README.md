@@ -127,3 +127,15 @@
     <td>4.51.3</td>
   </tr>
 </table>
+
+## 版本声明
+
+#### 参考实现：
+```shell
+url=https://github.com/huggingface/transformers/tree/v4.51.3
+commit_id=5f4ecf2
+```
+
+#### 变更记录：
+
+- 2025.4.22：首次发布
