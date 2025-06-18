@@ -64,6 +64,18 @@ MindSpeed-LLM MindSpore后端的安装步骤参考[基础安装指导](../../../
    successfully saved checkpoint from iteration 1 to ./model_weights/qwen2.5_mcore/
    INFO:root:Done!
     ```
+**注意：**
+- MindSpore 后端默认在Device侧进行权重转换，在模型较大时存在OOM风险，因此建议用户手动修改`convert_ckpt.py`，在包导入时加入如下代码设置CPU侧执行权重转换：
+
+```python
+import mindspore as ms
+ms.set_context(device_target="CPU", pynative_synchronize=True)
+import torch
+torch.configs.set_pyboost(False)
+```
+
+- MindSpore 后端转换出的模型权重无法用于 Torch后端训练或推理。
+
 ### 数据预处理
 
 当前MindSpore后端已完全支持MindSpeed-LLM的多种任务场景下的数据预处理，数据预处理指南参见[数据预处理](../../../docs/pytorch/solutions/pretrain/pretrain_dataset.md)。

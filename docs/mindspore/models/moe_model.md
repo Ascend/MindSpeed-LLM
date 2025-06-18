@@ -21,7 +21,7 @@
       <td> 4K</td>
       <th>Mcore</th>
       <td>8x8</td>
-      <td>❌</td>
+      <td>支持中</td>
       <tr>
     </tr>
     <tr>
@@ -31,20 +31,20 @@
       <td> 32K</td>
       <th>Mcore</th>
       <td>8x8</td>
-      <td>❌</td>
+      <td>支持中</td>
     </tr>
     <tr>
       <td rowspan="2"><a href="https://huggingface.co/mistralai/Mixtral-8x22B-v0.1/tree/main">8x22B</a></td>
       <td> 32K</td>
       <th>Mcore</th>
       <td>8x8</td>
-      <td>❌</td>
+      <td>支持中</td>
     </tr>
     <tr>
       <td> 64K</td>
       <th>Mcore</th>
       <td>8x8</td>
-      <td>❌</td>
+      <td>支持中</td>
     </tr>
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/deepseek-ai/DeepSeek-V2">DeepSeek-V2</a></td>
@@ -53,7 +53,7 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td> 20x8 </td>
-      <td>❌</td>
+      <td>支持中</td>
     </tr>
         <tr>
       <td rowspan="1"><a href="https://huggingface.co/deepseek-ai/DeepSeek-Coder-V2-Base">DeepSeek-V2-coder</a></td>
@@ -62,7 +62,7 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td> 20x8 </td>
-       <td>❌</td>
+       <td>支持中</td>
     </tr>
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/deepseek-ai/DeepSeek-V2-Lite">DeepSeek-V2-Lite</a></td>
@@ -80,7 +80,7 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td> 20x8 </td>
-      <td>❌</td>
+      <td>支持中</td>
     </tr>
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/deepseek-ai/DeepSeek-V3">DeepSeek-V3</a></td>
@@ -98,7 +98,7 @@
       <td> 4K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
-      <td>❌</td>
+      <td>支持中</td>
     </tr>
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/microsoft">Phi3.5</a></td>
@@ -107,7 +107,7 @@
       <td> 4K </td>
       <th> Mcore </th>
       <td> 2x8 </td>
-      <td>❌</td>
+      <td>支持中</td>
     </tr>
   </tbody>
 </table>

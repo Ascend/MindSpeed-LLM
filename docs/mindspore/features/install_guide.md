@@ -21,7 +21,7 @@ source /usr/local/Ascend/ascend-toolkit/set_env.sh # 安装nnal包需要source�
 bash Ascend-cann-nnal_8.1.RC1_linux-aarch64.run --install
 # 设置环境变量
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
-source /usr/local/Ascend/nnal/atb/set_env.sh --cxxabi=0
+source /usr/local/Ascend/nnal/atb/set_env.sh --cxx_abi=0
 ```
 
 ### MindSpore安装
@@ -34,7 +34,7 @@ source /usr/local/Ascend/nnal/atb/set_env.sh --cxxabi=0
 ```shell
 # 使用环境变量
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
-source /usr/local/Ascend/nnal/atb/set_env.sh --cxxabi=0
+source /usr/local/Ascend/nnal/atb/set_env.sh --cxx_abi=0
 
 # 安装MindSpeed-Core-MS转换工具
 git clone https://gitee.com/ascend/MindSpeed-Core-MS.git -b master

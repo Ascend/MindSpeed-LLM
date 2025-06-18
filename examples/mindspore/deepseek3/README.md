@@ -5,11 +5,20 @@
 
 
 ### 2. 权重转换
-MindSpore后端已支持DeepSeek3模型权重转换，使用方式与PyTorch后端一致，详细转换参考[DeepSeek3权重转换](../../mcore/deepseek3/README.md)
+MindSpore后端已支持DeepSeek3模型权重转换，使用方式与PyTorch后端一致，详细转换参考[DeepSeek3权重转换](../../mcore/deepseek3/README.md)。
 
 **注意：**
-- 当前尚不支持QLoRA权重量化转换，【--qlora-nf4】参数仅可置为False
+- 当前尚不支持QLoRA权重量化转换，【--qlora-nf4】参数仅可置为False。
+- MindSpore 后端默认在Device侧进行权重转换，在模型较大时存在OOM风险，因此建议用户手动修改`examples/mcore/deepseek3/convert_ckpt_deepseek3.py`，在包导入时加入如下代码设置CPU侧执行权重转换：
 
+```python
+import mindspore as ms
+ms.set_context(device_target="CPU", pynative_synchronize=True)
+import torch
+torch.configs.set_pyboost(False)
+```
+
+- MindSpore 后端转换出的模型权重无法用于 Torch后端训练或推理。
 
 ### 3. 预训练
 
@@ -44,6 +53,8 @@ GBS=8
 ...
 MOE_ARGS="
     ...
+    --first-k-dense-replace 1 \
+    ...
     --num-experts 16 \
     ...
 "
@@ -71,7 +82,7 @@ WORLD_SIZE=$(($GPUS_PER_NODE*$NNODES))
 ```shell
 # 初始化环境变量
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
-source /usr/local/Ascend/nnal/atb/set_env.sh
+source /usr/local/Ascend/nnal/atb/set_env.sh --cxx_abi=0
 # 注意：在MindSpeed-LLM目录下执行
 sh examples/mindspore/deepseek3/pretrain_deepseek3_671B_4k_ms.sh
 ```

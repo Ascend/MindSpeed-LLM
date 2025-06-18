@@ -17,12 +17,12 @@ MindSpeed-LLM + MindSpore后端的依赖配套如下表，安装步骤参考[基
 | --------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
 | 昇腾NPU驱动固件 | [在研版本](https://www.hiascend.com/hardware/firmware-drivers/community?product=1&model=30&cann=8.0.RC3.alpha002&driver=1.0.26.alpha) |
 | 昇腾 CANN       | [在研版本](https://www.hiascend.com/zh/developer/download/community/result?module=cann)                                               |
-| MindSpore       | [2.6.0](https://www.mindspore.cn/install/)                                                                                        |
+| MindSpore       | [2.7.0](https://www.mindspore.cn/install/)                                                                                        |
 | Python          | >=3.9                                                                                                                              |
 
 ## 模型支持
 
-MindSpore后端仅支持以 mcore 模型，当前模型支持详情见下表，更多模型支持将逐步上线，敬请期待！
+MindSpore后端仅支持以 mcore 方式实现的模型，当前模型支持详情见下表，更多模型支持将逐步上线，敬请期待！
 
 <table><thead>
   <tr>
@@ -97,7 +97,7 @@ MindSpore后端对MindSpeed的重要加速特性的支持情况如下表所示�
   <tr>
     <td rowspan="6">显存优化</td>
     <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/reuse-fp32-param.md">参数副本复用</a></td>
-    <td>✅</td>
+    <td>须和分布式优化器特性一起使用</td>
   </tr>
     <tr>
     <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/distributed-optimizer.md">分布式优化器</a></td>
