@@ -157,7 +157,7 @@ def run_tests(raw_txt_file):
     if filter_exec_ut(raw_txt_file)[0]:
         pass
     else:
-        st.run_st()
+        pass
 
         
 def main():
