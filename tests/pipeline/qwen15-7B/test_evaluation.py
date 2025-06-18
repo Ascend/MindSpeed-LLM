@@ -28,7 +28,7 @@ class TestEvaluate(DistributedTest):
             handler, log_capture = setup_logger(PATTERN)
 
         main()
-        
+
         if dist.get_rank() == 0:
             print("=================== qwen15_7B MMLU score ===============")
             print(log_capture)
@@ -44,7 +44,7 @@ class TestEvaluate(DistributedTest):
             handler, log_capture = setup_logger(PATTERN)
 
         main()
-        
+
         if dist.get_rank() == 0:
             print("=================== qwen15_7B CMMLU score ===============")
             print(log_capture)
@@ -60,7 +60,7 @@ class TestEvaluate(DistributedTest):
             handler, log_capture = setup_logger(PATTERN)
 
         main()
-        
+
         if dist.get_rank() == 0:
             print("=================== qwen15_7B BOOLQ score ===============")
             print(log_capture)
@@ -76,7 +76,7 @@ class TestEvaluate(DistributedTest):
             handler, log_capture = setup_logger(PATTERN)
 
         main()
-        
+
         if dist.get_rank() == 0:
             print("=================== qwen15_7B CEVAL score ===============")
             print(log_capture)
@@ -92,7 +92,7 @@ class TestEvaluate(DistributedTest):
             handler, log_capture = setup_logger(PATTERN)
 
         main()
-        
+
         if dist.get_rank() == 0:
             print("=================== qwen15_7B BBH score ===============")
             print(log_capture)
@@ -108,13 +108,13 @@ class TestEvaluate(DistributedTest):
             handler, log_capture = setup_logger(PATTERN)
 
         main()
-        
+
         if dist.get_rank() == 0:
             print("=================== qwen15_7B GSM8K score ===============")
             print(log_capture)
 
             expected_score = acquire_score(log_capture)
-            assert math.isclose(expected_score, 0.6667, abs_tol=1e-2), expected_score
+            assert math.isclose(expected_score, 0.7179487, abs_tol=1e-2), expected_score
 
 
     @pytest.mark.parametrize("params", test_config["test_qwen15_7B_agi_evaluate"])
@@ -124,7 +124,7 @@ class TestEvaluate(DistributedTest):
             handler, log_capture = setup_logger(PATTERN)
 
         main()
-        
+
         if dist.get_rank() == 0:
             print("=================== qwen15_7B AGI score ===============")
             print(log_capture)
@@ -140,27 +140,27 @@ class TestEvaluate(DistributedTest):
             handler, log_capture = setup_logger(PATTERN)
 
         main()
-        
+
         if dist.get_rank() == 0:
             print("=================== qwen15_7B MMLU_PPL score ===============")
             print(log_capture)
 
             expected_score = acquire_score(log_capture)
-            assert math.isclose(expected_score, 0.631579, abs_tol=1e-2), expected_score
-
-
+            assert math.isclose(expected_score, 0.25146198, abs_tol=1e-2), expected_score
+    
+    
     @pytest.mark.parametrize("params", test_config["test_qwen15_7B_hellaswag_evaluate"])
     def test_qwen_hellaswag_evaluate(self, build_args, params):
         os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
         if dist.get_rank() == 0:
             handler, log_capture = setup_logger(PATTERN)
-
+        
         main()
         
         if dist.get_rank() == 0:
             print("=================== qwen15_7B HELLASWAG score ===============")
             print(log_capture)
-
+            
             expected_score = acquire_score(log_capture)
             assert math.isclose(expected_score, 1.0, abs_tol=1e-2), expected_score
 

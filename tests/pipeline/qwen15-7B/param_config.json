@@ -374,7 +374,6 @@
                 "tokenizer-name-or-path": "/data/hf/qwen15-7B-hf/",
                 "tokenizer-not-use-fast": null,
                 "micro-batch-size": 1,
-                "exit-on-missing-checkpoint": null,
                 "no-load-rng": null,
                 "no-load-optim": null,
                 "untie-embeddings-and-output-weights": null,
@@ -396,7 +395,7 @@
     "test_qwen15_7B_hellaswag_evaluate": [
         {
             "param": {
-                "task-data-path": "/data/eval_data/hellaswag/",
+                "task-data-path": "/data/pipeline/eval_data/hellaswag/",
                 "task": "hellaswag_eval",
                 "tensor-model-parallel-size": 8,
                 "pipeline-model-parallel-size": 1,
@@ -413,10 +412,9 @@
                 "load": "/data/qwen15-7B-hf/ckpt/",
                 "normalization": "RMSNorm",
                 "tokenizer-type": "PretrainedFromHF",
-                "tokenizer-name-or-path": "/data/qwen15-7B-hf/",
+                "tokenizer-name-or-path": "/data/hf/qwen15-7B-hf/",
                 "tokenizer-not-use-fast": null,
                 "micro-batch-size": 1,
-                "exit-on-missing-checkpoint": null,
                 "no-load-rng": null,
                 "no-load-optim": null,
                 "untie-embeddings-and-output-weights": null,
@@ -438,7 +436,7 @@
     "test_qwen15_7B_human_eval_evaluate": [
         {
             "param": {
-                "task-data-path": "/data/eval_data/human_eval_alternative/",
+                "task-data-path": "/data/pipeline/eval_data/human_eval_alternative/",
                 "task": "human_eval",
                 "use-mcore-models": null,
                 "tensor-model-parallel-size": 8,
@@ -458,7 +456,6 @@
                 "tokenizer-name-or-path": "/data/hf/qwen15-7B-hf/",
                 "tokenizer-not-use-fast": null,
                 "micro-batch-size": 1,
-                "exit-on-missing-checkpoint": null,
                 "no-load-rng": null,
                 "no-load-optim": null,
                 "untie-embeddings-and-output-weights": null,

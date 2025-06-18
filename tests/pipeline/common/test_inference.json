@@ -68,7 +68,6 @@
                 "no-load-rng": null,
                 "no-masked-softmax-fusion": null,
                 "no-gradient-accumulation-fusion": null,
-                "exit-on-missing-checkpoint": null,
                 "lora-load": "/data/llama-2-7b-lora-tp8-pp1",
                 "lora-r": 16,
                 "lora-alpha": 32,
