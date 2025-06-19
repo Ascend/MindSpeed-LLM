@@ -1,5 +1,6 @@
 # 修改 ascend-toolkit 路径
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
+export CUDA_DEVICE_MAX_CONNECTIONS=1
 
 # 设置你需要的并行参数
 python convert_ckpt.py \

@@ -1,4 +1,5 @@
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
+export CUDA_DEVICE_MAX_CONNECTIONS=1
 
 python convert_ckpt.py \
     --model-type GPT \

@@ -1,5 +1,6 @@
 # 请按照您的真实环境修改 set_env.sh 路径
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
+export CUDA_DEVICE_MAX_CONNECTIONS=1
 
 python convert_ckpt.py \
    --use-mcore-models \

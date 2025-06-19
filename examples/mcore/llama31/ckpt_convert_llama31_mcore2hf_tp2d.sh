@@ -1,5 +1,6 @@
 # 修改 ascend-toolkit 路径
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
+export CUDA_DEVICE_MAX_CONNECTIONS=1
 
 # 权重格式转换
 python mindspeed_llm/tasks/checkpoint/convert_param.py \
