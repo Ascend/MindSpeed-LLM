@@ -51,7 +51,7 @@ GPT_ARGS="
     --lora-r 8 \
     --lora-alpha 16 \
     --lora-target-modules linear_qkv linear_proj linear_fc1 linear_fc2 \
-    --moe-token-dispatcher-type alltoall \
+    --moe-token-dispatcher-type alltoall_seq \
     --use-mcore-models  \
     --disable-bias-linear \
     --seq-length 1024 \

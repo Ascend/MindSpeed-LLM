@@ -4,7 +4,7 @@ from torch.nn.parallel.distributed import DistributedDataParallel as torchDDP
 from megatron.core import InferenceParams
 from megatron.core.distributed import DistributedDataParallel as LocalDDP
 from megatron.core.packed_seq_params import PackedSeqParams
-from megatron.legacy.model import Float16Module as MegatronFloat16Module
+from megatron.core.transformer.module import Float16Module as MegatronFloat16Module
 from megatron.training import get_args
 from megatron.training.utils import unwrap_model
 from mindspeed_llm.inference.text_generation.tokenization import tokenize_prompts

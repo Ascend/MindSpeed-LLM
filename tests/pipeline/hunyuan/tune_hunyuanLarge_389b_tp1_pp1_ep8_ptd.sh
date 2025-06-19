@@ -36,14 +36,17 @@ DISTRIBUTED_ARGS="
 "
 
 MOE_ARGS="
+    --moe-layer-freq -1 \
+    --first-k-dense-replace -1 \
     --num-experts 16 \
     --moe-router-topk 1 \
     --n-shared-experts 1 \
     --moe-router-load-balancing-type ${ROUTER_BALANCING_TYPE} \
     --moe-intermediate-size 18304 \
+    --moe-ffn-hidden-size 18304 \
     --moe-permutation-async-comm \
     --moe-grouped-gemm \
-    --moe-token-dispatcher-type alltoall \
+    --moe-token-dispatcher-type alltoall_seq \
     --moe-aux-loss-coeff 0.001 \
     --cla-share-factor 2 \
     --moe-revert-type-after-topk \

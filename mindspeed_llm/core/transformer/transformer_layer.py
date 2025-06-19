@@ -15,6 +15,7 @@
 
 import math
 from megatron.core.transformer.transformer_layer import TransformerLayerSubmodules
+from megatron.core.utils import WrappedTensor, deprecate_inference_params
 from megatron.core.transformer.transformer_layer import TransformerLayer as MegatronTransformerLayer
 from megatron.core.transformer.transformer_config import TransformerConfig
 from megatron.core.transformer.moe.moe_layer import MoELayer
@@ -59,8 +60,12 @@ class TransformerLayer(MegatronTransformerLayer):
                               context_mask=None,
                               rotary_pos_emb=None,
                               inference_params=None,
+                              attention_bias=None,
+                              inference_context=None,
                               packed_seq_params=None):
-
+        
+        inference_context = deprecate_inference_params(inference_context, inference_params)
+        
         # hidden_states: [s, b, h]
         args = get_args()
         # Residual connection.
@@ -76,7 +81,7 @@ class TransformerLayer(MegatronTransformerLayer):
         attention_output_with_bias = self.self_attention(
             input_layernorm_output,
             attention_mask=attention_mask,
-            inference_params=inference_params,
+            inference_context=inference_context,
             rotary_pos_emb=rotary_pos_emb,
             packed_seq_params=packed_seq_params,
         )
@@ -103,7 +108,7 @@ class TransformerLayer(MegatronTransformerLayer):
             pre_cross_attn_layernorm_output,
             attention_mask=context_mask,
             key_value_states=context,
-            inference_params=inference_params,
+            inference_context=inference_context,
         )
 
         if isinstance(attention_output_with_bias, dict) and "context" in attention_output_with_bias:

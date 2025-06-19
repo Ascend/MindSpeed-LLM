@@ -43,14 +43,14 @@ MLA_ARGS="
 MOE_ARGS="
     --moe-grouped-gemm \
     --moe-permutation-async-comm \
-    --moe-token-dispatcher-type alltoall \
-    --use-fused-moe-token-permute-and-unpermute \
+    --moe-token-dispatcher-type alltoall_seq \
     --first-k-dense-replace 1 \
     --moe-layer-freq 1 \
     --n-shared-experts 2 \
     --num-experts 160 \
     --moe-router-topk 6 \
     --moe-intermediate-size 1536 \
+    --moe-ffn-hidden-size 1536 \
     --moe-router-load-balancing-type group_limited_greedy \
     --topk-group 3 \
     --moe-aux-loss-coeff 0.003 \

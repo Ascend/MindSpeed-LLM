@@ -53,7 +53,7 @@ MOE_ARGS="
     --moe-grouped-gemm \
     --moe-permutation-async-comm \
     --use-fused-moe-token-permute-and-unpermute \
-    --moe-token-dispatcher-type alltoall \
+    --moe-token-dispatcher-type alltoall_seq \
     --moe-alltoall-overlap-comm \
     --first-k-dense-replace 3 \
     --moe-layer-freq 1 \
@@ -61,6 +61,7 @@ MOE_ARGS="
     --num-experts 256 \
     --moe-router-topk 8 \
     --moe-intermediate-size 2048 \
+    --moe-ffn-hidden-size 2048 \
     --moe-router-load-balancing-type noaux_tc \
     --seq-aux \
     --topk-group 4 \

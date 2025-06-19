@@ -20,6 +20,7 @@ import pytest
 import megatron.core.parallel_state as mpu
 from megatron.core.parallel_state import initialize_model_parallel
 from mindspeed.core.parallel_state import initialize_model_parallel_wrapper
+from mindspeed.core.context_parallel.model_parallel_utils import initialize_model_parallel_cp_wrapper
 from mindspeed_llm.core.parallel_state import initialize_model_parallel_decorator
 
 
@@ -75,6 +76,9 @@ def calculate_hash_for_model(data, chunk_size=1024 * 1024):
 
 
 def compare_state_dicts(state_dict1, state_dict2):
+    # Add rerun_state_machine for the Megatron-0.8.0 checkpoint
+    if 'rerun_state_machine' not in state_dict1.keys() and 'rerun_state_machine' in state_dict2.keys():
+        state_dict1['rerun_state_machine'] = state_dict2['rerun_state_machine']
     if state_dict1.keys() != state_dict2.keys():
         print(f"base:{state_dict1.keys()} != save:{state_dict2.keys()}")
         return False

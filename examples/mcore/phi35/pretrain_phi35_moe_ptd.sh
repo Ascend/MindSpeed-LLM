@@ -43,7 +43,8 @@ MOE_ARGS="
     --moe-input-jitter-eps 0.01 \
     --moe-token-dispatcher-type allgather \
     --moe-permutation-async-comm \
-    --use-fused-moe-token-permute-and-unpermute
+    --moe-layer-freq -1 \
+    --first-k-dense-replace -1 \
 "
 
 GPT_ARGS="

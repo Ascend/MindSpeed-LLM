@@ -27,6 +27,8 @@ MOE_ARGS="
     --moe-token-dispatcher-type allgather \
     --moe-permutation-async-comm \
     --moe-grouped-gemm \
+    --moe-layer-freq -1 \
+    --first-k-dense-replace -1 \
 "
 
 DISTRIBUTED_ARGS="

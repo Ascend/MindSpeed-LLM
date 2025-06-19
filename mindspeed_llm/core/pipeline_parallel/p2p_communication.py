@@ -28,14 +28,16 @@ def _batched_p2p_ops(
     tensor_recv_prev: Optional[torch.Tensor],
     tensor_send_next: Optional[torch.Tensor],
     tensor_recv_next: Optional[torch.Tensor],
-    group: torch.distributed.ProcessGroup
+    group: torch.distributed.ProcessGroup,
+    prev_pipeline_rank: int,
+    next_pipeline_rank: int,
 ):
     ops = []
     if tensor_send_prev is not None:
         send_prev_op = torch.distributed.P2POp(
             torch.distributed.isend,
             tensor_send_prev,
-            get_pipeline_model_parallel_prev_rank(),
+            prev_pipeline_rank,
             group,
         )
         ops.append(send_prev_op)
@@ -43,7 +45,7 @@ def _batched_p2p_ops(
         recv_prev_op = torch.distributed.P2POp(
             torch.distributed.irecv,
             tensor_recv_prev,
-            get_pipeline_model_parallel_prev_rank(),
+            prev_pipeline_rank,
             group,
         )
         ops.append(recv_prev_op)
@@ -51,7 +53,7 @@ def _batched_p2p_ops(
         recv_next_op = torch.distributed.P2POp(
             torch.distributed.irecv,
             tensor_recv_next,
-            get_pipeline_model_parallel_next_rank(),
+            next_pipeline_rank,
             group,
         )
         ops.append(recv_next_op)
@@ -59,7 +61,7 @@ def _batched_p2p_ops(
         send_next_op = torch.distributed.P2POp(
             torch.distributed.isend,
             tensor_send_next,
-            get_pipeline_model_parallel_next_rank(),
+            next_pipeline_rank,
             group,
         )
         ops.append(send_next_op)

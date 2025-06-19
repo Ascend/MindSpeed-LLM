@@ -65,26 +65,8 @@ def forward_backward_pipelining_with_interleaving_wrapper(fn):
 
 def forward_step_wrapper(fn):
     @wraps(fn)
-    def wrapper(
-            forward_step_func,
-            data_iterator,
-            model,
-            num_microbatches,
-            input_tensor,
-            forward_data_store,
-            config,
-            *args,
-            **kwargs):
-        output, num_tokens = fn(
-            forward_step_func,
-            data_iterator,
-            model,
-            num_microbatches,
-            input_tensor,
-            forward_data_store,
-            config,
-            *args,
-            **kwargs)
+    def wrapper(forward_step_func, data_iterator, model, num_microbatches, input_tensor, forward_data_store, config, *args, **kwargs):
+        output, num_tokens = fn(forward_step_func, data_iterator, model, num_microbatches, input_tensor, forward_data_store, config, *args, **kwargs)
 
         if not isinstance(input_tensor, list):
             # unwrap_output_tensor True

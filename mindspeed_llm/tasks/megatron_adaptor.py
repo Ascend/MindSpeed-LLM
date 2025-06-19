@@ -20,6 +20,7 @@ import argparse
 import torch
 import tensordict
 from torch_npu.contrib import transfer_to_npu
+from mindspeed.features_manager import FEATURES_LIST as MS_DUMMY_FEATURES_LIST
 from mindspeed_llm.features_manager import FEATURES_LIST
 
 
@@ -27,22 +28,6 @@ def dummy_jit(fn):
     def wrapper(*args, **kwargs):
         return fn(*args, **kwargs)
     return wrapper
-
-
-def add_safe_globals():
-    from megatron.core.enums import ModelType
-    from argparse import Namespace
-    from numpy.core.multiarray import _reconstruct
-    import numpy as np
-    from _io import BytesIO
-    # for torch2.6, add args to the safe global variables list
-    torch.serialization.add_safe_globals([ModelType])
-    torch.serialization.add_safe_globals([Namespace])
-    torch.serialization.add_safe_globals([_reconstruct])
-    torch.serialization.add_safe_globals([np.ndarray])
-    torch.serialization.add_safe_globals([np.dtype])
-    torch.serialization.add_safe_globals([np.dtypes.UInt32DType])
-    torch.serialization.add_safe_globals([BytesIO])
 
 
 class MegatronAdaptation:
@@ -120,6 +105,9 @@ class MegatronAdaptation:
             group.add_argument('--memory-fragmentation', type=bool, default=False)
             group.add_argument('--layerzero', action='store_true', default=False)
             
+            for feature in MS_DUMMY_FEATURES_LIST:
+                feature.default_patches = False
+            
             return parser
 
         def _get_dummy_args():
@@ -137,23 +125,24 @@ class MegatronAdaptation:
 
         from collections import namedtuple
         from mindspeed.patch_utils import MindSpeedPatchesManager
-        from mindspeed.megatron_adaptor import te_adaptation, apex_adaptation, torch_adaptation, optimizer_selection
-
+        from mindspeed.features_manager.megatron_basic.requirements_basic import RequirementsBasicFeature
+        requirements = RequirementsBasicFeature()
+            
         # For torch >= 2.2.0
         torch.compile = torch.jit.script
 
         if not _get_dummy_args().o2_optimizer:
             # vanilla optimizer
             args = namedtuple("variables", ['optimizer_selection'])
-            optimizer_selection(MindSpeedPatchesManager, args(optimizer_selection="fused_adamw"))
+            requirements.optimizer_selection(MindSpeedPatchesManager, args(optimizer_selection="fused_adamw"))
         else:
             # O2 optimizer
             from mindspeed_llm.tasks.models.common.adamw import O2AdamW
             MindSpeedPatchesManager.register_patch('apex.optimizers.FusedAdam', O2AdamW, create_dummy=True)
 
-        te_adaptation(MindSpeedPatchesManager)
-        apex_adaptation(MindSpeedPatchesManager)
-        torch_adaptation(MindSpeedPatchesManager)
+        requirements.te_adaptation(MindSpeedPatchesManager, _get_dummy_args())
+        requirements.apex_adaptation(MindSpeedPatchesManager, _get_dummy_args())
+        requirements.torch_adaptation(MindSpeedPatchesManager, _get_dummy_args())
         MindSpeedPatchesManager.apply_patches()
 
     @classmethod
@@ -168,10 +157,6 @@ class MegatronAdaptation:
         TransformerBlock._build_layers = build_layers_wrapper(TransformerBlock._build_layers,
                                                               ColumnParallelLinear.forward,
                                                               RowParallelLinear.forward)
-        from ..training.utils import get_torch_version
-        from packaging.version import Version as PkgVersion
-        if get_torch_version() >= PkgVersion("2.6.0"):
-            add_safe_globals()
         
 
 class MegatronAdaptationABC:
@@ -220,6 +205,18 @@ class CoreAdaptation(MegatronAdaptationABC):
         MegatronAdaptation.register('megatron.core.distributed.finalize_model_grads.finalize_model_grads',
                                     finalize_model_grads)
 
+        # optim relative.
+        from mindspeed.core.distributed.param_and_grad_buffer import reuse_fp32_param_param_and_grad_buffer_init_wrapper
+        MegatronAdaptation.register('megatron.core.distributed.param_and_grad_buffer._ParamAndGradBuffer.__init__',
+                            reuse_fp32_param_param_and_grad_buffer_init_wrapper)
+
+        # coalescing_manager patches
+        from mindspeed.core.distributed.param_and_grad_buffer import start_param_sync, finish_param_sync, start_grad_sync, finish_grad_sync
+        MegatronAdaptation.register('megatron.core.distributed.param_and_grad_buffer._ParamAndGradBucketGroup.start_param_sync', start_param_sync)
+        MegatronAdaptation.register('megatron.core.distributed.param_and_grad_buffer._ParamAndGradBucketGroup.finish_param_sync', finish_param_sync)
+        MegatronAdaptation.register('megatron.core.distributed.param_and_grad_buffer._ParamAndGradBucketGroup.start_grad_sync', start_grad_sync)
+        MegatronAdaptation.register('megatron.core.distributed.param_and_grad_buffer._ParamAndGradBucketGroup.finish_grad_sync', finish_grad_sync)
+        
 
     def patch_fusions(self):
         from mindspeed.core.fusions.fused_layer_norm import (FusedLayerNormAffineFunction, FastLayerNormFN)
@@ -251,7 +248,8 @@ class CoreAdaptation(MegatronAdaptationABC):
     def patch_core_models(self):
         from megatron.core.models.gpt.gpt_layer_specs import get_gpt_layer_local_spec
         from mindspeed.core.models.common.embeddings.rotary_pos_embedding import get_pos_emb_on_this_cp_rank
-        from mindspeed.core.data_parallel.distributed_data_parallel import distributed_data_parallel_init_with_cp
+        from mindspeed.core.models.common.embeddings.rotary_pos_embedding import rotary_embedding_get_rotary_seq_len_wrapper
+        from mindspeed.core.models.common.embeddings.language_model_embedding import language_model_embedding_forward_wrapper
         from mindspeed.core.transformer.attention import attention_init, self_attention_init_wrapper
         from ..training.utils import get_batch_on_this_cp_rank, get_device_wrapper
         from ..core.models.gpt.gpt_layer_specs import get_gpt_layer_local_spec_wrapper
@@ -265,16 +263,16 @@ class CoreAdaptation(MegatronAdaptationABC):
         MegatronAdaptation.register(
             'megatron.core.models.common.embeddings.rotary_pos_embedding.get_pos_emb_on_this_cp_rank',
             get_pos_emb_on_this_cp_rank)
-        MegatronAdaptation.register('megatron.core.distributed.distributed_data_parallel.DistributedDataParallel.__init__',
-                            distributed_data_parallel_init_with_cp)
+        from mindspeed.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb
+        MegatronAdaptation.register('megatron.core.models.common.embeddings.rope_utils.apply_rotary_pos_emb',
+                                    apply_rotary_pos_emb)
 
         # Attention
         MegatronAdaptation.register('megatron.core.transformer.attention.Attention.__init__',
                                     attention_init)
-        MegatronAdaptation.register('megatron.core.transformer.attention.SelfAttention.__init__',
-                                          self_attention_init_wrapper)
+        
         if MegatronAdaptation.get_args().tp_2d:
-            from mindspeed.core.transformer.attention import self_attention_init_tp2d_wrapper
+            from ..core.transformer.attention import self_attention_init_tp2d_wrapper
             MegatronAdaptation.register('megatron.core.transformer.attention.SelfAttention.__init__',
                                         self_attention_init_tp2d_wrapper)
 
@@ -290,7 +288,7 @@ class CoreAdaptation(MegatronAdaptationABC):
             dot_product_attention_forward_wrapper)
         # For GQA in ulysses and hybrid
         MegatronAdaptation.register(
-            'mindspeed.core.context_parallel.ulysses_context_parallel.UlyssesContextAttention.forward',
+            'mindspeed.core.context_parallel.ulysses_context_parallel.ulysses_context_parallel.UlyssesContextAttention.forward',
             ulysses_context_parallel_forward_wrapper)
 
         # Layer Definition
@@ -325,19 +323,15 @@ class CoreAdaptation(MegatronAdaptationABC):
 
     def patch_core_transformers(self):
         import megatron.core
-        from mindspeed.core.transformer.transformer_config import transformer_config_post_init_wrapper
-        from mindspeed.core.transformer.moe.token_dispatcher import allgather_token_permutation, \
-            allgather_token_unpermutation
         from mindspeed.core.transformer.moe.grouped_gemm_util import Ops, grouped_gemm_is_available, \
             get_device_capability, assert_grouped_gemm_is_available
         from mindspeed.core.transformer.transformer import core_mlp_forward_wrapper
-        from mindspeed.core.transformer.moe.experts import group_mlp_forward
         from ..core.transformer.moe.moe_layer import moe_layer_init_wrapper, moe_layer_forward
         from ..core.transformer.transformer_block import _transformer_block_build_layers
         from ..core.transformer.moe.moe_utils import track_moe_metrics_wrapper
 
         from ..core import (PTNorm, topk_router_forward, topk_router_routing, z_loss_func, topk_softmax_with_capacity,
-                            get_num_layers_to_build_wrapper, TransformerLayer, topk_router_init_wrapper,
+                            get_num_layers_to_build, TransformerLayer, topk_router_init_wrapper,
                             transformer_block_init_wrapper, transformer_block_forward, core_mlp_init,
                             topk_router_gating_func)
         args = MegatronAdaptation.get_args()
@@ -345,7 +339,7 @@ class CoreAdaptation(MegatronAdaptationABC):
             from mindspeed.core.transformer.transformer_config import transformer_config_post_init
             MegatronAdaptation.register('megatron.core.transformer.transformer_config.TransformerConfig.__post_init__',
                                               transformer_config_post_init)
-
+        from ..core.transformer.transformer_config import transformer_config_post_init_wrapper
         MegatronAdaptation.register('megatron.core.transformer.transformer_config.TransformerConfig.__post_init__',
                                     transformer_config_post_init_wrapper)
         # for mtp
@@ -355,9 +349,8 @@ class CoreAdaptation(MegatronAdaptationABC):
         MegatronAdaptation.register('torch.cuda.get_device_capability', get_device_capability)
         megatron.core.transformer.transformer_block.LayerNormImpl = PTNorm
         MegatronAdaptation.register('megatron.core.transformer.transformer_block.TENorm', PTNorm)
-        MegatronAdaptation.register('megatron.core.transformer.moe.moe_utils.topk_softmax_with_capacity', topk_softmax_with_capacity)
         MegatronAdaptation.register('megatron.core.transformer.transformer_block.get_num_layers_to_build',
-                                    get_num_layers_to_build_wrapper)
+                                    get_num_layers_to_build)
         MegatronAdaptation.register('megatron.core.transformer.moe.grouped_gemm_util.ops', Ops)
         MegatronAdaptation.register('megatron.core.transformer.moe.grouped_gemm_util.grouped_gemm_is_available',
                                     grouped_gemm_is_available)
@@ -372,7 +365,14 @@ class CoreAdaptation(MegatronAdaptationABC):
                                     _transformer_block_build_layers)
         MegatronAdaptation.register('megatron.core.transformer.transformer_layer.TransformerLayer', TransformerLayer)
         MegatronAdaptation.register('megatron.core.transformer.mlp.MLP.__init__', core_mlp_init)
-        MegatronAdaptation.register('megatron.core.transformer.mlp.MLP.forward', core_mlp_forward_wrapper)
+        if not args.recompute_activation_function:
+            MegatronAdaptation.register('megatron.core.transformer.mlp.MLP.forward', core_mlp_forward_wrapper)
+        else:
+            from mindspeed.core.memory.recompute.activation.adaptor import mindspeed_activation_recompute_forward
+            MegatronAdaptation.register('megatron.core.transformer.mlp.MLP.forward', mindspeed_activation_recompute_forward)
+        # fix count_zeros in ChainedOptimizer for core_r0.12.1.
+        from mindspeed.core.megatron_basic.count_zero_fix import step
+        MegatronAdaptation.register('megatron.core.optimizer.optimizer.ChainedOptimizer.step', step)
         MegatronAdaptation.register('megatron.core.transformer.moe.moe_utils.track_moe_metrics',
                                     track_moe_metrics_wrapper)
         # For mcore moe
@@ -381,7 +381,7 @@ class CoreAdaptation(MegatronAdaptationABC):
         MegatronAdaptation.register('megatron.core.transformer.moe.moe_layer.MoELayer.forward', moe_layer_forward)
 
         # For groupMLP
-        from mindspeed.core.transformer.moe.experts import groupedmlp_init_wrapper, groupedmlp_forward
+        from mindspeed.core.transformer.moe.experts import groupedmlp_init_wrapper
         MegatronAdaptation.register('megatron.core.transformer.moe.experts.GroupedMLP.__init__',
                                     groupedmlp_init_wrapper)
         # For async log loss
@@ -424,15 +424,18 @@ class CoreAdaptation(MegatronAdaptationABC):
             from mindspeed.core.transformer.moe.moe_layer import base_moe_init_wrapper
             MegatronAdaptation.register('megatron.core.transformer.moe.moe_layer.BaseMoELayer.__init__',
                                 base_moe_init_wrapper)
-
+            
+        if hasattr(args, 'moe_token_dispatcher_type') and args.moe_token_dispatcher_type == 'alltoall':
+            from mindspeed.core.transformer.moe.token_dispatcher import preprocess
+            MegatronAdaptation.register('megatron.core.transformer.moe.token_dispatcher.MoEAlltoAllTokenDispatcher.preprocess', preprocess)
+            
         if args.moe_permutation_async_comm:
             if args.moe_token_dispatcher_type == 'allgather':
-                from mindspeed.core.transformer.moe.router import aux_loss_load_balancing
-                MegatronAdaptation.register('megatron.core.transformer.moe.router.TopKRouter.aux_loss_load_balancing',
-                                            aux_loss_load_balancing)
                 if args.moe_allgather_overlap_comm:
-                    from mindspeed.core.transformer.moe.token_dispatcher import (allgather_token_permutation_new,
-                                                                        allgather_token_unpermutation_new)
+                    from mindspeed.core.transformer.moe.legacy_a2a_token_dispatcher import (allgather_token_permutation_new,
+                                                                               allgather_token_unpermutation_new)
+                    from ..core.transformer.moe.experts import group_mlp_forward
+                    from mindspeed.core.transformer.transformer import parallel_transformer_layer_init_wrapper
                     MegatronAdaptation.register('megatron.core.transformer.moe.experts.GroupedMLP.forward', group_mlp_forward)
                     MegatronAdaptation.register(
                         'megatron.core.transformer.moe.token_dispatcher.MoEAllGatherTokenDispatcher.token_permutation',
@@ -440,48 +443,36 @@ class CoreAdaptation(MegatronAdaptationABC):
                     MegatronAdaptation.register(
                         'megatron.core.transformer.moe.token_dispatcher.MoEAllGatherTokenDispatcher.token_unpermutation',
                         allgather_token_unpermutation_new)
-                else:
                     MegatronAdaptation.register(
-                        'megatron.core.transformer.moe.token_dispatcher.MoEAllGatherTokenDispatcher.token_permutation',
-                        allgather_token_permutation)
-                    MegatronAdaptation.register(
-                        'megatron.core.transformer.moe.token_dispatcher.MoEAllGatherTokenDispatcher.token_unpermutation',
-                        allgather_token_unpermutation)
-            elif args.moe_token_dispatcher_type == 'alltoall':
-                from mindspeed.core.transformer.moe.token_dispatcher import preprocess, alltoall_token_permutation
-                from mindspeed.core.transformer.moe.moe_utils import permute, unpermute
-                from mindspeed.core.transformer.moe.experts import sequential_mlp_forward
-
-                MegatronAdaptation.register('megatron.core.transformer.moe.experts.SequentialMLP.forward', sequential_mlp_forward)
-                MegatronAdaptation.register('megatron.core.transformer.moe.moe_utils.permute', permute)
-                MegatronAdaptation.register('megatron.core.transformer.moe.moe_utils.unpermute', unpermute)
-
+                        'megatron.core.transformer.transformer_layer.TransformerLayer.__init__',
+                        parallel_transformer_layer_init_wrapper)
+            elif args.moe_token_dispatcher_type == 'alltoall_seq':
                 if args.moe_tp_extend_ep:
-                    from mindspeed.core.transformer.moe.token_dispatcher import (
+                    from mindspeed.core.transformer.moe.legacy_a2a_token_dispatcher import (
                         preprocess_tp_extend_ep, alltoall_token_unpermutation_tp_extend_ep,
                         alltoall_token_permutation_tp_extend_ep
                     )
                     MegatronAdaptation.register(
-                        'megatron.core.transformer.moe.token_dispatcher.MoEAlltoAllTokenDispatcher.preprocess',
+                        'megatron.core.transformer.moe.legacy_a2a_token_dispatcher.MoEAlltoAllSEQTokenDispatcher.preprocess',
                         preprocess_tp_extend_ep)
 
                     if args.moe_alltoall_overlap_comm:
-                        from mindspeed.core.transformer.moe.token_dispatcher import alltoall_token_permutation_new, \
+                        from mindspeed.core.transformer.moe.legacy_a2a_token_dispatcher import alltoall_token_permutation_new, \
                             alltoall_token_unpermutation_new
-                        from mindspeed.core.transformer.moe.experts import group_mlp_forward
+                        from ..core.transformer.moe.experts import group_mlp_forward
                         MegatronAdaptation.register('megatron.core.transformer.moe.experts.GroupedMLP.forward', group_mlp_forward)
                         MegatronAdaptation.register(
-                            'megatron.core.transformer.moe.token_dispatcher.MoEAlltoAllTokenDispatcher.token_permutation',
+                            'megatron.core.transformer.moe.legacy_a2a_token_dispatcher.MoEAlltoAllSEQTokenDispatcher.token_permutation',
                             alltoall_token_permutation_new)
                         MegatronAdaptation.register(
-                            'megatron.core.transformer.moe.token_dispatcher.MoEAlltoAllTokenDispatcher.token_unpermutation',
+                            'megatron.core.transformer.moe.legacy_a2a_token_dispatcher.MoEAlltoAllSEQTokenDispatcher.token_unpermutation',
                             alltoall_token_unpermutation_new)
                     else:
                         MegatronAdaptation.register(
-                            'megatron.core.transformer.moe.token_dispatcher.MoEAlltoAllTokenDispatcher.token_permutation',
+                            'megatron.core.transformer.moe.legacy_a2a_token_dispatcher.MoEAlltoAllSEQTokenDispatcher.token_permutation',
                             alltoall_token_permutation_tp_extend_ep)
                         MegatronAdaptation.register(
-                            'megatron.core.transformer.moe.token_dispatcher.MoEAlltoAllTokenDispatcher.token_unpermutation',
+                            'megatron.core.transformer.moe.legacy_a2a_token_dispatcher.MoEAlltoAllSEQTokenDispatcher.token_unpermutation',
                             alltoall_token_unpermutation_tp_extend_ep)
                     if args.moe_fb_overlap and args.schedules_method == 'dualpipev' and args.moe_zerc:
                         from mindspeed.core.transformer.moe.moe_zerc.token_dispatcher import zerc_alltoall_token_perm1, \
@@ -509,37 +500,28 @@ class CoreAdaptation(MegatronAdaptationABC):
                             'mindspeed.core.pipeline_parallel.fb_overlap.overlap_funcs.fwdbwd.transformer_layer_forward_moe_backward_dense_overlaping',
                             transformer_layer_forward_moe_backward_dense_overlaping_zerc)
                 else:
-                    from mindspeed.core.transformer.moe.token_dispatcher import preprocess, alltoall_token_permutation
-                    MegatronAdaptation.register(
-                        'megatron.core.transformer.moe.token_dispatcher.MoEAlltoAllTokenDispatcher.preprocess',
-                        preprocess)
+                    from mindspeed.core.transformer.moe.legacy_a2a_token_dispatcher import preprocess, alltoall_token_permutation
+                    # pm.register_patch('megatron.core.transformer.moe.legacy_a2a_token_dispatcher.MoEAlltoAllSEQTokenDispatcher.preprocess',
+                    #                   preproces
                     if args.moe_alltoall_overlap_comm:
-                        from mindspeed.core.transformer.moe.token_dispatcher import preprocess, alltoall_token_permutation
-                        from mindspeed.core.transformer.moe.token_dispatcher import alltoall_token_permutation_new, \
+                        from mindspeed.core.transformer.moe.legacy_a2a_token_dispatcher import preprocess, alltoall_token_permutation
+                        from mindspeed.core.transformer.moe.legacy_a2a_token_dispatcher import alltoall_token_permutation_new, \
                             alltoall_token_unpermutation_new
-                        from mindspeed.core.transformer.moe.experts import group_mlp_forward
+                        from ..core.transformer.moe.experts import group_mlp_forward
 
                         MegatronAdaptation.register('megatron.core.transformer.moe.experts.GroupedMLP.forward', group_mlp_forward)
                         MegatronAdaptation.register(
-                            'megatron.core.transformer.moe.token_dispatcher.MoEAlltoAllTokenDispatcher.token_permutation',
+                            'megatron.core.transformer.moe.legacy_a2a_token_dispatcher.MoEAlltoAllSEQTokenDispatcher.token_permutation',
                             alltoall_token_permutation_new)
                         MegatronAdaptation.register(
-                            'megatron.core.transformer.moe.token_dispatcher.MoEAlltoAllTokenDispatcher.token_unpermutation',
+                            'megatron.core.transformer.moe.legacy_a2a_token_dispatcher.MoEAlltoAllSEQTokenDispatcher.token_unpermutation',
                             alltoall_token_unpermutation_new)
-                    else:
-                        MegatronAdaptation.register(
-                            'megatron.core.transformer.moe.token_dispatcher.MoEAlltoAllTokenDispatcher.token_permutation',
-                            alltoall_token_permutation)
-                            
+                        
                 if hasattr(args, 'use_fused_moe_token_permute_and_unpermute') and args.use_fused_moe_token_permute_and_unpermute and not args.moe_expert_capacity_factor:
                     from mindspeed.core.fusions.npu_moe_token_permute import permute_wrapper
                     from mindspeed.core.fusions.npu_moe_token_unpermute import unpermute_wrapper
                     MegatronAdaptation.register('megatron.core.transformer.moe.moe_utils.permute', permute_wrapper)
                     MegatronAdaptation.register('megatron.core.transformer.moe.moe_utils.unpermute', unpermute_wrapper)
-
-        if not args.moe_alltoall_overlap_comm and not args.moe_allgather_overlap_comm and not args.moe_fb_overlap:
-            MegatronAdaptation.register('megatron.core.transformer.moe.experts.GroupedMLP.forward',
-                                        groupedmlp_forward)
 
     def patch_pipeline_parallel(self):
         from ..core.pipeline_parallel.p2p_communication import _batched_p2p_ops
@@ -562,10 +544,10 @@ class CoreAdaptation(MegatronAdaptationABC):
         MegatronAdaptation.register('megatron.core.pipeline_parallel.schedules.forward_step', forward_step_wrapper)
 
     def patch_tensor_parallel(self):
-        from mindspeed.core.tensor_parallel.random import _set_cuda_rng_state
+        from mindspeed.core.megatron_basic.megatron_basic import _set_cuda_rng_state
         from ..core import vocab_parallel_embedding_forward, vocab_embedding_init_func, checkpoint_forward_wrapper, \
             checkpoint_backward_wrapper
-
+        
         # default_generators need replace after set_device
         MegatronAdaptation.register('megatron.core.tensor_parallel.random._set_cuda_rng_state', _set_cuda_rng_state)
 
@@ -648,6 +630,13 @@ class CoreAdaptation(MegatronAdaptationABC):
         MegatronAdaptation.register('megatron.core.parallel_state.initialize_model_parallel',
                                     initialize_model_parallel_wrapper)
 
+        # For CP
+        args = MegatronAdaptation.get_args()
+        from mindspeed.core.context_parallel.model_parallel_utils import initialize_model_parallel_cp_wrapper
+        if int(getattr(args, 'context_parallel_size', 1)) > 1:
+            MegatronAdaptation.register('megatron.core.parallel_state.initialize_model_parallel',
+                                         initialize_model_parallel_cp_wrapper)
+
         # For MoE
         MegatronAdaptation.register('megatron.core.parallel_state.destroy_model_parallel',
                                     destroy_model_parallel_decorator)
@@ -702,6 +691,11 @@ class CoreAdaptation(MegatronAdaptationABC):
                                 generate_adaptive_cp_mask_list_by_user)
         MegatronAdaptation.register('mindspeed.core.context_parallel.utils.generate_adaptive_cp_grid_mask_by_user',
                                 generate_adaptive_cp_grid_mask_by_user)
+        from mindspeed.training import get_device_arch_version
+        MegatronAdaptation.register('megatron.training.utils.get_device_arch_version', get_device_arch_version)
+        # Currently, it is not supported to Cast shard fp32 main params to fp8 model params
+        from mindspeed.core.fp8_utils import quantize_param_shard
+        MegatronAdaptation.register('megatron.core.fp8_utils.quantize_param_shard', quantize_param_shard)
 
     def mcore_tensor_parallel_adaptation(self):
         args = MegatronAdaptation.get_args()
@@ -786,6 +780,7 @@ class LegacyAdaptation(MegatronAdaptationABC):
             parallel_transformer_forward, parallel_mlp_init_wrapper,
             rms_norm_init_wrapper, rms_norm_forward, post_language_model_processing
         )
+        from ..legacy.model.fused_layer_norm import fused_layer_norm_forward
         from ..training.checkpointing import load_args_from_checkpoint_wrapper
 
         # patch_fused_layer_norm
@@ -795,6 +790,8 @@ class LegacyAdaptation(MegatronAdaptationABC):
                                     FastLayerNormFN)  # use torch-npu fused layer norm
         MegatronAdaptation.register('megatron.legacy.model.fused_layer_norm.fused_layer_norm_affine',
                                     fused_layer_norm_affine)  # use torch-npu fused layer norm
+        MegatronAdaptation.register('megatron.legacy.model.fused_layer_norm.MixedFusedLayerNorm.forward',
+                                    fused_layer_norm_forward)
 
         # patch_fused_softmax
         MegatronAdaptation.register('megatron.legacy.model.fused_softmax.ScaledUpperTriangMaskedSoftmax',
@@ -882,16 +879,12 @@ class LegacyAdaptation(MegatronAdaptationABC):
 
         MegatronAdaptation.register('megatron.training.arguments.parse_args', parse_args_decorator)
         MegatronAdaptation.register('megatron.training.arguments.validate_args', validate_args_decorator)
+        MegatronAdaptation.register('megatron.training.checkpointing.save_checkpoint', save_checkpoint_wrapper)
         # After validating arguments, do arguments printing.
         MegatronAdaptation.register('megatron.training.arguments._print_args', print_args_wrapper)
         MegatronAdaptation.register('megatron.training.global_vars.build_tokenizer', build_tokenizer)
-        # Fix torch2.6+megatorn0.8.0 bug. After switching to a higher version, this patch can be deleted.
-        MegatronAdaptation.register('megatron.training.checkpointing._load_base_checkpoint',
-                                    _load_base_checkpoint)
         MegatronAdaptation.register('megatron.training.checkpointing._load_base_checkpoint',
                                     _load_base_checkpoint_wrapper)
-        # fix core0.8.0 bug 切更高版本之后可以删除这个patch
-        MegatronAdaptation.register('megatron.training.checkpointing.save_checkpoint', save_checkpoint_wrapper)
         # For transformer layer configuration
         MegatronAdaptation.register('megatron.training.arguments.core_transformer_config_from_args',
                                     core_transformer_config_from_args_wrapper)

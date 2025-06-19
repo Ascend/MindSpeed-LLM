@@ -17,10 +17,8 @@ def mamba_mixer_init_wrapper(fn):
     def wrapper(self, *args, **kwargs):
         param_args = get_args()
         kwargs["chunk_size"] = param_args.mamba_chunk_size
-        kwargs["d_state"] = param_args.mamba_d_state
         kwargs["d_conv"] = param_args.mamba_d_conv
-        kwargs["expand"] = param_args.mamba_expand
-        kwargs["headdim"] = param_args.mamba_headdim    
+        kwargs["expand"] = param_args.mamba_expand   
         fn(self, *args, **kwargs)
         dt_min = kwargs.pop('dt_min', 0.001)
         dt_max = kwargs.pop('dt_max', 0.1)
@@ -33,7 +31,7 @@ def mamba_mixer_init_wrapper(fn):
     return wrapper
 
 
-def mamba_mixer_forward(self, hidden_states, seqlen=None, seq_idx=None, cu_seqlens=None, inference_params=None):
+def mamba_mixer_forward(self, hidden_states, seqlen=None, seq_idx=None, cu_seqlens=None, inference_params=None, inference_context=None):
     """
     hidden_states: (nL, B, D) / (L B D)
     Returns: same shape as hidden_states

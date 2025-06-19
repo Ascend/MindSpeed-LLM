@@ -17,6 +17,7 @@ def language_model_embedding_init_func(
         position_embedding_type: Literal['learned_absolute', 'rope', 'none'] = 'learned_absolute',
         num_tokentypes: int = 0,
         skip_weight_param_allocation: bool = False,
+        scatter_to_sequence_parallel: bool = True,
 ):
     """Patch language model embeddings init."""
     super(LanguageModelEmbedding, self).__init__(config=config)
@@ -26,10 +27,12 @@ def language_model_embedding_init_func(
     self.max_sequence_length: int = max_sequence_length
     self.add_position_embedding: bool = position_embedding_type == 'learned_absolute'
     self.num_tokentypes = num_tokentypes
+    self.scatter_to_sequence_parallel = scatter_to_sequence_parallel
     self.reduce_scatter_embeddings = (
             (not self.add_position_embedding)
             and self.num_tokentypes <= 0
             and self.config.sequence_parallel
+            and self.scatter_to_sequence_parallel
     )
 
     # Word embeddings (parallel).

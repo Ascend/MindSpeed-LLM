@@ -27,6 +27,7 @@ from megatron.inference.text_generation.communication import (
     broadcast_from_last_pipeline_stage,
     broadcast_from_last_to_first_pipeline_stage)
 from megatron.inference.text_generation.forward_step import ForwardStep
+from megatron.core.inference.contexts import StaticInferenceContext
 from megatron.inference.text_generation.beam_utils import BeamHypotheses
 from megatron.inference.text_generation.generation import _build_attention_mask_and_position_ids
 
@@ -75,7 +76,8 @@ def generate_tokens_probs_and_return_on_first_stage(
         raise ValueError("Too many tokens.  " + str(max_sequence_length*batch_size) + " is greater than " + str(args.max_tokens_to_oom))
 
     # forward step.
-    forward_step = ForwardStep(model, batch_size, max_sequence_length)
+    inference_context = StaticInferenceContext(batch_size, max_sequence_length)
+    forward_step = ForwardStep(model, inference_context)
 
     # Added termination_id to support the case that we want to terminate the
     # generation once that id is generated.
@@ -266,7 +268,8 @@ def beam_search_and_return_on_first_stage(
         raise ValueError("context length + tokens_to_generate too large")
 
     # forward step.
-    forward_step = ForwardStep(model, beam_size, final_sequence_length)
+    inference_context = StaticInferenceContext(beam_size, final_sequence_length)
+    forward_step = ForwardStep(model, inference_context)
 
     beam_hyp = BeamHypotheses(beam_size, length_penalty)
     best_batches = None

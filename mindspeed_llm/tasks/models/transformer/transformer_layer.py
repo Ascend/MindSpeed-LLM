@@ -69,6 +69,7 @@ class TransformerLayerWithPostNorm(TransformerLayer):
             context_mask=None,
             rotary_pos_emb=None,
             inference_params=None,
+            inference_context=None,
             packed_seq_params=None,
     ):
         # hidden_states: [s, b, h]

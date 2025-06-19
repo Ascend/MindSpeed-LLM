@@ -32,14 +32,15 @@ CP_TYPE='megatron_cp_algo'
 NUM_LAYERS=32
 
 MOE_ARGS="
+    --moe-layer-freq -1 \
+    --first-k-dense-replace -1 \
     --num-experts 8 \
     --expert-model-parallel-size ${EP} \
     --moe-router-topk 1 \
     --moe-router-load-balancing-type aux_loss \
     --moe-aux-loss-coeff 0.02 \
     --moe-permutation-async-comm \
-    --moe-token-dispatcher-type alltoall \
-    --use-fused-moe-token-permute-and-unpermute
+    --moe-token-dispatcher-type alltoall_seq \
     --moe-router-pre-softmax
 "
 

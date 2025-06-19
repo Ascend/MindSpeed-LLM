@@ -37,10 +37,11 @@ DISTRIBUTED_ARGS="
 "
 
 MOE_ARGS="
+    --moe-layer-freq -1 \
+    --first-k-dense-replace -1 \
     --moe-permutation-async-comm \
-    --moe-token-dispatcher-type alltoall \
+    --moe-token-dispatcher-type alltoall_seq \
     --moe-grouped-gemm \
-    --use-fused-moe-token-permute-and-unpermute \
     --num-experts 8 \
     --moe-router-load-balancing-type aux_loss \
     --moe-router-topk 2 \

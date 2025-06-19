@@ -65,8 +65,8 @@ class MOERouter(MindSpeedFeature):
     def _validate_moe_args(self, args):
         from mindspeed_llm.training.utils import print_rank0_by_args
         if args.moe_expert_capacity_factor is not None:
-            if args.moe_token_dispatcher_type != "alltoall":
-                raise ValueError(f'moe_expert_capacity_factor only works with alltoall token dispatcher')
+            if args.moe_token_dispatcher_type == "allgather":
+                raise ValueError(f'moe_expert_capacity_factor not works with allgather token dispatcher')
             if args.moe_expert_capacity_factor < 0:
                 args.moe_expert_capacity_factor = None
                 print_rank0_by_args(

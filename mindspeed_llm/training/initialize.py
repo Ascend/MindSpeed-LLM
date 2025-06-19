@@ -56,6 +56,8 @@ def initialize_megatron(
     ignore_unknown_args=False,
     allow_no_cuda=False,
     skip_mpu_initialization=False,
+    get_embedding_ranks=None,
+    get_position_embedding_ranks=None,
 ):
     """Set global variables, initialize distributed, and
     set autoresume and random seeds.
@@ -96,7 +98,7 @@ def initialize_megatron(
     def finish_mpu_init():
         args = get_args()
         # Pytorch distributed.
-        _initialize_distributed()
+        _initialize_distributed(get_embedding_ranks, get_position_embedding_ranks)
 
         # Random seeds for reproducibility.
         if args.rank == 0:

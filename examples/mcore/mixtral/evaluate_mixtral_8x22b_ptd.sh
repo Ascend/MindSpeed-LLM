@@ -30,6 +30,8 @@ MOE_ARGS="
     --num-experts 8 \
     --expert-model-parallel-size 1 \
     --moe-router-topk 2 \
+    --moe-layer-freq -1 \
+    --first-k-dense-replace -1 \
 "
 
 GPT_ARGS="

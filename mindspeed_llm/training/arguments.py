@@ -74,6 +74,7 @@ def process_args(parser):
     parser = _add_inference_args(parser)
     parser = _add_dualpipe_args(parser)
     parser = _add_ai_framework_args(parser)
+    parser = _add_ckpt_args(parser)
     parser = _add_communication_overlap_args(parser)
     parser = _add_zerc_args(parser)
 
@@ -101,6 +102,17 @@ def _add_default_model_args(parser):
 
     group.add_argument('--use-mcore-models', action='store_true', dest='use_mcore_models',
                        help='Use Megatron-Core models, will be DEPRECATED in future')
+    return parser
+    
+    
+def _add_ckpt_args(parser):
+    group = parser.add_argument_group(title='ckpt arguments')
+    
+    group.add_argument('--ckpt-format', default='torch',
+                        choices=['torch', 'torch_dist', 'zarr'],
+                        help='Checkpoint format to use.')
+    group.add_argument('--use-mp-args-from-checkpoint-args', action='store_true', default=True,
+                        help='Copy model parallelism command-line arguments from checkpoint')
     return parser
 
 
@@ -206,6 +218,8 @@ def _add_profile_args(parser):
 
 def _add_cp_args(parser):
     group = parser.add_argument_group(title='cp parallel')
+    group.add_argument('--context-parallel-size', type=int, default=1,
+                       help='Degree of context parallelism.')
     group.add_argument('--context-parallel-algo', type=str, default='ulysses_cp_algo',
                        choices=['ulysses_cp_algo', 'megatron_cp_algo', 'hybrid_cp_algo', 'adaptive_cp_algo',
                                 'hybrid_adaptive_cp_algo'], help='context parallel algorithm')
@@ -384,7 +398,7 @@ def _add_moe_args(parser):
                        help="Use gradient-accumulation-fusion in gemm.")
 
     # For megatron_moe drop
-    group.add_argument('--moe-token-dispatcher-type', type=str, choices=['allgather', 'alltoall'], default='allgather',
+    group.add_argument('--moe-token-dispatcher-type', type=str, choices=['allgather', 'alltoall', 'alltoall_seq'], default='allgather',
                        help='The dispatcher type for moe token dispatching.')
     group.add_argument('--noisy-gate-policy', type=str, default=None,
                        help="noisy gate policy, valid options are 'Jitter', 'RSample' or 'None'.")
@@ -863,7 +877,7 @@ def _add_training_args(parser):
 def _add_distributed_args(parser):
     group = parser.add_argument_group(title='distributed')
 
-    group.add_argument('--local-rank', type=int, default=None,
+    group.add_argument('--local-rank', type=int, default=int(os.getenv('LOCAL_RANK', '0')),
                        help='Local rank passed from distributed launcher for torch2.x.')
     group.add_argument('--distributed-timeout-minutes', type=int, default=45,
                        help='Timeout minutes for torch.distributed.')
@@ -1028,7 +1042,7 @@ def _validate_instruction_finetune(args):
         if args.context_parallel_size > 1:
             raise AssertionError('Context parallelism is forbidden when use variable seq lengths.')
         if args.num_experts is not None and args.moe_token_dispatcher_type == "allgather":
-            raise AssertionError('moe_token_dispatcher_type "allgather" is forbidden when use variable seq lengths. you can choose "alltoall"')
+            raise AssertionError('moe_token_dispatcher_type "allgather" is forbidden when use variable seq lengths. you can choose "alltoall_seq"')
 
 
 def _validate_inference_args(args):
@@ -1054,8 +1068,8 @@ def _validate_moe_args(args):
         if not args.moe_permutation_async_comm or not args.moe_grouped_gemm:
             raise AssertionError(
                 '`--moe-alltoall-overlap-comm` or `--moe-allgather-overlap-comm` only support with `--moe-permutation-async-comm` and `--moe-grouped-gemm`.')
-    if args.moe_alltoall_overlap_comm and not args.moe_token_dispatcher_type == 'alltoall':
-        raise AssertionError('`--moe-alltoall-overlap-comm` only support with `--moe-token-dispatcher-type alltoall`.')
+    if args.moe_alltoall_overlap_comm and not args.moe_token_dispatcher_type == 'alltoall_seq':
+        raise AssertionError('`--moe-alltoall-overlap-comm` only support with `--moe-token-dispatcher-type alltoall_seq`.')
     if not args.moe_tp_extend_ep and args.moe_alltoall_overlap_comm and args.tensor_model_parallel_size > 1:
         raise AssertionError(
             '`--moe-alltoall-overlap-comm` do not support tp for now. only support with moe_tp_extend_ep when tp > 1.')
@@ -1286,6 +1300,15 @@ def _add_dummy_args(args):
     args.megatron_cp_in_bnsd = False
     args.use_fusion_attn_v2 = False
     args.npu_deterministic = False
+    args.prof_file = False
+    args.moe_adaptive_recompute_activation = False
+    args.op_cal_tflops = False
+    args.profile_operator = False
+    args.delay_grad_reduce = False
+    args.delay_param_gather = False
+    args.alibi_fusion_attn_type = None
+    args.moe_adaptive_recompute_activation_scale = 2.0
+    args.yarn_scaling_factor = 1.0
 
 
 def _add_dummy_args_v2(args):
@@ -1448,7 +1471,14 @@ def validate_args_decorator(megatron_validate_args):
             defaults = {}
 
         variable_dict = _store_variables(args)
-        megatron_validate_args(args, defaults)
+        if args.num_layer_list:
+            _num_layer = args.num_layers
+            args.num_layers = len(args.num_layer_list.split(','))
+            megatron_validate_args(args, defaults)
+            args.num_layers = _num_layer
+            args.encoder_num_layers = args.num_layers
+        else:
+            megatron_validate_args(args, defaults)
         _restore_variables(args, variable_dict)
 
         args.use_mc2 = False

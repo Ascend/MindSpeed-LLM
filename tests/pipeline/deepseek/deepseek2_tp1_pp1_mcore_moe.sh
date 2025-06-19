@@ -40,6 +40,8 @@ MLA_ARGS="
 "
 
 MOE_ARGS="
+    --moe-layer-freq -1 \
+    --first-k-dense-replace -1 \
     --moe-grouped-gemm \
     --moe-permutation-async-comm \
     --moe-token-dispatcher-type allgather \
@@ -49,6 +51,7 @@ MOE_ARGS="
     --num-experts 160 \
     --moe-router-topk 6 \
     --moe-intermediate-size 1536 \
+    --moe-ffn-hidden-size 1536 \
     --moe-router-load-balancing-type group_limited_greedy \
     --topk-group 3 \
     --moe-aux-loss-coeff 0.003 \

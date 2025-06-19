@@ -16,6 +16,7 @@
 import types
 from contextlib import nullcontext
 from functools import wraps
+from typing import List, Optional, Tuple, Union
 
 import torch
 from torch import Tensor
@@ -24,8 +25,11 @@ from megatron.core.packed_seq_params import PackedSeqParams
 from megatron.training import get_args
 from megatron.core.models.gpt.gpt_layer_specs import _get_mlp_module_spec
 from megatron.core.transformer import build_module
+from megatron.core.transformer.transformer_config import TransformerConfig
 from megatron.core.transformer.custom_layers.transformer_engine import TENorm
 from megatron.core.utils import make_sharded_tensor_for_checkpoint, make_viewless_tensor
+from megatron.core.utils import WrappedTensor, deprecate_inference_params
+from megatron.core.inference.contexts import BaseInferenceContext
 from mindspeed.core.transformer.transformer_block import NoopTransformerLayer, _get_layer_offset
 from mindspeed.core.tensor_parallel.comm_autograd_function import auto_grad_sync_gather_along_last_dim, \
     auto_grad_sync_gather_along_first_dim
@@ -34,25 +38,50 @@ from mindspeed.core.transformer.transformer import norm_recompute_forward
 from mindspeed.model.transformer import should_recompute_norm
 
 
-def get_num_layers_to_build_wrapper(fn):
-    @wraps(fn)
-    def wrapper(config):
-        num_layers_to_build = fn(config)
-        num_layer_list = config.num_layer_list
-        if num_layer_list:
-            pp_stage = parallel_state.get_pipeline_model_parallel_rank()
-            num_layers_to_build = num_layer_list[pp_stage]
-        return num_layers_to_build
-    return wrapper
+def get_num_layers_to_build(config: TransformerConfig) -> int:
+    num_layers_per_pipeline_rank = (
+            config.num_layers // parallel_state.get_pipeline_model_parallel_world_size()
+    )
+    
+    if parallel_state.get_virtual_pipeline_model_parallel_world_size() is not None:
+        # Interleaved pipeline parallelism:
+        # Number of layers in each model chunk is the number of layers in the stage,
+        # divided by the number of model chunks in a stage.
+        # With 8 layers, 2 stages, and 4 model chunks, we want an assignment of
+        # layers to stages like (each list is a model chunk):
+        # Stage 0: [0]  [2]  [4]  [6]
+        # Stage 1: [1]  [3]  [5]  [7]
+        # With 8 layers, 2 stages, and 2 virtual stages, we want an assignment of
+        # layers to stages like (each list is a model chunk):
+        # Stage 0: [0, 1]  [4, 5]
+        # Stage 1: [2, 3]  [6, 7]
+        
+        vp_size = parallel_state.get_virtual_pipeline_model_parallel_world_size()
+        
+        num_layers_per_virtual_rank = num_layers_per_pipeline_rank // vp_size
+        
+        num_layers_to_build = num_layers_per_virtual_rank
+    
+    else:
+        # Non-interleaved pipeline parallelism:
+        # Each stage gets a contiguous set of layers.
+        
+        num_layers_to_build = num_layers_per_pipeline_rank
+
+    num_layer_list = config.num_layer_list
+    if num_layer_list:
+        pp_stage = parallel_state.get_pipeline_model_parallel_rank()
+        num_layers_to_build = num_layer_list[pp_stage]
+    return num_layers_to_build
 
 
 def get_layer_offset_wrapper(fn):
     @wraps(fn)
-    def wrapper(self):
-        if self.config.num_layer_list:
+    def wrapper(config):
+        if config.num_layer_list:
             pp_stage = parallel_state.get_pipeline_model_parallel_rank()
-            return self.config.layer_offset[pp_stage]
-        return fn(self)
+            return config.layer_offset[pp_stage]
+        return fn(config)
     return wrapper
 
 
@@ -144,12 +173,21 @@ def transformer_block_forward(
     context: Tensor = None,
     context_mask: Tensor = None,
     rotary_pos_emb: Tensor = None,
+    rotary_pos_cos: Tensor = None,
+    rotary_pos_sin: Tensor = None,
     inference_params: InferenceParams = None,
+    inference_context: Optional[BaseInferenceContext] = None,
     packed_seq_params: PackedSeqParams = None,
+    sequence_len_offset: Tensor = None,
 ):
     # hidden_states (float): [s, b, h]
     # attention_mask (bool): [1, 1, s, s]
-
+    inference_context = deprecate_inference_params(inference_context, inference_params)
+    
+    # Delete the obsolete reference to the initial input tensor if necessary
+    if isinstance(hidden_states, WrappedTensor):
+        hidden_states = hidden_states.unwrap()
+    
     if not self.pre_process:
         # See set_input_tensor()
         hidden_states = self.input_tensor
@@ -232,6 +270,7 @@ def transformer_block_forward(
                     context=context,
                     context_mask=context_mask,
                     rotary_pos_emb=rotary_pos_emb,
+                    attention_bias=None,
                     packed_seq_params=packed_seq_params,
                 )
         else:
@@ -245,8 +284,11 @@ def transformer_block_forward(
                             context=context,
                             context_mask=context_mask,
                             rotary_pos_emb=rotary_pos_emb,
-                            inference_params=inference_params,
+                            rotary_pos_cos=rotary_pos_cos,
+                            rotary_pos_sin=rotary_pos_sin,
+                            inference_context=inference_context,
                             packed_seq_params=packed_seq_params,
+                            sequence_len_offset=sequence_len_offset,
                         )
                     else:
                         hidden_states, context = layer(
@@ -255,7 +297,7 @@ def transformer_block_forward(
                             context=context,
                             context_mask=context_mask,
                             rotary_pos_emb=rotary_pos_emb,
-                            inference_params=inference_params,
+                            inference_context=inference_context,
                             packed_seq_params=packed_seq_params,
                         )
 
@@ -312,6 +354,7 @@ def _block_method_checkpointed_forward_func(
                     context_mask=context_mask,
                     rotary_pos_emb=rotary_pos_emb,
                     inference_params=None,
+                    inference_context=None,
                     packed_seq_params=packed_seq_params,
                 )
             return hidden_states, context
@@ -389,6 +432,7 @@ def share_kvstates_checkpointed_forward_func(
                     context_mask=context_mask,
                     rotary_pos_emb=rotary_pos_emb,
                     inference_params=None,
+                    inference_context=None,
                     packed_seq_params=packed_seq_params,
                 )
 

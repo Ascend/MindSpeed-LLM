@@ -135,7 +135,7 @@ class GPTRewardModel(GPTModel):
                 init_method=self.config.init_method,
             )
             # Set requires_grads to False for params not involved in calculation
-            # to remove them from grad sync in DDP ParamAndGradBuffer
+            # to remove them from grad sync in DDP _ParamAndGradBuffer
             self.output_layer.requires_grad_(False)
             if not post_layer_norm:
                 self.decoder.final_layernorm.requires_grad_(False)
@@ -148,6 +148,7 @@ class GPTRewardModel(GPTModel):
         decoder_input: Tensor = None,
         labels: Tensor = None,
         inference_params=None,
+        inference_context=None,
     ):
         with patch.object(self, "post_process", False):
             hidden_states = super().forward(

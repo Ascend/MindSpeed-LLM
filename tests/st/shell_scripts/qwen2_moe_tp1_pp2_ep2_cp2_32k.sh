@@ -40,13 +40,15 @@ MOE_ARGS="
     --moe-router-topk 2 \
     --n-shared-experts 2 \
     --shared-expert-gate \
+    --moe-layer-freq -1 \
+    --first-k-dense-replace -1 \
     --moe-router-load-balancing-type ${ROUTER_BALANCING_TYPE} \
     --moe-intermediate-size 320 \
+    --moe-ffn-hidden-size 320 \
     --moe-grouped-gemm \
     --moe-permutation-async-comm \
     --moe-alltoall-overlap-comm \
-    --use-fused-moe-token-permute-and-unpermute \
-    --moe-token-dispatcher-type alltoall \
+    --moe-token-dispatcher-type alltoall_seq \
     --moe-aux-loss-coeff 0.001 \
     --reuse-fp32-param \
 "

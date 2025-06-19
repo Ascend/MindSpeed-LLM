@@ -31,6 +31,8 @@ from megatron.core.transformer.custom_layers.transformer_engine import TENorm
 from megatron.core.transformer import TransformerConfig, ModuleSpec
 from megatron.core.transformer.enums import ModelType
 from megatron.core.transformer.transformer_block import TransformerBlock
+from megatron.core.utils import WrappedTensor, deprecate_inference_params
+from megatron.core.inference.contexts import BaseInferenceContext
 from megatron.training import get_args
 
 from mindspeed_llm.core.tensor_parallel.layers import SegmentedColumnParallelLinear
@@ -193,6 +195,7 @@ class GPTModel(MegatronCoreGPTModel):
                 decoder_input: Tensor = None,
                 labels: Tensor = None,
                 inference_params: InferenceParams = None,
+                inference_context: BaseInferenceContext = None,
                 packed_seq_params: PackedSeqParams = None,
                 extra_block_kwargs: dict = None,
                 loss_mask: Optional[Tensor] = None,
@@ -200,6 +203,8 @@ class GPTModel(MegatronCoreGPTModel):
         # If decoder_input is provided (not None), then input_ids and position_ids are ignored.
         # Otherwise, apply embedding layer on input_ids and position_ids to get decoder_input.
         args = get_args()
+
+        inference_context = deprecate_inference_params(inference_context, inference_params)
 
         if not self.training and (hasattr(args, "rope_scaling_type") and args.rope_scaling_type == "longrope"):
             args.rope_scaling_original_max_position_embeddings = args.max_position_embeddings
@@ -219,7 +224,7 @@ class GPTModel(MegatronCoreGPTModel):
         rotary_pos_emb = None
         if self.position_embedding_type == 'rope':
             rotary_seq_len = self.rotary_pos_emb.get_rotary_seq_len(
-                inference_params, self.decoder, decoder_input, self.config
+                inference_context, self.decoder, decoder_input, self.config, packed_seq_params
             )
             rotary_pos_emb = self.rotary_pos_emb(rotary_seq_len)
 
@@ -228,6 +233,7 @@ class GPTModel(MegatronCoreGPTModel):
             hidden_states=decoder_input,
             attention_mask=attention_mask,
             inference_params=inference_params,
+            inference_context=inference_context,
             rotary_pos_emb=rotary_pos_emb,
             packed_seq_params=packed_seq_params,
             **(extra_block_kwargs or {}),

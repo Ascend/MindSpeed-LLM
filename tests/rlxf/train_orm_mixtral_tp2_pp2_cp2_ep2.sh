@@ -37,7 +37,7 @@ MOE_ARGS="
     --moe-router-load-balancing-type aux_loss \
     --moe-aux-loss-coeff 0.02 \
     --moe-permutation-async-comm \
-    --moe-token-dispatcher-type alltoall \
+    --moe-token-dispatcher-type alltoall_seq \
     --use-fused-moe-token-permute-and-unpermute
 "
 

@@ -51,16 +51,16 @@ MLA_ARGS="
 MOE_ARGS="
     --moe-grouped-gemm \
     --moe-permutation-async-comm \
-    --use-fused-moe-token-permute-and-unpermute \
     --moe-tp-extend-ep \
     --moe-alltoall-overlap-comm \
-    --moe-token-dispatcher-type alltoall \
+    --moe-token-dispatcher-type alltoall_seq \
     --first-k-dense-replace 3 \
     --moe-layer-freq 1 \
     --n-shared-experts 1 \
     --num-experts 256 \
     --moe-router-topk 8 \
     --moe-intermediate-size 2048 \
+    --moe-ffn-hidden-size 2048 \
     --moe-router-load-balancing-type noaux_tc \
     --topk-group 4 \
     --routed-scaling-factor 2.5 \

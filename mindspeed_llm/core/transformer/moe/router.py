@@ -26,9 +26,9 @@ from megatron.core.transformer.moe.router import MoEAuxLossAutoScaler
 from megatron.core.transformer.moe.moe_utils import save_to_aux_losses_tracker
 from megatron.core import parallel_state
 from megatron.training import get_args
+from megatron.core.transformer.moe.moe_utils import topk_softmax_with_capacity
 from mindspeed.core.tensor_parallel.random import CheckpointWithoutOutput
 
-from mindspeed_llm.core.transformer.moe.moe_utils import topk_softmax_with_capacity
 from mindspeed_llm.tasks.models.common.pai_megatron import pai_megatron_aux_loss
 
 
@@ -66,10 +66,13 @@ def group_limited_greedy_topKgating(self, logits: torch.Tensor):
     else:
         topk_weight = topk_weight * args.routed_scaling_factor
 
+    topk_masked_gates = torch.zeros_like(logits).scatter(1, topk_idx, topk_weight)
+    topk_map = torch.zeros_like(logits).int().scatter(1, topk_idx, 1).bool()
+
     if not self.training:
         l_aux = None
         self.l_aux = l_aux
-        return topk_weight, topk_idx
+        return topk_masked_gates, topk_map
 
     scores_for_aux = scores  # [s*b, n_global_experts]
     topk_idx_for_aux_loss = topk_idx.view(args.micro_batch_size, -1)  # [b, s*top_k]
@@ -212,7 +215,7 @@ def group_limited_greedy_topKgating(self, logits: torch.Tensor):
 
     self.l_aux = l_aux
 
-    return topk_weight, topk_idx
+    return topk_masked_gates, topk_map
 
 
 class custom_multiplier(torch.autograd.Function):
@@ -348,6 +351,9 @@ def sparsemixer_top2(self, scores, jitter_eps=0.01):
     multiplier = torch.concat((multiplier, multiplier_top2), dim=-1)
     selected_experts = torch.concat((selected_experts, selected_experts_top2), dim=-1)
 
+    multiplier = torch.zeros_like(scores).scatter(1, selected_experts, multiplier)
+    selected_experts = torch.zeros_like(scores).int().scatter(1, selected_experts, 1).bool()
+
     return (
         multiplier,
         selected_experts,
@@ -471,7 +477,7 @@ def topk_router_routing(self, logits: torch.Tensor):
     args = get_args()
     if (
         self.config.tensor_model_parallel_size > 1
-        and self.config.moe_token_dispatcher_type == "alltoall"
+        and self.config.moe_token_dispatcher_type == "alltoall_seq"
     ):
         # Gather the logits from the TP region
         logits = gather_from_sequence_parallel_region(logits)
@@ -489,6 +495,8 @@ def topk_router_routing(self, logits: torch.Tensor):
         else:
             logits_ = torch.softmax(logits, dim=-1, dtype=torch.float32).type_as(logits)
         scores, indices = torch.topk(logits_, k=self.topk, dim=1)
+        scores = torch.zeros_like(logits_).scatter(1, indices, scores)
+        indices = torch.zeros_like(logits_).int().scatter(1, indices, 1).bool()
     elif self.routing_type == "group_limited_greedy":
         scores, indices = group_limited_greedy_topKgating(self, logits)
     elif self.routing_type == "pai_megatron_aux_loss":
@@ -510,7 +518,6 @@ def topk_router_routing(self, logits: torch.Tensor):
             deterministic_mode=self.config.deterministic_mode,
             score_function=self.score_function,
             expert_bias=self.expert_bias,
-            norm_topk_prob=self.norm_topk_prob,
         )
         args = get_args()
         if self.training and args.seq_aux:

@@ -9,7 +9,7 @@ from mindspeed_llm import megatron_adaptor
 import megatron.core.parallel_state as ps
 from megatron.training.global_vars import set_args
 from megatron.training.arguments import parse_args
-from mindspeed.core.context_parallel.ulysses_context_parallel import UlyssesContextAttention
+from mindspeed.core.context_parallel.ulysses_context_parallel.ulysses_context_parallel import UlyssesContextAttention
 
 from mindspeed_llm.training.utils import seed_all
 

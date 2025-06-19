@@ -137,7 +137,7 @@ def save_checkpoint(iteration, model, optimizer, opt_param_scheduler,
     if save_model_type:
         save_path = args.save + '/' + save_model_type
 
-    ckpt_format = args.dist_ckpt_format if args.use_dist_ckpt else 'torch'
+    ckpt_format = args.ckpt_format if args.use_dist_ckpt else 'torch'
     print_rank_0('saving checkpoint at iteration {:7d} to {} in {} format'.format(
         iteration, save_path, ckpt_format))
 
@@ -160,8 +160,8 @@ def save_checkpoint(iteration, model, optimizer, opt_param_scheduler,
     if args.async_save:
         if not args.use_dist_ckpt:
             raise NotImplementedError('Async checkpoint save not implemented for legacy checkpoints')
-        elif args.dist_ckpt_format != 'torch_dist':
-            raise NotImplementedError(f'Async checkpoint save not implemented for {args.dist_ckpt_format} distributed checkpoint format')
+        elif args.ckpt_format != 'torch_dist':
+            raise NotImplementedError(f'Async checkpoint save not implemented for {args.ckpt_format} distributed checkpoint format')
 
     # Collect args, model, RNG.
     if not torch.distributed.is_initialized() \
@@ -183,7 +183,7 @@ def save_checkpoint(iteration, model, optimizer, opt_param_scheduler,
                 ensure_directory_exists(checkpoint_name, check_parent=False)
             validate_sharding_integrity = True
             save_strategy = (checkpointing_context or {}).get('save_strategy',
-                                                              get_default_save_sharded_strategy(args.dist_ckpt_format))
+                                                              get_default_save_sharded_strategy(args.ckpt_format))
             if args.ckpt_fully_parallel_save:
                 if checkpointing_context is not None and 'save_strategy' in checkpointing_context:
                     # Already saved once before - don't need to rerun sharding validation

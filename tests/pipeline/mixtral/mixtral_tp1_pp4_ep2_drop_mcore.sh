@@ -34,6 +34,8 @@ TRAIN_ITER=20
 
 
 MOE_ARGS=(
+    --moe-layer-freq -1
+    --first-k-dense-replace -1
     --num-experts 8
     --expert-model-parallel-size ${EP}
     --moe-router-topk 2
@@ -43,7 +45,7 @@ MOE_ARGS=(
     --moe-expert-capacity-factor 0.5
     --moe-pad-expert-input-to-capacity
     --moe-token-drop-policy probs
-    --moe-token-dispatcher-type alltoall
+    --moe-token-dispatcher-type alltoall_seq
 )
 
 ACCELERATE_ARGS=(

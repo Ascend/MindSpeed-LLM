@@ -40,7 +40,9 @@ MOE_ARGS="
     --moe-router-topk 2 \
     --moe-router-load-balancing-type aux_loss \
     --moe-aux-loss-coeff 0.02 \
-    --moe-permutation-async-comm
+    --moe-permutation-async-comm \
+    --moe-layer-freq -1 \
+    --first-k-dense-replace -1 \
 "
 
 GPT_ARGS="
@@ -51,7 +53,7 @@ GPT_ARGS="
     --lora-target-modules linear_qkv linear_proj linear_fc1 linear_fc2 \
     --variable-seq-lengths \
     --context-parallel-size ${CP} \
-    --moe-token-dispatcher-type alltoall \
+    --moe-token-dispatcher-type alltoall_seq \
     --use-mcore-models  \
     --disable-bias-linear \
     --seq-length 32768 \

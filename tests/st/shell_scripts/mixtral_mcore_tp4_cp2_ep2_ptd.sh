@@ -32,12 +32,15 @@ CP_TYPE='ulysses_cp_algo'
 NUM_LAYERS=6
 
 MOE_ARGS=(
+    --moe-token-dispatcher-type allgather
     --num-experts 8
     --expert-model-parallel-size ${EP}
     --moe-router-topk 2
     --moe-router-load-balancing-type aux_loss
     --moe-aux-loss-coeff 0.01
     --moe-permutation-async-comm
+    --moe-layer-freq  -1
+    --first-k-dense-replace -1
 )
 
 GPT_ARGS=(

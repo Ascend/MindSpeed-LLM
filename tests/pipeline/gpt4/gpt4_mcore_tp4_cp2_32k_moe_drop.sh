@@ -36,6 +36,8 @@ DISTRIBUTED_ARGS="
 "
 
 MOE_ARGS="
+    --moe-layer-freq -1 \
+    --first-k-dense-replace -1 \
     --num-experts 4 \
     --expert-model-parallel-size ${EP} \
     --moe-router-topk 2 \

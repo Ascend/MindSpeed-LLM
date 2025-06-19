@@ -50,107 +50,13 @@ except Exception:
 logger = getLogger(__name__)
 
 
-def _load_base_checkpoint(load_dir, rank0=False, sharded_state_dict=None,
-                          exit_on_missing_checkpoint=False, checkpoint_step=None):
-    """ Load the base state_dict from the given directory
-
-    If rank0 is true, just loads rank 0 checkpoint, ignoring arguments.
-    """
-    # Read the tracker file and set the iteration.
-    tracker_filename = get_checkpoint_tracker_filename(load_dir)
-
-    # If no tracker file, return nothing
-    if not os.path.isfile(tracker_filename):
-        if not rank0:
-            print_rank_0('WARNING: could not find the metadata file {} '.format(
-                tracker_filename))
-            print_rank_0('    will not load any checkpoints and will start from '
-                         'random')
-
-        # Conditionally exit if checkpoint not found.
-        if exit_on_missing_checkpoint:
-            print_rank_0(">> '--exit-on-missing-checkpoint' set ... exiting. <<")
-            if torch.distributed.is_initialized():
-                torch.distributed.barrier()
-            sys.exit()
-
-        return None, "", False
-
-    # Otherwise, read the tracker file and either set the iteration or
-    # mark it as a release checkpoint.
-    if checkpoint_step is not None:
-        iteration = checkpoint_step
-        release = False
-    else:
-        iteration, release = read_metadata(tracker_filename)
-
-    # Checkpoint.
-    if rank0:
-        checkpoint_name = find_checkpoint_rank_0(load_dir, iteration, release)
-        is_dist_ckpt = checkpoint_name is not None and dist_checkpointing.check_is_distributed_checkpoint(checkpoint_name)
-    else:
-        checkpoint_name = get_checkpoint_name(load_dir, iteration, release,
-                                              return_base_dir=True)
-        is_dist_ckpt = dist_checkpointing.check_is_distributed_checkpoint(checkpoint_name)
-        if not is_dist_ckpt:
-            checkpoint_name = get_checkpoint_name(load_dir, iteration, release,
-                                                  return_base_dir=False)
-        dist_infix = "distributed " if is_dist_ckpt else ""
-        if release:
-            print_rank_0(f' loading release {dist_infix}checkpoint from {load_dir}')
-        else:
-            print_rank_0(f' loading {dist_infix}checkpoint from {load_dir} at iteration {iteration}')
-
-    # Load the checkpoint.
-    if is_dist_ckpt:
-        if rank0:
-            state_dict = dist_checkpointing.load_common_state_dict(checkpoint_name)
-            return state_dict, checkpoint_name, release
-
-        # at this point args are available
-        args = get_args()
-        if sharded_state_dict is None:
-            assert not args.auto_detect_ckpt_format and not args.use_dist_ckpt, (args.auto_detect_ckpt_format, args.use_dist_ckpt)
-            raise RuntimeError('Detected load from a distributed checkpoint, but neither --use-dist-ckpt nor --auto-detect-ckpt-format is set.')
-
-        load_strategy = get_default_load_sharded_strategy(checkpoint_name)
-        if args.ckpt_fully_parallel_load:
-            load_strategy = FullyParallelLoadStrategyWrapper(load_strategy,
-                                                             mpu.get_data_parallel_group(with_context_parallel=True))
-        state_dict = dist_checkpointing.load(sharded_state_dict, checkpoint_name, load_strategy, strict=args.dist_ckpt_strictness)
-        return state_dict, checkpoint_name, release
-
-    try:
-        state_dict = torch.load(checkpoint_name, map_location='cpu', weights_only=False)
-    except ModuleNotFoundError:
-        from megatron.legacy.fp16_deprecated import loss_scaler
-        # For backward compatibility.
-        if not rank0:
-            print_rank_0(' > deserializing using the old code structure ...')
-        sys.modules['fp16.loss_scaler'] = sys.modules[
-            'megatron.legacy.fp16_deprecated.loss_scaler']
-        sys.modules['megatron.fp16.loss_scaler'] = sys.modules[
-            'megatron.legacy.fp16_deprecated.loss_scaler']
-        sys.modules['megatron.model'] = sys.modules['megatron.legacy.model']
-        state_dict = torch.load(checkpoint_name, map_location='cpu', weights_only=False)
-        sys.modules.pop('fp16.loss_scaler', None)
-        sys.modules.pop('megatron.fp16.loss_scaler', None)
-        sys.modules.pop('megatron.model', None)
-    except BaseException as e:
-        print('could not load the checkpoint')
-        print(e)
-        sys.exit()
-
-    return state_dict, checkpoint_name, release
-
-
 def _load_base_checkpoint_wrapper(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
         args_ = get_args()
         if getattr(args_, 'is_load_refer', False):
             kwargs['checkpoint_step'] = args_.refer_model_iter
-        state_dict, checkpoint_name, release = fn(*args, **kwargs)
+        state_dict, checkpoint_name, release, ckpt_type = fn(*args, **kwargs)
         rank0 = kwargs.pop('rank0')
         if is_enable_lora() and state_dict is not None:
             words_to_match = {'weight': 'base_layer.weight', 'bias': 'base_layer.bias'}
@@ -158,24 +64,25 @@ def _load_base_checkpoint_wrapper(fn):
             state_dict = modify_keys_with_dict(state_dict, words_to_match, exclude_words)
 
             if not args_.lora_load or getattr(args_, 'is_load_refer', False):
-                return state_dict, checkpoint_name, release
+                return state_dict, checkpoint_name, release, None
 
             # Read the tracker file and set the iteration.
-            state_dict_lora, checkpoint_name_lora, release_lora = fn(args_.lora_load, rank0)
+            state_dict_lora, checkpoint_name_lora, release_lora, ckpt_type_lora = fn(args_.lora_load, args_, rank0)
             if state_dict_lora is not None:
                 merge_dicts(state_dict, state_dict_lora)
                 checkpoint_name = checkpoint_name_lora
                 release = release_lora
-        return state_dict, checkpoint_name, release
+        return state_dict, checkpoint_name, release, ckpt_type
     return wrapper
 
 
 def load_checkpoint_wrapper(fn):
     @wraps(fn)
-    def wrapper(*args, **kwargs):
+    def wrapper(ddp_model, optimizer, opt_param_scheduler, strict=True, *args, **kwargs):
         if is_enable_lora() or load_checkpoint_loosely():
-            kwargs['strict'] = False
-        return fn(*args, **kwargs)
+            strict = False
+        ddp_model = unwrap_model(ddp_model)
+        return fn(ddp_model, optimizer, opt_param_scheduler, strict=strict, *args, **kwargs)
 
     return wrapper
 
@@ -218,11 +125,11 @@ def load_args_from_checkpoint_wrapper(fn):
         _set_arg('v_head_dim', force=True)
         _set_arg('shared_expert_gate', force=True)
 
-        state_dict, checkpoint_name, release = _load_base_checkpoint(
+        state_dict, checkpoint_name, release, ckpt_type = _load_base_checkpoint(
             getattr(args, kwargs.get('load_arg', 'load')),
+            args,
             rank0=True,
-            exit_on_missing_checkpoint=kwargs.get('exit_on_missing_checkpoint', False),
-            checkpoint_step=args.ckpt_step
+            checkpointing_context=kwargs.get('checkpointing_context'),
         )
         checkpoint_version = state_dict.get('checkpoint_version', 0)
         if checkpoint_version >= 3.0:
@@ -235,8 +142,9 @@ def load_args_from_checkpoint_wrapper(fn):
 
 def save_checkpoint_wrapper(fn):
     @wraps(fn)
-    def wrapper(iteration, model, optimizer, opt_param_scheduler, num_floating_point_operations_so_far, checkpointing_context=None,
-                    pipeline_rank=None, expert_rank=None, tensor_rank=None, pipeline_parallel=None, expert_parallel=None):
+    def wrapper(iteration, model, optimizer, opt_param_scheduler, num_floating_point_operations_so_far,
+                checkpointing_context=None, pipeline_rank=None, expert_rank=None, tensor_rank=None, pipeline_parallel=None, expert_parallel=None, non_persistent_ckpt=False,
+                train_data_iterator=None, preprocess_common_state_dict_fn=None):
         """Save a model checkpoint.
 
         Checkpointing context is used to persist some checkpointing state
@@ -251,7 +159,7 @@ def save_checkpoint_wrapper(fn):
         # Only rank zero of the data parallel writes to the disk.
         model = unwrap_model(model)
 
-        ckpt_format = args.dist_ckpt_format if args.use_dist_ckpt else 'torch'
+        ckpt_format = args.ckpt_format if args.use_dist_ckpt else 'torch'
         print_rank_0('saving checkpoint at iteration {:7d} to {} in {} format'.format(
             iteration, args.save, ckpt_format))
 
@@ -275,14 +183,14 @@ def save_checkpoint_wrapper(fn):
         if args.async_save:
             if not args.use_dist_ckpt:
                 raise NotImplementedError('Async checkpoint save not implemented for legacy checkpoints')
-            elif args.dist_ckpt_format != 'torch_dist':
+            elif args.ckpt_format != 'torch_dist':
                 raise NotImplementedError(
-                    f'Async checkpoint save not implemented for {args.dist_ckpt_format} distributed checkpoint format')
+                    f'Async checkpoint save not implemented for {args.ckpt_format} distributed checkpoint format')
 
         rank = torch.distributed.get_rank() if torch.distributed.is_initialized() else 0
         # Collect args, model, RNG.
         if not torch.distributed.is_initialized() \
-                or mpu.get_data_modulo_expert_parallel_rank(with_context_parallel=True) == 0 \
+                or mpu.get_expert_data_parallel_rank() == 0 \
                 or args.use_dist_ckpt:
 
             optim_sd_kwargs = {}
@@ -301,8 +209,8 @@ def save_checkpoint_wrapper(fn):
                 validate_sharding_integrity = True
                 save_strategy = (checkpointing_context or {}).get('save_strategy',
                                                                   get_default_save_sharded_strategy(
-                                                                      args.dist_ckpt_format))
-                if args.ckpt_assume_constant_structure and args.dist_ckpt_format == 'torch_dist':
+                                                                      args.ckpt_format))
+                if args.ckpt_assume_constant_structure and args.ckpt_format == 'torch_dist':
                     save_strategy.use_cached_ckpt_structure = args.ckpt_assume_constant_structure
                 if args.ckpt_fully_parallel_save:
                     if checkpointing_context is not None and 'save_strategy' in checkpointing_context:
@@ -322,7 +230,7 @@ def save_checkpoint_wrapper(fn):
 
                 # [ModelOpt]: save sharded modelopt_state
                 if has_nvidia_modelopt:
-                    save_sharded_modelopt_state(model, checkpoint_name, (args.dist_ckpt_format, 1))
+                    save_sharded_modelopt_state(model, checkpoint_name, (args.ckpt_format, 1))
             else:
                 # [ModelOpt]: Inject modelopt_state into state_dict
                 if has_nvidia_modelopt:

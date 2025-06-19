@@ -43,6 +43,7 @@ class TransformerMTPoverlap(torch.autograd.Function):
                 context_mask=None,
                 rotary_pos_emb=None,
                 inference_params=None,
+                inference_context=None,
                 packed_seq_params=None, ):
         with torch.enable_grad():
             output, context_out, graph = transformer_layer_forward_moe(layer,

@@ -49,7 +49,7 @@ source /usr/local/Ascend/nnal/atb/set_env.sh
 # 安装MindSpeed加速库
 git clone https://gitee.com/ascend/MindSpeed.git
 cd MindSpeed
-git checkout 2c085cc9  # checkout commit from MindSpeed core_r0.8.0 in 2025.04.01
+git checkout 5d9464d2  # checkout commit from MindSpeed master in 2025.06.18
 pip install -r requirements.txt 
 pip3 install -e .
 cd ..
@@ -58,7 +58,7 @@ cd ..
 git clone https://gitee.com/ascend/MindSpeed-LLM.git 
 git clone https://github.com/NVIDIA/Megatron-LM.git  # megatron从github下载，请确保网络能访问
 cd Megatron-LM
-git checkout core_r0.8.0
+git checkout core_v0.12.1
 cp -r megatron ../MindSpeed-LLM/
 cd ../MindSpeed-LLM
 

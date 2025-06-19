@@ -30,7 +30,7 @@ from .transformer.moe.router import (topk_router_forward, topk_router_routing, t
                                      topk_router_gating_func)
 from .transformer.moe.moe_utils import z_loss_func, topk_softmax_with_capacity
 from .transformer.transformer_layer import TransformerLayer
-from .transformer.transformer_block import get_num_layers_to_build_wrapper, transformer_block_init_wrapper, transformer_block_forward
+from .transformer.transformer_block import get_num_layers_to_build, transformer_block_init_wrapper, transformer_block_forward
 from .distributed.param_and_grad_buffer import start_grad_sync_wrapper
 from .distributed.distributed_data_parallel import distributed_data_parallel_init_wrapper
 from .optimizer import get_megatron_optimizer_wrapper

@@ -36,6 +36,8 @@ DISTRIBUTED_ARGS="
 "
 
 MOE_ARGS="
+    --moe-layer-freq -1 \
+    --first-k-dense-replace -1 \
     --expert-model-parallel-size ${EP} \
     --num-experts 16 \
     --moe-router-topk 2 \
@@ -44,7 +46,6 @@ MOE_ARGS="
     --moe-input-jitter-eps 0.01 \
     --moe-token-dispatcher-type allgather \
     --moe-permutation-async-comm \
-    --use-fused-moe-token-permute-and-unpermute
 "
 
 GPT_ARGS="

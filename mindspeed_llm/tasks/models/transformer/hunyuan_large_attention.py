@@ -261,6 +261,7 @@ class HunyuanLargeAttention(SelfAttention):
             attention_mask,
             key_value_states=None,
             inference_params=None,
+            inference_context=None,
             rotary_pos_emb=None,
             packed_seq_params=None,
     ):
@@ -305,8 +306,8 @@ class HunyuanLargeAttention(SelfAttention):
         # ===================================================
         # Adjust key, value, and rotary_pos_emb for inference
         # ===================================================
-        key, value, rotary_pos_emb, attn_mask_type = self._adjust_key_value_for_inference(
-            inference_params, key, value, rotary_pos_emb
+        _, key, value, rotary_pos_emb, attn_mask_type = self._adjust_key_value_for_inference(
+            inference_params, query, key, value, rotary_pos_emb
         )
  
         if packed_seq_params is not None:
@@ -361,6 +362,7 @@ class HunyuanLargeAttention(SelfAttention):
                 key,
                 value,
                 attention_mask,
+                attention_bias=None,
                 attn_mask_type=attn_mask_type,
                 packed_seq_params=packed_seq_params,
             )

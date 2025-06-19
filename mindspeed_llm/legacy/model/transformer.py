@@ -30,6 +30,7 @@ from megatron import core
 from megatron.core import tensor_parallel
 from megatron.core import parallel_state
 from megatron.core.enums import ModelType
+from megatron.core.utils import deprecate_inference_params
 
 from megatron.legacy.model.enums import AttnMaskType, LayerType, AttnType
 from megatron.legacy.model.transformer import _get_layer_type
@@ -107,7 +108,7 @@ def _get_num_layers(args, model_type, is_decoder=False):
             # or no layers at all (virtual pp rank >= 1).
             num_layers = (
                 0
-                if args.standalone_embedding_stage
+                if args.account_for_embedding_in_pipeline_split
                 and mpu.get_pipeline_model_parallel_rank() == 0 else
                 args.num_layers // args.transformer_pipeline_model_parallel_size
             )
@@ -639,18 +640,20 @@ def core_attention_forward(self, query_layer, key_layer, value_layer, attention_
 
 
 def ParallelAttentionForward(self, hidden_states, attention_mask,
-                encoder_output=None, inference_params=None,
-                rotary_pos_emb=None):
+                encoder_output=None, inference_context=None,
+                rotary_pos_emb=None, *, inference_params=None):
     # hidden_states: [sq, b, h]
-
+    
+    inference_context = deprecate_inference_params(inference_context, inference_params)
+    
     # =================================================
     # Pre-allocate memory for key-values for inference.
     # =================================================
     is_first_step = False
-    if inference_params:
-        if self.layer_number not in inference_params.key_value_memory_dict:
-            inf_max_seq_len = inference_params.max_sequence_length
-            inf_max_batch_size = inference_params.max_batch_size
+    if inference_context:
+        if self.layer_number not in inference_context.key_value_memory_dict:
+            inf_max_seq_len = inference_context.max_sequence_length
+            inf_max_batch_size = inference_context.max_batch_size
             inference_key_memory = self._allocate_memory(
                 inf_max_seq_len, inf_max_batch_size,
                 self.num_query_groups_per_partition)
@@ -658,12 +661,12 @@ def ParallelAttentionForward(self, hidden_states, attention_mask,
                 inf_max_seq_len, inf_max_batch_size,
                 self.num_query_groups_per_partition)
 
-            inference_params.key_value_memory_dict[self.layer_number] = (
+            inference_context.key_value_memory_dict[self.layer_number] = (
                 inference_key_memory, inference_value_memory)
             is_first_step = True
         else:
             inference_key_memory, inference_value_memory = \
-                inference_params.key_value_memory_dict[self.layer_number]
+                inference_context.key_value_memory_dict[self.layer_number]
 
     # =====================
     # Query, Key, and Value
@@ -733,11 +736,11 @@ def ParallelAttentionForward(self, hidden_states, attention_mask,
         else:
             rotary_pos_emb = ((rotary_pos_emb,) * 2)
 
-    if inference_params:
-        batch_start = inference_params.batch_size_offset
+    if inference_context:
+        batch_start = inference_context.batch_size_offset
         batch_end = batch_start + key_layer.size(1)
         assert batch_end <= inference_key_memory.size(1)
-        sequence_start = inference_params.sequence_len_offset
+        sequence_start = inference_context.sequence_len_offset
         sequence_end = sequence_start + key_layer.size(0)
         assert sequence_end <= inference_key_memory.size(0)
         # Copy key and values.
@@ -803,9 +806,9 @@ def ParallelAttentionForward(self, hidden_states, attention_mask,
         q, k, v = query_layer, key_layer, value_layer
         if not self.sequence_parallel:
             with tensor_parallel.get_cuda_rng_tracker().fork():
-                context_layer = self.core_attention_flash(q, k, v, attention_mask, inference_params)
+                context_layer = self.core_attention_flash(q, k, v, attention_mask, inference_context)
         else:
-            context_layer = self.core_attention_flash(q, k, v, attention_mask, inference_params)
+            context_layer = self.core_attention_flash(q, k, v, attention_mask, inference_context)
 
     # =================
     # Output. [sq, b, h]
@@ -823,9 +826,12 @@ def parallel_transformer_forward(
         retriever_output=None,
         retriever_attn_mask=None,
         inference_params=None,
+        inference_context=None,
         rotary_pos_emb=None):
-
-    if inference_params:
+    
+    inference_context = deprecate_inference_params(inference_context, inference_params)
+    
+    if inference_context:
         assert self.recompute_granularity is None, \
             'inference does not work with activation checkpointing'
 
@@ -891,9 +897,11 @@ def parallel_transformer_forward(
                     'encoder_output': encoder_output,
                     'enc_dec_attn_mask': enc_dec_attn_mask,
                     'inference_params': inference_params,
+                    'inference_context': inference_context,
                 }
 
                 if self.transformer_impl == 'transformer_engine':
+                    forward_kwargs['inference_params'] = inference_context
                     forward_kwargs['is_first_microbatch'] = is_first_microbatch
                     forward_kwargs['checkpoint_core_attention'] = self.checkpoint_core_attention
                     if self.transformer_engine_v_0_10:
@@ -903,6 +911,7 @@ def parallel_transformer_forward(
                     forward_kwargs['retriever_input'] = retriever_input
                     forward_kwargs['retriever_output'] = retriever_output
                     forward_kwargs['retriever_attn_mask'] = retriever_attn_mask
+                    forward_kwargs['inference_context'] = inference_context
 
                 for index in range(self.num_layers):
                     layer = self._get_layer(index)

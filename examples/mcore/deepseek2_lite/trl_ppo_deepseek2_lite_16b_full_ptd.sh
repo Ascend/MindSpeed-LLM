@@ -41,14 +41,14 @@ MOE_ARGS="
     --moe-grouped-gemm \
     --moe-alltoall-overlap-comm \
     --moe-permutation-async-comm \
-    --moe-token-dispatcher-type alltoall \
-    --use-fused-moe-token-permute-and-unpermute \
+    --moe-token-dispatcher-type alltoall_seq \
     --first-k-dense-replace 1 \
     --moe-layer-freq 1 \
     --n-shared-experts 2 \
     --num-experts 64 \
     --moe-router-topk 6 \
     --moe-intermediate-size 1408 \
+    --moe-ffn-hidden-size 1408 \
     --moe-router-load-balancing-type aux_loss \
     --topk-group 1 \
     --moe-aux-loss-coeff 0.01 \

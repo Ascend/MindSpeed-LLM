@@ -12,7 +12,7 @@ from megatron.legacy.model.transformer import FlashSelfAttention
 from megatron.core.transformer.transformer_config import TransformerConfig
 from megatron.core.transformer.dot_product_attention import DotProductAttention
 import megatron.core.parallel_state as mpu
-from mindspeed.core.context_parallel.ulysses_context_parallel import UlyssesContextAttention
+from mindspeed.core.context_parallel.ulysses_context_parallel.ulysses_context_parallel import UlyssesContextAttention
 from mindspeed.core.parallel_state import get_context_parallel_group_for_hybrid_ulysses
 from mindspeed.model.transformer import get_attention_mask
 from mindspeed.model.transformer import set_attention_mask

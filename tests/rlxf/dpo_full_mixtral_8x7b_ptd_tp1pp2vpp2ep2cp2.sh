@@ -47,7 +47,7 @@ GPT_ARGS="
     --no-gradient-accumulation-fusion \
     --num-layers-per-virtual-pipeline-stage 2 \
     --context-parallel-size ${CP} \
-    --moe-token-dispatcher-type alltoall \
+    --moe-token-dispatcher-type alltoall_seq \
     --use-mcore-models  \
     --disable-bias-linear \
     --seq-length 1024 \

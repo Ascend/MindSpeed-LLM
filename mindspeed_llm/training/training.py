@@ -41,6 +41,7 @@ from megatron.training.initialize import initialize_megatron
 from megatron.training.initialize import write_args_to_tensorboard
 from megatron.training.arguments import core_transformer_config_from_args
 from megatron.training.theoretical_memory_usage import report_theoretical_memory
+from megatron.training.training import disable_forward_pre_hook, enable_forward_pre_hook
 from megatron.training.training import (
     train_step, calc_params_l2_norm,
     evaluate_and_print_results,
@@ -479,11 +480,11 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
         config.no_sync_func = [model_chunk.no_sync for model_chunk in model]
         if len(model) == 1:
             config.no_sync_func = config.no_sync_func[0]
-        if args.delay_grad_reduce:
+        if args.align_grad_reduce:
             config.grad_sync_func = [model_chunk.start_grad_sync for model_chunk in model]
             if len(model) == 1:
                 config.grad_sync_func = config.grad_sync_func[0]
-    if args.overlap_param_gather and args.delay_param_gather:
+    if args.overlap_param_gather and args.align_param_gather:
         config.param_sync_func = [lambda x: optimizer.finish_param_sync(model_index, x)
                                   for model_index in range(len(model))]
         if len(model) == 1:
@@ -493,6 +494,7 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
     timers('interval-time', log_level=0).start(barrier=True)
     print_datetime('before the start of training step')
     report_memory_flag = True
+    pre_hook_enabled = False
     exit = False
 
     if args.manual_gc:
@@ -530,6 +532,18 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
     if is_profile_enabled():
         prof = get_profiler()
         prof.start()
+    
+    start_iteration = iteration
+    # Disable forward pre-hook to start training to ensure that errors in checkpoint loading
+    # or random initialization don't propagate to all ranks in first all-gather (which is a
+    # no-op if things work correctly).
+    if should_disable_forward_pre_hook(args):
+        disable_forward_pre_hook(model, param_sync=False)
+        # Also remove param_sync_func temporarily so that sync calls made in
+        # `forward_backward_func` are no-ops.
+        param_sync_func = config.param_sync_func
+        config.param_sync_func = None
+        pre_hook_enabled = False
 
     while iteration < args.train_iters:
 
@@ -549,13 +563,32 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
         update_num_microbatches(args.consumed_train_samples, consistency_check=True)
 
         args.curr_iteration = iteration
-        loss_dict, skipped_iter, grad_norm, num_zeros_in_grad = \
+        loss_dict, skipped_iter, should_checkpoint, should_exit, exit_code, grad_norm, num_zeros_in_grad = \
             train_step(forward_step_func,
                        train_data_iterator,
                        model,
                        optimizer,
                        opt_param_scheduler,
                        config)
+        
+        # Enable forward pre-hooks after first set of forward and backward passes.
+        # When running in fp16, skip all NaN iterations until steady-state loss scaling value
+        # is reached.
+        if iteration == start_iteration:
+            if skipped_iter:
+                # Only enable forward pre-hook after a training step has successfully run. Relevant
+                # for fp16 codepath where first XX iterations are skipped until steady-state loss
+                # scale value is reached.
+                start_iteration = iteration + 1
+            else:
+                # Enable forward pre-hook after training step has successfully run. All subsequent
+                # forward passes will use the forward pre-hook / `param_sync_func` in
+                # `forward_backward_func`.
+                if should_disable_forward_pre_hook(args):
+                    enable_forward_pre_hook(model)
+                    config.param_sync_func = param_sync_func
+                    pre_hook_enabled = True
+                    
         iteration += 1
         batch_size = mpu.get_data_parallel_world_size() * \
                      args.micro_batch_size * \
@@ -599,8 +632,9 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
         if args.eval_interval and iteration % args.eval_interval == 0 and \
                 args.do_valid:
             timers('interval-time').stop()
-            if args.use_distributed_optimizer and args.overlap_param_gather:
-                optimizer.disable_pre_hook()
+            if should_disable_forward_pre_hook(args):
+                disable_forward_pre_hook(model)
+                pre_hook_enabled = False
             if args.manual_gc and args.manual_gc_eval:
                 # Collect all objects.
                 gc.collect()
@@ -618,8 +652,9 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
             if args.manual_gc and args.manual_gc_eval:
                 # Collect only the objects created and used in evaluation.
                 gc.collect(generation=0)
-            if args.use_distributed_optimizer and args.overlap_param_gather:
-                optimizer.enable_pre_hook()
+            if should_disable_forward_pre_hook(args):
+                enable_forward_pre_hook(model)
+                pre_hook_enabled = False
             timers('interval-time', log_level=0).start(barrier=True)
 
         # Checkpointing
@@ -695,8 +730,8 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
         wandb_writer.finish()
 
     # Close out pre-hooks if using distributed optimizer and overlapped param gather.
-    if args.use_distributed_optimizer and args.overlap_param_gather:
-        optimizer.disable_pre_hook()
+    if pre_hook_enabled:
+        disable_forward_pre_hook(model)
 
     # If any exit conditions (signal handler, duration, iterations) have been reached, exit.
     if exit:
@@ -942,3 +977,8 @@ def training_log(loss_dict, total_loss_dict, learning_rate, decoupled_learning_r
         timers.log(timers_to_log, normalizer=args.log_interval)
 
     return report_memory_flag
+
+
+def should_disable_forward_pre_hook(args):
+    """Block forward pre-hook for certain configurations."""
+    return not args.use_custom_fsdp and args.use_distributed_optimizer and args.overlap_param_gather

@@ -38,11 +38,13 @@ MOE_ARGS="
     --moe-router-topk 2 \
     --moe-router-load-balancing-type aux_loss \
     --moe-aux-loss-coeff 0.02 \
-    --moe-permutation-async-comm
+    --moe-permutation-async-comm \
+    --moe-layer-freq -1 \
+    --first-k-dense-replace -1 \
 "
 
 GPT_ARGS="
-    --moe-token-dispatcher-type alltoall \
+    --moe-token-dispatcher-type alltoall_seq \
     --use-mcore-models  \
     --disable-bias-linear \
     --seq-length 32768 \

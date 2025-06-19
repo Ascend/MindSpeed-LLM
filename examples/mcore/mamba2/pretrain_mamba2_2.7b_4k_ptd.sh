@@ -45,12 +45,12 @@ MAMBA_ARGS="
     --num-layers ${NUM_LAYERS} \
     --group-query-attention \
     --num-query-groups 8 \
-    --mamba-ngroups 1 \
+    --mamba-num-groups 1 \
     --mamba-chunk-size 256 \
-    --mamba-d-state 128 \
+    --mamba-state-dim 128 \
     --mamba-d-conv 4 \
     --mamba-expand 2 \
-    --mamba-headdim 64 \
+    --mamba-head-dim 64 \
     --tokenizer-type  GPTSentencePieceTokenizer \
     --tokenizer-model ${TOKENIZER_PATH} \
     --hidden-size 2560 \

@@ -1,17 +1,23 @@
+from typing import Optional, Union
 import torch
 from torch import Tensor, nn
+
 from megatron.core import tensor_parallel, mpu
 from megatron.training import get_args
 from megatron.core.utils import make_viewless_tensor
 from megatron.core.ssm.mamba_block import MambaStack
+from megatron.core.inference.contexts import BaseInferenceContext
 
 
 def mamba_block_forward(self,
     hidden_states: Tensor,
     attention_mask: Tensor,
-    inference_params=None,
-    rotary_pos_emb: Tensor = None,
+    inference_context: Optional[BaseInferenceContext] = None,
+    rotary_pos_emb: Optional[Tensor] = None,
+    *,
+    inference_params: Optional[BaseInferenceContext] = None,
     ):
+    
     if not self.pre_process:
         # See set_input_tensor()
         hidden_states = self.input_tensor
@@ -77,6 +83,7 @@ def _mamba_block_method_checkpointed_forward_func(
                     hidden_states,
                     attention_mask,
                     inference_params=None,
+                    inference_context=None,
                     rotary_pos_emb=rotary_pos_emb,
                 )
             return hidden_states

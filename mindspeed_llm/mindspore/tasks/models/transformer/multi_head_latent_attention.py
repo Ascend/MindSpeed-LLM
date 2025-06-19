@@ -41,6 +41,7 @@ def mla_forward(
     attention_mask,
     key_value_states=None,
     inference_params=None,
+    inference_context=None,
     rotary_pos_emb=None,
     packed_seq_params=None,
 ):

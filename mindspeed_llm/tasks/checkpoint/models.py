@@ -1037,6 +1037,7 @@ class MegatronModel(ModelBase):
             self.args.shared_expert_gate = getattr(hf_args, "shared_expert_gate", None)
             self.args.qk_layernorm = getattr(hf_args, "qk_layernorm", False)
             self.args.moe_intermediate_size = getattr(hf_args, "moe_intermediate_size", None)
+            self.args.moe_ffn_hidden_size = getattr(hf_args, "moe_intermediate_size", None)
             self.args.first_k_dense_replace = getattr(hf_args, "first_k_dense_replace", None)
             self.args.moe_layer_freq = getattr(hf_args, "moe_layer_freq", None)
             self.args.multi_head_latent_attention = getattr(hf_args, "multi_head_latent_attention", False)
@@ -1074,8 +1075,10 @@ class MegatronModel(ModelBase):
             return
         set_args(self.args)
         self.args, self.args_megatron_checkpoint = load_args_from_checkpoint(self.args)
+        self.args.moe_ffn_hidden_size = getattr(self.args_megatron_checkpoint, "moe_intermediate_size", None)
 
     def update_megatron_args_from_cmd_config(self, loader_megatron):
+        self.args.ckpt_format = self.args_cmd.ckpt_format
         self.args.w_pack = self.args_cmd.w_pack
         self.args.add_qkv_bias = self.args_cmd.add_qkv_bias
         self.args.add_dense_bias = self.args_cmd.add_dense_bias

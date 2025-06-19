@@ -101,7 +101,8 @@ def get_tensor_shapes_decorator(get_tensor_shapes):
             seq_length,
             micro_batch_size,
             decoder_seq_length,
-            config
+            config,
+            encoder_decoder_xattn: bool,
     ):
         args = get_args()
         actual_micro_batch_size = getattr(args, "actual_micro_batch_size", None)
@@ -113,7 +114,8 @@ def get_tensor_shapes_decorator(get_tensor_shapes):
             seq_length=seq_length,
             micro_batch_size=micro_batch_size,
             decoder_seq_length=decoder_seq_length,
-            config=config
+            config=config,
+            encoder_decoder_xattn=False,
          )
 
         if args.tp_2d:

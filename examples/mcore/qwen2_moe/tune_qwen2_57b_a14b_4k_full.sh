@@ -47,9 +47,12 @@ MOE_ARGS="
     --shared-expert-gate \
     --moe-router-load-balancing-type ${ROUTER_BALANCING_TYPE} \
     --moe-intermediate-size 2560 \
+    --moe-ffn-hidden-size 2560 \
     --moe-permutation-async-comm \
-    --moe-token-dispatcher-type alltoall \
-    --moe-aux-loss-coeff 0.001
+    --moe-token-dispatcher-type alltoall_seq \
+    --moe-aux-loss-coeff 0.001 \
+    --moe-layer-freq -1 \
+    --first-k-dense-replace -1 \
 "
 
 OPTIMIZE_ARGS="

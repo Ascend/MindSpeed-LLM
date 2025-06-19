@@ -81,15 +81,16 @@ def rotary_embedding_init_wrapper(fn):
     return wrapper
 
 
-def rotary_embedding_forward(self, max_seq_len: int, offset: int = 0):
+def rotary_embedding_forward(self, max_seq_len: int, offset: int = 0, packed_seq: bool = False):
     """Forward pass of RoPE embedding.
 
-    Args:
-        max_seq_len (int): Maximum size of sequence
-        offset (int, optional): _description_. Defaults to 0.
+        Args:
+            max_seq_len (int): Maximum size of sequence
+            offset (int, optional): RoPE offset. Defaults to 0.
+            packed_seq (bool, optional): Whether to use packed sequence. Defaults to False.
 
-    Returns:
-        Tensor: Embeddings after applying RoPE.
+        Returns:
+            Tensor: Embeddings after applying RoPE.
     """
     args = get_args()
     if self.inv_freq.device.type == 'cpu':
@@ -143,7 +144,7 @@ def rotary_embedding_forward(self, max_seq_len: int, offset: int = 0):
         tp_y_cp_sz = cp * args.tp_y
     else:
         tp_y_cp_sz = cp
-    if tp_y_cp_sz > 1:
+    if tp_y_cp_sz > 1 and not packed_seq:
         # slice rotary_pos_emb along sequence dimension and select the parition of the current CP rank
         emb = get_pos_emb_on_this_cp_rank(emb, 0)
     return emb
@@ -197,12 +198,18 @@ def apply_rotary_pos_emb(t, freqs, rotary_interleaved=False):
     return torch.cat((t, t_pass), dim=-1)
 
 
-def apply_rotary_pos_emb_bshd(t: Tensor, freqs: Tensor, rotary_interleaved: bool = False) -> Tensor:
+def apply_rotary_pos_emb_bshd(
+    t: Tensor,
+    freqs: Tensor,
+    rotary_interleaved: bool = False,
+    multi_latent_attention: bool = False,
+    mscale: float = 1.0,
+) -> Tensor:
     args = get_args()
     if args.use_glm_rope:
         return _process_partial_rope(freqs, t)
 
-    _mscale = 1
+    _mscale = mscale
     if args.rope_scaling_type == "yarn":
         _mscale = float(
             YarnRotaryPositionEmbedding.yarn_get_mscale(args.rope_scaling_factor, args.rope_scaling_mscale)
@@ -219,6 +226,11 @@ def apply_rotary_pos_emb_bshd(t: Tensor, freqs: Tensor, rotary_interleaved: bool
 
     rot_dim = freqs.shape[-1]
     t, t_pass = t[..., :rot_dim], t[..., rot_dim:]
+    if multi_latent_attention:
+        x1 = t[..., 0::2]
+        x2 = t[..., 1::2]
+        t = torch.cat((x1, x2), dim=-1)
+        
     cos_ = (torch.cos(freqs) * _mscale).to(t.dtype)
     sin_ = (torch.sin(freqs) * _mscale).to(t.dtype)
     

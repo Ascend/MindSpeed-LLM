@@ -37,7 +37,9 @@ DISTRIBUTED_ARGS="
 MOE_ARGS="
     --num-experts 40 \
     --moe-grouped-gemm \
-    --moe-token-dispatcher-type alltoall \
+    --moe-layer-freq -1 \
+    --first-k-dense-replace -1 \
+    --moe-token-dispatcher-type alltoall_seq \
     --moe-alltoall-overlap-comm \
     --moe-router-topk 5 \
     --moe-permutation-async-comm \
@@ -96,7 +98,6 @@ GPT_ARGS="
     --expert-model-parallel-size ${EP} \
     --lr-warmup-fraction 0.01 \
     --use-fused-ring-attention-update \
-    --use-fused-moe-token-permute-and-unpermute \
     --bf16
 "
 

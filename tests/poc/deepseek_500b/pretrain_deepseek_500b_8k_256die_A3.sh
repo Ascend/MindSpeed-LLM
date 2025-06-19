@@ -35,7 +35,7 @@ DISTRIBUTED_ARGS="
 MOE_ARGS="
     --num-experts 160 \
     --moe-grouped-gemm \
-    --moe-token-dispatcher-type alltoall \
+    --moe-token-dispatcher-type alltoall_seq \
     --moe-alltoall-overlap-comm \
     --moe-router-topk 5 \
     --moe-permutation-async-comm \

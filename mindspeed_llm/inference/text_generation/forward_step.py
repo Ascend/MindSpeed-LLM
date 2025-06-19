@@ -34,7 +34,7 @@ def inference_forward_step_init_wrapper(fn):
         fn(self, *args, **kwargs)
         args = get_args()
         if not args.use_kv_cache:
-            self.inference_params = None
+            self.inference_context = None
 
     return wrapper
 
@@ -74,8 +74,8 @@ def _no_pipelining_forward_step_wrapper(_no_pipelining_forward_step):
                                             attention_mask,
                                             recv_buffer=recv_buffer)
         # Update the sequence length offset.
-        if self.inference_params:
-            self.inference_params.sequence_len_offset += tokens.size(1)
+        if self.inference_context:
+            self.inference_context.sequence_len_offset += tokens.size(1)
 
         logits = None
         if mpu.is_pipeline_last_stage():
@@ -133,9 +133,9 @@ def _with_pipelining_forward_step_wrapper(_with_pipelining_forward_step):
                                         attention_mask,
                                         recv_buffer=recv_buffer)
 
-            if self.inference_params:
+            if self.inference_context:
                 # Adjust the batch size offset to account for the micro-batch.
-                self.inference_params.batch_size_offset += this_micro_batch_size
+                self.inference_context.batch_size_offset += this_micro_batch_size
 
             # Copy logits.
             if mpu.is_pipeline_last_stage():
@@ -145,12 +145,12 @@ def _with_pipelining_forward_step_wrapper(_with_pipelining_forward_step):
 
                 logits[start:end, ...] = output
 
-        if self.inference_params:
+        if self.inference_context:
             # Once we are done with all the micro-batches, we can
             # adjust the sequence length offset.
-            self.inference_params.sequence_len_offset += sequence_length
+            self.inference_context.sequence_len_offset += sequence_length
             # and reset the batch size offset
-            self.inference_params.batch_size_offset = 0
+            self.inference_context.batch_size_offset = 0
 
         return logits
     return wrapper

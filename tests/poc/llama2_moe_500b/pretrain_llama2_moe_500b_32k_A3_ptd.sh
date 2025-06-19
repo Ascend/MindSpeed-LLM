@@ -82,7 +82,7 @@ GPT_ARGS="
     --expert-model-parallel-size ${EP} \
     --num-experts 160 \
     --moe-grouped-gemm \
-    --moe-token-dispatcher-type alltoall \
+    --moe-token-dispatcher-type alltoall_seq \
     --moe-router-topk 5 \
     --moe-permutation-async-comm \
     --lr-warmup-fraction 0.01 \

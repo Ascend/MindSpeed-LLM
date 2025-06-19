@@ -17,7 +17,7 @@ from megatron.core.transformer.enums import AttnMaskType
 from megatron.core.transformer.utils import attention_mask_func
 from megatron.core.utils import divide
 from megatron.core.packed_seq_params import PackedSeqParams
-from mindspeed.core.context_parallel.ulysses_context_parallel import ulyssesattn_context_parallel
+from mindspeed.core.context_parallel.ulysses_context_parallel.ulysses_context_parallel import ulyssesattn_context_parallel
 from mindspeed.core.parallel_state import (get_context_parallel_group_for_hybrid_ring,
                                            get_context_parallel_for_hybrid_ring_world_size,
                                            get_context_parallel_for_hybrid_ring_rank,
@@ -27,11 +27,11 @@ from mindspeed.core.parallel_state import (get_context_parallel_group_for_hybrid
                                            get_ring_ranks_for_inter_window_dkv,
                                            get_ring_group_for_intra_window,
                                            get_ring_group_for_intra_window_send_recv_overlap)
-from mindspeed.core.context_parallel.adaptive_context_parallel import adaptive_attn_context_parallel
+from mindspeed.core.context_parallel.adaptive_context_parallel.adaptive_context_parallel import adaptive_attn_context_parallel
 from mindspeed.core.context_parallel.utils import get_scheduling_info
 from mindspeed.model.transformer import get_attention_mask
 from mindspeed.utils import get_actual_seq_len
-from mindspeed.core.context_parallel.context_parallel_kv_cache import get_cache_policy
+from mindspeed.core.context_parallel.ring_context_parallel.context_parallel_kv_cache import get_cache_policy
 from mindspeed.utils import get_actual_seq_len, compute_qkv_index, get_position_ids
 
 from mindspeed_llm.tasks.models.common.alibi import Alibi
@@ -137,6 +137,8 @@ def dot_product_attention_init(
         attn_mask_type: AttnMaskType,
         attention_type: str,
         attention_dropout: float = None,
+        softmax_scale: float = None,
+        cp_comm_type: str = None,
 ):
     cp_size = config.context_parallel_size
     config.context_parallel_size = 1
@@ -246,14 +248,14 @@ def ulysses_context_parallel_forward_wrapper(fn):
 
 def dot_product_attention_forward_wrapper(fn):
     @wraps(fn)
-    def wrapper(self, query, key, value, attention_mask, attn_mask_type, packed_seq_params):
+    def wrapper(self, query, key, value, attention_mask, attn_mask_type, attention_bias=None, packed_seq_params=None):
         if attention_mask is None:
             attention_mask = get_attention_mask()
 
         args = get_args()
         if args.use_flash_attn and args.tp_2d:
             from mindspeed.core.transformer.dot_product_attention import dot_product_attention_forward
-            return dot_product_attention_forward(self, query, key, value, attention_mask, attn_mask_type, packed_seq_params)
+            return dot_product_attention_forward(self, query, key, value, attention_mask, attn_mask_type, attention_bias, packed_seq_params)
         if self.config.context_parallel_size > 1 and args.context_parallel_algo == "ulysses_cp_algo" and args.context_parallel_kv_cache_policy:
             return do_ulyssesattn_context_parallel(self, query, key, value, attention_mask, attn_mask_type, packed_seq_params)
         # ===================================

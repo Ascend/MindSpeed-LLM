@@ -101,7 +101,7 @@ def parallel_linear_load_from_state_dict_wrapper(fn):
 def get_model(model_provider_func, model_type=ModelType.encoder_or_decoder, wrap_with_ddp=True):
     """Build the model."""
     from megatron.core import tensor_parallel
-    from megatron.legacy.model import Float16Module
+    from megatron.core.transformer.module import Float16Module
     from megatron.core.distributed import DistributedDataParallelConfig
     
     tpl = tensor_parallel.layers
@@ -203,7 +203,8 @@ def get_model(model_provider_func, model_type=ModelType.encoder_or_decoder, wrap
 
     # Fp16 conversion.
     if args.fp16 or args.bf16:
-        model = [Float16Module(model_module, args) for model_module in model]
+        config = get_model_config(model[0])
+        model = [Float16Module(config, model_module) for model_module in model]
 
     if wrap_with_ddp:
         config = get_model_config(model[0])

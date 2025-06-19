@@ -8,10 +8,11 @@ import torch.distributed
 from apex.optimizers import FusedAdam as Adam
 
 from megatron.training import get_args
-from megatron.core.distributed import ParamAndGradBuffer
+from megatron.core.distributed.param_and_grad_buffer import _ParamAndGradBuffer
 from megatron.core.optimizer.grad_scaler import MegatronGradScaler
 from megatron.core.optimizer import OptimizerConfig
 from megatron.core.optimizer.optimizer import MixedPrecisionOptimizer
+from megatron.core.fp8_utils import is_float8tensor
 from mindspeed.optimizer.distrib_optimizer import reuse_fp32_param_distrib_optimizer_init_wrapper
 
 
@@ -21,7 +22,7 @@ def distributed_optimizer_init(
         config: OptimizerConfig,
         grad_scaler: MegatronGradScaler,
         init_state_fn: Optional[Callable],
-        per_model_buffers: Dict[int, List[ParamAndGradBuffer]],
+        per_model_buffers: Dict[int, List[_ParamAndGradBuffer]],
         data_parallel_group: torch.distributed.ProcessGroup,
         data_parallel_group_gloo: torch.distributed.ProcessGroup,
         data_parallel_group_idx: int,

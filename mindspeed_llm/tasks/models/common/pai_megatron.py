@@ -12,30 +12,37 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from functools import partial
 
 import torch
 from megatron.training import get_args
-
+from megatron.core.transformer.moe.moe_utils import switch_load_balancing_loss_func
+from megatron.core.transformer.moe.moe_utils import topk_softmax_with_capacity
 
 def pai_megatron_aux_loss(self, logits: torch.Tensor):
-    routing_weights = torch.softmax(logits, dim=1, dtype=torch.float32).type_as(logits)
-    scores, indices = torch.topk(routing_weights, k=self.topk, dim=-1)
-
-    # TopK without capacity
-    num_experts = logits.shape[1]
-    tokens_per_expert = torch.histc(indices, bins=num_experts, min=0, max=num_experts)
-
-    # Apply load balancing loss
-    probs = torch.softmax(logits, dim=-1, dtype=torch.float32)
-    scores = self.apply_load_balancing_loss(probs, tokens_per_expert, activation=scores)
+    probs, routing_map, tokens_per_expert = topk_softmax_with_capacity(
+        logits,
+        self.topk,
+        use_pre_softmax=True
+    )
+    
+    if self.training and torch.is_grad_enabled():
+        # Apply load balancing loss
+        scores = torch.softmax(logits, dim=-1, dtype=torch.float32)
+        aux_loss_func = partial(
+            switch_load_balancing_loss_func,
+            probs=scores,
+            tokens_per_expert=tokens_per_expert,
+            topk=self.topk,
+        )
+        probs = self.apply_load_balancing_loss(activation=probs, load_balancing_loss_func=aux_loss_func)
 
     args = get_args()
-    global_indices = indices
     if args.moe_token_dispatcher_type == "allgather":
         if args.moe_permutation_async_comm and (
                 self.config.sequence_parallel or (self.config.expert_model_parallel_size > 1)):
             from mindspeed.core.transformer.moe.router import gather_from_sequence_parallel_region_to_moe_async
             with torch.no_grad():
-                global_indices = gather_from_sequence_parallel_region_to_moe_async(indices)
-    return scores, global_indices
+                routing_map = gather_from_sequence_parallel_region_to_moe_async(indices)
+    return probs, routing_map
 

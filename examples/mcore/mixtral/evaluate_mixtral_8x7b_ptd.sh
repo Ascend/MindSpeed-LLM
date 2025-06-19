@@ -33,6 +33,8 @@ MOE_ARGS="
     --expert-model-parallel-size 1 \
     --moe-router-load-balancing-type aux_loss \
     --moe-aux-loss-coeff 0.02 \
+    --moe-layer-freq -1 \
+    --first-k-dense-replace -1 \
 "
 
 GPT_ARGS="

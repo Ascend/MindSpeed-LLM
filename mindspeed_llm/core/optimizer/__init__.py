@@ -10,7 +10,7 @@ from apex.optimizers import FusedAdam as Adam
 from apex.optimizers import FusedSGD as SGD
 from megatron.training import get_args
 from megatron.core import mpu
-from megatron.core.distributed import ParamAndGradBuffer
+from megatron.core.distributed.param_and_grad_buffer import _ParamAndGradBuffer
 from megatron.core.transformer.module import MegatronModule
 from megatron.core.optimizer import (
     DistributedOptimizer,
@@ -30,7 +30,7 @@ logger = getLogger(__name__)
 def get_megatron_optimizer_based_on_param_groups(
     config: OptimizerConfig,
     param_groups: List,
-    per_model_buffers: Optional[Dict[int, List[ParamAndGradBuffer]]] = None,
+    per_model_buffers: Optional[Dict[int, List[_ParamAndGradBuffer]]] = None,
     data_parallel_group: Optional[torch.distributed.ProcessGroup] = None,
     data_parallel_group_gloo: Optional[torch.distributed.ProcessGroup] = None,
     data_parallel_group_idx: Optional[int] = None,

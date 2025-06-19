@@ -42,7 +42,7 @@ MOE_ARGS="
     --moe-aux-loss-coeff 0.01 \
     --moe-permutation-async-comm \
     --disable-bias-linear \
-    --moe-token-dispatcher-type alltoall \
+    --moe-token-dispatcher-type alltoall_seq \
     --moe-expert-capacity-factor 1.1 \
     --moe-pad-expert-input-to-capacity \
     --moe-grouped-gemm \

@@ -16,7 +16,7 @@
 
 import sys
 from functools import wraps
-from typing import Optional
+from typing import Optional, Callable, List
 from datetime import timedelta
 
 import torch
@@ -39,12 +39,21 @@ def initialize_model_parallel_decorator(initialize_model_parallel):
             pipeline_model_parallel_size: int = 1,
             virtual_pipeline_model_parallel_size: Optional[int] = None,
             pipeline_model_parallel_split_rank: Optional[int] = None,
+            pipeline_model_parallel_comm_backend: Optional[str] = None,
             use_sharp: bool = False,
             context_parallel_size: int = 1,
+            hierarchical_context_parallel_sizes: Optional[List[int]] = None,
             expert_model_parallel_size: int = 1,
+            num_distributed_optimizer_instances: int = 1,
+            expert_tensor_parallel_size: Optional[int] = None,
             nccl_communicator_config_path: Optional[str] = None,
             distributed_timeout_minutes: int = 30,
             order: str = "tp-cp-ep-dp-pp",
+            encoder_tensor_model_parallel_size: int = 0,
+            encoder_pipeline_model_parallel_size: Optional[int] = 0,
+            get_embedding_ranks: Optional[Callable[[List[int], Optional[int]], List[int]]] = None,
+            get_position_embedding_ranks: Optional[Callable[[List[int], Optional[int]], List[int]]] = None,
+            create_gloo_process_groups: bool = True,
     ):
         from megatron.training.utils import print_rank_0
         timeout = timedelta(minutes=distributed_timeout_minutes)
@@ -56,14 +65,23 @@ def initialize_model_parallel_decorator(initialize_model_parallel):
         initialize_model_parallel(
             tensor_model_parallel_size,
             pipeline_model_parallel_size,
-            None,
+            virtual_pipeline_model_parallel_size,
             pipeline_model_parallel_split_rank,
+            pipeline_model_parallel_comm_backend,
             use_sharp,
             context_parallel_size,
-            1,
+            hierarchical_context_parallel_sizes,
+            expert_model_parallel_size,
+            num_distributed_optimizer_instances,
+            expert_tensor_parallel_size,
             nccl_communicator_config_path,
             distributed_timeout_minutes,
             order,
+            encoder_tensor_model_parallel_size,
+            encoder_pipeline_model_parallel_size,
+            get_embedding_ranks,
+            get_position_embedding_ranks,
+            create_gloo_process_groups,
         )
 
         rank = torch.distributed.get_rank()

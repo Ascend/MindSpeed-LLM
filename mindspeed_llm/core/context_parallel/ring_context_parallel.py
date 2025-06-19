@@ -3,9 +3,9 @@
 import torch
 import torch_npu
 from einops import rearrange
-from mindspeed.core.context_parallel.context_parallel_kv_cache import ContextParallelKVCache
+from mindspeed.core.context_parallel.ring_context_parallel.context_parallel_kv_cache import ContextParallelKVCache
 from mindspeed.core.context_parallel.utils import RingP2P, tnd_out_update, causal_out_update, general_out_update, sbh_to_tnd, tnd_to_sbh, get_selection_indices_for_tnd_softmax_update
-from mindspeed.core.context_parallel.ring_context_parallel import (
+from mindspeed.core.context_parallel.ring_context_parallel.ring_context_parallel import (
     causal_forward_fetch,
     tnd_forward_fetch,
     tnd_backward_fetch,

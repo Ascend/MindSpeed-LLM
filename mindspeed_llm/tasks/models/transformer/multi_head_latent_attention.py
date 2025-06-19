@@ -5,7 +5,7 @@ from typing import Union
 
 import torch
 import torch.nn.functional as F
-from mindspeed.core.context_parallel.ulysses_context_parallel import UlyssesContextAttention
+from mindspeed.core.context_parallel.ulysses_context_parallel.ulysses_context_parallel import UlyssesContextAttention
 from mindspeed.core.parallel_state import get_context_parallel_group_for_hybrid_ulysses
 from mindspeed.core.tensor_parallel.random import CheckpointWithoutOutput
 from mindspeed.utils import set_actual_seq_len, set_position_ids, get_actual_seq_len, get_position_ids
@@ -63,6 +63,7 @@ class MultiHeadLatentAttention(SelfAttention):
         submodules: MLASelfAttentionSubmodules,
         layer_number: int,
         attn_mask_type=AttnMaskType.padding,
+        cp_comm_type: str = None,
     ):
         super().__init__(
             config=config,
@@ -233,7 +234,11 @@ class MultiHeadLatentAttention(SelfAttention):
         attention_mask,
         key_value_states=None,
         inference_params=None,
+        inference_context=None,
         rotary_pos_emb=None,
+        rotary_pos_cos=None,
+        rotary_pos_sin=None,
+        attention_bias=None,
         packed_seq_params=None,
     ):
         """
@@ -385,6 +390,7 @@ class MultiHeadLatentAttention(SelfAttention):
                     value,
                     attention_mask,
                     attn_mask_type=attn_mask_type,
+                    attention_bias=None,
                     packed_seq_params=packed_seq_params,
                 )
 

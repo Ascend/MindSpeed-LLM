@@ -8,7 +8,7 @@ from megatron.training import get_args
 from megatron.core import parallel_state
 from megatron.core.transformer.module import MegatronModule
 from megatron.core.transformer.transformer_config import TransformerConfig
-from megatron.core.distributed import ParamAndGradBuffer
+from megatron.core.distributed.param_and_grad_buffer import _ParamAndGradBuffer
 
 
 def distributed_data_parallel_init(
@@ -86,7 +86,7 @@ def distributed_data_parallel_init(
         buffers = []
         for (param_dtype, grad_dtype), params in param_and_grad_dtype_to_params.items():
             buffers.append(
-                ParamAndGradBuffer(
+                _ParamAndGradBuffer(
                     param_dtype,
                     grad_dtype,
                     params,

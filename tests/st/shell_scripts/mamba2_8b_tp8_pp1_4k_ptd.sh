@@ -57,12 +57,12 @@ MAMBA_ARGS="
     --num-attention-heads 32 \
     --group-query-attention \
     --num-query-groups 8 \
-    --mamba-ngroups 8 \
+    --mamba-num-groups 8 \
     --mamba-chunk-size 128 \
-    --mamba-d-state 128 \
+    --mamba-state-dim 128 \
     --mamba-d-conv 4 \
     --mamba-expand 2 \
-    --mamba-headdim 64 \
+    --mamba-head-dim 64 \
     --tokenizer-type  GPTSentencePieceTokenizer \
     --tokenizer-model ${TOKENIZER_PATH} \
     --hidden-size 4096 \

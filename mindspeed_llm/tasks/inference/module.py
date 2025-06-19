@@ -218,7 +218,7 @@ class MegatronModuleForCausalLM(MegatronModuleForCausalLMABC):
         from megatron.training import get_model
         from megatron.training.checkpointing import load_checkpoint
         from megatron.core.distributed import DistributedDataParallel as LocalDDP
-        from megatron.legacy.model import Float16Module as MegatronFloat16Module
+        from megatron.core.transformer.module import Float16Module as MegatronFloat16Module
         from megatron.training.utils import unwrap_model
 
         args = get_args()

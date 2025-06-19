@@ -43,7 +43,7 @@ class RotaryPositionEmbeddingFeature(MindSpeedFeature):
         from mindspeed.core.models.common.embeddings.rotary_pos_embedding import rotary_embedding_get_rotary_seq_len_wrapper
 
         patch_manager.register_patch(
-            'megatron.core.models.common.embeddings.rotary_pos_embedding.apply_rotary_pos_emb_bshd',
+            'megatron.core.models.common.embeddings.rotary_pos_embedding._apply_rotary_pos_emb_bshd',
             apply_rotary_pos_emb_bshd)
         patch_manager.register_patch(
             'megatron.core.models.common.embeddings.rotary_pos_embedding.RotaryEmbedding.forward',

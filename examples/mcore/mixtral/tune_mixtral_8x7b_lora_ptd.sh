@@ -38,8 +38,10 @@ MOE_ARGS="
     --moe-router-load-balancing-type aux_loss \
     --moe-aux-loss-coeff 0.02 \
     --moe-permutation-async-comm \
-    --moe-token-dispatcher-type alltoall \
-    --moe-router-pre-softmax
+    --moe-token-dispatcher-type alltoall_seq \
+    --moe-router-pre-softmax \
+    --moe-layer-freq -1 \
+    --first-k-dense-replace -1 \
 "
 
 GPT_ARGS="

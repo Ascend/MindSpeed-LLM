@@ -9,7 +9,7 @@ import torch.distributed as dist
 from mindspeed_llm import megatron_adaptor
 from megatron.training.global_vars import set_args
 from megatron.training.arguments import parse_args
-from mindspeed.core.context_parallel.adaptive_context_parallel import adaptive_attn_context_parallel
+from mindspeed.core.context_parallel.adaptive_context_parallel.adaptive_context_parallel import adaptive_attn_context_parallel
 from mindspeed.core.parallel_state import (get_context_parallel_group_for_send_recv_overlap,
                                            initialize_context_parallel_group_for_hybrid_cp,
                                            get_context_parallel_for_hybrid_ulysses_world_size,
@@ -26,7 +26,7 @@ from mindspeed.core.context_parallel.utils import (set_scheduling_info,
                                                    set_remapped_seq_order)
 
 from tests.test_tools.dist_test import DistributedTest
-from tests.test_tools.utils import initialize_model_parallel, initialize_model_parallel_decorator
+from tests.test_tools.utils import initialize_model_parallel, initialize_model_parallel_decorator, initialize_model_parallel_cp_wrapper
 from mindspeed_llm.training.utils import seed_all
 
 DEVICE_NAME = torch_npu.npu.get_device_name(0)[:10]
@@ -179,7 +179,7 @@ def run_adaptive_cp(cp_size, bs, seq_len, dtype, cp_args):
 
 
 def run_hybrid_adaptive_cp(cp_size, bs, seq_len, dtype, cp_args):
-    from mindspeed.core.context_parallel.ulysses_context_parallel import _SeqAllToAll
+    from mindspeed.core.context_parallel.ulysses_context_parallel.ulysses_context_parallel import _SeqAllToAll
     args = parse_args(None, True)
     args.seq_length = seq_len
     args.cp_attention_mask_type = 'general'
@@ -195,7 +195,7 @@ def run_hybrid_adaptive_cp(cp_size, bs, seq_len, dtype, cp_args):
     args.hccl_group_buffer_adaptive = False
     args.ampipe_degree = 0
     set_args(args)
-    initialize_model_parallel_nest = initialize_model_parallel_decorator(initialize_model_parallel)
+    initialize_model_parallel_nest = initialize_model_parallel_cp_wrapper(initialize_model_parallel)
     initialize_model_parallel_nest(context_parallel_size=cp_size)
     seed_all(1234)
 

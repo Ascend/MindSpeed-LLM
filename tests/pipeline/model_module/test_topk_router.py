@@ -37,6 +37,7 @@ class TestTopKRouter:
         config = TransformerConfig(**topk_param)
         router = TopKRouter(config)
         scores, indices = router.forward(hidden_states)
+        indices = indices.int()
 
         tols = dict(atol=2.5e-2, rtol=2.5e-2)
         assert (torch.allclose(scores.cpu(), torch.tensor(expected_scores).type_as(scores), **tols))

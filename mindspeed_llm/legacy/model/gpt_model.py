@@ -12,11 +12,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from typing import List, Optional, Union
 
 from megatron.training import get_args
 from megatron.legacy.model.module import MegatronModule
 from megatron.legacy.model.enums import AttnMaskType
 from megatron.legacy.model.language_model import get_language_model, parallel_lm_logits
+from megatron.core.utils import WrappedTensor, deprecate_inference_params
 from megatron.core import tensor_parallel
 from mindspeed_llm.tasks.inference import MegatronModuleForCausalLM
 
@@ -92,7 +94,10 @@ class GPTModel(MegatronModule, MegatronModuleForCausalLM):
                 retriever_input_ids=None,
                 retriever_position_ids=None,
                 retriever_attn_mask=None,
+                inference_context=None,
                 labels=None, tokentype_ids=None, inference_params=None):
+        
+        inference_context = deprecate_inference_params(inference_context, inference_params)
 
         lm_output = self.language_model(
             input_ids,
@@ -101,7 +106,8 @@ class GPTModel(MegatronModule, MegatronModuleForCausalLM):
             retriever_input_ids=retriever_input_ids,
             retriever_position_ids=retriever_position_ids,
             retriever_attn_mask=retriever_attn_mask,
-            inference_params=inference_params)
+            inference_params=inference_params,
+            inference_context=inference_context)
 
         if self.post_process:
             return post_language_model_processing(
