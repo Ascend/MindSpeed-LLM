@@ -495,6 +495,7 @@ class MultiTokenPredictionLayer(MegatronModule):
                 return tensor
 
             if self.recompute_mtp_norm:
+                decoder_input.requires_grad_(True)
                 self.enorm_ckpt = CheckpointWithoutOutput()
                 enorm_output = self.enorm_ckpt.checkpoint(enorm, False, decoder_input)
                 self.hnorm_ckpt = CheckpointWithoutOutput()
