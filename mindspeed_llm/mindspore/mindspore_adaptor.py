@@ -337,6 +337,10 @@ class MindSporeAdaptation(MegatronAdaptationABC):
             from mindspeed_llm.mindspore.core.transformer.dot_product_attention import flash_attention_forward
             MindSporeAdaptation.register('mindspeed_llm.core.transformer.dot_product_attention.flash_attention_forward', flash_attention_forward)
 
+        from mindspeed.mindspore.core.pipeline_parallel.schedules import deallocate_output_tensor_
+        MindSporeAdaptation.register('megatron.core.pipeline_parallel.schedules.deallocate_output_tensor',
+                                     deallocate_output_tensor_)
+
     @staticmethod
     def reparse_args():
         """
