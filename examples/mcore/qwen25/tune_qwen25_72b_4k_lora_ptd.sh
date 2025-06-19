@@ -44,6 +44,8 @@ TUNE_ARGS="
 "
 
 GPT_ARGS="
+    --swap-attention \
+    --reuse-fp32-param \
     --use-mcore-models \
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \

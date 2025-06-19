@@ -114,4 +114,4 @@ torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     $FINETUNE_ARGS \
     $OUTPUT_ARGS \
     --distributed-backend nccl \
-    | tee logs/tune_llama31_8b_lora_ptd.log
+    | tee logs/tune_llama3_8b_lora_ptd.log

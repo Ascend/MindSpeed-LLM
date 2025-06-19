@@ -117,4 +117,4 @@ torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     --load ${CKPT_LOAD_DIR} \
     --save ${CKPT_SAVE_DIR} \
     --distributed-backend nccl \
-    | tee logs/pretrain_mcore_distill_qwen_32b_full_8k.log
+    | tee logs/tune_mcore_distill_qwen_32b_full_8k.log
