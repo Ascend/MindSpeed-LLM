@@ -9,7 +9,7 @@ class MOERouter(MindSpeedFeature):
         group = parser.add_argument_group(title=self.feature_name)
         group.add_argument('--moe-router-load-balancing-type', type=str,
                            choices=['aux_loss', "group_limited_greedy", "softmax_topk", "pai_megatron_aux_loss",
-                                    "sparsemixer_topk", "noaux_tc"],
+                                    "sparsemixer_topk", "noaux_tc", "none"],
                            default='aux_loss',
                            help='Determines the load balancing strategy for the router. "aux_loss" corresponds '
                                 'to the load balancing loss used in GShard and SwitchTransformer, "sinkhorn" corresponds '
@@ -77,8 +77,9 @@ class MOERouter(MindSpeedFeature):
                 raise ValueError(f'moe_expert_capacity_factor must be set to use moe_pad_expert_input_to_capacity')
             if args.shared_expert_gate_output_dimension != 1 and args.shared_expert_gate_output_dimension != args.hidden_size:
                 raise AssertionError('shared expert gate output dimension can only be configured with 1 or hidden_size')
-            if hasattr(args,
-                       'use_fused_moe_token_permute_and_unpermute') and args.use_fused_moe_token_permute_and_unpermute:
+            if (args.moe_pad_expert_input_to_capacity
+                    and hasattr(args, 'use_fused_moe_token_permute_and_unpermute')
+                    and args.use_fused_moe_token_permute_and_unpermute):
                 raise AssertionError(
                     'moe_expert_capacity_factor mode does not support use_fused_moe_token_permute_and_unpermute')
 

@@ -531,7 +531,7 @@ class CoreAdaptation(MegatronAdaptationABC):
                             'megatron.core.transformer.moe.token_dispatcher.MoEAlltoAllTokenDispatcher.token_permutation',
                             alltoall_token_permutation)
                             
-                if hasattr(args, 'use_fused_moe_token_permute_and_unpermute') and args.use_fused_moe_token_permute_and_unpermute and not args.moe_expert_capacity_factor:
+                if hasattr(args, 'use_fused_moe_token_permute_and_unpermute') and args.use_fused_moe_token_permute_and_unpermute:
                     from mindspeed.core.fusions.npu_moe_token_permute import permute_wrapper
                     from mindspeed.core.fusions.npu_moe_token_unpermute import unpermute_wrapper
                     MegatronAdaptation.register('megatron.core.transformer.moe.moe_utils.permute', permute_wrapper)

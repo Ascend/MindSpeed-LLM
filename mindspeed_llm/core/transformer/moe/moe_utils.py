@@ -200,7 +200,7 @@ def topk_softmax_with_capacity(
                 capacity_probs.T.contiguous(),
                 capacity_indices.T.contiguous(),
             )
-            tokens_per_expert_before_capacity = topk_mask.sum(dim=0)
+            tokens_per_expert = topk_mask.sum(dim=0)
         else:
             # Get exceed mask and maskout exceeded probs and indices
             final_mask = torch.logical_and(topk_mask, capacity_mask)
@@ -210,8 +210,8 @@ def topk_softmax_with_capacity(
             final_indices = top_indices.clone().masked_fill_(
                 exceed_mask, torch.iinfo(torch.long).max
             )
-            tokens_per_expert_before_capacity = topk_mask.sum(dim=0)
-        return final_probs, final_indices, tokens_per_expert_before_capacity
+            tokens_per_expert = final_mask.sum(dim=0)
+        return final_probs, final_indices, tokens_per_expert
 
 
 def track_moe_metrics_wrapper(fn):
