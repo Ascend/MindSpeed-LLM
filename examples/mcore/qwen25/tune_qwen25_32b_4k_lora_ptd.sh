@@ -51,7 +51,6 @@ GPT_ARGS="
     --reuse-fp32-param \
     --use-distributed-optimizer \
     --overlap-grad-reduce \
-    --overlap-param-gather \
     --sequence-parallel \
     --hidden-size 5120  \
     --ffn-hidden-size 27648 \

@@ -47,7 +47,6 @@ GPT_ARGS="
     --use-mcore-models \
     --use-distributed-optimizer \
     --overlap-grad-reduce \
-    --overlap-param-gather \
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \
     --num-layers 28 \
