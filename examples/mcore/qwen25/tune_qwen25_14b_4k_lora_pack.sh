@@ -87,7 +87,6 @@ GPT_ARGS="
     --bf16 \
     --use-distributed-optimizer \
     --overlap-grad-reduce \
-    --overlap-param-gather 
 "
 TUNE_ARGS="
     --finetune \
