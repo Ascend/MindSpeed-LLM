@@ -56,7 +56,7 @@ torchrun $DISTRIBUTED_ARGS inference.py \
          --hidden-size 2048 \
          --use-rotary-position-embeddings \
          --num-attention-heads 32 \
-         --ffn-hidden-size 8192 \
+         --ffn-hidden-size 6144 \
          --max-position-embeddings 40960 \
          --seq-length ${SEQ_LENGTH} \
          --make-vocab-size-divisible-by 1 \

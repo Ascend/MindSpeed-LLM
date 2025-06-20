@@ -36,9 +36,10 @@ MOE_ARGS="
     --num-experts 128 \
     --moe-router-topk 8 \
     --moe-intermediate-size 768 \
+    --moe-ffn-hidden-size 768 \
     --moe-grouped-gemm \
     --moe-permutation-async-comm \
-    --moe-token-dispatcher-type alltoall \
+    --moe-token-dispatcher-type alltoall_seq \
     --moe-router-load-balancing-type aux_loss \
     --moe-aux-loss-coeff 0.001
 "

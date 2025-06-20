@@ -36,10 +36,11 @@ MOE_ARGS="
     --num-experts 128 \
     --moe-router-topk 8 \
     --moe-intermediate-size 768 \
+    --moe-ffn-hidden-size 768 \
     --moe-grouped-gemm \
     --moe-alltoall-overlap-comm \
     --moe-permutation-async-comm \
-    --moe-token-dispatcher-type alltoall \
+    --moe-token-dispatcher-type alltoall_seq \
     --moe-router-load-balancing-type aux_loss \
     --moe-aux-loss-coeff 0.001
 "
@@ -93,7 +94,7 @@ GPT_ARGS="
     --max-position-embeddings ${SEQ_LENGTH} \
     --num-layers 48 \
     --hidden-size 2048 \
-    --ffn-hidden-size 8192 \
+    --ffn-hidden-size 6144 \
     --num-attention-heads 32 \
     --tokenizer-type PretrainedFromHF \
     --make-vocab-size-divisible-by 1 \

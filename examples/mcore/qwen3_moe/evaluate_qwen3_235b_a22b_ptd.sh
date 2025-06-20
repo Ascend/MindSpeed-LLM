@@ -36,9 +36,10 @@ MOE_ARGS="
     --moe-router-topk 8 \
     --moe-router-load-balancing-type ${ROUTER_BALANCING_TYPE} \
     --moe-intermediate-size 1536 \
+    --moe-ffn-hidden-size 1536 \
     --moe-grouped-gemm \
     --moe-permutation-async-comm \
-    --moe-token-dispatcher-type alltoall \
+    --moe-token-dispatcher-type alltoall_seq \
     --use-fused-moe-token-permute-and-unpermute \
     --moe-aux-loss-coeff 0.001
 "
