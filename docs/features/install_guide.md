@@ -61,6 +61,7 @@ cd Megatron-LM
 git checkout core_v0.12.1
 cp -r megatron ../MindSpeed-LLM/
 cd ../MindSpeed-LLM
+git checkout master
 
 pip install -r requirements.txt  # 安装其余依赖库
 ```
