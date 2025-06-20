@@ -18,10 +18,13 @@ DATA_PATH="your data path"
 TOKENIZER_PATH="your tokenizer path"
 CKPT_LOAD_DIR="your model ckpt path"
 
-TP=4
-PP=2
-EP=2
+TP=1
+PP=4
+EP=4
 CP=1
+
+MBS=1
+GBS=256
 SEQ_LENGTH=4096
 TRAIN_ITERS=2000
 CP_TYPE='ulysses_cp_algo'
@@ -41,9 +44,10 @@ MOE_ARGS="
     --moe-router-load-balancing-type ${ROUTER_BALANCING_TYPE} \
     --moe-intermediate-size 768 \
     --moe-grouped-gemm \
+    --use-fused-moe-token-permute-and-unpermute \
     --moe-permutation-async-comm \
-    --moe-token-dispatcher-type allgather \
-    --moe-aux-loss-coeff 0.001
+    --moe-token-dispatcher-type alltoall \
+    --moe-aux-loss-coeff 0.001 \
 "
 
 OPTIMIZE_ARGS="
@@ -55,11 +59,15 @@ OPTIMIZE_ARGS="
     --use-fused-rmsnorm \
     --no-masked-softmax-fusion \
     --use-distributed-optimizer
+    --gemm-gradient-accumulation-fusion \
+    --recompute-method uniform \
+    --recompute-granularity full \
+    --recompute-num-layers 1 \
 "
 
 TRAIN_ARGS="
-    --micro-batch-size 1 \
-    --global-batch-size 256 \
+    --micro-batch-size ${MBS} \
+    --global-batch-size ${GBS} \
     --lr 1.25e-6 \
     --lr-decay-style cosine \
     --min-lr 1.25e-7 \
@@ -97,7 +105,7 @@ GPT_ARGS="
     --max-position-embeddings ${SEQ_LENGTH} \
     --num-layers 48 \
     --hidden-size 2048 \
-    --ffn-hidden-size 8192 \
+    --ffn-hidden-size 6144 \
     --num-attention-heads 32 \
     --tokenizer-type PretrainedFromHF \
     --make-vocab-size-divisible-by 1 \
