@@ -3,9 +3,6 @@ import logging
 
 from megatron.training import get_args
 from megatron.training.initialize import initialize_megatron
-from mindspeed_llm.tasks.posttrain.rlxf.ray_trainer.online_dpo_trainer import RayOnlineDPOTrainer
-from mindspeed_llm.tasks.posttrain.rlxf.ray_trainer.ppo_trainer import RayPPOTrainer
-from mindspeed_llm.tasks.posttrain.rlxf.ray_trainer.grpo_trainer import RayGRPOTrainer
 from mindspeed_llm.tasks.posttrain.sft import SFTTrainer
 from mindspeed_llm.tasks.posttrain.dpo import DPOTrainer
 from mindspeed_llm.tasks.posttrain.orm import ORMTrainer
@@ -33,14 +30,8 @@ def get_trainer(stage):
         return PRMTrainer()
     elif stage == "simpo":
         return SimPOTrainer()
-    elif stage == "ray_ppo":
-        return RayPPOTrainer
-    elif stage == "ray_online_dpo":
-        return RayOnlineDPOTrainer
     elif stage == "trl_ppo":
         return TrlPPOTrainer()
-    elif stage == "ray_grpo":
-        return RayGRPOTrainer
     else:
         logger.info(f'Unknown Stage: {stage}')
         return None

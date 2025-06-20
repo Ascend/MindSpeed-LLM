@@ -18,7 +18,6 @@ import sys
 import types
 import argparse
 import torch
-import tensordict
 from torch_npu.contrib import transfer_to_npu
 from mindspeed.features_manager import FEATURES_LIST as MS_DUMMY_FEATURES_LIST
 from mindspeed_llm.features_manager import FEATURES_LIST
@@ -757,7 +756,6 @@ class LegacyAdaptation(MegatronAdaptationABC):
         self.patch_inference()
         self.patch_log_handler()
         self.patch_optimizer()
-        self.patch_2megatron()
 
     def patch_log_handler(self):
         from megatron.training.log_handler import CustomHandler
@@ -921,25 +919,5 @@ class LegacyAdaptation(MegatronAdaptationABC):
                 allowed_recomputing_module_wrapper(ParallelTransformerLayer)
             MegatronAdaptation.register('megatron.training.training.setup_model_and_optimizer',
                                         setup_model_and_optimizer_wrapper)
-
-    def patch_2megatron(self):
-        # This patch is only for running ray scenarios
-        if "--raylet-name" in "".join(sys.argv):
-            from mindspeed_llm.core.pipeline_parallel.p2p_communication import _communicate_shapes
-            from mindspeed_llm.tasks.posttrain.rlxf.training.parallel_state import (rank_generator_init_wrapper, rank_generator_get_ranks_wrapper)
-            from mindspeed_llm.tasks.posttrain.rlxf.training.initialize import initialize_megatron
-            from mindspeed_llm.tasks.posttrain.rlxf.training.initialize import barrier_wrapper, broadcast_wrapper, is_last_rank, \
-                get_world_size_wrapper, get_elapsed_time_all_ranks
-
-            MegatronAdaptation.register('megatron.core.pipeline_parallel.p2p_communication._communicate_shapes', _communicate_shapes)
-            MegatronAdaptation.register('megatron.core.parallel_state.RankGenerator.__init__', rank_generator_init_wrapper)
-            MegatronAdaptation.register('megatron.core.parallel_state.RankGenerator.get_ranks', rank_generator_get_ranks_wrapper)
-            MegatronAdaptation.register('megatron.training.utils.is_last_rank', is_last_rank)
-            MegatronAdaptation.register('megatron.core.timers.Timers._get_elapsed_time_all_ranks', get_elapsed_time_all_ranks)
-            MegatronAdaptation.register('torch.distributed.barrier', barrier_wrapper)
-            MegatronAdaptation.register('torch.distributed.all_reduce', barrier_wrapper)
-            MegatronAdaptation.register('torch.distributed.broadcast', broadcast_wrapper)
-            MegatronAdaptation.register('torch.distributed.get_world_size', get_world_size_wrapper)
-            MegatronAdaptation.register('megatron.training.initialize.initialize_megatron', initialize_megatron, force_patch=True)
 
 MegatronAdaptation.execute()

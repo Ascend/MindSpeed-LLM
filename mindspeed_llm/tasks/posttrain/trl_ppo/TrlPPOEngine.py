@@ -22,7 +22,6 @@ from megatron.training.training import (
     get_optimizer_param_scheduler,
     build_train_valid_test_data_iterators
 )
-from mindspeed_llm.tasks.posttrain.rlxf.utils.torch_functional import masked_mean, masked_whiten
 from mindspeed_llm.training.utils import get_tune_attention_mask
 from mindspeed_llm.tasks.posttrain.utils import train_valid_test_datasets_provider
 from mindspeed_llm.tasks.posttrain.trl_ppo.actor_model import ActorModel
@@ -316,3 +315,36 @@ class TrlPPOEngine():
     def set_model_train(self, model):
         for model_module in model:
             model_module.train()
+
+
+def masked_mean(values, mask, axis=None):
+    """Compute mean of tensor with a masked values."""
+    return (values * mask).sum(axis=axis) / mask.sum(axis=axis)
+
+
+def masked_var(values, mask, unbiased=True):
+    """Compute variance of tensor with masked values."""
+    mean = masked_mean(values, mask)
+    centered_values = values - mean
+    variance = masked_mean(centered_values ** 2, mask)
+    if unbiased:
+        mask_sum = mask.sum()
+        if mask_sum == 0:
+            raise ValueError("At least one element in the mask has to be 1.")
+        # note that if mask_sum == 1, then there is a division by zero issue
+        # to avoid it you just need to use a larger minibatch_size
+        elif mask_sum == 1:
+            bessel_correction = mask_sum
+        else:
+            bessel_correction = mask_sum / (mask_sum - 1)
+        variance = variance * bessel_correction
+    return variance
+
+
+def masked_whiten(values, mask, shift_mean=True):
+    """Whiten values with masked values."""
+    mean, var = masked_mean(values, mask), masked_var(values, mask)
+    whitened = (values - mean) * torch.rsqrt(var + 1e-8)
+    if not shift_mean:
+        whitened += mean
+    return whitened
