@@ -25,7 +25,6 @@ from megatron.training.training import (
     training_log
 )
 from megatron.inference.text_generation.communication import broadcast_from_last_pipeline_stage
-from mindspeed_llm.tasks.posttrain.rlxf.workers.actor_train_infer import generate_attention_mask, generate_position_ids_from_attention_mask
 
 from mindspeed_llm.tasks.posttrain.trl_ppo.TrlPPOEngine import TrlPPOEngine
 from mindspeed_llm.training.training import get_profiler, is_profile_enabled
@@ -601,3 +600,53 @@ class TrlPPOTrainer():
         args.micro_batch_size = origin_micro_batch_size
 
         return output_tensor
+
+
+def generate_position_ids_from_attention_mask(input_ids_list, prompts_ori_length, prompts_pad_length):
+    """
+    生成与 attention_mask 对应的 position_ids 列表。
+
+    参数:
+    input_ids_list (list of lists): 包含 input_ids 的列表，每个元素是一个列表。
+    prompts_ori_length (list of lists): 包含 prompt_ori_length 的列表，每个元素是int。
+    prompts_pad_length int: prompts_pad_length，int。
+
+    返回:
+    list of lists: 包含 position_ids 的列表，每个元素是一个列表。
+    """
+    position_ids_list = []
+    for idx, input_ids in enumerate(input_ids_list):
+        prompt_pad_length = prompts_pad_length - prompts_ori_length[idx]
+        position_ids = [0] * prompt_pad_length + list(range(len(input_ids) - prompt_pad_length))
+        position_ids_list.append(position_ids)
+
+    return position_ids_list
+
+
+def generate_attention_mask(input_ids_list, prompts_ori_length, prompts_pad_length, responses_ori_length,
+                            responses_pad_length):
+    """
+    生成与 input_ids 对应的 attention_mask 列表。
+
+    参数:
+    input_ids_list (list of lists): 包含 input_ids 的列表，每个元素是一个列表。
+    prompts_ori_length (list of lists): 包含 prompt_ori_length 的列表，每个元素是int。
+    prompts_pad_length int: prompts_pad_length，int。
+    responses_ori_length (list of lists): 包含 response_ori_length 的列表，每个元素是int。
+    responses_pad_length int: responses_pad_length，int。
+
+    返回:
+    list of lists: 包含 attention_mask 的列表，每个元素是一个列表。
+    """
+    attention_mask_list = []
+
+    for idx, input_ids in enumerate(input_ids_list):
+        attention_mask = torch.ones_like(torch.tensor(input_ids))
+        prompt_pad_length = prompts_pad_length - prompts_ori_length[idx]
+        response_pad_length = responses_pad_length - responses_ori_length[idx]
+        attention_mask[:prompt_pad_length] = 0
+        if response_pad_length > 0:
+            attention_mask[-response_pad_length:] = 0
+        attention_mask_list.append(attention_mask.numpy().tolist())
+
+    return attention_mask_list
