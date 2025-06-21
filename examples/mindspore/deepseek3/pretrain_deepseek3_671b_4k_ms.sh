@@ -8,8 +8,8 @@ export HCCL_BUFFSIZE=400
 basepath=$(cd `dirname $0`; cd ../../../; pwd)
 
 NPUS_PER_NODE=8
-MASTER_ADDR=localhost #主节点IP
-MASTER_PORT=9110
+MASTER_ADDR=localhost #MASTER IP
+MASTER_PORT=6000
 NNODES=64
 NODE_RANK=0
 WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
@@ -23,7 +23,6 @@ TP=4
 PP=8
 EP=8
 CP=1
-VPP=1
 CP_TYPE='ulysses_cp_algo'
 NUM_LAYERS=64
 SEQ_LEN=4096
@@ -50,9 +49,11 @@ MLA_ARGS="
     --kv-lora-rank 512 \
     --v-head-dim 128 \
     --qk-layernorm \
+    --mla-fa-without-pad \
 "
 
 MOE_ARGS="
+    --router-gating-in-fp32 \
     --moe-grouped-gemm \
     --moe-permutation-async-comm \
     --use-fused-moe-token-permute-and-unpermute \
@@ -67,12 +68,12 @@ MOE_ARGS="
     --n-group 8 \
     --topk-group 4 \
     --routed-scaling-factor 2.5 \
+    --moe-aux-loss-coeff 0.0001 \
     --seq-aux \
     --norm-topk-prob \
     --moe-router-score-function sigmoid \
     --moe-router-enable-expert-bias \
     --moe-tp-extend-ep \
-    --moe-alltoall-overlap-comm \
 "
 
 MTP_ARGS="
@@ -91,6 +92,11 @@ ROPE_ARGS="
     --rope-scaling-type yarn
 "
 
+DUALPIPE_ARGS="
+    --moe-fb-overlap \
+    --schedules-method dualpipev \
+"
+
 MEM_ARGS="
     --use-distributed-optimizer \
     --recompute-method uniform \
@@ -99,7 +105,6 @@ MEM_ARGS="
 "
 
 GPT_ARGS="\
-    --no-check-for-nan-in-loss-and-grad \
     --spec mindspeed_llm.tasks.models.spec.deepseek_spec layer_spec \
     --no-gradient-accumulation-fusion \
     --reset-position-ids \
@@ -110,7 +115,6 @@ GPT_ARGS="\
     --use-mcore-models \
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \
-    --num-layers-per-virtual-pipeline-stage ${VPP} \
     --expert-model-parallel-size ${EP} \
     --sequence-parallel \
     --context-parallel-size ${CP} \
@@ -169,7 +173,7 @@ DATA_ARGS="
 
 OUTPUT_ARGS="
     --log-interval 1 \
-    --save-interval 1 \
+    --save-interval 2000 \
     --eval-interval 2000 \
     --eval-iters 0 \
     --no-save-optim \
@@ -184,7 +188,10 @@ msrun $DISTRIBUTED_ARGS $basepath/pretrain_gpt.py \
     $ROPE_ARGS \
     $MOE_ARGS \
     $MTP_ARGS \
+    $DUALPIPE_ARGS \
     $MEM_ARGS \
     --distributed-backend nccl \
+    --save $CKPT_SAVE_DIR \
+    --load $CKPT_LOAD_DIR \
     --ai-framework mindspore \
     2>&1 | tee logs/ms_pretrain_deepseek3_671b_4k_ptd.log
