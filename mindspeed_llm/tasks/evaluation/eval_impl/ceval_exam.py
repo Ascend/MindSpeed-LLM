@@ -124,12 +124,12 @@ class CEvalExam(DatasetEval):
                     chat_results, rank = chat.chat(instruction=instructions, history=[])
                     if chat_results:
                         for index, chat_result in enumerate(chat_results):
-                            answer = chat_result[0].lstrip()
+                            answer = chat_result[0].lstrip().strip()
                             try:
                                 if rank == 0:
                                     logger.info("correct: %s, AI: %s", answers[index], answer)
                                     subject_result[str(idx - len(chat_results) + index + 1)] = answer
-                                    if subject_result[str(idx - len(chat_results) + index + 1)] == answers[index]:
+                                    if subject_result[str(idx - len(chat_results) + index + 1)].strip() == answers[index].strip():
                                         acc_n += 1
                             except Exception as e:
                                 subject_result[str(idx - len(chat_results) + index + 1)] = str(
