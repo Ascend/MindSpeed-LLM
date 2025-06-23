@@ -281,6 +281,9 @@ class MindSporeAdaptation(MegatronAdaptationABC):
             MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.modules.token_dispatcher.overlap_stream',
                 overlap_stream)     
 
+            from mindspeed_llm.core.pipeline_parallel.dualpipe.adaptor import dualpipe_forward_step_wrapper
+            MindSporeAdaptation.register('mindspeed.mindspore.core.pipeline_parallel.dualpipev.dualpipev_schedules.forward_step_with_model_graph',
+                dualpipe_forward_step_wrapper)
 
 
         if args.swap_optimizer:
