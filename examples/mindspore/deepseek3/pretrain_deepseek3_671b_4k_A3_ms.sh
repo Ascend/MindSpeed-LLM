@@ -7,7 +7,7 @@ export HCCL_BUFFSIZE=400
 
 NPUS_PER_NODE=16
 MASTER_ADDR=localhost
-MASTER_PORT=9110
+MASTER_PORT=6000
 NNODES=32
 NODE_RANK=0
 WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
@@ -78,7 +78,19 @@ MOE_ARGS="
 MTP_ARGS="
     --mtp-num-layers 1 \
     --mtp-loss-scaling-factor 0.3 \
+"
+
+DUALPIPE_ARGS="
+    --moe-fb-overlap \
+    --schedules-method dualpipev \
+"
+
+MEM_ARGS="
     --mtp-mem-efficient-logits \
+    --use-distributed-optimizer \
+    --recompute-granularity full \
+    --recompute-method block \
+    --recompute-num-layers 8 \
 "
 
 ROPE_ARGS="
@@ -91,14 +103,8 @@ ROPE_ARGS="
     --rope-scaling-type yarn
 "
 
-MEM_ARGS="
-    --use-distributed-optimizer \
-    --recompute-method uniform \
-    --recompute-granularity full \
-    --recompute-num-layers 1 \
-"
 
-GPT_ARGS="\
+GPT_ARGS="
     --spec mindspeed_llm.tasks.models.spec.deepseek_spec layer_spec \
     --reset-position-ids \
     --noop-layers 61,62,63 \
@@ -107,7 +113,6 @@ GPT_ARGS="\
     --use-mcore-models \
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \
-    --num-layers-per-virtual-pipeline-stage ${VPP} \
     --expert-model-parallel-size ${EP} \
     --sequence-parallel \
     --context-parallel-size ${CP} \
@@ -164,7 +169,7 @@ DATA_ARGS="
 
 OUTPUT_ARGS="
     --log-interval 1 \
-    --save-interval 1 \
+    --save-interval 2000 \
     --eval-interval 2000 \
     --eval-iters 0 \
     --no-save-optim \
@@ -176,10 +181,13 @@ msrun $DISTRIBUTED_ARGS $basepath/pretrain_gpt.py \
     $DATA_ARGS \
     $OUTPUT_ARGS \
     $MLA_ARGS \
+    $DUALPIPE_ARGS \
+    $MEM_ARGS \
     $ROPE_ARGS \
     $MOE_ARGS \
     $MTP_ARGS \
-    $MEM_ARGS \
     --distributed-backend nccl \
+    --save $CKPT_SAVE_DIR \
+    --load $CKPT_LOAD_DIR \
     --ai-framework mindspore \
     2>&1 | tee logs/pretrain_deepseek3_671b_4k_A3_ms.log
