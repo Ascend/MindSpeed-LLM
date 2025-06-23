@@ -11,7 +11,7 @@
   <tbody>
     <tr>
       <td rowspan="1">环境安装指导</td>
-      <td><a href="features/install_guide.md">install_guide.md</a></td>
+      <td><a href="pytorch/install_guide.md">install_guide.md</a></td>
       <td></td>
     </tr>
     <tr>

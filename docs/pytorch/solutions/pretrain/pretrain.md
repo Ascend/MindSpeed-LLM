@@ -2,7 +2,7 @@
 
 #### 1. 准备工作
 
-参考[安装指导](../../../features/install_guide.md)，完成环境安装，参考[权重转换](../checkpoint_convert.md)和[预训练数据处理](pretrain_dataset.md)完成权重准备和数据预处理。
+参考[安装指导](../../install_guide.md)，完成环境安装，参考[权重转换](../checkpoint_convert.md)和[预训练数据处理](pretrain_dataset.md)完成权重准备和数据预处理。
 
 #### 2. 配置预训练参数
 

@@ -2,6 +2,9 @@
 
 `认证`【Pass】表示经过昇腾官方版本测试的模型，【Test】表示待测试模型
 
+**目前qwen3模型已通过内部验证，可参考本章节完成环境安装，移步[examples/mcore](../../../examples/mcore)使用更完整功能。**
+
+
 <table>
   <thead>
     <tr>
@@ -133,7 +136,7 @@
 
 ## 环境搭建
 
-MindSpeed-LLM的主要依赖配套如下表，安装步骤参考[安装指导](https://gitee.com/ascend/MindSpeed-LLM/blob/master/docs/features/install_guide.md)。
+MindSpeed-LLM的主要依赖配套如下表，安装步骤参考[安装指导](../../../docs/features/install_guide.md)。
 
 <table>
   <tr>
