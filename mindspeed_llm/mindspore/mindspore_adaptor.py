@@ -95,8 +95,10 @@ class MindSporeAdaptation(MegatronAdaptationABC):
         from mindspeed.mindspore.core.optimizer.optimizer import megatron_optimizer_init
         MindSporeAdaptation.register('megatron.core.optimizer.optimizer.MegatronOptimizer.__init__', megatron_optimizer_init)
 
-        from mindspeed.mindspore.core.pipeline_parallel.schedules import forward_step, backward_step, forward_backward_no_pipelining
+        from mindspeed.mindspore.core.pipeline_parallel.schedules import backward_step, forward_backward_no_pipelining
+        from mindspeed_llm.mindspore.core.pipeline_parallel.schedules import forward_step
         MindSporeAdaptation.register('megatron.core.pipeline_parallel.schedules.forward_step', forward_step)
+        MindSporeAdaptation.register('mindspeed.mindspore.core.pipeline_parallel.schedules.forward_step', forward_step)
         MindSporeAdaptation.register('megatron.core.pipeline_parallel.schedules.backward_step', backward_step)
         MindSporeAdaptation.register('megatron.core.pipeline_parallel.schedules.forward_backward_no_pipelining', forward_backward_no_pipelining)
 
