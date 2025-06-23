@@ -41,6 +41,9 @@ class MindSporeAdaptation(MegatronAdaptationABC):
 
         args = self.reparse_args()
 
+        from mindspeed_llm.mindspore.training.arguments import _validate_optimizer
+        MindSporeAdaptation.register('mindspeed_llm.training.arguments._validate_optimizer', _validate_optimizer)
+
         from ..core.models.gpt.gpt_model import GPTModel
         from ..mindspore.core.transformer.moe.moe_layer import moe_layer_init_wrapper, moe_layer_forward
         from mindspeed.mindspore.core.data_parallel.distributed_data_parallel import distributed_data_parallel_init_with_cp
