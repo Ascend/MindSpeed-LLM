@@ -43,7 +43,7 @@ MindSpeed LLM是基于昇腾生态的大语言模型分布式训练框架，旨�
 
 ## 版本配套表
 
-MindSpeed LLM的依赖配套如下表，安装步骤参考[安装指导](./docs/features/install_guide.md)。
+MindSpeed LLM的依赖配套如下表，安装步骤参考[安装指导](docs/pytorch/install_guide.md)。
 
 <table>
   <tr>
@@ -87,6 +87,8 @@ MindSpeed LLM的依赖配套如下表，安装步骤参考[安装指导](./docs/
 
 
 注：由于master分支使用在研版本的驱动以及CANN包，因此master上的一些新特性老版本配套可能有不支持情况，要使用稳定版本，请切换到商发分支并下载对应依赖版本进行安装。
+
+注：torch2.6 不支持python3.8；部分模型存在更高版本环境依赖，请检查预设模型章节链接的版本支持确认依赖关系。
 
 ## 预置模型
 
