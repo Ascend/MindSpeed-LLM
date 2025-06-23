@@ -17,9 +17,10 @@ NNODES=1
 NODE_RANK=0
 WORLD_SIZE=$(($GPUS_PER_NODE*$NNODES))
 
+CKPT_SAVE_DIR="/data/mindspore/st/test_ds3_pretrain/ckpt_tp2ep2pp2vpp1"
 DATA_PATH="/data/mindspore/st/test_ds3_pretrain/dataset/dataset/enwiki_text_document"
 TOKENIZER_PATH="/data/mindspore/st/test_ds3_pretrain/tokenizer"
-CKPT_LOAD_DIR="/data/mindspore/st/test_ds3_pretrain/load"
+CKPT_LOAD_DIR="/data/mindspore/st/test_ds3_pretrain/ckpt_tp2ep2pp2vpp1"
 
 TP=2
 PP=2
@@ -187,7 +188,7 @@ msrun $DISTRIBUTED_ARGS $basepath/pretrain_gpt.py \
     $MLA_ARGS \
     $ROPE_ARGS \
     $MOE_ARGS \
+    $MTP_ARGS \
     --load $CKPT_LOAD_DIR \
     --distributed-backend nccl \
     --ai-framework mindspore \
-    --finetune \
