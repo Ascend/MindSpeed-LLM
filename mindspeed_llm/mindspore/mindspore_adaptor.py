@@ -198,10 +198,11 @@ class MindSporeAdaptation(MegatronAdaptationABC):
             MindSporeAdaptation.register('megatron.core.pipeline_parallel.schedules.forward_backward_pipelining_without_interleaving',
                                 forward_backward_pipelining_with_cutinhalf)
 
-
-            from mindspeed.mindspore.core.pipeline_parallel.fb_overlap.transformer_layer import transformer_layer_backward
-            MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.transformer_layer.transformer_layer_backward',
-                                transformer_layer_backward)
+            from mindspeed.mindspore.core.pipeline_parallel.fb_overlap.transformer_layer import \
+                transformer_layer_recompute
+            MindSporeAdaptation.register(
+                'mindspeed.core.pipeline_parallel.fb_overlap.transformer_layer.transformer_layer_recompute',
+                transformer_layer_recompute)
 
             from mindspeed.mindspore.core.pipeline_parallel.fb_overlap.transformer_block import transformer_block_forward, transformer_block_forward_backward_overlaping
             MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.transformer_block.transformer_block_forward',
