@@ -23,6 +23,16 @@ def process_mindspore_args(parser):
     return parser
 
 
+def _validate_optimizer(args):
+    if args.reuse_fp32_param and not args.bf16:
+        raise AssertionError('--reuse-fp32-param only support for `bf16`')
+    if args.reuse_fp32_param and args.swap_optimizer:
+        raise AssertionError('--swap-optimizer dose not support `--reuse-fp32-param`')
+    if args.reuse_fp32_param and not args.use_distributed_optimizer:
+        raise ValueError(
+            "When using the --reuse-fp32-param feature, the --use-distributed-optimizer feature must also be enabled.")
+
+
 def _add_moba_args(parser):
     group = parser.add_argument_group(title='moba')
     group.add_argument('--use-moba-attn', action='store_true', default=False,

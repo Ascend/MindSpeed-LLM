@@ -9,6 +9,7 @@ MindSpore后端已支持DeepSeek3模型权重转换，使用方式与PyTorch后�
 
 **注意：**
 - 当前尚不支持QLoRA权重量化转换，【--qlora-nf4】参数仅可置为False。
+- 当前--reuse-fp32-param需跟--use-distributed-optimizer参数一起使用，暂不支持单独使用
 - MindSpore 后端默认在Device侧进行权重转换，在模型较大时存在OOM风险，因此建议用户手动修改`examples/mcore/deepseek3/convert_ckpt_deepseek3.py`，在包导入时加入如下代码设置CPU侧执行权重转换：
 
 ```python
