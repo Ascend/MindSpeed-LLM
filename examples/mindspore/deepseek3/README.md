@@ -94,3 +94,4 @@ sh examples/mindspore/deepseek3/pretrain_deepseek3_671B_4k_ms.sh
 
 - 多机训练需在多个终端同时启动预训练脚本。
 - 如果使用多机训练，且没有设置数据共享，需要在训练启动脚本中增加--no-shared-storage参数，设置此参数之后将会根据布式参数判断非主节点是否需要load数据，并检查相应缓存和生成数据。
+- 小网场景下同时使能dualpipe和MoE零冗余通信(--moe-zerc)特性时，性能波动较大且收益不明显，不建议开启。
