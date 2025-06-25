@@ -13,6 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import sys
 from time import time
 from functools import wraps
 from logging import getLogger
@@ -22,7 +23,8 @@ from megatron.training import get_args
 from megatron.core import mpu, dist_checkpointing
 from megatron.core.dist_checkpointing.serialization import get_default_save_sharded_strategy
 from megatron.core.dist_checkpointing.strategies.fully_parallel import \
-    FullyParallelSaveStrategyWrapper
+    FullyParallelSaveStrategyWrapper, FullyParallelLoadStrategyWrapper
+from megatron.core.dist_checkpointing.serialization import get_default_load_sharded_strategy
 from megatron.training.utils import print_rank_0, unwrap_model, append_to_progress_log, is_last_rank
 from megatron.training.async_utils import schedule_async_save
 from megatron.training.checkpointing import (_load_base_checkpoint, get_rng_state, get_checkpoint_name,
