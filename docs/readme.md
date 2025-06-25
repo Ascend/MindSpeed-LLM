@@ -109,7 +109,7 @@
       <td rowspan="1">仓库支持评估数据集</td>
     </tr>
     <tr>
-      <td rowspan="5">模型偏好训练方法</td>
+      <td rowspan="3">模型偏好训练方法</td>
       <td rowspan="1"><a href="pytorch/solutions/preference-alignment/offline_dpo.md">offline_dpo</a></td>
       <td rowspan="1">基于数据偏好训练模型，但不会使用policy-model进行推理并参与其权重更新</td>
     </tr>
@@ -120,14 +120,6 @@
     <tr>
       <td rowspan="1"><a href="pytorch/solutions/preference-alignment/trl_ppo.md">trl_ppo</a></td>
       <td rowspan="1">强化学习优化策略方法</td>
-    </tr>
-    <tr>
-      <td rowspan="1"><a href="pytorch/solutions/preference-alignment/ray_ppo.md">ray_ppo</a></td>
-      <td rowspan="1">基于ray平台的偏好训练方法</td>
-    </tr>
-    <tr>
-      <td rowspan="1"><a href="pytorch/solutions/preference-alignment/ray_online_dpo.md">ray_online_dpo</a></td>
-      <td rowspan="1">基于ray平台边推边训的偏好优化方法</td>
     </tr>
     <tr>
       <td rowspan="2">奖励模型方案</td>
