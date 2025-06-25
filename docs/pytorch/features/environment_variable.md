@@ -14,5 +14,6 @@
 | PYTORCH_NPU_ALLOC_CONF      | 内存碎片优化开关，默认是expandable_segments:False，使能时expandable_segments:True。        |
 | ASCEND_RT_VISIBLE_DEVICES   | 指定哪些Device对当前进程可见，支持一次指定一个或多个Device ID。通过该环境变量，可实现不修改应用程序即可调整所用Device的功能。 |
 | NPUS_PER_NODE               | 配置一个计算节点上使用的NPU数量。                                                        |
-| HCCL_SOCKET_IFNAME               | 指定hccl socket通讯走的网卡配置。                                                    |
-| GLOO_SOCKET_IFNAME               | 指定gloo socket通讯走的网卡配置。                                                |
+| HCCL_SOCKET_IFNAME          | 指定hccl socket通讯走的网卡配置。                                                    |
+| GLOO_SOCKET_IFNAME          | 指定gloo socket通讯走的网卡配置。                                                    |
+| HCCL_LOGIC_SUPERPOD_ID      | 指定当前设备的逻辑超节点ID，如果走ROCE，不同多机超节点ID不同，0-N。                                   |
