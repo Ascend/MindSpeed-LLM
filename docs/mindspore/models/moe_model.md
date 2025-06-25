@@ -21,30 +21,8 @@
       <td> 4K</td>
       <th>Mcore</th>
       <td>8x8</td>
-      <td>❌</td>
+      <td>支持中</td>
       <tr>
-    </tr>
-    <tr>
-      <td rowspan="3"><a href="https://huggingface.co/mistralai">Mixtral</a></td>
-      <td><a href="https://huggingface.co/mistralai/Mixtral-8x7B-v0.1/tree/main">8x7B</a></td>
-      <td rowspan="3"><a href="../../../examples/mindspore/">mixtral</a></td>
-      <td> 32K</td>
-      <th>Mcore</th>
-      <td>8x8</td>
-      <td>❌</td>
-    </tr>
-    <tr>
-      <td rowspan="2"><a href="https://huggingface.co/mistralai/Mixtral-8x22B-v0.1/tree/main">8x22B</a></td>
-      <td> 32K</td>
-      <th>Mcore</th>
-      <td>8x8</td>
-      <td>❌</td>
-    </tr>
-    <tr>
-      <td> 64K</td>
-      <th>Mcore</th>
-      <td>8x8</td>
-      <td>❌</td>
     </tr>
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/deepseek-ai/DeepSeek-V2">DeepSeek-V2</a></td>
@@ -53,16 +31,7 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td> 20x8 </td>
-      <td>❌</td>
-    </tr>
-        <tr>
-      <td rowspan="1"><a href="https://huggingface.co/deepseek-ai/DeepSeek-Coder-V2-Base">DeepSeek-V2-coder</a></td>
-      <td><a href="https://huggingface.co/deepseek-ai/DeepSeek-Coder-V2-Base/tree/main">236B</a></td>
-      <td><a href="../../../examples/mindspore/">deepseek2_coder</a></td>
-      <td> 8K </td>
-      <th>Mcore</th>
-      <td> 20x8 </td>
-       <td>❌</td>
+      <td>支持中</td>
     </tr>
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/deepseek-ai/DeepSeek-V2-Lite">DeepSeek-V2-Lite</a></td>
@@ -80,7 +49,7 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td> 20x8 </td>
-      <td>❌</td>
+      <td>支持中</td>
     </tr>
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/deepseek-ai/DeepSeek-V3">DeepSeek-V3</a></td>
@@ -90,24 +59,6 @@
       <th>Mcore</th>
       <td> 64x8 </td>
       <td>✅</td>
-    </tr>
-    <tr>
-      <td rowspan="1"><a href="https://github.com/OpenBMB/MiniCPM">MiniCPM</a></td>
-      <td> <a href="https://huggingface.co/openbmb/MiniCPM-MoE-8x2B/tree/main">8x2B</a> </td>
-      <td><a href="../../../examples/mindspore/">minicpm</a></td>
-      <td> 4K </td>
-      <th>Mcore</th>
-      <td> 1x8 </td>
-      <td>❌</td>
-    </tr>
-    <tr>
-      <td rowspan="1"><a href="https://huggingface.co/microsoft">Phi3.5</a></td>
-      <td> <a href="https://huggingface.co/microsoft/Phi-3.5-MoE-instruct">MoE-instruct</a> </td>
-      <td><a href="../../../examples/mindspore/">phi35</a></td>
-      <td> 4K </td>
-      <th> Mcore </th>
-      <td> 2x8 </td>
-      <td>❌</td>
     </tr>
   </tbody>
 </table>
