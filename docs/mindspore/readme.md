@@ -61,7 +61,7 @@ MindSpore后端对MindSpeed的重要加速特性的支持情况如下表所示�
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="./docs/features/virtual_pipeline_parallel.md">虚拟流水并行</a></td>
+    <td><a href="../pytorch/features/virtual_pipeline_parallel.md">虚拟流水并行</a></td>
     <td>✅</td>
   </tr>
   <tr>
@@ -74,7 +74,7 @@ MindSpore后端对MindSpeed的重要加速特性的支持情况如下表所示�
   </tr>
   <tr>
     <td rowspan="3">长序列并行</td>
-    <td><a href="../docs/features/ring-attention-context-parallel.md">Ascend Ring Attention 长序列并行</a></td>
+    <td><a href="../pytorch/features/ring-attention-context-parallel.md">Ascend Ring Attention 长序列并行</a></td>
     <td>✅</td>
   </tr>
   <tr>
@@ -108,7 +108,7 @@ MindSpore后端对MindSpeed的重要加速特性的支持情况如下表所示�
     <td>❌</td>
   </tr>
   <tr>
-    <td><a href="../docs/features/recompute_relative.md">重计算</a></td>
+    <td><a href="../pytorch/features/recompute_relative.md">重计算</a></td>
     <td>✅</td>
   </tr>
   <tr>
@@ -116,7 +116,7 @@ MindSpore后端对MindSpeed的重要加速特性的支持情况如下表所示�
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="../docs/features/o2.md">O2 BF16 Optimizer</a></td>
+    <td><a href="../pytorch/features/o2.md">O2 BF16 Optimizer</a></td>
     <td>❌</td>
   </tr>
   <tr>
@@ -125,7 +125,7 @@ MindSpore后端对MindSpeed的重要加速特性的支持情况如下表所示�
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="../docs/features/variable_length_flash_attention.md">Flash attention variable length</a></td>
+    <td><a href="../pytorch/features/variable_length_flash_attention.md">Flash attention variable length</a></td>
     <td>✅</td>
   </tr>
   <tr>
@@ -162,11 +162,11 @@ MindSpore后端对MindSpeed的重要加速特性的支持情况如下表所示�
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="../docs/features/mc2.md">MC2</a></td>
+    <td><a href="../pytorch/features/mc2.md">MC2</a></td>
     <td>❌</td>
   </tr>
   <tr>
-    <td><a href="../docs/features/communication-over-computation.md">CoC</a></td>
+    <td><a href="../pytorch/features/communication-over-computation.md">CoC</a></td>
     <td>✅</td>
   </tr>
   <tr>
@@ -325,7 +325,7 @@ MindSpeed MindSore后端的权重转换与PyTorch后端保持了一致，当前�
   <tbody>
     <tr>
       <td rowspan="1">性能采集</td>
-      <td><a href="docs/pytorch/features/profiling.md">基于昇腾芯片采集 profiling 数据</a></td>
+      <td><a href="../pytorch/features/profiling.md">基于昇腾芯片采集 profiling 数据</a></td>
       <td>✅</td>
       <td>❌</td>
       <td>【Ascend】</td>
@@ -349,7 +349,7 @@ MindSpeed MindSore后端的权重转换与PyTorch后端保持了一致，当前�
   <tbody>
     <tr>
       <td rowspan="2">高可用性</td>
-      <td><a href="docs/pytorch/features/deterministic_computation.md">基于昇腾芯片开启确定性计算</a></td>
+      <td><a href="../pytorch/features/deterministic_computation.md">基于昇腾芯片开启确定性计算</a></td>
       <td>✅</td>
       <td>❌</td>
       <td rowspan="2">【Ascend】</td>
