@@ -47,19 +47,43 @@ python ./preprocess_data.py \
     --prompt-type llama2
 ```
 
+### hf2mcore权重转换示例
+
+MindSpeed-LLM lora微调脚本可使用普通base mcore权重进行微调任务：
+
+```shell
+# Legacy 模型
+bash examples/legacy/llama2/ckpt_convert_llama2_hf2legacy.sh
+
+# Mcore 模型
+bash examples/mcore/llama2/ckpt_convert_llama2_hf2mcore.sh
+```
+
+在hf2mcore权重转换脚本中，则使用以下命令：
+
+```shell
+# 权重格式转换，设置需要的并行配置，--num-layers-per-virtual-pipeline-stage 5，--params-dtype bf16 结合需要使用
+python convert_ckpt.py \
+    --model-type GPT \
+    --load-model-type hf \
+    --save-model-type mg \
+    --target-tensor-parallel-size 8 \
+    --target-pipeline-parallel-size 1 \
+    --load-dir ./model_from_hf/llama-2-7b-hf/ \
+    --save-dir ./model_weights/llama2-mcore/ \
+    --tokenizer-model ./model_from_hf/llama-2-7b-hf/tokenizer.model \
+    --use-mcore-models \
+    --model-type-hf llama2
+```
+
+### lora微调脚本部分说明
+
 在指令微调时，`DATA_PATH` 也应保持一致：
 
 ```shell
 DATA_PATH="./finetune_dataset/llama-2-7b/alpaca"  # 数据集路径
+CKPT_LOAD_DIR="./model_weights/llama2-mcore/"     # 权重路径
 ```
-
-- **`--prompt-type`**  
-  指定模型模板，使 base 模型在微调后具备更好的对话能力。
-
-- **`--variable-seq-lengths`**  
-  支持动态序列长度微调，默认按 8 的倍数进行 padding，可以通过 `--pad-to-multiple-of` 参数修改 padding 的倍数。
-
-### 参数说明
 
 MindSpeed-LLM LoRA微调脚本命名和启动方法：
 
@@ -75,6 +99,12 @@ bash examples/legacy/llama2/tune_llama2_7b_lora_ptd.sh
 bash examples/mcore/llama2/tune_llama2_7b_lora_ptd.sh
 ```
 参数说明：
+
+- **`--prompt-type`**  
+  指定模型模板，使 base 模型在微调后具备更好的对话能力。
+
+- **`--variable-seq-lengths`**  
+  支持动态序列长度微调，默认按 8 的倍数进行 padding，可以通过 `--pad-to-multiple-of` 参数修改 padding 的倍数。
 
 - **`--load`**  
   若不指定该参数加载权重，模型会随机初始化权重。
@@ -96,47 +126,49 @@ bash examples/mcore/llama2/tune_llama2_7b_lora_ptd.sh
 - **`--lora-load`**  
   加载 LoRA 权重断点继续训练或用于推理。在推理时需与 `--load` 参数配合使用，加载 `CKPT_SAVE_DIR` 路径下的 LoRA 权重。
 
-### Lora 权重与 Base 权重合并与转换
+### Lora权重与Base权重的合并与转换
 
-在权重转换命令中，添加以下参数即可将训练好的 Lora 权重与 Base 权重融合,合并后转换为 Megatron-Legacy 权重.：
+基于lora微调训练完后，得到Lora权重与Base权重存在区别，无法直接用于续训，需要转换后才可使用，添加以下参数即可将训练好的 Lora 权重与 Base 权重融合,合并后转换为 Mcore 权重：
 
 ```bash
---lora-load ${CHECKPOINT_LORA}  \
---lora-r 16 \
---lora-alpha 32 \
---lora-target-modules query_key_value dense dense_h_to_4h dense_4h_to_h \
+    --lora-load ${CHECKPOINT_LORA}  \
+    --lora-r 16 \
+    --lora-alpha 32 \
+    --lora-target-modules linear_qkv linear_proj linear_fc1 linear_fc2 \
 ```
 
-以下是将合并后的权重转换为 Megatron-Legacy 格式的示例命令：
+以下是将 Lora权重 合并转换为 Mcore 权重的示例命令：
 
 ```shell
 # 请确保您已配置好环境变量
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
 
 python convert_ckpt.py \
+    --use-mcore-models \
     --model-type GPT \
     --load-model-type mg \
     --save-model-type mg \
-    --load-dir ./model_weights/llama-2-7b-legacy/ \
-    --lora-load ./ckpt/llama-2-7b-lora \
+    --load-dir ./model_weights/llama-2-7b-mcor \
+    --lora-load ./ckpt/llama-7b-lora-mcore-tp1pp1 \
+    --save-dir ./model_weights/llama2-7b-lora2mcore \
     --lora-r 16 \
     --lora-alpha 32 \
-    --lora-target-modules query_key_value dense dense_h_to_4h dense_4h_to_h \
+    --lora-target-modules linear_qkv linear_proj linear_fc1 linear_fc2 \
     --target-tensor-parallel-size 1 \
     --target-pipeline-parallel-size 1 \
-    --save-dir ./model_weights/llama-2-7b-lora2legacy
+    --model-type-hf llama2 
 ```
 
 以下是启动转换脚本的示例：
 
 ```shell
 # 以 legacy 下的模型为例
-bash examples/legacy/llama2/ckpt_convert_llama2_legacy2legacy_lora.sh
+bash examples/mcore/llama2/ckpt_convert_llama2_mg2mg_lora.sh
 ```
 
-#### 合并后转换为 Hugging Face 权重
+#### 将lora权重 合并并转换为 HuggingFace 权重
 
-若希望将合并后的权重转换为 Hugging Face（HF）格式，可以使用以下命令：
+若希望将lora权重合并并权重转换为 Hugging Face（HF）格式，可以使用以下命令：
 
 ```shell
 # 请确保您已配置好环境变量
@@ -144,13 +176,14 @@ source /usr/local/Ascend/ascend-toolkit/set_env.sh
 
 python convert_ckpt.py \
     --model-type GPT \
+    --use-mcore-models \
     --load-model-type mg \
     --save-model-type hf \
-    --load-dir ./model_weights/llama-2-7b-legacy/ \
-    --lora-load ./ckpt/llama-2-7b-lora \
+    --load-dir ./model_weights/llama-2-7b-mcore/ \
+    --lora-load ./ckpt/llama-7b-lora-mcore-tp1pp1 \
     --lora-r 16 \
     --lora-alpha 32 \
-    --lora-target-modules query_key_value dense dense_h_to_4h dense_4h_to_h \
+    --lora-target-modules linear_qkv linear_proj linear_fc1 linear_fc2 \
     --target-tensor-parallel-size 1 \
     --target-pipeline-parallel-size 1 \
     --save-dir ./model_from_hf/llama-2-7b-hf/    # 填写原始 HF 模型路径，新权重将存储于 ./model_from_hf/llama-2-7b-hf/mg2hg/
@@ -160,7 +193,7 @@ python convert_ckpt.py \
 
 ```shell
 # 以 legacy 下的模型为例
-bash examples/legacy/llama2/ckpt_convert_llama2_legacy2hf_lora.sh
+bash examples/mcore/llama2/ckpt_convert_llama2_mcore2hf_lora.sh
 ```
 
 **注意：** `lora` 参数的值应与微调时的参数设置保持一致，以确保转换后的模型具有相同的性能表现和兼容性。
