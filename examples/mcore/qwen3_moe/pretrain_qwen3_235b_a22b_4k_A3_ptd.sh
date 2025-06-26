@@ -9,7 +9,7 @@ export TASK_QUEUE_ENABLE=2
 
 NPUS_PER_NODE=16
 MASTER_ADDR=localhost
-MASTER_PORT=60014
+MASTER_PORT=6000
 NNODES=16
 NODE_RANK=0
 WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
@@ -20,7 +20,7 @@ DATA_PATH="your data path"
 TOKENIZER_PATH="your tokenizer path"
 CKPT_LOAD_DIR="your model ckpt path"
 
-TP=2
+TP=1
 PP=4
 EP=32
 CP=1
@@ -58,7 +58,6 @@ MOE_ARGS="
     --moe-permutation-async-comm \
     --moe-alltoall-overlap-comm \
     --use-fused-moe-token-permute-and-unpermute \
-    --moe-tp-extend-ep \
 "
 
 OPTIMIZE_ARGS="
