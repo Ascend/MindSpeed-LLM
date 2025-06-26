@@ -874,11 +874,11 @@ def get_args():
     parser.add_argument('--num-layers-per-virtual-pipeline-stage', type=int, default=None,
                         help='Number of layers per virtual pipeline stage')
     parser.add_argument('--moe-grouped-gemm', action='store_true',
-                        help='Usr moe grouped gemm.')
+                        help='Use moe grouped gemm.')
     parser.add_argument("--noop-layers", type=str, default=None, help='Specity the noop layers.')
     parser.add_argument('--mtp-num-layers', type=int, default=0, help='Multi-Token prediction layer num')
     parser.add_argument('--num-layer-list', type=str,
-                        help='a list of number of layers, seperated by comma; e.g., 4,4,4,4')
+                        help='a list of number of layers, separated by comma; e.g., 4,4,4,4')
     parser.add_argument('--num-layers', type=int, default=61,
                         help='Number of transformer layers.')
     parser.add_argument('--first-k-dense-replace', type=int, default=3,

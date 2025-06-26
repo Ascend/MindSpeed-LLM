@@ -996,11 +996,11 @@ def get_args():
                         help='Source expert model parallel size, default to 1')
     parser.add_argument('--num-layers-per-virtual-pipeline-stage', type=int, default=None,
                         help='Number of layers per virtual pipeline stage')
-    parser.add_argument('--moe-grouped-gemm', action='store_true', help='Usr moe grouped gemm.')
+    parser.add_argument('--moe-grouped-gemm', action='store_true', help='Use moe grouped gemm.')
     parser.add_argument("--noop-layers", type=str, default=None, help='Specity the noop layers.')
     parser.add_argument('--mtp-num-layers', type=int, default=0, help='Multi-Token prediction layer num')
     parser.add_argument('--num-layer-list', type=str,
-                        help='a list of number of layers, seperated by comma; e.g., 4,4,4,4')
+                        help='a list of number of layers, separated by comma; e.g., 4,4,4,4')
     parser.add_argument("--moe-tp-extend-ep", action='store_true',
                         help="use tp group to extend experts parallism instead of sharding weight tensor of experts in tp group")
     parser.add_argument('--mla-mm-split', action='store_true', default=False,
