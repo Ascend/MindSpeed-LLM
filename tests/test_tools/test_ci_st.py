@@ -121,7 +121,7 @@ class TestCIST:
         
         assert actual_avg_time <= expected_avg_time or \
                abs(actual_avg_time - expected_avg_time) / expected_avg_time <= TestMargin.time, \
-            f"The actual avg time ({actual_avg_time} ms) was {exceed_percentage:.1f}% slower than the expected ({expected_avg_time} ms)."
+            f"The actual avg time ({actual_avg_time} ms) was slower than the expected ({expected_avg_time} ms)."
 
 
     def _compare_memory(self, expected_list, actual_list):

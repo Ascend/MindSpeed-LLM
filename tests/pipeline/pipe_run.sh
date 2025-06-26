@@ -34,7 +34,8 @@ GENERATE_LOG_DIR="$GENERATE_LOG_BASE_DIR/$CURRENT_TIME"
 #mkdir cache to store product and will be removed after test
 mkdir -p "$GENERATE_LOG_DIR"
 touch "$GENERATE_LOG_DIR/exec_error.log"
-echo "core0.8.0 Execution Results" > $GENERATE_LOG_DIR/exec_error.log
+chmod a+w "$GENERATE_LOG_DIR/exec_error.log"
+echo "core0.12.0 Execution Results" > $GENERATE_LOG_DIR/exec_error.log
 
 # step 2: running scripts and execute `test_ci_pipeline.py` && running pytest
 find "$BASE_DIR" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
@@ -67,7 +68,7 @@ find "$BASE_DIR" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
             echo "running $file"
             tmp_file_name="${file#*MindSpeed-LLM/}"
             file_name="${tmp_file_name//\//_}"
-            pytest --log-level=INFO "$file" 2>&1 | tee "${GENERATE_LOG_DIR}/${file_name}.log"
+            pytest -x --log-level=INFO "$file" 2>&1 | tee "${GENERATE_LOG_DIR}/${file_name}.log"
             PYTEST_EXITCODE=${PIPESTATUS[0]}
             if [ $PYTEST_EXITCODE -ne 0 ]; then
                 echo "$file has failed, check it!" >> "$GENERATE_LOG_DIR/exec_error.log"
