@@ -1,6 +1,7 @@
 # Copyright (c) 2025; NVIDIA CORPORATION. All rights reserved.
 # Copyright (c) 2025, Huawei Technologies Co., Ltd.  All rights reserved
 
+from mindspeed_llm.mindspore.utils import clear_wrapper
 from mindspeed_llm.tasks.megatron_adaptor import MegatronAdaptation, MegatronAdaptationABC
 
 
@@ -357,6 +358,15 @@ class MindSporeAdaptation(MegatronAdaptationABC):
         from mindspeed.mindspore.core.pipeline_parallel.schedules import deallocate_output_tensor_
         MindSporeAdaptation.register('megatron.core.pipeline_parallel.schedules.deallocate_output_tensor',
                                      deallocate_output_tensor_)
+
+        if args.reuse_fp32_param:
+            from megatron.core.optimizer.distrib_optimizer import DistributedOptimizer
+            from mindspeed.mindspore.optimizer.distrib_optimizer import reuse_fp32_param_distrib_optimizer_init_wrapper
+            target_func = DistributedOptimizer.__init__
+            target_func_name = 'megatron.core.optimizer.distrib_optimizer.DistributedOptimizer.__init__'
+            clear_wrapper(target_func_name, target_func)
+            MindSporeAdaptation.register(target_func_name, reuse_fp32_param_distrib_optimizer_init_wrapper)
+
 
     @staticmethod
     def reparse_args():
