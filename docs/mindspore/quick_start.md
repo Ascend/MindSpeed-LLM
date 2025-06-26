@@ -1,6 +1,6 @@
-# 快速入门：Qwen2.5 模型预训练
+# 快速入门：Qwen2.5 模型预训练（MindSpore后端）
 
-当前文档提供了一个简单示例，方便新接触MindSpeed-LLM的开发者们可以快速上手，将模型训练任务跑起来。下面以Qwen2.5-7B模型为例，指导开发者完成Qwen2.5-7B大语言模型的预训练任务，主要包含如下步骤：
+当前文档提供一个简单示例，方便新接触MindSpeed-LLM（以MindSpore框架作为后端）的开发者们可以快速上手，将模型训练任务跑起来。下面以Qwen2.5-7B模型为例，指导开发者完成Qwen2.5-7B大语言模型的预训练任务，主要包含如下步骤：
 - 环境搭建：基于仓库指导文件搭建环境
 - 开源模型权重获取：从HuggingFace下载Qwen2.5-7B原始模型
 - 启动预训练：在昇腾NPU上进行模型预训练
@@ -14,14 +14,14 @@
 
 如果已经完成了环境搭建，请跳转2，进行预训练任务拉起。
 
-请参考MindSpeed-LLM仓首页[“版本配套表”](../README.md#版本配套表)，选择下载对应版本的软件依赖，如下主要提供一些图示指导说明，完成环境搭建，本章节通过配图辅助您完成环境安装。
+请参考MindSpore后端说明文档的[“版本配套表”](./readme.md#版本配套表)，选择下载对应版本的软件依赖，如下主要提供一些图示指导说明，完成环境搭建，本章节通过配图辅助您完成环境安装。
 > 如下图示不代表具体配套版本关系，以版本配套表为准。
 
 ## 1.1 驱动固件安装
 
 下载[驱动固件](https://www.hiascend.com/hardware/firmware-drivers/community)，请根据系统和硬件产品型号选择对应版本的`driver`和`firmware`下载到本地并上传到服务器任意目录，驱动固件下载示意图如下:
 
-![](../sources/images/quick_start/driver_image.png)
+![](../../sources/images/quick_start/driver_image.png)
 
 参考[安装NPU驱动固件](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/81RC1alpha002/softwareinst/instg/instg_0005.html?Mode=PmIns&OS=Ubuntu&Software=cannToolKit),选择对应的版本，执行以下命令安装：
 
@@ -37,7 +37,7 @@ bash Ascend-hdk-910b-npu-driver_24.1.0.3_linux-aarch64.run --full --force
 
 下载[CANN](https://www.hiascend.com/developer/download/community/result?module=cann)，请根据系统选择`aarch64`或`x86_64`对应版本的`cann-toolkit`、`cann-kernel`和`cann-nnal`下载到本地并上传到服务器任意目录。相关软件下载示意图如下：
 
-![](../sources/images/quick_start/cann_image.png)
+![](../../sources/images/quick_start/cann_image.png)
 
 参考[CANN安装](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/81RC1alpha002/softwareinst/instg/instg_0008.html?Mode=PmIns&OS=Ubuntu&Software=cannToolKit)完成cann包安装，若缺少依赖请参考[CANN依赖安装](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/81RC1alpha002/softwareinst/instg/instg_0007.html?Mode=PmIns&OS=Ubuntu&Software=cannToolKit)：
 
@@ -50,46 +50,19 @@ source /usr/local/Ascend/ascend-toolkit/set_env.sh
 bash Ascend-cann-nnal_8.1.RC1_linux-aarch64.run --install
 ```
 
-## 1.3 PTA安装
-
-准备[torch_npu](https://www.hiascend.com/developer/download/community/result?module=pt)和[apex](https://gitee.com/ascend/apex)，参考[Ascend Extension for PyTorch](https://www.hiascend.com/document/detail/zh/Pytorch/700/configandinstg/instg/insg_0001.html)或执行以下命令安装
+## 1.3 使用MindSpeed-Core-MS进行软件一键安装
+MindSpeed-Core-MS仓库提供了集成依赖软件一键拉取、代码自动适配、环境变量自动配置功能的脚本。首先执行以下命令拉取MindSpeed-Core-MS代码仓
 
 ```shell
-# 安装torch和torch_npu，因为版本迭代，包名存在出入，根据实际修改
-wget https://download.pytorch.org/whl/cpu/torch-2.1.0-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
-pip install torch-2.1.0-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
-wget https://gitee.com/ascend/pytorch/releases/download/v7.0.0-pytorch2.1.0/torch_npu-2.1.0.post12-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
-pip install torch_npu-2.1.0.post12-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
-
-# apex for Ascend 需要自行参考 https://gitee.com/ascend/apex 完成whl包的构建，再通过如下指令完成安装
-pip install apex-*.whl
+git clone https://gitee.com/ascend/MindSpeed-Core-MS.git -b r0.3.0
 ```
 
-## 1.4 MindSpeed-LLM及相关依赖安装
+然后执行以下命令完成一键安装适配后，用户即可开始进行大模型训练相关事项。
 
 ```shell
-# 设置环境变量
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
-source /usr/local/Ascend/nnal/atb/set_env.sh
-
-# 安装MindSpeed加速库
-git clone https://gitee.com/ascend/MindSpeed.git
-cd MindSpeed
-git checkout master              # 以install_guide.md中的版本为准，此处仅做参考
-pip install -r requirements.txt
-pip3 install -e .
-cd ..
-
-# 准备MindSpeed-LLM及Megatron-LM源码
-git clone https://gitee.com/ascend/MindSpeed-LLM.git
-git clone https://github.com/NVIDIA/Megatron-LM.git  # megatron从github下载，请确保网络能访问
-cd Megatron-LM
-git checkout core_r0.8.0         # 以install_guide.md中的版本为准，此处仅做参考
-cp -r megatron ../MindSpeed-LLM/
-cd ../MindSpeed-LLM
-git checkout master              # 以install_guide.md中的版本为准，此处仅做参考
-
-pip install -r requirements.txt  # 安装其余依赖库
+cd MindSpeed-Core-MS
+source auto_convert_llm.sh
+cd MindSpeed-LLM
 ```
 
 # 2 开源模型权重获取
@@ -124,9 +97,9 @@ sha256sum model-00002-of-00004.safetensors
 sha256sum model-00003-of-00004.safetensors
 sha256sum model-00004-of-00004.safetensors
 ```
-![img.png](../sources/images/quick_start/sha256.png)
+![img.png](../../sources/images/quick_start/sha256.png)
 
-![img_1.png](../sources/images/quick_start/sha256_hf.png)
+![img_1.png](../../sources/images/quick_start/sha256_hf.png)
 
 # 3 启动预训练
 
@@ -147,7 +120,7 @@ sha256sum model-00004-of-00004.safetensors
 cd MindSpeed-LLM
 
 # 请先根据如下指导完成脚本修改配置
-bash examples/mcore/qwen25/ckpt_convert_qwen25_hf2mcore.sh
+bash examples/mindspore/qwen25/ckpt_convert_qwen25_hf2mcore.sh
 ```
 
 如下为调整后的hf2mcore权重转换示例脚本
@@ -186,11 +159,24 @@ python convert_ckpt.py \
 | `--model-type-hf`                 | huggingface模型类别，默认为llama2                                  |   |
 | `--params-dtype`                 | 指定权重转换后的权重精度模式，默认为fp16，如果源文件格式为bf16，则需要设置为bf16 | ✅  |
 
-- 注意：对该qwen2.5-7b模型，此处推荐的切分配置是tp1pp4，对应上述配置。
+**注意**
+- 对该qwen2.5-7b模型，此处推荐的切分配置是tp1pp4，对应上述配置。
+- 当前尚不支持QLoRA权重量化转换，【--qlora-nf4】参数仅可置为False。
+- MindSpore 后端默认在Device侧进行权重转换，在模型较大时存在OOM风险，因此建议用户手动修改`convert_ckpt.py`，在包导入时加入如下代码设置CPU侧执行权重转换：
+
+```python
+import mindspore as ms
+ms.set_context(device_target="CPU", pynative_synchronize=True)
+import torch
+torch.configs.set_pyboost(False)
+```
+
+- MindSpore 后端转换出的模型权重无法直接用于 Torch后端训练或推理。
+
 
 ## 3.2 预训练数据集处理
 
-通过对各种格式的数据做提前预处理，避免原始数据的反复处理加载，将所有的数据都统一存储到为.bin和.idx两个文件中，详见[预训练数据处理](./pytorch/solutions/pretrain/pretrain_dataset.md)
+通过对各种格式的数据做提前预处理，避免原始数据的反复处理加载，将所有的数据都统一存储到为.bin和.idx两个文件中，详见[预训练数据处理](./pytorch/solutions/pretrain/pretrain_dataset.md)。
 
 常用的预训练数据集包括alpaca、enwiki、c4等，链接中提供了数据集下载地址。
 
@@ -207,7 +193,7 @@ cd ..
 
 # 使用仓库提供的数据处理脚本，获取预训练数据集。
 # 请根据如下指导完成脚本修改配置
-bash examples/mcore/qwen25/data_convert_qwen25_pretrain.sh
+bash examples/mindspore/qwen25/data_convert_qwen25_pretrain.sh
 ```
 data_convert_qwen25_pretrain.sh中的配置需做如下修改：
 ```shell
@@ -215,12 +201,12 @@ data_convert_qwen25_pretrain.sh中的配置需做如下修改：
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
 
 python ./preprocess_data.py \
-	--input ./dataset/train-00000-of-00001-a09b74b3ef9c3b56.parquet \
-	--tokenizer-name-or-path ./model_from_hf/qwen2.5-7b-hf/ \         # 注意此处路径是否一致
-	--output-prefix ./dataset/alpaca \                                # 预训练数据集会生成alpaca_text_document.bin和.idx
-	--tokenizer-type PretrainedFromHF \
-	--workers 4 \
-	--log-interval 1000
+    --input ./dataset/train-00000-of-00001-a09b74b3ef9c3b56.parquet \
+    --tokenizer-name-or-path ./model_from_hf/qwen2.5-7b-hf/ \         # 注意此处路径是否一致
+    --output-prefix ./dataset/alpaca \                                # 预训练数据集会生成alpaca_text_document.bin和.idx
+    --tokenizer-type PretrainedFromHF \
+    --workers 4 \
+    --log-interval 1000
 ```
 
 参数解析
@@ -244,7 +230,7 @@ python ./preprocess_data.py \
 
  ```shell
 # 打开示例脚本
-vi examples/mcore/qwen25/pretrain_qwen25_7b_32k_ptd.sh
+vi examples/mindspore/qwen25/pretrain_qwen25_7b_32k_ms.sh
 
 # 单机配置如下
 NPUS_PER_NODE=8           # 使用单节点的8卡NPU
@@ -272,12 +258,12 @@ GBS=64              # 设置global-batch-size为64
 ```shell
 # 初始化环境变量
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
-source /usr/local/Ascend/nnal/atb/set_env.sh
+source /usr/local/Ascend/nnal/atb/set_env.sh cxx_abi=0
 
 # 启动预训练脚本
-bash examples/mcore/qwen25/pretrain_qwen25_7b_32k_ptd.sh
+bash examples/mindspore/qwen25/pretrain_qwen25_7b_32k_ms.sh
 ```
-![img_2.png](../sources/images/quick_start/running_log.png)
+![img_2.png](../../sources/images/quick_start/running_log.png)
 
 脚本中特性包含训练参数也包含优化特性，如下部分参数解释
 
@@ -299,7 +285,7 @@ bash examples/mcore/qwen25/pretrain_qwen25_7b_32k_ptd.sh
 #### 配置预训练参数
 
  ```shell
-# vi examples/mcore/qwen25/pretrain_qwen25_7b_32k_ptd.sh 打开示例脚本
+# vi examples/mindspore/qwen25/pretrain_qwen25_7b_32k_ms.sh 打开示例脚本
 
 # 单机配置如下
 NPUS_PER_NODE=8           # 同单机
@@ -324,28 +310,28 @@ TOKENIZER_PATH="./model_from_hf/qwen2.5-7b-hf/"
 
 # 附录
 ## 常见问题
-- **问题1：训练日志显示"Checkpoint path not found"？**  
+**问题1：训练日志显示"Checkpoint path not found"？**  
   → 检查`CKPT_LOAD_DIR`是否指向正确的权重转换后路径，确认文件夹内包含`.ckpt`或`.bin`文件。
 
-![img_1.png](../sources/images/quick_start/img_1.png)
+![img_1.png](../../sources/images/quick_start/img_1.png)
 
 **问题2：显示数据集加载out of range？**  
   → 微调脚本，没有读取到数据集，请检查DATA_PATH是否符合上面示例的规范。
 
-![img_3.png](../sources/images/quick_start/img_3.png)
+![img_3.png](../../sources/images/quick_start/img_3.png)
  
-- **问题3：训练脚本拉起失败？**  
+**问题3：训练脚本拉起失败？**  
   → 检查有无source，检查是否有进程残留，未清理干净。
 
-- **问题4：没有生成运行日志文件？**  
+**问题4：没有生成运行日志文件？**  
   → 需要自行创建logs文件夹。
 
-![img_2.png](../sources/images/quick_start/img_2.png)
+![img_2.png](../../sources/images/quick_start/img_2.png)
 
 ## 加入昇腾开发者生态
 
 - 🌐 **社区资源**：访问[昇腾开源社区](https://gitee.com/ascend)获取最新模型支持
-- 📈 **性能优化**：参考[MindSpeed Profiling](pytorch/features/profiling.md)分析瓶颈
+- 📈 **性能优化**：参考[MindSpeed Profiling](../pytorch/features/profiling.md)分析瓶颈
 - 💡 **定制需求**：通过`model_cfg.json`扩展自定义模型
 
 ---

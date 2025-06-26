@@ -239,6 +239,50 @@ MindSpore后端仅支持以mcore方式实现的稠密模型，对Legacy方式实
       <td>支持中</td>
     </tr>
     <tr>
+      <td rowspan="6"> <a href="https://huggingface.co/collections/Qwen/qwen3-67dd247413f0e2e4f653967f">Qwen3</a> </td>
+      <td><a href="https://huggingface.co/Qwen/Qwen3-0.6B-Base">0.6B</a></td>
+      <td rowspan="6"><a href="../../../examples/mindspore/qwen3">qwen3</a></td>
+      <td> 4K </td>
+      <th> Mcore </th>
+      <td> 1x8 </td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td><a href="https://huggingface.co/Qwen/Qwen3-1.7B-Base">1.7B</a></td>
+      <td> 4K </td>
+      <th> Mcore </th>
+      <td> 1x8 </td>
+      <td>支持中</td>
+    </tr>
+    <tr>
+      <td><a href="https://huggingface.co/Qwen/Qwen3-4B-Base">4B</a></td>
+      <td> 4K </td>
+      <th> Mcore </th>
+      <td> 1x8 </td>
+      <td>支持中</td>
+    </tr>
+    <tr>
+      <td><a href="https://huggingface.co/Qwen/Qwen3-8B-Base">8B</a></td>
+      <td> 4K </td>
+      <th> Mcore </th>
+      <td> 1x8 </td>
+      <td>支持中</td>
+    </tr>
+    <tr>
+      <td><a href="https://huggingface.co/Qwen/Qwen3-14B-Base">14B</a></td>
+      <td> 4K </td>
+      <th> Mcore </th>
+      <td> 1x8 </td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td><a href="https://huggingface.co/Qwen/Qwen3-32B">32B</a></td>
+      <td> 4K </td>
+      <th> Mcore </th>
+      <td> 2x8 </td>
+      <td>✅</td>
+    </tr>
+    <tr>
       <td rowspan="1"><a href="https://github.com/OpenBMB/MiniCPM">MiniCPM</a></td>
       <td> <a href="https://huggingface.co/openbmb/MiniCPM-2B-sft-bf16/tree/main">2B</a> </td>
       <td rowspan="1"><a href="../../../examples/mindspore/minicpm">minicpm</a></td>
