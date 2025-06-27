@@ -222,7 +222,7 @@ def _add_cp_args(parser):
                        help='Degree of context parallelism.')
     group.add_argument('--context-parallel-algo', type=str, default='ulysses_cp_algo',
                        choices=['ulysses_cp_algo', 'megatron_cp_algo', 'hybrid_cp_algo', 'adaptive_cp_algo',
-                                'hybrid_adaptive_cp_algo'], help='context parallel algorithm')
+                                'hybrid_adaptive_cp_algo', 'mamba_cp_algo'], help='context parallel algorithm')
     group.add_argument('--ulysses-degree-in-cp', type=int, default=None)
     group.add_argument('--attention-mask-type', type=str, default='causal',
                        choices=['causal', 'general'], help='context parallel attention mask type')
@@ -303,7 +303,7 @@ def _validate_cp_args(args):
     if not args.use_mcore_models:
         raise AssertionError(f"Context parallel is only supported in Mcore.")
 
-    if args.context_parallel_algo == 'ulysses_cp_algo':
+    if args.context_parallel_algo == 'ulysses_cp_algo' or args.context_parallel_algo == 'mamba_cp_algo':
         assert args.seq_length % args.context_parallel_size == 0, f"sequence length must be divisible by context_parallel_size"
         _check_attention_head(args, args.context_parallel_size)
 

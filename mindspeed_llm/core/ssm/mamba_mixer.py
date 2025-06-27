@@ -1,3 +1,4 @@
+# Copyright (c) 2025, HUAWEI CORPORATION.  All rights reserved.
 import math
 from copy import deepcopy
 from dataclasses import dataclass
@@ -9,7 +10,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch_npu
 from megatron.training import get_args
+from megatron.core import mpu
+
 from mindspeed_llm.tasks.models.ssm.state_space_duality import StateSpaceProcessor, ProcessInputs, StateOptions
+from mindspeed_llm.tasks.models.ssm.state_space_context_parallel import SequenceParallelConvFunction
 
 
 def mamba_mixer_init_wrapper(fn):
@@ -36,6 +40,10 @@ def mamba_mixer_forward(self, hidden_states, seqlen=None, seq_idx=None, cu_seqle
     hidden_states: (nL, B, D) / (L B D)
     Returns: same shape as hidden_states
     """
+    cp_size = mpu.get_context_parallel_world_size()
+    cp_rank = mpu.get_context_parallel_rank()
+    cp_group = mpu.get_context_parallel_group()
+
     seqlen_og = seqlen
     if seqlen is None:
         seqlen, batch, dim = hidden_states.shape
@@ -75,27 +83,43 @@ def mamba_mixer_forward(self, hidden_states, seqlen=None, seq_idx=None, cu_seqle
         ],
         dim=-1,
     )
+    if cp_size > 1:
+        xBC, dt = SequenceParallelConvFunction.apply(
+            xBC,      # Input xBC for current rank
+            dt,       # Input dt for current rank
+            self.conv1d.weight,
+            self.conv1d.bias,
+            self.dt_bias,
+            cp_group,
+            cp_size,
+            cp_rank,
+            self.d_conv,         # kernel_size
+            self.nheads_local,
+            self.d_inner_local,  # For splitting xBC_processed later
+            self.d_state,        # For splitting xBC_processed later
+            self.ngroups_local   # For splitting xBC_processed later
+        )
+    else:
+        # transpose: b l pd --> b pd l
+        xBC = rearrange(xBC, "b l d -> b d l").contiguous()
 
-    # transpose: b l pd --> b pd l
-    xBC = rearrange(xBC, "b l d -> b d l").contiguous()
+        # Compute short convolution
+        if conv_state is not None:
+            if cu_seqlens:
+                raise('Variable length inputs in convolution are not currently supported')
+            # If we just take x[:, :, -self.d_conv :], it will error if seqlen < self.d_conv
+            # Instead F.pad will pad with zeros if seqlen < self.d_conv, and truncate otherwise.
+            conv_state.copy_(
+                F.pad(xBC, (self.d_conv - xBC.shape[-1], 0))
+            )  # Update state (B D W)
 
-    # Compute short convolution
-    if conv_state is not None:
-        if cu_seqlens:
+        seqlen = xBC.size(2)
+        if seq_idx:
             raise('Variable length inputs in convolution are not currently supported')
-        # If we just take x[:, :, -self.d_conv :], it will error if seqlen < self.d_conv
-        # Instead F.pad will pad with zeros if seqlen < self.d_conv, and truncate otherwise.
-        conv_state.copy_(
-            F.pad(xBC, (self.d_conv - xBC.shape[-1], 0))
-        )  # Update state (B D W)
+        xBC = self.act(self.conv1d(xBC)[..., :seqlen])
 
-    seqlen = xBC.size(2)
-    if seq_idx:
-        raise('Variable length inputs in convolution are not currently supported')    
-    xBC = self.act(self.conv1d(xBC)[..., :seqlen])
-
-    # transpose b pd l --> b l pd
-    xBC = rearrange(xBC, "b d l ->  b l d").contiguous()
+        # transpose b pd l --> b l pd
+        xBC = rearrange(xBC, "b d l ->  b l d").contiguous()
 
     x, B, C = torch.split(
         xBC,

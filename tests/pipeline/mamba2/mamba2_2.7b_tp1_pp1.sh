@@ -28,6 +28,8 @@ TOKENIZER_PATH="/data/mamba2-hf/mamba2_2.7b_from_8b.model"
 
 TP=1
 PP=1
+CP=2
+CP_TYPE="mamba_cp_algo"
 NUM_LAYERS=64
 SEQ_LEN=4096
 MBS=1
@@ -42,6 +44,8 @@ MAMBA_ARGS="
     --use-mcore-models \
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \
+    --context-parallel-size ${CP} \
+    --context-parallel-algo  ${CP_TYPE} \
     --sequence-parallel \
     --num-layers ${NUM_LAYERS} \
     --group-query-attention \

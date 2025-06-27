@@ -716,7 +716,7 @@ def get_batch_on_this_cp_rank(batch):
             batch = _get_batch_on_this_tp_y_cp_rank_in_megatron_cp(batch)
         else:
             batch = _get_batch_on_this_cp_rank_in_megatron_cp(batch)
-    elif args.context_parallel_algo == 'ulysses_cp_algo':
+    elif args.context_parallel_algo == 'ulysses_cp_algo' or args.context_parallel_algo == 'mamba_cp_algo':
         batch = _get_batch_on_this_cp_rank_in_ulysses_cp(batch)
     elif args.context_parallel_algo == 'hybrid_cp_algo':
         if args.cp_attention_mask_type == 'general':
