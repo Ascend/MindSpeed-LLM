@@ -58,6 +58,9 @@ class MindSporeAdaptation(MegatronAdaptationABC):
                                 groupedmlp_init_wrapper)
         MindSporeAdaptation.register('megatron.core.transformer.moe.moe_layer.MoELayer.forward', moe_layer_forward)
 
+        from mindspeed.mindspore.core.transformer.transformer_block import NoopTransformerLayer
+        MindSporeAdaptation.register('mindspeed.core.transformer.transformer_block.NoopTransformerLayer', NoopTransformerLayer)
+
         if args.moe_permutation_async_comm:
             if args.moe_token_dispatcher_type == 'alltoall':
                 if args.moe_alltoall_overlap_comm:
