@@ -53,10 +53,10 @@ class MindSporeAdaptation(MegatronAdaptationABC):
         MindSporeAdaptation.register('megatron.core.models.gpt.gpt_model.GPTModel', GPTModel)
         MindSporeAdaptation.register('megatron.core.distributed.distributed_data_parallel.DistributedDataParallel.__init__',
                     distributed_data_parallel_init_with_cp)
+        from megatron.core.transformer.moe.moe_layer import MoELayer
+        clear_wrapper('megatron.core.transformer.moe.moe_layer.MoELayer.__init__', MoELayer.__init__)
         MindSporeAdaptation.register('megatron.core.transformer.moe.moe_layer.MoELayer.__init__',
                                 moe_layer_init_wrapper)
-        MindSporeAdaptation.register('megatron.core.transformer.moe.experts.GroupedMLP.__init__',
-                                groupedmlp_init_wrapper)
         MindSporeAdaptation.register('megatron.core.transformer.moe.moe_layer.MoELayer.forward', moe_layer_forward)
 
         from .core.transformer.moe.moe_utils import unpermute
@@ -172,6 +172,8 @@ class MindSporeAdaptation(MegatronAdaptationABC):
         MindSporeAdaptation.register('megatron.core.transformer.moe.router.TopKRouter.gating', topk_router_gating_func)
 
         from mindspeed.mindspore.core.transformer.transformer import core_mlp_forward_wrapper
+        from megatron.core.transformer.mlp import MLP
+        clear_wrapper('megatron.core.transformer.mlp.MLP.forward', MLP.forward)
         MindSporeAdaptation.register('megatron.core.transformer.mlp.MLP.forward',
             core_mlp_forward_wrapper)
 
