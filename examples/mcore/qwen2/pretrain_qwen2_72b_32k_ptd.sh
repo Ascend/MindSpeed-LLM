@@ -84,6 +84,8 @@ GPT_ARGS="
     --bf16 \
     --group-query-attention \
     --num-query-groups 8 \
+    --manual-gc \
+    --manual-gc-interval 100 \
     --use-distributed-optimizer \
     --overlap-grad-reduce \
     --exit-on-missing-checkpoint \

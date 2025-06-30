@@ -7,8 +7,8 @@
 下载[驱动固件](https://www.hiascend.com/hardware/firmware-drivers/community?product=4&model=26&cann=8.0.RC3.beta1&driver=1.0.27.alpha)，请根据系统和硬件产品型号选择对应版本的`driver`和`firmware`。参考[安装NPU驱动固件](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/80RC3alpha003/softwareinst/instg/instg_0005.html?Mode=PmIns&OS=Ubuntu&Software=cannToolKit)或执行以下命令安装：
 
 ```shell
-bash Ascend-hdk-910b-npu-firmware_7.5.0.1.129.run --full
 bash Ascend-hdk-910b-npu-driver_24.1.rc3_linux-aarch64.run --full --force
+bash Ascend-hdk-910b-npu-firmware_7.5.0.1.129.run --full
 ```
 
 ### CANN安装
