@@ -117,6 +117,9 @@ def main():
 
         logger.info("Waiting for saver to complete...")
         saver_proc.join()
+        if saver_proc.exitcode is not None and saver_proc.exitcode != 0:
+            logger.error(f"saver process exited with error code {saver_proc.exitcode}")
+            sys.exit(saver_proc.exitcode)
 
 
 if __name__ == '__main__':
