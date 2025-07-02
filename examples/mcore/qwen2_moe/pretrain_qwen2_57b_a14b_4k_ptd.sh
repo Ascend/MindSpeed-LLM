@@ -48,7 +48,7 @@ MOE_ARGS="
 "
 
 OPTIMIZE_ARGS="
-
+    --swap-attention \
     --use-flash-attn \
     --use-fused-rotary-pos-emb \
     --use-rotary-position-embeddings \
