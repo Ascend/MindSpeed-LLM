@@ -257,7 +257,7 @@ class MindSporeAdaptation(MegatronAdaptationABC):
             MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.overlap_funcs.fwd.transformer_layer_forward_noop',
                                 transformer_layer_forward_noop)
 
-            from mindspeed.mindspore.core.pipeline_parallel.fb_overlap.overlap_funcs.fwdbwd import transformer_layer_forward_dense_backward_moe_overlaping,\
+            from mindspeed.mindspore.core.pipeline_parallel.fb_overlap.overlap_funcs.fwdbwd import transformer_layer_forward_dense_backward_moe_overlaping, \
                     transformer_layer_forward_moe_backward_dense_overlaping, transformer_layer_forward_dense_backward_dense_overlaping, transformer_layer_forward_moe_backward_moe_overlaping
             MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.overlap_funcs.fwdbwd.transformer_layer_forward_dense_backward_moe_overlaping',
                                 transformer_layer_forward_dense_backward_moe_overlaping)

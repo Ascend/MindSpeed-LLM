@@ -137,7 +137,10 @@ def forward_step(
                     output_tensor /= num_microbatches
             else:
                 # preserve legacy loss averaging behavior (ie, over the number of microbatches)
-                assert len(outputs) == 2
+                if len(outputs) != 2:
+                    raise ValueError(
+                        f"Expected outputs to have length 2 in pipeline last stage, got {len(outputs)}"
+                    )
                 output_tensor, loss_reduced = outputs
                 output_tensor /= num_microbatches
             forward_data_store.append(loss_reduced)

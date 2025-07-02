@@ -2,6 +2,7 @@
 # Copyright (c) 2025, Huawei Technologies Co., Ltd.  All rights reserved.
 
 """General utilities."""
+import logging
 from itertools import takewhile
 import torch
 import numpy as np
@@ -13,8 +14,8 @@ from mindspeed_llm.training.utils import (get_sharedmem_mgr, BASE_SHM_NAME, comp
 
 try:
     from mindspeed.core.pipeline_parallel.dualpipev.dualpipev_schedules import get_post_process_flag
-except Exception:
-    pass
+except ImportError as e:
+    logging.warning(f"Import failed: {e}")
 
 
 def _compute_actual_seq_len(origin_seq):
