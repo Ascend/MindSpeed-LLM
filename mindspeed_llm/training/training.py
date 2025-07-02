@@ -17,7 +17,7 @@
 import gc
 import sys
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from functools import wraps
 
 import time
@@ -885,7 +885,7 @@ def training_log(loss_dict, total_loss_dict, learning_rate, decoupled_learning_r
             if wandb_writer:
                 wandb_writer.log({'iteration-time': elapsed_time_per_iteration},
                                  iteration)
-        log_string = f" [{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]"
+        log_string = f" [{datetime.now(tz=timezone.utc).strftime('%Y-%m-%d %H:%M:%S')}]"
         log_string += ' iteration {:8d}/{:8d} |'.format(
             iteration, args.train_iters)
         log_string += ' consumed samples: {:12d} |'.format(

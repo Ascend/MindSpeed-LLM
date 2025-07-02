@@ -4,29 +4,29 @@
 import os
 from functools import partial
 from typing import List, Optional
-
 import torch
+
 from mindspeed_llm import megatron_adaptor
-from megatron.training import get_args
-from megatron.training import print_rank_0
-from megatron.training import get_timers
-from megatron.training import get_tokenizer
-from megatron.core import mpu
 from megatron.core.enums import ModelType
+from megatron.core.models.mamba import MambaModel
+from megatron.core.transformer import TransformerConfig
+from megatron.core.transformer.spec_utils import import_module
 from megatron.core.datasets.blended_megatron_dataset_builder import BlendedMegatronDatasetBuilder
 from megatron.core.datasets.gpt_dataset import GPTDatasetConfig
 from megatron.core.datasets.gpt_dataset import MockGPTDataset, GPTDataset
 from megatron.core.datasets.utils import get_blend_from_list
-from megatron.core.models.mamba import MambaModel
 from megatron.core.utils import StragglerDetector
-from megatron.core.transformer import TransformerConfig
-from megatron.core.transformer.spec_utils import import_module
+from megatron.training import get_args
+from megatron.training import print_rank_0
+from megatron.training import get_timers
+from megatron.training import get_tokenizer
 from megatron.training.utils import (
     get_batch_on_this_cp_rank,
     get_batch_on_this_tp_rank,
     average_losses_across_data_parallel_group,
 )
 from megatron.training.arguments import core_transformer_config_from_args
+from megatron.core import mpu
 from mindspeed_llm.training import pretrain
 from mindspeed_llm.training.utils import generate_actual_seq_len
 
@@ -64,7 +64,7 @@ def model_provider(pre_process=True, post_process=True) -> MambaModel:
     if args.spec is not None:
         mamba_stack_spec = import_module(args.spec)
     else:
-        raise("You must provide a valid Mamba layer spec!")
+        raise "You must provide a valid Mamba layer spec!"
 
     model = MambaModel(
         config=config,
@@ -105,11 +105,11 @@ def get_batch(data_iterator):
     batch, actual_seq_len = get_batch_on_this_tp_rank(data_iterator)
     args = get_args()
     if args.return_document_ids and all(
-    rank == 0 for rank in (
-        mpu.get_context_parallel_rank(),
-        mpu.get_tensor_model_parallel_rank(),
-        mpu.get_pipeline_model_parallel_rank()
-    )
+        rank == 0 for rank in [
+            mpu.get_context_parallel_rank(),
+            mpu.get_tensor_model_parallel_rank(),
+            mpu.get_pipeline_model_parallel_rank()
+        ]
     ):
         print("current idx: {}, current rank: {}, data_parallel_rank: {}, document_ids: {}".format(batch['idx'], torch.distributed.get_rank(), mpu.get_data_parallel_rank(), batch['document_ids']))
         batch.pop('document_ids', None)

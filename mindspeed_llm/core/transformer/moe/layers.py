@@ -96,9 +96,9 @@ class SEColumnParallelLinear(megatron.core.tensor_parallel.ColumnParallelLinear)
                 )
 
         if self.config._cpu_offloading_context is not None:
-            if self.config._cpu_offloading_context.inside_context == True:
+            if self.config._cpu_offloading_context.inside_context:
                 assert (
-                    self.config.cpu_offloading == False
+                    not self.config.cpu_offloading
                 ), "CPU Offloading cannot be enabled while using non-TE modules"
 
         bias = self.bias if not self.skip_bias_add else None
@@ -197,9 +197,9 @@ class SERowParallelLinear(megatron.core.tensor_parallel.RowParallelLinear):
         """
 
         if self.config._cpu_offloading_context is not None:
-            if self.config._cpu_offloading_context.inside_context == True:
+            if self.config._cpu_offloading_context.inside_context:
                 assert (
-                    self.config.cpu_offloading == False
+                    not self.config.cpu_offloading
                 ), "CPU Offloading cannot be enabled while using non-TE modules"
 
         # Set up backprop all-reduce.

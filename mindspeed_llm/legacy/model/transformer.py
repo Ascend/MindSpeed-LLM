@@ -486,16 +486,16 @@ class FlashSelfAttention(torch.nn.Module):
             if q.shape[1] == 1 and q.shape[1] != seq_length:
                 output = torch_npu.npu_incre_flash_attention( \
                     q, k, v, \
-                    num_heads=head_num, 
+                    num_heads=head_num,
                     input_layout="BSH", \
                     pse_shift=pse, \
                     padding_mask=None, \
-                    scale_value=scale, 
+                    scale_value=scale,
                 )
             else:
                 output = torch_npu.npu_prompt_flash_attention( \
                     q, k, v, \
-                    num_heads=head_num, 
+                    num_heads=head_num,
                     input_layout="BSH", \
                     pse_shift=pse, \
                     sparse_mode=sparse_mode, \
@@ -519,7 +519,7 @@ class FlashSelfAttention(torch.nn.Module):
                 keep_prob=1 - self.dropout_p, \
                 inner_precise=0
             )[0]
-        
+
         return output
 
 
@@ -760,7 +760,7 @@ def ParallelAttentionForward(self, hidden_states, attention_mask,
                 # In inference, we compute one token at a time.
                 # Select the correct positional embedding
                 # (only the last token in the sequence)
-                q_pos_emb = q_pos_emb[sequence_end - 1 : sequence_end]
+                q_pos_emb = q_pos_emb[sequence_end - 1: sequence_end]
             else:
                 # In the first forward pass of inference,
                 # we use the entire provided prefix.

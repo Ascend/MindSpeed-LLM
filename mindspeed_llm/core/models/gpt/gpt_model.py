@@ -33,6 +33,8 @@ from megatron.core.transformer.enums import ModelType
 from megatron.core.transformer.transformer_block import TransformerBlock
 from megatron.training import get_args
 
+from mindspeed.utils import get_actual_seq_len, compute_qkv_index, get_position_ids
+
 from mindspeed_llm.core.tensor_parallel.layers import SegmentedColumnParallelLinear
 from mindspeed_llm.training.utils import tensor_slide
 from mindspeed_llm.core.transformer.multi_token_prediction import (
@@ -40,7 +42,6 @@ from mindspeed_llm.core.transformer.multi_token_prediction import (
     tie_output_layer_state_dict,
     tie_word_embeddings_state_dict,
 )
-from mindspeed.utils import get_actual_seq_len, compute_qkv_index, get_position_ids
 
 
 class GPTModel(MegatronCoreGPTModel):

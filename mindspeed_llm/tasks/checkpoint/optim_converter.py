@@ -541,7 +541,7 @@ class OptimConverter(abc.ABC):
                 out_word_embed_list = self.set_optimizer_preprocess(src_data, dst_dict, 0)
 
             flag = False
-            if "qkv weight" in src_data[i].keys() :
+            if "qkv weight" in src_data[i].keys():
                 flag = True
 
             if flag: 

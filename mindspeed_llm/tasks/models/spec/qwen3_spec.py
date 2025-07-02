@@ -8,8 +8,8 @@ from megatron.core.transformer.spec_utils import ModuleSpec
 from megatron.core.models.gpt.gpt_layer_specs import _get_mlp_module_spec
 from megatron.training import get_args
 
-from mindspeed_llm.core.transformer.custom_layers.transformer_engine import PTNorm
 from megatron.core.transformer import ModuleSpec, TransformerLayer, TransformerLayerSubmodules
+from mindspeed_llm.core.transformer.custom_layers.transformer_engine import PTNorm
 
 args = get_args()
 num_experts, moe_grouped_gemm, qk_layernorm = args.num_experts, args.moe_grouped_gemm, args.qk_layernorm

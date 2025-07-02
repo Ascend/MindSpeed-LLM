@@ -18,6 +18,7 @@ import os
 import stat
 import random
 import warnings
+import logging
 from functools import wraps
 from typing import Optional, Union, List
 from itertools import takewhile
@@ -46,16 +47,20 @@ from mindspeed.model.transformer import set_attention_mask
 from mindspeed.utils import _get_batch_on_this_tp_y_cp_rank_in_megatron_cp
 from mindspeed_llm.tasks.dataset.shared_memory_manager import SharedMemoryManager
 
+logging.basicConfig(level=logging.ERROR, format='%(asctime)s - %(levelname)s - %(message)s')
+
 try:
     from mindspeed.core.pipeline_parallel.dualpipev.dualpipev_schedules import get_post_process_flag
-except Exception:
-    pass
+except Exception as e:
+    logging.error(f"Failed to import get_post_process_flag: {e}")
 
 try:
     _torch_version = PkgVersion(torch.__version__)
-except Exception:
-    # This is a WAR for building docs, where torch is not actually imported
+except Exception as e:
+    logging.error(f"Failed to get torch version: {e}")
+    # 这是一个特殊情况，用于构建文档时torch未被导入
     _torch_version = PkgVersion("0.0.0")
+    logging.warning("Using default torch version '0.0.0' for documentation build.")
     
 
 WRITE_FILE_DEFAULT_FLAGS = os.O_WRONLY | os.O_CREAT

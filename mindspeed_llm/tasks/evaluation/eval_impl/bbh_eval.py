@@ -169,7 +169,7 @@ class BBHEval(DatasetEval):
                         result_mapping = {value.strip(): key for key, value in re.findall(r'\(([A-Z])\)\s*([^\(\)]+)', instruction[-1][:answer_idx])} 
                 elif args.chain_of_thought:
                     instruction = bbh_template.get(subject_name)
-                    target_question = "Q: " + item['input']
+                    target_question = "Q: " + item['input']  # item['input'] is not path-info
                     instruction += target_question
                     instruction += "\nA: Let's think step by step."
                     instructions.append(instruction)

@@ -595,7 +595,7 @@ class AlpacaStyleProcessRewardHandler(BaseDatasetHandler):
 
         concatenated_ids = {
             "input_ids": [input_token],
-            "attention_mask":[attention_mask],
+            "attention_mask": [attention_mask],
             "labels": [label_token]
         }
 

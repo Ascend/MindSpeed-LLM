@@ -84,7 +84,7 @@ def mamba_mixer_forward(self, hidden_states, seqlen=None, seq_idx=None, cu_seqle
     # Compute short convolution
     if conv_state is not None:
         if cu_seqlens:
-            raise('Variable length inputs in convolution are not currently supported')
+            raise 'Variable length inputs in convolution are not currently supported'
         # If we just take x[:, :, -self.d_conv :], it will error if seqlen < self.d_conv
         # Instead F.pad will pad with zeros if seqlen < self.d_conv, and truncate otherwise.
         conv_state.copy_(
@@ -93,7 +93,7 @@ def mamba_mixer_forward(self, hidden_states, seqlen=None, seq_idx=None, cu_seqle
 
     seqlen = xBC.size(2)
     if seq_idx:
-        raise('Variable length inputs in convolution are not currently supported')    
+        raise 'Variable length inputs in convolution are not currently supported'
     xBC = self.act(self.conv1d(xBC)[..., :seqlen])
 
     # transpose b pd l --> b l pd

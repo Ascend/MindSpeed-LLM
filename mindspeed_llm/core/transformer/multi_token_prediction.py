@@ -697,7 +697,7 @@ class MultiTokenPredictionBlock(MegatronModule):
             loss_mask = torch.ones_like(labels)
 
         hidden_states_main_model = hidden_states
-        for layer_number in range(len(self.layers)):
+        for layer_number, _ in enumerate(self.layers):
             # Calc logits for the current Multi-Token Prediction (MTP) layers.
             input_ids, _ = roll_tensor(input_ids, shifts=-1, dims=-1)
             if args.reset_position_ids:

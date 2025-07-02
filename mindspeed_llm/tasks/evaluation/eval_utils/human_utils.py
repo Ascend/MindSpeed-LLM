@@ -70,7 +70,7 @@ def check_correctness(problem: Dict, completion: str, timeout: float,
 
             rmtree = shutil.rmtree
             rmdir = os.rmdir
-            chdir = os.chdir
+            os_chdir = os.chdir
 
             reliability_guard()
 
@@ -79,9 +79,8 @@ def check_correctness(problem: Dict, completion: str, timeout: float,
                 problem["test"] + "\n" +
                 f"check({problem['entry_point']})"
             )
-
+            exec_globals = {}
             try:
-                exec_globals = {}
                 with swallow_io():
                     with time_limit(timeout):
                         exec(check_program, exec_globals)
@@ -93,7 +92,7 @@ def check_correctness(problem: Dict, completion: str, timeout: float,
 
             shutil.rmtree = rmtree
             os.rmdir = rmdir
-            os.chdir = chdir
+            os.chdir = os_chdir
 
     manager = multiprocessing.Manager()
     result = manager.list()
@@ -211,7 +210,7 @@ def get_score(predictions, references, test_set, problem_set):
 
 def evaluate_functional_correctness(
     sample_file: str,
-    problem_file: dict,
+    problem_file: dict = None,
     k: List[int] = [1, 10, 100],
     n_workers: int = 4,
     timeout: float = 3.0,
@@ -259,7 +258,8 @@ def evaluate_functional_correctness(
     ks = k
     pass_at_k = {
         f"pass@{k}": estimate_pass_at_k(total, correct, k).mean()
-        for k in ks if (total >= k).all()
+        for k in ks
+        if (total >= k).all()
     }
 
     # Finally, save the results in one file:

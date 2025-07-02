@@ -409,8 +409,10 @@ def apply_seq_aux_loss(self, activation, logits, topk_idx):
     scores_for_aux = scores  # [s*b, n_global_experts]
     topk_idx_for_aux_loss = topk_idx.view(args.micro_batch_size, -1)  # [b, s*top_k]
     scores_for_seq_aux = scores_for_aux.view(args.micro_batch_size, seq_length, -1)
-    ce = torch.stack([torch.histc(x.to(torch.int32), bins=args.num_experts, min=0, max=args.num_experts) for x in
-                      topk_idx_for_aux_loss])
+    ce = torch.stack([
+        torch.histc(x.to(torch.int32), bins=args.num_experts, min=0, max=args.num_experts)
+        for x in topk_idx_for_aux_loss
+    ])
 
     num_sub_sequence = 1
     sequence_partition_group = parallel_state.get_context_parallel_group()
