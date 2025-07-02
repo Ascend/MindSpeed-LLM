@@ -19,7 +19,6 @@ from megatron.core.datasets.gpt_dataset import MockGPTDataset, GPTDataset
 from megatron.core.datasets.utils import get_blend_from_list
 import megatron.legacy.model
 from megatron.core.models.gpt import GPTModel
-from mindspeed_llm.core.models.gpt.gpt_layer_specs import get_gpt_mtp_block_spec
 from mindspeed_llm.training import pretrain
 from megatron.core.transformer.spec_utils import import_module
 from megatron.training.utils import (
@@ -32,6 +31,7 @@ from megatron.training.yaml_arguments import core_transformer_config_from_yaml
 from megatron.core.models.gpt.gpt_layer_specs import (
     get_gpt_layer_local_spec,
     get_gpt_layer_with_transformer_engine_spec,
+    get_gpt_mtp_block_spec,
 )
 from mindspeed_llm.training.utils import generate_actual_seq_len
 

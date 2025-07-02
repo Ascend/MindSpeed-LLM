@@ -9,11 +9,11 @@ from mindspeed_llm.features_manager.models.mamba import MambaModel
 from mindspeed_llm.features_manager.communication.coc import AscendCocFeature
 from mindspeed_llm.features_manager.communication.gloo import DisableGlooFeature
 from mindspeed_llm.features_manager.high_availability.high_availability import HighAvailabilityFeature
-
+from mindspeed_llm.features_manager.transformer.mtp import MultiTokenPredictionFeature
 
 FEATURES_LIST = [
     # MindSpeed Legacy Features
-    
+
     # MindSpeed Mcore Features
     UnalignedLinearFeature(),
     # MindSpeed-LLM Mcore Features
@@ -25,7 +25,8 @@ FEATURES_LIST = [
     MambaModel(),
     MOERouter(),
     AscendCocFeature(),
-    HighAvailabilityFeature()
+    HighAvailabilityFeature(),
+    MultiTokenPredictionFeature(),
 
     # MindSpeed-LLM Legacy Features
 ]

@@ -17,10 +17,10 @@ from megatron.core.transformer.spec_utils import import_module
 from megatron.core.models.gpt.gpt_layer_specs import (
     get_gpt_layer_local_spec,
     get_gpt_layer_with_transformer_engine_spec,
+    get_gpt_mtp_block_spec,
 )
 from megatron.core.models.gpt import GPTModel
 from megatron.training.checkpointing import save_checkpoint
-from mindspeed_llm.core.models.gpt.gpt_layer_specs import get_gpt_mtp_block_spec
 from mindspeed_llm.training import build_train_args
 from mindspeed_llm.training import train
 from mindspeed_llm.training.initialize import set_jit_fusion_options

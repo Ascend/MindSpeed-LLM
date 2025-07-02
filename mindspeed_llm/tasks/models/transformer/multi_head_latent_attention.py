@@ -233,13 +233,15 @@ class MultiHeadLatentAttention(SelfAttention):
         hidden_states,
         attention_mask,
         key_value_states=None,
-        inference_params=None,
         inference_context=None,
         rotary_pos_emb=None,
         rotary_pos_cos=None,
         rotary_pos_sin=None,
         attention_bias=None,
         packed_seq_params=None,
+        sequence_len_offset=None,
+        *,
+        inference_params=None,
     ):
         """
         Do patch for repeating KV so that GQA+Ulysses is better supported.

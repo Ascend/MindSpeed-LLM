@@ -216,11 +216,11 @@ def topk_softmax_with_capacity(
 
 def track_moe_metrics_wrapper(fn):
     @wraps(fn)
-    def wrapper(self, *args, **kwargs):
+    def wrapper(*args, **kwargs):
         _args = get_args()
         if _args.moe_router_load_balancing_type in ["none", "noaux_tc"] and not _args.seq_aux:
             return
-        fn(self, *args, **kwargs)
+        fn(*args, **kwargs)
 
     return wrapper
 

@@ -13,14 +13,13 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-from typing import Literal, Optional, Dict
+from typing import Literal, Optional
 from functools import wraps
 
 import torch
 from torch import Tensor
 
-from megatron.core import InferenceParams, tensor_parallel, parallel_state
-from megatron.core.dist_checkpointing.mapping import ShardedStateDict
+from megatron.core import InferenceParams, tensor_parallel
 from megatron.core.models.common.embeddings.language_model_embedding import LanguageModelEmbedding
 from megatron.core.models.common.embeddings.rotary_pos_embedding import RotaryEmbedding
 from megatron.core.models.common.language_module.language_module import LanguageModule
@@ -30,18 +29,14 @@ from megatron.core.transformer import build_module
 from megatron.core.transformer.custom_layers.transformer_engine import TENorm
 from megatron.core.transformer import TransformerConfig, ModuleSpec
 from megatron.core.transformer.enums import ModelType
+from megatron.core.transformer.multi_token_prediction import MultiTokenPredictionBlock
 from megatron.core.transformer.transformer_block import TransformerBlock
-from megatron.core.utils import WrappedTensor, deprecate_inference_params
+from megatron.core.utils import deprecate_inference_params
 from megatron.core.inference.contexts import BaseInferenceContext
 from megatron.training import get_args
 
 from mindspeed_llm.core.tensor_parallel.layers import SegmentedColumnParallelLinear
-from mindspeed_llm.training.utils import tensor_slide
-from mindspeed_llm.core.transformer.multi_token_prediction import (
-    MultiTokenPredictionBlock,
-    tie_output_layer_state_dict,
-    tie_word_embeddings_state_dict,
-)
+
 from mindspeed.utils import get_actual_seq_len, compute_qkv_index, get_position_ids
 
 
@@ -296,66 +291,13 @@ class GPTModel(MegatronCoreGPTModel):
         output weights set to True or when use Multi-Token Prediction (MTP) feature.
 
         Returns:
-            Tensor: During pre processing or MTP process it returns the input embeddings weight.
-            Otherwise, during post processing it returns the final output layers weight.
+            Tensor: When dualpipe is enabled, return the weights from dual_chunk, otherwise follow the original logic.
         """
         if not self.pre_process and self.post_process and get_args().schedules_method == 'dualpipev':
             from mindspeed.core.pipeline_parallel.dualpipev.dualpipev_schedules import \
                 get_shared_embedding_from_dual_chunk
             return get_shared_embedding_from_dual_chunk()
-        if self.pre_process or self.mtp_process:
-            # Multi-Token Prediction (MTP) need both embedding layer and output layer.
-            # So there will be both embedding layer and output layer in the mtp process stage.
-            # In this case, if share_embeddings_and_output_weights is True, the shared weights
-            # will be stored in embedding layer, and output layer will not have any weight.
-            assert hasattr(
-                self, 'embedding'
-            ), f"embedding is needed in this pipeline stage, but it is not initialized."
-            return self.embedding.word_embeddings.weight
-        elif self.post_process:
-            return self.output_layer.weight
-        return None
-
-    def sharded_state_dict(
-        self, prefix: str = '', sharded_offsets: tuple = (), metadata: Optional[Dict] = None
-    ) -> ShardedStateDict:
-        """Sharded state dict implementation for GPTModel backward-compatibility.
-        Removing extra state.
-        Tie word embeddings and output layer in mtp process stage.
-
-        Args:
-            prefix (str): Module name prefix.
-            sharded_offsets (tuple): PP related offsets, expected to be empty at this module level.
-            metadata (Optional[Dict]): metadata controlling sharded state dict creation.
-
-        Returns:
-            ShardedStateDict: sharded state dict for the GPTModel
-        """
-        sharded_state_dict = super().sharded_state_dict(prefix, sharded_offsets, metadata)
-        # Multi-Token Prediction (MTP) need both embedding layer and output layer in
-        # mtp process stage.
-        # If MTP is not placed in the pre processing stage, we need to maintain a copy of
-        # embedding layer in the mtp process stage and tie it to the embedding in the pre
-        # processing stage.
-        # Also, if MTP is not placed in the post processing stage, we need to maintain a copy
-        # of output layer in the mtp process stage and tie it to the output layer in the post
-        # processing stage.
-        if self.mtp_process and not self.pre_process:
-            emb_weight_key = f'{prefix}embedding.word_embeddings.weight'
-            emb_weight = self.embedding.word_embeddings.weight
-            tie_word_embeddings_state_dict(sharded_state_dict, emb_weight, emb_weight_key)
-        if self.mtp_process and not self.post_process:
-            # We only need to tie the output layer weight if share_embeddings_and_output_weights
-            # is False. Because if share_embeddings_and_output_weights is True, the shared weight
-            # will be stored in embedding layer, and output layer will not have any weight.
-            if not self.share_embeddings_and_output_weights:
-                output_layer_weight_key = f'{prefix}output_layer.weight'
-                output_layer_weight = self.output_layer.weight
-                tie_output_layer_state_dict(
-                    sharded_state_dict, output_layer_weight, output_layer_weight_key
-                )
-
-        return sharded_state_dict
+        return super().shared_embedding_or_output_weight()
 
 
 def gpt_forward_wrapper(fn):

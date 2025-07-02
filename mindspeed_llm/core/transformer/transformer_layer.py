@@ -14,6 +14,8 @@
 # limitations under the License.
 
 import math
+
+from megatron.core import tensor_parallel
 from megatron.core.transformer.transformer_layer import TransformerLayerSubmodules
 from megatron.core.utils import WrappedTensor, deprecate_inference_params
 from megatron.core.transformer.transformer_layer import TransformerLayer as MegatronTransformerLayer
@@ -56,78 +58,22 @@ class TransformerLayer(MegatronTransformerLayer):
             self.mtp_idx = 0
             self.self_attention.core_attention.mtp_idx = 0
 
-    def forward(self, hidden_states, attention_mask, context=None,
-                              context_mask=None,
-                              rotary_pos_emb=None,
-                              inference_params=None,
-                              attention_bias=None,
-                              inference_context=None,
-                              packed_seq_params=None):
-        
-        inference_context = deprecate_inference_params(inference_context, inference_params)
-        
-        # hidden_states: [s, b, h]
+    def _forward_mlp(self, pre_mlp_layernorm_output, residual):
         args = get_args()
-        # Residual connection.
-        residual = hidden_states
-
-        # Optional Input Layer norm
-        input_layernorm_output = self.input_layernorm(hidden_states)
-
-        if args.input_layernorm_in_fp32:
-            input_layernorm_output = input_layernorm_output.float()
-
-        # Self attention.
-        attention_output_with_bias = self.self_attention(
-            input_layernorm_output,
-            attention_mask=attention_mask,
-            inference_context=inference_context,
-            rotary_pos_emb=rotary_pos_emb,
-            packed_seq_params=packed_seq_params,
-        )
-
-        if args.scale_depth is not None:
-            attention_output, attention_bias = attention_output_with_bias
-            attention_output = attention_output * (args.scale_depth / math.sqrt(args.num_layers))
-            attention_output_with_bias = (attention_output, attention_bias)
-
-        # inside the module provided in the `bias_dropout_add_spec` module?
-        with self.bias_dropout_add_exec_handler():
-            hidden_states = self.self_attn_bda(self.training, self.config.bias_dropout_fusion)(
-                attention_output_with_bias, residual, self.hidden_dropout
-            )
-
-        # Residual connection.
-        residual = hidden_states
-
-        # Optional Layer norm after self-attention
-        pre_cross_attn_layernorm_output = self.pre_cross_attn_layernorm(hidden_states)
-
-        # Cross attention.
-        attention_output_with_bias = self.cross_attention(
-            pre_cross_attn_layernorm_output,
-            attention_mask=context_mask,
-            key_value_states=context,
-            inference_context=inference_context,
-        )
-
-        if isinstance(attention_output_with_bias, dict) and "context" in attention_output_with_bias:
-            context = attention_output_with_bias["context"]
-
-        # inside the module provided in the `bias_dropout_add_spec` module?
-        with self.bias_dropout_add_exec_handler():
-            hidden_states = self.cross_attn_bda(self.training, self.config.bias_dropout_fusion)(
-                attention_output_with_bias, residual, self.hidden_dropout
-            )
-
-        # Residual connection.
-        residual = hidden_states
-
-        # Optional Layer norm post the cross-attention.
-        pre_mlp_layernorm_output = self.pre_mlp_layernorm(hidden_states)
-
         # MLP.
-        mlp_output_with_bias = self.mlp(pre_mlp_layernorm_output)
+        if self.recompute_mlp:
+            mlp_output_with_bias = tensor_parallel.checkpoint(
+                self.mlp, False, pre_mlp_layernorm_output
+            )
+        else:
+            mlp_output_with_bias = self.mlp(pre_mlp_layernorm_output)
+
+        if self.recompute_pre_mlp_layernorm:
+            # discard the output of the pre-mlp layernorm and register the recompute
+            # as a gradient hook of mlp_output_with_bias[0]
+            self.pre_mlp_norm_checkpoint.discard_output_and_register_recompute(
+                mlp_output_with_bias[0]
+            )
 
         if args.scale_depth is not None:
             mlp_output, mlp_bias = mlp_output_with_bias
@@ -150,4 +96,4 @@ class TransformerLayer(MegatronTransformerLayer):
             inp=hidden_states, requires_grad=hidden_states.requires_grad, keep_graph=True
         )
 
-        return output, context
+        return output

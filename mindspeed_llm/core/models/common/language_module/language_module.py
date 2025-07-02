@@ -1,4 +1,5 @@
 # Copyright (c) Huawei Technologies Co., Ltd. 2025. All rights reserved.
+# Copyright (c) 2024, NVIDIA CORPORATION.  All rights reserved.
 import logging
 
 import torch
@@ -86,57 +87,3 @@ def setup_embeddings_and_output_layer(self) -> None:
             "something is definitely wrong."
         )
         LanguageModule.embedding_warning_printed = True
-
-
-def tie_embeddings_and_output_weights_state_dict(
-    self,
-    sharded_state_dict: ShardedStateDict,
-    output_layer_weight_key: str,
-    first_stage_word_emb_key: str,
-) -> None:
-    """Ties the embedding and output weights in a given sharded state dict.
-
-    Args:
-        sharded_state_dict (ShardedStateDict): state dict with the weight to tie
-        output_layer_weight_key (str): key of the output layer weight in the state dict.
-            This entry will be replaced with a tied version
-        first_stage_word_emb_key (str): this must be the same as the
-            ShardedTensor.key of the first stage word embeddings.
-
-    Returns: None, acts in-place
-    """
-    if not self.post_process:
-        # No output layer
-        if output_layer_weight_key in sharded_state_dict or not sharded_state_dict.keys():
-            raise AssertionError("Sharded state dict incorrectly initialized.")
-        return
-
-    if self.pre_process:
-        # Output layer is equivalent to the embedding already
-        return
-
-    # If use Multi-Token Prediction (MTP), we need maintain both embedding layer and output
-    # layer in mtp process stage. In this case, if share_embeddings_and_output_weights is True,
-    # the shared weights will be stored in embedding layer, and output layer will not have
-    # any weight.
-    if getattr(self, 'mtp_process', False):
-        # No output layer
-        if output_layer_weight_key in sharded_state_dict or not sharded_state_dict.keys():
-            raise AssertionError("Sharded state dict incorrectly initialized.")
-        return
-
-    # Replace the default output layer with a one sharing the weights with the embedding
-    del sharded_state_dict[output_layer_weight_key]
-    tensor = self.shared_embedding_or_output_weight()
-    last_stage_word_emb_replica_id = (
-        1,  # copy of first stage embedding
-        0,
-        parallel_state.get_data_parallel_rank(with_context_parallel=True),
-    )
-
-    sharded_state_dict[output_layer_weight_key] = make_tp_sharded_tensor_for_checkpoint(
-        tensor=tensor,
-        key=first_stage_word_emb_key,
-        replica_id=last_stage_word_emb_replica_id,
-        allow_shape_mismatch=True,
-    )
