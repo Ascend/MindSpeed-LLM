@@ -28,10 +28,10 @@ try:
         TEDelayedScaling,
         TENorm,
     )
-
-    HAVE_TE = True
 except ImportError:
     HAVE_TE = False
+else:
+    HAVE_TE = True
 
 
 def mtp_overlap_backward(ctx, *args):

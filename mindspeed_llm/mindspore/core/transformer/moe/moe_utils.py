@@ -16,7 +16,12 @@ def unpermute(
             permuted_tokens, sorted_indices, probs, restore_shape=restore_shape
         )
 
-    assert sorted_indices.numel() == permuted_tokens.size(0)
+    if sorted_indices.numel() != permuted_tokens.size(0):
+        raise ValueError(
+            f"sorted_indices.numel() ({sorted_indices.numel()}) "
+            f"must match permuted_tokens.size(0) ({permuted_tokens.size(0)})"
+        )
+
     if probs is not None:
         # Unpermute and merge the tokens with their probabilities
         num_unpermuted_tokens = probs.numel()

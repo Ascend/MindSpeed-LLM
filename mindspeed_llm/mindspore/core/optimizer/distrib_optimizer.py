@@ -88,7 +88,13 @@ def get_parameter_state_dp_zero(self):
                     gbuf_local_start = param_range_map["gbuf_local"].start
                     gbuf_local_end = param_range_map["gbuf_local"].end
                     for key in local_shards:
-                        local_shards[key][gbuf_local_start:gbuf_local_end] = tensors[key].numpy()
+                        try:
+                            tensor = tensors[key]
+                            local_shard = local_shards[key]
+                        except KeyError as e:
+                            raise KeyError(f"Missing key '{key}' in tensors or local_shards") from e
+
+                        local_shard[gbuf_local_start:gbuf_local_end] = tensor.numpy()
 
                 # Gather contiguous shards on DP rank 0.
                 for key, send_tensor in local_shards.items():
