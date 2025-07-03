@@ -53,7 +53,6 @@ GPT_ARGS="
     --micro-batch-size 1 \
     --global-batch-size 64 \
     --use-flash-attn \
-    --prompt-type llama3 \
     --rope-scaling-type llama3 \
     --rope-scaling-factor 8.0 \
     --rotary-percent 1.0 \
