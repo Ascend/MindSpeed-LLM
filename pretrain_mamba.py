@@ -104,13 +104,8 @@ def get_batch(data_iterator):
     # get batches based on the TP rank you are on
     batch, actual_seq_len = get_batch_on_this_tp_rank(data_iterator)
     args = get_args()
-    if args.return_document_ids and all(
-        rank == 0 for rank in [
-            mpu.get_context_parallel_rank(),
-            mpu.get_tensor_model_parallel_rank(),
-            mpu.get_pipeline_model_parallel_rank()
-        ]
-    ):
+    is_rank_0 = (mpu.get_context_parallel_rank() == 0 and mpu.get_tensor_model_parallel_rank() == 0 and mpu.get_pipeline_model_parallel_rank() == 0)
+    if args.return_document_ids and is_rank_0:
         print("current idx: {}, current rank: {}, data_parallel_rank: {}, document_ids: {}".format(batch['idx'], torch.distributed.get_rank(), mpu.get_data_parallel_rank(), batch['document_ids']))
         batch.pop('document_ids', None)
         batch.pop('idx', None)
