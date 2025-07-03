@@ -38,6 +38,15 @@ TOOL_SYSTEM_PROMPT = (
 )
 
 
+QWEN_TOOL_PROMPT = (
+    "\n\n# Tools\n\nYou may call one or more functions to assist with the user query.\n\n"
+    "You are provided with function signatures within <tools></tools> XML tags:\n<tools>{tool_text}"
+    "\n</tools>\n\nFor each function call, return a json object with function name and arguments within "
+    """<tool_call></tool_call> XML tags:\n<tool_call>\n{{"name": <function-name>, """
+    """"arguments": <args-json-object>}}\n</tool_call>"""
+)
+
+
 def default_tool_formatter(tools: List[Dict[str, Any]]) -> str:
     tool_text = ""
     tool_names = []
@@ -201,3 +210,120 @@ class ToolFormatter(Formatter):
             return default_tool_extractor(content)
         else:
             raise NotImplementedError
+
+
+@dataclass
+class ToolUtils(ABC):
+    """Base class for tool utilities."""
+
+    @staticmethod
+    @abstractmethod
+    def tool_formatter(tools: list[dict[str, Any]]) -> str:
+        r"""Generate the system message describing all the available tools."""
+        ...
+
+    @staticmethod
+    @abstractmethod
+    def function_formatter(functions: list[Tuple[str, str]]) -> str:
+        r"""Generate the assistant message including all the tool calls."""
+        ...
+
+    @staticmethod
+    @abstractmethod
+    def tool_extractor(content: str) -> Union[str, list[Tuple[str, str]]]:
+        r"""Extract all the function calls from the assistant message.
+
+        It should be an inverse function of `function_formatter`.
+        """
+        ...
+
+
+class QwenToolUtils(ToolUtils):
+    r"""Qwen 2.5 tool using template."""
+
+    @staticmethod
+    def tool_formatter(tools: list[dict[str, Any]]) -> str:
+        tool_text = ""
+        for tool in tools:
+            wrapped_tool = tool if tool.get("type") == "function" else {"type": "function", "function": tool}
+            tool_text += "\n" + json.dumps(wrapped_tool, ensure_ascii=False)
+
+        return QWEN_TOOL_PROMPT.format(tool_text=tool_text)
+
+    @staticmethod
+    def function_formatter(functions: list[Tuple[str, str]]) -> str:
+        function_texts = [
+            json.dumps({"name": name, "arguments": json.loads(arguments)}, ensure_ascii=False)
+            for name, arguments in functions
+        ]
+        return "\n".join([f"<tool_call>\n{text}\n</tool_call>" for text in function_texts])
+
+    @staticmethod
+    def tool_extractor(content: str) -> Union[str, list[Tuple[str, str]]]:
+        regex = re.compile(r"<tool_call>(.+?)</tool_call>(?=\s*<tool_call>|\s*$)", re.DOTALL)
+        tool_match: list[str] = re.findall(regex, content)
+        if not tool_match:
+            return content
+
+        results = []
+        for tool in tool_match:
+            try:
+                tool = json.loads(tool.strip())
+            except json.JSONDecodeError:
+                return content
+
+            if "name" not in tool or "arguments" not in tool:
+                return content
+
+            results.append((tool["name"], json.dumps(tool["arguments"], ensure_ascii=False)))
+
+        return results
+
+
+@dataclass
+class Qwen3FunctionFormatter(StringFormatter):
+    def __post_init__(self):
+        super().__post_init__()
+        self.tool_utils = QwenToolUtils()
+
+    def apply(self, **kwargs) -> SLOTS:
+        content: str = kwargs.pop("content")
+        regex = re.compile(r"<think>(.*)</think>", re.DOTALL)
+        thought = re.search(regex, content)
+        if thought:
+            content = content.replace(thought.group(0), "")
+
+        functions: list[Tuple[str, str]] = []
+        try:
+            tool_calls = json.loads(content)
+            if not isinstance(tool_calls, list):  # parallel function call
+                tool_calls = [tool_calls]
+
+            for tool_call in tool_calls:
+                functions.append((tool_call["name"], json.dumps(tool_call["arguments"], ensure_ascii=False)))
+
+        except json.JSONDecodeError as e:
+            raise RuntimeError(f"Invalid JSON format in function message: {str([content])}.") from e  # flat string
+
+        function_str = self.tool_utils.function_formatter(functions)
+        if thought:
+            function_str = thought.group(0) + function_str
+
+        return super().apply(content=function_str)
+
+
+@dataclass
+class Qwen3ToolFormatter(Formatter):
+    def __post_init__(self):
+        self.tool_utils = QwenToolUtils()
+
+    def apply(self, **kwargs) -> SLOTS:
+        content = kwargs.pop("content")
+        try:
+            tools = json.loads(content)
+            return [self.tool_utils.tool_formatter(tools) if len(tools) != 0 else ""]
+        except json.JSONDecodeError as e:
+            raise RuntimeError(f"Invalid JSON format in tool description: {str([content])}.") from e  # flat string
+
+    def extract(self, content: str) -> Union[str, Tuple[str, str]]:
+        return self.tool_utils.tool_extractor(content)

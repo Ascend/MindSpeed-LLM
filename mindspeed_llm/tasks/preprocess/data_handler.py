@@ -105,11 +105,11 @@ class BaseDatasetHandler(object):
             batch = doc["input_ids"]
             for idx, sample in enumerate(batch):
                 length = len(sample)
-                if (length > self.args.seq_length) and (not self.args.neat_pack):
-                    logger.warning(f"Dropped lengthy example with length {length} > {self.args.seq_length}.")
+                if (length >= self.args.seq_length) and (not self.args.neat_pack):
+                    logger.warning(f"Dropped lengthy example with length {length} >= {self.args.seq_length}.")
                 else:
-                    if length > self.args.seq_length:
-                        logger.warning(f"Sequence length {length} > {self.args.seq_length}.")
+                    if length >= self.args.seq_length:
+                        logger.warning(f"Sequence length {length} >= {self.args.seq_length}.")
                         sample = sample[:self.args.seq_length - 1]
                         length = len(sample)
                     lengths.append(length)
@@ -342,7 +342,8 @@ class LlamaFactoryInstructionHandler(BaseDatasetHandler):
         self.args.output_prefix = self.args.output_prefix + "_packed"
         self.ignored_label = -100
         self.is_multi_turn = True
-        self.llama_factory_template = get_model_template(args.prompt_type.strip(), args.prompt_type_path.strip())
+        self.llama_factory_template = get_model_template(args.prompt_type.strip(), args.prompt_type_path.strip(), args.enable_thinking)
+        self.cutoff_len = args.seq_length
 
     def _format_msg(self, sample):
         return sample
@@ -360,9 +361,8 @@ class LlamaFactoryInstructionHandler(BaseDatasetHandler):
             messages = [{'role': 'user', 'content': ''}, {'role': 'assistant', 'content': ''}]
         else:
             messages = example["prompt"] + example["response"]
-
         for source_ids, target_ids in self.llama_factory_template.encode_multiturn(
-                tokenizer, messages, example["system"][0], example["tools"][0]
+                tokenizer, messages, example["system"][0], example["tools"][0], self.cutoff_len
         ):
             if self.train_on_inputs:
                 source_mask = source_ids
@@ -446,7 +446,7 @@ class HunyuanInstructionHandler(BaseDatasetHandler):
         self.ignored_label = -100
         self.is_multi_turn = True
 
-        self.hunyuanlarge_template = get_model_template(args.prompt_type.strip(), args.prompt_type_path.strip())
+        self.hunyuanlarge_template = get_model_template(args.prompt_type.strip(), args.prompt_type_path.strip(), args.enable_thinking)
 
     def _format_msg(self, sample):
         return sample
@@ -511,7 +511,7 @@ class AlpacaStylePairwiseHandler(BaseDatasetHandler):
         self.args.json_keys = ["chosen_input_ids", "chosen_labels", "rejected_input_ids", "rejected_labels"]
         self.args.output_prefix = self.args.output_prefix + "_packed"
         self.ignored_label = -100
-        self.llama_factory_template = get_model_template(args.prompt_type.strip(), args.prompt_type_path.strip())
+        self.llama_factory_template = get_model_template(args.prompt_type.strip(), args.prompt_type_path.strip(), args.enable_thinking)
 
     def _filter(self, sample):
         chosen_messages = sample["prompt"] + [sample["response"][0]]
@@ -621,7 +621,8 @@ class PPOAlpacaStyleInstructionHandler(BaseDatasetHandler):
         self.args.output_prefix = self.args.output_prefix + "_packed"
         self.ignored_label = -100
         self.is_multi_turn = True
-        self.llama_factory_template = get_model_template(args.prompt_type.strip(), args.prompt_type_path.strip())
+        self.llama_factory_template = get_model_template(args.prompt_type.strip(), args.prompt_type_path.strip(), args.enable_thinking)
+        self.cutoff_len = args.seq_length
 
     def _format_msg(self, sample):
         return sample
@@ -641,7 +642,7 @@ class PPOAlpacaStyleInstructionHandler(BaseDatasetHandler):
             messages = example["prompt"] + example["response"]
 
         for source_ids, _ in self.llama_factory_template.encode_multiturn(
-                tokenizer, messages, example["system"][0], example["tools"][0]
+                tokenizer, messages, example["system"][0], example["tools"][0], self.cutoff_len
         ):
             input_ids += source_ids
 
@@ -680,7 +681,8 @@ class R1AlpacaStyleInstructionHandler(BaseDatasetHandler):
         self.args.output_prefix = self.args.output_prefix + "_packed"
         self.ignored_label = -100
         self.is_multi_turn = True
-        self.llama_factory_template = get_model_template(args.prompt_type.strip(), args.prompt_type_path.strip())
+        self.llama_factory_template = get_model_template(args.prompt_type.strip(), args.prompt_type_path.strip(), args.enable_thinking)
+        self.cutoff_len = args.seq_length
 
     def _format_msg(self, sample):
         return sample
@@ -700,7 +702,7 @@ class R1AlpacaStyleInstructionHandler(BaseDatasetHandler):
             messages = example["prompt"] + example["response"]
 
         multiturn_input_ids = self.llama_factory_template.encode_multiturn(
-                tokenizer, messages, example["system"][0], example["tools"][0])
+                tokenizer, messages, example["system"][0], example["tools"][0], self.cutoff_len)
 
         turns = len(multiturn_input_ids)
 

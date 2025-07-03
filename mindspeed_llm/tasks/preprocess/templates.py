@@ -14,15 +14,17 @@
 # limitations under the License.
 
 import os
+import sys
 import re
 import json
 import logging
+from copy import deepcopy
 from pathlib import Path
 from dataclasses import dataclass
 from enum import Enum, unique
 from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Tuple, Union
 
-from .formatter import EmptyFormatter, FunctionFormatter, StringFormatter, ToolFormatter
+from .formatter import EmptyFormatter, FunctionFormatter, StringFormatter, ToolFormatter, Qwen3FunctionFormatter, Qwen3ToolFormatter
 
 if TYPE_CHECKING:
     from transformers import PreTrainedTokenizer
@@ -99,9 +101,11 @@ class Template:
     format_prefix: "Formatter"
     default_system: str
     stop_words: List[str]
+    thought_words: tuple[str, str]
     efficient_eos: bool
     replace_eos: bool
     force_system: bool
+    enable_thinking: Optional[bool]
 
 
     def encode_oneturn(
@@ -231,6 +235,22 @@ class Template:
         return encoded_pairs
 
 
+    def add_thought(self, content: str = "") -> str:
+        r"""Add empty thought to assistant message."""
+        return f"{self.thought_words[0]}\n\n{self.thought_words[1]}\n\n" + content
+
+
+    def remove_thought(self, content: str) -> str:
+        r"""Remove thought from assistant message."""
+        pattern = re.compile(f"{re.escape(self.thought_words[0])}(.*?){re.escape(self.thought_words[1])}", re.DOTALL)
+        return re.sub(pattern, "", content).lstrip("\n")
+
+    
+    def get_thought_word_ids(self, tokenizer: "PreTrainedTokenizer") -> list[int]:
+        r"""Get the token ids of thought words."""
+        return tokenizer.encode(self.add_thought(), add_special_tokens=False)
+
+
 @dataclass
 class Llama2Template(Template):
     def _encode(
@@ -276,6 +296,133 @@ class Llama2Template(Template):
         return self._make_pairs(encoded_messages, cutoff_len, reserved_label_len)
 
 
+@dataclass
+class ReasoningTemplate(Template):
+    r"""A template that add thought to assistant message."""
+
+    def _encode(
+        self,
+        tokenizer: "PreTrainedTokenizer",
+        messages: List[Dict[str, str]],
+        system: str,
+        tools: str,
+    ) -> Sequence[list[int]]:
+        r"""
+        Encodes formatted inputs to pairs of token ids.
+        Turn 0: prefix + system + query        resp
+        Turn t: sep + query           resp
+        """
+        system = system or self.default_system
+        encoded_messages = []
+        for i, message in enumerate(messages):
+            elements = []
+            if i == 0:
+                elements += self.format_prefix.apply()
+                if system or tools:
+                    tool_text = self.format_tools.apply(content=tools)[0] if tools else ""
+                    elements += self.format_system.apply(content=(system + tool_text))
+            elif i > 0 and i % 2 == 0:
+                elements += self.format_separator.apply()
+
+            if message["role"] == Role.USER.value:
+                elements += self.format_user.apply(content=message["content"], idx=str(i // 2))
+            elif message["role"] == Role.ASSISTANT.value:
+                elements += self.format_assistant.apply(content=message["content"])
+            elif message["role"] == Role.OBSERVATION.value:
+                elements += self.format_observation.apply(content=message["content"])
+            elif message["role"] == Role.FUNCTION.value:
+                elements += self.format_function.apply(content=message["content"])
+            else:
+                raise NotImplementedError("Unexpected role: {}".format(message["role"]))
+            encoded_messages.append(self._convert_elements_to_ids(tokenizer, elements))
+
+        return encoded_messages
+
+    def encode_oneturn(
+        self,
+        tokenizer: "PreTrainedTokenizer",
+        messages: list[dict[str, str]],
+        system: Optional[str] = None,
+        tools: Optional[str] = None,
+        cutoff_len: int = 1_000_000,
+        reserved_label_len: int = 1,
+    ) -> Tuple[list[int], list[int]]:
+        messages = deepcopy(messages)
+        for i in range(1, len(messages) - 2, 2):
+            messages[i]["content"] = self.remove_thought(messages[i]["content"])
+
+        if self.enable_thinking is False:  # remove all cot
+            messages[-1]["content"] = self.remove_thought(messages[-1]["content"])
+
+        prompt_ids, response_ids = super().encode_oneturn(tokenizer, messages, system, tools)
+        if (
+            self.thought_words[0] not in messages[-1]["content"]
+            and self.thought_words[1] not in messages[-1]["content"]
+        ):  # add empty cot
+            if not self.enable_thinking:  # do not compute loss
+                prompt_ids += self.get_thought_word_ids(tokenizer)
+            else:  # do compute loss
+                response_ids = self.get_thought_word_ids(tokenizer) + response_ids
+
+        return prompt_ids, response_ids
+
+    def encode_multiturn(
+        self,
+        tokenizer: "PreTrainedTokenizer",
+        messages: list[dict[str, str]],
+        system: Optional[str] = None,
+        tools: Optional[str] = None,
+        cutoff_len: int = 1_000_000,
+        reserved_label_len: int = 1,
+    ) -> Sequence[Tuple[List[int], List[int]]]:
+        messages = deepcopy(messages)
+        
+        if self.enable_thinking is False:  # remove all cot
+            for i in range(1, len(messages), 2):
+                messages[i]["content"] = self.remove_thought(messages[i]["content"])
+        
+        encoded_messages = self._encode(tokenizer, messages, system, tools)
+        
+        for i in range(0, len(messages), 2): 
+            if (
+                self.thought_words[0] not in messages[i + 1]["content"]
+                and self.thought_words[1] not in messages[i + 1]["content"]
+            ):  # add empty cot
+                if not self.enable_thinking:  # do not compute loss
+                    encoded_messages[i] += self.get_thought_word_ids(tokenizer)
+                else:  # do compute loss
+                    encoded_messages[i + 1] = self.get_thought_word_ids(tokenizer) + encoded_messages[i + 1]
+        
+        return self._make_pairs(encoded_messages, cutoff_len, reserved_label_len)
+
+    def _make_pairs(
+        self,
+        encoded_messages: Sequence[List[int]],
+        cutoff_len: int,
+        reserved_label_len: int,
+    ) -> Sequence[Tuple[List[int], List[int]]]:
+        from .decoder_packed_mtf_dataset import _infer_seqlen
+        
+        encoded_pairs = []
+        total_length = 0
+        cutoff_len = cutoff_len - reserved_label_len
+        for i in range(0, len(encoded_messages), 2):
+            if total_length >= cutoff_len:
+                break
+
+            max_source_len, max_target_len = _infer_seqlen(
+                source_len=len(encoded_messages[i]),
+                target_len=len(encoded_messages[i + 1]),
+                cutoff_len=(cutoff_len - total_length)
+            )
+            source_ids = encoded_messages[i][:max_source_len]
+            target_ids = encoded_messages[i + 1][:max_target_len]
+            total_length += len(source_ids) + len(target_ids)
+            encoded_pairs.append((source_ids, target_ids))
+
+        return encoded_pairs
+
+
 templates: Dict[str, Template] = {}
 
 
@@ -283,8 +430,8 @@ def get_templates() -> Dict[str, Template]:
     return templates
 
 
-def get_model_template(name, prompt_type_path):
-    name = register_custom_template(name, prompt_type_path)
+def get_model_template(name, prompt_type_path, enable_thinking):
+    name = register_custom_template(name, prompt_type_path, enable_thinking)
     if name is None:
         template = templates["empty"]  # placeholder
     else:
@@ -298,8 +445,9 @@ def fix_model_tokenizer(
     tokenizer: "PreTrainedTokenizer",
     name: Optional[str] = None,
     prompt_type_path: Optional[str] = None,
+    enable_thinking: Optional[bool] = False,
 ):
-    template = get_model_template(name, prompt_type_path)
+    template = get_model_template(name, prompt_type_path, enable_thinking)
 
     stop_words = template.stop_words
     if template.replace_eos:
@@ -337,9 +485,12 @@ def _register_template(
     format_prefix: Optional["Formatter"] = None,
     default_system: str = "",
     stop_words: List[str] = [],
+    thought_words: Optional[tuple[str, str]] = None,
     efficient_eos: bool = False,
     replace_eos: bool = False,
     force_system: bool = False,
+    enable_thinking: Optional[bool] = True,
+    template_class: type["Template"] = Template,
 ) -> None:
     r"""
     Registers a chat template.
@@ -368,7 +519,6 @@ def _register_template(
     ```
     """
     eos_slots = [] if efficient_eos else [{"eos_token"}]
-    template_class = Llama2Template if name.startswith("llama2") else Template
     default_user_formatter = StringFormatter(slots=["{{content}}"])
     default_assistant_formatter = StringFormatter(slots=["{{content}}"] + eos_slots)
     default_function_formatter = FunctionFormatter(slots=["Action: {{name}}\nAction Input: {{arguments}}"] + eos_slots)
@@ -386,9 +536,11 @@ def _register_template(
         format_prefix=format_prefix or default_prefix_formatter,
         default_system=default_system,
         stop_words=stop_words,
+        thought_words=thought_words or ("<think>", "</think>"),
         efficient_eos=efficient_eos,
         replace_eos=replace_eos,
         force_system=force_system,
+        enable_thinking=enable_thinking,
     )
 
 
@@ -472,7 +624,7 @@ def _get_jinja_template(template: "Template", tokenizer: "PreTrainedTokenizer") 
     return jinja_template
 
 
-def register_custom_template(name, json_file_path=TEMPLATES_DIR) -> str:
+def register_custom_template(name, json_file_path=TEMPLATES_DIR, enable_thinking=False) -> str:
     if name in templates:
         return name
     
@@ -501,18 +653,23 @@ def register_custom_template(name, json_file_path=TEMPLATES_DIR) -> str:
     efficient_eos = _format_custom_template(config.get("efficient_eos", False))
     replace_eos = _format_custom_template(config.get("replace_eos", False))
     force_system = _format_custom_template(config.get("force_system", False))
+    template_class = _format_custom_template(config.get("template_class", None))
 
     if isinstance(default_system, list):
         default_system = "".join(default_system) if all(isinstance(sentence, str) for sentence in default_system) else default_system
     format_user = StringFormatter(**format_user) if format_user else None
     format_assistant = StringFormatter(**format_assistant) if format_assistant else None
     format_system = StringFormatter(**format_system) if format_system else None
-    format_function = FunctionFormatter(**format_function) if format_function else None
     format_observation = StringFormatter(**format_observation) if format_observation else None
-    format_tools = ToolFormatter(**format_tools) if format_tools else None
     format_separator = EmptyFormatter(**format_separator) if format_separator else None
     format_prefix = EmptyFormatter(**format_prefix) if format_prefix else None
-
+    template_class = _get_template_class(template_class) if template_class else Template
+    if name == 'qwen3':
+        format_function = Qwen3FunctionFormatter(**format_function) if format_function else None
+        format_tools = Qwen3ToolFormatter(**format_tools) if format_tools else None
+    else:
+        format_function = FunctionFormatter(**format_function) if format_function else None
+        format_tools = ToolFormatter(**format_tools) if format_tools else None
 
     _register_template(
         name=name,
@@ -526,9 +683,12 @@ def register_custom_template(name, json_file_path=TEMPLATES_DIR) -> str:
         format_prefix=format_prefix,
         default_system=default_system,
         stop_words=stop_words,
+        thought_words=("<think>", "</think>"),
         efficient_eos=efficient_eos,
         replace_eos=replace_eos,
-        force_system=force_system
+        force_system=force_system,
+        enable_thinking=enable_thinking,
+        template_class=template_class
     )
 
     return name
@@ -539,3 +699,15 @@ def _format_custom_template(slots: Dict) -> Dict:
         for key, slot in slots.items():
             slots[key] = list(map(lambda slot: set(slot) if isinstance(slot, list) else slot, slot)) if slot else None
     return slots
+
+
+def _get_template_class(template_name: str) -> None:
+    current_module = sys.modules.get(__name__)
+    if not current_module:
+        raise Exception("curent module not found")
+    template_class = getattr(current_module, template_name, None)
+    if template_class is None:
+        template_class = Template
+    logger.info("template will use %s to format dataset", template_class.__name__)
+    
+    return template_class

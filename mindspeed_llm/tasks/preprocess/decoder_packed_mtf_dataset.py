@@ -246,7 +246,7 @@ class DecoderPackedMTFDataset(torch.utils.data.Dataset):
             template = None
             # get model chat template
             if hasattr(self.args, "prompt_type") and self.args.prompt_type is not None:
-                template = get_model_template(self.args.prompt_type, self.args.prompt_type_path)
+                template = get_model_template(self.args.prompt_type, self.args.prompt_type_path, self.args.enable_thinking)
 
             prompt_begin_list, prompt_end_list = get_prompt_index(item["labels"], IGNORE_INDEX)
 
