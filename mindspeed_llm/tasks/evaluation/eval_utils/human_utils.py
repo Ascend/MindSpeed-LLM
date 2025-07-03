@@ -1,20 +1,20 @@
 import re
-from typing import Optional, Callable, Dict, List, Iterable, Union
-import contextlib
-import faulthandler
 import io
 import os
-import multiprocessing
-import platform
-import signal
-import tempfile
-import shutil
-import gzip
-import json
-import builtins
-import resource
-import subprocess
 import sys
+import resource
+import multiprocessing
+import tempfile
+import platform
+import shutil
+import signal
+import json
+import gzip
+import subprocess
+import builtins
+import contextlib
+import faulthandler
+from typing import Optional, Callable, Dict, List, Iterable, Union
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from collections import defaultdict, Counter
@@ -31,20 +31,22 @@ class TimeoutException(Exception):
 
 
 class WriteOnlyStringIO(io.StringIO):
-    """ StringIO that throws an exception when it's read from """
 
     def read(self, *args, **kwargs):
-        raise IOError
-
-    def readline(self, *args, **kwargs):
-        raise IOError
-
-    def readlines(self, *args, **kwargs):
+        """Disabled read operation."""
         raise IOError
 
     def readable(self, *args, **kwargs):
-        """ Returns True if the IO object can be read. """
+        """Always returns False indicating this stream is not readable."""
         return False
+
+    def readlines(self, *args, **kwargs):
+        """Disabled readlines operation."""
+        raise IOError
+
+    def readline(self, *args, **kwargs):
+        """Disabled readline operation."""
+        raise IOError
 
 
 def humaneval_postprocess(text: str) -> str:
@@ -56,82 +58,144 @@ def humaneval_postprocess(text: str) -> str:
 
 def check_correctness(problem: Dict, completion: str, timeout: float,
                       completion_id: Optional[int] = None) -> Dict:
-    """
-    Evaluates the functional correctness of a completion by running the test
-    suite provided in the problem. 
-
-    :param completion_id: an optional completion ID so we can match
-        the results later even if execution finishes asynchronously.
+    """Evaluates code correctness by executing it in a sandboxed environment.
+    
+    Args:
+        problem: Dictionary containing coding problem details
+        completion: Code solution to be tested
+        timeout: Maximum execution time in seconds
+        completion_id: Optional identifier for tracking
+        
+    Returns:
+        Dictionary containing test results with keys:
+        - task_id: Problem identifier
+        - passed: Boolean indicating success
+        - result: Detailed outcome string
+        - completion_id: Echoed identifier
     """
 
     def unsafe_execute():
-
+        """Runs untrusted code in a restricted environment with safety measures."""
+        # Create a temporary directory for safe execution
         with create_tempdir():
-
+            # Preserve original functions before modifying environment
             rmtree = shutil.rmtree
             rmdir = os.rmdir
-            os_chdir = os.chdir
-
+            os_chdir = os.chdir 
+            # Apply security restrictions to prevent dangerous operations
             reliability_guard()
 
+            # Construct full test program by combining:
+            # 1. Problem prompt (function definitions)
+            # 2. User's code completion
+            # 3. Test cases
+            # 4. Entry point verification call
             check_program = (
                 problem["prompt"] + completion + "\n" +
-                problem["test"] + "\n" +
-                f"check({problem['entry_point']})"
+                problem["test"] + "\n" + f"check({problem['entry_point']})"
             )
+            
+            # Global namespace for execution sandbox
             exec_globals = {}
             try:
-                with swallow_io():
-                    with time_limit(timeout):
+                # Execute program with I/O suppressed and time limit
+                with swallow_io():  # Redirects stdout/stderr
+                    with time_limit(timeout):  # Enforces timeout
                         exec(check_program, exec_globals)
                 result.append("passed")
             except TimeoutException:
                 result.append("timed out")
-            except BaseException as e:
+            except BaseException as e:  # Catch any error during execution
                 result.append(f"failed: {e}")
-
+            # Restore original functions after execution
             shutil.rmtree = rmtree
-            os.rmdir = rmdir
             os.chdir = os_chdir
+            os.rmdir = rmdir
 
+    # Use multiprocessing for isolation and timeout enforcement
     manager = multiprocessing.Manager()
-    result = manager.list()
+    result = manager.list()  # Shared list for inter-process communication
 
+    # Execute untrusted code in separate process
     p = multiprocessing.Process(target=unsafe_execute)
     p.start()
+    # Allow extra second beyond solution timeout for clean shutdown
     p.join(timeout=timeout + 1)
+    
+    # Terminate process if it exceeds allowed time
     if p.is_alive():
         p.kill()
 
+    # Handle case where process was terminated before storing result
     if not result:
         result.append("timed out")
 
+    # Format results with problem metadata
     return dict(
         task_id=problem["task_id"],
-        passed=result[0] == "passed",
-        result=result[0],
-        completion_id=completion_id,
+        passed=result[0] == "passed",  # Boolean success indicator
+        result=result[0],  # Detailed status message
+        completion_id=completion_id,  # Optional tracking ID
     )
 
 
 @contextlib.contextmanager
-def time_limit(seconds: float):
+def time_limit(seconds):
+    """Context manager that enforces a time limit for code execution.
+    
+    Args:
+        seconds: Maximum allowed execution time (in seconds)
+        
+    Raises:
+        TimeoutException: If the code block exceeds the time limit
+        
+    Example:
+        with time_limit(5):
+            long_running_function()  # Will be interrupted after 5 seconds
+    """
+    # Signal handler function that gets called when the timer expires
     def signal_handler(signum, frame):
+        """Handles SIGALRM signal by raising a timeout exception."""
         raise TimeoutException("Timed out!")
+
+    # Set a one-shot timer that will send SIGALRM after specified seconds
+    # ITIMER_REAL: Real-world timer (counts wall-clock time)
     signal.setitimer(signal.ITIMER_REAL, seconds)
+    
+    # Register our handler for the alarm signal (SIGALRM)
+    # Replaces any existing handler for this signal
     signal.signal(signal.SIGALRM, signal_handler)
+
     try:
+        # Context manager entry point - executes the block inside "with"
         yield
     finally:
+        # Cleanup: Always runs after the block completes or when interrupted
+        # Cancel any pending alarm by setting timer to zero
         signal.setitimer(signal.ITIMER_REAL, 0)
 
 
 @contextlib.contextmanager
 def swallow_io():
-    stream = WriteOnlyStringIO()
+    """Context manager that silences all standard I/O streams (stdout, stderr, stdin).
+    
+    This effectively:
+    - Redirects stdout/stderr to a void (discards all output)
+    - Blocks input operations (stdin becomes write-only)
+    
+    Typical use case: Preventing untrusted code from flooding output or requesting input.
+    """
+    # Create a write-only buffer that discards output and blocks input
+    stream = WriteOnlyStringIO()  # Custom class that disables read operations
+    
+    # Triple redirection stack:
+    # 1. Redirect stdout to our write-only buffer
     with contextlib.redirect_stdout(stream):
+        # 2. Redirect stderr to the same buffer
         with contextlib.redirect_stderr(stream):
+            # 3. Redirect stdin to the same buffer (using custom redirect_stdin)
             with redirect_stdin(stream):
+                # Execute the wrapped code block
                 yield
 
 
@@ -148,16 +212,36 @@ def create_tempdir():
 
 @contextlib.contextmanager
 def chdir(root):
+    """Context manager for temporarily changing the current working directory.
+    
+    Args:
+        root: Target directory path (if ".", no change occurs)
+        
+    Behavior:
+        - Changes to specified directory on entry
+        - Restores original directory on exit
+        - Handles exceptions safely
+        - No-op if root is current directory (".")
+    """
+    # Short-circuit for current directory - no action needed
     if root == ".":
-        yield
-        return
+        yield  # Execute context without changing directory
+        return  # Exit early
+    
+    # Preserve original working directory
     cwd = os.getcwd()
+    # Change to target directory
     os.chdir(root)
     try:
+        # Execute the wrapped code block
         yield
     except BaseException as exc:
+        # Re-raise any exceptions that occur in the context
+        # (Note: This except block is technically redundant since the exception 
+        #  would propagate automatically, but shown for clarity)
         raise exc
     finally:
+        # Critical cleanup: Always return to original directory
         os.chdir(cwd)
 
 
@@ -323,62 +407,73 @@ def estimate_pass_at_k(
 
 
 def reliability_guard(maximum_memory_bytes: Optional[int] = None):
+    """Hardens the execution environment against untrusted code.
+    
+    Applies multiple security layers:
+    1. Memory limits
+    2. Fault handler disabling
+    3. Dangerous function neutralization
+    4. Environment restrictions
+    5. Module blocking
+    
+    Args:
+        maximum_memory_bytes: Cap for memory usage (None = no limit)
     """
-    This disables various destructive functions and prevents the generated code
-    from interfering with the test (e.g. fork bomb, killing other processes,
-    removing filesystem files, etc.)
-
-    WARNING
-    This function is NOT a security sandbox. Untrusted code, including, model-
-    generated code, should not be blindly executed outside of one. See the 
-    Codex paper for more information about OpenAI's code sandbox, and proceed
-    with caution.
-    """
-
+    
+    # 1. MEMORY LIMITS - Prevent memory exhaustion attacks
     if maximum_memory_bytes is not None:
+        # Set address space limit (virtual memory)
         resource.setrlimit(resource.RLIMIT_AS, (maximum_memory_bytes, maximum_memory_bytes))
+        # Set data segment limit (heap memory)
         resource.setrlimit(resource.RLIMIT_DATA, (maximum_memory_bytes, maximum_memory_bytes))
+        
+        # Stack limit (skip on macOS due to different behavior)
         if not platform.uname().system == 'Darwin':
             resource.setrlimit(resource.RLIMIT_STACK, (maximum_memory_bytes, maximum_memory_bytes))
 
+    # 2. FAULT HANDLER - Disable crash dumps to prevent leaks
     faulthandler.disable()
 
+    # 3. DANGEROUS BUILTINS - Neutralize exit mechanisms
     builtins.exit = None
     builtins.quit = None
 
-    os.environ['OMP_NUM_THREADS'] = '1'
+    # 4. ENVIRONMENT RESTRICTIONS - Limit parallel processing
+    os.environ['OMP_NUM_THREADS'] = '1'  # OpenMP threads
 
+    # 5. OS OPERATIONS - Disable dangerous system functions
+    # Process control
     os.kill = None
-    os.system = None
     os.putenv = None
-    os.remove = None
+    os.system = None
     os.removedirs = None
+    os.remove = None
+    os.fchdir = None
     os.rmdir = None
-    os.fchdir = None
-    os.setuid = None
     os.fork = None
-    os.forkpty = None
+    os.setuid = None
     os.killpg = None
-    os.rename = None
+    os.forkpty = None
     os.renames = None
-    os.truncate = None
+    os.rename = None
     os.replace = None
-    os.unlink = None
+    os.truncate = None
     os.fchmod = None
-    os.fchown = None
+    os.unlink = None
     os.chmod = None
-    os.chown = None
+    os.fchown = None
     os.chroot = None
-    os.fchdir = None
+    os.chown = None
     os.lchflags = None
-    os.lchmod = None
+    os.fchdir = None
     os.lchown = None
-    os.getcwd = None
     os.chdir = None
+    os.getcwd = None
+    os.lchmod = None
 
     shutil.rmtree = None
-    shutil.move = None
     shutil.chown = None
+    shutil.move = None
 
     subprocess.Popen = None  # type: ignore
 
