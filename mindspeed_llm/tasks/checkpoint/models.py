@@ -159,8 +159,12 @@ class ModelBase(abc.ABC):
             # insert noop layer
             mg_layer_list.insert(i, -1)
         for dst_layer_idx, src_layer_idx in enumerate(mg_layer_list):
-            if not self.is_noop_layer(src_layer_idx):
-                self.set_layer_state_base(src_model, src_layer_idx=src_layer_idx, dst_layer_idx=dst_layer_idx)
+            if self.args_cmd.save_model_type == "hf":
+                if not self.is_noop_layer(src_layer_idx):
+                    self.set_layer_state_base(src_model, src_layer_idx=dst_layer_idx, dst_layer_idx=src_layer_idx)
+            else:
+                if not self.is_noop_layer(src_layer_idx):
+                    self.set_layer_state_base(src_model, src_layer_idx=src_layer_idx, dst_layer_idx=dst_layer_idx)
 
     def set_preprocess_state(self, src_model):
         """Set embedding params."""
@@ -495,6 +499,7 @@ class HuggingfaceModel(ModelBase):
         self.args.add_dense_bias = self.args_cmd.add_dense_bias
         self.args.post_norm = self.args_cmd.post_norm
         self.args.save_lora_to_hf = self.args_cmd.save_lora_to_hf
+        self.args.noop_layers = self.args_cmd.noop_layers
 
     def get_modules_from_config(self, device_map="cpu", trust_remote_code=True):
         # Load Huggingface model.
