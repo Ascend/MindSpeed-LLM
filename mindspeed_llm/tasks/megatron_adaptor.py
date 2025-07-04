@@ -637,11 +637,10 @@ class CoreAdaptation(MegatronAdaptationABC):
     def patch_parallel_state(self):
         import megatron
         from mindspeed.core.parallel_state import (destroy_model_parallel_wrapper, \
-                                                   get_context_parallel_group_for_send_recv_overlap,
-                                                   initialize_model_parallel_wrapper)
+                                                   get_context_parallel_group_for_send_recv_overlap)
         from ..core import destroy_model_parallel_decorator
         from ..core.transformer.transformer_block import get_layer_offset_wrapper
-        from ..core.parallel_state import get_nccl_options_wrapper
+        from ..core.parallel_state import get_nccl_options_wrapper, initialize_model_parallel_wrapper
 
         # Bugfix for Megatron-LM core 0.6.0, to be removed for next version.
         MegatronAdaptation.register('megatron.core.parallel_state.initialize_model_parallel',
