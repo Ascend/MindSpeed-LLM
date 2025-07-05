@@ -51,13 +51,13 @@ logging.basicConfig(level=logging.WARN, format='%(asctime)s - %(levelname)s - %(
 
 try:
     from mindspeed.core.pipeline_parallel.dualpipev.dualpipev_schedules import get_post_process_flag
-except Exception as e:
-    logging.warning(f"Failed to import get_post_process_flag: {e}")
+except Exception as warn_get_post_process_flag:
+    logging.warning(f"Failed to import get_post_process_flag: {warn_get_post_process_flag}")
 
 try:
     _torch_version = PkgVersion(torch.__version__)
-except Exception as e:
-    logging.warning(f"Failed to get torch version: {e}")
+except Exception as warn_torch_ver:
+    logging.warning(f"Failed to get torch version: {warn_torch_ver}")
     # 这是一个特殊情况，用于构建文档时torch未被导入
     _torch_version = PkgVersion("0.0.0")
     logging.warning("Using default torch version '0.0.0' for documentation build.")
