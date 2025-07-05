@@ -666,6 +666,7 @@ class CoreAdaptation(MegatronAdaptationABC):
         from megatron.core.datasets.gpt_dataset import GPTDataset
         from ..core import (build_generic_dataset, _build_document_sample_shuffle_indices,
                             indexed_dataset_builder_init_wrapper, add_item_wrapper, finalize_wrapper)
+        from ..training.training import build_train_valid_test_data_loaders_wrapper
 
         # change attributions
         GPTDataset._build_document_sample_shuffle_indices = _build_document_sample_shuffle_indices
@@ -676,6 +677,9 @@ class CoreAdaptation(MegatronAdaptationABC):
                                     add_item_wrapper)
         MegatronAdaptation.register('megatron.core.datasets.indexed_dataset.IndexedDatasetBuilder.finalize',
                                     finalize_wrapper)
+        MegatronAdaptation.register('megatron.training.training.build_train_valid_test_data_loaders',
+                                    build_train_valid_test_data_loaders_wrapper)
+                                    
         from ..core.datasets.gpt_dataset import (
             gpt_dataset_getitem_wrapper,
             _get_ltor_masks_and_position_ids

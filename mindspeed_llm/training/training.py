@@ -157,6 +157,22 @@ def get_model_wrapper(fn):
     return wrapper
 
 
+# This wrapper ensures that DataLoader workers are initialized early to prevent deadlocks during evaluation.
+# By accessing the DataLoader's iterator, it triggers the creation of worker subprocesses at initialization.
+def build_train_valid_test_data_loaders_wrapper(fn):
+    @wraps(fn)
+    def wrapper(build_train_valid_test_datasets_provider):
+        train_dataloader, valid_dataloader, test_dataloader = fn(build_train_valid_test_datasets_provider)
+        is_distributed = getattr(build_train_valid_test_datasets_provider, "is_distributed", False)
+        if is_distributed or mpu.get_tensor_model_parallel_rank() == 0:
+            for dataloader in [train_dataloader, valid_dataloader, test_dataloader]:
+                if dataloader is not None:
+                    # Access the DataLoader's iterator to initialize workers
+                    _ = iter(dataloader)
+        return train_dataloader, valid_dataloader, test_dataloader
+    return wrapper
+
+
 def is_profile_enabled():
     args = get_args()
     if not args.profile:
