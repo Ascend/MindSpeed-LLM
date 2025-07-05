@@ -303,6 +303,8 @@ def evaluate_functional_correctness(
     Evaluates the functional correctness of generated samples, and writes
     results to f"{sample_file}_results.jsonl.gz"
     """
+    if problem_file is None:
+        problem_file = {}
 
     problems = problem_file
 

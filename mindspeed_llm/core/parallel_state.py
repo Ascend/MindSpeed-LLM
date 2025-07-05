@@ -585,7 +585,11 @@ def initialize_context_parallel_group_for_hybrid_cp(
     )
 
     ulysses_degree = get_args().ulysses_degree_in_cp
-    assert (context_parallel_size > ulysses_degree and context_parallel_size % ulysses_degree == 0)
+
+    if not (context_parallel_size > ulysses_degree and context_parallel_size % ulysses_degree == 0):
+        raise ValueError("context_parallel_size must be greater than ulysses_degress and a multiple "
+                         "of ulysses_degree")
+
     ring_degree = context_parallel_size // ulysses_degree
 
     for i in range(pipeline_model_parallel_size):
@@ -718,7 +722,10 @@ def initialize_context_parallel_group_for_double_ring(
 
                 if use_hybrid_cp:
                     ulysses_degree = get_args().ulysses_degree_in_cp
-                    assert (context_parallel_size > ulysses_degree and context_parallel_size % ulysses_degree == 0)
+                    if not (context_parallel_size > ulysses_degree and context_parallel_size % ulysses_degree == 0):
+                        raise ValueError("context_parallel_size must be greater than ulysses_degress and a multiple "
+                                         "of ulysses_degree")
+
                     # ring cp ranks
                     for m in range(ulysses_degree):
                         ring_ranks = [cp_ranks[idx] for idx in range(m, len(cp_ranks), ulysses_degree)]
