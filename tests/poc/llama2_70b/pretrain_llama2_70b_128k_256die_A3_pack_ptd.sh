@@ -1,6 +1,9 @@
 #!/bin/bash
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
+export STREAMS_PER_DEVICE=32
+export TASK_QUEUE_ENABLE=2
+
 
 NPUS_PER_NODE=16
 MASTER_ADDR=localhost
@@ -34,6 +37,8 @@ DISTRIBUTED_ARGS="
 
 GPT_ARGS="
     --use-mcore-models \
+    --manual-gc \
+    --manual-gc-interval 50 \
     --rope-scaling-type llama3 \
     --rope-scaling-factor 8.0 \
     --low-freq-factor 1.0 \
