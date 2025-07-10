@@ -61,7 +61,7 @@ except Exception as warn_torch_ver:
     # 这是一个特殊情况，用于构建文档时torch未被导入
     _torch_version = PkgVersion("0.0.0")
     logging.warning("Using default torch version '0.0.0' for documentation build.")
-    
+
 
 WRITE_FILE_DEFAULT_FLAGS = os.O_WRONLY | os.O_CREAT
 WRITE_FILE_DEFAULT_MODES = stat.S_IWUSR | stat.S_IRUSR
@@ -73,8 +73,8 @@ def set_mtp_position_ids(position_ids_mtp):
     """set_postprocess_chunk for mtp position id"""
     global _MTP_POSITION_ID
     _MTP_POSITION_ID = position_ids_mtp
-    
-    
+
+
 def get_torch_version():
     """Get torch version from __version__."""
 
@@ -114,6 +114,15 @@ def compute_actual_seq_len(origin_seq):
             mtp_res.append(next_actual_seq_len)
         return mtp_res
     return actual_seq_len
+
+
+def recompute_valid_actual_seq_len(pos_ids, actual_seq_len):
+    seq = pos_ids.view(-1)
+    valid_seq = (seq != 0).nonzero()[-1] + 1 + 1
+    valid_actual_seq_len_clip = (torch.tensor(actual_seq_len).to(pos_ids.device) < valid_seq).nonzero()[-1]
+    valid_actual_seq_len = actual_seq_len[:valid_actual_seq_len_clip + 1]
+    valid_actual_seq_len.append(actual_seq_len[-1])
+    return valid_actual_seq_len
 
 
 def generate_actual_seq_len(batch, actual_seq_len=None):
@@ -626,7 +635,7 @@ def get_batch_on_this_tp_rank_reset_attn_mask(data_iterator):
 
         elif args.reset_attention_mask:
             _broadcast(batch['position_ids'])
-        
+
         if args.reset_attention_mask:
             actual_seq_len = broadcast_dynamic(data['actual_seq_len'])
             if args.attention_mask_type == 'causal':
@@ -661,7 +670,7 @@ def get_batch_on_this_tp_rank_reset_attn_mask(data_iterator):
                 _broadcast(labels)
             else:
                 labels = None
-                loss_mask = None 
+                loss_mask = None
 
         elif mpu.is_pipeline_last_stage():
             tokens = None
@@ -676,7 +685,7 @@ def get_batch_on_this_tp_rank_reset_attn_mask(data_iterator):
 
         elif args.reset_attention_mask:
             _broadcast(position_ids)
- 
+
         batch = {
             'tokens': tokens,
             'labels': labels,
@@ -829,10 +838,10 @@ def _get_batch_on_this_cp_rank_in_megatron_cp_general(batch):
             batch[key] = mask_list
             continue
         if val is not None:
-            seq_dim = 1 
+            seq_dim = 1
             val = val.chunk(cp_size, dim=seq_dim)[cp_rank].contiguous()
-            batch[key] = val 
-    
+            batch[key] = val
+
     return batch
 
 
