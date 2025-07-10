@@ -1,6 +1,7 @@
 # coding=utf-8
 # Copyright (c) 2024, Huawei Technologies Co., Ltd. All rights reserved.
 
+import logging
 import math
 from functools import wraps
 
@@ -30,17 +31,21 @@ from mindspeed.core.parallel_state import (get_context_parallel_group_for_hybrid
 from mindspeed.core.context_parallel.adaptive_context_parallel import adaptive_attn_context_parallel
 from mindspeed.core.context_parallel.utils import get_scheduling_info
 from mindspeed.model.transformer import get_attention_mask
-from mindspeed.utils import get_actual_seq_len
 from mindspeed.core.context_parallel.context_parallel_kv_cache import get_cache_policy
 from mindspeed.utils import get_actual_seq_len, compute_qkv_index, get_position_ids
 
 from mindspeed_llm.core.models.common.embeddings.rotary_pos_embedding import yarn_get_mscale
 from mindspeed_llm.tasks.models.common.alibi import Alibi
+from mindspeed_llm.training.utils import recompute_valid_actual_seq_len
+
+logger = logging.getLogger(__name__)
 
 try:
     from einops import rearrange
 except ImportError:
     rearrange = None
+
+ACTUAL_SEQ_LEN_THRESHOLD = 2048
 
 
 def do_ring_context_parallel(q, k, v, head_num, softmax_scale, attn_mask, dropout_p=0., pse=None, pse_type=None, packed_seq_params=None):
@@ -51,12 +56,12 @@ def do_ring_context_parallel(q, k, v, head_num, softmax_scale, attn_mask, dropou
             cu_seqlens_q=torch.tensor(actual_seq_len, dtype=torch.int64, device=torch.cuda.current_device()),
             cu_seqlens_kv=torch.tensor(actual_seq_len, dtype=torch.int64, device=torch.cuda.current_device())
         )
-        
+
         q_index, kv_index = compute_qkv_index(torch.tensor(actual_seq_len, dtype=torch.int64, device=torch.cuda.current_device()).clone().tolist())
         packed_seq_params.q_index = q_index
         packed_seq_params.kv_index = kv_index
         packed_seq_params.position_ids = get_position_ids()
-    
+
     in_hybrid_mode = get_context_parallel_group_for_hybrid_ring(check_initialized=False) is not None
     if in_hybrid_mode:
         cp_group = get_context_parallel_group_for_hybrid_ring()
@@ -105,14 +110,14 @@ def do_ulyssesattn_context_parallel(self,
         attn_mask_type,
         packed_seq_params):
     args = get_args()
-    
+
     sparse_mode = args.sparse_mode
     if attn_mask_type == AttnMaskType.no_mask:
         sparse_mode = 0  # default mask
-        
+
     scale = 1.0 / math.sqrt(
         self.hidden_size_per_attention_head) if self.scale_mask_softmax.scale is None else self.softmax_scale
-    
+
     self.ulysses_comm_para['cache_policy'] = get_cache_policy(
         self.layer_number, args.context_parallel_kv_cache_policy, args.context_parallel_cache_interval
     )
@@ -126,10 +131,10 @@ def do_ulyssesattn_context_parallel(self,
     attn_para['keep_prob'] = 1 - self.attention_dropout.p
     attn_para['sparse_mode'] = sparse_mode
     output = ulyssesattn_context_parallel(query, key, value, attn_para, self.ulysses_comm_para)
-    
+
     return output
-    
-    
+
+
 def dot_product_attention_init(
         self,
         config: TransformerConfig,
@@ -489,6 +494,10 @@ def flash_attention_forward(
             )
         output = output.transpose(0, 1)
     else:
+        if actual_seq_len is not None and len(actual_seq_len) > ACTUAL_SEQ_LEN_THRESHOLD:
+            logger.warning("flash-attention get a long actual_seq_len, maybe create a coredump!")
+            actual_seq_len = recompute_valid_actual_seq_len(get_position_ids(), actual_seq_len)
+
         output = torch_npu.npu_fusion_attention(
             query, key, value, n_head, args.shape_order,
             pse=pse,

@@ -70,6 +70,15 @@ def compute_actual_seq_len(seq, stride=0):
     return res
 
 
+def recompute_valid_actual_seq_len(pos_ids, actual_seq_len):
+    seq = pos_ids.view(-1)
+    valid_seq = (seq != 0).nonzero()[-1] + 1 + 1
+    valid_actual_seq_len_clip = (torch.tensor(actual_seq_len).to(pos_ids.device) < valid_seq).nonzero()[-1]
+    valid_actual_seq_len = actual_seq_len[:valid_actual_seq_len_clip + 1]
+    valid_actual_seq_len.append(actual_seq_len[-1])
+    return valid_actual_seq_len
+
+
 def generate_actual_seq_len(batch):
     position_ids = batch.get('position_ids').transpose(0, 1).contiguous()
     set_position_ids(position_ids)
