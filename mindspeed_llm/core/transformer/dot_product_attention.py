@@ -527,7 +527,7 @@ def flash_attention_forward(
                 padding_mask=None,
                 atten_mask=self.attention_mask,
                 query_rope=query_rope,
-                key_rope=query_rope,
+                key_rope=key_rope,
                 actual_seq_qlen=actual_seq_len,
                 actual_seq_kvlen=actual_seq_len,
                 scale=scale,
