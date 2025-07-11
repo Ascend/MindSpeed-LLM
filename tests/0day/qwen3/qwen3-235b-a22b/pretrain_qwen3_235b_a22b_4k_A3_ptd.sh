@@ -4,7 +4,7 @@ export CUDA_DEVICE_MAX_CONNECTIONS=1
 export HCCL_IF_BASE_PORT=25809
 export CPU_AFFINITY_CONF=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
-export HCCL_CONNECT_TIMEOUT=3600
+export HCCL_CONNECT_TIMEOUT=1800
 export TASK_QUEUE_ENABLE=2
 
 NPUS_PER_NODE=16
@@ -20,7 +20,7 @@ DATA_PATH="your data path"
 TOKENIZER_PATH="your tokenizer path"
 CKPT_LOAD_DIR="your model ckpt path"
 
-TP=2
+TP=1
 PP=4
 EP=32
 CP=1
@@ -44,7 +44,7 @@ RECOMPUTE_ARGS="
     --recompute-granularity full \
     --recompute-method block \
     --recompute-num-layers 8 \
-    "
+"
 
 MOE_ARGS="
     --num-experts 128 \
@@ -59,7 +59,6 @@ MOE_ARGS="
     --moe-permutation-async-comm \
     --moe-alltoall-overlap-comm \
     --use-fused-moe-token-permute-and-unpermute \
-    --moe-tp-extend-ep \
 "
 
 OPTIMIZE_ARGS="
@@ -108,8 +107,6 @@ TRAIN_ARGS="
     --no-shared-storage
 "
 
-
-
 GPT_ARGS="
     --kv-channels 128 \
     --use-mcore-models \
@@ -132,7 +129,6 @@ GPT_ARGS="
     --attention-softmax-in-fp32 \
     --group-query-attention \
     --num-query-groups 4 \
-    --no-shared-storage
 "
 
 DATA_ARGS="
