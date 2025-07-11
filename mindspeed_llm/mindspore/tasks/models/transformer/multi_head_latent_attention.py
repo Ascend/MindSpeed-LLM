@@ -260,5 +260,3 @@ def LinearNoTP_forward(self, input_):
     output = torch.matmul(input_, self.weight.t())
     output = output.view(bs, seq_len, self.output_size)
     return output
-
-   

@@ -1,6 +1,7 @@
 # Copyright (c) 2025; NVIDIA CORPORATION. All rights reserved.
 # Copyright (c) 2025, Huawei Technologies Co., Ltd.  All rights reserved
 
+from mindspeed_llm.mindspore.utils import clear_wrapper
 from mindspeed_llm.tasks.megatron_adaptor import MegatronAdaptation, MegatronAdaptationABC
 
 
@@ -349,6 +350,35 @@ class MindSporeAdaptation(MegatronAdaptationABC):
         if args.use_moba_attn:
             from mindspeed_llm.mindspore.core.transformer.dot_product_attention import flash_attention_forward
             MindSporeAdaptation.register('mindspeed_llm.core.transformer.dot_product_attention.flash_attention_forward', flash_attention_forward)
+
+        if args.reuse_fp32_param:
+            from megatron.core.optimizer.distrib_optimizer import DistributedOptimizer
+            from mindspeed.mindspore.optimizer.distrib_optimizer import reuse_fp32_param_distrib_optimizer_init_wrapper
+            target_func = DistributedOptimizer.__init__
+            target_func_name = 'megatron.core.optimizer.distrib_optimizer.DistributedOptimizer.__init__'
+            clear_wrapper(target_func_name, target_func)
+            MindSporeAdaptation.register(target_func_name, reuse_fp32_param_distrib_optimizer_init_wrapper)
+
+        from mindspeed_llm.mindspore.core.datasets.blended_megatron_dataset_builder import need_to_build_dataset
+        MindSporeAdaptation.register(
+            'mindspeed_llm.core.datasets.blended_megatron_dataset_builder.need_to_build_dataset',
+            need_to_build_dataset)
+        from mindspeed.mindspore.ops.npu_rotary_position_embedding import npu_rotary_position_embedding
+        MindSporeAdaptation.register(
+            'mindspeed.ops.npu_rotary_position_embedding.npu_rotary_position_embedding',
+            npu_rotary_position_embedding)
+
+        from mindspeed_llm.mindspore.tasks.checkpoint.models import register_functions, get_modules_from_pretrained
+        MindSporeAdaptation.register(
+            'mindspeed_llm.tasks.checkpoint.models.ModelBase._ModelBase__register_functions', register_functions)
+        MindSporeAdaptation.register(
+            'mindspeed_llm.tasks.checkpoint.models.HuggingfaceModel.get_modules_from_pretrained',
+            get_modules_from_pretrained)
+
+        from mindspeed.mindspore.legacy.model.module import fp32_to_float16, float16_to_fp32
+        MindSporeAdaptation.register('megatron.legacy.model.module.fp32_to_float16', fp32_to_float16)
+        MindSporeAdaptation.register('megatron.legacy.model.module.float16_to_fp32', float16_to_fp32)
+
 
     @staticmethod
     def reparse_args():
