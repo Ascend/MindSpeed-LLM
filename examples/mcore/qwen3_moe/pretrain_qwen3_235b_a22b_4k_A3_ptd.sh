@@ -4,7 +4,7 @@ export CUDA_DEVICE_MAX_CONNECTIONS=1
 export HCCL_IF_BASE_PORT=25809
 export CPU_AFFINITY_CONF=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
-export HCCL_CONNECT_TIMEOUT=3600
+export HCCL_CONNECT_TIMEOUT=1800
 export TASK_QUEUE_ENABLE=2
 
 NPUS_PER_NODE=16
@@ -44,7 +44,7 @@ RECOMPUTE_ARGS="
     --recompute-granularity full \
     --recompute-method block \
     --recompute-num-layers 8 \
-    "
+"
 
 MOE_ARGS="
     --num-experts 128 \
@@ -106,8 +106,6 @@ TRAIN_ARGS="
     --no-shared-storage
 "
 
-
-
 GPT_ARGS="
     --kv-channels 128 \
     --use-mcore-models \
@@ -130,7 +128,6 @@ GPT_ARGS="
     --attention-softmax-in-fp32 \
     --group-query-attention \
     --num-query-groups 4 \
-    --no-shared-storage
 "
 
 DATA_ARGS="
