@@ -1,4 +1,5 @@
 # Copyright (c) 2023, HUAWEI CORPORATION.  All rights reserved.
+# Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
 """Pretrain GPT."""
 
 import os
@@ -17,6 +18,7 @@ from megatron.core.datasets.blended_megatron_dataset_builder import BlendedMegat
 from megatron.core.datasets.gpt_dataset import GPTDatasetConfig
 from megatron.core.datasets.gpt_dataset import MockGPTDataset, GPTDataset
 from megatron.core.datasets.utils import get_blend_from_list
+from megatron.core.rerun_state_machine import get_rerun_state_machine
 import megatron.legacy.model
 from megatron.core.models.gpt import GPTModel
 from mindspeed_llm.training import pretrain
@@ -128,46 +130,76 @@ def get_batch(data_iterator):
     return batch.values()
 
 
+# define spiky loss as a loss that's 10x the max loss observed
+SPIKY_LOSS_FACTOR = 10
+
+
 def loss_func(loss_mask: torch.Tensor, output_tensor: torch.Tensor):
     """Loss function.
 
     Args:
         loss_mask (torch.Tensor): Used to mask out some portions of the loss
         output_tensor (torch.Tensor): The tensor with the losses
-    """    
+
+    Returns:
+        the loss scalar for this micro-batch
+        the number of non-padded tokens in this microbatch
+        a dict containing reporting metrics on the loss and number of tokens across
+            the data parallel ranks
+    """
     args = get_args()
 
     losses = output_tensor.float()
     loss_mask = loss_mask.view(-1).float()
+    total_tokens = loss_mask.sum()
+    loss = torch.cat([torch.sum(losses.view(-1) * loss_mask).view(1), total_tokens.view(1)])
+
     if args.context_parallel_size > 1:
-        loss = torch.cat([torch.sum(losses.view(-1) * loss_mask).view(1), loss_mask.sum().view(1)])
         torch.distributed.all_reduce(loss, group=mpu.get_context_parallel_group())
-        loss = loss[0] / loss[1]
-    else:
-        loss = torch.sum(losses.view(-1) * loss_mask) / loss_mask.sum()
 
     # Check individual rank losses are not NaN prior to DP all-reduce.
+    rerun_state_machine = get_rerun_state_machine()
     if args.check_for_nan_in_loss_and_grad:
-        global_rank = torch.distributed.get_rank()
-        if loss.isnan():
-            raise ValueError(f'Rank {global_rank}: found NaN in local forward loss calculation. '
-                             f'Device: {torch.cuda.current_device()}, node: {os.uname()[1]}')
-
-    if args.async_log_allreduce:
-        # Reduce loss for logging, which is different from megatron pretrain_gpt.py.
-        reporting_loss = loss.clone().detach()
-
-        allreduce_handle = torch.distributed.all_reduce(
-            reporting_loss, group=mpu.get_data_parallel_group(), async_op=True
+        rerun_state_machine.validate_result(
+            result=loss[0],
+            rejection_func=torch.isnan,
+            message="found NaN in local forward loss calculation",
+            tolerance=0.0,        # forward pass calculations are determinisic
+            fatal=True,
         )
+        rerun_state_machine.validate_result(
+            result=loss[0],
+            rejection_func=torch.isinf,
+            message="found Inf in local forward loss calculation",
+            tolerance=0.0,        # forward pass calculations are determinisic
+            fatal=True,
+        )
+    # Check for spiky loss
+    if args.check_for_spiky_loss:
+        rerun_state_machine.validate_result(
+            result=loss[0],
+            rejection_func=partial(
+                rerun_state_machine.is_unexpectedly_large,
+                threshold=SPIKY_LOSS_FACTOR,
+                context="loss",
+            ),
+            message="Spiky loss",
+            tolerance=0.0,        # forward pass calculations are determinisic
+            fatal=False,
+        )
+    # Reduce loss for logging.
+    reporting_loss = loss.clone().detach()
+    torch.distributed.all_reduce(reporting_loss, group=mpu.get_data_parallel_group())
 
-        return loss * args.context_parallel_size, ({"lm loss": (reporting_loss)}, allreduce_handle)
-    else:
-
-        # Reduce loss for logging.
-        averaged_loss = average_losses_across_data_parallel_group([loss])
-
-        return loss * args.context_parallel_size, {'lm loss': averaged_loss[0]}
+    # loss[0] is a view of loss, so it has ._base not None, which triggers assert error
+    # in core/pipeline_parallel/schedule.py::deallocate_output_tensor, calling .clone()
+    # on loss[0] fixes this
+    local_num_tokens = loss[1].clone().detach().to(torch.int)
+    return (
+        loss[0].clone(),
+        local_num_tokens,
+        {'lm loss': (reporting_loss[0], reporting_loss[1])},
+    )
 
 
 def forward_step(data_iterator, model: GPTModel):

@@ -364,10 +364,6 @@ class CoreAdaptation(MegatronAdaptationABC):
         from mindspeed.core.transformer.moe.experts import groupedmlp_init_wrapper
         MegatronAdaptation.register('megatron.core.transformer.moe.experts.GroupedMLP.__init__',
                                     groupedmlp_init_wrapper)
-        # For async log loss
-        if args.async_log_allreduce and not args.schedules_method == 'dualpipev':
-            from mindspeed.core.training import train_step
-            MegatronAdaptation.register('megatron.training.training.train_step', train_step)
 
         if getattr(args, 'reset_attention_mask', False):
             from mindspeed.core.datasets.gpt_dataset import _get_ltor_masks_and_position_ids, collate_wrapper

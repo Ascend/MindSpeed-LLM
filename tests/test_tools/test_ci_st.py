@@ -7,6 +7,7 @@ MEMO_INFO = "memo info"
 THROUGHPUT = "throughput"
 LOSS = "lm loss"
 TIME_INFO = "time info"
+GRAD_NORM_INFO = "grad norm"
 
 WARM_UP = 5
 
@@ -14,6 +15,7 @@ WARM_UP = 5
 class TestMargin:
     _MARGIN_NAME = " margin"
     loss = 0.02
+    grad_norm = 0.1
     memory = 0.1
     throughput = 0.05
     time = 0.05
@@ -24,11 +26,13 @@ class TestMargin:
         cls.memory = json_obj.get(MEMO_INFO + cls._MARGIN_NAME, cls.memory)
         cls.throughput = json_obj.get(THROUGHPUT + cls._MARGIN_NAME, cls.throughput)
         cls.time = json_obj.get(TIME_INFO + cls._MARGIN_NAME, cls.time)
+        cls.grad_norm = json_obj.get(GRAD_NORM_INFO + cls._MARGIN_NAME, cls.grad_norm)
 
 
 class TestCIST:
 
-    margin_loss = 0.02 
+    margin_loss = 0.02
+    margin_grad_norm = 0.1
     margin_throughput_percent = 0.05
     margin_memory_percent = 0.1
     margin_time_percent = 0.05
@@ -65,11 +69,18 @@ class TestCIST:
         comparison_time = {
             TIME_INFO: self._compare_time,
         }
+
+        comparison_grad_norm = {
+            GRAD_NORM_INFO: self._compare_grad_norm,
+        }
         
         if "time info" in self.expected:
             comparison_selection = {**comparison_base, **comparison_time}
         else:
             comparison_selection = {**comparison_base, **comparison_throughput}
+
+        if "grad norm" in self.expected:
+            comparison_selection = {**comparison_selection, **comparison_grad_norm}
         
         if test_obj in comparison_selection:
             expected_list = self.expected[test_obj]
@@ -99,6 +110,16 @@ class TestCIST:
             print(f"Checking step {step + 1} for lm loss")
             assert actual_val == pytest.approx(expected=expected_val, rel=TestMargin.loss),\
             f"The loss at step {step} should be approximate to {expected_val} but it is {actual_val}."
+
+    
+    def _compare_grad_norm(self, expected_list, actual_list):
+        # Because "deterministic computation" affects the throughput, so we just test
+        # grad norm in case of approximation.
+        for step, (expected_val, actual_val) in enumerate(zip(expected_list, actual_list)):
+            print(f"Checking step {step + 1} for grad norm")
+            assert actual_val == pytest.approx(expected=expected_val, rel=TestMargin.grad_norm),\
+            f"The grad norm at step {step} should be approximate to {expected_val} but it is {actual_val}."
+
             
     def _compare_throughput(self, expected_list, actual_list):
         # First few iterations might take a little longer. So we take the last 70 percent of the timings
@@ -111,7 +132,8 @@ class TestCIST:
         assert actual_avg_throughput >= expected_avg_throughput or \
             abs(actual_avg_throughput - expected_avg_throughput) / expected_avg_throughput <= TestMargin.throughput, \
             f"The actual avg throughput {actual_avg_throughput} degradate expected avg throughput {expected_avg_throughput}"
-    
+
+
     def _compare_time(self, expected_list, actual_list):
         try:
             expected_avg_time = sum(expected_list[WARM_UP:]) / (len(expected_list) - WARM_UP)
@@ -134,21 +156,32 @@ class TestCIST:
                 abs(actual_val["max allocated memory"] - expected_val["max allocated memory"]) / expected_val["max allocated memory"] <= TestMargin.memory, \
                 f'The actual max memory {actual_val["max allocated memory"]} seems to be abnormal compare to expected {expected_val["max allocated memory"]}.'
 
+
     def test_lm_loss_approx(self, baseline_json, generate_log, generate_json):
         # expected training loss curve at different global steps.
         self._get_baseline(baseline_json)
         self._get_actual(generate_log, generate_json)
         self._test_helper("lm loss")
-    
+
+
+    def test_grad_norm_approx(self, baseline_json, generate_log, generate_json):
+        # expected training loss curve at different global steps.
+        self._get_baseline(baseline_json)
+        self._get_actual(generate_log, generate_json)
+        self._test_helper("grad norm")
+
+
     def test_througpout(self, baseline_json, generate_log, generate_json):
         self._get_baseline(baseline_json)
         self._get_actual(generate_log, generate_json)
         self._test_helper("throughput")
-        
+
+
     def test_time(self, baseline_json, generate_log, generate_json):
         self._get_baseline(baseline_json)
         self._get_actual(generate_log, generate_json)
         self._test_helper("time info")
+
 
     def test_allocated_memory(self, baseline_json, generate_log, generate_json):
         self._get_baseline(baseline_json)

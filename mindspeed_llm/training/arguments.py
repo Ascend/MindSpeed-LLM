@@ -74,7 +74,6 @@ def process_args(parser):
     parser = _add_dualpipe_args(parser)
     parser = _add_ai_framework_args(parser)
     parser = _add_ckpt_args(parser)
-    parser = _add_communication_overlap_args(parser)
     parser = _add_zerc_args(parser)
 
     for feature in FEATURES_LIST:
@@ -939,15 +938,6 @@ def _add_hccl_group_buffer_args(parser):
     group.add_argument('--hccl-group-buffer', type=str, default=None,
                        help='the hccl buffer for group')
 
-    return parser
-
-
-def _add_communication_overlap_args(parser):
-    group = parser.add_argument_group(title='overlap_p2p_comm_or_async_log_allreduce_')
-    group.add_argument('--async-log-allreduce', action='store_true',
-                       help='Transform the AllReduce operation used for transmitting log information into an '
-                            'asynchronous operation to reduce communication overhead. '
-                            'This is useful in cross-DataCenter (DC) training.')
     return parser
 
 

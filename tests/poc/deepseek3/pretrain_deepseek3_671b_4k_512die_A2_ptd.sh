@@ -171,7 +171,6 @@ GPT_ARGS="
     --use-ascend-coc \
     --coc-fused-kernel \
     --moe-zerc \
-    --async-log-allreduce \
     --enable-share-memory \
     --distributed-timeout-minutes 120
 "
