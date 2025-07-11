@@ -14,6 +14,7 @@
 # limitations under the License.
 
 import os
+import warnings
 import argparse
 from pathlib import Path
 from functools import wraps
@@ -1205,6 +1206,16 @@ def _validate_optimizer(args):
         raise AssertionError('--swap-optimizer dose not support `--reuse-fp32-param`')
 
 
+def _warning_arguments(args):
+    if args.attention_mask_type == 'general':
+        warnings.warn(
+            """The 'args.attention_mask_type' argument is deprecated and will be removed in master branch.
+            Please use 'args.cp_attention_mask_type' instead.
+            In current branch, 'args.attention_mask_type' will be forcibly set as the value of 'args.cp_attention_mask_type'!
+        """,
+        DeprecationWarning)
+
+
 def _store_variables(args):
     """
     To bypass megatron validation, we store variables and restore them shortly afterward.
@@ -1454,14 +1465,13 @@ def validate_args_decorator(megatron_validate_args):
         args.use_mc2 = False
         args.use_legacy_models = not args.use_mcore_models
 
-
+        _warning_arguments(args)
         _validate_o2(args)
         _validate_varlen_fa_args(args)
         _validate_cp_args(args)
         _validate_vpp(args)
         _validate_recompute_args(args)
         _validate_recompute_in_advance(args)
-        _validate_create_attention_mask_in_dataloader(args)
         _validate_instruction_finetune(args)
         _validate_position_embedding(args)
         _validate_inference_args(args)
@@ -1482,6 +1492,7 @@ def validate_args_decorator(megatron_validate_args):
         _add_dummy_args(args)
         # remove in future megatron version
         _validate_mtp_args(args)
+        _validate_create_attention_mask_in_dataloader(args)
 
 
         _add_dummy_args_v2(args)
