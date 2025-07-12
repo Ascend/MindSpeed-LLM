@@ -1214,6 +1214,13 @@ def _warning_arguments(args):
             In current branch, 'args.attention_mask_type' will be forcibly set as the value of 'args.cp_attention_mask_type'!
         """,
         DeprecationWarning)
+        
+    if args.use_mc2:
+        warnings.warn(
+            """The '--use-mc2' argument is deprecated and will be removed in master branch.
+            Please use '--use-ascend-mc2' instead.
+        """,
+        DeprecationWarning)
 
 
 def _store_variables(args):
