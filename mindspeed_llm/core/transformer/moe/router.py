@@ -543,16 +543,19 @@ def topk_router_routing(self, logits: torch.Tensor):
 
     # fix router if needed
     if args.fix_router:
-        def fix_indices(index_tensor, logits_shape):
-            return torch.arange(index_tensor.numel(), device=index_tensor.device,
-                                dtype=torch.int64).view(index_tensor.shape) % logits_shape[-1]
+        def fix_indices(index_tensor, logits_shape, router_topk):
+            expert_select = torch.arange(index_tensor.shape[0] * router_topk, device=index_tensor.device,
+                                dtype=torch.int64).view(index_tensor.shape[0], router_topk) % logits_shape[-1]
+            routing_map = torch.zeros(index_tensor.shape, device=index_tensor.device, dtype=torch.bool)
+            routing_map.scatter_(1, expert_select, True)
+            return routing_map
 
         if isinstance(indices, tuple):
             indices = list(indices)
-            indices[0] = fix_indices(indices[0], logits.shape)
+            indices[0] = fix_indices(indices[0], logits.shape, args.moe_router_topk)
             indices = tuple(indices)
         else:
-            indices = fix_indices(indices, logits.shape)
+            indices = fix_indices(indices, logits.shape, args.moe_router_topk)
 
     return scores, indices
 
