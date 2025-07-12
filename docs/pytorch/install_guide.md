@@ -2,6 +2,10 @@
 
 请参考首页[依赖信息](../../README.md#版本配套表)选择下载对应依赖版本。
 
+>注：torch2.6 不支持python3.8；
+>注：请优先使用python3.10，部分模型存在更高版本环境依赖，如qwen3，依赖transformers==4.51.0只有 python3.9及以上版本支持。
+
+
 ### 驱动固件安装
 
 下载[驱动固件](https://www.hiascend.com/hardware/firmware-drivers/community?product=4&model=26&cann=8.0.RC3.beta1&driver=1.0.27.alpha)，请根据系统和硬件产品型号选择对应版本的`driver`和`firmware`。参考[安装NPU驱动固件](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/80RC3alpha003/softwareinst/instg/instg_0005.html?Mode=PmIns&OS=Ubuntu&Software=cannToolKit)或执行以下命令安装：

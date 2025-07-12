@@ -11,6 +11,7 @@
       <th>序列</th>
       <th>实现</th>
       <th>集群</th>
+      <th>支持版本</th>
       <th>贡献方</th>
       <th>认证</th>
     </tr>
@@ -19,20 +20,22 @@
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/collections/BAAI/aquila-6698657124de09d10cd7a83f">Aquila</a></td>
       <td><a href="https://huggingface.co/BAAI/Aquila-7B/tree/main">7B</a></td>
-      <td><a href="../../../examples/legacy/aquila">aquila</a></td>
+      <td><a href="https://gitee.com/ascend/MindSpeed-LLM/tree/2.0.0/examples/legacy/aquila">aquila</a></td>
       <td>2K</td>
       <th>Legacy</th>
       <td> 1x8</td>
+      <td><a href="https://gitee.com/ascend/MindSpeed-LLM/tree/2.0.0/">2.0.0</a></td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
     <tr>
       <td rowspan="2"><a href="https://huggingface.co/collections/BAAI/aquila-6698657124de09d10cd7a83f">Aquila2</a></td>
       <td><a href="https://huggingface.co/BAAI/Aquila2-7B/tree/main">7B</a></td>
-      <td rowspan="2"><a href="../../../examples/legacy/aquila2">aquila2</a></td>
+      <td rowspan="2"><a href="https://gitee.com/ascend/MindSpeed-LLM/tree/2.0.0/examples/legacy/aquila2">aquila2</a></td>
       <td>2K</td>
       <th>Legacy</th>
       <td> 1x8</td>
+      <td><a href="https://gitee.com/ascend/MindSpeed-LLM/tree/2.0.0/">2.0.0</a></td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -41,16 +44,18 @@
       <td>4K</td>
       <th>Legacy</th>
       <td> 2x8</td>
+      <td><a href="https://gitee.com/ascend/MindSpeed-LLM/tree/2.0.0/">2.0.0</a></td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
     <tr>
       <td rowspan="2"><a href="https://huggingface.co/baichuan-inc">Baichuan</a></td>
       <td><a href="https://huggingface.co/baichuan-inc/Baichuan-7B/tree/main">7B</a></td>
-      <td rowspan="2"><a href="../../../examples/legacy/baichuan">baichuan</a></td>
+      <td rowspan="2"><a href="https://gitee.com/ascend/MindSpeed-LLM/tree/2.0.0/examples/legacy/baichuan">baichuan</a></td>
       <td>4K</td>
       <th>Legacy</th>
       <td> 1x8</td>
+      <td><a href="https://gitee.com/ascend/MindSpeed-LLM/tree/2.0.0/">2.0.0</a></td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -59,6 +64,7 @@
       <td>4K</td>
       <th>Legacy</th>
       <td> 1x8</td>
+      <td><a href="https://gitee.com/ascend/MindSpeed-LLM/tree/2.0.0/">2.0.0</a></td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -69,6 +75,7 @@
       <td>4K</td>
       <th>Legacy</th>
       <td> 1x8</td>
+      <td><a href="https://gitee.com/ascend/MindSpeed-LLM/tree/2.0.0/">2.0.0</a></td>
       <td>【Ascend】</td>
       <td>【Pass】</td>
     </tr>
@@ -77,16 +84,18 @@
       <td>4K</td>
       <th>Mcore</th>
       <td> 1x8</td>
+      <td> </td>
       <td>【Ascend】</td>
       <td>【Pass】</td>
     </tr>
     <tr>
       <td rowspan="2"><a href="https://huggingface.co/bigscience">Bloom</a></td>
       <td><a href="https://huggingface.co/bigscience/bloom-7b1/tree/main">7B1</a></td>
-      <td rowspan="2"><a href="../../../examples/legacy/bloom">bloom</a></td>
+      <td rowspan="2"><a href="https://gitee.com/ascend/MindSpeed-LLM/tree/2.0.0/examples/legacy/bloom">bloom</a></td>
       <td>2K</td>
       <th>Legacy</th>
       <td> 1x8</td>
+      <td><a href="https://gitee.com/ascend/MindSpeed-LLM/tree/2.0.0/">2.0.0</a></td>
       <td>【Ascend】</td>
       <td>【Pass】</td>
     </tr>
@@ -95,6 +104,7 @@
       <td>2K</td>
       <th>Legacy</th>
       <td >12x8</td>
+      <td><a href="https://gitee.com/ascend/MindSpeed-LLM/tree/2.0.0/">2.0.0</a></td>
       <td>【Ascend】</td>
       <td>【Pass】</td>
     </tr>
@@ -105,6 +115,7 @@
       <td>8K</td>
       <th>Mcore</th>
       <td >1x8</td>
+      <td> </td>
       <td>【Ascend】</td>
       <td>【Pass】</td>
     </tr>
@@ -112,6 +123,7 @@
       <td>32K</td>
       <th>Mcore</th>
       <td >1x8</td>
+      <td> </td>
       <td>【Ascend】</td>
       <td>【Pass】</td>
     </tr>
@@ -119,6 +131,7 @@
       <td>64K</td>
       <th>Mcore</th>
       <td >2x8</td>
+      <td> </td>
       <td>【Ascend】</td>
       <td>【Pass】</td>
     </tr>
@@ -129,6 +142,7 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -136,6 +150,7 @@
       <td> 32K </td>
       <th>Mcore</th>
       <td> 2x8 </td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -146,16 +161,18 @@
       <td>4K</td>
       <th>Mcore</th>
       <td> 2x8</td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
     <tr>
       <td rowspan="2"><a href="https://huggingface.co/internlm">InternLM</a></td>
       <td><a href="https://huggingface.co/internlm/internlm-7b/tree/main">7B</a></td>
-      <td rowspan="2"><a href="../../../examples/legacy/intern">intern</a></td>
+      <td rowspan="2"><a href="https://gitee.com/ascend/MindSpeed-LLM/tree/2.0.0/examples/legacy/intern">intern</a></td>
       <td>2K</td>
       <th>Legacy</th>
       <td>1x8</td>
+      <td><a href="https://gitee.com/ascend/MindSpeed-LLM/tree/2.0.0/">2.0.0</a></td>
       <td>【Ascend】</td>
       <td>【Pass】</td>
     </tr>
@@ -164,6 +181,7 @@
       <td>2K</td>
       <th>Legacy</th>
       <td >4x8</td>
+      <td><a href="https://gitee.com/ascend/MindSpeed-LLM/tree/2.0.0/">2.0.0</a></td>
       <td>【Ascend】</td>
       <td>【Pass】</td>
     </tr>
@@ -174,12 +192,14 @@
       <td> 4K </td>
       <th> Mcore </th>
       <td> 1x8 </td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
       <tr>
       <td> 32K </td>
       <th> Mcore </th>
       <td> 1x8 </td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -190,6 +210,7 @@
       <td> 32K </td>
       <th> Mcore </th>
       <td> 1x8 </td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -198,6 +219,7 @@
       <td> 32K </td>
       <th> Mcore </th>
       <td> 1x8 </td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -206,16 +228,18 @@
       <td> 32K </td>
       <th> Mcore </th>
       <td> 2x8 </td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Test】</td>
     </tr>
     <tr>
       <td rowspan="4"><a href="https://huggingface.co/meta-llama">LLaMA</a></td>
       <td><a href="https://huggingface.co/huggyllama/llama-7b/tree/main">7B</a></td>
-      <td rowspan="4"><a href="../../../examples/legacy/llama">llama</a></td>
+      <td rowspan="4"><a href="https://gitee.com/ascend/MindSpeed-LLM/tree/2.0.0/examples/legacy/llama">llama</a></td>
       <td>2K</td>
       <th>Legacy</th>
       <td>1x8</td>
+      <td><a href="https://gitee.com/ascend/MindSpeed-LLM/tree/2.0.0/">2.0.0</a></td>
       <td>【Ascend】</td>
       <td>【Pass】</td>
     </tr>
@@ -224,15 +248,17 @@
       <td>2K</td>
       <th>Legacy</th>
       <td>1x8</td>
+      <td><a href="https://gitee.com/ascend/MindSpeed-LLM/tree/2.0.0/">2.0.0</a></td>
       <td>【Ascend】</td>
       <td>【Pass】</td>
     </tr>
     <tr>
-        <td><a href="https://huggingface.co/pinkmanlove/llama-33b-hf/tree/main">33B</a></td>
-        <td>2K</td>
-        <th>Legacy</th>
-        <td>4x8</td>
-        <td>【Ascend】</td>
+      <td><a href="https://huggingface.co/pinkmanlove/llama-33b-hf/tree/main">33B</a></td>
+      <td>2K</td>
+      <th>Legacy</th>
+      <td>4x8</td>
+      <td><a href="https://gitee.com/ascend/MindSpeed-LLM/tree/2.0.0/">2.0.0</a></td>
+      <td>【Ascend】</td>
       <td>【Pass】</td>
     </tr>
     <tr>
@@ -240,6 +266,7 @@
       <td>2K</td>
       <th>Legacy</th>
       <td>4x8</td>
+      <td><a href="https://gitee.com/ascend/MindSpeed-LLM/tree/2.0.0/">2.0.0</a></td>
       <td>【Ascend】</td>
       <td>【Pass】</td>
     </tr>
@@ -250,6 +277,7 @@
       <td>4K</td>
       <th>Mcore</th>
       <td>1x8</td>
+      <td> </td>
       <td>【NAIE】</td>
       <td>【Pass】</td>
     </tr>
@@ -258,6 +286,7 @@
       <td>4K</td>
       <th>Mcore</th>
       <td>1x8</td>
+      <td> </td>
       <td>【NAIE】</td>
       <td>【Pass】</td>
     </tr>
@@ -266,6 +295,7 @@
       <td>4K</td>
       <th>Mcore</th>
       <td>2x8</td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -274,6 +304,7 @@
       <td>4K</td>
       <th>Mcore</th>
       <td>4x8</td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -284,6 +315,7 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td>1x8</td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -292,6 +324,7 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td>4x8</td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -302,6 +335,7 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td>1x8</td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -309,6 +343,7 @@
       <td>128K</td>
       <th>Mcore</th>
       <td>4x8</td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -317,6 +352,7 @@
       <td>8K</td>
       <th>Mcore</th>
       <td>4x8</td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -327,6 +363,7 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td>1x8</td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -335,6 +372,7 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td>1x8</td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -345,16 +383,18 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td> 4x8</td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Test】</td>
     </tr>
     <tr>
       <td rowspan="3"><a href="https://huggingface.co/Qwen">Qwen</a></td>
       <td><a href="https://huggingface.co/Qwen/Qwen-7B/tree/main">7B</a></td>
-      <td rowspan="3"><a href="../../../examples/legacy/qwen">qwen</a></td>
+      <td rowspan="3"><a href="https://gitee.com/ascend/MindSpeed-LLM/tree/2.0.0/examples/legacy/qwen">qwen</a></td>
       <td> 8K </td>
       <th>Legacy</th>
       <td>1x8</td>
+      <td><a href="https://gitee.com/ascend/MindSpeed-LLM/tree/2.0.0/">2.0.0</a></td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -363,6 +403,7 @@
       <td>2K</td>
       <th>Legacy</th>
       <td>1x8</td>
+      <td><a href="https://gitee.com/ascend/MindSpeed-LLM/tree/2.0.0/">2.0.0</a></td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -371,6 +412,7 @@
       <td> 8K </td>
       <th>Legacy</th>
       <td>16x8</td>
+      <td><a href="https://gitee.com/ascend/MindSpeed-LLM/tree/2.0.0/">2.0.0</a></td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -382,6 +424,7 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
       <tr>
@@ -389,6 +432,7 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
       <tr>
@@ -396,6 +440,7 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
       <tr>
@@ -403,6 +448,7 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
       <tr>
@@ -410,6 +456,7 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
       <tr>
@@ -417,6 +464,7 @@
       <td> 8K </td>
       <th> Mcore </th>
       <td> 4x8 </td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
       <tr>
@@ -424,6 +472,7 @@
       <td> 8K </td>
       <th> Mcore </th>
       <td> 8x8 </td>
+      <td> </td>
       <td>【GTS】</td>    
       <td>【Pass】</td>
       <tr>
@@ -431,6 +480,7 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td> 8x8 </td>
+      <td> </td>
       <td>【GTS】</td>    
       <td>【Pass】</td>
     </tr>
@@ -440,6 +490,7 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
+      <td> </td>
       <td>【GTS】</td>    
       <td>【Pass】</td>
     </tr>
@@ -451,12 +502,14 @@
       <td> 4K </td>
       <th> Mcore </th>
       <td> 1x8 </td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
       <tr>
       <td> 32K </td>
       <th> Mcore </th>
       <td> 1x8 </td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
       <tr>
@@ -464,12 +517,14 @@
       <td> 4K </td>
       <th> Mcore </th>
       <td> 1x8 </td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
       <tr>
       <td> 32K </td>
       <th> Mcore </th>
       <td> 1x8 </td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
       <tr>
@@ -477,12 +532,14 @@
       <td> 4K</td>
       <th>Mcore</th>
       <td>1x8</td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
       <tr>
       <td> 32K</td>
       <th>Mcore</th>
       <td>1x8</td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
       <tr>
@@ -490,6 +547,7 @@
       <td> 4K</td>
       <th>Mcore</th>
       <td>4x8</td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -500,6 +558,7 @@
       <td> 32K </td>
       <th>Mcore</th>
       <td>1x8</td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -507,6 +566,7 @@
       <td> 32K </td>
       <th>Mcore</th>
       <td>1x8</td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     <tr>
@@ -514,6 +574,7 @@
       <td> 32K </td>
       <th>Mcore</th>
       <td>1x8</td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -522,6 +583,7 @@
       <td>32K</td>
       <th>Mcore</th>
       <td>1x8</td>
+      <td> </td>
       <td>【Ascend】</td>
       <td>【Pass】</td>
     </tr>
@@ -530,6 +592,7 @@
       <td>32K</td>
       <th>Mcore</th>
       <td>2x8</td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -538,6 +601,7 @@
       <td>32K</td>
       <th>Mcore</th>
       <td>4x8</td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -546,6 +610,7 @@
       <td>32K</td>
       <th>Mcore</th>
       <td>16x8</td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Test】</td>
     </tr>
@@ -556,6 +621,7 @@
       <td> 4K </td>
       <th> Mcore </th>
       <td> 1x8 </td>
+      <td> </td>
       <td>【Ascend】</td>
       <td>【Test】</td>
     </tr>
@@ -565,6 +631,7 @@
       <td> 4K </td>
       <th> Mcore </th>
       <td> 1x8 </td>
+      <td> </td>
       <td>【Ascend】</td>
       <td>【Test】</td>
     </tr>
@@ -574,6 +641,7 @@
       <td> 4K </td>
       <th> Mcore </th>
       <td> 1x8 </td>
+      <td> </td>
       <td>【Ascend】</td>
       <td>【Test】</td>
     </tr>
@@ -583,6 +651,7 @@
       <td> 4K </td>
       <th> Mcore </th>
       <td> 1x8 </td>
+      <td> </td>
       <td>【Ascend】</td>
       <td>【Test】</td>
     </tr>
@@ -592,6 +661,7 @@
       <td> 4K </td>
       <th> Mcore </th>
       <td> 1x8 </td>
+      <td> </td>
       <td>【Ascend】</td>
       <td>【Test】</td>
     </tr>
@@ -601,6 +671,7 @@
       <td> 4K </td>
       <th> Mcore </th>
       <td> 2x8 </td>
+      <td> </td>
       <td>【Ascend】</td>
       <td>【Test】</td>
     </tr>
@@ -611,6 +682,7 @@
       <td> 4K </td>
       <th>Mcore</th>
       <td>1x8</td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Test】</td>
     </tr>
@@ -621,6 +693,7 @@
       <td> 4K </td>
       <th>Mcore</th>
       <td>1x8</td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -629,6 +702,7 @@
       <td> 4K </td>
       <th>Mcore</th>
       <td>1x8</td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -637,6 +711,7 @@
       <td> 4K </td>
       <th>Mcore</th>
       <td>4x8</td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Test】</td>
     </tr>
@@ -647,16 +722,18 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
+      <td> </td>
       <td>【China Mobile Cloud】</td>    
       <td>【Test】</td>
     </tr>
 	<tr>
       <td rowspan="2"><a href="https://huggingface.co/01-ai">Yi</a></td>
       <td><a href="https://huggingface.co/01-ai/Yi-9B/tree/main">9B</a></td>
-      <td rowspan="2"><a href="../../../examples/mcore/yi">yi</a></td>
+      <td rowspan="2"><a href="https://gitee.com/ascend/MindSpeed-LLM/tree/2.0.0/examples/legacy/yi">yi</a></td>
       <td> 4K</td>
       <th>Legacy</th>
       <td>1x4</td>
+      <td><a href="https://gitee.com/ascend/MindSpeed-LLM/tree/2.0.0/">2.0.0</a></td>
       <td>【OpenMind】</td>
       <td>【Test】</td>
     </tr>
@@ -665,6 +742,7 @@
       <td> 4K</td>
       <th>Mcore</th>
       <td>2x8</td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -675,6 +753,7 @@
       <td> 4K</td>
       <th>Mcore</th>
       <td>1x8</td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -683,6 +762,7 @@
       <td> 4K</td>
       <th>Mcore</th>
       <td>1x8</td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -691,6 +771,7 @@
       <td> 4K</td>
       <th>Mcore</th>
       <td>2x8</td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Test】</td>
     </tr>
@@ -701,6 +782,7 @@
       <td> 32K</td>
       <th>Mcore</th>
       <td>1x8</td>
+      <td> </td>
       <td>【NAIE】</td>
       <td>【Pass】</td>
     </tr>
@@ -711,6 +793,7 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td>1x8</td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -719,6 +802,7 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td>1x8</td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -729,6 +813,7 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td>1x8</td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -737,16 +822,29 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td>2x8</td>
+      <td> </td>
+      <td>【GTS】</td>
+      <td>【Pass】</td>
+    </tr>
+    <tr>
+      <td rowspan="1"><a href="https://huggingface.co/xai-org/grok-1/tree/main">grok-1</a></td>
+      <td><a href="https://huggingface.co/xai-org/grok-1/tree/main">40B</a></td>
+      <td><a href="https://gitee.com/ascend/MindSpeed-LLM/tree/2.0.0/examples/mcore/grok1">grok-1</a></td>
+      <td> 8K </td>
+      <th>Mcore</th>
+      <td>4x8</td>
+      <td><a href="https://gitee.com/ascend/MindSpeed-LLM/tree/2.0.0/">2.0.0</a></td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
     <tr>
       <td>GPT3</td>
       <td>175B</td>
-      <td rowspan="1"><a href="../../../examples/legacy/gpt3">gpt3</a></td>
+      <td rowspan="1"><a href="https://gitee.com/ascend/MindSpeed-LLM/tree/2.0.0/examples/legacy/gpt3">gpt3</a></td>
       <td> 2K </td>
       <th>Legacy</th>
       <td> 16x8 </td>
+      <td><a href="https://gitee.com/ascend/MindSpeed-LLM/tree/2.0.0/">2.0.0</a></td>
       <td>【Ascend】</td>
       <td>【Pass】</td>
     </tr>
@@ -757,6 +855,7 @@
       <td> 4K </td>
       <th> Mcore </th>
       <td> 1x8 </td>
+      <td> </td>
       <td>【NAIE】</td>
       <td>【Pass】</td>
     </tr>
@@ -767,6 +866,7 @@
       <td> 32K </td>
       <th> Mcore </th>
       <td> 1x8 </td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Test】</td>
     </tr>
@@ -777,6 +877,7 @@
       <td> 4K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
+      <td> </td>
       <td>【GTS】</td>
       <td>【Test】</td>
     </tr>
@@ -787,6 +888,7 @@
       <td> 4K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
+      <td> </td>
       <td>【Ascend】</td>
       <td>【Test】</td>
     </tr>
@@ -797,6 +899,7 @@
       <td> 4K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
+      <td> </td>
       <td>【Ascend】</td>
       <td>【Test】</td>
     </tr>
@@ -805,6 +908,7 @@
       <td> 4K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
+      <td> </td>
       <td>【Ascend】</td>
       <td>【Test】</td>
     </tr>
@@ -813,6 +917,7 @@
       <td> 4K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
+      <td> </td>
       <td>【Ascend】</td>
       <td>【Test】</td>
     </tr>
@@ -821,6 +926,7 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td> 2x8 </td>
+      <td> </td>
       <td>【Ascend】</td>
       <td>【Test】</td>
     </tr>
@@ -831,6 +937,7 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
+      <td> </td>
       <td>【Ascend】</td>
       <td>【Test】</td>
     </tr>
@@ -839,6 +946,7 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td> 4x8 </td>
+      <td> </td>
       <td>【Ascend】</td>
       <td>【Test】</td>
     </tr>
@@ -888,12 +996,4 @@
    # SUPPORT_FP16 = SUPPORT_CUDA and torch.cuda.get_device_capability(0)[0] >= 7
    # 修改为：
    # SUPPORT_FP16 = True
-   ```
-
-## 版本支持
-1. Qwen3系列模型与llama3.3系列模型依赖以下特定Python及transformers版本
- 
-    ```shell
-   Python>=3.10
-   transformers==4.51.0
    ```
