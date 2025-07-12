@@ -21,7 +21,7 @@ from megatron.training.global_vars import set_args
 from megatron.training.checkpointing import load_checkpoint
 from megatron.core import tensor_parallel
 from mindspeed_llm.training.utils import parse_args
-from mindspeed_llm.training import model_provider_func_wrapper
+from mindspeed_llm.training.training import model_provider_func_wrapper
 from mindspeed_llm.training.checkpointing import load_checkpoint_wrapper
 
 logger.basicConfig(format="")

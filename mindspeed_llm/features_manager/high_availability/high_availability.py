@@ -33,7 +33,7 @@ class HighAvailabilityFeature(MindSpeedFeature):
 
 
     def register_patches(self, patch_manager, args):
-        from training import setup_model_and_optimizer_wrapper
+        from mindspeed_llm.training.training import setup_model_and_optimizer_wrapper
         from core import (get_megatron_optimizer_wrapper, clip_grad_norm_fp32_wrapper,
                             distributed_optimizer_init_wrapper,
                             start_grad_sync_wrapper, distributed_data_parallel_init_wrapper,

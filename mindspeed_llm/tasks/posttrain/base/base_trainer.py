@@ -21,8 +21,8 @@ from megatron.core.models.gpt.gpt_layer_specs import (
 )
 from megatron.core.models.gpt import GPTModel
 from megatron.training.checkpointing import save_checkpoint
-from mindspeed_llm.training import build_train_args
-from mindspeed_llm.training import train
+from mindspeed_llm.training.training import build_train_args
+from mindspeed_llm.training.training import train
 from mindspeed_llm.training.initialize import set_jit_fusion_options
 from mindspeed_llm.tasks.posttrain.utils import train_valid_test_datasets_provider
 

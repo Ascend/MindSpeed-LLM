@@ -21,7 +21,7 @@ from megatron.core.datasets.utils import get_blend_from_list
 from megatron.core.rerun_state_machine import get_rerun_state_machine
 import megatron.legacy.model
 from megatron.core.models.gpt import GPTModel
-from mindspeed_llm.training import pretrain
+from mindspeed_llm.training.training import pretrain
 from megatron.core.transformer.spec_utils import import_module
 from megatron.training.utils import (
     get_batch_on_this_cp_rank,

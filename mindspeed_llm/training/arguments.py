@@ -17,14 +17,21 @@ import os
 import argparse
 from pathlib import Path
 from functools import wraps
-from mindspeed_llm.training.utils import print_rank0_by_args
+from mindspeed.features_manager.features_manager import MindSpeedFeaturesManager
 from mindspeed_llm.features_manager import FEATURES_LIST
+
 
 cur_file_dir = Path(__file__).absolute().parent
 
 TEMPLATES_DIR = os.path.join(cur_file_dir.parent.parent, "configs/finetune/templates.json")
 
 
+def print_rank0_by_args(args, message):
+    """Before initialization of distributed, we only print on rank 0."""
+    if args.rank == 0:
+        print(message, flush=True)
+   
+        
 def extra_args_provider_decorator(extra_args_provider):
     @wraps(extra_args_provider)
     def wrapper(parser):
@@ -78,6 +85,8 @@ def process_args(parser):
 
     for feature in FEATURES_LIST:
         feature.register_args(parser)
+        
+    MindSpeedFeaturesManager.register_features_args(parser)
 
     return parser
 
@@ -1474,6 +1483,12 @@ def validate_args_decorator(megatron_validate_args):
 
         _add_dummy_args_v2(args)
         for feature in FEATURES_LIST:
+            if (getattr(args, feature.feature_name, None) and feature.optimization_level > 0) or feature.optimization_level == 0:
+                feature.pre_validate_args(args)
+                feature.validate_args(args)
+                feature.post_validate_args(args)
+                
+        for feature in MindSpeedFeaturesManager.FEATURES_LIST:
             if (getattr(args, feature.feature_name, None) and feature.optimization_level > 0) or feature.optimization_level == 0:
                 feature.pre_validate_args(args)
                 feature.validate_args(args)

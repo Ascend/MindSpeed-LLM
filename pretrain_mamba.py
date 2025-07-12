@@ -27,7 +27,7 @@ from megatron.training.utils import (
     average_losses_across_data_parallel_group,
 )
 from megatron.training.arguments import core_transformer_config_from_args
-from mindspeed_llm.training import pretrain
+from mindspeed_llm.training.training import pretrain
 from mindspeed_llm.training.utils import generate_actual_seq_len
 
 stimer = StragglerDetector()
