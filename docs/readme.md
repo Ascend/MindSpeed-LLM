@@ -17,7 +17,7 @@
     <tr>
       <td rowspan="1">快速入门</td>
       <td><a href="./quick_start.md">quick_start.md</a></td>
-      <td></td>
+      <td>基于pytorch/mindspore后端的入门指导，从环境安装到预训练拉起</td>
     </tr>
     <tr>
       <td rowspan="3">仓库支持模型清单</td>
