@@ -41,22 +41,11 @@ class MindSporeAdaptation(MegatronAdaptationABC):
             return
 
         args = self.reparse_args()
-
-        from mindspeed_llm.mindspore.training.arguments import _validate_optimizer
-        MindSporeAdaptation.register('mindspeed_llm.training.arguments._validate_optimizer', _validate_optimizer)
-
         from ..core.models.gpt.gpt_model import GPTModel
-        from ..mindspore.core.transformer.moe.moe_layer import moe_layer_init_wrapper, moe_layer_forward
-        from mindspeed.mindspore.core.data_parallel.distributed_data_parallel import distributed_data_parallel_init_with_cp
-        from mindspeed.mindspore.core.transformer.moe.experts import groupedmlp_init_wrapper, groupedmlp_forward
+        from ..mindspore.core.transformer.moe.moe_layer import moe_layer_forward
 
         MindSporeAdaptation.register('megatron.core.models.gpt.gpt_model.GPTModel', GPTModel)
-        MindSporeAdaptation.register('megatron.core.distributed.distributed_data_parallel.DistributedDataParallel.__init__',
-                    distributed_data_parallel_init_with_cp)
-        MindSporeAdaptation.register('megatron.core.transformer.moe.moe_layer.MoELayer.__init__',
-                                moe_layer_init_wrapper)
-        MindSporeAdaptation.register('megatron.core.transformer.moe.experts.GroupedMLP.__init__',
-                                groupedmlp_init_wrapper)
+
         MindSporeAdaptation.register('megatron.core.transformer.moe.moe_layer.MoELayer.forward', moe_layer_forward)
 
         if args.moe_permutation_async_comm:
@@ -65,7 +54,7 @@ class MindSporeAdaptation(MegatronAdaptationABC):
                     from mindspeed.mindspore.core.transformer.moe.legacy_a2a_token_dispatcher import alltoall_token_permutation_new, \
                             alltoall_token_unpermutation_new
                     from mindspeed.mindspore.core.transformer.moe.experts import group_mlp_forward
-                    MindSporeAdaptation.register('megatron.core.transformer.moe.experts.GroupedMLP.forward', group_mlp_forward)
+
                     MindSporeAdaptation.register(
                         'megatron.core.transformer.moe.token_dispatcher.MoEAlltoAllTokenDispatcher.token_permutation',
                         alltoall_token_permutation_new)
@@ -79,13 +68,12 @@ class MindSporeAdaptation(MegatronAdaptationABC):
                     MindSporeAdaptation.register('megatron.core.transformer.moe.moe_utils.permute', permute_wrapper)
                     MindSporeAdaptation.register('megatron.core.transformer.moe.moe_utils.unpermute', unpermute_wrapper)
 
-        if not args.moe_alltoall_overlap_comm and not args.moe_fb_overlap:
-            MindSporeAdaptation.register('megatron.core.transformer.moe.experts.GroupedMLP.forward',
-                                    groupedmlp_forward)
+        from mindspeed.mindspore.core.transformer.moe.grouped_gemm_util import Ops
+        MindSporeAdaptation.register('megatron.core.transformer.moe.grouped_gemm_util.ops', Ops)
 
-        from mindspeed.mindspore.core.distributed.distributed_data_parallel import distributed_data_parallel_init, local_make_param_hook
+        from mindspeed.mindspore.core.distributed.distributed_data_parallel import distributed_data_parallel_init, _make_backward_post_hook
         MindSporeAdaptation.register('megatron.core.distributed.distributed_data_parallel.DistributedDataParallel.__init__', distributed_data_parallel_init)
-        MindSporeAdaptation.register('megatron.core.distributed.distributed_data_parallel.DistributedDataParallel._make_param_hook', local_make_param_hook)
+        MindSporeAdaptation.register('megatron.core.distributed.distributed_data_parallel.DistributedDataParallel._make_backward_post_hook', _make_backward_post_hook)
 
         from mindspeed.mindspore.core.distributed.param_and_grad_buffer import register_grad_ready
         MindSporeAdaptation.register('megatron.core.distributed.param_and_grad_buffer.register_grad_ready', register_grad_ready)
@@ -94,15 +82,12 @@ class MindSporeAdaptation(MegatronAdaptationABC):
         MindSporeAdaptation.register('megatron.core.models.common.embeddings.rotary_pos_embedding.RotaryEmbedding.get_rotary_seq_len', get_rotary_seq_len)
         MindSporeAdaptation.register('megatron.core.models.common.embeddings._rotate_half', local_rotate_half)
 
-        from mindspeed.mindspore.core.optimizer import get_megatron_optimizer
-        MindSporeAdaptation.register('megatron.core.optimizer.get_megatron_optimizer', get_megatron_optimizer)
         from mindspeed.mindspore.core.optimizer.optimizer import megatron_optimizer_init
         MindSporeAdaptation.register('megatron.core.optimizer.optimizer.MegatronOptimizer.__init__', megatron_optimizer_init)
 
-        from mindspeed.mindspore.core.pipeline_parallel.schedules import backward_step, forward_backward_no_pipelining
-        from mindspeed_llm.mindspore.core.pipeline_parallel.schedules import forward_step
+        from mindspeed.mindspore.core.pipeline_parallel.schedules import forward_step, backward_step, forward_backward_no_pipelining
         MindSporeAdaptation.register('megatron.core.pipeline_parallel.schedules.forward_step', forward_step)
-        MindSporeAdaptation.register('mindspeed.mindspore.core.pipeline_parallel.schedules.forward_step', forward_step)
+
         MindSporeAdaptation.register('megatron.core.pipeline_parallel.schedules.backward_step', backward_step)
         MindSporeAdaptation.register('megatron.core.pipeline_parallel.schedules.forward_backward_no_pipelining', forward_backward_no_pipelining)
 
@@ -159,17 +144,17 @@ class MindSporeAdaptation(MegatronAdaptationABC):
             MindSporeAdaptation.register('mindspeed.ops.lcal_functional.CoCOperations.matmul_reduce_scatter', matmul_reduce_scatter)
             MindSporeAdaptation.register('mindspeed.ops.lcal_functional.CoCOperations.matmul_all_reduce', matmul_all_reduce)
             MindSporeAdaptation.register('mindspeed.ops.lcal_functional.CoCOperations.pure_matmul', pure_matmul)
+        
+        from mindspeed.mindspore.core.optimizer.adamw import step_func
+        MindSporeAdaptation.register('apex.optimizers.FusedAdam.step', step_func)
+        
+        from mindspeed.mindspore.core.transformer.module import fp32_to_float16
+        MindSporeAdaptation.register('megatron.core.transformer.module.fp32_to_float16', fp32_to_float16)
 
         from mindspeed_llm.mindspore.core.transformer.moe.router import apply_seq_aux_loss, topk_router_gating_func
         MindSporeAdaptation.register('mindspeed_llm.core.transformer.moe.router.apply_seq_aux_loss',
                                     apply_seq_aux_loss)
         MindSporeAdaptation.register('megatron.core.transformer.moe.router.TopKRouter.gating', topk_router_gating_func)
-
-        from mindspeed.mindspore.core.transformer.transformer import core_mlp_forward_wrapper
-        MindSporeAdaptation.register('megatron.core.transformer.mlp.MLP.forward',
-            core_mlp_forward_wrapper)
-
-
 
         if args.moe_fb_overlap:
             from mindspeed_llm.mindspore.tasks.models.transformer.multi_head_latent_attention import mla_forward
@@ -313,12 +298,6 @@ class MindSporeAdaptation(MegatronAdaptationABC):
             MegatronAdaptation.register(
                 'mindspeed_llm.training.utils._compute_actual_seq_len', _compute_actual_seq_len)
 
-        from ..mindspore.core.distributed.finalize_model_grads import _update_router_expert_bias
-        MindSporeAdaptation.register('mindspeed_llm.core.distributed.finalize_model_grads._update_router_expert_bias', _update_router_expert_bias)
-
-        from ..mindspore.core.transformer.module import set_is_first_microbatch
-        MindSporeAdaptation.register('megatron.core.transformer.module.MegatronModule.set_is_first_microbatch', set_is_first_microbatch)
-
         if args.moe_zerc:
             from mindspeed.mindspore.core.transformer.moe.moe_zerc.fwdbwd import transformer_layer_forward_moe_backward_dense_overlaping_zerc, transformer_layer_forward_moe_backward_moe_overlaping_zerc
             MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.overlap_funcs.fwdbwd.transformer_layer_forward_moe_backward_dense_overlaping',
@@ -336,13 +315,10 @@ class MindSporeAdaptation(MegatronAdaptationABC):
             MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.modules.token_dispatcher.alltoall_token_unperm2',
                         zerc_alltoall_token_unperm2)
 
-        from mindspeed.mindspore.core.pipeline_parallel.fb_overlap.modules.token_dispatcher import PackProb, UnpackProb
-        MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.modules.token_dispatcher.PackProb', PackProb)
-        MindSporeAdaptation.register('mindspeed.core.pipeline_parallel.fb_overlap.modules.token_dispatcher.UnpackProb', UnpackProb)
-
         if args.gemm_gradient_accumulation_fusion:
             from mindspeed.mindspore.ops.npu_groupmatmul_add import npu_groupmatmul_add_fp32
             MindSporeAdaptation.register('mindspeed.ops.npu_groupmatmul_add.npu_groupmatmul_add_fp32', npu_groupmatmul_add_fp32)
+
         from mindspeed.mindspore.ops.npu_matmul_add import npu_matmul_add_fp32
         MindSporeAdaptation.register('fused_weight_gradient_mlp_cuda.wgrad_gemm_accum_fp32', npu_matmul_add_fp32)
         MindSporeAdaptation.register('mindspeed.ops.npu_matmul_add.npu_matmul_add_fp32', npu_matmul_add_fp32)
@@ -379,6 +355,36 @@ class MindSporeAdaptation(MegatronAdaptationABC):
         MindSporeAdaptation.register('megatron.legacy.model.module.fp32_to_float16', fp32_to_float16)
         MindSporeAdaptation.register('megatron.legacy.model.module.float16_to_fp32', float16_to_fp32)
 
+        from mindspeed_llm.mindspore.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb_bshd_func
+        MindSporeAdaptation.register('megatron.core.models.common.embeddings.rotary_pos_embedding._apply_rotary_pos_emb_bshd', apply_rotary_pos_emb_bshd_func)
+
+        from mindspeed_llm.mindspore.core.datasets.blended_megatron_dataset_builder import need_to_build_dataset
+        MindSporeAdaptation.register('mindspeed_llm.core.datasets.blended_megatron_dataset_builder.need_to_build_dataset', need_to_build_dataset)
+
+        from mindspeed_llm.mindspore.core.models.common.embeddings.rotary_pos_embedding import apply_yarn_scaling
+        MindSporeAdaptation.register('mindspeed_llm.core.models.common.embeddings.rotary_pos_embedding.apply_yarn_scaling', apply_yarn_scaling)
+
+        from mindspeed_llm.mindspore.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb
+        MindSporeAdaptation.register('mindspeed_llm.core.models.common.embeddings.rotary_pos_embedding.apply_rotary_pos_emb', apply_rotary_pos_emb)
+
+        from mindspeed_llm.mindspore.core.transformer.moe.router import topk_router_gating_func
+        MindSporeAdaptation.register('mindspeed_llm.core.transformer.moe.router.topk_router_gating_func', topk_router_gating_func)
+
+        from mindspeed_llm.mindspore.tasks.common.yarn_rope import yarn_linear_ramp_mask
+        MindSporeAdaptation.register('mindspeed_llm.tasks.common.yarn_rope.YarnRotaryPositionEmbedding.yarn_linear_ramp_mask', yarn_linear_ramp_mask)
+
+        from mindspeed.mindspore.core.optimizer.adamw import step_func
+        MindSporeAdaptation.register('mindspeed.core.optimizer.adamw.AdamW.step', step_func)
+
+        from mindspeed.mindspore.core.transformer.moe.token_dispatcher import preprocess
+        MindSporeAdaptation.register('mindspeed.core.transformer.moe.token_dispatcher.preprocess', preprocess)
+
+        from mindspeed.mindspore.ops.npu_apply_fused_adamw_v2 import npu_apply_fused_adamw_v2
+        MindSporeAdaptation.register('mindspeed.ops.npu_apply_fused_adamw_v2.npu_apply_fused_adamw_v2',
+                            npu_apply_fused_adamw_v2)
+        
+        from mindspeed.mindspore.optimizer.adamw import step_func
+        MindSporeAdaptation.register('mindspeed.optimizer.adamw.AdamW.step', step_func)
 
     @staticmethod
     def reparse_args():

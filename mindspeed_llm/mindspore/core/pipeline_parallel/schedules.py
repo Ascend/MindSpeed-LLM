@@ -33,6 +33,7 @@ def forward_step(
     is_first_microbatch=False,
     current_microbatch=None,
     forward_only=False,
+    encoder_decoder_xattn=False,
 ):
     """Forward step for passed-in model.
 

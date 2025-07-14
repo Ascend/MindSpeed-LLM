@@ -1,11 +1,16 @@
 # Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
 # Copyright (c) 2025, HUAWEI CORPORATION. All rights reserved.
+import logging
+from typing import Any, Callable, Iterable, Optional, Type, Union
 
 import torch
 
 from megatron.training import get_args
 from megatron.core import mpu
 from mindspore.communication import get_local_rank
+from megatron.core.datasets.blended_dataset import BlendedDataset
+from megatron.core.datasets.megatron_dataset import MegatronDataset, LowLevelDataset
+from megatron.core import mpu
 
 
 def need_to_build_dataset():

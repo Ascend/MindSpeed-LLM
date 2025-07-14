@@ -61,29 +61,28 @@ def moe_layer_init_wrapper(init_func):
 
 
 def moe_layer_forward(self, hidden_states: torch.Tensor):
-    global_args = get_args()
-    if global_args.moe_token_dispatcher_type == 'alltoall' and global_args.moe_alltoall_overlap_comm:
+    args = get_args()
+    if args.moe_token_dispatcher_type == 'alltoall_seq' and args.moe_alltoall_overlap_comm:
         return MoELayerOverlapAll2All.apply(hidden_states, self)
-    if global_args.moe_token_dispatcher_type == 'allgather' and global_args.moe_allgather_overlap_comm:
+    if args.moe_token_dispatcher_type == 'allgather' and args.moe_allgather_overlap_comm:
         return MoELayerOverlapAllGather.apply(hidden_states, self)
 
     # process MoE
     scores, indices = self.router(hidden_states)
     
-    if global_args.moe_revert_type_after_topk:
-        (dispatched_input, tokens_per_expert) = self.token_dispatcher.token_permutation(
+    if args.moe_revert_type_after_topk:
+        (dispatched_input, tokens_per_expert, global_probs) = self.token_dispatcher.token_permutation(
             hidden_states, scores.type_as(hidden_states), indices
         )
     else:
-        (dispatched_input, tokens_per_expert) = self.token_dispatcher.token_permutation(
+        (dispatched_input, tokens_per_expert, global_probs) = self.token_dispatcher.token_permutation(
             hidden_states, scores, indices
         )
-    
-    router_expert_output, mlp_bias = self.experts(dispatched_input, tokens_per_expert)
+
+    router_expert_output, mlp_bias = self.experts(dispatched_input, tokens_per_expert, global_probs)
     
     output, mlp_bias = self.token_dispatcher.token_unpermutation(router_expert_output, mlp_bias)
     
-    args = get_args()
     if args.moe_router_load_balancing_type == "group_limited_greedy":
         # forward only need no loss track
         if hasattr(args, "do_train") and args.do_train:
@@ -121,7 +120,7 @@ def moe_layer_forward(self, hidden_states: torch.Tensor):
             share_experts_output = F.sigmoid(self.shared_expert_gate(hidden_states)) * share_experts_output
         output = output + share_experts_output
         
-        if self.token_dispatcher.add_bias:
+        if hasattr(self.token_dispatcher, 'add_bias') and self.token_dispatcher.add_bias:
             mlp_bias = mlp_bias + share_experts_bias
 
     return output, mlp_bias
