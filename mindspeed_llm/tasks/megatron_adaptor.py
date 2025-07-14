@@ -424,32 +424,26 @@ class CoreAdaptation(MegatronAdaptationABC):
                         parallel_transformer_layer_init_wrapper)
             elif args.moe_token_dispatcher_type == 'alltoall_seq':
                 if args.moe_tp_extend_ep:
-                    from mindspeed.core.transformer.moe.legacy_a2a_token_dispatcher import (
-                        preprocess_tp_extend_ep, alltoall_token_unpermutation_tp_extend_ep,
-                        alltoall_token_permutation_tp_extend_ep
-                    )
-                    MegatronAdaptation.register(
-                        'megatron.core.transformer.moe.legacy_a2a_token_dispatcher.MoEAlltoAllSEQTokenDispatcher.preprocess',
-                        preprocess_tp_extend_ep)
+                    from mindspeed.core.transformer.moe.moe_feature.adaptor import MindSpeedAlltoAllSEQTptoEpMoELayer
+                    from mindspeed.core.transformer.moe.moe_feature.common import routing_tp_extend_ep
 
-                    if args.moe_alltoall_overlap_comm:
-                        from mindspeed.core.transformer.moe.legacy_a2a_token_dispatcher import alltoall_token_permutation_new, \
-                            alltoall_token_unpermutation_new
-                        from ..core.transformer.moe.experts import group_mlp_forward
-                        MegatronAdaptation.register('megatron.core.transformer.moe.experts.GroupedMLP.forward', group_mlp_forward)
-                        MegatronAdaptation.register(
-                            'megatron.core.transformer.moe.legacy_a2a_token_dispatcher.MoEAlltoAllSEQTokenDispatcher.token_permutation',
-                            alltoall_token_permutation_new)
-                        MegatronAdaptation.register(
-                            'megatron.core.transformer.moe.legacy_a2a_token_dispatcher.MoEAlltoAllSEQTokenDispatcher.token_unpermutation',
-                            alltoall_token_unpermutation_new)
+                    MegatronAdaptation.register('megatron.core.transformer.moe.router.TopKRouter.routing', routing_tp_extend_ep)
+
+                    if not args.moe_alltoall_overlap_comm:
+                        MegatronAdaptation.register('megatron.core.transformer.moe.moe_layer.MoELayer', MindSpeedAlltoAllSEQTptoEpMoELayer)
                     else:
-                        MegatronAdaptation.register(
-                            'megatron.core.transformer.moe.legacy_a2a_token_dispatcher.MoEAlltoAllSEQTokenDispatcher.token_permutation',
-                            alltoall_token_permutation_tp_extend_ep)
-                        MegatronAdaptation.register(
-                            'megatron.core.transformer.moe.legacy_a2a_token_dispatcher.MoEAlltoAllSEQTokenDispatcher.token_unpermutation',
-                            alltoall_token_unpermutation_tp_extend_ep)
+                        from mindspeed.core.transformer.moe.moe_feature.adaptor import MindSpeedAlltoAllSeqOverlapMoeLayerAdaptor
+                        from mindspeed.core.transformer.moe.moe_feature.overlap.moe_common import mlp_init, parallel_transformer_layer_init_wrapper, core_mlp_forward_wrapper
+                        from mindspeed.core.transformer.moe.moe_feature.overlap.experts import Zero_Memory_SharedExpertMlp_forward
+
+                        MegatronAdaptation.register('megatron.core.transformer.transformer_layer.TransformerLayer.__init__',
+                                                    parallel_transformer_layer_init_wrapper)
+                        MegatronAdaptation.register('megatron.core.transformer.moe.moe_layer.MoELayer', 
+                                                    MindSpeedAlltoAllSeqOverlapMoeLayerAdaptor)
+                        if args.moe_zero_memory != 'disable':
+                            MegatronAdaptation.register('megatron.core.transformer.moe.shared_experts.SharedExpertMLP.forward',
+                                                    Zero_Memory_SharedExpertMlp_forward)
+
                     if args.moe_fb_overlap and args.schedules_method == 'dualpipev' and args.moe_zerc:
                         from mindspeed.core.transformer.moe.moe_zerc.token_dispatcher import zerc_alltoall_token_perm1, \
                             zerc_alltoall_token_perm2, zerc_alltoall_token_unperm1, zerc_alltoall_token_unperm2
@@ -476,15 +470,10 @@ class CoreAdaptation(MegatronAdaptationABC):
                             'mindspeed.core.pipeline_parallel.fb_overlap.overlap_funcs.fwdbwd.transformer_layer_forward_moe_backward_dense_overlaping',
                             transformer_layer_forward_moe_backward_dense_overlaping_zerc)
                 else:
-                    from mindspeed.core.transformer.moe.legacy_a2a_token_dispatcher import preprocess, alltoall_token_permutation
-                    # pm.register_patch('megatron.core.transformer.moe.legacy_a2a_token_dispatcher.MoEAlltoAllSEQTokenDispatcher.preprocess',
-                    #                   preproces
                     if args.moe_alltoall_overlap_comm:
-                        from mindspeed.core.transformer.moe.legacy_a2a_token_dispatcher import preprocess, alltoall_token_permutation
                         from mindspeed.core.transformer.moe.legacy_a2a_token_dispatcher import alltoall_token_permutation_new, \
                             alltoall_token_unpermutation_new
                         from ..core.transformer.moe.experts import group_mlp_forward
-
                         MegatronAdaptation.register('megatron.core.transformer.moe.experts.GroupedMLP.forward', group_mlp_forward)
                         MegatronAdaptation.register(
                             'megatron.core.transformer.moe.legacy_a2a_token_dispatcher.MoEAlltoAllSEQTokenDispatcher.token_permutation',

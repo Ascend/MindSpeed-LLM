@@ -1069,6 +1069,8 @@ def _validate_moe_args(args):
         raise AssertionError('`--moe_allgather_overlap_comm` requires enabling tp or ep.')
     if args.shared_expert_gate and args.gradient_accumulation_fusion:
         raise AssertionError('args.shared_expert_gate does not support gradient_accumulation_fusion.')
+    if args.moe_tp_extend_ep and args.moe_token_dispatcher_type == 'allgather':
+        raise AssertionError('moe_tp_extend_ep is not supported when moe_token_dispatcher_type = allgather')
 
 
 def _validate_mla(args):
