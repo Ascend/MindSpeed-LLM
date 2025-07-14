@@ -324,4 +324,4 @@ def mtp_block_forward(
                 hidden_states_main_model, mtp_loss_scale * mtp_loss / num_tokens
             )
 
-        return hidden_states_main_model
+    return hidden_states_main_model

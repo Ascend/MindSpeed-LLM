@@ -8,8 +8,8 @@ class MOERouter(MindSpeedFeature):
     def register_args(self, parser):
         group = parser.add_argument_group(title=self.feature_name)
         group.add_argument('--moe-router-load-balancing-type', type=str,
-                           choices=['aux_loss', "group_limited_greedy", "softmax_topk", "pai_megatron_aux_loss",
-                                    "sparsemixer_topk", "noaux_tc"],
+                           choices=["aux_loss", "group_limited_greedy", "softmax_topk", "pai_megatron_aux_loss",
+                                    "sparsemixer_topk", "noaux_tc", "seq_aux_loss", "sinkhorn", "none"],
                            default='aux_loss',
                            help='Determines the load balancing strategy for the router. "aux_loss" corresponds '
                                 'to the load balancing loss used in GShard and SwitchTransformer, "sinkhorn" corresponds '
