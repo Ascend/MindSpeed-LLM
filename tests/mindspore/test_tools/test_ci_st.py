@@ -52,7 +52,7 @@ class TestCIST:
             compare_func(expected_list, actual_list)
         else:
             raise ValueError(f"Unsupported test object: {test_obj}")
-            
+
     def _compare_lm_loss(self, expected_list, actual_list):
         for step, (expected_val, actual_val) in enumerate(zip(expected_list, actual_list)):
             print(f"Checking step {step + 1} for lm loss")
