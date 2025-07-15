@@ -24,8 +24,10 @@ TRAIN_ITERS=5000
 DISTRIBUTED_ARGS="
     --local_worker_num $NPUS_PER_NODE \
     --node_rank $NODE_RANK \
+    --worker_num $WORLD_SIZE \
     --master_addr $MASTER_ADDR \
     --master_port $MASTER_PORT \
+    --join False
 "
 
 TUNE_ARGS="
