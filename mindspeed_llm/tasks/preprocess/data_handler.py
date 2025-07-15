@@ -343,7 +343,7 @@ class LlamaFactoryInstructionHandler(BaseDatasetHandler):
         self.ignored_label = -100
         self.is_multi_turn = True
         self.llama_factory_template = get_model_template(args.prompt_type.strip(), args.prompt_type_path.strip(), args.enable_thinking)
-        self.cutoff_len = args.seq_length
+        self.cutoff_len = 100000 if args.seq_length is None else args.seq_length
 
     def _format_msg(self, sample):
         return sample
@@ -622,7 +622,7 @@ class PPOAlpacaStyleInstructionHandler(BaseDatasetHandler):
         self.ignored_label = -100
         self.is_multi_turn = True
         self.llama_factory_template = get_model_template(args.prompt_type.strip(), args.prompt_type_path.strip(), args.enable_thinking)
-        self.cutoff_len = args.seq_length
+        self.cutoff_len = 100000 if args.seq_length is None else args.seq_length
 
     def _format_msg(self, sample):
         return sample
@@ -682,7 +682,7 @@ class R1AlpacaStyleInstructionHandler(BaseDatasetHandler):
         self.ignored_label = -100
         self.is_multi_turn = True
         self.llama_factory_template = get_model_template(args.prompt_type.strip(), args.prompt_type_path.strip(), args.enable_thinking)
-        self.cutoff_len = args.seq_length
+        self.cutoff_len = 100000 if args.seq_length is None else args.seq_length
 
     def _format_msg(self, sample):
         return sample
