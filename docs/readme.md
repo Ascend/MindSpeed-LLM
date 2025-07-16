@@ -11,7 +11,7 @@
   <tbody>
     <tr>
       <td rowspan="1">环境安装指导</td>
-      <td><a href="pytorch/install_guide.md">install_guide.md</a></td>
+      <td><a href="./pytorch/install_guide.md">install_guide.md</a></td>
       <td></td>
     </tr>
     <tr>
@@ -71,16 +71,16 @@
       <td rowspan="1">多样本Pack微调方案</td>
     </tr>
     <tr>
+      <td rowspan="1"><a href="pytorch/solutions/finetune/multi-turn_conversation.md">multi-turn_conversation</a></td>
+      <td rowspan="1">多轮对话微调方案</td>
+    </tr>
+    <tr>
       <td rowspan="1"><a href="pytorch/solutions/finetune/lora_finetune.md">lora_finetune</a></td>
       <td rowspan="1">模型lora微调方案</td>
     </tr>
     <tr>
       <td rowspan="1"><a href="pytorch/solutions/finetune/qlora_finetune.md">qlora_finetune</a></td>
       <td rowspan="1">模型qlora微调方案</td>
-    </tr>
-    <tr>
-      <td rowspan="1"><a href="pytorch/solutions/finetune/multi-turn_conversation.md">multi-turn_conversation</a></td>
-      <td rowspan="1">多轮对话微调方案</td>
     </tr>
     <tr>
       <td rowspan="3">模型推理方法</td>
