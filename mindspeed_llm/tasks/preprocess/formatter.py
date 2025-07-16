@@ -151,9 +151,6 @@ class FunctionFormatter(Formatter):
             if "{{arguments}}" in slot:
                 has_args = True
 
-        if not has_name or not has_args:
-            raise ValueError("Name and arguments placeholders are required in the function formatter.")
-
     def apply(self, **kwargs) -> SLOTS:
         content = kwargs.pop("content")
         try:
