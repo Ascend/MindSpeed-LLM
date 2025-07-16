@@ -19,6 +19,7 @@ SEQ_LENGTH=32768
 
 DISTRIBUTED_ARGS="
     --local_worker_num $NPUS_PER_NODE \
+    --worker_num $WORLD_SIZE \
     --node_rank $NODE_RANK \
     --master_addr $MASTER_ADDR \
     --master_port $MASTER_PORT \
