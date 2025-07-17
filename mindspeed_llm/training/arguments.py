@@ -453,7 +453,7 @@ def _add_data_args(parser):
     group.add_argument('--padded-samples', action='store_true',
                        help='fill in the missing samples within an epoch, '
                             'starting at index 0, aligned with the LlamaFatory.')
-    group.add_argument("--enable-thinking", action='store_true',
+    group.add_argument("--enable-thinking", type=lambda x: {"true": True, "false": False, "none": None}[x.lower()], default=None,
                        help="Whether or not to enable thinking mode for reasoning models.")
 
     return parser
