@@ -10,4 +10,5 @@ python ./preprocess_data.py \
     --tokenizer-type PretrainedFromHF \
     --workers 4 \
     --log-interval 1000 \
-    --prompt-type qwen
+    --enable-thinking true \
+    --prompt-type qwen3

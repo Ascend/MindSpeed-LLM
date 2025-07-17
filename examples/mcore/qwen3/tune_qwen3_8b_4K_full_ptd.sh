@@ -96,7 +96,7 @@ TUNE_ARGS="
     --finetune \
     --stage sft \
     --is-instruction-dataset \
-    --prompt-type qwen \
+    --prompt-type qwen3 \
     --variable-seq-lengths
 "
 

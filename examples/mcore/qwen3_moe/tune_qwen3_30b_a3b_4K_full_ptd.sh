@@ -129,7 +129,7 @@ TUNE_ARGS="
     --stage sft \
     --is-instruction-dataset \
     --tokenizer-not-use-fast \
-    --prompt-type qwen \
+    --prompt-type qwen3 \
     --variable-seq-lengths
 "
 
