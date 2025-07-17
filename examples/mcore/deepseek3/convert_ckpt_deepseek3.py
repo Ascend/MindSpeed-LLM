@@ -86,6 +86,8 @@ class CkptConvert(object):
         self.first_k_dense_replace = num_dense_layers
         self.mtp_num_layers = mtp_num_layers
 
+        if not os.path.exists(self.hf_model_path):
+            raise FileNotFoundError(f"Model path does not exist: {self.hf_model_path}")
         if dualpipe:
             if vpp_stage:
                 raise ValueError(f"dualpipe is not compatible with virtual pipeline parallel.")
