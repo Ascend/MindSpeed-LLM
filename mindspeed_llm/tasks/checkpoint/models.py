@@ -264,22 +264,24 @@ class ModelBase(abc.ABC):
             self.set_layers_self_attention_linear_proj_lora_B_default_weight(layer_idx=dst_layer_idx, data=proj_lora_B_weight)
         else:
             if getattr(src_model.get_args(), "qk_layernorm", False):
-                if getattr(src_model.get_args(), "multi_head_latent_attention", False):
+                if getattr(src_model.get_args(), "multi_latent_attention", False):
                     if getattr(src_model.get_args(), "q_lora_rank", None):
                         q_layernorm = src_model.get_layers_self_attention_q_layernorm_weight(layer_idx=src_layer_idx)
                         self.set_layers_self_attention_q_layernorm_weight(layer_idx=dst_layer_idx, data=q_layernorm)
+                    kv_layernorm = src_model.get_layers_self_attention_kv_layernorm_weight(layer_idx=src_layer_idx)
+                    self.set_layers_self_attention_kv_layernorm_weight(layer_idx=dst_layer_idx, data=kv_layernorm)
                 else:
                     q_layernorm = src_model.get_layers_self_attention_q_layernorm_weight(layer_idx=src_layer_idx)
                     self.set_layers_self_attention_q_layernorm_weight(layer_idx=dst_layer_idx, data=q_layernorm)
-                k_layernorm = src_model.get_layers_self_attention_k_layernorm_weight(layer_idx=src_layer_idx)
-                self.set_layers_self_attention_k_layernorm_weight(layer_idx=dst_layer_idx, data=k_layernorm)
+                    k_layernorm = src_model.get_layers_self_attention_k_layernorm_weight(layer_idx=src_layer_idx)
+                    self.set_layers_self_attention_k_layernorm_weight(layer_idx=dst_layer_idx, data=k_layernorm)
 
-            if getattr(src_model.get_args(), "multi_head_latent_attention", False):
+            if getattr(src_model.get_args(), "multi_latent_attention", False):
                 if getattr(src_model.get_args(), "q_lora_rank", None):
-                    linear_qb = src_model.get_layers_self_attention_linear_qb_weight(layer_idx=src_layer_idx)
-                    self.set_layers_self_attention_linear_qb_weight(layer_idx=dst_layer_idx, data=linear_qb)
-                linear_kvb = src_model.get_layers_self_attention_linear_kvb_weight(layer_idx=src_layer_idx)
-                self.set_layers_self_attention_linear_kvb_weight(layer_idx=dst_layer_idx, data=linear_kvb)
+                    linear_qb = src_model.get_layers_self_attention_linear_q_up_proj_weight(layer_idx=src_layer_idx)
+                    self.set_layers_self_attention_linear_q_up_proj_weight(layer_idx=dst_layer_idx, data=linear_qb)
+                linear_kvb = src_model.get_layers_self_attention_linear_kv_up_proj_weight(layer_idx=src_layer_idx)
+                self.set_layers_self_attention_linear_kv_up_proj_weight(layer_idx=dst_layer_idx, data=linear_kvb)
 
             qkv_weight = src_model.get_layers_self_attention_linear_qkv_weight(layer_idx=src_layer_idx)
             proj_weight = src_model.get_layers_self_attention_linear_proj_weight(layer_idx=src_layer_idx)
@@ -826,7 +828,7 @@ class HuggingfaceModel(ModelBase):
             self.set_layers_self_attention_linear_qkv_pack_weight(layer_idx=layer_idx, data=qkv)
         elif qkv_type == "pack_mla":
             if self.args.q_lora_rank is None:
-                q_head_dim = self.args.qk_nope_head_dim + self.args.qk_rope_head_dim
+                q_head_dim = self.args.qk_head_dim + self.args.qk_pos_emb_head_dim
                 q_proj = data[:self.args.num_attention_heads * q_head_dim, :]
                 kv_proj = data[self.args.num_attention_heads * q_head_dim:, :]
             else:
@@ -890,7 +892,7 @@ class HuggingfaceModel(ModelBase):
             self.set_layers_self_attention_linear_qkv_pack_lora_B_default_weight(layer_idx=layer_idx, data=qkv)
         elif qkv_type == "pack_mla":
             if self.args.q_lora_rank is None:
-                q_head_dim = self.args.qk_nope_head_dim + self.args.qk_rope_head_dim
+                q_head_dim = self.args.qk_head_dim + self.args.qk_pos_emb_head_dim
                 q_proj = data[:self.args.num_attention_heads * q_head_dim, :]
                 kv_proj = data[self.args.num_attention_heads * q_head_dim:, :]
             else:
@@ -1049,14 +1051,14 @@ class MegatronModel(ModelBase):
             self.args.moe_ffn_hidden_size = getattr(hf_args, "moe_intermediate_size", None)
             self.args.first_k_dense_replace = getattr(hf_args, "first_k_dense_replace", None)
             self.args.moe_layer_freq = getattr(hf_args, "moe_layer_freq", None)
-            self.args.multi_head_latent_attention = getattr(hf_args, "multi_head_latent_attention", False)
+            self.args.multi_latent_attention = getattr(hf_args, "multi_latent_attention", False)
             self.args.cla_share_factor = getattr(hf_args, "cla_share_factor", 1)
             self.args.shared_expert_intermediate_size = getattr(hf_args, "shared_expert_intermediate_size", None)
             if self.args.shared_expert_intermediate_size is not None and self.args.n_shared_experts is None:
                 self.args.n_shared_experts = self.args.shared_expert_intermediate_size // self.args.moe_intermediate_size
-            if self.args.multi_head_latent_attention:
-                self.args.qk_rope_head_dim = getattr(hf_args, "qk_rope_head_dim", None)
-                self.args.qk_nope_head_dim = getattr(hf_args, "qk_nope_head_dim", None)
+            if self.args.multi_latent_attention:
+                self.args.qk_pos_emb_head_dim = getattr(hf_args, "qk_pos_emb_head_dim", None)
+                self.args.qk_head_dim = getattr(hf_args, "qk_head_dim", None)
                 self.args.q_lora_rank = getattr(hf_args, "q_lora_rank", None)
                 self.args.kv_lora_rank = getattr(hf_args, "kv_lora_rank", None)
                 self.args.v_head_dim = getattr(hf_args, "v_head_dim", None)
@@ -1417,9 +1419,15 @@ class MegatronMCoreModel(MegatronModel):
         self.module_mapping[
             "layers_mlp_experts_linear_fc2"] = module_layer + "mlp.experts.local_experts[expert_idx].linear_fc2"
 
-        # MLP
-        self.module_mapping["layers_self_attention_linear_qb"] = module_layer + "self_attention.linear_qb"
-        self.module_mapping["layers_self_attention_linear_kvb"] = module_layer + "self_attention.linear_kvb"
+        # MLA
+        if config_value.get('multi_latent_attention', False):
+            self.module_mapping["layers_self_attention_kv_layernorm"] = module_layer + "self_attention.kv_layernorm"
+            self.module_mapping["layers_self_attention_linear_q_up_proj"] = module_layer + "self_attention.linear_q_up_proj"
+            self.module_mapping["layers_self_attention_linear_kv_up_proj"] = module_layer + "self_attention.linear_kv_up_proj"
+        else:
+            # MLP
+            self.module_mapping["layers_self_attention_linear_qb"] = module_layer + "self_attention.linear_qb"
+            self.module_mapping["layers_self_attention_linear_kvb"] = module_layer + "self_attention.linear_kvb"
 
         # shared experts
         self.module_mapping[

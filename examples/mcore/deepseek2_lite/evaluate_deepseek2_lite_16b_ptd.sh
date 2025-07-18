@@ -63,9 +63,9 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS evaluation.py \
     --no-load-optim \
     --no-load-rng \
     --bf16 \
-    --multi-head-latent-attention \
-    --qk-rope-head-dim 64 \
-    --qk-nope-head-dim 128 \
+    --multi-latent-attention \
+    --qk-pos-emb-head-dim 64 \
+    --qk-head-dim 128 \
     --kv-lora-rank 512 \
     --v-head-dim 128 \
     --qk-layernorm \
@@ -84,8 +84,8 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS evaluation.py \
     --moe-aux-loss-coeff 0.001 \
     --routed-scaling-factor 1.0 \
     --seq-aux \
-    --rope-scaling-beta-fast 32 \
-    --rope-scaling-beta-slow 1 \
+    --beta-fast 32 \
+    --beta-slow 1 \
     --rope-scaling-factor  40 \
     --rope-scaling-mscale 0.707 \
     --rope-scaling-mscale-all-dim  0.707 \

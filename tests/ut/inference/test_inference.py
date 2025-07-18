@@ -74,9 +74,7 @@ class TestInference(DistributedTest):
             print(log_capture)
             context = acquire_context(log_capture)
             # 减层
-            assert [context] == ["катаCounts КоCEupy flocksproduction缉solve aclar crit minorities定律 Cod DEFIN短发 "
-                                 "динаrown femalesrivacyrivialAMIacomtemplatestransport picky positiva hongares古老ittle"
-                                 ], "forward pass has been changed, check it!"
+            assert [context] == ["夏季 doubled延续了 produccicoat的效果quare鞋 hesushima храни inde Motorsтингexion盲目 DEL Ott最高的esosiard motherhood间接 BillboardanticQuit junctionpotent buckets"], "forward pass has been changed, check it!"
     
     @pytest.mark.parametrize("params", test_config["test_llama3_mcore_greedy_search_with_tp2pp4sp"])
     def test_llama3_mcore_greedy_search_with_tp2pp4sp(self, build_args, params):

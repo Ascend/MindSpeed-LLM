@@ -111,13 +111,13 @@ def build_metadata(args, margs):
     md.moe_intermediate_size = getattr(margs, "moe_intermediate_size", None)
     md.first_k_dense_replace = getattr(margs, "first_k_dense_replace", None)
     md.moe_layer_freq = getattr(margs, "moe_layer_freq", None)
-    md.multi_head_latent_attention = getattr(margs, "multi_head_latent_attention", False)
+    md.multi_latent_attention = getattr(margs, "multi_latent_attention", False)
     md.cla_share_factor = getattr(margs, "cla_share_factor", 1)
     md.q_lora_rank = getattr(margs, "q_lora_rank", None)
     
-    if md.multi_head_latent_attention:
-        md.qk_rope_head_dim = getattr(margs, "qk_rope_head_dim", None)
-        md.qk_nope_head_dim = getattr(margs, "qk_nope_head_dim", None)
+    if md.multi_latent_attention:
+        md.qk_pos_emb_head_dim = getattr(margs, "qk_pos_emb_head_dim", None)
+        md.qk_head_dim = getattr(margs, "qk_head_dim", None)
         md.q_lora_rank = getattr(margs, "q_lora_rank", None)
         md.kv_lora_rank = getattr(margs, "kv_lora_rank", None)
         md.v_head_dim = getattr(margs, "v_head_dim", None)
@@ -176,16 +176,17 @@ def get_message_layer_attn(message, model, layer_idx, md=None, args=None):
     dense_weight.append(model.get_layers_self_attention_linear_proj_weight(layer_idx=layer_idx))
 
     if getattr(model.get_args(), "qk_layernorm", False):
-        if getattr(model.get_args(), "multi_head_latent_attention", False):
+        if getattr(model.get_args(), "multi_latent_attention", False):
             if getattr(model.get_args(), "q_lora_rank", None):
                 message["q layernorm"] = model.get_layers_self_attention_q_layernorm_weight(layer_idx=layer_idx)
+            message["kv layernorm"] = model.get_layers_self_attention_kv_layernorm_weight(layer_idx=layer_idx)
         else:
             message["q layernorm"] = model.get_layers_self_attention_q_layernorm_weight(layer_idx=layer_idx)
-        message["k layernorm"] = model.get_layers_self_attention_k_layernorm_weight(layer_idx=layer_idx)
-    if getattr(model.get_args(), "multi_head_latent_attention", False):
+            message["k layernorm"] = model.get_layers_self_attention_k_layernorm_weight(layer_idx=layer_idx)
+    if getattr(model.get_args(), "multi_latent_attention", False):
         if getattr(model.get_args(), "q_lora_rank", None):
-            message["linear qb weight"] = model.get_layers_self_attention_linear_qb_weight(layer_idx=layer_idx)
-        message["linear kvb weight"] = model.get_layers_self_attention_linear_kvb_weight(layer_idx=layer_idx)
+            message["linear qb weight"] = model.get_layers_self_attention_linear_q_up_proj_weight(layer_idx=layer_idx)
+        message["linear kvb weight"] = model.get_layers_self_attention_linear_kv_up_proj_weight(layer_idx=layer_idx)
 
     if args.add_qkv_bias:
         message["qkv bias"] = model.get_layers_self_attention_linear_qkv_bias(layer_idx=layer_idx)

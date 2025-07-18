@@ -38,7 +38,7 @@ class TestCheckpoint(object):
         os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
         exit_code = run_cmd(["python3", CKPT_PYPATH] + self.test_config_cmd['test_deepseek2_hf2mcore_tp1pp4ep8'])
         assert exit_code == 0
-        base_dir = '/data/ci/deepseek2/mg_base/deepseek2-mla_tp-l8-t1p4e8-gemm'
+        base_dir = '/data/ci/deepseek2/mg_base/deepseek2-mla_tp-l8-t1p4e8-gemm_new'
         save_dir = self.test_config['test_deepseek2_hf2mcore_tp1pp4ep8'][0]['save-dir']
         assert weight_compare(base_dir, save_dir)
         shutil.rmtree(save_dir)

@@ -27,11 +27,11 @@ torchrun $DISTRIBUTED_ARGS evaluation.py   \
     --pipeline-model-parallel-size 2  \
     --use-mcore-models \
     --use-flash-attn \
-    --multi-head-latent-attention \
+    --multi-latent-attention \
     --prompt-type minicpm3 \
     --spec mindspeed_llm.tasks.models.spec.minicpm_spec layer_spec \
-    --qk-rope-head-dim 32 \
-    --qk-nope-head-dim 64 \
+    --qk-pos-emb-head-dim 32 \
+    --qk-head-dim 64 \
     --q-lora-rank 768 \
     --kv-lora-rank 256 \
     --v-head-dim 64 \

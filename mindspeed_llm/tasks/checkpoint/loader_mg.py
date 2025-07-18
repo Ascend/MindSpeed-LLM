@@ -103,10 +103,10 @@ def build_metadata(args, margs):
     md.first_k_dense_replace = getattr(margs, "first_k_dense_replace", None)
     md.moe_layer_freq = getattr(margs, "moe_layer_freq", None)
     md.q_lora_rank = getattr(margs, "q_lora_rank", None)
-    md.multi_head_latent_attention = getattr(margs, "multi_head_latent_attention", False)
-    if md.multi_head_latent_attention:
-        md.qk_rope_head_dim = getattr(margs, "qk_rope_head_dim", None)
-        md.qk_nope_head_dim = getattr(margs, "qk_nope_head_dim", None)
+    md.multi_latent_attention = getattr(margs, "multi_latent_attention", False)
+    if md.multi_latent_attention:
+        md.qk_pos_emb_head_dim = getattr(margs, "qk_pos_emb_head_dim", None)
+        md.qk_head_dim = getattr(margs, "qk_head_dim", None)
         md.q_lora_rank = getattr(margs, "q_lora_rank", None)
         md.kv_lora_rank = getattr(margs, "kv_lora_rank", None)
         md.v_head_dim = getattr(margs, "v_head_dim", None)
@@ -172,10 +172,10 @@ def get_message_layer_attn(message, model, md=None, **kwargs):
 
         if md.linear_bias or margs.add_qkv_bias:
             qkv_bias.append(model.get_layers_self_attention_linear_qkv_bias(**kwargs))
-        if getattr(model.get_args(), "multi_head_latent_attention", False):
+        if getattr(model.get_args(), "multi_latent_attention", False):
             if getattr(model.get_args(), "q_lora_rank", None):
-                qb_weight.append(model.get_layers_self_attention_linear_qb_weight(**kwargs))
-            kvb_weight.append(model.get_layers_self_attention_linear_kvb_weight(**kwargs))
+                qb_weight.append(model.get_layers_self_attention_linear_q_up_proj_weight(**kwargs))
+            kvb_weight.append(model.get_layers_self_attention_linear_kv_up_proj_weight(**kwargs))
 
         if margs.save_lora_to_hf:
             proj_lora_A_weight.append(model.get_layers_self_attention_linear_proj_lora_A_default_weight(**kwargs))
@@ -184,13 +184,14 @@ def get_message_layer_attn(message, model, md=None, **kwargs):
     # Handle gated linear units
     # simple concat of the rest
     if getattr(model.get_args(), "qk_layernorm", False):
-        if getattr(model.get_args(), "multi_head_latent_attention", False):
+        if getattr(model.get_args(), "multi_latent_attention", False):
             if getattr(model.get_args(), "q_lora_rank", None):
                 message["q layernorm"] = model.get_layers_self_attention_q_layernorm_weight(**kwargs)
+            message["kv layernorm"] = model.get_layers_self_attention_kv_layernorm_weight(**kwargs)
         else:
             message["q layernorm"] = model.get_layers_self_attention_q_layernorm_weight(**kwargs)           
-        message["k layernorm"] = model.get_layers_self_attention_k_layernorm_weight(**kwargs)
-    if getattr(model.get_args(), "multi_head_latent_attention", False):
+            message["k layernorm"] = model.get_layers_self_attention_k_layernorm_weight(**kwargs)
+    if getattr(model.get_args(), "multi_latent_attention", False):
         if getattr(model.get_args(), "q_lora_rank", None):
             message["linear qb weight"] = torch.cat(qb_weight, dim=0)
         message["linear kvb weight"] = torch.cat(kvb_weight, dim=0)

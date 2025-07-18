@@ -10,11 +10,12 @@ from megatron.core.tensor_parallel import ColumnParallelLinear, RowParallelLinea
 from megatron.core.transformer import ModuleSpec, TransformerLayer, TransformerLayerSubmodules
 from megatron.core.transformer.enums import AttnMaskType
 from megatron.core.transformer.identity_op import IdentityOp
+from megatron.core.transformer.multi_latent_attention import MLASelfAttentionSubmodules, MLASelfAttention
 from megatron.core.models.gpt.gpt_layer_specs import _get_mlp_module_spec
-from mindspeed_llm.tasks.models.transformer.multi_head_latent_attention import (
-    MLASelfAttentionSubmodules,
+from mindspeed_llm.tasks.models.transformer.multi_latent_attention import (
+    CustomMLASelfAttentionSubmodules,
     MLASelfAttentionWithMMSplitSubmodules,
-    MultiHeadLatentAttention,
+    CustomMLASelfAttention,
     LinearNoTP,
 )
 from mindspeed_llm.tasks.models.transformer.mla_dot_product_attention import MlaDotProductAttention
@@ -29,35 +30,42 @@ num_experts, moe_grouped_gemm, qk_layernorm, mla_mm_split = (
     args.mla_mm_split,
 )
 
+mla_self_attention_submodules = None
+
+if not mla_mm_split:
+    mla_self_attention_submodules = CustomMLASelfAttentionSubmodules(
+        linear_qkv=LinearNoTP,
+        core_attention=MlaDotProductAttention,
+        linear_proj=RowParallelLinear,
+        q_layernorm=PTNorm if qk_layernorm else IdentityOp,
+        kv_layernorm=PTNorm if qk_layernorm else IdentityOp,
+        linear_q_up_proj=ColumnParallelLinear,
+        linear_kv_up_proj=ColumnParallelLinear,
+    )
+
+else:
+    mla_self_attention_submodules = MLASelfAttentionWithMMSplitSubmodules(
+        linear_qkv=LinearNoTP,
+        core_attention=MlaDotProductAttention,
+        linear_proj=RowParallelLinear,
+        q_layernorm=PTNorm if qk_layernorm else IdentityOp,
+        kv_layernorm=PTNorm if qk_layernorm else IdentityOp,
+        linear_qk_nope=ColumnParallelLinear,
+        linear_qk_rope=ColumnParallelLinear,
+        linear_kv_nope=ColumnParallelLinear,
+        linear_v=ColumnParallelLinear,
+    )
+
+
 
 layer_spec = ModuleSpec(
     module=TransformerLayer,
     submodules=TransformerLayerSubmodules(
         input_layernorm=PTNorm,
         self_attention=ModuleSpec(
-            module=MultiHeadLatentAttention,
+            module=CustomMLASelfAttention,
             params={"attn_mask_type": AttnMaskType.causal},
-            submodules=MLASelfAttentionSubmodules(
-                linear_qkv=LinearNoTP,
-                core_attention=MlaDotProductAttention,
-                linear_proj=RowParallelLinear,
-                q_layernorm=PTNorm if qk_layernorm else IdentityOp,
-                k_layernorm=PTNorm if qk_layernorm else IdentityOp,
-                linear_qb=ColumnParallelLinear,
-                linear_kvb=ColumnParallelLinear,
-            )
-            if not mla_mm_split
-            else MLASelfAttentionWithMMSplitSubmodules(
-                linear_qkv=LinearNoTP,
-                core_attention=MlaDotProductAttention,
-                linear_proj=RowParallelLinear,
-                q_layernorm=PTNorm if qk_layernorm else IdentityOp,
-                k_layernorm=PTNorm if qk_layernorm else IdentityOp,
-                linear_qk_nope=ColumnParallelLinear,
-                linear_qk_rope=ColumnParallelLinear,
-                linear_kv_nope=ColumnParallelLinear,
-                linear_v=ColumnParallelLinear,
-            ),
+            submodules=mla_self_attention_submodules
         ),
         self_attn_bda=get_bias_dropout_add,
         pre_mlp_layernorm=PTNorm,

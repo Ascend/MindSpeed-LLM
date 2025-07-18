@@ -11,7 +11,7 @@ from megatron.core.transformer import ModuleSpec, TransformerLayer, TransformerL
 from megatron.core.models.gpt.gpt_layer_specs import _get_mlp_module_spec
 from megatron.core.transformer.enums import AttnMaskType
 from megatron.core.transformer.identity_op import IdentityOp
-from mindspeed_llm.tasks.models.transformer.multi_head_latent_attention import MLASelfAttentionSubmodules, MultiHeadLatentAttention
+from mindspeed_llm.tasks.models.transformer.multi_latent_attention import CustomMLASelfAttentionSubmodules, CustomMLASelfAttention
 from mindspeed_llm.tasks.models.transformer.mla_dot_product_attention import MlaDotProductAttention
 from mindspeed_llm.core import PTNorm
 
@@ -25,16 +25,16 @@ layer_spec = ModuleSpec(
     submodules=TransformerLayerSubmodules(
         input_layernorm=PTNorm,
         self_attention=ModuleSpec(
-            module=MultiHeadLatentAttention,
+            module=CustomMLASelfAttention,
             params={"attn_mask_type": AttnMaskType.causal},
-            submodules=MLASelfAttentionSubmodules(
+            submodules=CustomMLASelfAttentionSubmodules(
                 linear_qkv=ColumnParallelLinear,
                 core_attention=MlaDotProductAttention,
                 linear_proj=RowParallelLinear,
                 q_layernorm=PTNorm if qk_layernorm else IdentityOp,
-                k_layernorm=PTNorm if qk_layernorm else IdentityOp,
-                linear_qb=ColumnParallelLinear,
-                linear_kvb=ColumnParallelLinear
+                kv_layernorm=PTNorm if qk_layernorm else IdentityOp,
+                linear_q_up_proj=ColumnParallelLinear,
+                linear_kv_up_proj=ColumnParallelLinear
             )
         ),
         self_attn_bda=get_bias_dropout_add,

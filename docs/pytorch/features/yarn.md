@@ -19,9 +19,9 @@ yarn通过ntk-by-part调整位置编码，提升序列扩增后的精度。
 
 在deepseek v2系列上，通过--rope-scaling-type yarn进行使能，其它配置参数如下：
 
---rope-scaling-beta-fast  （高频旋转周期数，默认值32）
+--beta-fast  （高频旋转周期数，默认值32）
 
---rope-scaling-beta-slow  （低频旋转周期数，默认值1）
+--beta-slow  （低频旋转周期数，默认值1）
 
 --rope-scaling-factor      (上下文扩展倍数, 高频维度外推时用到，比如预训练模型为4K，扩展上下文到160K长度，扩展倍数为40)
 

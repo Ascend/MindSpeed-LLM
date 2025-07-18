@@ -38,9 +38,9 @@ MEMORY_ARGS="
 "
 
 MLA_ARGS="
-    --multi-head-latent-attention \
-    --qk-rope-head-dim 32 \
-    --qk-nope-head-dim 64 \
+    --multi-latent-attention \
+    --qk-pos-emb-head-dim 32 \
+    --qk-head-dim 64 \
     --q-lora-rank 768 \
     --kv-lora-rank 256 \
     --v-head-dim 64 \

@@ -33,7 +33,7 @@ class MlaDotProductAttention(DotProductAttention):
 
         self.scale_mask_softmax.scale = True
         self.hidden_size_per_partition = args.num_attention_heads * args.v_head_dim
-        self.q_head_dim = args.qk_nope_head_dim + args.qk_rope_head_dim
+        self.q_head_dim = args.qk_head_dim + args.qk_pos_emb_head_dim
         self.softmax_scale = self.q_head_dim ** (-0.5)
 
         if args.rope_scaling_type is not None:

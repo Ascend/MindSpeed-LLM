@@ -76,7 +76,7 @@ def should_recompute_mla_up_proj(args, init_recompute_flag):
         return init_recompute_flag
 
 
-def mla_up_projection_overlap_tp_comm(q_a, compressed_kv, k_pe, rotary_pos_emb, packed_seq_params, mla_ctx):
+def mla_up_projection_overlap_tp_comm(q_compressed, kv_compressed, k_pos_emb, rotary_pos_emb, packed_seq_params, mla_ctx):
     """
     This function overlap tp communication in up projection for mla.
     Allgather communication is launched in async, and overlap all gather comm by computation.
@@ -84,65 +84,65 @@ def mla_up_projection_overlap_tp_comm(q_a, compressed_kv, k_pe, rotary_pos_emb, 
     args = get_args()
     tp_size = parallel_state.get_tensor_model_parallel_world_size()
     tp_group = parallel_state.get_tensor_model_parallel_group()
-    q_len, bsz = q_a.shape[:2]
+    q_len, bsz = q_compressed.shape[:2]
     q_len = q_len * tp_size
 
-    def forward_func(q_a, compressed_kv, k_pe, rotary_pos_emb):
+    def forward_func(q_compressed, kv_compressed, k_pos_emb, rotary_pos_emb):
 
-        compressed_kv_norm = mla_ctx.k_layernorm(compressed_kv)
+        compressed_kv_norm = mla_ctx.kv_layernorm(kv_compressed)
         if tp_size > 1:
             _, compressed_kv_norm_ag, compressed_kv_norm_ag_handle = async_all_gather(compressed_kv_norm, tp_group)
         else:
             compressed_kv_norm_ag, compressed_kv_norm_ag_handle = compressed_kv_norm, None
 
-        q_a_norm = mla_ctx.q_layernorm(q_a)
+        q_a_norm = mla_ctx.q_layernorm(q_compressed)
         if tp_size > 1:
             _, q_a_norm_ag, q_a_norm_ag_handle = async_all_gather(q_a_norm, tp_group)
         else:
             q_a_norm_ag, q_a_norm_ag_handle = q_a_norm, None
 
         if tp_size > 1:
-            k_pe, k_pe_ag_handle = async_all_gather_with_backward_reduce_scatter(k_pe, tp_group)
+            k_pos_emb, k_pe_ag_handle = async_all_gather_with_backward_reduce_scatter(k_pos_emb, tp_group)
 
 
         if compressed_kv_norm_ag_handle:
             compressed_kv_norm_ag_handle.wait()
 
         with NoAllGatherContext(compressed_kv_norm_ag):
-            k_nope, _ = mla_ctx.linear_kv_nope(compressed_kv_norm)
+            k_no_pe, _ = mla_ctx.linear_kv_nope(compressed_kv_norm)
             value, _ = mla_ctx.linear_v(compressed_kv_norm)
 
-        k_nope = k_nope.view(q_len, bsz, mla_ctx.num_attention_heads_per_partition, -1)
+        k_no_pe = k_no_pe.view(q_len, bsz, mla_ctx.num_attention_heads_per_partition, -1)
         value = value.view(q_len, bsz, mla_ctx.num_attention_heads_per_partition, -1)
 
         if q_a_norm_ag_handle:
             q_a_norm_ag_handle.wait()
 
         with NoAllGatherContext(q_a_norm_ag):
-            q_nope, _ = mla_ctx.linear_qk_nope(q_a_norm)
-            q_pe, _ = mla_ctx.linear_qk_rope(q_a_norm)
+            q_no_pe, _ = mla_ctx.linear_qk_nope(q_a_norm)
+            q_pos_emb, _ = mla_ctx.linear_qk_rope(q_a_norm)
 
-        q_nope = q_nope.view(
+        q_no_pe = q_no_pe.view(
             q_len, bsz, mla_ctx.num_attention_heads_per_partition, -1
         )
-        q_pe = q_pe.view(q_len, bsz, mla_ctx.num_attention_heads_per_partition, -1)
+        q_pos_emb = q_pos_emb.view(q_len, bsz, mla_ctx.num_attention_heads_per_partition, -1)
 
 
         if tp_size > 1:
             k_pe_ag_handle.wait()
-        k_pe = k_pe.view(q_len, bsz, 1, mla_ctx.qk_rope_head_dim)
+        k_pos_emb = k_pos_emb.view(q_len, bsz, 1, mla_ctx.qk_pos_emb_head_dim)
 
         if mla_ctx.a2a_hooked_on_attention:
             launch_async_all2all()
 
         if rotary_pos_emb is not None:
-            q_pos_emb, k_pos_emb = rotary_pos_emb, rotary_pos_emb
+            rotary_q_pos_emb, rotary_k_pos_emb = rotary_pos_emb, rotary_pos_emb
 
             if hasattr(args, "rope_scaling_type") and args.rope_scaling_type == "yarn":
-                b, h, s, d = q_pe.shape
-                q_pe = q_pe.view(b, h, s, d // 2, 2).transpose(4, 3).reshape(b, h, s, d)
-                b, h, s, d = k_pe.shape
-                k_pe = k_pe.view(b, h, s, d // 2, 2).transpose(4, 3).reshape(b, h, s, d)
+                b, h, s, d = q_pos_emb.shape
+                q_pos_emb = q_pos_emb.view(b, h, s, d // 2, 2).transpose(4, 3).reshape(b, h, s, d)
+                b, h, s, d = k_pos_emb.shape
+                k_pos_emb = k_pos_emb.view(b, h, s, d // 2, 2).transpose(4, 3).reshape(b, h, s, d)
 
             if packed_seq_params is not None:
                 cu_seqlens_q = packed_seq_params.cu_seqlens_q
@@ -150,18 +150,18 @@ def mla_up_projection_overlap_tp_comm(q_a, compressed_kv, k_pe, rotary_pos_emb, 
             else:
                 cu_seqlens_q = cu_seqlens_kv = None
 
-            q_pe = apply_rotary_pos_emb(q_pe, q_pos_emb, config=mla_ctx.config, cu_seqlens=cu_seqlens_q)
-            k_pe = apply_rotary_pos_emb(k_pe, k_pos_emb, config=mla_ctx.config, cu_seqlens=cu_seqlens_kv)
+            q_pos_emb = apply_rotary_pos_emb(q_pos_emb, rotary_q_pos_emb, config=mla_ctx.config, cu_seqlens=cu_seqlens_q)
+            k_pos_emb = apply_rotary_pos_emb(k_pos_emb, rotary_k_pos_emb, config=mla_ctx.config, cu_seqlens=cu_seqlens_kv)
 
-        k_pe = k_pe.expand(k_pe.shape[0], k_pe.shape[1], q_nope.shape[2], k_pe.shape[3])
+        k_pos_emb = k_pos_emb.expand(k_pos_emb.shape[0], k_pos_emb.shape[1], q_no_pe.shape[2], k_pos_emb.shape[3])
 
         if args.mla_fa_divide_qk:
-            query = [q_nope, q_pe]
-            key = [k_nope, k_pe]
+            query = [q_no_pe, q_pos_emb]
+            key = [k_no_pe, k_pos_emb]
             return *query, *key, value
         else:
-            query = torch.cat([q_nope, q_pe], dim=-1)
-            key = torch.cat([k_nope, k_pe], dim=-1)
+            query = torch.cat([q_no_pe, q_pos_emb], dim=-1)
+            key = torch.cat([k_no_pe, k_pos_emb], dim=-1)
 
             if (
                 mla_ctx.use_flash_attn
@@ -179,19 +179,19 @@ def mla_up_projection_overlap_tp_comm(q_a, compressed_kv, k_pe, rotary_pos_emb, 
 
     if args.mla_fa_divide_qk:
         if not mla_ctx.recompute_mla_up_proj:
-            q_nope, q_pe, k_nope, k_pe, value = forward_func(q_a, compressed_kv, k_pe, rotary_pos_emb[0])
+            q_no_pe, q_pos_emb, k_no_pe, k_pos_emb, value = forward_func(q_compressed, kv_compressed, k_pos_emb, rotary_pos_emb[0])
         else:
             mla_ctx.recompute_mla_up_proj_ckpt = CheckpointWithoutOutput()
-            q_nope, q_pe, k_nope, k_pe, value = mla_ctx.recompute_mla_up_proj_ckpt.checkpoint(forward_func, False, q_a,
-                                                                                              compressed_kv, k_pe,
-                                                                                              rotary_pos_emb[0])
-        return [q_nope, q_pe], [k_nope, k_pe], value
+            q_no_pe, q_pos_emb, k_no_pe, k_pos_emb, value = mla_ctx.recompute_mla_up_proj_ckpt.checkpoint(forward_func, False, q_compressed,
+                                                                                                          kv_compressed, k_pos_emb,
+                                                                                                          rotary_pos_emb[0])
+        return [q_no_pe, q_pos_emb], [k_no_pe, k_pos_emb], value
     else:
         if not should_recompute_mla_up_proj(args, mla_ctx.recompute_mla_up_proj):
             mla_ctx.recompute_mla_up_proj_ckpt = None
-            query, key, value = forward_func(q_a, compressed_kv, k_pe, rotary_pos_emb[0])
+            query, key, value = forward_func(q_compressed, kv_compressed, k_pos_emb, rotary_pos_emb[0])
         else:
             mla_ctx.recompute_mla_up_proj_ckpt = CheckpointWithoutOutput()
-            query, key, value = mla_ctx.recompute_mla_up_proj_ckpt.checkpoint(forward_func, False, q_a, compressed_kv,
-                                                                              k_pe, rotary_pos_emb[0])
+            query, key, value = mla_ctx.recompute_mla_up_proj_ckpt.checkpoint(forward_func, False, q_compressed, kv_compressed,
+                                                                              k_pos_emb, rotary_pos_emb[0])
         return query, key, value

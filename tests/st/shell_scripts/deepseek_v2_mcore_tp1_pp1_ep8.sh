@@ -13,7 +13,7 @@ basepath=$(cd `dirname $0`; cd ../../../; pwd)
 
 DATA_PATH="/data/pretrain_dataset/alpaca_text_document"
 TOKENIZER_MODEL="/data/gemm/"
-CKPT_LOAD_DIR="/data/gemm-mcore-tp1-pp1-test/l2_gemm_t1p1e8/"
+CKPT_LOAD_DIR=" /data/ci/deepseek2/mg_base/l2_gemm_t1p1e8_new/"
 
 TP=1
 PP=1
@@ -29,9 +29,9 @@ DISTRIBUTED_ARGS="
 
 MLA_ARGS="
     --spec mindspeed_llm.tasks.models.spec.deepseek_spec layer_spec \
-    --multi-head-latent-attention \
-    --qk-rope-head-dim 64 \
-    --qk-nope-head-dim 128 \
+    --multi-latent-attention \
+    --qk-pos-emb-head-dim 64 \
+    --qk-head-dim 128 \
     --q-lora-rank 1536 \
     --kv-lora-rank 512 \
     --v-head-dim 128 \
@@ -64,8 +64,8 @@ MOE_ARGS="
 "
 
 ROPE_ARGS="
-    --rope-scaling-beta-fast 32 \
-    --rope-scaling-beta-slow 1 \
+    --beta-fast 32 \
+    --beta-slow 1 \
     --rope-scaling-factor  40 \
     --rope-scaling-mscale 0.707 \
     --rope-scaling-mscale-all-dim  0.707 \

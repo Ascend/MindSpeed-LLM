@@ -126,18 +126,11 @@ def _add_ckpt_args(parser):
 def _add_mla_args(parser):
     group = parser.add_argument_group(title='multi-head latent attention')
 
-    group.add_argument('--multi-head-latent-attention', action='store_true', default=False,
-                       help='Use Multi-head Latent Attention(MLA)')
     group.add_argument('--padded-base-length', type=int, default=128,
-                       help='Fill Q K V of Multi-head-latent-attention to an integer multiple of this parameter.')
-    group.add_argument('--q-lora-rank', type=int, default=None, help='The low rank of q')
-    group.add_argument('--kv-lora-rank', type=int, default=None, help='The low rank of k and v')
-    group.add_argument('--v-head-dim', type=int, default=None, help='The head dim of v')
-    group.add_argument('--qk-rope-head-dim', type=int, default=None, help='The qk head dim for rope')
-    group.add_argument('--qk-nope-head-dim', type=int, default=None, help='The qk head dim for only self-attn')
+                       help='Fill Q K V of multi-latent-attention to an integer multiple of this parameter.')
     group.add_argument('--mla-fa-without-pad', action='store_true', default=False, help='Do not pad v_head_dim to q_head_dim in MLA')
     group.add_argument('--mla-mm-split', action='store_true', default=False, help='Split 2 up-proj matmul into 4 in MLA')
-    group.add_argument("--mla-zero-memory", action='store_true', default=False, help="Save activation memory in multi-head-latent-attention.")
+    group.add_argument("--mla-zero-memory", action='store_true', default=False, help="Save activation memory in multi-latent-attention.")
     group.add_argument("--mla-up-proj-tp-overlap", action='store_true', default=False, help='overlap up proj tp comm')
     group.add_argument("--recompute-mla-up-proj", action='store_true', default=False, help='recompute up projection in mla')
     group.add_argument('--mla-swap-core-attn-out', action='store_true', default=False, help='swap core_attn_out only in mla.')
@@ -150,8 +143,8 @@ def _add_mla_args(parser):
 def _add_yarn_args(parser):
     group = parser.add_argument_group(title='yarn')
 
-    group.add_argument('--rope-scaling-beta-fast', type=int, default=32, help='Yarn rope: rope beta fast')
-    group.add_argument('--rope-scaling-beta-slow', type=int, default=1, help='Yarn rope: rope beta slow')
+    group.add_argument('--beta-fast', type=int, default=32, help='Yarn rope: rope beta fast')
+    group.add_argument('--beta-slow', type=int, default=1, help='Yarn rope: rope beta slow')
     group.add_argument('--rope-scaling-factor', type=float, default=1.0, help='Yarn rope: rope factor')
     group.add_argument('--rope-scaling-mscale', type=float, default=1.0, help='Yarn rope: rope mscale')
     group.add_argument('--rope-scaling-mscale-all-dim', type=float, default=0.0, help='Yarn rope: rope mscale all dim')
@@ -1074,17 +1067,9 @@ def _validate_moe_args(args):
 
 
 def _validate_mla(args):
-    if args.multi_head_latent_attention:
+    if args.multi_latent_attention:
         if args.padded_base_length < 1:
             raise AssertionError('The value of padded_base_length cannot be less than 1.')
-        if args.kv_lora_rank is None:
-            raise AssertionError('The parameter kv-lora-rank should be set when use multi_head_latent_attention.')
-        elif args.v_head_dim is None:
-            raise AssertionError('The parameter v-head-dim should be set when use multi_head_latent_attention.')
-        elif args.qk_rope_head_dim is None:
-            raise AssertionError('The parameter qk-rope-head-dim should be set when use multi_head_latent_attention.')
-        elif args.qk_nope_head_dim is None:
-            raise AssertionError('The parameter qk-nope-head-dim should be set when use multi_head_latent_attention.')
         if args.mla_up_proj_tp_overlap:
             assert args.mla_mm_split, '--mla-up-proj-tp-overlap can only be used with mla-mm-split by now'
             assert args.sequence_parallel, '--mla-up-proj-tp-overlap should be used with sequence parallel'

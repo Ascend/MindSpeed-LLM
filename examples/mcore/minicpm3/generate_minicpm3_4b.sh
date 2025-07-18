@@ -24,10 +24,10 @@ torchrun $DISTRIBUTED_ARGS inference.py \
     --tensor-model-parallel-size 1  \
     --pipeline-model-parallel-size 2  \
     --use-mcore-models \
-    --multi-head-latent-attention \
+    --multi-latent-attention \
     --spec mindspeed_llm.tasks.models.spec.minicpm_spec layer_spec \
-    --qk-rope-head-dim 32 \
-    --qk-nope-head-dim 64 \
+    --qk-pos-emb-head-dim 32 \
+    --qk-head-dim 64 \
     --q-lora-rank 768 \
     --kv-lora-rank 256 \
     --v-head-dim 64 \

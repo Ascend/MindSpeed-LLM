@@ -88,7 +88,7 @@ class MOERouter(MindSpeedFeature):
                 raise AssertionError('The parameter topk-group should be set when use group_limited_greedy.')
             elif args.routed_scaling_factor is None:
                 raise AssertionError(
-                    'The parameter routed_scaling_factor should be set when use multi_head_latent_attention.')
+                    'The parameter routed_scaling_factor should be set when use multi_latent_attention.')
             elif args.topk_group >= args.expert_model_parallel_size:
                 raise AssertionError('The topk group ({}) should be less than n-group(EP)({}).'.format(args.topk_group,
                                                                                                        args.expert_model_parallel_size))

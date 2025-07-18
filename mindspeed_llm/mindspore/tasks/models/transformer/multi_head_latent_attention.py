@@ -27,7 +27,7 @@ from megatron.core import mpu, parallel_state
 from megatron.training import get_args
 from mindspeed_llm.tasks.models.transformer.mla_up_proj_overlap_tp_comm import mla_up_projection_overlap_tp_comm
 
-from mindspeed_llm.tasks.models.transformer.multi_head_latent_attention import recompute_mla
+from mindspeed_llm.tasks.models.transformer.multi_latent_attention import recompute_mla
 
 try:
     import bitsandbytes as bnb

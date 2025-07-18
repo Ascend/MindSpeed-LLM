@@ -30,7 +30,7 @@
                 "target-pipeline-parallel-size": "1",
                 "target-expert-parallel-size": "1",
                 "save-dir":"/data/hf/deepseek2_hf",
-                "load-dir":"/data/ci/deepseek2/mg_base/deepseek2-l8-t1p4e8-gemm",
+                "load-dir":"/data/ci/deepseek2/mg_base/deepseek2-l8-t1p4e8-gemm_new",
                 "use-mcore-models": null,
                 "moe-grouped-gemm": null,
                 "model-type-hf": "deepseek2",

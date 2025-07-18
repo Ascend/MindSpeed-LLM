@@ -238,9 +238,7 @@ class CoreAdaptation(MegatronAdaptationABC):
     def patch_core_models(self):
         from megatron.core.models.gpt.gpt_layer_specs import get_gpt_layer_local_spec
         from mindspeed.core.models.common.embeddings.rotary_pos_embedding import get_pos_emb_on_this_cp_rank
-        from mindspeed.core.models.common.embeddings.rotary_pos_embedding import rotary_embedding_get_rotary_seq_len_wrapper
-        from mindspeed.core.models.common.embeddings.language_model_embedding import language_model_embedding_forward_wrapper
-        from mindspeed.core.transformer.attention import attention_init, self_attention_init_wrapper
+        from mindspeed.core.transformer.attention import attention_init
         from ..training.utils import get_batch_on_this_cp_rank, get_device_wrapper
         from ..core.models.gpt.gpt_layer_specs import get_gpt_layer_local_spec_wrapper
         from ..core.transformer.dot_product_attention import dot_product_attention_init, \
@@ -820,7 +818,7 @@ class LegacyAdaptation(MegatronAdaptationABC):
         from mindspeed_llm.training.utils import print_args_wrapper
         from mindspeed_llm.training.arguments import validate_args_decorator
         from mindspeed_llm.training.arguments import core_transformer_config_from_args_wrapper
-        from ..training.checkpointing import _load_base_checkpoint_wrapper, save_checkpoint_wrapper, _load_base_checkpoint
+        from ..training.checkpointing import _load_base_checkpoint_wrapper, save_checkpoint_wrapper
         from ..training.tokenizer import build_tokenizer
         from ..training.arguments import parse_args_decorator
 
