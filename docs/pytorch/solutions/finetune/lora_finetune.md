@@ -26,10 +26,6 @@ MindSpeed-LLM支持在微调、偏好对齐、奖励模型等任务上，使用L
 MindSpeed-LLM 微调数据预处理脚本命名和启动方法（别的基准任务数据预处理请参考对应任务的数据预处理文档）：
 
 ```shell
-# Legacy 模型
-bash examples/legacy/llama2/data_convert_llama2_instruction.sh
-
-# Mcore 模型
 bash examples/mcore/llama2/data_convert_llama2_instruction.sh
 ```
 
@@ -52,10 +48,6 @@ python ./preprocess_data.py \
 MindSpeed-LLM lora微调脚本可使用普通base mcore权重进行微调任务：
 
 ```shell
-# Legacy 模型
-bash examples/legacy/llama2/ckpt_convert_llama2_hf2legacy.sh
-
-# Mcore 模型
 bash examples/mcore/llama2/ckpt_convert_llama2_hf2mcore.sh
 ```
 
@@ -92,10 +84,7 @@ MindSpeed-LLM LoRA微调脚本命名和启动方法：
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
 source /usr/local/Ascend/nnal/atb/set_env.sh
 
-# Legacy 模型
-bash examples/legacy/llama2/tune_llama2_7b_lora_ptd.sh
-
-# Mcore 模型
+# 启动任务
 bash examples/mcore/llama2/tune_llama2_7b_lora_ptd.sh
 ```
 参数说明：
@@ -121,7 +110,6 @@ bash examples/mcore/llama2/tune_llama2_7b_lora_ptd.sh
 - **`--lora-target-modules`**  
   选择需要添加 LoRA 的模块。  
   *mcore 模型可选模块：* `linear_qkv`, `linear_proj`, `linear_fc1`, `linear_fc2`  
-  *legacy 模型可选模块：* `query_key_value`, `dense`, `dense_h_to_4h`, `dense_4h_to_h`
 
 - **`--lora-load`**  
   加载 LoRA 权重断点继续训练或用于推理。在推理时需与 `--load` 参数配合使用，加载 `CKPT_SAVE_DIR` 路径下的 LoRA 权重。
@@ -162,7 +150,7 @@ python convert_ckpt.py \
 以下是启动转换脚本的示例：
 
 ```shell
-# 以 legacy 下的模型为例
+# 启动任务
 bash examples/mcore/llama2/ckpt_convert_llama2_mg2mg_lora.sh
 ```
 
@@ -192,7 +180,7 @@ python convert_ckpt.py \
 以下是启动转换脚本的示例：
 
 ```shell
-# 以 legacy 下的模型为例
+# 启动任务
 bash examples/mcore/llama2/ckpt_convert_llama2_mcore2hf_lora.sh
 ```
 
@@ -216,9 +204,6 @@ CHECKPOINT_LORA="./ckpt/llama-2-7b-lora/"
 TOKENIZER_PATH="./model_from_hf/llama-2-hf/"
 
 # 启动任务
-# Legacy 模型
-bash examples/legacy/llama2/generate_llama2_7b_lora_ptd.sh
-# Mcore 模型
 bash examples/mcore/llama2/generate_llama2_7b_lora_ptd.sh
 ```
 
@@ -232,7 +217,7 @@ source /usr/local/Ascend/ascend-toolkit/set_env.sh
 source /usr/local/Ascend/nnal/atb/set_env.sh
 
 # 启动任务
-bash examples/legacy/llama2/evaluate_llama2_7B_lora_mmlu_ptd.sh
+bash examples/mcore/llama2/evaluate_llama2_7B_lora_mmlu_ptd.sh
 ```
 
 #### 评估参数说明

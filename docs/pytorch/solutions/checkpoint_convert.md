@@ -17,15 +17,7 @@
 
     将Megatron-LM模型权重转换为Huggingface格式，适用于不同框架间的模型迁移。
 
-  - [Megatron-LM格式权重互转](#23-megatron-lm格式权重互转)
-
-    支持Megatron-Legacy与Megatron-Mcore格式之间的相互转换。
-
   - [Lora权重转换](#24-lora权重转换)
-
-    - [legacy格式权重合并](#241-megatron-legacy格式权重合并)
-
-      支持将legacy格式的Lora微调权重与基础模型权重合并，转换为Megatron或Huggingface格式；
 
     - [mcore格式权重合并](#242-megatron-mcore格式权重合并)
 
@@ -45,7 +37,7 @@
 
 权重转换旨在解决不同深度学习框架和训练策略下模型权重的兼容性问题，支持在多个模型和训练配置之间进行高效的权重互转。核心功能包括：
 
-**权重互转**：支持100+种模型的权重互转，能够在 Hugging Face、Megatron-LM主流框架之间，实现任意并行切分策略的权重格式互转。Megatron-LM具体包括两种格式：Megatron-Legacy和Megatron-Mcore。在转换过程中，用户可以通过指定参数 --use-mcore-models 来将权重转换为 Megatron-Mcore 格式；若未指定该参数，则默认转换为 Megatron-Legacy 格式。
+**权重互转**：支持100+种模型的权重互转，能够在 Hugging Face、Megatron-LM主流框架之间，实现任意并行切分策略的权重格式互转。在转换过程中，用户需要通过指定参数 --use-mcore-models 来将权重转换为 Megatron-Mcore 格式。
 
 **训练并行策略权重转换**：支持多种训练并行策略之间的权重转换，包括 张量并行、流水线并行、专家并行、流水并行动态划分 和 虚拟流水并行 等。无论是针对不同并行策略的训练，还是需要在不同策略之间切换的场景，都能实现灵活的权重转换，以适应各种训练和推理需求。
 
@@ -139,8 +131,8 @@ python convert_ckpt.py \
     </tr>
     <tr>
       <td>--use-mcore-models</td>
-      <td>转换为Megatron-Mcore权重，若不指定，则默认转换为Megatron-Legacy权重</td>
-      <td>可选</td>
+      <td>转换为Megatron-Mcore权重</td>
+      <td>必选</td>
     </tr>
     <tr>
       <td>--model-type-hf</td>
@@ -169,16 +161,6 @@ python convert_ckpt.py \
 
 
 【启动脚本】
-
-MindSpeed-LLM Huggingface到Megatron-Legacy权重转换脚本命名风格及启动方法为：
-
-```shell
-# 命名及启动：
-# bash examples/legacy/model_name/ckpt_convert_xxx_hf2legacy.sh
-# 需要配置并行参数以及权重词表加载保存等路径
-
-bash examples/legacy/llama2/ckpt_convert_llama2_hf2legacy.sh
-```
 
 MindSpeed-LLM Huggingface到Megatron-Mcore权重转换脚本命名风格及启动方法为：
 
@@ -213,16 +195,6 @@ python convert_ckpt.py \
 
 【启动脚本】
 
-MindSpeed-LLM Megatron-Legacy到Huggingface的权重转换脚本命名风格及启动方法为：
-
-```shell
-# 命名及启动：
-# bash examples/legacy/model_name/ckpt_convert_xxx_legacy2hf.sh
-# 需要配置并行参数以及权重词表加载保存等路径
-
-bash examples/legacy/llama2/ckpt_convert_llama2_legacy2hf.sh
-```
-
 MindSpeed-LLM Megatron-Mcore到Huggingface的权重转换脚本命名风格及启动方法为：
 
 ```shell
@@ -233,96 +205,7 @@ MindSpeed-LLM Megatron-Mcore到Huggingface的权重转换脚本命名风格及�
 bash examples/mcore/llama2/ckpt_convert_llama2_mcore2hf.sh
 ```
 
-### 2.3 Megatron-LM格式权重互转
-
-Megatron-LM格式权重互转功能支持**Megatron-Legacy**与**Megatron-Mcore**之间的相互转换，以适应不同的训练和推理需求。下面提供Llama2-7b模型的Megatron-LM格式权重互转脚本仅供参考：
-
-```shell
-# legacy转legacy
-python convert_ckpt.py \
-    --model-type GPT \
-    --load-model-type mg \
-    --save-model-type mg \
-    --target-tensor-parallel-size 2 \
-    --target-pipeline-parallel-size 2 \
-    --load-dir ./model_weights/llama-2-7b-legacy/ \
-    --save-dir ./model_weights/llama-2-7b-legacy_tp2pp2/
-
-# legacy转mcore
-python convert_ckpt.py \
-    --model-type GPT \
-    --load-model-type mg \
-    --save-model-type mg \
-    --use-mcore-models \
-    --load-from-legacy \
-    --target-tensor-parallel-size 2 \
-    --target-pipeline-parallel-size 2 \
-    --load-dir ./model_weights/llama-2-7b-legacy/ \
-    --save-dir ./model_weights/llama-2-7b-mcore_tp2pp2/
-
-# mcore转mocre
-python convert_ckpt.py \
-    --model-type GPT \
-    --load-model-type mg \
-    --save-model-type mg \
-    --use-mcore-models \
-    --target-tensor-parallel-size 2 \
-    --target-pipeline-parallel-size 2 \
-    --load-dir ./model_weights/llama-2-7b-mcore/ \
-    --save-dir ./model_weights/llama-2-7b-mcore_tp2pp2/
-
-# mcore转legacy
-python convert_ckpt.py \
-    --model-type GPT \
-    --load-model-type mg \
-    --save-model-type mg \
-    --use-mcore-models \
-    --save-to-legacy \
-    --target-tensor-parallel-size 2 \
-    --target-pipeline-parallel-size 2 \
-    --load-dir ./model_weights/llama-2-7b-mcore/ \
-    --save-dir ./model_weights/llama-2-7b-legacy_tp2pp2/
-```
-
-
-<table>
-  <thead>
-    <tr>
-      <th>参数</th>
-      <th>说明</th>
-      <th>可选/必选</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>--load-from-legacy</td>
-      <td>legacy转mcore时设置此参数以指定导入权重格式为legacy</td>
-      <td>可选</td>
-    </tr>
-    <tr>
-      <td>--save-to-legacy</td>
-      <td>mcore转legacy时设置此参数以指定保存权重格式为legacy</td>
-      <td>可选</td>
-    </tr>
-    <tr>
-      <td>--noop-layers</td>
-      <td>自定义空层操作，权重转换当前只支持mcore-mcore、hf-mcore、优化器权重转换，在mcore-mcore时，空层参数不能更改，只能更改并行方式，同时需要设置参数--load-checkpoint-loosely</td>
-      <td>可选</td>
-    </tr>
-    <tr>
-      <td>--load-checkpoint-loosely</td>
-      <td>允许松弛加载，在带有空层的mcore-mcore权重转换时，需要设置此参数</td>
-      <td>可选</td>
-    </tr>
-  </tbody>
-</table>
-
-
-其余参数意义参考2.1
-
-注：上述权重legacy和mcore互转为高阶功能，MindSpeed-LLM基于llama2提供基础能力，并进行版本迭代看护.对于其他模型的支持，用户需根据实际需求自行进行修改与适配。
-
-### 2.4 lora权重转换
+### 2.3 lora权重转换
 
 当前仓库支持以下两种lora权重转换方法:
 
@@ -330,15 +213,15 @@ python convert_ckpt.py \
 
 (2) 将Lora微调权重单独转为Huggingface格式，在lora微调脚本中加入参数--lora-ckpt-filter仅保存lora权重。
 
-#### 2.4.1 Megatron-Legacy格式权重合并
+#### 2.3.1 Megatron-Mcore格式权重合并
 
-在权重转换命令中，加入如下参数可以将训练的Megatron-Legacy格式的lora权重与base进行合并。
+在权重转换命令中，加入如下参数可以将训练的lora权重与权重转换出的base权重进行融合。
 
 ```bash
 --lora-load ./ckpt/llama-2-7b-lora  \
 --lora-r 16 \
 --lora-alpha 32 \
---lora-target-modules query_key_value dense dense_h_to_4h dense_4h_to_h \
+--lora-target-modules linear_qkv linear_proj linear_fc1 linear_fc2 \
 ```
 
 <table>
@@ -367,74 +250,11 @@ python convert_ckpt.py \
     </tr>
     <tr>
       <td>--lora-target-modules</td>
-      <td>该参数定义了LoRA目标模块，为一个由空格分隔的字符串列表，且不具有默认值。每个字符串对应需要进行LoRA微调的层名称，且只能在上述四种预定义的参数配置中选择。用户可根据具体需求调整该参数，但需注意，legacy模型和mcore模型在该参数的取值上存在差异。</td>
+      <td>该参数定义了LoRA目标模块，为一个由空格分隔的字符串列表，且不具有默认值。每个字符串对应需要进行LoRA微调的层名称，且只能在上述四种预定义的参数配置中选择。用户可根据具体需求调整该参数。</td>
       <td>可选</td>
     </tr>
   </tbody>
 </table>
-
-【合并后转换为Megatron-Legacy权重】
-
-下面提供Megatron-Legacy格式的Llama2-7b模型的Lora权重与base权重合并，并转为Megatron-Legacy格式的示例脚本，仅供参考：
-
-```shell
-python convert_ckpt.py \
-    --model-type GPT \
-    --load-model-type mg \
-    --save-model-type mg \
-    --load-dir ./model_weights/llama-2-7b-legacy/ \
-    --lora-load ./ckpt/llama-2-7b-lora \
-    --lora-r 16 \
-    --lora-alpha 32 \
-    --lora-target-modules query_key_value dense dense_h_to_4h dense_4h_to_h \
-    --target-tensor-parallel-size 1 \
-    --target-pipeline-parallel-size 1 \
-    --save-dir ./model_weights/llama-2-7b-lora2legacy
-```
-
-
-转换脚本命名风格及启动方法为：
-
-```shell
-# 命令启动方式以 legacy 下的模型 llama2 为例
-bash examples/legacy/llama2/ckpt_convert_llama2_legacy2legacy_lora.sh
-```
-
-【合并后转换为Huggingface权重】
-
-下面提供Megatron-Legacy格式的Llama2-7b模型的Lora权重与base权重合并，并转为Huggingface格式的示例脚本，仅供参考：
-
-```shell
-python convert_ckpt.py \
-    --model-type GPT \
-    --load-model-type mg \
-    --save-model-type hf \
-    --load-dir ./model_weights/llama-2-7b-legacy/ \
-    --lora-load ./ckpt/llama-2-7b-lora \
-    --lora-r 16 \
-    --lora-alpha 32 \
-    --lora-target-modules query_key_value dense dense_h_to_4h dense_4h_to_h \
-    --target-tensor-parallel-size 1 \
-    --target-pipeline-parallel-size 1 \
-    --save-dir ./model_from_hf/llama-2-7b-hf/    # <-- 需要填入原始HF模型路径，新权重会存于./model_from_hf/llama-2-7b-hf/mg2hg/
-```
-
-转换脚本命名风格及启动方法为：
-```shell
-#命令启动方式以 legacy 下的模型 llama2 为例
-bash examples/legacy/llama2/ckpt_convert_llama2_legacy2hf_lora.sh
-```
-
-#### 2.4.2 Megatron-Mcore格式权重合并
-
-在上述权重转换命令中，加入如下参数可以将训练的lora权重与权重转换出的base权重进行融合。
-
-```bash
---lora-load ./ckpt/llama-2-7b-lora  \
---lora-r 16 \
---lora-alpha 32 \
---lora-target-modules linear_qkv linear_proj linear_fc1 linear_fc2 \
-```
 
 【合并后转换为Megatron-Mcore权重】
 
@@ -467,18 +287,16 @@ python convert_ckpt.py \
   <tbody>
     <tr>
       <td>--lora-target-modules</td>
-      <td>该参数定义了LoRA目标模块，为一个由空格分隔的字符串列表，且不具有默认值。每个字符串对应需要进行LoRA微调的层名称，且只能在上述四种预定义的参数配置中选择。用户可根据具体需求调整该参数，但需注意，legacy模型和mcore模型在该参数的取值上存在差异。</td>
+      <td>该参数定义了LoRA目标模块，为一个由空格分隔的字符串列表，且不具有默认值。每个字符串对应需要进行LoRA微调的层名称，且只能在上述四种预定义的参数配置中选择。用户可根据具体需求调整该参数。</td>
       <td>可选</td>
     </tr>
   </tbody>
 </table>
 
-其余参数含义同2.4.1
-
 转换脚本命名风格及启动方法为：
 
 ```shell
-#命令启动方式以 mcore 下的模型 llama2 为例
+#命令启动方式以 llama2 为例
 bash examples/mcore/llama2/ckpt_convert_llama2_mg2mg_lora.sh
 ```
 
@@ -504,7 +322,7 @@ python convert_ckpt.py \
 
 转换脚本命名风格及启动方法为：
 ```shell
-#命令启动方式以 mcore 下的模型 llama2 为例
+#命令启动方式以 llama2 为例
 bash examples/mcore/llama2/ckpt_convert_llama2_mcore2hf_lora.sh
 ```
 
@@ -516,7 +334,7 @@ lora参数值需与lora微调时的参数保持一致,且lora权重的切分方�
 
 moe模型暂不支持开启--moe-grouped-gemm 特性后的lora权重转换
 
-#### 2.4.3 Lora权重转换为Huggingface权重
+#### 2.3.2 Lora权重转换为Huggingface权重
 
 通过使能参数--save-lora-to-hf,支持将Lora微调后的lora权重转换为Huggingface格式，下面提供Llama2-7b模型的Lora权重转为Huggingface格式的示例脚本，仅供参考：
 
@@ -567,7 +385,7 @@ python convert_ckpt.py \
 
 --save-lora-to-hf和--load-hf-from-config两个参数不能同时使用；
 
-lora权重转换仅支持mcore格式，legacy暂未支持；仅支持fc_type为gate_up_down的模型，其余待适配；当前仅支持llama2、mixtral。
+lora权重转换仅支持mcore格式；仅支持fc_type为gate_up_down的模型，其余待适配；当前仅支持llama2、mixtral。
 
 【启动脚本】
 
@@ -581,7 +399,7 @@ MindSpeed-LLM lora到Huggingface的权重转换脚本命名风格及启动方法
 bash examples/mcore/llama2/ckpt_convert_llama2_lora2hf.sh
 ```
 
-### 2.5 优化器权重转换
+### 2.4 优化器权重转换
 
 在权重转换脚本中指定`--load-model-type`参数为`optim` , 则为优化器权重转换。
 
@@ -659,7 +477,7 @@ python convert_ckpt.py
 转换脚本命名风格及启动方法为：
 
 ```shell
-# 命令启动方式以 mcore 下的模型llama2为例子
+# 命令启动方式以 llama2 为例子
 bash examples/mcore/llama2/ckpt_convert_llama2_optim.sh
 ```
 
@@ -674,7 +492,7 @@ deepseek2-lite支持PP、EP、DPP、noop-layers。
 
 ### 权重转换特性清单
 
-MindSpeed-LLM 支持 Huggingface、Megatron-Legacy 以及 Megatron-Core 之间的权重格式互转，具体功能列表如下:
+MindSpeed-LLM 支持 Huggingface 和 Megatron-Core 之间的权重格式互转，具体功能列表如下:
 
 <table>
   <thead>
@@ -687,24 +505,7 @@ MindSpeed-LLM 支持 Huggingface、Megatron-Legacy 以及 Megatron-Core 之间�
   </thead>
   <tbody>
     <tr>
-      <td rowspan="10">HuggingFace </td>
-      <td rowspan="4">Megatron-Legacy</td>
-      <td>张量并行</td>
-      <td>--target-tensor-parallel-size</td>
-    </tr>
-    <tr>
-      <td>流水并行</td>
-      <td>--target-pipeline-parallel-size</td>
-    </tr>
-    <tr>
-      <td>流水并行动态划分</td>
-      <td>--num-layer-list</td>
-    </tr>
-    <tr>
-      <td>虚拟流水并行</td>
-      <td>--num-layers-per-virtual-pipeline-stage</td>
-    </tr>
-    <tr>
+      <td rowspan="6">HuggingFace </td>
       <td rowspan="6">Megatron-Core</td>
       <td>张量并行</td>
       <td>--target-tensor-parallel-size</td>
@@ -732,7 +533,7 @@ MindSpeed-LLM 支持 Huggingface、Megatron-Legacy 以及 Megatron-Core 之间�
   </tbody>
   <tbody>
     <tr>
-      <td rowspan="16">Megatron-Legacy </td>
+      <td rowspan="22">Megatron-Core </td>
       <td rowspan="6">Huggingface</td>
       <td>张量并行</td>
       <td>--target-tensor-parallel-size</td>
@@ -756,93 +557,6 @@ MindSpeed-LLM 支持 Huggingface、Megatron-Legacy 以及 Megatron-Core 之间�
     <tr>
       <td>LoRA alpha</td>
       <td>--lora-alpha</td>
-    </tr>
-    <tr>
-      <td rowspan="4">Megatron-Core</td>
-      <td>张量并行</td>
-      <td>--target-tensor-parallel-size</td>
-    </tr>
-    <tr>
-      <td>流水并行</td>
-      <td>--target-pipeline-parallel-size</td>
-    </tr>
-    <tr>
-      <td>流水并行动态划分</td>
-      <td>--num-layer-list</td>
-    </tr>
-    <tr>
-      <td>虚拟流水并行</td>
-      <td>--num-layers-per-virtual-pipeline-stage</td>
-    </tr>
-    <tr>
-      <td rowspan="6">Megatron-Legacy</td>
-      <td>张量并行</td>
-      <td>--target-tensor-parallel-size</td>
-    </tr>
-    <tr>
-      <td>流水并行</td>
-      <td>--target-pipeline-parallel-size</td>
-    </tr>
-    <tr>
-      <td>LoRA训练模块</td>
-      <td>--lora-target-modules</td>
-    </tr>
-    <tr>
-      <td>LoRA权重</td>
-      <td>--lora-load</td>
-    </tr>
-    <tr>
-      <td>LoRA r</td>
-      <td>--lora-r</td>
-    </tr>
-    <tr>
-      <td>LoRA alpha</td>
-      <td>--lora-alpha</td>
-    </tr>
-  </tbody>
-  <tbody>
-    <tr>
-      <td rowspan="26">Megatron-Core </td>
-      <td rowspan="6">Huggingface</td>
-      <td>张量并行</td>
-      <td>--target-tensor-parallel-size</td>
-    </tr>
-    <tr>
-      <td>流水并行</td>
-      <td>--target-pipeline-parallel-size</td>
-    </tr>
-    <tr>
-      <td>LoRA训练模块</td>
-      <td>--lora-target-modules</td>
-    </tr>
-    <tr>
-      <td>LoRA权重</td>
-      <td>--lora-load</td>
-    </tr>
-    <tr>
-      <td>LoRA r</td>
-      <td>--lora-r</td>
-    </tr>
-    <tr>
-      <td>LoRA alpha</td>
-      <td>--lora-alpha</td>
-    </tr>
-    <tr>
-      <td rowspan="4">Megatron-Legacy</td>
-      <td>张量并行</td>
-      <td>--target-tensor-parallel-size</td>
-    </tr>
-    <tr>
-      <td>流水并行</td>
-      <td>--target-pipeline-parallel-size</td>
-    </tr>
-    <tr>
-      <td>流水并行动态划分</td>
-      <td>--num-layer-list</td>
-    </tr>
-    <tr>
-      <td>虚拟流水并行</td>
-      <td>--num-layers-per-virtual-pipeline-stage</td>
     </tr>
     <tr>
       <td rowspan="10">Megatron-Core</td>
