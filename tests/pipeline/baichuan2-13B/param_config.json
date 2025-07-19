@@ -1,72 +1,4 @@
- {
-    "test_baichuan2_mmlu_evaluate": [
-        {
-            "param": {
-                "task-data-path": "/data/eval_data/mmlu/data/test",
-                "task": "mmlu",
-                "tensor-model-parallel-size": 8,
-                "pipeline-model-parallel-size": 1,
-                "num-layers": 40,
-                "hidden-size": 5120,
-                "ffn-hidden-size": 13696,
-                "num-attention-heads": 40,
-                "seq-length": 4096,
-                "max-new-tokens": 1,
-                "max-position-embeddings": 4096,
-                "make-vocab-size-divisible-by": 32,
-                "micro-batch-size": 1,
-                "normalization": "RMSNorm",
-                "position-embedding-type": "alibi",
-                "swiglu": null,
-                "tokenizer-not-use-fast": null,
-                "untie-embeddings-and-output-weights": null,
-                "disable-bias-linear": null,
-                "fp16": null,
-                "no-load-rng": null,
-                "no-load-optim": null,
-                "load": "/data/pipeline/baichuan2-13b-tp8pp1-legacy-base",
-                "tokenizer-type": "PretrainedFromHF",
-                "tokenizer-name-or-path": "/data/hf/baichuan2-13B-hf/",
-                "use-deter-comp": null
-            }
-        }
-    ],
-
-    "test_baichuan2_greedy_search": [
-        {
-            "param": {
-                "tensor-model-parallel-size": 8,
-                "pipeline-model-parallel-size": 1,
-                "num-layers": 40,
-                "hidden-size": 5120,
-                "ffn-hidden-size": 13696,
-                "num-attention-heads": 40,
-                "seq-length": 4096,
-                "max-position-embeddings": 4096,
-                "make-vocab-size-divisible-by": 32,
-                "normalization": "RMSNorm",
-                "position-embedding-type": "alibi",
-                "load": "/data/pipeline/baichuan2-13b-tp8pp1-legacy-base",
-                "tokenizer-type": "PretrainedFromHF",
-                "tokenizer-name-or-path": "/data/hf/baichuan2-13B-hf/",
-                "disable-bias-linear": null,
-                "use-fused-rmsnorm": null,
-                "swiglu": null,
-                "attention-softmax-in-fp32": null,
-                "untie-embeddings-and-output-weights": null,
-                "no-masked-softmax-fusion": null,
-                "no-load-optim": null,
-                "no-load-rng": null,
-                "bf16": null,
-                "task": "greedy",
-                "max-new-tokens": 30,
-                "micro-batch-size": 4,
-                "global-batch-size": 16,
-                "use-deter-comp": null
-            }
-        }
-    ],
-
+{
     "test_preprocess_pretrain_data": [
         {
             "param": {
@@ -75,35 +7,6 @@
                 "tokenizer-name-or-path": "/data/hf/baichuan2-13B-hf/"
             },
             "prefix": "alpaca"
-        }
-    ],
-
-    "test_baichuan2_hf2mg_tp8pp1": [
-        {
-            "param": {
-                "model-type": "GPT",
-                "load-model-type": "hf",
-                "save-model-type": "mg",
-                "target-tensor-parallel-size": "8",
-                "load-dir": "/data/hf/baichuan2-13B-hf",
-                "save-dir": "/data/cache/baichuan2",
-                "tokenizer-model": "/data/hf/baichuan2-13B-hf/tokenizer.model",
-                "params-dtype": "bf16",
-                "w-pack":"True",
-                "model-type-hf": "baichuan2"
-            }
-        },
-        {
-            "Base_MD5" : [
-                "cf849faf523182c3",
-                "aef29df0b7ce1e0b",
-                "bf0557d58d800f02",
-                "019c2cbb6122c57f",
-                "ce2041d1c11cb52c",
-                "5f38e0b30e9d1111",
-                "d247b92c351eac8c",
-                "1d54bb73a32e144c"
-            ]
         }
     ]
 }

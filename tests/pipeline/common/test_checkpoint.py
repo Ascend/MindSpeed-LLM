@@ -139,48 +139,6 @@ class TestCheckpoint(object):
         shutil.rmtree(save_dir)
 
 
-    def test_llama2_hf2legacy_tp2pp4dypp(self):
-        os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
-        exit_code = run_cmd(["python3", CKPT_PYPATH] + self.test_config_cmd['test_llama2_hf2legacy_tp2pp4dypp'])
-        assert exit_code == 0
-        base_hash = self.test_config['test_llama2_hf2legacy_tp2pp4dypp'][1]
-        save_dir = self.test_config['test_llama2_hf2legacy_tp2pp4dypp'][0]['save-dir']
-        assert weight_compare_hash(save_dir, base_hash, "pt")
-
-
-    def test_llama2_legacy2hf_tp2pp4dypp(self):
-        os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
-        exit_code = run_cmd(["python3", CKPT_PYPATH] + self.test_config_cmd['test_llama2_legacy2hf_tp2pp4dypp'])
-        assert exit_code == 0
-        base_hash = self.test_config['test_llama2_legacy2hf_tp2pp4dypp'][1]
-        load_dir = self.test_config['test_llama2_legacy2hf_tp2pp4dypp'][0]['load-dir']
-        save_dir = os.path.join(self.test_config['test_llama2_legacy2hf_tp2pp4dypp'][0]['save-dir'], 'mg2hf')
-        assert weight_compare_hash(save_dir, base_hash, "safetensors")
-        shutil.rmtree(load_dir)
-        shutil.rmtree(save_dir)
-
-
-    def test_llama2_legacy2mcore_tp2pp4dypp(self):
-        os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
-        exit_code = run_cmd(["python3", CKPT_PYPATH] + self.test_config_cmd['test_llama2_legacy2mcore_tp2pp4dypp'])
-        assert exit_code == 0
-        base_hash = self.test_config['test_llama2_legacy2mcore_tp2pp4dypp'][1]
-        save_dir = self.test_config['test_llama2_legacy2mcore_tp2pp4dypp'][0]['save-dir']
-        assert weight_compare_hash(save_dir, base_hash, "pt")
-
-
-    def test_llama2_mcore2legacy_tp1pp4vpp2(self):
-        os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
-        exit_code = run_cmd(["python3", CKPT_PYPATH] + self.test_config_cmd['test_llama2_mcore2legacy_tp1pp4vpp2'])
-        assert exit_code == 0
-        base_hash = self.test_config['test_llama2_mcore2legacy_tp1pp4vpp2'][1]
-        load_dir = self.test_config['test_llama2_mcore2legacy_tp1pp4vpp2'][0]['load-dir']
-        save_dir = self.test_config['test_llama2_mcore2legacy_tp1pp4vpp2'][0]['save-dir']
-        assert weight_compare_hash(save_dir, base_hash, "pt")
-        shutil.rmtree(load_dir)
-        shutil.rmtree(save_dir)
-
-
     def test_qwen2_hf2mcore_tp1pp1(self):
         os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
         exit_code = run_cmd(["python3", CKPT_PYPATH] + self.test_config_cmd['test_qwen2_hf2mcore_tp1pp1'])

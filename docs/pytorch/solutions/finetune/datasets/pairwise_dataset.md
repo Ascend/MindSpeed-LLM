@@ -69,7 +69,7 @@ MindSpeed-LLM微调数据集处理脚本命名风格及启动方法为：
 ```shell
 # Mcore
 # 命名及启动：examples/mcore/model_name/data_convert_xxx_pairwise.sh
-bash examples/legacy/llama3/data_convert_llama3_pairwise.sh
+bash examples/mcore/llama3/data_convert_llama3_pairwise.sh
 ```
 
 指令微调数据集处理结果如下：

@@ -211,7 +211,7 @@
                 "target-tensor-parallel-size": "1",
                 "target-pipeline-parallel-size": "1",
                 "target-expert-parallel-size": "1",
-                "save-dir":"/data/hf/Mixtral-legacy-hf/",
+                "save-dir":"/data/hf/Mixtral-mcore-hf/",
                 "load-dir":"/data/pipeline/mixtral_lora_filter/",
                 "lora-r":"8",
                 "lora-alpha":"16",

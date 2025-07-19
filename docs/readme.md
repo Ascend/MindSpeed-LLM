@@ -40,7 +40,7 @@
     <tr>
       <td rowspan="4">模型前处理操作</td>
       <td rowspan="1"><a href="pytorch/solutions/checkpoint_convert.md">checkpoint_convert</a></td>
-      <td rowspan="1">支持legacy、mcore、hf、lora等各种不同格式权重间的部分转换路径</td>
+      <td rowspan="1">支持mcore、hf、lora等各种不同格式权重间的部分转换路径</td>
     </tr>
     <tr>
       <td rowspan="1"><a href="pytorch/solutions/pretrain/pretrain_dataset.md">pretrain_dataset</a></td>

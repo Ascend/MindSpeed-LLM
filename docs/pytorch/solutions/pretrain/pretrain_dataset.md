@@ -41,11 +41,6 @@ python ./preprocess_data.py \
 MindSpeed-LLM预训练数据集处理脚本命名风格及启动方法为:
 
 ```shell
-# Legacy
-# 命名及启动：examples/legacy/model_name/data_convert_xxx_pretrain.sh
-bash examples/legacy/llama2/data_convert_llama2_pretrain.sh
-
-# Mcore
 # 命名及启动：examples/mcore/model_name/data_convert_xxx_pretrain.sh
 bash examples/mcore/llama2/data_convert_llama2_pretrain.sh
 ```

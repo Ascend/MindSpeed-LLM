@@ -58,9 +58,8 @@ PRM微调数据预处理Alpaca风格数据集时，应指定为AlpacaStyleProces
 MindSpeed-LLM过程奖励数据集处理脚本命名风格及启动方法为：
 
 ```bash
-# Legacy
 # 命名及启动：examples/mcore/model_name/data_convert_xxx_process_reward.sh
-bash examples/legacy/llama2/data_convert_llama2_process_reward.sh
+bash examples/mcore/llama2/data_convert_llama2_process_reward.sh
 过程奖励微调数据集处理结果如下：
 
 ./prm_dataset/math-shepherd_packed_attention_mask_document.bin

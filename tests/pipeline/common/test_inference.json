@@ -1,86 +1,4 @@
 {
-    "test_llama2_legacy_prompt_greedy_search": [
-        {
-            "param": {
-                "tensor-model-parallel-size": 8,
-                "pipeline-model-parallel-size": 1,
-                "use-kv-cache": null,
-                "use-flash-attn": null,
-                "num-layers": 32,
-                "hidden-size": 4096,
-                "ffn-hidden-size": 11008,
-                "num-attention-heads": 32,
-                "seq-length": 4096, 
-                "max-position-embeddings": 4096,
-                "make-vocab-size-divisible-by": 1,
-                "normalization": "RMSNorm", 
-                "position-embedding-type": "rope", 
-                "load":"/data/pipeline/llama2-7B-tp8-pp1",
-                "tokenizer-type": "PretrainedFromHF",
-                "tokenizer-name-or-path":"/data/hf/llama-2-7b-hf",
-                "tokenizer-model": "/data/hf/llama-2-7b-hf/tokenizer.model",
-                "disable-bias-linear": null,
-                "use-fused-rmsnorm": null,
-                "swiglu": null,
-                "attention-softmax-in-fp32": null,
-                "untie-embeddings-and-output-weights": null,
-                "no-masked-softmax-fusion": null,
-                "no-load-optim": null,
-                "no-load-rng": null,
-                "fp16": null,
-                "task":"greedy",
-                "max-new-tokens": 30,
-                "micro-batch-size": 4,
-                "global-batch-size": 16,
-                "use-deter-comp": null,
-                "prompt-type": "llama2"
-            }
-        }
-    ],
-
-    "test_llama2_lora_prompt_legacy_greedy_search": [
-        {
-            "param": {
-                "tensor-model-parallel-size": 8,
-                "pipeline-model-parallel-size": 1,
-                "num-layers": 32,
-                "hidden-size": 4096,
-                "ffn-hidden-size": 11008,
-                "position-embedding-type": "rope",
-                "seq-length": 4096,
-                "max-new-tokens": 30,
-                "micro-batch-size": 4,
-                "global-batch-size": 16,
-                "num-attention-heads": 32,
-                "max-position-embeddings": 4096 ,
-                "swiglu": null,
-                "load": "/data/pipeline/llama2-7B-tp8-pp1",
-                "tokenizer-type": "PretrainedFromHF",
-                "tokenizer-name-or-path": "/data/hf/llama-2-7b-hf",
-                "tokenizer-model": "/data/hf/llama-2-7b-hf/tokenizer.model",
-                "tokenizer-not-use-fast": null,
-                "fp16": null,
-                "normalization": "RMSNorm" ,
-                "untie-embeddings-and-output-weights": null,
-                "disable-bias-linear": null,
-                "attention-softmax-in-fp32": null,
-                "no-load-optim": null,
-                "no-load-rng": null,
-                "no-masked-softmax-fusion": null,
-                "no-gradient-accumulation-fusion": null,
-                "exit-on-missing-checkpoint": null,
-                "lora-load": "/data/llama-2-7b-lora-tp8-pp1",
-                "lora-r": 16,
-                "lora-alpha": 32,
-                "task": "greedy",
-                "use-deter-comp": null,
-                "lora-target-modules": ["query_key_value", "dense", "dense_h_to_4h","dense_4h_to_h"],
-                "make-vocab-size-divisible-by": 1,
-                "prompt-type": "llama2"
-            }
-        }
-    ],
-
     "test_chatglm3_mcore_greedy_search": [
         {
             "param": {
@@ -131,53 +49,6 @@
         }
     ],
 
-    "test_chatglm3_legacy_greedy_search": [
-        {
-            "param": {
-                "tensor-model-parallel-size": 1,
-                "pipeline-model-parallel-size": 2,
-                "use-kv-cache": null,
-                "use-flash-attn": null,
-                "num-layers": 28,
-                "hidden-size": 4096,
-                "ffn-hidden-size": 13696,
-                "seq-length": 8192,
-                "group-query-attention": null,
-                "num-query-groups": 2,
-                "num-attention-heads": 32,
-                "padded-vocab-size": 65024,
-                "make-vocab-size-divisible-by": 1,
-                "max-position-embeddings": 8192,
-                "position-embedding-type": "rope",
-                "use-glm-rope": null,
-                "rotary-percent": 0.5,
-                "disable-bias-linear": null,
-                "add-qkv-bias": null,
-                "swiglu": null,
-                "normalization": "RMSNorm",
-                "max-new-tokens": 30,
-                "micro-batch-size": 1,
-                "global-batch-size": 16,
-                "load":"/data/pipeline/chatglm3-6b-base-mg-tp1pp2-legacy-base",
-                "tokenizer-type": "PretrainedFromHF",
-                "tokenizer-name-or-path":"/data/hf/chatglm3-6b-base-hf/",
-                "tokenizer-model": "/data/hf/chatglm3-6b-base-hf/tokenizer.model",
-                "tokenizer-not-use-fast": null,
-                "untie-embeddings-and-output-weights": null,
-                "attention-softmax-in-fp32": null,
-                "no-load-optim": null,
-                "no-load-rng": null,
-                "no-masked-softmax-fusion": null,
-                "no-gradient-accumulation-fusion": null,
-                "exit-on-missing-checkpoint": null,
-                "seed": 42,
-                "fp16": null,
-                "task": "greedy",
-                "use-deter-comp": null
-                }
-        }
-    ],
-
     "test_baichuan2_mcore_greedy_search": [
         {
             "param": {
@@ -200,47 +71,6 @@
                 "fill-neg-inf": null,
                 "swiglu": null,
                 "load": "/data/Baichuan2-13B-tp8pp1-mcore-hf",
-                "tokenizer-type": "PretrainedFromHF",
-                "tokenizer-name-or-path": "/data/hf/baichuan2-13B-hf/",
-                "tokenizer-not-use-fast": null,
-                "fp16": null,
-                "normalization": "RMSNorm" ,
-                "untie-embeddings-and-output-weights": null,
-                "disable-bias-linear": null,
-                "attention-softmax-in-fp32": null,
-                "no-load-optim": null,
-                "no-load-rng": null,
-                "no-masked-softmax-fusion": null,
-                "no-gradient-accumulation-fusion": null,
-                "exit-on-missing-checkpoint": null,
-                "task": "greedy",
-                "use-deter-comp": null,
-                "make-vocab-size-divisible-by": 32
-            }
-        }
-    ],
-
-    "test_baichuan2_legacy_greedy_search": [
-        {
-            "param": {
-                "tensor-model-parallel-size": 8,
-                "pipeline-model-parallel-size": 1,
-                "use-kv-cache": null,
-                "use-flash-attn": null,
-                "num-layers": 40,
-                "hidden-size": 5120,
-                "ffn-hidden-size": 13696,
-                "seq-length": 1024,
-                "max-new-tokens": 30,
-                "micro-batch-size": 1,
-                "global-batch-size": 16,
-                "num-attention-heads": 40,
-                "max-position-embeddings": 2048 ,
-                "position-embedding-type": "alibi",
-                "square-alibi-mask": null,
-                "fill-neg-inf": null,
-                "swiglu": null,
-                "load": "/data/pipeline/baichuan2-13b-tp8pp1-legacy-base",
                 "tokenizer-type": "PretrainedFromHF",
                 "tokenizer-name-or-path": "/data/hf/baichuan2-13B-hf/",
                 "tokenizer-not-use-fast": null,
