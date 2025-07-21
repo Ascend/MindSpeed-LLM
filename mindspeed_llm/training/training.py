@@ -19,6 +19,7 @@ import sys
 import json
 from datetime import datetime
 from functools import wraps
+import logging
 
 import time
 
@@ -62,6 +63,14 @@ from mindspeed_llm.tasks.posttrain.lora.utils import is_enable_lora
 
 # The earliest we can measure the start time.
 _TRAIN_START_TIME = time.time()
+# For the core binding scenario, the original timing for core binding is at the start of the first inversion.
+# By calling reset_thread_affinity(), core binding can be initiated earlier.
+try:
+    from torch_npu.utils import reset_thread_affinity
+    reset_thread_affinity()
+except Exception as e:
+    logging.warning("fail to call reset_thread_affinity, please upgrade torch_npu.")
+    pass
 
 
 def model_provider_func_wrapper(model_provider_func):
