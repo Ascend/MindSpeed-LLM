@@ -1100,6 +1100,9 @@ def _validate_transformer_block_build_layers(args):
         if args.first_k_dense_replace and args.num_layers <= args.first_k_dense_replace:
             raise AssertionError('Num-layer ({}) must be greater than first-k-dense-replace ({}) when first-k-dense-replace is set.'.format(args.num_layers,
             args.first_k_dense_replace))
+        if args.first_k_dense_replace and args.pipeline_model_parallel_size > 1:
+            if args.first_k_dense_replace >= args.num_layers // args.pipeline_model_parallel_size:
+                raise AssertionError('When using first-k-dense-replace, it is not allowed for all layers within a pp stage to be dense layers.')
     if args.num_experts is not None and args.use_mc2 and args.moe_grouped_gemm:
         raise AssertionError('Moe Grouped Gemm is not supported with mc2 in MOE model.')
 
