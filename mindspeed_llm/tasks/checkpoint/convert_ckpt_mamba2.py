@@ -54,11 +54,11 @@ class CheckpointConverter:
         raise Exception(f"Unknown tensor name {tensor_name}")
 
     def _valid_parameter(self):
-        if self.args.n_groups % self.args.target_tp_size != 0:
+        if self.args.mamba2_n_groups % self.args.target_tp_size != 0:
             raise ValueError("target_tp_size must can divide n_groups. Please adjust values.")
 
     @staticmethod
-    def load_bin_files_to_dict(directory_path):
+    def load_hf_files_to_dict(directory_path):
         model_dict = {}
         loaded = False  # Flag to indicate if any file was successfully loaded
 
@@ -103,10 +103,10 @@ class CheckpointConverter:
 
         with open(config_file_path, 'r') as f:
             config = json.load(f)
-        n_layer = config.get("num_hidden_layers", None)
+        n_layer = config.get("num_hidden_layers", config.get("n_layer", None))
 
         if n_layer is None:
-            raise KeyError("'num_hidden_layers' key not found in the config file")
+            raise KeyError("Neither 'num_hidden_layers' nor 'n_layers' key found in the config file")
         
         return n_layer
 
@@ -121,7 +121,10 @@ class CheckpointConverter:
             elif "lm_head" in key:
                 new_key = key.replace("lm_head", "output_layer")
             elif "embedding" in key:
-                new_key = key.replace("backbone.embeddings", "embedding.word_embeddings")
+                if "backbone.embeddings" in key:
+                    new_key = key.replace("backbone.embeddings", "embedding.word_embeddings")
+                else:
+                    new_key = key.replace("backbone.embedding", "embedding.word_embeddings")
             elif "backbone" in key:
                 new_key = key.replace("backbone", "decoder")
             modified_dict[new_key] = value
@@ -139,7 +142,7 @@ class CheckpointConverter:
             elif "output_layer" in key:
                 new_key = key.replace("output_layer", "lm_head")
             elif "embedding" in key:
-                new_key = key.replace("embedding.word_embeddings", "backbone.embedding")
+                new_key = key.replace("embedding.word_embeddings", "backbone.embeddings")
             elif "decoder" in key:
                 new_key = key.replace("decoder", "backbone")
             restored_dict[new_key] = value
@@ -490,7 +493,7 @@ class CheckpointConverter:
 
             finalized = self.finalize_checkpoint(src_model, {'model': model_dict}, args, verbose=False)
             torch.save(finalized, model_file)
-            logger.info(f"Model {model_file} is saved.")(f"Model {model_file} is saved.")
+            logger.info(f"Model {model_file} is saved.")
 
         tracker_file = os.path.join(args.save_dir, "latest_checkpointed_iteration.txt")
         with open(tracker_file, "w") as f:
@@ -537,7 +540,7 @@ class CheckpointConverter:
     def convert_hf2mg(self, args):
         logger.info("====RUNNING CHECKPOINT CONVERSION====")
 
-        hf_model = self.load_bin_files_to_dict(args.load_dir)
+        hf_model = self.load_hf_files_to_dict(args.load_dir)
         hf_model_new = self.modify_keys_hf2mg(hf_model)
         args.num_layers = self.load_config_and_get_n_layer(args.load_dir)
 

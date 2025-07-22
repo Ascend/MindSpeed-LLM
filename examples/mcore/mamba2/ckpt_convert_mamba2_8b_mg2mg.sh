@@ -10,5 +10,7 @@ python mindspeed_llm/tasks/checkpoint/convert_ckpt_mamba2.py \
     --target-tp-size 2 \
 
     # 注意，如果load权重不是训练后保存的权重，则需要增加如下配置参数
+    # 数值仅供参考，具体请按需修改
     # --input-tp-rank 4 \
     # --input-pp-rank 2 \
+    # --num-layers 56 \
