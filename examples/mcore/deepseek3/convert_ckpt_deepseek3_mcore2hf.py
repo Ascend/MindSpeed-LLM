@@ -23,8 +23,8 @@ NUM_EXPERTS = 256
 MTP_LAYER_INDEX = 61
 Q_LORA_RANK = 1536
 NUM_ATTENTION_HEADS = 128
-QK_NOPE_HEAD_DIM = 128
-QK_ROPE_HEAD_DIM = 64
+QK_HEAD_DIM = 128
+QK_POS_EMB_HEAD_DIM = 64
 V_HEAD_DIM = 128
 TENSOR_SIZE = 0
 hf_weight_dict = defaultdict()
@@ -96,8 +96,8 @@ class MgCkptConvert(object):
         self.hidden_size = HIDDEN_SIZE
         self.num_experts = NUM_EXPERTS
         self.num_attention_heads = NUM_ATTENTION_HEADS
-        self.qk_nope_head_dim = QK_NOPE_HEAD_DIM
-        self.qk_rope_head_dim = QK_ROPE_HEAD_DIM
+        self.qk_head_dim = QK_HEAD_DIM
+        self.qk_pos_emb_head_dim = QK_POS_EMB_HEAD_DIM
         self.v_head_dim = V_HEAD_DIM
         self.mtp_layer_number = MTP_LAYER_INDEX
 
@@ -435,9 +435,9 @@ class MgCkptConvert(object):
             qkv_key = f"{prefix}.self_attention.linear_qkv.weight"
             dense_key = f"{prefix}.self_attention.linear_proj.weight"
             q_layernorm_key = f"{prefix}.self_attention.q_layernorm.weight"
-            kv_layernorm_key = f"{prefix}.self_attention.k_layernorm.weight"
-            q_b_key = f"{prefix}.self_attention.linear_qb.weight"
-            kv_b_key = f"{prefix}.self_attention.linear_kvb.weight"
+            kv_layernorm_key = f"{prefix}.self_attention.kv_layernorm.weight"
+            q_b_key = f"{prefix}.self_attention.linear_q_up_proj.weight"
+            kv_b_key = f"{prefix}.self_attention.linear_kv_up_proj.weight"
 
             return qkv_key, dense_key, q_layernorm_key, kv_layernorm_key, q_b_key, kv_b_key
 
@@ -483,14 +483,14 @@ class MgCkptConvert(object):
         o_proj = torch.cat(linear_proj_list, dim=1)
 
         if self.mla_mm_split:
-            qk_nope_weight = torch.cat(qk_nope_list, dim=0).reshape(self.num_attention_heads, self.qk_nope_head_dim, -1)
-            qk_rope_weight = torch.cat(qk_rope_list, dim=0).reshape(self.num_attention_heads, self.qk_rope_head_dim, -1)
-            kv_nope_weight = torch.cat(kv_nope_list, dim=0).reshape(self.num_attention_heads, self.qk_nope_head_dim, -1)
+            qk_nope_weight = torch.cat(qk_nope_list, dim=0).reshape(self.num_attention_heads, self.qk_head_dim, -1)
+            qk_rope_weight = torch.cat(qk_rope_list, dim=0).reshape(self.num_attention_heads, self.qk_pos_emb_head_dim, -1)
+            kv_nope_weight = torch.cat(kv_nope_list, dim=0).reshape(self.num_attention_heads, self.qk_head_dim, -1)
             linear_v_weight = torch.cat(linear_v_list, dim=0).reshape(self.num_attention_heads, self.v_head_dim, -1)
             q_b_proj = torch.cat([qk_nope_weight, qk_rope_weight], dim=1)
-            q_b_proj = q_b_proj.reshape(self.num_attention_heads * (self.qk_nope_head_dim + self.qk_rope_head_dim), -1)
+            q_b_proj = q_b_proj.reshape(self.num_attention_heads * (self.qk_head_dim + self.qk_pos_emb_head_dim), -1)
             kv_b_proj = torch.cat([kv_nope_weight, linear_v_weight], dim=1)
-            kv_b_proj = kv_b_proj.reshape(self.num_attention_heads * (self.qk_nope_head_dim + self.v_head_dim), -1)
+            kv_b_proj = kv_b_proj.reshape(self.num_attention_heads * (self.qk_head_dim + self.v_head_dim), -1)
         else:
             q_b_proj = torch.cat(linear_qb_list, dim=0)
             kv_b_proj = torch.cat(linear_kvb_list, dim=0)
