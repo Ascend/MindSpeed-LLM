@@ -4,6 +4,9 @@ from mindspeed.deprecate import AutoExecuteFunction
 from mindspeed.features_manager.feature import MindSpeedFeature
 from mindspeed.features_manager.tensor_parallel.unaligned_linear_feature import UnalignedLinearFeature
 from mindspeed.features_manager.features_manager import MindSpeedFeaturesManager
+from mindspeed.features_manager.fusions.fused_bias_swiglu import FusedSwigluFeature
+from mindspeed.features_manager.fusions.fused_softmax import FusedSoftmaxFeature
+from mindspeed.features_manager.fusions.fused_rope import FusedRoPEFeature
 
 from mindspeed_llm.features_manager.common.training import TrainingDefaultFeature
 from mindspeed_llm.features_manager.common.rotary import RotaryPositionEmbeddingFeature
@@ -49,10 +52,19 @@ def add_megatron_basic_features(features_list: List[MindSpeedFeature]):
         TrainingBasicFeature(),
     ])
     
-    
+
+def add_fusions_features(features_list: List[MindSpeedFeature]):
+    features_list.extend([
+        FusedSwigluFeature(),
+        FusedSoftmaxFeature(),
+        FusedRoPEFeature(),
+    ])
+
+
 def create_features_list():
     features_list = []
     add_megatron_basic_features(features_list)
+    add_fusions_features(features_list)
     return features_list
 
 

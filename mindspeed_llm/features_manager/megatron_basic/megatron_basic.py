@@ -9,12 +9,12 @@ class MegatronBasicFeature(MindSpeedMegatronBasicFeature):
     def register_basic_patches(self, pm, args):
         # args parser patch
         from mindspeed_llm.training.utils import print_args_wrapper
-        from mindspeed_llm.training.arguments import validate_args_decorator, parse_args_decorator
+        from mindspeed_llm.training.arguments import validate_args_v2_decorator, parse_args_decorator
         from mindspeed_llm.core.transformer.transformer_config import transformer_config_post_init_wrapper
         pm.register_patch('megatron.training.arguments.parse_args', parse_args_decorator)
-        pm.register_patch('megatron.training.arguments.validate_args', validate_args_decorator)
+        pm.register_patch('megatron.training.arguments.validate_args', validate_args_v2_decorator)
         pm.register_patch('megatron.training.arguments._print_args', print_args_wrapper)
-        pm.register_patch('megatron.training.yaml_arguments.validate_yaml', validate_args_decorator)
+        pm.register_patch('megatron.training.yaml_arguments.validate_yaml', validate_args_v2_decorator)
         pm.register_patch('megatron.training.yaml_arguments._print_args', print_args_wrapper)
         pm.register_patch("megatron.core.transformer.transformer_config.TransformerConfig.__post_init__",
                           transformer_config_post_init_wrapper)

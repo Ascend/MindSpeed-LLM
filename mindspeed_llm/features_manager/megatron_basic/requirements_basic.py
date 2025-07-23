@@ -7,6 +7,14 @@ from mindspeed.features_manager.megatron_basic.requirements_basic import Require
 
 
 class RequirementsBasicFeature(MindspeedRequirementsBasicFeature):
+
+    def register_args(self, parser: ArgumentParser):
+        super().register_args(parser)
+        group = parser.add_argument_group(title=self.feature_name)
+        group.add_argument('--o2-optimizer', action='store_true',
+                           help='use bf16 exponential moving average to greatly save up memory.')
+        group.add_argument('--o2-gradient', action='store_true',
+                           help='use bf16 gradient accumulation to greatly save up memory.')
     
     def register_patches(self, patch_manager, args):
         super().register_patches(patch_manager, args)

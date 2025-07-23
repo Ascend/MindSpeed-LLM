@@ -85,7 +85,12 @@ def process_args(parser):
 
     for feature in FEATURES_LIST:
         feature.register_args(parser)
-        
+
+    return parser
+
+
+def process_args_v2(parser):
+
     MindSpeedFeaturesManager.register_features_args(parser)
 
     return parser
@@ -1286,6 +1291,32 @@ def _add_dummy_args_v2(args):
     For arguments in feature_list which is currently unsupported in mindspeed-llm.
     """
     args.unaligned_linear = False
+    args.multi_head_latent_attention = False
+    args.embed_layernorm = False
+    args.tp_2d = False
+    args.tp_x = 1
+    args.attn_logit_softcapping = False
+    args.square_alibi_mask = False
+    args.fill_neg_inf = False
+    args.query_pre_attn_scalar = 0.0
+    args.add_output_layer_bias = False
+    args.is_pairwise_dataset = False
+    args.is_instruction_dataset = False
+    args.enable_share_memory = False
+    args.return_document_ids = False
+    args.schedules_method = None
+    args.embedding_multiplier_scale = 0.0
+    args.scale_emb = None
+    args.load_checkpoint_loosely = False
+    args.attention_mask_type = None
+    args.attention_mask_on_cpu = False
+    args.dim_model_base = None
+    args.output_multiplier_scale = False
+    args.output_logit_softcapping = False
+    args.output_layer_slice_num = 1
+    args.enable_high_availability = False
+    args.use_fused_mlp = False
+    args.disable_gloo_group = False
 
 
 def _validate_noop_layer(args):
@@ -1471,19 +1502,39 @@ def validate_args_decorator(megatron_validate_args):
         _valid_fa_div_args(args)
         _add_dummy_args(args)
 
-        _add_dummy_args_v2(args)
         for feature in FEATURES_LIST:
             if (getattr(args, feature.feature_name, None) and feature.optimization_level > 0) or feature.optimization_level == 0:
                 feature.pre_validate_args(args)
                 feature.validate_args(args)
                 feature.post_validate_args(args)
-                
-        for feature in MindSpeedFeaturesManager.FEATURES_LIST:
-            if (getattr(args, feature.feature_name, None) and feature.optimization_level > 0) or feature.optimization_level == 0:
-                feature.pre_validate_args(args)
-                feature.validate_args(args)
-                feature.post_validate_args(args)
+
         
+        from mindspeed_llm.training.utils import print_args
+        print_args('MindSpeed-LLM Arguments', args)
+        return args
+
+    return wrapper
+
+
+def validate_args_v2_decorator(megatron_validate_args):
+    """A decorator for megatron arguments validation function."""
+
+    @wraps(megatron_validate_args)
+    def wrapper(args, defaults=None):
+        if defaults is None:
+            defaults = {}
+        # make prev validation and copy some args.
+        MindSpeedFeaturesManager.pre_validate_features_args(args)
+
+        # make megatron args validation then restore args thar are copied.
+        args = megatron_validate_args(args, defaults)
+
+        # make post validation after megatron validation.
+        MindSpeedFeaturesManager.post_validate_features_args(args=args)
+
+        _add_dummy_args_v2(args)
+        MindSpeedFeaturesManager.validate_features_args(args=args)
+
         from mindspeed_llm.training.utils import print_args
         print_args('MindSpeed-LLM Arguments', args)
         return args

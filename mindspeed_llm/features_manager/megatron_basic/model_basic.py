@@ -6,9 +6,8 @@ class ModelBasicFeature(MindSpeedFeature):
 
     def __init__(self):
         super(ModelBasicFeature, self).__init__(feature_name="model", optimization_level=0)
-    
+
     def register_patches(self, patch_manager, args):
-        self.patch_attention_patches(patch_manager, args)
         self.patch_model_patches(patch_manager, args)
 
     def patch_model_patches(self, pm, args):
@@ -33,19 +32,6 @@ class ModelBasicFeature(MindSpeedFeature):
         pm.register_patch('megatron.core.tensor_parallel.random.CheckpointFunction.backward',
                                     checkpoint_backward_wrapper)
 
-    def patch_attention_patches(self, pm, args):
-        from mindspeed_llm.core.transformer.dot_product_attention import dot_product_attention_init, \
-            dot_product_attention_forward_wrapper, ulysses_context_parallel_forward_wrapper
-        pm.register_patch('megatron.core.transformer.dot_product_attention.DotProductAttention.__init__',
-                          dot_product_attention_init)
-        pm.register_patch('megatron.core.transformer.dot_product_attention.DotProductAttention.forward',
-                          dot_product_attention_forward_wrapper)
-        pm.register_patch(
-            'megatron.core.transformer.custom_layers.transformer_engine.TEDotProductAttention.__init__',
-            dot_product_attention_init)
-        pm.register_patch(
-            'megatron.core.transformer.custom_layers.transformer_engine.TEDotProductAttention.forward',
-            dot_product_attention_forward_wrapper)
 
 
     

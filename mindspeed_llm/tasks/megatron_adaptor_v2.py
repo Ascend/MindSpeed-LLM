@@ -22,9 +22,9 @@ class FeatureAdaptor:
         if cls._args is not None:
             return cls._args
 
-        from mindspeed_llm.training.arguments import process_args
+        from mindspeed_llm.training.arguments import process_args_v2
         parser = argparse.ArgumentParser(description='MindSpeed-LLM Arguments', allow_abbrev=False)
-        _args, _ = process_args(parser).parse_known_args()
+        _args, _ = process_args_v2(parser).parse_known_args()
         return _args
     
     @classmethod
