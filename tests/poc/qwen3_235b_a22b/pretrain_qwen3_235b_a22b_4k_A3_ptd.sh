@@ -106,6 +106,8 @@ MODEL_PARALLEL_ARGS="
 
 GPT_ARGS="
     --kv-channels 128 \
+    --spec mindspeed_llm.tasks.models.spec.qwen3_spec layer_spec \
+    --qk-layernorm \
     --gemm-gradient-accumulation-fusion \
     --reuse-fp32-param \
     --use-mcore-models \
@@ -114,7 +116,7 @@ GPT_ARGS="
     --noop-layers 94,95 \
     --num-layers 96 \
     --hidden-size 4096 \
-    --ffn-hidden-size 8192 \
+    --ffn-hidden-size 12288 \
     --num-attention-heads 64 \
     --tokenizer-type PretrainedFromHF \
     --make-vocab-size-divisible-by 1 \
