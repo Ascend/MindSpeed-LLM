@@ -22,7 +22,10 @@ class Hf2MgConvert(Convert):
         self.save_dir = self.mg_path_process(args.save_dir)
 
         # model arguments
-        self.num_layers = self.load_model.num_layers + len(eval(self.noop_layers))
+        if self.noop_layers is None:
+            self.num_layers = self.load_model.num_layers
+        else:
+            self.num_layers = self.load_model.num_layers + len(eval(self.noop_layers))
 
         if self.vpp_stage is None:
             self.pprank_layer_idxs = defaultdict()
@@ -621,8 +624,8 @@ class Hf2MgConvert(Convert):
             else:
                 num_local_experts = self.load_model.num_experts // self.ep_size
                 for ep_rank in range(self.ep_size):
-                    mg_weight_key = self.save_model.get_weight(local_layer_idx, ep_rank)
                     for local_experts_idx in range(num_local_experts):
+                        mg_weight_key = self.save_model.get_weight(local_layer_idx, local_experts_idx)
                         local_fc1_key = mg_weight_key["layers_mlp_experts_linear_fc1"]
                         local_fc2_key = mg_weight_key["layers_mlp_experts_linear_fc2"]
                         if mtp_layer_flag:
@@ -637,12 +640,12 @@ class Hf2MgConvert(Convert):
                         local_fc2_lst = torch.chunk(local_fc2_weight, self.tp_size, dim=1)
 
                         for tp_rank in range(self.tp_size):
-                            mg_model[ep_rank][tp_rank][local_fc1_key] = local_fc1_lst[tp_rank].clone()
-                            mg_model[ep_rank][tp_rank][local_fc2_key] = local_fc2_lst[tp_rank].clone()
+                            mg_weight[ep_rank][tp_rank][local_fc1_key] = local_fc1_lst[tp_rank].clone()
+                            mg_weight[ep_rank][tp_rank][local_fc2_key] = local_fc2_lst[tp_rank].clone()
                             if self.qlora_nf4:
-                                self.qlora_nf4_quant(mg_model, ep_rank, tp_rank, local_fc1_key,
+                                self.qlora_nf4_quant(mg_weight, ep_rank, tp_rank, local_fc1_key,
                                                      local_fc1_lst[tp_rank].clone())
-                                self.qlora_nf4_quant(mg_model, ep_rank, tp_rank, local_fc2_key,
+                                self.qlora_nf4_quant(mg_weight, ep_rank, tp_rank, local_fc2_key,
                                                      local_fc2_lst[tp_rank].clone())
         else:
             mg_weight_key = self.save_model.get_weight(local_layer_idx)
