@@ -13,13 +13,13 @@ def apply_yarn_scaling(freqs: torch.Tensor):
     args = get_args()
     
     scaling_factor = args.rope_scaling_factor
-    dim = args.qk_rope_head_dim if args.multi_head_latent_attention else (args.hidden_size // args.num_attention_heads)
+    dim = args.qk_pos_emb_head_dim if args.multi_latent_attention else (args.hidden_size // args.num_attention_heads)
     rotary_ratio = args.rotary_base ** (torch.arange(0, dim, 2, dtype=torch.float32, device=freqs.device) / dim)
     freq_extra = 1.0 / rotary_ratio
     freq_inter = 1.0 / (scaling_factor * rotary_ratio)
     low, high = YarnRotaryPositionEmbedding.yarn_find_correction_range(
-        args.rope_scaling_beta_fast,
-        args.rope_scaling_beta_slow,
+        args.beta_fast,
+        args.beta_slow,
         dim,
         args.rotary_base,
         args.rope_scaling_original_max_position_embeddings,
