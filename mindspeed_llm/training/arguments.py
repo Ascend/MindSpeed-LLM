@@ -1216,6 +1216,11 @@ def _store_variables(args):
     if args.o2_gradient:
         args.accumulate_allreduce_grads_in_fp32 = True
 
+    # Bypass megatron validation for MTP and CP
+    if args.mtp_num_layers is not None and args.mtp_num_layers >= 1 and args.context_parallel_size > 1:
+        variable_dict["mtp_num_layers"] = args.mtp_num_layers
+        args.mtp_num_layers = 0
+
     # for 2 megatron
     if hasattr(args, "role") and args.role == "actor_rollout":
         variable_dict["true_world_size"] = args.world_size
@@ -1239,6 +1244,10 @@ def _restore_variables(args, variable_dict):
     # Bypass megatron validation for gradient reduce in fp32
     if args.o2_gradient:
         args.accumulate_allreduce_grads_in_fp32 = False
+
+    # Bypass megatron validation for MTP and CP
+    if variable_dict.get("mtp_num_layers"):
+        args.mtp_num_layers = variable_dict["mtp_num_layers"]     
 
     # for 2 megatron
     if hasattr(args, "role") and args.role == "actor_rollout":

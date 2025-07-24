@@ -35,7 +35,8 @@ from megatron.core.models.gpt.gpt_layer_specs import (
     get_gpt_layer_with_transformer_engine_spec,
     get_gpt_mtp_block_spec,
 )
-from mindspeed_llm.training.utils import generate_actual_seq_len
+from mindspeed_llm.training.utils import generate_actual_seq_len, set_mtp_batch_list, get_mtp_batch_list
+from mindspeed_llm.core.transformer.multi_token_prediction import generate_mtp_batch_list_on_this_tp_rank
 
 
 def model_provider(pre_process=True, post_process=True) -> Union[GPTModel, megatron.legacy.model.GPTModel]:
@@ -120,6 +121,11 @@ def get_batch(data_iterator):
         print("current idx: {}, current rank: {}, data_parallel_rank: {}, document_ids: {}".format(batch['idx'], torch.distributed.get_rank(), mpu.get_data_parallel_rank(), batch['document_ids']))
         batch.pop('document_ids', None)
         batch.pop('idx', None)
+
+    # get batch_list for mtp_block
+    if args.mtp_num_layers:
+        mtp_batch_list = generate_mtp_batch_list_on_this_tp_rank(batch)
+        set_mtp_batch_list(mtp_batch_list)
 
     if args.reset_position_ids and not args.reset_attention_mask:
         generate_actual_seq_len(batch, actual_seq_len)

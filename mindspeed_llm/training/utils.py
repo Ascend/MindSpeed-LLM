@@ -62,6 +62,18 @@ WRITE_FILE_DEFAULT_FLAGS = os.O_WRONLY | os.O_CREAT
 WRITE_FILE_DEFAULT_MODES = stat.S_IWUSR | stat.S_IRUSR
 
 _MTP_POSITION_ID = None
+_MTP_BATCH_LIST = None
+
+
+def set_mtp_batch_list(mtp_batch_list):
+    global _MTP_BATCH_LIST
+    _MTP_BATCH_LIST = mtp_batch_list
+
+
+def get_mtp_batch_list():
+    """Get mtp_batch_list"""
+    global _MTP_BATCH_LIST
+    return _MTP_BATCH_LIST
 
 
 def set_mtp_position_ids(position_ids_mtp):
