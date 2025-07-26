@@ -16,6 +16,8 @@ except ImportError:
     pass
 from mindspeed_llm.training.utils import get_tune_attention_mask, get_finetune_data_on_this_tp_rank, generate_actual_seq_len
 from mindspeed_llm.tasks.posttrain.base import BaseTrainer
+from mindspeed_llm.training.utils import generate_actual_seq_len, set_mtp_batch_list, get_mtp_batch_list
+from mindspeed_llm.core.transformer.multi_token_prediction import generate_mtp_batch_list_on_this_tp_rank
 
 IGNORE_INDEX = -100
 
@@ -103,6 +105,10 @@ class SFTTrainer(BaseTrainer):
                     'attention_mask': attention_mask,
                     'position_ids': position_ids
                 }
+                # get batch_list for mtp_block
+        if args.mtp_num_layers:
+            mtp_batch_list = generate_mtp_batch_list_on_this_tp_rank(batch)
+            set_mtp_batch_list(mtp_batch_list)
         batch = get_batch_on_this_cp_rank(batch)
         return batch.values()
 
@@ -136,7 +142,7 @@ class SFTTrainer(BaseTrainer):
         # Reduce loss for logging.
         averaged_loss = average_losses_across_data_parallel_group([loss])
 
-        return loss * args.context_parallel_size, {'lm loss': averaged_loss[0]}
+        return loss, {'lm loss': averaged_loss[0]}
 
     def forward_step(self, data_iterator, model):
         """Forward training step.

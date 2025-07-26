@@ -297,7 +297,7 @@ def get_expert_model_parallel_rank():
 
     if torch.distributed.is_available() and torch.distributed.is_initialized():
         tensor_and_expert_parallel_rank = torch.distributed.get_rank(
-            group=megatron.core.parallel_state.get_tensor_and_expert_parallel_group()
+            group=megatron.core.parallel_state.get_expert_tensor_parallel_group()
         )
         res = tensor_and_expert_parallel_rank // \
               megatron.core.parallel_state.get_tensor_model_parallel_world_size()
@@ -314,7 +314,7 @@ def get_expert_model_parallel_world_size():
 
     if torch.distributed.is_available() and torch.distributed.is_initialized():
         tensor_and_expert_parallel_world_size = torch.distributed.get_world_size(
-            group=megatron.core.parallel_state.get_tensor_and_expert_parallel_group()
+            group=megatron.core.parallel_state.get_expert_tensor_parallel_group()
         )
         res = tensor_and_expert_parallel_world_size // \
               megatron.core.parallel_state.get_tensor_model_parallel_world_size()

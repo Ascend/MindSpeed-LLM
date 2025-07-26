@@ -17,8 +17,8 @@ from megatron.core.transformer.moe import grouped_gemm_util as gg
 from megatron.training import get_args
 from megatron.core.parallel_state import (
     get_expert_model_parallel_group,
-    get_tensor_and_expert_parallel_group,
-    get_tensor_and_expert_parallel_world_size,
+    get_expert_tensor_parallel_group,
+    get_expert_tensor_parallel_world_size,
     get_tensor_model_parallel_world_size
 )
 
@@ -128,7 +128,7 @@ class LoraParallelGroupedMlpWithCompAndCommOverlapAll2All(torch.autograd.Functio
 
         ep_group = get_expert_model_parallel_group()
         if global_args.moe_tp_extend_ep:
-            ep_group = get_tensor_and_expert_parallel_group()
+            ep_group = get_expert_tensor_parallel_group()
 
         # grad of mm2
         if ctx.use_gmm:
@@ -326,7 +326,7 @@ class LoraParallelGroupedMLP(GroupedMLP):
         self.scaling = lora_config.lora_alpha / self.lora_r
 
         if config.moe_extended_tp:
-            tp_size = get_tensor_and_expert_parallel_world_size()
+            tp_size = get_expert_tensor_parallel_world_size()
         else:
             tp_size = get_tensor_model_parallel_world_size()
 
