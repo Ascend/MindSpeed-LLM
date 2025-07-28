@@ -363,15 +363,22 @@ class Hf2MgConvert(Convert):
 
             return qk_nope_key, qk_rope_key, kv_nope_key, linear_v_key
 
-        def _generate_attn_layers_key():
-            qkv_key = mg_weight_key["layers_self_attention_linear_qkv"]
-            dense_key = mg_weight_key["layers_self_attention_linear_proj"]
+        def _generate_attn_layers_key(mtp_flag):
+            if mtp_flag:
+                qkv_key = mg_weight_key["mtp_layers_self_attention_linear_qkv"]
+                dense_key = mg_weight_key["mtp_layers_self_attention_linear_proj"]
+            else:
+                qkv_key = mg_weight_key["layers_self_attention_linear_qkv"]
+                dense_key = mg_weight_key["layers_self_attention_linear_proj"]
             q_layernorm_key = mg_weight_key["layers_self_attention_q_layernorm"]
             k_layernorm_key = mg_weight_key["layers_self_attention_k_layernorm"]
             return qkv_key, dense_key, q_layernorm_key, k_layernorm_key
 
-        def _generate_attn_layers_bias_key():
-            qkv_bias_key = mg_bias_key["layers_self_attention_linear_qkv"]
+        def _generate_attn_layers_bias_key(mtp_flag):
+            if mtp_flag:
+                qkv_bias_key = mg_bias_key["mtp_layers_self_attention_linear_qkv"]
+            else:
+                qkv_bias_key = mg_bias_key["layers_self_attention_linear_qkv"]
             return qkv_bias_key
 
         nh = self.load_model.num_attention_heads
@@ -493,14 +500,14 @@ class Hf2MgConvert(Convert):
                             self.qlora_nf4_quant(mg_weight, ep_rank, tp_rank, kv_b_key, linear_kvb_lst[tp_rank].clone())
 
                 else:
-                    qkv_key, dense_key, q_layernorm_key, k_layernorm_key = _generate_attn_layers_key()
+                    qkv_key, dense_key, q_layernorm_key, k_layernorm_key = _generate_attn_layers_key(mtp_layer_flag)
                     mg_weight[ep_rank][tp_rank][qkv_key] = qkv_weight_lst[tp_rank].clone()
                     mg_weight[ep_rank][tp_rank][dense_key] = dense_lst[tp_rank].clone()
                     if self.load_model.qk_layernorm:
                         mg_weight[ep_rank][tp_rank][q_layernorm_key] = q_layernorm.clone()
                         mg_weight[ep_rank][tp_rank][k_layernorm_key] = k_layernorm.clone()
                     if self.load_model.add_qkv_bias:
-                        qkv_bias_key = _generate_attn_layers_bias_key()
+                        qkv_bias_key = _generate_attn_layers_bias_key(mtp_layer_flag)
                         mg_weight[ep_rank][tp_rank][qkv_bias_key] = qkv_bias_lst[tp_rank].clone()
 
     def get_first_k_dense_replace(self):

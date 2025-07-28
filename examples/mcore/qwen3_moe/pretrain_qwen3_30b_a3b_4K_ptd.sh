@@ -58,7 +58,7 @@ OPTIMIZE_ARGS="
     --use-fused-swiglu \
     --use-fused-rmsnorm \
     --no-masked-softmax-fusion \
-    --use-distributed-optimizer
+    --use-distributed-optimizer \
     --gemm-gradient-accumulation-fusion \
     --recompute-method uniform \
     --recompute-granularity full \

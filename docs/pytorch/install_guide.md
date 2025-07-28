@@ -2,8 +2,9 @@
 
 请参考首页[依赖信息](../../README.md#版本配套表)选择下载对应依赖版本。
 
->注：torch2.6 不支持python3.8；
->注：请优先使用python3.10，部分模型存在更高版本环境依赖，如qwen3，依赖transformers==4.51.0只有 python3.9及以上版本支持。
+>注意：<br>
+> 1.torch2.6不支持python3.8,请优先使用python3.10;<br>
+> 2.qwen3,glm45-moe系列模型要求高版本transformers,因此需要使用python3.10及以上版本;<br>
 
 
 ### 驱动固件安装
@@ -74,3 +75,8 @@ git checkout master
 
 pip install -r requirements.txt  # 安装其余依赖库
 ```
+
+
+> 注意:<br>
+> 1.qwen3,llama3.3系列模型依赖transformers 4.51.0, 需要在环境配置完成后手动执行pip install transformers==4.51.0;<br>
+> 2.glm4.5-moe系列模型依赖transformers 4.55.0, 需要在环境配置完成后手动执行pip install transformers==4.55.0;<br>
