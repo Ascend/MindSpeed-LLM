@@ -125,8 +125,10 @@ class MegatronAdaptation:
         from collections import namedtuple
         from mindspeed.patch_utils import MindSpeedPatchesManager
         from mindspeed.features_manager.megatron_basic.requirements_basic import RequirementsBasicFeature
+        from mindspeed_llm.features_manager.high_availability.high_availability import HighAvailabilityCommFeature
         requirements = RequirementsBasicFeature()
-            
+        high_availability_comm_patch = HighAvailabilityCommFeature()
+
         # For torch >= 2.2.0
         torch.compile = torch.jit.script
 
@@ -142,6 +144,7 @@ class MegatronAdaptation:
         requirements.te_adaptation(MindSpeedPatchesManager, _get_dummy_args())
         requirements.apex_adaptation(MindSpeedPatchesManager, _get_dummy_args())
         requirements.torch_adaptation(MindSpeedPatchesManager, _get_dummy_args())
+        high_availability_comm_patch.pre_patch(MindSpeedPatchesManager, _get_dummy_args())
         MindSpeedPatchesManager.apply_patches()
 
     @classmethod

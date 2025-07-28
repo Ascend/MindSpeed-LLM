@@ -15,11 +15,19 @@
 # Copyright (c) 2022, NVIDIA CORPORATION. All rights reversed.
 # Copyright (c) Huawei Technologies Co., Ltd. 2024. All rights reserved.
 
-import contextlib
 from functools import wraps
 import torch
 from megatron.training import get_args
 from mindspeed.core.pipeline_parallel.ripipe_schedules import forward_backward_ripipe_pipelining
+
+
+def high_availability_get_forward_backward_func_wrapper(get_forward_backward_func):
+    @wraps(get_forward_backward_func)
+    def wrapper(*args, **kwargs):
+        forward_backward_func = get_forward_backward_func(*args, **kwargs)
+        forward_backward_func = forward_backward_func_wrapper(forward_backward_func)
+        return forward_backward_func
+    return wrapper
 
 
 def get_forward_backward_func_wrapper(get_forward_backward_func):
@@ -30,9 +38,6 @@ def get_forward_backward_func_wrapper(get_forward_backward_func):
         if arguments.recompute_in_advance and torch.is_grad_enabled():
             forward_backward_func = forward_backward_ripipe_pipelining
 
-        if arguments.enable_high_availability:
-            forward_backward_func = forward_backward_func_wrapper(forward_backward_func)
-
         return forward_backward_func
     return wrapper
 
@@ -41,9 +46,8 @@ def forward_backward_func_wrapper(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
         losses_reduced = fn(*args, **kwargs)
-        if get_args().enable_high_availability:
-            from mindio_ttp.adaptor import tft_set_losses_reduced
-            tft_set_losses_reduced(losses_reduced)
+        from mindio_ttp.adaptor import tft_set_losses_reduced
+        tft_set_losses_reduced(losses_reduced)
         return losses_reduced
     return wrapper
 

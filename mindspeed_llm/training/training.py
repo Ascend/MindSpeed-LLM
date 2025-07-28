@@ -250,18 +250,6 @@ def get_profiler():
     return prof
 
 
-def setup_model_and_optimizer_wrapper(fn):
-    @wraps(fn)
-    def wrapper(*args, **kwargs):
-        model, optimizer, opt_param_scheduler = fn(*args, **kwargs)
-        argument = get_args()
-        if argument.enable_high_availability and hasattr(optimizer, "set_current_step"):
-            optimizer.set_current_step(argument.iteration)
-        return model, optimizer, opt_param_scheduler
-
-    return wrapper
-
-
 def build_train_args(*input_args):
     args, timers, train_valid_test_dataset_provider, model_provider, model_type, forward_step_func, process_non_loss_data_func, app_metrics = input_args
 
@@ -370,8 +358,6 @@ def pretrain(train_valid_test_dataset_provider,
     args = get_args()
     timers = get_timers()
 
-    if args.enable_high_availability:
-        raise AssertionError("High availability feature do not support core_r0.8.0")
 
     if args.log_progress:
         append_to_progress_log("Starting job")
@@ -421,8 +407,7 @@ def pretrain(train_valid_test_dataset_provider,
         iteration = 0
         if args.do_train and args.train_iters > 0:
             if args.enable_high_availability:
-                from mindio_ttp.adaptor import tft_init_controller_processor, tft_register_processor, tft_train
-                tft_init_controller_processor(enable_tls=False, tls_option_top_path='')
+                from mindio_ttp.adaptor import tft_register_processor, tft_train
                 tft_register_processor(train_valid_test_dataset_provider, model_provider, model_type)
                 iteration, num_floating_point_operations_so_far = tft_train(train_args, test_data_iterator_list)
             else:

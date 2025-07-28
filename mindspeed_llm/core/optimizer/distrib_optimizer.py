@@ -12,8 +12,11 @@ from megatron.core.distributed.param_and_grad_buffer import _ParamAndGradBuffer
 from megatron.core.optimizer.grad_scaler import MegatronGradScaler
 from megatron.core.optimizer import OptimizerConfig
 from megatron.core.optimizer.optimizer import MixedPrecisionOptimizer
-from megatron.core.fp8_utils import is_float8tensor
+from megatron.core.distributed.param_and_grad_buffer import partition_buckets
 from mindspeed.optimizer.distrib_optimizer import reuse_fp32_param_distrib_optimizer_init_wrapper
+from megatron.core.optimizer.cpu_offloading import HybridDeviceOptimizer
+from megatron.core.transformer.module import MegatronModule
+from megatron.core.config_logger import has_config_logger_enabled, log_config_to_disk
 
 
 def distributed_optimizer_init(
@@ -22,18 +25,37 @@ def distributed_optimizer_init(
         config: OptimizerConfig,
         grad_scaler: MegatronGradScaler,
         init_state_fn: Optional[Callable],
+        model_chunks: List[MegatronModule],
         per_model_buffers: Dict[int, List[_ParamAndGradBuffer]],
         data_parallel_group: torch.distributed.ProcessGroup,
-        data_parallel_group_gloo: torch.distributed.ProcessGroup,
+        data_parallel_group_gloo: Optional[torch.distributed.ProcessGroup],
         data_parallel_group_idx: int,
+        distributed_optimizer_instance_id: int,
 ):
-    MixedPrecisionOptimizer.__init__(
-        self, optimizer, config, grad_scaler, init_state_fn,
+    if has_config_logger_enabled(config):
+        log_config_to_disk(config, locals(), prefix=type(self).__name__)
+
+    MixedPrecisionOptimizer.__init__(self, optimizer, config, grad_scaler, init_state_fn)
+    self.model_chunks = model_chunks
+    self.ddp_config = self.model_chunks[0].ddp_config
+    for model_chunk in self.model_chunks:
+        assert self.ddp_config == model_chunk.ddp_config
+    self.distributed_optimizer_instance_id = distributed_optimizer_instance_id
+
+    assert isinstance(optimizer, (Adam, HybridDeviceOptimizer)) or optimizer is None, (
+        "Only Adam and HybridDeviceOptimizer currently supported, "
+        "due to checkpointing requirements."
     )
 
-    assert isinstance(
-        optimizer, Adam
-    ), "Only Adam currently supported, due to checkpointing requirements."
+    # when freezing sub-models we have no real optimizer
+    # but still need a stub DistributedOptimizer class
+    if optimizer is None:
+        self.is_stub_optimizer = True
+        return
+
+    self.is_stub_optimizer = False
+    if self.ddp_config.use_custom_fsdp:
+        return
 
     # Model grad buffer ranges.
     assert per_model_buffers is not None, "per_model_buffers must be provided"
@@ -42,17 +64,22 @@ def distributed_optimizer_init(
     self.data_parallel_group = data_parallel_group
     self.data_parallel_group_gloo = data_parallel_group_gloo
     self.data_parallel_group_idx = data_parallel_group_idx
+
     self.gbuf_idx_to_model_idx_map = {}
     gbuf_idx = 0
     for model_idx, buffers in self.per_model_buffers.items():
         for _ in buffers:
             self.gbuf_idx_to_model_idx_map[gbuf_idx] = model_idx
             gbuf_idx += 1
+
+    self.per_model_bucket_groups = {}
+    for model_idx, buffers in self.per_model_buffers.items():
+        self.per_model_bucket_groups[model_idx] = partition_buckets(buffers)
+
     self.gbuf_ranges = []
     self.per_bucket_numel = []
     self.per_bucket_numel_unpadded = []
     for buffer in self.buffers:
-
         self.per_bucket_numel.append(
             {
                 (buffer.param_dtype, buffer.grad_dtype): [
@@ -70,6 +97,19 @@ def distributed_optimizer_init(
         self.gbuf_ranges.append(self._build_gbuf_range_map(buffer, self.data_parallel_group))
     self.model_param_gbuf_map = self._build_model_param_gbuf_map(self.gbuf_ranges)
 
+    # Add main_param field to each parameter. We will use this fp32 copy to compute
+    # the param norm.
+    # For parameters with optimizer state on this rank, None will be overwritten by
+    # the corresponding sharded main_param tensor.
+    for param_group in self.optimizer.param_groups:
+        # For all the parameters in this group.
+        for param in param_group['params']:
+            if param.requires_grad:
+                # fp32 copy only needed for 16-bit parameters.
+                if param.type() in ['torch.cuda.HalfTensor', 'torch.cuda.BFloat16Tensor']:
+                    param.main_param = None
+                    param.main_param_sharded = True
+
     # Optimizer ranges.
     (
         self.model_param_group_index_map,
@@ -84,55 +124,24 @@ def distributed_optimizer_init(
         self.shard_fp32_groups,
         self.shard_fp32_from_float16_groups,
     ) = self._build_model_and_main_param_groups(
-        self.gbuf_ranges, self.model_param_gbuf_map, self.opt_group_ranges
+        self.gbuf_ranges, self.model_param_gbuf_map, self.opt_group_ranges, config
     )
 
-    # Now construct data structures to manage all-gather handles.
-    self.all_gather_handles = []
-    self.all_gather_handle_index_to_bucket_index_map = []
-    self.model_index_to_all_gather_handle_index_map = {}
-    self.all_gather_handle_indices = []
-    self.param_to_all_gather_handle_index_map = {}
-
-    self.pbuf_view_items = self._get_model_param_buffer_dp_views()
-    for (gbuf_index, dtype, bucket_index, _, _) in self.pbuf_view_items:
-        self.all_gather_handle_index_to_bucket_index_map.append(
-            (gbuf_index, dtype, bucket_index)
+    if isinstance(self.optimizer, HybridDeviceOptimizer):
+        self.optimizer = HybridDeviceOptimizer(
+            params=[g["orig_group"] for g in self.opt_group_ranges], **self.optimizer.defaults
         )
-        all_gather_handle_index = len(self.all_gather_handle_index_to_bucket_index_map) - 1
-        self.all_gather_handles.append(None)
-
-        # Store all all_gather_handle_indices.
-        model_idx = self.gbuf_idx_to_model_idx_map[gbuf_index]
-        if model_idx not in self.model_index_to_all_gather_handle_index_map:
-            self.model_index_to_all_gather_handle_index_map[model_idx] = []
-        self.model_index_to_all_gather_handle_index_map[model_idx].append(
-            all_gather_handle_index
-        )
-
-        for param in self.buffers[gbuf_index].buckets[bucket_index].params_list:
-            self.param_to_all_gather_handle_index_map[param] = all_gather_handle_index
-    self.num_all_gather_handles = len(self.all_gather_handle_index_to_bucket_index_map)
-
-    self.overlap_param_gather = self.config.overlap_param_gather
-    self.remove_pre_hook_handle = None
-    if self.overlap_param_gather:
-        self.enable_pre_hook()
-
-    self.update_successful = False
-
-    self.optimizer.param_groups = [g["orig_group"] for g in self.opt_group_ranges]
-    self.optimizer.load_state_dict(self.optimizer.state_dict())
+    else:
+        self.optimizer.param_groups = [g["orig_group"] for g in self.opt_group_ranges]
+        self.optimizer.load_state_dict(self.optimizer.state_dict())
 
 
 def distributed_optimizer_init_wrapper(fn):
     @wraps(fn)
     def wrapper(self, *args, **kwargs):
-        argument = get_args()
-        if argument.enable_high_availability:
-            distributed_optimizer_init(self, *args, **kwargs)
-        else:
-            fn(self, *args, **kwargs)
+
+        distributed_optimizer_init(self, *args, **kwargs)
+
     return wrapper
 
 
