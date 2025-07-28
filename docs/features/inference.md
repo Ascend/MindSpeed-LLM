@@ -51,6 +51,7 @@ CHECKPOINT="./model_weights/llama-2-7b-mcore/"
 TOKENIZER_PATH="./model_from_hf/llama-2-7b-hf/"
 TOKENIZER_MODEL="./model_from_hf/llama-2-7b-hf/tokenizer.model"
 ```
+【注意】除了路径的配置，推理脚本中的其他参数应与训练时的参数保持一致（例如TP/PP/EP/VPP等并行切分，--noop-layers/--num-layer-list等自定义模型结构参数），否则会出现模型权重加载失败的情况
 
 #### 运行脚本
 
