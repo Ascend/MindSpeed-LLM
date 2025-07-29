@@ -1,3 +1,5 @@
+from argparse import ArgumentParser
+
 from mindspeed.features_manager.megatron_basic.megatron_basic import MegatronBasicFeature as MindSpeedMegatronBasicFeature
 
 
@@ -5,6 +7,22 @@ class MegatronBasicFeature(MindSpeedMegatronBasicFeature):
     
     def register_patches(self, patch_manager, args):
         super().register_patches(patch_manager, args)
+
+    def register_args(self, parser: ArgumentParser):
+        super().register_args(parser)
+        group = parser.add_argument_group(title=self.feature_name)
+        group.add_argument("--noop-layers", type=str, default=None, help='Specity the noop layers.')
+        group.add_argument("--stage",
+                            default=None,
+                            choices=["sft", "dpo", "orm", "prm", "simpo", "ray_ppo", "ray_online_dpo", "ray_grpo", "trl_ppo"],
+                            help='Determine training mode')
+        group.add_argument('--scale-depth', type=float, default=None,
+                            help='scale-depth')
+        group.add_argument('--no-shared-storage', action='store_true',
+                            default=False, help='if no shared storage, set it')
+        group.add_argument('--num-layer-list',
+                            type=str, help='a list of number of layers, '
+                                        'seperated by comma; e.g., 4,4,4,4')
 
     def register_basic_patches(self, pm, args):
         # args parser patch
@@ -16,8 +34,7 @@ class MegatronBasicFeature(MindSpeedMegatronBasicFeature):
         pm.register_patch('megatron.training.arguments._print_args', print_args_wrapper)
         pm.register_patch('megatron.training.yaml_arguments.validate_yaml', validate_args_v2_decorator)
         pm.register_patch('megatron.training.yaml_arguments._print_args', print_args_wrapper)
-        pm.register_patch("megatron.core.transformer.transformer_config.TransformerConfig.__post_init__",
-                          transformer_config_post_init_wrapper)
+        pm.register_patch("megatron.core.transformer.transformer_config.TransformerConfig.__post_init__", transformer_config_post_init_wrapper)
 
         # initialization patches
         from mindspeed.core.megatron_basic.megatron_basic import _set_cuda_rng_state, _compile_dependencies, get_device_wrapper
@@ -61,5 +78,8 @@ class MegatronBasicFeature(MindSpeedMegatronBasicFeature):
         from mindspeed.core.megatron_basic.count_zero_fix import step
         pm.register_patch('megatron.core.optimizer.optimizer.ChainedOptimizer.step', step)
 
-    
-    
+        from mindspeed_llm.core.transformer.transformer_block import get_layer_offset_wrapper
+        from mindspeed_llm.core import TransformerLayer
+        pm.register_patch('megatron.core.transformer.transformer_layer.TransformerLayer._get_layer_offset',
+                            get_layer_offset_wrapper)
+        pm.register_patch('megatron.core.transformer.transformer_layer.TransformerLayer', TransformerLayer)

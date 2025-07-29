@@ -1310,14 +1310,12 @@ def _add_dummy_args_v2(args):
     args.query_pre_attn_scalar = 0.0
     args.add_output_layer_bias = False
     args.is_pairwise_dataset = False
-    args.is_instruction_dataset = False
     args.enable_share_memory = False
     args.return_document_ids = False
     args.schedules_method = None
     args.embedding_multiplier_scale = 0.0
     args.scale_emb = None
     args.load_checkpoint_loosely = False
-    args.attention_mask_type = None
     args.attention_mask_on_cpu = False
     args.dim_model_base = None
     args.output_multiplier_scale = False

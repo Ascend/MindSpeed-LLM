@@ -1,7 +1,9 @@
 import abc
 import sys
 import types
+import shutil
 import argparse
+from logging import getLogger
 from pathlib import Path
 from multiprocessing import Lock
 
@@ -9,6 +11,35 @@ import torch
 from torch.utils.cpp_extension import _get_build_directory
 from torch_npu.contrib import transfer_to_npu
 from mindspeed.features_manager.features_manager import MindSpeedFeaturesManager
+
+LOG = getLogger(__name__)
+
+
+def add_args(args, key, value):
+    if key is not None:
+        key = key[2:].replace('-', '_')
+        if value is None:
+            value = True
+        elif len(value) == 1:
+            value = value[0]
+        setattr(args, key, value)
+
+
+def parser_unknown_args(args, unknown):
+    i = 0
+    key = value = None
+    while i < len(unknown):
+        if unknown[i].startswith("--"):
+            add_args(args, key, value)
+            key = unknown[i]
+            value = None
+        else:
+            if value is None:
+                value = [unknown[i]]
+            else:
+                value.append(unknown[i])
+        i += 1
+    add_args(args, key, value)
 
 
 class FeatureAdaptor:
@@ -24,7 +55,8 @@ class FeatureAdaptor:
 
         from mindspeed_llm.training.arguments import process_args_v2
         parser = argparse.ArgumentParser(description='MindSpeed-LLM Arguments', allow_abbrev=False)
-        _args, _ = process_args_v2(parser).parse_known_args()
+        _args, unknown = process_args_v2(parser).parse_known_args()
+        parser_unknown_args(_args, unknown)
         return _args
     
     @classmethod

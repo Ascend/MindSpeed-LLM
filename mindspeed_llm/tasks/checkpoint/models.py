@@ -1177,6 +1177,7 @@ class MegatronModel(ModelBase):
             for _ in range(virtual_pipeline_model_parallel_size)
         ]
 
+        self.args.transformer_impl = "local"
         for ep_rank in range(self.args.expert_model_parallel_size):
             if self.args.expert_model_parallel_size > 1:
                 self.set_expert_model_parallel_rank(ep_rank)
