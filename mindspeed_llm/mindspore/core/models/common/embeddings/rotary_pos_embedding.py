@@ -1,4 +1,3 @@
-
 import torch
 from torch import Tensor
 import torch_npu
@@ -7,6 +6,7 @@ from megatron.core import parallel_state
 from megatron.core.models.common.embeddings.rotary_pos_embedding import _rotate_half, get_pos_emb_on_this_cp_rank
 from mindspeed.ops.npu_rotary_position_embedding import npu_rotary_position_embedding
 from mindspeed_llm.tasks.common.yarn_rope import YarnRotaryPositionEmbedding
+from mindspeed_llm.core.models.common.embeddings.rotary_pos_embedding import _process_partial_rope
 
 
 def apply_yarn_scaling(freqs: torch.Tensor):
