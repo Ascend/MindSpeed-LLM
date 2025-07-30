@@ -1324,6 +1324,8 @@ def _add_dummy_args_v2(args):
     args.enable_high_availability = False
     args.use_fused_mlp = False
     args.disable_gloo_group = False
+    args.recompute_activation_function = False
+    args.input_jitter = False
 
 
 def _validate_noop_layer(args):
@@ -1530,6 +1532,7 @@ def validate_args_v2_decorator(megatron_validate_args):
     def wrapper(args, defaults=None):
         if defaults is None:
             defaults = {}
+                      
         # make prev validation and copy some args.
         MindSpeedFeaturesManager.pre_validate_features_args(args)
 

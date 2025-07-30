@@ -18,8 +18,20 @@ class RotaryPositionEmbeddingFeature(MindSpeedFeature):
         group.add_argument('--original-max-position-embeddings', type=float,
                             help='Base context length used during pretraining '
                                 '(critical for scaling calculations, e.g., 8192 for LLaMA3)')
+        # Arguments used for yarn
+        group.add_argument('--beta-fast', type=int, default=32,
+                            help='Yarn rope: rope beta fast')
+        group.add_argument('--beta-slow', type=int, default=1,
+                            help='Yarn rope: rope beta slow')
+        group.add_argument('--rope-scaling-mscale', type=float, default=1.0,
+                            help='Yarn rope: rope mscale')
+        group.add_argument('--rope-scaling-mscale-all-dim', type=float, default=0.0,
+                            help='Yarn rope: rope mscale all dim')
+        group.add_argument('--rope-scaling-original-max-position-embeddings', type=int, default=None,
+                            help='Yarn rope: rope original max position embeddings')
         # Arguments used for long RoPE
-        group.add_argument('--longrope-freqs-type', type=str, default="mul", choices=["mul", "outer"],
+        group.add_argument('--longrope-freqs-type', type=str, default="mul",
+                            choices=["mul", "outer"],
                             help='Frequency adjustment strategy for LongRoPE: '
                                 '"mul" - Frequency multiplication, '
                                 '"outer" - Frequency outer product')
@@ -41,6 +53,7 @@ class RotaryPositionEmbeddingFeature(MindSpeedFeature):
         # Only used for InternLM3
         group.add_argument('--dynamic-factor', type=float, default=1.0,
                             help='Dynamic scaling factor for adaptive rotary position embeddings')
+        # Only used for glm
         group.add_argument('--use-glm-rope', action='store_true',
                             help='use custom partial rope in glm model.')
 

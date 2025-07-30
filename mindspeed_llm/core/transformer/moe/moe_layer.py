@@ -20,6 +20,22 @@ from mindspeed.core.transformer.moe.moe_layer_overlap_allgather import MoELayerO
 from mindspeed_llm.tasks.posttrain.lora.utils import is_enable_lora
 
 
+
+def parallel_transformer_layer_init_wrapper(fn):
+    @wraps(fn)
+    def wrapper(self, *args, **kwargs):
+        fn(self, *args, **kwargs)
+        from mindspeed.core.transformer.moe.moe_feature.overlap.moe_layer import AllGatherOverlapMoeLayer, AlltoAllSeqOverlapMoeLayer
+        if self.config.moe_alltoall_overlap_comm or self.config.moe_allgather_overlap_comm:
+            if isinstance(self.mlp, (AllGatherOverlapMoeLayer, AlltoAllSeqOverlapMoeLayer)):
+                self.mlp.experts.layer_number = self.layer_number
+                if self.config.n_shared_experts:
+                    self.mlp.shared_experts.layer_number = self.layer_number
+            else:
+                self.mlp.layer_number = self.layer_number
+    return wrapper
+
+
 def moe_layer_init_wrapper(init_func):
     @wraps(init_func)
     def moe_layer_init(*args, **kwargs):

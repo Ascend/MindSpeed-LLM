@@ -39,6 +39,8 @@ class TrainingBasicFeature(MindSpeedFeature):
                             help='Setting jit compile mode to True')
         group.add_argument('--attention-mask-type', type=str, default='causal', choices=['causal', 'general'],
                             help='context parallel attention mask type')
+        group.add_argument('--use-ascend-mc2', action='store_true', default=False,
+                            help='use ascend mc2')
 
     def register_patches(self, patch_manager, args):
         from mindspeed_llm.training.training import train
@@ -58,6 +60,15 @@ class TrainingBasicFeature(MindSpeedFeature):
         patch_manager.register_patch('megatron.training.training.get_model',
                                       get_model_wrapper)
         
+        patch_manager.register_patch('megatron.training.training.train',
+                                      train)
+        patch_manager.register_patch('megatron.training.training.load_checkpoint',
+                                      load_checkpoint_wrapper)
+   
+
+        patch_manager.register_patch('megatron.training.training.get_model',
+                                      get_model_wrapper)
+
         patch_manager.register_patch('megatron.training.training.train',
                                       train)
         patch_manager.register_patch('megatron.training.training.load_checkpoint',

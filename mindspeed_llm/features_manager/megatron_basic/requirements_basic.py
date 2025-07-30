@@ -12,9 +12,9 @@ class RequirementsBasicFeature(MindspeedRequirementsBasicFeature):
         super().register_args(parser)
         group = parser.add_argument_group(title=self.feature_name)
         group.add_argument('--o2-optimizer', action='store_true',
-                           help='use bf16 exponential moving average to greatly save up memory.')
+                            help='use bf16 exponential moving average to greatly save up memory.')
         group.add_argument('--o2-gradient', action='store_true',
-                           help='use bf16 gradient accumulation to greatly save up memory.')
+                            help='use bf16 gradient accumulation to greatly save up memory.')
     
     def register_patches(self, patch_manager, args):
         super().register_patches(patch_manager, args)
@@ -24,12 +24,16 @@ class RequirementsBasicFeature(MindspeedRequirementsBasicFeature):
         if args.o2_optimizer:
             # O2 optimizer
             from mindspeed_llm.tasks.models.common.adamw import O2AdamW
-            pm.register_patch('apex.optimizers.FusedAdam', O2AdamW, create_dummy=True)
+            pm.register_patch('apex.optimizers.FusedAdam', 
+                               O2AdamW, create_dummy=True)
             
         else:
             if args.optimizer_selection == 'fused_torch_adamw':
-                pm.register_patch('apex.optimizers.FusedAdam', FusedTorchAdamW, create_dummy=True)
+                pm.register_patch('apex.optimizers.FusedAdam', 
+                                   FusedTorchAdamW, create_dummy=True)
             elif args.optimizer_selection == 'fused_adamw':
-                pm.register_patch('apex.optimizers.FusedAdam', AdamW, create_dummy=True)
-            pm.register_patch('apex.optimizers.FusedSGD', torch.optim.SGD, create_dummy=True)
+                pm.register_patch('apex.optimizers.FusedAdam', 
+                                   AdamW, create_dummy=True)
+            pm.register_patch('apex.optimizers.FusedSGD', 
+                               torch.optim.SGD, create_dummy=True)
 

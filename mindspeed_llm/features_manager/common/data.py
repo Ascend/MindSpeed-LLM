@@ -1,8 +1,6 @@
 from mindspeed.features_manager.feature import MindSpeedFeature
 
 
-
-
 class DataFeature(MindSpeedFeature):
     def __init__(self):
         super(DataFeature, self).__init__(feature_name="data", optimization_level=0)
@@ -10,7 +8,7 @@ class DataFeature(MindSpeedFeature):
     def register_args(self, parser):
         group = parser.add_argument_group(title=self.feature_name)
         group.add_argument('--enable-share-memory', action='store_true', default=False,
-                           help='Enable shared memory for passing actual_seq_len when reset-position-ids is enabled.')
+                            help='Enable shared memory for passing actual_seq_len when reset-position-ids is enabled.')
 
 
     def validate_args(self, args):
@@ -22,6 +20,5 @@ class DataFeature(MindSpeedFeature):
     def register_patches(self, patch_manager, args):
         from ...training.utils import get_batch_on_this_tp_rank
         if not args.reset_attention_mask:
-            patch_manager.register_patch(
-                'megatron.training.utils.get_batch_on_this_tp_rank', get_batch_on_this_tp_rank)
-
+            patch_manager.register_patch('megatron.training.utils.get_batch_on_this_tp_rank', 
+                                          get_batch_on_this_tp_rank)

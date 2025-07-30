@@ -10,10 +10,11 @@ class FusedEmaAdamwFeature(MindSpeedFusedEmaAdamwFeature):
         group = parser.add_argument_group(title=self.feature_name)
 
         group.add_argument('--ema-decay', type=float, default=0.9999,
-                           help='Set ema_decay of fused_ema_adamw optimizer.')
-        group.add_argument('--optimizer-selection', type=str, default='fused_adamw', choices=['fused_adamw', 'fused_torch_adamw', 'fused_ema_adamw'],
-                           help='Select from the former fused AdamW optimizer and Torch fused AdamW optimizer')
+                            help='Set ema_decay of fused_ema_adamw optimizer.')
+        group.add_argument('--optimizer-selection', type=str, default='fused_adamw',
+                            choices=['fused_adamw', 'fused_torch_adamw', 'fused_ema_adamw'],
+                            help='Select from the former fused AdamW optimizer and Torch fused AdamW optimizer')
         group.add_argument('--optimization-level', type=int, choices=[0, 1, 2], default=2,
-                           help='0: The minimum patch set for megatron to adapt to NPU,'
-                                '1: Affinity optimization (fusion operator, etc.), '
-                                '2: Advanced acceleration algorithm')
+                            help='0: The minimum patch set for megatron to adapt to NPU,'
+                                 '1: Affinity optimization (fusion operator, etc.), '
+                                 '2: Advanced acceleration algorithm')

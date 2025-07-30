@@ -14,17 +14,13 @@ TEMPLATES_DIR = str(
 class BuildTokenizerFeature(MindSpeedBuildTokenizerFeature):
 
     def register_args(self, parser: ArgumentParser):
-        self.add_parser_argument_choices_value(
-            parser,
-            "--tokenizer-type",
-            'PretrainedFromHF'
-        )
+        self.add_parser_argument_choices_value(parser, "--tokenizer-type", 'PretrainedFromHF')
 
         group = parser.add_argument_group(title=self.feature_name)
         group.add_argument("--tokenizer-name-or-path", type=str, default=None,
-                           help="Name or path of the huggingface tokenizer.")
+                            help="Name or path of the huggingface tokenizer.")
         group.add_argument("--tokenizer-not-use-fast", action='store_false',
-                           help="HuggingFace tokenizer not use the fast version.")
+                            help="HuggingFace tokenizer not use the fast version.")
         group.add_argument('--padded-vocab-size', type=int, default=None,
                             help='set padded vocab size')
         group.add_argument('--prompt-type', type=str, default=None,
@@ -34,3 +30,5 @@ class BuildTokenizerFeature(MindSpeedBuildTokenizerFeature):
                             help='Which template to use for constructing prompts in training/inference.'  'e.g., "qwen"')
         group.add_argument('--prompt-type-path', type=str, default=TEMPLATES_DIR,
                             help='Path to the json file of templates.')
+        group.add_argument('--tokenizer-padding-side', type=str, default='right',
+                            help="tokenizer padding side")
