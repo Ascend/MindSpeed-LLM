@@ -52,13 +52,13 @@ MindSpeed LLM的依赖配套如下表，安装步骤参考[安装指导](docs/py
   </tr>
   <tr>
     <td>昇腾NPU驱动</td>
-    <td rowspan="2">在研版本</td>
+    <td rowspan="2">Ascend HDK 25.2.0</td>
   <tr>
     <td>昇腾NPU固件</td>
   </tr>
   <tr>
     <td>Toolkit（开发套件）</td>
-      <td rowspan="3">在研版本</td>
+      <td rowspan="3">CANN 8.2.RC1</td>
   </tr>
   <tr>
     <td>Kernel（算子包）</td>
@@ -78,15 +78,13 @@ MindSpeed LLM的依赖配套如下表，安装步骤参考[安装指导](docs/py
   </tr>
   <tr>
     <td>torch_npu插件</td>
-    <td rowspan="2">在研版本</td>
+    <td rowspan="2">7.1.0</td>
   </tr>
   <tr>
     <td>apex</td>
   </tr>
 </table>
 
-
-注：由于master分支使用在研版本的驱动以及CANN包，因此master上的一些新特性老版本配套可能有不支持情况，要使用稳定版本，请切换到商发分支并下载对应依赖版本进行安装。
 
 
 ## 预置模型
