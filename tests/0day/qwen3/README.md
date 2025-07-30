@@ -24,7 +24,7 @@
       <td rowspan="6"> <a href="https://huggingface.co/collections/Qwen/qwen3-67dd247413f0e2e4f653967f">Qwen3-dense</a> </td>
       <td><a href="https://huggingface.co/Qwen/Qwen3-0.6B-Base">0.6B</a></td>
       <td><a href="https://modelers.cn/models/MindSpeed/Qwen3-0.6B-Base">0.6B</a></td>
-      <td><a href="./qwen3-0.6b/">Qwen3-0.6B</a></td>
+      <td><a href="../../../examples/mcore/qwen3/pretrain_qwen3_0point6b_4K_ptd.sh">Qwen3-0.6B</a></td>
       <td> 4K </td>
       <th> Mcore </th>
       <td> 1x8 </td>
@@ -34,7 +34,7 @@
     <tr>
       <td><a href="https://huggingface.co/Qwen/Qwen3-1.7B-Base">1.7B</a></td>
       <td><a href="https://modelers.cn/models/MindSpeed/Qwen3-1.7B-Base">1.7B</a></td>
-      <td><a href="./qwen3-1.7b/">Qwen3-1.7B</a></td>
+      <td><a href="../../../examples/mcore/qwen3/pretrain_qwen3_1point7b_4K_ptd.sh">Qwen3-1.7B</a></td>
       <td> 4K </td>
       <th> Mcore </th>
       <td> 1x8 </td>
@@ -44,7 +44,7 @@
     <tr>
       <td><a href="https://huggingface.co/Qwen/Qwen3-4B-Base">4B</a></td>
       <td><a href="https://modelers.cn/models/MindSpeed/Qwen3-4B-Base">4B</a></td>
-      <td><a href="./qwen3-4b/">Qwen3-4B</a></td>
+      <td><a href="../../../examples/mcore/qwen3/pretrain_qwen3_4b_4K_ptd.sh">Qwen3-4B</a></td>
       <td> 4K </td>
       <th> Mcore </th>
       <td> 1x8 </td>
@@ -54,7 +54,7 @@
     <tr>
       <td><a href="https://huggingface.co/Qwen/Qwen3-8B-Base">8B</a></td>
       <td><a href="https://modelers.cn/models/MindSpeed/Qwen3-8B-Base">8B</a></td>
-      <td><a href="./qwen3-8b/">Qwen3-8B</a></td>
+      <td><a href="../../../examples/mcore/qwen3/pretrain_qwen3_8b_4K_ptd.sh">Qwen3-8B</a></td>
       <td> 4K </td>
       <th> Mcore </th>
       <td> 1x8 </td>
@@ -64,7 +64,7 @@
     <tr>
       <td><a href="https://huggingface.co/Qwen/Qwen3-14B-Base">14B</a></td>
       <td><a href="https://modelers.cn/models/MindSpeed/Qwen3-14B-Base">14B</a></td>
-      <td><a href="./qwen3-14b/">Qwen3-14B</a></td>
+      <td><a href="../../../examples/mcore/qwen3/pretrain_qwen3_14b_4K_ptd.sh">Qwen3-14B</a></td>
       <td> 4K </td>
       <th> Mcore </th>
       <td> 1x8 </td>
@@ -74,7 +74,7 @@
     <tr>
       <td><a href="https://huggingface.co/Qwen/Qwen3-32B">32B</a></td>
       <td><a href="https://modelers.cn/models/MindSpeed/Qwen3-32B">32B</a></td>
-      <td><a href="./qwen3-32b/">Qwen3-32B</a></td>
+      <td><a href="../../../examples/mcore/qwen3/pretrain_qwen3_32b_4K_ptd.sh/">Qwen3-32B</a></td>
       <td> 4K </td>
       <th> Mcore </th>
       <td> 2x8 </td>
@@ -85,7 +85,7 @@
       <td rowspan="2"> <a href="https://huggingface.co/collections/Qwen/qwen3-67dd247413f0e2e4f653967f">Qwen3-moe</a> </td>
       <td><a href="https://huggingface.co/Qwen/Qwen3-30B-A3B-Base">30B</a></td>
       <td><a href="https://modelers.cn/models/MindSpeed/Qwen3-30B-A3B-Base">30B</a></td>
-      <td><a href="./qwen3-30b-a3b/">Qwen3-30B-A3B</a></td>
+      <td><a href="../../../examples/mcore/qwen3_moe/pretrain_qwen3_30b_a3b_4K_ptd.sh/">Qwen3-30B-A3B</a></td>
       <td> 4K </td>
       <th> Mcore </th>
       <td> 2x8 </td>
@@ -95,7 +95,7 @@
     <tr>
       <td><a href="https://huggingface.co/Qwen/Qwen3-235B-A22B">235B</a></td>
       <td><a href="https://modelers.cn/models/MindSpeed/Qwen3-235B-A22B">235B</a></td>
-      <td><a href="./qwen3-235b-a22b/">Qwen3-235B-A22B</a></td>
+      <td><a href="../../../examples/mcore/qwen3_moe/pretrain_qwen3_235b_a22b_4k_A3_ptd.sh">Qwen3-235B-A22B</a></td>
       <td> 4K </td>
       <th> Mcore </th>
       <td> 16x16 </td>
@@ -136,7 +136,7 @@
 
 ## 环境搭建
 
-MindSpeed-LLM的主要依赖配套如下表，安装步骤参考[安装指导](../../../docs/pytorch/install_guide.md)。
+MindSpeed-LLM的主要依赖配套如下表，安装步骤参考[安装指导](../../../docs/features/install_guide.md)。
 
 <table>
   <tr>
@@ -230,7 +230,7 @@ cd ../MindSpeed-LLM
 # 安装其余依赖库
 pip install -r requirements.txt
 ```
-**注意** ： 由于首发最新版本支持，要求transformers版本为4.51.0,用户需执行以下命令：
+**注意** ： Qwen 3系列模型要求transformers版本为4.51.0,用户需执行以下命令：
 
 ```
   pip install transformers==4.51.0
@@ -243,10 +243,6 @@ pip install -r requirements.txt
 url=https://github.com/huggingface/transformers/tree/v4.51.0
 commit_id=0720e20
 ```
-
-#### 变更记录：
-
-- 2025.4.29：首次发布
 
 ## 训练全流程参考
 
@@ -263,7 +259,7 @@ commit_id=0720e20
     使用方法如下，请根据实际需要的TP/PP等切分策略和权重路径修改权重转换脚本
     ```sh
     cd MindSpeed-LLM
-    bash tests/0day/qwen3/qwen3-1.7b/ckpt_convert_qwen3_1.7b_hf2mcore.sh
+    bash examples/mcore/qwen3/ckpt_convert_qwen3_hf2mcore.sh
       ```
 
 
@@ -274,7 +270,7 @@ commit_id=0720e20
 
 ```sh
 cd MindSpeed-LLM
-bash tests/0day/qwen3/qwen3-1.7b/data_convert_qwen3_1.7b_pretrain.sh
+bash examples/mcore/qwen3/data_convert_qwen3_pretrain.sh
   ```
 
 | 参数名  | 含义                |
@@ -291,7 +287,7 @@ bash tests/0day/qwen3/qwen3-1.7b/data_convert_qwen3_1.7b_pretrain.sh
 
   ```sh
   cd MindSpeed-LLM
-  bash tests/0day/qwen3/qwen3-1.7b/pretrain_qwen3_1.7b_ptd.sh
+  bash examples/mcore/qwen3/pretrain_qwen3_1point7b_4K_ptd.sh
    ```
 用户需要根据实际情况修改脚本中以下变量
   | 变量名  | 含义                |
@@ -309,7 +305,7 @@ bash tests/0day/qwen3/qwen3-1.7b/data_convert_qwen3_1.7b_pretrain.sh
 
  ```sh
  cd MindSpeed-LLM
- bash tests/0day/qwen3/qwen3-1.7b/generate_qwen3_1.7b_ptd.sh
+ bash examples/mcore/qwen3/generate_qwen3_1point7b_ptd.shh
    ```
 用户需要根据实际情况修改脚本中以下变量
   | 变量名  | 含义                |
@@ -325,7 +321,7 @@ bash tests/0day/qwen3/qwen3-1.7b/data_convert_qwen3_1.7b_pretrain.sh
 
  ```sh
  cd MindSpeed-LLM
- bash tests/0day/qwen3/qwen3-1.7b/evaluate_qwen3_1.7b_ptd.sh
+ bash examples/mcore/qwen3/evaluate_qwen3_1point7b_ptd.sh
    ```
 用户需要根据实际情况修改脚本中以下变量
   | 变量名  | 含义                |
@@ -343,6 +339,3 @@ bash tests/0day/qwen3/qwen3-1.7b/data_convert_qwen3_1.7b_pretrain.sh
 0day系列模型处于内部测试阶段，未完成充分的性能测试和验收。在实际使用中可能存在未被发现的问题，待后续充分验证后会发布正式版本。相关使用问题请反馈至[MindSpeed-LLM/issues](https://gitee.com/ascend/MindSpeed-LLM/issues)。
 
 MindSpeed-LLM框架将持续支持相关主流模型演进，并根据开源情况面向全体开发者提供支持。
-
-
-
