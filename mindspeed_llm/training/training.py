@@ -108,6 +108,13 @@ def model_provider_func_wrapper(model_provider_func):
                     ParallelMLP.forward = ParallelSwigluMLPLoRAForward
                     MLP.forward = ParallelSwigluMLPLoRAForward
 
+            if args.lu_lora_final_layer_index is not None:
+                from mindspeed_llm.tasks.posttrain.lu_lora.layers.tp_lu_lora_linear import (
+                    CCLULoRAParallelLinear
+                )
+
+                peft.tuners.lora.tp_layer.LoraParallelLinear = CCLULoRAParallelLinear
+
             config = core_transformer_config_from_args(args)
             lora_config = LoraConfig(
                 r=args.lora_r,
@@ -121,6 +128,11 @@ def model_provider_func_wrapper(model_provider_func):
 
             model = get_peft_model(model, lora_config)
             model.add_module('module', model.get_base_model())
+
+            if args.lu_lora_final_layer_index is not None:
+                from mindspeed_llm.tasks.posttrain.lu_lora.bootstrap import activate_lu_lora_layers
+
+                activate_lu_lora_layers(model=model, args=args)
 
             def _hook(_module, _x_in, _x_out):
                 """ Extract the feature map of model"""
@@ -257,8 +269,23 @@ def build_train_args(*input_args):
     # Model, optimizer, and learning rate.
     timers('model-and-optimizer-setup', log_level=0).start(barrier=True)
     app_metrics['app_build_optimizer_start_time'] = one_logger_utils.get_timestamp_in_ms()
-    model, optimizer, opt_param_scheduler = setup_model_and_optimizer(
+    if args.lu_lora_final_layer_index is not None:
+
+        from mindspeed_llm.tasks.posttrain.lu_lora.bootstrap import (
+            configure_lr_for_lu_lora_layers
+        )
+
+        model, optimizer, opt_param_scheduler = setup_model_and_optimizer(
+            model_provider, model_type,
+            lr_mult=args.lu_lora_lr_ratio,
+            scale_lr_cond=lambda name, _: 'lora_B' in name if args.lu_lora_lr_ratio != 1.0 else None
+        )
+
+        opt_param_scheduler = configure_lr_for_lu_lora_layers(model, opt_param_scheduler, args)
+    else:
+        model, optimizer, opt_param_scheduler = setup_model_and_optimizer(
         model_provider, model_type)
+
     timers('model-and-optimizer-setup').stop()
     print_datetime('after model, optimizer, and learning rate '
                    'scheduler are built')

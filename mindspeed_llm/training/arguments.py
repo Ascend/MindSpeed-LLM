@@ -57,6 +57,7 @@ def process_args(parser):
     parser = _add_fusion_op_args(parser)
     parser = _add_network_size_args(parser)
     parser = _add_lora_args(parser)
+    parser = _add_lu_lora_args(parser)
     parser = _add_data_args(parser)
     parser = _add_moe_args(parser)
     parser = _add_num_layer_allocation(parser)
@@ -341,6 +342,17 @@ def _validate_tocken(args):
         print_rank0_by_args(args, f"[INFO] pre_tocken={args.pre_tocken} would be adjusted to {args.seq_length} for better performance.")
     if args.next_tocken > args.seq_length:
         print_rank0_by_args(args, f"[INFO] next_tocken={args.next_tocken} would be adjusted to {args.seq_length} for better performance.")
+
+
+def _add_lu_lora_args(parser):
+    group = parser.add_argument_group(title='LU-LoRA arguments')
+    group.add_argument('--lu-lora-final-layer-index', type=int, default=None,
+                       help='Index of last transformer block trained with LU-LoRA.')
+    group.add_argument('--lu-lora-lr', type=float, default=1.25e-6,
+                        help='Initial learning rate for LU-LoRA layers.')
+    group.add_argument('--lu-lora-lr-ratio', type=float, default=1.,
+                       help='Ratio of learning rates of LU-LoRA B and LU-LoRA A adapters.')
+    return parser
 
 
 def _add_lora_args(parser):
