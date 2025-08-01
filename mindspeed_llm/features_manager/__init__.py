@@ -14,6 +14,7 @@ from mindspeed.features_manager.moe.fb_overlap import MoEFwdBwdOverlapFeature
 from mindspeed.features_manager.memory.reuse_fp32_param import ReuseFP32Param
 from mindspeed.features_manager.pipeline_parallel import NoopLayersFeature
 from mindspeed.features_manager.recompute.norm_function import RecomputeNormFeature
+from mindspeed.features_manager.tensor_parallel.mc2 import MC2Feature
 
 
 from mindspeed_llm.features_manager.common.training import TrainingDefaultFeature
@@ -96,6 +97,7 @@ def add_fusions_features(features_list: List[MindSpeedFeature]):
 def add_tensor_parallel_features(features_list: List[MindSpeedFeature]):
     features_list.extend([
         AscendCocFeature(),
+        MC2Feature()
     ])
 
 
