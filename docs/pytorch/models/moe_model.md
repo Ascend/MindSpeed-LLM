@@ -24,7 +24,7 @@
       <th> Mcore </th>
       <td> 2x8 </td>
       <td>【Ascend】</td>
-      <td>【Test】</td>
+      <td>【Pass】</td>
     </tr>
     <tr>
       <td><a href="https://huggingface.co/Qwen/Qwen3-235B-A22B">235B</a></td>
@@ -100,7 +100,7 @@
       <th>Mcore</th>
       <td> 1x8 </td>
       <td>【Ascend】</td>
-      <td>【Test】</td>
+      <td>【Pass】</td>
     </tr>
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/deepseek-ai/DeepSeek-V2.5">DeepSeek-V2.5</a></td>
@@ -120,7 +120,7 @@
       <th>Mcore</th>
       <td> 64x8 </td>
       <td>【Ascend】</td>
-      <td>【Test】</td>
+      <td>【Pass】</td>
     </tr>
     <tr>
       <td rowspan="1"><a href="https://github.com/OpenBMB/MiniCPM">MiniCPM</a></td>
