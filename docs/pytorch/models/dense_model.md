@@ -385,7 +385,7 @@
       <td> 4x8</td>
       <td> </td>
       <td>【GTS】</td>
-      <td>【Test】</td>
+      <td>【Pass】</td>
     </tr>
     <tr>
       <td rowspan="3"><a href="https://huggingface.co/Qwen">Qwen</a></td>
@@ -612,7 +612,7 @@
       <td>16x8</td>
       <td> </td>
       <td>【GTS】</td>
-      <td>【Test】</td>
+      <td>【Pass】</td>
     </tr>
     <tr>
       <td rowspan="6"> <a href="https://huggingface.co/collections/Qwen/qwen3-67dd247413f0e2e4f653967f">Qwen3</a> </td>
@@ -623,7 +623,7 @@
       <td> 1x8 </td>
       <td> </td>
       <td>【Ascend】</td>
-      <td>【Test】</td>
+      <td>【Pass】</td>
     </tr>
     <tr>
       <td><a href="https://huggingface.co/Qwen/Qwen3-1.7B-Base">1.7B</a></td>
@@ -633,7 +633,7 @@
       <td> 1x8 </td>
       <td> </td>
       <td>【Ascend】</td>
-      <td>【Test】</td>
+      <td>【Pass】</td>
     </tr>
     <tr>
       <td><a href="https://huggingface.co/Qwen/Qwen3-4B-Base">4B</a></td>
@@ -643,7 +643,7 @@
       <td> 1x8 </td>
       <td> </td>
       <td>【Ascend】</td>
-      <td>【Test】</td>
+      <td>【Pass】</td>
     </tr>
     <tr>
       <td><a href="https://huggingface.co/Qwen/Qwen3-8B-Base">8B</a></td>
@@ -653,7 +653,7 @@
       <td> 1x8 </td>
       <td> </td>
       <td>【Ascend】</td>
-      <td>【Test】</td>
+      <td>【Pass】</td>
     </tr>
     <tr>
       <td><a href="https://huggingface.co/Qwen/Qwen3-14B-Base">14B</a></td>
@@ -663,7 +663,7 @@
       <td> 1x8 </td>
       <td> </td>
       <td>【Ascend】</td>
-      <td>【Test】</td>
+      <td>【Pass】</td>
     </tr>
     <tr>
       <td><a href="https://huggingface.co/Qwen/Qwen3-32B">32B</a></td>
@@ -673,7 +673,7 @@
       <td> 2x8 </td>
       <td> </td>
       <td>【Ascend】</td>
-      <td>【Test】</td>
+      <td>【Pass】</td>
     </tr>
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/collections/Qwen/qwq-674762b79b75eac01735070a">QwQ</a></td>
@@ -901,7 +901,7 @@
       <td> 1x8 </td>
       <td> </td>
       <td>【Ascend】</td>
-      <td>【Test】</td>
+      <td>【Pass】</td>
     </tr>
     <tr>
       <td><a href="https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-7B">7B</a></td>
@@ -910,7 +910,7 @@
       <td> 1x8 </td>
       <td> </td>
       <td>【Ascend】</td>
-      <td>【Test】</td>
+      <td>【Pass】</td>
     </tr>
     <tr>
       <td><a href="https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-14B">14B</a></td>
@@ -919,7 +919,7 @@
       <td> 1x8 </td>
       <td> </td>
       <td>【Ascend】</td>
-      <td>【Test】</td>
+      <td>【Pass】</td>
     </tr>
     <tr>
       <td><a href="https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-32B">32B</a></td>
@@ -928,7 +928,7 @@
       <td> 2x8 </td>
       <td> </td>
       <td>【Ascend】</td>
-      <td>【Test】</td>
+      <td>【Pass】</td>
     </tr>
     <tr>
       <td rowspan="2"><a href="https://huggingface.co/deepseek-ai">DeepSeek-R1-Distill-LLaMA</a></td>
@@ -939,7 +939,7 @@
       <td> 1x8 </td>
       <td> </td>
       <td>【Ascend】</td>
-      <td>【Test】</td>
+      <td>【Pass】</td>
     </tr>
     <tr>
       <td><a href="https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Llama-70B">70B</a></td>
@@ -948,7 +948,7 @@
       <td> 4x8 </td>
       <td> </td>
       <td>【Ascend】</td>
-      <td>【Test】</td>
+      <td>【Pass】</td>
     </tr>
   </tbody>
 </table>
