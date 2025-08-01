@@ -22,9 +22,9 @@ MindSpeed LLM是基于昇腾生态的大语言模型分布式训练框架，旨�
 ## NEWS !!! 📣📣📣
 🚀🚀🚀**DeepSeek-V3**预训练已支持基于 **[MindSpore AI框架](./docs/mindspore/readme.md)** 运行！！！🚀🚀🚀
 
-🚀🚀🚀**Qwen3** 系列模型同步首发支持！！！🚀🚀🚀
+🚀🚀🚀**glm4.5-moe** 系列模型同步首发支持！！！🚀🚀🚀
 
-**[Qwen3系列模型](https://gitee.com/ascend/MindSpeed-LLM/tree/2.1.0/tests/0day/qwen3)** 😊
+🚀🚀🚀**Qwen3** 系列模型同步首发支持！！！🚀🚀🚀
 
 🚀🚀🚀**DeepSeek-R1** 系列功能逐步上线！！🚀🚀🚀
 
@@ -38,7 +38,9 @@ MindSpeed LLM是基于昇腾生态的大语言模型分布式训练框架，旨�
 
 😊 **[DeepSeek-R1-Distill-Qwen](./examples/mcore/deepseek_r1_distill_qwen/)**  **[DeepSeek-R1-Distill-LLaMA](./examples/mcore/deepseek_r1_distill_llama/)**
 
-> 注：当前qwen3系列模型功能完善、验证中，非商用版本。
+> 注：<br>
+> 当前qwen3系列模型功能已逐步完善，移步[examples/mcore](./examples/mcore)使用更完整功能； <br>
+> glm4.5-moe系列模型功能完善、验证中，非商用版本，移步[examples/mcore](./examples/mcore)使用更完整功能。<br>
 
 
 ## 版本配套表
