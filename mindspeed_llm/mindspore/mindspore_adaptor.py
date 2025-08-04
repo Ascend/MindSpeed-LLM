@@ -94,6 +94,9 @@ class MindSporeAdaptation(MegatronAdaptationABC):
 
         if not args.moe_fb_overlap:
             from mindspeed.mindspore.core.pipeline_parallel.schedules import forward_backward_pipelining_with_interleaving, forward_backward_pipelining_without_interleaving
+            MindSporeAdaptation.register(
+                'megatron.core.pipeline_parallel.schedules.forward_backward_pipelining_with_interleaving',
+                forward_backward_pipelining_with_interleaving)
             MindSporeAdaptation.register('megatron.core.pipeline_parallel.schedules.forward_backward_pipelining_without_interleaving', forward_backward_pipelining_without_interleaving)
 
         from mindspeed.mindspore.core.tensor_parallel.data import local_build_key_size_numel_dictionaries
