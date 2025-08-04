@@ -438,7 +438,7 @@ class CoreAdaptation(MegatronAdaptationABC):
                     else:
                         from mindspeed.core.transformer.moe.moe_feature.adaptor import MindSpeedAlltoAllSeqOverlapMoeLayerAdaptor
                         from mindspeed.core.transformer.moe.moe_feature.overlap.moe_common import mlp_init, parallel_transformer_layer_init_wrapper, core_mlp_forward_wrapper
-                        from mindspeed.core.transformer.moe.moe_feature.overlap.experts import Zero_Memory_SharedExpertMlp_forward
+                        from mindspeed.core.transformer.moe.moe_feature.overlap.experts import zero_memory_shared_expert_mlp_forward
 
                         MegatronAdaptation.register('megatron.core.transformer.transformer_layer.TransformerLayer.__init__',
                                                     parallel_transformer_layer_init_wrapper)
@@ -446,7 +446,7 @@ class CoreAdaptation(MegatronAdaptationABC):
                                                     MindSpeedAlltoAllSeqOverlapMoeLayerAdaptor)
                         if args.moe_zero_memory != 'disable':
                             MegatronAdaptation.register('megatron.core.transformer.moe.shared_experts.SharedExpertMLP.forward',
-                                                    Zero_Memory_SharedExpertMlp_forward)
+                                                    zero_memory_shared_expert_mlp_forward)
 
                     if args.moe_fb_overlap and args.schedules_method == 'dualpipev' and args.moe_zerc:
                         from mindspeed.core.transformer.moe.moe_zerc.token_dispatcher import zerc_alltoall_token_perm1, \
