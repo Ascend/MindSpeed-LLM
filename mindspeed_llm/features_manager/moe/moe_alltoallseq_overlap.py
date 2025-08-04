@@ -1,7 +1,7 @@
-from mindspeed.features_manager.moe.moe_alltoallseq_overlap import MoEAlltoAllSeqOverLapFeature as MindSpeedMoEAlltoAllSeqOverLapFeature
+from mindspeed.features_manager.moe.moe_alltoall_overlap import MoEAlltoAllOverLapFeature as MindSpeedMoEAlltoAllOverLapFeature
 
 
-class MoEAlltoAllSeqOverLapFeature(MindSpeedMoEAlltoAllSeqOverLapFeature):
+class MoEAlltoAllSeqOverLapFeature(MindSpeedMoEAlltoAllOverLapFeature):
 
     def validate_args(self, args):
         self.incompatible_check(args, 'use_ascend_mc2')

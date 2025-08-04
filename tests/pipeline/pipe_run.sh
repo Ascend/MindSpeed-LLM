@@ -9,8 +9,8 @@ source /usr/local/Ascend/nnal/atb/set_env.sh
 git clone -b master https://gitee.com/ascend/MindSpeed.git
 cd MindSpeed
 
-# checkout commit from MindSpeed master in 2025.06.18
-git checkout 5d9464d2
+# checkout commit from MindSpeed master in 2025.08.01
+git checkout 60f104c7
 pip install -r requirements.txt
 pip3 install -e .
 cd ..
@@ -20,7 +20,7 @@ cd MindSpeed-LLM
 
 pip install -r requirements.txt
 
-# megatron core_r0.8.0
+# megatron core_v0.12.1
 cp -rf /home/master_branch/Megatron-LM/megatron ./
 
 # Main
