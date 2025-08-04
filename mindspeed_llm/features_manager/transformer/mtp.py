@@ -21,21 +21,14 @@ class MultiTokenPredictionFeature(MindSpeedFeature):
         from mindspeed_llm.core import PTNorm
         from mindspeed_llm.core.transformer.multi_token_prediction import get_mtp_num_layers_to_build, \
             mtp_reduce_loss_in_tracker
-        from mindspeed_llm.core.models.common.language_module.language_module import setup_embeddings_and_output_layer
 
         # dualpipe do not need to init embedding weight
-        from mindspeed_llm.core.models.common.embeddings.language_model_embedding import language_model_embedding_init_func
-        patch_manager.register_patch('megatron.core.models.common.embeddings.language_model_embedding.LanguageModelEmbedding.__init__',
-                                      language_model_embedding_init_func)
+        # Use existing patch: megatron.core.models.common.embeddings.language_model_embedding.LanguageModelEmbedding.__init__
         # mtp compatibility
         megatron.core.transformer.multi_token_prediction.LNImpl = PTNorm
-        patch_manager.register_patch('megatron.core.transformer.multi_token_prediction.MTPLossLoggingHelper.reduce_loss_in_tracker',
-                                      mtp_reduce_loss_in_tracker)
-        patch_manager.register_patch('megatron.core.transformer.multi_token_prediction.get_mtp_num_layers_to_build',
-                                      get_mtp_num_layers_to_build)
-        patch_manager.register_patch('megatron.core.models.common.language_module.language_module.LanguageModule'
-                                     '.setup_embeddings_and_output_layer',
-                                      setup_embeddings_and_output_layer)
+        patch_manager.register_patch(
+            'megatron.core.transformer.multi_token_prediction.MTPLossLoggingHelper.reduce_loss_in_tracker',
+            mtp_reduce_loss_in_tracker)
         # change masked_target for better performance
         if args.mtp_mem_efficient_logits:
             from mindspeed_llm.core.tensor_parallel.cross_entropy import calculate_logits_max, calculate_predicted_logits
@@ -56,8 +49,9 @@ class MultiTokenPredictionFeature(MindSpeedFeature):
         )
         patch_manager.register_patch('megatron.core.transformer.multi_token_prediction.MultiTokenPredictionLayer.__init__',
                                       mtp_layer_init_wrapper)
-        patch_manager.register_patch('megatron.core.transformer.multi_token_prediction.MultiTokenPredictionLayer.forward',
-                                      mtp_layer_forward)
+        if not args.schedules_method == "dualpipev":
+            patch_manager.register_patch('megatron.core.transformer.multi_token_prediction.MultiTokenPredictionLayer.forward',
+                                          mtp_layer_forward)
         patch_manager.register_patch('megatron.core.transformer.multi_token_prediction.MultiTokenPredictionBlock._build_layers',
                                       mtp_block_build_layers_wrapper)
         patch_manager.register_patch('megatron.core.transformer.multi_token_prediction.MultiTokenPredictionBlock.forward',

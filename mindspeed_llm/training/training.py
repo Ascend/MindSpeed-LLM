@@ -269,6 +269,7 @@ def build_train_args(*input_args):
     # Model, optimizer, and learning rate.
     timers('model-and-optimizer-setup', log_level=0).start(barrier=True)
     app_metrics['app_build_optimizer_start_time'] = one_logger_utils.get_timestamp_in_ms()
+
     if args.lu_lora_final_layer_index is not None:
 
         from mindspeed_llm.tasks.posttrain.lu_lora.bootstrap import (
@@ -283,9 +284,14 @@ def build_train_args(*input_args):
 
         opt_param_scheduler = configure_lr_for_lu_lora_layers(model, opt_param_scheduler, args)
     else:
+        # If with MTP and dualpipev, change model_provider func.
+        if args.mtp_num_layers is not None and args.schedules_method == "dualpipev":
+            from mindspeed.core.pipeline_parallel.dualpipev.mtp_utils import model_provider_mtp
+            model_provider_func = model_provider_mtp
+        else:
+            model_provider_func = model_provider
         model, optimizer, opt_param_scheduler = setup_model_and_optimizer(
-        model_provider, model_type)
-
+            model_provider_func, model_type)
     timers('model-and-optimizer-setup').stop()
     print_datetime('after model, optimizer, and learning rate '
                    'scheduler are built')
@@ -355,7 +361,7 @@ def pretrain(train_valid_test_dataset_provider,
         1) initialize Megatron.
         2) setup model, optimizer and lr schedule using the model_provider.
         3) call train_val_test_data_provider to get train/val/test datasets.
-        4) train the modle using the forward_step_func.
+        4) train the model using the forward_step_func.
 
     Args:
         train_valid_test_dataset_provider: a function that takes the size of

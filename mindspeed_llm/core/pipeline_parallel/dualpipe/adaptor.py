@@ -2,6 +2,8 @@
 from functools import wraps
 
 import torch
+
+from megatron.core.transformer.multi_token_prediction import MultiTokenPredictionLayer, MTPLossAutoScaler
 from megatron.training.utils import print_rank_0
 
 try:
@@ -16,8 +18,6 @@ try:
     from mindspeed_llm.core.pipeline_parallel.dualpipe.MTP_overlap import forward_overlap
 except ImportError:
     pass
-
-from mindspeed_llm.core.transformer.multi_token_prediction import MultiTokenPredictionLayer, MTPLossAutoScaler
 
 
 def dualpipe_register_patches(MegatronAdaptation):

@@ -1,48 +1,56 @@
 from typing import List
 
 from mindspeed.deprecate import AutoExecuteFunction
+from mindspeed.features_manager import (
+    FusedEmaAdamwFeature,
+    FusedMoEPermuteFeature,
+    FusedSoftmaxFeature,
+    FusedSwigluFeature,
+    GroupedMatmulFeature,
+    MC2Feature,
+    MoEAlltoAllOverLapFeature,
+    MoEFwdBwdOverlapFeature,
+    MoEGmmFeature,
+    MoESharedExpertsFeature,
+    MoEZeroMemoryFeature,
+    OptimizeSendRecvCommFeature,
+    RecomputeNormFeature,
+    ReuseFP32Param,
+    RiPipeSchedulesAdvanceFeature,
+    RiPipeSchedulesBubbleFeature,
+    TransformerEngineBasicFeature,
+    UnalignedLinearFeature,
+    UnalignedPipelineFeature,
+    VirtualOptimizerFeature,
+)
 from mindspeed.features_manager.feature import MindSpeedFeature
-from mindspeed.features_manager.tensor_parallel.unaligned_linear_feature import UnalignedLinearFeature
 from mindspeed.features_manager.features_manager import MindSpeedFeaturesManager
-from mindspeed.features_manager.fusions.fused_bias_swiglu import FusedSwigluFeature
-from mindspeed.features_manager.fusions.fused_softmax import FusedSoftmaxFeature
-from mindspeed.features_manager.optimizer.virtual_optimizer import VirtualOptimizerFeature
-from mindspeed.features_manager.optimizer.fused_ema_adamw_feature import FusedEmaAdamwFeature
-from mindspeed.features_manager.fusions.grouped_matmul import GroupedMatmulFeature
-from mindspeed.features_manager.moe.gmm import MoEGmmFeature
-from mindspeed.features_manager.moe.fb_overlap import MoEFwdBwdOverlapFeature
-from mindspeed.features_manager.memory.reuse_fp32_param import ReuseFP32Param
-from mindspeed.features_manager.pipeline_parallel import NoopLayersFeature
-from mindspeed.features_manager.recompute.norm_function import RecomputeNormFeature
-from mindspeed.features_manager.tensor_parallel.mc2 import MC2Feature
 
-
-from mindspeed_llm.features_manager.common.training import TrainingDefaultFeature
-from mindspeed_llm.features_manager.common.rotary import RotaryPositionEmbeddingFeature
-from mindspeed_llm.features_manager.common.embedding import LanguageModelEmbeddingFeature
 from mindspeed_llm.features_manager.common.data import DataFeature
-from mindspeed_llm.features_manager.moe.moe_router import MoERouter
-from mindspeed_llm.features_manager.moe.shared_expert import MoESharedExpertsFeature
-from mindspeed_llm.features_manager.moe.moe_alltoallseq_overlap import MoEAlltoAllSeqOverLapFeature
-from mindspeed_llm.features_manager.moe.moe_allgather_overlap import MoEAllGatherOverLapFeature
-from mindspeed_llm.features_manager.models.mamba import MambaModel
+from mindspeed_llm.features_manager.common.embedding import LanguageModelEmbeddingFeature
+from mindspeed_llm.features_manager.common.rotary import RotaryPositionEmbeddingFeature
+from mindspeed_llm.features_manager.common.training import TrainingDefaultFeature
 from mindspeed_llm.features_manager.communication.coc import AscendCocFeature
 from mindspeed_llm.features_manager.communication.gloo import DisableGlooFeature
-from mindspeed_llm.features_manager.high_availability.high_availability import HighAvailabilityFeature
-from mindspeed_llm.features_manager.transformer.mtp import MultiTokenPredictionFeature
-from mindspeed_llm.features_manager.megatron_basic.megatron_basic import MegatronBasicFeature
-from mindspeed_llm.features_manager.megatron_basic.requirements_basic import RequirementsBasicFeature
-from mindspeed_llm.features_manager.megatron_basic.model_basic import ModelBasicFeature
-from mindspeed_llm.features_manager.megatron_basic.training_basic import TrainingBasicFeature
-from mindspeed_llm.features_manager.transformer.transformer_block import TransformerBlockFeature
-from mindspeed_llm.features_manager.transformer.multi_latent_attention.mla_feature import MLAFeature
 from mindspeed_llm.features_manager.dataset.dataset import DatasetFeature
-from mindspeed_llm.features_manager.moe.tp_extend_ep import MoETpExtendEpFeature
-from mindspeed_llm.features_manager.tokenizer.build_tokenizer import BuildTokenizerFeature
-from mindspeed_llm.features_manager.transformer.flash_attention.fusion_attention_feature import FusionAttentionFeature
 from mindspeed_llm.features_manager.finetune.finetune import FinetuneFeature
 from mindspeed_llm.features_manager.finetune.lora import LoraFeature
-
+from mindspeed_llm.features_manager.high_availability.high_availability import HighAvailabilityFeature
+from mindspeed_llm.features_manager.megatron_basic.megatron_basic import MegatronBasicFeature
+from mindspeed_llm.features_manager.megatron_basic.model_basic import ModelBasicFeature
+from mindspeed_llm.features_manager.megatron_basic.requirements_basic import RequirementsBasicFeature
+from mindspeed_llm.features_manager.megatron_basic.training_basic import TrainingBasicFeature
+from mindspeed_llm.features_manager.models.mamba import MambaModel
+from mindspeed_llm.features_manager.moe.moe_allgather_overlap import MoEAllGatherOverLapFeature
+from mindspeed_llm.features_manager.moe.moe_router import MoERouter
+from mindspeed_llm.features_manager.moe.tp_extend_ep import MoETpExtendEpFeature
+from mindspeed_llm.features_manager.pipeline_parallel.dualpipev_feature import DualpipeVFeature
+from mindspeed_llm.features_manager.pipeline_parallel.noop_layers import NoopLayersFeature
+from mindspeed_llm.features_manager.tokenizer.build_tokenizer import BuildTokenizerFeature
+from mindspeed_llm.features_manager.transformer.flash_attention.fusion_attention_feature import FusionAttentionFeature
+from mindspeed_llm.features_manager.transformer.mtp import MultiTokenPredictionFeature
+from mindspeed_llm.features_manager.transformer.multi_latent_attention.mla_feature import MLAFeature
+from mindspeed_llm.features_manager.transformer.transformer_block import TransformerBlockFeature
 
 FEATURES_LIST = [
     # MindSpeed Legacy Features
@@ -69,6 +77,7 @@ def add_megatron_basic_features(features_list: List[MindSpeedFeature]):
     features_list.extend([
         RequirementsBasicFeature(),
         MegatronBasicFeature(),
+        TransformerEngineBasicFeature(),
     ])
 
 
@@ -91,6 +100,7 @@ def add_fusions_features(features_list: List[MindSpeedFeature]):
         FusedSoftmaxFeature(),
         RotaryPositionEmbeddingFeature(),
         GroupedMatmulFeature(),
+        FusedMoEPermuteFeature(),
     ])
 
 
@@ -103,7 +113,12 @@ def add_tensor_parallel_features(features_list: List[MindSpeedFeature]):
 
 def add_pipeline_parallel_features(features_list: List[MindSpeedFeature]):
     features_list.extend([
+        RiPipeSchedulesBubbleFeature(),
+        RiPipeSchedulesAdvanceFeature(),
         NoopLayersFeature(),
+        OptimizeSendRecvCommFeature(),
+        UnalignedPipelineFeature(),
+        DualpipeVFeature(),
     ])
 
 
@@ -133,14 +148,15 @@ def add_reuse_param_features(features_list: List[MindSpeedFeature]):
 
 def add_moe_features(features_list: List[MindSpeedFeature]):
     features_list.extend([
-    MoEGmmFeature(),
-    # LLM feature
-    MoERouter(),
-    MoETpExtendEpFeature(),
-    MoESharedExpertsFeature(),
-    MoEAllGatherOverLapFeature(),
-    MoEAlltoAllSeqOverLapFeature(),
-    MoEFwdBwdOverlapFeature()
+        MoEGmmFeature(),
+        # LLM feature
+        MoERouter(),
+        MoETpExtendEpFeature(),
+        MoESharedExpertsFeature(),
+        MoEAllGatherOverLapFeature(),
+        MoEFwdBwdOverlapFeature(),
+        MoEAlltoAllOverLapFeature(),
+        MoEZeroMemoryFeature(),
     ])
 
 

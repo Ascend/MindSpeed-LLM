@@ -233,19 +233,6 @@ def _add_cp_args(parser):
     return parser
 
 
-def _validate_dualpipe_args(args):
-    if args.moe_fb_overlap:
-        from mindspeed.features_manager.pipeline_parallel.fb_overlap_feature import FwdBwdOverlapFeature
-        FwdBwdOverlapFeature().validate_args(args)
-    if args.schedules_method == 'dualpipev':
-        assert args.moe_fb_overlap, 'dualpipev currently can only be used with 1f1b overlap'
-        # The shared embed weight is managed by the dualpipe instead of being initialized by itself.
-        # To avoid load checkpoint with unexpected key, set `load_checkpoint_loosely` to True.
-        args.load_checkpoint_loosely = True
-        from mindspeed.features_manager.pipeline_parallel.dualpipev_feature import DualpipeVFeature
-        DualpipeVFeature().validate_args(args)
-
-
 def _validate_varlen_fa_args(args):
     # varlen FA layout must be TND
     if args.reset_position_ids:
@@ -1312,7 +1299,6 @@ def _add_dummy_args_v2(args):
     For arguments in feature_list which is currently unsupported in mindspeed-llm.
     """
     args.unaligned_linear = False
-    args.multi_head_latent_attention = False
     args.embed_layernorm = False
     args.tp_2d = False
     args.tp_x = 1
@@ -1324,10 +1310,8 @@ def _add_dummy_args_v2(args):
     args.is_pairwise_dataset = False
     args.enable_share_memory = False
     args.return_document_ids = False
-    args.schedules_method = None
     args.embedding_multiplier_scale = 0.0
     args.scale_emb = None
-    args.load_checkpoint_loosely = False
     args.attention_mask_on_cpu = False
     args.dim_model_base = None
     args.output_multiplier_scale = False
@@ -1517,7 +1501,6 @@ def validate_args_decorator(megatron_validate_args):
         _validate_long_rope(args)
         _validate_mlp_fusion(args)
         _validate_fused_opts(args)
-        _validate_dualpipe_args(args)
         _validate_noop_layer(args)
         _valid_tp_2d_args(args)
         _valid_fa_div_args(args)

@@ -32,6 +32,8 @@ DISTRIBUTED_ARGS="
 
 GPT_ARGS="
     --use-mcore-models \
+    --manual-gc \
+    --manual-gc-interval 50 \
     --transformer-impl local \
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \

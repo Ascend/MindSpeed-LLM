@@ -22,6 +22,7 @@ import torch
 from torch import Tensor
 from megatron.core import InferenceParams, tensor_parallel, parallel_state, mpu
 from megatron.core.packed_seq_params import PackedSeqParams
+from megatron.core.transformer.identity_op import IdentityOp
 from megatron.training import get_args
 from megatron.core.models.gpt.gpt_layer_specs import _get_mlp_module_spec
 from megatron.core.transformer import build_module
@@ -30,7 +31,8 @@ from megatron.core.transformer.custom_layers.transformer_engine import TENorm
 from megatron.core.utils import make_sharded_tensor_for_checkpoint, make_viewless_tensor
 from megatron.core.utils import WrappedTensor, deprecate_inference_params
 from megatron.core.inference.contexts import BaseInferenceContext
-from mindspeed.core.transformer.transformer_block import NoopTransformerLayer, _get_layer_offset
+from mindspeed.core.pipeline_parallel.noop_layers.adaptor import NoopTransformerLayer
+from mindspeed.core.transformer.transformer_block import _get_layer_offset
 from mindspeed.core.tensor_parallel.comm_autograd_function import auto_grad_sync_gather_along_last_dim, \
     auto_grad_sync_gather_along_first_dim
 from mindspeed.core.tensor_parallel.comm_group_api import TPXCollectiveComm, TPYCollectiveComm
@@ -141,7 +143,7 @@ def _transformer_block_build_layers(self):
             eps=self.config.layernorm_epsilon,
         )
     else:
-        self.final_layernorm = None  # Either this or nn.Identity
+        self.final_layernorm = build_module(IdentityOp)  # Either this or nn.Identity
     
     # For recompute norm
     if args.recompute_norm:

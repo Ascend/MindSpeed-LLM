@@ -86,7 +86,8 @@ def model_provider(pre_process=True, post_process=True) -> Union[GPTModel, megat
             share_embeddings_and_output_weights=not args.untie_embeddings_and_output_weights,
             position_embedding_type=args.position_embedding_type,
             rotary_percent=args.rotary_percent,
-            seq_len_interpolation_factor=args.rotary_seq_len_interpolation_factor,
+            rotary_base=args.rotary_base,
+            rope_scaling=args.use_rope_scaling,
             mtp_block_spec=mtp_block_spec,
         )
     else:

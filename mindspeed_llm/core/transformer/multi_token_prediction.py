@@ -262,6 +262,12 @@ def mtp_block_forward(
     args = get_args()
     mtp_batch_list = get_mtp_batch_list()
 
+    # With dualpipev schedules, last stage use embedding weight from first stage instead of initializing by itself.
+    if embedding.word_embeddings.weight is None:
+        from mindspeed.core.pipeline_parallel.dualpipev.dualpipev_schedules import \
+            get_shared_embedding_from_dual_chunk
+        embedding.word_embeddings.weight = get_shared_embedding_from_dual_chunk()
+
     hidden_states_main_model = hidden_states
     for layer_number in range(len(self.layers)):
         # get input_data from mtp_batch_list or not

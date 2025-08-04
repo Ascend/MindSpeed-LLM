@@ -16,8 +16,6 @@ class ModelBasicFeature(MindSpeedFeature):
         from mindspeed.core.models.common.embeddings.rotary_pos_embedding import get_pos_emb_on_this_cp_rank
         from mindspeed_llm.core.models.gpt.gpt_model import GPTModel
         from mindspeed_llm.training.utils import get_device_wrapper
-        from mindspeed_llm.core.models.common.embeddings.language_model_embedding import \
-            language_model_embedding_init_func
         from mindspeed_llm.core.models.gpt.gpt_layer_specs import get_gpt_layer_local_spec_wrapper
         from mindspeed_llm.core import vocab_parallel_embedding_forward, vocab_embedding_init_func, checkpoint_forward_wrapper, \
             checkpoint_backward_wrapper
@@ -28,8 +26,6 @@ class ModelBasicFeature(MindSpeedFeature):
                            get_pos_emb_on_this_cp_rank)
         pm.register_patch('megatron.core.models.gpt.gpt_model.GPTModel',
                            GPTModel)
-        pm.register_patch('megatron.core.models.common.embeddings.language_model_embedding.LanguageModelEmbedding.__init__',
-                           language_model_embedding_init_func)
 
         pm.register_patch('megatron.core.tensor_parallel.layers.VocabParallelEmbedding.forward',
                            vocab_parallel_embedding_forward)
