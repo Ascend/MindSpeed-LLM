@@ -28,7 +28,7 @@ class MLAFeature(MindSpeedFeature):
                             help='Flash attn support mla with seperate q and k.')
 
     def validate_args(self, args: Namespace):
-        if args.multi_head_latent_attention:
+        if args.multi_latent_attention:
             if args.kv_lora_rank is None:
                 raise AssertionError(
                     'The parameter kv-lora-rank should be '

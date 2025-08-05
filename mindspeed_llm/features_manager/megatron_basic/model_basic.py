@@ -13,7 +13,7 @@ class ModelBasicFeature(MindSpeedFeature):
     def patch_model_patches(self, pm, args):
         from mindspeed_llm.training.tokenizer import build_tokenizer
         from megatron.core.models.gpt.gpt_layer_specs import get_gpt_layer_local_spec
-        from mindspeed.core.models.common.embeddings.rotary_pos_embedding import get_pos_emb_on_this_cp_rank
+        from mindspeed.core.context_parallel.rotary_pos_embedding_utils import get_pos_emb_on_this_cp_rank
         from mindspeed_llm.core.models.gpt.gpt_model import GPTModel
         from mindspeed_llm.training.utils import get_device_wrapper
         from mindspeed_llm.core.models.gpt.gpt_layer_specs import get_gpt_layer_local_spec_wrapper

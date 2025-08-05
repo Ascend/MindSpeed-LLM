@@ -9,6 +9,7 @@ from mindspeed.features_manager import (
     GroupedMatmulFeature,
     MC2Feature,
     MoEAlltoAllOverLapFeature,
+    MoEAllGatherOverLapFeature,
     MoEFwdBwdOverlapFeature,
     MoEGmmFeature,
     MoESharedExpertsFeature,
@@ -43,7 +44,6 @@ from mindspeed_llm.features_manager.megatron_basic.model_basic import ModelBasic
 from mindspeed_llm.features_manager.megatron_basic.requirements_basic import RequirementsBasicFeature
 from mindspeed_llm.features_manager.megatron_basic.training_basic import TrainingBasicFeature
 from mindspeed_llm.features_manager.models.mamba import MambaModel
-from mindspeed_llm.features_manager.moe.moe_allgather_overlap import MoEAllGatherOverLapFeature
 from mindspeed_llm.features_manager.moe.moe_router import MoERouter
 from mindspeed_llm.features_manager.moe.tp_extend_ep import MoETpExtendEpFeature
 from mindspeed_llm.features_manager.pipeline_parallel.dualpipev_feature import DualpipeVFeature
@@ -53,6 +53,7 @@ from mindspeed_llm.features_manager.transformer.flash_attention.fusion_attention
 from mindspeed_llm.features_manager.transformer.mtp import MultiTokenPredictionFeature
 from mindspeed_llm.features_manager.transformer.multi_latent_attention.mla_feature import MLAFeature
 from mindspeed_llm.features_manager.transformer.transformer_block import TransformerBlockFeature
+
 
 FEATURES_LIST = [
     # MindSpeed Legacy Features
