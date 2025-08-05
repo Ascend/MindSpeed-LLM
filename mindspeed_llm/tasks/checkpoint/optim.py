@@ -55,7 +55,7 @@ class OptimBaseProcessor(abc.ABC):
         self.post_norm = args.post_norm
         self.true_vocab_size = None
         self.hidden_size = args.hidden_size
-        self.multi_head_latent_attention = args.multi_head_latent_attention
+        self.multi_head_latent_attention = args.multi_latent_attention
         self.q_lora_rank = args.q_lora_rank
         self.qk_layernorm = args.qk_layernorm
         self.swiglu = args.swiglu

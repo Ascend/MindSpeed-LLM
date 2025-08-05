@@ -92,7 +92,6 @@ def add_llm_features(features_list: List[MindSpeedFeature]):
         FinetuneFeature(),
         LoraFeature(),
         LuLoraFeature(),
-        HighAvailabilityFeature(),
         MambaModel(),
         LanguageModelEmbeddingFeature(),
     ])
