@@ -14,6 +14,7 @@ from mindspeed.features_manager import (
     MoESharedExpertsFeature,
     MoEZeroMemoryFeature,
     OptimizeSendRecvCommFeature,
+    SwapOptimizerFeature,
     RecomputeNormFeature,
     ReuseFP32Param,
     RiPipeSchedulesAdvanceFeature,
@@ -35,6 +36,7 @@ from mindspeed_llm.features_manager.communication.gloo import DisableGlooFeature
 from mindspeed_llm.features_manager.dataset.dataset import DatasetFeature
 from mindspeed_llm.features_manager.finetune.finetune import FinetuneFeature
 from mindspeed_llm.features_manager.finetune.lora import LoraFeature
+from mindspeed_llm.features_manager.finetune.lu_lora import LuLoraFeature
 from mindspeed_llm.features_manager.high_availability.high_availability import HighAvailabilityFeature
 from mindspeed_llm.features_manager.megatron_basic.megatron_basic import MegatronBasicFeature
 from mindspeed_llm.features_manager.megatron_basic.model_basic import ModelBasicFeature
@@ -88,6 +90,7 @@ def add_llm_features(features_list: List[MindSpeedFeature]):
         DatasetFeature(),
         FinetuneFeature(),
         LoraFeature(),
+        LuLoraFeature(),
         HighAvailabilityFeature(),
         MambaModel(),
         LanguageModelEmbeddingFeature(),
@@ -173,6 +176,12 @@ def add_recompute_features(features_list: List[MindSpeedFeature]):
     ])
 
 
+def add_swap_optimizer_feature(features_list: List[MindSpeedFeature]):
+    features_list.extend([
+        SwapOptimizerFeature(),
+    ])
+
+
 def create_features_list():
     features_list = []
     add_megatron_basic_features(features_list)
@@ -186,6 +195,7 @@ def create_features_list():
     add_moe_features(features_list)
     add_optimizer_features(features_list)
     add_recompute_features(features_list)
+    add_swap_optimizer_feature(features_list)
     return features_list
 
 
