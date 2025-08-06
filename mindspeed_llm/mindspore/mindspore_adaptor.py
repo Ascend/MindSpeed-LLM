@@ -390,6 +390,9 @@ class MindSporeAdaptation(MegatronAdaptationABC):
         from mindspeed.mindspore.optimizer.adamw import step_func
         MindSporeAdaptation.register('mindspeed.optimizer.adamw.AdamW.step', step_func)
 
+        from mindspeed.mindspore.core.pipeline_parallel.schedules import deallocate_output_tensor_
+        MindSporeAdaptation.register('megatron.core.pipeline_parallel.schedules.deallocate_output_tensor', deallocate_output_tensor_)
+
     @staticmethod
     def reparse_args():
         """
