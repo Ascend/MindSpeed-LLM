@@ -16,7 +16,6 @@ from mindspeed.features_manager import (
     MoEZeroMemoryFeature,
     OptimizeSendRecvCommFeature,
     SwapOptimizerFeature,
-    RecomputeNormFeature,
     ReuseFP32Param,
     RiPipeSchedulesAdvanceFeature,
     RiPipeSchedulesBubbleFeature,
@@ -24,6 +23,10 @@ from mindspeed.features_manager import (
     UnalignedLinearFeature,
     UnalignedPipelineFeature,
     VirtualOptimizerFeature,
+    RecomputeNormFeature,
+    RecomputeActivationFeature,
+    EnableRecomputeLayersPerPPRank,
+    RecomputeMethodFeature,
 )
 from mindspeed.features_manager.feature import MindSpeedFeature
 from mindspeed.features_manager.features_manager import MindSpeedFeaturesManager
@@ -172,7 +175,10 @@ def add_optimizer_features(features_list: List[MindSpeedFeature]):
 
 def add_recompute_features(features_list: List[MindSpeedFeature]):
     features_list.extend([
+        RecomputeActivationFeature(),
         RecomputeNormFeature(),
+        EnableRecomputeLayersPerPPRank(),
+        RecomputeMethodFeature()
     ])
 
 
@@ -187,6 +193,7 @@ def create_features_list():
     add_megatron_basic_features(features_list)
     add_llm_features(features_list)
     add_fusions_features(features_list)
+    add_recompute_features(features_list)
     add_tensor_parallel_features(features_list)
     add_pipeline_parallel_features(features_list)
     add_transformer_features(features_list)
@@ -194,7 +201,6 @@ def create_features_list():
     add_reuse_param_features(features_list)
     add_moe_features(features_list)
     add_optimizer_features(features_list)
-    add_recompute_features(features_list)
     add_swap_optimizer_feature(features_list)
     return features_list
 
