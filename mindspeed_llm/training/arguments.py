@@ -1319,7 +1319,6 @@ def _add_dummy_args_v2(args):
     args.output_layer_slice_num = 1
     args.enable_high_availability = False
     args.use_fused_mlp = False
-    args.disable_gloo_group = False
     args.recompute_activation_function = False
     args.input_jitter = False
 

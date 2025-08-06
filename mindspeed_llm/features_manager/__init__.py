@@ -2,6 +2,7 @@ from typing import List
 
 from mindspeed.deprecate import AutoExecuteFunction
 from mindspeed.features_manager import (
+    DisableGlooGroupFeature,
     FusedEmaAdamwFeature,
     FusedMoEPermuteFeature,
     FusedSoftmaxFeature,
@@ -36,7 +37,6 @@ from mindspeed_llm.features_manager.common.embedding import LanguageModelEmbeddi
 from mindspeed_llm.features_manager.common.rotary import RotaryPositionEmbeddingFeature
 from mindspeed_llm.features_manager.common.training import TrainingDefaultFeature
 from mindspeed_llm.features_manager.communication.coc import AscendCocFeature
-from mindspeed_llm.features_manager.communication.gloo import DisableGlooFeature
 from mindspeed_llm.features_manager.dataset.dataset import DatasetFeature
 from mindspeed_llm.features_manager.finetune.finetune import FinetuneFeature
 from mindspeed_llm.features_manager.finetune.lora import LoraFeature
@@ -66,7 +66,7 @@ FEATURES_LIST = [
     # MindSpeed-LLM Mcore Features
     TrainingDefaultFeature(),
     DataFeature(),
-    DisableGlooFeature(),
+    DisableGlooGroupFeature(),
     RotaryPositionEmbeddingFeature(),
     LanguageModelEmbeddingFeature(),
     MambaModel(),
@@ -188,6 +188,12 @@ def add_swap_optimizer_feature(features_list: List[MindSpeedFeature]):
     ])
 
 
+def add_disable_gloo_group_feature(features_list: List[MindSpeedFeature]):
+    features_list.extend([
+        DisableGlooGroupFeature()
+    ])
+
+
 def create_features_list():
     features_list = []
     add_megatron_basic_features(features_list)
@@ -202,6 +208,7 @@ def create_features_list():
     add_moe_features(features_list)
     add_optimizer_features(features_list)
     add_swap_optimizer_feature(features_list)
+    add_disable_gloo_group_feature(features_list)
     return features_list
 
 
