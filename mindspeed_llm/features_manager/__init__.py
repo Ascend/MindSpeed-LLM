@@ -24,6 +24,8 @@ from mindspeed.features_manager import (
     UnalignedLinearFeature,
     UnalignedPipelineFeature,
     VirtualOptimizerFeature,
+    HcclBufferAdaptiveFeature,
+    HcclBufferSetFeature,
     RecomputeNormFeature,
     RecomputeActivationFeature,
     EnableRecomputeLayersPerPPRank,
@@ -166,6 +168,13 @@ def add_moe_features(features_list: List[MindSpeedFeature]):
     ])
 
 
+def add_hccl_buffer_features(features_list: List[MindSpeedFeature]):
+    features_list.extend([
+        HcclBufferSetFeature(),
+        HcclBufferAdaptiveFeature(),
+    ])
+
+
 def add_optimizer_features(features_list: List[MindSpeedFeature]):
     features_list.extend([
         FusedEmaAdamwFeature(),
@@ -206,6 +215,7 @@ def create_features_list():
     add_tokenizer_features(features_list)
     add_reuse_param_features(features_list)
     add_moe_features(features_list)
+    add_hccl_buffer_features(features_list)
     add_optimizer_features(features_list)
     add_swap_optimizer_feature(features_list)
     add_disable_gloo_group_feature(features_list)
