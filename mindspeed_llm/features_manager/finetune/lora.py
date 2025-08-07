@@ -31,3 +31,8 @@ class LoraFeature(MindSpeedFeature):
                             help='Enable QLoRA for fine-tuning with reduced memory usage.')
         group.add_argument('--qlora-save-dequantize', action='store_true', default=False,
                             help='Dequantize weights to original precision when saving in QLoRA tuning.')
+
+    def register_patches(self, patch_manager, args):
+        from mindspeed_llm.core.distributed.finalize_model_grads import _allreduce_word_embedding_grads
+        patch_manager.register_patch('megatron.core.distributed.finalize_model_grads._allreduce_word_embedding_grads',
+                                      _allreduce_word_embedding_grads)

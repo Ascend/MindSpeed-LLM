@@ -71,6 +71,7 @@ FEATURES_LIST = [
     # MindSpeed-LLM Mcore Features
     TrainingDefaultFeature(),
     DataFeature(),
+    LoraFeature(),
     DisableGlooGroupFeature(),
     RotaryPositionEmbeddingFeature(),
     LanguageModelEmbeddingFeature(),

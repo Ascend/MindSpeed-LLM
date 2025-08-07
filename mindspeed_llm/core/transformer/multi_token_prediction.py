@@ -312,6 +312,11 @@ def mtp_block_forward(
 
         mtp_loss = compute_language_model_loss(mtp_labels, mtp_logits)
         mtp_loss = mtp_loss_mask * mtp_loss
+
+        if args.context_parallel_size > 1:
+            torch.distributed.all_reduce(mtp_loss, group=mpu.get_context_parallel_group())
+            torch.distributed.all_reduce(num_tokens, group=mpu.get_context_parallel_group())
+
         if self.training:
             MTPLossLoggingHelper.save_loss_to_tracker(
                 torch.sum(mtp_loss) / num_tokens,
@@ -319,6 +324,7 @@ def mtp_block_forward(
                 self.config.mtp_num_layers,
                 avg_group=parallel_state.get_tensor_and_data_parallel_group(with_context_parallel=True),
             )
+        mtp_loss *= parallel_state.get_context_parallel_world_size()
         mtp_loss_scale = self.mtp_loss_scaling_factor / self.config.mtp_num_layers
         if self.config.calculate_per_token_loss:
             hidden_states_main_model = MTPLossAutoScaler.apply(
@@ -358,66 +364,20 @@ def get_mtp_layer_input(input_data, mtp_batch_list, layer_number):
 
 def generate_mtp_batch_list_on_this_tp_rank(batch):
     args = get_args()
-    
-    def _broadcast(item):
-        if item is not None:
-            torch.distributed.broadcast(item, mpu.get_tensor_model_parallel_src_rank(),
-                                        group=mpu.get_tensor_model_parallel_group())
 
     if not (args.mtp_num_layers and mpu.is_pipeline_last_stage() and args.context_parallel_size > 1):
         return None
-    
+
     mtp_batch_list = []
     for i in range(args.mtp_num_layers):
-        if mpu.get_tensor_model_parallel_rank() == 0:            
-            mtp_batch = {}
 
-            mtp_batch['tokens'], _ = roll_tensor(batch['tokens'], shifts=-i - 1, dims=-1)
-            mtp_batch['labels'], _ = roll_tensor(batch['labels'], shifts=-i - 1, dims=-1)
-            mtp_batch['loss_mask'], _ = roll_tensor(batch['loss_mask'], shifts=-i - 1, dims=-1)
-            mtp_batch['attention_mask'] = batch['attention_mask'].clone() if batch['attention_mask'] is not None else None
-            mtp_batch['position_ids'] = batch['position_ids'].clone() if batch['position_ids'] is not None else None
+        mtp_batch = {}
 
-            _broadcast(mtp_batch['tokens'])
-            _broadcast(mtp_batch['labels'])
-            _broadcast(mtp_batch['loss_mask'])
-            _broadcast(mtp_batch['attention_mask'])
-            _broadcast(mtp_batch['position_ids'])
-        else:
-            tokens = torch.empty((args.micro_batch_size, args.seq_length),
-                                dtype=torch.int64,
-                                device=torch.cuda.current_device())
-            labels = torch.empty((args.micro_batch_size, args.seq_length),
-                                dtype=torch.int64,
-                                device=torch.cuda.current_device())
-            loss_mask = torch.empty((args.micro_batch_size, args.seq_length),
-                                    dtype=torch.float32,
-                                    device=torch.cuda.current_device())
-            if args.create_attention_mask_in_dataloader:
-                attention_mask = torch.empty(
-                    (args.micro_batch_size, 1, args.seq_length,
-                    args.seq_length), dtype=torch.bool,
-                    device=torch.cuda.current_device()
-                )
-            else:
-                attention_mask = None
-            position_ids = torch.empty((args.micro_batch_size, args.seq_length),
-                                    dtype=torch.int64,
-                                    device=torch.cuda.current_device())
-
-            mtp_batch = {
-                'tokens': tokens,
-                'labels': labels,
-                'loss_mask': loss_mask,
-                'attention_mask': attention_mask,
-                'position_ids': position_ids
-            }
-
-            _broadcast(mtp_batch['tokens'])
-            _broadcast(mtp_batch['labels'])
-            _broadcast(mtp_batch['loss_mask'])
-            _broadcast(mtp_batch['attention_mask'])
-            _broadcast(mtp_batch['position_ids'])
+        mtp_batch['tokens'], _ = roll_tensor(batch['tokens'], shifts=-i - 1, dims=-1)
+        mtp_batch['labels'], _ = roll_tensor(batch['labels'], shifts=-i - 1, dims=-1)
+        mtp_batch['loss_mask'], _ = roll_tensor(batch['loss_mask'], shifts=-i - 1, dims=-1)
+        mtp_batch['attention_mask'] = batch['attention_mask'].clone() if batch['attention_mask'] is not None else None
+        mtp_batch['position_ids'] = batch['position_ids'].clone() if batch['position_ids'] is not None else None
 
         if args.reset_position_ids and not args.reset_attention_mask:
             generate_actual_seq_len(mtp_batch)
