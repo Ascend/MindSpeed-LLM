@@ -191,10 +191,10 @@ def get_tune_attention_mask(attention_mask_1d):
         attention_mask = attention_mask.masked_fill((attention_mask_tran < 0.5).view(-1, 1, 1, seq_length), value=0)
     else:
         attention_mask = torch.tril(torch.ones(
-            (att_mask_batch, seq_length, seq_length), device=attention_mask_1d.device)).view(
+            (att_mask_batch, seq_length, seq_length), device=attention_mask_1d.device, dtype=torch.bool)).view(
             att_mask_batch, 1, seq_length, seq_length)
     attention_mask = attention_mask.masked_fill((attention_mask_1d < 0.5).view(-1, 1, 1, seq_length), value=0)
-    attention_mask = (attention_mask < 0.5)
+    attention_mask = ~attention_mask
     return attention_mask
 
 
