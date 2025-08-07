@@ -6,6 +6,7 @@ import torch
 def calculate_logits_max(
         vocab_parallel_logits: torch.Tensor,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
+    # Affinity Modification: release the bf16 space to save memory.
     if vocab_parallel_logits.dtype != torch.float32:
         vocab_parallel_logits_fp32 = vocab_parallel_logits.float()
         vocab_parallel_logits.untyped_storage().resize_(0)
@@ -31,6 +32,8 @@ def calculate_predicted_logits(
     # Create a mask of valid vocab ids (1 means it needs to be masked).
     target_mask = (target < vocab_start_index) | (target >= vocab_end_index)
     masked_target = target.clone() - vocab_start_index
+
+    # Affinity Modification: replace indexput with mul for better performance.
     masked_target *= ~target_mask
 
     # Get predicted-logits = logits[target].
@@ -43,6 +46,8 @@ def calculate_predicted_logits(
     predicted_logits_1d = logits_2d[arange_1d, masked_target_1d]
     predicted_logits_1d = predicted_logits_1d.clone().contiguous()
     predicted_logits = predicted_logits_1d.view_as(target)
+
+    # Affinity Modification: replace indexput with mul for better performance.
     predicted_logits *= ~target_mask
 
     exp_logits = vocab_parallel_logits

@@ -29,17 +29,13 @@ class MultiTokenPredictionFeature(MindSpeedFeature):
         patch_manager.register_patch(
             'megatron.core.transformer.multi_token_prediction.MTPLossLoggingHelper.reduce_loss_in_tracker',
             mtp_reduce_loss_in_tracker)
-        # change masked_target for better performance
+        
+        # mtp memory optimization
         if args.mtp_mem_efficient_logits:
-            from mindspeed_llm.core.tensor_parallel.cross_entropy import calculate_logits_max, calculate_predicted_logits
+            from mindspeed_llm.core.tensor_parallel.cross_entropy import calculate_logits_max
             patch_manager.register_patch('megatron.core.tensor_parallel.cross_entropy.VocabParallelCrossEntropy.calculate_logits_max',
                                           calculate_logits_max)
-            patch_manager.register_patch('megatron.core.tensor_parallel.cross_entropy.VocabParallelCrossEntropy.calculate_predicted_logits',
-                                          calculate_predicted_logits)
-        else:
-            from mindspeed.core.tensor_parallel.cross_entropy import calculate_predicted_logits
-            patch_manager.register_patch('megatron.core.tensor_parallel.cross_entropy.VocabParallelCrossEntropy.calculate_predicted_logits',
-                                          calculate_predicted_logits)
+
         # patch for mtp
         from mindspeed_llm.core.transformer.multi_token_prediction import (
             mtp_layer_init_wrapper,
