@@ -30,6 +30,8 @@ from mindspeed.features_manager import (
     RecomputeActivationFeature,
     EnableRecomputeLayersPerPPRank,
     RecomputeMethodFeature,
+    SmartSwapFeature,
+    SwapAttentionFeature,
 )
 from mindspeed.features_manager.feature import MindSpeedFeature
 from mindspeed.features_manager.features_manager import MindSpeedFeaturesManager
@@ -161,6 +163,13 @@ def add_reuse_param_features(features_list: List[MindSpeedFeature]):
     ])
 
 
+def add_swap_manage_features(features_list: List[MindSpeedFeature]):
+    features_list.extend([
+        SmartSwapFeature(),
+        SwapAttentionFeature()
+    ])
+
+
 def add_moe_features(features_list: List[MindSpeedFeature]):
     features_list.extend([
         MoEGmmFeature(),
@@ -222,6 +231,7 @@ def create_features_list():
     add_transformer_features(features_list)
     add_tokenizer_features(features_list)
     add_reuse_param_features(features_list)
+    add_swap_manage_features(features_list)
     add_moe_features(features_list)
     add_hccl_buffer_features(features_list)
     add_optimizer_features(features_list)
