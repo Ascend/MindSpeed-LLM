@@ -34,6 +34,8 @@ GPT_ARGS="
     --recompute-num-layers 1 \
     --recompute-in-advance \
     --use-mcore-models \
+    --manual-gc \
+    --manual-gc-interval 50 \
     --micro-batch-size 1 \
     --global-batch-size 16 \
     --sequence-parallel \

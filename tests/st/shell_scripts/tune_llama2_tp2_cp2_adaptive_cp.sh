@@ -45,6 +45,8 @@ DIST_ALGO=(
 
 MODEL_ARGS=(
     --use-mcore-models
+    --manual-gc
+    --manual-gc-interval 50
     --num-layers 32
     --hidden-size 4096
     --ffn-hidden-size 11008

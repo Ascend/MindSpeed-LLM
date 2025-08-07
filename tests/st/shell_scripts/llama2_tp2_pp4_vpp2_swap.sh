@@ -63,6 +63,8 @@ MODEL_ARGS=(
 TRAINING_ARGS=(
     --tokenizer-type Llama2Tokenizer
     --tokenizer-model ${TOKENIZER_MODEL}
+    --manual-gc
+    --manual-gc-interval 50
     --micro-batch-size 1
     --global-batch-size 32
     --make-vocab-size-divisible-by 1

@@ -32,6 +32,8 @@ GPT_ARGS="
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \
     --use-mcore-models \
+    --manual-gc \
+    --manual-gc-interval 50 \
     --micro-batch-size 1 \
     --global-batch-size 2 \
     --sequence-parallel \

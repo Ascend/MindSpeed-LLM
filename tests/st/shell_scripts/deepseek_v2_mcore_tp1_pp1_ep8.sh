@@ -81,6 +81,8 @@ GPT_ARGS="
     --use-flash-attn \
     --shape-order BNSD \
     --use-mcore-models \
+    --manual-gc \
+    --manual-gc-interval 50 \
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \
     --expert-model-parallel-size ${EP} \

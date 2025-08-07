@@ -47,6 +47,8 @@ MOE_ARGS="
 
 GPT_ARGS="
     --use-mcore-models \
+    --manual-gc \
+    --manual-gc-interval 50 \
     --reuse-fp32-param \
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \

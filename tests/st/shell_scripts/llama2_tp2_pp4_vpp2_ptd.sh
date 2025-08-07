@@ -57,6 +57,8 @@ MODEL_ARGS=(
 
 TRAINING_ARGS=(
     --tokenizer-type Llama2Tokenizer
+    --manual-gc
+    --manual-gc-interval 50
     --tokenizer-model ${TOKENIZER_MODEL}
     --micro-batch-size 1
     --global-batch-size 32

@@ -45,6 +45,8 @@ MOE_ARGS=(
 
 GPT_ARGS=(
     --use-mcore-models
+    --manual-gc
+    --manual-gc-interval 50
     --disable-bias-linear
     --seq-length 4096
     --max-position-embeddings 32768
@@ -64,7 +66,6 @@ GPT_ARGS=(
     --no-position-embedding
     --vocab-size 32000
     --rotary-base 1000000
-
     --no-masked-softmax-fusion
     --use-fused-rotary-pos-emb
     --use-flash-attn

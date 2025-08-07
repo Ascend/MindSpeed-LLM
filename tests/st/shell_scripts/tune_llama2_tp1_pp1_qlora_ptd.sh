@@ -45,6 +45,8 @@ MODEL_ARGS=(
 
 TRAINING_ARGS=(
     --use-mcore-models
+    --manual-gc
+    --manual-gc-interval 50
     --tokenizer-type PretrainedFromHF
     --tokenizer-name-or-path ${TOKENIZER_MODEL}
     --micro-batch-size 2

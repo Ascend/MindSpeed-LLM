@@ -99,6 +99,8 @@ MODEL_PARALLEL_ARGS="
 
 GPT_ARGS="
     --use-mcore-models \
+    --manual-gc \
+    --manual-gc-interval 50 \
     --tokenizer-name-or-path ${TOKENIZER_PATH} \
     --max-position-embeddings ${SEQ_LENGTH} \
     --num-layers 2 \

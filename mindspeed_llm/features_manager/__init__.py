@@ -13,7 +13,6 @@ from mindspeed.features_manager import (
     MoEAllGatherOverLapFeature,
     MoEFwdBwdOverlapFeature,
     MoEGmmFeature,
-    MoESharedExpertsFeature,
     MoEZeroMemoryFeature,
     OptimizeSendRecvCommFeature,
     SwapOptimizerFeature,
@@ -53,6 +52,7 @@ from mindspeed_llm.features_manager.megatron_basic.requirements_basic import Req
 from mindspeed_llm.features_manager.megatron_basic.training_basic import TrainingBasicFeature
 from mindspeed_llm.features_manager.models.mamba import MambaModel
 from mindspeed_llm.features_manager.moe.moe_router import MoERouter
+from mindspeed_llm.features_manager.moe.shared_expert import MoESharedExpertsFeature
 from mindspeed_llm.features_manager.moe.tp_extend_ep import MoETpExtendEpFeature
 from mindspeed_llm.features_manager.pipeline_parallel.dualpipev_feature import DualpipeVFeature
 from mindspeed_llm.features_manager.pipeline_parallel.noop_layers import NoopLayersFeature
@@ -176,6 +176,7 @@ def add_moe_features(features_list: List[MindSpeedFeature]):
         # LLM feature
         MoERouter(),
         MoETpExtendEpFeature(),
+        # LLM feature
         MoESharedExpertsFeature(),
         MoEAllGatherOverLapFeature(),
         MoEFwdBwdOverlapFeature(),

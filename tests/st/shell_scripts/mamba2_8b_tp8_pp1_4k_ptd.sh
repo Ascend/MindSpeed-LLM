@@ -50,6 +50,8 @@ MAMBA_ARGS="
     --use-distributed-optimizer \
     --use-flash-attn \
     --use-mcore-models \
+    --manual-gc \
+    --manual-gc-interval 50 \
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \
     --sequence-parallel \
