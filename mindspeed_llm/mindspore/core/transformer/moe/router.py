@@ -76,8 +76,7 @@ def topk_router_gating_func(self, input: torch.Tensor):
             input, weight = self.fp32_checkpoint_manager.checkpoint(to_fp32, False, input, self.weight)
             logits = torch.nn.functional.linear(input, weight, torch.zeros((self.config.num_moe_experts), dtype=torch.float32).cuda())
             self.fp32_checkpoint_manager.discard_output()
-            if logits.requires_grad:
-                logits.register_hook(self.fp32_checkpoint_manager.recompute)
+            logits.register_hook(self.fp32_checkpoint_manager.recompute)
     else:
         logits = F.linear(input, self.weight, torch.zeros((self.config.num_moe_experts), dtype=torch.bfloat16).cuda())
 
