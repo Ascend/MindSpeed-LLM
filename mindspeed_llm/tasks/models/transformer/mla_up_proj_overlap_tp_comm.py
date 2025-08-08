@@ -7,7 +7,7 @@ try:
     from mindspeed.core.pipeline_parallel.fb_overlap.modules.attention import launch_async_all2all
     from mindspeed.core.pipeline_parallel.dualpipev.dualpipev_schedules import get_post_process_flag
 except ImportError:
-    pass
+    print("[warning] failed import dualpipe modules, not support dualpipe")
 from mindspeed.core.transformer.moe.comm_utils import async_all_gather
 from mindspeed.core.tensor_parallel.random import CheckpointWithoutOutput
 from megatron.training.utils import get_args

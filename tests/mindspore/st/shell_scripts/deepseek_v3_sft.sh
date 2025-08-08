@@ -46,6 +46,7 @@ MLA_ARGS="
 
 
 MOE_ARGS="
+    --trust-remote-code \
     --moe-grouped-gemm \
     --moe-permutation-async-comm \
     --use-fused-moe-token-permute-and-unpermute \

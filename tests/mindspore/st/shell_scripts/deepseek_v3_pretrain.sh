@@ -100,6 +100,7 @@ ROPE_ARGS="
 
 
 GPT_ARGS="
+    --trust-remote-code \
     --no-gradient-accumulation-fusion \
     --spec mindspeed_llm.tasks.models.spec.deepseek_spec layer_spec \
     --reset-position-ids \

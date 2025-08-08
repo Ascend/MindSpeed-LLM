@@ -28,7 +28,7 @@ from mindspeed_llm.tasks.evaluation.eval_api.chat import Chat
 from mindspeed_llm.tasks.utils.error_utils import check_divisible_by_zero
 from mindspeed_llm.tasks.evaluation.utils import get_final_list_dataset
 from mindspeed_llm.tasks.evaluation.eval_utils.boolq_utils import first_capital_postprocess
-
+from mindspeed_llm.tasks.evaluation.file_utils import standardize_path
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 class BoolqEval(DatasetEval):
     def __init__(self, test_dir, eval_args,
                  instruction_template="{passage}\nQuestion: {question}?\nAnswer:"):
-        self.test_dir = test_dir
+        self.test_dir = standardize_path(test_dir, check_read=True)
         self.instruction_template = instruction_template
         self.alternative_prompt = "{title} -- {passage}\nQuestion: {question}\nA. Yes\nB. No\nAnswer:"
         self.answer_reference = {'True': 'A', 'False': 'B', 'Yes': 'A', 'No': 'B', 'Y': 'A', 'N': 'B', 'T': 'A', 'F': 'B'}

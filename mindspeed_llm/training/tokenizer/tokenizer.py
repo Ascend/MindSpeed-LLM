@@ -49,6 +49,7 @@ def build_tokenizer(args):
             model_max_length=args.seq_length,
             use_fast=args.tokenizer_not_use_fast,
             prompt_type=args.prompt_type,
+            trust_remote_code=args.trust_remote_code,
             **hf_tokenizer_kwargs
         )
 
@@ -108,7 +109,7 @@ class TokenizerAdaptor:
 class _AutoTokenizer(MegatronTokenizer):
     """AutoTokenizer for Hf Pretrained model loading."""
 
-    def __init__(self, tokenizer_name_or_path, vocab_extra_ids, model_max_length, use_fast, prompt_type=None, **kwargs):
+    def __init__(self, tokenizer_name_or_path, vocab_extra_ids, model_max_length, use_fast, prompt_type=None, trust_remote_code=False, **kwargs):
         name = tokenizer_name_or_path
         super().__init__(name)
         hf_tokenizer_kwargs = kwargs
@@ -117,7 +118,7 @@ class _AutoTokenizer(MegatronTokenizer):
 
         hf_tokenizer_kwargs["model_max_length"] = model_max_length
         hf_tokenizer_kwargs["use_fast"] = use_fast
-        hf_tokenizer_kwargs["trust_remote_code"] = True
+        hf_tokenizer_kwargs["trust_remote_code"] = trust_remote_code
         self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name_or_path, **hf_tokenizer_kwargs, local_files_only=True)
         if (prompt_type is None) and (self.tokenizer.pad_token_id is None):
             self.tokenizer.pad_token_id = self.tokenizer.eos_token_id

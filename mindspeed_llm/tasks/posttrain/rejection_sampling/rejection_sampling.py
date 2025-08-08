@@ -2,7 +2,7 @@ import argparse
 import gc
 import json
 import re
-
+import os
 import jsonlines
 import pandas as pd
 import torch
@@ -13,6 +13,7 @@ from vllm.distributed.parallel_state import (destroy_distributed_environment, de
 
 from utils import blending_datasets, PromptGtAnswerDataset, apply_GenRM_template, rejection_sampling_processor
 from mindspeed_llm.tasks.posttrain.verifier.rule_verifier import preprocess_box_response_for_qwen_prompt
+from mindspeed_llm.tasks.evaluation.file_utils import standardize_path
 
 
 def clean_up():
@@ -36,13 +37,13 @@ def batch_generate_vllm(args):
     dummy_strategy.args = args
 
     # configure tokenizer
-    tokenizer = AutoTokenizer.from_pretrained(args.pretrain, trust_remote_code=True)
+    tokenizer = AutoTokenizer.from_pretrained(args.pretrain, trust_remote_code=args.trust_remote_code)
 
     # configure model
     llm = LLM(
         model=args.pretrain,
         tensor_parallel_size=args.tp_size,
-        trust_remote_code=True,
+        trust_remote_code=args.trust_remote_code,
         seed=args.seed,
         max_num_seqs=args.max_num_seqs,
         enable_prefix_caching=args.enable_prefix_caching,
@@ -107,7 +108,7 @@ def batch_GenRM_rejection_sampling(args):
     llm = LLM(
         model=args.pretrain,
         tensor_parallel_size=args.tp_size,
-        trust_remote_code=True,
+        trust_remote_code=args.trust_remote_code,
         seed=args.seed,
         max_num_seqs=args.max_num_seqs,
         enable_prefix_caching=args.enable_prefix_caching,
@@ -215,8 +216,14 @@ if __name__ == "__main__":
     parser.add_argument("--iter", type=int, default=None,
                         help="Used to slice the datasets in range iter * rollout_batch_size: (iter + 1) * rollout_batch_size", )
     parser.add_argument("--rollout-batch-size", type=int, default=2048, help="Number of samples to generate")
+    parser.add_argument('--trust-remote-code',
+                       action='store_true',
+                       default=False,
+                       help='enable trust-remote-code for transformer to load model')
 
     args = parser.parse_args()
+
+    args.output_path = standardize_path(args.output_path, check_write=True)
 
     if args.task and args.task == "generate_vllm":
         batch_generate_vllm(args)

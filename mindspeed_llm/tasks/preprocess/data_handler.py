@@ -1034,6 +1034,7 @@ def build_dataset(args):
             # for MOSS, streaming is needed.
             args.streaming = True
         if args.hf_datasets_params:
+            args.hf_datasets_params = standardize_path(args.hf_datasets_params, check_read=True)
             with open(args.hf_datasets_params, 'r') as fin:
                 param_dict = json.load(fin)
             return load_dataset(**param_dict)

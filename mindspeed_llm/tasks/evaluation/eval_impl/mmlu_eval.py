@@ -30,6 +30,7 @@ from mindspeed_llm.tasks.evaluation.eval_api.chat import Chat
 from mindspeed_llm.tasks.utils.error_utils import check_divisible_by_zero
 from mindspeed_llm.tasks.evaluation.eval_utils.mmlu_utils import _format_example, postprocess
 from mindspeed_llm.tasks.evaluation.utils import get_final_dataset
+from mindspeed_llm.tasks.evaluation.file_utils import standardize_path
 from .template import MMLU_TEMPLATE_DIR, get_eval_template
 
 
@@ -42,7 +43,7 @@ class MmluEval(DatasetEval):
                                       "{question}\nAnswer:",
                  output_template1=r".*(?P<answer>[A|B|C|D])\..*",
                  output_template2=r"(?P<answer>[A|B|C|D])"):
-        self.test_dir = test_dir
+        self.test_dir = standardize_path(test_dir, check_read=True)
         self.instruction_template = instruction_template
         self.output_template = [output_template1, output_template2]
         self.batch_size = eval_args.evaluation_batch_size

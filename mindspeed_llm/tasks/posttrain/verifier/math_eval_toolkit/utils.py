@@ -21,16 +21,14 @@ def load_jsonl(file: Union[str, Path]) -> Iterable[Any]:
                 yield json.loads(line)
             except json.JSONDecodeError as e:
                 print("Error in loading JSON:", line, "Error:", e)
-                pass
             except Exception as e:
                 print("Unexpected error in loading:", line, "Error:", e)
-                pass
 
 
 def save_jsonl(samples, save_path):
     # ensure path
     folder = os.path.dirname(save_path)
-    os.makedirs(folder, exist_ok=True)
+    os.makedirs(folder, mode=0o750, exist_ok=True)
 
     with open(save_path, "w", encoding="utf-8") as f:
         for sample in samples:

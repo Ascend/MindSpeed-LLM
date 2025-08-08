@@ -1,7 +1,7 @@
 import random
 import re
 from typing import TypeVar, Iterable, List, Union, Any, Dict
-
+import ast
 import regex
 import sympy
 from latex2sympy2 import latex2sympy
@@ -75,7 +75,7 @@ def convert_word_number(text: str) -> str:
     try:
         text = str(w2n.word_to_num(text))
     except ValueError:
-        pass
+        return None
     return text
 
 
@@ -468,7 +468,7 @@ def extract_theoremqa_answer(pred: str, answer_flag: bool = True):
             pred = clean_units(pred)
             try:
                 tmp = str(latex2sympy(pred))
-                pred = str(eval(tmp))
+                pred = str(ast.literal_eval(tmp))
             except Exception:
                 if re.match(r"-?[\d\.]+\s\D+$", pred):
                     pred = pred.split(" ")[0]

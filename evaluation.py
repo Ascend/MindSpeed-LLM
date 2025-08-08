@@ -380,7 +380,7 @@ def main():
         model_provider=model_provider,
         pretrained_model_name_or_path=args.load
     )
-    tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_name_or_path, trust_remote_code=True, local_files_only=True)
+    tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_name_or_path, trust_remote_code=False, local_files_only=True)
 
     rank = dist.get_rank()
     if 'cmmlu' in args.task:

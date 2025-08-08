@@ -12,7 +12,7 @@ import safetensors
 import torch
 import safetensors.torch
 import bitsandbytes as bnb
-
+from mindspeed_llm.tasks.evaluation.file_utils import standardize_path
 logger.basicConfig(format="")
 logger.getLogger().setLevel(logger.INFO)
 
@@ -75,8 +75,8 @@ class CkptConvert(object):
         self.vpp_stage = vpp_stage
         if vpp_stage is not None:
             self.vpp_size = self.num_layers // self.pp_size // self.vpp_stage
-        self.hf_model_path = hf_model_path
-        self.mg_save_path = mg_save_path
+        self.hf_model_path = standardize_path(hf_model_path, check_read=True)
+        self.mg_save_path = standardize_path(mg_save_path, check_write=True)
         self.num_layer_list = num_layer_list
         self.noop_layers = noop_layers
         self.moe_grouped_gemm = moe_grouped_gemm
@@ -138,7 +138,7 @@ class CkptConvert(object):
         """megatron model path"""
         iter_mg_path = os.path.join(mg_path, "iter_0000001")
         if not os.path.exists(mg_path):
-            os.makedirs(mg_path, exist_ok=True)
+            os.makedirs(mg_path, mode=0o750, exist_ok=True)
 
         with open(os.path.join(mg_path, "latest_checkpointed_iteration.txt"), 'w') as f:
             f.write("1")
@@ -786,7 +786,7 @@ class CkptConvert(object):
                     for tp_rank in range(self.tp_size):
                         save_prefix = self.generate_mg_weights_dir(tp_rank=tp_rank, pp_rank=pp_rank, ep_rank=ep_rank)
                         parallel_save_path = os.path.join(save_model_path, save_prefix)
-                        os.makedirs(parallel_save_path)
+                        os.makedirs(parallel_save_path, mode=0o750, exist_ok=True)
                         save_file_name = os.path.join(parallel_save_path, "model_optim_rng.pt")
                         logger.info(f"Saving to {save_file_name}")
 
@@ -845,7 +845,7 @@ class CkptConvert(object):
                     for tp_rank in range(self.tp_size):
                         save_prefix = self.generate_mg_weights_dir(tp_rank=tp_rank, pp_rank=pp_rank, ep_rank=ep_rank)
                         parallel_save_path = os.path.join(save_model_path, save_prefix)
-                        os.makedirs(parallel_save_path, exist_ok=True)
+                        os.makedirs(parallel_save_path, mode=0o750, exist_ok=True)
                         save_file_name = os.path.join(parallel_save_path, "model_optim_rng.pt")
                         logger.info(f"Saving to {save_file_name}")
                         model_dict = {"checkpoint_version": 3.0, "iteration": 1}

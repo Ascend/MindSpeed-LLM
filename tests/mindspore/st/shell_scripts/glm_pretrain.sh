@@ -34,6 +34,7 @@ DISTRIBUTED_ARGS="
 "
 
 GPT_ARGS="
+    --trust-remote-code \
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \
     --sequence-parallel \

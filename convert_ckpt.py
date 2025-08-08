@@ -76,6 +76,10 @@ def main():
                         help='Enable only save lora-checkpoint to hf')
     parser.add_argument('--load-checkpoint-loosely', action='store_true', default=False,
                        help='Enable loading checkpoint not strictly.')
+    parser.add_argument('--trust-remote-code',
+                       action='store_true',
+                       default=False,
+                       help='enable trust-remote-code for transformer to load model')
     known_args, _ = parser.parse_known_args()
 
 

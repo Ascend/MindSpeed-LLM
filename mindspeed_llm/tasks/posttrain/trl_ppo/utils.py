@@ -1,5 +1,5 @@
 from typing import Union
-
+import os
 import torch
 
 from megatron.core import mpu, dist_checkpointing
@@ -19,6 +19,7 @@ from megatron.training.training import compute_throughputs_and_append_to_progres
 from megatron.training.utils import unwrap_model, print_rank_0, append_to_progress_log
 from megatron.training.yaml_arguments import core_transformer_config_from_yaml
 from mindspeed_llm.tasks.posttrain.orm.orm_model import GPTRewardModel
+from mindspeed_llm.tasks.evaluation.file_utils import standardize_path
 
 
 def model_provider(is_reward_model=False, pre_process=True, post_process=True) -> Union[GPTModel]:
@@ -136,6 +137,8 @@ def save_checkpoint(iteration, model, optimizer, opt_param_scheduler,
     # save_model_type is 'actor' or 'critic'
     if save_model_type:
         save_path = args.save + '/' + save_model_type
+
+    save_path = standardize_path(save_path, check_write=True)
 
     ckpt_format = args.dist_ckpt_format if args.use_dist_ckpt else 'torch'
     print_rank_0('saving checkpoint at iteration {:7d} to {} in {} format'.format(

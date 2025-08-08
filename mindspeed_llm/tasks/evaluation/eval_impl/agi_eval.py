@@ -34,7 +34,7 @@ from mindspeed_llm.tasks.evaluation.eval_utils.agi_utils import (
     get_default_instruction, 
     get_pred_postprocess_func
 )
-
+from mindspeed_llm.tasks.evaluation.file_utils import standardize_path
 logger = logging.getLogger(__name__)
 
 
@@ -42,7 +42,7 @@ class AGIEvalExam(DatasetEval):
     def __init__(self, test_dir, eval_args,
                  instruction_template="{fewshot_template}   {question}\n{question_template}\n{options}"
                                       "\n{answer_template}"):
-        self.test_dir = test_dir
+        self.test_dir = standardize_path(test_dir, check_read=True)
         self.instruction_template = instruction_template
         self.batch_size = eval_args.evaluation_batch_size
         self.rank = dist.get_rank()

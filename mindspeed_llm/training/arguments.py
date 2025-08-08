@@ -820,6 +820,10 @@ def _add_training_args(parser):
                        action='store_true',
                        default=False,
                        help='enable deterministic computing for npu')
+    group.add_argument('--trust-remote-code',
+                       action='store_true',
+                       default=False,
+                       help='enable trust-remote-code for transformer to load model')
     group.add_argument('--jit-compile', action='store_true', default=False,
                        help='Setting jit compile mode to True')
     group.add_argument('--prompt-type', type=str, default=None,

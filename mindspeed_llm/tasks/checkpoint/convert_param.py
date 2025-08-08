@@ -18,8 +18,8 @@ import json
 import os
 import stat
 import time
-
 import torch
+from mindspeed_llm.tasks.evaluation.file_utils import standardize_path
 
 
 def get_json_from_file(json_file):
@@ -123,10 +123,11 @@ class ConvertBase:
         self.mg_latest_ckpt_file_name = "latest_checkpointed_iteration.txt"
 
         # hf model index_file
-        self.model_index_file = os.path.join(
-            self.args_cmd.hf_dir,
-            "pytorch_model.bin.index.json") if self.args_cmd.model_index_file is None \
+        index_file = os.path.join(self.args_cmd.hf_dir, "pytorch_model.bin.index.json")
+        self.model_index_file = index_file if self.args_cmd.model_index_file is None \
             else self.args_cmd.model_index_file
+        self.model_index_file = standardize_path(self.model_index_file, check_read=True)
+
         self.model_index_map = get_json_from_file(self.model_index_file)
         # hf model config_file
         self.config_file = os.path.join(
@@ -217,7 +218,7 @@ class ConvertBase:
                         hf_model[k] = f.get_tensor(k)
             elif str(model_files).endswith(".bin"):
                 print(f"load file : {file_path}")
-                hf_model = torch.load(file_path, map_location='cpu', weights_only=False)
+                hf_model = torch.load(file_path, map_location='cpu', weights_only=True)
             else:
                 raise ValueError(f"unsupported model file format. {os.path.splitext(hf_model)[-1]} ")
             return hf_model
@@ -550,17 +551,18 @@ class ConvertHf2Mg(ConvertBase):
                                                             ep_rank=ep_rank)
                         save_dir = self.get_mg_model_save_dir(tp_rank=tp_rank, pp_rank=pp_rank, ep_rank=ep_rank,
                                                               iteration=iteration)
-                        os.makedirs(save_dir, exist_ok=True)
+                        os.makedirs(save_dir, mode=0o750, exist_ok=True)
                         torch.save(model_dict, os.path.join(save_dir, self.mg_model_file_name))
                 else:  # Dense Model
                     model_dict = self._set_dense_mg_model(hf_model=hf_model, tp_rank=tp_rank, pp_rank=pp_rank)
                     save_dir = self.get_mg_model_save_dir(tp_rank=tp_rank, pp_rank=pp_rank, ep_rank=None,
                                                           iteration=iteration)
-                    os.makedirs(save_dir, exist_ok=True)
+                    os.makedirs(save_dir, mode=0o750, exist_ok=True)
                     torch.save(model_dict, os.path.join(save_dir, self.mg_model_file_name))
 
         # write latest_checkpointed_iteration.txt
         latest_ckpt_file_path = os.path.join(self.args_cmd.mg_dir, self.mg_latest_ckpt_file_name)
+        latest_ckpt_file_path = standardize_path(latest_ckpt_file_path, check_write=True)
         modes = stat.S_IWUSR | stat.S_IRUSR | stat.S_IWGRP | stat.S_IRGRP
         with os.fdopen(os.open(latest_ckpt_file_path, flags=os.O_RDWR | os.O_CREAT, mode=modes), 'w') as fout:
             fout.write(iteration)
@@ -577,7 +579,7 @@ class ConvertMg2Hf(ConvertBase):
         for tp_rank in range(self.tp_size):
             mg_save_dir = self.get_mg_model_save_dir(tp_rank=tp_rank, pp_rank=pp_rank, ep_rank=None,
                                                      iteration=self.args_cmd.iteration)
-            mg_tp_model = torch.load(os.path.join(mg_save_dir, self.mg_model_file_name), map_location='cpu', weights_only=False)
+            mg_tp_model = torch.load(os.path.join(mg_save_dir, self.mg_model_file_name), map_location='cpu', weights_only=True)
             mg_tp_models.append(mg_tp_model)
 
         hf_model = {}
@@ -751,13 +753,13 @@ class ConvertMg2Hf(ConvertBase):
 
     def _update_hf_model_file(self, hf_model, model_file):
         file_path = os.path.join(self.args_cmd.hf_dir, model_file)
-        exist_model = torch.load(file_path, map_location='cpu', weights_only=False) if os.path.exists(file_path) else {}
+        exist_model = torch.load(file_path, map_location='cpu', weights_only=True) if os.path.exists(file_path) else {}
 
         for param_key in hf_model.keys():
             if self.get_hf_model_file_based_param_key(param_key) == model_file:
                 exist_model[param_key] = hf_model[param_key]
 
-        os.makedirs(os.path.dirname(file_path), exist_ok=True)
+        os.makedirs(os.path.dirname(file_path), mode=0o750, exist_ok=True)
         torch.save(exist_model, file_path)
 
     def run(self):

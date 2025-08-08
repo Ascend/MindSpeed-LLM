@@ -9,7 +9,7 @@ from collections import defaultdict, OrderedDict
 
 from tqdm import tqdm
 import torch
-
+from mindspeed_llm.tasks.evaluation.file_utils import standardize_path
 logger.basicConfig(format="")
 logger.getLogger().setLevel(logger.INFO)
 
@@ -39,7 +39,7 @@ class OptimConverter(abc.ABC):
         
     def get_optim_param_from_src_model_ckpt(self):
         ckpt_path = self.src_optim.model_paths[0][0][0]
-        model_ckpt = torch.load(ckpt_path, map_location='cpu', weights_only=False)
+        model_ckpt = torch.load(ckpt_path, map_location='cpu', weights_only=True)
         self.optim_param = model_ckpt['optimizer']
         self.opt_param_scheduler = model_ckpt['opt_param_scheduler']
 
@@ -57,7 +57,7 @@ class OptimConverter(abc.ABC):
             bool: True if successful, False otherwise.
         """
         try:
-            model_ckpt = torch.load(ckpt_path, map_location='cpu', weights_only=False)
+            model_ckpt = torch.load(ckpt_path, map_location='cpu', weights_only=True)
 
             # Apply modifications
             for key, value in modifications.items():

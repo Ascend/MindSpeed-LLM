@@ -1,6 +1,7 @@
 # Copyright (c) 2024, HUAWEI CORPORATION.  All rights reserved.
 import abc
 import os
+import ast
 import sys
 import re
 import json
@@ -23,7 +24,7 @@ from megatron.core import tensor_parallel
 from mindspeed_llm.training.utils import parse_args
 from mindspeed_llm.training import model_provider_func_wrapper
 from mindspeed_llm.training.checkpointing import load_checkpoint_wrapper
-
+from mindspeed_llm.tasks.evaluation.file_utils import standardize_path
 logger.basicConfig(format="")
 logger.getLogger().setLevel(logger.INFO)
 
@@ -465,9 +466,9 @@ class HuggingfaceModel(ModelBase):
     def initialize_args(self):
         # Read huggingface args.
         if self.args_cmd.save_model_type == 'hf':
-            cfg_dir = self.args_cmd.save_dir
+            cfg_dir = standardize_path(self.args_cmd.save_dir, check_write=True)
         else:
-            cfg_dir = self.args_cmd.load_dir
+            cfg_dir = standardize_path(self.args_cmd.load_dir, check_read=True)
         llama_args_path = os.path.join(cfg_dir, "config.json")
         with open(llama_args_path) as f:
             self.args = json.load(f)
@@ -501,7 +502,7 @@ class HuggingfaceModel(ModelBase):
         self.args.save_lora_to_hf = self.args_cmd.save_lora_to_hf
         self.args.noop_layers = self.args_cmd.noop_layers
 
-    def get_modules_from_config(self, device_map="cpu", trust_remote_code=True):
+    def get_modules_from_config(self, device_map="cpu", trust_remote_code=False):
         # Load Huggingface model.
         if self.args_cmd.save_model_type == "hf":
             load_dir = self.args_cmd.save_dir
@@ -513,9 +514,9 @@ class HuggingfaceModel(ModelBase):
         hf_model.to_empty(device=device_map)
         self.module = [hf_model]
         if hasattr(self.args, "torch_dtype") and self.args.torch_dtype in ["float16", "bfloat16"]:
-            self.module[0] = self.module[0].to(eval(f'torch.{self.args.torch_dtype}'))
+            self.module[0] = self.module[0].to(ast.literal_eval(f'torch.{self.args.torch_dtype}'))
 
-    def get_modules_from_pretrained(self, device_map="cpu", trust_remote_code=True):
+    def get_modules_from_pretrained(self, device_map="cpu", trust_remote_code=False):
         # Load Huggingface model.
         if self.args_cmd.save_model_type == "hf":
             load_dir = self.args_cmd.save_dir
@@ -542,7 +543,8 @@ class HuggingfaceModel(ModelBase):
             )
             self.module = [get_peft_model(self.module[0], lora_config)]        
         if hasattr(self.args, "torch_dtype") and self.args.torch_dtype in ["float16", "bfloat16"]:
-            self.module[0] = self.module[0].to(eval(f'torch.{self.args.torch_dtype}'))
+            dtype = getattr(torch, self.args.torch_dtype)
+            self.module[0] = self.module[0].to(dtype)
 
     def get_lora_key(self, layer_name, prefix):
         return f"{layer_name}.{prefix}"

@@ -31,9 +31,8 @@ from mindspeed_llm.tasks.evaluation.eval_api.chat import Chat
 from mindspeed_llm.tasks.utils.error_utils import check_divisible_by_zero
 from mindspeed_llm.tasks.evaluation.eval_utils.cmmlu_utils import cmmlu_subject_mapping, first_option_postprocess, cmmlu_format_example
 from mindspeed_llm.tasks.evaluation.utils import get_final_dataset
+from mindspeed_llm.tasks.evaluation.file_utils import standardize_path
 from .template import CMMLU_TEMPLATE_DIR, get_eval_template
-
-
 logger = logging.getLogger(__name__)
 
 
@@ -43,7 +42,7 @@ class CmmluEval(DatasetEval):
                                       "{question}\n答案： ",
                  output_template1=r".*(?P<答案>[A|B|C|D])\..*",
                  output_template2=r"(?P<答案>[A|B|C|D])"):
-        self.test_dir = test_dir
+        self.test_dir = standardize_path(test_dir, check_read=True)
         self.instruction_template = instruction_template
         self.output_template = [output_template1, output_template2]
         self.batch_size = eval_args.evaluation_batch_size

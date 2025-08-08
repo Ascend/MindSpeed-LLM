@@ -195,6 +195,10 @@ def add_tokenizer_args(parser):
         default=[],
         help="The labels represent the correctness of each reasoning step in the entire reasoning process.",
     )
+    parser.add_argument('--trust-remote-code',
+                       action='store_true',
+                       default=False,
+                       help='enable trust-remote-code for transformer to load model')
 
 
 def add_output_args(parser):

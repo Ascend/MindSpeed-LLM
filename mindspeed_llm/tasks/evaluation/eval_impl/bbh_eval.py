@@ -32,7 +32,7 @@ from mindspeed_llm.tasks.evaluation.eval_api.dataset_eval import DatasetEval
 from mindspeed_llm.tasks.evaluation.eval_impl.template import BBH_TEMPLATE_DIR, BBH_COT_TEMPLATE_DIR, get_eval_template
 from mindspeed_llm.tasks.evaluation.eval_utils.bbh_utils import bbh_mcq_postprocess, bbh_freeform_postprocess, bbh_true_or_false_questions
 from mindspeed_llm.tasks.evaluation.utils import get_final_list_dataset
-
+from mindspeed_llm.tasks.evaluation.file_utils import standardize_path
 
 logger = logging.getLogger(__name__)
 
@@ -75,7 +75,7 @@ bbh_free_form_sets = [
 class BBHEval(DatasetEval):
     def __init__(self, test_dir, eval_args,
                  instruction_template="{fewshot_template}Q: {question}\nA:"):
-        self.test_dir = test_dir
+        self.test_dir = standardize_path(test_dir, check_read=True)
         self.instruction_template = instruction_template
         self.batch_size = eval_args.evaluation_batch_size
         self.rank = dist.get_rank()

@@ -1,0 +1,9 @@
+[
+    r"os\.(system|popen|exec|setuid|setgid|chroot)\s*\(",
+    r"subprocess\.(run|Popen|call)\s*\(",
+    r"pty\.spawn\s*\(",
+    r"(requests|urllib|socket|httpx)\.(get|post|urlopen|connect)\s*\(",
+    r"open\s*\(",
+    r"os\.(remove|rename|chmod|chown|mkdir)\s*\(",
+    r"(eval|exec|__import__|globals|locals)\s*\("
+]

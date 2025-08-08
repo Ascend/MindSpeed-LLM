@@ -539,9 +539,9 @@ def save_huggingface(args, model):
     from .models import get_huggingface_model
     model_hf = get_huggingface_model(args)
     if args.load_hf_from_config:
-        model_hf.get_modules_from_config()
+        model_hf.get_modules_from_config(trust_remote_code=args.trust_remote_code)
     else:
-        model_hf.get_modules_from_pretrained()
+        model_hf.get_modules_from_pretrained(trust_remote_code=args.trust_remote_code)
     args_cmd = model_hf.get_args_cmd()
 
     model_hf.update_module(model)

@@ -8,6 +8,7 @@ import logging as logger
 import argparse
 import torch
 import safetensors.torch
+from mindspeed_llm.tasks.evaluation.file_utils import standardize_path
 logger.basicConfig(format="")
 logger.getLogger().setLevel(logger.INFO)
 
@@ -67,7 +68,7 @@ class CheckpointConverter:
 
             try:
                 if filename.endswith(".bin"):
-                    cur_weights = torch.load(file_path, map_location=torch.device('cpu'))
+                    cur_weights = torch.load(file_path, map_location=torch.device('cpu'), weights_only=True)
                     model_dict.update(cur_weights)
                     print(f"Successfully loaded: {filename}")
                     loaded = True
@@ -349,7 +350,7 @@ class CheckpointConverter:
 
         out_iteration, input_model_dir, src_model_file = self.get_latest_checkpoint_model_file(self.args.load_dir)
 
-        src_model = torch.load(src_model_file, map_location='cpu', weights_only=False)
+        src_model = torch.load(src_model_file, map_location='cpu', weights_only=True)
 
         logger.info(f"Sample model {src_model_file} is loaded.\n")
         return out_iteration, input_model_dir, src_model
@@ -381,7 +382,7 @@ class CheckpointConverter:
                     input_pp_rank
                 )
 
-                tp_models.append(torch.load(model_file, map_location='cpu', weights_only=False))
+                tp_models.append(torch.load(model_file, map_location='cpu', weights_only=True))
                 logger.info(f"Model {model_file} is loaded.")
 
             if input_tp_rank > 1:
@@ -475,7 +476,7 @@ class CheckpointConverter:
             dir_name += f"_{pp_idx:03d}"
 
         save_path = os.path.join(args.save_dir, f"iter_{out_iteration:07d}", dir_name)
-        os.makedirs(save_path, exist_ok=True)
+        os.makedirs(save_path, mode=0o750, exist_ok=True)
 
         return os.path.join(save_path, filename)
 
@@ -588,6 +589,8 @@ def run():
                         help='Checkpoint format to save: "hf" for HuggingFace or "mg" for Megatron')
 
     args, _ = parser.parse_known_args()
+
+    args.load_dir = standardize_path(args.load_dir, check_read=True)
 
     converter = CheckpointConverter(args)
     converter.main()

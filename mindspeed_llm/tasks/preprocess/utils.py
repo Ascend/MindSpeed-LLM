@@ -23,7 +23,7 @@ from datasets import load_dataset, concatenate_datasets, interleave_datasets
 
 from mindspeed_llm.tasks.preprocess.templates import Role
 from mindspeed_llm.tasks.preprocess.parser import InstructionDatasetAttr
-
+from mindspeed_llm.tasks.evaluation.file_utils import standardize_path
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -103,6 +103,7 @@ def get_dataset_list(data_args) -> List["InstructionDatasetAttr"]:
     else:
         dataset_names = []
 
+    data_args.dataset_dir = standardize_path(data_args.dataset_dir, check_read=True)
     try:
         with open(os.path.join(data_args.dataset_dir, DATA_CONFIG), "r") as f:
             dataset_info = json.load(f)

@@ -30,7 +30,7 @@ from mindspeed_llm.tasks.utils.error_utils import check_divisible_by_zero
 from mindspeed_llm.tasks.evaluation.eval_utils.gsm8k_utils import four_shots_prompt, gsm8k_postprocess
 from mindspeed_llm.tasks.evaluation.utils import get_final_list_dataset
 from mindspeed_llm.tasks.evaluation.eval_impl.template import GSM8K_TEMPLATE_DIR
-
+from mindspeed_llm.tasks.evaluation.file_utils import standardize_path
 logger = logging.getLogger(__name__)
 
 
@@ -38,7 +38,7 @@ class Gsm8kEval(DatasetEval):
     def __init__(self, test_dir, eval_args,
                  instruction_template="{fewshot_template}\n\n{question}",
                  output_template=r'The answer is (.*?) '):
-        self.test_dir = test_dir
+        self.test_dir = standardize_path(test_dir, check_read=True)
         self.instruction_template = instruction_template
         self.output_template = output_template
         self.batch_size = eval_args.evaluation_batch_size      

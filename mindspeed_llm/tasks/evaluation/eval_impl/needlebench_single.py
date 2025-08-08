@@ -157,7 +157,7 @@ def load_datasets(config: NeedleBenchConfig):
         dataset = []
         needle_file_path = os.path.join(config.dataset_dir, "needles.jsonl")
         cache_dir = os.path.join(tempfile.gettempdir(), "data-gym-cache")
-        os.makedirs(cache_dir, exist_ok=True)
+        os.makedirs(cache_dir, mode=0o750, exist_ok=True)
         cache_file = "9b5ad71b2ce5302211f9c61530b329a4922fc6a4"
         dest_filepath = os.path.join(cache_dir, cache_file)
         # 参考docs中的needlebench-evaluation.md下载cl100k_base.tiktoken，将其放置到该数据集文件夹

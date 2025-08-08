@@ -13,7 +13,7 @@ from megatron.training import get_timers
 try:
     from mindspeed.core.pipeline_parallel.dualpipev.dualpipev_schedules import set_post_process_flag
 except ImportError:
-    pass
+    print("[warning] failed import dualpipe modules, not support dualpipe")
 from mindspeed_llm.training.utils import get_tune_attention_mask, get_finetune_data_on_this_tp_rank, generate_actual_seq_len
 from mindspeed_llm.tasks.posttrain.base import BaseTrainer
 

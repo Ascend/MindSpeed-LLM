@@ -16,6 +16,7 @@ from megatron.core.datasets.gpt_dataset import (_build_document_index,
                                                 _build_shuffle_index
                                                 )
 from mindspeed_llm.tasks.utils.error_utils import GPTDatasetSampleIndexError
+from mindspeed_llm.tasks.evaluation.file_utils import standardize_path
 from .blended_megatron_dataset_builder import need_to_build_dataset
 
 logger = logging.getLogger(__name__)
@@ -65,11 +66,13 @@ def _build_document_sample_shuffle_indices(
     Returns:
         Tuple[numpy.ndarray, numpy.ndarray]: The document index, the sample index, and the shuffle index
     """
+
     path_to_cache = self.config.path_to_cache
     if path_to_cache is None and not self.config.mock:
         path_to_cache = os.path.join(
             self.dataset.path_prefix, "cache", f"{type(self).__name__}_indices"
         )
+    path_to_cache = standardize_path(path_to_cache, check_write=True)
 
     # start of megatron_adaptation,
     # here we change from (class)GPTDataset._build_document_sample_shuffle_indices
@@ -196,8 +199,7 @@ def _build_document_sample_shuffle_indices(
         )
 
         if any(sample_index[:, 0] < 0):
-            _url = "https://gitee.com/ascend/MindSpeed-LLM/wikis/megatron%20data%20helpers%E5%8F%AF%E8%83%BD%E5%BC%95%E5%85%A5%E7%9A%84%E9%97%AE%E9%A2%98"
-            raise GPTDatasetSampleIndexError(f"Bad sample index. Visit {_url} for more information")
+            raise GPTDatasetSampleIndexError(f"Bad sample index.")
 
         # Build the shuffle index
         if separate_final_epoch:
@@ -210,7 +212,7 @@ def _build_document_sample_shuffle_indices(
             )
 
         if path_to_cache:
-            os.makedirs(path_to_cache, exist_ok=True)
+            os.makedirs(path_to_cache, mode=0o750, exist_ok=True)
             # Write the description
             with open(path_to_description, "wt") as writer:
                 writer.write(self.unique_description)
@@ -256,8 +258,7 @@ def _build_document_sample_shuffle_indices(
     sample_index = numpy.load(path_to_sample_index, allow_pickle=True, mmap_mode='r')
 
     if any(sample_index[:, 0] < 0):
-        _url = "https://gitee.com/ascend/MindSpeed-LLM/wikis/megatron%20data%20helpers%E5%8F%AF%E8%83%BD%E5%BC%95%E5%85%A5%E7%9A%84%E9%97%AE%E9%A2%98"
-        raise GPTDatasetSampleIndexError(f"Bad sample index. Visit {_url} for more information")
+        raise GPTDatasetSampleIndexError(f"Bad sample index.")
 
     t_end = time.time()
     log_single_rank(logger, logging.DEBUG, f"\t> time elapsed: {t_end - t_beg:4f} seconds")

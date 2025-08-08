@@ -1,5 +1,6 @@
 # Copyright Huawei Technologies Co., Ltd. 2023-2024. All rights reserved.
 from functools import reduce
+import re
 import os
 import stat
 
@@ -52,17 +53,34 @@ def safe_open(file_path: str, mode='r', encoding=None, permission_mode=0o600, is
                      mode, encoding=encoding)
 
 
-def standardize_path(path: str, max_path_length=MAX_PATH_LENGTH, check_link=True):
+def standardize_path(path: str, max_path_length=MAX_PATH_LENGTH, check_link=True, check_read=True, check_write=True):
     """
     check path
     param: path
     return: data real path after check
     """
-    check_path_is_none(path)
+    if path:
+        path = os.path.realpath(path)
+    else:
+        return None
+
+    if os.path.exists(path):
+        if check_read and not os.access(path, os.R_OK):
+            raise RuntimeError(f"File {path} not readable")
+
+        if check_write and not os.access(path, os.W_OK):
+            raise RuntimeError(f"File {path} not writable")
+    else:
+        print(f"Path: {path} not exists")
+
     check_path_length_lt(path, max_path_length)
     if check_link:
         check_path_is_link(path)
-    path = os.path.realpath(path)
+
+    pattern = r'(\.|/|_|-|\s|[~0-9a-zA-Z]|[\u4e00-\u9fa5])+'
+    if not re.fullmatch(pattern, path):
+        raise RuntimeError(f"Invalid input path: {path}")
+
     return path
 
 

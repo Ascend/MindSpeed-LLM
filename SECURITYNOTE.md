@@ -46,7 +46,9 @@
 
 1. 建议用户结合运行资源状况编写对应训练脚本。若训练脚本与资源状况不匹配，如数据集加载内存大小超出内存容量限制、训练脚本在本地生成数据超过磁盘空间大小等情况，可能引发错误并导致进程意外退出。
 2. MindSpeed-LLM内部用到了pytorch,可能会因为版本不匹配导致运行错误，具体可参考pytorch[安全声明](https://gitee.com/ascend/pytorch#%E5%AE%89%E5%85%A8%E5%A3%B0%E6%98%8E)。
-
+3. 出于安全考虑torch.load目前加载都采用了weights_only=True的配置，请用户根据需要进行配置调整。
+4. HumanEval使用了subprocess.run,存在安全风险，为了不影响功能正常使用，做了一些安全校验规避，请用户根据需要自行构建黑名单，完善安全问题。
+5. 因为安全问题，需要设置trust_remote_code=False，无法远程加载Transformer官方仓库未支持的开源模型，如需要，请手动配置--trust-remote-code参量。
 
 ## 公网地址声明
 

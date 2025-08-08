@@ -38,7 +38,7 @@ def parse_digits(num):
             try:
                 return float(num) / 100
             except:
-                pass
+                return None
     return None
 
 

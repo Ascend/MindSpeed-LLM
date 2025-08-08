@@ -97,7 +97,7 @@ def compare_state_dicts(state_dict1, state_dict2):
 
 
 def process_file(file_path):
-    data = torch.load(file_path, map_location='cpu', weights_only=False)
+    data = torch.load(file_path, map_location='cpu', weights_only=True)
     layer_ckpt = {}
     # 兼容带vpp的权重
     for key in data.keys():
@@ -164,8 +164,8 @@ def weight_compare(dir_1, dir_2, suffix="pt", use_md5=False):
         if use_md5:
             are_equal = (get_md5sum(path_1) == get_md5sum(path_2))
         else:
-            state_dict1 = torch.load(path_1, weights_only=False)
-            state_dict2 = torch.load(path_2, weights_only=False)
+            state_dict1 = torch.load(path_1, weights_only=True)
+            state_dict2 = torch.load(path_2, weights_only=True)
             are_equal = compare_state_dicts(state_dict1, state_dict2)
         if not are_equal:
             return False
@@ -192,8 +192,8 @@ def weight_compare_optim(dir_1, dir_2, suffix="pt", use_md5=False):
         if use_md5:
             are_equal = (get_md5sum(path_1) == get_md5sum(path_2))
         else:
-            state_dict1 = torch.load(path_1, weights_only=False)
-            state_dict2 = torch.load(path_2, weights_only=False)
+            state_dict1 = torch.load(path_1, weights_only=True)
+            state_dict2 = torch.load(path_2, weights_only=True)
             are_equal = compare_state_dicts(state_dict1, state_dict2)
         
         if not are_equal:

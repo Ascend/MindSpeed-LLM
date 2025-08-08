@@ -2,6 +2,7 @@
     "test_deepseek2_hf2mcore_tp1pp4ep8": [
         {
             "param": {
+                "trust-remote-code":null,
                 "model-type":"GPT",
                 "load-model-type":"hf",
                 "save-model-type":"mg",
@@ -23,6 +24,7 @@
     "test_deepseek2_mcore2hf_tp1pp4ep8": [
         {
             "param": {
+                "trust-remote-code":null,
                 "model-type":"GPT",
                 "load-model-type":"mg",
                 "save-model-type": "hf",

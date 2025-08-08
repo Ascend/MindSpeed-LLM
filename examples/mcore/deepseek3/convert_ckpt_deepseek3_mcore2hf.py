@@ -14,7 +14,7 @@ import tqdm
 import torch
 import torch_npu
 import safetensors.torch
-
+from mindspeed_llm.tasks.evaluation.file_utils import standardize_path
 logger.basicConfig(format="")
 logger.getLogger().setLevel(logger.INFO)
 
@@ -33,7 +33,7 @@ GLOBAL_LM_HEAD_WEIGHTS = None
 
 def load_data(file_path):
     logger.info(f"Loading the checkpoint from {file_path}.")
-    return torch.load(file_path, map_location='cpu', weights_only=False)
+    return torch.load(file_path, map_location='cpu', weights_only=True)
 
 
 def tensor_memory_size(tensor):
@@ -73,15 +73,15 @@ class MgCkptConvert(object):
         self.ep_size = ep_size
         self.vpp_stage = vpp_stage
 
-        self.mg_model_path = mg_model_path
-        self.hf_save_path = hf_save_path
+        self.mg_model_path = standardize_path(mg_model_path, check_read=True)
+        self.hf_save_path = standardize_path(hf_save_path, check_write=True)
         self.lora_model_path = lora_model_path
         self.iter_path = self.get_iter_path(self.mg_model_path)
         if self.lora_model_path is not None:
             self.lora_iter_path = self.get_iter_path(self.lora_model_path)
 
         if not os.path.exists(self.hf_save_path):
-            os.makedirs(self.hf_save_path)
+            os.makedirs(self.hf_save_path, mode=0o750, exist_ok=True)
 
         self.num_layers = num_layers
         self.noop_layers = noop_layers
@@ -194,7 +194,7 @@ class MgCkptConvert(object):
 
         directory = os.path.join(ckpt_path, f'iter_{iteration:07d}')
 
-        os.makedirs(directory, exist_ok=True)
+        os.makedirs(directory, mode=0o750, exist_ok=True)
 
         return directory
 

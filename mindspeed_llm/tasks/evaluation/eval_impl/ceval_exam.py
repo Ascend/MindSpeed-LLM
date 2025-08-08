@@ -31,7 +31,7 @@ from mindspeed_llm.tasks.utils.error_utils import check_divisible_by_zero
 from mindspeed_llm.tasks.evaluation.eval_utils.ceval_utils import format_ceval_templates, first_capital_postprocess
 from mindspeed_llm.tasks.evaluation.utils import get_final_dataset
 from mindspeed_llm.tasks.evaluation.eval_impl.template import CEVAL_TEMPLATE_DIR, get_eval_template
-
+from mindspeed_llm.tasks.evaluation.file_utils import standardize_path
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 class CEvalExam(DatasetEval):
     def __init__(self, test_dir, eval_args,
                  instruction_template="{fewshot_template}\n\n问：{question}\n答："):
-        self.test_dir = test_dir
+        self.test_dir = standardize_path(test_dir, check_read=True)
         self.instruction_template = instruction_template
         self.batch_size = eval_args.evaluation_batch_size
         self.rank = dist.get_rank()

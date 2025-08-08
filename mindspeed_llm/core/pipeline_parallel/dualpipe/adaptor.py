@@ -15,7 +15,7 @@ try:
     from mindspeed_llm.core.pipeline_parallel.dualpipe.gpt_model import gpt_model_forward_backward_overlaping
     from mindspeed_llm.core.pipeline_parallel.dualpipe.MTP_overlap import forward_overlap
 except ImportError:
-    pass
+    print("[warning] failed import dualpipe modules, not support dualpipe")
 
 from mindspeed_llm.core.transformer.multi_token_prediction import MultiTokenPredictionLayer, MTPLossAutoScaler
 

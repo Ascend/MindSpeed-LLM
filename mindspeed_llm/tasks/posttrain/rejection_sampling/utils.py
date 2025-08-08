@@ -31,7 +31,7 @@ def blending_datasets(
         ext = os.path.splitext(dataset)[-1]
         # local python script
         if ext == ".py" or (os.path.isdir(dataset) and os.path.exists(os.path.join(dataset, f"{dataset_basename}.py"))):
-            data = load_dataset(dataset, trust_remote_code=True)
+            data = load_dataset(dataset, trust_remote_code=False)
             strategy.print(f"loaded {dataset} with python script")
         # local text file
         elif ext in [".json", ".jsonl", ".csv"]:

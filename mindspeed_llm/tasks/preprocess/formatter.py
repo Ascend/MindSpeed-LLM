@@ -190,7 +190,8 @@ class ToolFormatter(Formatter):
                 return [default_tool_formatter(tools)]
             else:
                 raise NotImplementedError
-        except Exception:
+        except Exception as e:
+            print(f"[warning] Unexpected error processing content: {content}. Error: {e}")
             return [""]
 
     def extract(self, content: str) -> Union[str, Tuple[str, str]]:

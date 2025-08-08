@@ -19,6 +19,7 @@ import logging
 import re
 import sys
 import subprocess
+import ast
 from typing import Iterable, Dict
 import pandas as pd
 import tqdm
@@ -32,9 +33,45 @@ from mindspeed_llm.tasks.evaluation.eval_api.dataset_eval import DatasetEval
 from mindspeed_llm.tasks.evaluation.eval_api.chat import Chat
 from mindspeed_llm.tasks.utils.error_utils import check_divisible_by_zero
 from mindspeed_llm.training.utils import WRITE_FILE_DEFAULT_FLAGS, WRITE_FILE_DEFAULT_MODES
+from mindspeed_llm.tasks.evaluation.file_utils import standardize_path
 from mindspeed_llm.tasks.evaluation.eval_utils.human_utils import humaneval_postprocess, get_score
 
 logger = logging.getLogger(__name__)
+
+
+def is_code_dangerous(code: str, dangerous_patterns) -> bool:
+    """AST 检测提权、外联、文件篡改"""
+
+    # 正则检测（快速过滤）
+    for pattern in dangerous_patterns:
+        if re.search(pattern, code):
+            return True
+
+    # AST 语义分析（防绕过）
+    try:
+        tree = ast.parse(code)
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Call):
+                if isinstance(node.func, ast.Name):
+                    if node.func.id in ("exec", "eval", "open", "os", "subprocess"):
+                        return True
+            elif isinstance(node, (ast.Import, ast.ImportFrom)):
+                for alias in node.names:
+                    if alias.name in ("os", "sys", "subprocess"):
+                        return True
+
+            # 检测 os.system("sudo ...")
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute) and node.func.attr == "system":
+                return True
+            if any(isinstance(arg, ast.Str) and ("sudo" in arg.s or "curl" in arg.s) for arg in node.args):
+                return True
+            # 检测动态导入（如 __import__("os").system(...)）
+            if isinstance(node, ast.Call) and isinstance(node.func, ast.Name) and node.func.id == "__import__":
+                return True
+
+        return False
+    except SyntaxError:
+        return True  # 语法错误视为危险
 
 
 def extract_answer_code(answer, task: dict):
@@ -43,6 +80,10 @@ def extract_answer_code(answer, task: dict):
     :param task:
     :return:
     """
+    """安全生成测试文件"""
+    if is_code_dangerous(answer, self.dangerous_patterns) or is_code_dangerous(task["test"], self.dangerous_patterns):
+        raise ValueError("Unsafe code detected")
+
     task_id = task['task_id']
     target_func = task['entry_point']
     test_case = task['test']
@@ -51,7 +92,7 @@ def extract_answer_code(answer, task: dict):
     code_lines = code.split("\n")
     target_func_flag = False
     if not os.path.exists(CODE_TEST_LOG_DIR):
-        os.makedirs(CODE_TEST_LOG_DIR)
+        os.makedirs(CODE_TEST_LOG_DIR, mode=0o750, exist_ok=True)
     test_code_path = "{}/{}".format(CODE_TEST_LOG_DIR, save_file)
     with os.fdopen(os.open(test_code_path, WRITE_FILE_DEFAULT_FLAGS, WRITE_FILE_DEFAULT_MODES), 'w') as f:
         f.write("from typing import List\n")
@@ -85,7 +126,7 @@ def extract_answer_code(answer, task: dict):
 
 class HumanEval(DatasetEval):
     def __init__(self, test_dir, eval_args):
-        self.test_dir = test_dir
+        self.test_dir = standardize_path(test_dir, check_read=True)
         instruction_template = eval_args.instruction_template
         if instruction_template:
             self.instruction_template = instruction_template
@@ -96,6 +137,11 @@ class HumanEval(DatasetEval):
         self.file_pbar = None
         self.task_pbar = None
         self.prompt = 'Complete the following python code:\n{prompt}'
+        self.dangerous_patterns = []
+        with open("configs/dangerous_shell.json", "r", encoding="utf-8") as f:
+            self.dangerous_patterns = json.load(f)
+            print(self.dangerous_patterns)
+
 
     def read_problems(self) -> Dict[str, Dict]:
         return {task["task_id"]: task for task in self.stream_jsonl(self.test_dir)}

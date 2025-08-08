@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 """Expert parallel groups."""
-
+import os
 import sys
 from functools import wraps
 from typing import Optional
@@ -24,7 +24,7 @@ import torch_npu
 import megatron
 from megatron.core.parallel_state import get_context_parallel_world_size, get_nccl_options
 from mindspeed.core.parallel_state import hccl_buffer_auto_adaptive, parse_hccl_buffer_string
-
+from mindspeed_llm.tasks.evaluation.file_utils import standardize_path
 _EXPERT_PARALLEL_GROUP = None
 _MPU_EXPERT_MODEL_PARALLEL_RANK = None
 _MPU_EXPERT_MODEL_PARALLEL_WORLD_SIZE = None
@@ -47,6 +47,8 @@ def initialize_model_parallel_decorator(initialize_model_parallel):
     ):
         from megatron.training.utils import print_rank_0
         timeout = timedelta(minutes=distributed_timeout_minutes)
+
+        nccl_communicator_config_path = standardize_path(nccl_communicator_config_path, check_read=True)
 
         if pipeline_model_parallel_size == 2 and virtual_pipeline_model_parallel_size is not None:
             megatron.core.parallel_state._VIRTUAL_PIPELINE_MODEL_PARALLEL_RANK = 0
@@ -260,6 +262,8 @@ def initialize_model_parallel_wrapper(initialize_model_parallel):
 
         if args.hccl_group_buffer is not None:
             parse_hccl_buffer_string(args.hccl_group_buffer)
+
+        nccl_communicator_config_path = standardize_path(nccl_communicator_config_path, check_read=True)
 
         data_parallel_size = 1  # dp 1
         rank = torch.distributed.get_rank()

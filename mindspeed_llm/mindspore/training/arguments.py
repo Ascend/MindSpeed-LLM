@@ -44,4 +44,8 @@ def _add_moba_args(parser):
     group.add_argument('--moba-calc-method', type=int, default=1,
                        help='moba calculation method. 1: naive attention with naive attention operations; 2: use flash'
                             'attention. default: 1')
+    group.add_argument('--trust-remote-code',
+                       action='store_true',
+                       default=False,
+                       help='enable trust-remote-code for transformer to load model')
     return parser
