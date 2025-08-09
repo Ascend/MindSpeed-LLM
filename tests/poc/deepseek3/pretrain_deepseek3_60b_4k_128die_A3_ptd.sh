@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 需要切换MindSpeed版本
-# git checkout 9648d729e4866f8037d0bd76630029410a60e6a6  # checkout commit from MindSpeed core_r0.8.0 in 2025.06.14
+# git checkout 60f1af651cdbf6425cb6792c22c719d579fca090 # checkout commit from MindSpeed core_r0.8.0 in 2025.07.21
 
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
