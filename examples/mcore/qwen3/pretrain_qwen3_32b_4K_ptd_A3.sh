@@ -1,10 +1,10 @@
 export HCCL_CONNECT_TIMEOUT=1800
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 
-NPUS_PER_NODE=8
+NPUS_PER_NODE=16
 MASTER_ADDR=localhost
 MASTER_PORT=6000
-NNODES=2
+NNODES=1
 NODE_RANK=0
 WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
@@ -16,7 +16,7 @@ CKPT_LOAD_DIR="your model ckpt path"
 
 TP=8
 PP=2
-VPP=8
+VPP=4
 
 MBS=2
 GBS=256
@@ -96,7 +96,9 @@ GPT_ARGS="
     --no-gradient-accumulation-fusion \
     --group-query-attention \
     --num-query-groups 8 \
-    --reset-position-ids
+    --reset-position-ids \
+    --use-ascend-coc \
+    --coc-fused-kernel
 "
 
 DATA_ARGS="
@@ -124,4 +126,4 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     --distributed-backend nccl \
     --load ${CKPT_LOAD_DIR} \
     --save ${CKPT_SAVE_DIR} \
-    | tee logs/train_mcore_qwen3_32b.log
+    | tee logs/train_mcore_qwen3_32b_4k_A3.log
