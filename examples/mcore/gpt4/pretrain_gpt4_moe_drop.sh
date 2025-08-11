@@ -43,7 +43,7 @@ MOE_ARGS="
     --moe-permutation-async-comm \
     --disable-bias-linear \
     --moe-expert-capacity-factor 1.1 \
-    --moe-token-dispatcher-type alltoall_seq \
+    --moe-token-dispatcher-type alltoall \
     --moe-pad-expert-input-to-capacity \
     --moe-layer-freq -1 \
     --first-k-dense-replace -1 \
