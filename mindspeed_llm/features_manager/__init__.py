@@ -27,6 +27,7 @@ from mindspeed.features_manager import (
     HcclBufferSetFeature,
     RecomputeNormFeature,
     RecomputeActivationFeature,
+    NPUDeterministicFeature,
     EnableRecomputeLayersPerPPRank,
     RecomputeMethodFeature,
     SmartSwapFeature,
@@ -200,6 +201,12 @@ def add_optimizer_features(features_list: List[MindSpeedFeature]):
     ])
 
 
+def add_functional_features(features_list: List[MindSpeedFeature]):
+    features_list.extend([
+        NPUDeterministicFeature(),
+    ])
+
+
 def add_recompute_features(features_list: List[MindSpeedFeature]):
     features_list.extend([
         RecomputeActivationFeature(),
@@ -228,6 +235,7 @@ def create_features_list():
     add_affinity_features(features_list)
     add_fusions_features(features_list)
     add_recompute_features(features_list)
+    add_functional_features(features_list)
     add_tensor_parallel_features(features_list)
     add_pipeline_parallel_features(features_list)
     add_transformer_features(features_list)
