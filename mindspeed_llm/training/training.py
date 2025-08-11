@@ -527,8 +527,7 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
             if len(model) == 1:
                 config.grad_sync_func = config.grad_sync_func[0]
     if args.overlap_param_gather and args.align_param_gather:
-        config.param_sync_func = [lambda x: optimizer.finish_param_sync(model_index, x)
-                                  for model_index in range(len(model))]
+        config.param_sync_func = [model_chunk.start_param_sync for model_chunk in model]
         if len(model) == 1:
             config.param_sync_func = config.param_sync_func[0]
     config.finalize_model_grads_func = finalize_model_grads
