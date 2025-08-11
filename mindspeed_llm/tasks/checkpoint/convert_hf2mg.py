@@ -327,7 +327,7 @@ class Hf2MgConvert(Convert):
         hf_weight_key = self.load_model.get_weight(hf_layer_idx)
         mg_weight_key = self.save_model.get_weight(local_layer_idx)
 
-        if self.load_model.add_qkv_bias:
+        if hasattr(self.load_model, "add_qkv_bias"):
             hf_bias_key = self.load_model.get_bias(hf_layer_idx)
             mg_bias_key = self.save_model.get_bias(local_layer_idx)
 
@@ -453,7 +453,7 @@ class Hf2MgConvert(Convert):
             qkv_weight = qkv_concatenate_weight(qkv_weight)
             qkv_weight_lst = torch.chunk(qkv_weight, self.tp_size, dim=0)
 
-            if self.load_model.add_qkv_bias:
+            if hasattr(self.load_model, "add_qkv_bias"):
                 hf_q_proj_bias = hf_weight.pop(hf_bias_key["layers_self_attention_linear_q_proj"])
                 hf_k_proj_bias = hf_weight.pop(hf_bias_key["layers_self_attention_linear_k_proj"])
                 hf_v_proj_bias = hf_weight.pop(hf_bias_key["layers_self_attention_linear_v_proj"])
@@ -506,7 +506,7 @@ class Hf2MgConvert(Convert):
                     if self.load_model.qk_layernorm:
                         mg_weight[ep_rank][tp_rank][q_layernorm_key] = q_layernorm.clone()
                         mg_weight[ep_rank][tp_rank][k_layernorm_key] = k_layernorm.clone()
-                    if self.load_model.add_qkv_bias:
+                    if hasattr(self.load_model, "add_qkv_bias"):
                         qkv_bias_key = _generate_attn_layers_bias_key(mtp_layer_flag)
                         mg_weight[ep_rank][tp_rank][qkv_bias_key] = qkv_bias_lst[tp_rank].clone()
 
