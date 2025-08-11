@@ -218,7 +218,7 @@ class ConvertBase:
                         hf_model[k] = f.get_tensor(k)
             elif str(model_files).endswith(".bin"):
                 print(f"load file : {file_path}")
-                hf_model = torch.load(file_path, map_location='cpu', weights_only=True)
+                hf_model = torch.load(file_path, map_location='cpu', weights_only=False)
             else:
                 raise ValueError(f"unsupported model file format. {os.path.splitext(hf_model)[-1]} ")
             return hf_model
@@ -579,7 +579,7 @@ class ConvertMg2Hf(ConvertBase):
         for tp_rank in range(self.tp_size):
             mg_save_dir = self.get_mg_model_save_dir(tp_rank=tp_rank, pp_rank=pp_rank, ep_rank=None,
                                                      iteration=self.args_cmd.iteration)
-            mg_tp_model = torch.load(os.path.join(mg_save_dir, self.mg_model_file_name), map_location='cpu', weights_only=True)
+            mg_tp_model = torch.load(os.path.join(mg_save_dir, self.mg_model_file_name), map_location='cpu', weights_only=False)
             mg_tp_models.append(mg_tp_model)
 
         hf_model = {}
@@ -753,7 +753,7 @@ class ConvertMg2Hf(ConvertBase):
 
     def _update_hf_model_file(self, hf_model, model_file):
         file_path = os.path.join(self.args_cmd.hf_dir, model_file)
-        exist_model = torch.load(file_path, map_location='cpu', weights_only=True) if os.path.exists(file_path) else {}
+        exist_model = torch.load(file_path, map_location='cpu', weights_only=False) if os.path.exists(file_path) else {}
 
         for param_key in hf_model.keys():
             if self.get_hf_model_file_based_param_key(param_key) == model_file:

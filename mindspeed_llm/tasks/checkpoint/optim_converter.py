@@ -39,7 +39,7 @@ class OptimConverter(abc.ABC):
         
     def get_optim_param_from_src_model_ckpt(self):
         ckpt_path = self.src_optim.model_paths[0][0][0]
-        model_ckpt = torch.load(ckpt_path, map_location='cpu', weights_only=True)
+        model_ckpt = torch.load(ckpt_path, map_location='cpu', weights_only=False)
         self.optim_param = model_ckpt['optimizer']
         self.opt_param_scheduler = model_ckpt['opt_param_scheduler']
 
@@ -57,7 +57,7 @@ class OptimConverter(abc.ABC):
             bool: True if successful, False otherwise.
         """
         try:
-            model_ckpt = torch.load(ckpt_path, map_location='cpu', weights_only=True)
+            model_ckpt = torch.load(ckpt_path, map_location='cpu', weights_only=False)
 
             # Apply modifications
             for key, value in modifications.items():

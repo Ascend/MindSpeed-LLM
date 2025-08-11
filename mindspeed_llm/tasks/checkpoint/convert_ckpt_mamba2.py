@@ -68,7 +68,7 @@ class CheckpointConverter:
 
             try:
                 if filename.endswith(".bin"):
-                    cur_weights = torch.load(file_path, map_location=torch.device('cpu'), weights_only=True)
+                    cur_weights = torch.load(file_path, map_location=torch.device('cpu'))
                     model_dict.update(cur_weights)
                     print(f"Successfully loaded: {filename}")
                     loaded = True
@@ -350,7 +350,7 @@ class CheckpointConverter:
 
         out_iteration, input_model_dir, src_model_file = self.get_latest_checkpoint_model_file(self.args.load_dir)
 
-        src_model = torch.load(src_model_file, map_location='cpu', weights_only=True)
+        src_model = torch.load(src_model_file, map_location='cpu', weights_only=False)
 
         logger.info(f"Sample model {src_model_file} is loaded.\n")
         return out_iteration, input_model_dir, src_model
@@ -382,7 +382,7 @@ class CheckpointConverter:
                     input_pp_rank
                 )
 
-                tp_models.append(torch.load(model_file, map_location='cpu', weights_only=True))
+                tp_models.append(torch.load(model_file, map_location='cpu', weights_only=False))
                 logger.info(f"Model {model_file} is loaded.")
 
             if input_tp_rank > 1:

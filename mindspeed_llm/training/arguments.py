@@ -1229,6 +1229,17 @@ def _warning_arguments(args):
         """,
         DeprecationWarning)
 
+    if args.trust_remote_code:
+        warnings.warn("""The '--trust-remote-code' argument is not safe, please be careful!!!""",
+        DeprecationWarning)
+    else:
+        warnings.warn("""The '--trust-remote-code' is not be set, some models will be failed to load from transformers!!!""",
+        DeprecationWarning)
+
+    warnings.warn(
+        """weights_only, the param of 'torch_load' is not be set True, it's not safe!!!""",
+        DeprecationWarning)
+
 
 def _store_variables(args):
     """

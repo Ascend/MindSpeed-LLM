@@ -373,8 +373,6 @@ def _load_checkpoint(model_provider, queue, args):
     md = build_metadata(args, margs)
     queue.put(md)
 
-    print(f"args.trust_remote_code:{args.trust_remote_code}")
-
     model_hf.get_modules_from_pretrained(trust_remote_code=args.trust_remote_code)
     model_mg.get_modules_from_config()
 
