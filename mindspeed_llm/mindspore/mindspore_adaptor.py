@@ -359,23 +359,8 @@ class MindSporeAdaptation(MegatronAdaptationABC):
         MindSporeAdaptation.register('megatron.legacy.model.module.fp32_to_float16', fp32_to_float16)
         MindSporeAdaptation.register('megatron.legacy.model.module.float16_to_fp32', float16_to_fp32)
 
-        from mindspeed_llm.mindspore.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb_bshd_func
-        MindSporeAdaptation.register('megatron.core.models.common.embeddings.rotary_pos_embedding._apply_rotary_pos_emb_bshd', apply_rotary_pos_emb_bshd_func)
-
         from mindspeed_llm.mindspore.core.datasets.blended_megatron_dataset_builder import need_to_build_dataset
         MindSporeAdaptation.register('mindspeed_llm.core.datasets.blended_megatron_dataset_builder.need_to_build_dataset', need_to_build_dataset)
-
-        from mindspeed_llm.mindspore.core.models.common.embeddings.rotary_pos_embedding import apply_yarn_scaling
-        MindSporeAdaptation.register('mindspeed_llm.core.models.common.embeddings.rotary_pos_embedding.apply_yarn_scaling', apply_yarn_scaling)
-
-        from mindspeed_llm.mindspore.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb
-        MindSporeAdaptation.register('mindspeed_llm.core.models.common.embeddings.rotary_pos_embedding.apply_rotary_pos_emb', apply_rotary_pos_emb)
-
-        from mindspeed_llm.mindspore.core.transformer.moe.router import topk_router_gating_func
-        MindSporeAdaptation.register('mindspeed_llm.core.transformer.moe.router.topk_router_gating_func', topk_router_gating_func)
-
-        from mindspeed_llm.mindspore.tasks.common.yarn_rope import yarn_linear_ramp_mask
-        MindSporeAdaptation.register('mindspeed_llm.tasks.common.yarn_rope.YarnRotaryPositionEmbedding.yarn_linear_ramp_mask', yarn_linear_ramp_mask)
 
         from mindspeed.mindspore.core.optimizer.adamw import step_func
         MindSporeAdaptation.register('mindspeed.core.optimizer.adamw.AdamW.step', step_func)
