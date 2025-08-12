@@ -32,11 +32,15 @@ from mindspeed.features_manager import (
     RecomputeMethodFeature,
     SmartSwapFeature,
     SwapAttentionFeature,
+    ContextParallelKvCacheFeature
 )
 from mindspeed.features_manager.feature import MindSpeedFeature
 from mindspeed.features_manager.features_manager import MindSpeedFeaturesManager
 
 from mindspeed_llm.features_manager.affinity.affinity import AffinityFeature
+from mindspeed_llm.features_manager.context_parallel.context_parallel_feature import ContextParallelFeature
+from mindspeed_llm.features_manager.context_parallel.ulysses_context_parallel import UlyssesContextParallelFeature
+from mindspeed_llm.features_manager.context_parallel.mamba_context_parallel import MambaContextParallelFeature
 from mindspeed_llm.features_manager.common.data import DataFeature
 from mindspeed_llm.features_manager.common.embedding import LanguageModelEmbeddingFeature
 from mindspeed_llm.features_manager.common.rotary import RotaryPositionEmbeddingFeature
@@ -110,6 +114,15 @@ def add_llm_features(features_list: List[MindSpeedFeature]):
 def add_affinity_features(features_list: List[MindSpeedFeature]):
     features_list.extend([
         AffinityFeature(),
+    ])
+
+
+def add_context_parallel_features(features_list: List[MindSpeedFeature]):
+    features_list.extend([
+        ContextParallelFeature(),
+        UlyssesContextParallelFeature(),
+        ContextParallelKvCacheFeature(),
+        MambaContextParallelFeature()
     ])
 
 
@@ -231,6 +244,7 @@ def add_disable_gloo_group_feature(features_list: List[MindSpeedFeature]):
 def create_features_list():
     features_list = []
     add_megatron_basic_features(features_list)
+    add_context_parallel_features(features_list)
     add_llm_features(features_list)
     add_affinity_features(features_list)
     add_fusions_features(features_list)

@@ -25,18 +25,18 @@ class FusionAttentionFeature(MindSpeedFusionAttentionFeature):
         from mindspeed_llm.core.transformer.dot_product_attention import dot_product_attention_init, \
             dot_product_attention_forward_wrapper, ulysses_context_parallel_forward_wrapper
         from mindspeed_llm.core.models.gpt.gpt_model import GPTModel
-
-        # Attention
-        pm.register_patch('megatron.core.transformer.attention.Attention.__init__',
-                           attention_init)
-        pm.register_patch('megatron.core.transformer.dot_product_attention.DotProductAttention.__init__',
-                           dot_product_attention_init)
-        pm.register_patch('megatron.core.transformer.dot_product_attention.DotProductAttention.forward',
-                           dot_product_attention_forward_wrapper)
-        pm.register_patch('megatron.core.transformer.custom_layers.transformer_engine.TEDotProductAttention.__init__',
-                           dot_product_attention_init)
-        pm.register_patch('megatron.core.transformer.custom_layers.transformer_engine.TEDotProductAttention.forward',
-                           dot_product_attention_forward_wrapper)
-        # For GQA in ulysses and hybrid
-        pm.register_patch('mindspeed.core.context_parallel.ulysses_context_parallel.ulysses_context_parallel.UlyssesContextAttention.forward',
-                           ulysses_context_parallel_forward_wrapper)
+        if int(getattr(args, 'context_parallel_size', 1)) < 2:
+            # Attention
+            pm.register_patch('megatron.core.transformer.attention.Attention.__init__',
+                               attention_init)
+            pm.register_patch('megatron.core.transformer.dot_product_attention.DotProductAttention.__init__',
+                               dot_product_attention_init)
+            pm.register_patch('megatron.core.transformer.dot_product_attention.DotProductAttention.forward',
+                               dot_product_attention_forward_wrapper)
+            pm.register_patch('megatron.core.transformer.custom_layers.transformer_engine.TEDotProductAttention.__init__',
+                               dot_product_attention_init)
+            pm.register_patch('megatron.core.transformer.custom_layers.transformer_engine.TEDotProductAttention.forward',
+                               dot_product_attention_forward_wrapper)
+            # For GQA in ulysses and hybrid
+            pm.register_patch('mindspeed.core.context_parallel.ulysses_context_parallel.ulysses_context_parallel.UlyssesContextAttention.forward',
+                               ulysses_context_parallel_forward_wrapper)

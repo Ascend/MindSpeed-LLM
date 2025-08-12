@@ -37,8 +37,6 @@ class TrainingBasicFeature(MindSpeedFeature):
         group = parser.add_argument_group(title=self.feature_name)
         group.add_argument('--jit-compile', action='store_true', default=False,
                             help='Setting jit compile mode to True')
-        group.add_argument('--attention-mask-type', type=str, default='causal', choices=['causal', 'general'],
-                            help='context parallel attention mask type')
         group.add_argument('--load-checkpoint-loosely', action='store_true', default=False,
                             help='Enable loading checkpoint not strictly.')
 
