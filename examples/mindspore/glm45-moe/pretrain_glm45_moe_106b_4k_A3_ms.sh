@@ -29,6 +29,7 @@ DISTRIBUTED_ARGS="
 
 MOE_ARGS="
     --moe-grouped-gemm \
+    --moe-alltoall-overlap-comm \
     --moe-permutation-async-comm \
     --moe-token-dispatcher-type alltoall_seq \
     --first-k-dense-replace 1 \
@@ -63,7 +64,6 @@ GPT_ARGS="
     --kv-channels 128 \
     --use-fused-rmsnorm \
     --use-fused-swiglu \
-    --overlap-grad-reduce \
     --use-distributed-optimizer \
     --num-layers 48 \
     --hidden-size 4096 \
