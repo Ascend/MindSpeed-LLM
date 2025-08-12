@@ -1258,7 +1258,9 @@ class MegatronModel(ModelBase):
             '--save-interval', '1',
             '--mock-data',  # To pass the "blend data checks" in arguments.py
             '--load', self.args_cmd.load_dir,
-            '--finetune'
+            '--finetune',
+            '--transformer-impl', 'local',
+            '--use-mp-args-from-checkpoint-args'
         ]
         
         if hasattr(self.args_cmd, 'add_bias_linear') and not self.args_cmd.add_bias_linear:

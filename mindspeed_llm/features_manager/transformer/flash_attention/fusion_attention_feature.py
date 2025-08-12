@@ -19,6 +19,8 @@ class FusionAttentionFeature(MindSpeedFusionAttentionFeature):
                             help='next-tockens is used by Flash attention')
         group.add_argument('--sparse-mode', type=int, default=0,
                             help='different modes of flash attention mask')
+        group.add_argument('--interleave-sliding-window', type=int,
+                       help='Window size when use interleave sliding window attention.')
 
     def register_patches(self, pm, args):
         from mindspeed.core.transformer.attention import attention_init
