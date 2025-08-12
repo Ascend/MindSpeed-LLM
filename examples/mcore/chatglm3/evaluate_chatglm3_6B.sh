@@ -19,6 +19,7 @@ TASK="mmlu"
 
 # Different task needs different max_new_tokens value, please follow the instruction in readme.
 torchrun $DISTRIBUTED_ARGS evaluation.py   \
+       --trust-remote-code \
        --use-mcore-models \
        --task-data-path $DATA_PATH \
        --task ${TASK}\

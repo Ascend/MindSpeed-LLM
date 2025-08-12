@@ -30,6 +30,7 @@ DISTRIBUTED_ARGS="
 "
 
 GPT_ARGS="
+    --trust-remote-code \
     --use-mcore-models \
     --transformer-impl local \
     --tensor-model-parallel-size ${TP} \

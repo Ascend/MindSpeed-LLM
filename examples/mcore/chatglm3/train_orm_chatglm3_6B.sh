@@ -28,6 +28,7 @@ DISTRIBUTED_ARGS="
 "
 
 GPT_ARGS="
+    --trust-remote-code \
     --use-mcore-models \
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \

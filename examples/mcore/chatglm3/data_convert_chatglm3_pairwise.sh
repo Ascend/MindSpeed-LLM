@@ -10,5 +10,6 @@ python ./preprocess_data.py \
         --output-prefix dataset/dpo_en \
         --workers 4 \
         --log-interval 1000 \
+        --trust-remote-code \
         --handler-name SharegptStylePairwiseHandler \
         --prompt-type chatglm3 

@@ -12,5 +12,6 @@ python convert_ckpt.py \
     --save-dir ./model_weights/chatglm3-mcore/ \
     --tokenizer-model ./model_from_hf/chatglm3-hf/tokenizer.model \
     --use-mcore-models \
+    --trust-remote-code \
     --add-qkv-bias \
     --model-type-hf chatglm3

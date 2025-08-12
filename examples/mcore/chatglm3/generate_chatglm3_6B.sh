@@ -17,6 +17,7 @@ WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 DISTRIBUTED_ARGS="--nproc_per_node $NPUS_PER_NODE --nnodes $NNODES --node_rank $NODE_RANK --master_addr $MASTER_ADDR --master_port $MASTER_PORT"
 
 python -m torch.distributed.launch $DISTRIBUTED_ARGS inference.py \
+       --trust-remote-code \
        --tensor-model-parallel-size 1  \
        --pipeline-model-parallel-size 1  \
        --use-mcore-models \

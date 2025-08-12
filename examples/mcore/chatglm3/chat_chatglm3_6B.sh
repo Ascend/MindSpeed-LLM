@@ -19,6 +19,7 @@ DISTRIBUTED_ARGS="--nproc_per_node $NPUS_PER_NODE --nnodes $NNODES --node_rank $
 python -m torch.distributed.launch $DISTRIBUTED_ARGS inference.py \
        --tensor-model-parallel-size 1  \
        --pipeline-model-parallel-size 1  \
+       --trust-remote-code \
        --task chat \
        --hf-chat-template \
        --top-p 0.8 \

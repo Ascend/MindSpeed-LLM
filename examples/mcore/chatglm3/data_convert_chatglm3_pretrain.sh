@@ -8,4 +8,5 @@ python ./preprocess_data.py \
         --output-prefix ./dataset/chatglm3_6b_hf/alpaca \
         --workers 4 \
         --log-interval 1000 \
+        --trust-remote-code \
         --tokenizer-type PretrainedFromHF

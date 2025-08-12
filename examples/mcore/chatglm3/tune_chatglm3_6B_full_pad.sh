@@ -30,6 +30,7 @@ DISTRIBUTED_ARGS="
 "
 
 GPT_ARGS="
+    --trust-remote-code \
     --use-mcore-models \
     --stage sft \
     --reuse-fp32-param \
