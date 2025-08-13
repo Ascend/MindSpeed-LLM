@@ -42,7 +42,6 @@ MOE_ARGS="
     --moe-router-topk 1 \
     --n-shared-experts 1 \
     --moe-router-load-balancing-type ${ROUTER_BALANCING_TYPE} \
-    --moe-intermediate-size 18304 \
     --moe-ffn-hidden-size 18304 \
     --moe-permutation-async-comm \
     --moe-grouped-gemm \
@@ -94,6 +93,7 @@ MODEL_PARALLEL_ARGS="
 
 GPT_ARGS="
     --use-mcore-models \
+    --transformer-impl local \
     --tokenizer-name-or-path ${TOKENIZER_PATH} \
     --max-position-embeddings 131072 \
     --num-layers ${NUM_LAYERS} \

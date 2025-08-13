@@ -42,6 +42,7 @@ from mindspeed_llm.features_manager.context_parallel.context_parallel_feature im
 from mindspeed_llm.features_manager.context_parallel.ulysses_context_parallel import UlyssesContextParallelFeature
 from mindspeed_llm.features_manager.context_parallel.mamba_context_parallel import MambaContextParallelFeature
 from mindspeed_llm.features_manager.common.data import DataFeature
+from mindspeed_llm.features_manager.models.module import ModuleFeature
 from mindspeed_llm.features_manager.common.embedding import LanguageModelEmbeddingFeature
 from mindspeed_llm.features_manager.common.rotary import RotaryPositionEmbeddingFeature
 from mindspeed_llm.features_manager.common.training import TrainingDefaultFeature
@@ -105,6 +106,7 @@ def add_llm_features(features_list: List[MindSpeedFeature]):
         ModelBasicFeature(),
         TrainingBasicFeature(),
         DatasetFeature(),
+        ModuleFeature(),
         FinetuneFeature(),
         LoraFeature(),
         InferenceFeature(),

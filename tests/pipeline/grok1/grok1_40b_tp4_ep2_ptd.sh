@@ -54,6 +54,7 @@ MOE_ARGS="
 GPT_ARGS="
     --spec mindspeed_llm.tasks.models.spec.grok_spec layer_spec \
     --use-mcore-models \
+    --transformer-impl local \
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \
     --expert-model-parallel-size ${EP} \

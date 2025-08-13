@@ -1285,25 +1285,19 @@ def _add_dummy_args_v2(args):
     args.embed_layernorm = False
     args.tp_2d = False
     args.tp_x = 1
-    args.attn_logit_softcapping = False
+    args.tp_y = 1
     args.square_alibi_mask = False
     args.fill_neg_inf = False
-    args.query_pre_attn_scalar = 0.0
     args.add_output_layer_bias = False
     args.is_pairwise_dataset = False
     args.enable_share_memory = False
     args.return_document_ids = False
-    args.embedding_multiplier_scale = 0.0
-    args.scale_emb = None
     args.attention_mask_on_cpu = False
-    args.dim_model_base = None
-    args.output_multiplier_scale = False
-    args.output_logit_softcapping = False
     args.output_layer_slice_num = 1
     args.enable_high_availability = False
+    args.enable_high_availability = False
     args.use_fused_mlp = False
-    args.recompute_activation_function = False
-    args.input_jitter = False
+
 
 
 def _validate_noop_layer(args):

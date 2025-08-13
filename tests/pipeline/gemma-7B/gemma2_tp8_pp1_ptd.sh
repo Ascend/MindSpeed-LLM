@@ -33,6 +33,7 @@ GPT_ARGS="
     --pipeline-model-parallel-size ${PP} \
     --sequence-parallel \
     --use-mcore-models \
+    --transformer-impl local \
     --use-fused-rmsnorm \
     --use-fused-rotary-pos-emb \
     --gelu-tanh \
@@ -83,7 +84,6 @@ GPT_ARGS="
     --no-load-rng \
     --vocab-size 256000 \
     --log-throughput \
-    --use-deter-comp \
     --finetune \
     --bf16
 "
