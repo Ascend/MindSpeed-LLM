@@ -51,6 +51,7 @@ from mindspeed_llm.features_manager.finetune.finetune import FinetuneFeature
 from mindspeed_llm.features_manager.finetune.lora import LoraFeature
 from mindspeed_llm.features_manager.finetune.lu_lora import LuLoraFeature
 from mindspeed_llm.features_manager.high_availability.high_availability import HighAvailabilityFeature
+from mindspeed_llm.features_manager.evaluation.evaluation import EvaluationFeature
 from mindspeed_llm.features_manager.megatron_basic.megatron_basic import MegatronBasicFeature
 from mindspeed_llm.features_manager.megatron_basic.model_basic import ModelBasicFeature
 from mindspeed_llm.features_manager.megatron_basic.requirements_basic import RequirementsBasicFeature
@@ -105,6 +106,7 @@ def add_llm_features(features_list: List[MindSpeedFeature]):
         DatasetFeature(),
         FinetuneFeature(),
         LoraFeature(),
+        EvaluationFeature(),
         LuLoraFeature(),
         MambaModel(),
         LanguageModelEmbeddingFeature(),
