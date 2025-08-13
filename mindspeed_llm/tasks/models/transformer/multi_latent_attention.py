@@ -9,11 +9,8 @@ from mindspeed.core.context_parallel.ulysses_context_parallel.ulysses_context_pa
 from mindspeed.core.parallel_state import get_context_parallel_group_for_hybrid_ulysses
 from mindspeed.core.tensor_parallel.random import CheckpointWithoutOutput
 from mindspeed.utils import set_actual_seq_len, set_position_ids, get_actual_seq_len, get_position_ids
-try:
-    from mindspeed.core.pipeline_parallel.fb_overlap.modules.attention import launch_async_all2all_hook, launch_async_all2all
-    from mindspeed.core.pipeline_parallel.fb_overlap.modules.utils import TensorSwapManager
-except ImportError:
-    pass
+from mindspeed.core.transformer.moe.moe_feature.fb_overlap.modules.attention import launch_async_all2all_hook, launch_async_all2all
+from mindspeed.core.transformer.moe.moe_feature.fb_overlap.modules.utils import TensorSwapManager
 
 from megatron.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb
 from megatron.core.tensor_parallel.mappings import gather_from_sequence_parallel_region
