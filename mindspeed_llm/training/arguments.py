@@ -206,12 +206,11 @@ def _add_cp_args(parser):
     group.add_argument('--context-parallel-size', type=int, default=1,
                        help='Degree of context parallelism.')
     group.add_argument('--context-parallel-algo', type=str, default='ulysses_cp_algo',
-                       choices=['ulysses_cp_algo', 'megatron_cp_algo', 'hybrid_cp_algo', 'adaptive_cp_algo',
-                                'hybrid_adaptive_cp_algo', 'mamba_cp_algo'], help='context parallel algorithm')
+                       choices=['ulysses_cp_algo', 'megatron_cp_algo', 'hybrid_cp_algo', 'mamba_cp_algo'], help='context parallel algorithm')
     group.add_argument('--ulysses-degree-in-cp', type=int, default=None)
     group.add_argument('--attention-mask-type', type=str, default='causal',
                        choices=['causal', 'general'], help='context parallel attention mask type')
-    group.add_argument('--cp-attention-mask-type', type=str, default='causal',
+    group.add_argument('--attention-mask-type', type=str, default='causal',
                        choices=['causal', 'general'], help='context parallel attention mask type')
     group.add_argument('--use-cp-send-recv-overlap', action='store_true',
                        help='use it to enable cp send-recv-overlap.')
@@ -288,8 +287,8 @@ def _validate_cp_args(args):
         assert args.cp_window_size >= 1 and args.cp_window_size < args.context_parallel_size, f'cp_window_size should in range [1, context_parallel_size) when using double_ring_attention.'
         n_window, remainder = divmod(args.context_parallel_size, args.cp_window_size)
         assert n_window >= 1 and remainder == 0, f'context parallel size must be divisible by cp_window_size when using double ring attention.'
-        if args.cp_attention_mask_type == 'general':
-            assert args.micro_batch_size == 1, f'When cp_attention_mask_type is set to general, the value of mbs can only be 1.'
+        if args.attention_mask_type == 'general':
+            assert args.micro_batch_size == 1, f'When attention_mask_type is set to general, the value of mbs can only be 1.'
 
     if args.context_parallel_algo == 'hybrid_cp_algo':
         assert args.ulysses_degree_in_cp is not None, "--ulysses-degree-in-cp must be specified in hybrid_cp_algo"
@@ -301,23 +300,8 @@ def _validate_cp_args(args):
         n_window, remainder = divmod(ring_degree, args.cp_window_size)
         assert n_window >= 1 and remainder == 0, f'ring_degree should be divisible by cp_window_size when using double ring with hybrid context parallelism.'
         _check_attention_head(args, args.ulysses_degree_in_cp)
-        if args.cp_attention_mask_type == 'general':
-            assert args.micro_batch_size == 1, f'When cp_attention_mask_type is set to general, the value of mbs can only be 1.'
-
-    if args.context_parallel_size > 1 and args.context_parallel_algo == 'adaptive_cp_algo':
-        assert args.seq_length % args.context_parallel_size == 0, f"sequence length must be divisible by context_parallel_size"
-        if args.cp_attention_mask_type == 'general':
-            assert args.micro_batch_size == 1, f'When cp_attention_mask_type is set to general, the value of mbs can only be 1.'
-
-    if args.context_parallel_size > 1 and args.context_parallel_algo == 'hybrid_adaptive_cp_algo':
-        assert args.ulysses_degree_in_cp is not None, "--ulysses-degree-in-cp must be specified in hybrid_adaptive_cp_algo"
-        ring_degree, remainder = divmod(args.context_parallel_size, args.ulysses_degree_in_cp)
-        assert ring_degree > 1 and remainder == 0, "--ulysses-degree-in-cp must be devisible by --context-parallel-size"
-        head, remainder = divmod(args.num_attention_heads, args.ulysses_degree_in_cp * args.tensor_model_parallel_size)
-        assert head >= 1 and remainder == 0, f"num_attention_heads must be divisible by ulysse-degree-in-cp * tensor_model_parallel_size in hybrid cp"
-        assert args.seq_length % args.context_parallel_size == 0, f"sequence length must be divisible by context_parallel_size in hybrid cp"
-        if args.cp_attention_mask_type == 'general':
-            assert args.micro_batch_size == 1, f'When cp_attention_mask_type is set to general, the value of mbs can only be 1.'
+        if args.attention_mask_type == 'general':
+            assert args.micro_batch_size == 1, f'When attention_mask_type is set to general, the value of mbs can only be 1.'
 
     if args.sliding_window:
         raise AssertionError("sliding window is not supported in context parallel.")
@@ -1271,7 +1255,6 @@ def _add_dummy_args(args):
     args.use_nanopipe = False
     args.moe_without_activation = False
     args.ampipe_degree = 0
-    args.attention_mask_type = args.cp_attention_mask_type
     args.hccl_group_buffer_adaptive = False
     args.moe_bmm_mc2 = False
     args.moe_hierarchical_alltoallv = False

@@ -53,7 +53,7 @@ GPT_ARGS="
     --group-query-attention \
     --num-query-groups 8 \
     --reset-position-ids \
-    --cp-attention-mask-type general \
+    --attention-mask-type general \
     --no-gradient-accumulation-fusion \
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \

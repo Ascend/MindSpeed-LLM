@@ -638,11 +638,6 @@ class CoreAdaptation(MegatronAdaptationABC):
         MegatronAdaptation.register('megatron.training.checkpointing.unwrap_model', unwrap_model_wrapper)
         MegatronAdaptation.register('megatron.training.training.unwrap_model', unwrap_model_wrapper)
 
-        from mindspeed_llm.training.utils import generate_adaptive_cp_mask_list_by_user, generate_adaptive_cp_grid_mask_by_user
-        MegatronAdaptation.register('mindspeed.core.context_parallel.utils.generate_adaptive_cp_mask_list_by_user',
-                                generate_adaptive_cp_mask_list_by_user)
-        MegatronAdaptation.register('mindspeed.core.context_parallel.utils.generate_adaptive_cp_grid_mask_by_user',
-                                generate_adaptive_cp_grid_mask_by_user)
         from mindspeed.training import get_device_arch_version
         MegatronAdaptation.register('megatron.training.utils.get_device_arch_version', get_device_arch_version)
         # Currently, it is not supported to Cast shard fp32 main params to fp8 model params

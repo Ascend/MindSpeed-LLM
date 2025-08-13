@@ -14,7 +14,7 @@
         <th>Mem.</th>
     </tr>
     <tr>
-        <td rowspan="16">ST</td>
+        <td rowspan="15">ST</td>
         <td rowspan="14">Pretrain</td>
         <td>TP，PP，VPP，distributed_optimizer，o2_gradient，o2_optimizer，重计算，enable_recompute_layers_per_pp_rank，FA_TND，use_fused_rotary_pos_emb</td>
         <td><a href="st/shell_scripts/llama2_tp2_pp4_vpp2_ptd.sh">llama2_tp2_pp4_vpp2_ptd.sh</a></td>
@@ -109,14 +109,6 @@
     <tr>
         <td>noop_layers， recompute_norm</td>
         <td><a href="st/shell_scripts/llama3_mcore_tp2_pp2_vpp2_noop_layer.sh">llama3_mcore_tp2_pp2_vpp2_noop_layer.sh</a></td>
-        <td>Y</td>
-        <td>Y</td>
-        <td>Y</td>
-    </tr>
-    <tr>
-        <td rowspan="1">FullSFT</td>
-        <td>自适应cp，general_cp，SFT_pack_cp</td>
-        <td><a href="st/shell_scripts/tune_llama2_tp2_cp4_adaptive_cp.sh">tune_llama2_tp2_cp4_adaptive_cp.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>

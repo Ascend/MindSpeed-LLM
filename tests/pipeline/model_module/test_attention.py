@@ -52,8 +52,7 @@ def run_attention_module(test_args, use_mcore, use_cp, cp_size, u_size, use_alib
     r_size = cp_size // u_size
     args = parse_args(None, True)
     args.use_cp_send_recv_overlap = True
-    args.cp_attention_mask_type = 'causal'
-    args.attention_mask_type = args.cp_attention_mask_type
+    args.attention_mask_type = 'causal'
     args.tp_2d = None
     args.tp_x = 1
     args.tp_y = 1

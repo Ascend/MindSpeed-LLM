@@ -47,8 +47,7 @@ def flash_attention_forward(
     if actual_seq_len is not None and args.mtp_num_layers:
         actual_seq_len = actual_seq_len[self.mtp_idx]
 
-    if args.context_parallel_size > 1 and args.context_parallel_algo in ['megatron_cp_algo', 'hybrid_cp_algo',
-                                                                         'adaptive_cp_algo', 'hybrid_adaptive_cp_algo']:
+    if args.context_parallel_size > 1 and args.context_parallel_algo in ['megatron_cp_algo', 'hybrid_cp_algo']:
         query, key, value = [rearrange(x, 's b h d -> s b (h d)') for x in [query, key, value]]
         return do_ring_context_parallel(
             query, key, value, head_num=n_head, softmax_scale=scale, attn_mask=attention_mask, pse=self.pse,

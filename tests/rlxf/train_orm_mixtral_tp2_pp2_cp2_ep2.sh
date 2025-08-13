@@ -77,7 +77,7 @@ GPT_ARGS="
     --sequence-parallel \
     --context-parallel-size ${CP} \
     --context-parallel-algo  ${CP_TYPE} \
-    --cp-attention-mask-type general \
+    --attention-mask-type general \
 
     --tokenizer-type PretrainedFromHF \
     --tokenizer-name-or-path ${TOKENIZER_MODEL} \

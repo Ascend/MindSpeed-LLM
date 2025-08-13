@@ -46,8 +46,7 @@ def run_ringattn_cp(cp_size, bs, seq_len, dtype, cp_args):
     args = parse_args(None, True)
     args.context_parallel_algo = 'megatron_cp_algo'
     args.use_cp_send_recv_overlap = send_recv_overlap
-    args.cp_attention_mask_type = 'causal' if causal else 'general'
-    args.attention_mask_type = args.cp_attention_mask_type
+    args.attention_mask_type = 'causal' if causal else 'general'
     args.seq_length = seq_len
     args.use_flash_attn = True
     args.tp_2d = None

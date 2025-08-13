@@ -35,7 +35,7 @@ DIST_ALGO=(
     --cp-window-size 2 \
     --use-fused-ring-attention-update \
     --context-parallel-algo megatron_cp_algo \
-    --cp-attention-mask-type general \
+    --attention-mask-type general \
     --sequence-parallel
 )
 

@@ -38,7 +38,7 @@ GPT_ARGS="
     --load ${CKPT_LOAD_DIR} \
     --context-parallel-algo megatron_cp_algo \
     --sequence-parallel \
-    --cp-attention-mask-type general \
+    --attention-mask-type general \
     --swap-attention \
     --num-workers 16 \
     --cp-window-size 1 \

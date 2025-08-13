@@ -38,8 +38,6 @@ from mindspeed.utils import (set_actual_seq_len, set_position_ids,
                              _get_batch_on_this_cp_rank_in_ulysses_cp,
                              _get_batch_on_this_cp_rank_in_hybrid_cp_general,
                              _get_batch_on_this_cp_rank_in_hybrid_cp,
-                             _get_batch_on_this_cp_rank_in_adaptive_cp,
-                             _get_batch_on_this_cp_rank_in_hybrid_adaptive_cp,
                              broadcast_dynamic, _broadcast, get_ring_degree)
 from mindspeed.core.tensor_parallel_y_union_cp import TensorParallelYUnionCP
 from mindspeed.model.transformer import set_attention_mask
@@ -726,12 +724,12 @@ def get_batch_on_this_cp_rank(batch):
     if not tp_y_cp_size > 1:
         return batch
 
-    if args.cp_attention_mask_type == 'general' and batch.get("attention_mask", None) is not None:
+    if args.attention_mask_type == 'general' and batch.get("attention_mask", None) is not None:
         set_attention_mask(batch['attention_mask'].squeeze())
 
     cp_expanded_by_2d_tp = args.tp_y > 1
     if args.context_parallel_algo == 'megatron_cp_algo':
-        if args.cp_attention_mask_type == 'general':
+        if args.attention_mask_type == 'general':
             batch = _get_batch_on_this_cp_rank_in_megatron_cp_general(batch)
         elif cp_expanded_by_2d_tp:
             batch = _get_batch_on_this_tp_y_cp_rank_in_megatron_cp(batch)
@@ -740,98 +738,11 @@ def get_batch_on_this_cp_rank(batch):
     elif args.context_parallel_algo == 'ulysses_cp_algo' or args.context_parallel_algo == 'mamba_cp_algo':
         batch = _get_batch_on_this_cp_rank_in_ulysses_cp(batch)
     elif args.context_parallel_algo == 'hybrid_cp_algo':
-        if args.cp_attention_mask_type == 'general':
+        if args.attention_mask_type == 'general':
             batch = _get_batch_on_this_cp_rank_in_hybrid_cp_general(batch)
         else:
             batch = _get_batch_on_this_cp_rank_in_hybrid_cp(batch)
-    elif args.context_parallel_algo == 'adaptive_cp_algo':
-        batch = _get_batch_on_this_cp_rank_in_adaptive_cp(batch)
-    elif args.context_parallel_algo == 'hybrid_adaptive_cp_algo':
-        batch = _get_batch_on_this_cp_rank_in_hybrid_adaptive_cp(batch)
     return batch
-
-
-def generate_adaptive_cp_grid_mask_by_user(cp_size):
-    from mindspeed.utils import get_actual_seq_len
-    from mindspeed.core.context_parallel.utils import set_adaptive_cp_grid_mask_by_user
-    args = get_args()
-    actual_seq_len = get_actual_seq_len()
-    seq_length = args.seq_length
-    grid_mask = torch.zeros(cp_size, cp_size)
-    sub_seq_length = seq_length // cp_size
-
-    grid_actual_seq_len_dict = {}
-    for seq_len in actual_seq_len:
-        grid_actual_seq_len_dict[seq_len // sub_seq_length + 1] = seq_len % sub_seq_length == 0
-    grid_actual_seq_len = list(grid_actual_seq_len_dict.items())
-    start_index = 0
-    for i, _ in enumerate(grid_actual_seq_len):
-        end_index = grid_actual_seq_len[i][0]
-        grid_mask[start_index:end_index, start_index:end_index] = 1
-
-        if i != 0:
-            if grid_actual_seq_len[i - 1][1]:
-                start_index = grid_actual_seq_len[i - 1][0] - 1
-            else:
-                start_index = grid_actual_seq_len[i - 1][0]
-    grid_mask = torch.tril(grid_mask)
-    set_adaptive_cp_grid_mask_by_user(grid_mask)
-
-
-def generate_adaptive_cp_mask_list_by_user(opt_seq, opt_scheduling, cp_rank, cp_size):
-    from mindspeed.utils import get_actual_seq_len
-    from mindspeed.core.context_parallel.utils import set_adaptive_cp_mask_list_by_user
-    actual_seq_len = get_actual_seq_len()
-    round_num = len(opt_scheduling)
-    grid_size = (opt_seq[-1] + 1) // cp_size
-    mask_list = []
-    for rnd_idx in range(round_num):
-        task_id = opt_scheduling[rnd_idx][cp_rank]
-        if task_id == -1:
-            mask_list.append(None)
-            continue
-        rank_x = task_id // cp_size
-        rank_y = task_id % cp_size
-        if rank_x == rank_y:
-            mask = torch.tril(torch.ones((grid_size, grid_size), device=torch.npu.current_device()))
-            for i in actual_seq_len:
-                if i - 1 < grid_size * rank_y:
-                    continue
-                elif i - 1 >= grid_size * (rank_y + 1):
-                    break
-                else:
-                    mask[(i - 1 - grid_size * cp_rank + 1):, : (i - 1 - grid_size * cp_rank + 1)] = 0
-        elif cp_rank > rank_y:
-            mask = torch.zeros((grid_size, grid_size), device=torch.npu.current_device())
-            start_index = 0
-            end_index = grid_size
-            for i in actual_seq_len:
-                if i - 1 < grid_size * rank_y:
-                    start_index = i - 1
-                    continue
-                elif i - 1 >= grid_size * (rank_y + 1):
-                    end_index = i - 1
-                    break
-                else:
-                    start_index = i - 1
-            start_index -= rank_y * grid_size
-            if start_index < 0:
-                start_index = 0
-            elif start_index > grid_size:
-                start_index = grid_size
-            end_index -= cp_rank * grid_size
-            if end_index < 0:
-                end_index = 0
-            elif end_index > grid_size:
-                end_index = grid_size
-            mask[: (end_index + 1), (start_index + 1):] = 1
-        else:
-            mask = torch.zeros((grid_size, grid_size), device=torch.npu.current_device())
-        if mask is not None:
-            # Convert attention mask to binary:
-            mask = mask < 0.5
-        mask_list.append(mask)
-    set_adaptive_cp_mask_list_by_user(mask_list)
 
 
 def _get_batch_on_this_cp_rank_in_megatron_cp_general(batch):

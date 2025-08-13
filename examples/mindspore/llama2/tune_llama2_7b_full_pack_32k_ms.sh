@@ -40,7 +40,7 @@ GPT_ARGS="
     --context-parallel-algo ulysses_cp_algo \
     --ulysses-degree-in-cp 2 \
     --sequence-parallel \
-    --cp-attention-mask-type causal \
+    --attention-mask-type causal \
     --num-workers 16 \
     --cp-window-size 1 \
     --use-fused-rotary-pos-emb \
