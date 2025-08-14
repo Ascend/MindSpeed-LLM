@@ -43,8 +43,7 @@
                 "exit-on-missing-checkpoint": null,
                 "seed": 42,
                 "fp16": null,
-                "task": "greedy",
-                "use-deter-comp": null
+                "task": "greedy"
                 }
         }
     ],
@@ -85,7 +84,6 @@
                 "no-gradient-accumulation-fusion": null,
                 "exit-on-missing-checkpoint": null,
                 "task": "greedy",
-                "use-deter-comp": null,
                 "make-vocab-size-divisible-by": 32
             }
         }

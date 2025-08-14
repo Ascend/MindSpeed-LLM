@@ -174,7 +174,7 @@
         <th>Memory</th>
     </tr>
     <tr>
-        <td rowspan="4"><a href="pipeline/context_parallel">CP</td>
+        <td rowspan="3"><a href="pipeline/context_parallel">CP</td>
         <td>hybrid</td>
         <td><a href="pipeline/context_parallel/test_hybrid_context_parallel.py">test_hybrid_context_parallel.py</a></td>
         <td>Y</td>
@@ -191,13 +191,6 @@
     <tr>
         <td>ulysses</td>
         <td><a href="pipeline/context_parallel/test_ulysses_context_parallel.py"> test_ulysses_context_parallel.py </a></td>
-        <td>Y</td>
-        <td></td>
-        <td></td>
-    </tr>
-    <tr>
-        <td>adaptive</td>
-        <td><a href="pipeline/context_parallel/test_adaptive_context_parallel.py"> test_adaptive_context_parallel.py </a></td>
         <td>Y</td>
         <td></td>
         <td></td>

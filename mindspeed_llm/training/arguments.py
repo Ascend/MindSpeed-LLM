@@ -1293,7 +1293,6 @@ def _add_dummy_args_v2(args):
     args.attention_mask_on_cpu = False
     args.output_layer_slice_num = 1
     args.enable_high_availability = False
-    args.enable_high_availability = False
     args.use_fused_mlp = False
 
 

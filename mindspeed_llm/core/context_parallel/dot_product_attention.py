@@ -202,19 +202,13 @@ class CPDotProductAttentionImpl:
         self.pse = None
         self.pse_type = None
         self.attn_logit_softcapping = self.config.attn_logit_softcapping
-        self.square_alibi_mask = self.config.square_alibi_mask
-        self.fill_neg_inf = self.config.fill_neg_inf
         self.beta = 1.0
         self.apply_query_key_layer_scaling = self.config.apply_query_key_layer_scaling
 
         if self.apply_query_key_layer_scaling:
             self.beta = 1.0 / self.layer_number
 
-        if self.config.position_embedding_type == 'alibi':
-            get_alibi(self, args.seq_length)
-            self.alibi_output_size = None
-        else:
-            self.alibi = None
+        self.alibi = None
 
         if self.config.query_pre_attn_scalar:
             self.norm_factor = self.config.query_pre_attn_scalar ** 0.5

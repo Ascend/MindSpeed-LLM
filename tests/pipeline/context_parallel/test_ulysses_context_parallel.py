@@ -1,9 +1,14 @@
+import sys
 import math
 
 import torch
 import torch_npu
 import torch.distributed as dist
-
+sys.argv = [
+    sys.argv[0],
+    '--context-parallel-algo', 'ulysses_cp_algo',
+    '--context-parallel-size', '2',
+]
 # To activate mindspeed_llm.patches.__init__
 from mindspeed_llm import megatron_adaptor
 import megatron.core.parallel_state as ps
@@ -146,6 +151,7 @@ class TestUlyssesAttention(DistributedTest):
         args.use_nd_matmul = False
         args.ampipe_degree = 0
         args.hccl_group_buffer_adaptive = False
+        args.enable_high_availability = False
         set_args(args)
         initialize_model_parallel_nest = initialize_model_parallel_decorator(initialize_model_parallel)
         initialize_model_parallel_nest(context_parallel_size=self.world_size)

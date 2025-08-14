@@ -1,9 +1,14 @@
+import sys
 import math
 import pytest
 import torch
 import torch_npu
 import torch.distributed as dist
-
+sys.argv = [
+    sys.argv[0],
+    '--context-parallel-algo', 'hybrid_cp_algo',
+    '--context-parallel-size', '2',
+]
 # To activate mindspeed_llm.patches.__init__
 from mindspeed_llm import megatron_adaptor
 from megatron.training.global_vars import set_args
@@ -11,9 +16,10 @@ from megatron.training.arguments import parse_args
 from megatron.legacy.model.transformer import FlashSelfAttention
 from megatron.core.transformer.transformer_config import TransformerConfig
 from megatron.core.transformer.dot_product_attention import DotProductAttention
+from megatron.core.transformer.enums import AttnMaskType
 import megatron.core.parallel_state as mpu
 from mindspeed.core.context_parallel.ulysses_context_parallel.ulysses_context_parallel import UlyssesContextAttention
-from mindspeed.core.parallel_state import get_context_parallel_group_for_hybrid_ulysses
+from mindspeed.core.context_parallel.model_parallel_utils import get_context_parallel_group_for_hybrid_ulysses
 from mindspeed.model.transformer import get_attention_mask
 from mindspeed.model.transformer import set_attention_mask
 
@@ -56,6 +62,7 @@ def run_hybridattn_cp(test_args, cp_size, u_size, cp_args):
     args.attention_mask_type = 'causal' if causal else 'general'
     # currently we always use FA in context parallel.
     args.use_flash_attn = True
+    args.enable_high_availability = False
     if u_size == 1:
         args.context_parallel_algo = 'megatron_cp_algo'
     elif u_size == 8:
@@ -120,9 +127,10 @@ def run_hybridattn_cp(test_args, cp_size, u_size, cp_args):
         local_attn = FlashSelfAttention(causal=causal, softmax_scale=scale, attention_dropout=0.)
     else:
         # test core branch, which uses core.transformer.DotProductAttention as core attention
-        config = TransformerConfig(num_layers=2, hidden_size=n * d, num_attention_heads=n, use_cpu_initialization=True)
+        config = TransformerConfig(num_layers=2, hidden_size=n * d, num_attention_heads=n, use_cpu_initialization=True,
+                                   context_parallel_size=cp_size, cp_comm_type=[None] * 2)
         local_attn = DotProductAttention(config=config, layer_number=1,
-                                         attn_mask_type=None, attention_type='self',
+                                         attn_mask_type=AttnMaskType.causal, attention_type='self',
                                          attention_dropout=0.)
 
     if args.context_parallel_algo == "megatron_cp_algo":

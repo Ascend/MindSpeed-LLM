@@ -34,6 +34,5 @@ class BuildTokenizerFeature(MindSpeedBuildTokenizerFeature):
                             help="tokenizer padding side")
 
     def register_patches(self, patch_manager, args):
-        if args.tokenizer_type == "PretrainedFromHF":
-            from mindspeed_llm.training.tokenizer import build_tokenizer
-            patch_manager.register_patch('megatron.training.tokenizer.tokenizer.build_tokenizer', build_tokenizer)
+        from mindspeed_llm.training.tokenizer import build_tokenizer
+        patch_manager.register_patch('megatron.training.tokenizer.tokenizer.build_tokenizer', build_tokenizer)

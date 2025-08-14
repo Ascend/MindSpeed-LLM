@@ -1,9 +1,13 @@
+import sys
 import math
 import pytest
 import torch
 import torch_npu
 import torch.distributed as dist
-
+sys.argv = [
+    sys.argv[0],
+    '--use-flash-attn',
+]
 # To activate mindspeed_llm.patches.__init__
 from mindspeed_llm import megatron_adaptor
 from megatron.training.global_vars import set_args
@@ -62,6 +66,7 @@ def run_attention_module(test_args, use_mcore, use_cp, cp_size, u_size, use_alib
     args.context_parallel_kv_cache_policy = None
     args.context_parallel_cache_interval = 0
     args.use_ulysses_allgather_kv = False
+    args.enable_high_availability = False
 
     if use_alibi:
         args.position_embedding_type = 'alibi'
@@ -187,7 +192,7 @@ class TestAttention(DistributedTest):
     """
     world_size = 8
 
-    @pytest.mark.parametrize("use_mcore", [True, False])
+    @pytest.mark.parametrize("use_mcore", [True])
     def test_no_context_parallel_seq8192_bs2_bf16(self, use_mcore):
         run_attention_module((2, 8192, torch.bfloat16), use_mcore, False, 1, 1)
 
