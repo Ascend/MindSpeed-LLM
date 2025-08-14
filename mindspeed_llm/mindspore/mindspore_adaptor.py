@@ -125,9 +125,11 @@ class MindSporeAdaptation(MegatronAdaptationABC):
         MindSporeAdaptation.register('megatron.core.timers.Timers._get_global_min_max_time', _get_global_min_max_time)
 
 
-        from ..mindspore.core.optimizer.distrib_optimizer import get_parameter_state_dp_zero
+        from ..mindspore.core.optimizer.distrib_optimizer import get_parameter_state_dp_zero, load_parameter_state_from_dp_zero
         MindSporeAdaptation.register('megatron.core.optimizer.distrib_optimizer.DistributedOptimizer.get_parameter_state_dp_zero',
                             get_parameter_state_dp_zero)
+        MindSporeAdaptation.register('megatron.core.optimizer.distrib_optimizer.DistributedOptimizer.load_parameter_state_from_dp_zero',
+                                     load_parameter_state_from_dp_zero)
 
         if args.async_log_allreduce:
             from mindspeed.mindspore.core.data_parallel.async_log_allreduce import get_async_reduced_loss_value
