@@ -4,7 +4,7 @@ export CUDA_DEVICE_MAX_CONNECTIONS=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
 
 # Change for multinode config
-NPUS_PER_NODE=8
+NPUS_PER_NODE=16
 MASTER_ADDR=localhost
 MASTER_PORT=6015
 NNODES=1
@@ -93,7 +93,6 @@ GPT_ARGS="
     --normalization RMSNorm \
     --position-embedding-type rope \
     --norm-epsilon 1e-6 \
-    --no-gradient-accumulation-fusion \
     --attention-softmax-in-fp32 \
     --group-query-attention \
     --num-query-groups 8 \
@@ -104,7 +103,7 @@ GPT_ARGS="
 
 DATA_ARGS="
     --data-path $DATA_PATH \
-    --split 100,0,0
+    --split 100,0,0 \
 "
 
 OUTPUT_ARGS="
