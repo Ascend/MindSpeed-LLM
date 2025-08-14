@@ -34,7 +34,6 @@ from megatron.training.arguments import core_transformer_config_from_args
 from megatron.training.yaml_arguments import core_transformer_config_from_yaml
 
 from mindspeed_llm.tasks.inference.module import GPTModelInfer, MegatronModuleForCausalLM
-from mindspeed_llm.tasks.evaluation.utils import add_text_generate_args
 from mindspeed_llm.tasks.evaluation.eval_api.chat import Chat
 from mindspeed_llm.tasks.evaluation.eval_impl.boolq_eval import BoolqEval
 from mindspeed_llm.tasks.evaluation.eval_impl.gsm8k_eval import Gsm8kEval
@@ -372,8 +371,7 @@ def bbh_eval(eval_args, agent):
 
 
 def main():
-    initialize_megatron(extra_args_provider=add_text_generate_args,
-                        args_defaults={'no_load_rng': True,
+    initialize_megatron(args_defaults={'no_load_rng': True,
                                        'no_load_optim': True})
     args = get_args()
     model = MegatronModuleForCausalLM.from_pretrained(
