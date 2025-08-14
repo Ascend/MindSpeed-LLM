@@ -41,3 +41,5 @@ class ModuleFeature(MindSpeedFeature):
                            help="Convert input-layernorm to fp32")
         group.add_argument("--skip-bias-add", action="store_false", default=True,
                            help='Configuration for the skip bias.')
+        group.add_argument('--output-layer-slice-num', type=int, default=1,
+                       help='Set the number of slices for the weight of the output_layer')
