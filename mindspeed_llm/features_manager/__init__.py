@@ -66,6 +66,7 @@ from mindspeed_llm.features_manager.pipeline_parallel.dualpipev_feature import D
 from mindspeed_llm.features_manager.pipeline_parallel.noop_layers import NoopLayersFeature
 from mindspeed_llm.features_manager.tokenizer.build_tokenizer import BuildTokenizerFeature
 from mindspeed_llm.features_manager.transformer.flash_attention.fusion_attention_feature import FusionAttentionFeature
+from mindspeed_llm.features_manager.transformer.flash_attention.alibi_feature import AlibiFeature
 from mindspeed_llm.features_manager.transformer.mtp import MultiTokenPredictionFeature
 from mindspeed_llm.features_manager.transformer.multi_latent_attention.mla_feature import MLAFeature
 from mindspeed_llm.features_manager.transformer.transformer_block import TransformerBlockFeature
@@ -169,6 +170,8 @@ def add_transformer_features(features_list: List[MindSpeedFeature]):
         MultiTokenPredictionFeature(),
         # LLM feature
         TransformerBlockFeature(),
+        # LLM feature
+        AlibiFeature(),
     ])
 
 

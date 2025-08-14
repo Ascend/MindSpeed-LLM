@@ -1286,8 +1286,6 @@ def _add_dummy_args_v2(args):
     args.tp_2d = False
     args.tp_x = 1
     args.tp_y = 1
-    args.square_alibi_mask = False
-    args.fill_neg_inf = False
     args.add_output_layer_bias = False
     args.is_pairwise_dataset = False
     args.enable_share_memory = False
