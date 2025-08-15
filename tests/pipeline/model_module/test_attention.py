@@ -188,7 +188,7 @@ def run_attention_module(test_args, use_mcore, use_cp, cp_size, u_size, use_alib
 
 class TestAttention(DistributedTest):
     """
-    Test attention module, including DotProductAttention in megatron-core and FlashSelfAttention in legacy.
+    Test attention module, including DotProductAttention with non-CP (no context-parallel) in megatron-core and FlashSelfAttention in legacy.
     """
     world_size = 8
 
@@ -199,16 +199,4 @@ class TestAttention(DistributedTest):
     @pytest.mark.parametrize("use_mcore, use_alibi", [(True, True), (True, False)])
     def test_alibi_seq8192_bs2_bf16(self, use_mcore, use_alibi):
         run_attention_module((2, 8192, torch.bfloat16), use_mcore, False, 1, 1, use_alibi=use_alibi)
-
-    @pytest.mark.parametrize("use_mcore", [True])
-    def test_hybrid_context_parallel_seq8192_bs2_bf16(self, use_mcore):
-        run_attention_module((2, 8192, torch.bfloat16), use_mcore, True, self.world_size, 2)
-
-    @pytest.mark.parametrize("use_mcore", [True])
-    def test_ring_context_parallel_seq8192_bs2_bf16(self, use_mcore):
-        run_attention_module((2, 8192, torch.bfloat16), use_mcore, True, self.world_size, 1)
-
-    @pytest.mark.parametrize("use_mcore", [True])
-    def test_ulysses_context_parallel_seq8192_bs2_bf16(self, use_mcore):
-        run_attention_module((2, 8192, torch.bfloat16), use_mcore, True, self.world_size, 8)
 

@@ -13,6 +13,7 @@ sys.argv = [
 from mindspeed_llm import megatron_adaptor
 from megatron.training.global_vars import set_args
 from megatron.training.arguments import parse_args
+from megatron.core import mpu, tensor_parallel
 from mindspeed.model.transformer import get_attention_mask
 
 from mindspeed_llm.training.utils import seed_all
@@ -140,7 +141,7 @@ def run_ringattn_cp(cp_size, bs, seq_len, dtype, cp_args):
         cp_para['cp_group_for_intra_window'] = get_ring_group_for_intra_window()
         cp_para['cp_group_for_intra_window_send_recv_overlap'] = get_ring_group_for_intra_window_send_recv_overlap()
 
-    out_ = ringattn_context_parallel(q_, k_, v_, head_num=n, cp_para=cp_para, softmax_scale=scale, attn_mask=attn_mask)
+    out_ = ringattn_context_parallel(q_, k_, v_, n, cp_para, softmax_scale=scale, attn_mask=attn_mask)
     out_.backward(dout_)
 
     output_list = [torch.empty_like(out_) for i in range(cp_size)]
@@ -253,7 +254,7 @@ def run_ringattn_cp_with_kv_cache(cp_size, bs, seq_len, dtype, cp_args, cache_ar
         cp_para['cp_group_for_intra_window_send_recv_overlap'] = get_ring_group_for_intra_window_send_recv_overlap()
         cp_para['cache_policy'] = cache_args
 
-    out_ = ringattn_context_parallel(q_, k_, v_, head_num=n, cp_para=cp_para, softmax_scale=scale, attn_mask=attn_mask)
+    out_ = ringattn_context_parallel(q_, k_, v_, n, cp_para, softmax_scale=scale, attn_mask=attn_mask)
     out_.backward(dout_)
 
     output_list = [torch.empty_like(out_) for i in range(cp_size)]
@@ -293,5 +294,5 @@ class TestRingAttention(DistributedTest):
 
     @pytest.mark.parametrize("cache_args", ["full", "half"])
     @pytest.mark.parametrize("cp_args", [(True, True), (False, False)])
-    def test_ringattn_context_parallel_with_kv_cache_seq8192_bs2_bf16(self, cp_args):
+    def test_ringattn_context_parallel_with_kv_cache_seq8192_bs2_bf16(self, cp_args, cache_args):
         run_ringattn_cp_with_kv_cache(self.world_size, 2, 8192, torch.bfloat16, cp_args, cache_args)

@@ -43,3 +43,12 @@ class ModuleFeature(MindSpeedFeature):
                            help='Configuration for the skip bias.')
         group.add_argument('--output-layer-slice-num', type=int, default=1,
                        help='Set the number of slices for the weight of the output_layer')
+        group.add_argument('--geglu', action='store_true', default=False,
+                           help='Geglu activate function.')
+        group.add_argument('--no-post-layer-norm', action='store_true', default=False,
+                           help='Disable final layer norm.')
+
+    def register_patches(self, patch_manager, args):
+        from mindspeed_llm.core.models.common.rms_norm import rms_norm_init_wrapper, rms_norm_forward
+        patch_manager.register_patch('megatron.legacy.model.rms_norm.RMSNorm.__init__', rms_norm_init_wrapper)
+        patch_manager.register_patch('megatron.legacy.model.rms_norm.RMSNorm.forward', rms_norm_forward)

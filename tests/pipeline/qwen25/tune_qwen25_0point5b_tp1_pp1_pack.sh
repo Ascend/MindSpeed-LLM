@@ -91,7 +91,7 @@ GPT_ARGS="
     --no-save-optim \
     --no-save-rng \
     --seed 42 \
-    --sparse-mode 4 \
+    --sparse-mode 2 \
     --bf16
 "
 

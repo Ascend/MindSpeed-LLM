@@ -14,6 +14,7 @@ class TransformerBlockFeature(MindSpeedFeature):
 
     def register_patches(self, patch_manager, args):
         from mindspeed_llm.core.transformer.transformer_block import _transformer_block_build_layers, transformer_block_init_wrapper, transformer_block_forward
+        from mindspeed_llm.core import core_mlp_init
 
         patch_manager.register_patch('megatron.core.transformer.transformer_block.TransformerBlock._build_layers',
                                       _transformer_block_build_layers)
@@ -23,6 +24,8 @@ class TransformerBlockFeature(MindSpeedFeature):
                                     transformer_block_init_wrapper)
         patch_manager.register_patch('megatron.core.transformer.transformer_block.TransformerBlock.forward',
                                     transformer_block_forward)
+
+        patch_manager.register_patch('megatron.core.transformer.mlp.MLP.__init__', core_mlp_init)
 
         if args.share_kvstates:
             from mindspeed_llm.core.transformer.transformer_block import share_kvstates_checkpointed_forward_func
