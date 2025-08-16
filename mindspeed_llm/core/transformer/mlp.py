@@ -13,6 +13,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from functools import wraps
 import math
 import torch
 import torch.nn.functional as F
@@ -198,3 +199,20 @@ def core_mlp_init(self, config, submodules, is_expert=False, input_size=None, sh
             enable_backward_overlap_ag_with_matmul=False,
             _initialize_affine_weight_gpu=_initialize_affine_weight_gpu
         )
+
+
+def core_mlp_init_wrapper(fn):
+    @wraps(fn)
+    def wrapper(self, *args, **kwargs):
+        _config = kwargs['config']
+        _args = get_args()
+        if _args.gelu_tanh:
+            def gelu_tanh_approximation(x):
+                return 0.5 * x * (1 + torch.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * torch.pow(x, 3))))
+
+            _config.gated_linear_unit = True
+            _config.activation_func = gelu_tanh_approximation
+            _config.bias_gelu_fusion = False
+        fn(self, *args, **kwargs)
+    return wrapper
+

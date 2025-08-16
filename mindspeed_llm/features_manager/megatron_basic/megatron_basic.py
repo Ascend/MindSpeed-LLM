@@ -33,7 +33,7 @@ class MegatronBasicFeature(MindSpeedMegatronBasicFeature):
 
     def register_mcore_basic_patches(self, pm, args):
         # norm patches
-        from mindspeed.core.megatron_basic.megatron_basic import PTNorm
+        from mindspeed_llm.core.transformer.custom_layers.transformer_engine import PTNorm
         pm.register_patch('megatron.core.models.gpt.gpt_layer_specs.LNImpl',
                            PTNorm)
         pm.register_patch('megatron.core.transformer.torch_norm.WrappedTorchNorm',
