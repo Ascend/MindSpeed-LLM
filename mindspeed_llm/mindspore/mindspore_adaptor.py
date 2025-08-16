@@ -380,6 +380,9 @@ class MindSporeAdaptation(MegatronAdaptationABC):
         from mindspeed.mindspore.core.pipeline_parallel.schedules import deallocate_output_tensor_
         MindSporeAdaptation.register('megatron.core.pipeline_parallel.schedules.deallocate_output_tensor', deallocate_output_tensor_)
 
+        from .tasks.common.yarn_rope import yarn_linear_ramp_mask
+        MindSporeAdaptation.register('mindspeed_llm.tasks.common.yarn_rope.YarnRotaryPositionEmbedding.yarn_linear_ramp_mask', yarn_linear_ramp_mask)
+
     @staticmethod
     def reparse_args():
         """
