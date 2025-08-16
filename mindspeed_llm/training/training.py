@@ -757,6 +757,10 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
         if is_profile_enabled():
             prof.step()
 
+        if args.enable_high_availability:
+            from mindio_ttp.framework_ttp import tft_pause_train
+            tft_pause_train(iteration)
+
     if is_profile_enabled():
         prof.stop()
 

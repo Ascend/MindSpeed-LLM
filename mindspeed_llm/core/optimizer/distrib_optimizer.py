@@ -13,7 +13,7 @@ from megatron.core.optimizer.grad_scaler import MegatronGradScaler
 from megatron.core.optimizer import OptimizerConfig
 from megatron.core.optimizer.optimizer import MixedPrecisionOptimizer
 from megatron.core.distributed.param_and_grad_buffer import partition_buckets
-from mindspeed.optimizer.distrib_optimizer import reuse_fp32_param_distrib_optimizer_init_wrapper
+from mindspeed.core.memory.reuse_param.adaptor import reuse_fp32_param_distrib_optimizer_init_wrapper
 from megatron.core.optimizer.cpu_offloading import HybridDeviceOptimizer
 from megatron.core.transformer.module import MegatronModule
 from megatron.core.config_logger import has_config_logger_enabled, log_config_to_disk
@@ -172,7 +172,10 @@ def get_parameter_state_dp_zero_with_high_availability_wrapper(func):
         # gather buffer res
         buffer_res_full_shard = []
         for shard_main_param_res_buffer in self.shard_main_param_res_buffers:
-            if global_rank == save_rank:
+            if self.disable_gloo_group and global_rank == save_rank:
+                recv_tensors = [torch.empty(shard_main_param_res_buffer.numel(), dtype=torch.float16, device="cpu")
+                                for _ in range(len(save_rank_list))]
+            elif global_rank == save_rank:
                 recv_tensors = [torch.empty((shard_main_param_res_buffer.numel(),), dtype=torch.float16, device="cpu")
                                 for _ in range(len(save_rank_list))]
             else:
@@ -182,12 +185,20 @@ def get_parameter_state_dp_zero_with_high_availability_wrapper(func):
             send_tensor_bf16_view = torch.tensor(send_tensor.data.untyped_storage(), dtype=torch.bfloat16,
                                                  device=send_tensor.device)
             send_tensor_bf16_view.copy_(shard_main_param_res_buffer.detach().cpu())  # gather支持fp16
-            torch.distributed.gather(
-                send_tensor,
-                recv_tensors,
-                save_rank,
-                save_group_gloo,
-            )
+            if self.disable_gloo_group:
+                from mindspeed.utils import _gather_hccl
+                _gather_hccl(
+                    send_tensor,
+                    recv_tensors,
+                    self.data_parallel_group
+                )
+            else:
+                torch.distributed.gather(
+                    send_tensor,
+                    recv_tensors,
+                    save_rank,
+                    save_group_gloo,
+                )
             if global_rank == save_rank:
                 res = []
                 for i in range(len(save_rank_list)):

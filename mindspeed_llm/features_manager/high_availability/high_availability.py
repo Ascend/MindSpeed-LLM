@@ -18,6 +18,10 @@ class HighAvailabilityFeature(MindSpeedFeature):
         group.add_argument('--distributed-optimizer-no-replica', action='store_true',
                             help='high availability feature, repair from ckpt and disable replica optimizer')
 
+    def pre_validate_args(self, args):
+        from .high_availability_helper import get_env_args
+        get_env_args(args)
+
     def validate_args(self, args):
         if args.enable_high_availability:
             try:
@@ -32,6 +36,15 @@ class HighAvailabilityFeature(MindSpeedFeature):
             raise AssertionError('switch of the high availability feature is unsupported')
         if args.swap_optimizer and args.enable_high_availability:
             raise AssertionError('switch of the high availability feature is unsupported')
+
+    def pre_register_patches(self, patch_manager, args):
+        from .communication_patch import communication_wrapper
+        from .high_availability_helper import skip_reuse_register_patches
+        for communication in ['barrier', 'all_reduce', '_all_gather_base', 'broadcast', 'all_gather_into_tensor']:
+            patch_manager.register_patch('torch.distributed.distributed_c10d.' + communication,
+                                         communication_wrapper)
+        from mindspeed.features_manager import ReuseFP32Param
+        ReuseFP32Param.register_patches = skip_reuse_register_patches(ReuseFP32Param.register_patches, args)
 
     def register_patches(self, patch_manager, args):
         from .initialize_patch import setup_model_and_optimizer_wrapper, initialize_distributed_wrapper
@@ -65,10 +78,7 @@ class HighAvailabilityFeature(MindSpeedFeature):
             patch_manager.register_patch('megatron.core.pipeline_parallel.schedules.get_forward_backward_func',
                                           high_availability_get_forward_backward_func_wrapper)
             if args.reuse_fp32_param:
-                from mindspeed.optimizer.optimizer import mixed_precision_optimizer_step, reuse_fp32_param_init_wrapper, \
-                    optimizer_config_init_wrapper
-                patch_manager.register_patch('megatron.core.optimizer.optimizer.MixedPrecisionOptimizer.step',
-                                              mixed_precision_optimizer_step)
+                from mindspeed.core.memory.reuse_param.adaptor import reuse_fp32_param_init_wrapper, optimizer_config_init_wrapper
                 patch_manager.register_patch('megatron.core.optimizer.optimizer.Float16OptimizerWithFloat16Params.__init__',
                                               reuse_fp32_param_init_wrapper)
                 patch_manager.register_patch('megatron.core.optimizer.optimizer_config.OptimizerConfig.__init__',
@@ -84,14 +94,3 @@ class HighAvailabilityFeature(MindSpeedFeature):
                                               build_train_valid_test_data_iterators_wrapper)
                 patch_manager.register_patch('torch.distributed.distributed_c10d.new_group',
                                               new_group_wrapper)
-
-
-class HighAvailabilityCommFeature(MindSpeedFeature):
-    def __init__(self):
-        super(HighAvailabilityCommFeature, self).__init__(feature_name='high-availability-comm', optimization_level=0)
-
-    def pre_patch(self, patch_manager, args):
-        from mindspeed_llm.features_manager.high_availability.communication_patch import communication_wrapper
-        for communication in ['barrier', 'all_reduce', '_all_gather_base', 'broadcast', 'all_gather_into_tensor']:
-            patch_manager.register_patch('torch.distributed.distributed_c10d.' + communication,
-                                          communication_wrapper)

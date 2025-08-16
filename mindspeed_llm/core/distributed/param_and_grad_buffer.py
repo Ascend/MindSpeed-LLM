@@ -38,18 +38,20 @@ def start_param_sync(self, force_sync: bool = False):
     async_op = self.ddp_config.overlap_param_gather and not force_sync
     self.param_gather_handle = []
     # Coalesce communication kernels across buckets in the bucket group.
-
+    instance_group = self.intra_distributed_optimizer_instance_group_for_tft()
+    instance_rank = torch.distributed.get_rank(
+        group=instance_group
+    )
+    instance_size = torch.distributed.get_world_size(
+                group=instance_group)
     for bucket in self.buckets:
-        instance_rank = torch.distributed.get_rank(
-            group=self.intra_distributed_optimizer_instance_group_for_tft()
-        )
         local_data_view = shard_buffer(
-            bucket.param_data, self.intra_distributed_optimizer_instance_size_for_tft
+            bucket.param_data, instance_size
         )[instance_rank]
         handle = dist_all_gather_func(
             bucket.param_data,
             local_data_view,
-            group=self.intra_distributed_optimizer_instance_group_for_tft(),
+            group=instance_group,
             async_op=async_op,
         )
         self.param_gather_handle.append(handle)
@@ -71,22 +73,8 @@ def param_and_grad_bucket_group_init_wrapper(fn):
                 is_expert_parallel |= not getattr(param, 'allreduce', True)
         from mindio_ttp.adaptor import (ttp_get_dp_cp_replica_group, ttp_get_dp_ep_replica_group)
         if self.ddp_config.use_distributed_optimizer:
-            if not is_expert_parallel:
-                self.intra_distributed_optimizer_instance_group_for_tft = ttp_get_dp_cp_replica_group
-                self.intra_distributed_optimizer_instance_size_for_tft = torch.distributed.get_world_size(
-                    group=ttp_get_dp_cp_replica_group()
-                )
-                self.intra_distributed_optimizer_instance_rank_for_tft = torch.distributed.get_rank(
-                    group=ttp_get_dp_cp_replica_group()
-                )
-            else:
-                self.intra_distributed_optimizer_instance_group_for_tft = ttp_get_dp_ep_replica_group
-                self.intra_distributed_optimizer_instance_size_for_tft = torch.distributed.get_world_size(
-                    group=ttp_get_dp_ep_replica_group()
-                )
-                self.intra_distributed_optimizer_instance_rank_for_tft = torch.distributed.get_rank(
-                    group=ttp_get_dp_ep_replica_group()
-                    )
+            self.intra_distributed_optimizer_instance_group_for_tft = ttp_get_dp_cp_replica_group \
+                if not is_expert_parallel else ttp_get_dp_ep_replica_group
         return
 
     return wrapper
