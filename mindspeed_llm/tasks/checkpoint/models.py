@@ -1086,7 +1086,12 @@ class MegatronModel(ModelBase):
             return
         set_args(self.args)
         self.args, self.args_megatron_checkpoint = load_args_from_checkpoint(self.args)
-        self.args.moe_ffn_hidden_size = getattr(self.args_megatron_checkpoint, "moe_intermediate_size", None)
+        self.args.moe_ffn_hidden_size = getattr(self.args_megatron_checkpoint, "moe_ffn_hidden_size", None)
+        self.args.first_k_dense_replace = getattr(self.args_megatron_checkpoint, "first_k_dense_replace", None)
+        self.args.multi_latent_attention = getattr(self.args_megatron_checkpoint, "multi_latent_attention", None)
+        self.args.qk_layernorm = getattr(self.args_megatron_checkpoint, "qk_layernorm", None)
+        self.args.kv_lora_rank = getattr(self.args_megatron_checkpoint, "kv_lora_rank", None)
+        self.args.n_shared_experts = getattr(self.args_megatron_checkpoint, "n_shared_experts", None)
 
     def update_megatron_args_from_cmd_config(self, loader_megatron):
         self.args.ckpt_format = self.args_cmd.ckpt_format
