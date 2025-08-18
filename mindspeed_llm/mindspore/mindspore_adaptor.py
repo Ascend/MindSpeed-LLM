@@ -383,6 +383,17 @@ class MindSporeAdaptation(MegatronAdaptationABC):
         from .tasks.common.yarn_rope import yarn_linear_ramp_mask
         MindSporeAdaptation.register('mindspeed_llm.tasks.common.yarn_rope.YarnRotaryPositionEmbedding.yarn_linear_ramp_mask', yarn_linear_ramp_mask)
 
+        from mindspeed.mindspore.third_party.safetensors.torch import storage_ptr, storage_size, save_file, load_file
+        MindSporeAdaptation.register('safetensors.torch.storage_ptr', storage_ptr)
+        MindSporeAdaptation.register('safetensors.torch.storage_size', storage_size)
+        MindSporeAdaptation.register('safetensors.torch.save_file', save_file)
+        MindSporeAdaptation.register('safetensors.torch.load_file', load_file)
+
+        from mindspeed.mindspore.third_party.huggingface_hub._torch import get_torch_storage_size, storage_ptr
+        MindSporeAdaptation.register('huggingface_hub.serialization._torch.get_torch_storage_size', get_torch_storage_size)
+        MindSporeAdaptation.register('huggingface_hub.serialization._torch.storage_ptr', storage_ptr)
+
+
     @staticmethod
     def reparse_args():
         """

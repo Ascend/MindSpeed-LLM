@@ -82,6 +82,11 @@ def main():
                         help='Enable only save lora-checkpoint to hf')
     parser.add_argument('--load-checkpoint-loosely', action='store_true', default=False,
                        help='Enable loading checkpoint not strictly.')
+    parser.add_argument('--ckpt-format', default='torch',
+                        choices=['torch', 'torch_dist', 'zarr'],
+                        help='Checkpoint format to use.')
+    parser.add_argument('--ai-framework', type=str, choices=['pytorch', 'mindspore'], default='pytorch', 
+                        help='support pytorch and mindspore')
     known_args, _ = parser.parse_known_args()
 
 
