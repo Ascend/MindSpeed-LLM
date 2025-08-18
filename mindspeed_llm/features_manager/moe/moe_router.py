@@ -90,15 +90,13 @@ class MoERouter(MindSpeedFeature):
             )
 
     def register_patches(self, patch_manager, args):
-        from mindspeed_llm.core.transformer.moe.router import (topk_router_forward, topk_router_routing, topk_router_init_wrapper, topk_router_gating_func)
+        from mindspeed_llm.core.transformer.moe.router import (topk_router_routing, topk_router_init_wrapper, topk_router_gating_func)
         from mindspeed_llm.core.transformer.moe.moe_utils import z_loss_func
 
         patch_manager.register_patch('megatron.core.transformer.moe.router.TopKRouter.__init__', 
                                       topk_router_init_wrapper)
         patch_manager.register_patch('megatron.core.transformer.moe.router.TopKRouter.routing', 
                                       topk_router_routing)
-        patch_manager.register_patch('megatron.core.transformer.moe.router.TopKRouter.forward', 
-                                      topk_router_forward)
         patch_manager.register_patch('megatron.core.transformer.moe.router.TopKRouter.gating', 
                                       topk_router_gating_func)
         patch_manager.register_patch('megatron.core.transformer.moe.router.z_loss_func', 

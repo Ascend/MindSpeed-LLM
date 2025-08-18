@@ -36,8 +36,6 @@ DISTRIBUTED_ARGS="
 "
 
 MOE_ARGS="
-    --moe-layer-freq -1 \
-    --first-k-dense-replace -1 \
     --expert-model-parallel-size ${EP} \
     --num-experts 16 \
     --moe-router-topk 2 \
@@ -46,9 +44,11 @@ MOE_ARGS="
     --moe-input-jitter-eps 0.01 \
     --moe-token-dispatcher-type allgather \
     --moe-permutation-async-comm \
+    --moe-permute-fusion \
 "
 
 GPT_ARGS="
+    --transformer-impl local \
     --use-mcore-models \
     --spec mindspeed_llm.tasks.models.spec.phi35_moe_spec layer_spec \
     --no-rope-fusion \
@@ -61,7 +61,6 @@ GPT_ARGS="
     --max-position-embeddings 131072 \
     --num-layers ${NUM_LAYERS} \
     --hidden-size 4096 \
-    --use-mc2 \
     --ffn-hidden-size 6400 \
     --num-attention-heads 32 \
     --group-query-attention \

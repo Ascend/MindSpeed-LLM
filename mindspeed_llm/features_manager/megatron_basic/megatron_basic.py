@@ -30,6 +30,11 @@ class MegatronBasicFeature(MindSpeedMegatronBasicFeature):
         group.add_argument('--num-layer-list',
                             type=str, help='a list of number of layers, '
                                         'seperated by comma; e.g., 4,4,4,4')
+        # add bias
+        group.add_argument("--add-dense-bias", action="store_true", default=False,
+                           help='Configuration for the dense bias.')
+        group.add_argument("--add-output-layer-bias", action="store_true", default=False,
+                           help='Configuration for the output layer bias.')
 
     def register_mcore_basic_patches(self, pm, args):
         # norm patches

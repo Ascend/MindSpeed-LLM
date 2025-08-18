@@ -1,18 +1,6 @@
-# coding=utf-8
-# Copyright (c) 2024, HUAWEI CORPORATION.  All rights reserved.
 # Copyright (c) 2023, NVIDIA CORPORATION. All rights reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# Copyright (c) 2024, HUAWEI CORPORATION.  All rights reserved.
+from copy import deepcopy
 from typing import Literal, Optional
 from functools import wraps
 
@@ -87,6 +75,7 @@ class GPTModel(MegatronCoreGPTModel):
         self.mtp_block_spec = mtp_block_spec
         self.mtp_process = mtp_block_spec is not None
 
+        # dualpipev use shared embedding weight instead of initialize or load another param
         skip_embedding_allocation = self.mtp_process and global_args.schedules_method == 'dualpipev'
         if self.pre_process or self.mtp_process:
             self.embedding = LanguageModelEmbedding(
@@ -96,6 +85,17 @@ class GPTModel(MegatronCoreGPTModel):
                 position_embedding_type=position_embedding_type,
                 skip_weight_param_allocation=skip_embedding_allocation,
             )
+        if skip_embedding_allocation:
+            def remove_shared_embedding_check(self, incompatible_keys):
+                """
+                Remove embedding weight from unexpected keys.
+                """
+                keys = deepcopy(incompatible_keys.unexpected_keys)
+                for key in keys:
+                    if 'embedding.word_embeddings.weight' in key:
+                        incompatible_keys.unexpected_keys.remove(key)
+
+            self.register_load_state_dict_post_hook(remove_shared_embedding_check)
 
         if self.position_embedding_type == 'rope':
             self.rotary_pos_emb = RotaryEmbedding(

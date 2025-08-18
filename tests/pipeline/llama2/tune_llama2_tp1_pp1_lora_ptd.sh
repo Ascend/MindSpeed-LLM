@@ -45,6 +45,7 @@ MODEL_ARGS=(
 )
 
 TRAINING_ARGS=(
+    --transformer-impl local
     --use-mcore-models
     --tokenizer-type PretrainedFromHF
     --tokenizer-name-or-path ${TOKENIZER_MODEL}

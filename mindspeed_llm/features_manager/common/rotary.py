@@ -1,4 +1,4 @@
-from argparse import ArgumentParser
+from argparse import ArgumentParser, Namespace
 from mindspeed.features_manager.feature import MindSpeedFeature
 
 
@@ -56,6 +56,28 @@ class RotaryPositionEmbeddingFeature(MindSpeedFeature):
         # Only used for glm
         group.add_argument('--use-glm-rope', action='store_true',
                             help='use custom partial rope in glm model.')
+
+    def pre_validate_args(self, args: Namespace):
+        if args.rope_scaling_type == "longrope":
+            if args.long_factor is not None:
+                args.long_factor = list(map(float, args.long_factor.split(',')))
+
+            if args.short_factor is not None:
+                args.short_factor = list(map(float, args.short_factor.split(',')))
+
+    def validate_args(self, args: Namespace):
+        if args.rope_scaling_type == "longrope":
+            if args.rope_scaling_original_max_position_embeddings is None:
+                raise AssertionError('The parameter rope_scaling_original_max_position_embeddings should be set '
+                                     'when use longrope.')
+            if args.long_factor is None:
+                raise AssertionError('The parameter long_factor should be set when use longrope.')
+
+            if args.short_factor is None:
+                raise AssertionError('The parameter short_factor should be set when use longrope.')
+
+            if bool(args.short_mscale) ^ bool(args.long_mscale):
+                raise AssertionError('The parameter short_mscale and long_mscale must be set at the same time')
 
     def register_patches(self, patch_manager, args):
         from mindspeed_llm.core import rotary_embedding_forward, apply_rotary_pos_emb_bshd, rotary_embedding_init_wrapper

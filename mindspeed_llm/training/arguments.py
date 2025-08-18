@@ -1281,12 +1281,12 @@ def _add_dummy_args_v2(args):
     """
     For arguments in feature_list which is currently unsupported in mindspeed-llm.
     """
+    args.ckpt_format = "torch"
     args.unaligned_linear = False
     args.embed_layernorm = False
     args.tp_2d = False
     args.tp_x = 1
     args.tp_y = 1
-    args.add_output_layer_bias = False
     args.is_pairwise_dataset = False
     args.enable_share_memory = False
     args.return_document_ids = False
@@ -1295,7 +1295,6 @@ def _add_dummy_args_v2(args):
     args.use_fused_mlp = False
     args.transformer_impl = 'local'
     args.ckpt_format = 'torch'
-
 
 
 def _validate_noop_layer(args):

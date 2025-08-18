@@ -58,6 +58,7 @@ ACCELERATE_ARGS=(
 )
 
 GPT_ARGS=(
+    --transformer-impl local
     --use-mcore-models
     --disable-bias-linear
     --seq-length 4096

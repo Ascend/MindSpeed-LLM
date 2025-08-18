@@ -60,7 +60,7 @@ MOE_ARGS="
     --moe-router-topk 8 \
     --moe-intermediate-size 2048 \
     --moe-ffn-hidden-size 2048 \
-    --moe-router-load-balancing-type noaux_tc \
+    --moe-router-load-balancing-type none \
     --topk-group 4 \
     --routed-scaling-factor 2.5 \
     --moe-router-score-function sigmoid \

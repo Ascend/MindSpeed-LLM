@@ -68,7 +68,6 @@ GPT_ARGS="
 
     --no-masked-softmax-fusion \
     --use-fused-rotary-pos-emb \
-    --use-mc2 \
     --use-flash-attn \
     --use-fused-swiglu \
     --use-fused-rmsnorm \

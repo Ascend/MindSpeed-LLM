@@ -29,6 +29,7 @@ DISTRIBUTED_ARGS="
 "
 
 GPT_ARGS="
+    --transformer-impl local \
     --use-mcore-models \
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \
@@ -83,7 +84,7 @@ GPT_ARGS="
     --is-instruction-dataset \
     --variable-seq-lengths \
     --prompt-type llama2 \
-    --use-deter-comp \
+    --npu-deterministic \
     --log-throughput \
 "
 

@@ -29,6 +29,7 @@ DISTRIBUTED_ARGS="
 "
 
 GPT_ARGS="
+    --transformer-impl local \
     --use-mcore-models \
     --tensor-model-parallel-size ${TP} \
     --tp-2d \
