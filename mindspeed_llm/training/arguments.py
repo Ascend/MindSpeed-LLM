@@ -1083,8 +1083,6 @@ def _validate_transformer_block_build_layers(args):
         if args.first_k_dense_replace is not None or args.moe_layer_freq is not None:
             raise AssertionError('First-k-dense-replace and moe-layer-freq must be None when not using MoEs')
     else:
-        if (args.first_k_dense_replace is None) != (args.moe_layer_freq is None):
-            raise AssertionError('First-k-dense-replace and moe-layer-freq must be set together.')
         if args.first_k_dense_replace and args.num_layers <= args.first_k_dense_replace:
             raise AssertionError('Num-layer ({}) must be greater than first-k-dense-replace ({}) when first-k-dense-replace is set.'.format(args.num_layers,
             args.first_k_dense_replace))

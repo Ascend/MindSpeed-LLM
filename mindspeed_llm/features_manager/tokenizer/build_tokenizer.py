@@ -1,8 +1,6 @@
 # Copyright (c) 2025, Huawei Technologies Co., Ltd. All rights reserved.
 from pathlib import Path
 
-from argparse import ArgumentParser
-
 from mindspeed.features_manager.tokenizer.build_tokenizer import BuildTokenizerFeature as MindSpeedBuildTokenizerFeature
 
 TEMPLATES_DIR = str(
@@ -13,7 +11,7 @@ TEMPLATES_DIR = str(
 
 class BuildTokenizerFeature(MindSpeedBuildTokenizerFeature):
 
-    def register_args(self, parser: ArgumentParser):
+    def register_args(self, parser):
         self.add_parser_argument_choices_value(parser, "--tokenizer-type", 'PretrainedFromHF')
 
         group = parser.add_argument_group(title=self.feature_name)

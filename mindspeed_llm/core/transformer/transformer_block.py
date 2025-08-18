@@ -107,8 +107,8 @@ def _transformer_block_build_layers(self):
         # For deepseek
         if (
                 args.num_experts
-                and args.first_k_dense_replace is not None
-                and args.moe_layer_freq is not None
+                and args.first_k_dense_replace
+                and args.moe_layer_freq
         ):
 
             if (

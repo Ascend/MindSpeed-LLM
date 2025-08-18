@@ -49,7 +49,6 @@ MOE_ARGS="
     --moe-permutation-async-comm \
     --moe-alltoall-overlap-comm \
     --moe-layer-freq -1 \
-    --first-k-dense-replace -1 \
 "
 
 OPTIMIZE_ARGS="

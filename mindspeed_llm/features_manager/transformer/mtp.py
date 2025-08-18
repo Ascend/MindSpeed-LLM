@@ -1,4 +1,3 @@
-from argparse import ArgumentParser
 from mindspeed.features_manager.feature import MindSpeedFeature
 
 
@@ -6,7 +5,7 @@ class MultiTokenPredictionFeature(MindSpeedFeature):
     def __init__(self):
         super(MultiTokenPredictionFeature, self).__init__(feature_name="multi-token-prediction", optimization_level=0)
     
-    def register_args(self, parser: ArgumentParser):
+    def register_args(self, parser):
         group = parser.add_argument_group(title=self.feature_name)
 
         group.add_argument('--recompute-mtp-norm', action='store_true', default=False,
@@ -26,9 +25,8 @@ class MultiTokenPredictionFeature(MindSpeedFeature):
         # Use existing patch: megatron.core.models.common.embeddings.language_model_embedding.LanguageModelEmbedding.__init__
         # mtp compatibility
         megatron.core.transformer.multi_token_prediction.LNImpl = PTNorm
-        patch_manager.register_patch(
-            'megatron.core.transformer.multi_token_prediction.MTPLossLoggingHelper.reduce_loss_in_tracker',
-            mtp_reduce_loss_in_tracker)
+        patch_manager.register_patch('megatron.core.transformer.multi_token_prediction.MTPLossLoggingHelper.reduce_loss_in_tracker',
+                                      mtp_reduce_loss_in_tracker)
         
         # mtp memory optimization
         if args.mtp_mem_efficient_logits:

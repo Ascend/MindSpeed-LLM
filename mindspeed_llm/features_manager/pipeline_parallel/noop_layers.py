@@ -20,6 +20,6 @@ class NoopLayersFeature(MSNoopLayersFeature):
         if getattr(args, self.feature_name, None):
             # Use existing patch: megatron.core.transformer.transformer_block.TransformerBlock._build_layers
             patch_manager.register_patch("megatron.training.training.num_floating_point_operations",
-                                         mindspeed_calc_flop)
+                                          mindspeed_calc_flop)
             patch_manager.register_patch("megatron.core.transformer.moe.moe_utils.track_moe_metrics",
-                                         mindspeed_track_moe_metrics)
+                                          mindspeed_track_moe_metrics)

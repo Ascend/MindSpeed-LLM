@@ -40,7 +40,6 @@ MOE_ARGS="
     --moe-permutation-async-comm \
     --moe-token-dispatcher-type allgather \
     --moe-layer-freq -1 \
-    --first-k-dense-replace -1 \
 "
 
 torchrun $DISTRIBUTED_ARGS evaluation.py \
