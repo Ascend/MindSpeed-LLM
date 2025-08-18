@@ -204,7 +204,13 @@ def core_mlp_init(self, config, submodules, is_expert=False, input_size=None, sh
 def core_mlp_init_wrapper(fn):
     @wraps(fn)
     def wrapper(self, *args, **kwargs):
-        _config = kwargs['config']
+        if 'config' in kwargs:
+            _config = kwargs['config']
+        elif len(args) > 0:
+            _config = args[0]
+        else:
+            raise ValueError("Missing the required argument 'config' when initializing MLP.")
+
         _args = get_args()
         if _args.gelu_tanh:
             def gelu_tanh_approximation(x):
@@ -213,6 +219,11 @@ def core_mlp_init_wrapper(fn):
             _config.gated_linear_unit = True
             _config.activation_func = gelu_tanh_approximation
             _config.bias_gelu_fusion = False
-        fn(self, *args, **kwargs)
+
+        if 'config' in kwargs:
+            kwargs['config'] = _config
+            fn(self, *args, **kwargs)
+        else:
+            fn(self, _config, *args[1:], **kwargs)
     return wrapper
 

@@ -56,7 +56,7 @@
                 "no-load-rng": null,
                 "seed": 42,
                 "bf16": null,
-                "use-deter-comp": null
+                "npu-deterministic": null
             }
         }
     ],
@@ -115,7 +115,7 @@
                 "no-load-rng": null,
                 "seed": 42,
                 "bf16": null,
-                "use-deter-comp": null
+                "npu-deterministic": null
             }
         }
     ],

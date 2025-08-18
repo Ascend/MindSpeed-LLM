@@ -46,7 +46,7 @@
                 "seed": 42,
                 "bf16": null,
                 "no-chat-template": null,
-                "use-deter-comp": null
+                "npu-deterministic": null
             }
         }
     ],
@@ -86,7 +86,7 @@
                 "seed": 42,
                 "bf16": null,
                 "no-chat-template": null,
-                "use-deter-comp": null
+                "npu-deterministic": null
             }
         }
     ]
