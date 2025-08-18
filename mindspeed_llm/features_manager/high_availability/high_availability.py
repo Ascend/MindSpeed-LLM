@@ -55,6 +55,7 @@ class HighAvailabilityFeature(MindSpeedFeature):
                                         distributed_optimizer_init_for_reuse_fp32_wrapper,
                                         get_parameter_state_dp_zero_with_high_availability_wrapper)
         from mindspeed_llm.core.pipeline_parallel.schedules import high_availability_get_forward_backward_func_wrapper
+        from mindspeed_llm.features_manager.high_availability.communication_patch import set_worker_signal_handlers_wrapper
 
         if args.enable_high_availability:
             patch_manager.register_patch('megatron.core.distributed.distributed_data_parallel.DistributedDataParallel.__init__',
@@ -77,6 +78,8 @@ class HighAvailabilityFeature(MindSpeedFeature):
                                           setup_model_and_optimizer_wrapper)
             patch_manager.register_patch('megatron.core.pipeline_parallel.schedules.get_forward_backward_func',
                                           high_availability_get_forward_backward_func_wrapper)
+            patch_manager.register_patch('torch.utils.data._utils.signal_handling._set_worker_signal_handlers',
+                                          set_worker_signal_handlers_wrapper)
             if args.reuse_fp32_param:
                 from mindspeed.core.memory.reuse_param.adaptor import reuse_fp32_param_init_wrapper, optimizer_config_init_wrapper
                 patch_manager.register_patch('megatron.core.optimizer.optimizer.Float16OptimizerWithFloat16Params.__init__',

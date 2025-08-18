@@ -1,3 +1,4 @@
+import signal
 from functools import wraps
 import torch
 
@@ -26,4 +27,16 @@ def new_group_wrapper(fn):
             kwargs['use_local_synchronization'] = True
         res = fn(*args, **kwargs)
         return res
+    return wrapper
+
+
+def set_worker_signal_handlers():
+    signal.signal(signal.SIGTERM, signal.SIG_IGN)
+
+
+def set_worker_signal_handlers_wrapper(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        fn(*args, **kwargs)
+        return set_worker_signal_handlers()
     return wrapper
