@@ -8,10 +8,6 @@ class MultiTokenPredictionFeature(MindSpeedFeature):
     def register_args(self, parser):
         group = parser.add_argument_group(title=self.feature_name)
 
-        group.add_argument('--recompute-mtp-norm', action='store_true', default=False,
-                            help='Multi-Token prediction recompute norm')
-        group.add_argument('--recompute-mtp-layer', action='store_true', default=False,
-                            help='Multi-Token prediction recompute layer')
         group.add_argument('--mtp-mem-efficient-logits', action='store_true', default=False,
                             help='Optimize ce_loss memory when use mtp block.')
 

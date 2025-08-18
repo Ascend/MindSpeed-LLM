@@ -70,8 +70,6 @@ MOE_ARGS="
 MTP_ARGS="
     --mtp-num-layers 1 \
     --mtp-loss-scaling-factor 0.3 \
-    --recompute-mtp-norm \
-    --recompute-mtp-layer
 "
 
 ROPE_ARGS="

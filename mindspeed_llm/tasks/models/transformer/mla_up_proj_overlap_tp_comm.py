@@ -3,11 +3,9 @@ from contextlib import AbstractContextManager
 from functools import wraps
 import torch
 import torch.nn.functional as F
-try:
-    from mindspeed.core.pipeline_parallel.fb_overlap.modules.attention import launch_async_all2all
-    from mindspeed.core.pipeline_parallel.dualpipev.dualpipev_schedules import get_post_process_flag
-except ImportError:
-    pass
+
+from mindspeed.core.transformer.moe.moe_feature.fb_overlap.modules.attention import launch_async_all2all
+from mindspeed.core.pipeline_parallel.dualpipev.dualpipev_schedules import get_post_process_flag
 from mindspeed.core.transformer.moe.comm_utils import async_all_gather
 from mindspeed.core.tensor_parallel.random import CheckpointWithoutOutput
 from megatron.training.utils import get_args

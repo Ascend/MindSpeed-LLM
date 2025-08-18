@@ -20,9 +20,8 @@ from megatron.core.transformer.multi_token_prediction import MTPLossLoggingHelpe
 from megatron.core.transformer.transformer_config import TransformerConfig
 from megatron.core.utils import make_viewless_tensor
 from megatron.training import get_args
-from mindspeed.core.tensor_parallel.random import CheckpointWithoutOutput
-
 from megatron.training.utils import get_batch_on_this_cp_rank
+
 from mindspeed_llm.training.utils import generate_actual_seq_len, get_mtp_batch_list
 
 
@@ -71,9 +70,6 @@ def mtp_layer_init_wrapper(fn):
         # fn move out of layer
         self.final_layernorm = None
 
-        args = get_args()
-        self.recompute_mtp_norm = args.recompute_mtp_norm
-        self.recompute_mtp_layer = args.recompute_mtp_layer
         # set mtp_idx for tnd
         self.transformer_layer.mtp_idx = self.layer_number
         self.transformer_layer.self_attention.core_attention.mtp_idx = self.layer_number
@@ -131,74 +127,36 @@ def mtp_layer_forward(self,
         fp8_context = nullcontext()
 
     with rng_context, fp8_context:
-
-        def enorm(tensor):
-            tensor = self.enorm(tensor)
-            tensor = make_viewless_tensor(
-                inp=tensor, requires_grad=True, keep_graph=True
-            )
-            return tensor
-
-        def hnorm(tensor):
-            tensor = self.hnorm(tensor)
-            tensor = make_viewless_tensor(
-                inp=tensor, requires_grad=True, keep_graph=True
-            )
-            return tensor
-
-        if self.recompute_mtp_norm:
-            decoder_input.requires_grad_(True)
-            self.enorm_ckpt = CheckpointWithoutOutput()
-            enorm_output = self.enorm_ckpt.checkpoint(enorm, False, decoder_input)
-            self.hnorm_ckpt = CheckpointWithoutOutput()
-            hnorm_output = self.hnorm_ckpt.checkpoint(hnorm, False, hidden_states)
-        else:
-            enorm_output = enorm(decoder_input)
-            hnorm_output = hnorm(hidden_states)
+        decoder_input = self.enorm(decoder_input)
+        decoder_input = make_viewless_tensor(
+            inp=decoder_input, requires_grad=True, keep_graph=True
+        )
+        hidden_states = self.hnorm(hidden_states)
+        hidden_states = make_viewless_tensor(
+            inp=hidden_states, requires_grad=True, keep_graph=True
+        )
         # At the (k - 1)-th MTP module, concatenates the i-th tocken's hidden_states
         # and the (i + K)-th tocken's embedding, and combine them with linear projection.
-        hidden_states = torch.cat((enorm_output, hnorm_output), -1)
-        if self.recompute_mtp_norm:
-            self.enorm_ckpt.discard_output()
-            self.hnorm_ckpt.discard_output()
-            hidden_states.register_hook(self.enorm_ckpt.recompute)
-            hidden_states.register_hook(self.hnorm_ckpt.recompute)
+        hidden_states = torch.cat((decoder_input, hidden_states), -1)
         hidden_states, _ = self.eh_proj(hidden_states)
         # For tensor parallel, all gather after linear_fc.
         hidden_states = all_gather_last_dim_from_tensor_parallel_region(hidden_states)
         # For sequence parallel, scatter after linear_fc and before transformer layer.
         if self.sequence_parallel:
             hidden_states = scatter_to_sequence_parallel_region(hidden_states)
-        if self.recompute_mtp_layer:
-            hidden_states, _ = tensor_parallel.checkpoint(
-                self.transformer_layer,
-                self.config.distribute_saved_activations,
-                hidden_states,
-                attention_mask,
-                context,
-                context_mask,
-                rotary_pos_emb,
-                rotary_pos_cos,
-                rotary_pos_sin,
-                attention_bias,
-                inference_params,
-                packed_seq_params,
-                sequence_len_offset,
-            )
-        else:
-            hidden_states, _ = self.transformer_layer(
-                hidden_states=hidden_states,
-                attention_mask=attention_mask,
-                context=context,
-                context_mask=context_mask,
-                rotary_pos_emb=rotary_pos_emb,
-                rotary_pos_cos=rotary_pos_cos,
-                rotary_pos_sin=rotary_pos_sin,
-                attention_bias=attention_bias,
-                inference_params=inference_params,
-                packed_seq_params=packed_seq_params,
-                sequence_len_offset=sequence_len_offset,
-            )
+        hidden_states, _ = self.transformer_layer(
+            hidden_states=hidden_states,
+            attention_mask=attention_mask,
+            context=context,
+            context_mask=context_mask,
+            rotary_pos_emb=rotary_pos_emb,
+            rotary_pos_cos=rotary_pos_cos,
+            rotary_pos_sin=rotary_pos_sin,
+            attention_bias=attention_bias,
+            inference_params=inference_params,
+            packed_seq_params=packed_seq_params,
+            sequence_len_offset=sequence_len_offset,
+        )
 
     return hidden_states
 

@@ -84,7 +84,6 @@ MTP_ARGS="
     --mtp-num-layers 1 \
     --mtp-loss-scaling-factor 0.3 \
     --mtp-mem-efficient-logits \
-    --recompute-mtp-norm \
 "
 
 

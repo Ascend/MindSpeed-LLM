@@ -1279,7 +1279,6 @@ def _add_dummy_args_v2(args):
     """
     For arguments in feature_list which is currently unsupported in mindspeed-llm.
     """
-    args.ckpt_format = "torch"
     args.unaligned_linear = False
     args.embed_layernorm = False
     args.tp_2d = False
