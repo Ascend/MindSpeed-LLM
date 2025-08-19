@@ -7,7 +7,7 @@ MindSpeed-LLM支持基于昇腾芯片采集profiling数据，以提供对模型�
 --profile-data-simplification    # 使用数据精简模式
 --profile-step-start  5          # 指定开启采集数据的步骤
 --profile-step-end 6             # 指定结束采集数据的步骤，实际采集步数为 end-start，不包含end
---profile-ranks 0 1 2 3 4        # 指定采集数据的卡号，默认为-1，表示采集所有rank的profiling数据，可以设置为 0 1 2 3 4 5 6 7 8 9 列表指定全局卡号
+--profile-ranks 0 1 2 3 4        # 指定采集数据的卡号，默认为0，设置为-1时表示采集所有rank的profiling数据，可以设置为 0 1 2 3 4 5 6 7 8 9 列表指定全局卡号
 --profile-level level2           # 数据采集水平，level_none, level0, 1, 2, 级别越高采集信息越多，默认为level0
 --profile-with-cpu               # 是否采集CPU数据，加入参数采集
 --profile-with-stack             # 采集指令运行堆栈，加入参数采集

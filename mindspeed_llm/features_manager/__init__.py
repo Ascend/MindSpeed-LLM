@@ -64,6 +64,7 @@ from mindspeed_llm.features_manager.moe.shared_expert import MoESharedExpertsFea
 from mindspeed_llm.features_manager.moe.tp_extend_ep import MoETpExtendEpFeature
 from mindspeed_llm.features_manager.pipeline_parallel.dualpipev_feature import DualpipeVFeature
 from mindspeed_llm.features_manager.pipeline_parallel.noop_layers import NoopLayersFeature
+from mindspeed_llm.features_manager.functional.profiling import ProfilingFeature
 from mindspeed_llm.features_manager.tokenizer.build_tokenizer import BuildTokenizerFeature
 from mindspeed_llm.features_manager.transformer.flash_attention.fusion_attention_feature import FusionAttentionFeature
 from mindspeed_llm.features_manager.transformer.flash_attention.alibi_feature import AlibiFeature
@@ -226,6 +227,7 @@ def add_optimizer_features(features_list: List[MindSpeedFeature]):
 
 def add_functional_features(features_list: List[MindSpeedFeature]):
     features_list.extend([
+        ProfilingFeature(),
         NPUDeterministicFeature(),
     ])
 
