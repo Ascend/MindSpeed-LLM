@@ -104,7 +104,7 @@ def initialize_megatron(
         if args.rank == 0:
             print("> setting random seeds to {} ...".format(args.seed))
         _set_random_seed(args.seed, args.data_parallel_random_init)
-        if args.use_mc2:
+        if args.use_ascend_mc2:
             initialize_cfg_from_args(args)
 
     if skip_mpu_initialization:

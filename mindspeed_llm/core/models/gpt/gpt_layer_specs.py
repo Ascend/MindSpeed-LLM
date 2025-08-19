@@ -46,7 +46,7 @@ def build_layers_wrapper(fn, column_forward, row_forward):
     @wraps(fn)
     def wrapper(self, *args, **kwargs):
         fn(self, *args, **kwargs)
-        if not get_args().use_mc2:
+        if not get_args().use_ascend_mc2:
             return
         for layer in self.layers:
             if isinstance(getattr(layer, 'mlp', None), MoELayer):

@@ -96,7 +96,7 @@ GPT_ARGS="
     --use-distributed-optimizer \
     --overlap-grad-reduce \
     --overlap-param-gather \
-    --use-mc2 \
+    --use-ascend-mc2 \
     --no-shuffle
 "
 
