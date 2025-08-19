@@ -11,16 +11,12 @@ class TransformerBlockFeature(MindSpeedFeature):
                             help='Set first k layer as dense layer')
 
     def validate_args(self, args):
-        if args.num_experts is None:
-            if args.first_k_dense_replace is not None or args.moe_layer_freq is not None:
-                raise AssertionError('First-k-dense-replace and moe-layer-freq must be None when not using MoEs')
-        else:
-            if args.first_k_dense_replace and args.num_layers <= args.first_k_dense_replace:
-                raise AssertionError('Num-layer ({}) must be greater than first-k-dense-replace ({}) when first-k-dense-replace is set.'.format(args.num_layers,
-                args.first_k_dense_replace))
-            if args.first_k_dense_replace and args.pipeline_model_parallel_size > 1:
-                if args.first_k_dense_replace >= args.num_layers // args.pipeline_model_parallel_size:
-                    raise AssertionError('When using first-k-dense-replace, it is not allowed for all layers within a pp stage to be dense layers.')
+        if args.first_k_dense_replace and args.num_layers <= args.first_k_dense_replace:
+            raise AssertionError('Num-layer ({}) must be greater than first-k-dense-replace ({}) when first-k-dense-replace is set.'.format(args.num_layers,
+            args.first_k_dense_replace))
+        if args.first_k_dense_replace and args.pipeline_model_parallel_size > 1:
+            if args.first_k_dense_replace >= args.num_layers // args.pipeline_model_parallel_size:
+                raise AssertionError('When using first-k-dense-replace, it is not allowed for all layers within a pp stage to be dense layers.')
         if args.num_experts is not None and args.use_ascend_mc2 and args.moe_grouped_gemm:
             raise AssertionError('Moe Grouped Gemm is not supported with mc2 in MOE model.')
 

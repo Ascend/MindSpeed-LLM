@@ -45,3 +45,6 @@ class MlaDotProductAttention(DotProductAttention):
                 self.softmax_scale = self.softmax_scale * mscale * mscale
 
         self.norm_factor = 1.0 / self.softmax_scale
+
+        self.scale = 1.0 / math.sqrt(self.hidden_size_per_attention_head) \
+            if self.scale_mask_softmax.scale is None else self.softmax_scale
