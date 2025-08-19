@@ -58,7 +58,6 @@ MOE_ARGS="
     --n-shared-experts 1 \
     --num-experts 16 \
     --moe-router-topk 8 \
-    --moe-intermediate-size 2048 \
     --moe-ffn-hidden-size 2048 \
     --moe-router-load-balancing-type none \
     --topk-group 4 \

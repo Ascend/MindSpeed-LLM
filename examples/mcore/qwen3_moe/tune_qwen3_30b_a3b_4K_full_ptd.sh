@@ -35,7 +35,6 @@ DISTRIBUTED_ARGS="
 MOE_ARGS="
     --num-experts 128 \
     --moe-router-topk 8 \
-    --moe-intermediate-size 768 \
     --moe-ffn-hidden-size 768 \
     --moe-grouped-gemm \
     --moe-permutation-async-comm \

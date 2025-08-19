@@ -51,7 +51,6 @@ MOE_ARGS="
     --n-shared-experts 8 \
     --shared-expert-gate \
     --moe-router-load-balancing-type ${ROUTER_BALANCING_TYPE} \
-    --moe-intermediate-size 2560 \
     --moe-ffn-hidden-size 2560 \
     --moe-grouped-gemm \
     --moe-permutation-async-comm \

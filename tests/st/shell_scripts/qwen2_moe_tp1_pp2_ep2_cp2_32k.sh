@@ -42,7 +42,6 @@ MOE_ARGS="
     --shared-expert-gate \
     --moe-layer-freq -1 \
     --moe-router-load-balancing-type ${ROUTER_BALANCING_TYPE} \
-    --moe-intermediate-size 320 \
     --moe-ffn-hidden-size 320 \
     --moe-grouped-gemm \
     --moe-permutation-async-comm \

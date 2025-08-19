@@ -60,7 +60,6 @@ MOE_ARGS="
     --n-shared-experts 1 \
     --num-experts 256 \
     --moe-router-topk 8 \
-    --moe-intermediate-size 2048 \
     --moe-ffn-hidden-size 2048 \
     --moe-router-load-balancing-type noaux_tc \
     --seq-aux \

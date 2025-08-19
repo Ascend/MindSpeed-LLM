@@ -40,7 +40,6 @@ MOE_ARGS="
     --moe-router-topk 8 \
     --n-shared-experts 8 \
     --shared-expert-gate \
-    --moe-intermediate-size 2560 \
     --moe-ffn-hidden-size 2560 \
     --moe-router-load-balancing-type ${ROUTER_BALANCING_TYPE} \
     --moe-grouped-gemm \

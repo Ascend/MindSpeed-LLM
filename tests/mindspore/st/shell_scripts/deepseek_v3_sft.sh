@@ -53,7 +53,6 @@ MOE_ARGS="
     --n-shared-experts 1 \
     --num-experts 128 \
     --moe-router-topk 8 \
-    --moe-intermediate-size 2048 \
     --moe-router-load-balancing-type noaux_tc \
     --topk-group 4 \
     --n-group 8 \

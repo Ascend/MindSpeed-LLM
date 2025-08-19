@@ -1273,6 +1273,7 @@ def _add_dummy_args(args):
     args.alibi_fusion_attn_type = None
     args.moe_adaptive_recompute_activation_scale = 2.0
     args.yarn_scaling_factor = 1.0
+    args.moe_intermediate_size = args.moe_ffn_hidden_size
 
 
 def _add_dummy_args_v2(args):

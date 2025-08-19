@@ -37,7 +37,6 @@ MOE_ARGS="
     --n-shared-experts 1 \
     --num-experts 128 \
     --moe-router-topk 8 \
-    --moe-intermediate-size 1408 \
     --moe-ffn-hidden-size 1408 \
     --moe-router-load-balancing-type noaux_tc \
     --n-group 1 \

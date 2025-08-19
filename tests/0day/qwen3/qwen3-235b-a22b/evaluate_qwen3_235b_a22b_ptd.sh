@@ -35,7 +35,6 @@ MOE_ARGS="
     --num-experts 128 \
     --moe-router-topk 8 \
     --moe-router-load-balancing-type ${ROUTER_BALANCING_TYPE} \
-    --moe-intermediate-size 1536 \
     --moe-ffn-hidden-size 1536 \
     --moe-grouped-gemm \
     --moe-permutation-async-comm \
