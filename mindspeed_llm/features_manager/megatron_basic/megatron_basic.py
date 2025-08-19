@@ -27,9 +27,6 @@ class MegatronBasicFeature(MindSpeedMegatronBasicFeature):
                             help='scale-depth')
         group.add_argument('--no-shared-storage', action='store_true',
                             default=False, help='if no shared storage, set it')
-        group.add_argument('--num-layer-list',
-                            type=str, help='a list of number of layers, '
-                                        'seperated by comma; e.g., 4,4,4,4')
         # add bias
         group.add_argument("--add-dense-bias", action="store_true", default=False,
                            help='Configuration for the dense bias.')
@@ -74,10 +71,7 @@ class MegatronBasicFeature(MindSpeedMegatronBasicFeature):
         pm.register_patch('megatron.core.optimizer.optimizer.ChainedOptimizer.step',
                            step)
 
-        from mindspeed_llm.core.transformer.transformer_block import get_layer_offset_wrapper
         from mindspeed_llm.core import TransformerLayer
-        pm.register_patch('megatron.core.transformer.transformer_layer.TransformerLayer._get_layer_offset',
-                            get_layer_offset_wrapper)
         pm.register_patch('megatron.core.transformer.transformer_layer.TransformerLayer', TransformerLayer)
 
     def register_non_mcore_basic_patches(self, pm, args):

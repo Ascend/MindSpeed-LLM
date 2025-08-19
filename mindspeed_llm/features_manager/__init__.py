@@ -71,6 +71,7 @@ from mindspeed_llm.features_manager.transformer.flash_attention.alibi_feature im
 from mindspeed_llm.features_manager.transformer.mtp import MultiTokenPredictionFeature
 from mindspeed_llm.features_manager.transformer.multi_latent_attention.mla_feature import MLAFeature
 from mindspeed_llm.features_manager.transformer.transformer_block import TransformerBlockFeature
+from mindspeed_llm.features_manager.pipeline_parallel.num_layer_list import NumLayerListFeature
 from mindspeed_llm.features_manager.ai_framework.ms_patch_feature import MindSporePatchFeature
 
 
@@ -111,6 +112,7 @@ def add_llm_features(features_list: List[MindSpeedFeature]):
         DatasetFeature(),
         ModuleFeature(),
         FinetuneFeature(),
+        NumLayerListFeature(),
         LoraFeature(),
         InferenceFeature(),
         EvaluationFeature(),
