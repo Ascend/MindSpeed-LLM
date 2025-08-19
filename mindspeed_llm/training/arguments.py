@@ -1292,6 +1292,7 @@ def _add_dummy_args_v2(args):
     args.use_fused_mlp = False
     args.transformer_impl = 'local'
     args.ckpt_format = 'torch'
+    args.use_dist_ckpt = False
 
 
 def _validate_noop_layer(args):
