@@ -34,5 +34,12 @@ class LoraFeature(MindSpeedFeature):
 
     def register_patches(self, patch_manager, args):
         from mindspeed_llm.core.distributed.finalize_model_grads import _allreduce_word_embedding_grads
+        from mindspeed_llm.training.utils import unwrap_model_wrapper
         patch_manager.register_patch('megatron.core.distributed.finalize_model_grads._allreduce_word_embedding_grads',
                                       _allreduce_word_embedding_grads)
+        # fix unwrap PerfModel 
+        patch_manager.register_patch('megatron.training.checkpointing.unwrap_model',
+                                      unwrap_model_wrapper)
+        patch_manager.register_patch('megatron.training.training.unwrap_model',
+                                      unwrap_model_wrapper)
+

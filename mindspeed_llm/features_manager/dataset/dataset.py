@@ -18,8 +18,8 @@ class DatasetFeature(MindSpeedFeature):
                             help='fill in the missing samples within an epoch, starting at index 0, aligned with the LlamaFatory.')
         group.add_argument("--enable-thinking", type=lambda x: {"true": True, "false": False, "none": None}[x.lower()], default=None,
                             help="Whether or not to enable thinking mode for reasoning models.")
-        group.add_argument("--pad-to-multiple-of", type=int, default=1,
-                           help="Pad each of the data to the multiple of...")
+        group.add_argument('--pad-to-multiple-of', type=int, default=8,
+                            help='Used for Padding multiple in finetune. The default is 8.')
 
     def register_patches(self, patch_manager, args):
         from megatron.core.datasets.blended_megatron_dataset_builder import BlendedMegatronDatasetBuilder

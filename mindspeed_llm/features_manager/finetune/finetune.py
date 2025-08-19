@@ -23,3 +23,13 @@ class FinetuneFeature(MindSpeedFeature):
                             help='Determine training mode')
         group.add_argument('--dataset-additional-keys', nargs='*', default=[],
                             help='Additional keys need to be add from dataset.')
+
+    def pre_validate_args(self, args):
+        self.origin_variable_seq_lengths = None
+        if args.variable_seq_lengths:
+            self.origin_variable_seq_lengths = args.variable_seq_lengths
+            args.variable_seq_lengths = False
+
+    def post_validate_args(self, args):
+        if self.origin_variable_seq_lengths:
+            args.variable_seq_lengths = self.origin_variable_seq_lengths
