@@ -70,6 +70,7 @@ from mindspeed_llm.features_manager.transformer.flash_attention.alibi_feature im
 from mindspeed_llm.features_manager.transformer.mtp import MultiTokenPredictionFeature
 from mindspeed_llm.features_manager.transformer.multi_latent_attention.mla_feature import MLAFeature
 from mindspeed_llm.features_manager.transformer.transformer_block import TransformerBlockFeature
+from mindspeed_llm.features_manager.ai_framework.ms_patch_feature import MindSporePatchFeature
 
 
 FEATURES_LIST = [
@@ -256,6 +257,12 @@ def add_high_availability_feature(features_list: List[MindSpeedFeature]):
     ])
 
 
+def add_ai_framework_feature(features_list: List[MindSpeedFeature]):
+    features_list.extend([
+        MindSporePatchFeature(),
+    ])
+
+
 def create_features_list():
     features_list = []
     add_megatron_basic_features(features_list)
@@ -277,6 +284,7 @@ def create_features_list():
     add_swap_optimizer_feature(features_list)
     add_disable_gloo_group_feature(features_list)
     add_high_availability_feature(features_list)
+    add_ai_framework_feature(features_list)
     return features_list
 
 
