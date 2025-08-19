@@ -2,13 +2,70 @@
 
 MindSpeed-LLM MindSpore后端的安装步骤参考：[基础安装指导](https://gitee.com/ascend/MindSpeed-LLM/blob/master/docs/mindspore/features/install_guide.md)
 
-# 2 Huggingface模型仓下载
+# 2 权重转换
 
-从[huggingface(以Qwen3-0.6B为例)](https://huggingface.co/Qwen/Qwen3-0.6B/tree/main)下载除模型权重外的其他配置文件，目录结构保持`huggingface`原始目录结构
+## 2.1 权重下载
+
+从[huggingface(以Qwen3-0.6B为例)](https://huggingface.co/Qwen/Qwen3-0.6B/tree/main)下载模型权重和其它配置文件，若需要在开源权重上继续预训练、微调、推理，也请下载网络模型文件。
+
+## 2.2 权重转换
+提供脚本将huggingface开源权重转换为mcore权重，用于训练、推理、评估等任务。使用方法如下，请根据实际需要的TP/PP等切分策略和权重路径修改权重转换脚本：
+
+```
+cd MindSpeed-LLM
+bash examples/mindspore/qwen3/ckpt_convert_qwen3_hf2mcore.sh
+```
+
+运行脚本后，预期会看到类似以下的日志输出，表示权重转换成功：
+
+```
+successfully saved checkpoint from iteration 1 to ./model_weights/qwen3_mcore/
+INFO:root:Done!
+```
+
+* 注：MindSpore 后端转换出的模型权重无法用于 Torch后端训练或推理。
 
 # 3 数据预处理
 
 当前MindSpore后端已完全支持MindSpeed-LLM的多种任务场景下的数据预处理，数据预处理指南参见[数据预处理](https://gitee.com/ascend/MindSpeed-LLM/blob/master/docs/pytorch/solutions/pretrain/pretrain_dataset.md)。
+
+## 3.1 预训练数据处理
+
+（以alpaca数据集为例）修改`data_convert_qwen3_pretrain.sh`预训练脚本
+
+配置好数据输入/输出路径、tokenizer模型路径即可启动：
+
+```
+bash examples/mindspore/qwen3/data_convert_qwen3_pretrain.sh
+```
+
+预训练数据集处理结果如下：
+
+```
+./dataset/alpaca_text_document.bin
+./dataset/alpaca_text_document.idx
+```
+
+## 3.2 微调数据处理
+
+（以alpaca数据集为例）修改`data_convert_qwen3_instruction.sh`微调脚本
+
+配置好数据输入/输出路径、tokenizer模型路径即可启动：
+
+```
+bash examples/mindspore/qwen3/data_convert_qwen3_instruction.sh
+```
+
+微调数据集处理结果如下：
+
+```
+./finetune_dataset/alpaca_packed_attention_mask_document.bin
+./finetune_dataset/alpaca_packed_attention_mask_document.idx
+./finetune_dataset/alpaca_packed_input_ids_document.bin
+./finetune_dataset/alpaca_packed_input_ids_document.idx
+./finetune_dataset/alpaca_packed_labels_document.bin
+./finetune_dataset/alpaca_packed_labels_document.idx
+```
 
 # 4 训练
 
