@@ -51,6 +51,7 @@ MOE_ARGS="
 
 GPT_ARGS="
     --use-mcore-models \
+    --disable-bias-linear \
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \
     --context-parallel-size ${CP} \
