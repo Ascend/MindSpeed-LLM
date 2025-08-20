@@ -48,9 +48,10 @@ MOE_ARGS="
     --moe-router-topk 6 \
     --moe-ffn-hidden-size 1408 \
     --moe-router-load-balancing-type pai_megatron_aux_loss \
-    --topk-group 1 \
+    --moe-router-group-topk 1 \
+    --moe-router-num-groups 8 \
     --moe-aux-loss-coeff 0.01 \
-    --routed-scaling-factor 1.0 \
+    --moe-router-topk-scaling-factor 1.0 \
     --seq-aux
 "
 

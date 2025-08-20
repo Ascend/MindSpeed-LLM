@@ -51,8 +51,9 @@ MOE_ARGS="
     --moe-router-topk 6 \
     --moe-ffn-hidden-size 1536 \
     --moe-router-load-balancing-type group_limited_greedy \
-    --topk-group 3 \
-    --routed-scaling-factor 16.0 \
+    --moe-router-group-topk 3 \
+    --moe-router-num-groups 8 \
+    --moe-router-topk-scaling-factor 16.0 \
     --seq-aux
 "
 

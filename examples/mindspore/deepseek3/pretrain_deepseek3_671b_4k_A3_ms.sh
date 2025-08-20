@@ -61,17 +61,17 @@ MOE_ARGS="
     --n-shared-experts 1 \
     --num-experts 256 \
     --moe-router-topk 8 \
-    --moe-router-load-balancing-type noaux_tc \
-    --n-group 8 \
-    --topk-group 4 \
-    --routed-scaling-factor 2.5 \
+    --moe-router-topk-scaling-factor none \
+    --moe-router-num-groups 8 \
+    --moe-router-group-topk 4 \
+    --moe-router-topk-scaling-factor 2.5 \
     --moe-aux-loss-coeff 0.0001 \
     --seq-aux \
     --norm-topk-prob \
     --moe-router-score-function sigmoid \
     --moe-router-enable-expert-bias \
     --moe-tp-extend-ep \
-    --router-gating-in-fp32 \
+    --moe-router-dtype fp32 \
 "
 
 MTP_ARGS="

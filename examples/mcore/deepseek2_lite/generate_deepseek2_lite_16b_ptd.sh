@@ -81,9 +81,10 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS inference.py \
     --moe-router-topk 6 \
     --moe-ffn-hidden-size 1408 \
     --moe-router-load-balancing-type softmax_topk \
-    --topk-group 1 \
+    --moe-router-group-topk 1 \
+    --moe-router-num-groups 1 \
     --moe-aux-loss-coeff 0.001 \
-    --routed-scaling-factor 1.0 \
+    --moe-router-topk-scaling-factor 1.0 \
     --seq-aux \
     --beta-fast 32 \
     --beta-slow 1 \

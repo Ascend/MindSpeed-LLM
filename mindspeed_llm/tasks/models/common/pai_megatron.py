@@ -43,6 +43,6 @@ def pai_megatron_aux_loss(self, logits: torch.Tensor):
                 self.config.sequence_parallel or (self.config.expert_model_parallel_size > 1)):
             from mindspeed.core.transformer.moe.router import gather_from_sequence_parallel_region_to_moe_async
             with torch.no_grad():
-                routing_map = gather_from_sequence_parallel_region_to_moe_async(indices)
+                routing_map = gather_from_sequence_parallel_region_to_moe_async(routing_map)
     return probs, routing_map
 

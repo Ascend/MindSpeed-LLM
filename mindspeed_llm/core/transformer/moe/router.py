@@ -41,7 +41,7 @@ def group_limited_greedy_topKgating(self, logits: torch.Tensor):
         scores.view(args.micro_batch_size * seq_length, self.n_group, -1).max(dim=-1).values
     )  # [n, EP]
 
-    group_idx = torch.topk(group_scores, k=args.topk_group, dim=-1, sorted=False)[1]  # [n, top_k_group]
+    group_idx = torch.topk(group_scores, k=self.topk_group, dim=-1, sorted=False)[1]  # [n, top_k_group]
 
     group_mask = torch.zeros_like(group_scores)  # [n, EP]
     group_mask.scatter_(1, group_idx, 1)  # [n, EP]
@@ -64,7 +64,7 @@ def group_limited_greedy_topKgating(self, logits: torch.Tensor):
         denominator = topk_weight.sum(dim=-1, keepdim=True) + 1e-20
         topk_weight = topk_weight / denominator
     else:
-        topk_weight = topk_weight * args.routed_scaling_factor
+        topk_weight = topk_weight * args.moe_router_topk_scaling_factor
 
     topk_masked_gates = torch.zeros_like(logits).scatter(1, topk_idx, topk_weight)
     topk_map = torch.zeros_like(logits).int().scatter(1, topk_idx, 1).bool()
@@ -184,7 +184,7 @@ def group_limited_greedy_topKgating(self, logits: torch.Tensor):
             )
 
             ge = (ge.view(args.micro_batch_size, seq_length, self.n_group, -1).sum(-1) > 0).to(logits.dtype).sum(dim=1)
-            ge.div_(seq_length * args.topk_group / self.n_group)
+            ge.div_(seq_length * self.topk_group / self.n_group)
 
             l_comm_aux = (ge * P_devi).sum(dim=1).mean() * args.moe_comm_aux_loss_coeff
 
@@ -206,7 +206,7 @@ def group_limited_greedy_topKgating(self, logits: torch.Tensor):
             )
 
             ge = rearrange(ge, 'b s (ng gs) -> (b s) ng gs', ng=self.n_group, gs=args.num_experts // self.n_group)
-            ge = (ge.sum(dim=-1) > 0).to(logits.dtype).mean(0).div(args.topk_group / self.n_group)
+            ge = (ge.sum(dim=-1) > 0).to(logits.dtype).mean(0).div(self.topk_group / self.n_group)
 
             l_comm_aux = (ge * P_devi).sum() * args.moe_comm_aux_loss_coeff
 
@@ -366,26 +366,10 @@ def topk_router_init_wrapper(function):
         function(self, *args, **kwargs)
         mg_args = get_args()
 
-        self.n_group = mg_args.n_group if mg_args.n_group is not None else mg_args.expert_model_parallel_size
-        self.topk_group = mg_args.topk_group
+        self.n_group = mg_args.moe_router_num_groups if mg_args.moe_router_num_groups is not None else (
+            mg_args.expert_model_parallel_size)
+        self.topk_group = mg_args.moe_router_group_topk
         self.norm_topk_prob = mg_args.norm_topk_prob
-        self.routed_scaling_factor = mg_args.routed_scaling_factor
-        self.score_function = mg_args.moe_router_score_function
-        self.enable_expert_bias = mg_args.moe_router_enable_expert_bias
-        self.moe_router_topk_scaling_factor = mg_args.routed_scaling_factor
-
-        if self.enable_expert_bias:
-            self.register_buffer(
-                'local_tokens_per_expert',
-                torch.zeros(self.config.num_moe_experts, dtype=torch.float32),
-                persistent=False,
-            )
-            self.register_buffer(
-                'expert_bias', torch.zeros(self.config.num_moe_experts, dtype=torch.float32)
-            )
-        else:
-            self.local_tokens_per_expert = None
-            self.expert_bias = None
 
     return topk_router_init
 

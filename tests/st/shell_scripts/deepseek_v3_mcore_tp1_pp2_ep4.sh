@@ -46,7 +46,7 @@ MLA_ARGS="
 "
 
 MOE_ARGS="
-    --n-group 4 \
+    --moe-router-num-groups 4 \
     --seq-aux \
     --moe-aux-loss-coeff 0.0001 \
     --moe-alltoall-overlap-comm \
@@ -60,8 +60,8 @@ MOE_ARGS="
     --moe-router-topk 8 \
     --moe-ffn-hidden-size 2048 \
     --moe-router-load-balancing-type none \
-    --topk-group 4 \
-    --routed-scaling-factor 2.5 \
+    --moe-router-group-topk 4 \
+    --moe-router-topk-scaling-factor 2.5 \
     --moe-router-score-function sigmoid \
     --moe-router-enable-expert-bias
 "

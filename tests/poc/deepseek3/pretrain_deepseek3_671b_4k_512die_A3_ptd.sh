@@ -25,7 +25,7 @@ CKPT_LOAD_DIR="your model ckpt path"
 
 TP=2
 PP=4
-EP=64
+EP=128
 CP=1
 CP_TYPE='ulysses_cp_algo'
 NUM_LAYERS=64
@@ -56,25 +56,22 @@ MLA_ARGS="
 MOE_ARGS="
     --moe-grouped-gemm \
     --moe-permutation-async-comm \
-    --use-fused-moe-token-permute-and-unpermute \
-    --moe-token-dispatcher-type alltoall_seq \
+    --moe-token-dispatcher-type alltoall \
+    --moe-permute-fusion \
     --first-k-dense-replace 3 \
     --moe-layer-freq 1 \
-    --n-shared-experts 1 \
+    --moe-shared-expert-intermediate-size 2048 \
     --num-experts 256 \
     --moe-router-topk 8 \
     --moe-ffn-hidden-size 2048 \
-    --moe-router-load-balancing-type noaux_tc \
-    --n-group 8 \
-    --topk-group 4 \
-    --routed-scaling-factor 2.5 \
+    --moe-router-load-balancing-type seq_aux_loss \
+    --moe-router-num-groups 8 \
+    --moe-router-group-topk 4 \
+    --moe-router-topk-scaling-factor 2.5 \
     --moe-aux-loss-coeff 0.0001 \
-    --seq-aux \
-    --norm-topk-prob \
     --moe-router-score-function sigmoid \
     --moe-router-enable-expert-bias \
-    --moe-tp-extend-ep \
-    --router-gating-in-fp32 \
+    --moe-router-dtype fp32 \
 "
 
 MTP_ARGS="
@@ -89,12 +86,10 @@ DUALPIPE_ARGS="
 
 OTHERS_ARGS="
     --mla-up-proj-tp-overlap \
-    --enable-share-memory \
 "
 
 MEM_ARGS="
     --mtp-mem-efficient-logits \
-    --moe-unperm2-mem-optim \
     --recompute-activation-function \
     --recompute-mla-up-proj \
     --moe-zero-memory level0 \
@@ -113,6 +108,7 @@ ROPE_ARGS="
 "
 
 GPT_ARGS="
+    --transformer-impl local \
     --spec mindspeed_llm.tasks.models.spec.deepseek_spec layer_spec \
     --reset-position-ids \
     --gemm-gradient-accumulation-fusion \
@@ -126,6 +122,7 @@ GPT_ARGS="
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \
     --expert-model-parallel-size ${EP} \
+    --expert-tensor-parallel-size 1 \
     --sequence-parallel \
     --context-parallel-size ${CP} \
     --context-parallel-algo  ${CP_TYPE} \

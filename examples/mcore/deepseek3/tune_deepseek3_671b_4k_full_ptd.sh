@@ -58,9 +58,10 @@ MOE_ARGS="
     --num-experts 256 \
     --moe-router-topk 8 \
     --moe-ffn-hidden-size 2048 \
-    --moe-router-load-balancing-type noaux_tc \
-    --topk-group 4 \
-    --routed-scaling-factor 2.5 \
+    --moe-router-topk-scaling-factor none \
+    --moe-router-group-topk 4 \
+    --moe-router-num-groups 8 \
+    --moe-router-topk-scaling-factor 2.5 \
     --seq-aux \
     --norm-topk-prob \
     --moe-router-score-function sigmoid \

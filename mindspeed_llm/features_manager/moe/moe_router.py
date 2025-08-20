@@ -12,17 +12,8 @@ class MoERouter(MindSpeedFeature):
         self.add_parser_argument_choices_value(parser, "--moe-router-load-balancing-type", 'softmax_topk')
         self.add_parser_argument_choices_value(parser, "--moe-router-load-balancing-type", 'pai_megatron_aux_loss')
         self.add_parser_argument_choices_value(parser, "--moe-router-load-balancing-type", 'sparsemixer_topk')
-        self.add_parser_argument_choices_value(parser, "--moe-router-load-balancing-type", 'noaux_tc')                                
-        group.add_argument('--topk-group', type=int, default=None,
-                            help='Choose topK group experts in group_limited_greedy_topK method')
-        group.add_argument('--routed-scaling-factor', type=float, default=None,
-                            help='The routed scaling factor')
-        group.add_argument('--norm-topk-prob', action='store_true', default=False, 
+        group.add_argument('--norm-topk-prob', action='store_true', default=False,
                             help='Normalize the topk weight')
-        group.add_argument('--n-group', type=int, default=None,
-                            help='Number of groups for routed experts.'
-                                 'Tips: in deepseek3, set n-group equal to EP to limit each token to experts on a subset of devices,'
-                                 'set n-group equal to number of nodes in EP group to limit each token to experts on a subset of nodes.')
         group.add_argument('--seq-aux', action='store_true', default=False, 
                             help='Compute aux loss in seq_aux')
         group.add_argument('--moe-device-level-aux-loss-coeff', type=float, default=0.,
@@ -73,14 +64,15 @@ class MoERouter(MindSpeedFeature):
 
     def _validate_group_limited_greedy(self, args):
         if args.moe_router_load_balancing_type == "group_limited_greedy":
-            if args.topk_group is None:
+            if args.moe_router_group_topk is None:
                 raise AssertionError('The parameter topk-group should be set when use group_limited_greedy.')
-            elif args.routed_scaling_factor is None:
+            elif args.moe_router_topk_scaling_factor is None:
                 raise AssertionError(
-                    'The parameter routed_scaling_factor should be set when use multi_latent_attention.')
-            elif args.topk_group >= args.expert_model_parallel_size:
-                raise AssertionError('The topk group ({}) should be less than n-group(EP)({}).'.format(args.topk_group,
-                                                                                                       args.expert_model_parallel_size))
+                    'The parameter --moe-router-topk-scaling-factor should be set when use multi_latent_attention.')
+            elif args.moe_router_group_topk >= args.expert_model_parallel_size:
+                raise AssertionError(
+                    'The topk group ({}) should be less than n-group(EP)({}).'.format(args.moe_router_group_topk,
+                                                                                      args.expert_model_parallel_size))
 
     def _validate_aux_loss_free(self, args):
         if args.moe_router_enable_expert_bias and args.moe_router_score_function != "sigmoid":

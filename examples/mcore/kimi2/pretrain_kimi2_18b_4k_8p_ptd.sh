@@ -53,15 +53,15 @@ MOE_ARGS="
     --n-shared-experts 1 \
     --num-experts 384 \
     --moe-router-topk 8 \
-    --moe-router-load-balancing-type noaux_tc \
-    --n-group 1 \
-    --routed-scaling-factor 2.827 \
+    --moe-router-load-balancing-type none \
+    --moe-router-num-groups 1 \
+    --moe-router-topk-scaling-factor 2.827 \
     --moe-aux-loss-coeff 0.0001 \
     --seq-aux \
     --norm-topk-prob \
     --moe-router-score-function sigmoid \
     --moe-router-enable-expert-bias \
-    --router-gating-in-fp32 \
+    --moe-router-dtype fp32 \
     --moe-tp-extend-ep \
 "
 
