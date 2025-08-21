@@ -42,8 +42,8 @@ source /usr/local/Ascend/nnal/atb/set_env.sh
 
 ```shell
 # 安装torch和torch_npu 构建参考 https://gitee.com/ascend/pytorch/releases
-pip install torch-2.6.0-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl 
-pip install torch_npu-2.6.0rc1-cp310-cp310-manylinux_2_28_aarch64.whl
+pip install torch-2.7.1-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl 
+pip install torch_npu-2.7.1rc1-cp310-cp310-manylinux_2_28_aarch64.whl
 
 # apex for Ascend 构建参考 https://gitee.com/ascend/apex
 pip install apex-0.1.dev20241015+ascend-cp310-cp310-linux_aarch64.whl
