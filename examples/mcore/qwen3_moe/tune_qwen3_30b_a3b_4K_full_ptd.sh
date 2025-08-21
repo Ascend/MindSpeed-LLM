@@ -40,6 +40,8 @@ MOE_ARGS="
     --moe-permutation-async-comm \
     --moe-token-dispatcher-type alltoall_seq \
     --moe-router-load-balancing-type aux_loss \
+    --moe-layer-freq -1 \
+    --first-k-dense-replace -1 \
     --moe-aux-loss-coeff 0.001
 "
 

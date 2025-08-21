@@ -35,6 +35,8 @@ MOE_ARGS="
     --moe-router-load-balancing-type ${ROUTER_BALANCING_TYPE} \
     --moe-ffn-hidden-size 768 \
     --moe-permutation-async-comm \
+    --moe-layer-freq -1 \
+    --first-k-dense-replace -1 \
     --moe-token-dispatcher-type allgather \
     --moe-aux-loss-coeff 0.001
 "

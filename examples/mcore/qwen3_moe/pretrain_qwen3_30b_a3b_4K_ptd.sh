@@ -46,6 +46,8 @@ MOE_ARGS="
     --moe-grouped-gemm \
     --moe-permutation-async-comm \
     --moe-token-dispatcher-type alltoall_seq \
+    --moe-layer-freq -1 \
+    --first-k-dense-replace -1 \
     --moe-aux-loss-coeff 0.001 \
 "
 
