@@ -43,7 +43,7 @@ MOE_ARGS="
 "
 
 GPT_ARGS="
-    --use-deter-comp \
+    --npu-deterministic \
     --no-gradient-accumulation-fusion \
     --num-layers-per-virtual-pipeline-stage 2 \
     --context-parallel-size ${CP} \

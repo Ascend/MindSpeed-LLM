@@ -30,7 +30,7 @@ GPT_ARGS="
     --lora-target-modules linear_qkv linear_proj linear_fc1 linear_fc2 \
     --sequence-parallel \
     --use-fused-rotary-pos-emb \
-    --use-deter-comp \
+    --npu-deterministic \
     --variable-seq-lengths \
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \

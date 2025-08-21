@@ -84,7 +84,7 @@ GPT_ARGS="
     --no-load-rng \
     --bf16 \
     --vocab-size 128256 \
-    --use-deter-comp \
+    --npu-deterministic \
 "
 
 DATA_ARGS="

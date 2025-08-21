@@ -33,6 +33,40 @@ class TrainingBasicFeature(MindSpeedFeature):
         if not args.reset_position_ids and args.neat_pack:
             raise ValueError("Require set `--reset-position-ids` when `--neat-pack` is set.")
 
+        # Bypass megatron validation when pp == 2 and vpp is enabled.
+        self.origin_num_layers_per_virtual_pipeline_stage = None
+        self.origin_noverlap_p2p_comm = None
+        if args.pipeline_model_parallel_size == 2 and args.num_layers_per_virtual_pipeline_stage is not None:
+            self.origin_num_layers_per_virtual_pipeline_stage = args.num_layers_per_virtual_pipeline_stage
+            self.origin_noverlap_p2p_comm = args.overlap_p2p_comm
+            args.num_layers_per_virtual_pipeline_stage = None
+            args.overlap_p2p_comm = None
+
+    def post_validate_args(self, args):
+        if self.origin_num_layers_per_virtual_pipeline_stage:
+            args.num_layers_per_virtual_pipeline_stage = self.origin_num_layers_per_virtual_pipeline_stage
+            args.overlap_p2p_comm = self.origin_noverlap_p2p_comm
+
+        """validate scenario that vpp is enabled when pp=2."""
+        if args.pipeline_model_parallel_size != 2 or args.num_layers_per_virtual_pipeline_stage is None:
+            return
+
+        # VPP enabled when pp == 2, do check.
+        num_layers_per_pipeline_stage = args.num_layers // args.pipeline_model_parallel_size
+        if num_layers_per_pipeline_stage % args.num_layers_per_virtual_pipeline_stage != 0:
+            raise AssertionError('number of layers per pipeline stage must be divisible number of layers per virtual pipeline stage')
+
+        pp_stage_layers = args.num_layers / args.pipeline_model_parallel_size
+        if args.num_layers_per_virtual_pipeline_stage and args.num_layers_per_virtual_pipeline_stage >= pp_stage_layers:
+            raise ValueError("Num of layers in vpp stage should be less than pp stage, "
+                             "please turn down args.num_layers_per_virtual_pipeline_stage.")
+
+        args.virtual_pipeline_model_parallel_size = num_layers_per_pipeline_stage // \
+                                                    args.num_layers_per_virtual_pipeline_stage
+
+        print_rank0_by_args(args, f'vpp_size would be {args.virtual_pipeline_model_parallel_size} since '
+                                  f'num_layers_per_virtual_pipeline_stage is {args.num_layers_per_virtual_pipeline_stage}')
+
     def register_args(self, parser: ArgumentParser):
         group = parser.add_argument_group(title=self.feature_name)
         group.add_argument('--jit-compile', action='store_true', default=False,

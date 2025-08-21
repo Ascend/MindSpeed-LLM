@@ -13,4 +13,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from mindspeed_llm.tasks import megatron_adaptor
+from mindspeed_llm.tasks import megatron_adaptor_v2 as megatron_adaptor

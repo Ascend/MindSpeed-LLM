@@ -417,5 +417,26 @@
                 "4ef7324837a98603"
             ]
         }
+    ],
+
+    "test_qwen2_moe_hf2mcore_tp2pp1ep2": [
+        {
+            "param": {
+                "model-type":"GPT",
+                "load-model-type":"hf",
+                "save-model-type":"mg",
+                "target-tensor-parallel-size": "2",
+                "target-pipeline-parallel-size": "1",
+                "target-expert-parallel-size": "2",
+                "load-dir":"/data/ci/qwen2_moe/hf_base/qwen2_moe_hf",
+                "save-dir":"/data/ci/qwen2_moe/mg_base/qwen2_moe_l2_t2p1e2",
+                "tokenizer-model":"/data/ci/qwen2_moe/hf_base/qwen2_moe_hf",
+                "use-mcore-models": null,
+                "moe-grouped-gemm": null,
+                "add-qkv-bias": null,
+                "model-type-hf": "qwen2-moe",
+                "params-dtype": "bf16"
+            }
+        }
     ]
 }

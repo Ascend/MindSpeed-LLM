@@ -37,7 +37,7 @@ def extra_args_provider_decorator(extra_args_provider):
     def wrapper(parser):
         if extra_args_provider is not None:
             parser = extra_args_provider(parser)
-        parser = process_args(parser)
+        parser = process_args_v2(parser)
         return parser
 
     return wrapper

@@ -32,7 +32,7 @@ GPT_ARGS="
     --num-layers-per-virtual-pipeline-stage 2 \
     --sequence-parallel \
     --use-fused-rotary-pos-emb \
-    --use-deter-comp \
+    --npu-deterministic \
     --no-shuffle \
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \

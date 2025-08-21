@@ -1092,6 +1092,7 @@ class MegatronModel(ModelBase):
         self.args.qk_layernorm = getattr(self.args_megatron_checkpoint, "qk_layernorm", None)
         self.args.kv_lora_rank = getattr(self.args_megatron_checkpoint, "kv_lora_rank", None)
         self.args.n_shared_experts = getattr(self.args_megatron_checkpoint, "n_shared_experts", None)
+        self.args.q_lora_rank = getattr(self.args_megatron_checkpoint, "q_lora_rank", None)
 
     def update_megatron_args_from_cmd_config(self, loader_megatron):
         self.args.ckpt_format = self.args_cmd.ckpt_format

@@ -28,7 +28,7 @@ GPT_ARGS="
     --attention-mask-type general \
     --sequence-parallel \
     --use-fused-rotary-pos-emb \
-    --use-deter-comp \
+    --npu-deterministic \
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \
     --use-mcore-models \

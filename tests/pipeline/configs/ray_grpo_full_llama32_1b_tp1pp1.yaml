@@ -19,7 +19,7 @@ training:
   no_shuffle: true
   stage: ray_grpo
   sequence_parallel: False
-  use_deter_comp: True
+  npu-deterministic: True
 
 actor_rollout_ref:
   actor_rollout:

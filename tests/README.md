@@ -59,7 +59,7 @@
     </tr>
     <tr>
         <td>pp2vpp，recompute_in_advance，matmul_add</td>
-        <td><a href="st/shell_scripts/llama3_tp2_pp2_vpp1.sh">llama3_tp2_pp2_vpp1.sh</a></td>
+        <td><a href="pipeline/llama3/llama3_tp2_pp2_vpp1.sh">llama3_tp2_pp2_vpp1.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>

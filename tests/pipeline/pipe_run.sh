@@ -9,8 +9,8 @@ source /usr/local/Ascend/nnal/atb/set_env.sh
 git clone -b master https://gitee.com/ascend/MindSpeed.git
 cd MindSpeed
 
-# checkout commit from MindSpeed master in 2025.08.01
-git checkout 60f104c7
+# checkout commit from MindSpeed master in 2025.08.19
+git checkout c99f34c0
 pip install -r requirements.txt
 pip3 install -e .
 cd ..
@@ -28,7 +28,7 @@ cp -rf /home/master_branch/Megatron-LM/megatron ./
 BASE_DIR=$(dirname "$(readlink -f "$0")")
 CURRENT_TIME=$(date "+%Y-%m-%d")
 BASELINE_DIR="$BASE_DIR/baseline"
-GENERATE_LOG_BASE_DIR="/$(echo "$BASE_DIR" | cut -d'/' -f2)/pipeline_log"
+GENERATE_LOG_BASE_DIR="/$(echo "$BASE_DIR" | cut -d'/' -f2)/pipeline_log_v2"
 GENERATE_LOG_DIR="$GENERATE_LOG_BASE_DIR/$CURRENT_TIME"
 
 #mkdir cache to store product and will be removed after test

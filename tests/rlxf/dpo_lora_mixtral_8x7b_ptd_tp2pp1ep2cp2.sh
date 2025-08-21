@@ -44,7 +44,7 @@ MOE_ARGS="
 "
 
 GPT_ARGS="
-    --use-deter-comp \
+    --npu-deterministic \
     --context-parallel-size ${CP} \
     --no-gradient-accumulation-fusion \
     --lora-load ${LORA_CKPT_DIR} \
