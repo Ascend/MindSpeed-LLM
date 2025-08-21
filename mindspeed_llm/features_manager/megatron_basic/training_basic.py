@@ -52,12 +52,7 @@ class TrainingBasicFeature(MindSpeedFeature):
 
         patch_manager.register_patch('megatron.training.utils.get_batch_on_this_tp_rank',
                                       get_batch_on_this_tp_rank)
-        
 
-        from mindspeed_llm.training.training import get_model_wrapper
-        patch_manager.register_patch('megatron.training.training.get_model',
-                                      get_model_wrapper)
-        
         patch_manager.register_patch('megatron.training.training.train',
                                       train)
         patch_manager.register_patch('megatron.training.training.load_checkpoint',

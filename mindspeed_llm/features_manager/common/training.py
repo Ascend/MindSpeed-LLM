@@ -11,15 +11,6 @@ class TrainingDefaultFeature(MindSpeedFeature):
         from mindspeed_llm.legacy.data import build_pretraining_data_loader
         from mindspeed_llm.tasks.posttrain.lora.utils import is_enable_qlora
         
-        if is_enable_qlora(args):
-            from mindspeed_llm.tasks.posttrain.lora.qlora import get_model
-            patch_manager.register_patch('megatron.training.training.get_model', 
-                                          get_model)
-        else:
-            from mindspeed_llm.training.training import get_model_wrapper
-            patch_manager.register_patch('megatron.training.training.get_model', 
-                                          get_model_wrapper)
-        
         patch_manager.register_patch('megatron.training.training.build_pretraining_data_loader', 
                                       build_pretraining_data_loader)
         patch_manager.register_patch('megatron.training.training.train', 

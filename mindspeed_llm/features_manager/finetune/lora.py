@@ -33,6 +33,47 @@ class LoraFeature(MindSpeedFeature):
                             help='Dequantize weights to original precision when saving in QLoRA tuning.')
 
     def register_patches(self, patch_manager, args):
+        # for qlora
+        from mindspeed_llm.tasks.posttrain.lora.utils import is_enable_qlora
+        if is_enable_qlora(args):
+            from mindspeed_llm.tasks.posttrain.lora.qlora import get_model
+            from mindspeed_llm.tasks.posttrain.lora.qlora import (parallel_linear_init_wrapper,
+                                                                  linear_with_frozen_weight_forward,
+                                                                  linear_with_frozen_weight_backward,
+                                                                  parallel_linear_save_to_state_dict_wrapper,
+                                                                  parallel_linear_load_from_state_dict_wrapper,
+                                                                  groupedmlp_load_from_state_dict_wrapper,
+                                                                  grouped_gemm_util_ops_gmm,
+                                                                  moe_layer_overlap_all2all_gmm_op_wrapper)
+            patch_manager.register_patch('megatron.training.training.get_model', 
+                                          get_model)
+            patch_manager.register_patch('megatron.core.tensor_parallel.layers.ColumnParallelLinear.__init__',
+                                          parallel_linear_init_wrapper)
+            patch_manager.register_patch('megatron.core.tensor_parallel.layers.RowParallelLinear.__init__',
+                                          parallel_linear_init_wrapper)
+            patch_manager.register_patch('megatron.core.tensor_parallel.layers.LinearWithFrozenWeight.forward',
+                                          linear_with_frozen_weight_forward)
+            patch_manager.register_patch('megatron.core.tensor_parallel.layers.LinearWithFrozenWeight.backward',
+                                          linear_with_frozen_weight_backward)
+            patch_manager.register_patch('megatron.core.tensor_parallel.layers.ColumnParallelLinear._save_to_state_dict',
+                                          parallel_linear_save_to_state_dict_wrapper)
+            patch_manager.register_patch('megatron.core.tensor_parallel.layers.RowParallelLinear._save_to_state_dict',
+                                          parallel_linear_save_to_state_dict_wrapper)
+            patch_manager.register_patch('megatron.core.tensor_parallel.layers.ColumnParallelLinear._load_from_state_dict',
+                                          parallel_linear_load_from_state_dict_wrapper)
+            patch_manager.register_patch('megatron.core.tensor_parallel.layers.RowParallelLinear._load_from_state_dict',
+                                          parallel_linear_load_from_state_dict_wrapper)
+            patch_manager.register_patch('megatron.core.transformer.moe.experts.GroupedMLP._load_from_state_dict',
+                                          groupedmlp_load_from_state_dict_wrapper)
+            patch_manager.register_patch('mindspeed.core.transformer.moe.grouped_gemm_util.Ops.gmm',
+                                          grouped_gemm_util_ops_gmm)
+            patch_manager.register_patch('mindspeed.core.transformer.moe.moe_layer_overlap_all2all.gmm_op',
+                                          moe_layer_overlap_all2all_gmm_op_wrapper)
+        else:
+            from mindspeed_llm.training.training import get_model_wrapper
+            patch_manager.register_patch('megatron.training.training.get_model', 
+                                          get_model_wrapper)
+
         from mindspeed_llm.core.distributed.finalize_model_grads import _allreduce_word_embedding_grads
         from mindspeed_llm.training.utils import unwrap_model_wrapper
         from mindspeed_llm.training.checkpointing import _load_base_checkpoint_wrapper, save_checkpoint_wrapper
