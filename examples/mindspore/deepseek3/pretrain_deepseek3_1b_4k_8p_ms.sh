@@ -63,7 +63,7 @@ MOE_ARGS="
     --n-shared-experts 1 \
     --num-experts 64 \
     --moe-router-topk 8 \
-    --moe-router-topk-scaling-factor none \
+    --moe-router-load-balancing-type none \
     --moe-router-num-groups 8 \
     --moe-router-group-topk 4 \
     --moe-router-topk-scaling-factor 2.5 \

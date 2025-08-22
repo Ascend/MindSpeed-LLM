@@ -1,7 +1,6 @@
 #!/bin/bash
 
-# 需要切换MindSpeed版本
-# git checkout 9648d729e4866f8037d0bd76630029410a60e6a6  # checkout commit from MindSpeed core_r0.8.0 in 2025.06.14
+
 
 export CPU_AFFINITY_CONF=1
 export CUDA_DEVICE_MAX_CONNECTIONS=1
@@ -64,7 +63,7 @@ MOE_ARGS="
     --num-experts 256 \
     --moe-router-topk 8 \
     --moe-ffn-hidden-size 2048 \
-    --moe-router-topk-scaling-factor none \
+    --moe-router-load-balancing-type none \
     --moe-router-num-groups 8 \
     --moe-router-group-topk 4 \
     --moe-router-topk-scaling-factor 2.5 \

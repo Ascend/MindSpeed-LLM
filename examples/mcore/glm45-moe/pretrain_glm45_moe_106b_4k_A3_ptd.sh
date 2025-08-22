@@ -36,7 +36,7 @@ MOE_ARGS="
     --num-experts 128 \
     --moe-router-topk 8 \
     --moe-ffn-hidden-size 1408 \
-    --moe-router-topk-scaling-factor none \
+    --moe-router-load-balancing-type none \
     --moe-router-num-groups 1 \
     --moe-router-group-topk 1 \
     --norm-topk-prob \
