@@ -1,6 +1,6 @@
 # Copyright (c) 2025, Huawei Technologies Co., Ltd.  All rights reserved.
 from mindspeed.patch_utils import MindSpeedPatchesManager
-from mindspeed_llm.mindspore.utils import clear_wrapper_v2
+from mindspeed_llm.mindspore.utils_v2 import clear_wrapper_v2
 
 
 class MindSporeAdaptation(MindSpeedPatchesManager):
@@ -141,12 +141,6 @@ def mindspore_adaptation(patch_manager, args):
         'megatron.core.optimizer.distrib_optimizer.DistributedOptimizer.load_parameter_state_from_dp_zero',
         load_parameter_state_from_dp_zero)
 
-    if args.async_log_allreduce:
-        from mindspeed.mindspore.core.data_parallel.async_log_allreduce import get_async_reduced_loss_value
-        MindSporeAdaptation.register_patch(
-            'mindspeed.core.data_parallel.async_log_allreduce.get_async_reduced_loss_value',
-            get_async_reduced_loss_value)
-
     from mindspeed.mindspore.core.tensor_parallel.random import CheckpointWithoutOutput, \
         CheckpointFunctionWithoutOutput
     MindSporeAdaptation.register_patch('mindspeed.core.tensor_parallel.random.CheckpointWithoutOutput',
@@ -187,17 +181,6 @@ def mindspore_adaptation(patch_manager, args):
 
     if args.swap_optimizer:
         patch_swap_optimizer()
-
-    if args.enable_share_memory:
-        from ..mindspore.tasks.dataset.shared_memory_manager import SharedMemoryManager
-        MindSporeAdaptation.register_patch(
-            'mindspeed_llm.tasks.dataset.shared_memory_manager.SharedMemoryManager', SharedMemoryManager)
-        from ..mindspore.training.utils import _compute_actual_seq_len
-        MindSporeAdaptation.register_patch(
-            'mindspeed_llm.training.utils._compute_actual_seq_len', _compute_actual_seq_len)
-
-    if args.moe_zerc:
-        patch_moe_zerc()
 
     if args.gemm_gradient_accumulation_fusion:
         from mindspeed.mindspore.ops.npu_groupmatmul_add import npu_groupmatmul_add_fp32
