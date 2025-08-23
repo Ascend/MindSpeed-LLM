@@ -7,6 +7,8 @@ from collections import defaultdict
 import re
 import safetensors
 import safetensors.torch
+import torch
+
 
 logger.basicConfig(format="")
 logger.getLogger().setLevel(logger.INFO)
@@ -34,8 +36,11 @@ class HuggingFaceModel(Model):
         super(HuggingFaceModel, self).__init__()
         self.model_cfg = self.read_model_cfg()
         self.model_type_hf = args.model_type_hf
-        self.hf_path = args.load_dir if args.load_model_type == 'hf' else args.save_dir
-        self.load_hf_args()
+        if args.load_model_type == 'hf':
+            self.hf_path = args.load_dir
+            self.load_hf_args()
+        else:
+            self.hf_path = args.save_dir
         self.module_mapping = self.get_module_mapping()
 
 
@@ -143,10 +148,56 @@ class MegatronModel(Model):
         super(MegatronModel, self).__init__()
         self.shared_expert_gate = args.shared_expert_gate
         self.save_lora_to_hf = False
-
+        if args.load_model_type == 'mg':
+            self.mg_path = args.load_dir
+            self.load_mg_args()
+        else:
+            self.mg_path = args.save_dir
         self.mla_mm_split = args.mla_mm_split
         self.mtp_num_layers = args.mtp_num_layers
         self.module_mapping = self.get_module_mapping()
+
+
+    @staticmethod
+    def get_latest_checkpoint_model_file(load_dir, model_filename="model_optim_rng.pt"):
+        """
+        Get the sub-model path for the latest iteration (any sub-model) to extract structure or parameter information.
+
+        Parameters:
+        - load_dir: Main directory to load the model
+        - model_filename: Sub-model filename (default is "model_optim_rng.pt")
+
+        Returns:
+        - out_iteration: Latest iteration number
+        - input_model_dir: Iteration directory path
+        - src_model_file: Full file path of any sub-model
+        """
+        tracker_filename = os.path.join(load_dir, 'latest_checkpointed_iteration.txt')
+
+        try:
+            with open(tracker_filename, 'r') as f:
+                metastring = f.read().strip()
+                iteration = int(metastring)
+        except FileNotFoundError as e:
+            raise FileNotFoundError(f"Checkpoint tracker file not found at {tracker_filename}") from e
+        except ValueError as e:
+            raise ValueError(f"Invalid iteration value in {tracker_filename}: '{metastring}' is not an integer.") from e
+
+        input_model_dir = os.path.join(load_dir, f'iter_{iteration:07d}')
+        input_sub_models = os.listdir(input_model_dir)
+        if not input_sub_models:
+            raise RuntimeError(f"No sub-models found under {input_model_dir}")
+
+        src_model_file = os.path.join(input_model_dir, input_sub_models[0], model_filename)
+        return src_model_file
+
+
+    def load_mg_args(self):
+        src_model_file = self.get_latest_checkpoint_model_file(self.mg_path)
+        src_model = torch.load(src_model_file, map_location='cpu', weights_only=False)
+        logger.info(f"Megatron arguments is loaded from {src_model_file}\n")
+        for key, value in src_model['args'].__dict__.items():
+            setattr(self, key, value)
 
 
     def get_weight(self, layer_idx=0, expert_idx=0):
@@ -200,8 +251,11 @@ class MegatronModel(Model):
             "layers_mlp_experts_linear_fc2"] = module_layer + "mlp.experts.local_experts[expert_idx].linear_fc2"
 
         # MLA
-        module_mapping["layers_self_attention_linear_qb"] = module_layer + "self_attention.linear_qb"
-        module_mapping["layers_self_attention_linear_kvb"] = module_layer + "self_attention.linear_kvb"
+        module_mapping["layers_self_attention_kv_layernorm"] = module_layer + "self_attention.kv_layernorm"
+        module_mapping[
+            "layers_self_attention_linear_q_up_proj"] = module_layer + "self_attention.linear_q_up_proj"
+        module_mapping[
+            "layers_self_attention_linear_kv_up_proj"] = module_layer + "self_attention.linear_kv_up_proj"
 
         # shared experts
         module_mapping[
@@ -237,13 +291,13 @@ class MegatronModel(Model):
             module_mapping[
                 "mtp_layers_self_attention_linear_qkv"] = module_layer_mtp + "self_attention.linear_qkv"
             module_mapping[
-                "mtp_layers_self_attention_linear_qb"] = module_layer_mtp + "self_attention.linear_qb"
+                "mtp_layers_self_attention_linear_q_up_proj"] = module_layer_mtp + "self_attention.linear_qb"
             module_mapping[
-                "mtp_layers_self_attention_linear_kvb"] = module_layer_mtp + "self_attention.linear_kvb"
+                "mtp_layers_self_attention_linear_kv_up_proj"] = module_layer_mtp + "self_attention.linear_kvb"
             module_mapping[
                 "mtp_layers_self_attention_q_layernorm"] = module_layer_mtp + "self_attention.q_layernorm"
             module_mapping[
-                "mtp_layers_self_attention_k_layernorm"] = module_layer_mtp + "self_attention.k_layernorm"
+                "mtp_layers_self_attention_kv_layernorm"] = module_layer_mtp + "self_attention.kv_layernorm"
             module_mapping[
                 "mtp_layers_mlp_router"] = module_layer_mtp + "mlp.router"
             module_mapping[

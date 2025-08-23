@@ -43,8 +43,6 @@ def get_args():
                        help="moe model has shared expert gate")
     parser.add_argument('--schedules-method', type=str, default=None, choices=['dualpipev'],
                         help='An innovative bidirectional pipeline parallelism algorithm.')
-    parser.add_argument('--qlora-nf4', action='store_true',
-                        help='use bitsandbytes nf4 to quantize model.')
 
     args, _ = parser.parse_known_args()
     return args
@@ -56,6 +54,8 @@ def main():
 
     if args.load_model_type == 'hf' and args.save_model_type == 'mg':
         converter = Hf2MgConvert(args)
+    elif args.load_model_type == 'mg' and args.save_model_type == 'hf':
+        converter = Mg2HfConvert(args)
     else:
         raise "This conversion scheme is not supported"
 

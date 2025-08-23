@@ -20,15 +20,12 @@ class Convert(abc.ABC):
         self.model_type_hf = args.model_type_hf
 
         # parallel train arguments
-        self.tp_size = args.target_tensor_parallel_size
-        self.pp_size = args.target_pipeline_parallel_size
-        self.ep_size = args.target_expert_parallel_size
+        self.tensor_model_parallel_size = args.target_tensor_parallel_size
+        self.pipeline_model_parallel_size = args.target_pipeline_parallel_size
+        self.expert_model_parallel_size = args.target_expert_parallel_size
         self.num_layer_list = args.num_layer_list
         self.noop_layers = args.noop_layers
-        self.vpp_stage = args.num_layers_per_virtual_pipeline_stage
-
-        # lora arguments
-        self.qlora_nf4 = args.qlora_nf4
+        self.num_layers_per_virtual_pipeline_stage = args.num_layers_per_virtual_pipeline_stage
 
         # features arguments
         self.moe_grouped_gemm = args.moe_grouped_gemm
@@ -55,11 +52,11 @@ class Convert(abc.ABC):
 
     def generate_mg_weights_dir(self, tp_rank, pp_rank, ep_rank):
         """Generate the megatron weight directory."""
-        if self.ep_size == 1 and self.pp_size == 1:
+        if self.expert_model_parallel_size == 1 and self.pipeline_model_parallel_size == 1:
             prefix = f"mp_rank_{tp_rank:02}"
-        elif self.ep_size == 1:
+        elif self.expert_model_parallel_size == 1:
             prefix = f"mp_rank_{tp_rank:02}_{pp_rank:03}"
-        elif self.pp_size == 1:
+        elif self.pipeline_model_parallel_size == 1:
             prefix = f"mp_rank_{tp_rank:02}_{ep_rank:03}"
         else:
             prefix = f"mp_rank_{tp_rank:02}_{pp_rank:03}_{ep_rank:03}"
@@ -70,16 +67,16 @@ class Convert(abc.ABC):
         """generate each pp local layer index"""
         pp_local_layer_idx = defaultdict()
 
-        for pp_rank in range(self.pp_size):
+        for pp_rank in range(self.pipeline_model_parallel_size):
             if self.num_layer_list is not None:
                 layer_list = list(map(int, self.num_layer_list.split(',')))
                 pp_local_layer_idx[pp_rank] = [i for i in range(layer_list[pp_rank])]
             else:
-                pp_local_layer_idx[pp_rank] = [i for i in range(self.num_layers // self.pp_size)]
+                pp_local_layer_idx[pp_rank] = [i for i in range(self.num_layers // self.pipeline_model_parallel_size)]
 
         if self.noop_layers is not None:
             noop_list = list(map(int, self.noop_layers.split(",")))
-            num_layers_each_pp = self.num_layers // self.pp_size
+            num_layers_each_pp = self.num_layers // self.pipeline_model_parallel_size
             for num_noop_layers in noop_list:
                 pp_idx = num_noop_layers // num_layers_each_pp
                 local_noop_idx = num_noop_layers % num_layers_each_pp
@@ -90,16 +87,16 @@ class Convert(abc.ABC):
 
     def generate_vpp_local_layer_idx(self):
         vpp_local_layer_idx = defaultdict()
-        for pp_rank in range(self.pp_size):
+        for pp_rank in range(self.pipeline_model_parallel_size):
             vpp_local_layer_idx[pp_rank] = defaultdict()
 
-        for pp_rank in range(self.pp_size):
+        for pp_rank in range(self.pipeline_model_parallel_size):
             for vpp_rank in range(self.vpp_size):
-                vpp_local_layer_idx[pp_rank][vpp_rank] = [i for i in range(self.vpp_stage)]
+                vpp_local_layer_idx[pp_rank][vpp_rank] = [i for i in range(self.num_layers_per_virtual_pipeline_stage)]
 
         if self.noop_layers is not None:
             noop_list = list(map(int, self.noop_layers.split(",")))
-            num_layers_each_pp = self.num_layers // self.pp_size
+            num_layers_each_pp = self.num_layers // self.pipeline_model_parallel_size
 
             if self.schedules_method == 'dualpipev':
                 # calc pp rank, vpp rank and local idx of noop layer
@@ -110,18 +107,18 @@ class Convert(abc.ABC):
                     if noop_layer >= self.num_layers // 2:
                         mapping_layer = -(noop_layer - self.num_layers + 1)
                         vpp_idx = 1
-                        pp_idx = mapping_layer // ((self.num_layers // 2) // self.pp_size)
-                        local_noop_idx = self.vpp_stage - 1 - (mapping_layer - pp_idx * self.vpp_stage)
+                        pp_idx = mapping_layer // ((self.num_layers // 2) // self.pipeline_model_parallel_size)
+                        local_noop_idx = self.num_layers_per_virtual_pipeline_stage - 1 - (mapping_layer - pp_idx * self.num_layers_per_virtual_pipeline_stage)
                     else:
                         vpp_idx = 0
-                        pp_idx = noop_layer // ((self.num_layers // 2) // self.pp_size)
-                        local_noop_idx = noop_layer - pp_idx * self.vpp_stage
+                        pp_idx = noop_layer // ((self.num_layers // 2) // self.pipeline_model_parallel_size)
+                        local_noop_idx = noop_layer - pp_idx * self.num_layers_per_virtual_pipeline_stage
                     vpp_local_layer_idx[pp_idx][vpp_idx].remove(local_noop_idx)
             else:
                 for num_noop_layer in noop_list:
-                    pp_idx = num_noop_layer % (self.pp_size * self.vpp_stage) // self.vpp_stage
-                    vpp_idx = num_noop_layer // self.vpp_stage // self.pp_size
-                    local_noop_idx = num_noop_layer % num_layers_each_pp % self.vpp_stage
+                    pp_idx = num_noop_layer % (self.pipeline_model_parallel_size * self.num_layers_per_virtual_pipeline_stage) // self.num_layers_per_virtual_pipeline_stage
+                    vpp_idx = num_noop_layer // self.num_layers_per_virtual_pipeline_stage // self.pipeline_model_parallel_size
+                    local_noop_idx = num_noop_layer % num_layers_each_pp % self.num_layers_per_virtual_pipeline_stage
                     vpp_local_layer_idx[pp_idx][vpp_idx].remove(local_noop_idx)
 
         return vpp_local_layer_idx
