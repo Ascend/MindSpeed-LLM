@@ -76,7 +76,7 @@ MindSpeed LLM的依赖配套如下表，安装步骤参考[安装指导](docs/py
   </tr>
   <tr>
     <td>PyTorch</td>
-    <td>2.6, 2.7.1</td>
+    <td>2.7.1</td>
   </tr>
   <tr>
     <td>torch_npu插件</td>
