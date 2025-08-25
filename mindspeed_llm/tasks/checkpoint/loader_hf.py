@@ -261,7 +261,7 @@ def get_message_layer_mlp(message, model, layer_idx, md=None, tp_size=1):
         mlp_router_weight = model.get_layers_mlp_router_weight(layer_idx=layer_idx)
         message["mlp_moe"]["mlp router weight"] = mlp_router_weight
         if shared_expert_gate:
-            shared_expert_gate = model.get_layers_mlp_shared_expert_gate_weight(layer_idx=layer_idx)
+            shared_expert_gate = model.get_layers_mlp_shared_experts_gate_weight_module(layer_idx=layer_idx)
             message["mlp_moe"]["mlp shared_expert_gate weight"] = shared_expert_gate
         if getattr(margs, "n_shared_experts", None) is not None:
             shared_experts_fc1_weight = []

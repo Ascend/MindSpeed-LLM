@@ -365,8 +365,8 @@ class ModelBase(abc.ABC):
                 router_weight = src_model.get_layers_mlp_router_weight(**kwargs)
                 self.set_layers_mlp_router_weight(**kwargs, data=router_weight)
                 if shared_expert_gate:
-                    shared_expert_gate_weight = src_model.get_layers_mlp_shared_expert_gate_weight(**kwargs)
-                    self.set_layers_mlp_shared_expert_gate_weight(**kwargs, data=shared_expert_gate_weight)
+                    shared_expert_gate_weight = src_model.get_layers_mlp_shared_experts_gate_weight_module(**kwargs)
+                    self.set_layers_mlp_shared_experts_gate_weight_module(data=shared_expert_gate_weight, **kwargs)
                 if getattr(self.args, "n_shared_experts", None) is not None:
                     self._set_mlp_shared_experts_state(src_model, **kwargs)
             if args.moe_grouped_gemm:
@@ -723,6 +723,13 @@ class HuggingfaceModel(ModelBase):
         self.set_layers_mlp_shared_experts_gate_proj_weight(data=gate_proj, **kwargs)
         self.set_layers_mlp_shared_experts_up_proj_weight(data=up_proj, **kwargs)
 
+    def get_layers_mlp_shared_experts_gate_weight_module(self, **kwargs):
+        share_gate_weight = self.get_layers_mlp_shared_expert_gate_weight(**kwargs)
+        return share_gate_weight
+
+    def set_layers_mlp_shared_experts_gate_weight_module(self, data=None, **kwargs):
+        self.set_layers_mlp_shared_expert_gate_weight(data=data, **kwargs)
+
     def set_layers_mlp_experts_weight1_module(self, data=None, **kwargs):
         args = self.get_args()
         num_experts = getattr(args, 'num_experts', None) or getattr(args, 'num_local_experts', None)
@@ -1040,14 +1047,10 @@ class MegatronModel(ModelBase):
             self.args.ffn_hidden_size = hf_args.intermediate_size
             self.args.gradient_accumulation_fusion = hf_args.gradient_accumulation_fusion
             self.args.kv_channels = hf_args.kv_channels if hasattr(hf_args, "kv_channels") else None
-            self.args.moe_grouped_gemm = hf_args.moe_grouped_gemm
-            self.args.moe_tp_extend_ep = hf_args.moe_tp_extend_ep
-            self.args.spec = hf_args.spec
             self.args.num_experts = getattr(hf_args, "num_experts", None)
             self.args.n_shared_experts = getattr(hf_args, "n_shared_experts", None)
             self.args.shared_expert_gate = getattr(hf_args, "shared_expert_gate", None)
             self.args.qk_layernorm = getattr(hf_args, "qk_layernorm", False)
-            self.args.moe_intermediate_size = getattr(hf_args, "moe_intermediate_size", None)
             self.args.moe_ffn_hidden_size = getattr(hf_args, "moe_intermediate_size", None)
             self.args.first_k_dense_replace = getattr(hf_args, "first_k_dense_replace", None)
             self.args.moe_layer_freq = getattr(hf_args, "moe_layer_freq", None)
@@ -1055,7 +1058,7 @@ class MegatronModel(ModelBase):
             self.args.cla_share_factor = getattr(hf_args, "cla_share_factor", 1)
             self.args.shared_expert_intermediate_size = getattr(hf_args, "shared_expert_intermediate_size", None)
             if self.args.shared_expert_intermediate_size is not None and self.args.n_shared_experts is None:
-                self.args.n_shared_experts = self.args.shared_expert_intermediate_size // self.args.moe_intermediate_size
+                self.args.n_shared_experts = self.args.shared_expert_intermediate_size // self.args.moe_ffn_hidden_size 
             if self.args.multi_latent_attention:
                 self.args.qk_pos_emb_head_dim = getattr(hf_args, "qk_pos_emb_head_dim", None)
                 self.args.qk_head_dim = getattr(hf_args, "qk_head_dim", None)
@@ -1080,7 +1083,6 @@ class MegatronModel(ModelBase):
             logger.info(e)
             raise AssertionError("You may got an incomplete config, please check hf config.json")
 
-
     def update_megatron_args_from_megatron_checkpoint(self, loader_megatron):
         if not loader_megatron:
             return
@@ -1093,6 +1095,8 @@ class MegatronModel(ModelBase):
         self.args.kv_lora_rank = getattr(self.args_megatron_checkpoint, "kv_lora_rank", None)
         self.args.n_shared_experts = getattr(self.args_megatron_checkpoint, "n_shared_experts", None)
         self.args.q_lora_rank = getattr(self.args_megatron_checkpoint, "q_lora_rank", None)
+        self.args.sequence_parallel = getattr(self.args_megatron_checkpoint, "sequence_parallel", False)
+        self.args.shared_expert_gate = getattr(self.args_megatron_checkpoint, "shared_expert_gate", False)
 
     def update_megatron_args_from_cmd_config(self, loader_megatron):
         self.args.ckpt_format = self.args_cmd.ckpt_format
@@ -1100,6 +1104,11 @@ class MegatronModel(ModelBase):
         self.args.add_qkv_bias = self.args_cmd.add_qkv_bias
         self.args.add_dense_bias = self.args_cmd.add_dense_bias
         self.args.post_norm = self.args_cmd.post_norm
+        self.args.moe_grouped_gemm = self.args_cmd.moe_grouped_gemm
+        self.args.moe_tp_extend_ep = self.args_cmd.moe_tp_extend_ep
+        if self.args.moe_tp_extend_ep:
+            self.args.moe_permutation_async_comm = True
+        self.args.spec = self.args_cmd.spec
         self.args.save_lora_to_hf = self.args_cmd.save_lora_to_hf
         self.args.load_checkpoint_loosely = self.args_cmd.load_checkpoint_loosely
         self.args.tokenizer_model = getattr(self.args_cmd, 'tokenizer_model', None)
@@ -1446,7 +1455,7 @@ class MegatronMCoreModel(MegatronModel):
 
         # shared experts gate
         if config_value.get('shared_expert_gate', False):
-            self.module_mapping["layers_mlp_shared_expert_gate"] = module_layer + "mlp.shared_expert_gate"
+            self.module_mapping["layers_mlp_shared_experts_gate_weight"] = module_layer + "mlp.shared_experts.gate_weight"
 
         # moe grouped gemm
         self.module_mapping[

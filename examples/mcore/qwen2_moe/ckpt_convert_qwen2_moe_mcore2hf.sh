@@ -5,6 +5,7 @@ source /usr/local/Ascend/ascend-toolkit/set_env.sh
 # 设置需要的权重转换参数
 python convert_ckpt.py \
     --use-mcore-models \
+    --spec mindspeed_llm.tasks.models.spec.qwen2_moe_spec layer_spec \
     --model-type GPT \
     --model-type-hf qwen2-moe \
     --load-model-type mg \

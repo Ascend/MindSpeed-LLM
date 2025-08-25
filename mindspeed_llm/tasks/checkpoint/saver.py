@@ -380,7 +380,7 @@ def set_model_layer_mlp(model_mg, msg, md, total_layer_num, **kwargs):
                 kwargs['tp_rank'] = tp_rank
                 model_mg.set_layers_mlp_router_weight(**kwargs, data=mlp_router_weight)
                 if shared_expert_gate:
-                    model_mg.set_layers_mlp_shared_expert_gate_weight(**kwargs, data=mlp_shared_expert_gate_weights)
+                    model_mg.set_layers_mlp_shared_experts_gate_weight_module(**kwargs, data=mlp_shared_expert_gate_weights)
                 if getattr(margs, "n_shared_experts", None) is not None:
                     model_mg.set_layers_mlp_shared_experts_linear_fc1_weight(**kwargs,
                                                                              data=shared_experts_linear_fc1_weight[tp_rank])

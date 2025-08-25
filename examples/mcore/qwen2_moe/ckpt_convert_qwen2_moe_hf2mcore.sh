@@ -14,6 +14,7 @@ python convert_ckpt.py \
        --add-qkv-bias \
        --load-dir ./model_from_hf/qwen2_moe_hf/ \
        --save-dir ./model_weights/qwen2_moe_mcore/ \
+       --spec mindspeed_llm.tasks.models.spec.qwen2_moe_spec layer_spec \
        --tokenizer-model ./model_from_hf/qwen2_moe_hf/tokenizer.json \
        --model-type-hf qwen2-moe \
        --moe-grouped-gemm \

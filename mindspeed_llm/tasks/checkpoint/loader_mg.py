@@ -289,7 +289,7 @@ def get_message_layer_mlp(message, model, md=None, **kwargs):
         num_experts_local = margs.num_experts // margs.expert_model_parallel_size
         message["mlp_moe"]["mlp router weight"] = mlp_router_weight
         if shared_expert_gate:
-            shared_expert_gate_weight = model.get_layers_mlp_shared_expert_gate_weight(**kwargs)
+            shared_expert_gate_weight = model.get_layers_mlp_shared_experts_gate_weight_module(**kwargs)
             message["mlp_moe"]["mlp shared_expert_gate weight"] = shared_expert_gate_weight
         weight1 = []
         weight2 = []
@@ -326,7 +326,7 @@ def get_message_layer_mlp(message, model, md=None, **kwargs):
                 kwargs['tp_rank'] = tp_rank
                 model.get_layers_mlp_router_weight(**kwargs, data=mlp_router_weight)
                 if shared_expert_gate:
-                    model.get_layers_mlp_shared_expert_gate_weight(**kwargs)
+                    model.get_layers_mlp_shared_experts_gate_weight_module(**kwargs)
                 if margs.moe_grouped_gemm:
                     weight1_tp.append(model.get_layers_mlp_experts_weight1_module(**kwargs))
                     weight2_tp.append(model.get_layers_mlp_experts_weight2_module(**kwargs))

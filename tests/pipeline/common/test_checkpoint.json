@@ -19,14 +19,14 @@
         },
         {
             "Base_MD5" : [
-                "d6c9d201b220792b",
-                "22770e7c925108b6",
-                "dd71b1971fa22f3b",
-                "0ca899d170e6d21e",
-                "ce01fba75ab12288",
-                "1461fc7bdee61e12",
-                "937d727330ba0e8e",
-                "9d7b0836d33ae492"
+                "f3b5b6fe2e9726b2",
+                "d4e5025e6132d876",
+                "81c5e315b398b54c",
+                "23b538fde9b48c2a",
+                "e0937010a49a5b04",
+                "708615f567dbbf3b",
+                "e71aebc4518028c4",
+                "c1a3598a30d7e4f5"
             ]
         }
     ],
@@ -192,15 +192,16 @@
                 "moe-grouped-gemm": null,
                 "add-qkv-bias": null,
                 "model-type-hf": "qwen2-moe",
+                "spec":"mindspeed_llm.tasks.models.spec.qwen2_moe_spec layer_spec",
                 "params-dtype": "bf16"
             }
         },
         {
             "Base_MD5" : [
-                "16e908518d8149bd",
-                "da0e2436775b9b48",
-                "5fb3fbe88f550232",
-                "d4974354fe5692b7"
+                "88e76a8f4d2c63e6",
+                "41de1be72cf9cfd5",
+                "feeef39e58a9dd33",
+                "43049110377b3298"
             ]
         }
     ],
@@ -216,6 +217,7 @@
                 "target-expert-parallel-size": "1",
                 "save-dir":"/data/ci/qwen2_moe/hf_base/qwen2_moe_hf",
                 "load-dir":"/data/ci/qwen2_moe/mg_base/qwen2_moe_l2_t1p2e2",
+                "spec":"mindspeed_llm.tasks.models.spec.qwen2_moe_spec layer_spec",
                 "use-mcore-models": null,
                 "moe-grouped-gemm": null,
                 "add-qkv-bias": null,
@@ -241,6 +243,7 @@
                 "target-expert-parallel-size": "1",
                 "save-dir":"/data/ci/qwen2_moe/hf_base/qwen2_moe_hf",
                 "load-dir":"/data/ci/qwen2_moe/mg_base/qwen2_moe_l2_t2p1e2_base",
+                "spec":"mindspeed_llm.tasks.models.spec.qwen2_moe_spec layer_spec",
                 "use-mcore-models": null,
                 "moe-grouped-gemm": null,
                 "add-qkv-bias": null,
@@ -401,6 +404,7 @@
                 "load-dir":"/data/ci/qwen2_moe/hf_base/qwen2_moe_hf",
                 "save-dir":"/data/qwen2_moe_tp2_ep2_extend_mc",
                 "tokenizer-model":"/data/ci/qwen2_moe/hf_base/qwen2_moe_hf",
+                "spec":"mindspeed_llm.tasks.models.spec.qwen2_moe_spec layer_spec",
                 "use-mcore-models": null,
                 "moe-grouped-gemm": null,
                 "moe-tp-extend-ep":null,
@@ -411,10 +415,10 @@
         },
         {
             "Base_MD5" : [
-                "88696533426f5058",
-                "5356b1ad668971f5",
-                "1bbdb66127188a42",
-                "4ef7324837a98603"
+                "df67d9bd5cce49ec",
+                "98345c41a01b31f0",
+                "3cd5d4ca48fe55ea",
+                "3486875632e81c16"
             ]
         }
     ],
@@ -431,6 +435,7 @@
                 "load-dir":"/data/ci/qwen2_moe/hf_base/qwen2_moe_hf",
                 "save-dir":"/data/ci/qwen2_moe/mg_base/qwen2_moe_l2_t2p1e2",
                 "tokenizer-model":"/data/ci/qwen2_moe/hf_base/qwen2_moe_hf",
+                "spec":"mindspeed_llm.tasks.models.spec.qwen2_moe_spec layer_spec",
                 "use-mcore-models": null,
                 "moe-grouped-gemm": null,
                 "add-qkv-bias": null,
