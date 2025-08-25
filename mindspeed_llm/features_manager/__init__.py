@@ -62,6 +62,7 @@ from mindspeed_llm.features_manager.models.mamba import MambaModel
 from mindspeed_llm.features_manager.moe.moe_router import MoERouter
 from mindspeed_llm.features_manager.moe.shared_expert import MoESharedExpertsFeature
 from mindspeed_llm.features_manager.moe.tp_extend_ep import MoETpExtendEpFeature
+from mindspeed_llm.features_manager.dpo.dpo import DPOFeature
 from mindspeed_llm.features_manager.pipeline_parallel.dualpipev_feature import DualpipeVFeature
 from mindspeed_llm.features_manager.pipeline_parallel.noop_layers import NoopLayersFeature
 from mindspeed_llm.features_manager.functional.profiling import ProfilingFeature
@@ -113,6 +114,7 @@ def add_llm_features(features_list: List[MindSpeedFeature]):
         ModuleFeature(),
         FinetuneFeature(),
         NumLayerListFeature(),
+        DPOFeature(),
         LoraFeature(),
         InferenceFeature(),
         EvaluationFeature(),

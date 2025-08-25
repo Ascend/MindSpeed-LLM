@@ -1285,7 +1285,6 @@ def _add_dummy_args_v2(args):
     args.tp_2d = False
     args.tp_x = 1
     args.tp_y = 1
-    args.is_pairwise_dataset = False
     args.enable_share_memory = False
     args.return_document_ids = False
     args.attention_mask_on_cpu = False
