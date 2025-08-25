@@ -161,9 +161,6 @@ def mindspore_adaptation(patch_manager, args):
                                            matmul_all_reduce)
         MindSporeAdaptation.register_patch('mindspeed.ops.lcal_functional.CoCOperations.pure_matmul', pure_matmul)
 
-    from mindspeed.mindspore.core.optimizer.adamw import step_func
-    MindSporeAdaptation.register_patch('apex.optimizers.FusedAdam.step', step_func)
-
     from mindspeed.mindspore.core.transformer.module import fp32_to_float16
     MindSporeAdaptation.register_patch('megatron.core.transformer.module.fp32_to_float16', fp32_to_float16)
 
@@ -224,18 +221,12 @@ def mindspore_adaptation(patch_manager, args):
         'mindspeed_llm.core.datasets.blended_megatron_dataset_builder.need_to_build_dataset',
         need_to_build_dataset)
 
-    from mindspeed.mindspore.core.optimizer.adamw import step_func
-    MindSporeAdaptation.register_patch('mindspeed.core.optimizer.adamw.AdamW.step', step_func)
-
     from mindspeed.mindspore.core.transformer.moe.token_dispatcher import preprocess
     MindSporeAdaptation.register_patch('mindspeed.core.transformer.moe.token_dispatcher.preprocess', preprocess)
 
     from mindspeed.mindspore.ops.npu_apply_fused_adamw_v2 import npu_apply_fused_adamw_v2
     MindSporeAdaptation.register_patch('mindspeed.ops.npu_apply_fused_adamw_v2.npu_apply_fused_adamw_v2',
                                        npu_apply_fused_adamw_v2)
-
-    from mindspeed.mindspore.optimizer.adamw import step_func
-    MindSporeAdaptation.register_patch('mindspeed.optimizer.adamw.AdamW.step', step_func)
 
     from mindspeed.mindspore.core.pipeline_parallel.schedules import deallocate_output_tensor_
     MindSporeAdaptation.register_patch('megatron.core.pipeline_parallel.schedules.deallocate_output_tensor',
@@ -255,6 +246,19 @@ def mindspore_adaptation(patch_manager, args):
     MindSporeAdaptation.register_patch('huggingface_hub.serialization._torch.get_torch_storage_size',
                                        get_torch_storage_size)
     MindSporeAdaptation.register_patch('huggingface_hub.serialization._torch.storage_ptr', storage_ptr)
+
+    if args.optimizer_selection == 'fused_ema_adamw':
+        from mindspeed.mindspore.ops.npu_apply_fused_ema_adamw import npu_apply_fused_ema_adamw
+        MindSporeAdaptation.register_patch('mindspeed.ops.npu_apply_fused_ema_adamw.npu_apply_fused_ema_adamw', npu_apply_fused_ema_adamw, create_dummy=True, force_patch=True)
+    else:
+        from mindspeed.mindspore.core.optimizer.adamw import step_func
+        MindSporeAdaptation.register_patch('apex.optimizers.FusedAdam.step', step_func)
+
+        from mindspeed.mindspore.core.optimizer.adamw import step_func
+        MindSporeAdaptation.register_patch('mindspeed.core.optimizer.adamw.AdamW.step', step_func)
+
+        from mindspeed.mindspore.optimizer.adamw import step_func
+        MindSporeAdaptation.register_patch('mindspeed.optimizer.adamw.AdamW.step', step_func)
 
 
 def pre_validate_args(patch_manager):
