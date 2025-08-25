@@ -116,66 +116,68 @@ def moe_layer_init_wrapper(init_func):
 
 
 def moe_layer_forward(self, hidden_states: torch.Tensor):
-    args = get_args()
-    if args.moe_token_dispatcher_type == 'alltoall_seq' and args.moe_alltoall_overlap_comm:
-        return MoELayerOverlapAll2All.apply(hidden_states, self)
-    if args.moe_token_dispatcher_type == 'allgather' and args.moe_allgather_overlap_comm:
-        return MoELayerOverlapAllGather.apply(hidden_states, self)
+    if (
+            self.training
+            and self.config.tensor_model_parallel_size > 1
+            and not self.config.sequence_parallel
+    ):
+        raise ValueError(
+            "During training, performance may degrade if MoE and tensor parallelism"
+            "are enabled without also enabling sequence parallelism."
+        )
 
     # process MoE
-    scores, indices = self.router(hidden_states)
-    
-    if args.moe_revert_type_after_topk:
-        (dispatched_input, tokens_per_expert, global_probs) = self.token_dispatcher.token_permutation(
-            hidden_states, scores.type_as(hidden_states), indices
+    def custom_forward(hidden_states):
+        probs, routing_map = self.router(hidden_states)
+        (dispatched_input, tokens_per_expert, permuted_probs) = (
+            self.token_dispatcher.token_permutation(hidden_states, probs, routing_map)
         )
+        expert_output, mlp_bias = self.experts(
+            dispatched_input, tokens_per_expert, permuted_probs
+        )
+        output, mlp_bias = self.token_dispatcher.token_unpermutation(expert_output, mlp_bias)
+
+        args = get_args()
+        if args.moe_router_load_balancing_type == "group_limited_greedy":
+            # forward only need no loss track
+            if hasattr(args, "do_train") and args.do_train:
+                save_to_aux_losses_tracker(
+                    "load_balancing_loss",
+                    self.router.l_aux,
+                    self.layer_number,
+                    self.config.num_layers,
+                )
+                save_to_aux_losses_tracker(
+                    "load_balancing_expert_level_loss",
+                    self.router.l_expert_aux / args.moe_aux_loss_coeff,
+                    self.layer_number,
+                    self.config.num_layers,
+                )
+                if hasattr(self.router, 'l_device_aux'):
+                    save_to_aux_losses_tracker(
+                        "load_balancing_device_level_loss",
+                        self.router.l_device_aux / args.moe_device_level_aux_loss_coeff,
+                        self.layer_number,
+                        self.config.num_layers,
+                    )
+                if hasattr(self.router, 'l_comm_aux'):
+                    save_to_aux_losses_tracker(
+                        "load_balancing_comm_level_loss",
+                        self.router.l_comm_aux / args.moe_comm_aux_loss_coeff,
+                        self.layer_number,
+                        self.config.num_layers,
+                    )
+            output = MoEAuxLossAutoScaler.apply(output, self.router.l_aux)
+
+        if self.use_shared_expert and not self.shared_expert_overlap:
+            # if shared_expert_overlap is True, the expert calculation happens in
+            # the token_dispatcher to overlap communications and computations
+            output = output + self.shared_experts(hidden_states)
+        return output, mlp_bias
+
+    if self.moe_layer_recompute:
+        output, mlp_bias = tensor_parallel.checkpoint(custom_forward, False, hidden_states)
     else:
-        (dispatched_input, tokens_per_expert, global_probs) = self.token_dispatcher.token_permutation(
-            hidden_states, scores, indices
-        )
-    
-    router_expert_output, mlp_bias = self.experts(dispatched_input, tokens_per_expert, global_probs)
-    
-    output, mlp_bias = self.token_dispatcher.token_unpermutation(router_expert_output, mlp_bias)
-    
-    if args.moe_router_load_balancing_type == "group_limited_greedy":
-        # forward only need no loss track
-        if hasattr(args, "do_train") and args.do_train:
-            save_to_aux_losses_tracker(
-                "load_balancing_loss",
-                self.router.l_aux,
-                self.layer_number,
-                self.config.num_layers,
-            )
-            save_to_aux_losses_tracker(
-                "load_balancing_expert_level_loss",
-                self.router.l_expert_aux / args.moe_aux_loss_coeff,
-                self.layer_number,
-                self.config.num_layers,
-            )
-            if hasattr(self.router, 'l_device_aux'):
-                save_to_aux_losses_tracker(
-                    "load_balancing_device_level_loss",
-                    self.router.l_device_aux / args.moe_device_level_aux_loss_coeff,
-                    self.layer_number,
-                    self.config.num_layers,
-                )
-            if hasattr(self.router, 'l_comm_aux'):
-                save_to_aux_losses_tracker(
-                    "load_balancing_comm_level_loss",
-                    self.router.l_comm_aux / args.moe_comm_aux_loss_coeff,
-                    self.layer_number,
-                    self.config.num_layers,
-                )
-        output = MoEAuxLossAutoScaler.apply(output, self.router.l_aux)
-    
-    if args.n_shared_experts:
-        share_experts_output, share_experts_bias = self.shared_experts(hidden_states)
-        if args.shared_expert_gate:
-            share_experts_output = F.sigmoid(self.shared_expert_gate(hidden_states)) * share_experts_output
-        output = output + share_experts_output
-        
-        if hasattr(self.token_dispatcher, 'add_bias') and self.token_dispatcher.add_bias:
-            mlp_bias = mlp_bias + share_experts_bias
+        output, mlp_bias = custom_forward(hidden_states)
 
     return output, mlp_bias

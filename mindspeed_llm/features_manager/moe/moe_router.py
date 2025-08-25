@@ -84,6 +84,7 @@ class MoERouter(MindSpeedFeature):
     def register_patches(self, patch_manager, args):
         from mindspeed_llm.core.transformer.moe.router import (topk_router_routing, topk_router_init_wrapper, topk_router_gating_func)
         from mindspeed_llm.core.transformer.moe.moe_utils import z_loss_func
+        from mindspeed_llm.core.transformer.moe.moe_layer import moe_layer_forward
 
         patch_manager.register_patch('megatron.core.transformer.moe.router.TopKRouter.__init__', 
                                       topk_router_init_wrapper)
@@ -93,3 +94,7 @@ class MoERouter(MindSpeedFeature):
                                       topk_router_gating_func)
         patch_manager.register_patch('megatron.core.transformer.moe.router.z_loss_func', 
                                       z_loss_func)
+        # add moe layer forward patch for deepseekv2
+        if not (args.moe_allgather_overlap_comm or args.moe_alltoall_overlap_comm):
+            patch_manager.register_patch('megatron.core.transformer.moe.moe_layer.MoELayer.forward',
+                                          moe_layer_forward)
