@@ -326,7 +326,7 @@ class DPOTrainer(BaseTrainer):
                 args_.no_load_rng = True
                 args_.no_load_optim = True
                 set_args(args_)
-            load_checkpoint(model, None, None, 'load', strict=strict)
+            load_checkpoint(model, None, None, load_arg='load', strict=strict)
             self.args.consumed_train_samples = consumed_train_samples
 
         return [model[k].eval() for k in range(len(model))]
