@@ -56,8 +56,7 @@ MOE_ARGS="
     --moe-router-dtype fp32 \
     --moe-grouped-gemm \
     --moe-permutation-async-comm \
-    --use-fused-moe-token-permute-and-unpermute \
-    --moe-token-dispatcher-type alltoall \
+    --moe-token-dispatcher-type alltoall_seq \
     --first-k-dense-replace 1 \
     --moe-layer-freq 1 \
     --n-shared-experts 1 \
@@ -103,7 +102,7 @@ MEM_ARGS="
     --recompute-num-layers 1 \
 "
 
-GPT_ARGS="\
+GPT_ARGS="
     --spec mindspeed_llm.tasks.models.spec.deepseek_spec layer_spec \
     --no-gradient-accumulation-fusion \
     --reset-position-ids \
@@ -187,7 +186,6 @@ msrun $DISTRIBUTED_ARGS $basepath/pretrain_gpt.py \
     $ROPE_ARGS \
     $MOE_ARGS \
     $MTP_ARGS \
-    $DUALPIPE_ARGS \
     $MEM_ARGS \
     --distributed-backend nccl \
     --save $CKPT_SAVE_DIR \

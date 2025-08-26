@@ -30,11 +30,7 @@ class MindSporeAdaptation(MindSpeedPatchesManager):
 
 def mindspore_adaptation(patch_manager, args):
     from ..core.models.gpt.gpt_model import GPTModel
-    from ..mindspore.core.transformer.moe.moe_layer import moe_layer_forward
-
     MindSporeAdaptation.register_patch('megatron.core.models.gpt.gpt_model.GPTModel', GPTModel)
-
-    MindSporeAdaptation.register_patch('megatron.core.transformer.moe.moe_layer.MoELayer.forward', moe_layer_forward)
 
     if args.moe_permutation_async_comm:
         if args.moe_token_dispatcher_type == 'alltoall_seq':

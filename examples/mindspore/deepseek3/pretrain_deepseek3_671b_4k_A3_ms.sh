@@ -54,8 +54,7 @@ MLA_ARGS="
 MOE_ARGS="
     --moe-grouped-gemm \
     --moe-permutation-async-comm \
-    --use-fused-moe-token-permute-and-unpermute \
-    --moe-token-dispatcher-type alltoall \
+    --moe-token-dispatcher-type alltoall_seq \
     --first-k-dense-replace 3 \
     --moe-layer-freq 1 \
     --n-shared-experts 1 \
@@ -180,7 +179,6 @@ msrun $DISTRIBUTED_ARGS $basepath/pretrain_gpt.py \
     $DATA_ARGS \
     $OUTPUT_ARGS \
     $MLA_ARGS \
-    $DUALPIPE_ARGS \
     $MEM_ARGS \
     $ROPE_ARGS \
     $MOE_ARGS \
