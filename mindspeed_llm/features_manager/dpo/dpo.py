@@ -7,6 +7,10 @@ class DPOFeature(MindSpeedFeature):
     def __init__(self):
         super(DPOFeature, self).__init__(feature_name="dpo", optimization_level=0)
 
+    def validate_args(self, args):
+        if not args.use_wandb and args.wandb_exp_name:
+            raise ValueError("When `wandb_exp_name` is not None, you must enable `use_wandb`.")
+
     def register_args(self, parser: ArgumentParser):
         group = parser.add_argument_group(title=self.feature_name)
 
@@ -25,5 +29,8 @@ class DPOFeature(MindSpeedFeature):
                             help="The robust DPO label smoothing parameter in cDPO that should be between 0 and 0.5.",)
         group.add_argument('--pref-ftx', default=0.0, type=float,
                             help="The supervised fine-tuning loss coefficient in DPO training.",)
+        group.add_argument('-use-wandb', default=False, action='store_true',
+                           help="Enable Weights & Biases (wandb) logging for experiment tracking. "
+                                "Disabled by default; set this flag to turn it on.", )
 
 
