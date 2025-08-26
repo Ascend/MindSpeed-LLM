@@ -27,10 +27,6 @@
       
       支持将Lora微调权重单独转为Huggingface格式。
 
-  - [优化器权重转换](#25-优化器权重转换)
-
-    优化器权重转换支持多种并行切分，确保训练过程中优化器状态的迁移。
-
 - [权重转换特性清单](#权重转换特性清单)
 
 ## 权重转换使用
@@ -43,7 +39,6 @@
 
 **Lora权重合并与转换**：支持将 Lora 权重与 Base 权重合并，简化了模型推理过程中的加载步骤。合并后的模型可直接用于推理，显著提升了推理效率，减少了不必要的计算资源消耗。支持将Lora微调权重单独转为Huggingface格式，以支持客户下游任务。
 
-**优化器权重转换**：支持多种并行切分策略，确保优化器状态在不同并行策略间的迁移与兼容，便于在不同训练环境下进行优化器状态恢复。
 
 ## 1. 权重下载
 
@@ -398,96 +393,6 @@ MindSpeed-LLM lora到Huggingface的权重转换脚本命名风格及启动方法
 
 bash examples/mcore/llama2/ckpt_convert_llama2_lora2hf.sh
 ```
-
-### 2.4 优化器权重转换
-
-在权重转换脚本中指定`--load-model-type`参数为`optim` , 则为优化器权重转换。
-
-使用方法：
-
-1.准备预训练权重
-
-优化器状态为预训练保存得到，并且需要在预训练脚本中加入参数`--use-distributed-optimizer` 表示使用分布式优化器，并且删除参数`--no-save-optim ` 使训练生成的每个权重文件夹都包括`model_optim_rng.pt`和`distrib_optim.pt` 模型权重文件和优化器状态文件。
-
-2.`mg-mg`权重转换
-
-优化器权重需要先做一次`mg-mg`的权重转换，并指定所需的切分方式，脚本参考2.3中`mcore-mcore`脚本：
-
-```shell
-    python convert_ckpt.py \
-        --model-type GPT \
-        --load-model-type mg \
-        --save-model-type mg \
-        --target-tensor-parallel-size 4 \
-        --target-pipeline-parallel-size 2 \
-        --load-dir ./ckpt/llama2-7b-tp2pp4 \
-        --save-dir ./ckpt/llama2-7b-tp4pp2-optim \
-        --use-mcore-models
-```
-
-在此步骤完成后，`--save-dir` 中应该会生成 `model_optim_rng.pt` 格式的权重文件。
-
-3.权重转换优化器:
-
-完成上述步骤后，可以执行优化器权重转换。此时，指定 `--load-model-type optim` 参数来加载优化器权重，并进行转换，下面提供Llama2-7b模型的优化器权重转换的示例脚本，仅供参考：
-
-**注意：** ：并行配置如：TP、PP、EP、VPP、num-layer-list、noop-layers等参数需要与mcore-mcore权重转换脚本相同。
-
-
-```
-python convert_ckpt.py
---model-type GPT
---load-model-type optim
---load-dir ./ckpt/llama2-7b-tp2pp4
---target-tensor-parallel-size 4
---target-pipeline-parallel-size 2
---save-dir ./ckpt/llama2-7b-tp4pp2-optim
---use-mcore-models
---model-type-hf llama2
-```
-
-
-<table>
-  <thead>
-    <tr>
-      <th>参数</th>
-      <th>说明</th>
-      <th>可选/必选</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>--save-dir</td>
-      <td>权重保存路径，需要与`mg-mg`转换时的保存路径一致</td>
-      <td>必选</td>
-    </tr>
-    <tr>
-      <td>--load-model-type</td>
-      <td>指定加载模型的方式。对于优化器权重转换，必须设置参数值为`optim`</td>
-      <td>必选</td>
-    </tr>
-    <tr>
-      <td>--moe-grouped-gemm</td>
-      <td>对于moe模型，如果在预训练脚本和mcore-mcore权重转换脚本中加入此参数`--moe-grouped-gemm` ，则在优化器权重转换脚本中，也需要加入该参数。</td>
-      <td>可选</td>
-    </tr>
-  </tbody>
-</table>
-
-转换脚本命名风格及启动方法为：
-
-```shell
-# 命令启动方式以 llama2 为例子
-bash examples/mcore/llama2/ckpt_convert_llama2_optim.sh
-```
-
-**注意**：
-
-优化器权重转换当前仅支持模型：llama2-7b、deepseek2-lite
-
-llama2-7b支持TP、PP、EP、VPP、DPP、noop-layers；
-
-deepseek2-lite支持PP、EP、DPP、noop-layers。
 
 
 ### 权重转换特性清单

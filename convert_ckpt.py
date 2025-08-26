@@ -45,7 +45,7 @@ def main():
     parser.add_argument('--loader', type=str, default='megatron',
                         help='Module name to load checkpoint, should be on python path')
     parser.add_argument('--load-model-type', type=str, nargs='?',
-                        default=None, const=None, choices=['hf', 'mg', 'optim'],
+                        default=None, const=None, choices=['hf', 'mg'],
                         help='Module name to load checkpoint, should be on python path')
     parser.add_argument('--saver', type=str, default='megatron',
                         help='Module name to save checkpoint, should be on python path')
@@ -82,44 +82,36 @@ def main():
     
     known_args, _ = parser.parse_known_args()
 
-
-    if known_args.load_model_type == 'optim':
-        loader = load_plugin('loader', known_args.load_model_type)
-        loader.add_arguments(parser)
-        args = parser.parse_args()
-        model_provider = pretrain_gpt.model_provider
-        loader.load_checkpoint(model_provider, args)
+    use_saver = known_args.load_model_type is None
+    if use_saver:
+        loader = load_plugin('loader', known_args.loader)
+        saver = load_plugin('saver', known_args.saver)
     else:
-        use_saver = known_args.load_model_type is None
-        if use_saver:
-            loader = load_plugin('loader', known_args.loader)
-            saver = load_plugin('saver', known_args.saver)
-        else:
-            loader = load_plugin('loader', known_args.load_model_type)
-            saver = load_plugin('saver', '')
+        loader = load_plugin('loader', known_args.load_model_type)
+        saver = load_plugin('saver', '')
 
-        loader.add_arguments(parser)
-        saver.add_arguments(parser)
+    loader.add_arguments(parser)
+    saver.add_arguments(parser)
 
-        args = parser.parse_args()
+    args = parser.parse_args()
 
-        queue = mp.Queue(maxsize=args.max_queue_size)
-        model_provider = ORMTrainer.model_provider if args.orm else pretrain_gpt.model_provider
-        if args.orm and not args.use_mcore_models:
-            raise AssertionError("Currently Outcome Reward Model only support Mcore models")
+    queue = mp.Queue(maxsize=args.max_queue_size)
+    model_provider = ORMTrainer.model_provider if args.orm else pretrain_gpt.model_provider
+    if args.orm and not args.use_mcore_models:
+        raise AssertionError("Currently Outcome Reward Model only support Mcore models")
 
-        logger.info("Starting saver...")
-        saver_proc = mp.Process(target=saver.save_model_checkpoint, args=(model_provider, queue, args))
-        saver_proc.start()
+    logger.info("Starting saver...")
+    saver_proc = mp.Process(target=saver.save_model_checkpoint, args=(model_provider, queue, args))
+    saver_proc.start()
 
-        logger.info("Starting loader...")
-        loader.load_checkpoint(model_provider, queue, args)
+    logger.info("Starting loader...")
+    loader.load_checkpoint(model_provider, queue, args)
 
-        logger.info("Waiting for saver to complete...")
-        saver_proc.join()
-        if saver_proc.exitcode is not None and saver_proc.exitcode != 0:
-            logger.error(f"saver process exited with error code {saver_proc.exitcode}")
-            sys.exit(saver_proc.exitcode)
+    logger.info("Waiting for saver to complete...")
+    saver_proc.join()
+    if saver_proc.exitcode is not None and saver_proc.exitcode != 0:
+        logger.error(f"saver process exited with error code {saver_proc.exitcode}")
+        sys.exit(saver_proc.exitcode)
 
 
 if __name__ == '__main__':
