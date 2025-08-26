@@ -159,9 +159,7 @@ class MindSporeAdaptation(MegatronAdaptationABC):
         from mindspeed.mindspore.core.transformer.module import fp32_to_float16
         MindSporeAdaptation.register('megatron.core.transformer.module.fp32_to_float16', fp32_to_float16)
 
-        from mindspeed_llm.mindspore.core.transformer.moe.router import apply_seq_aux_loss, topk_router_gating_func
-        MindSporeAdaptation.register('mindspeed_llm.core.transformer.moe.router.apply_seq_aux_loss',
-                                    apply_seq_aux_loss)
+        from mindspeed_llm.mindspore.core.transformer.moe.router import topk_router_gating_func
         MindSporeAdaptation.register('megatron.core.transformer.moe.router.TopKRouter.gating', topk_router_gating_func)
 
         from mindspeed.mindspore.core.transformer.moe.comm_utils import async_all_to_all
