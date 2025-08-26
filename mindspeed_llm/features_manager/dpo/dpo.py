@@ -29,7 +29,7 @@ class DPOFeature(MindSpeedFeature):
                             help="The robust DPO label smoothing parameter in cDPO that should be between 0 and 0.5.",)
         group.add_argument('--pref-ftx', default=0.0, type=float,
                             help="The supervised fine-tuning loss coefficient in DPO training.",)
-        group.add_argument('-use-wandb', default=False, action='store_true',
+        group.add_argument('--use-wandb', default=False, action='store_true',
                            help="Enable Weights & Biases (wandb) logging for experiment tracking. "
                                 "Disabled by default; set this flag to turn it on.", )
 
