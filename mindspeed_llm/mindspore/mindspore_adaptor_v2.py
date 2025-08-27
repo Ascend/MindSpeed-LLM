@@ -77,7 +77,7 @@ def mindspore_adaptation(patch_manager, args):
 
     from mindspeed.mindspore.core.models.common.language_module.language_module import \
         setup_embeddings_and_output_layer
-    MindSporeAdaptation.register(
+    MindSporeAdaptation.register_patch(
         'megatron.core.models.common.language_module.language_module.LanguageModule.setup_embeddings_and_output_layer',
         setup_embeddings_and_output_layer)
 
@@ -249,20 +249,20 @@ def mindspore_adaptation(patch_manager, args):
 
     # accelerate
     from mindspeed.mindspore.third_party.accelerate.extract import extract_model_from_parallel
-    MindSporeAdaptation.register('accelerate.utils.extract_model_from_parallel', extract_model_from_parallel)
+    MindSporeAdaptation.register_patch('accelerate.utils.extract_model_from_parallel', extract_model_from_parallel)
 
     # transformers
     from mindspeed.mindspore.third_party.transformers.configuration_utils import dict_torch_dtype_to_str
-    MindSporeAdaptation.register('transformers.configuration_utils.PretrainedConfig.dict_torch_dtype_to_str',
+    MindSporeAdaptation.register_patch('transformers.configuration_utils.PretrainedConfig.dict_torch_dtype_to_str',
                                  dict_torch_dtype_to_str)
 
     from mindspeed.mindspore.third_party.transformers.modeling_utils import load_state_dict, \
         _load_state_dict_into_meta_model, safe_open, get_parameter_dtype
-    MindSporeAdaptation.register('transformers.modeling_utils.load_state_dict', load_state_dict)
-    MindSporeAdaptation.register('transformers.modeling_utils._load_state_dict_into_meta_model',
+    MindSporeAdaptation.register_patch('transformers.modeling_utils.load_state_dict', load_state_dict)
+    MindSporeAdaptation.register_patch('transformers.modeling_utils._load_state_dict_into_meta_model',
                                  _load_state_dict_into_meta_model)
-    MindSporeAdaptation.register('transformers.modeling_utils.safe_open', safe_open)
-    MindSporeAdaptation.register('transformers.modeling_utils.get_parameter_dtype', get_parameter_dtype)
+    MindSporeAdaptation.register_patch('transformers.modeling_utils.safe_open', safe_open)
+    MindSporeAdaptation.register_patch('transformers.modeling_utils.get_parameter_dtype', get_parameter_dtype)
 
     if args.optimizer_selection == 'fused_ema_adamw':
         from mindspeed.mindspore.ops.npu_apply_fused_ema_adamw import npu_apply_fused_ema_adamw
