@@ -34,20 +34,6 @@ def mindspore_adaptation(patch_manager, args):
 
     if args.moe_permutation_async_comm:
         if args.moe_token_dispatcher_type == 'alltoall_seq':
-            if args.moe_alltoall_overlap_comm:
-                from mindspeed.mindspore.core.transformer.moe.legacy_a2a_token_dispatcher import \
-                    alltoall_token_permutation_new, \
-                    alltoall_token_unpermutation_new
-                from mindspeed.mindspore.core.transformer.moe.experts import group_mlp_forward
-                MindSporeAdaptation.register_patch('megatron.core.transformer.moe.experts.GroupedMLP.forward',
-                                                   group_mlp_forward)
-                MindSporeAdaptation.register_patch(
-                    'megatron.core.transformer.moe.legacy_a2a_token_dispatcher.MoEAlltoAllSEQTokenDispatcher.token_permutation',
-                    alltoall_token_permutation_new)
-                MindSporeAdaptation.register_patch(
-                    'megatron.core.transformer.moe.legacy_a2a_token_dispatcher.MoEAlltoAllSEQTokenDispatcher.token_unpermutation',
-                    alltoall_token_unpermutation_new)
-
             if hasattr(args,
                        'use_fused_moe_token_permute_and_unpermute') and args.use_fused_moe_token_permute_and_unpermute and not args.moe_expert_capacity_factor:
                 from mindspeed.mindspore.core.fusions.npu_moe_token_permute import permute_wrapper
@@ -58,11 +44,6 @@ def mindspore_adaptation(patch_manager, args):
 
     from mindspeed.mindspore.core.transformer.moe.grouped_gemm_util import Ops
     MindSporeAdaptation.register_patch('megatron.core.transformer.moe.grouped_gemm_util.ops', Ops)
-
-    from mindspeed.mindspore.core.distributed.distributed_data_parallel import distributed_data_parallel_init
-    MindSporeAdaptation.register_patch(
-        'megatron.core.distributed.distributed_data_parallel.DistributedDataParallel.__init__',
-        distributed_data_parallel_init)
 
     from mindspeed.mindspore.core.distributed.param_and_grad_buffer import register_grad_ready
     MindSporeAdaptation.register_patch('megatron.core.distributed.param_and_grad_buffer.register_grad_ready',
@@ -85,23 +66,6 @@ def mindspore_adaptation(patch_manager, args):
     MindSporeAdaptation.register_patch('megatron.core.optimizer.optimizer.MegatronOptimizer.__init__',
                                        megatron_optimizer_init)
 
-    from mindspeed.mindspore.core.pipeline_parallel.schedules import backward_step, forward_backward_no_pipelining
-    from mindspeed_llm.mindspore.core.pipeline_parallel.schedules import forward_step
-    MindSporeAdaptation.register_patch('megatron.core.pipeline_parallel.schedules.forward_step', forward_step)
-
-    MindSporeAdaptation.register_patch('megatron.core.pipeline_parallel.schedules.backward_step', backward_step)
-    MindSporeAdaptation.register_patch('megatron.core.pipeline_parallel.schedules.forward_backward_no_pipelining',
-                                       forward_backward_no_pipelining)
-
-    if not args.moe_fb_overlap:
-        from mindspeed.mindspore.core.pipeline_parallel.schedules import forward_backward_pipelining_with_interleaving, \
-            forward_backward_pipelining_without_interleaving
-        MindSporeAdaptation.register_patch(
-            'megatron.core.pipeline_parallel.schedules.forward_backward_pipelining_with_interleaving',
-            forward_backward_pipelining_with_interleaving)
-        MindSporeAdaptation.register_patch(
-            'megatron.core.pipeline_parallel.schedules.forward_backward_pipelining_without_interleaving',
-            forward_backward_pipelining_without_interleaving)
 
     from mindspeed.mindspore.core.tensor_parallel.data import local_build_key_size_numel_dictionaries
     MindSporeAdaptation.register_patch('megatron.core.tensor_parallel.data._build_key_size_numel_dictionaries',
@@ -114,10 +78,6 @@ def mindspore_adaptation(patch_manager, args):
         checkpoint_function_backward
     MindSporeAdaptation.register_patch('megatron.core.tensor_parallel.random._set_cuda_rng_state',
                                        local_set_cuda_rng_state)
-    MindSporeAdaptation.register_patch('megatron.core.tensor_parallel.random.CheckpointFunction.forward',
-                                       checkpoint_function_forward)
-    MindSporeAdaptation.register_patch('megatron.core.tensor_parallel.random.CheckpointFunction.backward',
-                                       checkpoint_function_backward)
 
     from ..mindspore.training.utils import get_batch_on_this_tp_rank
     MindSporeAdaptation.register_patch('megatron.training.utils.get_batch_on_this_tp_rank', get_batch_on_this_tp_rank)
@@ -143,12 +103,6 @@ def mindspore_adaptation(patch_manager, args):
         'megatron.core.optimizer.distrib_optimizer.DistributedOptimizer.load_parameter_state_from_dp_zero',
         load_parameter_state_from_dp_zero)
 
-    from mindspeed.mindspore.core.tensor_parallel.random import CheckpointWithoutOutput, \
-        CheckpointFunctionWithoutOutput
-    MindSporeAdaptation.register_patch('mindspeed.core.tensor_parallel.random.CheckpointWithoutOutput',
-                                       CheckpointWithoutOutput)
-    MindSporeAdaptation.register_patch('mindspeed.core.tensor_parallel.random.CheckpointFunctionWithoutOutput',
-                                       CheckpointFunctionWithoutOutput)
 
     if args.use_ascend_coc:
         from mindspeed.mindspore.ops.lcal_functional import all_gather_matmul, all_gather_matmul_v2, \
@@ -166,12 +120,8 @@ def mindspore_adaptation(patch_manager, args):
     from mindspeed.mindspore.core.transformer.module import fp32_to_float16
     MindSporeAdaptation.register_patch('megatron.core.transformer.module.fp32_to_float16', fp32_to_float16)
 
-    from mindspeed_llm.mindspore.core.transformer.moe.router import topk_router_gating_func
-    MindSporeAdaptation.register_patch('megatron.core.transformer.moe.router.TopKRouter.gating',
-                                       topk_router_gating_func)
-
     from mindspeed.mindspore.core.transformer.moe.comm_utils import async_all_to_all
-    MindSporeAdaptation.register_patch('mindspeed.core.transformer.moe.comm_utils.async_all_to_all',
+    MindSporeAdaptation.register_patch('mindspeed.core.transformer.moe.moe_feature.overlap.comm_utils.async_all_to_all',
                                        async_all_to_all)
     if args.moe_fb_overlap:
         patch_moe_fb_overlap()
@@ -277,6 +227,17 @@ def mindspore_adaptation(patch_manager, args):
         from mindspeed.mindspore.optimizer.adamw import step_func
         MindSporeAdaptation.register_patch('mindspeed.optimizer.adamw.AdamW.step', step_func)
 
+
+    from mindspeed.mindspore.core.transformer.moe.moe_layer_overlap_all2all import gmm_op
+    MindSporeAdaptation.register_patch('mindspeed.core.transformer.moe.moe_feature.overlap.moe_layer_overlap_all2all.gmm_op', gmm_op)
+
+    from mindspeed.mindspore.core.pipeline_parallel.schedules import custom_backward
+    MindSporeAdaptation.register_patch('megatron.core.pipeline_parallel.schedules.custom_backward', custom_backward)
+
+    from mindspeed.mindspore.core.optimizer.optimizer import scale_loss
+    MindSporeAdaptation.register_patch('megatron.core.optimizer.optimizer.MegatronOptimizer.scale_loss', scale_loss)
+
+    
 
 def pre_validate_args(patch_manager):
     pass
