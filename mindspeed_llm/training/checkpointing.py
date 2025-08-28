@@ -55,7 +55,7 @@ def _load_base_checkpoint_wrapper(fn):
     def wrapper(*args, **kwargs):
         args_ = get_args()
         if getattr(args_, 'is_load_refer', False):
-            kwargs['checkpoint_step'] = args_.refer_model_iter
+            kwargs['checkpointing_context'] = args_.refer_model_iter
         state_dict, checkpoint_name, release, ckpt_type = fn(*args, **kwargs)
         rank0 = kwargs.pop('rank0')
         if is_enable_lora() and state_dict is not None:
