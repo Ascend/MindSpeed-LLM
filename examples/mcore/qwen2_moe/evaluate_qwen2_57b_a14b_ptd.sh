@@ -43,6 +43,7 @@ MOE_ARGS="
 
 torchrun $DISTRIBUTED_ARGS evaluation.py \
         $MOE_ARGS \
+       --spec mindspeed_llm.tasks.models.spec.qwen2_moe_spec layer_spec \
        --use-mcore-models \
        --task-data-path $DATA_PATH \
        --task ${TASK} \

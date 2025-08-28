@@ -101,6 +101,7 @@ MODEL_PARALLEL_ARGS="
 
 GPT_ARGS="
     --use-mcore-models \
+    --spec mindspeed_llm.tasks.models.spec.qwen2_moe_spec layer_spec \
     --tokenizer-name-or-path ${TOKENIZER_PATH} \
     --max-position-embeddings ${SEQ_LENGTH} \
     --num-layers ${NUM_LAYERS} \

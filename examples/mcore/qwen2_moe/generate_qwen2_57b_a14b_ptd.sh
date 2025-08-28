@@ -44,6 +44,7 @@ MOE_ARGS="
 
 torchrun $DISTRIBUTED_ARGS inference.py \
          $MOE_ARGS \
+       --spec mindspeed_llm.tasks.models.spec.qwen2_moe_spec layer_spec \
        --use-mcore-models \
        --tensor-model-parallel-size ${TP} \
        --pipeline-model-parallel-size ${PP} \

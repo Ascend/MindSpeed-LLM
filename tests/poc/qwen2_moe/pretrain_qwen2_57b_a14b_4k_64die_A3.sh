@@ -95,6 +95,7 @@ MODEL_PARALLEL_ARGS="
 
 GPT_ARGS="
     --fix-router \
+    --spec mindspeed_llm.tasks.models.spec.qwen2_moe_spec layer_spec \
     --load $CKPT_LOAD_DIR \
     --no-gradient-accumulation-fusion \
     --gemm-gradient-accumulation-fusion \

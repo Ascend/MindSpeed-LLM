@@ -94,6 +94,7 @@ MODEL_PARALLEL_ARGS="
 "
 
 GPT_ARGS="
+    --spec mindspeed_llm.tasks.models.spec.qwen2_moe_spec layer_spec \
     --use-cp-send-recv-overlap \
     --use-fused-ring-attention-update \
     --no-gradient-accumulation-fusion \
