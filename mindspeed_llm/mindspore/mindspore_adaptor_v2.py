@@ -440,3 +440,7 @@ def patch_moe_fb_overlap():
     MindSporeAdaptation.register_patch(
         'mindspeed.mindspore.core.pipeline_parallel.dualpipev.dualpipev_schedules.forward_step_with_model_graph',
         dualpipe_forward_step_wrapper)
+
+
+def mindspore_register_args(group):
+    pass

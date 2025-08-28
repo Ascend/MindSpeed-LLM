@@ -2,6 +2,7 @@
 
 from argparse import ArgumentParser
 from mindspeed.features_manager.feature import MindSpeedFeature
+from mindspeed_llm.mindspore.mindspore_adaptor_v2 import mindspore_register_args
 
 
 class MindSporePatchFeature(MindSpeedFeature):
@@ -11,6 +12,9 @@ class MindSporePatchFeature(MindSpeedFeature):
     def register_args(self, parser: ArgumentParser):
         group = parser.add_argument_group(title=self.feature_name)
         group.add_argument('--ai-framework', type=str, default='pytorch', help='support pytorch and mindspore')
+        args = parser.parse_known_args()
+        if args[0].ai_framework == "mindspore":
+            mindspore_register_args(group)
 
     def use_mindspore(self, args) -> bool:
         return hasattr(args, "ai_framework") and args.ai_framework == "mindspore"
