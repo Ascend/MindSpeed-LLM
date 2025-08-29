@@ -285,15 +285,11 @@ class MindSporeAdaptation(MegatronAdaptationABC):
             from mindspeed.mindspore.ops.npu_apply_fused_adamw_v2 import npu_apply_fused_adamw_v2
             MindSporeAdaptation.register('mindspeed.ops.npu_apply_fused_adamw_v2.npu_apply_fused_adamw_v2',
                                 npu_apply_fused_adamw_v2)
-            from mindspeed.mindspore.core.optimizer.swap_optimizer.swap_optimizer import opt_states_initialization, create_tensor_maps, swap_tensors_to_device, _copy_model_params_to_main_params, swap_adamw_step
+            from mindspeed.mindspore.core.optimizer.swap_optimizer.swap_optimizer import opt_states_initialization, create_tensor_maps, swap_adamw_step
             MindSporeAdaptation.register('mindspeed.core.optimizer.swap_optimizer.swap_optimizer.SwapDistributedOptimizer.opt_states_initialization',
                 opt_states_initialization)
             MindSporeAdaptation.register('mindspeed.core.optimizer.swap_optimizer.swap_optimizer.SwapDistributedOptimizer.create_tensor_maps',
                 create_tensor_maps)
-            MindSporeAdaptation.register('mindspeed.core.optimizer.swap_optimizer.swap_optimizer.SwapDistributedOptimizer.swap_tensors_to_device',
-                swap_tensors_to_device)
-            MindSporeAdaptation.register('mindspeed.core.optimizer.swap_optimizer.swap_optimizer.SwapDistributedOptimizer._copy_model_params_to_main_params',
-                _copy_model_params_to_main_params)
             MindSporeAdaptation.register('mindspeed.optimizer.adamw.AdamW.step', swap_adamw_step)
 
         if args.enable_share_memory:
@@ -383,15 +379,9 @@ class MindSporeAdaptation(MegatronAdaptationABC):
         from .tasks.common.yarn_rope import yarn_linear_ramp_mask
         MindSporeAdaptation.register('mindspeed_llm.tasks.common.yarn_rope.YarnRotaryPositionEmbedding.yarn_linear_ramp_mask', yarn_linear_ramp_mask)
 
-        from mindspeed.mindspore.third_party.safetensors.torch import storage_ptr, storage_size, save_file, load_file
-        MindSporeAdaptation.register('safetensors.torch.storage_ptr', storage_ptr)
-        MindSporeAdaptation.register('safetensors.torch.storage_size', storage_size)
+        from mindspeed.mindspore.third_party.safetensors.torch import save_file, load_file
         MindSporeAdaptation.register('safetensors.torch.save_file', save_file)
         MindSporeAdaptation.register('safetensors.torch.load_file', load_file)
-
-        from mindspeed.mindspore.third_party.huggingface_hub._torch import get_torch_storage_size, storage_ptr
-        MindSporeAdaptation.register('huggingface_hub.serialization._torch.get_torch_storage_size', get_torch_storage_size)
-        MindSporeAdaptation.register('huggingface_hub.serialization._torch.storage_ptr', storage_ptr)
 
         # accelerate
         from mindspeed.mindspore.third_party.accelerate.extract import extract_model_from_parallel
