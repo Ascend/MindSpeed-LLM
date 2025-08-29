@@ -1057,7 +1057,7 @@ class MegatronModel(ModelBase):
             self.args.multi_latent_attention = getattr(hf_args, "multi_latent_attention", False)
             self.args.cla_share_factor = getattr(hf_args, "cla_share_factor", 1)
             self.args.shared_expert_intermediate_size = getattr(hf_args, "shared_expert_intermediate_size", None)
-            if self.args.shared_expert_intermediate_size is not None and self.args.n_shared_experts is None:
+            if self.args.shared_expert_intermediate_size is not None and self.args.shared_expert_intermediate_size != 0 and self.args.n_shared_experts is None:
                 self.args.n_shared_experts = self.args.shared_expert_intermediate_size // self.args.moe_ffn_hidden_size 
             if self.args.multi_latent_attention:
                 self.args.qk_pos_emb_head_dim = getattr(hf_args, "qk_pos_emb_head_dim", None)
