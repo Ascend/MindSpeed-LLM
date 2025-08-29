@@ -94,14 +94,10 @@ def mindspore_adaptation(patch_manager, args):
     from mindspeed.mindspore.core.timers import _get_global_min_max_time
     MindSporeAdaptation.register_patch('megatron.core.timers.Timers._get_global_min_max_time', _get_global_min_max_time)
 
-    from ..mindspore.core.optimizer.distrib_optimizer import get_parameter_state_dp_zero, \
-        load_parameter_state_from_dp_zero
+    from ..mindspore.core.optimizer.distrib_optimizer import get_parameter_state_dp_zero
     MindSporeAdaptation.register_patch(
         'megatron.core.optimizer.distrib_optimizer.DistributedOptimizer.get_parameter_state_dp_zero',
         get_parameter_state_dp_zero)
-    MindSporeAdaptation.register_patch(
-        'megatron.core.optimizer.distrib_optimizer.DistributedOptimizer.load_parameter_state_from_dp_zero',
-        load_parameter_state_from_dp_zero)
 
 
     if args.use_ascend_coc:
@@ -174,10 +170,6 @@ def mindspore_adaptation(patch_manager, args):
     from mindspeed.mindspore.core.transformer.moe.token_dispatcher import preprocess
     MindSporeAdaptation.register_patch('mindspeed.core.transformer.moe.token_dispatcher.preprocess', preprocess)
 
-    from mindspeed.mindspore.ops.npu_apply_fused_adamw_v2 import npu_apply_fused_adamw_v2
-    MindSporeAdaptation.register_patch('mindspeed.ops.npu_apply_fused_adamw_v2.npu_apply_fused_adamw_v2',
-                                       npu_apply_fused_adamw_v2)
-
     from mindspeed.mindspore.core.pipeline_parallel.schedules import deallocate_output_tensor_
     MindSporeAdaptation.register_patch('megatron.core.pipeline_parallel.schedules.deallocate_output_tensor',
                                        deallocate_output_tensor_)
@@ -217,16 +209,13 @@ def mindspore_adaptation(patch_manager, args):
     if args.optimizer_selection == 'fused_ema_adamw':
         from mindspeed.mindspore.ops.npu_apply_fused_ema_adamw import npu_apply_fused_ema_adamw
         MindSporeAdaptation.register_patch('mindspeed.ops.npu_apply_fused_ema_adamw.npu_apply_fused_ema_adamw', npu_apply_fused_ema_adamw, create_dummy=True, force_patch=True)
-    else:
+    elif args.virtual_optimizer is None:
         from mindspeed.mindspore.core.optimizer.adamw import step_func
         MindSporeAdaptation.register_patch('apex.optimizers.FusedAdam.step', step_func)
-
-        from mindspeed.mindspore.core.optimizer.adamw import step_func
         MindSporeAdaptation.register_patch('mindspeed.core.optimizer.adamw.AdamW.step', step_func)
 
         from mindspeed.mindspore.optimizer.adamw import step_func
         MindSporeAdaptation.register_patch('mindspeed.optimizer.adamw.AdamW.step', step_func)
-
 
     from mindspeed.mindspore.core.transformer.moe.moe_layer_overlap_all2all import gmm_op
     MindSporeAdaptation.register_patch('mindspeed.core.transformer.moe.moe_feature.overlap.moe_layer_overlap_all2all.gmm_op', gmm_op)
@@ -236,6 +225,15 @@ def mindspore_adaptation(patch_manager, args):
 
     from mindspeed.mindspore.core.optimizer.optimizer import scale_loss
     MindSporeAdaptation.register_patch('megatron.core.optimizer.optimizer.MegatronOptimizer.scale_loss', scale_loss)
+
+    from torch import npu_apply_fused_adamw_v2
+    MindSporeAdaptation.register_patch('mindspeed.ops.npu_apply_fused_adamw_v2.npu_apply_fused_adamw_v2', npu_apply_fused_adamw_v2)
+
+    if args.virtual_optimizer is None:
+        from ..mindspore.core.optimizer.distrib_optimizer import load_parameter_state_from_dp_zero
+        MindSporeAdaptation.register_patch(
+            'megatron.core.optimizer.distrib_optimizer.DistributedOptimizer.load_parameter_state_from_dp_zero',
+            load_parameter_state_from_dp_zero)
 
     
 
@@ -286,9 +284,6 @@ def patch_moe_zerc():
 
 
 def patch_swap_optimizer():
-    from mindspeed.mindspore.ops.npu_apply_fused_adamw_v2 import npu_apply_fused_adamw_v2
-    MindSporeAdaptation.register_patch('mindspeed.ops.npu_apply_fused_adamw_v2.npu_apply_fused_adamw_v2',
-                                       npu_apply_fused_adamw_v2)
     from mindspeed.mindspore.core.optimizer.swap_optimizer.swap_optimizer import opt_states_initialization, \
         create_tensor_maps, swap_tensors_to_device, _copy_model_params_to_main_params, swap_adamw_step
     MindSporeAdaptation.register_patch(
