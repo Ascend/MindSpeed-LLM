@@ -1,5 +1,6 @@
 # Copyright (c) 2025, Huawei Technologies Co., Ltd. All rights reserved.
 # Copyright (c) 2022-2024, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+import logging
 from typing import Union, List
 import math
 import torch
@@ -32,6 +33,9 @@ from mindspeed.core.context_parallel.model_parallel_utils import (get_context_pa
                                            get_ring_group_for_intra_window,
                                            get_ring_group_for_intra_window_send_recv_overlap)
 
+from mindspeed_llm.training.utils import recompute_valid_actual_seq_len
+
+logger = logging.getLogger(__name__)
 
 try:
     from einops import rearrange
