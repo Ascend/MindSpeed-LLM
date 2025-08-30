@@ -64,6 +64,7 @@ OPTIMIZE_ARGS="
 "
 
 TRAIN_ARGS="
+    --spec mindspeed_llm.tasks.models.spec.qwen2_moe_spec layer_spec \
     --finetune \
     --micro-batch-size 1 \
     --global-batch-size 64 \

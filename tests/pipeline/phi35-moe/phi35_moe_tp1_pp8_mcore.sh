@@ -44,7 +44,6 @@ MOE_ARGS="
     --moe-input-jitter-eps 0.01 \
     --moe-token-dispatcher-type allgather \
     --moe-permutation-async-comm \
-    --moe-permute-fusion \
 "
 
 GPT_ARGS="
