@@ -35,7 +35,6 @@ from tqdm import tqdm
 
 from mindspeed.utils import (set_actual_seq_len, set_position_ids,
                              _get_batch_on_this_cp_rank_in_megatron_cp,
-                             _get_batch_on_this_cp_rank_in_ulysses_cp,
                              _get_batch_on_this_cp_rank_in_hybrid_cp_general,
                              _get_batch_on_this_cp_rank_in_hybrid_cp,
                              broadcast_dynamic, _broadcast, get_ring_degree)
@@ -757,6 +756,20 @@ def _get_batch_on_this_cp_rank_in_megatron_cp_general(batch):
             continue
         if val is not None:
             seq_dim = 1
+            val = val.chunk(cp_size, dim=seq_dim)[cp_rank].contiguous()
+            batch[key] = val
+
+    return batch
+
+
+def _get_batch_on_this_cp_rank_in_ulysses_cp(batch):
+    cp_rank = mpu.get_context_parallel_rank()
+    cp_size = mpu.get_context_parallel_world_size()
+    for key, val in batch.items():
+        if key in ['attention_mask', 'position_ids']:
+            continue
+        if val is not None:
+            seq_dim = 1 if key != 'attention_mask' else 2
             val = val.chunk(cp_size, dim=seq_dim)[cp_rank].contiguous()
             batch[key] = val
 

@@ -5,12 +5,13 @@ from megatron.core import mpu
 from mindspeed.model.transformer import set_attention_mask
 from mindspeed.core.context_parallel.get_batch_utils import (set_actual_seq_len,
                              _get_batch_on_this_cp_rank_in_megatron_cp,
-                             _get_batch_on_this_cp_rank_in_ulysses_cp,
                              _get_batch_on_this_cp_rank_in_hybrid_cp_general,
                              _get_batch_on_this_cp_rank_in_hybrid_cp,
                              _get_batch_on_this_cp_rank_in_adaptive_cp,
                              _get_batch_on_this_cp_rank_in_hybrid_adaptive_cp,
                              broadcast_dynamic, _broadcast, get_ring_degree)
+
+from mindspeed_llm.training.utils import _get_batch_on_this_cp_rank_in_ulysses_cp
 
 
 def get_batch_on_this_cp_rank(batch):

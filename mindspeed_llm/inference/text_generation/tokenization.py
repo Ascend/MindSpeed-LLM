@@ -169,7 +169,7 @@ def _tokenize_prompts_and_batch(tokenizer, prompts, tokens_to_generate, max_gene
     # Now update the list of list to be of the same size: max_samples_length.
     for prompt_tokens, prompt_length in zip(prompts_tokens, prompts_length):
         if args.sequence_parallel:
-            padding_size = math.ceil(max_samples_length // mpu.get_tensor_model_parallel_world_size()) * mpu.get_tensor_model_parallel_world_size() - prompt_length
+            padding_size = math.ceil(max_samples_length / mpu.get_tensor_model_parallel_world_size()) * mpu.get_tensor_model_parallel_world_size() - prompt_length
         else:
             padding_size = max_samples_length - prompt_length
         prompt_tokens.extend([tokenizer.pad_token_id] * padding_size)

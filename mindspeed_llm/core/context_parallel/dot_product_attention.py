@@ -11,18 +11,14 @@ from megatron.core.transformer.utils import attention_mask_func
 from megatron.core.packed_seq_params import PackedSeqParams
 from megatron.training import get_args
 from megatron.core import mpu, parallel_state, tensor_parallel
-from mindspeed.core.transformer.attention import self_attention_init_wrapper
 from mindspeed.utils import get_actual_seq_len, compute_qkv_index, get_position_ids
 from mindspeed.core.context_parallel import AttnMaskType
 from mindspeed.core.context_parallel import FusedScaleMaskSoftmax
 from mindspeed.core.context_parallel import divide
-from mindspeed.ops.fusion_attention_v2 import npu_fusion_attention
 from mindspeed.model.transformer import get_attention_mask
-from mindspeed.core.tensor_parallel_y_union_cp import TensorParallelYUnionCP
 from mindspeed.core.context_parallel.ring_context_parallel.context_parallel_kv_cache import get_cache_policy
 from mindspeed.core.context_parallel.ulysses_context_parallel.ulysses_context_parallel import ulyssesattn_context_parallel
 from mindspeed.core.context_parallel.ring_context_parallel.ring_context_parallel import ringattn_context_parallel
-from mindspeed.core.context_parallel.utils import get_scheduling_info
 from mindspeed.core.context_parallel.model_parallel_utils import (get_context_parallel_group_for_hybrid_ring,
                                            get_context_parallel_for_hybrid_ring_world_size,
                                            get_context_parallel_for_hybrid_ring_rank,
