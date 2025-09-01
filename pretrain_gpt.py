@@ -196,7 +196,12 @@ def loss_func(loss_mask: torch.Tensor, output_tensor: torch.Tensor):
         )
     # Reduce loss for logging.
     reporting_loss = loss.clone().detach()
-    torch.distributed.all_reduce(reporting_loss, group=mpu.get_data_parallel_group())
+    try:
+        from taskd.python.adaptor.elastic_training import common
+        if not args.enable_elastic_training or not common.zit_scale_in_running_state():
+            torch.distributed.all_reduce(reporting_loss, group=mpu.get_data_parallel_group())
+    except ImportError:
+        torch.distributed.all_reduce(reporting_loss, group=mpu.get_data_parallel_group())
 
     # loss[0] is a view of loss, so it has ._base not None, which triggers assert error
     # in core/pipeline_parallel/schedule.py::deallocate_output_tensor, calling .clone()

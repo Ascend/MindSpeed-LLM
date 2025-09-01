@@ -774,3 +774,40 @@ def _get_batch_on_this_cp_rank_in_ulysses_cp(batch):
             batch[key] = val
 
     return batch
+
+
+def is_last_rank_wrapper(fn):
+    @wraps(fn)
+    def wrapper():
+        """
+        In the context of scale-in training scenarios, use the scale-in world group to determine
+        if it is the last rank.
+        """
+        from taskd.python.adaptor.elastic_training import common
+        if not common.zit_scale_in_running_state():
+            return fn()
+        else:
+            return torch.distributed.get_rank() == torch.distributed.get_process_group_ranks(
+                group=common.zit_get_scale_in_world_group())[-1]
+    return wrapper
+
+
+def print_rank_last_wrapper(fn):
+    @wraps(fn)
+    def wrapper(message):
+        """
+        In the context of scale-in training scenarios, use the get_args().global_batch_size to
+        replace the batch_size.
+        """
+        from taskd.python.adaptor.elastic_training import common
+        if common.zit_scale_in_running_state():
+            args = get_args()
+            from megatron.core.num_microbatches_calculator import get_num_microbatches
+            batch_size = args.micro_batch_size * args.data_parallel_size * \
+                         get_num_microbatches()
+            src_str = f' global batch size: {batch_size:5d} |'
+            batch_size = get_args().global_batch_size
+            dest_str = f' global batch size: {batch_size:5d} |'
+            message = message.replace(src_str, dest_str)
+        return fn(message)
+    return wrapper

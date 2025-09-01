@@ -211,3 +211,25 @@ def get_parameter_state_dp_zero_with_high_availability_wrapper(func):
         state['shard_main_param_res'] = buffer_res_full_shard
         return state
     return wrapper
+
+
+def get_parameter_state_dp_zero_wrapper(fn):
+    """
+    In the context of scale-in training scenarios, have the replica rank with the fault perform
+    an addition gather operation.
+    """
+    @wraps(fn)
+    def wrapper(self):
+        from taskd.python.adaptor.elastic_training import common
+        if not common.zit_scale_in_running_state():
+            return fn(self)
+        state = None
+        if not common.zit_fault_rank_in_dp_cp_replica_group():
+            state = fn(self)
+        if common.zit_fault_rank_in_dp_cp_replica_group() or common.zit_is_fault_replica_rank():
+            dp_group_gloo = self.data_parallel_group_gloo
+            self.data_parallel_group_gloo = common.zit_get_scale_in_dp_cp_replica_group_gloo()
+            state = fn(self)
+            self.data_parallel_group_gloo = dp_group_gloo
+        return state
+    return wrapper
