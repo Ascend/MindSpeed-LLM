@@ -18,7 +18,7 @@ import torch.nn as nn
 from megatron.core.transformer.transformer_config import TransformerConfig
 from megatron.legacy.model.rms_norm import RMSNorm
 from megatron.training import get_args
-from mindspeed.core.tensor_parallel.comm_group_api import TPYCollectiveComm
+from mindspeed.core.tensor_parallel.tp_2d.group_api_2d import TPYCollectiveComm
 from mindspeed.core.tensor_parallel.tp_2d.layernorm_2d import LayerNorm2D
 from mindspeed.core.tensor_parallel.tp_2d.rms_norm_2d import RMSNorm2D
 

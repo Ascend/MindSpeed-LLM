@@ -24,7 +24,7 @@ from megatron.core.transformer.spec_utils import build_module
 from megatron.core.tensor_parallel.layers import _initialize_affine_weight_gpu
 from megatron.core.transformer.mlp import MLP
 from megatron.core.transformer.transformer_config import TransformerConfig
-from mindspeed.core.tensor_parallel.comm_group_api import TPXCollectiveComm, TPXOverlapCollectiveComm, \
+from mindspeed.core.tensor_parallel.tp_2d.group_api_2d import TPXCollectiveComm, TPXOverlapCollectiveComm, \
     TPYCollectiveComm, TPYOverlapCollectiveComm
 from mindspeed.core.tensor_parallel.tp_2d.parallel_linear_2d import ParallelLinear2D
 

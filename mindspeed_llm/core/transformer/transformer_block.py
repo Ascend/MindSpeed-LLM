@@ -35,7 +35,6 @@ from mindspeed.core.pipeline_parallel.noop_layers.adaptor import NoopTransformer
 from mindspeed.core.transformer.transformer_block import _get_layer_offset
 from mindspeed.core.tensor_parallel.comm_autograd_function import auto_grad_sync_gather_along_last_dim, \
     auto_grad_sync_gather_along_first_dim
-from mindspeed.core.tensor_parallel.comm_group_api import TPXCollectiveComm, TPYCollectiveComm
 from mindspeed.core.transformer.transformer import norm_recompute_forward
 from mindspeed.model.transformer import should_recompute_norm
 
@@ -313,10 +312,6 @@ def transformer_block_forward(
     # Final layer norm.
     if self.post_process and self.post_layer_norm and self.final_layernorm is not None:
         hidden_states = self.final_layernorm(hidden_states)
-
-    if get_args().tp_2d and parallel_state.is_pipeline_last_stage():
-        hidden_states = auto_grad_sync_gather_along_first_dim(hidden_states, TPXCollectiveComm)
-        hidden_states = auto_grad_sync_gather_along_last_dim(hidden_states, TPYCollectiveComm)
 
     return hidden_states
 

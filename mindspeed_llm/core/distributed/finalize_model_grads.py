@@ -10,7 +10,7 @@ from megatron.core import parallel_state
 from megatron.core.transformer.transformer_config import TransformerConfig
 from megatron.core.utils import get_attr_wrapped_model
 from megatron.core.distributed.finalize_model_grads import _reshard_if_dtensor, _unshard_if_dtensor
-from mindspeed.core.tensor_parallel.comm_group_api import TPXCollectiveComm
+from mindspeed.core.tensor_parallel.tp_2d.group_api_2d import TPXCollectiveComm
 
 
 def _get_main_grad_attr(param: torch.nn.Parameter, use_custom_fsdp: bool = False):

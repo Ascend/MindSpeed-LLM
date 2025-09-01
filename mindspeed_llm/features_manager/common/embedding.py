@@ -12,5 +12,3 @@ class LanguageModelEmbeddingFeature(MindSpeedFeature):
 
         patch_manager.register_patch('megatron.core.models.common.embeddings.language_model_embedding.LanguageModelEmbedding.__init__',
                                       language_model_embedding_init_func)
-        patch_manager.register_patch('megatron.core.models.common.embeddings.language_model_embedding.LanguageModelEmbedding.forward',
-                                      language_model_embedding_forward_wrapper)

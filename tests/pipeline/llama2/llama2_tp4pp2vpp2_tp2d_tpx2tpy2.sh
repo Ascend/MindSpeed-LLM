@@ -19,6 +19,7 @@ CKPT_LOAD_DIR="/data/llama2-2dtp-tp4pp2vp2tpx2tpy2"
 
 TP=4
 PP=2
+CP_TYPE='ulysses_cp_algo'
 
 DISTRIBUTED_ARGS="
     --nproc_per_node $NPUS_PER_NODE \
@@ -37,6 +38,7 @@ GPT_ARGS="
     --tp-y 2 \
     --pipeline-model-parallel-size ${PP} \
     --num-layers-per-virtual-pipeline-stage 1 \
+    --context-parallel-algo ${CP_TYPE} \
     --num-layers 4 \
     --hidden-size 4096 \
     --ffn-hidden-size 11008 \

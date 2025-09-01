@@ -74,6 +74,7 @@ from mindspeed_llm.features_manager.transformer.multi_latent_attention.mla_featu
 from mindspeed_llm.features_manager.transformer.transformer_block import TransformerBlockFeature
 from mindspeed_llm.features_manager.pipeline_parallel.num_layer_list import NumLayerListFeature
 from mindspeed_llm.features_manager.ai_framework.ms_patch_feature import MindSporePatchFeature
+from mindspeed_llm.features_manager.tensor_parallel.tp_2d import TP2dFeature
 
 
 FEATURES_LIST = [
@@ -152,7 +153,8 @@ def add_fusions_features(features_list: List[MindSpeedFeature]):
 def add_tensor_parallel_features(features_list: List[MindSpeedFeature]):
     features_list.extend([
         AscendCocFeature(),
-        MC2Feature()
+        MC2Feature(),
+        TP2dFeature()
     ])
 
 

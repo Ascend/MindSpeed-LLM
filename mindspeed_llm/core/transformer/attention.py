@@ -11,7 +11,7 @@ from megatron.core.utils import divide
 from megatron.training import get_args
 
 from mindspeed.core.parallel_state import get_tensor_model_parallel_world_size_for_nd1_dim1
-from mindspeed.core.tensor_parallel.comm_group_api import TPXCollectiveComm, TPXOverlapCollectiveComm, \
+from mindspeed.core.tensor_parallel.tp_2d.group_api_2d import TPXCollectiveComm, TPXOverlapCollectiveComm, \
     TPYCollectiveComm, TPYOverlapCollectiveComm
 from mindspeed.core.tensor_parallel.tp_2d.parallel_linear_2d import ParallelLinear2D
 
