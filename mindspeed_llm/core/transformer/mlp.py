@@ -212,6 +212,11 @@ def core_mlp_init_wrapper(fn):
             raise ValueError("Missing the required argument 'config' when initializing MLP.")
 
         _args = get_args()
+        if _args.geglu:
+            _config.gated_linear_unit = True
+            _config.activation_func = F.gelu
+            _config.bias_gelu_fusion = False
+
         if _args.gelu_tanh:
             def gelu_tanh_approximation(x):
                 return 0.5 * x * (1 + torch.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * torch.pow(x, 3))))
