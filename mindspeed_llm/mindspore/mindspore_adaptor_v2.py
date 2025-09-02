@@ -230,6 +230,20 @@ def mindspore_adaptation(patch_manager, args):
             'megatron.core.optimizer.distrib_optimizer.DistributedOptimizer.load_parameter_state_from_dp_zero',
             load_parameter_state_from_dp_zero)
 
+    if args.enable_a2avc:
+        from mindspeed.mindspore.core.transformer.moe.moe_feature.tp_extend_ep.token_dispatcher import All2AllSeqTp2epDispatcherImpl
+        MindSporeAdaptation.register_patch(
+            'mindspeed.core.transformer.moe.moe_feature.tp_extend_ep.token_dispatcher.All2AllSeqTp2epDispatcherImpl',
+            All2AllSeqTp2epDispatcherImpl)
+
+        from mindspeed.mindspore.core.transformer.moe.moe_feature.tp_extend_ep.token_dispatcher import _PatchedMOEAlltoAllSEQTptoEpTokenDispatcher
+        MindSporeAdaptation.register_patch(
+            'mindspeed.core.transformer.moe.moe_feature.adaptor.MindSpeedMOEAlltoAllSEQTptoEpTokenDispatcher',
+            _PatchedMOEAlltoAllSEQTptoEpTokenDispatcher)
+
+        from mindspeed.mindspore.core.tensor_parallel.mappings import all_to_all_forward_a2avc
+        MindSporeAdaptation.register_patch('mindspeed_llm.mindspore.core.tensor_parallel.mappings._AllToAll.forward', all_to_all_forward_a2avc)
+
     
 
 def pre_validate_args(patch_manager):
@@ -295,4 +309,7 @@ def patch_moe_fb_overlap():
 
 
 def mindspore_register_args(group):
+    group.add_argument('--enable-a2avc', action='store_true', default=False,
+                       help='enable a2avc')
+
     pass
