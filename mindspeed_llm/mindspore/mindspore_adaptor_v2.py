@@ -208,8 +208,6 @@ def mindspore_adaptation(patch_manager, args):
         from mindspeed.mindspore.optimizer.adamw import step_func
         MindSporeAdaptation.register_patch('mindspeed.optimizer.adamw.AdamW.step', step_func)
 
-    from mindspeed.mindspore.core.transformer.moe.moe_layer_overlap_all2all import gmm_op
-    MindSporeAdaptation.register_patch('mindspeed.core.transformer.moe.moe_feature.overlap.moe_layer_overlap_all2all.gmm_op', gmm_op)
 
     from mindspeed.mindspore.ops.gmm import _GMM_patched_load
     MindSporeAdaptation.register_patch('mindspeed.op_builder.gmm_builder.GMMOpBuilder.load', _GMM_patched_load)
