@@ -17,6 +17,7 @@ cd ..
 
 git clone -b master https://gitee.com/ascend/MindSpeed-LLM.git
 cd MindSpeed-LLM
+chmod 777 -R ./
 
 pip install -r requirements.txt
 

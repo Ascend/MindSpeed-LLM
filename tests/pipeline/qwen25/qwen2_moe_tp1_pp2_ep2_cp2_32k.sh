@@ -14,7 +14,7 @@ WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 basepath=$(cd `dirname $0`; cd ../../../; pwd)
 
 # please fill these path configurations
-CKPT_LOAD_DIR="/data/qwen2-moe-t1p2e2"
+CKPT_LOAD_DIR="/data/qwen2-moe-t1p2e2-new-spec"
 DATA_PATH="/data/qwen2_moe_dataset/enwiki_text_document"
 TOKENIZER_PATH="/data/qwen2-moe-hf"
 
