@@ -52,9 +52,6 @@ def mindspore_adaptation(patch_manager, args):
     MindSporeAdaptation.register_patch('transformers.modeling_utils.safe_open', safe_open)
     MindSporeAdaptation.register_patch('transformers.modeling_utils.get_parameter_dtype', get_parameter_dtype)
 
-    from ..core.models.gpt.gpt_model import GPTModel
-    MindSporeAdaptation.register_patch('megatron.core.models.gpt.gpt_model.GPTModel', GPTModel)
-
     if args.moe_permutation_async_comm:
         if args.moe_token_dispatcher_type == 'alltoall_seq':
             if hasattr(args,
@@ -68,25 +65,8 @@ def mindspore_adaptation(patch_manager, args):
     from mindspeed.mindspore.core.transformer.moe.grouped_gemm_util import Ops
     MindSporeAdaptation.register_patch('megatron.core.transformer.moe.grouped_gemm_util.ops', Ops)
 
-    from mindspeed.mindspore.core.distributed.param_and_grad_buffer import register_grad_ready
-    MindSporeAdaptation.register_patch('megatron.core.distributed.param_and_grad_buffer.register_grad_ready',
-                                       register_grad_ready)
-
-    from mindspeed.mindspore.core.models.common.embeddings.rotary_pos_embedding import get_rotary_seq_len, \
-        local_rotate_half
-    MindSporeAdaptation.register_patch(
-        'megatron.core.models.common.embeddings.rotary_pos_embedding.RotaryEmbedding.get_rotary_seq_len',
-        get_rotary_seq_len)
+    from mindspeed.mindspore.core.models.common.embeddings.rotary_pos_embedding import local_rotate_half
     MindSporeAdaptation.register_patch('megatron.core.models.common.embeddings._rotate_half', local_rotate_half)
-
-    from mindspeed.mindspore.core.optimizer.optimizer import megatron_optimizer_init
-    MindSporeAdaptation.register_patch('megatron.core.optimizer.optimizer.MegatronOptimizer.__init__',
-                                       megatron_optimizer_init)
-
-
-    from mindspeed.mindspore.core.tensor_parallel.data import local_build_key_size_numel_dictionaries
-    MindSporeAdaptation.register_patch('megatron.core.tensor_parallel.data._build_key_size_numel_dictionaries',
-                                       local_build_key_size_numel_dictionaries)  # 1097
 
     from mindspeed.mindspore.core.tensor_parallel.mappings import all_to_all_forward
     MindSporeAdaptation.register_patch('megatron.core.tensor_parallel.mappings._AllToAll.forward', all_to_all_forward)
@@ -109,12 +89,6 @@ def mindspore_adaptation(patch_manager, args):
 
     from mindspeed.mindspore.core.timers import _get_global_min_max_time
     MindSporeAdaptation.register_patch('megatron.core.timers.Timers._get_global_min_max_time', _get_global_min_max_time)
-
-    from ..mindspore.core.optimizer.distrib_optimizer import get_parameter_state_dp_zero
-    MindSporeAdaptation.register_patch(
-        'megatron.core.optimizer.distrib_optimizer.DistributedOptimizer.get_parameter_state_dp_zero',
-        get_parameter_state_dp_zero)
-
 
     if args.use_ascend_coc:
         from mindspeed.mindspore.ops.lcal_functional import all_gather_matmul, all_gather_matmul_v2, \
@@ -181,11 +155,6 @@ def mindspore_adaptation(patch_manager, args):
     MindSporeAdaptation.register_patch('megatron.legacy.model.module.fp32_to_float16', fp32_to_float16)
     MindSporeAdaptation.register_patch('megatron.legacy.model.module.float16_to_fp32', float16_to_fp32)
 
-    from mindspeed_llm.mindspore.core.datasets.blended_megatron_dataset_builder import need_to_build_dataset
-    MindSporeAdaptation.register_patch(
-        'mindspeed_llm.core.datasets.blended_megatron_dataset_builder.need_to_build_dataset',
-        need_to_build_dataset)
-
     from mindspeed.mindspore.core.transformer.moe.token_dispatcher import preprocess
     MindSporeAdaptation.register_patch('mindspeed.core.transformer.moe.token_dispatcher.preprocess', preprocess)
 
@@ -221,12 +190,6 @@ def mindspore_adaptation(patch_manager, args):
 
     from torch import npu_apply_fused_adamw_v2
     MindSporeAdaptation.register_patch('mindspeed.ops.npu_apply_fused_adamw_v2.npu_apply_fused_adamw_v2', npu_apply_fused_adamw_v2)
-
-    if args.virtual_optimizer is None:
-        from ..mindspore.core.optimizer.distrib_optimizer import load_parameter_state_from_dp_zero
-        MindSporeAdaptation.register_patch(
-            'megatron.core.optimizer.distrib_optimizer.DistributedOptimizer.load_parameter_state_from_dp_zero',
-            load_parameter_state_from_dp_zero)
 
     if args.enable_a2avc:
         from mindspeed.mindspore.core.transformer.moe.moe_feature.tp_extend_ep.token_dispatcher import All2AllSeqTp2epDispatcherImpl
