@@ -10,7 +10,7 @@ git clone -b master https://gitee.com/ascend/MindSpeed.git
 cd MindSpeed
 
 # checkout commit from MindSpeed master in 2025.08.19
-git checkout c99f34c0
+git checkout master
 pip install -r requirements.txt
 pip3 install -e .
 cd ..
