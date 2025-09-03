@@ -96,10 +96,17 @@ def do_ring_context_parallel(self,
         rank = get_context_parallel_for_hybrid_ring_rank()
         cp_global_ranks = get_context_parallel_for_hybrid_ring_global_ranks()
     else:
-        cp_group = mpu.get_context_parallel_group()
-        cp_size = mpu.get_context_parallel_world_size()
-        rank = mpu.get_context_parallel_rank()
-        cp_global_ranks = mpu.get_context_parallel_global_ranks()
+        if self.cp_expanded_by_2d_tp:
+            tp_y_cp = TensorParallelYUnionCP()
+            cp_group = tp_y_cp.group
+            cp_size = tp_y_cp.get_parallel_group_world_size()
+            rank = tp_y_cp.get_parallel_rank()
+            cp_global_ranks = tp_y_cp.global_ranks
+        else:
+            cp_group = mpu.get_context_parallel_group()
+            cp_size = mpu.get_context_parallel_world_size()
+            rank = mpu.get_context_parallel_rank()
+            cp_global_ranks = mpu.get_context_parallel_global_ranks()
 
     cp_para = dict()
 
@@ -109,19 +116,25 @@ def do_ring_context_parallel(self,
     cp_para['rank'] = rank
     if args.context_parallel_algo in ['megatron_cp_algo', 'hybrid_cp_algo']:
         cp_para['cp_global_ranks'] = cp_global_ranks
-        cp_para['cp_group_for_send_recv_overlap'] = mpu.get_context_parallel_group_for_send_recv_overlap() \
-            if args.use_cp_send_recv_overlap else None
+        if args.use_cp_send_recv_overlap:
+            if self.cp_expanded_by_2d_tp:
+                cp_para['cp_group_for_send_recv_overlap'] = tp_y_cp.overlap_group
+            else:
+                cp_para['cp_group_for_send_recv_overlap'] = mpu.get_context_parallel_group_for_send_recv_overlap()
+        else:
+            cp_para['cp_group_for_send_recv_overlap'] = None
         cp_para['pse'] = self.pse
         cp_para['pse_type'] = self.pse_type
 
-        cp_para['cp_inner_ranks'] = get_ring_ranks_for_intra_window()
-        cp_para['cp_outer_ranks'] = get_ring_ranks_for_inter_window_kv()
-        cp_para['cp_dkv_outer_ranks'] = get_ring_ranks_for_inter_window_dkv()
-        cp_para['cp_group_for_intra_window'] = get_ring_group_for_intra_window()
-        cp_para['cp_group_for_intra_window_send_recv_overlap'] = get_ring_group_for_intra_window_send_recv_overlap()
-        cp_para['cache_policy'] = get_cache_policy(
-            self.layer_number, args.context_parallel_kv_cache_policy, args.context_parallel_cache_interval
-        )
+        if args.context_parallel_size > 1 and not getattr(args, 'tp_2d', False):
+            cp_para['cp_inner_ranks'] = get_ring_ranks_for_intra_window()
+            cp_para['cp_outer_ranks'] = get_ring_ranks_for_inter_window_kv()
+            cp_para['cp_dkv_outer_ranks'] = get_ring_ranks_for_inter_window_dkv()
+            cp_para['cp_group_for_intra_window'] = get_ring_group_for_intra_window()
+            cp_para['cp_group_for_intra_window_send_recv_overlap'] = get_ring_group_for_intra_window_send_recv_overlap()
+            cp_para['cache_policy'] = get_cache_policy(
+                self.layer_number, args.context_parallel_kv_cache_policy, args.context_parallel_cache_interval
+            )
 
         output = ringattn_context_parallel(query, key, value, head_num, cp_para, self.scale, attention_mask, dropout_p,
                                            packed_seq_params)
@@ -158,7 +171,7 @@ class CPDotProductAttentionImpl:
 
         projection_size = self.config.kv_channels * self.config.num_attention_heads
         # Per attention head and per partition values.
-        world_size = parallel_state.get_tensor_model_parallel_world_size()
+        world_size = self.config.tp_x if self.config.tp_2d else parallel_state.get_tensor_model_parallel_world_size()
         self.hidden_size_per_partition = divide(projection_size, world_size)
         self.hidden_size_per_attention_head = divide(projection_size, config.num_attention_heads)
         self.num_attention_heads_per_partition = divide(self.config.num_attention_heads, world_size)
@@ -218,6 +231,8 @@ class CPDotProductAttentionImpl:
         self.scale = 1.0 / math.sqrt(
             self.hidden_size_per_attention_head) if self.scale_mask_softmax.scale is None else self.softmax_scale
 
+        self.cp_expanded_by_2d_tp = getattr(self.config, 'tp_2d', False) and getattr(self.config, 'tp_y', 1) > 1
+
     def forward(
         self,
         query,
@@ -251,8 +266,13 @@ class CPDotProductAttentionImpl:
                 and self.config.context_parallel_kv_cache_policy):
             return do_ulyssesattn_context_parallel_with_kv_cache_policy(self, query, key, value, attention_mask=attention_mask, packed_seq_params=packed_seq_params)
 
+        if self.cp_expanded_by_2d_tp:
+            tp_y_cp_sz = TensorParallelYUnionCP().get_parallel_group_world_size()
+        else:
+            tp_y_cp_sz = self.config.context_parallel_size
+
         # ring_context_parallel
-        if self.config.context_parallel_size > 1 and self.config.context_parallel_algo in ['megatron_cp_algo', 'hybrid_cp_algo']:
+        if tp_y_cp_sz > 1 and self.config.context_parallel_algo in ['megatron_cp_algo', 'hybrid_cp_algo']:
             query, key, value = [rearrange(x, 's b h d -> s b (h d)') for x in [query, key, value]]
             return do_ring_context_parallel(self, query, key, value, head_num=n_head, attention_mask=attention_mask, packed_seq_params=packed_seq_params, actual_seq_len=actual_seq_len)
 
