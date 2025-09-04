@@ -221,7 +221,10 @@ class GPTModel(MegatronCoreGPTModel):
             rotary_seq_len = self.rotary_pos_emb.get_rotary_seq_len(
                 inference_context, self.decoder, decoder_input, self.config, packed_seq_params
             )
-            rotary_pos_emb = self.rotary_pos_emb(rotary_seq_len, position_ids)
+            if args.tp_2d:
+                rotary_pos_emb = self.rotary_pos_emb(rotary_seq_len)
+            else:
+                rotary_pos_emb = self.rotary_pos_emb(rotary_seq_len, position_ids)
 
         # Run decoder.
         hidden_states = self.decoder(

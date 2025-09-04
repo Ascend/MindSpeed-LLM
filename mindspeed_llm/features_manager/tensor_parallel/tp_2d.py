@@ -52,8 +52,3 @@ class TP2dFeature(MSTP2dFeature):
                 parallell_linear_2D_init_wrapper)
 
         self.more_patches_for_tp2d(patch_manager, args)
-
-    def more_patches_for_tp2d(self, patch_manager, args):
-        """common features"""
-        from mindspeed.core.transformer.module import megatron_module_init_wrapper
-        patch_manager.register_patch('megatron.core.transformer.module.MegatronModule.__init__', megatron_module_init_wrapper)
