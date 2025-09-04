@@ -57,10 +57,6 @@ class MoERouter(MindSpeedFeature):
                 raise ValueError(f'moe_expert_capacity_factor must be set to use moe_pad_expert_input_to_capacity')
             if args.shared_expert_gate_output_dimension != 1 and args.shared_expert_gate_output_dimension != args.hidden_size:
                 raise AssertionError('shared expert gate output dimension can only be configured with 1 or hidden_size')
-            if hasattr(args,
-                       'use_fused_moe_token_permute_and_unpermute') and args.use_fused_moe_token_permute_and_unpermute:
-                raise AssertionError(
-                    'moe_expert_capacity_factor mode does not support use_fused_moe_token_permute_and_unpermute')
 
     def _validate_group_limited_greedy(self, args):
         if args.moe_router_load_balancing_type == "group_limited_greedy":
