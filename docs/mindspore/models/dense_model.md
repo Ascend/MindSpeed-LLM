@@ -84,7 +84,7 @@ MindSpore后端仅支持以mcore方式实现的稠密模型，对Legacy方式实
     <tr>
       <td rowspan="2"><a href="https://huggingface.co/meta-llama">LLaMA3</td>
       <td><a href="https://huggingface.co/unsloth/llama-3-8b/tree/main">8B</a></td>
-      <td rowspan="2"><a href="../.././examples/mindspore/llama3">llama3</a></td>
+      <td rowspan="2"><a href="../../../examples/mindspore/llama3">llama3</a></td>
       <td> 8K </td>
       <th>Mcore</th>
       <td>1x8</td>
@@ -266,7 +266,7 @@ MindSpore后端仅支持以mcore方式实现的稠密模型，对Legacy方式实
       <td> 4K </td>
       <th> Mcore </th>
       <td> 1x8 </td>
-      <td>支持中</td>
+      <td>✅</td>
     </tr>
     <tr>
       <td><a href="https://huggingface.co/Qwen/Qwen3-14B-Base">14B</a></td>
@@ -319,7 +319,7 @@ MindSpore后端仅支持以mcore方式实现的稠密模型，对Legacy方式实
       <td> 8K </td>
       <th>Mcore</th>
       <td> 2x8 </td>
-      <td>支持中</td>
+      <td>✅</td>
     </tr>
     <tr>
       <td rowspan="2"><a href="https://huggingface.co/deepseek-ai">DeepSeek-R1-Distill-LLaMA</a></td>
@@ -336,6 +336,24 @@ MindSpore后端仅支持以mcore方式实现的稠密模型，对Legacy方式实
       <th>Mcore</th>
       <td> 4x8 </td>
       <td>支持中</td>
+    </tr>
+    <tr>
+      <td rowspan="1"><a href="https://huggingface.co/deepseek-ai">DeepSeek2-Lite</a></td>
+      <td><a href="https://huggingface.co/deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct">16B</a></td>
+      <td rowspan="1"><a href="../../../examples/mindspore/deepseek2_lite">deepseek2_lite</a></td>
+      <td> 4K </td>
+      <th>Mcore</th>
+      <td> 1x8 </td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td rowspan="1"><a href="https://huggingface.co/deepseek-ai">DeepSeek3</a></td>
+      <td><a href="https://huggingface.co/deepseek-ai/DeepSeek-V3">235B</a></td>
+      <td rowspan="1"><a href="../../../examples/mindspore/deepseek3">deepseek3</a></td>
+      <td> 4K </td>
+      <th>Mcore</th>
+      <td> 1x8 </td>
+      <td>✅</td>
     </tr>
   </tbody>
 </table>

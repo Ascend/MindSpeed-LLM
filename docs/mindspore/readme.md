@@ -6,7 +6,7 @@ MindSpeed-LLM已支持接入华为自研AI框架MindSpore，旨在提供华为�
 
 ## NEWS !!! 📣📣📣
 
-🚀🚀🚀MindSpore后端已支持 **[GLM-4.5](../../examples/mindspore/glm45-moe/README.md)** ！！！🚀🚀🚀
+🚀🚀🚀MindSpore后端已支持 **[Deepseek-V3](../../examples/mindspore/deepseek3/README.md)/[QWEN3](../../examples/mindspore/qwen3/README.md)/[GLM-4.5](../../examples/mindspore/glm45-moe/README.md)** ！！！🚀🚀🚀
 
 
 ## 版本配套表
@@ -73,17 +73,13 @@ MindSpore后端对MindSpeed的重要加速特性的支持情况如下表所示�
     <td>✅</td>
   </tr>
   <tr>
-    <td rowspan="3">长序列并行</td>
+    <td rowspan="2">长序列并行</td>
     <td><a href="../pytorch/features/ring-attention-context-parallel.md">Ascend Ring Attention 长序列并行</a></td>
     <td>✅</td>
   </tr>
   <tr>
     <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/ulysses-context-parallel.md">Ulysses 长序列并行</a></td>
     <td>✅</td>
-  </tr>
-  <tr>
-    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/hybrid-context-parallel.md">混合长序列并行</a></td>
-    <td>❌</td>
   </tr>
   <tr>
     <td rowspan="2">MOE</td>
@@ -95,7 +91,7 @@ MindSpore后端对MindSpeed的重要加速特性的支持情况如下表所示�
     <td>仅支持alltoall</td>
   </tr>
   <tr>
-    <td rowspan="6">显存优化</td>
+    <td rowspan="4">显存优化</td>
     <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/reuse-fp32-param.md">参数副本复用</a></td>
     <td>须和分布式优化器特性一起使用</td>
   </tr>
@@ -104,20 +100,12 @@ MindSpore后端对MindSpeed的重要加速特性的支持情况如下表所示�
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/swap_attention.md">Swap Attention</a></td>
-    <td>❌</td>
-  </tr>
-  <tr>
     <td><a href="../pytorch/features/recompute_relative.md">重计算</a></td>
     <td>✅</td>
   </tr>
   <tr>
     <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/norm-recompute.md">Norm重计算</a></td>
     <td>✅</td>
-  </tr>
-  <tr>
-    <td><a href="../pytorch/features/o2.md">O2 BF16 Optimizer</a></td>
-    <td>❌</td>
   </tr>
   <tr>
     <td rowspan="7">融合算子</td>
@@ -149,29 +137,17 @@ MindSpore后端对MindSpeed的重要加速特性的支持情况如下表所示�
     <td>✅</td>
   </tr>
   <tr>
-    <td rowspan="6">通信优化</td>
+    <td rowspan="3">通信优化</td>
     <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/async-ddp-param-gather.md">梯度reduce通算掩盖</a></td>
     <td>✅</td>
-  </tr>
-  <tr>
-    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/recompute_independent_pipelining.md">Recompute in advance</a></td>
-    <td>❌</td>
   </tr>
   <tr>
     <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/async-ddp-param-gather.md">权重all-gather通算掩盖</a></td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="../pytorch/features/mc2.md">MC2</a></td>
-    <td>❌</td>
-  </tr>
-  <tr>
     <td><a href="../pytorch/features/communication-over-computation.md">CoC</a></td>
     <td>✅</td>
-  </tr>
-  <tr>
-    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/hccl-replace-gloo.md">Ascend Gloo 存档落盘优化</a></td>
-    <td>❌</td>
   </tr>
 </tbody></table>
 
@@ -187,12 +163,12 @@ MindSpore后端对MindSpeed的重要加速特性的支持情况如下表所示�
   </thead>
   <tbody>
     <tr>
-      <td><a href="solutions/inference/inference.md">流式推理 </a></td>
+      <td><a href="../pytorch/solutions/inference/inference.md">流式推理 </a></td>
       <td>上线中</td>
       <td>❌</td>
     </tr>
     <tr>
-      <td><a href="solutions/inference/chat.md"> Chat对话</a></td>
+      <td><a href="../pytorch/solutions/inference/chat.md"> Chat对话</a></td>
       <td>上线中</td>
       <td>❌</td>
     </tr>
@@ -274,7 +250,7 @@ MindSpore后端已完全支持MindSpeed-LLM的预训练、指令微调、RLHF等
 
 ### 权重转换
 
-MindSpeed MindSore后端的权重转换与PyTorch后端保持了一致，当前支持huggingface、megatron-core两种格式的权重互转，暂不支持Lora权重合并且无megatron-legacy格式支持计划。权重转换特性参数和使用说明参考[权重转换](../pytorch/solutions/checkpoint_convert.md)。
+MindSpeed MindSore后端的权重转换与PyTorch后端保持了一致，当前支持huggingface、megatron-core两种格式的权重互转。权重转换特性参数和使用说明参考[权重转换](../pytorch/solutions/checkpoint_convert.md)。
 
 <table>
   <thead>
@@ -284,7 +260,6 @@ MindSpeed MindSore后端的权重转换与PyTorch后端保持了一致，当前�
       <th>切分特性</th>
       <th>lora</th>
       <th>贡献方</th>
-      <th>Released</th>
     </tr>
   </thead>
   <tbody>
@@ -294,13 +269,12 @@ MindSpeed MindSore后端的权重转换与PyTorch后端保持了一致，当前�
       <td>tp、pp、dpp、vpp、cp、ep、loop layer</td>
       <td>❌</td>
       <td rowspan="3">【Ascend】</td>
-      <td rowspan="3">❌</td>
     </tr>
     <tr>
       <td rowspan="2">megatron-core</td>
       <td>huggingface</td>
       <td></td>
-      <td>❌</td>
+      <td>✅</td>
     </tr>
     <tr>
       <td>megatron-core</td>
@@ -318,7 +292,6 @@ MindSpeed MindSore后端的权重转换与PyTorch后端保持了一致，当前�
       <th>场景</th>
       <th>特性</th>
       <th>Mcore</th>
-      <th>Released</th>
       <th>贡献方</th>
     </tr>
   </thead>
@@ -327,7 +300,6 @@ MindSpeed MindSore后端的权重转换与PyTorch后端保持了一致，当前�
       <td rowspan="1">性能采集</td>
       <td><a href="../pytorch/features/profiling.md">基于昇腾芯片采集 profiling 数据</a></td>
       <td>✅</td>
-      <td>❌</td>
       <td>【Ascend】</td>
     </tr>
   </tbody>
@@ -342,7 +314,6 @@ MindSpeed MindSore后端的权重转换与PyTorch后端保持了一致，当前�
       <th>场景</th>
       <th>特性</th>
       <th>Mcore</th>
-      <th>Released</th>
       <th>贡献方</th>
     </tr>
   </thead>
@@ -351,7 +322,6 @@ MindSpeed MindSore后端的权重转换与PyTorch后端保持了一致，当前�
       <td rowspan="2">高可用性</td>
       <td><a href="../pytorch/features/deterministic_computation.md">基于昇腾芯片开启确定性计算</a></td>
       <td>✅</td>
-      <td>❌</td>
       <td rowspan="2">【Ascend】</td>
     </tr>
   </tbody>
