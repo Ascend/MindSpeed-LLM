@@ -17,23 +17,7 @@
 import inspect
 import sys
 
-from mindspeed.patch_utils import Patch
-from mindspeed_llm.tasks.megatron_adaptor import MegatronAdaptation
-
-
-def clear_wrapper(original_func_name, target_func):
-    '''update the pt wrapper patch with mindspore wrapper'''
-    reset_patch(original_func_name)
-    # orig_func is the original megatron method
-    orig_func = inspect.unwrap(target_func)
-    # patch with orig_func, which is equivalent to restore this patch to the original megatron method
-    apply_patch(original_func_name, orig_func)
-
-
-def reset_patch(original_func_name):
-    '''clear the wrapper info in Patch object'''
-    target_patch = MegatronAdaptation._patch_info_collection[original_func_name]
-    target_patch.wrappers = []
+from mindspeed.patch_utils import Patch, MindSpeedPatchesManager
 
 
 def apply_patch(original_func_name, new_func):
@@ -51,3 +35,18 @@ def apply_patch(original_func_name, new_func):
         if orig_func_name is not None and hasattr(value, orig_func_name) \
                 and id(getattr(value, orig_func_name)) == id(orig_func):
             setattr(value, orig_func_name, final_patch_func)
+
+
+def clear_wrapper_v2(original_func_name, target_func):
+    '''update the pt wrapper patch with mindspore wrapper'''
+    reset_patch_v2(original_func_name)
+    # orig_func is the original megatron method
+    orig_func = inspect.unwrap(target_func)
+    # patch with orig_func, which is equivalent to restore this patch to the original megatron method
+    apply_patch(original_func_name, orig_func)
+
+
+def reset_patch_v2(original_func_name):
+    '''clear the wrapper info in Patch object'''
+    target_patch = MindSpeedPatchesManager.patches_info[original_func_name]
+    target_patch.wrappers = []
