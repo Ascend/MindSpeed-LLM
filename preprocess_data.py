@@ -77,6 +77,7 @@ def build_splitter(args):
         if not nltk:
             logger.error("NLTK is not available to split sentences.")
             raise Exception("nltk is not available")
+        logger.warning("Warning: nltk.load() uses pickle. Ensure the source of the corpus is trusted.")
         splitter = nltk.load("tokenizers/punkt/english.pickle")
         if args.keep_newlines:
             # this prevents punkt from eating newlines after sentences
