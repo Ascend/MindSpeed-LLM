@@ -92,7 +92,8 @@ TRAIN_ARGS="
     --seed 42 \
     --bf16 \
     --train-iters ${TRAIN_ITERS} \
-    --seq-length ${SEQ_LENGTH}
+    --seq-length ${SEQ_LENGTH} \
+    --no-shared-storage
 "
 
 MODEL_PARALLEL_ARGS="
@@ -116,7 +117,7 @@ GPT_ARGS="
     --noop-layers 94,95 \
     --num-layers 96 \
     --hidden-size 4096 \
-    --ffn-hidden-size 8192 \
+    --ffn-hidden-size 12288 \
     --num-attention-heads 64 \
     --tokenizer-type PretrainedFromHF \
     --make-vocab-size-divisible-by 1 \
@@ -140,7 +141,7 @@ DATA_ARGS="
 
 OUTPUT_ARGS="
     --log-interval 1 \
-    --save-interval 500 \
+    --save-interval ${TRAIN_ITERS} \
     --eval-interval ${TRAIN_ITERS} \
     --eval-iters 0 \
     --no-load-optim \
