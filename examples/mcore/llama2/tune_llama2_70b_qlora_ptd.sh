@@ -81,6 +81,7 @@ TRAINING_ARGS="
     --tokenizer-not-use-fast \
     --attention-dropout 0.0 \
     --seed 42 \
+    --exit-on-missing-checkpoint
 "
 
 FINETUNE_ARGS="

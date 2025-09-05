@@ -72,7 +72,6 @@ GPT_ARGS="
     --use-fused-rmsnorm \
     --no-check-for-nan-in-loss-and-grad \
     --overlap-grad-reduce \
-    --overlap-param-gather \
     --make-vocab-size-divisible-by 1 \
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \

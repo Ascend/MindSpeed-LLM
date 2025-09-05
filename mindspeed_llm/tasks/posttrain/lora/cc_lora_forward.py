@@ -349,7 +349,10 @@ def column_cc_lora_parallel_linear_forward(input_, base_layer, weight_a, weight_
     weight = base_layer.weight
     bias = base_layer.bias if not base_layer.skip_bias_add else None
     lora_params = [input_, weight, weight_a, weight_b, scaling]
-    if base_layer.explicit_expert_comm or get_tensor_model_parallel_world_size() == 1:
+    explicit_expert_comm = base_layer.is_expert and (
+                get_tensor_model_parallel_world_size() > 1 or base_layer.expert_parallel
+    )
+    if explicit_expert_comm or get_tensor_model_parallel_world_size() == 1:
         output_parallel = _FusedBaseParallelLoRAFunction.apply(*lora_params)
     elif base_layer.sequence_parallel:
         output_parallel = _FusedColumnSeqParallelLoRAFunction.apply(*lora_params)
@@ -368,7 +371,10 @@ def row_cc_lora_parallel_linear_forward(input_, base_layer, weight_a, weight_b, 
     weight = base_layer.weight
     skip_bias_add, bias = base_layer.skip_bias_add, base_layer.bias
     lora_params = [input_, weight, weight_a, weight_b, scaling]
-    if base_layer.explicit_expert_comm or get_tensor_model_parallel_world_size() == 1:
+    explicit_expert_comm = base_layer.is_expert and (
+                get_tensor_model_parallel_world_size() > 1 or base_layer.expert_parallel
+    )
+    if explicit_expert_comm or get_tensor_model_parallel_world_size() == 1:
         output_ = _FusedBaseParallelLoRAFunction.apply(*lora_params)
     elif base_layer.sequence_parallel:
         output_ = _FusedRowSeqParallelLoRAFunction.apply(*lora_params)

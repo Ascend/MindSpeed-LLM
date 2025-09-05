@@ -94,7 +94,8 @@ GPT_ARGS="
     --adam-beta1 0.9 \
     --adam-beta2 0.999 \
     --seed 42 \
-    --bf16
+    --bf16 \
+    --exit-on-missing-checkpoint
 "
 
 FINETUNE_ARGS="

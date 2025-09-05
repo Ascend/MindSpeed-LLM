@@ -1,5 +1,6 @@
 #!/bin/bash
 export CUDA_DEVICE_MAX_CONNECTIONS=1
+export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
 
 NPUS_PER_NODE=8
 MASTER_ADDR=localhost
@@ -44,7 +45,6 @@ TUNE_ARGS="
 "
 
 GPT_ARGS="
-    --swap-attention \
     --reuse-fp32-param \
     --use-mcore-models \
     --tensor-model-parallel-size ${TP} \
@@ -95,7 +95,6 @@ GPT_ARGS="
     --bf16 \
     --use-distributed-optimizer \
     --overlap-grad-reduce \
-    --overlap-param-gather \
     --use-ascend-mc2 \
     --no-shuffle
 "

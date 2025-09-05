@@ -110,4 +110,6 @@ QLoRA在LoRA的基础上，对主干部分的权重进行量化，大幅降低�
 
 > 目前QLoRA特性支持开启 `--moe-grouped-gemm` GMM算子以及 `--moe-alltoall-overlap-comm` 特性。
 
+> 目前QLoRA微调必须加载权重，暂不支持随机初始化权重。
+
 > QLoRA支持分布式LoRA、PP、TP、VPP、CP、SP、重计算等LoRA支持的特性，并且精度正常，更多特性的亲和性还在补充验证中。
