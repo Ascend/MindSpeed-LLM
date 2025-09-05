@@ -1,6 +1,7 @@
 #  Copyright (c) Huawei Technologies Co., Ltd. 2025-2025. All rights reserved.
 import abc
 import json
+import copy
 import logging as logger
 import os
 from collections import defaultdict
@@ -38,16 +39,16 @@ class HuggingFaceModel(Model):
         self.model_type_hf = args.model_type_hf
         if args.load_model_type == 'hf':
             self.hf_path = args.load_dir
-            self.load_hf_args()
+            self.load_hf_args(args)
         else:
             self.hf_path = args.save_dir
         self.module_mapping = self.get_module_mapping()
 
 
-    def load_hf_args(self):
+    def load_hf_args(self, args):
         """
         Load config.json, apply key mappings and config values from model_cfg,
-        and set them as instance attributes.
+        and set them as instance attributes and update args.
         """
         hf_args_path = os.path.join(self.hf_path, "config.json")
         with open(hf_args_path) as f:
@@ -59,11 +60,13 @@ class HuggingFaceModel(Model):
             key_hf = config_key_mapping[key_target]
             if key_hf in hf_args:
                 setattr(self, key_target, hf_args[key_hf])
+                setattr(args, key_target, hf_args[key_hf])
             else:
                 setattr(self, key_hf, hf_args[key_hf])
 
         for key_target, value in config_value.items():
             setattr(self, key_target, value)
+            setattr(args, key_target, value)
 
 
     def get_module_mapping(self):
@@ -155,6 +158,7 @@ class MegatronModel(Model):
             self.mg_path = args.save_dir
         self.mla_mm_split = args.mla_mm_split
         self.mtp_num_layers = args.mtp_num_layers
+        self.multi_latent_attention = True if hasattr(args, "multi_latent_attention") else False
         self.module_mapping = self.get_module_mapping()
 
 
@@ -296,8 +300,12 @@ class MegatronModel(Model):
                 "mtp_layers_self_attention_linear_kv_up_proj"] = module_layer_mtp + "self_attention.linear_kvb"
             module_mapping[
                 "mtp_layers_self_attention_q_layernorm"] = module_layer_mtp + "self_attention.q_layernorm"
-            module_mapping[
-                "mtp_layers_self_attention_kv_layernorm"] = module_layer_mtp + "self_attention.kv_layernorm"
+            if self.multi_latent_attention:
+                module_mapping[
+                    "mtp_layers_self_attention_kv_layernorm"] = module_layer_mtp + "self_attention.kv_layernorm"
+            else:
+                module_mapping[
+                    "mtp_layers_self_attention_k_layernorm"] = module_layer_mtp + "self_attention.k_layernorm"
             module_mapping[
                 "mtp_layers_mlp_router"] = module_layer_mtp + "mlp.router"
             module_mapping[

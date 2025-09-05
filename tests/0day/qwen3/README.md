@@ -1,8 +1,8 @@
-## 0day提供Qwen3系列模型同步首发支持
+## 0day提供Ling-MINI模型同步首发支持
 
 `认证`【Pass】表示经过昇腾官方版本测试的模型，【Test】表示待测试模型
 
-**目前qwen3模型已通过内部验证，可参考[安装指导](../../../docs/pytorch/install_guide.md)完成环境安装**
+**目前Qwen3系列模型已通过内部验证，可参考当前文档完成环境安装**
 
 **[test/0day/qwen3](../qwen3/)文件夹下其他脚本仅作展示用，请移步[examples/mcore](../../../examples/mcore)使用完整功能。**
 

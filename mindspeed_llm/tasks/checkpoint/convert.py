@@ -32,7 +32,6 @@ class Convert(abc.ABC):
         self.moe_tp_extend_ep = args.moe_tp_extend_ep
         self.mla_mm_split = args.mla_mm_split
         self.schedules_method = args.schedules_method
-        self.first_k_dense_replace = args.first_k_dense_replace
         self.mtp_num_layers = args.mtp_num_layers
 
         # model arguments

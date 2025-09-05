@@ -8,8 +8,12 @@
     },
     "format_prefix": {
       "slots": [
-        {"token": "[gMASK]"},
-        {"token": "sop"}
+        {
+          "token": "[gMASK]"
+        },
+        {
+          "token": "sop"
+        }
       ]
     },
     "format_separator": {
@@ -24,10 +28,14 @@
     "name": "chatglm3",
     "format_user": {
       "slots": [
-        {"token": "<|user|>"},
+        {
+          "token": "<|user|>"
+        },
         "\n",
         "{{content}}",
-        {"token": "<|assistant|>"}
+        {
+          "token": "<|assistant|>"
+        }
       ]
     },
     "format_assistant": {
@@ -38,17 +46,23 @@
     },
     "format_system": {
       "slots": [
-        {"token": "<|system|>"},
+        {
+          "token": "<|system|>"
+        },
         "\n",
         "{{content}}"
       ]
     },
     "format_observation": {
       "slots": [
-        {"token": "<|observation|>"},
+        {
+          "token": "<|observation|>"
+        },
         "\n",
         "{{content}}",
-        {"token": "<|assistant|>"}
+        {
+          "token": "<|assistant|>"
+        }
       ]
     },
     "format_tools": {
@@ -56,8 +70,12 @@
     },
     "format_prefix": {
       "slots": [
-        {"token": "[gMASK]"},
-        {"token": "sop"}
+        {
+          "token": "[gMASK]"
+        },
+        {
+          "token": "sop"
+        }
       ]
     },
     "stop_words": [
@@ -70,10 +88,14 @@
     "name": "chatglm3_system",
     "format_user": {
       "slots": [
-        {"token": "<|user|>"},
+        {
+          "token": "<|user|>"
+        },
         "\n",
         "{{content}}",
-        {"token": "<|assistant|>"}
+        {
+          "token": "<|assistant|>"
+        }
       ]
     },
     "format_assistant": {
@@ -84,9 +106,15 @@
     },
     "format_system": {
       "slots": [
-        {"token": "[gMASK]"},
-        {"token": "sop"},
-        {"token": "<|system|>"},
+        {
+          "token": "[gMASK]"
+        },
+        {
+          "token": "sop"
+        },
+        {
+          "token": "<|system|>"
+        },
         "\n",
         "{{content}}"
       ]
@@ -98,10 +126,14 @@
     },
     "format_observation": {
       "slots": [
-        {"token": "<|observation|>"},
+        {
+          "token": "<|observation|>"
+        },
         "\n",
         "{{content}}",
-        {"token": "<|assistant|>"}
+        {
+          "token": "<|assistant|>"
+        }
       ]
     },
     "default_system": "You are ChatGLM3, a large language model trained by Zhipu.AI. Follow the user's instructions carefully. Respond using markdown.",
@@ -219,7 +251,9 @@
     },
     "format_prefix": {
       "slots": [
-        ["bos_token"]
+        [
+          "bos_token"
+        ]
       ]
     }
   },
@@ -268,7 +302,9 @@
     },
     "format_prefix": {
       "slots": [
-        ["bos_token"]
+        [
+          "bos_token"
+        ]
       ]
     }
   },
@@ -375,7 +411,9 @@
     },
     "format_prefix": {
       "slots": [
-        ["bos_token"]
+        [
+          "bos_token"
+        ]
       ]
     },
     "stop_words": [
@@ -392,7 +430,9 @@
     },
     "format_prefix": {
       "slots": [
-        ["bos_token"]
+        [
+          "bos_token"
+        ]
       ]
     }
   },
@@ -405,7 +445,9 @@
     },
     "format_prefix": {
       "slots": [
-        ["bos_token"]
+        [
+          "bos_token"
+        ]
       ]
     }
   },
@@ -428,7 +470,9 @@
     },
     "format_prefix": {
       "slots": [
-        ["bos_token"]
+        [
+          "bos_token"
+        ]
       ]
     },
     "efficient_eos": true
@@ -437,7 +481,9 @@
     "name": "llama2",
     "format_user": {
       "slots": [
-        ["bos_token"],
+        [
+          "bos_token"
+        ],
         "[INST] {{content}} [/INST]"
       ]
     },
@@ -476,7 +522,9 @@
     },
     "format_prefix": {
       "slots": [
-        ["bos_token"]
+        [
+          "bos_token"
+        ]
       ]
     }
   },
@@ -494,7 +542,9 @@
     },
     "format_prefix": {
       "slots": [
-        ["bos_token"]
+        [
+          "bos_token"
+        ]
       ]
     }
   },
@@ -512,7 +562,9 @@
     },
     "format_prefix": {
       "slots": [
-        ["bos_token"]
+        [
+          "bos_token"
+        ]
       ]
     }
   },
@@ -534,7 +586,9 @@
     },
     "format_prefix": {
       "slots": [
-        ["bos_token"]
+        [
+          "bos_token"
+        ]
       ]
     }
   },
@@ -557,7 +611,9 @@
     },
     "format_prefix": {
       "slots": [
-        ["bos_token"]
+        [
+          "bos_token"
+        ]
       ]
     },
     "stop_words": [
@@ -598,7 +654,7 @@
     "format_function": {
       "slots": [
         "{{content}}<|im_end|>\n"
-      ], 
+      ],
       "tool_format": "qwen"
     },
     "format_observation": {
@@ -614,5 +670,42 @@
     ],
     "replace_eos": true,
     "template_class": "ReasoningTemplate"
+  },
+  {
+    "name": "bailing_mini",
+    "format_user": {
+      "slots": [
+        "<role>HUMAN</role>{{content}}<|role_end|><role>ASSISTANT</role>"
+      ]
+    },
+    "format_assistant": {
+      "slots": [
+        "{{content}}<|role_end|>"
+      ]
+    },
+    "format_system": {
+      "slots": [
+        "<role>SYSTEM</role>{{content}}\ndetailed thinking off<|role_end|>"
+      ]
+    },
+    "format_observation": {
+      "slots": [
+        "<role>OBSERVATION</role>{{content}}<|role_end|><role>ASSISTANT</role>"
+      ]
+    },
+    "format_tool": {
+      "slots": [
+        "<tool_call>\n{{content}}\n</tool_call>"
+      ]
+    },
+    "format_tool_response": {
+      "slots": [
+        "\n<tool_response>\n{{content}}\n</tool_response>"
+      ]
+    },
+    "stop_words": [
+      "<|role_end|>"
+    ],
+    "replace_eos": true
   }
 ]
