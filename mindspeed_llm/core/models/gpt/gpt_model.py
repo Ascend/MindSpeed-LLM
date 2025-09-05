@@ -307,7 +307,11 @@ def gpt_forward_wrapper(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
         actual_seq_len = get_actual_seq_len()
-
+        
+        args_r = get_args()
+        if args_r.reset_attention_mask:
+            actual_seq_len = torch.tensor(actual_seq_len)
+        
         packed_seq_params = PackedSeqParams(
             cu_seqlens_q=actual_seq_len, 
             cu_seqlens_kv=actual_seq_len

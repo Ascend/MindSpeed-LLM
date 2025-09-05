@@ -25,6 +25,8 @@ class AlibiFeature(MindSpeedFeature):
                             help='attention mask of alibi is squared')
         group.add_argument('--fill-neg-inf', action='store_true', default=False, 
                             help='fill alibi with negative inf')
+        group.add_argument('--alibi-fusion-attn-type', type=int, default=None,
+                            help='alibi pse type, support for 0,2')
 
     def validate_args(self, args):
         # alibi only support by FA

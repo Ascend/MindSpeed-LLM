@@ -28,7 +28,7 @@ class ContextParallelFeature(MindspeedContextParallelFeature):
 
 
     def register_patches(self, patch_manager, args):
-        if int(getattr(args, 'context_parallel_size', 1)) > 1:
+        if int(getattr(args, 'context_parallel_size', 1)) > 1 and not getattr(args, 'reset_attention_mask', None):
             from mindspeed.core.context_parallel.model_parallel_utils import initialize_model_parallel_cp_wrapper, \
                 destroy_model_parallel_cp_wrapper, get_context_parallel_group_for_send_recv_overlap
             from mindspeed.core.context_parallel.rotary_pos_embedding_utils import get_pos_emb_on_this_cp_rank

@@ -69,6 +69,7 @@ from mindspeed_llm.features_manager.functional.profiling import ProfilingFeature
 from mindspeed_llm.features_manager.tokenizer.build_tokenizer import BuildTokenizerFeature
 from mindspeed_llm.features_manager.transformer.flash_attention.fusion_attention_feature import FusionAttentionFeature
 from mindspeed_llm.features_manager.transformer.flash_attention.alibi_feature import AlibiFeature
+from mindspeed_llm.features_manager.transformer.flash_attention.reset_attention_mask_feature import ResetAttentionMaskFeature
 from mindspeed_llm.features_manager.transformer.mtp import MultiTokenPredictionFeature
 from mindspeed_llm.features_manager.transformer.multi_latent_attention.mla_feature import MLAFeature
 from mindspeed_llm.features_manager.transformer.transformer_block import TransformerBlockFeature
@@ -180,6 +181,8 @@ def add_transformer_features(features_list: List[MindSpeedFeature]):
         TransformerBlockFeature(),
         # LLM feature
         AlibiFeature(),
+        # LLM feature
+        ResetAttentionMaskFeature(),
     ])
 
 
