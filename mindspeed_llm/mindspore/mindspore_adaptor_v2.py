@@ -232,7 +232,6 @@ def _patch_optimizer_and_training(args):
     MindSporeAdaptation.register_patch('mindspeed.ops.npu_apply_fused_adamw_v2.npu_apply_fused_adamw_v2',
                                        npu_apply_fused_adamw_v2)
 
-    
 
 def pre_validate_args(patch_manager):
     pass
@@ -281,15 +280,8 @@ def patch_moe_zerc():
 
 
 def patch_swap_optimizer():
-    from mindspeed.mindspore.core.optimizer.swap_optimizer.swap_optimizer import opt_states_initialization, \
-        create_tensor_maps, swap_adamw_step
-    MindSporeAdaptation.register_patch(
-        'mindspeed.core.optimizer.swap_optimizer.swap_optimizer.SwapDistributedOptimizer.opt_states_initialization',
-        opt_states_initialization)
-    MindSporeAdaptation.register_patch(
-        'mindspeed.core.optimizer.swap_optimizer.swap_optimizer.SwapDistributedOptimizer.create_tensor_maps',
-        create_tensor_maps)
-    MindSporeAdaptation.register_patch('mindspeed.optimizer.adamw.AdamW.step', swap_adamw_step)
+    from mindspeed.mindspore.core.optimizer.swap_optimizer.swap_optimizer import swap_adamw_step
+    MindSporeAdaptation.register_patch('mindspeed.core.optimizer.adamw.AdamW.step', swap_adamw_step)
 
 
 def patch_moe_fb_overlap():
