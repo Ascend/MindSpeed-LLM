@@ -179,6 +179,9 @@ def _patch_optimizer_and_training(args):
     from mindspeed.mindspore.ops.gmm import _GMM_patched_load
     MindSporeAdaptation.register_patch('mindspeed.op_builder.gmm_builder.GMMOpBuilder.load', _GMM_patched_load)
 
+    from mindspeed.mindspore.ops.gmm import _GMM_patched_load2
+    MindSporeAdaptation.register_patch('mindspeed.op_builder.gmm_builder.GMMV2OpBuilder.load', _GMM_patched_load2)
+
     # Checkpoint & Model Registration
     from mindspeed_llm.mindspore.tasks.checkpoint.models import register_functions, get_modules_from_pretrained
     MindSporeAdaptation.register_patch(
