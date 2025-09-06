@@ -69,22 +69,11 @@ cd ../../
 
 ### 2.1 Huggingface权重转换到Megatron-LM格式
 
-权重转换实现了 HuggingFace 权重到 Megatron-LM 格式的转换，支持多种并行策略（如张量并行、流水并行等），确保转换后可以在 MindSpeed-LLM 框架下继续训练和推理。下面提供一个Llama2-7b模型的hf-mg权重转换脚本仅供参考：
+权重转换实现了 HuggingFace 权重到 Megatron-LM 格式的转换，支持多种并行策略（如张量并行、流水并行等），确保转换后可以在 MindSpeed-LLM 框架下继续训练和推理。
 
-```shell
-python convert_ckpt.py \
-    --model-type GPT \
-    --load-model-type hf \
-    --save-model-type mg \
-    --target-tensor-parallel-size 2 \
-    --target-pipeline-parallel-size 4 \
-    --num-layer-list 8,8,8,8 \
-    --model-type-hf llama2 \
-    --use-mcore-models \
-    --load-dir ./model_from_hf/llama-2-7b-hf/ \
-    --save-dir ./model_weights/llama-2-7b-mcore/ \
-    --tokenizer-model ./model_from_hf/llama-2-7b-hf/tokenizer.model
-```
+**注意**：
+
+在做权重转换前，请先确认训练时的参数配置，根据您的训练配置修改仓上的权重转换脚本（因为这些配置会改变权重的结构，如果与训练的参数不一致的话，会导致训练无法加载权重），需要确认的训练配置见下表：
 <table>
   <thead>
     <tr>
@@ -147,12 +136,30 @@ python convert_ckpt.py \
   </tbody>
 </table>
 
+场景限制：
 
-**注意**：
+1、模型的层数必须能被PP切分数量整除，否则需要增加空层--noop-layer或者使用动态PP
 
-1、VPP和动态PP划分只能二选一
+2、VPP和动态PP划分只能二选一
 
-2、目前支持的模型见 [model_cfg.json](https://gitee.com/ascend/MindSpeed-LLM/blob/master/configs/checkpoint/model_cfg.json)中“model_mappings”下包含的模型。
+3、请参考 [model_cfg.json](https://gitee.com/ascend/MindSpeed-LLM/blob/master/configs/checkpoint/model_cfg.json)中的“model_mappings”部分，查看目前支持的模型。
+
+下面提供一个Llama2-7b模型的hf-mg权重转换脚本仅供参考：
+
+```shell
+python convert_ckpt.py \
+    --model-type GPT \
+    --load-model-type hf \
+    --save-model-type mg \
+    --target-tensor-parallel-size 2 \
+    --target-pipeline-parallel-size 4 \
+    --num-layer-list 8,8,8,8 \
+    --model-type-hf llama2 \
+    --use-mcore-models \
+    --load-dir ./model_from_hf/llama-2-7b-hf/ \
+    --save-dir ./model_weights/llama-2-7b-mcore/ \
+    --tokenizer-model ./model_from_hf/llama-2-7b-hf/tokenizer.model
+```
 
 
 【启动脚本】
@@ -169,7 +176,15 @@ bash examples/mcore/llama2/ckpt_convert_llama2_hf2mcore.sh
 
 ### 2.2 Megatron-LM权重转换到Huggingface格式
 
-权重转换实现了 Megatron-LM 权重到 HuggingFace 格式的转换，支持多种并行策略（如张量并行、流水并行等）。转换过程中，模型的权重会被适配为 HuggingFace 的标准格式，确保可以在 HuggingFace 环境下继续进行训练和推理。下面提供一个Llama2-7b模型的mg-hf权重转换脚本仅供参考：
+权重转换实现了 Megatron-LM 权重到 HuggingFace 格式的转换，支持多种并行策略（如张量并行、流水并行等）。转换过程中，模型的权重会被适配为 HuggingFace 的标准格式，确保可以在 HuggingFace 环境下继续进行训练和推理。
+
+**注意**：
+
+1、转到Huggingface权重必须设置--target-tensor-parallel-size = 1、--target-pipeline-parallel-size = 1，因为Huggingface权重不涉及并行切分。
+
+2、转换成功后的权重保存目录下仅包含模型权重文件，不会生成config.json模型配置文件和tokenizer.model、vocab.json等词表文件。
+
+下面提供一个Llama2-7b模型的mg-hf权重转换脚本仅供参考：
 
 ```shell
 python convert_ckpt.py \
@@ -185,8 +200,6 @@ python convert_ckpt.py \
 ```
 
 参数意义参考2.1
-
-**注意：** 转到Huggingface权重必须设置--target-tensor-parallel-size = 1、--target-pipeline-parallel-size = 1。
 
 【启动脚本】
 
