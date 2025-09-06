@@ -982,7 +982,7 @@ class MegatronModel(ModelBase):
             # These are arguments that we are either changing, or cause problems for validation if they are set
             args_to_keep = [
                 'tensor_model_parallel_size', 'pipeline_model_parallel_size', 'world_size', 'params_dtype',
-                'num_layers_per_virtual_pipeline_stage', 'virtual_pipeline_model_parallel_size',
+                'num_layers_per_virtual_pipeline_stage', 'virtual_pipeline_model_parallel_size', 'expert_tensor_parallel_size',
                 'bias_gelu_fusion', 'bias_dropout_fusion', 'sequence_parallel', 'async_tensor_model_parallel_allreduce',
                 'no_load_optim', 'no_load_rng', 'no_save_optim', 'no_save_rng', 'vocab_file', 'tokenizer_model',
                 'save_interval', 'save', 'perform_initialization', 'use_cpu_initialization', 'recompute_granularity',
