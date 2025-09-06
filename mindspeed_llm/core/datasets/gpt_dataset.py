@@ -167,7 +167,7 @@ def _build_document_sample_shuffle_indices(
             drop_last_partial_sequence = self.config.drop_last_partial_validation_sequence
 
         # Build the sample index
-        from megatron.core.datasets import helpers
+        from mindspeed_llm.core.datasets import helpers
 
         if self.index_split == Split.valid:
             drop_last_partial_sequence = self.config.drop_last_partial_validation_sequence
@@ -185,6 +185,8 @@ def _build_document_sample_shuffle_indices(
             sequence_lengths_for_cpp = self.dataset.sequence_lengths.copy()
         else:
             sequence_lengths_for_cpp = self.dataset.sequence_lengths
+
+        from megatron.core.datasets import helpers
         sample_index = helpers.build_sample_idx(
             sequence_lengths_for_cpp,
             document_index,
