@@ -52,7 +52,7 @@ source /usr/local/Ascend/ascend-toolkit/set_env.sh # 修改为真实的ascend-to
     --json-keys text input output
     ```
 - `n-subs`：数据预处理并行加速参数。当需要预处理的数据集比较大时，可以通过并行处理进行加速，方法为设置参数`--n-subs`，通过该参数设置并行处理数量。在数据预处理过程会将原始数据集切分为`n_sub`个子集，对子集进行并行处理，然后合并，从而实现加速。建议预处理数据集超过GB级别时加上该参数。
-- `append-eod`：该参数的作用是将文档结束标记`EOD`显示地添加到每条数据的末尾，防止模型学习无意义的关联。还参数使能后的效果如下：  
+- `append-eod`：该参数的作用是将文档结束标记`EOD`显示地添加到每条数据的末尾，防止模型学习无意义的关联。该参数使能后的效果如下：  
 ![append-eod示意图](../../../../sources/images/pretrain/append-eod.png)
 
 相关参数设置完毕后，运行数据预处理脚本：
