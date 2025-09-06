@@ -203,6 +203,16 @@ def _patch_optimizer_and_training(args):
             force_patch=True
         )
 
+    # Optimizer: load and save parameter
+    from ..mindspore.core.optimizer.distrib_optimizer import get_parameter_state_dp_zero
+    MindSporeAdaptation.register_patch(
+        'megatron.core.optimizer.distrib_optimizer.DistributedOptimizer.get_parameter_state_dp_zero',
+        get_parameter_state_dp_zero)
+    from ..mindspore.core.optimizer.distrib_optimizer import load_parameter_state_from_dp_zero
+    MindSporeAdaptation.register_patch(
+        'megatron.core.optimizer.distrib_optimizer.DistributedOptimizer.load_parameter_state_from_dp_zero',
+        load_parameter_state_from_dp_zero)
+
     # Gradient accumulation fusion
     if args.gemm_gradient_accumulation_fusion:
         from torch_npu import npu_groupmatmul_add_fp32
@@ -291,5 +301,3 @@ def patch_moe_fb_overlap():
 def mindspore_register_args(group):
     group.add_argument('--enable-a2avc', action='store_true', default=False,
                        help='enable a2avc')
-
-    pass
