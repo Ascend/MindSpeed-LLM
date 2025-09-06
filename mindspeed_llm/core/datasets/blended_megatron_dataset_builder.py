@@ -74,7 +74,8 @@ def build_generic_dataset(
                 )
                 raise Exception(log) from err
 
-        torch.distributed.barrier()
+        if synchronize_ranks:
+            torch.distributed.barrier()
 
         # After, build on other ranks
         if not to_build_flag and is_built_on_rank():
