@@ -22,7 +22,7 @@ import torch
 from megatron.core import mpu
 import megatron.core.tensor_parallel.layers as tpl
 from megatron.training.checkpointing import save_checkpoint
-
+from mindspeed_llm.training.training import update_save_checkpoint_chmod
 from .models import get_megatron_model
 
 logger.basicConfig(format="")
@@ -534,6 +534,7 @@ def save_model(model_mg, md, **kwargs):
                 save_checkpoint(md.iteration, vp_models, None, None, 0)
             elif args_cmd.save_model_type == "hf":
                 save_huggingface(args_cmd, model_mg)
+    update_save_checkpoint_chmod(args_cmd.save_dir)
 
 
 def save_huggingface(args, model):

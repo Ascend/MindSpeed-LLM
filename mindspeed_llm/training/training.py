@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import gc
 import sys
 import json
@@ -71,6 +72,22 @@ try:
 except Exception as e:
     logging.warning("fail to call reset_thread_affinity, please upgrade torch_npu.")
     pass
+
+
+def update_save_checkpoint_chmod(save_path, permission=0o640):
+    if os.path.exists(save_path) and os.path.isdir(save_path):
+        for root, _, files in os.walk(save_path):
+            for file in files:
+                file_path = os.path.join(root, file)
+
+                try:
+                    os.chmod(file_path, permission)
+                except PermissionError:
+                    logging.warning(f"permission error: {file_path}")
+                except Exception as ee:
+                    logging.warning(f"failed to change permission: {file_path}: {ee}")
+
+    print(f"finish permission set for files in {save_path}")
 
 
 def model_provider_func_wrapper(model_provider_func):
@@ -710,6 +727,7 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
                                          opt_param_scheduler,
                                          num_floating_point_operations_so_far,
                                          checkpointing_context=None)
+                update_save_checkpoint_chmod(config.save)
                 print_datetime('exiting program after receiving SIGTERM.')
                 exit = True
                 break
@@ -720,6 +738,7 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
                                      opt_param_scheduler,
                                      num_floating_point_operations_so_far,
                                      checkpointing_context=None)
+            update_save_checkpoint_chmod(config.save)
             saved_checkpoint = True
 
         # Exiting based on duration
@@ -737,6 +756,7 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
                                              opt_param_scheduler,
                                              num_floating_point_operations_so_far,
                                              checkpointing_context=None)
+                    update_save_checkpoint_chmod(config.save)
                 print_datetime('exiting program after {} minutes'.format(train_time))
                 exit = True
                 break
@@ -748,6 +768,7 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
                                          opt_param_scheduler,
                                          num_floating_point_operations_so_far,
                                          checkpointing_context=None)
+                update_save_checkpoint_chmod(config.save)
             torch.distributed.barrier()
             print_datetime('exiting program at iteration {}'.format(iteration))
             exit = True
