@@ -56,6 +56,7 @@ def _patch_third_party_libraries():
     from mindspeed.mindspore.third_party.transformers.modeling_utils import (
         load_state_dict, _load_state_dict_into_meta_model, safe_open, get_parameter_dtype
     )
+    from mindspeed.mindspore.third_party.transformers.integrations.deepspeed import is_deepspeed_available
     MindSporeAdaptation.register_patch(
         'transformers.configuration_utils.PretrainedConfig.dict_torch_dtype_to_str', dict_torch_dtype_to_str)
     MindSporeAdaptation.register_patch('transformers.modeling_utils.load_state_dict', load_state_dict)
@@ -63,6 +64,8 @@ def _patch_third_party_libraries():
         'transformers.modeling_utils._load_state_dict_into_meta_model', _load_state_dict_into_meta_model)
     MindSporeAdaptation.register_patch('transformers.modeling_utils.safe_open', safe_open)
     MindSporeAdaptation.register_patch('transformers.modeling_utils.get_parameter_dtype', get_parameter_dtype)
+    MindSporeAdaptation.register_patch('transformers.integrations.deepspeed.is_deepspeed_available',
+                                       is_deepspeed_available)
 
 
 def _patch_model_and_embedding():
@@ -113,10 +116,10 @@ def _patch_moe_and_communication(args):
         if args.moe_token_dispatcher_type == 'alltoall_seq':
             if hasattr(args, 'use_fused_moe_token_permute_and_unpermute') and \
                     args.use_fused_moe_token_permute_and_unpermute and not args.moe_expert_capacity_factor:
-                from mindspeed.mindspore.core.fusions.npu_moe_token_permute import permute_wrapper
-                from mindspeed.mindspore.core.fusions.npu_moe_token_unpermute import unpermute_wrapper
-                MindSporeAdaptation.register_patch('megatron.core.transformer.moe.moe_utils.permute', permute_wrapper)
-                MindSporeAdaptation.register_patch('megatron.core.transformer.moe.moe_utils.unpermute', unpermute_wrapper)
+                from mindspeed.mindspore.core.fusions.npu_moe_token_unpermute import unpermute
+                from mindspeed.mindspore.ops.npu_moe_token_permute import npu_moe_token_permute
+                MindSporeAdaptation.register_patch('megatron.core.transformer.moe.moe_utils.permute', npu_moe_token_permute)
+                MindSporeAdaptation.register_patch('megatron.core.transformer.moe.moe_utils.unpermute', unpermute)
 
     # GEMM & MoE utils
     from mindspeed.mindspore.core.transformer.moe.grouped_gemm_util import Ops
