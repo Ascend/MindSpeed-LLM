@@ -81,7 +81,9 @@ def load_checkpoint_wrapper(fn):
     def wrapper(ddp_model, optimizer, opt_param_scheduler, strict=True, *args, **kwargs):
         if is_enable_lora() or load_checkpoint_loosely():
             strict = False
-        ddp_model = unwrap_model(ddp_model)
+        args_ = get_args()
+        if not getattr(args_, "use_torch_fsdp2", False):
+            ddp_model = unwrap_model(ddp_model)
         return fn(ddp_model, optimizer, opt_param_scheduler, strict=strict, *args, **kwargs)
 
     return wrapper

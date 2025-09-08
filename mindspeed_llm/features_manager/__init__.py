@@ -32,7 +32,8 @@ from mindspeed.features_manager import (
     RecomputeMethodFeature,
     SmartSwapFeature,
     SwapAttentionFeature,
-    ContextParallelKvCacheFeature
+    ContextParallelKvCacheFeature,
+    TorchFullyShardedDataParallelFeature
 )
 from mindspeed.features_manager.feature import MindSpeedFeature
 from mindspeed.features_manager.features_manager import MindSpeedFeaturesManager
@@ -192,6 +193,12 @@ def add_tokenizer_features(features_list: List[MindSpeedFeature]):
     ])
 
 
+def add_distributed_features(features_list: List[MindSpeedFeature]): 
+    features_list.extend([ 
+        TorchFullyShardedDataParallelFeature() 
+    ])
+
+
 def add_reuse_param_features(features_list: List[MindSpeedFeature]):
     features_list.extend([
         ReuseFP32Param()
@@ -287,6 +294,7 @@ def create_features_list():
     add_pipeline_parallel_features(features_list)
     add_transformer_features(features_list)
     add_tokenizer_features(features_list)
+    add_distributed_features(features_list)
     add_reuse_param_features(features_list)
     add_swap_manage_features(features_list)
     add_moe_features(features_list)
