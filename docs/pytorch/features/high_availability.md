@@ -21,11 +21,11 @@
 
 megatron原生的分布式优化器数据流及工作原理如下图：
 
-<img alt="输入图片说明" src="..\..\..\sources\images\high_availability\grad_buffer_sharding.png">
+![](/sources/images/high_availability/grad_buffer_sharding.png)
 
 副本优化器通过设计优化器参数均匀分布在副本DP组，完成优化器状态的备份，从而为TTP/UCE功能提供机制支持：
 
-<img alt="输入图片说明" src="..\..\..\sources\images\high_availability\replica_optimizer.png"/>
+![](/sources/images/high_availability/replica_optimizer.png)
 
 副本优化器相比分布式优化器会有内存占用增加，相对占用如下：
 
