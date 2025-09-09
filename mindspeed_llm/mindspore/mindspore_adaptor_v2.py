@@ -185,6 +185,9 @@ def _patch_optimizer_and_training(args):
     from mindspeed.mindspore.ops.gmm import _GMM_patched_load2
     MindSporeAdaptation.register_patch('mindspeed.op_builder.gmm_builder.GMMV2OpBuilder.load', _GMM_patched_load2)
 
+    from mindspeed.mindspore.ops.npu_ring_attention_update import _ring_atten_patched_load
+    MindSporeAdaptation.register_patch("mindspeed.op_builder.npu_ring_attention_update_builder.RingAttentionUpdateOpBuilder.load", _ring_atten_patched_load)
+
     # Checkpoint & Model Registration
     from mindspeed_llm.mindspore.tasks.checkpoint.models import register_functions, get_modules_from_pretrained
     MindSporeAdaptation.register_patch(
@@ -195,6 +198,15 @@ def _patch_optimizer_and_training(args):
     from mindspeed_llm.mindspore.core.datasets.blended_megatron_dataset_builder import need_to_build_dataset
     MindSporeAdaptation.register_patch(
         'mindspeed_llm.core.datasets.blended_megatron_dataset_builder.need_to_build_dataset', need_to_build_dataset)
+
+    # share memory
+    if args.enable_share_memory:
+        from ..mindspore.tasks.dataset.shared_memory_manager import SharedMemoryManager
+        MindSporeAdaptation.register(
+            'mindspeed_llm.tasks.dataset.shared_memory_manager.SharedMemoryManager', SharedMemoryManager)
+        from ..mindspore.training.utils import _compute_actual_seq_len
+        MindSporeAdaptation.register(
+            'mindspeed_llm.training.utils._compute_actual_seq_len', _compute_actual_seq_len)
 
     # Optimizer: AdamW step
     if args.optimizer_selection == 'fused_ema_adamw':
@@ -304,3 +316,7 @@ def patch_moe_fb_overlap():
 def mindspore_register_args(group):
     group.add_argument('--enable-a2avc', action='store_true', default=False,
                        help='enable a2avc')
+
+    group = parser.add_argument_group(title=self.feature_name)
+    group.add_argument('--enable-share-memory', action='store_true', default=False,
+                        help='Enable shared memory for passing actual_seq_len when reset-position-ids is enabled.')
