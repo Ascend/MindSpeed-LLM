@@ -137,7 +137,7 @@ MindSpore后端对MindSpeed的重要加速特性的支持情况如下表所示�
     <td>✅</td>
   </tr>
   <tr>
-    <td rowspan="3">通信优化</td>
+    <td rowspan="4">通信优化</td>
     <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/async-ddp-param-gather.md">梯度reduce通算掩盖</a></td>
     <td>✅</td>
   </tr>
@@ -147,6 +147,10 @@ MindSpore后端对MindSpeed的重要加速特性的支持情况如下表所示�
   </tr>
   <tr>
     <td><a href="../pytorch/features/communication-over-computation.md">CoC</a></td>
+    <td>✅</td>
+  </tr>
+    <tr>
+    <td><a href="https://gitee.com/ascend/MindSpeed-LLM/blob/master/docs/mindspore/features/alltoallvc.md">AllToAllVC 通信算子</a></td>
     <td>✅</td>
   </tr>
 </tbody></table>
