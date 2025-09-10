@@ -57,12 +57,12 @@ modifyTrainingLogs() {
     sed -i 's/log_string += '\'' params norm: {:.3f} |'\''.format(params_norm)/log_string += '\'' params norm: {:.16f} |'\''.format(params_norm)/g' "$fname"
     echo "Log precision has been updated to 16 decimal places in $fname"
 }
-modifyTrainingLogs ${MindSpeed_LLM_PATH}/mindspeed_llm/training/training.py
+modifyTrainingLogs ${Megatron_LM_PATH}/megatron/training/training.py
 addSeedAll ${MindSpeed_LLM_PATH}/pretrain_gpt.py
 addSeedAll ${MindSpeed_LLM_PATH}/posttrain_gpt.py
-sed -i 's/\ \ \ \ \ \ \ \ logits = F.linear(input, self.weight)/\ \ \ \ \ \ \ \ logits = F.linear(input, self.weight, self.bias)/g' ${MindSpeed_LLM_PATH}/mindspeed_llm/core/transformer/moe/router.py
-addbias ${Megatron_LM_PATH}/megatron/core/transformer/moe/router.py
-sed -i 's/        device=freqs.device, dtype=torch.float32/        dtype=torch.float32/g' ${MindSpeed_LLM_PATH}/mindspeed_llm/core/models/common/embeddings/rotary_pos_embedding.py
+#sed -i 's/\ \ \ \ \ \ \ \ logits = F.linear(input, self.weight)/\ \ \ \ \ \ \ \ logits = F.linear(input, self.weight, self.bias)/g' ${MindSpeed_LLM_PATH}/mindspeed_llm/core/transformer/moe/router.py
+#addbias ${Megatron_LM_PATH}/megatron/core/transformer/moe/router.py
+#sed -i 's/        device=freqs.device, dtype=torch.float32/        dtype=torch.float32/g' ${MindSpeed_LLM_PATH}/mindspeed_llm/core/models/common/embeddings/rotary_pos_embedding.py
 export HCCL_DETERMINISTIC=true  
 export ASCEND_LAUNCH_BLOCKING=1  
 export NCCL_DETERMINISTIC=1
