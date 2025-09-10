@@ -316,7 +316,5 @@ def patch_moe_fb_overlap():
 def mindspore_register_args(group):
     group.add_argument('--enable-a2avc', action='store_true', default=False,
                        help='enable a2avc')
-
-    group = parser.add_argument_group(title=self.feature_name)
     group.add_argument('--enable-share-memory', action='store_true', default=False,
                         help='Enable shared memory for passing actual_seq_len when reset-position-ids is enabled.')
