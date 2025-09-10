@@ -47,7 +47,7 @@ from mindspeed_llm.features_manager.models.module import ModuleFeature
 from mindspeed_llm.features_manager.common.embedding import LanguageModelEmbeddingFeature
 from mindspeed_llm.features_manager.common.rotary import RotaryPositionEmbeddingFeature
 from mindspeed_llm.features_manager.common.training import TrainingDefaultFeature
-from mindspeed_llm.features_manager.communication.coc import AscendCocFeature
+from mindspeed_llm.features_manager.tensor_parallel.coc import CoCFeature
 from mindspeed_llm.features_manager.dataset.dataset import DatasetFeature
 from mindspeed_llm.features_manager.finetune.finetune import FinetuneFeature
 from mindspeed_llm.features_manager.finetune.lora import LoraFeature
@@ -93,7 +93,7 @@ FEATURES_LIST = [
     LanguageModelEmbeddingFeature(),
     MambaModel(),
     MoERouter(),
-    AscendCocFeature(),
+    CoCFeature(),
     HighAvailabilityFeature(),
     MultiTokenPredictionFeature(),
 
@@ -154,7 +154,7 @@ def add_fusions_features(features_list: List[MindSpeedFeature]):
 
 def add_tensor_parallel_features(features_list: List[MindSpeedFeature]):
     features_list.extend([
-        AscendCocFeature(),
+        CoCFeature(),
         MC2Feature(),
         TP2dFeature()
     ])
