@@ -2,7 +2,9 @@
 
 export HCCL_CONNECT_TIMEOUT=1800
 export CUDA_DEVICE_MAX_CONNECTIONS=1
+export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
 export NPU_ASD_ENABLE=0
+export TASK_QUEUE_ENABLE=2
 
 NPUS_PER_NODE=8
 MASTER_ADDR=localhost
@@ -18,13 +20,12 @@ TOKENIZER_PATH="your tokenizer path"
 CKPT_LOAD_DIR="your model ckpt path"
 
 TP=1
-PP=4
+PP=2
 CP=1
 MBS=1
 GBS=64
 SEQ_LENGTH=4096
 TRAIN_ITERS=2000
-CP_TYPE='ulysses_cp_algo'
 
 DISTRIBUTED_ARGS="
     --nproc_per_node $NPUS_PER_NODE \
@@ -41,7 +42,11 @@ OPTIMIZE_ARGS="
     --use-fused-swiglu \
     --use-fused-rmsnorm \
     --no-masked-softmax-fusion \
-    --use-distributed-optimizer
+    --use-distributed-optimizer \
+    --reuse-fp32-param \
+    --overlap-grad-reduce \
+    --overlap-param-gather \
+    --use-ascend-coc
 "
 
 TRAIN_ARGS="
@@ -62,15 +67,12 @@ TRAIN_ARGS="
     --seed 42 \
     --bf16 \
     --train-iters ${TRAIN_ITERS} \
-    --seq-length ${SEQ_LENGTH} \
-    --no-shared-storage
+    --seq-length ${SEQ_LENGTH}
 "
 
 MODEL_PARALLEL_ARGS="
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \
-    --context-parallel-size ${CP} \
-    --context-parallel-algo ${CP_TYPE} \
 "
 
 GPT_ARGS="
@@ -95,7 +97,8 @@ GPT_ARGS="
     --attention-softmax-in-fp32 \
     --no-gradient-accumulation-fusion \
     --group-query-attention \
-    --num-query-groups 8
+    --num-query-groups 8 \
+    --norm-epsilon 1e-6
 "
 
 DATA_ARGS="
