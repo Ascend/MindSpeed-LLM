@@ -55,7 +55,9 @@ class DPOTrainer(BaseTrainer):
         if (not mpu.is_pipeline_first_stage()) and (not mpu.is_pipeline_last_stage()):
             if args.variable_seq_lengths and args.pipeline_model_parallel_size > 2:
                 tokens, attention_mask = get_finetune_data_on_this_tp_rank(data_iterator)
-                return tokens, None, attention_mask, None
+                batch = {'attention_mask': attention_mask}
+                batch = get_batch_on_this_cp_rank(batch)
+                return tokens, None, batch['attention_mask'], None
             else:
                 # Broadcast data.
                 data_b = tensor_parallel.broadcast_data(keys, next(data_iterator), data_type)
@@ -134,6 +136,15 @@ class DPOTrainer(BaseTrainer):
         # Get the batch.
         self.timers('batch-generator', log_level=2).start()
         tokens, labels, attention_mask, position_ids = self.get_batch(data_iterator)
+
+        # Temporary solution, can be optimized in get_batch func.
+        if self.args.stage in ['dpo']:
+            if attention_mask is not None:
+                if isinstance(attention_mask, list):
+                    attention_mask = [torch.cat((x, x), dim=0) for x in attention_mask]
+                else:
+                    attention_mask = torch.cat((attention_mask, attention_mask), dim=0)
+
         self.timers('batch-generator').stop()
 
         output_tensor = self.hyper_model(tokens, position_ids, attention_mask)
