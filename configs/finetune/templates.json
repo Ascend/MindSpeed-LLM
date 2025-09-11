@@ -685,27 +685,26 @@
     },
     "format_system": {
       "slots": [
-        "<role>SYSTEM</role>{{content}}\ndetailed thinking off<|role_end|>"
+        "<role>SYSTEM</role>{{content}}<|role_end|>"
       ]
     },
     "format_observation": {
       "slots": [
-        "<role>OBSERVATION</role>{{content}}<|role_end|><role>ASSISTANT</role>"
+        "<role>OBSERVATION</role>\n<tool_response>\n{{content}}\n</tool_response><|role_end|><role>ASSISTANT</role>"
       ]
     },
-    "format_tool": {
+    "format_function": {
       "slots": [
-        "<tool_call>\n{{content}}\n</tool_call>"
-      ]
+        "{{content}}<|role_end|>"
+      ],
+      "tool_format": "ling"
     },
-    "format_tool_response": {
-      "slots": [
-        "\n<tool_response>\n{{content}}\n</tool_response>"
-      ]
+    "format_tools": {
+      "tool_format": "ling"
     },
     "stop_words": [
-      "<|role_end|>"
+      "<|endoftext|>"
     ],
-    "replace_eos": true
+    "efficient_eos": true
   }
 ]

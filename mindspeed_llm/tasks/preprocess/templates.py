@@ -24,7 +24,8 @@ from dataclasses import dataclass
 from enum import Enum, unique
 from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Tuple, Union
 
-from .formatter import EmptyFormatter, FunctionFormatter, StringFormatter, ToolFormatter, Qwen3FunctionFormatter, Qwen3ToolFormatter
+from .formatter import (EmptyFormatter, FunctionFormatter, StringFormatter, ToolFormatter,
+                        FunctionFormatterForThink, ToolFormatterForThink)
 
 if TYPE_CHECKING:
     from transformers import PreTrainedTokenizer
@@ -664,9 +665,9 @@ def register_custom_template(name, json_file_path=TEMPLATES_DIR, enable_thinking
     format_separator = EmptyFormatter(**format_separator) if format_separator else None
     format_prefix = EmptyFormatter(**format_prefix) if format_prefix else None
     template_class = _get_template_class(template_class) if template_class else Template
-    if name == 'qwen3':
-        format_function = Qwen3FunctionFormatter(**format_function) if format_function else None
-        format_tools = Qwen3ToolFormatter(**format_tools) if format_tools else None
+    if name in ['qwen3', 'bailing_mini']:
+        format_function = FunctionFormatterForThink(**format_function) if format_function else None
+        format_tools = ToolFormatterForThink(**format_tools) if format_tools else None
     else:
         format_function = FunctionFormatter(**format_function) if format_function else None
         format_tools = ToolFormatter(**format_tools) if format_tools else None

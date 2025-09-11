@@ -281,10 +281,37 @@ class QwenToolUtils(ToolUtils):
 
 
 @dataclass
-class Qwen3FunctionFormatter(StringFormatter):
+class LingToolUtils(QwenToolUtils):
+    r"""Ling v2 tool using template."""
+    LING_TOOL_PROMPT = (
+        "# Tools\n\nYou may call one or more functions to assist with the user query.\n\n"
+        "You are provided with function signatures within <tools></tools> XML tags:\n<tools>{tool_text}"
+        "\n</tools>\n\nFor each function call, return a json object with function name and arguments within "
+        """<tool_call></tool_call> XML tags:\n<tool_call>\n{{"name": <function-name>, """
+        """"arguments": <args-json-object>}}\n</tool_call>"""
+    )
+
+    @staticmethod
+    def tool_formatter(tools: list[dict[str, Any]]) -> str:
+        tool_text = ""
+        for tool in tools:
+            wrapped_tool = tool if tool.get("type") == "function" else {"type": "function", "function": tool}
+            tool_text += "\n" + json.dumps(wrapped_tool, ensure_ascii=False)
+
+        return LING_TOOL_PROMPT.format(tool_text=tool_text) + "\n" + "detailed thinking off"
+
+
+@dataclass
+class FunctionFormatterForThink(StringFormatter):
     def __post_init__(self):
         super().__post_init__()
-        self.tool_utils = QwenToolUtils()
+        tmp_tool_format = "".join(self.tool_format)
+        if tmp_tool_format == "ling":
+            self.tool_utils = LingToolUtils()
+        elif tmp_tool_format == "qwen3":
+            self.tool_utils = QwenToolUtils()
+        else:
+            print(f"something wrong with toolformat, tool_format is {tmp_tool_format}")
 
     def apply(self, **kwargs) -> SLOTS:
         content: str = kwargs.pop("content")
@@ -313,9 +340,15 @@ class Qwen3FunctionFormatter(StringFormatter):
 
 
 @dataclass
-class Qwen3ToolFormatter(Formatter):
+class ToolFormatterForThink(Formatter):
     def __post_init__(self):
-        self.tool_utils = QwenToolUtils()
+        tmp_tool_format = "".join(self.tool_format)
+        if tmp_tool_format == "ling":
+            self.tool_utils = LingToolUtils()
+        elif tmp_tool_format == "qwen3":
+            self.tool_utils = QwenToolUtils()
+        else:
+            print(f"something wrong with toolformat, tool_format is {tmp_tool_format}")
 
     def apply(self, **kwargs) -> SLOTS:
         content = kwargs.pop("content")

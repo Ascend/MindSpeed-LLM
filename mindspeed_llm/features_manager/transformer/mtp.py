@@ -10,6 +10,8 @@ class MultiTokenPredictionFeature(MindSpeedFeature):
 
         group.add_argument('--mtp-mem-efficient-logits', action='store_true', default=False,
                             help='Optimize ce_loss memory when use mtp block.')
+        group.add_argument('--mtp-after-norm', action='store_true', default=False,
+                            help='Optimize ce_loss memory when use mtp block.')
 
     def register_patches(self, patch_manager, args):
         import megatron
