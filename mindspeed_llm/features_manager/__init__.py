@@ -77,6 +77,7 @@ from mindspeed_llm.features_manager.transformer.transformer_block import Transfo
 from mindspeed_llm.features_manager.pipeline_parallel.num_layer_list import NumLayerListFeature
 from mindspeed_llm.features_manager.ai_framework.ms_patch_feature import MindSporePatchFeature
 from mindspeed_llm.features_manager.tensor_parallel.tp_2d import TP2dFeature
+from mindspeed_llm.features_manager.arguments.deprecated_args import DeprecatedArgsFeature
 
 
 FEATURES_LIST = [
@@ -122,6 +123,7 @@ def add_llm_features(features_list: List[MindSpeedFeature]):
         InferenceFeature(),
         EvaluationFeature(),
         LuLoraFeature(),
+        DeprecatedArgsFeature(),
         MambaModel(),
         LanguageModelEmbeddingFeature(),
     ])
