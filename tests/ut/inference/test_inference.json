@@ -104,6 +104,7 @@
                 "moe-ffn-hidden-size": 1536,
                 "moe-router-load-balancing-type": "group_limited_greedy",
                 "moe-router-group-topk": 3,
+                "moe-router-num-groups": 8,
                 "moe-aux-loss-coeff": 0.003,
                 "moe-device-level-aux-loss-coeff": 0.05,
                 "moe-comm-aux-loss-coeff": 0.02,
