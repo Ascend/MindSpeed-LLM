@@ -9,9 +9,10 @@ def communication_wrapper(fn):
         from megatron.training import get_args
         arguments = get_args()
         if arguments.enable_high_availability:
-            from mindio_ttp.adaptor import tft_is_arf_reboot_node
+            from mindio_ttp.adaptor import tft_is_arf_reboot_node, tft_get_node_group
             if tft_is_arf_reboot_node():
-                return None
+                node_group = tft_get_node_group()
+                return fn(node_group) if node_group is not None else None
             if arguments.enable_elastic_training:
                 group_index = 2
                 return torch_wrapper(fn, group_index, *args, **kwargs)
