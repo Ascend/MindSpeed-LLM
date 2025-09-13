@@ -31,6 +31,37 @@ class Model(abc.ABC):
     def get_module_mapping(self):
         pass
 
+    @staticmethod
+    def read_model_cfg():
+        def merge_configs(base_config, specific_config):
+            merged_config = base_config.copy()
+            for key, value in specific_config.items():
+                if isinstance(value, dict) and key in merged_config:
+                    merged_config[key] = merge_configs(merged_config[key], value)
+                else:
+                    merged_config[key] = value
+            return merged_config
+
+        current_directory = os.path.dirname(os.path.abspath(__file__))
+        cfg_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(current_directory))),
+                               "configs/checkpoint/model_cfg.json")
+        with open(cfg_dir, 'r') as file:
+            config = json.load(file)
+        final_configs = {}
+
+        for model_name, model_config in config["model_mappings"].items():
+            if "__base__" in model_config:
+                base_model_name = model_config["__base__"]
+                base_config = config["model_mappings"][base_model_name]
+                specific_config = model_config.copy()
+                specific_config.pop("__base__", None)
+                final_config = merge_configs(base_config, specific_config)
+            else:
+                final_config = model_config
+            final_configs[model_name] = final_config
+
+        return final_configs
+
 
 class HuggingFaceModel(Model):
     def __init__(self, args):
@@ -72,36 +103,14 @@ class HuggingFaceModel(Model):
     def get_module_mapping(self):
         return self.model_cfg.get(self.model_type_hf).get('model_hf_key_mapping')
 
-    @staticmethod
-    def read_model_cfg():
-        def merge_configs(base_config, specific_config):
-            merged_config = base_config.copy()
-            for key, value in specific_config.items():
-                if isinstance(value, dict) and key in merged_config:
-                    merged_config[key] = merge_configs(merged_config[key], value)
-                else:
-                    merged_config[key] = value
-            return merged_config
 
-        current_directory = os.path.dirname(os.path.abspath(__file__))
-        cfg_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(current_directory))),
-                               "configs/checkpoint/model_cfg.json")
-        with open(cfg_dir, 'r') as file:
-            config = json.load(file)
-        final_configs = {}
-
-        for model_name, model_config in config["model_mappings"].items():
-            if "__base__" in model_config:
-                base_model_name = model_config["__base__"]
-                base_config = config["model_mappings"][base_model_name]
-                specific_config = model_config.copy()
-                specific_config.pop("__base__", None)
-                final_config = merge_configs(base_config, specific_config)
-            else:
-                final_config = model_config
-            final_configs[model_name] = final_config
-
-        return final_configs
+    def get_module(self, layer_idx=0, expert_idx=0):
+        module_key = {}
+        for key, value in self.module_mapping.items():
+            value = re.sub(r'\[layer_idx\]', f'.{layer_idx}', value)
+            value = re.sub(r'\[expert_idx\]', f'.{expert_idx}', value)
+            module_key[key] = value
+        return module_key
 
 
     def get_weight(self, layer_idx=0, expert_idx=0):
@@ -149,6 +158,8 @@ class HuggingFaceModel(Model):
 class MegatronModel(Model):
     def __init__(self, args):
         super(MegatronModel, self).__init__()
+        self.model_cfg = self.read_model_cfg()
+        self.model_type_hf = args.model_type_hf
         self.shared_expert_gate = args.shared_expert_gate
         self.save_lora_to_hf = False
         if args.load_model_type == 'mg':
@@ -158,6 +169,7 @@ class MegatronModel(Model):
             self.mg_path = args.save_dir
         self.mla_mm_split = args.mla_mm_split
         self.mtp_num_layers = args.mtp_num_layers
+        self.qkv_type = args.qkv_type
         self.multi_latent_attention = True if hasattr(args, "multi_latent_attention") else False
         self.module_mapping = self.get_module_mapping()
 
@@ -197,11 +209,25 @@ class MegatronModel(Model):
 
 
     def load_mg_args(self):
+        config_value = self.model_cfg.get(self.model_type_hf).get('config_set_value', {})
         src_model_file = self.get_latest_checkpoint_model_file(self.mg_path)
         src_model = torch.load(src_model_file, map_location='cpu', weights_only=False)
         logger.info(f"Megatron arguments is loaded from {src_model_file}\n")
-        for key, value in src_model['args'].__dict__.items():
+        ckpt_args = src_model['args'].__dict__
+    
+        merged_args = {**config_value, **ckpt_args}
+
+        for key, value in merged_args.items():
             setattr(self, key, value)
+
+
+    def get_module(self, layer_idx=0, expert_idx=0):
+        module_key = {}
+        for key, value in self.module_mapping.items():
+            value = re.sub(r'\[layer_idx\]', f'.{layer_idx}', value)
+            value = re.sub(r'\[expert_idx\]', f'.{expert_idx}', value)
+            module_key[key] = value
+        return module_key
 
 
     def get_weight(self, layer_idx=0, expert_idx=0):
@@ -269,13 +295,39 @@ class MegatronModel(Model):
 
         # shared experts gate
         if self.shared_expert_gate:
-            module_mapping["layers_mlp_shared_expert_gate"] = module_layer + "mlp.shared_expert_gate"
+            module_mapping["layers_mlp_shared_expert_gate"] = module_layer + "mlp.shared_experts.gate_weight"
 
         # moe grouped gemm
         module_mapping[
             "layers_mlp_experts_weight1"] = module_layer + "mlp.experts.weight1"
         module_mapping[
             "layers_mlp_experts_weight2"] = module_layer + "mlp.experts.weight2"
+
+        if self.qkv_type == "mix":
+            module_mapping[
+                "layers_self_attention_linear_A_log"] = module_layer + "self_attention.A_log"
+            module_mapping[
+                "layers_self_attention_linear_conv1d"] = module_layer + "self_attention.conv1d"
+            module_mapping[
+                "layers_self_attention_linear_dt_bias"] = module_layer + "self_attention.dt_bias"
+            module_mapping[
+                "layers_self_attention_linear_in_proj_ba"] = module_layer + "self_attention.in_proj_ba"
+            module_mapping[
+                "layers_self_attention_linear_in_proj_qkvz"] = module_layer + "self_attention.in_proj_qkvz"
+            module_mapping[
+                "layers_self_attention_linear_norm"] = module_layer + "self_attention.norm"
+            module_mapping[
+                "layers_self_attention_linear_out_proj"] = module_layer + "self_attention.out_proj"
+            module_mapping[
+                "layers_self_attention_linear_q_proj"] = module_layer + "self_attention.q_proj"
+            module_mapping[
+                "layers_self_attention_linear_k_proj"] = module_layer + "self_attention.k_proj"
+            module_mapping[
+                "layers_self_attention_linear_v_proj"] = module_layer + "self_attention.v_proj"
+            module_mapping[
+                "layers_self_attention_linear_proj"] = module_layer + "self_attention.linear_proj"
+            module_mapping[
+                "layers_self_attention_k_layernorm"] = module_layer + "self_attention.k_layernorm"
 
         if self.mtp_num_layers:
             module_mapping[
@@ -319,6 +371,8 @@ class MegatronModel(Model):
             module_mapping[
                 "mtp_layers_mlp_shared_experts_linear_fc2"] = module_layer_mtp + "mlp.shared_experts.linear_fc2"
             module_mapping[
+                "mtp_layers_mlp_shared_expert_gate"] = module_layer_mtp + "mlp.shared_experts.gate_weight"
+            module_mapping[
                 "mtp_layers_mlp_experts_linear_fc1"] = module_layer_mtp + "mlp.experts.local_experts[expert_idx].linear_fc1"
             module_mapping[
                 "mtp_layers_mlp_experts_linear_fc2"] = module_layer_mtp + "mlp.experts.local_experts[expert_idx].linear_fc2"
@@ -326,6 +380,33 @@ class MegatronModel(Model):
                 "mtp_post_norm"] = "mtp.final_layernorms[layer_idx]"
             module_mapping[
                 "mtp_final_layernorms"] = "final_layernorm"
+            if self.qkv_type == "mix":
+                module_mapping[
+                    "mtp_layers_self_attention_linear_A_log"] = module_layer_mtp + "self_attention.A_log"
+                module_mapping[
+                    "mtp_layers_self_attention_linear_conv1d"] = module_layer_mtp + "self_attention.conv1d"
+                module_mapping[
+                    "mtp_layers_self_attention_linear_dt_bias"] = module_layer_mtp + "self_attention.dt_bias"
+                module_mapping[
+                    "mtp_layers_self_attention_linear_in_proj_ba"] = module_layer_mtp + "self_attention.in_proj_ba"
+                module_mapping[
+                    "mtp_layers_self_attention_linear_in_proj_qkvz"] = module_layer_mtp + "self_attention.in_proj_qkvz"
+                module_mapping[
+                    "mtp_layers_self_attention_linear_norm"] = module_layer_mtp + "self_attention.norm"
+                module_mapping[
+                    "mtp_layers_self_attention_linear_out_proj"] = module_layer_mtp + "self_attention.out_proj"
+                module_mapping[
+                    "mtp_layers_self_attention_linear_q_proj"] = module_layer_mtp + "self_attention.q_proj"
+                module_mapping[
+                    "mtp_layers_self_attention_linear_k_proj"] = module_layer_mtp + "self_attention.k_proj"
+                module_mapping[
+                    "mtp_layers_self_attention_linear_v_proj"] = module_layer_mtp + "self_attention.v_proj"
+                module_mapping[
+                    "mtp_layers_self_attention_linear_proj"] = module_layer_mtp + "self_attention.linear_proj"
+                module_mapping[
+                    "mtp_layers_self_attention_k_layernorm"] = module_layer_mtp + "self_attention.k_layernorm"
+
+            
 
 
             if self.mla_mm_split:

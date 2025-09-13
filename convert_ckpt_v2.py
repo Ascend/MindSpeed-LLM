@@ -3,21 +3,22 @@ import argparse
 import logging as logger
 import time
 from mindspeed_llm.tasks.checkpoint.convert_hf2mg import Hf2MgConvert
+from mindspeed_llm.tasks.checkpoint.convert_mg2hf import Mg2HfConvert
 
 
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--load-model-type', type=str, nargs='?',
-                        default='hf', const=None, choices=['hf'],
+                        default='hf', const=None, choices=['hf', 'mg'],
                         help='Type of the converter')
     parser.add_argument('--save-model-type', type=str, default='mg',
-                       choices=['mg'], help='Save model type')
+                       choices=['mg', 'hf'], help='Save model type')
     parser.add_argument('--load-dir', type=str, required=True,
                         help='Directory to load model checkpoint from')
     parser.add_argument('--save-dir', type=str, required=True,
                         help='Directory to save model checkpoint to')
     parser.add_argument('--model-type-hf', type=str, default="qwen3",
-                        choices=['qwen3', 'qwen3-moe', 'deepseek3', 'glm45-moe', 'bailing_mini'],
+                        choices=['qwen3', 'qwen3-moe', 'deepseek3', 'glm45-moe', 'bailing_mini', 'qwen3-next'],
                         help='model type of huggingface')
     parser.add_argument('--target-tensor-parallel-size', type=int, default=1,
                         help='Target tensor model parallel size, defaults to 1.')
@@ -41,6 +42,8 @@ def get_args():
                        help="moe model has shared expert gate")
     parser.add_argument('--schedules-method', type=str, default=None, choices=['dualpipev'],
                         help='An innovative bidirectional pipeline parallelism algorithm.')
+    parser.add_argument('--first-k-dense-replace', type=int, default=0,
+                        help='Customizing the number of dense layers.')
 
     args, _ = parser.parse_known_args()
     return args

@@ -3,6 +3,7 @@ import argparse
 import logging as logger
 import os
 from collections import defaultdict
+from collections import namedtuple
 import numpy as np
 import torch
 from .model_builder import MegatronModel, HuggingFaceModel
@@ -326,6 +327,9 @@ class Hf2MgConvert(Convert):
         hf_weight_key = self.load_model.get_weight(hf_layer_idx)
         mg_weight_key = self.save_model.get_weight(local_layer_idx)
 
+        hf_module_key = self.load_model.get_module(hf_layer_idx)
+        mg_module_key = self.save_model.get_module(local_layer_idx)
+
         if hasattr(self.load_model, "add_qkv_bias"):
             hf_bias_key = self.load_model.get_bias(hf_layer_idx)
             mg_bias_key = self.save_model.get_bias(local_layer_idx)
@@ -362,21 +366,53 @@ class Hf2MgConvert(Convert):
 
             return qk_nope_key, qk_rope_key, kv_nope_key, linear_v_key
 
-        def _generate_attn_layers_key(mtp_flag, qkv_type):
+        def _generate_attn_layers_key(mtp_flag):
             if mtp_flag:
                 qkv_key = mg_weight_key["mtp_layers_self_attention_linear_qkv"]
                 dense_key = mg_weight_key["mtp_layers_self_attention_linear_proj"]
                 q_layernorm_key = mg_weight_key["mtp_layers_self_attention_q_layernorm"]
-                if qkv_type == "pack_mla":
-                    k_layernorm_key = mg_weight_key["mtp_layers_self_attention_kv_layernorm"]
-                else:
-                    k_layernorm_key = mg_weight_key["mtp_layers_self_attention_k_layernorm"]
+                k_layernorm_key = mg_weight_key["mtp_layers_self_attention_k_layernorm"]
             else:
                 qkv_key = mg_weight_key["layers_self_attention_linear_qkv"]
                 dense_key = mg_weight_key["layers_self_attention_linear_proj"]
                 q_layernorm_key = mg_weight_key["layers_self_attention_q_layernorm"]
                 k_layernorm_key = mg_weight_key["layers_self_attention_k_layernorm"]
             return qkv_key, dense_key, q_layernorm_key, k_layernorm_key
+
+        AttnKeys = namedtuple("AttnKeys", [
+                                "q_key", "k_key", "v_key", "o_key", "q_layernorm_key", "k_layernorm_key"])
+
+        MixAttnKeys = namedtuple("MixAttnKeys", [
+                                "A_log_key", "conv1d_key", "dt_bias_key",
+                                "in_proj_ba_key", "in_proj_qkvz_key",
+                                "linear_norm_key", "out_proj_key"])
+
+        def _generate_attn_mix_layers_key(mtp_flag, hf_layer_idx):
+            if (hf_layer_idx + 1) % self.load_model.full_attention_interval == 0:
+                # Attention
+                prefix = "mtp_" if mtp_flag else ""
+                q_key = mg_weight_key[f"{prefix}layers_self_attention_linear_q_proj"]
+                k_key = mg_weight_key[f"{prefix}layers_self_attention_linear_k_proj"]
+                v_key = mg_weight_key[f"{prefix}layers_self_attention_linear_v_proj"]
+                o_key = mg_weight_key[f"{prefix}layers_self_attention_linear_proj"]
+                q_layernorm_key = mg_weight_key[f"{prefix}layers_self_attention_q_layernorm"]
+                k_layernorm_key = mg_weight_key[f"{prefix}layers_self_attention_k_layernorm"]
+                return AttnKeys(q_key, k_key, v_key, o_key, q_layernorm_key, k_layernorm_key)
+            else:
+                # mix Attention（linear + conv）
+                prefix = "mtp_" if mtp_flag else ""
+                A_log_key = mg_module_key[f"{prefix}layers_self_attention_linear_A_log"]
+                conv1d_key = mg_weight_key[f"{prefix}layers_self_attention_linear_conv1d"]
+                dt_bias_key = mg_module_key[f"{prefix}layers_self_attention_linear_dt_bias"]
+                in_proj_ba_key = mg_weight_key[f"{prefix}layers_self_attention_linear_in_proj_ba"]
+                in_proj_qkvz_key = mg_weight_key[f"{prefix}layers_self_attention_linear_in_proj_qkvz"]
+                linear_norm_key = mg_weight_key[f"{prefix}layers_self_attention_linear_norm"]
+                out_proj_key = mg_weight_key[f"{prefix}layers_self_attention_linear_out_proj"]
+                return MixAttnKeys(A_log_key, conv1d_key, dt_bias_key,
+                           in_proj_ba_key, in_proj_qkvz_key,
+                           linear_norm_key, out_proj_key)
+
+
 
         def _generate_attn_layers_bias_key(mtp_flag):
             if mtp_flag:
@@ -497,6 +533,25 @@ class Hf2MgConvert(Convert):
             if self.load_model.qk_layernorm:
                 q_layernorm = hf_weight.pop(hf_weight_key["layers_self_attention_q_layernorm"])
                 k_layernorm = hf_weight.pop(hf_weight_key["layers_self_attention_k_layernorm"])
+        
+        elif self.load_model.qkv_type == 'mix':
+            if (hf_layer_idx + 1) % self.load_model.full_attention_interval == 0:
+                hf_q_proj = hf_weight.pop(hf_weight_key["layers_self_attention_linear_q_proj"])
+                hf_k_proj = hf_weight.pop(hf_weight_key["layers_self_attention_linear_k_proj"])
+                hf_v_proj = hf_weight.pop(hf_weight_key["layers_self_attention_linear_v_proj"])
+                hf_o_proj = hf_weight.pop(hf_weight_key["layers_self_attention_linear_proj"])
+                q_layernorm = hf_weight.pop(hf_weight_key["layers_self_attention_q_layernorm"])
+                k_layernorm = hf_weight.pop(hf_weight_key["layers_self_attention_k_layernorm"])
+            else:
+                A_log = hf_weight.pop(hf_module_key["layers_self_attention_linear_A_log"])
+                conv1d = hf_weight.pop(hf_weight_key["layers_self_attention_linear_conv1d"])
+                dt_bias = hf_weight.pop(hf_module_key["layers_self_attention_linear_dt_bias"])
+                in_proj_ba = hf_weight.pop(hf_weight_key["layers_self_attention_linear_in_proj_ba"])
+                in_proj_qkvz = hf_weight.pop(hf_weight_key["layers_self_attention_linear_in_proj_qkvz"])
+                linear_norm = hf_weight.pop(hf_weight_key["layers_self_attention_linear_norm"])
+                out_proj = hf_weight.pop(hf_weight_key["layers_self_attention_linear_out_proj"])
+
+        
         else:
             raise ValueError("Unknown qkv_type {}".format(self.load_model.qkv_type))
 
@@ -523,6 +578,26 @@ class Hf2MgConvert(Convert):
                     else:
                         mg_weight[ep_rank][tp_rank][q_b_key] = linear_qb_lst[tp_rank].clone()
                         mg_weight[ep_rank][tp_rank][kv_b_key] = linear_kvb_lst[tp_rank].clone()
+                
+                elif self.load_model.qkv_type == "mix":
+                    if (hf_layer_idx + 1) % self.load_model.full_attention_interval == 0:
+                        attn_keys = _generate_attn_mix_layers_key(mtp_layer_flag, hf_layer_idx)
+                        mg_weight[ep_rank][tp_rank][attn_keys.q_key] = hf_q_proj.clone()
+                        mg_weight[ep_rank][tp_rank][attn_keys.k_key] = hf_k_proj.clone()
+                        mg_weight[ep_rank][tp_rank][attn_keys.v_key] = hf_v_proj.clone()
+                        mg_weight[ep_rank][tp_rank][attn_keys.o_key] = hf_o_proj.clone()
+                        mg_weight[ep_rank][tp_rank][attn_keys.q_layernorm_key] = q_layernorm.clone()
+                        mg_weight[ep_rank][tp_rank][attn_keys.k_layernorm_key] = k_layernorm.clone()
+                    else:
+                        mix_attn_keys = _generate_attn_mix_layers_key(mtp_layer_flag, hf_layer_idx)
+                        mg_weight[ep_rank][tp_rank][mix_attn_keys.A_log_key] = A_log.clone()
+                        mg_weight[ep_rank][tp_rank][mix_attn_keys.conv1d_key] = conv1d.clone()
+                        mg_weight[ep_rank][tp_rank][mix_attn_keys.dt_bias_key] = dt_bias.clone()
+                        mg_weight[ep_rank][tp_rank][mix_attn_keys.in_proj_ba_key] = in_proj_ba.clone()
+                        mg_weight[ep_rank][tp_rank][mix_attn_keys.in_proj_qkvz_key] = in_proj_qkvz.clone()
+                        mg_weight[ep_rank][tp_rank][mix_attn_keys.linear_norm_key] = linear_norm.clone()
+                        mg_weight[ep_rank][tp_rank][mix_attn_keys.out_proj_key] = out_proj.clone()
+                
                 else:
                     qkv_key, dense_key, q_layernorm_key, k_layernorm_key = _generate_attn_layers_key(mtp_layer_flag, self.load_model.qkv_type)
                     mg_weight[ep_rank][tp_rank][qkv_key] = qkv_weight_lst[tp_rank].clone()
@@ -555,6 +630,9 @@ class Hf2MgConvert(Convert):
             mlp_router_weight = hf_weight.pop(hf_weight_key["layers_mlp_router"])
             mlp_router_weight = mlp_router_weight[:self.load_model.num_experts, :]
 
+            if hasattr(self.load_model, "shared_expert_gate"):
+                mlp_shared_expert_gate = hf_weight.pop(hf_weight_key["layers_mlp_shared_expert_gate"])
+
             if hasattr(self.load_model, "router_bias"):
                 mlp_router_bias = hf_weight.pop(hf_weight_key["layers_mlp_router_bias"])
                 mlp_router_bias = mlp_router_bias[:self.load_model.num_experts]
@@ -571,18 +649,25 @@ class Hf2MgConvert(Convert):
                 if mtp_flag:
                     router_key = mg_weight_key["mtp_layers_mlp_router"]
                     router_bias_key = mg_weight_key["mtp_layers_mlp_router_bias"]
+                    shared_gate_key = mg_weight_key["mtp_layers_mlp_shared_expert_gate"]
                     shared_fc1_key = mg_weight_key["mtp_layers_mlp_shared_experts_linear_fc1"]
                     shared_fc2_key = mg_weight_key["mtp_layers_mlp_shared_experts_linear_fc2"]
-                    experts_weight1_key = mg_weight_key["mtp_layers_mlp_experts_weight1"]
-                    experts_weight2_key = mg_weight_key["mtp_layers_mlp_experts_weight2"]
                 else:
                     router_key = mg_weight_key["layers_mlp_router"]
                     router_bias_key = mg_weight_key["layers_mlp_router_bias"]
+                    shared_gate_key = mg_weight_key["layers_mlp_shared_expert_gate"]
                     shared_fc1_key = mg_weight_key["layers_mlp_shared_experts_linear_fc1"]
                     shared_fc2_key = mg_weight_key["layers_mlp_shared_experts_linear_fc2"]
+                return router_key, router_bias_key, shared_gate_key, shared_fc1_key, shared_fc2_key
+
+            def _generate_moe_gemm_layer_key(mtp_flag):
+                if mtp_flag:
+                    experts_weight1_key = mg_weight_key["mtp_layers_mlp_experts_weight1"]
+                    experts_weight2_key = mg_weight_key["mtp_layers_mlp_experts_weight2"]
+                else:
                     experts_weight1_key = mg_weight_key["layers_mlp_experts_weight1"]
                     experts_weight2_key = mg_weight_key["layers_mlp_experts_weight2"]
-                return router_key, router_bias_key, shared_fc1_key, shared_fc2_key, experts_weight1_key, experts_weight2_key
+                return experts_weight1_key, experts_weight2_key
 
             for expert_idx in range(self.load_model.num_experts):
                 hf_weight_key = self.load_model.get_weight(hf_layer_idx, expert_idx)
@@ -613,13 +698,15 @@ class Hf2MgConvert(Convert):
 
                 # generate weights key
                 mg_weight_key = self.save_model.get_weight(local_layer_idx, ep_rank)
-                router_key, router_bias_key, shared_fc1_key, shared_fc2_key, experts_weight1_key, experts_weight2_key \
+                router_key, router_bias_key, shared_gate_key, shared_fc1_key, shared_fc2_key \
                     = _generate_moe_layer_key(mtp_layer_flag)
 
                 for tp_rank in range(self.tensor_model_parallel_size):
                     mg_weight[ep_rank][tp_rank][router_key] = mlp_router_weight.clone()
                     if hasattr(self.load_model, "router_bias"):
                         mg_weight[ep_rank][tp_rank][router_bias_key] = mlp_router_bias.clone()
+                    if hasattr(self.load_model, "shared_expert_gate"):
+                        mg_weight[ep_rank][tp_rank][shared_gate_key] = mlp_shared_expert_gate.clone()
                     if hasattr(self.load_model, "n_shared_experts"):
                         mg_weight[ep_rank][tp_rank][shared_fc1_key] = shared_l0_lst[tp_rank].clone()
                         mg_weight[ep_rank][tp_rank][shared_fc2_key] = shared_l1_lst[tp_rank].clone()
@@ -643,8 +730,7 @@ class Hf2MgConvert(Convert):
 
                 for ep_rank in range(self.expert_model_parallel_size):
                     mg_weight_key = self.save_model.get_weight(local_layer_idx, ep_rank)
-                    router_key, router_bias_key, shared_fc1_key, shared_fc2_key, experts_weight1_key, experts_weight2_key = _generate_moe_layer_key(
-                        mtp_layer_flag)
+                    experts_weight1_key, experts_weight2_key = _generate_moe_gemm_layer_key(mtp_layer_flag)
                     if not self.moe_tp_extend_ep:
                         gemm_fc1_ep_tp = torch.chunk(gemm_fc1_ep[ep_rank], self.tensor_model_parallel_size, dim=2)
                         gemm_fc2_ep_tp = torch.chunk(gemm_fc2_ep[ep_rank], self.tensor_model_parallel_size, dim=1)

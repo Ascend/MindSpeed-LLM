@@ -50,6 +50,8 @@ class Mg2HfConvert(Convert):
         self.tensor_model_parallel_size = self.load_model.tensor_model_parallel_size
         self.pipeline_model_parallel_size = self.load_model.pipeline_model_parallel_size
         self.expert_model_parallel_size = self.load_model.expert_model_parallel_size
+        self.first_k_dense_replace = self.load_model.first_k_dense_replace
+        self.n_shared_experts = getattr(self.load_model, "n_shared_experts", None)
         self.tp_rank_list = list(range(self.load_model.tensor_model_parallel_size))
         self.ep_rank_list = list(range(self.load_model.expert_model_parallel_size))
         self.pp_rank_list = list(range(self.load_model.pipeline_model_parallel_size))
@@ -460,7 +462,7 @@ class Mg2HfConvert(Convert):
 
             qkv_weight = torch.cat(linear_qkv_list, dim=0)
             nh = self.load_model.num_attention_heads
-            ng = self.load_model.num_key_value_heads
+            ng = self.load_model.num_query_groups
             repeats = nh // ng
 
             qkv_weight = qkv_weight.reshape(
@@ -539,7 +541,7 @@ class Mg2HfConvert(Convert):
             if hasattr(self.load_model, "router_bias"):
                 router_bias_weights = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(router_bias_key)
                 hf_weight[hf_weight_key["layers_mlp_router_bias"]] = router_bias_weights.clone()
-            if hasattr(self.load_model, "n_shared_experts"):
+            if self.n_shared_experts and self.n_shared_experts != 0:
                 shared_gate_weights, shared_up_weights = self.linear_fc1_gather_from_tp(mg_weight, shared_fc1_key)
                 shared_down_weights = self.linear_fc2_gather_from_tp(mg_weight, shared_fc2_key)
                 hf_weight[hf_weight_key["layers_mlp_shared_experts_gate_proj"]] = shared_gate_weights.clone()
