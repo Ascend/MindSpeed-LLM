@@ -63,6 +63,9 @@ class Hf2MgConvert(Convert):
             if self.noop_layers is not None:
                 raise ValueError('num_layer_list and noop_layers cannot be configured at the same time')
 
+        if self.load_model.qkv_type == "mix" and self.tensor_model_parallel_size > 1:
+            raise ValueError('mix qkv-type and tp cannot be configured at the same time')
+
     def get_pprank_hf_layeridxs(self) -> None:
         """pp_rank -> hf layer map"""
         num_noop_layers = 0 if self.noop_layers is None else len(list(map(int, self.noop_layers.split(","))))
@@ -599,7 +602,7 @@ class Hf2MgConvert(Convert):
                         mg_weight[ep_rank][tp_rank][mix_attn_keys.out_proj_key] = out_proj.clone()
                 
                 else:
-                    qkv_key, dense_key, q_layernorm_key, k_layernorm_key = _generate_attn_layers_key(mtp_layer_flag, self.load_model.qkv_type)
+                    qkv_key, dense_key, q_layernorm_key, k_layernorm_key = _generate_attn_layers_key(mtp_layer_flag)
                     mg_weight[ep_rank][tp_rank][qkv_key] = qkv_weight_lst[tp_rank].clone()
                     mg_weight[ep_rank][tp_rank][dense_key] = dense_lst[tp_rank].clone()
                     if self.load_model.qk_layernorm:
