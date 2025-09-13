@@ -18,6 +18,7 @@ class RequirementsBasicFeature(MindspeedRequirementsBasicFeature):
     
     def register_patches(self, patch_manager, args):
         super().register_patches(patch_manager, args)
+        self.version_patch(patch_manager, args)
         
     def optimizer_selection(self, pm, args):
         from mindspeed.core.optimizer.adamw import FusedTorchAdamW, AdamW
@@ -36,4 +37,8 @@ class RequirementsBasicFeature(MindspeedRequirementsBasicFeature):
                                    AdamW, create_dummy=True)
             pm.register_patch('apex.optimizers.FusedSGD', 
                                torch.optim.SGD, create_dummy=True)
+
+    def version_patch(self, pm, args):
+        from mindspeed_llm.tasks.megatron_basic.requirements_basic import version_wrapper
+        pm.register_patch('importlib.metadata.version', version_wrapper)
 
