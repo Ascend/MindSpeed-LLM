@@ -1,3 +1,4 @@
+import os
 from argparse import ArgumentParser
 
 from mindspeed.features_manager.feature import MindSpeedFeature
@@ -41,6 +42,11 @@ class TrainingBasicFeature(MindSpeedFeature):
             self.origin_noverlap_p2p_comm = args.overlap_p2p_comm
             args.num_layers_per_virtual_pipeline_stage = None
             args.overlap_p2p_comm = None
+
+    def validate_args(self, args):
+        # mitigate FSDP2 performance degradation
+        if getattr(args, "use_torch_fsdp2", False):
+            os.environ['MULTI_STREAM_MEMORY_REUSE'] = '2'
 
     def post_validate_args(self, args):
         if self.origin_num_layers_per_virtual_pipeline_stage:
