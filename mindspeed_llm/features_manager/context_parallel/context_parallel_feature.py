@@ -27,6 +27,17 @@ class ContextParallelFeature(MindspeedContextParallelFeature):
                            help="Megatron CP in bnsd.")
 
 
+    def validate_args(self, args):
+        super().validate_args(args)
+        if args.context_parallel_size > 1:
+            if args.position_embedding_type == 'alibi':
+                raise AssertionError("Context parallel does not support alibi")
+            if args.use_kv_cache:
+                raise AssertionError("Context parallel does not support use_kv_cache")
+            if args.sliding_window is not None and args.seq_length > args.sliding_window:
+                raise AssertionError("Context parallel does not support sliding_windows")
+
+
     def register_patches(self, patch_manager, args):
         if int(getattr(args, 'context_parallel_size', 1)) > 1 and not getattr(args, 'reset_attention_mask', None):
             from mindspeed.core.context_parallel.model_parallel_utils import initialize_model_parallel_cp_wrapper, \
