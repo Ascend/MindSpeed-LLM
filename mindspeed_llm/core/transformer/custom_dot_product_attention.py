@@ -334,7 +334,7 @@ class CustomDotProductAttentionImpl:
                 # Standard FA path
                 if actual_seq_len is not None and len(actual_seq_len) > ACTUAL_SEQ_LEN_THRESHOLD:
                     logger.warning("flash-attention got a long actual_seq_len; recomputing to avoid potential coredump.")
-                    actual_seq_len = recompute_valid_actual_seq_len(get_position_ids(), actual_seq_len)
+                    actual_seq_len = recompute_valid_actual_seq_len(actual_seq_len)
 
                 output = torch_npu.npu_fusion_attention(
                     query, key, value, n_head, args.shape_order,

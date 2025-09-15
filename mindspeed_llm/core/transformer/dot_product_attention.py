@@ -505,7 +505,7 @@ def flash_attention_forward(
         if not args.mla_fa_divide_qk:
             if actual_seq_len is not None and len(actual_seq_len) > ACTUAL_SEQ_LEN_THRESHOLD:
                 logger.warning("flash-attention get a long actual_seq_len, maybe create a coredump!")
-                actual_seq_len = recompute_valid_actual_seq_len(get_position_ids(), actual_seq_len)
+                actual_seq_len = recompute_valid_actual_seq_len(actual_seq_len)
 
             output = torch_npu.npu_fusion_attention(
                 query, key, value, n_head, args.shape_order,
