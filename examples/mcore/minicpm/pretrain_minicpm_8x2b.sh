@@ -24,8 +24,10 @@ MOE_ARGS="
     --moe-router-topk 2 \
     --moe-router-load-balancing-type aux_loss \
     --moe-aux-loss-coeff 0.01 \
-    --moe-token-dispatcher-type allgather \
+    --moe-token-dispatcher-type alltoall_seq \
+    --moe-alltoall-overlap-comm \
     --moe-permutation-async-comm \
+    --moe-permute-fusion \
     --moe-grouped-gemm \
     --moe-layer-freq -1 \
     --first-k-dense-replace -1 \
@@ -56,6 +58,7 @@ GPT_ARGS="
     --micro-batch-size 1 \
     --global-batch-size 128 \
     --make-vocab-size-divisible-by 1 \
+    --gemm-gradient-accumulation-fusion \
     --lr 1.25e-5 \
     --train-iters 5000 \
     --lr-decay-style cosine \
@@ -78,7 +81,6 @@ GPT_ARGS="
     --adam-beta1 0.9 \
     --initial-loss-scale 65536 \
     --adam-beta2 0.95 \
-    --no-gradient-accumulation-fusion \
     --no-load-optim \
     --no-load-rng \
     --use-distributed-optimizer \

@@ -15,4 +15,5 @@ python convert_ckpt.py \
     --target-pipeline-parallel-size 4 \
     --target-expert-parallel-size 2 \
     --model-type-hf minicpm-moe \
+    --moe-grouped-gemm \
     --params-dtype bf16
