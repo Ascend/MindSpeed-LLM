@@ -6,10 +6,11 @@ import torch
 
 class _AllToAll(torch.autograd.Function):
     @staticmethod
-    def forward(ctx, group, input, send_count_matrix):
+    def forward(ctx, group, input, send_count_matrix, mode):
         """Forward function."""
         ctx.group = group
         ctx.send_count_matrix = send_count_matrix
+        ctx.mode = mode
 
         world_size = torch.distributed.get_world_size(group=group)
         # Bypass the function if we are using only 1 GPU.
@@ -41,11 +42,12 @@ class _AllToAll(torch.autograd.Function):
         """Backward function."""
         return (
             None,
-            _AllToAll.apply(ctx.group, *grad_output, ctx.send_count_matrix_T),
+            _AllToAll.apply(ctx.group, *grad_output, ctx.send_count_matrix_T, ctx.mode),
+            None,
             None,
         )
 
 
-def all_to_all(group, input_, send_count_matrix=None):
+def all_to_all(group, input_, send_count_matrix=None, mode=None):
     """Wrapper for autograd function"""
-    return _AllToAll.apply(group, input_, send_count_matrix)
+    return _AllToAll.apply(group, input_, send_count_matrix, mode)
