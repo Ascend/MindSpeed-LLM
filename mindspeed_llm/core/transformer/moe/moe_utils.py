@@ -95,7 +95,7 @@ def group_limited_topk(
 def topk_softmax_with_capacity(
     logits: torch.Tensor,
     topk: int,
-    capacity_factor: float = None,
+    capacity_factor: Optional[float] = None,
     pad_to_capacity: bool = False,
     drop_policy: str = "probs",
     use_pre_softmax: bool = False,
@@ -104,16 +104,20 @@ def topk_softmax_with_capacity(
     scaling_factor: Optional[float] = None,
     deterministic_mode: bool = False,
     score_function: str = "softmax",
-    expert_bias: torch.Tensor = None,
-    norm_topk_prob=False,
+    expert_bias: Optional[torch.Tensor] = None,
 ):
     """Apply capacity and padding to the top-k selection.
     Args:
         logits (torch.Tensor): Logits tensor.
         topk (int): The number of experts to select for each token.
-        capacity_factor (int): The capacity factor of each expert. Will drop tokens if the number of tokens exceeds the capacity.
-        pad_to_capacity (bool): Whether to need padding in token drop mode.
-        drop_policy (str): The policy to drop tokens. Can be either "prob" or "position". If "prob", the tokens with the lowest probabilities will be dropped. If "position", tokens at the end of each batch will be dropped.
+        capacity_factor (float): The capacity factor of each expert. Will drop tokens if the number
+                               of tokens exceeds the capacity.
+        pad_to_capacity (bool): Whether to need padding in token drop mode. The probs for padded
+                               tokens will be 0.
+        drop_policy (str): The policy to drop tokens. Can be either "prob" or "position".
+                           If "prob", the tokens with the lowest probabilities will be dropped.
+                           If "position", tokens at the end of each batch will be dropped.
+        use_pre_softmax (bool): Whether to apply softmax or sigmoid before top-k selection.
         num_groups (int): Number of groups for routed experts.
         group_topk (int): Number of selected groups for each token.
         scaling_factor (float): Scaling factor of routing score in top-k selection.
@@ -122,14 +126,18 @@ def topk_softmax_with_capacity(
         expert_bias (torch.Tensor): The bias added to logits for expert routing.
 
     Returns:
-        Tuple[torch.Tensor, torch.Tensor, torch.Tensor]: Probs, indices and tokens_per_expert tensor.
-
-        (1) If there's no token padding, the shape of probs and indices is [tokens, top_k], indicating the selected experts for each token.
-        (2) If there's token padding, the shape of probs and indices is [num_expert, capacity], indicating the tokens selected for each expert.
+        Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+            - routing_probs (torch.Tensor): A tensor of shape [num_tokens, num_experts] containing
+              the routing probabilities for each token to each expert.
+            - routing_map (torch.Tensor): A mask tensor of shape [num_tokens, num_experts]
+              indicating which experts were selected for each token. True values represent
+              the selected experts.
+            - tokens_per_expert (torch.Tensor): A tensor of shape [num_experts] containing
+              the number of local tokens assigned to each expert before dropping and padding.
     """
-    if logits.dim() != 2:
+    args = get_args()
+    if logits.dim() == 2:
         raise ValueError(f"Expected 2D logits [num_tokens, num_experts], got {logits.dim()}.")
-
     num_tokens, num_experts = logits.shape
 
     def compute_topk(scores, topk, num_groups=None, group_topk=None):
@@ -147,13 +155,15 @@ def topk_softmax_with_capacity(
 
     if score_function == "softmax":
         if use_pre_softmax:
+            if args.topk_softmax_in_fp32:
+                logits = logits.float()
             scores = torch.softmax(logits, dim=-1, dtype=torch.float32).type_as(logits)
             probs, top_indices = compute_topk(scores, topk, num_groups, group_topk)
         else:
             scores, top_indices = compute_topk(logits, topk, num_groups, group_topk)
             probs = torch.softmax(scores, dim=-1, dtype=torch.float32).type_as(logits)
     elif score_function == "sigmoid":
-        scores = torch.sigmoid(logits)
+        scores = torch.sigmoid(logits.float()).type_as(logits)
         if expert_bias is not None:
             scores_for_routing = scores + expert_bias
             _, top_indices = compute_topk(scores_for_routing, topk, num_groups, group_topk)
@@ -167,51 +177,38 @@ def topk_softmax_with_capacity(
     if scaling_factor:
         probs = probs * scaling_factor
 
+    topk_masked_gates = torch.zeros_like(logits).scatter(1, top_indices, probs)
+    topk_map = torch.zeros_like(logits).int().scatter(1, top_indices, 1).bool()
+    tokens_per_expert = topk_map.sum(dim=0)
+
     if capacity_factor is None:
-        # TopK without capacity , back to core 0.7.0 for better performance
-        tokens_per_expert = torch.histc(top_indices, bins=num_experts, min=0, max=num_experts)
-        return probs, top_indices, tokens_per_expert
+        # TopK without capacity
+        return topk_masked_gates, topk_map, tokens_per_expert
     else:
         # TopK with capacity
         expert_capacity = get_capacity(
-            num_tokens=num_tokens * topk,
-            num_experts=num_experts,
-            capacity_factor=capacity_factor,
+            num_tokens=num_tokens * topk, num_experts=num_experts, capacity_factor=capacity_factor
         )
-        # TopK selection, Maskout unused experts
-        topk_masked_gates = torch.zeros_like(logits).scatter(1, top_indices, probs)
-        topk_mask = torch.zeros_like(logits).scatter(1, top_indices, 1)
 
         # Maskout exceeded tokens
         if drop_policy == "probs":
-            capacity_probs, capacity_indices = torch.topk(
+            _, capacity_indices = torch.topk(
                 topk_masked_gates, k=expert_capacity, dim=0, sorted=False
             )
-            capacity_mask = torch.zeros_like(logits).scatter(0, capacity_indices, 1)
+            capacity_mask = torch.zeros_like(logits).scatter(0, capacity_indices, 1).bool()
         elif drop_policy == "position":
-            _, capacity_indices = torch.topk(topk_mask, k=expert_capacity, dim=0, sorted=False)
-            capacity_mask = torch.zeros_like(logits).scatter(0, capacity_indices, 1)
-            capacity_probs = torch.gather(topk_masked_gates, 0, capacity_indices)
+            _, capacity_indices = torch.topk(topk_map.int(), k=expert_capacity, dim=0, sorted=False)
+            capacity_mask = torch.zeros_like(logits).scatter(0, capacity_indices, 1).bool()
         else:
             raise ValueError(f"Invalid drop_policy: {drop_policy}")
 
         if pad_to_capacity:
-            final_probs, final_indices = (
-                capacity_probs.T.contiguous(),
-                capacity_indices.T.contiguous(),
-            )
-            tokens_per_expert_before_capacity = topk_mask.sum(dim=0)
+            final_map = capacity_mask
+            final_probs = topk_masked_gates * final_map
         else:
-            # Get exceed mask and maskout exceeded probs and indices
-            final_mask = torch.logical_and(topk_mask, capacity_mask)
-            drop_mask = torch.logical_not(final_mask)
-            exceed_mask = torch.gather(drop_mask, 1, top_indices)
-            final_probs = probs * torch.logical_not(exceed_mask)
-            final_indices = top_indices.clone().masked_fill_(
-                exceed_mask, torch.iinfo(torch.long).max
-            )
-            tokens_per_expert_before_capacity = topk_mask.sum(dim=0)
-        return final_probs, final_indices, tokens_per_expert_before_capacity
+            final_map = torch.logical_and(topk_map, capacity_mask)
+            final_probs = topk_masked_gates * final_map
+        return final_probs, final_map, tokens_per_expert
 
 
 def track_moe_metrics_wrapper(fn):

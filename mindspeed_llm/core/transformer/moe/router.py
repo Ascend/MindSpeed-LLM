@@ -483,6 +483,8 @@ def topk_router_routing(self, logits: torch.Tensor):
         scores, routing_map = self.aux_loss_load_balancing(logits)
         if args.norm_topk_prob:
             scores = scores / scores.sum(dim=-1, keepdim=True)
+        if args.topk_softmax_in_fp32:
+            scores = scores.type_as(logits)
     elif self.routing_type == "seq_aux_loss":
         scores, routing_map = self.seq_aux_loss_load_balancing(logits, bsz, seq_length)
     # add softmax_topk for softmax before topk that difference form routing_type is none

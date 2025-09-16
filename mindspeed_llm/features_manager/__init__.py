@@ -73,6 +73,7 @@ from mindspeed_llm.features_manager.transformer.flash_attention.alibi_feature im
 from mindspeed_llm.features_manager.transformer.flash_attention.reset_attention_mask_feature import ResetAttentionMaskFeature
 from mindspeed_llm.features_manager.transformer.mtp import MultiTokenPredictionFeature
 from mindspeed_llm.features_manager.transformer.multi_latent_attention.mla_feature import MLAFeature
+from mindspeed_llm.features_manager.transformer.qwen3_next_attention.qwen3_next_feature import Qwen3NextFeature
 from mindspeed_llm.features_manager.transformer.transformer_block import TransformerBlockFeature
 from mindspeed_llm.features_manager.pipeline_parallel.num_layer_list import NumLayerListFeature
 from mindspeed_llm.features_manager.ai_framework.ms_patch_feature import MindSporePatchFeature
@@ -107,6 +108,7 @@ def add_megatron_basic_features(features_list: List[MindSpeedFeature]):
         RequirementsBasicFeature(),
         MegatronBasicFeature(),
         TransformerEngineBasicFeature(),
+        Qwen3NextFeature(),        
     ])
 
 

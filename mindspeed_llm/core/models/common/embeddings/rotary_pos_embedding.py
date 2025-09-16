@@ -68,6 +68,9 @@ def rotary_embedding_init_wrapper(fn):
         self.dim = kwargs['kv_channels']
         if _args.rotary_base:
             kwargs["rotary_base"] = _args.rotary_base
+        if _args.partial_rotary_factor:
+            head_dim = getattr(_args, "kv_channels", None) or _args.hidden_size // _args.num_attention_heads
+            kwargs['kv_channels'] = int(head_dim * _args.partial_rotary_factor)
         if _args.dynamic_factor and _args.dynamic_factor > 1:
             seq_len = _args.seq_length if _args.seq_length is not None and _args.seq_length > _args.max_position_embeddings else _args.max_position_embeddings
             kwargs["rotary_base"] = _args.rotary_base * ((_args.dynamic_factor * seq_len / _args.max_position_embeddings) - (_args.dynamic_factor - 1)) ** (self.dim / (self.dim - 2))

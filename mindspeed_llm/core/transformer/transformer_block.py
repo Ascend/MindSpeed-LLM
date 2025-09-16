@@ -31,12 +31,20 @@ from megatron.core.transformer.custom_layers.transformer_engine import TENorm
 from megatron.core.utils import make_sharded_tensor_for_checkpoint, make_viewless_tensor
 from megatron.core.utils import WrappedTensor, deprecate_inference_params
 from megatron.core.inference.contexts import BaseInferenceContext
+from megatron.core.tensor_parallel import ColumnParallelLinear, RowParallelLinear
+from megatron.core.transformer.dot_product_attention import DotProductAttention
+from megatron.core.transformer import ModuleSpec
+from megatron.core.transformer.enums import AttnMaskType
 from mindspeed.core.pipeline_parallel.noop_layers.adaptor import NoopTransformerLayer
 from mindspeed.core.transformer.transformer_block import _get_layer_offset
 from mindspeed.core.tensor_parallel.comm_autograd_function import auto_grad_sync_gather_along_last_dim, \
     auto_grad_sync_gather_along_first_dim
 from mindspeed.core.transformer.transformer import norm_recompute_forward
 from mindspeed.model.transformer import should_recompute_norm
+
+from mindspeed_llm.tasks.models.transformer.qwen3_next_full_attention import CustomQwen3NextSelfAttentionSubmodules, CustomQwen3NextSelfAttention
+from mindspeed_llm.tasks.models.transformer.qwen3_next_gated_deltanet_attention import CustomQwen3NextGatedDeltaNetAttentionSubmodules, CustomQwen3NextGatedDeltaNetAttention
+from mindspeed_llm.core.transformer.custom_layers.transformer_engine import PTNorm
 
 
 def get_num_layers_to_build(config: TransformerConfig) -> int:
@@ -100,10 +108,11 @@ def transformer_block_init_wrapper(fn):
 def _transformer_block_build_layers(self):
     args = get_args()
     use_te = args.transformer_impl == "transformer_engine"
+    self.attention_layer_type = None
 
     def build_layer(layer_spec, layer_number):
         global_layer_number = _get_layer_offset(args) + layer_number
-        # For deepseek
+        # For dense and moe mix
         if (
                 args.num_experts
                 and args.first_k_dense_replace
@@ -119,10 +128,39 @@ def _transformer_block_build_layers(self):
             else:
                 layer_spec.submodules.mlp = _get_mlp_module_spec(use_te=use_te, moe_grouped_gemm=args.moe_grouped_gemm)
 
+        # For qwen3_next attention
+        if args.full_attention_interval:
+            self.attention_layer_type = "linear_attention" if bool((global_layer_number) % args.full_attention_interval) else "full_attention" 
+        if args.mtp_num_layers:
+            self.attention_layer_type = "full_attention"            
+
+        if args.full_attention_interval and self.attention_layer_type == "linear_attention":
+            layer_spec.submodules.self_attention = ModuleSpec(module=CustomQwen3NextGatedDeltaNetAttention, 
+                                                              params={"attn_mask_type": AttnMaskType.causal},
+                                                              submodules=CustomQwen3NextGatedDeltaNetAttentionSubmodules(
+                                                              in_proj_qkvz=ColumnParallelLinear,
+                                                              in_proj_ba=ColumnParallelLinear,
+                                                              out_proj=RowParallelLinear,                                                              
+                                                              ))
+
+        elif args.full_attention_interval and self.attention_layer_type == "full_attention":
+            layer_spec.submodules.self_attention = ModuleSpec(module=CustomQwen3NextSelfAttention, 
+                                                              params={"attn_mask_type": AttnMaskType.causal},
+                                                              submodules=CustomQwen3NextSelfAttentionSubmodules(
+                                                              q_proj=ColumnParallelLinear,
+                                                              k_proj=ColumnParallelLinear,
+                                                              v_proj=ColumnParallelLinear,
+                                                              core_attention=DotProductAttention,
+                                                              linear_proj=RowParallelLinear,
+                                                              q_layernorm=PTNorm if args.qk_layernorm else IdentityOp,
+                                                              k_layernorm=PTNorm if args.qk_layernorm else IdentityOp,
+                                                              ))               
+
         # For noop layer
         if args.noop_layers and isinstance(args.noop_layers, set) and global_layer_number - 1 in args.noop_layers:
             return NoopTransformerLayer(global_layer_number)
         return build_module(layer_spec, config=self.config, layer_number=layer_number, )
+
 
     # offset is implicit in TransformerLayer
     self.layers = torch.nn.ModuleList(

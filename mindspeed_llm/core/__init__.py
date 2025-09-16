@@ -28,7 +28,6 @@ from .datasets.gpt_dataset import _build_document_sample_shuffle_indices
 from .datasets.indexed_dataset import indexed_dataset_builder_init_wrapper, add_item_wrapper, finalize_wrapper
 from .transformer.moe.router import (topk_router_forward, topk_router_routing, topk_router_init_wrapper,
                                      topk_router_gating_func)
-from .transformer.moe.moe_utils import z_loss_func, topk_softmax_with_capacity
 from .transformer.transformer_layer import TransformerLayer
 from .transformer.transformer_block import get_num_layers_to_build, transformer_block_init_wrapper, transformer_block_forward
 from .distributed.param_and_grad_buffer import start_grad_sync_wrapper, param_and_grad_bucket_group_init_wrapper, start_param_sync_wrapper

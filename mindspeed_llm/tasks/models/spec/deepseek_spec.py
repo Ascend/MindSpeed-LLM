@@ -19,7 +19,7 @@ from mindspeed_llm.tasks.models.transformer.multi_latent_attention import (
     LinearNoTP,
 )
 from mindspeed_llm.tasks.models.transformer.mla_dot_product_attention import MlaDotProductAttention
-from mindspeed_llm.core import PTNorm
+from mindspeed_llm.core.transformer.custom_layers.transformer_engine import PTNorm
 
 
 args = get_args()

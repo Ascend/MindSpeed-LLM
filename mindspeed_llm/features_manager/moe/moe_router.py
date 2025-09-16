@@ -26,6 +26,8 @@ class MoERouter(MindSpeedFeature):
                             help="revert the type of logits after the topk has been computed")
         group.add_argument("--fix-router", action='store_true', 
                             help="fix router for load balancing.")
+        group.add_argument("--topk-softmax-in-fp32", action='store_true',
+                            help="topk softmax in fp32.")
 
     def pre_validate_args(self, args):
         self.origin_spec = None
@@ -79,7 +81,7 @@ class MoERouter(MindSpeedFeature):
 
     def register_patches(self, patch_manager, args):
         from mindspeed_llm.core.transformer.moe.router import (topk_router_routing, topk_router_init_wrapper, topk_router_gating_func)
-        from mindspeed_llm.core.transformer.moe.moe_utils import z_loss_func
+        from mindspeed_llm.core.transformer.moe.moe_utils import z_loss_func, topk_softmax_with_capacity
         from mindspeed_llm.core.transformer.moe.moe_layer import moe_layer_forward
 
         patch_manager.register_patch('megatron.core.transformer.moe.router.TopKRouter.__init__', 
@@ -94,3 +96,7 @@ class MoERouter(MindSpeedFeature):
         if not (args.moe_allgather_overlap_comm or args.moe_alltoall_overlap_comm):
             patch_manager.register_patch('megatron.core.transformer.moe.moe_layer.MoELayer.forward',
                                           moe_layer_forward)
+        # add topk softmax in fp32 in topk_softmax_with_capacity
+        if args.topk_softmax_in_fp32:
+            patch_manager.register_patch('megatron.core.transformer.moe.moe_utils.topk_softmax_with_capacity',
+                                          topk_softmax_with_capacity)
