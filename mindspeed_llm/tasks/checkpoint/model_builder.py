@@ -294,8 +294,7 @@ class MegatronModel(Model):
             "layers_mlp_shared_experts_linear_fc2"] = module_layer + "mlp.shared_experts.linear_fc2"
 
         # shared experts gate
-        if self.shared_expert_gate:
-            module_mapping["layers_mlp_shared_expert_gate"] = module_layer + "mlp.shared_experts.gate_weight"
+        module_mapping["layers_mlp_shared_expert_gate"] = module_layer + "mlp.shared_experts.gate_weight"
 
         # moe grouped gemm
         module_mapping[
