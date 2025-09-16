@@ -177,24 +177,21 @@ def print_rank0_by_args(args, message):
 def get_tune_attention_mask(attention_mask_1d):
     args = get_args()
     micro_batch_size, seq_length = attention_mask_1d.size()
-    if args.reset_attention_mask:
-        att_mask_batch = micro_batch_size
-    else:
-        att_mask_batch = 1
+
+    if args.stage in ['dpo']:
+        micro_batch_size = attention_mask_1d.shape[0] // 2
+        attention_mask_1d = attention_mask_1d[:micro_batch_size]
+
+    attention_mask = torch.ones((micro_batch_size, seq_length, seq_length),
+                                 device=attention_mask_1d.device,
+                                 dtype=torch.bool).tril_().view(micro_batch_size, 1, seq_length, seq_length)
 
     if args.tokenizer_padding_side == "left":
-        attention_mask = torch.tril(
-            torch.ones(seq_length, seq_length, device=attention_mask_1d.device, dtype=torch.bool)).view(1, 1,
-                                                                                                        seq_length,
-                                                                                                        seq_length)
-        attention_mask_tran = attention_mask_1d.view(seq_length, 1, -1)
-        attention_mask = attention_mask.masked_fill((attention_mask_tran < 0.5).view(-1, 1, 1, seq_length), value=0)
-    else:
-        attention_mask = torch.tril(torch.ones(
-            (att_mask_batch, seq_length, seq_length), device=attention_mask_1d.device, dtype=torch.bool)).view(
-            att_mask_batch, 1, seq_length, seq_length)
-    attention_mask = attention_mask.masked_fill((attention_mask_1d < 0.5).view(-1, 1, 1, seq_length), value=0)
-    attention_mask = ~attention_mask
+        attention_mask_1d = attention_mask_1d.view(seq_length, 1, -1)
+
+    attention_mask = attention_mask.masked_fill_(attention_mask_1d.bool().bitwise_not_().view(-1, 1, 1, seq_length), value=0)
+    attention_mask.bitwise_not_()
+
     return attention_mask
 
 
