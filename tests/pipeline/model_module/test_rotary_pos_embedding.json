@@ -8,6 +8,8 @@
             "chatglm": false,
             "rotary_base": null,
             "seq": 2,
+            "position_ids": 0,
+            "packed_seq": false,
             "expected": [
                 [
                     [
@@ -47,6 +49,8 @@
             "chatglm": true,
             "rotary_base": null,
             "seq": 2,
+            "position_ids": 0,
+            "packed_seq": false,
             "expected": [
                 [
                     [
@@ -102,6 +106,8 @@
             "chatglm": false,
             "rotary_base": null,
             "seq": 2,
+            "position_ids": 0,
+            "packed_seq": false,
             "expected": [
                 [
                     [
@@ -133,6 +139,8 @@
             "chatglm": false,
             "rotary_base": 100000,
             "seq": 2,
+            "position_ids": 0,
+            "packed_seq": false,
             "expected": [
                 [
                     [

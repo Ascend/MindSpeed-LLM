@@ -37,13 +37,14 @@ class TestRotaryPosEmbedding:
             test_name_space.tp_x = 1
             test_name_space.tp_y = 1
             test_name_space.dynamic_factor = 1.0
+            test_name_space.neat.pack = False
             return test_name_space
         # set up name space function
         import mindspeed_llm
         setattr(mindspeed_llm.core.models.common.embeddings.rotary_pos_embedding, "get_args", get_test_namespace)
 
-    @pytest.mark.parametrize("rotary_param, chatglm, rotary_base, seq, expected", test_config["test_rotary_pos_embedding"])
-    def test_rotary_pos_embedding(self, mock_dependency, rotary_param, chatglm, rotary_base, seq, expected):
+    @pytest.mark.parametrize("rotary_param, chatglm, rotary_base, seq, position_ids, packed_seq, expected", test_config["test_rotary_pos_embedding"])
+    def test_rotary_pos_embedding(self, mock_dependency, rotary_param, chatglm, rotary_base, seq, position_ids, packed_seq, expected):
         rotary = RotaryEmbedding(**rotary_param)
-        assert(torch.allclose(rotary.forward(seq).cpu(), torch.Tensor(expected)))
+        assert(torch.allclose(rotary.forward(seq, position_ids, packed_seq).cpu(), torch.Tensor(expected)))
         
