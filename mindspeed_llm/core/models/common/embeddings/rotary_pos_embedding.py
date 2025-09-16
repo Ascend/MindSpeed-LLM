@@ -81,12 +81,11 @@ def rotary_embedding_init_wrapper(fn):
     return wrapper
 
 
-def rotary_embedding_forward(self, max_seq_len: int, position_ids, offset: int = 0, packed_seq: bool = False):
+def rotary_embedding_forward(self, max_seq_len: int, offset: int = 0, packed_seq: bool = False):
     """Forward pass of RoPE embedding.
 
         Args:
             max_seq_len (int): Maximum size of sequence
-            position_ids : Use position ids generate rotary embedding
             offset (int, optional): RoPE offset. Defaults to 0.
             packed_seq (bool, optional): Whether to use packed sequence. Defaults to False.
 
@@ -98,12 +97,8 @@ def rotary_embedding_forward(self, max_seq_len: int, position_ids, offset: int =
         # move `inv_freq` to GPU once at the first micro-batch forward pass
         self.inv_freq = self.inv_freq.to(device=torch.cuda.current_device())
 
-    if args.neat_pack:
-        seq = position_ids[:, None, :].float()
-        inv_freq_expanded = self.inv_freq[None, :, None].float().expand(position_ids.shape[0], -1, 1)
 
-    else:
-        seq = (
+    seq = (
             torch.arange(max_seq_len, device=self.inv_freq.device, dtype=self.inv_freq.dtype)
             + offset
         )
@@ -128,10 +123,7 @@ def rotary_embedding_forward(self, max_seq_len: int, position_ids, offset: int =
                 torch.outer(seq, 1.0 / ext_factors).to(device=self.inv_freq.device),
                 self.inv_freq.to(device=self.inv_freq.device).to(self.inv_freq.dtype)
             )
-    elif args.neat_pack:
-        freqs = (inv_freq_expanded @ seq).permute(2, 0, 1)
-    else:
-        freqs = torch.outer(seq, self.inv_freq)
+    freqs = torch.outer(seq, self.inv_freq)
     # first part even vector components, second part odd vector components,
     #  2 * dim in dimension size
 
@@ -147,10 +139,7 @@ def rotary_embedding_forward(self, max_seq_len: int, position_ids, offset: int =
                 freqs.shape[0], -1
             )
     # emb [seq_length, .., dim]
-    if args.neat_pack:
-        emb = emb[:, :, None, :]
-    else:
-        emb = emb[:, None, None, :]
+    emb = emb[:, None, None, :]
 
     cp = parallel_state.get_context_parallel_world_size()
     if args.tp_2d:

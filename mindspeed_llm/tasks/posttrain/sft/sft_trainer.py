@@ -44,16 +44,14 @@ class SFTTrainer(BaseTrainer):
                 # Broadcast data.
                 data_b = tensor_parallel.broadcast_data(keys, next(data_iterator), data_type)
                 if args.reset_position_ids:
-                    position_ids = data_b.get('position_ids').long()
                     generate_actual_seq_len(data_b)
-                    batch = {'attention_mask': None, 'position_ids': position_ids}
+                    batch = {'attention_mask': None}
                 else:
                     attention_mask_1d = data_b.get('attention_mask').long()
                     attention_mask = get_tune_attention_mask(attention_mask_1d)
                     batch = {'attention_mask': attention_mask}
                 batch = get_batch_on_this_cp_rank(batch)
-                return None, None, None, batch['attention_mask'], batch[
-                    'position_ids'] if 'position_ids' in batch else None
+                return None, None, None, batch['attention_mask'], None
 
         # Broadcast data.
         data_b = tensor_parallel.broadcast_data(keys, next(data_iterator), data_type)
