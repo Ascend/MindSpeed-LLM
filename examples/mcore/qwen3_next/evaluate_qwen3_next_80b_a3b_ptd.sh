@@ -42,7 +42,10 @@ MOE_ARGS="
     --moe-permutation-async-comm \
     --moe-token-dispatcher-type alltoall_seq \
     --moe-layer-freq 1 \
-    --moe-aux-loss-coeff 0.001
+    --moe-aux-loss-coeff 0.001 \
+    --norm-topk-prob \
+    --topk-softmax-in-fp32 \
+    --moe-router-pre-softmax \
 "
 
 GPT_ARGS="
@@ -76,13 +79,15 @@ GPT_ARGS="
         --max-new-tokens 2 \
         --max-position-embeddings ${SEQ_LENGTH} \
         --disable-bias-linear \
+        --no-enable-linear-qkv \
         --swiglu \
+        --rmsnorm-weight-in-fp32 \
+        --add-rmsnorm-offset \
         --norm-epsilon 1e-6 \
         --padded-vocab-size 151936 \
         --make-vocab-size-divisible-by 1 \
         --position-embedding-type rope \
         --no-chat-template \
-        --norm-topk-prob \
         --rotary-base 1000000 \
         --use-rotary-position-embeddings \
         --tokenizer-type PretrainedFromHF \
