@@ -68,8 +68,10 @@ def add_arguments(parser):
 
 
 def verify_transformers_version():
-    major, minor, patch = map(int, transformers.__version__.split('.'))
-    if major < 4 or minor < 31:
+    version_idents = transformers.__version__.split('.')
+    major_version = int(version_idents[0])
+    minor_version = int(version_idents[1])
+    if major_version < 4 or minor_version < 31:
         raise ValueError("the version transformers should greater or equal 4.31")
 
 

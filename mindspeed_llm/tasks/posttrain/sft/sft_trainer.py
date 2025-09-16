@@ -144,7 +144,13 @@ class SFTTrainer(BaseTrainer):
         # Reduce loss for logging.
         averaged_loss = average_losses_across_data_parallel_group([loss])
 
-        return loss, {'lm loss': averaged_loss[0]}
+        if args.calculate_per_token_loss:
+            loss_mask_sum = loss_mask.sum()
+            loss_sum = loss * loss_mask_sum
+            averaged_loss_sum = averaged_loss[0] * loss_mask_sum
+            return loss_sum, loss_mask_sum.to(torch.int32), {'lm loss': [averaged_loss_sum, loss_mask_sum]}
+        else:
+            return loss, {'lm loss': averaged_loss[0]}
 
     def forward_step(self, data_iterator, model):
         """Forward training step.

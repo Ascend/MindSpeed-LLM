@@ -683,6 +683,20 @@
       "mtp_layers_shared_head_norm": "model.layers[layer_idx].shared_head.norm"
     }
   },
+  "seed-oss": {
+    "__base__": "base",
+    "config_set_value": {
+      "qkv_type": "unpack",
+      "add_qkv_bias": true,
+      "qk_layernorm": false
+    },
+    "config_hf_key_mapping": {
+      "num_layers": "num_hidden_layers",
+      "norm_epsilon": "rms_norm_eps",
+      "rotary_base": "rope_theta",
+      "kv_channels": "head_dim"
+    }
+  },
     "bailing_mini": {
       "__base__": "base",
       "config_set_value": {
