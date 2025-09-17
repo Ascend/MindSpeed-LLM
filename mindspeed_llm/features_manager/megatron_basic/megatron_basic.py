@@ -18,6 +18,10 @@ class MegatronBasicFeature(MindSpeedMegatronBasicFeature):
 
     def register_args(self, parser: ArgumentParser):
         super().register_args(parser)
+
+        # When the value is 30, PTA will treat it as the default and set the watchdog timeout period to be greater than the HCCL timeout period.
+        parser.set_defaults(distributed_timeout_minutes=30)
+
         group = parser.add_argument_group(title=self.feature_name)
         group.add_argument("--stage",
                             default=None,
