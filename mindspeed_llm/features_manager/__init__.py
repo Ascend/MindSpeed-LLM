@@ -33,7 +33,8 @@ from mindspeed.features_manager import (
     SmartSwapFeature,
     SwapAttentionFeature,
     ContextParallelKvCacheFeature,
-    TorchFullyShardedDataParallelFeature
+    TorchFullyShardedDataParallelFeature,
+    ProfilerDefaultFeature
 )
 from mindspeed.features_manager.feature import MindSpeedFeature
 from mindspeed.features_manager.features_manager import MindSpeedFeaturesManager
@@ -249,6 +250,7 @@ def add_functional_features(features_list: List[MindSpeedFeature]):
     features_list.extend([
         ProfilingFeature(),
         NPUDeterministicFeature(),
+        ProfilerDefaultFeature()
     ])
 
 
