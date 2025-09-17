@@ -136,7 +136,7 @@ def topk_softmax_with_capacity(
               the number of local tokens assigned to each expert before dropping and padding.
     """
     args = get_args()
-    if logits.dim() == 2:
+    if logits.dim() != 2:
         raise ValueError(f"Expected 2D logits [num_tokens, num_experts], got {logits.dim()}.")
     num_tokens, num_experts = logits.shape
 
