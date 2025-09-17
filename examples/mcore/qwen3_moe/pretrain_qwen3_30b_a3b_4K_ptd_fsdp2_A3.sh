@@ -55,9 +55,6 @@ OPTIMIZE_ARGS="
     --use-fused-rmsnorm \
     --overlap-grad-reduce \
     --no-masked-softmax-fusion \
-    --recompute-method uniform \
-    --recompute-granularity full \
-    --recompute-num-layers 1 \
 "
 
 TRAIN_ARGS="
@@ -80,6 +77,7 @@ TRAIN_ARGS="
     --seq-length ${SEQ_LENGTH} \
     --bf16 \
     --no-shared-storage \
+    --use-cpu-initialization \
 "
 
 GPT_ARGS="
@@ -128,7 +126,7 @@ OUTPUT_ARGS="
 
 FSDP2_ARGS="
     --use-torch-fsdp2 \
-    --fsdp2-config-path "configs/FSDP2/fsdp2_config.yaml" \
+    --fsdp2-config-path "configs/FSDP2/fsdp2_config_qwen3_30b.yaml" \
     --ckpt-format torch_dist \
 "
 
