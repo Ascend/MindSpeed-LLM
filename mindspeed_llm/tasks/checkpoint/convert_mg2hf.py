@@ -24,7 +24,7 @@ hf_weight_dict = defaultdict()
 
 
 def load_data(file_path):
-    return torch.load(file_path, map_location='cpu')
+    return torch.load(file_path, map_location='cpu', weights_only=False)
 
 
 def tensor_memory_size(tensor):
@@ -52,6 +52,7 @@ class Mg2HfConvert(Convert):
         self.expert_model_parallel_size = self.load_model.expert_model_parallel_size
         self.first_k_dense_replace = self.load_model.first_k_dense_replace
         self.n_shared_experts = getattr(self.load_model, "n_shared_experts", None)
+        self.expert_tensor_parallel_size = self.load_model.expert_tensor_parallel_size
         self.tp_rank_list = list(range(self.load_model.tensor_model_parallel_size))
         self.ep_rank_list = list(range(self.load_model.expert_model_parallel_size))
         self.pp_rank_list = list(range(self.load_model.pipeline_model_parallel_size))
@@ -88,6 +89,17 @@ class Mg2HfConvert(Convert):
         self.last_save_hf_layer = self.get_last_hf_layer()
         self._valid_parameter()
 
+    def check_etp_conflict(self):
+        if self.expert_tensor_parallel_size is None:
+            self.expert_tensor_parallel_size = self.tensor_model_parallel_size
+        if self.expert_tensor_parallel_size != 1 and self.expert_tensor_parallel_size != self.tensor_model_parallel_size:
+            raise ValueError("Currently expert-tensor-parallel-size is only support to be set to 1 or None")
+        if self.expert_tensor_parallel_size == 1:
+            if self.tensor_model_parallel_size % self.expert_model_parallel_size != 0 and self.expert_model_parallel_size % self.tensor_model_parallel_size != 0:
+                raise ValueError("Currently if expert-tensor-parallel-size is set to 1, then target-tensor-parallel-size must be divisible by target-expert-parallel-size or target-expert-parallel-size must be divisible by target-tensor-parallel-size")
+
+        if self.expert_tensor_parallel_size == 1 and self.moe_tp_extend_ep:
+            raise ValueError("Currently if expert-tensor-parallel-size is set to 1, then it is no need to set moe-tp-extend-ep")
 
     def _valid_parameter(self):
         if self.num_layer_list is None:
@@ -98,6 +110,7 @@ class Mg2HfConvert(Convert):
                 raise ValueError("Sum of num_layer_list must equal num_layers")
         if self.last_save_hf_layer == -1:
             raise ValueError("Does not contain a vaild model layer. Please check the parameters!")
+        self.check_etp_conflict()
 
     @staticmethod
     def get_iter_path(ckpt_path, iteration=None):
@@ -307,9 +320,14 @@ class Mg2HfConvert(Convert):
         hf_weight_key = self.save_model.get_weight()
         mg_weight_key = self.load_model.get_weight()
         emb_list = []
-        for tp_rank in self.tp_rank_list:
-            cur_tp_emb = mg_weight[(tp_rank, self.ep_rank_list[0])].get(mg_weight_key["embedding_word_embeddings"])
-            emb_list.append(cur_tp_emb.clone())
+        if self.expert_tensor_parallel_size == 1:
+            for(tp_rank, ep_rank) in self.attention_tp_ckpts_list:
+                cur_tp_emb = mg_weight[(tp_rank, ep_rank)].get(mg_weight_key["embedding_word_embeddings"])
+                emb_list.append(cur_tp_emb.clone())
+        else:
+            for tp_rank in self.tp_rank_list:
+                cur_tp_emb = mg_weight[(tp_rank, self.ep_rank_list[0])].get(mg_weight_key["embedding_word_embeddings"])
+                emb_list.append(cur_tp_emb.clone())
         emb_weights = torch.cat(emb_list, dim=0)
         hf_weight[hf_weight_key["embedding_word_embeddings"]] = emb_weights
 
@@ -325,9 +343,14 @@ class Mg2HfConvert(Convert):
         hf_weight[hf_weight_key["final_layernorm"]] = final_norm.clone()
 
         lm_head_list = []
-        for tp_rank in self.tp_rank_list:
-            cur_tp_head = mg_weight[(tp_rank, self.ep_rank_list[0])].pop(mg_weight_key["output_layer"])
-            lm_head_list.append(cur_tp_head.clone())
+        if self.expert_tensor_parallel_size == 1:
+            for(tp_rank, ep_rank) in self.attention_tp_ckpts_list:
+                cur_tp_head = mg_weight[(tp_rank, ep_rank)].pop(mg_weight_key["output_layer"])
+                lm_head_list.append(cur_tp_head.clone())
+        else:
+            for tp_rank in self.tp_rank_list:
+                cur_tp_head = mg_weight[(tp_rank, self.ep_rank_list[0])].pop(mg_weight_key["output_layer"])
+                lm_head_list.append(cur_tp_head.clone())
         lm_head_weights = torch.cat(lm_head_list, dim=0)
         hf_weight[hf_weight_key["output_layer"]] = lm_head_weights.clone()
 
@@ -406,21 +429,39 @@ class Mg2HfConvert(Convert):
             linear_v_list = []
 
             linear_qkv_key, linear_proj_key, q_norm_key, k_norm_key, linear_qb_key, linear_kvb_key = _generate_mla_attn_layers_key(mtp_layer_flag)
-            for tp_rank in self.tp_rank_list:
-                cur_linear_proj = mg_weight[(tp_rank, self.ep_rank_list[0])].pop(linear_proj_key)
-                linear_proj_list.append(cur_linear_proj.clone())
-                if self.mla_mm_split:
-                    qk_nope_key, qk_rope_key, kv_nope_key, linear_v_key = _generate_attn_mm_split_key(mtp_layer_flag)
-                    qk_nope_list.append(mg_weight[(tp_rank, self.ep_rank_list[0])].pop(qk_nope_key))
-                    qk_rope_list.append(mg_weight[(tp_rank, self.ep_rank_list[0])].pop(qk_rope_key))
-                    kv_nope_list.append(mg_weight[(tp_rank, self.ep_rank_list[0])].pop(kv_nope_key))
-                    linear_v_list.append(mg_weight[(tp_rank, self.ep_rank_list[0])].pop(linear_v_key))
-                else:
-                    linear_qb = mg_weight[(tp_rank, self.ep_rank_list[0])].pop(linear_qb_key)
-                    linear_kvb = mg_weight[(tp_rank, self.ep_rank_list[0])].pop(linear_kvb_key)
+            
+            if self.expert_tensor_parallel_size == 1:
+                for (tp_rank, ep_rank) in self.attention_tp_ckpts_list:
+                    cur_linear_proj = mg_weight[(tp_rank, ep_rank)].pop(linear_proj_key)
+                    linear_proj_list.append(cur_linear_proj.clone())
+                    if self.mla_mm_split:
+                        qk_nope_key, qk_rope_key, kv_nope_key, linear_v_key = _generate_attn_mm_split_key(mtp_layer_flag)
+                        qk_nope_list.append(mg_weight[(tp_rank, ep_rank)].pop(qk_nope_key))
+                        qk_rope_list.append(mg_weight[(tp_rank, ep_rank)].pop(qk_rope_key))
+                        kv_nope_list.append(mg_weight[(tp_rank, ep_rank)].pop(kv_nope_key))
+                        linear_v_list.append(mg_weight[(tp_rank, ep_rank)].pop(linear_v_key))
+                    else:
+                        linear_qb = mg_weight[(tp_rank, ep_rank)].pop(linear_qb_key)
+                        linear_kvb = mg_weight[(tp_rank, ep_rank)].pop(linear_kvb_key)
 
-                    linear_qb_list.append(linear_qb.clone())
-                    linear_kvb_list.append(linear_kvb.clone())
+                        linear_qb_list.append(linear_qb.clone())
+                        linear_kvb_list.append(linear_kvb.clone())
+            else:
+                for tp_rank in self.tp_rank_list:
+                    cur_linear_proj = mg_weight[(tp_rank, self.ep_rank_list[0])].pop(linear_proj_key)
+                    linear_proj_list.append(cur_linear_proj.clone())
+                    if self.mla_mm_split:
+                        qk_nope_key, qk_rope_key, kv_nope_key, linear_v_key = _generate_attn_mm_split_key(mtp_layer_flag)
+                        qk_nope_list.append(mg_weight[(tp_rank, self.ep_rank_list[0])].pop(qk_nope_key))
+                        qk_rope_list.append(mg_weight[(tp_rank, self.ep_rank_list[0])].pop(qk_rope_key))
+                        kv_nope_list.append(mg_weight[(tp_rank, self.ep_rank_list[0])].pop(kv_nope_key))
+                        linear_v_list.append(mg_weight[(tp_rank, self.ep_rank_list[0])].pop(linear_v_key))
+                    else:
+                        linear_qb = mg_weight[(tp_rank, self.ep_rank_list[0])].pop(linear_qb_key)
+                        linear_kvb = mg_weight[(tp_rank, self.ep_rank_list[0])].pop(linear_kvb_key)
+
+                        linear_qb_list.append(linear_qb.clone())
+                        linear_kvb_list.append(linear_kvb.clone())
 
             o_proj = torch.cat(linear_proj_list, dim=1)
 
@@ -455,10 +496,15 @@ class Mg2HfConvert(Convert):
             linear_qkv_key, linear_proj_key, q_layernorm_key, k_layernorm_key = _generate_attn_layers_key()
             linear_qkv_list = []
             linear_proj_list = []
-
-            for tp_rank in self.tp_rank_list:
-                linear_qkv_list.append(mg_weight[(tp_rank, self.ep_rank_list[0])].pop(linear_qkv_key))
-                linear_proj_list.append(mg_weight[(tp_rank, self.ep_rank_list[0])].pop(linear_proj_key))
+            
+            if self.expert_tensor_parallel_size == 1:
+                for(tp_rank, ep_rank) in self.attention_tp_ckpts_list:
+                    linear_qkv_list.append(mg_weight[(tp_rank, ep_rank)].pop(linear_qkv_key))
+                    linear_proj_list.append(mg_weight[(tp_rank, ep_rank)].pop(linear_proj_key))
+            else:
+                for tp_rank in self.tp_rank_list:
+                    linear_qkv_list.append(mg_weight[(tp_rank, self.ep_rank_list[0])].pop(linear_qkv_key))
+                    linear_proj_list.append(mg_weight[(tp_rank, self.ep_rank_list[0])].pop(linear_proj_key))
 
             qkv_weight = torch.cat(linear_qkv_list, dim=0)
             nh = self.load_model.num_attention_heads
@@ -487,6 +533,18 @@ class Mg2HfConvert(Convert):
             hf_weight[hf_weight_key["layers_self_attention_linear_proj"]] = o_proj.clone()
             hf_weight[hf_weight_key["layers_self_attention_q_layernorm"]] = q_a_layernorm.clone()
             hf_weight[hf_weight_key["layers_self_attention_k_layernorm"]] = kv_a_layernorm.clone()
+
+
+    def linear_fc1_get_for_etp(self, mg_weight, fc1_key, tp_rank, ep_rank):
+        cur_linear_fc1 = mg_weight[(tp_rank, ep_rank)].pop(fc1_key)
+        cur_gate, cur_up = torch.chunk(cur_linear_fc1, 2, dim=0)
+        return cur_gate, cur_up
+
+
+    def linear_fc2_get_for_etp(self, mg_weight, fc2_key, tp_rank, ep_rank):
+        cur_linear_fc2 = mg_weight[(tp_rank, ep_rank)].pop(fc2_key)
+        return cur_linear_fc2
+
 
     def linear_fc1_gather_from_tp(self, mg_weight, fc1_key, ep_rank=0):
         """cat linear fc1"""
@@ -532,6 +590,42 @@ class Mg2HfConvert(Convert):
                 experts_weight1_key = mg_weight_key["layers_mlp_experts_weight1"]
                 experts_weight2_key = mg_weight_key["layers_mlp_experts_weight2"]
             return router_key, router_bias_key, shared_fc1_key, shared_fc2_key, experts_weight1_key, experts_weight2_key
+        
+        def _set_model_layer_mlp_for_etp():
+            if self.moe_grouped_gemm:
+                for (tp_rank, ep_rank) in self.moe_ep_ckpts_list:
+                    cur_weight1 = mg_weight[(tp_rank, ep_rank)].pop(expert_weight1_key).reshape(local_expert_nums, self.load_model.hidden_size, -1)
+                    cur_weight2 = mg_weight[(tp_rank, ep_rank)].pop(expert_weight2_key).reshape(local_expert_nums, -1, self.load_model.hidden_size)
+
+                    for local_idx in range(local_expert_nums):
+                        expert_idx = ep_rank * local_expert_nums + local_idx
+                        hf_weight_key = self.save_model.get_weight(hf_layer_idx, expert_idx)
+                        ep_weight1_expert = cur_weight1[local_idx].t()
+                        local_gate, local_up = torch.chunk(ep_weight1_expert, 2, dim=0)
+                        local_down = cur_weight2[local_idx].t()
+                        hf_weight[hf_weight_key["layers_mlp_experts_gate_proj"]] = local_gate.contiguous().clone()
+                        hf_weight[hf_weight_key["layers_mlp_experts_up_proj"]] = local_up.contiguous().clone()
+                        hf_weight[hf_weight_key["layers_mlp_experts_linear_fc2"]] = local_down.contiguous().clone()
+
+            else:
+                for (tp_rank, ep_rank) in self.moe_ep_ckpts_list:
+                    for local_idx in range(local_expert_nums):
+                        expert_idx = ep_rank * local_expert_nums + local_idx
+                        hf_weight_key = self.save_model.get_weight(hf_layer_idx, expert_idx)
+                        mg_weight_key = self.load_model.get_weight(local_layer_idx, local_idx)
+                        local_fc1_key = mg_weight_key["layers_mlp_experts_linear_fc1"]
+                        local_fc2_key = mg_weight_key["layers_mlp_experts_linear_fc2"]
+                        if mtp_layer_flag:
+                            local_fc1_key = mg_weight_key["mtp_layers_mlp_experts_linear_fc1"]
+                            local_fc2_key = mg_weight_key["mtp_layers_mlp_experts_linear_fc2"]
+
+                        local_gate, local_up = self.linear_fc1_get_for_etp(mg_weight, local_fc1_key, tp_rank=tp_rank, ep_rank=ep_rank)
+                        local_down = self.linear_fc2_get_for_etp(mg_weight, local_fc2_key, tp_rank=tp_rank, ep_rank=ep_rank)
+
+                        hf_weight[hf_weight_key["layers_mlp_experts_gate_proj"]] = local_gate.contiguous().clone()
+                        hf_weight[hf_weight_key["layers_mlp_experts_up_proj"]] = local_up.contiguous().clone()
+                        hf_weight[hf_weight_key["layers_mlp_experts_linear_fc2"]] = local_down.contiguous().clone()
+            
 
         if hf_layer_idx >= self.first_k_dense_replace:
             # moe
@@ -542,8 +636,12 @@ class Mg2HfConvert(Convert):
                 router_bias_weights = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(router_bias_key)
                 hf_weight[hf_weight_key["layers_mlp_router_bias"]] = router_bias_weights.clone()
             if self.n_shared_experts and self.n_shared_experts != 0:
-                shared_gate_weights, shared_up_weights = self.linear_fc1_gather_from_tp(mg_weight, shared_fc1_key)
-                shared_down_weights = self.linear_fc2_gather_from_tp(mg_weight, shared_fc2_key)
+                if self.expert_tensor_parallel_size == 1:
+                    shared_gate_weights, shared_up_weights = self.linear_fc1_get_for_etp(mg_weight, shared_fc1_key)
+                    shared_down_weights = self.linear_fc2_get_for_etp(mg_weight, shared_fc2_key)
+                else:
+                    shared_gate_weights, shared_up_weights = self.linear_fc1_gather_from_tp(mg_weight, shared_fc1_key)
+                    shared_down_weights = self.linear_fc2_gather_from_tp(mg_weight, shared_fc2_key)
                 hf_weight[hf_weight_key["layers_mlp_shared_experts_gate_proj"]] = shared_gate_weights.clone()
                 hf_weight[hf_weight_key["layers_mlp_shared_experts_up_proj"]] = shared_up_weights.clone()
                 hf_weight[hf_weight_key["layers_mlp_shared_experts_linear_fc2"]] = shared_down_weights.clone()
@@ -552,6 +650,10 @@ class Mg2HfConvert(Convert):
 
             # moe_gemm
             local_expert_nums = self.load_model.num_experts // self.expert_model_parallel_size
+            
+            if self.expert_tensor_parallel_size == 1:
+                _set_model_layer_mlp_for_etp()
+                return
 
             if self.moe_grouped_gemm:
                 for ep_rank in self.ep_rank_list:
@@ -647,11 +749,18 @@ class Mg2HfConvert(Convert):
 
         eh_proj_list = []
         emb_list = []
-        for tp_rank in self.tp_rank_list:
-            cur_eh_proj = mg_weight[(tp_rank, self.ep_rank_list[0])].pop(mg_weight_key["mtp_layers_eh_proj"])
-            eh_proj_list.append(cur_eh_proj.clone())
-            cur_tp_emb = mg_weight[(tp_rank, self.ep_rank_list[0])].get(mg_weight_key["mtp_layers_embed_tokens"])
-            emb_list.append(cur_tp_emb.clone())
+        if self.expert_tensor_parallel_size == 1:
+            for(tp_rank, ep_rank) in self.attention_tp_ckpts_list:
+                cur_eh_proj = mg_weight[(tp_rank, ep_rank)].pop(mg_weight_key["mtp_layers_eh_proj"])
+                eh_proj_list.append(cur_eh_proj.clone())
+                cur_tp_emb = mg_weight[(tp_rank, ep_rank)].get(mg_weight_key["mtp_layers_embed_tokens"])
+                emb_list.append(cur_tp_emb.clone())
+        else:
+            for tp_rank in self.tp_rank_list:
+                cur_eh_proj = mg_weight[(tp_rank, self.ep_rank_list[0])].pop(mg_weight_key["mtp_layers_eh_proj"])
+                eh_proj_list.append(cur_eh_proj.clone())
+                cur_tp_emb = mg_weight[(tp_rank, self.ep_rank_list[0])].get(mg_weight_key["mtp_layers_embed_tokens"])
+                emb_list.append(cur_tp_emb.clone())
 
         eh_proj_weights = torch.cat(eh_proj_list, dim=0)
         emb_weights = torch.cat(emb_list, dim=0)
@@ -753,12 +862,41 @@ class Mg2HfConvert(Convert):
                     self.save_safetensors(hf_weight_dict, hf_layer_number + 1)
                     hf_weight_dict = defaultdict()
 
-    def run(self):
 
+    def get_etp_valid_ckpts_list(self):
+        if self.tensor_model_parallel_size % self.expert_model_parallel_size == 0:
+            for tp_rank in range(self.tensor_model_parallel_size):
+                ep_rank = tp_rank % self.expert_model_parallel_size
+                self.etp_valid_ckpts_list.append((tp_rank, ep_rank))
+                self.attention_tp_ckpts_list.append((tp_rank, ep_rank))
+                if tp_rank // self.expert_model_parallel_size == 0:
+                    self.moe_ep_ckpts_list.append((tp_rank, ep_rank))
+        elif self.expert_model_parallel_size % self.tensor_model_parallel_size == 0:
+            for ep_rank in range(self.expert_model_parallel_size):
+                tp_rank = ep_rank % self.tensor_model_parallel_size
+                self.etp_valid_ckpts_list.append((tp_rank, ep_rank))
+                self.moe_ep_ckpts_list.append((tp_rank, ep_rank))
+                if ep_rank // self.tensor_model_parallel_size == 0:
+                    self.attention_tp_ckpts_list.append((tp_rank, ep_rank))
+        else:
+            raise ValueError("Currently if expert-tensor-parallel-size is set to 1, then target-tensor-parallel-size must be divisible by target-expert-parallel-size or target-expert-parallel-size must be divisible by target-tensor-parallel-size")
+
+
+    def run(self):
+        if self.expert_tensor_parallel_size == 1:
+            self.etp_valid_ckpts_list = []
+            self.attention_tp_ckpts_list = []
+            self.moe_ep_ckpts_list = []
+            self.get_etp_valid_ckpts_list()
+        
         for pp_rank in self.pp_rank_list:
             mg_weights = defaultdict()
             if self.num_layers_per_virtual_pipeline_stage is None:
                 for tp_rank, ep_rank in product(self.tp_rank_list, self.ep_rank_list):
+                    # if expert-tensor-parallel-size is set to 1, the weight files no longer satisfies the TP EP product format
+                    # then it is necessary to avoid reading non-existent files
+                    if self.expert_tensor_parallel_size == 1 and (tp_rank, ep_rank) not in self.etp_valid_ckpts_list:
+                        continue
                     model_path = self.get_pt_path_by_tpppep_rank(self.iter_path, tp_rank, pp_rank, ep_rank)
                     ckpt_file = load_data(model_path)
                     mg_weight = ckpt_file['model']
@@ -767,6 +905,8 @@ class Mg2HfConvert(Convert):
             else:
                 for vpp_rank in range(self.vpp_size):
                     for tp_rank, ep_rank in product(self.tp_rank_list, self.ep_rank_list):
+                        if self.expert_tensor_parallel_size and (tp_rank, ep_rank) not in self.etp_valid_ckpts_list:
+                            continue
                         pt_path = self.get_pt_path_by_tpppep_rank(self.iter_path, tp_rank, pp_rank, ep_rank)
                         mg_weight = load_data(pt_path)[f'model{vpp_rank}']
                         mg_weights[(tp_rank, ep_rank)] = mg_weight

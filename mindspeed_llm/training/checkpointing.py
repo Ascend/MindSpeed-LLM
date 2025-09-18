@@ -190,9 +190,15 @@ def save_checkpoint_wrapper(fn):
                     f'Async checkpoint save not implemented for {args.ckpt_format} distributed checkpoint format')
 
         rank = torch.distributed.get_rank() if torch.distributed.is_initialized() else 0
+
+        rank_ckpt_save_flag = False
+        if mpu.get_expert_data_parallel_world_size() > mpu.get_data_parallel_world_size():
+            rank_ckpt_save_flag = mpu.get_data_parallel_rank() == 0
+        else:
+            rank_ckpt_save_flag = mpu.get_expert_data_parallel_rank() == 0
         # Collect args, model, RNG.
         if not torch.distributed.is_initialized() \
-                or mpu.get_expert_data_parallel_rank() == 0 \
+                or rank_ckpt_save_flag \
                 or args.use_dist_ckpt:
 
             optim_sd_kwargs = {}

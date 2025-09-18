@@ -26,6 +26,8 @@ def get_args():
                         help='Target pipeline model parallel size, defaults to 1.')
     parser.add_argument('--target-expert-parallel-size', type=int, default=1,
                         help='Target expert model parallel size, defaults to 1.')
+    parser.add_argument('--expert-tensor-parallel-size', type=int, default=None,
+                        help='Degree of expert model parallelism, Currentley it is support to be set to 1 or None. Default is None, which will be set to the value of --target-tensor-parallel-size')
     parser.add_argument('--num-layers-per-virtual-pipeline-stage', type=int, default=None,
                         help='Number of layers per virtual pipeline stage')
     parser.add_argument('--moe-grouped-gemm', action='store_true',

@@ -23,6 +23,7 @@ class Convert(abc.ABC):
         self.tensor_model_parallel_size = args.target_tensor_parallel_size
         self.pipeline_model_parallel_size = args.target_pipeline_parallel_size
         self.expert_model_parallel_size = args.target_expert_parallel_size
+        self.expert_tensor_parallel_size = args.expert_tensor_parallel_size
         self.num_layer_list = args.num_layer_list
         self.noop_layers = args.noop_layers
         self.num_layers_per_virtual_pipeline_stage = args.num_layers_per_virtual_pipeline_stage

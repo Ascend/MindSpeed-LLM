@@ -40,6 +40,18 @@ class Hf2MgConvert(Convert):
             self.get_vpprank_hf_layeridxs()
         self._valid_parameter()
 
+    def check_etp_conflict(self):
+        if self.expert_tensor_parallel_size is None:
+            self.expert_tensor_parallel_size = self.tensor_model_parallel_size
+        if self.expert_tensor_parallel_size != 1 and self.expert_tensor_parallel_size != self.tensor_model_parallel_size:
+            raise ValueError("Currently expert-tensor-parallel-size is only support to be set to 1 or None")
+        if self.expert_tensor_parallel_size == 1:
+            if self.tensor_model_parallel_size % self.expert_model_parallel_size != 0 and self.expert_model_parallel_size % self.tensor_model_parallel_size != 0:
+                raise ValueError("Currently if expert-tensor-parallel-size is set to 1, then target-tensor-parallel-size must be divisible by target-expert-parallel-size or target-expert-parallel-size must be divisible by target-tensor-parallel-size")
+
+        if self.expert_tensor_parallel_size == 1 and self.moe_tp_extend_ep:
+            raise ValueError("Currently if expert-tensor-parallel-size is set to 1, then it is no need to set moe-tp-extend-ep")
+            
     def _valid_parameter(self):
         if self.schedules_method == 'dualpipev':
             if self.tensor_model_parallel_size > 1 and not self.moe_tp_extend_ep:
@@ -65,6 +77,7 @@ class Hf2MgConvert(Convert):
 
         if self.load_model.qkv_type == "mix" and self.tensor_model_parallel_size > 1:
             raise ValueError('mix qkv-type and tp cannot be configured at the same time')
+        self.check_etp_conflict()
 
     def get_pprank_hf_layeridxs(self) -> None:
         """pp_rank -> hf layer map"""
@@ -676,13 +689,24 @@ class Hf2MgConvert(Convert):
                 hf_weight_key = self.load_model.get_weight(hf_layer_idx, expert_idx)
 
                 if hasattr(self.load_model, "n_shared_experts"):
-                    shared_l0_W = torch.chunk(shared_gate_proj, self.tensor_model_parallel_size, dim=0)
-                    shared_l0_V = torch.chunk(shared_up_proj, self.tensor_model_parallel_size, dim=0)
-                    shared_l0_lst = [torch.cat(weights, dim=0) for weights in zip(shared_l0_W, shared_l0_V)]
-                    shared_l1_lst = torch.chunk(shared_fc2_weight, self.tensor_model_parallel_size, dim=1)
+                    if self.expert_tensor_parallel_size == 1:
+                        shared_l0_lst = [torch.cat([shared_gate_proj, shared_up_proj], dim=0).clone() for i in range(self.tensor_model_parallel_size)]
+                        shared_l1_lst = [shared_fc2_weight.clone() for i in range(self.tensor_model_parallel_size)]
+                    else:
+                        shared_l0_W = torch.chunk(shared_gate_proj, self.tensor_model_parallel_size, dim=0)
+                        shared_l0_V = torch.chunk(shared_up_proj, self.tensor_model_parallel_size, dim=0)
+                        shared_l0_lst = [torch.cat(weights, dim=0) for weights in zip(shared_l0_W, shared_l0_V)]
+                        shared_l1_lst = torch.chunk(shared_fc2_weight, self.tensor_model_parallel_size, dim=1)
 
                 gate_proj = hf_weight.pop(hf_weight_key["layers_mlp_experts_gate_proj"])
                 up_proj = hf_weight.pop(hf_weight_key["layers_mlp_experts_up_proj"])
+
+                fc2_weight = hf_weight.pop(hf_weight_key["layers_mlp_experts_linear_fc2"])
+
+                if self.expert_tensor_parallel_size == 1:
+                    gate_proj = torch.cat([gate_proj.clone() for i in range(self.tensor_model_parallel_size)], dim=0)
+                    up_proj = torch.cat([up_proj.clone() for i in range(self.tensor_model_parallel_size)], dim=0)
+                    fc2_weight = torch.cat([fc2_weight.clone() for i in range(self.tensor_model_parallel_size)], dim=1)
 
                 expert_tp_size = self.tensor_model_parallel_size
                 if self.moe_tp_extend_ep:
@@ -692,7 +716,6 @@ class Hf2MgConvert(Convert):
                 up_w_list = torch.chunk(up_proj, expert_tp_size, dim=0)
                 fc1_weight = torch.cat([torch.cat(weights, dim=0) for weights in zip(gate_w_list, up_w_list)], dim=0)
 
-                fc2_weight = hf_weight.pop(hf_weight_key["layers_mlp_experts_linear_fc2"])
 
                 experts_linear_fc1_list.append(fc1_weight.t())
                 experts_linear_fc2_list.append(fc2_weight.t())
@@ -810,9 +833,26 @@ class Hf2MgConvert(Convert):
         return args
 
 
+    def get_etp_valid_ckpts_list(self):
+        if self.tensor_model_parallel_size % self.expert_model_parallel_size == 0:
+            for tp_rank in range(self.tensor_model_parallel_size):
+                ep_rank = tp_rank % self.expert_model_parallel_size
+                self.etp_valid_ckpts_list.append((tp_rank, ep_rank))
+        elif self.expert_model_parallel_size % self.tensor_model_parallel_size == 0:
+            for ep_rank in range(self.expert_model_parallel_size):
+                tp_rank = ep_rank % self.tensor_model_parallel_size
+                self.etp_valid_ckpts_list.append((tp_rank, ep_rank))
+        else:
+            raise ValueError("Currently if expert-tensor-parallel-size is set to 1, then target-tensor-parallel-size must be divisible by target-expert-parallel-size or target-expert-parallel-size must be divisible by target-tensor-parallel-size")
+
+
     def run(self):
         """save magetron format checkpoint"""
         pp_local_layer_idx = self.generate_pp_local_layer_idx()
+
+        if self.expert_tensor_parallel_size == 1:
+            self.etp_valid_ckpts_list = []
+            self.get_etp_valid_ckpts_list()
 
         # Packaging Parameters
         logger.info(f"Packaging Parameters......")
@@ -861,6 +901,9 @@ class Hf2MgConvert(Convert):
 
                 for ep_rank in range(self.expert_model_parallel_size):
                     for tp_rank in range(self.tensor_model_parallel_size):
+                        # # if expert-tensor-parallel-size is set to 1, some (tp_rank, ep_rank) weights are redundant and should not be saved.
+                        if self.expert_tensor_parallel_size == 1 and (tp_rank, ep_rank) not in self.etp_valid_ckpts_list:
+                            continue
                         save_prefix = self.generate_mg_weights_dir(tp_rank=tp_rank, pp_rank=pp_rank, ep_rank=ep_rank)
                         parallel_save_path = os.path.join(self.save_dir, save_prefix)
                         os.makedirs(parallel_save_path, exist_ok=True)
@@ -921,6 +964,8 @@ class Hf2MgConvert(Convert):
 
                 for ep_rank in range(self.expert_model_parallel_size):
                     for tp_rank in range(self.tensor_model_parallel_size):
+                        if self.expert_tensor_parallel_size == 1 and (tp_rank, ep_rank) not in self.etp_valid_ckpts_list:
+                            continue
                         save_prefix = self.generate_mg_weights_dir(tp_rank=tp_rank, pp_rank=pp_rank, ep_rank=ep_rank)
                         parallel_save_path = os.path.join(self.save_dir, save_prefix)
                         os.makedirs(parallel_save_path, exist_ok=True)

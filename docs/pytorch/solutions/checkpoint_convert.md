@@ -423,8 +423,8 @@ MindSpeed-LLM 支持 Huggingface 和 Megatron-Core 之间的权重格式互转�
   </thead>
   <tbody>
     <tr>
-      <td rowspan="6">HuggingFace </td>
-      <td rowspan="6">Megatron-Core</td>
+      <td rowspan="7">HuggingFace </td>
+      <td rowspan="7">Megatron-Core</td>
       <td>张量并行</td>
       <td>--target-tensor-parallel-size</td>
     </tr>
@@ -445,20 +445,32 @@ MindSpeed-LLM 支持 Huggingface 和 Megatron-Core 之间的权重格式互转�
       <td>--target-expert-model-parallel-size</td>
     </tr>
     <tr>
+      <td>专家张量并行</td>
+      <td>--expert-tensor-parallel-size</td>
+    </tr>
+    <tr>
       <td>自定义空操作层</td>
       <td>--noop-layers</td>
     </tr>
   </tbody>
   <tbody>
     <tr>
-      <td rowspan="22">Megatron-Core </td>
-      <td rowspan="6">Huggingface</td>
+      <td rowspan="24">Megatron-Core </td>
+      <td rowspan="8">Huggingface</td>
       <td>张量并行</td>
       <td>--target-tensor-parallel-size</td>
     </tr>
     <tr>
       <td>流水并行</td>
       <td>--target-pipeline-parallel-size</td>
+    </tr>
+    <tr>
+      <td>专家并行</td>
+      <td>--target-expert-model-parallel-size</td>
+    </tr>
+    <tr>
+      <td>专家张量并行</td>
+      <td>--expert-tensor-parallel-size</td>
     </tr>
     <tr>
       <td>LoRA训练模块</td>
