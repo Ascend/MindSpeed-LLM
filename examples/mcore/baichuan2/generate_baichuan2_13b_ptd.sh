@@ -30,6 +30,7 @@ torchrun $DISTRIBUTED_ARGS inference.py \
     --num-attention-heads 40  \
     --max-position-embeddings 2048 \
     --position-embedding-type alibi \
+    --use-flash-attn \
     --square-alibi-mask \
     --fill-neg-inf \
     --swiglu \

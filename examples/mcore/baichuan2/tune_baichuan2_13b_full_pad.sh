@@ -64,6 +64,7 @@ GPT_ARGS="
     --attention-dropout 0.0 \
     --init-method-std 0.01 \
     --position-embedding-type alibi \
+    --use-flash-attn \
     --hidden-dropout 0.0 \
     --norm-epsilon 1e-6 \
     --normalization RMSNorm \

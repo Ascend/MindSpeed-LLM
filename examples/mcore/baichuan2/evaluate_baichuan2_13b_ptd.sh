@@ -32,6 +32,7 @@ torchrun $DISTRIBUTED_ARGS evaluation.py \
     --num-attention-heads 40  \
     --disable-bias-linear \
     --swiglu \
+    --use-flash-attn \
     --position-embedding-type alibi \
     --square-alibi-mask \
     --fill-neg-inf \
