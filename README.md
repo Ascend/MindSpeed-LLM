@@ -13,39 +13,48 @@
     </a>
 </p>
 
-MindSpeed LLM是基于昇腾生态的大语言模型分布式训练框架，旨在为华为 [昇腾芯片](https://www.hiascend.com/) 生态合作伙伴提供端到端的大语言模型训练方案，包含分布式预训练、分布式指令微调以及对应的开发工具链，如：数据预处理、权重转换、在线推理、基线评估。
 
-***<small>注 : 原仓名ModelLink更改为MindSpeed LLM，原包名modellink更改为mindspeed_llm </small>***
+# 简介
 
 ---
 
-## NEWS !!! 📣📣📣
-🚀🚀🚀**DeepSeek-V3**预训练已支持基于 **[MindSpore AI框架](./docs/mindspore/readme.md)** 运行！！！🚀🚀🚀
 
-🚀🚀🚀**glm4.5-moe** 系列模型同步首发支持！！！🚀🚀🚀
 
-🚀🚀🚀**Qwen3** 系列模型同步首发支持！！！🚀🚀🚀
+MindSpeed LLM：基于昇腾生态的大语言模型分布式训练框架，旨在为华为 [昇腾芯片](https://www.hiascend.com/) 生态合作伙伴提供端到端的大语言模型训练方案，包含分布式预训练、分布式指令微调以及对应的开发工具链，如：数据预处理、权重转换、在线推理、基线评估等。
 
-🚀🚀🚀**DeepSeek-R1** 系列功能逐步上线！！🚀🚀🚀
+**<small>注意 : 原仓名ModelLink更改为MindSpeed LLM，原包名modellink更改为mindspeed_llm </small>**
 
-😊 **[DeepSeek-R1-ZERO Qwen-7B](https://gitee.com/ascend/MindSpeed-RL/blob/master/docs/solutions/r1_zero_qwen25_7b.md)**  **[DeepSeek-R1-ZERO Qwen-32B](https://gitee.com/ascend/MindSpeed-RL/blob/master/docs/solutions/r1_zero_qwen25_32b.md)**
+# 最新消息
 
-🚀🚀🚀 **[DeepSeek-V3-671B模型全家桶](./examples/mcore/deepseek3/)** 已上线！！！🚀🚀🚀
+---
 
-😊**支持数据集处理、权重转换、预训练、全参微调、lora微调、qlora微调** 
 
-🚀🚀🚀**DeepSeek-R1-Distill** 系列模型已上线！！🚀🚀🚀
 
-😊 **[DeepSeek-R1-Distill-Qwen](./examples/mcore/deepseek_r1_distill_qwen/)**  **[DeepSeek-R1-Distill-LLaMA](./examples/mcore/deepseek_r1_distill_llama/)**
+- **DeepSeek-V3**预训练已支持基于 **[MindSpore AI框架](./docs/mindspore/readme.md)** 运行
+- **glm4.5-moe** 系列模型同步首发支持
+- **Qwen3** 系列模型同步首发支持
+- **DeepSeek-R1** 系列功能逐步上线
 
-> 注：<br>
-> 当前qwen3系列模型功能已逐步完善，移步[examples/mcore](./examples/mcore)使用更完整功能； <br>
+-  **[DeepSeek-R1-ZERO Qwen-7B](https://gitee.com/ascend/MindSpeed-RL/blob/master/docs/solutions/r1_zero_qwen25_7b.md)**  **[DeepSeek-R1-ZERO Qwen-32B](https://gitee.com/ascend/MindSpeed-RL/blob/master/docs/solutions/r1_zero_qwen25_32b.md)**
+
+-  **[DeepSeek-V3-671B模型全家桶](./examples/mcore/deepseek3/)** 已上线
+
+- **支持数据集处理、权重转换、预训练、全参微调、lora微调、qlora微调** 
+- **DeepSeek-R1-Distill** 系列模型已上线
+
+- **[DeepSeek-R1-Distill-Qwen](./examples/mcore/deepseek_r1_distill_qwen/)**  **[DeepSeek-R1-Distill-LLaMA](./examples/mcore/deepseek_r1_distill_llama/)**
+
+> 注意：<br>
+> 当前Qwen3系列模型功能已逐步完善，移步[examples/mcore](./examples/mcore)使用更完整功能； <br>
 > glm4.5-moe系列模型功能完善、验证中，非商用版本，移步[examples/mcore](./examples/mcore)使用更完整功能。<br>
 
+#  版本说明
 
-## 版本配套表
+---
 
-MindSpeed LLM的依赖配套如下表，安装步骤参考[安装指导](docs/pytorch/install_guide.md)。
+
+
+MindSpeed LLM的依赖配套如下表
 
 <table>
   <tr>
@@ -86,12 +95,29 @@ MindSpeed LLM的依赖配套如下表，安装步骤参考[安装指导](docs/py
     <td>apex</td>
   </tr>
 </table>
-
-
 注：由于master分支使用在研版本的驱动以及CANN包，因此master上的一些新特性老版本配套可能有不支持情况，要使用稳定版本，请切换到商发分支并下载对应依赖版本进行安装。
 
+# 安装
 
-## 预置模型
+---
+
+
+
+MindSpeed LLM具体的安装步骤请参考[安装指导](./docs/pytorch/install_guide.md)。
+
+# 快速上手
+
+---
+
+
+
+MindSpeed LLM将以Qwen2.5-7B模型为例，指导开发者完成Qwen2.5-7B大语言模型的预训练任务，具体的操作请参考[快速入门](./docs/quick_start.md)。
+
+# 预置模型
+
+---
+
+
 
 MindSpeed LLM目前已内置支持百余个业界常用LLM大模型的预训练与微调，预置模型清单详见下表。
 
@@ -115,11 +141,15 @@ MindSpeed LLM目前已内置支持百余个业界常用LLM大模型的预训练�
   </tr>  
 </tbody></table>
 
-## 训练方案与特性
+# 训练方案与特性
+
+---
+
+
 
 MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
 
-### 分布式预训练
+## 分布式预训练
 
 基于MindSpeed LLM的实测预训练性能如下：
 
@@ -163,7 +193,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
   </tbody>
 </table>
 
-#### 预训练方案
+### 预训练方案
 
 <table>
   <thead>
@@ -189,8 +219,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
   </tbody>
 </table>
 
-
-#### 加速特性
+### 加速特性
 
 <table><thead>
   <tr>
@@ -355,7 +384,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
   </tr>
 </tbody></table>
 
-### 分布式微调
+## 分布式微调
 
 基于MindSpeed LLM的实测指令微调性能如下：
 
@@ -370,7 +399,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
     <th>MFU</th>
   </tr>
   <tr>
-    <td rowspan="3">llama2-7B</td>
+    <td rowspan="3">Llama2-7B</td>
     <td rowspan="3">Atlas 900 A2 PODc</td>
     <td rowspan="3">1x8</td>
     <td>全参</td>
@@ -391,7 +420,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
     <td>48.4%</td>
   </tr>
   <tr>
-    <td rowspan="1">llama2-13B</td>
+    <td rowspan="1">Llama2-13B</td>
     <td rowspan="1">Atlas 900 A2 PODc</td>
     <td rowspan="1">1x8</td>
     <td>全参</td>
@@ -400,7 +429,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
     <td>-</td>
   </tr>
   <tr>
-    <td>llama2-70B</td>
+    <td>Llama2-70B</td>
     <td>Atlas 900 A2 PODc</td>
     <td>1x8</td>
     <td>LoRA</td>
@@ -410,7 +439,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
   </tr>
 </table>
 
-#### 微调方案
+### 微调方案
 
 <table><thead>
   <tr>
@@ -447,9 +476,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
     <td>【Ascend】</td>
   </tr>  
 </tbody></table>
-
-
-#### 加速特性
+### 加速特性
 
 <table><thead>
   <tr>
@@ -495,7 +522,11 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
   </tr>
 </tbody></table>
 
-## 在线推理
+# 在线推理
+
+---
+
+
 
 <table>
   <thead>
@@ -528,7 +559,12 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
   </tbody>
 </table>
 
-## 开源数据集评测
+# 开源数据集评测
+
+---
+
+
+
 仓库模型基线见[开源数据集评测基线](docs/pytorch/models/models_evaluation.md)
 <table>
   <thead>
@@ -582,11 +618,15 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
 </table>
 
 
-## 开发工具链
+# 开发工具链
 
-### 权重转换
+---
 
-MindSpeed LLM支持huggingface、megatron-core两种格式的权重互转，支持Lora权重合并。权重转换特性参数和使用说明参考[权重转换](docs/pytorch/solutions/checkpoint_convert.md)。
+
+
+## 权重转换
+
+MindSpeed LLM支持Huggingface、Megatron-core两种格式的权重互转，支持LoRa权重合并。权重转换特性参数和使用说明参考[权重转换](docs/pytorch/solutions/checkpoint_convert.md)。
 
 <table>
   <thead>
@@ -601,28 +641,28 @@ MindSpeed LLM支持huggingface、megatron-core两种格式的权重互转，支�
   </thead>
   <tbody>
     <tr>
-      <td>huggingface</td>
-      <td>megatron-core</td>
+      <td>Huggingface</td>
+      <td>Megatron-core</td>
       <td>tp、pp、dpp、vpp、cp、ep、loop layer</td>
       <td>❌</td>
       <td rowspan="3">【Ascend】</td>
       <td rowspan="3">❌</td>
     </tr>
     <tr>
-      <td rowspan="2">megatron-core</td>
-      <td>huggingface</td>
+      <td rowspan="2">Megatron-core</td>
+      <td>Huggingface</td>
       <td></td>
       <td>✅</td>
     </tr>
     <tr>
-      <td>megatron-core</td>
+      <td>Megatron-core</td>
       <td>tp、pp、dpp、vpp、cp、ep、loop layer</td>
       <td>✅</td>
     </tr>
   </tbody>
 </table>
 
-### 数据预处理
+## 数据预处理
 
 MindSpeed LLM支持预训练、指令微调等多种任务的数据预处理。
 
@@ -659,7 +699,7 @@ MindSpeed LLM支持预训练、指令微调等多种任务的数据预处理。
 </table>
 
 
-### 性能采集
+## 性能采集
 
 <table>
   <thead>
@@ -683,7 +723,7 @@ MindSpeed LLM支持预训练、指令微调等多种任务的数据预处理。
 </table>
 
 
-### 高可用性
+## 高可用性
 
 <table>
   <thead>
@@ -707,7 +747,11 @@ MindSpeed LLM支持预训练、指令微调等多种任务的数据预处理。
 </table>
 
 
-## 版本维护策略
+# 版本维护策略
+
+---
+
+
 
 MindSpeed LLM版本有以下五个维护阶段：
 
@@ -732,7 +776,11 @@ MindSpeed LLM已发布版本维护策略：
 | 1.0.RC1               | v1.0.RC1.0   | 常规版本     | EOL          | 2024/03/30   | 生命周期终止           | 2024/9/30    |
 | bk_origin_23          | \            | Demo        | EOL          | 2023         | 生命周期终止           | 2024/6/30     |
 
-## 致谢
+# 致谢
+
+---
+
+
 
 MindSpeed LLM由华为公司的下列部门以及昇腾生态合作伙伴联合贡献 ：
 
@@ -749,20 +797,31 @@ MindSpeed LLM由华为公司的下列部门以及昇腾生态合作伙伴联合�
 
 感谢来自社区的每一个PR，欢迎贡献 MindSpeed LLM。
 
-## 安全声明
+# 安全声明
+
+---
+
+
 
 [MindSpeed LLM安全声明](https://gitee.com/ascend/ModelLink/wikis/%E5%AE%89%E5%85%A8%E7%9B%B8%E5%85%B3/%E5%AE%89%E5%85%A8%E5%A3%B0%E6%98%8E)
 
 # 免责声明
 
+---
+
+
+
 ## 致MindSpeed LLM使用者
+
 1. MindSpeed LLM提供的模型仅供您用于非商业目的。
 2. MindSpeed LLM功能依赖的Megatron等第三方开源软件，均由第三方社区提供和维护，因第三方开源软件导致的问题修复依赖相关社区的贡献和反馈。您应理解，MindSpeed LLM仓库不保证对第三方开源软件本身的问题进行修复，也不保证会测试、纠正所有第三方开源软件的漏洞和错误。
 3. 对于各模型，MindSpeed LLM平台仅提示性地向您建议可用于训练的数据集，华为不提供任何数据集，如您使用这些数据集进行训练，请您特别注意应遵守对应数据集的License，如您因使用数据集而产生侵权纠纷，华为不承担任何责任。
 4. 如您在使用MindSpeed LLM模型过程中，发现任何问题（包括但不限于功能问题、合规问题），请在Gitee提交issue，我们将及时审视并解决。
 
 ## 致数据集所有者
+
 如果您不希望您的数据集在MindSpeed LLM中的模型被提及，或希望更新MindSpeed LLM中的模型关于您的数据集的描述，请在Gitee提交issue，我们将根据您的issue要求删除或更新您的数据集描述。衷心感谢您对MindSpeed LLM的理解和贡献。
 
 ## License声明
+
 Ascend MindSpeed LLM提供的模型，如模型目录下存在License的，以该License为准。如模型目录下不存在License的，以Apache 2.0许可证许可，对应许可证文本可查阅Ascend MindSpeed LLM根目录。
