@@ -42,10 +42,6 @@ from mindspeed.core.tensor_parallel.comm_autograd_function import auto_grad_sync
 from mindspeed.core.transformer.transformer import norm_recompute_forward
 from mindspeed.model.transformer import should_recompute_norm
 
-from mindspeed_llm.tasks.models.transformer.qwen3_next_full_attention import CustomQwen3NextSelfAttentionSubmodules, CustomQwen3NextSelfAttention
-from mindspeed_llm.tasks.models.transformer.qwen3_next_gated_deltanet_attention import CustomQwen3NextGatedDeltaNetAttentionSubmodules, CustomQwen3NextGatedDeltaNetAttention
-from mindspeed_llm.core.transformer.custom_layers.transformer_engine import PTNorm
-
 
 def get_num_layers_to_build(config: TransformerConfig) -> int:
     num_layers_per_pipeline_rank = (
@@ -130,31 +126,14 @@ def _transformer_block_build_layers(self):
 
         # For qwen3_next attention
         if args.full_attention_interval:
-            self.attention_layer_type = "linear_attention" if bool((global_layer_number) % args.full_attention_interval) else "full_attention" 
-        if args.mtp_num_layers:
-            self.attention_layer_type = "full_attention"            
+            from mindspeed_llm.tasks.models.spec.qwen3_next_spec import linear_attention_spec, full_attention_spec
+            self.attention_layer_type = "linear_attention" if bool((global_layer_number) % args.full_attention_interval) else "full_attention"
 
         if args.full_attention_interval and self.attention_layer_type == "linear_attention":
-            layer_spec.submodules.self_attention = ModuleSpec(module=CustomQwen3NextGatedDeltaNetAttention, 
-                                                              params={"attn_mask_type": AttnMaskType.causal},
-                                                              submodules=CustomQwen3NextGatedDeltaNetAttentionSubmodules(
-                                                              in_proj_qkvz=ColumnParallelLinear,
-                                                              in_proj_ba=ColumnParallelLinear,
-                                                              out_proj=RowParallelLinear,                                                              
-                                                              ))
+            layer_spec.submodules.self_attention = linear_attention_spec
 
         elif args.full_attention_interval and self.attention_layer_type == "full_attention":
-            layer_spec.submodules.self_attention = ModuleSpec(module=CustomQwen3NextSelfAttention, 
-                                                              params={"attn_mask_type": AttnMaskType.causal},
-                                                              submodules=CustomQwen3NextSelfAttentionSubmodules(
-                                                              q_proj=ColumnParallelLinear,
-                                                              k_proj=ColumnParallelLinear,
-                                                              v_proj=ColumnParallelLinear,
-                                                              core_attention=DotProductAttention,
-                                                              linear_proj=RowParallelLinear,
-                                                              q_layernorm=PTNorm if args.qk_layernorm else IdentityOp,
-                                                              k_layernorm=PTNorm if args.qk_layernorm else IdentityOp,
-                                                              ))               
+            layer_spec.submodules.self_attention = full_attention_spec
 
         # For noop layer
         if args.noop_layers and isinstance(args.noop_layers, set) and global_layer_number - 1 in args.noop_layers:

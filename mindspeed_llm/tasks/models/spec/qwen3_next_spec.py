@@ -17,6 +17,8 @@ from megatron.core.transformer.moe.shared_experts import SharedExpertMLP
 from megatron.core.transformer.mlp import MLPSubmodules
 from megatron.core.transformer.moe.experts import GroupedMLP, SequentialMLP
 from mindspeed_llm.core.transformer.custom_layers.transformer_engine import PTNorm
+from mindspeed_llm.tasks.models.transformer.qwen3_next_full_attention import CustomQwen3NextSelfAttentionSubmodules, CustomQwen3NextSelfAttention
+from mindspeed_llm.tasks.models.transformer.qwen3_next_gated_deltanet_attention import CustomQwen3NextGatedDeltaNetAttentionSubmodules, CustomQwen3NextGatedDeltaNetAttention
 
 args = get_args()
 num_experts, moe_grouped_gemm, qk_layernorm, shared_expert_gate = args.num_experts, args.moe_grouped_gemm, args.qk_layernorm, args.shared_expert_gate
@@ -37,11 +39,31 @@ if num_experts:
         expert_module = SequentialMLP
         expert_submodule = qwen3_next_mlp
 
+linear_attention_spec = ModuleSpec(module=CustomQwen3NextGatedDeltaNetAttention,
+                                                  params={"attn_mask_type": AttnMaskType.causal},
+                                                  submodules=CustomQwen3NextGatedDeltaNetAttentionSubmodules(
+                                                  in_proj_qkvz=ColumnParallelLinear,
+                                                  in_proj_ba=ColumnParallelLinear,
+                                                  out_proj=RowParallelLinear,
+                                                  ))
+
+full_attention_spec = ModuleSpec(module=CustomQwen3NextSelfAttention,
+                                                  params={"attn_mask_type": AttnMaskType.causal},
+                                                  submodules=CustomQwen3NextSelfAttentionSubmodules(
+                                                  q_proj=ColumnParallelLinear,
+                                                  k_proj=ColumnParallelLinear,
+                                                  v_proj=ColumnParallelLinear,
+                                                  core_attention=DotProductAttention,
+                                                  linear_proj=RowParallelLinear,
+                                                  q_layernorm=PTNorm if args.qk_layernorm else IdentityOp,
+                                                  k_layernorm=PTNorm if args.qk_layernorm else IdentityOp,
+                                                  ))
+
 layer_spec = ModuleSpec(
     module=TransformerLayer,
     submodules=TransformerLayerSubmodules(
         input_layernorm=PTNorm,
-        self_attention=None,
+        self_attention=full_attention_spec,
         self_attn_bda=get_bias_dropout_add,
         pre_mlp_layernorm=PTNorm,
         # different mlp spec varied from different layers.

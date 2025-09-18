@@ -57,7 +57,7 @@ class TransformerLayer(MegatronTransformerLayer):
             self.mlp.layer_number = self.layer_number
         # set mtp_idx
         args = get_args()
-        if args.mtp_num_layers:
+        if args.mtp_num_layers and hasattr(self.self_attention, "core_attention"):
             self.mtp_idx = 0
             self.self_attention.core_attention.mtp_idx = 0
 
