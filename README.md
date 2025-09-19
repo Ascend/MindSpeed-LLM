@@ -476,6 +476,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
     <td>【Ascend】</td>
   </tr>  
 </tbody></table>
+
 ### 加速特性
 
 <table><thead>
