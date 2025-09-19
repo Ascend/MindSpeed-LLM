@@ -109,4 +109,4 @@ torchrun $DISTRIBUTED_ARGS evaluation.py \
          $MOE_ARGS \
          $GPT_ARGS \
          --load ${CHECKPOINT} \
-        | tee logs/evaluate_qwen3_next_80b_a3b_ptd.log
+        | tee logs/evaluate_qwen3_next_80b_ptd.log

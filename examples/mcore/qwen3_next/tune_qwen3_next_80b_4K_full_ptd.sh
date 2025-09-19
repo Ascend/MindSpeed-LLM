@@ -65,9 +65,6 @@ OPTIMIZE_ARGS="
     --gemm-gradient-accumulation-fusion \
     --swap-optimizer \
     --recompute-activation-function \
-    --recompute-granularity full \
-    --recompute-method block \
-    --recompute-num-layers  40 \
 "
 
 TRAIN_ARGS="
@@ -144,11 +141,6 @@ DATA_ARGS="
     --split 100,0,0
 "
 
-MTP_ARGS="
-    --mtp-num-layers 1 \
-    --mtp-loss-scaling-factor 0.3 \
-    --mtp-mem-efficient-logits \
-"
 
 OUTPUT_ARGS="
     --log-interval 1 \
@@ -159,16 +151,25 @@ OUTPUT_ARGS="
     --no-load-rng \
 "
 
-torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
-    $MTP_ARGS \
+TUNE_ARGS="
+    --finetune \
+    --stage sft \
+    --is-instruction-dataset \
+    --tokenizer-not-use-fast \
+    --prompt-type qwen \
+    --variable-seq-lengths
+"
+
+torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     $GPT_ARGS \
     $DATA_ARGS \
     $MOE_ARGS \
     $OUTPUT_ARGS \
+    $TUNE_ARGS \
     $OPTIMIZE_ARGS \
     $TRAIN_ARGS \
     $MODEL_PARALLEL_ARGS \
     --load ${CKPT_LOAD_DIR} \
     --save ${CKPT_SAVE_DIR} \
     --distributed-backend nccl \
-    | tee logs/train_mcore_qwen3_next_80b.log
+    | tee logs/tune_mcore_qwen3_next_80b.log

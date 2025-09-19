@@ -92,7 +92,8 @@ torchrun $DISTRIBUTED_ARGS inference.py \
           --norm-epsilon 1e-6 \
           --hidden-dropout 0 \
           --attention-dropout 0 \
-          --max-new-tokens 64 \
+          --max-new-tokens 256 \
+          --prompt-type qwen \
           --no-gradient-accumulation-fusion \
           --attention-softmax-in-fp32 \
           --exit-on-missing-checkpoint \
