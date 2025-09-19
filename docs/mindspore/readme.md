@@ -91,7 +91,7 @@ MindSpore后端对MindSpeed的重要加速特性的支持情况如下表所示�
     <td>仅支持alltoall</td>
   </tr>
   <tr>
-    <td rowspan="4">显存优化</td>
+    <td rowspan="5">显存优化</td>
     <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/reuse-fp32-param.md">参数副本复用</a></td>
     <td>须和分布式优化器特性一起使用</td>
   </tr>
@@ -105,6 +105,10 @@ MindSpore后端对MindSpeed的重要加速特性的支持情况如下表所示�
   </tr>
   <tr>
     <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/norm-recompute.md">Norm重计算</a></td>
+    <td>✅</td>
+  </tr>
+  <tr>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/features/virtual-optimizer.md">Virtual Optimizer</a></td>
     <td>✅</td>
   </tr>
   <tr>
