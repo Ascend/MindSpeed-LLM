@@ -51,7 +51,7 @@
 	
 	在每个输入序列的末尾添加一个特殊的标记来表示输入序列的结束。
 
-* `--overwrite-cache`
+* `--overwrite-cache`【可选参数】
 
 	用于控制是否覆盖已存在的缓存分词器。
 
@@ -129,7 +129,7 @@ CKPT_LOAD_DIR="./model_weights/qwen25-7b-mcore/"
 
 * `--prompt-type`
 
-	用于指定模型模板，能够让base模型微调后能具备更好的对话能力。`prompt-type`的可选项可以在[`templates`](../../../../configs/finetune/templates.json)文件内查看。
+	用于指定模型模板，能够让base模型微调后能具备更好的对话能力。`prompt-type`的可选项可以在[templates](../../../../configs/finetune/templates.json)文件内查看。
 
 * `--reset-position-ids`
 
