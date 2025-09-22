@@ -48,7 +48,7 @@ MOE_ARGS="
     --num-experts 64 \
     --moe-router-topk 6 \
     --moe-intermediate-size 1408 \
-    --moe-router-load-balancing-type aux_loss \
+    --moe-router-load-balancing-type pai_megatron_aux_loss \
     --topk-group 1 \
     --moe-aux-loss-coeff 0.01 \
     --routed-scaling-factor 1.0 \
