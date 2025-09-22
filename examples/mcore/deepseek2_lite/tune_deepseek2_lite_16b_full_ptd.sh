@@ -37,6 +37,7 @@ MLA_ARGS="
 "
 
 MOE_ARGS="
+    --moe-permute-fusion \
     --moe-grouped-gemm \
     --moe-alltoall-overlap-comm \
     --moe-permutation-async-comm \
@@ -47,7 +48,7 @@ MOE_ARGS="
     --num-experts 64 \
     --moe-router-topk 6 \
     --moe-ffn-hidden-size 1408 \
-    --moe-router-load-balancing-type aux_loss \
+    --moe-router-load-balancing-type pai_megatron_aux_loss \
     --moe-router-group-topk 1 \
     --moe-router-num-groups 8 \
     --moe-aux-loss-coeff 0.01 \
