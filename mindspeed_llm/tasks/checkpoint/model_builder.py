@@ -70,13 +70,13 @@ class HuggingFaceModel(Model):
         self.model_type_hf = args.model_type_hf
         if args.load_model_type == 'hf':
             self.hf_path = args.load_dir
-            self.load_hf_args(args)
+            self.load_hf_args()
         else:
             self.hf_path = args.save_dir
         self.module_mapping = self.get_module_mapping()
 
 
-    def load_hf_args(self, args):
+    def load_hf_args(self):
         """
         Load config.json, apply key mappings and config values from model_cfg,
         and set them as instance attributes and update args.
@@ -91,13 +91,11 @@ class HuggingFaceModel(Model):
             key_hf = config_key_mapping[key_target]
             if key_hf in hf_args:
                 setattr(self, key_target, hf_args[key_hf])
-                setattr(args, key_target, hf_args[key_hf])
             else:
                 setattr(self, key_hf, hf_args[key_hf])
 
         for key_target, value in config_value.items():
             setattr(self, key_target, value)
-            setattr(args, key_target, value)
 
 
     def get_module_mapping(self):
@@ -113,13 +111,19 @@ class HuggingFaceModel(Model):
         return module_key
 
 
-    def get_weight(self, layer_idx=0, expert_idx=0):
+    def get_weight(self, mtp_flag=False, layer_idx=0, expert_idx=0):
         module_key = {}
         for key, value in self.module_mapping.items():
             value = re.sub(r'\[layer_idx\]', f'.{layer_idx}', value)
             value = re.sub(r'\[expert_idx\]', f'.{expert_idx}', value)
-            module_key[key] = value + ".weight" if ("weight" not in value and "bias" not in value) else value
+            value = value + ".weight" if ("weight" not in value and "bias" not in value) else value
+
+            if mtp_flag and value.startswith("model.layers."):
+                value = value.replace("model.layers.", "mtp.layers.", 1)
+
+            module_key[key] = value
         return module_key
+
 
 
     def get_bias(self, layer_idx=0, expert_idx=0):
@@ -144,9 +148,29 @@ class HuggingFaceModel(Model):
             if key.startswith("model.layers."):
                 layer_name = int(key.split('model.layers.')[1].split('.')[0])
                 layer_map_dict[layer_name].add(value)
+            elif key.startswith("mtp.layers."):
+                layer_id = int(key.split("mtp.layers.")[1].split(".")[0])
+                new_layer_id = layer_id + self.num_layers
+                layer_map_dict[new_layer_id].add(value)
             else:
                 layer_map_dict[key].add(value)
         return layer_map_dict
+
+
+    @staticmethod
+    def remap_mtp_keys(weights_dict: dict, offset: int) -> dict:
+        """
+        replace weights_dict from mtp.layers.* key to model.layers.* ，and add offset
+        """
+        new_dict = {}
+        for key, value in weights_dict.items():
+            if key.startswith("mtp.layers."):
+                layer_id = int(key.split("mtp.layers.")[1].split(".")[0])
+                new_key = key.replace(f"mtp.layers.{layer_id}", f"model.layers.{layer_id + offset}")
+                new_dict[new_key] = value
+            else:
+                new_dict[key] = value
+        return new_dict
 
     @staticmethod
     def load_hf_model(file_path):
@@ -164,13 +188,12 @@ class MegatronModel(Model):
         self.save_lora_to_hf = False
         if args.load_model_type == 'mg':
             self.mg_path = args.load_dir
-            self.load_mg_args()
         else:
             self.mg_path = args.save_dir
+        self.load_mg_args(args)
         self.mla_mm_split = args.mla_mm_split
         self.mtp_num_layers = args.mtp_num_layers
-        self.qkv_type = args.qkv_type
-        self.multi_latent_attention = True if hasattr(args, "multi_latent_attention") else False
+        self.multi_latent_attention = True if hasattr(self, "multi_latent_attention") else False
         self.module_mapping = self.get_module_mapping()
 
 
@@ -208,17 +231,21 @@ class MegatronModel(Model):
         return src_model_file
 
 
-    def load_mg_args(self):
+    def load_mg_args(self, args):
         config_value = self.model_cfg.get(self.model_type_hf).get('config_set_value', {})
-        src_model_file = self.get_latest_checkpoint_model_file(self.mg_path)
-        src_model = torch.load(src_model_file, map_location='cpu', weights_only=False)
-        logger.info(f"Megatron arguments is loaded from {src_model_file}\n")
-        ckpt_args = src_model['args'].__dict__
-    
-        merged_args = {**config_value, **ckpt_args}
+        if args.load_model_type == 'hf':
+            for key, value in config_value.items():
+                setattr(self, key, value)
+        else:
+            src_model_file = self.get_latest_checkpoint_model_file(self.mg_path)
+            src_model = torch.load(src_model_file, map_location='cpu', weights_only=False)
+            logger.info(f"Megatron arguments is loaded from {src_model_file}\n")
+            ckpt_args = src_model['args'].__dict__
+        
+            merged_args = {**config_value, **ckpt_args}
 
-        for key, value in merged_args.items():
-            setattr(self, key, value)
+            for key, value in merged_args.items():
+                setattr(self, key, value)
 
 
     def get_module(self, layer_idx=0, expert_idx=0):

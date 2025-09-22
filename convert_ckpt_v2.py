@@ -44,8 +44,10 @@ def get_args():
                        help="moe model has shared expert gate")
     parser.add_argument('--schedules-method', type=str, default=None, choices=['dualpipev'],
                         help='An innovative bidirectional pipeline parallelism algorithm.')
-    parser.add_argument('--first-k-dense-replace', type=int, default=0,
+    parser.add_argument('--first-k-dense-replace', type=int, default=None,
                         help='Customizing the number of dense layers.')
+    parser.add_argument('--num-layers', type=int, default=None,
+                        help='Specify the number of transformer layers to use.')
 
     args, _ = parser.parse_known_args()
     return args

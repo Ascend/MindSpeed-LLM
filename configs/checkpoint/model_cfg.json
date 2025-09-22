@@ -751,7 +751,8 @@
         "moe_layer_freq": 1,
         "n_shared_experts": 1,
         "qk_layernorm": true,
-        "shared_expert_gate": true
+        "shared_expert_gate": true,
+        "mtp_reorder_flag": true
       },
       "config_hf_key_mapping": {
         "num_layers": "num_hidden_layers",
@@ -777,12 +778,12 @@
         "layers_self_attention_pre_mlp_layernorm": "model.layers[layer_idx].post_attention_layernorm",
         "layers_mlp_router": "model.layers[layer_idx].mlp.gate",
         "layers_self_attention_linear_A_log": "model.layers[layer_idx].linear_attn.A_log",
-        "layers_self_attention_linear_conv1d": "model.layers[layer_idx].linear_attn.conv1d.weight",
+        "layers_self_attention_linear_conv1d": "model.layers[layer_idx].linear_attn.conv1d",
         "layers_self_attention_linear_dt_bias": "model.layers[layer_idx].linear_attn.dt_bias",
-        "layers_self_attention_linear_in_proj_ba": "model.layers[layer_idx].linear_attn.in_proj_ba.weight",
-        "layers_self_attention_linear_in_proj_qkvz": "model.layers[layer_idx].linear_attn.in_proj_qkvz.weight",
-        "layers_self_attention_linear_norm": "model.layers[layer_idx].linear_attn.norm.weight",
-        "layers_self_attention_linear_out_proj": "model.layers[layer_idx].linear_attn.out_proj.weight",
+        "layers_self_attention_linear_in_proj_ba": "model.layers[layer_idx].linear_attn.in_proj_ba",
+        "layers_self_attention_linear_in_proj_qkvz": "model.layers[layer_idx].linear_attn.in_proj_qkvz",
+        "layers_self_attention_linear_norm": "model.layers[layer_idx].linear_attn.norm",
+        "layers_self_attention_linear_out_proj": "model.layers[layer_idx].linear_attn.out_proj",
         "layers_mlp_experts_gate_proj": "model.layers[layer_idx].mlp.experts[expert_idx].gate_proj",
         "layers_mlp_experts_up_proj": "model.layers[layer_idx].mlp.experts[expert_idx].up_proj",
         "layers_mlp_experts_linear_fc2": "model.layers[layer_idx].mlp.experts[expert_idx].down_proj",
@@ -791,7 +792,11 @@
         "layers_mlp_shared_experts_up_proj": "model.layers[layer_idx].mlp.shared_expert.up_proj",
         "layers_mlp_shared_experts_linear_fc2": "model.layers[layer_idx].mlp.shared_expert.down_proj",
         "final_layernorm": "model.norm",
-        "output_layer": "lm_head"
+        "output_layer": "lm_head",
+        "mtp_layers_enorm": "mtp.pre_fc_norm_embedding",
+        "mtp_layers_hnorm": "mtp.pre_fc_norm_hidden",
+        "mtp_layers_eh_proj": "mtp.fc",
+        "mtp_layers_shared_head_norm": "mtp.norm"
       }
     }
   }

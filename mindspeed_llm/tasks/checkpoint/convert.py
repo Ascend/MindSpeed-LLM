@@ -35,8 +35,8 @@ class Convert(abc.ABC):
         self.schedules_method = args.schedules_method
         self.mtp_num_layers = args.mtp_num_layers
 
-        # model arguments
-        self.num_layers = None
+        self.num_layers = args.num_layers
+        self.first_k_dense_replace = args.first_k_dense_replace
 
 
     @staticmethod

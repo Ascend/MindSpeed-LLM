@@ -18,18 +18,33 @@ class Hf2MgConvert(Convert):
 
     def __init__(self, args):
         super().__init__(args)
-        self.args = args
         self.load_model = HuggingFaceModel(args)
         self.save_model = MegatronModel(args)
 
         self.load_dir = args.load_dir
         self.save_dir = self.mg_path_process(args.save_dir)
 
-        # model arguments
-        if self.noop_layers is None:
+        if self.num_layers is None:
             self.num_layers = self.load_model.num_layers
         else:
-            self.num_layers = self.load_model.num_layers + len(eval(self.noop_layers))
+            if self.num_layers > self.load_model.num_layers:
+                raise ValueError(
+                    f"Specified num_layers ({self.num_layers}) cannot be greater than "
+                    f"the actual model num_layers ({self.load_model.num_layers})."
+                )
+            logger.warning(
+                f"You specified num_layers = {self.num_layers}, "
+                f"but the actual model has num_layers = {self.load_model.num_layers}."
+            )
+            
+        if self.first_k_dense_replace is None:
+            self.first_k_dense_replace = self.load_model.first_k_dense_replace
+
+        # model arguments
+        if self.noop_layers is None:
+            self.num_layers = self.num_layers
+        else:
+            self.num_layers = self.num_layers + len(eval(self.noop_layers))
 
         if self.num_layers_per_virtual_pipeline_stage is None:
             self.pprank_layer_idxs = defaultdict()
@@ -251,6 +266,10 @@ class Hf2MgConvert(Convert):
             cur_weights = self.load_model.load_hf_model(os.path.join(self.load_dir, filename))
             all_pp_weights.update(cur_weights)
 
+        if self.mtp_num_layers and hasattr(self.load_model, "mtp_reorder_flag", False) \
+        and pp_rank == self.pipeline_model_parallel_size - 1:
+            all_pp_weights = self.load_model.remap_mtp_keys(all_pp_weights, self.load_model.num_layers)
+
         return all_pp_weights
 
     def set_model_preprocess(self, hf_weight, mg_weight):
@@ -404,7 +423,7 @@ class Hf2MgConvert(Convert):
                                 "linear_norm_key", "out_proj_key"])
 
         def _generate_attn_mix_layers_key(mtp_flag, hf_layer_idx):
-            if (hf_layer_idx + 1) % self.load_model.full_attention_interval == 0:
+            if (hf_layer_idx + 1) % self.load_model.full_attention_interval == 0 or mtp_layer_flag:
                 # Attention
                 prefix = "mtp_" if mtp_flag else ""
                 q_key = mg_weight_key[f"{prefix}layers_self_attention_linear_q_proj"]
@@ -551,7 +570,7 @@ class Hf2MgConvert(Convert):
                 k_layernorm = hf_weight.pop(hf_weight_key["layers_self_attention_k_layernorm"])
         
         elif self.load_model.qkv_type == 'mix':
-            if (hf_layer_idx + 1) % self.load_model.full_attention_interval == 0:
+            if (hf_layer_idx + 1) % self.load_model.full_attention_interval == 0 or mtp_layer_flag:
                 hf_q_proj = hf_weight.pop(hf_weight_key["layers_self_attention_linear_q_proj"])
                 hf_k_proj = hf_weight.pop(hf_weight_key["layers_self_attention_linear_k_proj"])
                 hf_v_proj = hf_weight.pop(hf_weight_key["layers_self_attention_linear_v_proj"])
@@ -596,7 +615,7 @@ class Hf2MgConvert(Convert):
                         mg_weight[ep_rank][tp_rank][kv_b_key] = linear_kvb_lst[tp_rank].clone()
                 
                 elif self.load_model.qkv_type == "mix":
-                    if (hf_layer_idx + 1) % self.load_model.full_attention_interval == 0:
+                    if (hf_layer_idx + 1) % self.load_model.full_attention_interval == 0 or mtp_layer_flag:
                         attn_keys = _generate_attn_mix_layers_key(mtp_layer_flag, hf_layer_idx)
                         mg_weight[ep_rank][tp_rank][attn_keys.q_key] = hf_q_proj.clone()
                         mg_weight[ep_rank][tp_rank][attn_keys.k_key] = hf_k_proj.clone()
@@ -626,15 +645,15 @@ class Hf2MgConvert(Convert):
                         mg_weight[ep_rank][tp_rank][qkv_bias_key] = qkv_bias_lst[tp_rank].clone()
 
     def get_first_k_dense_replace(self):
-        if getattr(self.load_model, "first_k_dense_replace", None) is None:
-            num_experts = (getattr(self.args, 'num_experts', None) or
-                           getattr(self.args, 'num_local_experts', None))
+        if getattr(self, "first_k_dense_replace", None) is None:
+            num_experts = (getattr(self.load_model, 'num_experts', None) or
+                           getattr(self.load_model, 'num_local_experts', None))
             if num_experts is None:
                 return self.load_model.num_layers
             else:
                 return 0
         else:
-            return self.load_model.first_k_dense_replace
+            return self.first_k_dense_replace
 
     def set_model_layer_mlp(self, hf_layer_idx, local_layer_idx, hf_weight, mg_weight, mtp_layer_flag=False):
         """MLP layer process"""

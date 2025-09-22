@@ -7,6 +7,7 @@ import json
 import logging as logger
 import os
 from collections import defaultdict
+from collections import namedtuple
 from itertools import product
 
 import numpy as np
@@ -356,7 +357,10 @@ class Mg2HfConvert(Convert):
 
     def set_model_layer_norm(self, hf_weight, mg_weight, hf_layer_idx, local_layer_idx, mtp_layer_flag=False):
         """input norm & post attn norm"""
-        hf_weight_key = self.save_model.get_weight(hf_layer_idx)
+        if self.load_model.qkv_type == "mix":
+            hf_weight_key = self.save_model.get_weight(mtp_layer_flag, hf_layer_idx)
+        else:
+            hf_weight_key = self.save_model.get_weight(layer_idx=hf_layer_idx)
         mg_weight_key = self.load_model.get_weight(local_layer_idx)
         if mtp_layer_flag:
             input_norm_key = mg_weight_key["mtp_layers_input_layernorm"]
@@ -376,9 +380,13 @@ class Mg2HfConvert(Convert):
 
     def set_model_layer_attn(self, hf_weight, mg_weight, hf_layer_idx, local_layer_idx, mtp_layer_flag=False):
         """attn"""
-
-        hf_weight_key = self.save_model.get_weight(hf_layer_idx)
+        if self.load_model.qkv_type == "mix":
+            hf_weight_key = self.save_model.get_weight(mtp_layer_flag, hf_layer_idx)
+        else:
+            hf_weight_key = self.save_model.get_weight(layer_idx=hf_layer_idx)
         mg_weight_key = self.load_model.get_weight(local_layer_idx)
+        hf_module_key = self.save_model.get_module(hf_layer_idx)
+        mg_module_key = self.load_model.get_module(local_layer_idx)
 
         def _generate_mla_attn_layers_key(mtp_layer_flag):
             if mtp_layer_flag:
@@ -418,6 +426,39 @@ class Mg2HfConvert(Convert):
             q_layernorm_key = mg_weight_key["layers_self_attention_q_layernorm"]
             k_layernorm_key = mg_weight_key["layers_self_attention_k_layernorm"]
             return qkv_key, dense_key, q_layernorm_key, k_layernorm_key
+
+        AttnKeys = namedtuple("AttnKeys", [
+                                "q_key", "k_key", "v_key", "o_key", "q_layernorm_key", "k_layernorm_key"])
+
+        MixAttnKeys = namedtuple("MixAttnKeys", [
+                                "A_log_key", "conv1d_key", "dt_bias_key",
+                                "in_proj_ba_key", "in_proj_qkvz_key",
+                                "linear_norm_key", "out_proj_key"])
+
+        def _generate_attn_mix_layers_key(mtp_layer_flag, hf_layer_idx):
+            if (hf_layer_idx + 1) % self.load_model.full_attention_interval == 0 or mtp_layer_flag:
+                # Attention
+                prefix = "mtp_" if mtp_layer_flag else ""
+                q_key = mg_weight_key[f"{prefix}layers_self_attention_linear_q_proj"]
+                k_key = mg_weight_key[f"{prefix}layers_self_attention_linear_k_proj"]
+                v_key = mg_weight_key[f"{prefix}layers_self_attention_linear_v_proj"]
+                o_key = mg_weight_key[f"{prefix}layers_self_attention_linear_proj"]
+                q_layernorm_key = mg_weight_key[f"{prefix}layers_self_attention_q_layernorm"]
+                k_layernorm_key = mg_weight_key[f"{prefix}layers_self_attention_k_layernorm"]
+                return AttnKeys(q_key, k_key, v_key, o_key, q_layernorm_key, k_layernorm_key)
+            else:
+                # mix Attention（linear + conv）
+                prefix = "mtp_" if mtp_layer_flag else ""
+                A_log_key = mg_module_key[f"{prefix}layers_self_attention_linear_A_log"]
+                conv1d_key = mg_weight_key[f"{prefix}layers_self_attention_linear_conv1d"]
+                dt_bias_key = mg_module_key[f"{prefix}layers_self_attention_linear_dt_bias"]
+                in_proj_ba_key = mg_weight_key[f"{prefix}layers_self_attention_linear_in_proj_ba"]
+                in_proj_qkvz_key = mg_weight_key[f"{prefix}layers_self_attention_linear_in_proj_qkvz"]
+                linear_norm_key = mg_weight_key[f"{prefix}layers_self_attention_linear_norm"]
+                out_proj_key = mg_weight_key[f"{prefix}layers_self_attention_linear_out_proj"]
+                return MixAttnKeys(A_log_key, conv1d_key, dt_bias_key,
+                           in_proj_ba_key, in_proj_qkvz_key,
+                           linear_norm_key, out_proj_key)
 
         if self.load_model.qkv_type == "pack_mla":
             linear_proj_list = []
@@ -534,6 +575,26 @@ class Mg2HfConvert(Convert):
             hf_weight[hf_weight_key["layers_self_attention_q_layernorm"]] = q_a_layernorm.clone()
             hf_weight[hf_weight_key["layers_self_attention_k_layernorm"]] = kv_a_layernorm.clone()
 
+        elif self.load_model.qkv_type == "mix":
+            if (hf_layer_idx + 1) % self.load_model.full_attention_interval == 0 or mtp_layer_flag:
+                attn_keys = _generate_attn_mix_layers_key(mtp_layer_flag, hf_layer_idx)
+                hf_weight[hf_weight_key["layers_self_attention_linear_q_proj"]] = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(attn_keys.q_key).clone()
+                hf_weight[hf_weight_key["layers_self_attention_linear_k_proj"]] = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(attn_keys.k_key).clone()
+                hf_weight[hf_weight_key["layers_self_attention_linear_v_proj"]] = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(attn_keys.v_key).clone()
+                hf_weight[hf_weight_key["layers_self_attention_linear_proj"]] = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(attn_keys.o_key).clone()
+                hf_weight[hf_weight_key["layers_self_attention_q_layernorm"]] = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(attn_keys.q_layernorm_key).clone()
+                hf_weight[hf_weight_key["layers_self_attention_k_layernorm"]] = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(attn_keys.k_layernorm_key).clone()
+
+            else:
+                mix_attn_keys = _generate_attn_mix_layers_key(mtp_layer_flag, hf_layer_idx)
+                hf_weight[hf_module_key["layers_self_attention_linear_A_log"]] = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(mix_attn_keys.A_log_key).clone()
+                hf_weight[hf_weight_key["layers_self_attention_linear_conv1d"]] = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(mix_attn_keys.conv1d_key).clone()
+                hf_weight[hf_module_key["layers_self_attention_linear_dt_bias"]] = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(mix_attn_keys.dt_bias_key).clone()
+                hf_weight[hf_weight_key["layers_self_attention_linear_in_proj_ba"]] = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(mix_attn_keys.in_proj_ba_key).clone()
+                hf_weight[hf_weight_key["layers_self_attention_linear_in_proj_qkvz"]] = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(mix_attn_keys.in_proj_qkvz_key).clone()
+                hf_weight[hf_weight_key["layers_self_attention_linear_norm"]] = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(mix_attn_keys.linear_norm_key).clone()
+                hf_weight[hf_weight_key["layers_self_attention_linear_out_proj"]] = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(mix_attn_keys.out_proj_key).clone()
+
 
     def linear_fc1_get_for_etp(self, mg_weight, fc1_key, tp_rank, ep_rank):
         cur_linear_fc1 = mg_weight[(tp_rank, ep_rank)].pop(fc1_key)
@@ -571,35 +632,50 @@ class Mg2HfConvert(Convert):
 
     def set_model_layer_mlp(self, hf_weight, mg_weight, hf_layer_idx, local_layer_idx, mtp_layer_flag=False):
         """ dense + moe """
-        hf_weight_key = self.save_model.get_weight(hf_layer_idx)
+        if self.load_model.qkv_type == "mix":
+            hf_weight_key = self.save_model.get_weight(mtp_layer_flag, hf_layer_idx)
+        else:
+            hf_weight_key = self.save_model.get_weight(layer_idx=hf_layer_idx)
 
         def _generate_moe_layer_key(mtp_layer_flag):
             mg_weight_key = self.load_model.get_weight(local_layer_idx)
             if mtp_layer_flag:
                 router_key = mg_weight_key["mtp_layers_mlp_router"]
                 router_bias_key = mg_weight_key["mtp_layers_mlp_router_bias"]
+                shared_gate_key = mg_weight_key["mtp_layers_mlp_shared_expert_gate"]
                 shared_fc1_key = mg_weight_key["mtp_layers_mlp_shared_experts_linear_fc1"]
                 shared_fc2_key = mg_weight_key["mtp_layers_mlp_shared_experts_linear_fc2"]
-                experts_weight1_key = mg_weight_key["mtp_layers_mlp_experts_weight1"]
-                experts_weight2_key = mg_weight_key["mtp_layers_mlp_experts_weight2"]
             else:
                 router_key = mg_weight_key["layers_mlp_router"]
                 router_bias_key = mg_weight_key["layers_mlp_router_bias"]
+                shared_gate_key = mg_weight_key["layers_mlp_shared_expert_gate"]
                 shared_fc1_key = mg_weight_key["layers_mlp_shared_experts_linear_fc1"]
                 shared_fc2_key = mg_weight_key["layers_mlp_shared_experts_linear_fc2"]
+            return router_key, router_bias_key, shared_gate_key, shared_fc1_key, shared_fc2_key
+
+        def _generate_moe_gemm_layer_key(mtp_layer_flag):
+            mg_weight_key = self.load_model.get_weight(local_layer_idx)
+            if mtp_layer_flag:
+                experts_weight1_key = mg_weight_key["mtp_layers_mlp_experts_weight1"]
+                experts_weight2_key = mg_weight_key["mtp_layers_mlp_experts_weight2"]
+            else:
                 experts_weight1_key = mg_weight_key["layers_mlp_experts_weight1"]
                 experts_weight2_key = mg_weight_key["layers_mlp_experts_weight2"]
-            return router_key, router_bias_key, shared_fc1_key, shared_fc2_key, experts_weight1_key, experts_weight2_key
+            return experts_weight1_key, experts_weight2_key
         
         def _set_model_layer_mlp_for_etp():
             if self.moe_grouped_gemm:
+                experts_weight1_key, experts_weight2_key = _generate_moe_gemm_layer_key(mtp_layer_flag)
                 for (tp_rank, ep_rank) in self.moe_ep_ckpts_list:
-                    cur_weight1 = mg_weight[(tp_rank, ep_rank)].pop(expert_weight1_key).reshape(local_expert_nums, self.load_model.hidden_size, -1)
-                    cur_weight2 = mg_weight[(tp_rank, ep_rank)].pop(expert_weight2_key).reshape(local_expert_nums, -1, self.load_model.hidden_size)
+                    cur_weight1 = mg_weight[(tp_rank, ep_rank)].pop(experts_weight1_key).reshape(local_expert_nums, self.load_model.hidden_size, -1)
+                    cur_weight2 = mg_weight[(tp_rank, ep_rank)].pop(experts_weight2_key).reshape(local_expert_nums, -1, self.load_model.hidden_size)
 
                     for local_idx in range(local_expert_nums):
                         expert_idx = ep_rank * local_expert_nums + local_idx
-                        hf_weight_key = self.save_model.get_weight(hf_layer_idx, expert_idx)
+                        if self.load_model.qkv_type == "mix":
+                            hf_weight_key = self.save_model.get_weight(mtp_layer_flag, hf_layer_idx, expert_idx)
+                        else:
+                            hf_weight_key = self.save_model.get_weight(layer_idx=hf_layer_idx, expert_idx=expert_idx)
                         ep_weight1_expert = cur_weight1[local_idx].t()
                         local_gate, local_up = torch.chunk(ep_weight1_expert, 2, dim=0)
                         local_down = cur_weight2[local_idx].t()
@@ -611,7 +687,10 @@ class Mg2HfConvert(Convert):
                 for (tp_rank, ep_rank) in self.moe_ep_ckpts_list:
                     for local_idx in range(local_expert_nums):
                         expert_idx = ep_rank * local_expert_nums + local_idx
-                        hf_weight_key = self.save_model.get_weight(hf_layer_idx, expert_idx)
+                        if self.load_model.qkv_type == "mix":
+                            hf_weight_key = self.save_model.get_weight(mtp_layer_flag, hf_layer_idx, expert_idx)
+                        else:
+                            hf_weight_key = self.save_model.get_weight(layer_idx=hf_layer_idx, expert_idx=expert_idx)
                         mg_weight_key = self.load_model.get_weight(local_layer_idx, local_idx)
                         local_fc1_key = mg_weight_key["layers_mlp_experts_linear_fc1"]
                         local_fc2_key = mg_weight_key["layers_mlp_experts_linear_fc2"]
@@ -629,16 +708,20 @@ class Mg2HfConvert(Convert):
 
         if hf_layer_idx >= self.first_k_dense_replace:
             # moe
-            router_key, router_bias_key, shared_fc1_key, shared_fc2_key, expert_weight1_key, expert_weight2_key = _generate_moe_layer_key(mtp_layer_flag)
+            router_key, router_bias_key, shared_gate_key, shared_fc1_key, shared_fc2_key \
+                = _generate_moe_layer_key(mtp_layer_flag)
 
             router_weights = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(router_key)
             if hasattr(self.load_model, "router_bias"):
                 router_bias_weights = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(router_bias_key)
                 hf_weight[hf_weight_key["layers_mlp_router_bias"]] = router_bias_weights.clone()
+            if hasattr(self.load_model, "shared_expert_gate"):
+                mlp_shared_expert_gate = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(shared_gate_key)
+                hf_weight[hf_weight_key["layers_mlp_shared_expert_gate"]] = mlp_shared_expert_gate.clone()
             if self.n_shared_experts and self.n_shared_experts != 0:
                 if self.expert_tensor_parallel_size == 1:
-                    shared_gate_weights, shared_up_weights = self.linear_fc1_get_for_etp(mg_weight, shared_fc1_key)
-                    shared_down_weights = self.linear_fc2_get_for_etp(mg_weight, shared_fc2_key)
+                    shared_gate_weights, shared_up_weights = self.linear_fc1_get_for_etp(mg_weight, shared_fc1_key, tp_rank=self.tp_rank_list[0], ep_rank=self.ep_rank_list[0])
+                    shared_down_weights = self.linear_fc2_get_for_etp(mg_weight, shared_fc2_key, tp_rank=self.tp_rank_list[0], ep_rank=self.ep_rank_list[0])
                 else:
                     shared_gate_weights, shared_up_weights = self.linear_fc1_gather_from_tp(mg_weight, shared_fc1_key)
                     shared_down_weights = self.linear_fc2_gather_from_tp(mg_weight, shared_fc2_key)
@@ -655,12 +738,13 @@ class Mg2HfConvert(Convert):
                 _set_model_layer_mlp_for_etp()
                 return
 
+            experts_weight1_key, experts_weight2_key = _generate_moe_gemm_layer_key(mtp_layer_flag)
             if self.moe_grouped_gemm:
                 for ep_rank in self.ep_rank_list:
                     ep_weight1_list, ep_weight2_list = [], []
                     for tp_rank in self.tp_rank_list:
-                        cur_weight1 = mg_weight[(tp_rank, ep_rank)].pop(expert_weight1_key)
-                        cur_weight2 = mg_weight[(tp_rank, ep_rank)].pop(expert_weight2_key)
+                        cur_weight1 = mg_weight[(tp_rank, ep_rank)].pop(experts_weight1_key)
+                        cur_weight2 = mg_weight[(tp_rank, ep_rank)].pop(experts_weight2_key)
                         ep_weight1_list.append(cur_weight1.reshape(local_expert_nums, self.load_model.hidden_size, -1))
                         ep_weight2_list.append(cur_weight2.reshape(local_expert_nums, -1, self.load_model.hidden_size))
 
@@ -681,7 +765,10 @@ class Mg2HfConvert(Convert):
                                 local_w2 = cur_w2_list[idx].reshape(-1, self.hidden_size)
                                 # global expert idx
                                 expert_idx = global_expert_idx * bucket_expert_num + idx
-                                hf_weight_key = self.save_model.get_weight(hf_layer_idx, expert_idx)
+                                if self.load_model.qkv_type == "mix":
+                                    hf_weight_key = self.save_model.get_weight(mtp_layer_flag, hf_layer_idx, expert_idx)
+                                else:
+                                    hf_weight_key = self.save_model.get_weight(layer_idx=hf_layer_idx, expert_idx=expert_idx)
                                 gate, up = torch.chunk(local_w1.t(), 2, dim=0)
                                 down = local_w2.t()
                                 hf_weight[hf_weight_key["layers_mlp_experts_gate_proj"]] = gate.contiguous().clone()
@@ -694,7 +781,10 @@ class Mg2HfConvert(Convert):
 
                         for local_idx in range(local_expert_nums):
                             expert_idx = ep_rank * local_expert_nums + local_idx
-                            hf_weight_key = self.save_model.get_weight(hf_layer_idx, expert_idx)
+                            if self.load_model.qkv_type == "mix":
+                                hf_weight_key = self.save_model.get_weight(mtp_layer_flag, hf_layer_idx, expert_idx)
+                            else:
+                                hf_weight_key = self.save_model.get_weight(layer_idx=hf_layer_idx, expert_idx=expert_idx)
                             gate_list, up_list = [], []
                             ep_weight1_expert = ep_weight1[local_idx].t()
                             cur_w1_list = torch.chunk(ep_weight1_expert, self.tensor_model_parallel_size, dim=0)
@@ -714,7 +804,10 @@ class Mg2HfConvert(Convert):
                 for ep_rank in self.ep_rank_list:
                     for local_idx in range(local_expert_nums):
                         expert_idx = ep_rank * local_expert_nums + local_idx
-                        hf_weight_key = self.save_model.get_weight(hf_layer_idx, expert_idx)
+                        if self.load_model.qkv_type == "mix":
+                            hf_weight_key = self.save_model.get_weight(mtp_layer_flag, hf_layer_idx, expert_idx)
+                        else:
+                            hf_weight_key = self.save_model.get_weight(layer_idx=hf_layer_idx, expert_idx=expert_idx)
                         mg_weight_key = self.load_model.get_weight(local_layer_idx, local_idx)
                         local_fc1_key = mg_weight_key["layers_mlp_experts_linear_fc1"]
                         local_fc2_key = mg_weight_key["layers_mlp_experts_linear_fc2"]
@@ -764,8 +857,8 @@ class Mg2HfConvert(Convert):
 
         eh_proj_weights = torch.cat(eh_proj_list, dim=0)
         emb_weights = torch.cat(emb_list, dim=0)
-
-        hf_weight[hf_weight_key["mtp_layers_embed_tokens"]] = emb_weights.clone()
+        if "mtp_layers_embed_tokens" in hf_weight_key.keys():
+            hf_weight[hf_weight_key["mtp_layers_embed_tokens"]] = emb_weights.clone()
         hf_weight[hf_weight_key["mtp_layers_enorm"]] = enorm.clone()
         hf_weight[hf_weight_key["mtp_layers_hnorm"]] = hnorm.clone()
         hf_weight[hf_weight_key["mtp_layers_eh_proj"]] = eh_proj_weights.clone()
@@ -775,8 +868,8 @@ class Mg2HfConvert(Convert):
         hf_weight[hf_weight_key["mtp_layers_shared_head_norm"]] = mtp_final_norm.clone()
 
         self.set_model_layer_norm(hf_weight, mg_weight, hf_layer_idx, mtp_local_idx, mtp_layer_flag=True)
-        self.set_model_attn(hf_weight, mg_weight, hf_layer_idx, mtp_local_idx, mtp_layer_flag=True)
-        self.set_model_mlp(hf_weight, mg_weight, hf_layer_idx, mtp_local_idx, mtp_layer_flag=True)
+        self.set_model_layer_attn(hf_weight, mg_weight, hf_layer_idx, mtp_local_idx, mtp_layer_flag=True)
+        self.set_model_layer_mlp(hf_weight, mg_weight, hf_layer_idx, mtp_local_idx, mtp_layer_flag=True)
 
 
     def save_safetensors(self, hf_weight, cur_file_idx):
@@ -819,9 +912,10 @@ class Mg2HfConvert(Convert):
             hf_weight_dict = defaultdict()
             if self.mtp_num_layers:
                 for mtp_idx in range(self.mtp_num_layers):
-                    hf_layer_number = self.num_real_layers + mtp_idx
+                    hf_layer_number = mtp_idx if self.load_model.qkv_type == "mix" else self.num_real_layers + mtp_idx
                     logger.info(f"Converting the weights of mtp layer {hf_layer_number}")
                     self.set_mtp_layer(hf_weight_dict, mg_weights, hf_layer_number, mtp_idx)
+                    hf_layer_number = self.num_real_layers + mtp_idx
                     self.save_safetensors(hf_weight_dict, hf_layer_number + 1)
                     hf_weight_dict = defaultdict()
 
@@ -856,9 +950,10 @@ class Mg2HfConvert(Convert):
             hf_weight_dict = defaultdict()
             if self.mtp_num_layers:
                 for mtp_idx in range(self.mtp_num_layers):
-                    hf_layer_number = self.num_real_layers + mtp_idx
+                    hf_layer_number = mtp_idx if self.load_model.qkv_type == "mix" else self.num_real_layers + mtp_idx
                     logger.info(f"Converting the weights of mtp layer {hf_layer_number}")
                     self.set_mtp_layer(hf_weight_dict, mg_weight, hf_layer_number, mtp_idx)
+                    hf_layer_number = self.num_real_layers + mtp_idx
                     self.save_safetensors(hf_weight_dict, hf_layer_number + 1)
                     hf_weight_dict = defaultdict()
 
