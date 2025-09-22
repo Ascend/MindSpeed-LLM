@@ -25,9 +25,9 @@
 
 参考版本配套表，根据系统选择`aarch64`或`x86_64`对应版本的`cann-toolkit`、`cann-kernel`和`cann-nnal`，下载[CANN软件包](https://www.hiascend.com/developer/download/community/result?module=cann)，参考[CANN安装教程](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/81RC1alpha002/softwareinst/instg/instg_0008.html?Mode=PmIns&OS=Ubuntu&Software=cannToolKit)完成cann包安装。
 
-## 1.3 Pytorch后端及相关依赖安装
+## 1.3 PyTorch后端及相关依赖安装
 
-**pytorch后端环境安装，该环境与mindspore环境冲突，请根据需要，择一安装。**
+**PyTorch后端环境安装，该环境与MindSpore环境冲突，请根据需要，择一安装。**
 
 请参考MindSpeed-LLM仓首页[“版本配套表”](../README.md#版本配套表)，准备[torch_npu](https://www.hiascend.com/developer/download/community/result?module=pt)和[apex](https://gitee.com/ascend/apex)，参考[Ascend Extension for PyTorch](https://www.hiascend.com/document/detail/zh/Pytorch/700/configandinstg/instg/insg_0001.html)或执行以下命令安装
 
@@ -70,7 +70,7 @@ pip install -r requirements.txt  # 安装其余依赖库
 
 ## 1.4 MindSpore后端及相关依赖安装
 
-**mindspore后端环境安装，该环境与pytorch环境冲突，请根据需要，择一安装。**
+**MindSpore后端环境安装，该环境与PyTorch环境冲突，请根据需要，择一安装。**
 
 请参考MindSpore仓[“版本配套表”](mindspore/readme.md#版本配套表)，安装指定版本。
 
@@ -101,17 +101,17 @@ mkdir -p ./model_from_hf/qwen2.5-7b-hf
 cd ./model_from_hf/qwen2.5-7b-hf
 
 # wget获取权重文件
-wget https://huggingface.co/Qwen/Qwen2.5-7B/tree/main/config.json
-wget https://huggingface.co/Qwen/Qwen2.5-7B/tree/main/generation_config.json
-wget https://huggingface.co/Qwen/Qwen2.5-7B/tree/main/merges.txt
-wget https://huggingface.co/Qwen/Qwen2.5-7B/tree/main/model-00001-of-00004.safetensors
-wget https://huggingface.co/Qwen/Qwen2.5-7B/tree/main/model-00002-of-00004.safetensors
-wget https://huggingface.co/Qwen/Qwen2.5-7B/tree/main/model-00003-of-00004.safetensors
-wget https://huggingface.co/Qwen/Qwen2.5-7B/tree/main/model-00004-of-00004.safetensors
-wget https://huggingface.co/Qwen/Qwen2.5-7B/tree/main/model.safetensors.index.json
-wget https://huggingface.co/Qwen/Qwen2.5-7B/tree/main/tokenizer.json
-wget https://huggingface.co/Qwen/Qwen2.5-7B/tree/main/tokenizer_config.json
-wget https://huggingface.co/Qwen/Qwen2.5-7B/tree/main/vocab.json
+wget https://huggingface.co/Qwen/Qwen2.5-7B/blob/main/config.json
+wget https://huggingface.co/Qwen/Qwen2.5-7B/blob/main/generation_config.json
+wget https://huggingface.co/Qwen/Qwen2.5-7B/blob/main/merges.txt
+wget https://huggingface.co/Qwen/Qwen2.5-7B/blob/main/model-00001-of-00004.safetensors
+wget https://huggingface.co/Qwen/Qwen2.5-7B/blob/main/model-00002-of-00004.safetensors
+wget https://huggingface.co/Qwen/Qwen2.5-7B/blob/main/model-00003-of-00004.safetensors
+wget https://huggingface.co/Qwen/Qwen2.5-7B/blob/main/model-00004-of-00004.safetensors
+wget https://huggingface.co/Qwen/Qwen2.5-7B/blob/main/model.safetensors.index.json
+wget https://huggingface.co/Qwen/Qwen2.5-7B/blob/main/tokenizer.json
+wget https://huggingface.co/Qwen/Qwen2.5-7B/blob/main/tokenizer_config.json
+wget https://huggingface.co/Qwen/Qwen2.5-7B/blob/main/vocab.json
 ```
 
 通过md5sum验证模型权重文件完整性
@@ -127,7 +127,7 @@ sha256sum model-00004-of-00004.safetensors
 
 ![img_1.png](../sources/images/quick_start/sha256_hf.png)
 
-# 3 基于pytorch后端的预训练
+# 3 基于PyTorch后端的预训练
 
 在这一阶段，我们将基于下载的HuggingFace(hf)原数据，完成权重转换、数据集预处理，启动模型预训练，包含步骤如下：
 
@@ -189,7 +189,7 @@ python convert_ckpt.py \
 
 ## 3.2 预训练数据集处理
 
-通过对各种格式的数据做提前预处理，避免原始数据的反复处理加载，将所有的数据都统一存储到为.bin和.idx两个文件中，详见[预训练数据处理](./pytorch/solutions/pretrain/pretrain_dataset.md)
+通过对各种格式的数据做提前预处理，避免原始数据的反复处理加载，将所有的数据都统一存储到.bin和.idx两个文件中，详见[预训练数据处理](./pytorch/solutions/pretrain/pretrain_dataset.md)
 
 常用的预训练数据集包括alpaca、enwiki、c4等，链接中提供了数据集下载地址。
 
@@ -247,11 +247,11 @@ vi examples/mcore/qwen25/pretrain_qwen25_7b_32k_ptd.sh
 
 # 单机配置如下
 NPUS_PER_NODE=8           # 使用单节点的8卡NPU
-MASTER_ADDR=locahost      # 以本节点ip地址为master_ip
+MASTER_ADDR=localhost      # 以本节点ip地址为master_ip
 MASTER_PORT=6000          # 本节点端口号为6000
 NNODES=1                  # 单机，即一台节点，多机即多节点
 NODE_RANK=0               # 单机RANK为0，多机为(0,NNODES-1)，不同节点不可重复
-WORLD_SIZE=$(($GPUS_PER_NODE * $NNODES))
+WORLD_SIZE=$(($NPUS_PER_NODE * $NNODES))
 
 # 根据实际情况配置权重保存、权重加载、词表、数据集路径
 CKPT_LOAD_DIR="./model_weights/qwen2.5_mcore/"  # 权重加载路径，填入权重转换时保存的权重路径
@@ -306,7 +306,7 @@ MASTER_ADDR=${master_ip}  # 参与多机训练的节点都配置为master_ip
 MASTER_PORT=6000          # 本节点端口号为6000
 NNODES=1                  # 根据参与节点数量配置
 NODE_RANK=0               # 多机为(0,NNODES-1)，不同节点不可重复，master_node rank为0，其ip为master_ip
-WORLD_SIZE=$(($GPUS_PER_NODE * $NNODES))
+WORLD_SIZE=$(($NPUS_PER_NODE * $NNODES))
 
 # 参与节点都要有如下数据
 CKPT_LOAD_DIR="./model_weights/qwen2.5_mcore/"  
@@ -318,9 +318,9 @@ TOKENIZER_PATH="./model_from_hf/qwen2.5-7b-hf/"
 **注意**：
 
 - 多机训练需在多个终端同时启动预训练脚本(每个终端的预训练脚本只有NODE_RANK参数不同，其他参数均相同)
-- 如果使用多机训练，且没有设置数据共享，需要在训练启动脚本中增加`--no-shared-storage`参数，设置此参数之后将会根据布式参数判断非主节点是否需要load数据，并检查相应缓存和生成数据
+- 如果使用多机训练，且没有设置数据共享，需要在训练启动脚本中增加`--no-shared-storage`参数，设置此参数之后将会根据分布式参数判断非主节点是否需要load数据，并检查相应缓存和生成数据
 
-# 4 基于mindspore后端的预训练
+# 4 基于MindSpore后端的预训练
 
 在这一阶段，我们将基于下载的HuggingFace(hf)原数据，完成权重转换、数据集预处理，启动模型预训练，包含步骤如下：
 
@@ -397,7 +397,7 @@ torch.configs.set_pyboost(False)
 
 通过对各种格式的数据做提前预处理，避免原始数据的反复处理加载，将所有的数据都统一存储到为.bin和.idx两个文件中，详见[预训练数据处理](./pytorch/solutions/pretrain/pretrain_dataset.md)。
 
-常用的预训练数据集包括alpaca、enwiki、c4等，链接中提供了数据集下载地址。
+常用的预训练数据集包括Alpaca、enwiki、C4等，链接中提供了数据集下载地址。
 
 ### 预训练数据集下载
 
@@ -453,11 +453,11 @@ vi examples/mindspore/qwen25/pretrain_qwen25_7b_32k_ms.sh
 
 # 单机配置如下
 NPUS_PER_NODE=8           # 使用单节点的8卡NPU
-MASTER_ADDR=locahost      # 以本节点ip地址为master_ip
+MASTER_ADDR=localhost      # 以本节点ip地址为master_ip
 MASTER_PORT=6000          # 本节点端口号为6000
 NNODES=1                  # 单机，即一台节点，多机即多节点
 NODE_RANK=0               # 单机RANK为0，多机为(0,NNODES-1)，不同节点不可重复
-WORLD_SIZE=$(($GPUS_PER_NODE * $NNODES))
+WORLD_SIZE=$(($NPUS_PER_NODE * $NNODES))
 
 # 根据实际情况配置权重保存、权重加载、词表、数据集路径
 CKPT_LOAD_DIR="./model_weights/qwen2.5_mcore/"  # 权重加载路径，填入权重转换时保存的权重路径
@@ -512,7 +512,7 @@ MASTER_ADDR=${master_ip}  # 参与多机训练的节点都配置为master_ip
 MASTER_PORT=6000          # 本节点端口号为6000
 NNODES=1                  # 根据参与节点数量配置
 NODE_RANK=0               # 多机为(0,NNODES-1)，不同节点不可重复，master_node rank为0，其ip为master_ip
-WORLD_SIZE=$(($GPUS_PER_NODE * $NNODES))
+WORLD_SIZE=$(($NPUS_PER_NODE * $NNODES))
 
 # 参与节点都要有如下数据
 CKPT_LOAD_DIR="./model_weights/qwen2.5_mcore/"  
