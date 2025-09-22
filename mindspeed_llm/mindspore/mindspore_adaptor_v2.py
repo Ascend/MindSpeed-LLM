@@ -249,8 +249,9 @@ def _patch_optimizer_and_training(args):
         MindSporeAdaptation.register_patch(target_func_name, reuse_fp32_param_distrib_optimizer_init_wrapper)
 
     # Loss scaling
-    from mindspeed.mindspore.core.optimizer.optimizer import scale_loss
-    MindSporeAdaptation.register_patch('megatron.core.optimizer.optimizer.MegatronOptimizer.scale_loss', scale_loss)
+    if not hasattr(args, 'fp16') or not args.fp16:
+        from mindspeed.mindspore.core.optimizer.optimizer import scale_loss
+        MindSporeAdaptation.register_patch('megatron.core.optimizer.optimizer.MegatronOptimizer.scale_loss', scale_loss)
 
     # Fused AdamW v2
     from torch import npu_apply_fused_adamw_v2
