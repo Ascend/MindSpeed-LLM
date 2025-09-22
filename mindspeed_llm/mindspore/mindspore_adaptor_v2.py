@@ -89,6 +89,9 @@ def _patch_model_and_embedding():
     MindSporeAdaptation.register_patch('megatron.legacy.model.module.fp32_to_float16', fp32_to_float16)
     MindSporeAdaptation.register_patch('megatron.legacy.model.module.float16_to_fp32', float16_to_fp32)
 
+    from mindspeed_llm.mindspore.core.models.common.embeddings.rotary_pos_embedding import apply_llama3_scaling
+    MindSporeAdaptation.register_patch('mindspeed_llm.core.models.common.embeddings.rotary_pos_embedding.apply_llama3_scaling', apply_llama3_scaling)
+
 
 def _patch_tensor_parallel_and_pipeline():
     from mindspeed.mindspore.core.tensor_parallel.mappings import all_to_all_forward
