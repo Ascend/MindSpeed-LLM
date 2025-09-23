@@ -13,9 +13,13 @@
 
 ## 使用方法
 
-本章节以Qwen3-8B模型为例，介绍了预训练启动方法。如果需要使用数据集pack模式，请参考[大模型预训练pack模式](./pretrain_eod.md)。大模型分布式预训练主要包含以下流程：  
+本章节以Qwen3-8B模型为例，介绍了预训练启动方法。大模型分布式预训练主要包含以下流程:
 
 ![预训练流程图](../../../../sources/images/pretrain/process_of_pretraining.png)
+
+注意：
+- 数据预处理时如果需要使用数据集pack模式，请参考[大模型预训练pack模式](./pretrain_eod.md)。
+- 预训练时可以不加载初始权重，此时模型权重采用随机初始化。如果需要加载权重，则需提前进行权重转换，具体请参考[权重转换](../checkpoint_convert.md)章节
 
 第一步，请在训练开始前参考[安装指导](../../install_guide.md)，完成环境安装。请注意由于Qwen3要求使用`transformers>=4.51.0`，因此Python需使用3.9及以上版本。环境搭建完成后，确保在预训练开始前已经配置好昇腾NPU套件相关的环境变量，如下所示：
 
@@ -92,6 +96,7 @@ PP=4 # 模型权重转换的pp大小，在本例中是4
 脚本内的相关参数说明:
 
 - `DATA_PATH`：数据集路径。请注意实际数据预处理生成文件末尾会增加`_text_document`，该参数填写到数据集的文件前缀即可。例如实际的数据集相对路径是`./finetune_dataset/alpaca/alpaca_text_document.bin`等，那么只需要填`./finetune_dataset/alpaca/alpaca_text_document`即可。
+- `CKPT_LOAD_DIR`: 权重加载路径。预训练时可以选择随机初始化模型权重，此时该参数不用配置，同时需要注释掉预训练脚本中的`--load ${CKPT_LOAD_DIR} \`代码行。
 - `tokenizer-type`：参数值为PretrainedFromHF时， 词表路径仅需要填到模型文件夹即可，不需要到tokenizer.model文件；参数值不为PretrainedFromHF时，例如Qwen3Tokenizer，需要指定到tokenizer.model文件。示例如下
 
     ```shell 

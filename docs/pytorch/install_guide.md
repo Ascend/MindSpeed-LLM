@@ -38,20 +38,12 @@ source /usr/local/Ascend/nnal/atb/set_env.sh
 
 ### PTA安装
 
-准备[torch_npu](https://www.hiascend.com/developer/download/community/result?module=pt)和[apex](https://gitee.com/ascend/apex)，执行以下命令安装或参考[Ascend Extension for PyTorch 配置与安装](https://www.hiascend.com/document/detail/zh/Pytorch/60RC2/configandinstg/instg/insg_0001.html)：
+准备[torch_npu](https://www.hiascend.com/developer/download/community/result?module=pt)，执行以下命令安装或参考[Ascend Extension for PyTorch 配置与安装](https://www.hiascend.com/document/detail/zh/Pytorch/60RC2/configandinstg/instg/insg_0001.html)：
 
 ```shell
 # 安装torch和torch_npu 构建参考 https://gitee.com/ascend/pytorch/releases
 pip install torch-2.7.1-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl 
 pip install torch_npu-2.7.1rc1-cp310-cp310-manylinux_2_28_aarch64.whl
-
-# apex for Ascend 构建参考 https://gitee.com/ascend/apex
-git clone -b master https://gitee.com/ascend/apex.git
-cd apex/
-bash scripts/build.sh --python={python_version}
-cd apex/dist/
-pip3 uninstall apex
-pip3 install --upgrade apex-0.1+ascend-{version}.whl # version为python版本和cpu架构
 ```
 
 ### MindSpeed-LLM及相关依赖安装
