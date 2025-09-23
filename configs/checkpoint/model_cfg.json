@@ -161,7 +161,7 @@
         "output_layer": "lm_head"
       }
     },
-    "glm4.5-moe": {
+    "glm45-moe": {
       "__base__": "base",
       "config_set_value": {
         "seq_length": 4096,

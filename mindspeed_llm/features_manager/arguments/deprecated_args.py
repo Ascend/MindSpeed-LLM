@@ -15,13 +15,13 @@ class DeprecatedArgsFeature(MindSpeedFeature):
         group.add_argument('--use-deter-comp', action='store_true', default=False, dest='deprecated_use_deter_comp',
                            help='enable deterministic computing for npu'
                                 'Note: this option is deprecated, please use --npu-deterministic instead!')
-        group.add_argument('--use-mc2', action='store_true', default=False, dest='deprecated_use_mc2',
+        group.add_argument('--use-mc2', action='store_true', dest='deprecated_use_mc2',
                            help='enable mc2'
                                 'Note: this option is deprecated, please use --use-ascend-mc2 instead!')
-        group.add_argument('--cp-attention-mask-type', action='store_true', default=False, dest='deprecated_cp_attention_mask_type',
+        group.add_argument('--cp-attention-mask-type', type=str, default='causal', choices=['causal', 'general'], dest='deprecated_cp_attention_mask_type',
                            help='context parallel attention mask type'
                                 'Note: this option is deprecated, please use --attention-mask-type instead!')
-        group.add_argument('--moe-intermediate-size', action='store_true', default=False, dest='deprecated_moe_intermediate_size',
+        group.add_argument('--moe-intermediate-size', type=int, default=None, dest='deprecated_moe_intermediate_size',
                            help='The ffn hidden size of MoE layer'
                                 'Note: this option is deprecated, please use --moe-ffn-hidden-size instead!')
         group.add_argument('--n-group', type=int, default=None, dest='deprecated_n_group',
@@ -52,62 +52,62 @@ class DeprecatedArgsFeature(MindSpeedFeature):
                                 'Note: this option is deprecated, please use --beta-slow instead!')
 
     def validate_args(self, args):
-        if args.deprecated_use_deter_comp:
+        if args.deprecated_use_deter_comp and not args.npu_deterministic:
             warnings.warn(
                 """The '--use-deter-comp' argument is deprecated and will be removed in the next future version, 
                    please use '--npu-deterministic' instead!""", DeprecationWarning)
             args.npu_deterministic = args.deprecated_use_deter_comp
-        if args.deprecated_use_mc2:
+        if args.deprecated_use_mc2 and not args.use_ascend_mc2:
             warnings.warn(
                 """The '--use-mc2' argument is deprecated and will be removed in the next future version, 
                    please use '--use-ascend-mc2' instead!""", DeprecationWarning)
             args.use_ascend_mc2 = args.deprecated_use_mc2
-        if args.deprecated_cp_attention_mask_type:
+        if args.deprecated_cp_attention_mask_type != 'causal' and args.deprecated_cp_attention_mask_type == 'causal':
             warnings.warn(
                 """The '--cp-attention-mask-type' argument is deprecated and will be removed in the next future version, 
                    please use '--attention-mask-type' instead!""", DeprecationWarning)
             args.attention_mask_type = args.deprecated_cp_attention_mask_type
-        if args.deprecated_moe_intermediate_size:
+        if args.deprecated_moe_intermediate_size and not args.moe_ffn_hidden_size:
             warnings.warn(
                 """The '--moe-intermediate-size' argument is deprecated and will be removed in the next future version, 
                    please use '--moe-ffn-hidden-size' instead!""", DeprecationWarning)
             args.moe_ffn_hidden_size = args.deprecated_moe_intermediate_size
-        if args.deprecated_n_group:
+        if args.deprecated_n_group and not args.moe_router_num_groups:
             warnings.warn(
                 """The '--n-group' argument is deprecated and will be removed in the next future version, 
                    please use '--moe-router-num-groups' instead!""", DeprecationWarning)
             args.moe_router_num_groups = args.deprecated_n_group
-        if args.deprecated_topk_group:
+        if args.deprecated_topk_group and not args.moe_router_group_topk:
             warnings.warn(
                 """The '--topk-group' argument is deprecated and will be removed in the next future version, 
                    please use '--moe-router-group-topk' instead!""", DeprecationWarning)
             args.moe_router_group_topk = args.deprecated_topk_group
-        if args.deprecated_routed_scaling_factor:
+        if args.deprecated_routed_scaling_factor and not args.moe_router_topk_scaling_factor:
             warnings.warn(
                 """The '--routed-scaling-factor' argument is deprecated and will be removed in the next future version, 
                    please use '--moe-router-topk-scaling-factor' instead!""", DeprecationWarning)
             args.moe_router_topk_scaling_factor = args.deprecated_topk_group
-        if args.deprecated_qk_rope_head_dim:
+        if args.deprecated_qk_rope_head_dim and args.qk_pos_emb_head_dim:
             warnings.warn(
                 """The '--qk-rope-head-dim' argument is deprecated and will be removed in the next future version, 
                    please use '--qk-pos-emb-head-dim' instead!""", DeprecationWarning)
             args.qk_pos_emb_head_dim = args.deprecated_qk_rope_head_dim
-        if args.deprecated_qk_nope_head_dim:
+        if args.deprecated_qk_nope_head_dim and args.qk_head_dim:
             warnings.warn(
                 """The '--qk-nope-head-dim' argument is deprecated and will be removed in the next future version, 
                    please use '--qk-head-dim' instead!""", DeprecationWarning)
             args.qk_head_dim = args.deprecated_qk_nope_head_dim
-        if args.deprecated_multi_head_latent_attention:
+        if args.deprecated_multi_head_latent_attention and not args.multi_latent_attention:
             warnings.warn(
                 """The '--multi-head-latent-attention' argument is deprecated and will be removed in the next future version, 
                    please use '--multi-latent-attention' instead!""", DeprecationWarning)
             args.multi_latent_attention = args.deprecated_multi_head_latent_attention
-        if args.deprecated_rope_scaling_beta_fast:
+        if args.deprecated_rope_scaling_beta_fast != 32 and args.beta_fast == 32:
             warnings.warn(
                 """The '--rope-scaling-beta-fast' argument is deprecated and will be removed in the next future version, 
                    please use 'beta-fast' instead!""", DeprecationWarning)
             args.beta_fast = args.deprecated_rope_scaling_beta_fast
-        if args.deprecated_rope_scaling_beta_slow:
+        if args.deprecated_rope_scaling_beta_slow != 1 and args.beta_slow == 1:
             warnings.warn(
                 """The '--rope-scaling-beta-slow' argument is deprecated and will be removed in the next future version, 
                    please use 'beta-slow' instead!""", DeprecationWarning)
