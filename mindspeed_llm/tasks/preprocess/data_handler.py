@@ -326,6 +326,37 @@ class AlpacaPretrainHandler(GeneralPretrainHandler):
         return sample
 
 
+class SharegptPretrainHandler(GeneralPretrainHandler):
+    def __init__(self, args, raw_datasets, tokenizer, splitter):
+        super().__init__(args, raw_datasets, tokenizer, splitter)
+
+    def _filter(self, sample):
+        sample = self._pre_process(sample)
+        for key in self.args.json_keys:
+            text = ""
+            text_list = sample[key]
+            sample_len = len(text_list)
+            for i in range(0, sample_len):
+                text_item = text_list[i]
+                value = text_item.get("value", text_item.get("content", None)) 
+                if value is None: 
+                    raise ValueError("sample does not have value or content field")
+                text = text + value
+            doc_ids = []
+            for sentence in self.splitter.tokenize(text):
+                if len(sentence) > 0:
+                    sentence_ids = self._tokenize(sentence)
+                    doc_ids.append(sentence_ids)
+            if len(doc_ids) > 0 and self.args.append_eod:
+                doc_ids[-1]['input_ids'].append(self.tokenizer.eod)
+                doc_ids[-1]['attention_mask'].append(1)
+                doc_ids[-1]['labels'].append(self.tokenizer.eod)
+            sample[key] = doc_ids
+            # for now, only input_ids are saved
+            sample[key] = list(map(lambda x: x['input_ids'], sample[key]))
+        return sample
+        
+        
 class LlamaFactoryInstructionHandler(BaseDatasetHandler):
     """
     Handle LlamaFactory supported dataset format
