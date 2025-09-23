@@ -123,7 +123,7 @@ def get_modules_from_pretrained(self, device_map="cpu", trust_remote_code=True):
         )]
     else:
         self.module = [AutoModelForCausalLM.from_pretrained(
-            load_dir, trust_remote_code=trust_remote_code, local_files_only=True, low_cpu_mem_usage=False
+            load_dir, device_map=device_map, trust_remote_code=trust_remote_code, local_files_only=True, low_cpu_mem_usage=False
         )]
 
     if self.args_cmd.save_lora_to_hf:
