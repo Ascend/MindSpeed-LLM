@@ -1006,6 +1006,13 @@ def _validate_instruction_finetune(args):
             raise AssertionError('moe_token_dispatcher_type "allgather" is forbidden when use variable seq lengths. you can choose "alltoall_seq"')
 
 
+def _validate_train_mode_conflict(args):
+    if args.stage == 'sft':
+        if args.variable_seq_lengths:
+            if args.neat_pack or args.reset_position_ids:
+                raise AssertionError('pack mode is forbidden when using variable seq lengths.')
+
+
 def _validate_inference_args(args):
     if args.prompt_type is not None and hasattr(args, "hf_chat_template") and args.hf_chat_template:
         raise AssertionError('Prompt-type is forbidden when use huggingface chat template.')
@@ -1457,6 +1464,7 @@ def validate_args_decorator(megatron_validate_args):
         _validate_recompute_in_advance(args)
         _validate_create_attention_mask_in_dataloader(args)
         _validate_instruction_finetune(args)
+        _validate_train_mode_conflict(args)
         _validate_position_embedding(args)
         _validate_inference_args(args)
         _validate_moe_args(args)
