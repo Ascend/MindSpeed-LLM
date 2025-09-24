@@ -28,3 +28,9 @@ class ProfilingFeature(MindSpeedFeature):
                                          help='profiling with cpu info')
         group.add_argument('--profile-save-path', type=str, default='./profile_dir',
                                          help='path to save profiling files')
+
+    def validate_args(self, args):
+        super().validate_args(args)
+
+        if hasattr(args, 'profile_step_start') and args.profile_step_start < 1:
+            raise AssertionError(f'profile_step_start should be greater than 0 but now it is {args.profile_step_start}')
