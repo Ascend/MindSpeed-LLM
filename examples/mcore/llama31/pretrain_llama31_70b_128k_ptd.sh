@@ -36,7 +36,7 @@ GPT_ARGS="
     --micro-batch-size 1 \
     --global-batch-size 256 \
     --sequence-parallel \
-    --sparse-mode 4 \
+    --sparse-mode 2 \
     --use-flash-attn \
     --use-rotary-position-embeddings \
     --use-fused-rmsnorm \

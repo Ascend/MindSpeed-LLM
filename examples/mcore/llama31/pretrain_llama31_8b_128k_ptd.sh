@@ -33,7 +33,7 @@ GPT_ARGS="
     --context-parallel-algo megatron_cp_algo \
     --no-create-attention-mask-in-dataloader \
     --no-shared-storage \
-    --sparse-mode 4 \
+    --sparse-mode 2 \
     --micro-batch-size 1 \
     --global-batch-size 32 \
     --sequence-parallel \
