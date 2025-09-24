@@ -229,8 +229,17 @@ def get_profiler():
         export_type=profile_export_type,
         data_simplification=args.profile_data_simplification,
     )
-    skip_first = args.profile_step_start
+    
+    skip_first = args.profile_step_start - args.iteration - 2
     active = args.profile_step_end - args.profile_step_start
+
+    if args.profile_step_start == args.iteration + 1:
+        warmup = 0
+    elif args.profile_step_start > args.iteration + 1:
+        warmup = 1
+    else:
+        raise AssertionError(f'When loading checkpoint, iteration will be loaded from checkpoint, '
+                             f'profile_step_start should be greater than {args.iteration} but now it is {args.profile_step_start}.')
 
     activites = [torch_npu.profiler.ProfilerActivity.NPU]
     if args.profile_with_cpu:
@@ -241,7 +250,7 @@ def get_profiler():
         record_shapes=args.profile_record_shapes,
         profile_memory=args.profile_with_memory,
         activities=activites,
-        schedule=torch_npu.profiler.schedule(wait=0, warmup=1, active=active, repeat=1, skip_first=skip_first),
+        schedule=torch_npu.profiler.schedule(wait=0, warmup=warmup, active=active, repeat=1, skip_first=skip_first),
         on_trace_ready=torch_npu.profiler.tensorboard_trace_handler(args.profile_save_path),
         experimental_config=experimental_config)
 
