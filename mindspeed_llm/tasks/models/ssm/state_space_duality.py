@@ -275,10 +275,7 @@ class StateSpaceProcessor:
             initial_states = torch.zeros_like(states[:, :1])
         states = torch.cat([initial_states, states], dim=1)
         decay = torch.exp(self._segmented_sum(nn.functional.pad(A_cum[:, :, :, -1], (1, 0)))).to(torch.bfloat16)
-        
-        decay_b = decay.permute(0, 1, 3, 2).contiguous().view(-1, decay.shape[3], decay.shape[2])
-        states_b = states.permute(0, 2, 1, 3, 4).contiguous().view(-1, states.shape[1], states.shape[3] * states.shape[4])
-        new_states = torch.bmm(decay_b, states_b).view(decay.shape[0], decay.shape[1], decay.shape[2], states.shape[-2], states.shape[-1]).permute(0, 2, 1, 3, 4).contiguous()
+        new_states = torch.einsum("bhzc,bchpn->bzhpn", decay, states)
         states, final_state = new_states[:, :-1], new_states[:, -1]
 
         # 状态转换输出
