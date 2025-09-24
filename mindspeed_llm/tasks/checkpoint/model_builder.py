@@ -68,6 +68,7 @@ class HuggingFaceModel(Model):
         super(HuggingFaceModel, self).__init__()
         self.model_cfg = self.read_model_cfg()
         self.model_type_hf = args.model_type_hf
+        self.load_model_type = args.load_model_type
         if args.load_model_type == 'hf':
             self.hf_path = args.load_dir
             self.load_hf_args()
@@ -118,7 +119,7 @@ class HuggingFaceModel(Model):
             value = re.sub(r'\[expert_idx\]', f'.{expert_idx}', value)
             value = value + ".weight" if ("weight" not in value and "bias" not in value) else value
 
-            if mtp_flag and value.startswith("model.layers."):
+            if self.load_model_type == 'mg' and mtp_flag and value.startswith("model.layers."):
                 value = value.replace("model.layers.", "mtp.layers.", 1)
 
             module_key[key] = value
@@ -373,9 +374,9 @@ class MegatronModel(Model):
             module_mapping[
                 "mtp_layers_self_attention_linear_qkv"] = module_layer_mtp + "self_attention.linear_qkv"
             module_mapping[
-                "mtp_layers_self_attention_linear_q_up_proj"] = module_layer_mtp + "self_attention.linear_qb"
+                "mtp_layers_self_attention_linear_q_up_proj"] = module_layer_mtp + "self_attention.linear_q_up_proj"
             module_mapping[
-                "mtp_layers_self_attention_linear_kv_up_proj"] = module_layer_mtp + "self_attention.linear_kvb"
+                "mtp_layers_self_attention_linear_kv_up_proj"] = module_layer_mtp + "self_attention.linear_kv_up_proj"
             module_mapping[
                 "mtp_layers_self_attention_q_layernorm"] = module_layer_mtp + "self_attention.q_layernorm"
             if self.multi_latent_attention:

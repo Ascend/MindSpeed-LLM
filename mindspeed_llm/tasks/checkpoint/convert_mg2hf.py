@@ -715,7 +715,7 @@ class Mg2HfConvert(Convert):
             if hasattr(self.load_model, "router_bias"):
                 router_bias_weights = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(router_bias_key)
                 hf_weight[hf_weight_key["layers_mlp_router_bias"]] = router_bias_weights.clone()
-            if hasattr(self.load_model, "shared_expert_gate"):
+            if getattr(self.load_model, "shared_expert_gate", None):
                 mlp_shared_expert_gate = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(shared_gate_key)
                 hf_weight[hf_weight_key["layers_mlp_shared_expert_gate"]] = mlp_shared_expert_gate.clone()
             if self.n_shared_experts and self.n_shared_experts != 0:
@@ -835,7 +835,7 @@ class Mg2HfConvert(Convert):
     def set_mtp_layer(self, hf_weight, mg_weight, hf_layer_idx, mtp_local_idx=0):
         """all mtp"""
         # preprocess
-        hf_weight_key = self.save_model.get_weight(hf_layer_idx)
+        hf_weight_key = self.save_model.get_weight(layer_idx=hf_layer_idx)
         mg_weight_key = self.load_model.get_weight(mtp_local_idx)
         enorm = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(mg_weight_key["mtp_layers_enorm"])
         hnorm = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(mg_weight_key["mtp_layers_hnorm"])

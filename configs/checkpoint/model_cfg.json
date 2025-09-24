@@ -677,7 +677,7 @@
       "final_layernorm": "model.norm",
       "output_layer": "lm_head",
       "mtp_layers_enorm": "model.layers[layer_idx].enorm",
-      "mtp_layers_hnorm": "model.layers[layer_idx]}.hnorm",
+      "mtp_layers_hnorm": "model.layers[layer_idx].hnorm",
       "mtp_layers_eh_proj": "model.layers[layer_idx].eh_proj",
       "mtp_layers_embed_tokens": "model.layers[layer_idx].embed_tokens",
       "mtp_layers_shared_head_norm": "model.layers[layer_idx].shared_head.norm"

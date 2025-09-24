@@ -266,7 +266,7 @@ class Hf2MgConvert(Convert):
             cur_weights = self.load_model.load_hf_model(os.path.join(self.load_dir, filename))
             all_pp_weights.update(cur_weights)
 
-        if self.mtp_num_layers and hasattr(self.load_model, "mtp_reorder_flag", False) \
+        if self.mtp_num_layers and hasattr(self.load_model, "mtp_reorder_flag") \
         and pp_rank == self.pipeline_model_parallel_size - 1:
             all_pp_weights = self.load_model.remap_mtp_keys(all_pp_weights, self.load_model.num_layers)
 
@@ -302,7 +302,7 @@ class Hf2MgConvert(Convert):
 
     def set_mtp_preprocess(self, hf_layer_idx, mtp_layer_idx, hf_weight, mg_weight):
         """MTP layer preprocess"""
-        hf_weight_key = self.load_model.get_weight(hf_layer_idx)
+        hf_weight_key = self.load_model.get_weight(layer_idx=hf_layer_idx)
         mg_weight_key = self.save_model.get_weight(mtp_layer_idx)
         enorm_weight = hf_weight.pop(hf_weight_key["mtp_layers_enorm"])
         hnorm_weight = hf_weight.pop(hf_weight_key["mtp_layers_hnorm"])
@@ -325,7 +325,7 @@ class Hf2MgConvert(Convert):
 
     def set_mtp_postprocess(self, hf_layer_idx, mtp_layer_idx, hf_weight, mg_weight):
         """MTP layer postprocess"""
-        hf_weight_key = self.load_model.get_weight(hf_layer_idx)
+        hf_weight_key = self.load_model.get_weight(layer_idx=hf_layer_idx)
         mg_weight_key = self.save_model.get_weight(mtp_layer_idx)
         mtp_norm_weight = hf_weight.pop(hf_weight_key["mtp_layers_shared_head_norm"])
 
@@ -336,7 +336,7 @@ class Hf2MgConvert(Convert):
 
     def set_model_layer_norm(self, hf_layer_idx, local_layer_idx, hf_weight, mg_weight, mtp_layer_flag=False):
         """Layernorm process"""
-        hf_weight_key = self.load_model.get_weight(hf_layer_idx)
+        hf_weight_key = self.load_model.get_weight(layer_idx=hf_layer_idx)
         mg_weight_key = self.save_model.get_weight(local_layer_idx)
         input_norm = hf_weight.pop(hf_weight_key["layers_input_layernorm"])
         post_attn_norm = hf_weight.pop(hf_weight_key["layers_self_attention_pre_mlp_layernorm"])
@@ -359,7 +359,7 @@ class Hf2MgConvert(Convert):
     def set_model_layer_attn(self, hf_layer_idx, local_layer_idx, hf_weight, mg_weight, mtp_layer_flag=False):
         """Attention layer process"""
 
-        hf_weight_key = self.load_model.get_weight(hf_layer_idx)
+        hf_weight_key = self.load_model.get_weight(layer_idx=hf_layer_idx)
         mg_weight_key = self.save_model.get_weight(local_layer_idx)
 
         hf_module_key = self.load_model.get_module(hf_layer_idx)
@@ -600,9 +600,6 @@ class Hf2MgConvert(Convert):
                     mg_weight[ep_rank][tp_rank][q_layernorm_key] = q_layernorm.clone()
                     mg_weight[ep_rank][tp_rank][k_layernorm_key] = k_layernorm.clone()
 
-                    if self.qlora_nf4:
-                        self.qlora_nf4_quant(mg_weight, ep_rank, tp_rank, qkv_key, qkv_weight.clone())
-                        self.qlora_nf4_quant(mg_weight, ep_rank, tp_rank, dense_key, dense_lst[tp_rank].clone())
                     if self.mla_mm_split:
                         qk_nope_key, qk_rope_key, kv_nope_key, linear_v_key = _generate_attn_mm_split_key(
                             mtp_layer_flag)
@@ -649,7 +646,7 @@ class Hf2MgConvert(Convert):
             num_experts = (getattr(self.load_model, 'num_experts', None) or
                            getattr(self.load_model, 'num_local_experts', None))
             if num_experts is None:
-                return self.load_model.num_layers
+                return self.num_layers
             else:
                 return 0
         else:
@@ -658,7 +655,7 @@ class Hf2MgConvert(Convert):
     def set_model_layer_mlp(self, hf_layer_idx, local_layer_idx, hf_weight, mg_weight, mtp_layer_flag=False):
         """MLP layer process"""
 
-        hf_weight_key = self.load_model.get_weight(hf_layer_idx)
+        hf_weight_key = self.load_model.get_weight(layer_idx=hf_layer_idx)
         first_k_dense_replace = self.get_first_k_dense_replace()
         if hf_layer_idx >= first_k_dense_replace:
             # moe layer & mtp layer
@@ -705,7 +702,7 @@ class Hf2MgConvert(Convert):
                 return experts_weight1_key, experts_weight2_key
 
             for expert_idx in range(self.load_model.num_experts):
-                hf_weight_key = self.load_model.get_weight(hf_layer_idx, expert_idx)
+                hf_weight_key = self.load_model.get_weight(layer_idx=hf_layer_idx, expert_idx=expert_idx)
 
                 if hasattr(self.load_model, "n_shared_experts"):
                     if self.expert_tensor_parallel_size == 1:
