@@ -32,6 +32,14 @@ class LoraFeature(MindSpeedFeature):
         group.add_argument('--qlora-save-dequantize', action='store_true', default=False,
                             help='Dequantize weights to original precision when saving in QLoRA tuning.')
 
+    def validate_args(self, args):
+        if hasattr(args, 'lora_target_modules') and args.lora_target_modules:
+            if args.moe_grouped_gemm:
+                if hasattr(args, 'qlora') and args.qlora:
+                    raise AssertionError("Qlora finetune does not support `--moe-grouped-gemm`")
+                else:
+                    raise AssertionError("Lora finetune does not support `--moe-grouped-gemm`")
+    
     def register_patches(self, patch_manager, args):
         # for qlora
         from mindspeed_llm.tasks.posttrain.lora.utils import is_enable_qlora
