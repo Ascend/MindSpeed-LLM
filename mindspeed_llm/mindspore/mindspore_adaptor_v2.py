@@ -168,6 +168,16 @@ def _patch_moe_and_communication(args):
         MindSporeAdaptation.register_patch(
             'mindspeed_llm.mindspore.core.tensor_parallel.mappings._AllToAll.forward',
             all_to_all_forward_a2avc)
+    else:
+        from mindspeed.mindspore.core.transformer.moe.moe_feature.tp_extend_ep.token_dispatcher import preprocess
+        MindSporeAdaptation.register_patch(
+            'mindspeed.core.transformer.moe.moe_feature.tp_extend_ep.token_dispatcher.All2AllSeqTp2epDispatcherImpl.preprocess',
+            preprocess)
+    
+    from mindspeed.mindspore.core.transformer.moe.legacy_a2a_token_dispatcher import moealltoallseqtokendispatcher_init
+    MindSporeAdaptation.register_patch(
+        'megatron.core.transformer.moe.legacy_a2a_token_dispatcher.MoEAlltoAllSEQTokenDispatcher.__init__',
+        moealltoallseqtokendispatcher_init)
 
 
 def _patch_optimizer_and_training(args):
