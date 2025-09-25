@@ -30,34 +30,35 @@ CKPT_SAVE_DIR="your model save ckpt path"
 CKPT_LOAD_DIR="your model ckpt path"
 
 TP=8
-PP=4
+PP=1
 EP=1
-CP=2
+CP=4
 CP_TYPE='megatron_cp_algo'
-NUM_LAYERS=56
-SEQ_LEN=32768
+NUM_LAYERS=32
 
 MOE_ARGS="
     --num-experts 8 \
     --expert-model-parallel-size ${EP} \
     --moe-router-topk 2 \
     --moe-router-load-balancing-type aux_loss \
-    --moe-token-dispatcher-type alltoall_seq \
-    --moe-aux-loss-coeff 0.001 \
+    --moe-aux-loss-coeff 0.02 \
     --moe-permutation-async-comm \
+    --moe-token-dispatcher-type alltoall_seq \
+    --moe-grouped-gemm \
     --moe-layer-freq -1 \
     --first-k-dense-replace -1 \
+    --use-cp-send-recv-overlap \
 "
 
 GPT_ARGS="
     --use-mcore-models  \
     --disable-bias-linear \
-    --seq-length ${SEQ_LEN} \
-    --max-position-embeddings ${SEQ_LEN} \
+    --seq-length 32768 \
+    --max-position-embeddings 32768 \
     --num-layers ${NUM_LAYERS} \
-    --hidden-size 6144 \
-    --ffn-hidden-size 16384 \
-    --num-attention-heads 48 \
+    --hidden-size 4096  \
+    --ffn-hidden-size 14336 \
+    --num-attention-heads 32 \
     --init-method-std 0.01 \
     --attention-dropout 0.0 \
     --hidden-dropout 0.0 \
@@ -67,7 +68,6 @@ GPT_ARGS="
     --untie-embeddings-and-output-weights \
     --group-query-attention \
     --num-query-groups 8 \
-    --make-vocab-size-divisible-by 1 \
     --vocab-size 32000 \
     --rotary-base 1000000 \
     --no-masked-softmax-fusion \
@@ -76,25 +76,21 @@ GPT_ARGS="
     --use-fused-swiglu \
     --use-fused-rmsnorm \
     --no-check-for-nan-in-loss-and-grad \
+    --overlap-grad-reduce \
+    --overlap-param-gather \
+    --make-vocab-size-divisible-by 1 \
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \
     --sequence-parallel \
-    --overlap-grad-reduce \
-    --overlap-param-gather \
     --use-distributed-optimizer \
     --context-parallel-size ${CP} \
     --context-parallel-algo  ${CP_TYPE}  \
-    --num-layers-per-virtual-pipeline-stage 2 \
-    --reuse-fp32-param \
-    --recompute-granularity full \
-    --recompute-method uniform \
-    --recompute-num-layers 1 \
     --tokenizer-type Llama2Tokenizer \
     --tokenizer-model ${TOKENIZER_MODEL} \
     --load ${CKPT_LOAD_DIR} \
     --save ${CKPT_SAVE_DIR} \
     --micro-batch-size 1 \
-    --global-batch-size 16 \
+    --global-batch-size 32 \
     --lr 1e-5 \
     --train-iters 2000 \
     --lr-decay-iters 1280 \
@@ -106,7 +102,7 @@ GPT_ARGS="
     --bf16 \
     --no-load-optim \
     --no-load-rng \
-    --no-shared-storage  \
+    --no-shared-storage \
 "
 
 DATA_ARGS="
@@ -117,8 +113,8 @@ DATA_ARGS="
 OUTPUT_ARGS="
     --log-interval 1 \
     --save-interval 2000 \
-    --eval-interval 2000 \
-    --eval-iters 10 \
+    --eval-interval 5001 \
+    --eval-iters 100 \
 "
 
 msrun $DISTRIBUTED_ARGS pretrain_gpt.py \
@@ -128,4 +124,4 @@ msrun $DISTRIBUTED_ARGS pretrain_gpt.py \
   $OUTPUT_ARGS \
   --distributed-backend nccl \
   --ai-framework mindspore \
-  | tee logs/train_mcore_mixtral_8x22b_32k_ptd.log
+  | tee logs/train_mixtral_8x7b_ptd.log 
