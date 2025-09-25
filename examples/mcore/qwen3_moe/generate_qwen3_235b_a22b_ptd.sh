@@ -19,7 +19,7 @@ TP=1
 PP=2
 EP=8
 SEQ_LENGTH=4096
-ROUTER_BALANCING_TYPE='softmax_topk'
+ROUTER_BALANCING_TYPE='aux_loss'
 
 DISTRIBUTED_ARGS="
     --nproc_per_node $NPUS_PER_NODE \
@@ -42,7 +42,6 @@ MOE_ARGS="
     --moe-alltoall-overlap-comm \
     --moe-layer-freq -1 \
     --first-k-dense-replace -1 \
-    --use-fused-moe-token-permute-and-unpermute \
 "
 
 MODEL_PARALLEL_ARGS="
@@ -54,7 +53,6 @@ MODEL_PARALLEL_ARGS="
 
 GPT_ARGS="
     --use-mcore-models \
-    --moe-grouped-gemm \
     --norm-topk-prob \
     --spec mindspeed_llm.tasks.models.spec.qwen3_spec layer_spec \
     --kv-channels 128 \
@@ -63,7 +61,7 @@ GPT_ARGS="
     --hidden-size 4096 \
     --use-rotary-position-embeddings \
     --num-attention-heads 64 \
-    --ffn-hidden-size 8192 \
+    --ffn-hidden-size 12288 \
     --max-position-embeddings 40960 \
     --seq-length ${SEQ_LENGTH} \
     --make-vocab-size-divisible-by 1 \
@@ -100,4 +98,4 @@ torchrun $DISTRIBUTED_ARGS inference.py \
          $GPT_ARGS \
          --load ${CHECKPOINT} \
          --distributed-backend nccl \
-         | tee logs/generate_mcore_qwen3_30b_a3b.log
+         | tee logs/generate_mcore_qwen3_235b_a22b.log

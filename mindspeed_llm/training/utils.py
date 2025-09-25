@@ -102,15 +102,15 @@ def _compute_actual_seq_len(origin_seq):
     return res
 
 
-def recompute_valid_actual_seq_len(actual_seq_len):
+def recompute_valid_actual_seq_len(actual_seq_len, micro_batch_size):
     if len(actual_seq_len) <= 1:
         return actual_seq_len
     s = torch.tensor(actual_seq_len)
     diffs = s[1:] - s[:-1]
     indices = (diffs == 1).nonzero()
-    if len(indices) == 0:
+    if len(indices) < micro_batch_size:
         return s
-    first_continuous = indices[0].item()
+    first_continuous = indices[micro_batch_size - 1].item()
     return torch.cat([s[:first_continuous + 1], s[-1:]]).tolist()
 
 

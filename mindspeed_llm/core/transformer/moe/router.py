@@ -494,6 +494,8 @@ def topk_router_routing(self, logits: torch.Tensor):
         else:
             logits_ = torch.softmax(logits, dim=-1, dtype=torch.float32).type_as(logits)
         scores, indices = torch.topk(logits_, k=self.topk, dim=1)
+        if args.norm_topk_prob:
+            scores = scores / scores.sum(dim=-1, keepdim=True)
         scores = torch.zeros_like(logits_).scatter(1, indices, scores)
         routing_map = torch.zeros_like(logits_).int().scatter(1, indices, 1).bool()
     elif self.routing_type == "group_limited_greedy":
