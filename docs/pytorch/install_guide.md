@@ -1,6 +1,6 @@
 ## 安装指导
 
-请参考首页[依赖信息](../../README.md#版本配套表)选择下载对应依赖版本。
+请参考首页[版本说明](./gitee.com/ascend/MindSpeed-LLM/tree/master/#%E7%89%88%E6%9C%AC%E8%AF%B4%E6%98%8E)选择下载对应依赖版本。
 
 >注意：<br>
 > 1.torch2.6不支持python3.8,请优先使用python3.10;<br>
@@ -42,7 +42,7 @@ source /usr/local/Ascend/nnal/atb/set_env.sh
 
 ```shell
 # 安装torch和torch_npu 构建参考 https://gitee.com/ascend/pytorch/releases
-pip install torch-2.7.1-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl 
+pip install torch-2.7.1-cp310-cp310-manylinux_2_28_aarch64.whl 
 pip install torch_npu-2.7.1rc1-cp310-cp310-manylinux_2_28_aarch64.whl
 ```
 
