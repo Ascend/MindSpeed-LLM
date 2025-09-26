@@ -109,7 +109,7 @@ source /usr/local/Ascend/nnal/atb/set_env.sh # 以具体的nnal路径为主
 
 数据集准备请参考[Alpaca风格数据集](datasets/alpaca_dataset.md)、[ShareGPT风格数据集](datasets/sharegpt_dataset.md)和[Pairwise风格数据集](datasets/pairwise_dataset.md)的相关内容，目前已支持`.parquet`, `.csv`, `.json`, `.jsonl`, `.txt`, `.arrow`的格式的数据文件。
 
-第三步，进行[权重转换](../checkpoint_convert.md)，即将模型原始的HF权重转换成Megatron权重，以Qwen3-8B模型在TP1PP4切分为例，详细配置请参考[Qwen3-8B权重转换脚本](../../../../examples/mcore/qwen3/ckpt_convert_qwen3_hf2mcore.sh)。需要修改脚本中的以下参数配置：
+第三步，进行[权重转换](../checkpoint/checkpoint_convert.md)，即将模型原始的HF权重转换成Megatron权重，以Qwen3-8B模型在TP1PP4切分为例，详细配置请参考[Qwen3-8B权重转换脚本](../../../../examples/mcore/qwen3/ckpt_convert_qwen3_hf2mcore.sh)。需要修改脚本中的以下参数配置：
 
 ```shell
 --load-dir ./model_from_hf/qwen3_hf/ # HF权重路径

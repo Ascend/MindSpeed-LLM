@@ -38,9 +38,13 @@
       <td rowspan="1">收集了部分仓库支持的性能优化和显存优化的特性</td>
     </tr>
     <tr>
-      <td rowspan="4">模型前处理操作</td>
-      <td rowspan="1"><a href="pytorch/solutions/checkpoint_convert.md">checkpoint_convert</a></td>
+      <td rowspan="5">模型前处理操作</td>
+      <td rowspan="1"><a href="pytorch/solutions/checkpoint/checkpoint_convert.md">checkpoint_convert</a></td>
       <td rowspan="1">支持mcore、hf、lora等各种不同格式权重间的部分转换路径</td>
+    </tr>
+    <tr>
+      <td><a href="pytorch/solutions/checkpoint/checkpoint_convert_v2.md">checkpoint_convert_v2</a></td>
+      <td>支持大参数模型mcore、hf等各种不同格式权重间的转换</td>
     </tr>
     <tr>
       <td rowspan="1"><a href="pytorch/solutions/pretrain/pretrain_dataset.md">pretrain_dataset</a></td>

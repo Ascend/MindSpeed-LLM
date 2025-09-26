@@ -44,7 +44,7 @@
 
 从Huggingface等网站下载开源模型权重
 
-预训练权重链接在 [稠密模型](../models/dense_model.md)和[MoE模型](../models/moe_model.md) 章节列表的`参数`列链接中可以获取；更多社区资源可以在`模型`列链接中获取，如`Chat/Instruct`权重等。
+预训练权重链接在 [稠密模型](../../models/dense_model.md)和[MoE模型](../../models/moe_model.md) 章节列表的`参数`列链接中可以获取；更多社区资源可以在`模型`列链接中获取，如`Chat/Instruct`权重等。
 
 权重可以基于网页直接下载，也可以基于命令行下载，保存到MindSpeed-LLM/model_from_hf目录，比如：
 
@@ -183,6 +183,10 @@ bash examples/mcore/llama2/ckpt_convert_llama2_hf2mcore.sh
 1、转到Huggingface权重必须设置--target-tensor-parallel-size = 1、--target-pipeline-parallel-size = 1，因为Huggingface权重不涉及并行切分。
 
 2、转换成功后的权重保存目录下仅包含模型权重文件，不会生成config.json模型配置文件和tokenizer.model、vocab.json等词表文件。
+
+3、`--save-dir` 必须要填原始HuggingFace模型路径，并且路径下需要包括完整的HuggingFace模型文件，包括权重和配置文件。
+
+4、如果Megatron-LM 权重配置了空层，在Megatron-LM权重转换到Huggingface格式时，也需要在命令行加上`相同的空层配置`,并加参数 `--load-checkpoint-loosely`
 
 下面提供一个Llama2-7b模型的mg-hf权重转换脚本仅供参考：
 
@@ -529,30 +533,5 @@ MindSpeed-LLM 支持 Huggingface 和 Megatron-Core 之间的权重格式互转�
       <td>自定义空操作层</td>
       <td>--noop-layers</td>
     </tr>
-    <tr>
-      <td rowspan="6">distributed-optimizer</td>
-      <td>张量并行</td>
-      <td>--target-tensor-parallel-size</td>
-    </tr>
-    <tr>
-      <td>流水并行</td>
-      <td>--target-pipeline-parallel-size</td>
-    </tr>
-    <tr>
-      <td>专家并行</td>
-      <td>--target-expert-model-parallel-size</td>
-    </tr>
-    <tr>
-      <td>虚拟流水并行</td>
-      <td>--num-layers-per-virtual-pipeline-stage</td>
-    </tr>
-    <tr>
-      <td>流水并行动态划分</td>
-      <td>--target-expert-model-parallel-size</td>
-    </tr>
-    <tr>
-      <td>自定义空操作层</td>
-      <td>--noop-layers</td>
-    </tr>
-  </tbody>
+
 </table>
