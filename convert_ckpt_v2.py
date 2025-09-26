@@ -40,8 +40,6 @@ def get_args():
                         help="use tp group to extend experts parallism instead of sharding weight tensor of experts in tp group")
     parser.add_argument('--mla-mm-split', action='store_true', default=False,
                         help='Split 2 up-proj matmul into 4 in MLA')
-    parser.add_argument("--shared-expert-gate", action='store_true',
-                       help="moe model has shared expert gate")
     parser.add_argument('--schedules-method', type=str, default=None, choices=['dualpipev'],
                         help='An innovative bidirectional pipeline parallelism algorithm.')
     parser.add_argument('--first-k-dense-replace', type=int, default=None,

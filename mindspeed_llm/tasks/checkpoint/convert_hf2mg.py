@@ -373,10 +373,10 @@ class Hf2MgConvert(Convert):
             if mtp_flag:
                 qkv_key = mg_weight_key["mtp_layers_self_attention_linear_qkv"]
                 dense_key = mg_weight_key["mtp_layers_self_attention_linear_proj"]
-                q_b_key = mg_weight_key["layers_self_attention_linear_q_up_proj"]
-                kv_b_key = mg_weight_key["layers_self_attention_linear_kv_up_proj"]
+                q_b_key = mg_weight_key["mtp_layers_self_attention_linear_q_up_proj"]
+                kv_b_key = mg_weight_key["mtp_layers_self_attention_linear_kv_up_proj"]
                 q_layernorm_key = mg_weight_key["mtp_layers_self_attention_q_layernorm"]
-                kv_layernorm_key = mg_weight_key["layers_self_attention_kv_layernorm"]
+                kv_layernorm_key = mg_weight_key["mtp_layers_self_attention_kv_layernorm"]
             else:
                 qkv_key = mg_weight_key["layers_self_attention_linear_qkv"]
                 dense_key = mg_weight_key["layers_self_attention_linear_proj"]
@@ -479,8 +479,6 @@ class Hf2MgConvert(Convert):
             ], dim=1).reshape(-1)
 
         if self.load_model.qkv_type == "pack_mla":
-            qkv_key, dense_key, q_layernorm_key, kv_layernorm_key, q_b_key, kv_b_key = _generate_mla_attn_layers_key(
-                mtp_layer_flag)
             hf_q_proj = hf_weight.pop(hf_weight_key["layers_self_attention_linear_q_proj"])
             hf_kv_proj = hf_weight.pop(hf_weight_key["layers_self_attention_linear_kv_proj"])
             qkv_weight = torch.cat([hf_q_proj.reshape((-1, self.load_model.hidden_size)),
