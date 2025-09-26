@@ -5,8 +5,10 @@
 下载[驱动固件](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/83RC1alpha001/softwareinst/instg/instg_0003.html?Mode=PmIns&OS=Debian&Software=cannToolKit)，请根据系统和硬件产品型号选择对应版本的`driver`和`firmware`。参考[安装NPU驱动固件](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/83RC1alpha001/softwareinst/instg/instg_0005.html?Mode=PmIns&OS=Debian&Software=cannToolKit)或执行以下命令安装：
 
 ```shell
-bash Ascend-hdk-<chip_type>-npu-driver_<version>_linux-<arch>.run --full
-bash Ascend-hdk-<chip_type>-npu-firmware_<version> --full --force
+chmod +x Ascend-hdk-<chip_type>-npu-driver_<version>_linux-<arch>.run
+chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
+./Ascend-hdk-<chip_type>-npu-driver_<version>_linux-<arch>.run --full --force
+./Ascend-hdk-<chip_type>-npu-firmware_<version>.run --full
 ```
 
 ### CANN安装
@@ -15,10 +17,13 @@ bash Ascend-hdk-<chip_type>-npu-firmware_<version> --full --force
 
 ```shell
 # 因为版本迭代，包名存在出入，根据实际修改
-bash Ascend-cann-toolkit_<version>_linux-<arch>.run --full
-bash Ascend-cann-kernels-<chip_type>_<version>_linux-<arch>.run --install
+chmod +x Ascend-cann-toolkit_<version>_linux-<arch>.run
+./Ascend-cann-toolkit_<version>_linux-<arch>.run --install
+chmod +x Ascend-cann-kernels-<chip_type>_<version>_linux-<arch>.run
+./Ascend-cann-kernels-<chip_type>_<version>_linux-<arch>.run --install
 source /usr/local/Ascend/ascend-toolkit/set_env.sh # 安装nnal包需要source环境变量
-bash Ascend-cann-nnal_<version>_linux-<arch>.run --install
+chmod +x Ascend-cann-nnal-<chip_type>_<version>_linux-<arch>.run
+./Ascend-cann-nnal-<chip_type>_<version>_linux-<arch>.run --install
 # 设置环境变量
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
 source /usr/local/Ascend/nnal/atb/set_env.sh --cxx_abi=0

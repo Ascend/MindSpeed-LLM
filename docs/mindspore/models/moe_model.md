@@ -43,7 +43,7 @@
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/deepseek-ai/DeepSeek-V2.5">DeepSeek-V2.5</a></td>
       <td><a href="https://huggingface.co/deepseek-ai/DeepSeek-V2.5/tree/main">236B</a></td>
-      <td><a href="../../../examples/mindspore/">deepseek25</a></td>
+      <td><a href="../../../examples/mindspore/deepseek25">deepseek25</a></td>
       <td> 8K </td>
       <th>Mcore</th>
       <td> 20x8 </td>
@@ -120,7 +120,7 @@
       <tr>
         <td rowspan="1"> <a href="https://huggingface.co/collections/Qwen/qwen3-67dd247413f0e2e4f653967f">Qwen3</a> </td>
         <td><a href="https://huggingface.co/Qwen/Qwen3-30B-A3B-Base">30B</a></td>
-        <td><a href="../../../examples/mindspore/qwen3_moe">Qwen3-30B-A3B</a></td>
+        <td><a href="../../../examples/mindspore/qwen3_moe">/qwen3_moe</a></td>
         <td> 4K </td>
         <th> Mcore </th>
         <td> 2x8 </td>
