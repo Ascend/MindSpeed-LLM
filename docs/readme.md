@@ -108,28 +108,6 @@
       <td><a href="pytorch/solutions/evaluation/evaluation_datasets">evaluation_datasets</a></td>
       <td rowspan="1">仓库支持评估数据集</td>
     </tr>
-    <tr>
-      <td rowspan="3">模型偏好训练方法</td>
-      <td rowspan="1"><a href="pytorch/solutions/preference-alignment/offline_dpo.md">offline_dpo</a></td>
-      <td rowspan="1">基于数据偏好训练模型，但不会使用policy-model进行推理并参与其权重更新</td>
-    </tr>
-    <tr>
-      <td rowspan="1"><a href="pytorch/solutions/preference-alignment/simpo.md">simpo</a></td>
-      <td rowspan="1">简单偏好训练优化方法</td>
-    </tr>
-    <tr>
-      <td rowspan="1"><a href="pytorch/solutions/preference-alignment/trl_ppo.md">trl_ppo</a></td>
-      <td rowspan="1">强化学习优化策略方法</td>
-    </tr>
-    <tr>
-      <td rowspan="2">奖励模型方案</td>
-      <td><a href="pytorch/solutions/preference-alignment/process_reward_model.md">process_reward_model</a></td>
-      <td rowspan="1">过程奖励模型</td>
-    </tr>
-    <tr>
-      <td><a href="pytorch/solutions/preference-alignment/outcome_reward_model.md">outcome_reward_model</a></td>
-      <td rowspan="1">结果奖励模型</td>
-    </tr>
   </tbody>
 </table>
 
