@@ -1,5 +1,5 @@
   <p align="center"> <img src="sources/images/readme/logo.png" height="110px" width="500px"> </p>
-
+# 通知: 本项目已经正式迁移至 [Gitcode](https://gitcode.com/Ascend) 平台
 <p align="center">
     <a href="https://gitee.com/ascend/MindSpeed-LLM/blob/2.1.0/LICENSE">
     <a href="https://gitee.com/ascend/MindSpeed-LLM/blob/2.1.0/LICENSE">
