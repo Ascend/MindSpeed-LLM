@@ -92,7 +92,7 @@ GPT_ARGS="
     --max-position-embeddings ${SEQ_LENGTH} \
     --num-layers 48 \
     --hidden-size 2048 \
-    --ffn-hidden-size 8192 \
+    --ffn-hidden-size 12288 \
     --num-attention-heads 32 \
     --tokenizer-type PretrainedFromHF \
     --make-vocab-size-divisible-by 1 \

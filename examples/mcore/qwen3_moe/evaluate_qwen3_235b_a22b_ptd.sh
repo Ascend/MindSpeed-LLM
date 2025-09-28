@@ -55,7 +55,7 @@ GPT_ARGS="
         --use-flash-attn \
         --reuse-fp32-param \
         --hidden-size 4096 \
-        --ffn-hidden-size 8192 \
+        --ffn-hidden-size 12288 \
         --num-attention-heads 64 \
         --group-query-attention \
         --num-query-groups 4 \
