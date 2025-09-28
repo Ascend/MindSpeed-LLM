@@ -157,7 +157,7 @@ python convert_ckpt.py \
 
 1、VPP和动态PP划分只能二选一
 
-2、目前支持的模型见 [model_cfg.json](https://gitee.com/ascend/MindSpeed-LLM/blob/2.1.0/configs/checkpoint/model_cfg.json)中“model_mappings”下包含的模型。
+2、目前支持的模型见 [model_cfg.json](https://gitcode.com/ascend/MindSpeed-LLM/blob/2.1.0/configs/checkpoint/model_cfg.json)中“model_mappings”下包含的模型。
 
 
 【启动脚本】
