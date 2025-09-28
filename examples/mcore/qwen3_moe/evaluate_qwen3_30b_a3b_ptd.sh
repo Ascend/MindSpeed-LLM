@@ -55,7 +55,7 @@ torchrun $DISTRIBUTED_ARGS evaluation.py \
         --expert-model-parallel-size ${EP} \
         --num-layers 48 \
         --hidden-size 2048 \
-        --ffn-hidden-size 8192 \
+        --ffn-hidden-size 6144 \
         --num-attention-heads 32 \
         --group-query-attention \
         --num-query-groups 4 \
