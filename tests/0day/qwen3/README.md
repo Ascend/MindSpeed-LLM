@@ -175,6 +175,6 @@ commit_id=0720e20
 
 ### 声明
 
-0day系列模型尚有部分功能处于内部测试阶段，未完成充分的性能测试和验收。在实际使用中可能存在未被发现的问题，待后续充分验证后会发布正式版本。相关使用问题请反馈至[MindSpeed-LLM/issues](https://gitee.com/ascend/MindSpeed-LLM/issues)。
+0day系列模型尚有部分功能处于内部测试阶段，未完成充分的性能测试和验收。在实际使用中可能存在未被发现的问题，待后续充分验证后会发布正式版本。相关使用问题请反馈至[MindSpeed-LLM/issues](https://gitcode.com/ascend/MindSpeed-LLM/issues)。
 
 MindSpeed-LLM框架将持续支持相关主流模型演进，并根据开源情况面向全体开发者提供支持。

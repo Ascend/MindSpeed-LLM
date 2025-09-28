@@ -563,7 +563,7 @@ MindSpore后端仅支持以mcore方式实现的稠密模型，对Legacy方式实
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/01-ai">Yi</a></td>
       <td><a href="https://huggingface.co/01-ai/Yi-34B/tree/main">34B</a></td>
-      <td rowspan="1"><a href="https://gitee.com/ascend/MindSpeed-LLM/tree/2.0.0/examples/legacy/yi">yi</a></td>
+      <td rowspan="1"><a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.0.0/examples/legacy/yi">yi</a></td>
       <td> 4K</td>
       <th>Mcore</th>
       <td>2x8</td>

@@ -45,7 +45,7 @@
 ## 运行安全声明
 
 1. 建议用户结合运行资源状况编写对应训练脚本。若训练脚本与资源状况不匹配，如数据集加载内存大小超出内存容量限制、训练脚本在本地生成数据超过磁盘空间大小等情况，可能引发错误并导致进程意外退出。
-2. MindSpeed-LLM内部用到了PyTorch,可能会因为版本不匹配导致运行错误，具体可参考PyTorch[安全声明](https://gitee.com/ascend/pytorch#%E5%AE%89%E5%85%A8%E5%A3%B0%E6%98%8E)。
+2. MindSpeed-LLM内部用到了PyTorch,可能会因为版本不匹配导致运行错误，具体可参考PyTorch[安全声明](https://gitcode.com/ascend/pytorch#%E5%AE%89%E5%85%A8%E5%A3%B0%E6%98%8E)。
 3. 本软件使用PyTorch的torch.load做模型加载，代码中存在该接口使用场景配置参数weights_only=True,对于PyTorch版本<=2.5.1时，存在反序列化漏洞CVE-2025-32434,请用户保障所加载权重的安全性，避免恶意模型加载使执行机/设备遭到攻击。
 
 ## 公网地址声明
@@ -60,19 +60,19 @@
 | 自研 | 不涉及       | mindspeed_llm/core/transformer/moe/moe_utils.py:135             | https://arxiv.org/abs/2101.03961                             | 论文地址     |
 | 自研 | 涉及         | mindspeed_llm/tasks/data/collator.py:4                          | https://github.com/OpenAccess-AI-Collective/axolotl/blob/main/src/axolotl/monkeypatch/utils.py | 源代码地址   |
 | 自研 | 涉及         | mindspeed_llm/core/distributed/distributed_data_parallel.py:126 | https://github.com/NVIDIA/TransformerEngine/pull/719         | 源代码地址   |
-| 自研 | 不涉及       | mindspeed_llm/core/datasets/gpt_dataset.py:159, 219             | https://gitee.com/ascend/MindSpeed-LLM/wikis/megatron%20data%20helpers%E5%8F%AF%E8%83%BD%E5%BC%95%E5%85%A5%E7%9A%84%E9%97%AE%E9%A2%98 | 详情地址     |
+| 自研 | 不涉及       | mindspeed_llm/core/datasets/gpt_dataset.py:159, 219             | https://gitcode.com/ascend/MindSpeed-LLM/wiki/megatron%20data%20helpers%E5%8F%AF%E8%83%BD%E5%BC%95%E5%85%A5%E7%9A%84%E9%97%AE%E9%A2%98 | 详情地址     |
 
 ## 公开接口声明
-MindSpeed-LLM 暂时未发布wheel包，无正式对外公开接口，所有功能均通过shell脚本调用。5个入口脚本分别为[pretrain_gpt.py](https://gitee.com/ascend/MindSpeed-LLM/blob/master/pretrain_gpt.py), [inference.py](https://gitee.com/ascend/MindSpeed-LLM/blob/master/inference.py), [evaluation.py](https://gitee.com/ascend/MindSpeed-LLM/blob/master/evaluation.py), [preprocess_data.py](https://gitee.com/ascend/MindSpeed-LLM/blob/master/preprocess_data.py) 和 [convert_ckpt.py](https://gitee.com/ascend/MindSpeed-LLM/blob/master/convert_ckpt.py)。
+MindSpeed-LLM 暂时未发布wheel包，无正式对外公开接口，所有功能均通过shell脚本调用。5个入口脚本分别为[pretrain_gpt.py](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/pretrain_gpt.py), [inference.py](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/inference.py), [evaluation.py](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/evaluation.py), [preprocess_data.py](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/preprocess_data.py) 和 [convert_ckpt.py](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/convert_ckpt.py)。
 
 
 ## 通信安全加固
 
-[通信安全加固说明](https://gitee.com/ascend/pytorch/blob/master/SECURITYNOTE.md#%E9%80%9A%E4%BF%A1%E5%AE%89%E5%85%A8%E5%8A%A0%E5%9B%BA)
+[通信安全加固说明](https://gitcode.com/ascend/pytorch/blob/master/SECURITYNOTE.md#%E9%80%9A%E4%BF%A1%E5%AE%89%E5%85%A8%E5%8A%A0%E5%9B%BA)
 
 ## 通信矩阵
 
-[通信矩阵说明](https://gitee.com/ascend/pytorch/blob/master/SECURITYNOTE.md#%E9%80%9A%E4%BF%A1%E7%9F%A9%E9%98%B5%E4%BF%A1%E6%81%AF)
+[通信矩阵说明](https://gitcode.com/ascend/pytorch/blob/master/SECURITYNOTE.md#%E9%80%9A%E4%BF%A1%E7%9F%A9%E9%98%B5%E4%BF%A1%E6%81%AF)
 
 ### 特殊场景
 | 场景                                  | 使用方法                                         | 端口 | 可能的风险       |
