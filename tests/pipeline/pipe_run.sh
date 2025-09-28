@@ -6,7 +6,7 @@ source /usr/local/Ascend/ascend-toolkit/set_env.sh
 source /usr/local/Ascend/nnal/atb/set_env.sh
 
 # 安装加速库
-git clone -b core_r0.8.0 https://gitee.com/ascend/MindSpeed.git
+git clone -b core_r0.8.0 https://gitcode.com/ascend/MindSpeed.git
 cd MindSpeed
 
 # checkout commit from MindSpeed core_r0.8.0 in 2025.02.26
@@ -15,7 +15,7 @@ pip install -r requirements.txt
 pip3 install -e .
 cd ..
 
-git clone -b master https://gitee.com/ascend/MindSpeed-LLM.git
+git clone -b master https://gitcode.com/ascend/MindSpeed-LLM.git
 cd MindSpeed-LLM
 
 pip install -r requirements.txt

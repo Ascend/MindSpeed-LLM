@@ -53,11 +53,11 @@ MindSpore后端对MindSpeed的重要加速特性的支持情况如下表所示�
 <tbody>
   <tr>
     <td rowspan="5">SPTD并行</td>
-    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/tensor-parallel.md">张量并行</a></td>
+    <td><a href="https://gitcode.com/ascend/MindSpeed/blob/master/docs/features/tensor-parallel.md">张量并行</a></td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/pipeline-parallel.md">流水线并行</a></td>
+    <td><a href="https://gitcode.com/ascend/MindSpeed/blob/master/docs/features/pipeline-parallel.md">流水线并行</a></td>
     <td>✅</td>
   </tr>
   <tr>
@@ -65,11 +65,11 @@ MindSpore后端对MindSpeed的重要加速特性的支持情况如下表所示�
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/sequence-parallel.md">序列并行</a></td>
+    <td><a href="https://gitcode.com/ascend/MindSpeed/blob/master/docs/features/sequence-parallel.md">序列并行</a></td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/noop-layers.md">Noop Layers</a></td>
+    <td><a href="https://gitcode.com/ascend/MindSpeed/blob/master/docs/features/noop-layers.md">Noop Layers</a></td>
     <td>✅</td>
   </tr>
   <tr>
@@ -78,11 +78,11 @@ MindSpore后端对MindSpeed的重要加速特性的支持情况如下表所示�
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/ulysses-context-parallel.md">Ulysses 长序列并行</a></td>
+    <td><a href="https://gitcode.com/ascend/MindSpeed/blob/master/docs/features/ulysses-context-parallel.md">Ulysses 长序列并行</a></td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/hybrid-context-parallel.md">混合长序列并行</a></td>
+    <td><a href="https://gitcode.com/ascend/MindSpeed/blob/master/docs/features/hybrid-context-parallel.md">混合长序列并行</a></td>
     <td>❌</td>
   </tr>
   <tr>
@@ -91,20 +91,20 @@ MindSpore后端对MindSpeed的重要加速特性的支持情况如下表所示�
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/megatron_moe/megatron-moe-allgather-dispatcher.md">MOE 重排通信优化</a></td>
+    <td><a href="https://gitcode.com/ascend/MindSpeed/blob/master/docs/features/megatron_moe/megatron-moe-allgather-dispatcher.md">MOE 重排通信优化</a></td>
     <td>仅支持alltoall</td>
   </tr>
   <tr>
     <td rowspan="6">显存优化</td>
-    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/reuse-fp32-param.md">参数副本复用</a></td>
+    <td><a href="https://gitcode.com/ascend/MindSpeed/blob/master/docs/features/reuse-fp32-param.md">参数副本复用</a></td>
     <td>须和分布式优化器特性一起使用</td>
   </tr>
     <tr>
-    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/distributed-optimizer.md">分布式优化器</a></td>
+    <td><a href="https://gitcode.com/ascend/MindSpeed/blob/master/docs/features/distributed-optimizer.md">分布式优化器</a></td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/swap_attention.md">Swap Attention</a></td>
+    <td><a href="https://gitcode.com/ascend/MindSpeed/blob/master/docs/features/swap_attention.md">Swap Attention</a></td>
     <td>❌</td>
   </tr>
   <tr>
@@ -112,7 +112,7 @@ MindSpore后端对MindSpeed的重要加速特性的支持情况如下表所示�
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/norm-recompute.md">Norm重计算</a></td>
+    <td><a href="https://gitcode.com/ascend/MindSpeed/blob/master/docs/features/norm-recompute.md">Norm重计算</a></td>
     <td>✅</td>
   </tr>
   <tr>
@@ -121,7 +121,7 @@ MindSpore后端对MindSpeed的重要加速特性的支持情况如下表所示�
   </tr>
   <tr>
     <td rowspan="7">融合算子</td>
-    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/flash-attention.md">Flash attention</a></td>
+    <td><a href="https://gitcode.com/ascend/MindSpeed/blob/master/docs/features/flash-attention.md">Flash attention</a></td>
     <td>✅</td>
   </tr>
   <tr>
@@ -129,36 +129,36 @@ MindSpore后端对MindSpeed的重要加速特性的支持情况如下表所示�
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/rms_norm.md">Fused rmsnorm</a></td>
+    <td><a href="https://gitcode.com/ascend/MindSpeed/blob/master/docs/features/rms_norm.md">Fused rmsnorm</a></td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/swiglu.md">Fused swiglu</a></td>
+    <td><a href="https://gitcode.com/ascend/MindSpeed/blob/master/docs/features/swiglu.md">Fused swiglu</a></td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/rotary-embedding.md">Fused rotary position embedding</a></td>
+    <td><a href="https://gitcode.com/ascend/MindSpeed/blob/master/docs/features/rotary-embedding.md">Fused rotary position embedding</a></td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/megatron_moe/megatron-moe-gmm.md">GMM</a></td>
+    <td><a href="https://gitcode.com/ascend/MindSpeed/blob/master/docs/features/megatron_moe/megatron-moe-gmm.md">GMM</a></td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/npu_matmul_add.md">Matmul Add</a></td>
+    <td><a href="https://gitcode.com/ascend/MindSpeed/blob/master/docs/features/npu_matmul_add.md">Matmul Add</a></td>
     <td>✅</td>
   </tr>
   <tr>
     <td rowspan="6">通信优化</td>
-    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/async-ddp-param-gather.md">梯度reduce通算掩盖</a></td>
+    <td><a href="https://gitcode.com/ascend/MindSpeed/blob/master/docs/features/async-ddp-param-gather.md">梯度reduce通算掩盖</a></td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/recompute_independent_pipelining.md">Recompute in advance</a></td>
+    <td><a href="https://gitcode.com/ascend/MindSpeed/blob/master/docs/features/recompute_independent_pipelining.md">Recompute in advance</a></td>
     <td>❌</td>
   </tr>
   <tr>
-    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/async-ddp-param-gather.md">权重all-gather通算掩盖</a></td>
+    <td><a href="https://gitcode.com/ascend/MindSpeed/blob/master/docs/features/async-ddp-param-gather.md">权重all-gather通算掩盖</a></td>
     <td>✅</td>
   </tr>
   <tr>
@@ -170,7 +170,7 @@ MindSpore后端对MindSpeed的重要加速特性的支持情况如下表所示�
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitee.com/ascend/MindSpeed/blob/master/docs/features/hccl-replace-gloo.md">Ascend Gloo 存档落盘优化</a></td>
+    <td><a href="https://gitcode.com/ascend/MindSpeed/blob/master/docs/features/hccl-replace-gloo.md">Ascend Gloo 存档落盘优化</a></td>
     <td>❌</td>
   </tr>
 </tbody></table>

@@ -1,6 +1,6 @@
 ## MindSpeed-LLM 预置ssm大模型
 
-认证`【Pass】`表示经过昇腾官方版本测试的模型。`【Test】`表示模型处于内部测试阶段，未完成充分的性能测试和验收，在实际使用中可能存在未被发现的问题，待后续充分验证后会发布正式版本。相关使用问题可反馈至[MindSpeed-LLM/issues](https://gitee.com/ascend/MindSpeed-LLM/issues)。
+认证`【Pass】`表示经过昇腾官方版本测试的模型。`【Test】`表示模型处于内部测试阶段，未完成充分的性能测试和验收，在实际使用中可能存在未被发现的问题，待后续充分验证后会发布正式版本。相关使用问题可反馈至[MindSpeed-LLM/issues](https://gitcode.com/ascend/MindSpeed-LLM/issues)。
 
 <table>
   <thead>

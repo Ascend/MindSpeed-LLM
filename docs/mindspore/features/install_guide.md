@@ -26,7 +26,7 @@ source /usr/local/Ascend/nnal/atb/set_env.sh --cxx_abi=0
 
 ### MindSpore安装
 
-参考[mindspore](https://gitee.com/mindspore/mindspore#%E5%AE%89%E8%A3%85)完成mindspore的安装
+参考[mindspore](https://gitcode.com/mindspore/mindspore#%E5%AE%89%E8%A3%85)完成mindspore的安装
 
 
 ### MindSpeed-LLM及相关依赖安装
@@ -37,7 +37,7 @@ source /usr/local/Ascend/ascend-toolkit/set_env.sh
 source /usr/local/Ascend/nnal/atb/set_env.sh --cxx_abi=0
 
 # 安装MindSpeed-Core-MS转换工具
-git clone https://gitee.com/ascend/MindSpeed-Core-MS.git -b r0.3.0
+git clone https://gitcode.com/ascend/MindSpeed-Core-MS.git -b r0.3.0
 
 # 使用MindSpeed-Core-MS内部脚本提供配置环境
 cd MindSpeed-Core-MS

@@ -38,15 +38,15 @@ source /usr/local/Ascend/nnal/atb/set_env.sh
 
 ### PTA安装
 
-准备[torch_npu](https://www.hiascend.com/developer/download/community/result?module=pt)和[apex](https://gitee.com/ascend/apex)，执行以下命令安装或参考[Ascend Extension for PyTorch 配置与安装](https://www.hiascend.com/document/detail/zh/Pytorch/60RC2/configandinstg/instg/insg_0001.html)：
+准备[torch_npu](https://www.hiascend.com/developer/download/community/result?module=pt)和[apex](https://gitcode.com/ascend/apex)，执行以下命令安装或参考[Ascend Extension for PyTorch 配置与安装](https://www.hiascend.com/document/detail/zh/Pytorch/60RC2/configandinstg/instg/insg_0001.html)：
 
 ```shell
-# 安装torch和torch_npu 构建参考 https://gitee.com/ascend/pytorch/releases
+# 安装torch和torch_npu 构建参考 https://gitcode.com/ascend/pytorch/releases
 pip install torch-2.6.0-cp310-cp310-manylinux_2_28_aarch64.whl 
 pip install torch_npu-2.6.0rc1-cp310-cp310-manylinux_2_28_aarch64.whl
 
-# apex for Ascend 构建参考 https://gitee.com/ascend/apex
-git clone -b master https://gitee.com/ascend/apex.git
+# apex for Ascend 构建参考 https://gitcode.com/ascend/apex
+git clone -b master https://gitcode.com/ascend/apex.git
 cd apex/
 bash scripts/build.sh --python={python_version}
 cd apex/dist/
@@ -62,7 +62,7 @@ source /usr/local/Ascend/ascend-toolkit/set_env.sh
 source /usr/local/Ascend/nnal/atb/set_env.sh
 
 # 安装MindSpeed加速库
-git clone https://gitee.com/ascend/MindSpeed.git
+git clone https://gitcode.com/ascend/MindSpeed.git
 cd MindSpeed
 git checkout 2c085cc9  # checkout commit from MindSpeed core_r0.8.0 in 2025.04.01
 pip install -r requirements.txt 
@@ -70,7 +70,7 @@ pip3 install -e .
 cd ..
 
 # 准备MindSpeed-LLM及Megatron-LM源码
-git clone https://gitee.com/ascend/MindSpeed-LLM.git 
+git clone https://gitcode.com/ascend/MindSpeed-LLM.git 
 git clone https://github.com/NVIDIA/Megatron-LM.git  # megatron从github下载，请确保网络能访问
 cd Megatron-LM
 git checkout core_r0.8.0
