@@ -61,7 +61,7 @@ GPT_ARGS="
     --hidden-size 4096 \
     --use-rotary-position-embeddings \
     --num-attention-heads 64 \
-    --ffn-hidden-size 8192 \
+    --ffn-hidden-size 12288 \
     --max-position-embeddings 40960 \
     --seq-length ${SEQ_LENGTH} \
     --make-vocab-size-divisible-by 1 \
