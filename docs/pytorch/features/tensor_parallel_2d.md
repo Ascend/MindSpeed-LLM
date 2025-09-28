@@ -1,5 +1,5 @@
 # 高维张量并行
-特性介绍参考[高维张量并行](https://gitee.com/ascend/MindSpeed/blob/master/docs/features/tensor-parallel-2d.md)
+特性介绍参考[高维张量并行](https://gitcode.com/ascend/MindSpeed/blob/master/docs/features/tensor-parallel-2d.md)
 ## 使用场景
 集群规模较大，且设置TP域很大时，例如A3训练llama3-405B，TP=16时；
 ## 使用方法

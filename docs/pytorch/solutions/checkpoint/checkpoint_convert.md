@@ -142,7 +142,7 @@ cd ../../
 
 2、VPP和动态PP划分只能二选一
 
-3、请参考 [model_cfg.json](https://gitee.com/ascend/MindSpeed-LLM/blob/master/configs/checkpoint/model_cfg.json)中的“model_mappings”部分，查看目前支持的模型。
+3、请参考 [model_cfg.json](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/configs/checkpoint/model_cfg.json)中的“model_mappings”部分，查看目前支持的模型。
 
 下面提供一个Llama2-7b模型的hf-mg权重转换脚本仅供参考：
 
