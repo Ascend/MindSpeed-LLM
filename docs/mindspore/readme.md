@@ -154,7 +154,7 @@ MindSpore后端对MindSpeed的重要加速特性的支持情况如下表所示�
     <td>✅</td>
   </tr>
     <tr>
-    <td><a href="https://gitee.com/ascend/MindSpeed-LLM/blob/master/docs/mindspore/features/alltoallvc.md">AllToAllVC 通信算子</a></td>
+    <td><a href="https://gitcode.com/ascend/MindSpeed-LLM/blob/master/docs/mindspore/features/alltoallvc.md">AllToAllVC 通信算子</a></td>
     <td>✅</td>
   </tr>
 </tbody></table>

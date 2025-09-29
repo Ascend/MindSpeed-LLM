@@ -33,7 +33,7 @@
 
 ### 软件安装
 
-[基础软件安装指引](https://gitee.com/ascend/MindSpeed-LLM/blob/master/docs/mindspore/features/install_guide.md)
+[基础软件安装指引](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/docs/mindspore/features/install_guide.md)
 
 ```bash
 # 安装基础依赖
