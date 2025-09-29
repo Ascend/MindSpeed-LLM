@@ -13,6 +13,47 @@
     </tr>
   </thead>
   <tbody>
+        <tr>
+        <td rowspan="1"> <a href="https://huggingface.co/collections/Qwen/qwen3-67dd247413f0e2e4f653967f">Qwen3</a> </td>
+        <td><a href="https://huggingface.co/Qwen/Qwen3-30B-A3B-Base">30B</a></td>
+        <td><a href="../../../examples/mindspore/qwen3_moe">qwen3_moe</a></td>
+        <td> 4K </td>
+        <th> Mcore </th>
+        <td> 2x8 </td>
+        <td>✅</td>
+      </tr>
+         <tr>
+       <td rowspan="1"><a href="https://huggingface.co/Qwen">Qwen2</a></td>
+      <td><a href="https://huggingface.co/Qwen/Qwen2-57B-A14B/tree/main">57B-A14B</a></td>
+      <td><a href="../../../examples/mindspore/qwen2_moe">qwen2_moe</a></td>
+      <td> 4K</td>
+      <th>Mcore</th>
+      <td>8x8</td>
+      <td>✅</td>
+      <tr>
+    </tr>
+    <tr>
+      <td rowspan="3"><a href="https://huggingface.co/mistralai">Mixtral</a></td>
+      <td><a href="https://huggingface.co/mistralai/Mixtral-8x7B-v0.1/tree/main">8x7B</a></td>
+      <td rowspan="3"><a href="../../../examples/mindspore/mixtral">mixtral</a></td>
+      <td> 32K</td>
+      <th>Mcore</th>
+      <td>8x8</td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td rowspan="2"><a href="https://huggingface.co/mistralai/Mixtral-8x22B-v0.1/tree/main">8x22B</a></td>
+      <td> 32K</td>
+      <th>Mcore</th>
+      <td>8x8</td>
+      <td>✅</td>
+    </tr>
+    <tr>
+      <td> 64K</td>
+      <th>Mcore</th>
+      <td>8x8</td>
+      <td>✅</td>
+    </tr>
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/deepseek-ai/DeepSeek-V2">DeepSeek-V2</a></td>
       <td><a href="https://huggingface.co/deepseek-ai/DeepSeek-V2/tree/main">236B</a></td>
@@ -43,7 +84,7 @@
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/deepseek-ai/DeepSeek-V2.5">DeepSeek-V2.5</a></td>
       <td><a href="https://huggingface.co/deepseek-ai/DeepSeek-V2.5/tree/main">236B</a></td>
-      <td><a href="../../../examples/mindspore/deepseek25">deepseek25</a></td>
+      <td>deepseek25</a></td>
       <td> 8K </td>
       <th>Mcore</th>
       <td> 20x8 </td>
@@ -56,37 +97,6 @@
       <td> 4K </td>
       <th>Mcore</th>
       <td> 64x8 </td>
-      <td>✅</td>
-    </tr>
-    <tr>
-      <td rowspan="1"><a href="https://huggingface.co/zai-org/GLM-4.5">GLM4.5</a></td>
-      <td><a href="https://huggingface.co/zai-org/GLM-4.5/tree/main">106B</a></td>
-      <td><a href="../../../examples/mindspore/glm45-moe">glm45-moe</a></td>
-      <td> 4K </td>
-      <th>Mcore</th>
-      <td> 8x16 </td>
-      <td>✅</td>
-    </tr>
-        <tr>
-      <td rowspan="3"><a href="https://huggingface.co/mistralai">Mixtral</a></td>
-      <td><a href="https://huggingface.co/mistralai/Mixtral-8x7B-v0.1/tree/main">8x7B</a></td>
-      <td rowspan="3"><a href="../../../examples/mindspore/mixtral">mixtral</a></td>
-      <td> 32K</td>
-      <th>Mcore</th>
-      <td>8x8</td>
-      <td>✅</td>
-    </tr>
-    <tr>
-      <td rowspan="2"><a href="https://huggingface.co/mistralai/Mixtral-8x22B-v0.1/tree/main">8x22B</a></td>
-      <td> 32K</td>
-      <th>Mcore</th>
-      <td>8x8</td>
-      <td>✅</td>
-    </tr>
-    <tr>
-      <td> 64K</td>
-      <th>Mcore</th>
-      <td>8x8</td>
       <td>✅</td>
     </tr>
     <tr>
@@ -107,24 +117,14 @@
       <td> 2x8 </td>
       <td>✅</td>
     </tr>
-       <tr>
-       <td rowspan="1"><a href="https://huggingface.co/Qwen">Qwen2</a></td>
-      <td><a href="https://huggingface.co/Qwen/Qwen2-57B-A14B/tree/main">57B-A14B</a></td>
-      <td><a href="../../../examples/mindspore/qwen2_moe">qwen2_moe</a></td>
-      <td> 4K</td>
+    <tr>
+      <td rowspan="1"><a href="https://huggingface.co/zai-org/GLM-4.5">GLM4.5</a></td>
+      <td><a href="https://huggingface.co/zai-org/GLM-4.5/tree/main">106B</a></td>
+      <td><a href="../../../examples/mindspore/glm45-moe">glm45-moe</a></td>
+      <td> 4K </td>
       <th>Mcore</th>
-      <td>8x8</td>
+      <td> 8x16 </td>
       <td>✅</td>
-      <tr>
     </tr>
-      <tr>
-        <td rowspan="1"> <a href="https://huggingface.co/collections/Qwen/qwen3-67dd247413f0e2e4f653967f">Qwen3</a> </td>
-        <td><a href="https://huggingface.co/Qwen/Qwen3-30B-A3B-Base">30B</a></td>
-        <td><a href="../../../examples/mindspore/qwen3_moe">/qwen3_moe</a></td>
-        <td> 4K </td>
-        <th> Mcore </th>
-        <td> 2x8 </td>
-        <td>✅</td>
-      </tr>
   </tbody>
 </table>
