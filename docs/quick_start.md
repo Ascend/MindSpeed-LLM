@@ -29,16 +29,16 @@
 
 **PyTorch后端环境安装，该环境与MindSpore环境冲突，请根据需要，择一安装。**
 
-请参考MindSpeed-LLM仓首页[“版本配套表”](../README.md#版本配套表)，准备[torch_npu](https://www.hiascend.com/developer/download/community/result?module=pt)和[apex](https://gitee.com/ascend/apex)，参考[Ascend Extension for PyTorch](https://www.hiascend.com/document/detail/zh/Pytorch/700/configandinstg/instg/insg_0001.html)或执行以下命令安装
+请参考MindSpeed-LLM仓首页[“版本配套表”](../README.md#版本配套表)，准备[torch_npu](https://www.hiascend.com/developer/download/community/result?module=pt)和[apex](https://gitcode.com/ascend/apex)，参考[Ascend Extension for PyTorch](https://www.hiascend.com/document/detail/zh/Pytorch/700/configandinstg/instg/insg_0001.html)或执行以下命令安装
 
 ```shell
 # 安装torch和torch_npu，因为版本迭代，包名存在出入，根据实际修改
 wget https://download.pytorch.org/whl/cpu/torch-2.1.0-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
 pip install torch-2.1.0-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
-wget https://gitee.com/ascend/pytorch/releases/download/v7.0.0-pytorch2.1.0/torch_npu-2.1.0.post12-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+wget https://gitcode.com/ascend/pytorch/releases/download/v7.0.0-pytorch2.1.0/torch_npu-2.1.0.post12-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
 pip install torch_npu-2.1.0.post12-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
 
-# apex for Ascend 需要自行参考 https://gitee.com/ascend/apex 完成whl包的构建，再通过如下指令完成安装
+# apex for Ascend 需要自行参考 https://gitcode.com/ascend/apex 完成whl包的构建，再通过如下指令完成安装
 pip install apex-*.whl
 ```
 
@@ -49,7 +49,7 @@ source /usr/local/Ascend/ascend-toolkit/set_env.sh
 source /usr/local/Ascend/nnal/atb/set_env.sh
 
 # 安装MindSpeed加速库
-git clone https://gitee.com/ascend/MindSpeed.git
+git clone https://gitcode.com/ascend/MindSpeed.git
 cd MindSpeed
 git checkout master              # 以install_guide.md中的版本为准，此处仅做参考
 pip install -r requirements.txt
@@ -57,7 +57,7 @@ pip3 install -e .
 cd ..
 
 # 准备MindSpeed-LLM及Megatron-LM源码
-git clone https://gitee.com/ascend/MindSpeed-LLM.git
+git clone https://gitcode.com/ascend/MindSpeed-LLM.git
 git clone https://github.com/NVIDIA/Megatron-LM.git  # megatron从github下载，请确保网络能访问
 cd Megatron-LM
 git checkout core_r0.8.0         # 以install_guide.md中的版本为准，此处仅做参考
@@ -82,7 +82,7 @@ pip install mindspore==2.7.0  # 以docs/mindspore/readme.md中的版本为准，
 
 ```shell
 # 拉取MindSpeed-Core-MS仓库
-git clone https://gitee.com/ascend/MindSpeed-Core-MS.git -b r0.3.0
+git clone https://gitcode.com/ascend/MindSpeed-Core-MS.git -b r0.3.0
 cd MindSpeed-Core-MS
 pip install requirements.txt
 source auto_convert_llm.sh
@@ -549,12 +549,12 @@ TOKENIZER_PATH="./model_from_hf/qwen2.5-7b-hf/"
 
 ## 加入昇腾开发者生态
 
-- 🌐 **社区资源**：访问[昇腾开源社区](https://gitee.com/ascend)获取最新模型支持
+- 🌐 **社区资源**：访问[昇腾开源社区](https://gitcode.com/ascend)获取最新模型支持
 - 📈 **性能优化**：参考[MindSpeed Profiling](pytorch/features/profiling.md)分析瓶颈
 - 💡 **定制需求**：通过`model_cfg.json`扩展自定义模型
 
 ---
 
 通过本教程，您已掌握昇腾生态的基础技能，能够正常使用仓库的模型预训练功能。下一步，不妨尝试更深入理解脚本特性和仓库。
-- 尝试进阶能力，请参考翻阅[模型迁移指南](https://gitee.com/ascend/MindSpeed-LLM/wikis/%E6%A8%A1%E5%9E%8B%E8%BF%81%E7%A7%BB)
-- 进行模型微调、模型性能优化，模型切分调整，或探索[MOE混合专家模型](https://gitee.com/ascend/MindSpeed-LLM/blob/master/README.md)等前沿应用！
+- 尝试进阶能力，请参考翻阅[模型迁移指南](https://gitcode.com/ascend/MindSpeed-LLM/wiki/%E6%A8%A1%E5%9E%8B%E8%BF%81%E7%A7%BB)
+- 进行模型微调、模型性能优化，模型切分调整，或探索[MOE混合专家模型](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/README.md)等前沿应用！

@@ -1,6 +1,6 @@
 ## 安装指导
 
-请参考首页[版本说明](./gitee.com/ascend/MindSpeed-LLM/tree/master/#%E7%89%88%E6%9C%AC%E8%AF%B4%E6%98%8E)选择下载对应依赖版本。
+请参考首页[版本说明](../../README.md#版本说明)选择下载对应依赖版本。
 
 >注意：<br>
 > 1.torch2.6不支持python3.8,请优先使用python3.10;<br>
@@ -41,7 +41,7 @@ source /usr/local/Ascend/nnal/atb/set_env.sh
 准备[torch_npu](https://www.hiascend.com/developer/download/community/result?module=pt)，执行以下命令安装或参考[Ascend Extension for PyTorch 配置与安装](https://www.hiascend.com/document/detail/zh/Pytorch/60RC2/configandinstg/instg/insg_0001.html)：
 
 ```shell
-# 安装torch和torch_npu 构建参考 https://gitee.com/ascend/pytorch/releases
+# 安装torch和torch_npu 构建参考 https://gitcode.com/ascend/pytorch/releases
 pip install torch-2.7.1-cp310-cp310-manylinux_2_28_aarch64.whl 
 pip install torch_npu-2.7.1rc1-cp310-cp310-manylinux_2_28_aarch64.whl
 ```
@@ -54,7 +54,7 @@ source /usr/local/Ascend/ascend-toolkit/set_env.sh
 source /usr/local/Ascend/nnal/atb/set_env.sh
 
 # 安装MindSpeed加速库
-git clone https://gitee.com/ascend/MindSpeed.git
+git clone https://gitcode.com/ascend/MindSpeed.git
 cd MindSpeed
 git checkout master  # checkout commit from MindSpeed master
 pip install -r requirements.txt 
@@ -62,7 +62,7 @@ pip3 install -e .
 cd ..
 
 # 准备MindSpeed-LLM及Megatron-LM源码
-git clone https://gitee.com/ascend/MindSpeed-LLM.git 
+git clone https://gitcode.com/ascend/MindSpeed-LLM.git 
 git clone https://github.com/NVIDIA/Megatron-LM.git  # megatron从github下载，请确保网络能访问
 cd Megatron-LM
 git checkout core_v0.12.1

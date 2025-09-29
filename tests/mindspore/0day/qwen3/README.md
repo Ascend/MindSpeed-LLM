@@ -6,7 +6,7 @@
 ### 使用说明
 支持将HuggingFace权重转换为mcore权重，用于与训练、微调等任务。
 ### 启动脚本
-使用Qwen3模型目录下的[HuggingFace转Megatron脚本](https://gitee.com/ascend/MindSpeed-LLM/blob/master/convert_ckpt.py)
+使用Qwen3模型目录下的[HuggingFace转Megatron脚本](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/convert_ckpt.py)
 ```commandline
 #稠密模型
 bash tests/mindspore/0day/qwen3/ckpt_convert_qwen3_dense_hf2mcore.sh
@@ -121,7 +121,7 @@ tokenizer的路径，指向tokenizer所在的目录
 ## 代码适配
 执行以下命令拉去MindSpore-Core-MS代码仓：
 ```commandline
-git clone -b feature-0.2 https://gitee.com/ascend/MindSpeed-Core-MS.git
+git clone -b feature-0.2 https://gitcode.com/ascend/MindSpeed-Core-MS.git
 ```
 基于MindSpeed-Core-MS代码仓可以进行代码拉取、代码一键适配等功能，请确保环境已完成以下配置：
 * 所部署容器网络可用，python已安装

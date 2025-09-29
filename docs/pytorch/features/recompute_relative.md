@@ -38,4 +38,4 @@
 （注意点：执行优先级是先计算全重计算层，后计算激活函数重计算层。在流水线并行未开启的情况下，全重计算层数和激活函数重计算层数之和应该等于总层数。）
 
 
-详细的算法原理可参见 [Megatron 重计算](https://arxiv.org/abs/2205.05198)、MindSpeed [激活函数重计算](https://gitee.com/ascend/MindSpeed/blob/master/docs/features/activation-function-recompute.md) 章节
+详细的算法原理可参见 [Megatron 重计算](https://arxiv.org/abs/2205.05198)、MindSpeed [激活函数重计算](https://gitcode.com/ascend/MindSpeed/blob/master/docs/features/activation-function-recompute.md) 章节
