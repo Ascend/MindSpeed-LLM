@@ -1,7 +1,7 @@
-MindSpeed-LLM支持基于昇腾芯片采集profiling数据，以提供对模型运行情况的分析，主要API如下：
+MindSpeed-LLM支持基于昇腾芯片采集profiling数据，以提供对模型运行情况的分析。使用时只需将相关参数添加至训练脚本中，运行脚本即可进行采集。主要参数及含义如下：
 
 
-```bash
+```shell
 --profile                        # 打开profiling采集数据开关
 --profile-export-type            # 指定导出的性能数据结果文件格式, db, text, 默认text格式
 --profile-data-simplification    # 使用数据精简模式
@@ -16,5 +16,35 @@ MindSpeed-LLM支持基于昇腾芯片采集profiling数据，以提供对模型�
 --profile-save-path ./profile_dir    # profiling数据采集保存路径
 ```
 注意：
-1.--profile-level设置为level_none时，不会采集cann侧数据，且暂不支持与--export-type db一起使用
-2.请更新最新8.0.RC3 cann包后使用level_none及export-type功能
+
+- --profile-level设置为level_none时，不会采集cann侧数据，且暂不支持与--export-type db一起使用
+- 请更新最新8.0.RC3 cann包后使用level_none及export-type功能
+
+常见使用场景有以下两种：
+
+1. 初步分析性能时，可以只采集0号卡的CPU信息，查看通信和计算时间占比，各类算子占比以及算子调度信息，推荐配置如下：
+
+```shell
+--profile                        # 打开profiling采集数据开关
+--profile-step-start  5          # 从第5步开始采集
+--profile-step-end 6             # 从第6步结束，不包括第6步
+--profile-ranks 0                # 采集0号卡的数据
+--profile-level level1           # 采集上层应用数据，底层NPU数据，NPU计算算子耗时和通信算子耗时信息，CANN层AscendCL数据信息，NPU AI Core性能指标信息，通信小算子耗时信息
+--profile-with-cpu               # 采集CPU数据，用于分析通信和调度
+--profile-save-path ./profile_dir    # profiling数据采集保存路径
+```
+
+2. 如果想要进一步查看算子内存占用信息以及算子详细调用情况，可以加入`--profile-with-stack`、`--profile-with-memory`和`--profile-record-shapes`等参数，但是这会导致数据膨胀，性能劣化。具体配置如下：
+
+```shell
+--profile                        # 打开profiling采集数据开关
+--profile-step-start  5          # 从第5步开始采集
+--profile-step-end 6             # 从第6步结束，不包括第6步
+--profile-ranks 0                # 采集0号卡的数据
+--profile-level level1           # 采集上层应用数据，底层NPU数据，NPU计算算子耗时和通信算子耗时信息，CANN层AscendCL数据信息，NPU AI Core性能指标信息，通信小算子耗时信息
+--profile-with-cpu               # 采集CPU数据，用于分析通信和调度
+--profile-with-stack             # 采集指令运行堆栈信息
+--profile-with-memory            # 采集算子内存信息
+--profile-record-shapes          # 采集算子数据维度信息
+--profile-save-path ./profile_dir_with_stack    # profiling数据采集保存路径
+```

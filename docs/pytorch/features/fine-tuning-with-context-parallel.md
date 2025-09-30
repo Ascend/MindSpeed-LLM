@@ -39,7 +39,7 @@ CP切分的并行数目，要可以被序列长度整除。
 理论上样本越短，拼接序列包含的样本数目越多，`--context-parallel-size`设置越大，性能收益越明显，但是要注意 seq-length / context-parallel-size > 8k时可以
 尽可能弥补CP带来的通信损失，针对该种场景参考配置如下，参数相关介绍参考上述对应算法的链接。CP较小时（一般<=4），`ulysses_cp_algo`是性能不错的选择。
 
-```bash
+```shell
     --seq-length 131072
     --context-parallel-size 8
     --context-parallel-algo megatron_cp_algo

@@ -33,7 +33,7 @@ Yes, I do remember. You came to buy flowers for your sister's birthday, and you 
 
 对使用带有`history`字段的 Alpaca 数据集，并运行如下[脚本](../../../../examples/mcore/gemma2/data_convert_gemma2_instruction.sh)：
 
-```bash
+```shell
 # 请根据 examples/README.md 下 “数据集准备及处理” 章节下载 Alpaca 数据集
 # 请按照您的真实环境修改 set_env.sh 路径
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
@@ -91,7 +91,7 @@ bash examples/mcore/gemma2/data_convert_gemma2_instruction.sh
 
 因此，根据之前的示例，路径应填写如下：
 
-```bash
+```shell
 DATA_PATH="./finetune_dataset/alpaca"
 CKPT_SAVE_DIR="./ckpt/"
 TOKENIZER_MODEL="./model_from_hf/gemma2_hf/"
@@ -100,7 +100,7 @@ CKPT_LOAD_DIR="./model_weights/gemma2-9b-mcore/"
 
 **运行多轮对话指令微调脚本** 
 
-```bash
+```shell
 bash examples/mcore/gemma2/chat_gemma2_9b_ptd.sh
 ```
 
@@ -114,14 +114,14 @@ bash examples/mcore/gemma2/chat_gemma2_9b_ptd.sh
 
 `CKPT_LOAD_DIR`：指向多轮对话微调后保存的路径。
 
-```bash
+```shell
 TOKENIZER_PATH="./model_from_hf/gemma2_hf/"
 CHECKPOINT="./ckpt/"
 ```
 
 **运行多轮对话脚本** 
 
-```bash
+```shell
 bash examples/mcore/gemma2/chat_gemma2_9b_ptd.sh
 ```
 
