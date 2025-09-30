@@ -16,7 +16,7 @@
 
 Alpaca风格微调数据集下载可以基于网页直接下载，也可以基于命令行下载，比如：
 
-```bash
+```shell
 cd dataset/
 wget https://huggingface.co/datasets/tatsu-lab/alpaca/resolve/main/data/train-00000-of-00001-a09b74b3ef9c3b56.parquet
 cd ..

@@ -27,10 +27,10 @@ LoRA微调算法通过更新附加在冻结预训练模型权重上的低秩矩�
 3. 数学等价方式，优化scale逻辑
 
 $$
-  x\ shape:[B, S, H] \\ 
-  Y = Wx + \lambda BAx \\
-  = Wx + B(\lambda A)x   \ \ \ \  (B * S < H)\ \  \\
-  = (W + B(\lambda A))x   \ \ \ \  (B * S >= H)   \ \
+  输入：x\in\mathbb{R}^{B\times S\times H}, \quad 输出： Y = Wx + \lambda BAx = \begin{cases}
+  Y=Wx+B(\lambda A)x, & \text{若 }BS<H \\
+  Y=(W+B\lambda A)x, & \text{若 }BS\geq H &
+  \end{cases}
 $$
 
 
