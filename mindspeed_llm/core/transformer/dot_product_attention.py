@@ -149,13 +149,11 @@ def dot_product_attention_init(
     config.context_parallel_size = 1
 
     super(DotProductAttention, self).__init__(config=config)
-    assert (
-            self.config.context_parallel_size == 1
-    ), "Context parallelism is only supported by TEDotProductAttention!"
+    if self.config.context_parallel_size != 1:
+        raise ValueError("Context parallelism is only supported by TEDotProductAttention!")
 
-    assert (
-            self.config.window_size is None
-    ), "Sliding Window Attention is only supported by TEDotProductAttention!"
+    if self.config.window_size is not None:
+        raise ValueError("Sliding Window Attention is only supported by TEDotProductAttention!")
 
     self.layer_number = max(1, layer_number)
     self.attn_mask_type = attn_mask_type

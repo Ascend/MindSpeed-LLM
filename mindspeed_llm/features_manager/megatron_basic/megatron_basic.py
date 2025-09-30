@@ -8,9 +8,10 @@ class MegatronBasicFeature(MindSpeedMegatronBasicFeature):
     def register_patches(self, patch_manager, args):
         try:
             import megatron.training
-            only_mcore = False
         except ModuleNotFoundError:
             only_mcore = True
+        else:
+            only_mcore = False
 
         self.register_mcore_basic_patches(patch_manager, args)
         if not only_mcore:

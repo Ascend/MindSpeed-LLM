@@ -51,8 +51,10 @@ def recover_gradient_scaling_factors(self, gradient_scaling_factors):
 
 
 def start_param_sync(self, force_sync: bool = False):
-    assert self.ddp_config.use_distributed_optimizer
-    assert self.intra_distributed_optimizer_instance_group_for_tft
+    if not self.ddp_config.use_distributed_optimizer:
+        raise ValueError("Distributed optimizer must be enabled")
+    if not self.intra_distributed_optimizer_instance_group_for_tft:
+        raise ValueError("Intra distributed optimizer instance group for TFT must be set")
 
     if force_sync:
         if self.param_gather_handle is not None:
@@ -60,7 +62,8 @@ def start_param_sync(self, force_sync: bool = False):
             self.param_gather_handle = None
             return
     else:
-        assert self.param_gather_handle is None
+        if self.param_gather_handle is not None:
+            raise ValueError("Param gather handle should be None when not forcing sync")
 
     async_op = self.ddp_config.overlap_param_gather and not force_sync
     deal_param_gather_handle_default(self, async_op)
