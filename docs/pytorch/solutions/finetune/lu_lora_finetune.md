@@ -70,7 +70,7 @@ bash examples/mcore/llama2/tune_llama2_7b_lu_lora_ptd.sh
  LU-LoRA层的初始学习率，默认1.25e-6。LU-LoRA适配器的学习率可以与LoRA适配器的学习率不同。
 ### LU-LoRA权重与基础权重的合并与转换
 在LU-LoRA微调后，获得的LU-LoRA权重与基础权重不同，不能直接用于推理或继续训练。它们需要与基础权重合并后才能使用。由于LU-LoRA基于LoRA，可以使用LoRA脚本。添加以下参数以将训练的LU-LoRA权重与基础权重合并，并在合并后将其转换为Mcore权重：
-```bash
+```shell
  --lora-load ${CHECKPOINT_LORA} \
  --lora-r 16 \
  --lora-alpha 32 \

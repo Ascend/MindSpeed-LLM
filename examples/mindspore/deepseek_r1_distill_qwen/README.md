@@ -35,7 +35,7 @@
 
 [基础软件安装指引](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/docs/mindspore/features/install_guide.md)
 
-```bash
+```shell
 # 安装基础依赖
 pip install modelscope pyarrow pandas
 
@@ -47,7 +47,7 @@ python -c "import mindspore as ms; print(ms.__version__)"
 
 ## 📦 模型权重下载
 
-```bash
+```shell
 # 创建工作目录并下载模型
 mkdir Qwen25Math7B
 cd Qwen25Math7B
@@ -61,7 +61,7 @@ modelscope download \
 
 ## 📁 数据集准备
 
-```bash
+```shell
 # 创建目录并下载数据
 mkdir OpenR1Math220K
 cd OpenR1Math220K
@@ -115,7 +115,7 @@ python ./preprocess_data.py \
 
 **示例 1：**
 
-```bash
+```shell
 --map-keys '{"prompt":"notice","query":"question","response":"answer","system":"system_test","history":"histories"}'
 ```
 
@@ -123,7 +123,7 @@ python ./preprocess_data.py \
 
 **示例 2：**
 
-```bash
+```shell
 --map-keys '{"history":"histories"}'
 ```
 
@@ -131,7 +131,7 @@ python ./preprocess_data.py \
 
 ### 启动脚本：
 
-```bash
+```shell
 # 执行转换脚本
 bash examples/mindspore/deepseek_r1_distill_qwen/data_convert_distill_qwen_instruction.sh
 ```
@@ -142,7 +142,7 @@ bash examples/mindspore/deepseek_r1_distill_qwen/data_convert_distill_qwen_instr
 
 ### ✅ 基本命令示例：
 
-```bash
+```shell
 python convert_ckpt.py \
        --use-mcore-models \
        --model-type GPT \
@@ -184,13 +184,13 @@ python convert_ckpt.py \
 
 ### HuggingFace → MCore 格式转换：
 
-```bash
+```shell
 bash examples/mindspore/deepseek_r1_distill_qwen/ckpt_convert_distill_qwen_hf2mcore.sh
 ```
 
 ### MCore → HuggingFace 回转：
 
-```bash
+```shell
 bash examples/mindspore/deepseek_r1_distill_qwen/ckpt_convert_distill_qwen_mcore2hf.sh
 ```
 
@@ -203,7 +203,7 @@ bash examples/mindspore/deepseek_r1_distill_qwen/ckpt_convert_distill_qwen_mcore
 
 ### 原始权重推理：
 
-```bash
+```shell
 bash examples/mindspore/deepseek_r1_distill_qwen/generate_distill_qwen_7b.sh
 ```
 
@@ -211,7 +211,7 @@ bash examples/mindspore/deepseek_r1_distill_qwen/generate_distill_qwen_7b.sh
 
 修改推理脚本中的 `CHECKPOINT` 参数：
 
-```bash
+```shell
 # 示例：替换为微调后的权重路径
 CHECKPOINT=/path/to/fine_tuned_weights
 ```
@@ -260,7 +260,7 @@ CHECKPOINT=/path/to/fine_tuned_weights
 
 ### ✅ 修改推理设备数量
 
-```bash
+```shell
 # 如使用单卡推理
 NPUS_PER_NODE=1
 WORLD_SIZE=1
@@ -268,7 +268,7 @@ WORLD_SIZE=1
 
 ### ✅ 修改模型并行策略
 
-```bash
+```shell
 # 如使用 TP=2, PP=1 的并行方式
 TP=2
 PP=1
@@ -276,14 +276,14 @@ PP=1
 
 ### ✅ 更改最大生成长度
 
-```bash
+```shell
 # 修改生成长度为 512
 --max-new-tokens 512
 ```
 
 ### ✅ 更改最大上下文长度
 
-```bash
+```shell
 # 改为支持 4096 长度的上下文
 SEQ_LENGTH=4096
 ```
@@ -294,7 +294,7 @@ SEQ_LENGTH=4096
 
 你可以通过修改 `--task` 参数来切换不同的推理任务模式，例如：
 
-```bash
+```shell
 # 切换为 chat 模式（适用于对话场景）
 --task chat
 ```
@@ -310,7 +310,7 @@ SEQ_LENGTH=4096
 1. **参数配置**  
    修改 `tune_distill_qwen_7b_full.sh` 中的关键参数：
 
-   ```bash
+   ```shell
    CKPT_LOAD_DIR="your model ckpt path"
    CKPT_SAVE_DIR="your model save ckpt path"
    DATA_PATH="your data path"
@@ -319,7 +319,7 @@ SEQ_LENGTH=4096
 
 2. **启动微调**
 
-   ```bash
+   ```shell
    bash examples/mindspore/deepseek_r1_distill_qwen/tune_distill_qwen_7b_full.sh
    ```
 
@@ -343,7 +343,7 @@ SEQ_LENGTH=4096
 
 **资源监控**：使用以下命令实时监控硬件负载：
 
-```bash
+```shell
 watch -n 1 npu-smi info
 ```
 
