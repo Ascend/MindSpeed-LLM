@@ -11,7 +11,7 @@
 ### 1. 数据准备
 首先确保每一个文档的末尾都添加了EOD Token。
 
-```bash
+```shell
 python ./preprocess_data.py \
    --input ./dataset/train-00000-of-00001-a09b74b3ef9c3b56.parquet \
    --tokenizer-name-or-path ./model_from_hf/Llama3-hf/ \

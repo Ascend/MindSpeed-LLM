@@ -229,7 +229,7 @@ bash examples/mcore/llama2/ckpt_convert_llama2_mcore2hf.sh
 
 在权重转换命令中，加入如下参数可以将训练的lora权重与权重转换出的base权重进行融合。
 
-```bash
+```shell
 --lora-load ./ckpt/llama-2-7b-lora  \
 --lora-r 16 \
 --lora-alpha 32 \

@@ -95,7 +95,7 @@ cd MindSpeed-LLM
 
 通过 wget 从HuggingFace下载模型文件。
 
-```bash
+```shell
 # 创建一个目录存储huggingface文件
 mkdir -p ./model_from_hf/qwen2.5-7b-hf
 cd ./model_from_hf/qwen2.5-7b-hf
@@ -115,7 +115,7 @@ wget https://huggingface.co/Qwen/Qwen2.5-7B/blob/main/vocab.json
 ```
 
 通过md5sum验证模型权重文件完整性
-```bash
+```shell
 # 利用sha256sum计算 SHA256数值
 # 打开文件明细可获取sha256值，https://huggingface.co/Qwen/Qwen2.5-7B/blob/main/model-00001-of-00004.safetensors
 sha256sum model-00001-of-00004.safetensors
@@ -142,7 +142,7 @@ sha256sum model-00004-of-00004.safetensors
 
 使用官方提供的转换脚本，获取对应切分的mg权重。
 
-```bash
+```shell
 cd MindSpeed-LLM
 
 # 请先根据如下指导完成脚本修改配置
@@ -151,7 +151,7 @@ bash examples/mcore/qwen25/ckpt_convert_qwen25_hf2mcore.sh
 
 如下为调整后的hf2mcore权重转换示例脚本
 
-```bash
+```shell
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
 
 python convert_ckpt.py \
@@ -335,7 +335,7 @@ TOKENIZER_PATH="./model_from_hf/qwen2.5-7b-hf/"
 
 使用官方提供的转换脚本，获取对应切分的mg权重。
 
-```bash
+```shell
 cd MindSpeed-LLM
 
 # 请先根据如下指导完成脚本修改配置
@@ -344,7 +344,7 @@ bash examples/mindspore/qwen25/ckpt_convert_qwen25_hf2mcore.sh
 
 如下为调整后的hf2mcore权重转换示例脚本
 
-```bash
+```shell
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
 
 python convert_ckpt.py \
