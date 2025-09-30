@@ -739,10 +739,12 @@ def ParallelAttentionForward(self, hidden_states, attention_mask,
     if inference_context:
         batch_start = inference_context.batch_size_offset
         batch_end = batch_start + key_layer.size(1)
-        assert batch_end <= inference_key_memory.size(1)
+        if batch_end > inference_key_memory.size(1):
+            raise ValueError(f"batch_end {batch_end} exceeds inference_key_memory size {inference_key_memory.size(1)}")
         sequence_start = inference_context.sequence_len_offset
         sequence_end = sequence_start + key_layer.size(0)
-        assert sequence_end <= inference_key_memory.size(0)
+        if sequence_end > inference_key_memory.size(0):
+            raise ValueError(f"sequence_end {sequence_end} exceeds inference_key_memory size {inference_key_memory.size(0)}")
         # Copy key and values.
         inference_key_memory[sequence_start:sequence_end,
                              batch_start:batch_end, ...] = key_layer
@@ -832,8 +834,8 @@ def parallel_transformer_forward(
     inference_context = deprecate_inference_params(inference_context, inference_params)
     
     if inference_context:
-        assert self.recompute_granularity is None, \
-            'inference does not work with activation checkpointing'
+        if self.recompute_granularity is not None:
+            raise ValueError('inference does not work with activation checkpointing')
 
     if not self.pre_process:
         # See set_input_tensor()
@@ -925,7 +927,8 @@ def parallel_transformer_forward(
                     # and retriever_output. Make retriever_output available
                     # to subsequence Retro layers.
                     if isinstance(hidden_states, tuple):
-                        assert len(hidden_states) == 2
+                        if len(hidden_states) != 2:
+                            raise ValueError(f"Expected tuple of length 2, but got {len(hidden_states)}")
                         hidden_states, retriever_output = hidden_states
                         forward_kwargs["retriever_output"] = retriever_output
 
@@ -952,8 +955,10 @@ def parallel_mlp_forward_wrapper(fn):
             intermediate, bias = function_args
 
             if self.bias_gelu_fusion:
-                assert self.add_bias is True
-                assert self.activation_func == F.gelu
+                if not self.add_bias:
+                    raise ValueError("bias_gelu_fusion requires add_bias to be True")
+                if self.activation_func != F.gelu:
+                    raise ValueError("bias_gelu_fusion requires activation_func to be F.gelu")
                 intermediate = bias_gelu_impl(intermediate, bias)
             else:
                 if bias is not None:

@@ -299,8 +299,8 @@ def mtp_block_forward(
 def get_mtp_layer_input(input_data, mtp_batch_list, layer_number):
     if mtp_batch_list:
         input_ids, position_ids, labels, loss_mask, attention_mask = (
-            mtp_batch_list[layer_number][k] for k in 
-            ('tokens', 'position_ids', 'labels', 'loss_mask', 'attention_mask')
+            mtp_batch_list[layer_number][k]
+            for k in ('tokens', 'position_ids', 'labels', 'loss_mask', 'attention_mask')
         )
     else:
         input_ids, position_ids, labels, loss_mask, attention_mask = input_data

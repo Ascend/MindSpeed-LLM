@@ -217,7 +217,8 @@ class SegmentedColumnParallelLinear(ColumnParallelLinear):
 
         if self.gather_output:
             # All-gather across the partitions.
-            assert not self.sequence_parallel
+            if self.sequence_parallel:
+                raise ValueError("Cannot gather output when sequence parallel is enabled")
             output = gather_from_tensor_model_parallel_region(output_parallel)
         else:
             output = output_parallel

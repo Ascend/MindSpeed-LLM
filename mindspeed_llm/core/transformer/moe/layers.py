@@ -97,9 +97,8 @@ class SEColumnParallelLinear(megatron.core.tensor_parallel.ColumnParallelLinear)
 
         if self.config._cpu_offloading_context is not None:
             if self.config._cpu_offloading_context.inside_context == True:
-                assert (
-                    self.config.cpu_offloading == False
-                ), "CPU Offloading cannot be enabled while using non-TE modules"
+                if self.config.cpu_offloading:
+                    raise ValueError("CPU Offloading cannot be enabled while using non-TE modules")
 
         bias = self.bias if not self.skip_bias_add else None
 
@@ -146,7 +145,8 @@ class SEColumnParallelLinear(megatron.core.tensor_parallel.ColumnParallelLinear)
             )
         if self.gather_output:
             # All-gather across the partitions.
-            assert not self.sequence_parallel
+            if self.sequence_parallel:
+                raise ValueError("Sequence parallel should not be enabled when gathering output")
             output = gather_from_tensor_model_parallel_region(output_parallel)
         else:
             output = output_parallel
@@ -198,15 +198,15 @@ class SERowParallelLinear(megatron.core.tensor_parallel.RowParallelLinear):
 
         if self.config._cpu_offloading_context is not None:
             if self.config._cpu_offloading_context.inside_context == True:
-                assert (
-                    self.config.cpu_offloading == False
-                ), "CPU Offloading cannot be enabled while using non-TE modules"
+                if self.config.cpu_offloading:
+                    raise ValueError("CPU Offloading cannot be enabled while using non-TE modules")
 
         # Set up backprop all-reduce.
         if self.input_is_parallel:
             input_parallel = input_
         else:
-            assert not self.sequence_parallel
+            if self.sequence_parallel:
+                raise ValueError("Sequence parallel should not be enabled when scattering input")
             input_parallel = scatter_to_tensor_model_parallel_region(input_)
         # Matrix multiply.
         if not self.weight.requires_grad:
@@ -224,7 +224,8 @@ class SERowParallelLinear(megatron.core.tensor_parallel.RowParallelLinear):
 
         # All-reduce across all the partitions.
         if self.explicit_expert_comm or self.shared_expert:
-            assert self.skip_bias_add
+            if not self.skip_bias_add:
+                raise ValueError("skip_bias_add must be enabled when using explicit_expert_comm or shared_expert")
             output_ = output_parallel
         elif self.sequence_parallel:
             output_ = reduce_scatter_to_sequence_parallel_region(output_parallel)
