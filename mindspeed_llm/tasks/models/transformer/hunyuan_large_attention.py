@@ -165,11 +165,11 @@ class HunyuanLargeAttention(SelfAttention):
         torch.distributed.all_gather(dp_list, inputs, group=get_data_parallel_group())
  
         def _compare(srcs, tgts, names, parallelism):
-            assert len(srcs) == len(tgts) == len(names)
+            if len(srcs) != len(tgts) or len(srcs) != len(names):
+                raise ValueError(f"Length mismatch: srcs={len(srcs)}, tgts={len(tgts)}, names={len(names)}")
             for src, tgt, name in zip(srcs, tgts, names):
-                assert torch.all(
-                    src == tgt
-                ), f"Discrepancy between {name} in {parallelism} ranks {i} and {rank}. Diff: {torch.norm(src - tgt)}"
+                if not torch.all(src == tgt):
+                    raise ValueError(f"Discrepancy between {name} in {parallelism} ranks {i} and {rank}. Diff: {torch.norm(src - tgt)}")
  
         for _, dp in enumerate(dp_list):
             q_w, q_b, k_w, k_b = torch.unbind(dp)

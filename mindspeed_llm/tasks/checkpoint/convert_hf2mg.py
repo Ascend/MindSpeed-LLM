@@ -222,8 +222,10 @@ class Hf2MgConvert(Convert):
 
                 for vpp_rank in range(self.vpp_size):
                     for pp_rank in range(self.pipeline_model_parallel_size):
-                        self.vpprank_layer_idxs[pp_rank][vpp_rank] = [num_layer_list_.pop(0) for _ in
-                                                                      range(layers_each_vpp[pp_rank][vpp_rank])]
+                        self.vpprank_layer_idxs[pp_rank][vpp_rank] = [
+                            num_layer_list_.pop(0)
+                            for _ in range(layers_each_vpp[pp_rank][vpp_rank])
+                        ]
 
         if self.mtp_num_layers:
             nextn_layer_list = [self.mtp_layer_number + i for i in range(self.mtp_num_layers)]

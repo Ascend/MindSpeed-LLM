@@ -131,10 +131,12 @@ def _build_document_sample_shuffle_indices(
                                     ) // sequence_length
 
             # num_samples_from_final_epoch should be non-negative
-            assert num_samples_from_final_epoch >= 0
+            if num_samples_from_final_epoch < 0:
+                raise ValueError("num_samples_from_final_epoch should be non-negative")
 
             # num_samples_from_final_epoch should not exceed max value
-            assert num_samples_from_final_epoch <= num_samples_per_epoch + 1
+            if num_samples_from_final_epoch > num_samples_per_epoch + 1:
+                raise ValueError("num_samples_from_final_epoch should not exceed max value")
 
             # Separate the final epoch if it falls below the threshold
             threshold = 0.80
@@ -174,8 +176,10 @@ def _build_document_sample_shuffle_indices(
         else:
             drop_last_partial_sequence = True
 
-        assert document_index.dtype == numpy.int32
-        assert self.dataset.sequence_lengths.dtype == numpy.int32
+        if document_index.dtype != numpy.int32:
+            raise ValueError(f"Expected document_index dtype to be int32, but got {document_index.dtype}")
+        if self.dataset.sequence_lengths.dtype != numpy.int32:
+            raise ValueError(f"Expected sequence_lengths dtype to be int32, but got {self.dataset.sequence_lengths.dtype}")
         if len(document_index) * 2 > len(self.dataset.sequence_lengths):
             # Heuristic: if "access density" of sequence_lengths is relatively high,
             # force loading the mmap-ed array into memory by taking a copy.

@@ -459,7 +459,8 @@ def pretrain(train_valid_test_dataset_provider,
         print_rank_0('training ...')
 
         if args.dataloader_type == 'cyclic' and args.retro_project_dir:
-            assert args.retro_cyclic_train_iters is not None
+            if args.retro_cyclic_train_iters is None:
+                raise ValueError("retro_cyclic_train_iters must be specified when using cyclic dataloader with retro project")
             args.train_iters = args.retro_cyclic_train_iters
             print_rank_0("retro cyclic train iters : %d" % args.train_iters)
 
@@ -545,9 +546,11 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
     config.grad_scale_func = optimizer.scale_loss
     config.timers = timers
     if isinstance(model[0], DDP) and args.overlap_grad_reduce and config.no_sync_func is None:
-        assert config.no_sync_func is None, \
-            ('When overlap_grad_reduce is True, config.no_sync_func must be None; '
-             'a custom no_sync_func is not supported when overlapping grad-reduce')
+        if config.no_sync_func is not None:
+            raise ValueError(
+                'When overlap_grad_reduce is True, config.no_sync_func must be None; '
+                'a custom no_sync_func is not supported when overlapping grad-reduce'
+            )
         config.no_sync_func = [model_chunk.no_sync for model_chunk in model]
         if len(model) == 1:
             config.no_sync_func = config.no_sync_func[0]
@@ -570,8 +573,8 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
     if args.manual_gc:
         # Disable the default garbage collector and perform the collection manually.
         # This is to align the timing of garbage collection across ranks.
-        assert args.manual_gc_interval >= 0, \
-            'Manual garbage collection interval should be laerger than or equal to 0.'
+        if args.manual_gc_interval < 0:
+            raise ValueError('Manual garbage collection interval should be larger than or equal to 0.')
         gc.disable()
         gc.collect()
 
@@ -623,8 +626,11 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
         # to make sure training configuration is still valid.
         update_num_microbatches(args.consumed_train_samples, consistency_check=False)
         if get_num_microbatches() != num_microbatches and iteration != 0:
-            assert get_num_microbatches() > num_microbatches, \
-                "number of microbatches should be increasing due to batch size rampup"
+            if get_num_microbatches() <= num_microbatches:
+                raise RuntimeError(
+                    "Number of microbatches should be increasing due to batch size rampup, "
+                    f"but got {get_num_microbatches()} <= {num_microbatches}"
+                )
             save_checkpoint_and_time(iteration, model, optimizer,
                                      opt_param_scheduler,
                                      num_floating_point_operations_so_far,

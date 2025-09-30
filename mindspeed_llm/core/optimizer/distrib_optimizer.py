@@ -39,13 +39,15 @@ def distributed_optimizer_init(
     self.model_chunks = model_chunks
     self.ddp_config = self.model_chunks[0].ddp_config
     for model_chunk in self.model_chunks:
-        assert self.ddp_config == model_chunk.ddp_config
+        if self.ddp_config != model_chunk.ddp_config:
+            raise ValueError("DDP config mismatch between model chunks")
     self.distributed_optimizer_instance_id = distributed_optimizer_instance_id
 
-    assert isinstance(optimizer, (Adam, HybridDeviceOptimizer)) or optimizer is None, (
-        "Only Adam and HybridDeviceOptimizer currently supported, "
-        "due to checkpointing requirements."
-    )
+    if not isinstance(optimizer, (Adam, HybridDeviceOptimizer)) and optimizer is not None:
+        raise ValueError(
+            "Only Adam and HybridDeviceOptimizer currently supported, "
+            "due to checkpointing requirements."
+        )
 
     # when freezing sub-models we have no real optimizer
     # but still need a stub DistributedOptimizer class
@@ -58,7 +60,8 @@ def distributed_optimizer_init(
         return
 
     # Model grad buffer ranges.
-    assert per_model_buffers is not None, "per_model_buffers must be provided"
+    if per_model_buffers is None:
+        raise ValueError("per_model_buffers must be provided")
     self.buffers = list(itertools.chain(*per_model_buffers.values()))
     self.per_model_buffers = per_model_buffers
     self.data_parallel_group = data_parallel_group
