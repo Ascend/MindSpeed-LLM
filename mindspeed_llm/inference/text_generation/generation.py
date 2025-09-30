@@ -148,7 +148,8 @@ def generate_tokens_probs_and_return_on_first_stage(
 
             if mpu.is_pipeline_last_stage():
                 # Always the last stage should have an output.
-                assert logits is not None
+                if logits is None:
+                    raise ValueError("logits must not be None for pipeline last stage")
 
                 # Sample.
                 if args.use_kv_cache:

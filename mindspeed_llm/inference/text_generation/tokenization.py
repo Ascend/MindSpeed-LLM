@@ -89,8 +89,10 @@ def tokenize_prompts(tokenizer=None, prompts=None, tokens_to_generate=None, max_
 
         # On the specified rank, build the above.
         if torch.distributed.get_rank() == rank:
-            assert prompts is not None
-            assert tokens_to_generate is not None
+            if prompts is None:
+                raise ValueError("prompts must not be None")
+            if tokens_to_generate is None:
+                raise ValueError("tokens_to_generate must not be None")
             # Tensor of tokens padded and their unpadded length.
             prompts_tokens_cuda_long_tensor, prompts_length_cuda_long_tensor = \
                 _tokenize_prompts_and_batch(tokenizer, prompts, tokens_to_generate, max_generate_length, add_BOS)
@@ -110,8 +112,10 @@ def tokenize_prompts(tokenizer=None, prompts=None, tokens_to_generate=None, max_
             sizes[0], torch.int64, tensor=prompts_length_cuda_long_tensor,
             rank=rank)
     else:
-        assert prompts is not None
-        assert tokens_to_generate is not None
+        if prompts is None:
+            raise ValueError("prompts must not be None")
+        if tokens_to_generate is None:
+            raise ValueError("tokens_to_generate must not be None")
         prompts_tokens_cuda_long_tensor, prompts_length_cuda_long_tensor = \
             _tokenize_prompts_and_batch(tokenizer, prompts, tokens_to_generate, max_generate_length, add_BOS)
 

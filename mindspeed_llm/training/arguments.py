@@ -245,10 +245,12 @@ def _validate_cp_args(args):
         check GQA & ulysses
         """
         head, remainder = divmod(args.num_attention_heads, uly_size * args.tensor_model_parallel_size)
-        assert head >= 1 and remainder == 0, f"num_attention_heads must be divisible by ulysses_size * tensor_model_parallel_size"
+        if not (head >= 1 and remainder == 0):
+            raise ValueError(f"num_attention_heads must be divisible by ulysses_size * tensor_model_parallel_size")
         if args.group_query_attention and args.num_query_groups >= 1:
             head_split_by_tp, remainder = divmod(args.num_query_groups, args.tensor_model_parallel_size)
-            assert head_split_by_tp >= 1 and remainder == 0, f"num_query_groups must be divisible by tensor_model_parallel_size"
+            if not (head_split_by_tp >= 1 and remainder == 0):
+                raise ValueError(f"num_query_groups must be divisible by tensor_model_parallel_size")
 
             if not args.kv_head_repeat_before_uly_alltoall:
                 head_split_by_tp_cp, remainder = divmod(head_split_by_tp, uly_size)
@@ -275,33 +277,44 @@ def _validate_cp_args(args):
         raise AssertionError(f"Context parallel is only supported in Mcore.")
 
     if args.context_parallel_algo == 'ulysses_cp_algo' or args.context_parallel_algo == 'mamba_cp_algo':
-        assert args.seq_length % args.context_parallel_size == 0, f"sequence length must be divisible by context_parallel_size"
+        if args.seq_length % args.context_parallel_size != 0:
+            raise ValueError(f"sequence length must be divisible by context_parallel_size")
         _check_attention_head(args, args.context_parallel_size)
 
     if args.context_parallel_algo == 'megatron_cp_algo':
-        assert args.seq_length % (
-                    2 * args.context_parallel_size) == 0, f"sequence length must be divisible by 2 * context_parallel_size"
-        assert args.cp_window_size >= 1 and args.cp_window_size < args.context_parallel_size, f'cp_window_size should in range [1, context_parallel_size) when using double_ring_attention.'
+        if args.seq_length % (2 * args.context_parallel_size) != 0:
+            raise ValueError(f"sequence length must be divisible by 2 * context_parallel_size")
+        if not (args.cp_window_size >= 1 and args.cp_window_size < args.context_parallel_size):
+            raise ValueError(f'cp_window_size should in range [1, context_parallel_size) when using double_ring_attention.')
         n_window, remainder = divmod(args.context_parallel_size, args.cp_window_size)
-        assert n_window >= 1 and remainder == 0, f'context parallel size must be divisible by cp_window_size when using double ring attention.'
-        assert args.cp_window_size >= 1 and args.cp_window_size < args.context_parallel_size, f'cp_window_size should in range [1, context_parallel_size) when using double_ring_attention.'
+        if not (n_window >= 1 and remainder == 0):
+            raise ValueError(f'context parallel size must be divisible by cp_window_size when using double ring attention.')
+        if not (args.cp_window_size >= 1 and args.cp_window_size < args.context_parallel_size):
+            raise ValueError(f'cp_window_size should in range [1, context_parallel_size) when using double_ring_attention.')
         n_window, remainder = divmod(args.context_parallel_size, args.cp_window_size)
-        assert n_window >= 1 and remainder == 0, f'context parallel size must be divisible by cp_window_size when using double ring attention.'
+        if not (n_window >= 1 and remainder == 0):
+            raise ValueError(f'context parallel size must be divisible by cp_window_size when using double ring attention.')
         if args.attention_mask_type == 'general':
-            assert args.micro_batch_size == 1, f'When attention_mask_type is set to general, the value of mbs can only be 1.'
+            if args.micro_batch_size != 1:
+                raise ValueError(f'When attention_mask_type is set to general, the value of mbs can only be 1.')
 
     if args.context_parallel_algo == 'hybrid_cp_algo':
-        assert args.ulysses_degree_in_cp is not None, "--ulysses-degree-in-cp must be specified in hybrid_cp_algo"
+        if args.ulysses_degree_in_cp is None:
+            raise ValueError("--ulysses-degree-in-cp must be specified in hybrid_cp_algo")
         ring_degree, remainder = divmod(args.context_parallel_size, args.ulysses_degree_in_cp)
-        assert ring_degree > 1 and remainder == 0, "--ulysses-degree-in-cp must be divisible by --context-parallel-size"
-        assert args.seq_length % (
-                    2 * args.context_parallel_size) == 0, f"sequence length must be divisible by 2 * context_parallel_size in hybrid cp"
-        assert args.cp_window_size >= 1 and args.cp_window_size < ring_degree, f'cp_window_size should be in range [1, ring_degree) when using double ring attention with hybrid context parallelism.'
+        if not (ring_degree > 1 and remainder == 0):
+            raise ValueError("--ulysses-degree-in-cp must be divisible by --context-parallel-size")
+        if args.seq_length % (2 * args.context_parallel_size) != 0:
+            raise ValueError(f"sequence length must be divisible by 2 * context_parallel_size in hybrid cp")
+        if not (args.cp_window_size >= 1 and args.cp_window_size < ring_degree):
+            raise ValueError(f'cp_window_size should be in range [1, ring_degree) when using double ring attention with hybrid context parallelism.')
         n_window, remainder = divmod(ring_degree, args.cp_window_size)
-        assert n_window >= 1 and remainder == 0, f'ring_degree should be divisible by cp_window_size when using double ring with hybrid context parallelism.'
+        if not (n_window >= 1 and remainder == 0):
+            raise ValueError(f'ring_degree should be divisible by cp_window_size when using double ring with hybrid context parallelism.')
         _check_attention_head(args, args.ulysses_degree_in_cp)
         if args.attention_mask_type == 'general':
-            assert args.micro_batch_size == 1, f'When attention_mask_type is set to general, the value of mbs can only be 1.'
+            if args.micro_batch_size != 1:
+                raise ValueError(f'When attention_mask_type is set to general, the value of mbs can only be 1.')
 
     if args.sliding_window:
         raise AssertionError("sliding window is not supported in context parallel.")
@@ -947,7 +960,8 @@ def _validate_create_attention_mask_in_dataloader(args):
         raise ValueError("Require set `--reset-position-ids` when `--neat-pack` is set.")
 
     if args.context_parallel_size > 1 and args.reset_attention_mask and args.attention_mask_type == 'causal':
-        assert args.context_parallel_algo == 'megatron_cp_algo', 'accelerated eod reset mode only support ring attention'
+        if args.context_parallel_algo != 'megatron_cp_algo':
+            raise ValueError('accelerated eod reset mode only support ring attention')
 
 
 def _validate_position_embedding(args):
@@ -1066,11 +1080,15 @@ def _validate_mla(args):
         if args.padded_base_length < 1:
             raise AssertionError('The value of padded_base_length cannot be less than 1.')
         if args.mla_up_proj_tp_overlap:
-            assert args.mla_mm_split, '--mla-up-proj-tp-overlap can only be used with mla-mm-split by now'
-            assert args.sequence_parallel, '--mla-up-proj-tp-overlap should be used with sequence parallel'
+            if not args.mla_mm_split:
+                raise ValueError('--mla-up-proj-tp-overlap can only be used with mla-mm-split by now')
+            if not args.sequence_parallel:
+                raise ValueError('--mla-up-proj-tp-overlap should be used with sequence parallel')
         if args.recompute_mla_up_proj:
-            assert args.mla_up_proj_tp_overlap, '--recompute-mla-up-proj can only be used with --mla-up-proj-tp-overlap'
-            assert not args.mla_zero_memory, '--recompute-mla-up-proj is incompatible with --mla-zero-memory'
+            if not args.mla_up_proj_tp_overlap:
+                raise ValueError('--recompute-mla-up-proj can only be used with --mla-up-proj-tp-overlap')
+            if args.mla_zero_memory:
+                raise ValueError('--recompute-mla-up-proj is incompatible with --mla-zero-memory')
         if args.mla_swap_core_attn_out:
             if args.schedules_method != "dualpipev":
                 raise AssertionError('--mla-swap-core-attn-out can only be used with dualpipev by now.')
@@ -1348,8 +1366,8 @@ def _validate_vpp(args):
 
     # VPP enabled when pp == 2, do check.
     num_layers_per_pipeline_stage = args.num_layers // args.pipeline_model_parallel_size
-    assert num_layers_per_pipeline_stage % args.num_layers_per_virtual_pipeline_stage == 0, \
-        'number of layers per pipeline stage must be divisible number of layers per virtual pipeline stage'
+    if num_layers_per_pipeline_stage % args.num_layers_per_virtual_pipeline_stage != 0:
+        raise ValueError('number of layers per pipeline stage must be divisible number of layers per virtual pipeline stage')
 
     pp_stage_layers = args.num_layers / args.pipeline_model_parallel_size
     if args.num_layers_per_virtual_pipeline_stage and args.num_layers_per_virtual_pipeline_stage >= pp_stage_layers:
