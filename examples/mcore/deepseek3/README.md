@@ -11,19 +11,19 @@
 使用DeepSeek-V3模型目录下的<a href="../../mcore/deepseek3/ckpt_convert_deepseek3_hf2mcore.sh">huggingface转megatron脚本</a>、<a href="../../mcore/deepseek3/ckpt_convert_deepseek3_mcore2hf.sh">megatron转huggingface脚本</a>和<a href="../../mcore/deepseek3/ckpt_convert_deepseek3_merge_lora2hf.sh">lora转huggingface脚本</a>
 
 #### huggingface转megatron
-```bash
+```shell
 bash examples/mcore/deepseek3/ckpt_convert_deepseek3_hf2mcore.sh
 ```
 
 #### megatron转huggingface
 
-```bash
+```shell
 bash examples/mcore/deepseek3/ckpt_convert_deepseek3_mcore2hf.sh
 ```
 
 #### lora/qlora转huggingface
 
-```bash
+```shell
 bash examples/mcore/deepseek3/ckpt_convert_deepseek3_merge_lora2hf.sh
 ```
 

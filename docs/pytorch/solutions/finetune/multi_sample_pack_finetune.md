@@ -114,7 +114,7 @@ bash examples/mcore/qwen25/data_convert_qwen25_instruction_pack.sh
 
 因此，根据之前的示例，路径应填写如下：
 
-```bash
+```shell
 DATA_PATH="./finetune_dataset/alpaca"
 CKPT_SAVE_DIR="./ckpt/"
 TOKENIZER_MODEL="./model_from_hf/qwen25-7b-hf/"
@@ -149,7 +149,7 @@ CKPT_LOAD_DIR="./model_weights/qwen25-7b-mcore/"
 
 启动脚本：
 
-```bash
+```shell
 bash examples/mcore/qwen25/tune_qwen25_7b_4k_full_pack.sh
 ```
 

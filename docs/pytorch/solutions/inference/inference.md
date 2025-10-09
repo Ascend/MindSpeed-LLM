@@ -4,7 +4,7 @@
 
 【Chatglm3-6b-Base流式推理效果】
 
-```bash
+```shell
 Instruction: "how are you?"
 MindSpeed-LLM:   "I'm just a computer program, so I don't have feelings or physical sensations, \
               but I'm here to help you with any questions you might have. \
@@ -16,7 +16,7 @@ HuggingFace: "I'm just a computer program, so I don't have feelings or physical 
 
 【Lama3.1-8b-Instruct流式推理效果】
 
-```bash
+```shell
 Instruction: "how are you?"
 MindSpeed-LLM:   "I hope you are doing well. I am writing to ask for your help with a project I am working on. \
               I am a student at [University Name] and I am doing a research project on [Topic]."
@@ -46,7 +46,7 @@ HuggingFace: "I hope you are doing well. I am writing to ask for your help with 
 
 
 因此，根据之前的示例，路径应填写如下：
-```bash
+```shell
 CHECKPOINT="./model_weights/llama-2-7b-mcore/"
 TOKENIZER_PATH="./model_from_hf/llama-2-7b-hf/"
 TOKENIZER_MODEL="./model_from_hf/llama-2-7b-hf/tokenizer.model"
@@ -55,7 +55,7 @@ TOKENIZER_MODEL="./model_from_hf/llama-2-7b-hf/tokenizer.model"
 【注意】除了路径的配置，推理脚本中的其他参数应与训练时的参数保持一致（例如TP/PP/EP/VPP等并行切分，--noop-layers/--num-layer-list等自定义模型结构参数），否则会出现模型权重加载失败的情况。
 #### 运行脚本
 
-```bash
+```shell
 bash examples/mcore/llama2/generate_llama2_7b_ptd.sh
 ```
 

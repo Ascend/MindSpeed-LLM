@@ -1,7 +1,7 @@
 MindSpeed-LLM支持基于昇腾芯片采集profiling数据，以提供对模型运行情况的分析。使用时只需将相关参数添加至训练脚本中，运行脚本即可进行采集。主要参数及含义如下：
 
 
-```bash
+```shell
 --profile                        # 打开profiling采集数据开关
 --profile-export-type            # 指定导出的性能数据结果文件格式, db, text, 默认text格式
 --profile-data-simplification    # 使用数据精简模式
@@ -24,7 +24,7 @@ MindSpeed-LLM支持基于昇腾芯片采集profiling数据，以提供对模型�
 
 1. 初步分析性能时，可以只采集0号卡的CPU信息，查看通信和计算时间占比，各类算子占比以及算子调度信息，推荐配置如下：
 
-```bash
+```shell
 --profile                        # 打开profiling采集数据开关
 --profile-step-start  5          # 从第5步开始采集
 --profile-step-end 6             # 从第6步结束，不包括第6步
@@ -36,7 +36,7 @@ MindSpeed-LLM支持基于昇腾芯片采集profiling数据，以提供对模型�
 
 2. 如果想要进一步查看算子内存占用信息以及算子详细调用情况，可以加入`--profile-with-stack`、`--profile-with-memory`和`--profile-record-shapes`等参数，但是这会导致数据膨胀，性能劣化。具体配置如下：
 
-```bash
+```shell
 --profile                        # 打开profiling采集数据开关
 --profile-step-start  5          # 从第5步开始采集
 --profile-step-end 6             # 从第6步结束，不包括第6步

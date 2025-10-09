@@ -187,7 +187,7 @@ PP=4 # 模型权重转换的pp大小，在本例中是4
 
 第六步，启动微调脚本。参数配置完毕后，如果是单机运行场景，只需要在一台机器上启动微调脚本：
 
-```bash
+```shell
 bash examples/mcore/qwen3/tune_qwen3_8b_4K_full_ptd.sh
 ```
 
@@ -208,14 +208,14 @@ WORLD_SIZE=$(($GPUS_PER_NODE * $NNODES))
 
 第七步，进行模型验证。完成微调后，需要进一步验证模型是否具备了预期的输出能力。我们提供了简单的模型生成脚本，只需要加载微调后的模型权重，便可观察模型在不同生成参数配置下的回复，详细配置请参考[Qwen3-8B推理脚本](../../../../examples/mcore/qwen3/generate_qwen3_8b_ptd.sh)。需要在脚本中修改以下参数：
 
-```bash
+```shell
 CKPT_DIR="your model save ckpt path" # 指向微调后权重的保存路径
 TOKENIZER_PATH="your tokenizer path" # 指向模型tokenizer的路径
 ```
 
 然后运行推理脚本：
 
-```bash
+```shell
 bash examples/mcore/qwen3/generate_qwen3_8b_ptd.sh
 ```
 
