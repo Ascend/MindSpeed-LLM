@@ -25,7 +25,7 @@
 
 
 因此，根据之前的示例，路径应填写如下：
-```bash
+```shell
 CHECKPOINT="./model_weights/llama-2-7b-mcore/"
 TOKENIZER_PATH="./model_from_hf/llama-2-7b-hf-chat/"
 TOKENIZER_MODEL="./model_from_hf/llama-2-7b-hf-chat/tokenizer.model"
@@ -51,7 +51,7 @@ TOKENIZER_MODEL="./model_from_hf/llama-2-7b-hf-chat/tokenizer.model"
 
 #### 运行脚本
 
-```bash
+```shell
 bash examples/mcore/llama2/chat_llama2_7b_ptd.sh
 ```
 

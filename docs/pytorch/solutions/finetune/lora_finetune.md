@@ -118,7 +118,7 @@ bash examples/mcore/llama2/tune_llama2_7b_lora_ptd.sh
 
 基于lora微调训练完后，得到Lora权重与Base权重存在区别，无法直接用于续训，需要转换后才可使用，添加以下参数即可将训练好的 Lora 权重与 Base 权重融合,合并后转换为 Mcore 权重：
 
-```bash
+```shell
     --lora-load ${CHECKPOINT_LORA}  \
     --lora-r 16 \
     --lora-alpha 32 \
