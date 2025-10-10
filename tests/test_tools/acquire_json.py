@@ -45,6 +45,7 @@ def transfer_logs_as_json(log_file, output_json_file):
     with open(log_file, "r") as f:
         log_content = f.read()
     log_matches = log_pattern.findall(log_content)
+
     memory_matches = memory_pattern.findall(log_content)
 
     if log_matches:
@@ -54,6 +55,16 @@ def transfer_logs_as_json(log_file, output_json_file):
             data["throughput"] = [float(match[1]) for match in log_matches]
         else:
             data["lm loss"] = [float(match[3]) for match in log_matches]
+    else:
+        log_pattern = re.compile(
+            r"elapsed time per iteration \(ms\):\s+([0-9.]+)\s+\| .*?lm loss:\s+([0-9.]+E[+-][0-9]+) | .* actor/pg_loss : ([0-9.]+)"
+        )
+        log_matches = log_pattern.findall(log_content)
+        if log_matches[0][1][2] != "":
+            data["lm loss"] = [float(match[1]) for match in log_matches]
+            data["time info"] = [float(match[0]) for match in log_matches]
+        else:
+            data["lm loss"] = [float(match[2]) for match in log_matches]
 
     if memory_matches:
         memo_info = [

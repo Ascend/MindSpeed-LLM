@@ -1030,6 +1030,9 @@ def _validate_recompute_args(args):
 
 def _validate_instruction_finetune(args):
     if args.variable_seq_lengths:
+        if args.log_throughput:
+            args.log_throughput = False
+            print_rank0_by_args(args, f"In variable-seq-lengths mode, accurate TFLOPS cannot be calculated, set --log-throughput to False.")
         if args.context_parallel_size > 1 and args.pad_to_multiple_of % (args.tensor_model_parallel_size * args.context_parallel_size) != 0:
             raise AssertionError('pad_to_multiple_of must be divided by (tp * cp) when use cp.')
         if args.num_experts is not None and args.moe_token_dispatcher_type == "allgather":

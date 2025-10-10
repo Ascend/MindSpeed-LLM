@@ -30,7 +30,7 @@ source /usr/local/Ascend/nnal/atb/set_env.sh # 以具体的nnal路径为主
 source /usr/local/Ascend/ascend-toolkit/set_env.sh # 修改为真实的ascend-toolkit路径
 ......
 --input ./dataset/train-00000-of-00042-d964455e17e96d5a.parquet # 原始数据集路径 
---tokenizer-name-or-path ./mdoel_from_hf/qwen3_hf # HF的tokenizer路径
+--tokenizer-name-or-path ./model_from_hf/qwen3_hf # HF的tokenizer路径
 --output-prefix ./finetune_dataset/alpaca  # 保存路径
 --append-eod  # 添加此参数开启pack模式数据预处理
 ......
