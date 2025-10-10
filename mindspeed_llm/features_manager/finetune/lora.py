@@ -32,14 +32,6 @@ class LoraFeature(MindSpeedFeature):
         group.add_argument('--qlora-save-dequantize', action='store_true', default=False,
                             help='Dequantize weights to original precision when saving in QLoRA tuning.')
 
-    def validate_args(self, args):
-        if hasattr(args, 'lora_target_modules') and args.lora_target_modules:
-            if args.moe_grouped_gemm:
-                if hasattr(args, 'qlora') and args.qlora:
-                    raise AssertionError("Qlora finetune does not support `--moe-grouped-gemm`")
-                else:
-                    raise AssertionError("Lora finetune does not support `--moe-grouped-gemm`")
-    
     def register_patches(self, patch_manager, args):
         # for qlora
         from mindspeed_llm.tasks.posttrain.lora.utils import is_enable_qlora
@@ -75,7 +67,7 @@ class LoraFeature(MindSpeedFeature):
                                           groupedmlp_load_from_state_dict_wrapper)
             patch_manager.register_patch('mindspeed.core.transformer.moe.grouped_gemm_util.Ops.gmm',
                                           grouped_gemm_util_ops_gmm)
-            patch_manager.register_patch('mindspeed.core.transformer.moe.moe_layer_overlap_all2all.gmm_op',
+            patch_manager.register_patch('mindspeed.core.transformer.moe.moe_feature.overlap.moe_layer_overlap_all2all.gmm_op',
                                           moe_layer_overlap_all2all_gmm_op_wrapper)
         else:
             from mindspeed_llm.training.training import get_model_wrapper
@@ -85,6 +77,7 @@ class LoraFeature(MindSpeedFeature):
         from mindspeed_llm.core.distributed.finalize_model_grads import _allreduce_word_embedding_grads
         from mindspeed_llm.training.utils import unwrap_model_wrapper
         from mindspeed_llm.training.checkpointing import _load_base_checkpoint_wrapper, save_checkpoint_wrapper
+        from mindspeed_llm.core.transformer.moe.moe_layer import lora_moe_layer_init_wrapper
         patch_manager.register_patch('megatron.core.distributed.finalize_model_grads._allreduce_word_embedding_grads',
                                       _allreduce_word_embedding_grads)
         # fix unwrap PerfModel 
@@ -96,4 +89,7 @@ class LoraFeature(MindSpeedFeature):
                                       _load_base_checkpoint_wrapper)
         patch_manager.register_patch('megatron.training.checkpointing.save_checkpoint',
                                       save_checkpoint_wrapper)
+        if hasattr(args, 'lora_target_modules') and args.lora_target_modules:
+            patch_manager.register_patch('megatron.core.transformer.moe.moe_layer.MoELayer.__init__',
+                                          lora_moe_layer_init_wrapper)
 
