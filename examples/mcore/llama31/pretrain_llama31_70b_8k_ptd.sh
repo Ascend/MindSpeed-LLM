@@ -12,7 +12,7 @@ WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
 CKPT_SAVE_DIR="your model save ckpt path"
 DATA_PATH="your data path"
-TOKENIZER_MODEL="your tokenizer path"
+TOKENIZER_PATH="your tokenizer path"
 CKPT_LOAD_DIR="your model ckpt path"
 TP=8
 PP=4
@@ -42,7 +42,7 @@ GPT_ARGS="
     --high-freq-factor 4.0 \
     --original-max-position-embeddings 8192 \
     --tokenizer-type PretrainedFromHF \
-    --tokenizer-name-or-path ${TOKENIZER_MODEL} \
+    --tokenizer-name-or-path ${TOKENIZER_PATH} \
     --num-layers 80 \
     --num-layer-list 17,20,22,21 \
     --hidden-size 8192 \
