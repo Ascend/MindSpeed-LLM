@@ -4,7 +4,7 @@ mkdir ./dataset
 
 python ./preprocess_data.py \
 	--input ./dataset/train-00000-of-00001-a09b74b3ef9c3b56.parquet \
-    --tokenizer-name-or-path ./mdoel_from_hf/Seed-OSS-36B-Base_hf \
+    --tokenizer-name-or-path ./model_from_hf/Seed-OSS-36B-Base_hf \
     --output-prefix ./finetune_dataset/alpaca \
 	--tokenizer-type PretrainedFromHF \
 	--workers 4 \
