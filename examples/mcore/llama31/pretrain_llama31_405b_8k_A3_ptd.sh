@@ -14,7 +14,7 @@ WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
 CKPT_SAVE_DIR="your model save ckpt path"
 DATA_PATH="your data path"
-TOKENIZER_MODEL="your tokenizer path"
+TOKENIZER_PATH="your tokenizer path"
 CKPT_LOAD_DIR="your model ckpt path"
 
 TP=16
@@ -83,7 +83,7 @@ GPT_ARGS="
     --untie-embeddings-and-output-weights \
     --no-gradient-accumulation-fusion \
     --tokenizer-type PretrainedFromHF \
-    --tokenizer-name-or-path ${TOKENIZER_PATH} \
+    --tokenizer-name-or-path ${TOKENIZER_MODEL} \
     --make-vocab-size-divisible-by 1 \
     --attention-dropout 0.0 \
     --hidden-dropout 0.0 \

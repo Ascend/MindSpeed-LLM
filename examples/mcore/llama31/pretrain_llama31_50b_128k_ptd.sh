@@ -14,7 +14,7 @@ WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
 CKPT_SAVE_DIR="your model save ckpt path"
 DATA_PATH="your data path"
-TOKENIZER_MODEL="your tokenizer path"
+TOKENIZER_PATH="your tokenizer path"
 CKPT_LOAD_DIR="your model ckpt path"
 
 TP=8
@@ -47,7 +47,7 @@ GPT_ARGS="
     --use-fused-rmsnorm \
     --use-fused-swiglu \
     --tokenizer-type PretrainedFromHF \
-    --tokenizer-name-or-path ${TOKENIZER_MODEL} \
+    --tokenizer-name-or-path ${TOKENIZER_PATH} \
     --num-layers 14 \
     --hidden-size 16384 \
     --ffn-hidden-size 53248 \
