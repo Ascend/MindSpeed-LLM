@@ -4,7 +4,7 @@ mkdir ./finetune_dataset
 
 python ./preprocess_data.py \
     --input ./dataset/train-00000-of-00001-a09b74b3ef9c3b56.parquet \
-    --tokenizer-name-or-path ./mdoel_from_hf/Qwen3-8B-Base/ \
+    --tokenizer-name-or-path ./model_from_hf/Qwen3-8B-Base/ \
     --output-prefix ./finetune_dataset/alpaca \
     --handler-name AlpacaStyleInstructionHandler \
     --tokenizer-type PretrainedFromHF \
