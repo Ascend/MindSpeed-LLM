@@ -56,7 +56,7 @@ source /usr/local/Ascend/nnal/atb/set_env.sh
 # 安装MindSpeed加速库
 git clone https://gitcode.com/ascend/MindSpeed.git
 cd MindSpeed
-git checkout 2.2.0_core_r0.12.1 # checkout commit from MindSpeed master
+git checkout 2.2.0_core_r0.12.1 
 pip install -r requirements.txt 
 pip3 install -e .
 cd ..
@@ -68,7 +68,7 @@ cd Megatron-LM
 git checkout core_v0.12.1
 cp -r megatron ../MindSpeed-LLM/
 cd ../MindSpeed-LLM
-git checkout master
+git checkout 2.2.0
 
 pip install -r requirements.txt  # 安装其余依赖库
 ```
