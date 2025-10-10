@@ -169,6 +169,11 @@ def dot_product_attention_init(
     self.num_query_groups_per_partition = divide(self.config.num_query_groups, world_size)
 
     coeff = None
+    if softmax_scale is None:
+        self.softmax_scale = 1.0 / math.sqrt(self.hidden_size_per_attention_head)
+    else:
+        self.softmax_scale = softmax_scale
+
     self.norm_factor = math.sqrt(self.hidden_size_per_attention_head)
     if self.config.apply_query_key_layer_scaling:
         coeff = self.layer_number

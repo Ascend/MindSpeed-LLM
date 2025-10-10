@@ -28,7 +28,12 @@ class AlibiFeature(MindSpeedFeature):
         group.add_argument('--alibi-fusion-attn-type', type=int, default=None,
                             help='alibi pse type, support for 0,2')
 
-    def validate_args(self, args):
-        # alibi only support by FA
-        if getattr(args, "position_embedding_type", None) == "alibi" and not getattr(args, "use_flash_attn", False):
-            raise AssertionError("`--position-embedding-type alibi` requires `--use-flash-attn` to be enabled.")
+    def register_patches(self, patch_manager, args):
+        from mindspeed_llm.core.transformer.alibi_attention import AlibiAttention
+
+        # support for alibi without fa need patch below
+        if getattr(args, "position_embedding_type", None) == "alibi" and not getattr(args, "use_flash_attn", False) and not getattr(args, "context_parallel_size", 1) > 1 :
+            patch_manager.register_patch('megatron.core.transformer.dot_product_attention.DotProductAttention',
+                                          AlibiAttention)
+            patch_manager.register_patch('megatron.core.transformer.custom_layers.transformer_engine.TEDotProductAttention',
+                                          AlibiAttention)
