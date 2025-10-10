@@ -4,7 +4,7 @@ mkdir ./dataset
 
 python ./preprocess_data.py \
     --input ./dataset/train-00000-of-00042-d964455e17e96d5a.parquet \
-    --tokenizer-name-or-path ./mdoel_from_hf/Qwen3-4B-Base/ \
+    --tokenizer-name-or-path ./model_from_hf/Qwen3-4B-Base/ \
     --tokenizer-type PretrainedFromHF \
     --handler-name GeneralPretrainHandler \
     --output-prefix ./dataset/enwiki \
