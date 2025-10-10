@@ -1,3 +1,4 @@
+import warnings
 from argparse import ArgumentParser
 
 from mindspeed.features_manager.feature import MindSpeedFeature
@@ -27,6 +28,9 @@ class FinetuneFeature(MindSpeedFeature):
     def pre_validate_args(self, args):
         self.origin_variable_seq_lengths = None
         if args.variable_seq_lengths:
+            if args.log_throughput:
+                args.log_throughput = False
+                warnings.warn("In variable-seq-lengths mode, accurate TFLOPS cannot be calculated, set --log-throughput to False.", RuntimeWarning)
             self.origin_variable_seq_lengths = args.variable_seq_lengths
             args.variable_seq_lengths = False
 

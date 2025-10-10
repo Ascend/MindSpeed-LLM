@@ -8,9 +8,9 @@ python convert_ckpt.py \
     --save-model-type mg \
     --target-tensor-parallel-size 4 \
     --target-pipeline-parallel-size 2 \
-    --load-dir ./mdoel_from_hf/Qwen3-1.7B-Base/ \
+    --load-dir ./model_from_hf/Qwen3-1.7B-Base/ \
     --save-dir ./model_weight/Qwen3-1.7B-mcore \
-    --tokenizer-model ./mdoel_from_hf/Qwen3-1.7B-Base/tokenizer.json \
+    --tokenizer-model ./model_from_hf/Qwen3-1.7B-Base/tokenizer.json \
     --model-type-hf qwen3 \
     --params-dtype bf16 \
     --spec mindspeed_llm.tasks.models.spec.qwen3_spec layer_spec

@@ -137,7 +137,7 @@ bash examples/mcore/qwen3/ckpt_convert_qwen3_hf2mcore.sh
 source /usr/local/Ascend/ascend-toolkit/set_env.sh # 修改为真实的ascend-toolkit路径
 ......
 --input ./dataset/train-00000-of-00001-a09b74b3ef9c3b56.parquet # 原始数据集路径 
---tokenizer-name-or-path ./mdoel_from_hf/qwen3_hf # HF的tokenizer路径
+--tokenizer-name-or-path ./model_from_hf/qwen3_hf # HF的tokenizer路径
 --output-prefix ./finetune_dataset/alpaca  # 保存路径
 ......
 ```

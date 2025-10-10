@@ -5,7 +5,7 @@ python convert_ckpt.py \
        --save-model-type mg \
        --target-tensor-parallel-size 1 \
        --target-pipeline-parallel-size 1 \
-       --load-dir ./mdoel_from_hf/Qwen3-1.7B-Base/ \
+       --load-dir ./model_from_hf/Qwen3-1.7B-Base/ \
        --save-dir ./model_weights/Qwen3-1.7B-mcore \
        --tokenizer-model ./model_from_hf/Qwen3-1.7B-Base/tokenizer.json \
        --model-type-hf qwen3 \
