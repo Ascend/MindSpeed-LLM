@@ -55,7 +55,7 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS inference.py \
        --lora-target-modules linear_qkv linear_proj linear_fc1 linear_fc2 \
        --make-vocab-size-divisible-by 1 \
        --padded-vocab-size 128256 \
-       --rotary-base 500000.0 \
+       --rotary-base 500000 \
        --group-query-attention \
        --num-query-groups 8 \
        | tee logs/generate_llama31_8b_lora.log
