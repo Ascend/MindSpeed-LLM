@@ -119,13 +119,10 @@ def add_llm_features(features_list: List[MindSpeedFeature]):
         TrainingBasicFeature(),
         DatasetFeature(),
         ModuleFeature(),
-        FinetuneFeature(),
         NumLayerListFeature(),
         DPOFeature(),
-        LoraFeature(),
         InferenceFeature(),
         EvaluationFeature(),
-        LuLoraFeature(),
         DeprecatedArgsFeature(),
         MambaModel(),
         LanguageModelEmbeddingFeature(),
@@ -281,6 +278,14 @@ def add_high_availability_feature(features_list: List[MindSpeedFeature]):
     ])
 
 
+def add_finetune_feature(features_list: List[MindSpeedFeature]):
+    features_list.extend([
+        FinetuneFeature(),
+        LoraFeature(),
+        LuLoraFeature(),
+    ])
+
+
 def add_ai_framework_feature(features_list: List[MindSpeedFeature]):
     features_list.extend([
         MindSporePatchFeature(),
@@ -309,6 +314,7 @@ def create_features_list():
     add_swap_optimizer_feature(features_list)
     add_disable_gloo_group_feature(features_list)
     add_high_availability_feature(features_list)
+    add_finetune_feature(features_list)
     add_ai_framework_feature(features_list)
     return features_list
 

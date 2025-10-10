@@ -181,3 +181,41 @@ def moe_layer_forward(self, hidden_states: torch.Tensor):
         output, mlp_bias = custom_forward(hidden_states)
 
     return output, mlp_bias
+
+
+def lora_moe_layer_init_wrapper(init_func):
+    @wraps(init_func)
+    def lora_moe_layer_init(*args, **kwargs):
+        self = args[0]
+        global_args = get_args()
+        moe_config = deepcopy(kwargs["config"])
+        kwargs["config"] = moe_config
+        init_func(*args, **kwargs)
+        # Initialize LoRA for MOE if grouped GEMM is enabled and LoRA is enabled
+        if moe_config.moe_grouped_gemm:
+            if is_enable_lora():
+                from peft import LoraConfig
+                lora_config = LoraConfig(
+                    r=global_args.lora_r,
+                    lora_alpha=global_args.lora_alpha,
+                    target_modules=global_args.lora_target_modules,
+                    lora_dropout=0.0,
+                    bias="none",
+                    megatron_config=self.config,
+                    megatron_core="megatron.core",
+                )
+                from mindspeed_llm.tasks.posttrain.lora.moe.experts import LoraParallelGroupedMLP
+                self.experts = LoraParallelGroupedMLP(self.num_local_experts, moe_config, lora_config)
+        # Initialize shared experts if enabled
+        if global_args.n_shared_experts:
+            shared_expert_config = deepcopy(moe_config)
+            # Deep copy the MOE configuration for shared experts
+            shared_expert_config.ffn_hidden_size = global_args.n_shared_experts * moe_config.ffn_hidden_size
+            if global_args.moe_allgather_overlap_comm or global_args.moe_alltoall_overlap_comm:
+                if hasattr(args, 'lora_target_modules') and args.lora_target_modules:
+                    from mindspeed_llm.core.transformer.moe.layers import SEColumnParallelLinear, SERowParallelLinear
+                    # Initialize shared experts with parallel linear layers
+                    self.shared_experts = MLP(shared_expert_config, MLPSubmodules(linear_fc1=SEColumnParallelLinear,
+                                                                                  linear_fc2=SERowParallelLinear),
+                                              shared_expert=True)
+    return lora_moe_layer_init
