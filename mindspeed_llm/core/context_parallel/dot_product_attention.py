@@ -306,7 +306,7 @@ class CPDotProductAttentionImpl:
 
         if not args.mla_fa_divide_qk:
             if actual_seq_len is not None and len(actual_seq_len) > ACTUAL_SEQ_LEN_THRESHOLD:
-                actual_seq_len = recompute_valid_actual_seq_len(actual_seq_len)
+                actual_seq_len = recompute_valid_actual_seq_len(actual_seq_len, args.micro_batch_size)
                 if len(actual_seq_len) > ACTUAL_SEQ_LEN_THRESHOLD:
                     logger.warning(
                         f"FlashAttention received unexpectedly long 'actual_seq_len' (length={len(actual_seq_len)}, threshold={ACTUAL_SEQ_LEN_THRESHOLD}). "
