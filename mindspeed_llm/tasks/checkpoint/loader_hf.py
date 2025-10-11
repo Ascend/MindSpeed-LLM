@@ -123,7 +123,6 @@ def build_metadata(args, margs):
         md.q_lora_rank = getattr(margs, "q_lora_rank", None)
         md.kv_lora_rank = getattr(margs, "kv_lora_rank", None)
         md.v_head_dim = getattr(margs, "v_head_dim", None)
-    md.rm_head = args.orm
     
     if hasattr(margs, 'normalization'):
         md.norm_has_bias = margs.normalization == "LayerNorm"
@@ -321,19 +320,6 @@ def get_message_output_layer(model, md):
     return message
 
 
-def get_message_rm_head(model, md):
-    # Send rm head from tp_rank 0.
-    message = None
-    if md.rm_head:
-        message = {
-            "weight": model.get_rm_head_weight()
-        }
-        if model.has_rm_head_bias():
-            message["bias"] = model.get_rm_head_bias()
-
-    return message
-
-
 def to_detach(message):
     for key, value in message.items():
         if isinstance(message[key], dict):
@@ -406,10 +392,6 @@ def _load_checkpoint(model_provider, queue, args):
     message = get_message_output_layer(model_mg, md)
     if message is not None:
         queue_put("output layer", message)
-
-    message = get_message_rm_head(model_mg, md)
-    if message:
-        queue_put("rm head", message)
 
     queue.put("done")
 

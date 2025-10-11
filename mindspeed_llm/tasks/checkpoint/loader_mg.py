@@ -110,7 +110,6 @@ def build_metadata(args, margs):
         md.q_lora_rank = getattr(margs, "q_lora_rank", None)
         md.kv_lora_rank = getattr(margs, "kv_lora_rank", None)
         md.v_head_dim = getattr(margs, "v_head_dim", None)
-    md.rm_head = args.orm
 
     md.consumed_train_samples = 0
     md.consumed_valid_samples = 0
@@ -436,25 +435,6 @@ def get_message_output_layer(model, md, **kwargs):
     return message
 
 
-def get_message_rm_head(model, md, **kwargs):
-    # Send rm head from tp_rank 0
-    margs = model.get_args()
-    tp_size = margs.tensor_model_parallel_size
-    message = {}
-    if md.rm_head:
-        get_rm_head_weight_list = []
-        for tp_rank in range(tp_size):
-            kwargs["tp_rank"] = tp_rank
-            get_rm_head_weight_list.append(
-                model.get_rm_head_weight(**kwargs)
-            )
-        message[f"weight"] = torch.cat(get_rm_head_weight_list, dim=1)
-        if model.has_rm_head_bias(**kwargs):
-            message[f"bias"] = model.get_rm_head_bias(**kwargs)
-
-    return message
-
-
 def to_detach(message):
     for key, value in message.items():
         if isinstance(message[key], dict):
@@ -532,10 +512,6 @@ def _load_checkpoint(model_provider, queue, args):
     message = get_message_output_layer(model_mg, md, **kwargs)
     if message:
         queue_put("output layer", message)
-
-    message = get_message_rm_head(model_mg, md, **kwargs)
-    if message:
-        queue_put("rm head", message)
 
     queue.put("done")
 

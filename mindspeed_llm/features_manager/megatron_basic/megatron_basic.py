@@ -26,7 +26,7 @@ class MegatronBasicFeature(MindSpeedMegatronBasicFeature):
         group = parser.add_argument_group(title=self.feature_name)
         group.add_argument("--stage",
                             default=None,
-                            choices=["sft", "dpo", "orm", "prm", "simpo", "ray_ppo", "ray_online_dpo", "ray_grpo", "trl_ppo"],
+                            choices=["sft", "dpo", "prm", "simpo", "ray_ppo", "ray_online_dpo", "ray_grpo", "trl_ppo"],
                             help='Determine training mode')
         group.add_argument('--scale-depth', type=float, default=None,
                             help='scale-depth')

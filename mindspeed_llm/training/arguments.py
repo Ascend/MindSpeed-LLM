@@ -556,7 +556,7 @@ def _add_network_args(parser):
     group.add_argument(
         '--stage',
         default=None,
-        choices=["sft", "dpo", "orm", "prm", "simpo", "ray_ppo", "ray_online_dpo", "ray_grpo", "trl_ppo"],
+        choices=["sft", "dpo", "prm", "simpo", "ray_ppo", "ray_online_dpo", "ray_grpo", "trl_ppo"],
         help='Determine training mode'
     )
     group.add_argument('--cut-max-seqlen', action="store_true", help='Determine training mode')

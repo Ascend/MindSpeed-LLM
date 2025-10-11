@@ -18,7 +18,6 @@ from megatron.training.global_vars import get_timers
 from megatron.training.training import compute_throughputs_and_append_to_progress_log
 from megatron.training.utils import unwrap_model, print_rank_0, append_to_progress_log
 from megatron.training.yaml_arguments import core_transformer_config_from_yaml
-from mindspeed_llm.tasks.posttrain.orm.orm_model import GPTRewardModel
 
 
 def model_provider(is_reward_model=False, pre_process=True, post_process=True) -> Union[GPTModel]:
@@ -33,15 +32,12 @@ def model_provider(is_reward_model=False, pre_process=True, post_process=True) -
         Defaults to True.
 
     Returns:
-        Union[GPTModel, GPTRewardModel]: The returned model
+        Union[GPTModel]: The returned model
     """
     args = get_args()
     use_te = args.transformer_impl == "transformer_engine"
 
-    if is_reward_model:
-        print_rank_0('building GPTReward model ...')
-    else:
-        print_rank_0('building GPT model ...')
+    print_rank_0('building GPT model ...')
 
     # Experimental loading arguments from yaml
     if args.yaml_cfg is not None:
@@ -60,36 +56,20 @@ def model_provider(is_reward_model=False, pre_process=True, post_process=True) -
         else:
             transformer_layer_spec = get_gpt_layer_local_spec(args.num_experts, args.moe_grouped_gemm)
 
-    if is_reward_model:
-        model = GPTRewardModel(
-            config=config,
-            transformer_layer_spec=transformer_layer_spec,
-            vocab_size=args.padded_vocab_size,
-            max_sequence_length=args.max_position_embeddings,
-            pre_process=pre_process,
-            post_process=post_process,
-            post_layer_norm=not args.no_post_layer_norm,
-            fp16_lm_cross_entropy=args.fp16_lm_cross_entropy,
-            parallel_output=True if args.sequence_parallel else False,
-            share_embeddings_and_output_weights=not args.untie_embeddings_and_output_weights,
-            position_embedding_type=args.position_embedding_type,
-            rotary_percent=args.rotary_percent,
-        )
-    else:
-        model = GPTModel(
-            config=config,
-            transformer_layer_spec=transformer_layer_spec,
-            vocab_size=args.padded_vocab_size,
-            max_sequence_length=args.max_position_embeddings,
-            pre_process=pre_process,
-            post_process=post_process,
-            fp16_lm_cross_entropy=args.fp16_lm_cross_entropy,
-            parallel_output=True if args.sequence_parallel else False,
-            share_embeddings_and_output_weights=not args.untie_embeddings_and_output_weights,
-            position_embedding_type=args.position_embedding_type,
-            rotary_percent=args.rotary_percent,
-            seq_len_interpolation_factor=args.rotary_seq_len_interpolation_factor
-        )
+    model = GPTModel(
+        config=config,
+        transformer_layer_spec=transformer_layer_spec,
+        vocab_size=args.padded_vocab_size,
+        max_sequence_length=args.max_position_embeddings,
+        pre_process=pre_process,
+        post_process=post_process,
+        fp16_lm_cross_entropy=args.fp16_lm_cross_entropy,
+        parallel_output=True if args.sequence_parallel else False,
+        share_embeddings_and_output_weights=not args.untie_embeddings_and_output_weights,
+        position_embedding_type=args.position_embedding_type,
+        rotary_percent=args.rotary_percent,
+        seq_len_interpolation_factor=args.rotary_seq_len_interpolation_factor
+    )
     return model
 
 

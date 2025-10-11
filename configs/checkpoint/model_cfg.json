@@ -42,8 +42,7 @@
         "layers_mlp_up_proj": "model.layers[layer_idx].mlp.up_proj",
         "layers_mlp_linear_fc2": "model.layers[layer_idx].mlp.down_proj",
         "final_layernorm": "model.norm",
-        "output_layer": "lm_head",
-        "rm_head": "score"
+        "output_layer": "lm_head"
       }
     },
     "qwen2-moe": {
