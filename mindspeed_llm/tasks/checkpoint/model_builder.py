@@ -298,7 +298,6 @@ class MegatronModel(Model):
             "layers_self_attention_post_mlp_layernorm": module_layer + "post_mlp_layernorm",
             "final_layernorm": "decoder.final_layernorm",
             "output_layer": "output_layer",
-            "rm_head": "rm_head"
         }
 
         module_mapping["layers_mlp_router"] = module_layer + "mlp.router"

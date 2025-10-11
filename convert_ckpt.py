@@ -8,7 +8,6 @@ import logging as logger
 import torch.multiprocessing as mp
 from mindspeed_llm import megatron_adaptor
 import pretrain_gpt
-from mindspeed_llm.tasks.posttrain.orm.orm_trainer import ORMTrainer
 
 MODULE_ROOT = "mindspeed_llm.tasks.checkpoint"
 
@@ -70,8 +69,6 @@ def main():
                         help="Path to the config directory. If not specified, the default path in the repository will be used.")
     parser.add_argument('--qlora-nf4', action='store_true',
                        help='use bitsandbytes nf4 to quantize model.')
-    parser.add_argument('--orm', action="store_true", default=False,
-                        help='Specify the ORM ckpt conversion, convert additional rm_head layer in ORM.')
     parser.add_argument('--save-lora-to-hf', action='store_true', default=False,
                         help='Enable only save lora-checkpoint to hf')
     parser.add_argument('--load-checkpoint-loosely', action='store_true', default=False,
@@ -96,9 +93,7 @@ def main():
     args = parser.parse_args()
 
     queue = mp.Queue(maxsize=args.max_queue_size)
-    model_provider = ORMTrainer.model_provider if args.orm else pretrain_gpt.model_provider
-    if args.orm and not args.use_mcore_models:
-        raise AssertionError("Currently Outcome Reward Model only support Mcore models")
+    model_provider = pretrain_gpt.model_provider
 
     logger.info("Starting saver...")
     saver_proc = mp.Process(target=saver.save_model_checkpoint, args=(model_provider, queue, args))

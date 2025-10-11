@@ -183,7 +183,6 @@ class ModelBase(abc.ABC):
     def set_postprocess_state(self, src_model):
         final_layernorm_weight = src_model.get_final_layernorm_weight()
         self.set_final_layernorm_weight(data=final_layernorm_weight)
-        # In ORM output_layer is replaced by rm_head, need to check whether it exists
         if self.args.untie_embeddings_and_output_weights and \
             self.has_output_layer_module() and src_model.has_output_layer_module():
             output_layer_weight = src_model.get_output_layer_weight()
@@ -198,17 +197,6 @@ class ModelBase(abc.ABC):
         if self.has_output_layer_bias():
             output_layer_bias = src_model.get_output_layer_bias()
             self.set_output_layer_bias(data=output_layer_bias)
-        if not isinstance(self, MegatronLegacyModel) and self.has_rm_head_module():
-            rm_head_weight = src_model.get_rm_head_weight()
-            self.set_rm_head_weight(data=rm_head_weight)
-            if self.has_rm_head_bias() and src_model.has_rm_head_bias():
-                rm_head_bias = src_model.get_rm_head_bias()
-                self.set_rm_head_bias(data=rm_head_bias)
-            elif self.has_rm_head_bias():
-                self.set_rm_head_bias(data=torch.zeros_like(self.get_rm_head_bias()))
-                logger.warning("Source Model doesn't contain rm_head bias, it will be initialized to 0")
-            else:
-                logger.warning("Target Model doesn't contain rm_head bias, it will be lost after conversion")
 
     def set_layer_state(self, src_model, layer_idx):
         """
@@ -523,15 +511,10 @@ class HuggingfaceModel(ModelBase):
             load_dir = self.args_cmd.save_dir
         else:
             load_dir = self.args_cmd.load_dir
-        if self.args_cmd.orm:
-            self.module = [AutoModelForSequenceClassification.from_pretrained(
-                load_dir, device_map=device_map, trust_remote_code=trust_remote_code, local_files_only=True,
-                num_labels=1
-            )]
-        else:
-            self.module = [AutoModelForCausalLM.from_pretrained(
-                load_dir, device_map=device_map, trust_remote_code=trust_remote_code, local_files_only=True
-            )]
+
+        self.module = [AutoModelForCausalLM.from_pretrained(
+            load_dir, device_map=device_map, trust_remote_code=trust_remote_code, local_files_only=True
+        )]
 
         if self.args_cmd.save_lora_to_hf:
             lora_config = LoraConfig(
@@ -1425,8 +1408,7 @@ class MegatronMCoreModel(MegatronModel):
             "layers_mlp_linear_fc2": module_layer + "mlp.linear_fc2",
             "layers_self_attention_post_mlp_layernorm": module_layer + "post_mlp_layernorm",
             "final_layernorm": "decoder.final_layernorm",
-            "output_layer": "output_layer",
-            "rm_head": "rm_head"
+            "output_layer": "output_layer"
         }
 
         config_value = self.model_cfg.get(self.args_cmd.model_type_hf).get('config_set_value')

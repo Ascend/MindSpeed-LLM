@@ -149,37 +149,6 @@ class TestCheckpoint(object):
         shutil.rmtree(save_dir)
 
 
-    def test_mixtral_hf2mcore_orm_tp2pp2ep2(self):
-        os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
-        exit_code = run_cmd(["python3", CKPT_PYPATH] + self.test_config_cmd['test_mixtral_hf2mcore_orm_tp2pp2ep2'])
-        assert exit_code == 0
-        base_hash = self.test_config['test_mixtral_hf2mcore_orm_tp2pp2ep2'][1]
-        save_dir = self.test_config['test_mixtral_hf2mcore_orm_tp2pp2ep2'][0]['save-dir']
-        assert weight_compare_hash(save_dir, base_hash, "pt")
-
-
-    def test_mixtral_mcore2hf_orm_tp2pp2ep2(self):
-        os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
-        exit_code = run_cmd(["python3", CKPT_PYPATH] + self.test_config_cmd['test_mixtral_mcore2hf_orm_tp2pp2ep2'])
-        assert exit_code == 0
-        base_hash = self.test_config['test_mixtral_mcore2hf_orm_tp2pp2ep2'][1]
-        load_dir = self.test_config['test_mixtral_mcore2hf_orm_tp2pp2ep2'][0]['load-dir']
-        save_dir = os.path.join(self.test_config['test_mixtral_mcore2hf_orm_tp2pp2ep2'][0]['save-dir'], 'mg2hf')
-        assert weight_compare_hash(save_dir, base_hash, "safetensors")
-        shutil.rmtree(load_dir)
-        shutil.rmtree(save_dir)
-
-
-    def test_llama2_mcore2hf_orm_pp2vpp2(self):
-        os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
-        exit_code = run_cmd(["python3", CKPT_PYPATH] + self.test_config_cmd['test_llama2_mcore2hf_orm_pp2vpp2'])
-        assert exit_code == 0
-        base_hash = self.test_config['test_llama2_mcore2hf_orm_pp2vpp2'][1]
-        save_dir = os.path.join(self.test_config['test_llama2_mcore2hf_orm_pp2vpp2'][0]['save-dir'], 'mg2hf')
-        assert weight_compare_hash(save_dir, base_hash, "safetensors")
-        shutil.rmtree(save_dir)
-
-
     def test_qwen2_moe_hf2mcore_tp2pp1ep2_extend(self):
         os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
         exit_code = run_cmd(["python3", CKPT_PYPATH] + self.test_config_cmd['test_qwen2_moe_hf2mcore_tp2pp1ep2_extend'])

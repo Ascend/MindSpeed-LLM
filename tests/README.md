@@ -140,7 +140,7 @@
     </tr>
     <tr>
         <td rowspan="2">Checkpoint</td>
-        <td>hf2mcore, mcore2hf, TP, PP, EP, DPP, VPP, moe, noop_layers, lora, ORM</td>
+        <td>hf2mcore, mcore2hf, TP, PP, EP, DPP, VPP, moe, noop_layers, lora</td>
         <td rowspan="2"><a href="ut/checkpoint/test_checkpoint.py">test_checkpoint.py</a></td>
         <td>Y</td>
         <td></td>

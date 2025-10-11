@@ -659,11 +659,6 @@ def save_model_checkpoint(model_provider, queue, args):
                     set_model_output_layer(model_mg, msg, md, **kwargs)
                     check_message(msg)
 
-                if md.rm_head:
-                    msg = queue_get("rm head")
-                    set_model_rm_head(model_mg, msg, md, **kwargs)
-                    check_message(msg)
-
             if vp_rank == virtual_pipeline_model_parallel_size - 1:
                 save_model(model_mg, md, **kwargs)
     logger.info("Done!")

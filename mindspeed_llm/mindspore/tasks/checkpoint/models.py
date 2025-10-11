@@ -116,15 +116,10 @@ def get_modules_from_pretrained(self, device_map="cpu", trust_remote_code=True):
         load_dir = self.args_cmd.save_dir
     else:
         load_dir = self.args_cmd.load_dir
-    if self.args_cmd.orm:
-        self.module = [AutoModelForSequenceClassification.from_pretrained(
-            load_dir, device_map=device_map, trust_remote_code=trust_remote_code, local_files_only=True,
-            num_labels=1
-        )]
-    else:
-        self.module = [AutoModelForCausalLM.from_pretrained(
-            load_dir, device_map=device_map, trust_remote_code=trust_remote_code, local_files_only=True, low_cpu_mem_usage=False
-        )]
+    
+    self.module = [AutoModelForCausalLM.from_pretrained(
+        load_dir, device_map=device_map, trust_remote_code=trust_remote_code, local_files_only=True, low_cpu_mem_usage=False
+    )]
 
     if self.args_cmd.save_lora_to_hf:
         lora_config = LoraConfig(
