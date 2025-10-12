@@ -17,7 +17,9 @@ from megatron.core.transformer.moe.moe_utils import save_to_aux_losses_tracker
 from megatron.training import get_args
 from mindspeed.core.transformer.moe.moe_layer_overlap_all2all import MoELayerOverlapAll2All
 from mindspeed.core.transformer.moe.moe_layer_overlap_allgather import MoELayerOverlapAllGather
+from mindspeed.core.transformer.moe.moe_feature import MoELayer as MegatronMoELayer
 from mindspeed_llm.tasks.posttrain.lora.utils import is_enable_lora
+
 
 
 
@@ -183,39 +185,55 @@ def moe_layer_forward(self, hidden_states: torch.Tensor):
     return output, mlp_bias
 
 
-def lora_moe_layer_init_wrapper(init_func):
-    @wraps(init_func)
-    def lora_moe_layer_init(*args, **kwargs):
-        self = args[0]
-        global_args = get_args()
-        moe_config = deepcopy(kwargs["config"])
-        kwargs["config"] = moe_config
-        init_func(*args, **kwargs)
-        # Initialize LoRA for MOE if grouped GEMM is enabled and LoRA is enabled
-        if moe_config.moe_grouped_gemm:
-            if is_enable_lora():
-                from peft import LoraConfig
-                lora_config = LoraConfig(
-                    r=global_args.lora_r,
-                    lora_alpha=global_args.lora_alpha,
-                    target_modules=global_args.lora_target_modules,
-                    lora_dropout=0.0,
-                    bias="none",
-                    megatron_config=self.config,
-                    megatron_core="megatron.core",
-                )
-                from mindspeed_llm.tasks.posttrain.lora.moe.experts import LoraParallelGroupedMLP
-                self.experts = LoraParallelGroupedMLP(self.num_local_experts, moe_config, lora_config)
-        # Initialize shared experts if enabled
-        if global_args.n_shared_experts:
-            shared_expert_config = deepcopy(moe_config)
-            # Deep copy the MOE configuration for shared experts
-            shared_expert_config.ffn_hidden_size = global_args.n_shared_experts * moe_config.ffn_hidden_size
-            if global_args.moe_allgather_overlap_comm or global_args.moe_alltoall_overlap_comm:
-                if hasattr(args, 'lora_target_modules') and args.lora_target_modules:
-                    from mindspeed_llm.core.transformer.moe.layers import SEColumnParallelLinear, SERowParallelLinear
-                    # Initialize shared experts with parallel linear layers
-                    self.shared_experts = MLP(shared_expert_config, MLPSubmodules(linear_fc1=SEColumnParallelLinear,
-                                                                                  linear_fc2=SERowParallelLinear),
-                                              shared_expert=True)
-    return lora_moe_layer_init
+
+
+def lora_moe_layer_init(self, config, submodules=None, layer_number=None):
+    """
+    "moe-alltoall-overlap-comm" only supported "moe_grouped_gemm".
+    """
+    self.submodules = submodules
+    self.config = config
+    super(MegatronMoELayer, self).__init__(config)
+    self.moe_layer_recompute = config.moe_layer_recompute
+    global_args = get_args()
+
+    from mindspeed.core.transformer.moe.moe_feature import TopKRouter, build_module
+    from mindspeed.core.transformer.moe.moe_feature.adaptor import MindSpeedMOEAlltoAllSeqOverLapDispatcherAdaptor
+    
+    # Initialize router
+    self.router = TopKRouter(config=self.config)
+    
+    # Initialize experts with LoRA for MOE if grouped GEMM is enabled
+    if self.config.moe_grouped_gemm:
+        if is_enable_lora():
+            from peft import LoraConfig
+            lora_config = LoraConfig(
+                r=global_args.lora_r,
+                lora_alpha=global_args.lora_alpha,
+                target_modules=global_args.lora_target_modules,
+                lora_dropout=0.0,
+                bias="none",
+                megatron_config=self.config,
+                megatron_core="megatron.core",
+            )
+            from mindspeed_llm.tasks.posttrain.lora.moe.experts import LoraParallelGroupedMLP
+            self.experts = LoraParallelGroupedMLP(self.num_local_experts, self.config, lora_config)
+    else:
+        raise ValueError(
+            f"use '--moe-alltoall-overlap-comm' should open '--moe-grouped-gemm'."
+        )
+
+    # Initialize token dispatcher
+    self.token_dispatcher = MindSpeedMOEAlltoAllSeqOverLapDispatcherAdaptor(
+        self.num_local_experts, self.local_expert_indices, config=self.config
+    )
+
+    # Initialize shared experts if enabled
+    if self.use_shared_expert:
+        if global_args.moe_allgather_overlap_comm or global_args.moe_alltoall_overlap_comm:
+            if hasattr(global_args, 'lora_target_modules') and global_args.lora_target_modules:
+                from mindspeed_llm.core.transformer.moe.layers import SEColumnParallelLinear, SERowParallelLinear
+                self.config.with_shared_expert = True
+                self.submodules.shared_experts.submodules.linear_fc1 = SEColumnParallelLinear
+                self.submodules.shared_experts.submodules.linear_fc2 = SERowParallelLinear
+                self.shared_experts = build_module(self.submodules.shared_experts, config=self.config)
