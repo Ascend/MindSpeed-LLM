@@ -77,7 +77,7 @@ class LoraFeature(MindSpeedFeature):
         from mindspeed_llm.core.distributed.finalize_model_grads import _allreduce_word_embedding_grads
         from mindspeed_llm.training.utils import unwrap_model_wrapper
         from mindspeed_llm.training.checkpointing import _load_base_checkpoint_wrapper, save_checkpoint_wrapper
-        from mindspeed_llm.core.transformer.moe.moe_layer import lora_moe_layer_init_wrapper
+        from mindspeed_llm.core.transformer.moe.moe_layer import lora_moe_layer_init
         patch_manager.register_patch('megatron.core.distributed.finalize_model_grads._allreduce_word_embedding_grads',
                                       _allreduce_word_embedding_grads)
         # fix unwrap PerfModel 
@@ -91,5 +91,5 @@ class LoraFeature(MindSpeedFeature):
                                       save_checkpoint_wrapper)
         if hasattr(args, 'lora_target_modules') and args.lora_target_modules:
             patch_manager.register_patch('megatron.core.transformer.moe.moe_layer.MoELayer.__init__',
-                                          lora_moe_layer_init_wrapper)
+                                          lora_moe_layer_init)
 
