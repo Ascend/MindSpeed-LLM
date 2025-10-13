@@ -584,58 +584,6 @@ class SharegptStylePairwiseHandler(AlpacaStylePairwiseHandler):
         super().__init__(args, raw_datasets, tokenizer, splitter)
 
 
-class AlpacaStyleProcessRewardHandler(BaseDatasetHandler):
-    """
-    Handle alpaca style dataset format in process reward dataset used in PRM training
-    """
-
-    def __init__(self, args, raw_datasets, tokenizer, splitter):
-        super().__init__(args, raw_datasets, tokenizer, splitter)
-        self.train_on_inputs = False
-        self.args.json_keys = ["input_ids", "labels", 'attention_mask']
-        self.args.output_prefix = self.args.output_prefix + "_packed"
-
-        # set placeholder token
-        self.placeholder_token_id = convert_token_to_id(args.placeholder_token, \
-                                                        self._unwrapped_tokenizer)
-        self.reward_tokens = args.reward_tokens
-
-    def _filter(self, sample):
-        inputs = self._unwrapped_tokenizer(sample["input"], padding=False, add_special_tokens=False)
-
-        input_ids = inputs["input_ids"]
-        label_values = sample["value"]
-
-        if not isinstance(label_values, list):
-            raise TypeError("labels should be a list of strings or numbers")
-        label_tokens = []
-        for label in label_values:
-            if self.reward_tokens is not None and label not in self.reward_tokens:
-                raise ValueError(f"label should be in reward tokens {self.reward_tokens}, got {label}")
-
-            label_tokens.append(convert_token_to_id(label, self._unwrapped_tokenizer))
-
-        labels = [-100] * len(input_ids)
-        indices = [index for index, item in enumerate(input_ids) if item == self.placeholder_token_id]
-        for index, indice in enumerate(indices):
-            labels[indice] = label_tokens[index]
-
-        input_token = inputs['input_ids']
-        attention_mask = inputs['attention_mask']
-        label_token = labels
-
-        concatenated_ids = {
-            "input_ids": [input_token],
-            "attention_mask":[attention_mask],
-            "labels": [label_token]
-        }
-
-        if len(input_token) != len(label_token):
-            raise ValueError(f"Length of input_token ({len(input_token)}) does not match length of label_token ({len(label_token)})")
-
-        return concatenated_ids
-
-
 class PPOAlpacaStyleInstructionHandler(BaseDatasetHandler):
     """
     Handle LlamaFactory supported dataset format

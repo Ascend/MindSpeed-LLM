@@ -187,11 +187,6 @@ def add_tokenizer_args(parser):
                             ' If this argument is used the value of `make-vocab-size-divisible-by` '
                             'will be ignored.')
     group.add_argument(
-        '--placeholder-token',
-        default='ки',
-        help="A special placeholder token marking the end of each step where the PRM can make predictions.",
-    )
-    group.add_argument(
         '--reward-tokens',
         nargs='+',
         type=str,
@@ -252,7 +247,6 @@ def validate_args(args):
         "SharegptStyleInstructionHandler",
         "AlpacaStylePairwiseHandler",
         "SharegptStylePairwiseHandler",
-        "AlpacaStyleProcessRewardHandler",
         "PPOAlpacaStyleInstructionHandler",
         "HunyuanInstructionHandler",
         "R1AlpacaStyleInstructionHandler",
