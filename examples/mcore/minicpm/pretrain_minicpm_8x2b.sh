@@ -84,6 +84,7 @@ GPT_ARGS="
     --no-load-optim \
     --no-load-rng \
     --use-distributed-optimizer \
+    --recompute-activation-function \
     --use-fused-swiglu \
     --use-fused-rotary-pos-emb \
     --overlap-grad-reduce \
