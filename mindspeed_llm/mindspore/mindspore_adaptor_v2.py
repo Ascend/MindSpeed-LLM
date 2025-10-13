@@ -34,6 +34,7 @@ def mindspore_adaptation(patch_manager, args):
     _patch_tensor_parallel_and_pipeline()
     _patch_moe_and_communication(args)
     _patch_optimizer_and_training(args)
+    _patch_fused_operators(args)
 
     # Optional patches (remain in main for control)
     if args.moe_fb_overlap:
@@ -72,11 +73,6 @@ def _patch_model_and_embedding():
     from mindspeed.mindspore.core.models.common.embeddings.rotary_pos_embedding import local_rotate_half
     MindSporeAdaptation.register_patch('megatron.core.models.common.embeddings._rotate_half', local_rotate_half)
 
-    from mindspeed.mindspore.ops.npu_rotary_position_embedding import npu_rotary_position_embedding
-    MindSporeAdaptation.register_patch(
-        'mindspeed.ops.npu_rotary_position_embedding.npu_rotary_position_embedding',
-        npu_rotary_position_embedding)
-
     from .tasks.common.yarn_rope import yarn_linear_ramp_mask
     MindSporeAdaptation.register_patch(
         'mindspeed_llm.tasks.common.yarn_rope.YarnRotaryPositionEmbedding.yarn_linear_ramp_mask',
@@ -90,7 +86,8 @@ def _patch_model_and_embedding():
     MindSporeAdaptation.register_patch('megatron.legacy.model.module.float16_to_fp32', float16_to_fp32)
 
     from mindspeed_llm.mindspore.core.models.common.embeddings.rotary_pos_embedding import apply_llama3_scaling
-    MindSporeAdaptation.register_patch('mindspeed_llm.core.models.common.embeddings.rotary_pos_embedding.apply_llama3_scaling', apply_llama3_scaling)
+    MindSporeAdaptation.register_patch(
+        'mindspeed_llm.core.models.common.embeddings.rotary_pos_embedding.apply_llama3_scaling', apply_llama3_scaling)
 
 
 def _patch_tensor_parallel_and_pipeline():
@@ -114,20 +111,6 @@ def _patch_tensor_parallel_and_pipeline():
 
 
 def _patch_moe_and_communication(args):
-    # MoE async comm
-    if args.moe_permutation_async_comm:
-        if args.moe_token_dispatcher_type == 'alltoall_seq':
-            if hasattr(args, 'use_fused_moe_token_permute_and_unpermute') and \
-                    args.use_fused_moe_token_permute_and_unpermute and not args.moe_expert_capacity_factor:
-                from mindspeed.mindspore.core.fusions.npu_moe_token_unpermute import unpermute
-                from mindspeed.mindspore.ops.npu_moe_token_permute import npu_moe_token_permute
-                MindSporeAdaptation.register_patch('megatron.core.transformer.moe.moe_utils.permute', npu_moe_token_permute)
-                MindSporeAdaptation.register_patch('megatron.core.transformer.moe.moe_utils.unpermute', unpermute)
-
-    # GEMM & MoE utils
-    from mindspeed.mindspore.core.transformer.moe.grouped_gemm_util import Ops
-    MindSporeAdaptation.register_patch('megatron.core.transformer.moe.grouped_gemm_util.ops', Ops)
-
     from mindspeed.mindspore.core.transformer.moe.comm_utils import async_all_to_all
     MindSporeAdaptation.register_patch('mindspeed.core.transformer.moe.moe_feature.overlap.comm_utils.async_all_to_all',
                                        async_all_to_all)
@@ -135,6 +118,85 @@ def _patch_moe_and_communication(args):
 
     from mindspeed.mindspore.core.transformer.moe.token_dispatcher import preprocess
     MindSporeAdaptation.register_patch('mindspeed.core.transformer.moe.token_dispatcher.preprocess', preprocess)
+
+    from mindspeed.mindspore.core.transformer.moe.legacy_a2a_token_dispatcher import moealltoallseqtokendispatcher_init
+    MindSporeAdaptation.register_patch(
+        'megatron.core.transformer.moe.legacy_a2a_token_dispatcher.MoEAlltoAllSEQTokenDispatcher.__init__',
+        moealltoallseqtokendispatcher_init)
+
+
+def _patch_optimizer_and_training(args):
+    # Cross Entropy
+    from ..mindspore.core.tensor_parallel.cross_entropy import calculate_predicted_logits, \
+        prepare_gradient_calculation_operands
+    MindSporeAdaptation.register_patch(
+        'megatron.core.tensor_parallel.cross_entropy.VocabParallelCrossEntropy.calculate_predicted_logits',
+        calculate_predicted_logits)
+    MindSporeAdaptation.register_patch(
+        'megatron.core.tensor_parallel.cross_entropy.VocabParallelCrossEntropy.prepare_gradient_calculation_operands',
+        prepare_gradient_calculation_operands)
+
+    # Checkpoint & Model Registration
+    from mindspeed_llm.mindspore.tasks.checkpoint.models import register_functions, get_modules_from_pretrained
+    MindSporeAdaptation.register_patch(
+        'mindspeed_llm.tasks.checkpoint.models.ModelBase._ModelBase__register_functions', register_functions)
+    MindSporeAdaptation.register_patch(
+        'mindspeed_llm.tasks.checkpoint.models.HuggingfaceModel.get_modules_from_pretrained',
+        get_modules_from_pretrained)
+
+    from mindspeed_llm.mindspore.core.datasets.blended_megatron_dataset_builder import need_to_build_dataset
+    MindSporeAdaptation.register_patch(
+        'mindspeed_llm.core.datasets.blended_megatron_dataset_builder.need_to_build_dataset', need_to_build_dataset)
+
+    # share memory
+    if args.enable_share_memory:
+        from ..mindspore.tasks.dataset.shared_memory_manager import SharedMemoryManager
+        MindSporeAdaptation.register(
+            'mindspeed_llm.tasks.dataset.shared_memory_manager.SharedMemoryManager', SharedMemoryManager)
+        from ..mindspore.training.utils import _compute_actual_seq_len
+        MindSporeAdaptation.register(
+            'mindspeed_llm.training.utils._compute_actual_seq_len', _compute_actual_seq_len)
+
+    # Optimizer: load and save parameter
+    from ..mindspore.core.optimizer.distrib_optimizer import get_parameter_state_dp_zero
+    MindSporeAdaptation.register_patch(
+        'megatron.core.optimizer.distrib_optimizer.DistributedOptimizer.get_parameter_state_dp_zero',
+        get_parameter_state_dp_zero)
+    from ..mindspore.core.optimizer.distrib_optimizer import load_parameter_state_from_dp_zero
+    MindSporeAdaptation.register_patch(
+        'megatron.core.optimizer.distrib_optimizer.DistributedOptimizer.load_parameter_state_from_dp_zero',
+        load_parameter_state_from_dp_zero)
+
+    # Reuse FP32 param
+    if args.reuse_fp32_param:
+        from megatron.core.optimizer.distrib_optimizer import DistributedOptimizer
+        from mindspeed.mindspore.optimizer.distrib_optimizer import reuse_fp32_param_distrib_optimizer_init_wrapper
+        target_func = DistributedOptimizer.__init__
+        target_func_name = 'megatron.core.optimizer.distrib_optimizer.DistributedOptimizer.__init__'
+        clear_wrapper_v2(target_func_name, target_func)
+        MindSporeAdaptation.register_patch(target_func_name, reuse_fp32_param_distrib_optimizer_init_wrapper)
+
+    # Loss scaling
+    if not hasattr(args, 'fp16') or not args.fp16:
+        from mindspeed.mindspore.core.optimizer.optimizer import scale_loss
+        MindSporeAdaptation.register_patch('megatron.core.optimizer.optimizer.MegatronOptimizer.scale_loss', scale_loss)
+
+
+def _patch_fused_operators(args):
+    from mindspeed.mindspore.ops.npu_rotary_position_embedding import npu_rotary_position_embedding
+    MindSporeAdaptation.register_patch(
+        'mindspeed.ops.npu_rotary_position_embedding.npu_rotary_position_embedding',
+        npu_rotary_position_embedding)
+    # MoE async comm
+    if args.moe_permutation_async_comm:
+        if args.moe_token_dispatcher_type == 'alltoall_seq':
+            if hasattr(args, 'use_fused_moe_token_permute_and_unpermute') and \
+                    args.use_fused_moe_token_permute_and_unpermute and not args.moe_expert_capacity_factor:
+                from mindspeed.mindspore.core.fusions.npu_moe_token_unpermute import unpermute
+                from mindspeed.mindspore.ops.npu_moe_token_permute import npu_moe_token_permute
+                MindSporeAdaptation.register_patch('megatron.core.transformer.moe.moe_utils.permute',
+                                                   npu_moe_token_permute)
+                MindSporeAdaptation.register_patch('megatron.core.transformer.moe.moe_utils.unpermute', unpermute)
 
     # CoC (Communication-Computation Overlap)
     if args.use_ascend_coc:
@@ -154,12 +216,14 @@ def _patch_moe_and_communication(args):
 
     # A2AVC
     if args.enable_a2avc:
-        from mindspeed.mindspore.core.transformer.moe.moe_feature.tp_extend_ep.token_dispatcher import All2AllSeqTp2epDispatcherImpl
+        from mindspeed.mindspore.core.transformer.moe.moe_feature.tp_extend_ep.token_dispatcher import \
+            All2AllSeqTp2epDispatcherImpl
         MindSporeAdaptation.register_patch(
             'mindspeed.core.transformer.moe.moe_feature.tp_extend_ep.token_dispatcher.All2AllSeqTp2epDispatcherImpl',
             All2AllSeqTp2epDispatcherImpl)
 
-        from mindspeed.mindspore.core.transformer.moe.moe_feature.tp_extend_ep.token_dispatcher import _PatchedMOEAlltoAllSEQTptoEpTokenDispatcher
+        from mindspeed.mindspore.core.transformer.moe.moe_feature.tp_extend_ep.token_dispatcher import \
+            _PatchedMOEAlltoAllSEQTptoEpTokenDispatcher
         MindSporeAdaptation.register_patch(
             'mindspeed.core.transformer.moe.moe_feature.adaptor.MindSpeedMOEAlltoAllSEQTptoEpTokenDispatcher',
             _PatchedMOEAlltoAllSEQTptoEpTokenDispatcher)
@@ -173,23 +237,6 @@ def _patch_moe_and_communication(args):
         MindSporeAdaptation.register_patch(
             'mindspeed.core.transformer.moe.moe_feature.tp_extend_ep.token_dispatcher.All2AllSeqTp2epDispatcherImpl.preprocess',
             preprocess)
-    
-    from mindspeed.mindspore.core.transformer.moe.legacy_a2a_token_dispatcher import moealltoallseqtokendispatcher_init
-    MindSporeAdaptation.register_patch(
-        'megatron.core.transformer.moe.legacy_a2a_token_dispatcher.MoEAlltoAllSEQTokenDispatcher.__init__',
-        moealltoallseqtokendispatcher_init)
-
-
-def _patch_optimizer_and_training(args):
-    # Cross Entropy
-    from ..mindspore.core.tensor_parallel.cross_entropy import calculate_predicted_logits, \
-        prepare_gradient_calculation_operands
-    MindSporeAdaptation.register_patch(
-        'megatron.core.tensor_parallel.cross_entropy.VocabParallelCrossEntropy.calculate_predicted_logits',
-        calculate_predicted_logits)
-    MindSporeAdaptation.register_patch(
-        'megatron.core.tensor_parallel.cross_entropy.VocabParallelCrossEntropy.prepare_gradient_calculation_operands',
-        prepare_gradient_calculation_operands)
 
     # GMM
     from mindspeed.mindspore.ops.gmm import _GMM_patched_load
@@ -199,29 +246,11 @@ def _patch_optimizer_and_training(args):
     MindSporeAdaptation.register_patch('mindspeed.op_builder.gmm_builder.GMMV2OpBuilder.load', _GMM_patched_load2)
 
     from mindspeed.mindspore.ops.npu_ring_attention_update import _ring_atten_patched_load
-    MindSporeAdaptation.register_patch("mindspeed.op_builder.npu_ring_attention_update_builder.RingAttentionUpdateOpBuilder.load", _ring_atten_patched_load)
-
-    # Checkpoint & Model Registration
-    from mindspeed_llm.mindspore.tasks.checkpoint.models import register_functions, get_modules_from_pretrained
     MindSporeAdaptation.register_patch(
-        'mindspeed_llm.tasks.checkpoint.models.ModelBase._ModelBase__register_functions', register_functions)
-    MindSporeAdaptation.register_patch(
-        'mindspeed_llm.tasks.checkpoint.models.HuggingfaceModel.get_modules_from_pretrained', get_modules_from_pretrained)
+        "mindspeed.op_builder.npu_ring_attention_update_builder.RingAttentionUpdateOpBuilder.load",
+        _ring_atten_patched_load)
 
-    from mindspeed_llm.mindspore.core.datasets.blended_megatron_dataset_builder import need_to_build_dataset
-    MindSporeAdaptation.register_patch(
-        'mindspeed_llm.core.datasets.blended_megatron_dataset_builder.need_to_build_dataset', need_to_build_dataset)
-
-    # share memory
-    if args.enable_share_memory:
-        from ..mindspore.tasks.dataset.shared_memory_manager import SharedMemoryManager
-        MindSporeAdaptation.register(
-            'mindspeed_llm.tasks.dataset.shared_memory_manager.SharedMemoryManager', SharedMemoryManager)
-        from ..mindspore.training.utils import _compute_actual_seq_len
-        MindSporeAdaptation.register(
-            'mindspeed_llm.training.utils._compute_actual_seq_len', _compute_actual_seq_len)
-
-    # Optimizer: AdamW step
+    # ema
     if args.optimizer_selection == 'fused_ema_adamw':
         from mindspeed.mindspore.ops.npu_apply_fused_ema_adamw import npu_apply_fused_ema_adamw
         MindSporeAdaptation.register_patch(
@@ -230,16 +259,6 @@ def _patch_optimizer_and_training(args):
             create_dummy=True,
             force_patch=True
         )
-
-    # Optimizer: load and save parameter
-    from ..mindspore.core.optimizer.distrib_optimizer import get_parameter_state_dp_zero
-    MindSporeAdaptation.register_patch(
-        'megatron.core.optimizer.distrib_optimizer.DistributedOptimizer.get_parameter_state_dp_zero',
-        get_parameter_state_dp_zero)
-    from ..mindspore.core.optimizer.distrib_optimizer import load_parameter_state_from_dp_zero
-    MindSporeAdaptation.register_patch(
-        'megatron.core.optimizer.distrib_optimizer.DistributedOptimizer.load_parameter_state_from_dp_zero',
-        load_parameter_state_from_dp_zero)
 
     # Gradient accumulation fusion
     if args.gemm_gradient_accumulation_fusion:
@@ -251,20 +270,6 @@ def _patch_optimizer_and_training(args):
     from mindspeed.mindspore.ops.npu_matmul_add import npu_matmul_add_fp32
     MindSporeAdaptation.register_patch('fused_weight_gradient_mlp_cuda.wgrad_gemm_accum_fp32', npu_matmul_add_fp32)
     MindSporeAdaptation.register_patch('mindspeed.ops.npu_matmul_add.npu_matmul_add_fp32', npu_matmul_add_fp32)
-
-    # Reuse FP32 param
-    if args.reuse_fp32_param:
-        from megatron.core.optimizer.distrib_optimizer import DistributedOptimizer
-        from mindspeed.mindspore.optimizer.distrib_optimizer import reuse_fp32_param_distrib_optimizer_init_wrapper
-        target_func = DistributedOptimizer.__init__
-        target_func_name = 'megatron.core.optimizer.distrib_optimizer.DistributedOptimizer.__init__'
-        clear_wrapper_v2(target_func_name, target_func)
-        MindSporeAdaptation.register_patch(target_func_name, reuse_fp32_param_distrib_optimizer_init_wrapper)
-
-    # Loss scaling
-    if not hasattr(args, 'fp16') or not args.fp16:
-        from mindspeed.mindspore.core.optimizer.optimizer import scale_loss
-        MindSporeAdaptation.register_patch('megatron.core.optimizer.optimizer.MegatronOptimizer.scale_loss', scale_loss)
 
     # Fused AdamW v2
     from torch import npu_apply_fused_adamw_v2
@@ -329,8 +334,8 @@ def patch_moe_fb_overlap():
 
 def mindspore_register_args(group):
     group.add_argument('--enable-a2avc', type=int, choices=[0, 1, 2], default=0,
-                            help='0: Disable a2avc,'
+                       help='0: Disable a2avc,'
                             '1: Enable a2avc & Use mindspore comm_func.py & with verification (run slower than 2),'
                             '2: Enable a2avc & Use msadapter comm_func.py & without verification (run faster than 1)')
     group.add_argument('--enable-share-memory', action='store_true', default=False,
-                        help='Enable shared memory for passing actual_seq_len when reset-position-ids is enabled.')
+                       help='Enable shared memory for passing actual_seq_len when reset-position-ids is enabled.')
