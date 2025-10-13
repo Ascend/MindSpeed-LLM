@@ -236,13 +236,6 @@ MindSpore后端已完全支持MindSpeed-LLM的预训练、指令微调、RLHF等
       <td>✅</td>
       <td>❌</td>
     </tr>
-    <tr>
-      <td>PRM</td>
-      <td rowspan="1">PRM数据集处理</a></td>
-      <td>✅</td>
-      <td>❌</td>
-      <td rowspan="1">【Ascend】</td>
-    </tr>
   </tbody>
 </table>
 

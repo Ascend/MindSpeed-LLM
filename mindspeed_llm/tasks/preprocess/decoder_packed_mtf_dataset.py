@@ -215,7 +215,7 @@ class DecoderPackedMTFDataset(torch.utils.data.Dataset):
                 "labels": self._cut_token(item["labels"], np.int64),
                 "position_ids": self._cut_token(position_ids.numpy(), np.int64)
             }
-        elif self.args.stage == "prm" or self.args.cut_max_seqlen:
+        elif self.args.cut_max_seqlen:
             return {
                 "input_ids": self._cut_token(item['input_ids'], np.int64),
                 "attention_mask": self._cut_token(item["attention_mask"], np.int64),
