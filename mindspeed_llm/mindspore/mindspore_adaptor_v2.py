@@ -250,6 +250,10 @@ def _patch_fused_operators(args):
         "mindspeed.op_builder.npu_ring_attention_update_builder.RingAttentionUpdateOpBuilder.load",
         _ring_atten_patched_load)
 
+    from mindspeed.ops.gmm import _npu_gmm, _npu_gmm_v2
+    MindSporeAdaptation.register_patch('torch.ops.mindspeed.npu_gmm', _npu_gmm)
+    MindSporeAdaptation.register_patch('torch.ops.mindspeed.npu_gmm_v2', _npu_gmm_v2)
+
     # ema
     if args.optimizer_selection == 'fused_ema_adamw':
         from mindspeed.mindspore.ops.npu_apply_fused_ema_adamw import npu_apply_fused_ema_adamw
