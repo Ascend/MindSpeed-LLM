@@ -18,7 +18,7 @@ MindSpeed-LLM支持基于昇腾芯片采集profiling数据，以提供对模型�
 注意：
 
 - --profile-level设置为level_none时，不会采集cann侧数据，且暂不支持与--export-type db一起使用
-- 请更新最新8.0.RC3 cann包后使用level_none及export-type功能
+- 请更新至8.0.RC3之后版本的cann包后使用level_none及export-type功能
 
 常见使用场景有以下两种：
 

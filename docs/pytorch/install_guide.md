@@ -38,7 +38,7 @@ source /usr/local/Ascend/nnal/atb/set_env.sh
 
 ### PTA安装
 
-准备[torch_npu](https://www.hiascend.com/developer/download/community/result?module=pt)，执行以下命令安装或参考[Ascend Extension for PyTorch 配置与安装](https://www.hiascend.com/document/detail/zh/Pytorch/60RC2/configandinstg/instg/insg_0001.html)：
+准备[torch_npu](https://www.hiascend.com/developer/download/community/result?module=pt)，执行以下命令安装或参考[Ascend Extension for PyTorch 配置与安装](https://www.hiascend.com/document/detail/zh/Pytorch/710/configandinstg/instg/insg_0001.html)：
 
 ```shell
 # 安装torch和torch_npu 构建参考 https://gitcode.com/ascend/pytorch/releases
