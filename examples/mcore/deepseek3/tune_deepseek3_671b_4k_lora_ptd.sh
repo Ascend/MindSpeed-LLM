@@ -2,6 +2,8 @@
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
 export HCCL_CONNECT_TIMEOUT=3600
+export STREAMS_PER_DEVICE=32
+export CPU_AFFINITY_CONF=1,lazy_bind:0
 
 NPUS_PER_NODE=8
 MASTER_ADDR=localhost #主节点IP
@@ -46,6 +48,7 @@ MLA_ARGS="
 MOE_ARGS="
     --moe-permutation-async-comm \
     --moe-token-dispatcher-type alltoall_seq \
+    --moe-permute-fusion \
     --first-k-dense-replace 3 \
     --moe-layer-freq 1 \
     --n-shared-experts 1 \
