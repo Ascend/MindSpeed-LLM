@@ -61,15 +61,21 @@ class MegatronBasicFeature(MindSpeedMegatronBasicFeature):
         pm.register_patch('megatron.core.distributed.param_and_grad_buffer._ParamAndGradBucketGroup.finish_grad_sync',
                            finish_grad_sync)
 
+        # fix duplicate all-gather
+        from mindspeed.core.optimizer.fix_duplicate_allgather import start_param_sync
+        from mindspeed.core.optimizer.fix_duplicate_allgather import step_with_ready_grads_distrib_opti_wrapper
+        from mindspeed.core.optimizer.fix_duplicate_allgather import get_megatron_optimizer_wrapper
+        pm.register_patch('megatron.core.distributed.distributed_data_parallel.DistributedDataParallel.start_param_sync',
+                          start_param_sync)
+        pm.register_patch('megatron.core.optimizer.distrib_optimizer.DistributedOptimizer.step_with_ready_grads',
+                          step_with_ready_grads_distrib_opti_wrapper)
+        pm.register_patch('megatron.core.optimizer.get_megatron_optimizer',
+                          get_megatron_optimizer_wrapper)
+
         # Currently, it is not supported to Cast shard fp32 main params to fp8 model params
         from mindspeed.core.fp8_utils import quantize_param_shard
         pm.register_patch('megatron.core.fp8_utils.quantize_param_shard',
                            quantize_param_shard)
-
-        # fix get_megatron_optimizer for core_r0.12.0
-        from mindspeed.core.megatron_basic.get_megatron_optimizer import get_megatron_optimizer
-        pm.register_patch('megatron.core.optimizer.get_megatron_optimizer',
-                           get_megatron_optimizer)
 
         # fix count_zeros in ChainedOptimizer for core_r0.12.1.
         from mindspeed.core.megatron_basic.count_zero_fix import step

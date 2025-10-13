@@ -41,6 +41,7 @@ MOE_ARGS="
     --moe-token-dispatcher-type alltoall_seq \
     --moe-grouped-gemm \
     --moe-layer-freq -1 \
+    --moe-permute-fusion \
     --first-k-dense-replace -1 \
     --use-cp-send-recv-overlap \
 "
