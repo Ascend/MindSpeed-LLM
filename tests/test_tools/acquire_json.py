@@ -25,11 +25,6 @@ def transfer_logs_as_json(log_file, output_json_file):
     log_pattern = re.compile(
         r"elapsed time per iteration \(ms\):\s+([0-9.]+)\s+\| .*?lm loss:\s+([0-9.]+E[+-][0-9]+)\s+\| .*?grad norm:\s+([0-9.]+) | .* actor/pg_loss : ([0-9.]+)"
     )
-
-    if "trl_ppo" in log_file:
-        log_pattern = re.compile(
-            r'throughput per GPU \(TFLOP/s/GPU\):\s([0-9\.]+).*?(?:abs_pg_loss:|vf_loss:)\s([0-9\.]+)'
-        )
         
     memory_pattern = re.compile(
         r"\[Rank (\d+)\] \(after \d+ iterations\) memory \(MB\) \| allocated: ([0-9.]+) \| max allocated: ([0-9.]+)"

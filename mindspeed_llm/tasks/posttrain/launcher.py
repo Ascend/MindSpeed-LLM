@@ -6,7 +6,6 @@ from megatron.training.initialize import initialize_megatron
 from mindspeed_llm.tasks.posttrain.sft import SFTTrainer
 from mindspeed_llm.tasks.posttrain.dpo import DPOTrainer
 from mindspeed_llm.tasks.posttrain.dpo import SimPOTrainer
-from mindspeed_llm.tasks.posttrain.trl_ppo import TrlPPOTrainer
 
 logger = logging.getLogger(__name__)
 
@@ -24,8 +23,6 @@ def get_trainer(stage):
         return DPOTrainer()
     elif stage == "simpo":
         return SimPOTrainer()
-    elif stage == "trl_ppo":
-        return TrlPPOTrainer()
     else:
         logger.info(f'Unknown Stage: {stage}')
         return None
