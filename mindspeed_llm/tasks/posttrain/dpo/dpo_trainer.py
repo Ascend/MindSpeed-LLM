@@ -364,7 +364,7 @@ class DPOTrainer(BaseTrainer):
             label
         )
 
-        if self.args.dpo_loss_type in ["ipo", "orpo", "simpo"]:
+        if self.args.dpo_loss_type in ["ipo", "orpo"]:
             all_log_probs = all_log_probs / torch.clamp(valid_length, min=1)
 
         chosen_log_probs, rejected_log_probs = all_log_probs.split(batch_size, dim=0)

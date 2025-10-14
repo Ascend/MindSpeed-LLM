@@ -231,11 +231,6 @@ MindSpore后端已完全支持MindSpeed-LLM的预训练、指令微调、RLHF等
       <td>✅</td>
       <td rowspan="3">【NAIE】</td>
     </tr>
-    <tr>
-      <td>SimPO</td>
-      <td>✅</td>
-      <td>❌</td>
-    </tr>
   </tbody>
 </table>
 

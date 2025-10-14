@@ -1,6 +1,6 @@
 # Pairwise 数据集处理
 
-在大模型后训练任务，比如RLHF中，通常需要用到基于人类偏好反馈的数据集，这些语料包含人类对同一个问题的不同回答或不同表述的偏好或评价。在DPO或SimPO任务中，常用的数据集为pairwise格式数据集，顾名思义，pairwise数据集为配对数据集，即对同一个问题，包含两个答案，一个好的（chosen），一个坏的（rejected）。比如[orca_dpo_pairs](https://huggingface.co/datasets/Intel/orca_dpo_pairs)数据集，包含四个字段：system、question、chosen、rejected。
+在大模型后训练任务，比如RLHF中，通常需要用到基于人类偏好反馈的数据集，这些语料包含人类对同一个问题的不同回答或不同表述的偏好或评价。在DPO任务中，常用的数据集为pairwise格式数据集，顾名思义，pairwise数据集为配对数据集，即对同一个问题，包含两个答案，一个好的（chosen），一个坏的（rejected）。比如[orca_dpo_pairs](https://huggingface.co/datasets/Intel/orca_dpo_pairs)数据集，包含四个字段：system、question、chosen、rejected。
 
 ![](../../../../../sources/images/dpo/orca_rlhf.png)
 
@@ -85,4 +85,4 @@ bash examples/mcore/llama3/data_convert_llama3_pairwise.sh
 ./pairwise_dataset/orca_rlhf_llama3_packed_rejected_labels_document.idx
 ```
 
-进行DPO或SimPO训练任务时，数据集路径输入 `./pairwise_dataset/orca_rlhf_llama3` 即可，同时须设置`--is-pairwise-dataset`参数
+进行DPO训练任务时，数据集路径输入 `./pairwise_dataset/orca_rlhf_llama3` 即可，同时须设置`--is-pairwise-dataset`参数

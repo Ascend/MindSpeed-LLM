@@ -4,4 +4,3 @@ __all__ = ["DPOTrainer"]
 
 
 from .dpo_trainer import DPOTrainer
-from .simpo_trainer import SimPOTrainer
