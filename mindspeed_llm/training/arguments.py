@@ -714,10 +714,6 @@ def _add_rl_args(parser):
         help="Path to the reference model used for the PPO training."
     )
     group.add_argument(
-        "--verifier", action='store_true',
-        help="Enable verifier in cal scores."
-    )
-    group.add_argument(
         '--kl-coef',
         default=0.3,
         type=float,
