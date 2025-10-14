@@ -24,7 +24,7 @@ class CustomQwen3NextGatedDeltaNetAttentionSubmodules:
     """Submodules for the Qwen3NextGatedDeltaNet self-attention layer with NPU."""
     in_proj_qkvz: Union[ModuleSpec, type] = None
     in_proj_ba: Union[ModuleSpec, type] = None
-    out_proj: Union[ModuleSpec, type] = None    
+    out_proj: Union[ModuleSpec, type] = None
 
 
 class Qwen3NextRMSNormGated(nn.Module):
@@ -74,6 +74,12 @@ def torch_causal_conv1d_update(
     return out
 
 
+def l2norm(x: torch.FloatTensor, dim: int = -1, eps: float = 1e-6):
+    """This function is intended to align with the l2norm implementation in the FLA library."""
+    inv_norm = torch.rsqrt((x * x).sum(dim=dim, keepdim=True) + eps)
+    return x * inv_norm
+
+
 def torch_chunk_gated_delta_rule(
     query,
     key,
@@ -87,11 +93,10 @@ def torch_chunk_gated_delta_rule(
 ):
     initial_dtype = query.dtype
     if use_qk_l2norm_in_kernel:
-        query = F.normalize(query, p=2, dim=-1)
-        key = F.normalize(key, p=2, dim=-1)
+        query = l2norm(query, dim=-1, eps=1e-6)
+        key = l2norm(key, dim=-1, eps=1e-6)
     query, key, value, beta, g = [
-        x.transpose(1, 2).contiguous().to(torch.float32)
-        for x in (query, key, value, beta, g)
+        x.transpose(1, 2).contiguous().to(torch.float32) for x in (query, key, value, beta, g)
     ]
 
     batch_size, sequence_length, num_heads, k_head_dim = key.shape
@@ -110,8 +115,7 @@ def torch_chunk_gated_delta_rule(
     k_beta = key * beta.unsqueeze(-1)
     # reshape to chunks
     query, key, value, k_beta, v_beta = [
-        x.reshape(x.shape[0], x.shape[1], -1, chunk_size, x.shape[-1])
-        for x in (query, key, value, k_beta, v_beta)
+        x.reshape(x.shape[0], x.shape[1], -1, chunk_size, x.shape[-1]) for x in (query, key, value, k_beta, v_beta)
     ]
     g = g.reshape(g.shape[0], g.shape[1], -1, chunk_size)
     mask = torch.triu(torch.ones(chunk_size, chunk_size, dtype=torch.bool, device=query.device), diagonal=0)
@@ -162,11 +166,10 @@ def torch_recurrent_gated_delta_rule(
 ):
     initial_dtype = query.dtype
     if use_qk_l2norm_in_kernel:
-        query = F.normalize(query, p=2, dim=-1)
-        key = F.normalize(key, p=2, dim=-1)
+        query = l2norm(query, dim=-1, eps=1e-6)
+        key = l2norm(key, dim=-1, eps=1e-6)
     query, key, value, beta, g = [
-        x.transpose(1, 2).contiguous().to(torch.float32)
-        for x in (query, key, value, beta, g)
+        x.transpose(1, 2).contiguous().to(torch.float32) for x in (query, key, value, beta, g)
     ]
 
     batch_size, sequence_length, num_heads, k_head_dim = key.shape
@@ -197,7 +200,7 @@ def torch_recurrent_gated_delta_rule(
     if not output_final_state:
         last_recurrent_state = None
     core_attn_out = core_attn_out.transpose(1, 2).contiguous().to(initial_dtype)
-    return core_attn_out, last_recurrent_state  
+    return core_attn_out, last_recurrent_state
 
 
 class CustomQwen3NextGatedDeltaNetAttention(MegatronModule):
@@ -267,7 +270,7 @@ class CustomQwen3NextGatedDeltaNetAttention(MegatronModule):
             skip_bias_add=False,
             is_expert=False,
             tp_comm_buffer_name='fc1',
-        ) 
+        )
 
         # time step projection (discretization)
         # instantiate once and copy inv_dt in init_weights of PretrainedModel
@@ -338,15 +341,15 @@ class CustomQwen3NextGatedDeltaNetAttention(MegatronModule):
         packed_seq_params=None,
         sequence_len_offset=None,
         cache_params=None,
-        cache_position=None,        
+        cache_position=None,
         *,
-        inference_params=None,      
+        inference_params=None,
     ):
         """
         Do patch for repeating KV so that GQA+Ulysses is better supported.
         """
         hidden_states = hidden_states.transpose(0, 1)
-        hidden_states = apply_mask_to_padding_states(hidden_states, attention_mask)        
+        hidden_states = apply_mask_to_padding_states(hidden_states, attention_mask)
 
         # Set up dimensions for reshapes later
         batch_size, seq_len, _ = hidden_states.shape
