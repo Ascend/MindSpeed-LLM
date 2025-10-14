@@ -79,7 +79,7 @@ QLoRA在LoRA的基础上，对主干部分的权重进行量化，大幅降低�
 
 将原精度的hf权重转换为的mg权重时，可以通过增加`--qlora-nf4`选项开启QLoRA的NF4量化，会得到量化压缩后的mg权重，目前不支持其它量化方式。
 
-> 目前QLoRA特性支持开启 `--moe-grouped-gemm` GMM算子以及 `--moe-alltoall-overlap-comm` 特性。
+> （新版本问题修复中，暂不推荐开启该特性）目前QLoRA特性支持开启 `--moe-grouped-gemm` GMM算子以及 `--moe-alltoall-overlap-comm` 特性。
 
 ### 2、QLoRA微调
 
@@ -108,7 +108,7 @@ QLoRA在LoRA的基础上，对主干部分的权重进行量化，大幅降低�
 
 * QLoRA 暂不支持 lora-fusion 特性，开启时无性能收益。
 
-> 目前QLoRA特性支持开启 `--moe-grouped-gemm` GMM算子以及 `--moe-alltoall-overlap-comm` 特性。
+> （新版本问题修复中，暂不推荐开启该特性）目前QLoRA特性支持开启 `--moe-grouped-gemm` GMM算子以及 `--moe-alltoall-overlap-comm` 特性。
 
 > 目前QLoRA微调必须加载权重，暂不支持随机初始化权重。
 
