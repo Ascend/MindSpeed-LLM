@@ -435,14 +435,14 @@ bash examples/mcore/llama2/ckpt_convert_llama2_lora2hf.sh
 
 
 ```
-python convert_ckpt.py
---model-type GPT
---load-model-type optim
---load-dir ./ckpt/llama2-7b-tp2pp4
---target-tensor-parallel-size 4
---target-pipeline-parallel-size 2
---save-dir ./ckpt/llama2-7b-tp4pp2-optim
---use-mcore-models
+python convert_ckpt.py \
+--model-type GPT \
+--load-model-type optim \
+--load-dir ./ckpt/llama2-7b-tp2pp4 \
+--target-tensor-parallel-size 4 \
+--target-pipeline-parallel-size 2 \
+--save-dir ./ckpt/llama2-7b-tp4pp2-optim \
+--use-mcore-models \
 --model-type-hf llama2
 ```
 
@@ -618,7 +618,7 @@ MindSpeed-LLM 支持 Huggingface 和 Megatron-Core 之间的权重格式互转�
     </tr>
     <tr>
       <td>流水并行动态划分</td>
-      <td>--target-expert-model-parallel-size</td>
+      <td>--num-layer-list</td>
     </tr>
     <tr>
       <td>自定义空操作层</td>

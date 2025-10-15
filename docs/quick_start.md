@@ -101,22 +101,22 @@ mkdir -p ./model_from_hf/qwen2.5-7b-hf
 cd ./model_from_hf/qwen2.5-7b-hf
 
 # wget获取权重文件
-wget https://huggingface.co/Qwen/Qwen2.5-7B/tree/main/config.json
-wget https://huggingface.co/Qwen/Qwen2.5-7B/tree/main/generation_config.json
-wget https://huggingface.co/Qwen/Qwen2.5-7B/tree/main/merges.txt
-wget https://huggingface.co/Qwen/Qwen2.5-7B/tree/main/model-00001-of-00004.safetensors
-wget https://huggingface.co/Qwen/Qwen2.5-7B/tree/main/model-00002-of-00004.safetensors
-wget https://huggingface.co/Qwen/Qwen2.5-7B/tree/main/model-00003-of-00004.safetensors
-wget https://huggingface.co/Qwen/Qwen2.5-7B/tree/main/model-00004-of-00004.safetensors
-wget https://huggingface.co/Qwen/Qwen2.5-7B/tree/main/model.safetensors.index.json
-wget https://huggingface.co/Qwen/Qwen2.5-7B/tree/main/tokenizer.json
-wget https://huggingface.co/Qwen/Qwen2.5-7B/tree/main/tokenizer_config.json
-wget https://huggingface.co/Qwen/Qwen2.5-7B/tree/main/vocab.json
+wget https://huggingface.co/Qwen/Qwen2.5-7B/resolve/main/config.json
+wget https://huggingface.co/Qwen/Qwen2.5-7B/resolve/main/generation_config.json
+wget https://huggingface.co/Qwen/Qwen2.5-7B/resolve/main/merges.txt
+wget https://huggingface.co/Qwen/Qwen2.5-7B/resolve/main/model-00001-of-00004.safetensors
+wget https://huggingface.co/Qwen/Qwen2.5-7B/resolve/main/model-00002-of-00004.safetensors
+wget https://huggingface.co/Qwen/Qwen2.5-7B/resolve/main/model-00003-of-00004.safetensors
+wget https://huggingface.co/Qwen/Qwen2.5-7B/resolve/main/model-00004-of-00004.safetensors
+wget https://huggingface.co/Qwen/Qwen2.5-7B/resolve/main/model.safetensors.index.json
+wget https://huggingface.co/Qwen/Qwen2.5-7B/resolve/main/tokenizer.json
+wget https://huggingface.co/Qwen/Qwen2.5-7B/resolve/main/tokenizer_config.json
+wget https://huggingface.co/Qwen/Qwen2.5-7B/resolve/main/vocab.json
 ```
 
-通过md5sum验证模型权重文件完整性
+通过sha256sum验证模型权重文件完整性
 ```shell
-# 利用sha256sum计算 SHA256数值
+# 利用sha256sum计算sha256数值
 # 打开文件明细可获取sha256值，https://huggingface.co/Qwen/Qwen2.5-7B/blob/main/model-00001-of-00004.safetensors
 sha256sum model-00001-of-00004.safetensors
 sha256sum model-00002-of-00004.safetensors
@@ -306,7 +306,7 @@ MASTER_ADDR=${master_ip}  # 参与多机训练的节点都配置为master_ip
 MASTER_PORT=6000          # 本节点端口号为6000
 NNODES=1                  # 根据参与节点数量配置
 NODE_RANK=0               # 多机为(0,NNODES-1)，不同节点不可重复，master_node rank为0，其ip为master_ip
-WORLD_SIZE=$(($GPUS_PER_NODE * $NNODES))
+WORLD_SIZE=$(($NPUS_PER_NODE * $NNODES))
 
 # 参与节点都要有如下数据
 CKPT_LOAD_DIR="./model_weights/qwen2.5_mcore/"  
@@ -530,22 +530,22 @@ TOKENIZER_PATH="./model_from_hf/qwen2.5-7b-hf/"
 # 附录
 ## 常见问题
 - **问题1：训练日志显示"Checkpoint path not found"？**  
-  → 检查`CKPT_LOAD_DIR`是否指向正确的权重转换后路径，确认文件夹内包含`.ckpt`或`.bin`文件。
+  → 检查`CKPT_LOAD_DIR`是否指向正确的权重转换后路径，确认文件夹内包含`.ckpt`或`.bin`文件，否则路径错误请更正权重路径。
 
-![img_1.png](../sources/images/quick_start/img_1.png)
+![img_2.png](../sources/images/quick_start/img_2.png)
 
-**问题2：显示数据集加载out of range？**  
-  → 微调脚本，没有读取到数据集，请检查DATA_PATH是否符合上面示例的规范。
+- **问题2：显示数据集加载out of range？**  
+  → 微调脚本，没有读取到数据集，请检查脚本中DATA_PATH是否符合上面示例的规范。
 
 ![img_3.png](../sources/images/quick_start/img_3.png)
  
 - **问题3：训练脚本拉起失败？**  
-  → 检查有无source，检查是否有进程残留，未清理干净。
+  → 检查有无source CANN包，检查是否有进程残留未清理干净。
 
 - **问题4：没有生成运行日志文件？**  
   → 需要自行创建logs文件夹。
 
-![img_2.png](../sources/images/quick_start/img_2.png)
+![img_1.png](../sources/images/quick_start/img_1.png)
 
 ## 加入昇腾开发者生态
 
