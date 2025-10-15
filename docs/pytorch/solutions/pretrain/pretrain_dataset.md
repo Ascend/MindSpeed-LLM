@@ -28,7 +28,7 @@ source /usr/local/Ascend/ascend-toolkit/set_env.sh
 mkdir ./dataset
 
 python ./preprocess_data.py \
-    --input ./dataset/train-00000-of-00042-d964455e17e96d5a.parquet \
+    --input ./dataset/train-00000-of-00001-a09b74b3ef9c3b56.parquet \
     --tokenizer-name-or-path ./model_from_hf/llama-2-7b-hf \
     --tokenizer-type PretrainedFromHF \
     --handler-name GeneralPretrainHandler \
@@ -51,6 +51,18 @@ bash examples/mcore/llama2/data_convert_llama2_pretrain.sh
 
 可以直接输入到数据集目录或具体文件，如果是目录，则处理全部文件, 支持 .parquet \ .csv \ .json \ .jsonl \ .txt \ .arrow 格式， 同一个文件夹下的数据格式需要保持一致 
 
+【--tokenizer-type】
+
+说明使用tokenizer类别，参数值为PretrainedFromHF时，词表路径填写模型目录即可。否则需要配置`--tokenizer-model`参数，指定分词器模型的路径，路径具体到tokenizer.model文件
+
+【--tokenizer-name-or-path】
+
+词表路径，当tokenizer类别为PretrainedFromHF时，只需配置到目标模型的tokenizer所在目录即可
+
+【--output-prefix】
+
+转换后输出的数据集文件的文件名前缀
+
 【--handler-name】
 
 当前预训练默认使用 `GeneralPretrainHandler`，支持的是预训练数据风格，提取数据的`text`列，格式如下：
@@ -71,6 +83,10 @@ bash examples/mcore/llama2/data_convert_llama2_pretrain.sh
 ```shell
 --json-keys text input output \
 ```
+
+【--workers】
+
+同时进行数据集处理的进程数
 
 【--n-subs】
 

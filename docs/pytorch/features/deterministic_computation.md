@@ -8,7 +8,7 @@
 
 ## 使用方法
 
-要启用此功能，在脚本中加入`--npu-deterministic`即可，环境变量HCCL_DETERMINISTIC默认开启，seed默认为1234，也可自行设定
+要启用此功能，在脚本中加入`--npu-deterministic`, 并配置环境变量`export HCCL_DETERMINISTIC=true`。seed默认为1234，也可自行设定
 
 ## 使用效果
 
