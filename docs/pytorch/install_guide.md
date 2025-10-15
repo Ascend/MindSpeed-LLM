@@ -3,8 +3,8 @@
 请参考首页[版本说明](../../README.md#版本说明)选择下载对应依赖版本。
 
 >注意：<br>
-> 1.torch2.6不支持python3.8,请优先使用python3.10;<br>
-> 2.qwen3,glm45-moe系列模型要求高版本transformers,因此需要使用python3.10及以上版本;<br>
+> 1.torch2.6不支持python3.8,请优先使用python3.10。<br>
+> 2.qwen3,glm45-moe系列模型要求高版本transformers,因此需要使用python3.10及以上版本。<br>
 
 
 ### 驱动固件安装
@@ -36,9 +36,9 @@ source /usr/local/Ascend/ascend-toolkit/set_env.sh
 source /usr/local/Ascend/nnal/atb/set_env.sh
 ```
 
-### PTA安装
+### PyTorch框架安装
 
-准备[torch_npu](https://www.hiascend.com/developer/download/community/result?module=pt)，执行以下命令安装或参考[Ascend Extension for PyTorch 配置与安装](https://www.hiascend.com/document/detail/zh/Pytorch/710/configandinstg/instg/insg_0001.html)：
+准备[torch_npu](https://www.hiascend.com/developer/download/community/result?module=pt)，参考[Ascend Extension for PyTorch 安装](https://www.hiascend.com/document/detail/zh/Pytorch/710/configandinstg/instg/insg_0001.html)或执行以下命令安装：
 
 ```shell
 # 安装torch和torch_npu 构建参考 https://gitcode.com/ascend/pytorch/releases
@@ -76,4 +76,4 @@ pip install -r requirements.txt  # 安装其余依赖库
 
 > 注意:<br>
 > 1.qwen3,llama3.3系列模型依赖transformers 4.51.0, 需要在环境配置完成后手动执行pip install transformers==4.51.0;<br>
-> 2.glm4.5-moe系列模型依赖transformers 4.54.0, 需要在环境配置完成后手动执行pip install transformers==4.54.0;<br>
+> 2.glm4.5-moe系列模型依赖transformers 4.54.0, 需要在环境配置完成后手动执行pip install transformers==4.54.0。<br>

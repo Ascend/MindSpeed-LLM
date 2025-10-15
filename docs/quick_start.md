@@ -114,7 +114,7 @@ wget https://huggingface.co/Qwen/Qwen2.5-7B/blob/main/tokenizer_config.json
 wget https://huggingface.co/Qwen/Qwen2.5-7B/blob/main/vocab.json
 ```
 
-通过md5sum验证模型权重文件完整性
+通过md5sum验证模型权重文件完整性。
 ```shell
 # 利用sha256sum计算 SHA256数值
 # 打开文件明细可获取sha256值，https://huggingface.co/Qwen/Qwen2.5-7B/blob/main/model-00001-of-00004.safetensors
@@ -293,7 +293,7 @@ bash examples/mcore/qwen25/pretrain_qwen25_7b_32k_ptd.sh
 
 ### 启动多机预训练任务
 
-如果需要启动多机预训练任务，那么在单机预训练脚本的基础上，做如下修改，
+如果需要启动多机预训练任务，那么在单机预训练脚本的基础上，做如下修改。
 
 #### 配置预训练参数
 
@@ -317,8 +317,8 @@ TOKENIZER_PATH="./model_from_hf/qwen2.5-7b-hf/"
 
 **注意**：
 
-- 多机训练需在多个终端同时启动预训练脚本(每个终端的预训练脚本只有NODE_RANK参数不同，其他参数均相同)
-- 如果使用多机训练，且没有设置数据共享，需要在训练启动脚本中增加`--no-shared-storage`参数，设置此参数之后将会根据分布式参数判断非主节点是否需要load数据，并检查相应缓存和生成数据
+- 多机训练需在多个终端同时启动预训练脚本(每个终端的预训练脚本只有NODE_RANK参数不同，其他参数均相同)。
+- 如果使用多机训练，且没有设置数据共享，需要在训练启动脚本中增加`--no-shared-storage`参数，设置此参数之后将会根据分布式参数判断非主节点是否需要load数据，并检查相应缓存和生成数据。
 
 # 4 基于MindSpore后端的预训练
 
@@ -530,20 +530,20 @@ TOKENIZER_PATH="./model_from_hf/qwen2.5-7b-hf/"
 # 附录
 ## 常见问题
 - **问题1：训练日志显示"Checkpoint path not found"？**  
-  → 检查`CKPT_LOAD_DIR`是否指向正确的权重转换后路径，确认文件夹内包含`.ckpt`或`.bin`文件，否则路径错误请更正权重路径。
+  检查`CKPT_LOAD_DIR`是否指向正确的权重转换后路径，确认文件夹内包含`.ckpt`或`.bin`文件，否则路径错误请更正权重路径。
 
 ![img_2.png](../sources/images/quick_start/img_2.png)
 
 - **问题2：显示数据集加载out of range？**  
-  → 微调脚本，没有读取到数据集，请检查脚本中DATA_PATH是否符合上面示例的规范。
+  微调脚本，没有读取到数据集，请检查脚本中DATA_PATH是否符合上面示例的规范。
 
 ![img_3.png](../sources/images/quick_start/img_3.png)
  
 - **问题3：训练脚本拉起失败？**  
-  → 检查有无source CANN包，检查是否有进程残留未清理干净。
+  检查有无source CANN包，检查是否有进程残留未清理干净。
 
 - **问题4：没有生成运行日志文件？**  
-  → 需要自行创建logs文件夹。
+  需要自行创建logs文件夹。
 
 ![img_1.png](../sources/images/quick_start/img_1.png)
 
@@ -557,4 +557,4 @@ TOKENIZER_PATH="./model_from_hf/qwen2.5-7b-hf/"
 
 通过本教程，您已掌握昇腾生态的基础技能，能够正常使用仓库的模型预训练功能。下一步，不妨尝试更深入理解脚本特性和仓库。
 - 尝试进阶能力，请参考翻阅[模型迁移指南](https://gitcode.com/ascend/MindSpeed-LLM/wiki/%E6%A8%A1%E5%9E%8B%E8%BF%81%E7%A7%BB)
-- 进行模型微调、模型性能优化，模型切分调整，或探索[MOE混合专家模型](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/README.md)等前沿应用！
+- 进行模型微调、模型性能优化，模型切分调整，或探索[MOE混合专家模型](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/README.md)等前沿应用
