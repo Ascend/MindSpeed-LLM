@@ -101,22 +101,22 @@ mkdir -p ./model_from_hf/qwen2.5-7b-hf
 cd ./model_from_hf/qwen2.5-7b-hf
 
 # wget获取权重文件
-wget https://huggingface.co/Qwen/Qwen2.5-7B/blob/main/config.json
-wget https://huggingface.co/Qwen/Qwen2.5-7B/blob/main/generation_config.json
-wget https://huggingface.co/Qwen/Qwen2.5-7B/blob/main/merges.txt
-wget https://huggingface.co/Qwen/Qwen2.5-7B/blob/main/model-00001-of-00004.safetensors
-wget https://huggingface.co/Qwen/Qwen2.5-7B/blob/main/model-00002-of-00004.safetensors
-wget https://huggingface.co/Qwen/Qwen2.5-7B/blob/main/model-00003-of-00004.safetensors
-wget https://huggingface.co/Qwen/Qwen2.5-7B/blob/main/model-00004-of-00004.safetensors
-wget https://huggingface.co/Qwen/Qwen2.5-7B/blob/main/model.safetensors.index.json
-wget https://huggingface.co/Qwen/Qwen2.5-7B/blob/main/tokenizer.json
-wget https://huggingface.co/Qwen/Qwen2.5-7B/blob/main/tokenizer_config.json
-wget https://huggingface.co/Qwen/Qwen2.5-7B/blob/main/vocab.json
+wget https://huggingface.co/Qwen/Qwen2.5-7B/resolve/main/config.json
+wget https://huggingface.co/Qwen/Qwen2.5-7B/resolve/main/generation_config.json
+wget https://huggingface.co/Qwen/Qwen2.5-7B/resolve/main/merges.txt
+wget https://huggingface.co/Qwen/Qwen2.5-7B/resolve/main/model-00001-of-00004.safetensors
+wget https://huggingface.co/Qwen/Qwen2.5-7B/resolve/main/model-00002-of-00004.safetensors
+wget https://huggingface.co/Qwen/Qwen2.5-7B/resolve/main/model-00003-of-00004.safetensors
+wget https://huggingface.co/Qwen/Qwen2.5-7B/resolve/main/model-00004-of-00004.safetensors
+wget https://huggingface.co/Qwen/Qwen2.5-7B/resolve/main/model.safetensors.index.json
+wget https://huggingface.co/Qwen/Qwen2.5-7B/resolve/main/tokenizer.json
+wget https://huggingface.co/Qwen/Qwen2.5-7B/resolve/main/tokenizer_config.json
+wget https://huggingface.co/Qwen/Qwen2.5-7B/resolve/main/vocab.json
 ```
 
-通过md5sum验证模型权重文件完整性。
+通过sha256sum验证模型权重文件完整性
 ```shell
-# 利用sha256sum计算 SHA256数值
+# 利用sha256sum计算sha256数值
 # 打开文件明细可获取sha256值，https://huggingface.co/Qwen/Qwen2.5-7B/blob/main/model-00001-of-00004.safetensors
 sha256sum model-00001-of-00004.safetensors
 sha256sum model-00002-of-00004.safetensors
