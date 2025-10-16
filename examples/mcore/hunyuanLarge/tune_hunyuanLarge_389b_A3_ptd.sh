@@ -52,7 +52,8 @@ OPTIMIZE_ARGS="
     --use-rotary-position-embeddings \
     --use-fused-swiglu \
     --no-masked-softmax-fusion \
-    --use-distributed-optimizer
+    --use-distributed-optimizer \
+    --swap-optimizer \
 "
 
 TRAIN_ARGS="

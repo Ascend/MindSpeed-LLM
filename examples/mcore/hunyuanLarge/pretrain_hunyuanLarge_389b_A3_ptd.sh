@@ -54,7 +54,8 @@ OPTIMIZE_ARGS="
     --use-fused-swiglu \
     --use-fused-rmsnorm \
     --no-masked-softmax-fusion \
-    --use-distributed-optimizer
+    --use-distributed-optimizer \
+    --swap-optimizer \
 "
 
 TRAIN_ARGS="
