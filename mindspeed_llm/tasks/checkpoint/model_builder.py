@@ -185,7 +185,6 @@ class MegatronModel(Model):
         super(MegatronModel, self).__init__()
         self.model_cfg = self.read_model_cfg()
         self.model_type_hf = args.model_type_hf
-        self.shared_expert_gate = args.shared_expert_gate
         self.save_lora_to_hf = False
         if args.load_model_type == 'mg':
             self.mg_path = args.load_dir
@@ -194,7 +193,6 @@ class MegatronModel(Model):
         self.load_mg_args(args)
         self.mla_mm_split = args.mla_mm_split
         self.mtp_num_layers = args.mtp_num_layers
-        self.multi_latent_attention = True if hasattr(self, "multi_latent_attention") else False
         self.module_mapping = self.get_module_mapping()
 
 
@@ -378,12 +376,10 @@ class MegatronModel(Model):
                 "mtp_layers_self_attention_linear_kv_up_proj"] = module_layer_mtp + "self_attention.linear_kv_up_proj"
             module_mapping[
                 "mtp_layers_self_attention_q_layernorm"] = module_layer_mtp + "self_attention.q_layernorm"
-            if self.multi_latent_attention:
-                module_mapping[
-                    "mtp_layers_self_attention_kv_layernorm"] = module_layer_mtp + "self_attention.kv_layernorm"
-            else:
-                module_mapping[
-                    "mtp_layers_self_attention_k_layernorm"] = module_layer_mtp + "self_attention.k_layernorm"
+            module_mapping[
+                "mtp_layers_self_attention_kv_layernorm"] = module_layer_mtp + "self_attention.kv_layernorm"
+            module_mapping[
+                "mtp_layers_self_attention_k_layernorm"] = module_layer_mtp + "self_attention.k_layernorm"
             module_mapping[
                 "mtp_layers_mlp_router"] = module_layer_mtp + "mlp.router"
             module_mapping[

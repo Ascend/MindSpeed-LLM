@@ -35,6 +35,10 @@ def load_plugin(plugin_type, name):
 
 def main():
 
+    logger.warning("This version of weight conversion tool is approaching end-of-life. "
+                   "It will be officially deprecated in the Q4 new release. "
+                   "Please look forward to the Weight Conversion V2 version!")
+
     parser = argparse.ArgumentParser(description="Megatron Checkpoint Utility Arguments",
                                      allow_abbrev=False, conflict_handler='resolve')
 
