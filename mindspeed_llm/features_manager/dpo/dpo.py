@@ -33,4 +33,7 @@ class DPOFeature(MindSpeedFeature):
                            help="Enable Weights & Biases (wandb) logging for experiment tracking. "
                                 "Disabled by default; set this flag to turn it on.", )
 
-
+    def register_patches(self, patch_manager, args):
+        from mindspeed_llm.core import forward_backward_pipelining_with_interleaving_wrapper
+        patch_manager.register_patch('megatron.core.pipeline_parallel.schedules.forward_backward_pipelining_with_interleaving',
+                                      forward_backward_pipelining_with_interleaving_wrapper)

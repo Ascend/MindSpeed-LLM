@@ -18,7 +18,7 @@ class DeprecatedArgsFeature(MindSpeedFeature):
         group.add_argument('--use-mc2', action='store_true', dest='deprecated_use_mc2',
                            help='enable mc2'
                                 'Note: this option is deprecated, please use --use-ascend-mc2 instead!')
-        group.add_argument('--cp-attention-mask-type', type=str, default='causal', choices=['causal', 'general'], dest='deprecated_cp_attention_mask_type',
+        group.add_argument('--cp-attention-mask-type', type=str, default=None, choices=['causal', 'general'], dest='deprecated_cp_attention_mask_type',
                            help='context parallel attention mask type'
                                 'Note: this option is deprecated, please use --attention-mask-type instead!')
         group.add_argument('--moe-intermediate-size', type=int, default=None, dest='deprecated_moe_intermediate_size',
@@ -63,7 +63,7 @@ class DeprecatedArgsFeature(MindSpeedFeature):
                 """The '--use-mc2' argument is deprecated and will be removed in the next future version, 
                    please use '--use-ascend-mc2' instead!""", DeprecationWarning)
             args.use_ascend_mc2 = args.deprecated_use_mc2
-        if args.deprecated_cp_attention_mask_type != 'causal' and args.deprecated_cp_attention_mask_type == 'causal':
+        if args.deprecated_cp_attention_mask_type:
             warnings.warn(
                 """The '--cp-attention-mask-type' argument is deprecated and will be removed in the next future version, 
                    please use '--attention-mask-type' instead!""", DeprecationWarning)
