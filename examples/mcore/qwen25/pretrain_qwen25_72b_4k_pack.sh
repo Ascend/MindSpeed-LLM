@@ -91,6 +91,7 @@ GPT_ARGS="
     --reset-position-ids \
     --use-ascend-coc \
     --coc-fused-kernel \
+    --recompute-activation-function \
     --num-layers-per-virtual-pipeline-stage 4
 "
 
