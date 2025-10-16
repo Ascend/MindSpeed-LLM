@@ -51,7 +51,7 @@ class Mg2HfConvert(Convert):
         self.tensor_model_parallel_size = self.load_model.tensor_model_parallel_size
         self.pipeline_model_parallel_size = self.load_model.pipeline_model_parallel_size
         self.expert_model_parallel_size = self.load_model.expert_model_parallel_size
-        self.first_k_dense_replace = self.load_model.first_k_dense_replace
+        self.first_k_dense_replace = getattr(self.load_model, 'first_k_dense_replace', 0)
         self.n_shared_experts = getattr(self.load_model, "n_shared_experts", None)
         self.expert_tensor_parallel_size = self.load_model.expert_tensor_parallel_size
         self.tp_rank_list = list(range(self.load_model.tensor_model_parallel_size))
@@ -549,7 +549,10 @@ class Mg2HfConvert(Convert):
 
             qkv_weight = torch.cat(linear_qkv_list, dim=0)
             nh = self.load_model.num_attention_heads
-            ng = self.load_model.num_query_groups
+            if hasattr(self.load_model, 'num_query_groups'):
+                ng = self.load_model.num_query_groups
+            else:
+                ng = self.load_model.num_key_value_heads
             repeats = nh // ng
 
             qkv_weight = qkv_weight.reshape(
