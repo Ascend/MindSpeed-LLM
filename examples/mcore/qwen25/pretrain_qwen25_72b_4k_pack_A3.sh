@@ -87,6 +87,7 @@ GPT_ARGS="
     --exit-on-missing-checkpoint \
     --no-shared-storage \
     --reset-position-ids \
+    --recompute-activation-function \
     --num-layers-per-virtual-pipeline-stage 5
 "
 

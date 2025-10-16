@@ -88,6 +88,7 @@ MODEL_PARALLEL_ARGS="
 
 GPT_ARGS="
     --use-mcore-models \
+    --use-flash-attn \
     --tokenizer-name-or-path ${TOKENIZER_PATH} \
     --max-position-embeddings 131072 \
     --num-layers ${NUM_LAYERS} \
@@ -131,7 +132,7 @@ FITUNE_ARGS="
     --finetune \
     --is-instruction-dataset \
     --variable-seq-lengths \
-    --pad-to-multiple-of 1 \
+    --pad-to-multiple-of 8 \
     --tokenizer-not-use-fast \
     "
 RECOMPUTE_ARGS="
