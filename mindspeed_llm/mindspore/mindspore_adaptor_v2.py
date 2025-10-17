@@ -256,13 +256,8 @@ def _patch_fused_operators(args):
 
     # ema
     if args.optimizer_selection == 'fused_ema_adamw':
-        from mindspeed.mindspore.ops.npu_apply_fused_ema_adamw import npu_apply_fused_ema_adamw
-        MindSporeAdaptation.register_patch(
-            'mindspeed.ops.npu_apply_fused_ema_adamw.npu_apply_fused_ema_adamw',
-            npu_apply_fused_ema_adamw,
-            create_dummy=True,
-            force_patch=True
-        )
+        from mindspeed.mindspore.ops.npu_apply_fused_ema_adamw import _fused_ema_adamw_patched_load
+        MindSporeAdaptation.register_patch("mindspeed.op_builder.fused_ema_adamw_builder.FusedEmaAdamWOpBuilder.load", _fused_ema_adamw_patched_load)
 
     # Gradient accumulation fusion
     if args.gemm_gradient_accumulation_fusion:
