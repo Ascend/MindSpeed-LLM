@@ -15,8 +15,8 @@ MindSpeed-LLM + MindSpore后端的依赖配套如下表，安装步骤参考[基
 
 | 依赖软件        |                                                                                                                                    |
 | --------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| 昇腾NPU驱动固件 | [在研版本](https://www.hiascend.com/hardware/firmware-drivers/community?product=1&model=30&cann=8.0.RC3.alpha002&driver=1.0.26.alpha) |
-| 昇腾 CANN       | [在研版本](https://www.hiascend.com/zh/developer/download/community/result?module=cann)                                               |
+| 昇腾NPU驱动固件 | [Ascend HDK 25.2.0](https://www.hiascend.com/hardware/firmware-drivers/community?product=1&model=30&cann=8.2.RC1&driver=Ascend+HDK+25.2.0) |
+| 昇腾 CANN       | [8.2.RC1](https://www.hiascend.com/developer/download/community/result?module=cann&cann=8.2.RC1)                                               |
 | MindSpore       | [2.7.0](https://www.mindspore.cn/install/)                                                                                        |
 | Python          | >=3.9                                                                                                                              |
 

@@ -84,7 +84,7 @@ pip install mindspore==2.7.0  # 以docs/mindspore/readme.md中的版本为准，
 # 拉取MindSpeed-Core-MS仓库
 git clone https://gitcode.com/ascend/MindSpeed-Core-MS.git -b r0.3.0
 cd MindSpeed-Core-MS
-pip install requirements.txt
+pip install -r requirements.txt
 source auto_convert_llm.sh
 
 # 完成安装，返回LLM执行模型任务
