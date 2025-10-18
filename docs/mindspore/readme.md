@@ -182,24 +182,20 @@ MindSpore后端对MindSpeed的重要加速特性的支持情况如下表所示�
     <tr>
       <th>特性</th>
       <th>是否支持</th>
-      <th>Released</th>
     </tr>
   </thead>
   <tbody>
     <tr>
       <td><a href="solutions/inference/inference.md">流式推理 </a></td>
       <td>上线中</td>
-      <td>❌</td>
     </tr>
     <tr>
       <td><a href="solutions/inference/chat.md"> Chat对话</a></td>
       <td>上线中</td>
-      <td>❌</td>
     </tr>
     <tr>
       <td><a href="../pytorch/features/yarn.md"> yarn上下文扩展 </a></td>
       <td>✅</td>
-      <td>❌</td>
     </tr>
   </tbody>
 </table>
@@ -263,8 +259,7 @@ MindSpore后端已完全支持MindSpeed-LLM的预训练、指令微调、RLHF等
     </tr>
     <tr>
       <td>PRM</td>
-      <td rowspan="1"><a href="../pytorch/solut
-      ions/preference-alignment/process_reward_dataset.md">PRM数据集处理</a></td>
+      <td rowspan="1">PRM数据集处理</a></td>
       <td>✅</td>
       <td>❌</td>
       <td rowspan="1">【Ascend】</td>
@@ -284,7 +279,6 @@ MindSpeed MindSore后端的权重转换与PyTorch后端保持了一致，当前�
       <th>切分特性</th>
       <th>lora</th>
       <th>贡献方</th>
-      <th>Released</th>
     </tr>
   </thead>
   <tbody>
@@ -294,7 +288,6 @@ MindSpeed MindSore后端的权重转换与PyTorch后端保持了一致，当前�
       <td>tp、pp、dpp、vpp、cp、ep、loop layer</td>
       <td>❌</td>
       <td rowspan="3">【Ascend】</td>
-      <td rowspan="3">❌</td>
     </tr>
     <tr>
       <td rowspan="2">megatron-core</td>

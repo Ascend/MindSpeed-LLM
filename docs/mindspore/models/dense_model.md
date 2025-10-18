@@ -84,7 +84,7 @@ MindSpore后端仅支持以mcore方式实现的稠密模型，对Legacy方式实
     <tr>
       <td rowspan="2"><a href="https://huggingface.co/meta-llama">LLaMA3</td>
       <td><a href="https://huggingface.co/unsloth/llama-3-8b/tree/main">8B</a></td>
-      <td rowspan="2"><a href="../.././examples/mindspore/llama3">llama3</a></td>
+      <td rowspan="2"><a href="../../../examples/mindspore/llama3">llama3</a></td>
       <td> 8K </td>
       <th>Mcore</th>
       <td>1x8</td>
