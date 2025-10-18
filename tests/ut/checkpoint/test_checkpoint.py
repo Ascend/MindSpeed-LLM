@@ -23,16 +23,25 @@ import re
 import math
 import pytest
 from mindspeed_llm import megatron_adaptor
-from tests.test_tools.utils import create_testconfig, weight_compare, run_cmd
+from tests.test_tools.utils import create_testconfig, weight_compare, run_cmd, weight_compare_hash
 
 
 BASE_DIR = Path(__file__).absolute().parents[3]
 CKPT_PYPATH = os.path.join(BASE_DIR, "convert_ckpt.py")
-
+CKPTV2_PYPATH = os.path.join(BASE_DIR, "convert_ckpt_v2.py")
 
 class TestCheckpoint(object):
     test_config = create_testconfig(Path(__file__).with_suffix(".json"))
     test_config_cmd = create_testconfig(Path(__file__).with_suffix(".json"), cmd=True)
+
+    def test_deepseek3_hf2mcore_tp2pp2vpp1ep2nooplayer(self):
+        os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
+        exit_code = run_cmd(["python3", CKPTV2_PYPATH] + self.test_config_cmd['test_deepseek3_hf2mcore_tp2pp2vpp1ep2nooplayer'])
+        assert exit_code == 0
+        base_hash = self.test_config['test_deepseek3_hf2mcore_tp2pp2vpp1ep2nooplayer'][1]
+        save_dir = self.test_config['test_deepseek3_hf2mcore_tp2pp2vpp1ep2nooplayer'][0]['save-dir']
+        assert weight_compare_hash(save_dir, base_hash, "pt")
+        shutil.rmtree(save_dir)
 
     def test_deepseek2_hf2mcore_tp1pp4ep8(self):
         os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"

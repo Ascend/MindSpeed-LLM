@@ -38,6 +38,40 @@
                 "spec":"mindspeed_llm.tasks.models.spec.deepseek_spec layer_spec"
             }
         }
+    ],
+
+    "test_deepseek3_hf2mcore_tp2pp2vpp1ep2nooplayer": [
+        {
+            "param": {
+                "load-model-type":"hf",
+                "save-model-type":"mg",
+                "target-tensor-parallel-size": "2",
+                "target-pipeline-parallel-size": "2",
+                "target-expert-parallel-size": "2",
+                "noop-layers": "0,3",
+                "load-dir":"/data/ci/ckpt_v2/deepseek3-hf-L2-mtp",
+                "save-dir":"/data/ci/ckpt_v2/deepseek3-mtp-L2-tp2pp2ep2vpp1-noop-vpp",
+                "moe-grouped-gemm": null,
+                "model-type-hf": "deepseek3",
+                "params-dtype": "bf16",
+                "num-layers": "2",
+                "mtp-num-layers": "1",
+                "first-k-dense-replace": "1",
+                "num-layers-per-virtual-pipeline-stage": "1"
+            }
+        },
+        {
+            "Base_MD5" : [
+                "8805ec24708437fe",
+                "9f0d52ea91a872ab",
+                "76fd1c0e20dd533e",
+                "c356bd6afc0c2b05",
+                "102f50e55644ece9",
+                "bc1e75fd4f52e815",
+                "4ed30b99759f9414",
+                "0768638e4c6bd700"
+            ]
+        }
     ]
 }
 

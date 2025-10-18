@@ -228,7 +228,7 @@ class Hf2MgConvert(Convert):
                         ]
 
         if self.mtp_num_layers:
-            nextn_layer_list = [self.mtp_layer_number + i for i in range(self.mtp_num_layers)]
+            nextn_layer_list = [self.load_model.num_layers + i for i in range(self.mtp_num_layers)]
             # for dualpipe, mtp layer in pp0vpp1
             mtp_pp_rank = 0 if self.schedules_method == 'dualpipev' else self.pipeline_model_parallel_size - 1
             self.vpprank_layer_idxs[mtp_pp_rank][self.vpp_size - 1].extend(nextn_layer_list)
