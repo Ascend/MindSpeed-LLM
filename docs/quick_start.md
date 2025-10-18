@@ -77,15 +77,15 @@ pip install -r requirements.txt  # 安装其余依赖库
 参考[MindSpore官方安装指导](https://www.mindspore.cn/install)，根据系统类型、CANN版本及Python版本选择匹配的对应的安装命令进行安装，安装前请确保网络畅通。或执行以下命令安装：
 
 ```shell
-pip install mindspore==2.7.0  # 以docs/mindspore/readme.md中的版本为准，此处仅做参考
+pip install mindspore==2.7.1  # 以docs/mindspore/readme.md中的版本为准，此处仅做参考
 ```
 
 ```shell
 # 拉取MindSpeed-Core-MS仓库
-git clone https://gitcode.com/ascend/MindSpeed-Core-MS.git -b r0.3.0
+git clone https://gitcode.com/ascend/MindSpeed-Core-MS.git -b master
 cd MindSpeed-Core-MS
-pip install requirements.txt
-source auto_convert_llm.sh
+pip install -r requirements.txt
+source auto_convert.sh llm
 
 # 完成安装，返回LLM执行模型任务
 cd MindSpeed-LLM
