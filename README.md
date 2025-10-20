@@ -39,7 +39,7 @@ MindSpeed LLM：基于昇腾生态的大语言模型分布式训练框架，旨�
 
 -  **[DeepSeek-V3-671B模型全家桶](./examples/mcore/deepseek3/)** 已上线
 
-- **支持数据集处理、权重转换、预训练、全参微调、lora微调、qlora微调** 
+- **支持数据集处理、权重转换、预训练、全参微调、LoRA微调、QLoRA微调** 
 - **DeepSeek-R1-Distill** 系列模型已上线
 
 - **[DeepSeek-R1-Distill-Qwen](./examples/mcore/deepseek_r1_distill_qwen/)**  **[DeepSeek-R1-Distill-LLaMA](./examples/mcore/deepseek_r1_distill_llama/)**
@@ -95,7 +95,6 @@ MindSpeed LLM的依赖配套如下表
     <td>apex</td>
   </tr>
 </table>
-注：由于master分支使用在研版本的驱动以及CANN包，因此master上的一些新特性老版本配套可能有不支持情况，要使用稳定版本，请切换到商发分支并下载对应依赖版本进行安装。
 
 # 安装
 
@@ -627,7 +626,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
 
 ## 权重转换
 
-MindSpeed LLM支持Huggingface、Megatron-core两种格式的权重互转，支持LoRa权重合并。权重转换特性参数和使用说明参考[权重转换](docs/pytorch/solutions/checkpoint/checkpoint_convert.md)。
+MindSpeed LLM支持Huggingface、Megatron-core两种格式的权重互转，支持LoRA权重合并。权重转换特性参数和使用说明参考[权重转换](docs/pytorch/solutions/checkpoint/checkpoint_convert.md)。
 
 <table>
   <thead>
@@ -635,7 +634,7 @@ MindSpeed LLM支持Huggingface、Megatron-core两种格式的权重互转，支�
       <th>源格式</th>
       <th>目标格式</th>
       <th>切分特性</th>
-      <th>lora</th>
+      <th>LoRA</th>
       <th>贡献方</th>
       <th>Released</th>
     </tr>

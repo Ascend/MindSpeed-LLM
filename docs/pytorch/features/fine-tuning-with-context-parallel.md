@@ -21,7 +21,7 @@
 
 【--context-parallel-size】
 
-CP切分的并行数目，要可以被序列长度整除。
+设置CP切分的并行数目，配置值要求能够被序列长度整除。
 
 【--attention-mask-type】
 
@@ -35,14 +35,12 @@ CP切分的并行数目，要可以被序列长度整除。
 2. [**ulysses_cp_algo**](https://gitcode.com/ascend/MindSpeed/blob/master/docs/features/ulysses-context-parallel.md)
 3. [**hybrid_cp_algo**](https://gitcode.com/ascend/MindSpeed/blob/master/docs/features/hybrid-context-parallel.md)
 
-由于在微调场景，`--attention-mask-type`只能设置为`general`，
-理论上样本越短，拼接序列包含的样本数目越多，`--context-parallel-size`设置越大，性能收益越明显，但是要注意 seq-length / context-parallel-size > 8k时可以
-尽可能弥补CP带来的通信损失，针对该种场景参考配置如下，参数相关介绍参考上述对应算法的链接。CP较小时（一般<=4），`ulysses_cp_algo`是性能不错的选择。
+由于在微调场景，`--attention-mask-type`只能设置为`general`，所以理论上样本越短，拼接序列包含的样本数目越多，`--context-parallel-size`设置越大，性能收益越明显。但是要注意 seq-length / context-parallel-size > 8k时可以一定程度上弥补CP带来的通信损失，针对这种场景参考配置如下，参数相关介绍参考上述对应算法的链接。
 
 ```shell
     --seq-length 131072
     --context-parallel-size 8
-    --context-parallel-algo megatron_cp_algo
+    --context-parallel-algo megatron_cp_algo  # CP较小时(CP<=4），使用ulysses_cp_algo是性能不错的选择
     --attention-mask-type general
 ```
 

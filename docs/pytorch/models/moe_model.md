@@ -149,7 +149,7 @@
 
 ### DeepSeek3模型
 
-注意：当前master分支未适配DeepSeek-V3，如需使用请切换到2.1.0商发分支
+注意：当前分支未适配DeepSeek-V3，如需使用请切换到2.1.0商发分支
     
 版本要求：CANN版本≥8.1.RC1，PTA版本≥7.0.RC1。
 
@@ -164,7 +164,7 @@ MTP说明：master分支是参考Megatron-LM实现，与2.0.0分支实现方案�
 
 ### 社区BUG列表
 
-1. DeepSeek2：使用examples/mcore/deepseek2/pretratin_deepseek2_100b_8k_C_ptd.sh进行八机预训练任务时，需确保首节点有1.2T的host内存，第二节点有1.1T的host内存，以此类推。可通过以下命令进行查询
+1. DeepSeek2：使用examples/mcore/deepseek2/pretrain_deepseek2_100b_8k_C_ptd.sh进行八机预训练任务时，需确保首节点有1.2T的host内存，第二节点有1.1T的host内存，以此类推。可通过以下命令进行查询
 
     ```shell
     # 查询host内存，通过free字段确定当前可用host内存

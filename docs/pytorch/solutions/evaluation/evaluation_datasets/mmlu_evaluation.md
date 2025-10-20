@@ -13,7 +13,7 @@ MMLU（Massive Multitask Language Understanding）评估包含一系列多样化
 
 每个领域下又包含多个具体的任务和问题，通过这些多样化的任务，MMLU能够评估模型在不同领域的知识掌握情况和跨领域的泛化能力。
 
-其中，[STEM](#STEM)，[人文学科](#人文学科)和[社会科学](#社会科学)和所包含的学科问题集会在文末说明。
+其中，[STEM](#STEM)，[人文学科](#人文学科)和[社会科学](#社会科学)所包含的学科问题集会在文末说明。
 
 目前MindSpeed-LLM仓库对MMLU评估有三种评估模式：
 
@@ -23,7 +23,7 @@ MMLU（Massive Multitask Language Understanding）评估包含一系列多样化
 
 #### 使用影响
 
-此模式将会读取对外的mmlu评估的[模板的文件](../../../../../mindspeed_llm/tasks/evaluation/eval_impl/fewshot_template/mmlu_5shot_template.json)作为评估模板，在与需要模型回答的问题连接后，输入到模型中，直接进行评估。
+此模式将会读取对外公开的[MMLU评估模板的文件](../../../../../mindspeed_llm/tasks/evaluation/eval_impl/fewshot_template/mmlu_5shot_template.json)，在与需要模型回答的问题连接后，输入到模型中，直接进行评估。
 
 此种模式下，模型的第一个输出将会作为答案。
 
@@ -39,7 +39,7 @@ MMLU（Massive Multitask Language Understanding）评估包含一系列多样化
 
 #### 使用影响
 
-此模式将会读取您的启动脚本中的`DATA_PATH`路径中的同级`dev`文件夹中对应问题的以dev_csv结尾的文件，作为模板问题，经处理后输入到模型中。
+此模式将会读取您的启动脚本中的`DATA_PATH`路径中的同级`dev`文件夹中对应问题的以`_dev.csv`为后缀的文件，作为模板问题，经处理后输入到模型中。
 
 与直接评估模式不同的是，该模式会根据种子数，打乱dev文件中的模板问题的顺序。再与需要模型回答的问题连接后，再进行对话模板处理后，将得到的对话字典输入到模型中进行评估。
 
@@ -53,13 +53,13 @@ MMLU（Massive Multitask Language Understanding）评估包含一系列多样化
 
 【--prompt-type】
 
-设置--prompt-type为您在使用MindSpeed-LLM进行微调时使用的prompt-type名称。
+该参数用于指定模型模板类型，应与您在使用MindSpeed-LLM仓进行微调时配置的`--prompt-type`参数保持一致。
 
 ### 3. 平替模板输出模式
 
 #### 使用影响
 
-与`微调模板评估模式`相同的是，该模式也会使用您评估脚本中的`DATA_PATH`路径中的同级`dev`文件夹中对应问题的以dev_csv的文件，并作为模板问题。
+与`微调模板评估模式`相同的是，该模式也会使用您评估脚本中的`DATA_PATH`路径中的同级`dev`文件夹中对应问题的以`_dev.csv`为后缀的文件，并作为模板问题。
 
 与其他模式不同的是，该模式不会打乱模板问题的顺序。模板问题与需要模型回答的问题连接后，不进行对话字典的处理，直接输入到模型，得到前向输出。
 
@@ -79,7 +79,7 @@ MMLU（Massive Multitask Language Understanding）评估包含一系列多样化
 
 #### 使用影响
 
-`ppl` 是困惑度 (perplexity) 的缩写，是一种评价模型进行语言建模能力的指标。该模式也会使用您评估脚本中的`DATA_PATH`路径中`dev`文件夹中对应问题的以dev_csv的文件，并作为模板问题。此时，我们会将 n 个选项拼接上上下文后，形成 n 个序列，然后计算模型对这 n 个序列的 perplexity，我们认为其中 perplexity 最低的序列所对应的选项即为模型在这道题上面的推理结果，该种评测方法的后处理简单直接、确定性高。
+`ppl` 是困惑度 (perplexity) 的缩写，是一种评价模型进行语言建模能力的指标。该模式也会使用您评估脚本中的`DATA_PATH`路径中`dev`文件夹中对应问题的以`_dev.csv`为后缀的文件，并作为模板问题。此时，我们会将 n 个选项拼接上上下文后，形成 n 个序列，然后计算模型对这 n 个序列的 perplexity，我们认为其中 perplexity 最低的序列所对应的选项即为模型在这道题上面的推理结果，该种评测方法的后处理简单直接、确定性高。
 
 #### 推荐参数配置
 

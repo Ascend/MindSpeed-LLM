@@ -24,7 +24,7 @@ BBH评估集专注于以下几个方面：
 
 #### 使用影响
 
- - 此模式将会直接将需要回答的问题直接输入到模型中，进行评估
+ - 此模式将会把需要回答的问题直接输入到模型中，进行评估
 
 
 #### 推荐参数配置
@@ -39,7 +39,7 @@ BBH评估集专注于以下几个方面：
 
  - 此模式将会读取bbh评估的[模板的文件](../../../../../mindspeed_llm/tasks/evaluation/eval_impl/fewshot_template/bbh_template.json)作为评估模板，在与需要模型回答的问题连接后，输入到模型中，直接进行评估。
 
- - 请注意该模式使用的模版，不是思维链（chain of thought）的模版风格
+ - 请注意该模式使用的模板，不是思维链（chain of thought）的模板风格
 
 
 #### 推荐参数配置
@@ -50,14 +50,14 @@ BBH评估集专注于以下几个方面：
 
 【--prompt-type】
 
-设置--prompt-type为您在使用MindSpeed-LLM进行微调时的使用的prompt-type名称。
+该参数用于指定模型模板类型，应与您在使用MindSpeed-LLM仓进行微调时配置的`--prompt-type`参数保持一致。
 
-### 3. 思维链（COT）评估模式
+### 3. 思维链（CoT）评估模式
 
 #### 使用影响
 
 - 该模式会将思维链 （CoT） 提示应用于 BBH 任务。
-- 此模式将会读取bbh评估的[COT模板的文件](../../../../../mindspeed_llm/tasks/evaluation/eval_impl/fewshot_template/bbh_cot_template.json)作为评估模板，在与需要模型回答的问题连接后，输入到模型中，进行评估。
+- 此模式将会读取bbh评估的[CoT模板的文件](../../../../../mindspeed_llm/tasks/evaluation/eval_impl/fewshot_template/bbh_cot_template.json)作为评估模板，在与需要模型回答的问题连接后，输入到模型中，进行评估。
 
 #### 推荐参数配置
 
@@ -65,9 +65,9 @@ BBH评估集专注于以下几个方面：
 
 设置为512或者以上
 
-【--chain-of-tought】
+【--chain-of-thought】
 
-使能`思维链（COT）评估模式`
+使能`思维链（CoT）评估模式`
 
 ## 参考文献
 

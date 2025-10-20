@@ -110,9 +110,9 @@ bash examples/mcore/gemma2/chat_gemma2_9b_ptd.sh
 
 填写相关路径
 
-`TOKENIZER_MODEL`：指定模型的分词器路径（例如`tokenizer.model`）。
+`TOKENIZER_PATH`：指定模型的分词器路径（例如`tokenizer.model`）。
 
-`CKPT_LOAD_DIR`：指向多轮对话微调后保存的路径。
+`CHECKPOINT`：指向多轮对话微调后保存权重的路径。
 
 ```shell
 TOKENIZER_PATH="./model_from_hf/gemma2_hf/"

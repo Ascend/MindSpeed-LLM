@@ -10,8 +10,8 @@ MindSpeed-LLM 支持大模型在公开基准数据集上进行准确率评估，
 | HumanEval   | [GitHub](https://github.com/openai/human-eval/tree/master/data)           | test | [12.8%](../../../examples/mcore/llama2/evaluate_llama2_7b_humaneval_ptd.sh) | [12.2%](https://hub.opencompass.org.cn/dataset-detail/HumanEval) |
 | CMMLU       | [Kaggle](https://www.kaggle.com/datasets/ginrawin/ceval-exam)        | test | -- | -- |
 | GSM8k       | [GitHub](https://github.com/openai/grade-school-math/tree/master/grade_school_math/data)     | -- | -- | -- |
-| Hellaswag   | [GitHub](https://github.com/rowanz/hellaswag)                             | -- | -- | -- |
-| Needlebench | [HuggingFace](https://huggingface.co/datasets/opencompass/NeedleBench/tree/main)     | -- | -- | -- |
+| HellaSwag   | [GitHub](https://github.com/rowanz/hellaswag)                             | -- | -- | -- |
+| NeedleBench | [HuggingFace](https://huggingface.co/datasets/opencompass/NeedleBench/tree/main)     | -- | -- | -- |
 
 MindSpeed-LLM 已支持的大模型评估数据统计如下：
 
@@ -23,7 +23,7 @@ MindSpeed-LLM 已支持的大模型评估数据统计如下：
 | Baichuan-13B         | BoolQ      | 74.7%     | [73.6%](https://hub.opencompass.org.cn/dataset-detail/BoolQ)          | Baichuan2-7B     | BoolQ  | 70.0%     | [63.2%](https://hub.opencompass.org.cn/dataset-detail/BoolQ)                       |
 | Baichuan2-13B        | BoolQ      | 78.0%     | [67.0%](https://hub.opencompass.org.cn/dataset-detail/BoolQ)          | Bloom-7B         | MMLU   | 25.1%     | --                                                                                 |
 | Bloom-176B           | BoolQ      | 64.5%     | --                                                                    | ChatGLM3-6B      | MMLU   | 61.5%     | --                                                                                 |
-| GLM4-9B              | MMLU       | 74.5%     | [74.7%](https://huggingface.co/THUDM/glm-4-9b)                        | CodeQwen1.5-7B   | Human. | 54.8%     | [51.8%](https://qwenlm.github.io/zh/blog/codeqwen1.5/)                             |
+| GLM4-9B              | MMLU       | 74.5%     | [74.7%](https://huggingface.co/THUDM/glm-4-9b)                        | CodeQwen1.5-7B   | HumanEval | 54.8%     | [51.8%](https://qwenlm.github.io/zh/blog/codeqwen1.5/)                             |
 | CodeLLaMA-34B        | HumanEval  | 48.8%     | [48.8%](https://paperswithcode.com/sota/code-generation-on-humaneval) | Gemma-2B         | MMLU   | 39.6%     | --                                                                                 |
 | Gemma-7B             | MMLU       | 52.2%     | --                                                                    | InternLM-7B      | MMLU   | 48.7%     | [51.0%](https://huggingface.co/internlm/internlm-7b)                               |
 | Gemma2-9B            | MMLU       | 70.7%     | [71.3%](https://huggingface.co/google/gemma-2-9b)                     | Gemma2-27B       | MMLU   | 75.5%     | [75.2%](https://huggingface.co/google/gemma-2-27b)                                 |
@@ -52,11 +52,12 @@ MindSpeed-LLM 已支持的大模型评估数据统计如下：
 | InternLM2.5-1.8b     | MMLU       | 51.3%     | [53.5%](https://huggingface.co/internlm/internlm2_5-1_8b)             | InternLM2.5-7B   | MMLU   | 71.6%     | [71.6%](https://huggingface.co/internlm/internlm2_5-7b)                            |
 | InternLM2.5-20b      | MMLU       | 73.3%     | [74.2%](https://huggingface.co/internlm/internlm2_5-20b)              | InternLM3-8b     | MMLU   | 76.6%     | [76.6%](https://huggingface.co/internlm/internlm3-8b-instruct)                     |
 | Yi1.5-6B             | MMLU       | 63.2%     | [63.5%](https://huggingface.co/01-ai/Yi-1.5-6B/tree/main)             | Yi1.5-9B         | MMLU   | 69.2%     | [69.5%](https://huggingface.co/01-ai/Yi-1.5-9B/tree/main)                          |
-| Yi1.5-34B            | MMLU       | 76.9%     | [77.1%](https://huggingface.co/01-ai/Yi-1.5-34B/tree/main)            | CodeQWen2.5-7B   | Human. | 66.5%     | [61.6%](https://modelscope.cn/models/Qwen/Qwen2.5-Coder-7B)                        |
-| Qwen2.5-Math-7B      | MMLU-STEM  | 67.8%    | [67.8%](https://github.com/QwenLM/Qwen2.5-Math/tree/main/)            | Qwen2.5-Math-72B |MMLU-STEM| 83.7%    | [82.8%](https://github.com/QwenLM/Qwen2.5-Math/tree/main/)                         |
-| MiniCPM3-4B          | MMLU       | 63.7%     | 64.6%                                                                 | Phi-3.5-mini-instruct | MMLU   | 64.39%    | 64.34%                                                                        |
+| Yi1.5-34B            | MMLU       | 76.9%     | [77.1%](https://huggingface.co/01-ai/Yi-1.5-34B/tree/main)            | CodeQWen2.5-7B   | HumanEval | 66.5%     | [61.6%](https://modelscope.cn/models/Qwen/Qwen2.5-Coder-7B)                        |
+| Qwen2.5-Math-7B      | MMLU-STEM  | 67.8%    | [67.8%](https://github.com/QwenLM/Qwen2.5-Math/tree/main/)             | Qwen2.5-Math-72B |MMLU-STEM| 83.7%    | [82.8%](https://github.com/QwenLM/Qwen2.5-Math/tree/main/)                         |
+| MiniCPM3-4B          | MMLU       | 63.7%     | [64.6%](https://huggingface.co/openbmb/MiniCPM3-4B)                   | Phi-3.5-mini-instruct | MMLU | 64.39% | [64.34%](https://huggingface.co/microsoft/Phi-3.5-mini-instruct)                                                                  |
 | Phi-3.5-MoE-instruct | MMLU       | 78.5%     | [78.9%](https://huggingface.co/microsoft/Phi-3.5-MoE-instruct)        | DeepSeek-Math-7B  |MMLU-STEM| 56.5%   | [56.5%](https://github.com/deepseek-ai/DeepSeek-Math)                              |
-| DeepSeek-V2.5        | MMLU       | 79.3%     | [80.6%](https://github.com/deepseek-ai/DeepSeek-V3)                   | DeepSeek-V2-236B | MMLU   | 78.1%     | [78.5%](https://huggingface.co/deepseek-ai/DeepSeek-V2)                            |
+| DeepSeek-V2.5        | MMLU       | 79.3%     | [80.6%](https://huggingface.co/deepseek-ai/DeepSeek-V2.5)    +
+         | DeepSeek-V2-236B | MMLU   | 78.1%     | [78.5%](https://huggingface.co/deepseek-ai/DeepSeek-V2)                            |
 | LLaMA3.3-70B-Instruct | MMLU       | 82.7%     | --                                                                   | QwQ-32B          | MMLU   | 81.19%    | --                                                                                 |
 
 ## 评估指导手册

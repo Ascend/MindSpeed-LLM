@@ -2,24 +2,24 @@
 
 ## 权重转换背景
 
-随着模型规模从亿级向万亿级跃迁，TB级别参数模型在实际部署与迁移过程中对系统资源提出了极高的要求，单一设备无法容纳完整模型参数。MindSpeed LLM的权重转换方案提出了一种支持按需加载并具备内存高效性的权重转换方案，以解决大参数规模模型在转换阶段易崩溃的问题，为超大模型的高效训练与应用提供基础技术支持。
+随着模型规模从亿级向万亿级跃迁，TB级别参数模型在实际部署与迁移过程中对系统资源提出了极高的要求，单一设备无法容纳完整模型参数。MindSpeed-LLM使用了一种支持按需加载并具备内存高效性的权重转换方案，以解决大参数规模模型在转换阶段易崩溃的问题，为超大模型的高效训练与应用提供基础技术支持。
 
 
 - [权重下载](#1-权重下载)
 
   从Huggingface等网站下载开源模型权重，支持命令行和网页下载。
 - [权重转换](#2-权重转换)
-  - [Huggingface权重转换到Megatron-LM格式](#21-huggingface权重转换到megatron-lm格式)
+  - [Huggingface权重转换到Megatron-Mcore](#21-huggingface权重转换到megatron-mcore格式)
 
-    将Huggingface模型权重转换为Megatron-LM格式，支持多种并行切分。
+    将Huggingface模型权重转换为Megatron-Mcore格式，支持多种并行切分。
 
-  - [Megatron-LM权重转换到Huggingface格式](#22-megatron-lm权重转换到huggingface格式)
+  - [Megatron-Mcore权重转换到Huggingface格式](#22-megatron-mcore权重转换到huggingface格式)
 
-    将Megatron-LM模型权重转换为Huggingface格式，适用于不同框架间的模型迁移。
+    将Megatron-Mcore模型权重转换为Huggingface格式，适用于不同框架间的模型迁移。
 
-  - [【调试功能】Huggingface权重减层转换到Megatron-LM格式](#23-调试功能huggingface权重减层转换到megatron-lm格式)
+  - [【调试功能】Huggingface权重减层转换到Megatron-Mcore格式](#23-调试功能huggingface权重减层转换到megatron-mcore格式)
 
-    支持将Huggingface模型权重减层转换为Megatron-LM格式，支持多种并行切分。
+    支持将Huggingface模型权重减层转换为Megatron-Mcore格式，支持多种并行切分。
 
 
 - [大参数权重转换特性清单](#权重转换特性清单)
@@ -28,7 +28,7 @@
 
 权重转换旨在解决不同深度学习框架和训练策略下模型权重的兼容性问题，支持在多个模型和训练配置之间进行高效的权重互转。核心功能包括：
 
-**权重互转**：能够在 Hugging Face、Megatron-LM主流框架之间，实现任意并行切分策略的权重格式互转。
+**权重互转**：能够在 HuggingFace、Megatron-LM主流框架之间，实现任意并行切分策略的权重格式互转。
 
 **训练并行策略权重转换**：支持多种训练并行策略之间的权重转换，包括 张量并行(TP)、流水线并行(PP)、专家并行(EP)、专家张量并行(ETP) 和 虚拟流水并行(VPP) 等。无论是针对不同并行策略的训练，还是需要在不同策略之间切换的场景，都能实现灵活的权重转换，以适应各种训练和推理需求。
 
@@ -83,9 +83,9 @@ ModelScope 下载指南：https://modelscope.cn/docs/models/download
 
 ## 2. 权重转换
 
-### 2.1 Huggingface权重转换到Megatron-LM格式
+### 2.1 Huggingface权重转换到Megatron-Mcore格式
 
-权重转换实现了 HuggingFace 权重到 Megatron-LM 格式的转换，支持多种并行策略（如张量并行、流水并行等），确保转换后可以在 MindSpeed-LLM 框架下继续训练和推理。
+权重转换实现了 HuggingFace 权重到 Megatron-Mcore 格式的转换，支持多种并行策略（如张量并行、流水并行等），确保转换后可以在 MindSpeed-LLM 框架下继续训练和推理。
 
 **注意**：
 
@@ -135,7 +135,7 @@ ModelScope 下载指南：https://modelscope.cn/docs/models/download
       <td>✅</td>
     </tr>
     <tr>
-      <td>--target-expert-model-parallel-size</td>
+      <td>--target-expert-parallel-size</td>
       <td>EP，指定专家并行数量，默认为1</td>
       <td>✅</td>
     </tr>
@@ -225,17 +225,17 @@ bash examples/mcore/qwen3_moe/ckpt_convert_qwen3_moe_235b_hf2mcore.sh
 ```
 
 
-### 2.2 Megatron-LM权重转换到Huggingface格式
+### 2.2 Megatron-Mcore权重转换到Huggingface格式
 
-权重转换实现了 Megatron-LM 权重到 HuggingFace 格式的转换，支持多种并行策略（如张量并行、流水并行等）。转换过程中，模型的权重会被适配为 HuggingFace 的标准格式，确保可以在 HuggingFace 环境下继续进行训练和推理。
+权重转换实现了 Megatron-Mcore 权重到 HuggingFace 格式的转换，支持多种并行策略（如张量并行、流水并行等）。转换过程中，模型的权重会被适配为 HuggingFace 的标准格式，确保可以在 HuggingFace 环境下继续进行训练和推理。
 
 **注意**：
 
-1、转到Huggingface权重**无需设置--target-tensor-parallel-size 、--target-pipeline-parallel-size、--target-expert-model-parallel-size、--expert-tensor-parallel-size、--num-layers-per-virtual-pipeline-stage** ，因为Huggingface权重不涉及并行切分。
+1、转到Huggingface权重**无需设置--target-tensor-parallel-size 、--target-pipeline-parallel-size、--target-expert-parallel-size、--expert-tensor-parallel-size、--num-layers-per-virtual-pipeline-stage** ，因为Huggingface权重不涉及并行切分。
 
 2、转换成功后的权重保存目录下仅包含模型权重文件，不会生成config.json模型配置文件和tokenizer.model、vocab.json等词表文件。
 
-3、如果Megatron-LM 权重配置了空层，在Megatron-LM权重转换到Huggingface格式时，也需要在命令行加上相同的空层配置。
+3、如果Megatron-Mcore权重配置了空层，在Megatron-Mcore权重转换到Huggingface格式时，也需要在命令行加上相同的空层配置。
 
 下面提供一个Qwen3-235b模型的mg-hf权重转换脚本仅供参考：
 
@@ -264,9 +264,9 @@ bash examples/mcore/qwen3_moe/ckpt_convert_qwen3_moe_235b_mcore2hf.sh
 ```
 
 
-### 2.3 【调试功能】Huggingface权重减层转换到Megatron-LM格式
+### 2.3 【调试功能】Huggingface权重减层转换到Megatron-Mcore格式
 
-本框架支持Huggingface权重转换到Megatron-LM格式时**减层调试**，并且**无需更改模型的配置文件**，通过以下命令行参数进行减层配置。
+本框架支持Huggingface权重转换到Megatron-Mcore格式时**减层调试**，并且**无需更改模型的配置文件**，通过以下命令行参数进行减层配置。
 
 【--num-layers】
 

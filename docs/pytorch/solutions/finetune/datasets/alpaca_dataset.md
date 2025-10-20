@@ -6,7 +6,7 @@
 
 - [单轮对话：Alpaca英文数据集](https://huggingface.co/datasets/tatsu-lab/alpaca)
 - [单轮对话：Alpaca中文数据集](https://huggingface.co/datasets/llm-wizard/alpaca-gpt4-data-zh/tree/main)
-- [多轮对话：AlpacaHistroy数据集](https://huggingface.co/datasets/kimnt93/oaast-selected)
+- [多轮对话：AlpacaHistory数据集](https://huggingface.co/datasets/kimnt93/oaast-selected)
 - [链式思维 (CoT)：Alpaca数据集](https://huggingface.co/datasets/QingyiSi/Alpaca-CoT/tree/main/Auto-CoT)
 - [BELLE：指令微调数据集](https://huggingface.co/datasets/BelleGroup/train_0.5M_CN)
 
@@ -45,7 +45,7 @@ python ./preprocess_data.py \
 
 【--input】
 
-可以直接输入到数据集目录或具体文件，如果是目录，则处理全部文件, 支持 .parquet \ .csv \ .json \ .jsonl \ .txt \ .arrow 格式， 同一个文件夹下的数据格式需要保持一致 
+可以直接输入到数据集目录或具体文件，如果是目录，则处理全部文件, 支持.parquet/.csv/.json/.jsonl/.txt/.arrow格式， 同一个文件夹下的数据格式需要保持一致 
 
 【--map-keys】
 

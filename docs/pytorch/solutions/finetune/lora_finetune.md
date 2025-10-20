@@ -19,7 +19,7 @@ $
 
 ## 使用说明
 
-MindSpeed-LLM支持在微调、偏好对齐、奖励模型等任务上，使用LoRA进行低参训练。使用方法为在基准任务上加上lora参数进行使能。这里以微调任务为例，说明如何在基准任务上使用lora。
+MindSpeed-LLM支持在微调、偏好对齐、奖励模型等任务上，使用LoRA进行低参数训练。使用方法为在基准任务上加上lora参数进行使能。这里以微调任务为例，说明如何在基准任务上使用lora。
 
 ### 数据预处理示例
 
@@ -136,7 +136,7 @@ python convert_ckpt.py \
     --model-type GPT \
     --load-model-type mg \
     --save-model-type mg \
-    --load-dir ./model_weights/llama-2-7b-mcor \
+    --load-dir ./model_weights/llama-2-7b-mcore \
     --lora-load ./ckpt/llama-7b-lora-mcore-tp1pp1 \
     --save-dir ./model_weights/llama2-7b-lora2mcore \
     --lora-r 16 \
@@ -201,7 +201,7 @@ source /usr/local/Ascend/nnal/atb/set_env.sh
 ```shell
 CHECKPOINT="./model_weights/llama-2-7b-mcore"
 CHECKPOINT_LORA="./ckpt/llama-2-7b-lora/"
-TOKENIZER_PATH="./model_from_hf/llama-2-hf/"
+TOKENIZER_PATH="./model_from_hf/llama-2-7b-hf/"
 
 # 启动任务
 bash examples/mcore/llama2/generate_llama2_7b_lora_ptd.sh

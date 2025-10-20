@@ -26,13 +26,13 @@ $$
 在前向传播时，增加了LoRA的线性层（矩阵部分）变成了计算：
 
 $$
-y = xW_0^T + x A^T B^T
+y = xW_0^T + x B^T A^T
 $$
 
 反向传播的输入是Loss对当前层的输出 $y$ 的梯度 $\frac{\partial \mathcal{L}}{\partial y}$，需要更新旁路矩阵 $A, B$ 的参数，所以需要计算 $A, B$ 的梯度 $\frac{\partial \mathcal{L}}{\partial A}, \frac{\partial \mathcal{L}}{\partial B}$，仅对$A$或$B$求偏导可以将 $xW_0^T$ 看做常数项，这个过程不涉及$W_0$，但为了继续反向传播，当前层还需要返回 $\mathcal{L}$ 对输入的的梯度：
 
 $$
-\frac{\partial \mathcal{L}}{\partial x}=\frac{\partial \mathcal{L}}{\partial y} \frac{\partial y}{\partial x} = \frac{\partial \mathcal{L}}{\partial y} W_0 + \frac{\partial \mathcal{L}}{\partial y} BA
+\frac{\partial \mathcal{L}}{\partial x}=\frac{\partial \mathcal{L}}{\partial y} \frac{\partial y}{\partial x} = \frac{\partial \mathcal{L}}{\partial y} W_0 + \frac{\partial \mathcal{L}}{\partial y} AB
 $$
 
 因此，$W_0$的参数不需要更新，但是仍需要在前向和反向时各参与一次矩阵乘运算。
@@ -77,7 +77,7 @@ QLoRA在LoRA的基础上，对主干部分的权重进行量化，大幅降低�
 
 ### 1、权重转换
 
-将原精度的hf权重转换为的mg权重时，可以通过增加`--qlora-nf4`选项开启QLoRA的NF4量化，会得到量化压缩后的mg权重，目前不支持其它量化方式。
+将原精度的hf权重转换为mg权重时，可以通过增加`--qlora-nf4`选项开启QLoRA的NF4量化，会得到量化压缩后的mg权重，目前不支持其它量化方式。
 
 > （新版本问题修复中，暂不推荐开启该特性）目前QLoRA特性支持开启 `--moe-grouped-gemm` GMM算子以及 `--moe-alltoall-overlap-comm` 特性。
 

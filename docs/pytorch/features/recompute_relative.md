@@ -5,7 +5,7 @@
 
 ## 全量重计算
 
-对于内存非常有限的情况，全量重计算只保存 Transformer 层或层组的输入激活值，其他部分全部重新计算。要启用全量激活重计算，请使用 `--recompute-granularity full`。在全量激活重新计算模式下，有两种方法：均匀（uniform）和分块（block），可以通过 `--recompute-method` 参数选择。
+对于内存非常有限的情况，全量重计算只保存 Transformer 层或层组的输入激活值，其他部分全部重新计算。要启用全量重计算，请使用 `--recompute-granularity full`。在该模式下，有两种重计算方法：均匀（uniform）和分块（block），可以通过 `--recompute-method` 参数选择。
 
 **均匀方法**: 
 

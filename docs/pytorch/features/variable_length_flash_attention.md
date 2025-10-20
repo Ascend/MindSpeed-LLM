@@ -29,7 +29,7 @@ python ./preprocess_data.py \
 
 ## 原理
 ### 1.使能前
-初始化atten_mask为压缩下三角矩阵（2048*2048）；
+初始化attn_mask为压缩下三角矩阵（2048*2048）；
 
 <img alt="casual_mask.png" src="../../../sources/images/variable_length_flash_attention/casual_mask.png" width="261"/>
 
@@ -39,7 +39,7 @@ python ./preprocess_data.py \
 不初始化mask，根据eod位置生成actual_seq_len,假设一个序列中真实的文本长度分别为[2,2,0,2,2]，则actual_seq_len为[2,4,4,6,8]；
 实际计算量由actual_seq_len决定；
 
-类似的attn_mask可以类似的表示为（实际计算时不生成）：
+attn_mask可以类似的表示为（实际计算时不生成）：
 
 <img alt="varlen_mask.png" src="../../../sources/images/variable_length_flash_attention/varlen_mask.png" width="414"/>
 

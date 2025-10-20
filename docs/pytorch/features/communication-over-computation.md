@@ -2,7 +2,7 @@
 
 ## 问题分析
 
-大模型训练过程中，其ColumnParallelLinear和RowParallelLinear部分的前反向均存在相互毗邻、顺序依赖的计算通信组合，计算为Matmul，而通信则为AllReduce（不开启序列并行）或AllGather和ReduceScatter（开启序列并行）。这些计算通信的组合因为存在顺序依赖（即后一个的输入是前一个输出），常常被串行执行，但这时候计算和通信流都存在一定的空闲等待时间，该过程的执行效率没有被最大化。
+大模型训练过程中，其ColumnParallelLinear和RowParallelLinear部分的前向/反向均存在相互毗邻、顺序依赖的计算通信组合，计算为Matmul，而通信则为AllReduce（不开启序列并行）或AllGather和ReduceScatter（开启序列并行）。这些计算通信的组合因为存在顺序依赖（即后一个的输入是前一个输出），常常被串行执行，但这时候计算和通信流都存在一定的空闲等待时间，该过程的执行效率没有被最大化。
 
 ## 解决方案
 

@@ -21,7 +21,7 @@ BoolQ 数据集版本由三个 `.jsonl` 文件组成，其中每行是具有以�
 ```json
 {
   "question": "is france the same timezone as the uk",
-  "passage": "At the Liberation of France in the summer of 1944, Metropolitan France kept GMT+2 as it was the time then used by the Allies (British Double Summer Time). In the winter of 1944--1945, Metropolitan France switched to GMT+1, same as in the United Kingdom, and switched again to GMT+2 in April 1945 like its British ally. In September 1945, Metropolitan France returned to GMT+1 (pre-war summer time), which the British had already done in July 1945. Metropolitan France was officially scheduled to return to GMT+0 on November 18, 1945 (the British returned to GMT+0 in on October 7, 1945), but the French government canceled the decision on November 5, 1945, and GMT+1 has since then remained the official time of Metropolitan France.",
+  "passage": "At the Liberation of France in the summer of 1944, Metropolitan France kept GMT+2 as it was the time then used by the Allies (British Double Summer Time). In the winter of 1944--1945, Metropolitan France switched to GMT+1, same as in the United Kingdom, and switched again to GMT+2 in April 1945 like its British ally. In September 1945, Metropolitan France returned to GMT+1 (pre-war summer time), which the British had already done in July 1945. Metropolitan France was officially scheduled to return to GMT+0 on November 18, 1945 (the British returned to GMT+0 on October 7, 1945), but the French government canceled the decision on November 5, 1945, and GMT+1 has since then remained the official time of Metropolitan France.",
   "answer": false,
   "title": "Time in France"
 }
@@ -41,7 +41,7 @@ MindSpeed-LLM 会对`dev`问题集中的内容进行评估。
 
 #### 使用影响
 
- - MindSpeed-LLM 对Boolq的评估不会使用任何的提示模版，而是直接对目标问题进行评估和输出最终答案。即模型直接接收问题-段落对，无需任何提示模板。
+ - MindSpeed-LLM 对BoolQ的评估不会使用任何的提示板，而是直接对目标问题进行评估和输出最终答案。即模型直接接收问题-段落对，无需任何提示模板。
 
  - 输出层计算"Yes"/"No"的token概率，通过概率比较确定最终预测：P(Yes) > P(No) → 标记为 True  |  其他情况 → 标记为 False。
 

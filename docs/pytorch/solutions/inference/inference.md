@@ -38,7 +38,7 @@ HuggingFace: "I hope you are doing well. I am writing to ask for your help with 
 
 #### 填写相关路径
 
-`CKPT_LOAD_DIR`：指向权重转换后保存的路径。
+`CHECKPOINT`：指向权重转换后保存的路径。
 
 `TOKENIZER_PATH`：指定模型的分词器所在文件夹路径。
 

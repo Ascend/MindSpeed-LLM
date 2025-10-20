@@ -137,8 +137,8 @@ sha256sum model-00004-of-00004.safetensors
 
 ## 3.1 权重转换
 
-昇腾MindSpeed-LLM要求模型权重采用Megatron-LM格式，在这里我们将原始HuggingFace权重格式转换为Megatron-Mcore格式。
-详见[hf2mg权重转换](./pytorch/solutions/checkpoint/checkpoint_convert.md#21-huggingface权重转换到megatron-lm格式)
+昇腾MindSpeed-LLM要求模型权重采用Megatron-Mcore格式，在这里我们将原始HuggingFace权重格式转换为Megatron-Mcore格式。
+详见[hf2mg权重转换](./pytorch/solutions/checkpoint/checkpoint_convert.md#21-huggingface权重转换到megatron-mcore格式)
 
 使用官方提供的转换脚本，获取对应切分的mg权重。
 
@@ -160,7 +160,7 @@ python convert_ckpt.py \
        --load-model-type hf \
        --save-model-type mg \
        --target-tensor-parallel-size 1 \   # 通过这里将切分调整为tp1pp4
-       --target-pipeline-parallel-size 4 \ #
+       --target-pipeline-parallel-size 4 \
        --add-qkv-bias \
        --load-dir ./model_from_hf/qwen2.5-7b-hf/ \
        --save-dir ./model_weights/qwen2.5_mcore/ \
@@ -330,8 +330,8 @@ TOKENIZER_PATH="./model_from_hf/qwen2.5-7b-hf/"
 
 ## 4.1 权重转换
 
-昇腾MindSpeed-LLM要求模型权重采用Megatron-LM格式，在这里我们将原始HuggingFace权重格式转换为Megatron-Mcore格式。
-详见[hf2mg权重转换](./pytorch/solutions/checkpoint/checkpoint_convert.md#21-huggingface权重转换到megatron-lm格式)
+昇腾MindSpeed-LLM要求模型权重采用Megatron-Mcore格式，在这里我们将原始HuggingFace权重格式转换为Megatron-Mcore格式。
+详见[hf2mg权重转换](./pytorch/solutions/checkpoint/checkpoint_convert.md#21-huggingface权重转换到megatron-mcore格式)
 
 使用官方提供的转换脚本，获取对应切分的mg权重。
 
@@ -395,7 +395,7 @@ torch.configs.set_pyboost(False)
 
 ## 4.2 预训练数据集处理
 
-通过对各种格式的数据做提前预处理，避免原始数据的反复处理加载，将所有的数据都统一存储到为.bin和.idx两个文件中，详见[预训练数据处理](./pytorch/solutions/pretrain/pretrain_dataset.md)。
+通过对各种格式的数据做提前预处理，避免原始数据的反复处理加载，将所有的数据都统一存储到后缀为.bin和.idx两个文件中，详见[预训练数据处理](./pytorch/solutions/pretrain/pretrain_dataset.md)。
 
 常用的预训练数据集包括Alpaca、enwiki、C4等，链接中提供了数据集下载地址。
 

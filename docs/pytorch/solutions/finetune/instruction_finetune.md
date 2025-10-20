@@ -78,7 +78,7 @@
     ```
 ## 使用方法
 
-本章节介绍如何基于预训练语言模型，使用单样本格式数据完成指令微调任务，其他数据格式请参考[多样本pack微调](./multi_sample_pack_finetune.md)和[多轮对话微调](./multi-turn_conversation.md)。该使用方法是基于Qwen3-8B模型和单台`Atlas 900 A2 PODc`（1x8集群）进行全参数微调。大模型微调主要包含以下流程：  
+本章节介绍如何基于预训练语言模型，使用单样本格式数据完成指令微调任务，其他数据格式请参考[多样本pack微调](./multi_sample_pack_finetune.md)和[多轮对话微调](./multi-turn_conversation.md)。该使用方法是基于Qwen3-8B模型和单台`Atlas 900 A2 POD`（1x8集群）进行全参数微调。大模型微调主要包含以下流程：  
 
 ![微调流程图](../../../../sources/images/instruction_finetune/process_of_instruction_tuning.png)
 
@@ -143,8 +143,8 @@ source /usr/local/Ascend/ascend-toolkit/set_env.sh # 修改为真实的ascend-to
 ```
 数据预处理相关参数说明：
 
-- `handler-name`：指定数据集的处理类，常用的有`AlpacaStylePairwiseHandler`，`SharegptStyleInstructionHandler`，`AlpacaStylePairwiseHandler`等。
-- `tokenizer-type`：指定处理数据的tokenizer，常用是的`PretrainedFromHF`。
+- `handler-name`：指定数据集的处理类，常用的有`AlpacaStyleInstructionHandler`，`SharegptStyleInstructionHandler`，`AlpacaStylePairwiseHandler`等。
+- `tokenizer-type`：指定处理数据的tokenizer，常用的是`PretrainedFromHF`。
 - `workers`：处理数据集的并行数。
 - `log-interval`：处理进度更新的间隔步数。
 - `enable-thinking`：快慢思考模板开关，可设定为`[true,false,none]`，默认值是`none`。开启后，会在数据集的模型回复中添加`<think>`和`</think>`，并参与到loss计算，所有数据被当成慢思考数据；当关闭后，空的CoT标志将被添加到数据集的用户输入中，不参与loss计算，所有数据被当成快思考数据；设置为`none`时适合原始数据集是混合快慢思考数据的场景。**目前只支持Qwen3系列模型**。
@@ -160,12 +160,12 @@ bash examples/mcore/qwen3/data_convert_qwen3_instruction.sh
 
 ```shell
 # 单机配置
-GPUS_PER_NODE=8
-MASTER_ADDR=locahost
+NPUS_PER_NODE=8
+MASTER_ADDR=localhost
 MASTER_PORT=6000
 NNODES=1  
 NODE_RANK=0  
-WORLD_SIZE=$(($GPUS_PER_NODE * $NNODES))
+WORLD_SIZE=$(($NPUS_PER_NODE * $NNODES))
 ```
 
 环境变量确认无误后，需要修改相关路径参数和模型切分配置：
@@ -196,15 +196,15 @@ bash examples/mcore/qwen3/tune_qwen3_8b_4K_full_ptd.sh
 ```shell
 # 多机配置 
 # 根据分布式集群实际情况配置分布式参数
-GPUS_PER_NODE=8  # 每个节点的卡数
+NPUS_PER_NODE=8  # 每个节点的卡数
 MASTER_ADDR="your master node IP"  # 都需要修改为主节点的IP地址（不能为localhost）
 MASTER_PORT=6000
 NNODES=2  # 集群里的节点数，以实际情况填写,
 NODE_RANK="current node id"  # 当前节点的RANK，多个节点不能重复，主节点为0, 其他节点可以是1,2..
-WORLD_SIZE=$(($GPUS_PER_NODE * $NNODES))
+WORLD_SIZE=$(($NPUS_PER_NODE * $NNODES))
 ```
 
-最后确保每台机器上的模型路径和数据集路径等无误后，在多个终端上同时启动预训练脚本即可开始训练。
+最后确保每台机器上的模型路径和数据集路径等无误后，在多个终端上同时启动微调脚本即可开始训练。
 
 第七步，进行模型验证。完成微调后，需要进一步验证模型是否具备了预期的输出能力。我们提供了简单的模型生成脚本，只需要加载微调后的模型权重，便可观察模型在不同生成参数配置下的回复，详细配置请参考[Qwen3-8B推理脚本](../../../../examples/mcore/qwen3/generate_qwen3_8b_ptd.sh)。需要在脚本中修改以下参数：
 

@@ -44,14 +44,14 @@
         <td>Y</td>
     </tr>
     <tr>
-        <td>cp_ring，general_cp，double_ring， 分布式优化器，reuse_fp32_param，recompute_activation_function，fused_rmsnorm，fused_swiglu，fused_rope，overlap_grad_reduce, overlap_param_gather</td>
+        <td>cp_ring，general_cp，double_ring，分布式优化器，reuse_fp32_param，recompute_activation_function，fused_rmsnorm，fused_swiglu，fused_rope，overlap_grad_reduce, overlap_param_gather</td>
         <td><a href="st/shell_scripts/llama2_tp2_cp4_general_double_ring.sh">llama2_tp2_cp4_general_double_ring.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
     </tr>
     <tr>
-        <td>n_group,seq_aux, gradient_accumulation_fusion, recompute_mtp_layer, recompute_mtp_norm</td>
+        <td>n_group，seq_aux，gradient_accumulation_fusion，recompute_mtp_layer，recompute_mtp_norm</td>
         <td><a href="st/shell_scripts/deepseek_v3_mcore_tp1_pp2_ep4.sh">deepseek_v3_mcore_tp1_pp2_ep4.sh</a></td>
         <td>Y</td>
         <td>Y</td>
@@ -527,7 +527,7 @@
 
 ② 建议按照功能特性进行文件夹命名区分，至多不超过两层目录，所有用例以 `test` 作为命名前缀；
 
-③ 新增用例可以在原有用例基础上做 `test_xxx` 的补充，尽量保证测试功能的集成性；对于存在 .json 文件的用例，贡献时在 .json 中加入 `test_xxx` 配置，然后在 .py 中通过 `@pytest.mark.parameterize` 传入参数、构造用例，**请注意 .json 中的 key 值命名需与 .py 中的 test_xxx 保持统一**；
+③ 新增用例可以在原有用例基础上做 `test_xxx` 的补充，尽量保证测试功能的集成性；对于存在 .json 文件的用例，贡献时在 .json 中加入 `test_xxx` 配置，然后在 .py 中通过 `@pytest.mark.parametrize` 传入参数、构造用例，**请注意 .json 中的 key 值命名需与 .py 中的 test_xxx 保持统一**；
 
 ④ 在贡献时候需要考虑最终校验的具体指标，精度(Acc.)、性能(Throu.)、显存(Mem.)，在对应指标空白处填上 `Y`，如无校验的保留空白即可。
 

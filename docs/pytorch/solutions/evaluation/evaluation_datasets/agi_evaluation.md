@@ -21,7 +21,7 @@
 
 #### 使用影响
 
- - 此模式将会直接将[模版提示](../../../../../mindspeed_llm/tasks/evaluation/eval_impl/fewshot_template/AGI_fewshot.json)和需要回答的问题连接起来输入到模型中，进行评估
+ - 此模式将会直接将[模板提示](../../../../../mindspeed_llm/tasks/evaluation/eval_impl/fewshot_template/AGI_fewshot.json)和需要回答的问题连接起来输入到模型中，进行评估
 
 #### 推荐参数配置
 
@@ -29,17 +29,17 @@
 
 设置为3
 
-### 2. 模版平替输出模式
+### 2. 平替模板输出模式
 
 #### 使用影响
 
-- 与`直接评估模式`不相同的是，该模式也会使用[agi_utils](../../../../../mindspeed_llm/tasks/evaluation/eval_utils/agi_utils.py)中的`template_mapping`中的固定模版和需要回答的问题连接起来输入到模型中，进行评估
+- 与`直接评估模式`不相同的是，该模式也会使用[agi_utils](../../../../../mindspeed_llm/tasks/evaluation/eval_utils/agi_utils.py)中的`template_mapping`中的固定模板和需要回答的问题连接起来输入到模型中，进行评估
 
 #### 推荐参数配置
 
 【--max-new-tokens】
 
-设置为5或者以上，确保任务可以输出完全。
+设置为5或者以上
 
 【--alternative-prompt】
 

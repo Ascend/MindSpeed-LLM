@@ -61,7 +61,7 @@ source /usr/local/Ascend/ascend-toolkit/set_env.sh # 修改为真实的ascend-to
     ```shell
     --json-keys text input output
     ```
-- `n-subs`：数据预处理并行加速参数。当需要预处理的数据集比较大时，可以通过并行处理进行加速，方法为设置参数`--n-subs`，通过该参数设置并行处理数量。在数据预处理过程会将原始数据集切分为`n_sub`个子集，对子集进行并行处理，然后合并，从而实现加速。建议预处理数据集超过GB级别时加上该参数。
+- `n-subs`：数据预处理并行加速参数。当需要预处理的数据集比较大时，可以通过并行处理进行加速，方法为设置参数`--n-subs`，通过该参数设置并行处理数量。在数据预处理过程会将原始数据集切分为`n-subs`个子集，对子集进行并行处理，然后合并，从而实现加速。建议预处理数据集超过GB级别时加上该参数。
 
 相关参数设置完毕后，运行数据预处理脚本：
 
@@ -72,12 +72,12 @@ bash examples/mcore/qwen3/data_convert_qwen3_pretrain.sh
 第三步，配置模型预训练脚本，详细的参数配置请参考[Qwen3-8B预训练脚本](../../../../examples/mcore/qwen3/pretrain_qwen3_8b_4K_ptd.sh)。脚本中的环境变量配置见[环境变量说明](../../features/environment_variable.md)。单机运行的配置说明如下：
 
 ```shell
-GPUS_PER_NODE=8 # 节点的卡数
-MASTER_ADDR=locahost
+NPUS_PER_NODE=8 # 节点的卡数
+MASTER_ADDR=localhost
 MASTER_PORT=6000
 NNODES=1  
 NODE_RANK=0  
-WORLD_SIZE=$(($GPUS_PER_NODE * $NNODES))
+WORLD_SIZE=$(($NPUS_PER_NODE * $NNODES))
 ```
 
 环境变量确认无误后，需要在脚本中修改相关路径参数和模型切分配置：
@@ -85,9 +85,9 @@ WORLD_SIZE=$(($GPUS_PER_NODE * $NNODES))
 ```shell
 # 注意：提供的路径需要加双引号
 CKPT_SAVE_DIR="your model save ckpt path" # 训练完成后的权重保存路径
-CKPT_LOAD_DIR="your data path" # 权重加载路径，填入权重转换时保存的权重路径
+DATA_PATH="your data path" # 数据集路径，填入数据预处理时保存的数据路径
 TOKENIZER_PATH="your tokenizer path" # 词表路径，填入下载的开源权重词表路径
-DATA_PATH="your model ckpt path" # 数据集路径，填入数据预处理时保存的数据路径
+CKPT_LOAD_DIR="your model ckpt path" # 权重加载路径，填入权重转换时保存的权重路径
 
 TP=1 # 模型权重转换的tp大小，在本例中是1
 PP=4 # 模型权重转换的pp大小，在本例中是4
@@ -120,12 +120,12 @@ bash examples/mcore/qwen3/pretrain_qwen3_8b_4K_ptd.sh
 
 ```shell
 # 根据分布式集群实际情况配置分布式参数
-GPUS_PER_NODE=8  # 每个节点的卡数
+NPUS_PER_NODE=8  # 每个节点的卡数
 MASTER_ADDR="your master node IP"  # 都需要修改为主节点的IP地址（不能为localhost）
 MASTER_PORT=6000
 NNODES=2  # 集群里的节点数，以实际情况填写,
 NODE_RANK="current node id"  # 当前节点的RANK，多个节点不能重复，主节点为0, 其他节点可以是1,2..
-WORLD_SIZE=$(($GPUS_PER_NODE * $NNODES))
+WORLD_SIZE=$(($NPUS_PER_NODE * $NNODES))
 ```
 
 最后确保每台机器上的模型路径和数据集路径等无误后，在多个终端上同时启动预训练脚本即可开始训练。如果使用多机训练，且没有设置数据共享，需要在训练启动脚本中增加`no-shared-storage`参数。设置此参数之后将会根据布式参数判断非主节点是否需要load数据，并检查相应缓存和生成数据。
