@@ -44,6 +44,8 @@ MLA_ARGS="
 "
 
 MOE_ARGS="
+    --moe-grouped-gemm \
+    --moe-alltoall-overlap-comm \
     --moe-permutation-async-comm \
     --moe-token-dispatcher-type alltoall_seq \
     --first-k-dense-replace 3 \
