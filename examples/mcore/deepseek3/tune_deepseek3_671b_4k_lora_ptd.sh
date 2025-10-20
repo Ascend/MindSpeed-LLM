@@ -46,6 +46,8 @@ MLA_ARGS="
 "
 
 MOE_ARGS="
+    --moe-grouped-gemm \
+    --moe-alltoall-overlap-comm \
     --moe-permutation-async-comm \
     --moe-permute-fusion \
     --moe-token-dispatcher-type alltoall_seq \
