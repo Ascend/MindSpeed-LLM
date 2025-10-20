@@ -15,7 +15,7 @@ bash examples/mcore/llama2/evaluate_llama2_7b_mmlu_ptd.sh
 
 ```shell
 # 修改模型参数路径和词表路径
-TOKENIZER_PATH="./model_from_hf/llama-2-hf/"  #词表路径
+TOKENIZER_PATH="./model_from_hf/llama-2-7b-hf/"  #词表路径
 CHECKPOINT="./model_weights/llama-2-7b-mcore"  #权重路径
 # 配置任务和数据集路径
 DATA_PATH="./mmlu/data/test/"

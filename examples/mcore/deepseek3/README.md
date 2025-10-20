@@ -125,7 +125,7 @@ python examples/mcore/deepseek3/convert_ckpt_deepseek3_mcore2hf.py \
     --first-k-dense-replace 3 \
     --num-layer-list 16,15,15,15 \
     --lora-r 8 \
-    --lora-alpha 16 \
+    --lora-alpha 16
 ```
 
 【--load-dir】填写lora权重路径，该权重包括base权重和lora权重
@@ -153,7 +153,7 @@ python examples/mcore/deepseek3/convert_ckpt_deepseek3_mcore2hf.py \
     --first-k-dense-replace 3 \
     --num-layer-list 16,15,15,15 \
     --lora-r 8 \
-    --lora-alpha 16 \
+    --lora-alpha 16
     # --num-layer-list, --noop-layers, --num-layers-per-virtual-pipeline-stage等参数根据任务需要进行配置
 ```
 
@@ -180,7 +180,7 @@ python examples/mcore/deepseek3/convert_ckpt_deepseek3_mcore2hf.py \
     --save-lora-to-hf \
     --lora-r 8 \
     --lora-alpha 16 \
-    --lora-target-modules linear_qkv linear_proj linear_fc1 linear_fc2 \
+    --lora-target-modules linear_qkv linear_proj linear_fc1 linear_fc2
 ```
 
 【--load-dir】指定lora权重路径，注意该权重仅为lora权重，在lora微调中加入'--lora-ckpt-filter'，只保存lora权重
@@ -195,7 +195,7 @@ python examples/mcore/deepseek3/convert_ckpt_deepseek3_mcore2hf.py \
 
 如果 qlora 权重包含了 base 权重，并且需要将其合并到一起转为huggingface格式：
 
-在微调脚本中加入--qlora-save-dequantize,保存时将权重反量化。
+在微调脚本中加入'--qlora-save-dequantize',保存时将权重反量化。
 
 【适用场景】在lora微调时没有加参数'--lora-ckpt-filter'，则保存的权重包括base权重和qlora权重
 
@@ -218,18 +218,18 @@ python examples/mcore/deepseek3/convert_ckpt_deepseek3_mcore2hf.py \
     --first-k-dense-replace 3 \
     --num-layer-list 16,15,15,15 \
     --lora-r 8 \
-    --lora-alpha 16 \
+    --lora-alpha 16
     # --num-layer-list, --noop-layers, --num-layers-per-virtual-pipeline-stage等参数根据任务需要进行配置
 ```
 
 【--load-dir】指定base权重路径，由于qlora微调加载的权重是量化过的，所以不能直接作为base权重，需要重新转出一份不加参数'--qlora-nf4'的mcore权重作为合并时的base权重
 
-【--lora-load】指定qlora权重路径，注意该权重仅为qlora权重，在微调脚本中加入'-qlora-save-dequantize',保存时将权重反量化，并加入'--lora-ckpt-filter'，只保存qlora权重
+【--lora-load】指定qlora权重路径，注意该权重仅为qlora权重，在微调脚本中加入'--qlora-save-dequantize',保存时将权重反量化，并加入'--lora-ckpt-filter'，只保存qlora权重
 
 【--lora-r】、【--lora-alpha】与lora微调时配置相同
 
 ### 3.3 只将qlora权重转为huggingface格式
 
-如果需要将单独的qlora权重转为huggingface格式，在微调脚本中加入'-qlora-save-dequantize',保存时将权重反量化，并加入'--lora-ckpt-filter'，只保存qlora权重。
+如果需要将单独的qlora权重转为huggingface格式，在微调脚本中加入'--qlora-save-dequantize',保存时将权重反量化，并加入'--lora-ckpt-filter'，只保存qlora权重。
 
 转换脚本同`2.3 只将lora权重转为huggingface格式`

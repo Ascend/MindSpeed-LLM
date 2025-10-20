@@ -6,7 +6,7 @@
 
 ### TTP临终遗言功能
 
-在训练过程中发生故障后，校验优化器中间状态数据的完整性和一致性，生成一次临终Checkpoint数据，恢复训练时能够通过该CheckPoint恢复到故障前一刻的状态，减少故障造成的训练迭代损失。
+在训练过程中发生故障后，校验优化器中间状态数据的完整性和一致性，生成一次临终checkpoint数据，恢复训练时能够通过该checkpoint恢复到故障前一刻的状态，减少故障造成的训练迭代损失。
 
 ### UCE Step级重计算功能
 
@@ -21,11 +21,11 @@
 
 megatron原生的分布式优化器数据流及工作原理如下图：
 
-![](/sources/images/high_availability/grad_buffer_sharding.png)
+![](../../../sources/images/high_availability/grad_buffer_sharding.png)
 
 副本优化器通过设计优化器参数均匀分布在副本DP组，完成优化器状态的备份，从而为TTP/UCE功能提供机制支持：
 
-![](/sources/images/high_availability/replica_optimizer.png)
+![](../../../sources/images/high_availability/replica_optimizer.png)
 
 副本优化器相比分布式优化器会有内存占用增加，相对占用如下：
 
@@ -54,7 +54,7 @@ taskd下载地址：[TaskD 下载软件包-昇腾社区](https://www.hiascend.co
 
 `--distributed-optimizer-no-replica`  # 不使用副本优化器而使用CKPT文件进行重计算和空中加油修复，需要在故障时存在CKPT文件。
 
-`--enable-elastic-training` # 使能弹性训练功能，配合支持相关功能的 Mind Cluster组件共同使能后，在发生一般性故障且无空闲芯片资源时，缩掉部分节点后继续训练，待有可用芯片资源时扩容回原有规模继续训练。本功能会将故障卡所在Data Parallel域对应节点剔除，修复时要求未故障节点中至少存在一份完整的优化器数据。
+`--enable-elastic-training` # 使能弹性训练功能，配合支持相关功能的 Mind Cluste`r组件共同使能后，在发生一般性故障且无空闲芯片资源时，缩掉部分节点后继续训练，待有可用芯片资源时扩容回原有规模继续训练。本功能会将故障卡所在Data Parallel域对应节点剔除，修复时要求未故障节点中至少存在一份完整的优化器数据。
 
 ### 启动脚本中添加环境变量
 

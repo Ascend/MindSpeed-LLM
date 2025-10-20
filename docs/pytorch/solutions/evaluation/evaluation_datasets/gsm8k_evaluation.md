@@ -22,13 +22,13 @@ GSM8K评估集专注于以下方面：
 
 #### 使用影响
 
- - 此模式将会直接将[模版提示](../../../../../mindspeed_llm/tasks/evaluation/eval_impl/fewshot_template/gsm8k_3shot_template.json)和需要回答的问题输入到模型中，进行评估
+ - 此模式将会直接将[模板提示](../../../../../mindspeed_llm/tasks/evaluation/eval_impl/fewshot_template/gsm8k_3shot_template.json)和需要回答的问题输入到模型中，进行评估
 
 #### 推荐参数配置
 
 【--max-new-tokens】
 
-设置为512，确保任务可以输出完全。
+设置为512。
 
 ### 2. 思维链（COT）评估模式
 
@@ -41,9 +41,9 @@ GSM8K评估集专注于以下方面：
 
 【--max-new-tokens】
 
-设置为512或者以上，确保任务可以输出完全。
+设置为512或者以上。
 
-【--chain-of-tought】
+【--chain-of-thought】
 
 使能`思维链（COT）评估模式`
 

@@ -20,7 +20,7 @@ cd ..
 
 ## ShareGPT风格数据集处理方法
 
-`ShareGPT` 格式支持更多的角色种类，例如 `human、gpt、observation、function`等等。它们构成一个对象列表呈现在`conversations`列中。
+`ShareGPT` 格式支持更多的角色种类，例如 `human、gpt、observation、function_call`等等。它们构成一个对象列表呈现在`conversations`列中。
 
 `ShareGPT`风格示例：
 

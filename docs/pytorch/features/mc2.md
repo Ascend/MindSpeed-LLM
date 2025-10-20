@@ -5,7 +5,7 @@
 
 若在非指定版本中尝试采用该配置，可能触发系统级的异常行为，包括但不限于运行时错误。
 
-MindSpeed-LLM 中 mc2 功能默认关闭，如需开启MC2，需将 `mindspeed_llm/training/arguments.py` 文件下，`validate_args_decorator`函数中的`args.use_ascend_mc2 = False`语句注释掉。
+MindSpeed-LLM 中 MC2 功能默认关闭，如需开启MC2，需将 `mindspeed_llm/training/arguments.py` 文件下，`validate_args_decorator`函数中的`args.use_ascend_mc2 = False`语句注释掉。
 **注意：使能MC2可能在部分模型带来精度问题。**
 
 ## 问题分析
@@ -32,7 +32,7 @@ MC2算子接口参见[link](https://www.hiascend.com/document/detail/zh/Pytorch/
 
 ## 使用方法
 
-设置--use-ascend-mc2即可使能MC2算子。
+设置`--use-ascend-mc2`即可使能MC2算子。
 
 
 ## 使用效果

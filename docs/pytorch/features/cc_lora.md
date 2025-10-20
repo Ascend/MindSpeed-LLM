@@ -40,7 +40,7 @@ RC2以上版本，LoRA微调场景，算法与PP、VPP、分布式优化器等�
 
 通过设置--lora-fusion开启CCLoRA的加速，在开启了TP或SP场景，加入--use-fused-mlp启用[Fused_MLP](fused_mlp.md)算法，针对LoRA的MLP模块进一步进行计算通信掩盖提高性能。
 
-注意:cclora 与 --overlap-param-gather 特性冲突 , 不能同时使用。
+注意:CCLoRA 与 --overlap-param-gather 特性冲突 , 不能同时使用。
 
 ## 使用效果
 

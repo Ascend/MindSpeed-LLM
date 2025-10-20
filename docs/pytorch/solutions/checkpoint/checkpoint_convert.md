@@ -2,20 +2,20 @@
 
 ## 权重转换背景
 
-随着大规模预训练模型的广泛应用，不同的训练框架和硬件平台之间的适配性问题逐渐显现。专有训练框架如MindSpeed-LLM通常采用定制的并行化策略（例如Tensor Parallelism、Pipeline Parallelism）以应对大规模模型训练中的内存和计算瓶颈。随着训练需求和硬件的变化，模型参数的切分策略也需进行相应的调整。然而，跨框架的权重转换往往面临格式不兼容和切分策略不同等挑战。权重转换旨在促进大规模预训练模型在不同训练框架之间的无缝迁移与评估，解决框架间权重格式不兼容及切分策略差异等问题，从而增强模型迁移的灵活性和可扩展性,支持更广泛的应用场景和业务需求。
+随着大规模预训练模型的广泛应用，不同的训练框架和硬件平台之间的适配性问题逐渐显现。专有训练框架如MindSpeed-LLM通常采用定制的并行化策略（例如Tensor Parallelism、Pipeline Parallelism）以应对大规模模型训练中的内存和计算瓶颈。随着训练需求和硬件的变化，模型参数的切分策略也需进行相应的调整。然而，跨框架的权重转换往往面临格式不兼容和切分策略不同等挑战。权重转换旨在促进大规模预训练模型在不同训练框架之间的无缝迁移与评估，解决框架间权重格式不兼容及切分策略差异等问题，从而增强模型迁移的灵活性和可扩展性，支持更广泛的应用场景和业务需求。
 
 
 - [权重下载](#1-权重下载)
 
   从Huggingface等网站下载开源模型权重，支持命令行和网页下载。
 - [权重转换](#2-权重转换)
-  - [Huggingface权重转换到Megatron-LM格式](#21-huggingface权重转换到megatron-lm格式)
+  - [Huggingface权重转换到Megatron-Mcore格式](#21-huggingface权重转换到megatron-mcore格式)
 
-    将Huggingface模型权重转换为Megatron-LM格式，支持多种并行切分。
+    将Huggingface模型权重转换为Megatron-Mcore格式，支持多种并行切分。
 
-  - [Megatron-LM权重转换到Huggingface格式](#22-megatron-lm权重转换到huggingface格式)
+  - [Megatron-Mcore权重转换到Huggingface格式](#22-megatron-mcore权重转换到huggingface格式)
 
-    将Megatron-LM模型权重转换为Huggingface格式，适用于不同框架间的模型迁移。
+    将Megatron-Mcore模型权重转换为Huggingface格式，适用于不同框架间的模型迁移。
 
   - [Lora权重转换](#24-lora权重转换)
 
@@ -33,7 +33,7 @@
 
 权重转换旨在解决不同深度学习框架和训练策略下模型权重的兼容性问题，支持在多个模型和训练配置之间进行高效的权重互转。核心功能包括：
 
-**权重互转**：支持100+种模型的权重互转，能够在 Hugging Face、Megatron-LM主流框架之间，实现任意并行切分策略的权重格式互转。在转换过程中，用户需要通过指定参数 --use-mcore-models 来将权重转换为 Megatron-Mcore 格式。
+**权重互转**：支持100+种模型的权重互转，能够在 Huggingface、Megatron-LM主流框架之间，实现任意并行切分策略的权重格式互转。在转换过程中，用户需要通过指定参数 --use-mcore-models 来将权重转换为 Megatron-Mcore 格式。
 
 **训练并行策略权重转换**：支持多种训练并行策略之间的权重转换，包括 张量并行、流水线并行、专家并行、流水并行动态划分 和 虚拟流水并行 等。无论是针对不同并行策略的训练，还是需要在不同策略之间切换的场景，都能实现灵活的权重转换，以适应各种训练和推理需求。
 
@@ -67,9 +67,9 @@ cd ../../
 
 ## 2. 权重转换
 
-### 2.1 Huggingface权重转换到Megatron-LM格式
+### 2.1 Huggingface权重转换到Megatron-Mcore格式
 
-权重转换实现了 HuggingFace 权重到 Megatron-LM 格式的转换，支持多种并行策略（如张量并行、流水并行等），确保转换后可以在 MindSpeed-LLM 框架下继续训练和推理。
+权重转换实现了 Huggingface 权重到 Megatron-Mcore 格式的转换，支持多种并行策略（如张量并行、流水并行等），确保转换后可以在 MindSpeed-LLM 框架下继续训练和推理。
 
 **注意**：
 
@@ -104,7 +104,7 @@ cd ../../
       <td>可选</td>
     </tr>
     <tr>
-      <td>--target-expert-model-parallel-size</td>
+      <td>--target-expert-parallel-size</td>
       <td>专家并行，指定专家并行卡数，默认为1</td>
       <td>可选</td>
     </tr>
@@ -174,9 +174,9 @@ MindSpeed-LLM Huggingface到Megatron-Mcore权重转换脚本命名风格及启�
 bash examples/mcore/llama2/ckpt_convert_llama2_hf2mcore.sh
 ```
 
-### 2.2 Megatron-LM权重转换到Huggingface格式
+### 2.2 Megatron-Mcore权重转换到Huggingface格式
 
-权重转换实现了 Megatron-LM 权重到 HuggingFace 格式的转换，支持多种并行策略（如张量并行、流水并行等）。转换过程中，模型的权重会被适配为 HuggingFace 的标准格式，确保可以在 HuggingFace 环境下继续进行训练和推理。
+权重转换实现了 Megatron-Mcore 权重到 Huggingface 格式的转换，支持多种并行策略（如张量并行、流水并行等）。转换过程中，模型的权重会被适配为 Huggingface 的标准格式，确保可以在 Huggingface 环境下继续进行训练和推理。
 
 **注意**：
 
@@ -184,9 +184,9 @@ bash examples/mcore/llama2/ckpt_convert_llama2_hf2mcore.sh
 
 2、转换成功后的权重保存目录下仅包含模型权重文件，不会生成config.json模型配置文件和tokenizer.model、vocab.json等词表文件。
 
-3、`--save-dir` 必须要填原始HuggingFace模型路径，并且路径下需要包括完整的HuggingFace模型文件，包括权重和配置文件。
+3、`--save-dir` 必须要填原始Huggingface模型路径，并且路径下需要包括完整的Huggingface模型文件，包括权重和配置文件。
 
-4、如果Megatron-LM 权重配置了空层，在Megatron-LM权重转换到Huggingface格式时，也需要在命令行加上`相同的空层配置`,并加参数 `--load-checkpoint-loosely`
+4、如果 Megatron-Mcore 权重配置了空层，在 Megatron-Mcore 权重转换到Huggingface格式时，也需要在命令行加上`相同的空层配置`,并加参数 `--load-checkpoint-loosely`
 
 下面提供一个Llama2-7b模型的mg-hf权重转换脚本仅供参考：
 
@@ -414,7 +414,7 @@ bash examples/mcore/llama2/ckpt_convert_llama2_lora2hf.sh
 
 ### 权重转换特性清单
 
-MindSpeed-LLM 支持 Huggingface 和 Megatron-Core 之间的权重格式互转，具体功能列表如下:
+MindSpeed-LLM 支持 Huggingface 和 Megatron-Mcore 之间的权重格式互转，具体功能列表如下:
 
 <table>
   <thead>
@@ -427,8 +427,8 @@ MindSpeed-LLM 支持 Huggingface 和 Megatron-Core 之间的权重格式互转�
   </thead>
   <tbody>
     <tr>
-      <td rowspan="7">HuggingFace </td>
-      <td rowspan="7">Megatron-Core</td>
+      <td rowspan="7">Huggingface </td>
+      <td rowspan="7">Megatron-Mcore</td>
       <td>张量并行</td>
       <td>--target-tensor-parallel-size</td>
     </tr>
@@ -446,7 +446,7 @@ MindSpeed-LLM 支持 Huggingface 和 Megatron-Core 之间的权重格式互转�
     </tr>
     <tr>
       <td>专家并行</td>
-      <td>--target-expert-model-parallel-size</td>
+      <td>--target-expert-parallel-size</td>
     </tr>
     <tr>
       <td>专家张量并行</td>
@@ -459,7 +459,7 @@ MindSpeed-LLM 支持 Huggingface 和 Megatron-Core 之间的权重格式互转�
   </tbody>
   <tbody>
     <tr>
-      <td rowspan="24">Megatron-Core </td>
+      <td rowspan="24">Megatron-Mcore </td>
       <td rowspan="8">Huggingface</td>
       <td>张量并行</td>
       <td>--target-tensor-parallel-size</td>
@@ -470,7 +470,7 @@ MindSpeed-LLM 支持 Huggingface 和 Megatron-Core 之间的权重格式互转�
     </tr>
     <tr>
       <td>专家并行</td>
-      <td>--target-expert-model-parallel-size</td>
+      <td>--target-expert-parallel-size</td>
     </tr>
     <tr>
       <td>专家张量并行</td>
@@ -493,7 +493,7 @@ MindSpeed-LLM 支持 Huggingface 和 Megatron-Core 之间的权重格式互转�
       <td>--lora-alpha</td>
     </tr>
     <tr>
-      <td rowspan="10">Megatron-Core</td>
+      <td rowspan="10">Megatron-Mcore</td>
       <td>张量并行</td>
       <td>--target-tensor-parallel-size</td>
     </tr>
@@ -503,7 +503,7 @@ MindSpeed-LLM 支持 Huggingface 和 Megatron-Core 之间的权重格式互转�
     </tr>
     <tr>
       <td>专家并行</td>
-      <td>--target-expert-model-parallel-size</td>
+      <td>--target-expert-parallel-size</td>
     </tr>
     <tr>
       <td>流水并行动态划分</td>
