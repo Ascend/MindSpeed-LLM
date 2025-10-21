@@ -18,7 +18,7 @@ def get_args():
     parser.add_argument('--save-dir', type=str, required=True,
                         help='Directory to save model checkpoint to')
     parser.add_argument('--model-type-hf', type=str, default="qwen3",
-                        choices=['qwen3', 'qwen3-moe', 'deepseek3', 'glm45-moe', 'bailing_mini', 'qwen3-next', 'seed-oss'],
+                        choices=['qwen3', 'qwen3-moe', 'deepseek3', 'glm45-moe', 'bailing_mini', 'qwen3-next', 'seed-oss', 'deepseek32'],
                         help='model type of huggingface')
     parser.add_argument('--target-tensor-parallel-size', type=int, default=1,
                         help='Target tensor model parallel size, defaults to 1.')

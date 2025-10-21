@@ -92,6 +92,10 @@ class Hf2MgConvert(Convert):
 
         if self.load_model.qkv_type == "mix" and self.tensor_model_parallel_size > 1:
             raise ValueError('mix qkv-type and tp cannot be configured at the same time')
+
+        if hasattr(self.load_model, "use_indexer") and self.tensor_model_parallel_size > 1:
+            raise ValueError('use_indexer model and tp cannot be configured at the same time')
+
         self.check_etp_conflict()
 
     def get_pprank_hf_layeridxs(self) -> None:
@@ -373,7 +377,7 @@ class Hf2MgConvert(Convert):
         hf_module_key = self.load_model.get_module(hf_layer_idx)
         mg_module_key = self.save_model.get_module(local_layer_idx)
 
-        if hasattr(self.load_model, "add_qkv_bias"):
+        if hasattr(self.load_model, "add_qkv_bias") or hasattr(self.load_model, "use_indexer"):
             hf_bias_key = self.load_model.get_bias(hf_layer_idx)
             mg_bias_key = self.save_model.get_bias(local_layer_idx)
 
@@ -455,6 +459,14 @@ class Hf2MgConvert(Convert):
                            in_proj_ba_key, in_proj_qkvz_key,
                            linear_norm_key, out_proj_key)
 
+        def _generate_attn_indexer_layers_key(mtp_flag):
+            prefix = "mtp_" if mtp_flag else ""
+            indexer_k_norm_key = mg_weight_key[f"{prefix}layers_self_attention_indexer_k_norm"]
+            indexer_k_norm_bias_key = mg_bias_key[f"{prefix}layers_self_attention_indexer_k_norm"]
+            indexer_weights_proj_key = mg_weight_key[f"{prefix}layers_self_attention_indexer_weights_proj"]
+            indexer_wk_key = mg_weight_key[f"{prefix}layers_self_attention_indexer_wk"]
+            indexer_wq_b_key = mg_weight_key[f"{prefix}layers_self_attention_indexer_wq_b"]
+            return indexer_k_norm_key, indexer_k_norm_bias_key, indexer_weights_proj_key, indexer_wk_key, indexer_wq_b_key
 
 
         def _generate_attn_layers_bias_key(mtp_flag):
@@ -522,6 +534,13 @@ class Hf2MgConvert(Convert):
             else:
                 linear_qb_lst = torch.chunk(q_b_proj, self.tensor_model_parallel_size, dim=0)
                 linear_kvb_lst = torch.chunk(kv_b_proj, self.tensor_model_parallel_size, dim=0)
+
+            if hasattr(self.load_model, "use_indexer"):
+                hf_k_norm = hf_weight.pop(hf_weight_key["layers_self_attention_indexer_k_norm"])
+                hf_k_norm_bias = hf_weight.pop(hf_bias_key["layers_self_attention_indexer_k_norm"])
+                hf_weights_proj = hf_weight.pop(hf_weight_key["layers_self_attention_indexer_weights_proj"])
+                hf_wk = hf_weight.pop(hf_weight_key["layers_self_attention_indexer_wk"])
+                hf_wq_b = hf_weight.pop(hf_weight_key["layers_self_attention_indexer_wq_b"])
 
         elif self.load_model.qkv_type == 'unpack':
             hf_q_proj = hf_weight.pop(hf_weight_key["layers_self_attention_linear_q_proj"])
@@ -617,6 +636,14 @@ class Hf2MgConvert(Convert):
                         mg_weight[ep_rank][tp_rank][q_b_key] = linear_qb_lst[tp_rank].clone()
                         mg_weight[ep_rank][tp_rank][kv_b_key] = linear_kvb_lst[tp_rank].clone()
                 
+                    if hasattr(self.load_model, "use_indexer"):
+                        indexer_k_norm_key, indexer_k_norm_bias_key, indexer_weights_proj_key, indexer_wk_key, indexer_wq_b_key = \
+                            _generate_attn_indexer_layers_key(mtp_layer_flag)
+                        mg_weight[ep_rank][tp_rank][indexer_k_norm_key] = hf_k_norm.clone()
+                        mg_weight[ep_rank][tp_rank][indexer_k_norm_bias_key] = hf_k_norm_bias.clone()
+                        mg_weight[ep_rank][tp_rank][indexer_weights_proj_key] = hf_weights_proj.clone()
+                        mg_weight[ep_rank][tp_rank][indexer_wk_key] = hf_wk.clone()
+                        mg_weight[ep_rank][tp_rank][indexer_wq_b_key] = hf_wq_b.clone()
                 elif self.load_model.qkv_type == "mix":
                     if (hf_layer_idx + 1) % self.load_model.full_attention_interval == 0 or mtp_layer_flag:
                         attn_keys = _generate_attn_mix_layers_key(mtp_layer_flag, hf_layer_idx)

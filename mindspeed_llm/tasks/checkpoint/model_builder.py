@@ -353,6 +353,16 @@ class MegatronModel(Model):
             module_mapping[
                 "layers_self_attention_k_layernorm"] = module_layer + "self_attention.k_layernorm"
 
+        if hasattr(self, "use_indexer"):
+            module_mapping[
+                "layers_self_attention_indexer_k_norm"] = module_layer + "self_attention.indexer.k_norm"
+            module_mapping[
+                "layers_self_attention_indexer_weights_proj"] = module_layer + "self_attention.indexer.weights_proj.weight"
+            module_mapping[
+                "layers_self_attention_indexer_wk"] = module_layer + "self_attention.indexer.wk"
+            module_mapping[
+                "layers_self_attention_indexer_wq_b"] = module_layer + "self_attention.indexer.wq_b"
+
         if self.mtp_num_layers:
             module_mapping[
                 "mtp_layers_enorm"] = "mtp.layers[layer_idx].enorm"
@@ -428,7 +438,15 @@ class MegatronModel(Model):
                 module_mapping[
                     "mtp_layers_self_attention_k_layernorm"] = module_layer_mtp + "self_attention.k_layernorm"
 
-            
+            if hasattr(self, "use_indexer"):
+                module_mapping[
+                    "layers_self_attention_indexer_k_norm"] = module_layer_mtp + "self_attention.indexer.k_norm"
+                module_mapping[
+                    "layers_self_attention_indexer_weights_proj"] = module_layer_mtp + "self_attention.indexer.weights_proj.weight"
+                module_mapping[
+                    "layers_self_attention_indexer_wk"] = module_layer_mtp + "self_attention.indexer.wk"
+                module_mapping[
+                    "layers_self_attention_indexer_wq_b"] = module_layer_mtp + "self_attention.indexer.wq_b"
 
 
             if self.mla_mm_split:
