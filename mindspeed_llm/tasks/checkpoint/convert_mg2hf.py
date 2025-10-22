@@ -53,7 +53,7 @@ class Mg2HfConvert(Convert):
         self.expert_model_parallel_size = self.load_model.expert_model_parallel_size
         self.first_k_dense_replace = getattr(self.load_model, 'first_k_dense_replace', 0)
         self.n_shared_experts = getattr(self.load_model, "n_shared_experts", None)
-        self.expert_tensor_parallel_size = self.load_model.expert_tensor_parallel_size
+        self.expert_tensor_parallel_size = getattr(self.load_model, "expert_tensor_parallel_size", self.tensor_model_parallel_size)
         self.tp_rank_list = list(range(self.load_model.tensor_model_parallel_size))
         self.ep_rank_list = list(range(self.load_model.expert_model_parallel_size))
         self.pp_rank_list = list(range(self.load_model.pipeline_model_parallel_size))
@@ -406,6 +406,20 @@ class Mg2HfConvert(Convert):
 
             return qkv_key, dense_key, q_layernorm_key, kv_layernorm_key, q_b_key, kv_b_key
 
+        def _generate_gqa_attn_layers_key(mtp_layer_flag):
+            if mtp_layer_flag:
+                qkv_key = mg_weight_key["mtp_layers_self_attention_linear_qkv"]
+                dense_key = mg_weight_key["mtp_layers_self_attention_linear_proj"]
+                q_layernorm_key = mg_weight_key["mtp_layers_self_attention_q_layernorm"]
+                kv_layernorm_key = mg_weight_key["mtp_layers_self_attention_k_layernorm"]
+            else:
+                qkv_key = mg_weight_key["layers_self_attention_linear_qkv"]
+                dense_key = mg_weight_key["layers_self_attention_linear_proj"]
+                q_layernorm_key = mg_weight_key["layers_self_attention_q_layernorm"]
+                kv_layernorm_key = mg_weight_key["layers_self_attention_k_layernorm"]
+
+            return qkv_key, dense_key, q_layernorm_key, kv_layernorm_key
+
         def _generate_attn_mm_split_key(mtp_layer_flag):
             if mtp_layer_flag:
                 qk_nope_key = mg_weight_key["mtp_layers_self_attention_linear_qk_nope"]
@@ -459,6 +473,13 @@ class Mg2HfConvert(Convert):
                 return MixAttnKeys(A_log_key, conv1d_key, dt_bias_key,
                            in_proj_ba_key, in_proj_qkvz_key,
                            linear_norm_key, out_proj_key)
+
+        # common params
+        nh = self.load_model.num_attention_heads
+        if hasattr(self.load_model, 'num_query_groups'):
+            ng = self.load_model.num_query_groups
+        else:
+            ng = self.load_model.num_key_value_heads
 
         if self.load_model.qkv_type == "pack_mla":
             linear_proj_list = []
@@ -548,11 +569,6 @@ class Mg2HfConvert(Convert):
                     linear_proj_list.append(mg_weight[(tp_rank, self.ep_rank_list[0])].pop(linear_proj_key))
 
             qkv_weight = torch.cat(linear_qkv_list, dim=0)
-            nh = self.load_model.num_attention_heads
-            if hasattr(self.load_model, 'num_query_groups'):
-                ng = self.load_model.num_query_groups
-            else:
-                ng = self.load_model.num_key_value_heads
             repeats = nh // ng
 
             qkv_weight = qkv_weight.reshape(
@@ -597,7 +613,46 @@ class Mg2HfConvert(Convert):
                 hf_weight[hf_weight_key["layers_self_attention_linear_in_proj_qkvz"]] = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(mix_attn_keys.in_proj_qkvz_key).clone()
                 hf_weight[hf_weight_key["layers_self_attention_linear_norm"]] = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(mix_attn_keys.linear_norm_key).clone()
                 hf_weight[hf_weight_key["layers_self_attention_linear_out_proj"]] = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(mix_attn_keys.out_proj_key).clone()
+        elif self.load_model.qkv_type == "pack_gqa":
+            linear_qkv_key, linear_proj_key, q_layernorm_key, k_layernorm_key = _generate_gqa_attn_layers_key(mtp_layer_flag)
+            linear_qkv_list = []
+            linear_proj_list = []
 
+            if self.expert_tensor_parallel_size == 1:
+                for (tp_rank, ep_rank) in self.attention_tp_ckpts_list:
+                    linear_qkv_list.append(mg_weight[(tp_rank, ep_rank)].pop(linear_qkv_key))
+                    linear_proj_list.append(mg_weight[(tp_rank, ep_rank)].pop(linear_proj_key))
+            else:
+                for tp_rank in self.tp_rank_list:
+                    linear_qkv_list.append(mg_weight[(tp_rank, self.ep_rank_list[0])].pop(linear_qkv_key))
+                    linear_proj_list.append(mg_weight[(tp_rank, self.ep_rank_list[0])].pop(linear_proj_key))
+
+            dim = self.load_model.kv_channels if hasattr(self.load_model, "kv_channels") \
+                else self.load_model.hidden_size // self.load_model.num_attention_heads
+
+            trans = torch.cat(linear_qkv_list, dim=0)
+            tran_reshape = trans.reshape(ng, -1, nh * dim)
+            tranrq = tran_reshape[:, :dim * nh // ng, :].reshape(-1, nh * dim)
+            tranrk = tran_reshape[:, dim * nh // ng:dim * nh // ng + dim, :].reshape(-1, nh * dim)
+            tranrv = tran_reshape[:, dim * nh // ng + dim:, :].reshape(-1, nh * dim)
+            qkv_weight = torch.cat([tranrq, tranrk, tranrv], dim=0)
+
+            o_proj = torch.cat(linear_proj_list, dim=1)
+            q_a_layernorm = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(q_layernorm_key)
+            if mtp_layer_flag:
+                kv_a_layernorm = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(k_layernorm_key)
+            else:
+                kv_a_layernorm = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(k_layernorm_key)
+
+            hf_weight[hf_weight_key["layers_self_attention_linear_qkv_pack"]] = qkv_weight.clone()
+            hf_weight[hf_weight_key["layers_self_attention_linear_proj"]] = o_proj.clone()
+            hf_weight[hf_weight_key["layers_self_attention_q_layernorm"]] = q_a_layernorm.clone()
+            if mtp_layer_flag:
+                hf_weight[hf_weight_key["layers_self_attention_k_layernorm"]] = kv_a_layernorm.clone()
+            else:
+                hf_weight[hf_weight_key["layers_self_attention_k_layernorm"]] = kv_a_layernorm.clone()
+        else:
+            logger.warning("[warning]: this attn_qkv_type is not supported. please check!")
 
     def linear_fc1_get_for_etp(self, mg_weight, fc1_key, tp_rank, ep_rank):
         cur_linear_fc1 = mg_weight[(tp_rank, ep_rank)].pop(fc1_key)

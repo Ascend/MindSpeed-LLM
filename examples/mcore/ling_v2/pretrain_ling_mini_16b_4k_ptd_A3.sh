@@ -7,7 +7,7 @@ export HCCL_CONNECT_TIMEOUT=3600
 export HCCL_ALGO="alltoall=level0:NA;level1:pipeline"
 export HCCL_BUFFSIZE=400
 
-NPUS_PER_NODE=8
+NPUS_PER_NODE=16
 MASTER_ADDR=localhost #主节点IP
 MASTER_PORT=6000
 NNODES=1
@@ -21,7 +21,7 @@ CKPT_LOAD_DIR="your model ckpt path"
 
 TP=1
 PP=1
-EP=8
+EP=16
 CP=1
 CP_TYPE='ulysses_cp_algo'
 NUM_LAYERS=20
@@ -81,7 +81,7 @@ GPT_ARGS="
     --use-flash-attn \
     --disable-bias-linear \
     --normalization RMSNorm \
-    --rotary-base 10000 \
+    --rotary-base 600000 \
     --rotary-percent 0.5 \
     --position-embedding-type rope \
     --use-rotary-position-embeddings \
@@ -107,6 +107,7 @@ GPT_ARGS="
     --tokenizer-type PretrainedFromHF  \
     --tokenizer-name-or-path ${TOKENIZER_PATH} \
     --seq-length ${SEQ_LEN} \
+    --no-shared-storage \
     --no-load-optim \
     --no-load-rng \
 "
@@ -148,4 +149,4 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     --distributed-backend nccl \
     --save $CKPT_SAVE_DIR \
     --load $CKPT_LOAD_DIR \
-    | tee logs/pretrain_ling_mini_4k_ptd.log
+    | tee logs/pretrain_ling_mini_4k_ptd_A3.log

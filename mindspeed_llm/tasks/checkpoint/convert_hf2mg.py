@@ -319,13 +319,16 @@ class Hf2MgConvert(Convert):
         eh_proj_weight = hf_weight.pop(hf_weight_key["mtp_layers_eh_proj"])
         if "mtp_layers_embed_tokens" in hf_weight_key.keys():
             emb_weight = hf_weight.pop(hf_weight_key["mtp_layers_embed_tokens"])
-        else:
+        elif self.pipeline_model_parallel_size > 1:
             hf_weight_key = self.load_model.get_weight()
             emb_weight = hf_weight.pop(hf_weight_key["embedding_word_embeddings"])
 
         for ep_rank in range(self.expert_model_parallel_size):
             eh_proj_lst = torch.chunk(eh_proj_weight, self.tensor_model_parallel_size, dim=0)
-            emb_lst = torch.chunk(emb_weight, self.tensor_model_parallel_size, dim=0)
+
+            # when pp==1, get the origin embedding, no need to get emb for mtp
+            if self.pipeline_model_parallel_size > 1:
+                emb_lst = torch.chunk(emb_weight, self.tensor_model_parallel_size, dim=0)
             for tp_rank in range(self.tensor_model_parallel_size):
                 mg_weight[ep_rank][tp_rank][mg_weight_key["mtp_layers_enorm"]] = enorm_weight.clone()
                 mg_weight[ep_rank][tp_rank][mg_weight_key["mtp_layers_hnorm"]] = hnorm_weight.clone()

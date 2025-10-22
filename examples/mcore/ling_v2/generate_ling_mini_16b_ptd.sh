@@ -1,23 +1,18 @@
 #!/bin/bash
 export CUDA_DEVICE_MAX_CONNECTIONS=1
-export HCCL_IF_BASE_PORT=28999
-export CPU_AFFINITY_CONF=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
-export HCCL_CONNECT_TIMEOUT=2400
-export HCCL_EXEC_TIMEOUT=2400
-export TASK_QUEUE_ENABLE=2
+export HCCL_CONNECT_TIMEOUT=3600
 
 NPUS_PER_NODE=8
-MASTER_ADDR=localhost  # 主节点IP
+MASTER_ADDR=localhost #主节点IP
 MASTER_PORT=6000
 NNODES=1
 NODE_RANK=0
 WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
-TOKENIZER_PATH="your tokenizer model path"
-CHECKPOINT="your model directory path"
-DATA_PATH="./ceval/val"
-TASK="ceval"
+# please fill these path configurations
+CHECKPOINT="your model ckpt path"
+TOKENIZER_PATH="your tokenizer path"
 
 TP=1
 PP=1
@@ -75,7 +70,7 @@ GPT_ARGS="
     --use-flash-attn \
     --disable-bias-linear \
     --normalization RMSNorm \
-    --rotary-base 10000 \
+    --rotary-base 600000 \
     --rotary-percent 0.5 \
     --position-embedding-type rope \
     --use-rotary-position-embeddings \
@@ -84,7 +79,6 @@ GPT_ARGS="
     --no-masked-softmax-fusion \
     --attention-softmax-in-fp32 \
     --bf16 \
-    --seed 42 \
     --reuse-fp32-param \
     --use-fused-swiglu \
     --use-fused-rmsnorm \
@@ -99,23 +93,18 @@ GPT_ARGS="
     --pipeline-model-parallel-size ${PP} \
     --expert-model-parallel-size ${EP} \
     --sequence-parallel \
-    --prompt-type deepseek3 \
-    --load ${CHECKPOINT} \
-    --exit-on-missing-checkpoint \
     --tokenizer-type PretrainedFromHF  \
     --tokenizer-name-or-path ${TOKENIZER_PATH} \
     --seq-length ${SEQ_LEN} \
-    --evaluation-batch-size 1 \
     --micro-batch-size 1 \
-    --max-new-tokens 4 \
+    --max-new-tokens 256 \
     --shape-order BNSD \
 "
 
-torchrun $DISTRIBUTED_ARGS evaluation.py \
-    --task ${TASK} \
-    --task-data-path ${DATA_PATH} \
+torchrun $DISTRIBUTED_ARGS inference.py \
     $GPT_ARGS \
     $GQA_ARGS \
     $MOE_ARGS \
+    --load ${CHECKPOINT} \
     --distributed-backend nccl \
-    | tee logs/evaluation_ling_mini_16b.log
+    | tee logs/generate_ling_mini.log
