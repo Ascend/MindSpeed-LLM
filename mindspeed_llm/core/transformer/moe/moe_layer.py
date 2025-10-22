@@ -14,6 +14,7 @@ from megatron.core import parallel_state, tensor_parallel
 from megatron.core.transformer.moe.moe_layer import MoELayer, MoESubmodules
 from megatron.core.transformer.moe.experts import GroupedMLP, SequentialMLP
 from megatron.core.transformer.moe.moe_utils import save_to_aux_losses_tracker
+from megatron.core.transformer.moe.legacy_a2a_token_dispatcher import MoEAlltoAllSEQTokenDispatcher
 from megatron.training import get_args
 from mindspeed.core.transformer.moe.moe_layer_overlap_all2all import MoELayerOverlapAll2All
 from mindspeed.core.transformer.moe.moe_layer_overlap_allgather import MoELayerOverlapAllGather
@@ -197,6 +198,33 @@ def lora_moe_layer_init(self, config, submodules=None, layer_number=None):
     self.moe_layer_recompute = config.moe_layer_recompute
     global_args = get_args()
 
+    if self.config.moe_tp_extend_ep:
+        tp_size = parallel_state.get_tensor_model_parallel_world_size()
+        if not self.config.num_moe_experts % (self.expert_parallel_size * tp_size):
+            raise ValueError("ep * tp must be divisible by the number of experts")
+        # adjust the local expert split logic
+        self.num_local_experts = self.config.num_moe_experts // self.expert_parallel_size // tp_size
+        local_expert_indices_offset = (
+                parallel_state.get_expert_model_parallel_rank() * self.num_local_experts * tp_size +
+                parallel_state.get_tensor_model_parallel_rank() * self.num_local_experts
+        )
+    else:
+        if not self.config.num_moe_experts % self.expert_parallel_size:
+            raise ValueError("ep must be divisible by the number of experts")
+        self.num_local_experts = self.config.num_moe_experts // self.expert_parallel_size
+        local_expert_indices_offset = (
+                parallel_state.get_expert_model_parallel_rank() * self.num_local_experts
+        )
+
+    self.use_shared_expert = self.config.moe_shared_expert_intermediate_size is not None
+    self.shared_expert_overlap = self.config.moe_shared_expert_overlap
+
+    self.local_expert_indices = [
+        local_expert_indices_offset + i for i in range(self.num_local_experts)
+    ]
+    if not all(map(lambda x: x < self.config.num_moe_experts, self.local_expert_indices)):
+        raise ValueError("local_expert_indices must all be <= experts")
+
     from mindspeed.core.transformer.moe.moe_feature import TopKRouter, build_module
     from mindspeed.core.transformer.moe.moe_feature.adaptor import MindSpeedMOEAlltoAllSeqOverLapDispatcherAdaptor
     
@@ -224,16 +252,26 @@ def lora_moe_layer_init(self, config, submodules=None, layer_number=None):
         )
 
     # Initialize token dispatcher
-    self.token_dispatcher = MindSpeedMOEAlltoAllSeqOverLapDispatcherAdaptor(
-        self.num_local_experts, self.local_expert_indices, config=self.config
-    )
+    if hasattr(global_args, "moe_alltoall_overlap_comm") and global_args.moe_alltoall_overlap_comm:
+        self.token_dispatcher = MindSpeedMOEAlltoAllSeqOverLapDispatcherAdaptor(
+            self.num_local_experts, self.local_expert_indices, config=self.config
+        )
+    else:
+        self.token_dispatcher = MoEAlltoAllSEQTokenDispatcher(
+            self.num_local_experts, self.local_expert_indices, config=self.config
+        )
 
     # Initialize shared experts if enabled
     if self.use_shared_expert:
-        if global_args.moe_allgather_overlap_comm or global_args.moe_alltoall_overlap_comm:
-            if hasattr(global_args, 'lora_target_modules') and global_args.lora_target_modules:
-                from mindspeed_llm.core.transformer.moe.layers import SEColumnParallelLinear, SERowParallelLinear
-                self.config.with_shared_expert = True
-                self.submodules.shared_experts.submodules.linear_fc1 = SEColumnParallelLinear
-                self.submodules.shared_experts.submodules.linear_fc2 = SERowParallelLinear
-                self.shared_experts = build_module(self.submodules.shared_experts, config=self.config)
+        if global_args.moe_alltoall_overlap_comm:
+            from mindspeed_llm.core.transformer.moe.layers import SEColumnParallelLinear, SERowParallelLinear
+            self.config.with_shared_expert = True
+            self.submodules.shared_experts.submodules.linear_fc1 = SEColumnParallelLinear
+            self.submodules.shared_experts.submodules.linear_fc2 = SERowParallelLinear
+
+        else:
+            from megatron.core.tensor_parallel import ColumnParallelLinear, RowParallelLinear
+            self.submodules.shared_experts.submodules.linear_fc1 = ColumnParallelLinear
+            self.submodules.shared_experts.submodules.linear_fc2 = RowParallelLinear
+
+        self.shared_experts = build_module(self.submodules.shared_experts, config=self.config)

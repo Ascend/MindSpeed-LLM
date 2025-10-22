@@ -93,3 +93,8 @@ class LoraFeature(MindSpeedFeature):
             patch_manager.register_patch('megatron.core.transformer.moe.moe_layer.MoELayer.__init__',
                                           lora_moe_layer_init)
 
+    def validate_args(self, args):
+        has_valid_lora_target = hasattr(args, 'lora_target_modules') and args.lora_target_modules
+
+        if args.num_experts and (has_valid_lora_target and args.moe_token_dispatcher_type != "alltoall_seq"):
+            raise AssertionError('Lora and Qlora in the moe only enable the alltoall_seq.')
