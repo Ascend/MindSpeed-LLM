@@ -39,8 +39,8 @@ GPT_ARGS="
     --ffn-hidden-size 13696 \
     --num-attention-heads 32 \
     --seq-length 32768 \
-    --micro-batch-size 1 \
-    --global-batch-size 4 \
+    --micro-batch-size 2 \
+    --global-batch-size 64 \
     --max-position-embeddings 32768 \
     --padded-vocab-size 151552 \
     --make-vocab-size-divisible-by 1 \

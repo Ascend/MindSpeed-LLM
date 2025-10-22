@@ -54,7 +54,7 @@ def _patch_third_party_libraries():
 
     from mindspeed.mindspore.third_party.transformers.configuration_utils import dict_torch_dtype_to_str
     from mindspeed.mindspore.third_party.transformers.modeling_utils import (
-        load_state_dict, _load_state_dict_into_meta_model, safe_open, get_parameter_dtype
+        load_state_dict, _load_state_dict_into_meta_model, safe_open, get_parameter_dtype, get_parameter_or_buffer
     )
     from mindspeed.mindspore.third_party.transformers.integrations.deepspeed import is_deepspeed_available
     MindSporeAdaptation.register_patch(
@@ -66,7 +66,8 @@ def _patch_third_party_libraries():
     MindSporeAdaptation.register_patch('transformers.modeling_utils.get_parameter_dtype', get_parameter_dtype)
     MindSporeAdaptation.register_patch('transformers.integrations.deepspeed.is_deepspeed_available',
                                        is_deepspeed_available)
-
+    MindSporeAdaptation.register_patch('transformers.modeling_utils.PreTrainedModel.get_parameter_or_buffer',
+                                        get_parameter_or_buffer)
 
 def _patch_model_and_embedding():
     from mindspeed.mindspore.core.models.common.embeddings.rotary_pos_embedding import local_rotate_half

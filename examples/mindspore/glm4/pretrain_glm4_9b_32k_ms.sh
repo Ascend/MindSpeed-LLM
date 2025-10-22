@@ -23,7 +23,8 @@ DISTRIBUTED_ARGS="
     --log_dir="msrun_log" \
     --join=True \
     --cluster_time_out=300 \
-    --master_port $MASTER_PORT
+    --master_port $MASTER_PORT \
+    --master_addr $MASTER_ADDR
 "
 
 GPT_ARGS="
