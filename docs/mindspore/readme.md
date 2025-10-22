@@ -15,8 +15,8 @@ MindSpeed-LLM + MindSpore后端的依赖配套如下表，安装步骤参考[基
 
 | 依赖软件        |                                                                                                                                    |
 | --------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| 昇腾NPU驱动固件 | [Ascend HDK 25.2.0](https://www.hiascend.com/hardware/firmware-drivers/community?product=1&model=30&cann=8.3.RC1.alpha002&driver=Ascend+HDK+25.2.0) |
-| 昇腾 CANN       | [8.3.RC1](https://www.hiascend.com/developer/download/community/result?module=cann&cann=8.3.RC1.alpha002)                                               |
+| 昇腾NPU驱动固件 | [Ascend HDK 25.2.0](https://www.hiascend.com/hardware/firmware-drivers/community?product=1&model=30&cann=8.3.RC1.alpha003&driver=Ascend+HDK+25.2.0) |
+| 昇腾 CANN       | [8.3.RC1](https://www.hiascend.com/developer/download/community/result?module=cann&cann=8.3.RC1.alpha003)                                               |
 | MindSpore       | 在研版本                                                                                       |
 | Python          | >=3.9                                                                                                                              |
 
@@ -253,7 +253,7 @@ MindSpore后端已完全支持MindSpeed-LLM的预训练、指令微调、RLHF等
 
 ### 权重转换
 
-MindSpeed MindSore后端的权重转换与PyTorch后端保持了一致，当前支持huggingface、megatron-core两种格式的权重互转。权重转换特性参数和使用说明参考[权重转换](../pytorch/solutions/checkpoint_convert.md)。
+MindSpeed MindSpore后端的权重转换与PyTorch后端保持了一致，当前支持huggingface、megatron-core两种格式的权重互转。权重转换特性参数和使用说明参考[权重转换](../pytorch/solutions/checkpoint/checkpoint_convert.md)。
 
 <table>
   <thead>

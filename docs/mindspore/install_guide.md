@@ -13,7 +13,7 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
 
 ### CANN安装
 
-下载[CANN](https://www.hiascend.com/developer/download/community/result?module=cann)，请根据系统选择`aarch64`或`x86_64`对应版本的`cann-toolkit`、`cann-kernel`和`cann-nnal`。参考[CANN安装](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/83RC1alpha003/softwareinst/instg/instg_0008.html?OS=Debian&Software=cannToolKit)或执行以下命令安装：
+下载[CANN](https://www.hiascend.com/developer/download/community/result?module=cann)，请根据系统选择`aarch64`或`x86_64`对应版本的`cann-toolkit`、`cann-kernels`和`cann-nnal`。参考[CANN安装](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/83RC1alpha003/softwareinst/instg/instg_0008.html?OS=Debian&Software=cannToolKit)或执行以下命令安装：
 
 ```shell
 # 因为版本迭代，包名存在出入，根据实际修改
@@ -47,6 +47,6 @@ git clone https://gitcode.com/ascend/MindSpeed-Core-MS.git -b r0.4.0
 # 使用MindSpeed-Core-MS内部脚本提供配置环境
 cd MindSpeed-Core-MS
 pip install -r requirements.txt
-source auto_convert_llm.sh
+source auto_convert.sh llm
 ```
 

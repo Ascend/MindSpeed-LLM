@@ -48,10 +48,10 @@ MindSpore后端仅支持以mcore方式实现的稠密模型，对Legacy方式实
       <td>✅</td>
     </tr>
     <tr>
-      <td> 32B </td>
+      <td><a href="https://huggingface.co/zai-org/GLM-4-32B-0414">32B</a></td>
       <td> 8K </td>
-      <td> Mcore </td>
-      <th> 2x8 </th>
+      <th> Mcore </th>
+      <td> 2x8 </td>
       <td>✅</td>
     </tr>
     <tr>
