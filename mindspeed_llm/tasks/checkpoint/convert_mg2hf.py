@@ -754,7 +754,7 @@ class Mg2HfConvert(Convert):
                     if self.moe_tp_extend_ep:
                         # all experts cut into tp_size*ep_size
                         bucket_num = self.tensor_model_parallel_size * self.expert_model_parallel_size
-                        bucket_expert_num = self.num_experts // bucket_num
+                        bucket_expert_num = self.load_model.num_experts // bucket_num
                         for tp_rank in self.tp_rank_list:
                             # cur_weight1_bucket has bucket_expert_num experts [local_expert_nums, self.hidden_size, -1]
                             cur_weight1_bucket = ep_weight1_list[tp_rank]
@@ -764,8 +764,8 @@ class Mg2HfConvert(Convert):
 
                             global_expert_idx = ep_rank * self.tensor_model_parallel_size + tp_rank
                             for idx in range(bucket_expert_num):
-                                local_w1 = cur_w1_list[idx].reshape(self.hidden_size, -1)
-                                local_w2 = cur_w2_list[idx].reshape(-1, self.hidden_size)
+                                local_w1 = cur_w1_list[idx].reshape(self.load_model.hidden_size, -1)
+                                local_w2 = cur_w2_list[idx].reshape(-1, self.load_model.hidden_size)
                                 # global expert idx
                                 expert_idx = global_expert_idx * bucket_expert_num + idx
                                 if self.load_model.qkv_type == "mix":
