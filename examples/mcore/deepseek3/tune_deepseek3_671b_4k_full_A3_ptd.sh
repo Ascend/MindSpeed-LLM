@@ -53,6 +53,7 @@ MOE_ARGS="
     --moe-tp-extend-ep \
     --moe-alltoall-overlap-comm \
     --moe-token-dispatcher-type alltoall_seq \
+    --moe-permute-fusion \
     --first-k-dense-replace 3 \
     --moe-layer-freq 1 \
     --n-shared-experts 1 \
