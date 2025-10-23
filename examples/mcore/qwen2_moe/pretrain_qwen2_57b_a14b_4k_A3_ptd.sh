@@ -44,6 +44,7 @@ MOE_ARGS="
     --moe-router-load-balancing-type ${ROUTER_BALANCING_TYPE} \
     --moe-grouped-gemm \
     --moe-token-dispatcher-type alltoall_seq \
+    --moe-permute-fusion \
     --moe-aux-loss-coeff 0.001 \
     --moe-permutation-async-comm \
     --moe-alltoall-overlap-comm \

@@ -40,6 +40,7 @@ MOE_ARGS="
     --moe-permutation-async-comm \
     --moe-grouped-gemm \
     --moe-token-dispatcher-type alltoall_seq \
+    --moe-permute-fusion \
     --moe-aux-loss-coeff 0.001 \
     --cla-share-factor 2 \
     --moe-revert-type-after-topk \
