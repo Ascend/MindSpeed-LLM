@@ -1,7 +1,7 @@
 ## DeepSeek-V3 指南
 ### 1. 准备工作
 
-参考[安装指导](../../../docs/mindspore/features/install_guide.md)，完成环境安装和[预训练数据处理](../../../docs/pytorch/solutions/pretrain/pretrain_dataset.md)。
+参考[安装指导](../../../docs/mindspore/install_guide.md)，完成环境安装和[预训练数据处理](../../../docs/pytorch/solutions/pretrain/pretrain_dataset.md)。
 
 
 ### 2. 权重转换
@@ -73,7 +73,7 @@ GPUS_PER_NODE=8
 MASTER_ADDR="your master node IP" #主节点IP
 MASTER_PORT=6000
 NNODES=4 # 集群里的节点数，以实际情况填写
-NODE_RANK="current node rank" # 当前节点RANK,主节点为0，其他可以使1,2..
+NODE_RANK="current node rank" # 当前节点RANK,主节点为0，其他可以是1,2..
 WORLD_SIZE=$(($GPUS_PER_NODE*$NNODES))
 ```
 

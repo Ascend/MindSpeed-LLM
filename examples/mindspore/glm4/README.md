@@ -33,7 +33,7 @@
 
 ### 环境配置
 
-MindSpeed-LLM MindSpore后端的安装步骤参考[基础安装指导](../../../docs/mindspore/features/install_guide.md)。
+MindSpeed-LLM MindSpore后端的安装步骤参考[基础安装指导](../../../docs/mindspore/install_guide.md)。
 
 
 
@@ -110,7 +110,7 @@ bash examples/mindspore/glm4/tune_glm4_9b_32k_full_ms.sh
 ### 推理
 推理使用方法如下
 ```sh
-# 以7b模型为例
+# 以9b模型为例
 cd MindSpeed-LLM
 bash examples/mindspore/glm4/generate_glm4_9b_ms.sh
 ```
