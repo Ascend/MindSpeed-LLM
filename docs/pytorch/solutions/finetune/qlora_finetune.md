@@ -51,7 +51,7 @@ $$
 
 我们使用**NF4量化**来进行权重量化，这也是开源社区流行的QLoRA量化方式，该量化算法被实现在[bitsandbytes](https://github.com/bitsandbytes-foundation/bitsandbytes)，它在开源社区广受欢迎。
 
-> 我们已经将支持NPU硬件的NF4量化功能贡献到bitsandbytes多硬件后端重构分支，但由于bitsandbytes官方还未正式将该分支在PyPi上发布，本仓库暂使用NPU版本的bitsandbytes，可以通过`pip install bitsandbytes-npu-beta`来安装。
+> 我们已经将支持NPU硬件的NF4量化功能贡献到bitsandbytes多硬件后端重构分支，但由于bitsandbytes官方还未正式将该分支在PyPi上发布，本仓库暂使用NPU版本的bitsandbytes，可以通过`pip3 install bitsandbytes-npu-beta`来安装。
 
 NF4是一种查找表量化，NF4表接近高斯分布下的数据的最佳表示方式，我们可以在QLoRA微调前先对权重$W_0$进行量化：
 

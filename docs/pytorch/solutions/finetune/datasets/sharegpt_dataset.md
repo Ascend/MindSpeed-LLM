@@ -5,7 +5,7 @@
 常用的对话指令微调数据集有：
 
 - [Roleplay多轮对话：ShareGPT数据集](https://huggingface.co/datasets/shibing624/roleplay-zh-sharegpt-gpt4-data)
-- [Chain-of-though: ShareGPT数据集](https://huggingface.co/datasets/isaiahbjork/chain-of-thought-sharegpt)
+- [Chain-of-thought: ShareGPT数据集](https://huggingface.co/datasets/isaiahbjork/chain-of-thought-sharegpt)
 - [Capybara: ShareGPT数据集](https://huggingface.co/datasets/Undi95/Capybara-ShareGPT)
 
 ## ShareGPT风格数据集下载

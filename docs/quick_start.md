@@ -34,12 +34,12 @@
 ```shell
 # 安装torch和torch_npu，因为版本迭代，包名存在出入，根据实际修改
 wget https://download.pytorch.org/whl/cpu/torch-2.1.0-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
-pip install torch-2.1.0-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+pip3 install torch-2.1.0-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
 wget https://gitcode.com/ascend/pytorch/releases/download/v7.0.0-pytorch2.1.0/torch_npu-2.1.0.post12-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
-pip install torch_npu-2.1.0.post12-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
+pip3 install torch_npu-2.1.0.post12-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
 
 # apex for Ascend 需要自行参考 https://gitcode.com/ascend/apex 完成whl包的构建，再通过如下指令完成安装
-pip install apex-*.whl
+pip3 install apex-*.whl
 ```
 
 拉取代码仓并完成安装:
@@ -52,7 +52,7 @@ source /usr/local/Ascend/nnal/atb/set_env.sh
 git clone https://gitcode.com/ascend/MindSpeed.git
 cd MindSpeed
 git checkout master              # 以install_guide.md中的版本为准，此处仅做参考
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 pip3 install -e .
 cd ..
 
@@ -65,7 +65,7 @@ cp -r megatron ../MindSpeed-LLM/
 cd ../MindSpeed-LLM
 git checkout master              # 以install_guide.md中的版本为准，此处仅做参考
 
-pip install -r requirements.txt  # 安装其余依赖库
+pip3 install -r requirements.txt  # 安装其余依赖库
 ```
 
 ## 1.4 MindSpore后端及相关依赖安装
@@ -77,14 +77,14 @@ pip install -r requirements.txt  # 安装其余依赖库
 参考[MindSpore官方安装指导](https://www.mindspore.cn/install)，根据系统类型、CANN版本及Python版本选择匹配的对应的安装命令进行安装，安装前请确保网络畅通。或执行以下命令安装：
 
 ```shell
-pip install mindspore==2.7.1  # 以docs/mindspore/readme.md中的版本为准，此处仅做参考
+pip3 install mindspore==2.7.1  # 以docs/mindspore/readme.md中的版本为准，此处仅做参考
 ```
 
 ```shell
 # 拉取MindSpeed-Core-MS仓库
 git clone https://gitcode.com/ascend/MindSpeed-Core-MS.git -b master
 cd MindSpeed-Core-MS
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 source auto_convert.sh llm
 
 # 完成安装，返回LLM执行模型任务

@@ -958,7 +958,7 @@
 1. Baichuan-13B: 在任务执行过程中如果出现报错：AttributeError: 'BaichuanTokenizer’ object has no attribute 'sp_model'，请执行下面命令解决这个问题：
 
     ```shell
-    pip install transformers==4.32.0 --force
+    pip3 install transformers==4.32.0 --force
     ```
 
 2. GPT: GPT词表文件与常规模型不同：
@@ -988,12 +988,3 @@
     ```
 
 3. Bloom-176B: config.json中同字段对应的key值与其他模型不一致，将文件中的n_embed改为hidden_size， 将num_attention_heads修改为n_head
-
-4. QWen: 不包含QWen1.5等，需要修改权重文件 
-
-    ```shell
-   # 修改modelling_qwen.py文件第39行，将：
-   # SUPPORT_FP16 = SUPPORT_CUDA and torch.cuda.get_device_capability(0)[0] >= 7
-   # 修改为：
-   # SUPPORT_FP16 = True
-   ```

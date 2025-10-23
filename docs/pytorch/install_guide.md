@@ -42,8 +42,8 @@ source /usr/local/Ascend/nnal/atb/set_env.sh
 
 ```shell
 # 安装torch和torch_npu 构建参考 https://gitcode.com/ascend/pytorch/releases
-pip install torch-2.7.1-cp310-cp310-manylinux_2_28_aarch64.whl 
-pip install torch_npu-2.7.1rc1-cp310-cp310-manylinux_2_28_aarch64.whl
+pip3 install torch-2.7.1-cp310-cp310-manylinux_2_28_aarch64.whl 
+pip3 install torch_npu-2.7.1rc1-cp310-cp310-manylinux_2_28_aarch64.whl
 ```
 
 ### MindSpeed-LLM及相关依赖安装
@@ -57,7 +57,7 @@ source /usr/local/Ascend/nnal/atb/set_env.sh
 git clone https://gitcode.com/ascend/MindSpeed.git
 cd MindSpeed
 git checkout master  # checkout commit from MindSpeed master
-pip install -r requirements.txt 
+pip3 install -r requirements.txt 
 pip3 install -e .
 cd ..
 
@@ -70,7 +70,7 @@ cp -r megatron ../MindSpeed-LLM/
 cd ../MindSpeed-LLM
 git checkout master
 
-pip install -r requirements.txt  # 安装其余依赖库
+pip3 install -r requirements.txt  # 安装其余依赖库
 ```
 
 
