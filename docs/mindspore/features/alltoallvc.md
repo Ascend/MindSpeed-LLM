@@ -31,7 +31,7 @@ MindSpore **AllToAllVC** 通信算子，支持不均匀通信，并在性能上�
 
 （1）开启 AllToAllVC 特性，需要在运行时确保通信组已初始化，并加载 MindSpeed 中的通信优化模块。
 
-（2）在 msrun 启动bash 脚本中，使用参数 **--enable-a2avc [int]** 即可控制是否使用 AllToAllVC 特性以及具体的模式。参数说明：
+（2）在 msrun 启动的 bash 脚本中，使用参数 **--enable-a2avc [int]** 即可控制是否使用 AllToAllVC 特性以及具体的模式。参数说明：
   * **[int]** 为整数，代表AllToAllVC的模式，可选值为 0，1，或 2。
   * **[int]** = 0：默认值。不启用 AllToAllVC 功能。
   * **[int]** = 1：启用 AllToAllVC，并在运行过程中对传输参数和计算结果执行多层次一致性校验，以便及时发现并中止潜在的非法或不匹配传值。该模式在健壮性上更为严格，但性能开销较高，性能低于模式 2。
