@@ -95,7 +95,7 @@ bash examples/mindspore/qwen25/data_convert_qwen25_pretrain.sh
 #### 微调
 以[Alpaca风格微调数据集处理](../../../docs/pytorch/solutions/finetune/datasets/alpaca_dataset.md)为例，只需在预训练数据预处理脚本`data_convert_qwen25_instruction.sh`中配置好数据输入/输出路径、tokenizer模型路径，并启动即可：
 ```sh
-bash examples\mindspore\qwen25\data_convert_qwen25_instruction.sh
+bash examples/mindspore/qwen25/data_convert_qwen25_instruction.sh
 ```
 微调数据集处理结果如下：
 ```log
@@ -159,7 +159,7 @@ bash examples/mindspore/qwen25/generate_qwen25_7b_ms.sh
 ```sh
 # 以7b模型为例
 cd MindSpeed-LLM
-bash examples/mindspore/qwen25/evalute_qwen25_7b_ms.sh
+bash examples/mindspore/qwen25/evaluate_qwen25_7b_ms.sh
 ```
 
 用户需要根据实际情况修改脚本中以下变量。关于数据集，可参考[评估数据集](../../../docs/pytorch/solutions/evaluation/evaluation_datasets/mmlu_evaluation.md)
