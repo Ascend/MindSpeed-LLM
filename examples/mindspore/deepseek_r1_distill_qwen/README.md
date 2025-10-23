@@ -37,7 +37,7 @@
 
 ```shell
 # 安装基础依赖
-pip install modelscope pyarrow pandas
+pip3 install modelscope pyarrow pandas
 
 # 验证 MindSpore 安装（需与硬件匹配）
 python -c "import mindspore as ms; print(ms.__version__)"

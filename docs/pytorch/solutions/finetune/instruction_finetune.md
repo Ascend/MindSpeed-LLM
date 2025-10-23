@@ -144,7 +144,7 @@ source /usr/local/Ascend/ascend-toolkit/set_env.sh # 修改为真实的ascend-to
 数据预处理相关参数说明：
 
 - `handler-name`：指定数据集的处理类，常用的有`AlpacaStyleInstructionHandler`，`SharegptStyleInstructionHandler`，`AlpacaStylePairwiseHandler`等。
-- `tokenizer-type`：指定处理数据的tokenizer，常用的是`PretrainedFromHF`。
+- `tokenizer-type`：指定处理数据的tokenizer，常用`PretrainedFromHF`。
 - `workers`：处理数据集的并行数。
 - `log-interval`：处理进度更新的间隔步数。
 - `enable-thinking`：快慢思考模板开关，可设定为`[true,false,none]`，默认值是`none`。开启后，会在数据集的模型回复中添加`<think>`和`</think>`，并参与到loss计算，所有数据被当成慢思考数据；当关闭后，空的CoT标志将被添加到数据集的用户输入中，不参与loss计算，所有数据被当成快思考数据；设置为`none`时适合原始数据集是混合快慢思考数据的场景。**目前只支持Qwen3系列模型**。

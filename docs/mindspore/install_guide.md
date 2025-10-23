@@ -46,7 +46,7 @@ git clone https://gitcode.com/ascend/MindSpeed-Core-MS.git -b r0.4.0
 
 # 使用MindSpeed-Core-MS内部脚本提供配置环境
 cd MindSpeed-Core-MS
-pip install -r requirements.txt
+pip3 install -r requirements.txt
 source auto_convert.sh llm
 ```
 

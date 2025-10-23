@@ -162,7 +162,7 @@ MindSpeed-LLM的主要依赖配套如下表，安装步骤参考[安装指导](.
 **注意** ： Qwen 3系列模型要求transformers版本为4.51.0,用户需执行以下命令：
 
 ```
-  pip install transformers==4.51.0
+  pip3 install transformers==4.51.0
 ```
 
 ## 版本声明
