@@ -200,7 +200,7 @@ def lora_moe_layer_init(self, config, submodules=None, layer_number=None):
 
     if self.config.moe_tp_extend_ep:
         tp_size = parallel_state.get_tensor_model_parallel_world_size()
-        if not self.config.num_moe_experts % (self.expert_parallel_size * tp_size):
+        if self.config.num_moe_experts % (self.expert_parallel_size * tp_size) != 0:
             raise ValueError("ep * tp must be divisible by the number of experts")
         # adjust the local expert split logic
         self.num_local_experts = self.config.num_moe_experts // self.expert_parallel_size // tp_size
@@ -209,7 +209,7 @@ def lora_moe_layer_init(self, config, submodules=None, layer_number=None):
                 parallel_state.get_tensor_model_parallel_rank() * self.num_local_experts
         )
     else:
-        if not self.config.num_moe_experts % self.expert_parallel_size:
+        if self.config.num_moe_experts % self.expert_parallel_size != 0:
             raise ValueError("ep must be divisible by the number of experts")
         self.num_local_experts = self.config.num_moe_experts // self.expert_parallel_size
         local_expert_indices_offset = (
@@ -246,10 +246,6 @@ def lora_moe_layer_init(self, config, submodules=None, layer_number=None):
             )
             from mindspeed_llm.tasks.posttrain.lora.moe.experts import LoraParallelGroupedMLP
             self.experts = LoraParallelGroupedMLP(self.num_local_experts, self.config, lora_config)
-    else:
-        raise ValueError(
-            f"use '--moe-alltoall-overlap-comm' should open '--moe-grouped-gemm'."
-        )
 
     # Initialize token dispatcher
     if hasattr(global_args, "moe_alltoall_overlap_comm") and global_args.moe_alltoall_overlap_comm:
