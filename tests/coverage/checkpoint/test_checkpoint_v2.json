@@ -1,0 +1,57 @@
+{
+    "test_deepseek3_hf2mcore_tp2ep8etp1": [
+        {
+            "param": {
+                "load-model-type":"hf",
+                "save-model-type":"mg",
+                "target-tensor-parallel-size": "2",
+                "target-pipeline-parallel-size": "1",
+                "target-expert-parallel-size": "8",
+                "expert-tensor-parallel-size": "1",
+                "load-dir":"/data/ci/models/deepseek3/hf/deepseek3-hf-L2-mtp",
+                "save-dir":"/data/ci/cache/deepseek3-mtp-L2-tp2ep8etp1",
+                "moe-grouped-gemm": null,
+                "model-type-hf": "deepseek3",
+                "params-dtype": "bf16",
+                "num-layers": "2"
+            }
+        },
+        {
+            "Base_MD5" : [
+                "5a198a526966b0bc",
+                "4694c5bc3810f5d0",
+                "58c25cba57160690",
+                "fa54a900e5d2f03b",
+                "a39ae9ff79c85d6f",
+                "896a0fd1bb99f8c0",
+                "52e330e1f4e7a5e4",
+                "c8345a8f1d2f37f7"
+            ]
+        }
+    ],
+    "test_deepseek3_mcore2hf_tp2ep8etp1": [
+        {
+            "param": {
+                "load-model-type":"mg",
+                "save-model-type":"hf",
+                "target-tensor-parallel-size": "2",
+                "target-pipeline-parallel-size": "1",
+                "target-expert-parallel-size": "8",
+                "expert-tensor-parallel-size": "1",
+                "load-dir":"/data/ci/cache/deepseek3-mtp-L2-tp2ep8etp1",
+                "save-dir":"/data/ci/cache/deepseek3-hf-L2-mtp-bk",
+                "moe-grouped-gemm": null,
+                "model-type-hf": "deepseek3",
+                "params-dtype": "bf16",
+                "num-layers": "2"
+            }
+        },
+        {
+            "Base_MD5" : [
+                "830db91fe49cb57e1ad737de4a690c78",
+                "8eaadfc5dc68ad56b6f1880bf34fd1ec"
+            ]
+        }
+    ]
+
+}

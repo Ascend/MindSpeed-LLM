@@ -882,8 +882,12 @@ class Mg2HfConvert(Convert):
         else:
             # dense
             mg_weight_key = self.load_model.get_weight(local_layer_idx)
-            gate_weights, up_weights = self.linear_fc1_gather_from_tp(mg_weight, mg_weight_key["layers_mlp_linear_fc1"])
-            down_weights = self.linear_fc2_gather_from_tp(mg_weight, mg_weight_key["layers_mlp_linear_fc2"])
+            if self.expert_tensor_parallel_size == 1:
+                gate_weights, up_weights = self.linear_fc1_get_for_etp(mg_weight, mg_weight_key["layers_mlp_linear_fc1"], tp_rank=self.tp_rank_list[0], ep_rank=self.ep_rank_list[0])
+                down_weights = self.linear_fc2_get_for_etp(mg_weight, mg_weight_key["layers_mlp_linear_fc2"], tp_rank=self.tp_rank_list[0], ep_rank=self.ep_rank_list[0])
+            else:
+                gate_weights, up_weights = self.linear_fc1_gather_from_tp(mg_weight, mg_weight_key["layers_mlp_linear_fc1"])
+                down_weights = self.linear_fc2_gather_from_tp(mg_weight, mg_weight_key["layers_mlp_linear_fc2"])
 
             hf_weight[hf_weight_key["layers_mlp_gate_proj"]] = gate_weights.clone()
             hf_weight[hf_weight_key["layers_mlp_up_proj"]] = up_weights.clone()
@@ -1058,7 +1062,7 @@ class Mg2HfConvert(Convert):
             else:
                 for vpp_rank in range(self.vpp_size):
                     for tp_rank, ep_rank in product(self.tp_rank_list, self.ep_rank_list):
-                        if self.expert_tensor_parallel_size and (tp_rank, ep_rank) not in self.etp_valid_ckpts_list:
+                        if self.expert_tensor_parallel_size == 1 and (tp_rank, ep_rank) not in self.etp_valid_ckpts_list:
                             continue
                         pt_path = self.get_pt_path_by_tpppep_rank(self.iter_path, tp_rank, pp_rank, ep_rank)
                         mg_weight = load_data(pt_path)[f'model{vpp_rank}']

@@ -1,0 +1,31 @@
+# 门禁机器资源登记
+<table>
+    <tr>
+        <th>用例名</th>
+        <th>hf权重和词表路径</th>
+        <th>mg权重路径</th>
+        <th>原数据集路径</th>
+        <th>处理后数据集路径</th>
+        <th>评估数据集路径</th>
+        <th>缓存文件路径</th>
+    </tr>
+    <tr>
+        <td>test_deepseek3_hf2mcore_tp2ep8etp1</td>
+        <td>/data/ci/models/deepseek3/hf/deepseek3-hf-L2-mtp</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/data/ci/cache/deepseek3-mtp-L2-tp2ep8etp1</td>
+    </tr>
+    <tr>
+        <td>test_deepseek3_mcore2hf_tp2ep8etp1</td>
+        <td>/</td>
+        <td>/data/ci/cache/deepseek3-mtp-L2-tp2ep8etp1</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/data/ci/cache/deepseek3-hf-L2-mtp-bk</td>
+    </tr>
+
+</table>
