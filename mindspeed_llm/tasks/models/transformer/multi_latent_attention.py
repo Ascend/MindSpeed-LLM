@@ -37,6 +37,7 @@ class CustomMLASelfAttentionSubmodules(SelfAttentionSubmodules):
     kv_layernorm: Union[ModuleSpec, type] = None
     linear_q_up_proj: Union[ModuleSpec, type] = None
     linear_kv_up_proj: Union[ModuleSpec, type] = None
+    indexer: Union[ModuleSpec, type] = None
 
 
 @dataclass
@@ -50,6 +51,7 @@ class MLASelfAttentionWithMMSplitSubmodules(SelfAttentionSubmodules):
     linear_kv_nope: Union[ModuleSpec, type] = None
     linear_qk_rope: Union[ModuleSpec, type] = None
     linear_v: Union[ModuleSpec, type] = None
+    indexer: Union[ModuleSpec, type] = None
 
 
 class CustomMLASelfAttention(SelfAttention):
@@ -215,6 +217,12 @@ class CustomMLASelfAttention(SelfAttention):
             is_expert=False,
             tp_comm_buffer_name="proj",
         )
+
+        self.indexer = build_module(submodules.indexer,
+                                    config=self.config,
+                                    layer_number=layer_number
+                                    )
+
         # hook async A2A launcher inside mla forward when TP > 1.
         # a2a should be launched after TP communication finished to avoid bandwidth compete.
         if args.moe_fb_overlap and parallel_state.get_tensor_model_parallel_world_size() > 1:
@@ -324,10 +332,10 @@ class CustomMLASelfAttention(SelfAttention):
                     rotary_q_pos_emb, rotary_k_pos_emb = rotary_pos_emb
 
                     if hasattr(args, "rope_scaling_type") and args.rope_scaling_type == "yarn":
-                        b, h, s, d = q_pos_emb.shape
-                        q_pos_emb = q_pos_emb.view(b, h, s, d // 2, 2).transpose(4, 3).reshape(b, h, s, d)
-                        b, h, s, d = k_pos_emb.shape
-                        k_pos_emb = k_pos_emb.view(b, h, s, d // 2, 2).transpose(4, 3).reshape(b, h, s, d)
+                        s, b, n, d = q_pos_emb.shape
+                        q_pos_emb = q_pos_emb.view(s, b, n, d // 2, 2).transpose(4, 3).reshape(s, b, n, d)
+                        s, b, n, d = k_pos_emb.shape
+                        k_pos_emb = k_pos_emb.view(s, b, n, d // 2, 2).transpose(4, 3).reshape(s, b, n, d)
 
                     if packed_seq_params is not None:
                         cu_seqlens_q = packed_seq_params.cu_seqlens_q
@@ -369,6 +377,12 @@ class CustomMLASelfAttention(SelfAttention):
                     if should_kv_repeat_before_uly and heads_per_gqa_group > 1:
                         key = key.repeat_interleave(heads_per_gqa_group, dim=2)
                         value = value.repeat_interleave(heads_per_gqa_group, dim=2)
+
+            # Indexer module computation
+            nonlocal attention_mask
+            if args.use_indexer:
+                topk_score, topk_indices, attention_mask = self.indexer(hidden_states.detach(), q_compressed.detach(),
+                                                                        0, rotary_pos_emb)
 
             # ==================================
             # core attention computation

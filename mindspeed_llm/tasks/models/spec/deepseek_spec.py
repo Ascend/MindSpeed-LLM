@@ -20,17 +20,26 @@ from mindspeed_llm.tasks.models.transformer.multi_latent_attention import (
 )
 from mindspeed_llm.tasks.models.transformer.mla_dot_product_attention import MlaDotProductAttention
 from mindspeed_llm.core.transformer.custom_layers.transformer_engine import PTNorm
+from mindspeed_llm.tasks.models.transformer.indexer import Indexer, IndexerSubmodules
 
 
 args = get_args()
-num_experts, moe_grouped_gemm, qk_layernorm, mla_mm_split = (
+num_experts, moe_grouped_gemm, qk_layernorm, mla_mm_split, use_indexer = (
     args.num_experts,
     args.moe_grouped_gemm,
     args.qk_layernorm,
     args.mla_mm_split,
+    args.use_indexer,
 )
 
 mla_self_attention_submodules = None
+
+IndexerSpec = ModuleSpec(module=Indexer,
+                         submodules=IndexerSubmodules(
+                             wq_b=ColumnParallelLinear,
+                             wk=ColumnParallelLinear,
+                             weights_proj=ColumnParallelLinear,
+                         ))
 
 if not mla_mm_split:
     mla_self_attention_submodules = CustomMLASelfAttentionSubmodules(
@@ -41,6 +50,7 @@ if not mla_mm_split:
         kv_layernorm=PTNorm if qk_layernorm else IdentityOp,
         linear_q_up_proj=ColumnParallelLinear,
         linear_kv_up_proj=ColumnParallelLinear,
+        indexer=IndexerSpec if args.use_indexer else IdentityOp,
     )
 
 else:
@@ -54,6 +64,7 @@ else:
         linear_qk_rope=ColumnParallelLinear,
         linear_kv_nope=ColumnParallelLinear,
         linear_v=ColumnParallelLinear,
+        indexer=IndexerSpec if args.use_indexer else IdentityOp,
     )
 
 

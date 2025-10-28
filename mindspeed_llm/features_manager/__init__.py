@@ -61,6 +61,7 @@ from mindspeed_llm.features_manager.megatron_basic.model_basic import ModelBasic
 from mindspeed_llm.features_manager.megatron_basic.requirements_basic import RequirementsBasicFeature
 from mindspeed_llm.features_manager.megatron_basic.training_basic import TrainingBasicFeature
 from mindspeed_llm.features_manager.models.mamba import MambaModel
+from mindspeed_llm.features_manager.transformer.indexer import IndexerFeature
 from mindspeed_llm.features_manager.moe.moe_router import MoERouter
 from mindspeed_llm.features_manager.moe.shared_expert import MoESharedExpertsFeature
 from mindspeed_llm.features_manager.moe.tp_extend_ep import MoETpExtendEpFeature
@@ -124,6 +125,7 @@ def add_llm_features(features_list: List[MindSpeedFeature]):
         InferenceFeature(),
         EvaluationFeature(),
         DeprecatedArgsFeature(),
+        IndexerFeature(),
         MambaModel(),
         LanguageModelEmbeddingFeature(),
     ])
