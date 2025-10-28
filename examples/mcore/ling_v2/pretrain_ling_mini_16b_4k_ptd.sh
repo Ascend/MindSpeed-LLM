@@ -44,14 +44,6 @@ GQA_ARGS="
     --num-attention-heads 16 \
 "
 
-FINETUNE_ARGS="
-    --finetune \
-    --stage sft \
-    --is-instruction-dataset \
-    --variable-seq-lengths \
-    --prompt-type bailing_mini \
-"
-
 MOE_ARGS="
     --moe-layer-freq 1 \
     --moe-grouped-gemm \
@@ -89,7 +81,7 @@ GPT_ARGS="
     --use-flash-attn \
     --disable-bias-linear \
     --normalization RMSNorm \
-    --rotary-base 10000 \
+    --rotary-base 600000 \
     --rotary-percent 0.5 \
     --position-embedding-type rope \
     --use-rotary-position-embeddings \
@@ -115,7 +107,6 @@ GPT_ARGS="
     --tokenizer-type PretrainedFromHF  \
     --tokenizer-name-or-path ${TOKENIZER_PATH} \
     --seq-length ${SEQ_LEN} \
-
     --no-load-optim \
     --no-load-rng \
 "
@@ -123,9 +114,9 @@ GPT_ARGS="
 TRAIN_ARGS="
     --micro-batch-size ${MBS} \
     --global-batch-size ${GBS} \
+    --train-iters 2000 \
     --lr 1.0e-5 \
     --weight-decay 1e-2 \
-    --train-iters 2000 \
     --lr-decay-style cosine \
     --clip-grad 1.0 \
     --adam-beta1 0.9 \
@@ -147,15 +138,14 @@ OUTPUT_ARGS="
     --no-save-rng
 "
 
-python -m torch.distributed.launch $DISTRIBUTED_ARGS posttrain_gpt.py \
+python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     $GPT_ARGS \
     $DATA_ARGS \
     $OUTPUT_ARGS \
     $GQA_ARGS \
     $MOE_ARGS \
-    $FINETUNE_ARGS \
     $TRAIN_ARGS \
     --distributed-backend nccl \
     --save $CKPT_SAVE_DIR \
     --load $CKPT_LOAD_DIR \
-    | tee logs/tune_ling_mini_4k_ptd.log
+    | tee logs/pretrain_ling_mini_4k_ptd.log
