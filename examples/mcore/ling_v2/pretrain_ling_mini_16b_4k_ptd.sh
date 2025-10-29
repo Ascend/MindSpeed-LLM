@@ -63,7 +63,6 @@ MOE_ARGS="
     --moe-token-dispatcher-type alltoall_seq \
     --moe-router-load-balancing-type none \
     --moe-aux-loss-coeff 0.0001 \
-    --seq-aux \
     --moe-alltoall-overlap-comm \
 "
 
