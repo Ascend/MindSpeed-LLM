@@ -182,7 +182,7 @@ PP=4 # 模型权重转换的pp大小，在本例中是4
 微调脚本相关参数说明
 - `DATA_PATH`：数据集路径。请注意实际数据预处理生成文件末尾会增加`_input_ids_document`等后缀，该参数填写到数据集的前缀即可。例如实际的数据集相对路径是`./finetune_dataset/alpaca/alpaca_packed_input_ids_document.bin`等，那么只需要填`./finetune_dataset/alpaca/alpaca`即可。
 - `is-instruction-dataset`：用于指定微调过程中采用指令微调数据集，以确保模型依据特定指令数据进行微调。
-- `variable-seq-lengths`：在不同的mini-batch间支持以动态的序列长度进行微调，默认padding到`8`的整数倍，可以通过`pad-to-multiple-of`参数来修改padding的倍数。假设微调时指定`--seq-length`序列长度为1024，开启`--variable-seq-lengths`后，序列长度会padding到真实数据长度的8整数倍。如下图所示：  
+- `no-pad-to-seq-lengths`：在不同的mini-batch间支持以动态的序列长度进行微调，默认padding到`8`的整数倍，可以通过`pad-to-multiple-of`参数来修改padding的倍数。假设微调时指定`--seq-length`序列长度为1024，开启`--no-pad-to-seq-lengths`后，序列长度会padding到真实数据长度的8整数倍。如下图所示：  
 ![variable-seq-lengths图示](../../../../sources/images/instruction_finetune/variable_seq_lengths.png)
 
 第六步，启动微调脚本。参数配置完毕后，如果是单机运行场景，只需要在一台机器上启动微调脚本：
@@ -227,8 +227,8 @@ bash examples/mcore/qwen3/generate_qwen3_8b_ptd.sh
 
 | 序列长度   | 特点                             | 训练脚本 | 数据预处理方式   |
 |--------|--------------------------------|----|---------------------------------------------------------|
-| 固定长度序列 | 性能低，不推荐使用 |  训练时不使用`--variable-seq-lengths`参数    | 使用默认预处理脚本，如`data_convert_qwen3_instruction.sh`         |
-| 动态长度序列 | sample吞吐高  |   训练脚本需要使用`--variable-seq-lengths`参数   | 使用默认预处理脚本，如`data_convert_qwen3_instruction.sh`         |
+| 固定长度序列 | 性能低，不推荐使用 |  训练时不使用`--no-pad-to-seq-lengths`参数    | 使用默认预处理脚本，如`data_convert_qwen3_instruction.sh`         |
+| 动态长度序列 | sample吞吐高  |   训练脚本需要使用`--no-pad-to-seq-lengths`参数   | 使用默认预处理脚本，如`data_convert_qwen3_instruction.sh`         |
 | 样本拼接序列 | token吞吐高，支持长序列并行 |   训练脚本需要使用`--reset-position-ids`参数，不启用`--variable-seq-lengths`   | 使用pack配置的预处理脚本，详见[多样本pack微调](./multi_sample_pack_finetune.md) |
 
 请根据自己的使用场景，灵活选择对应类型的指令微调训练脚本和数据预处理脚本。

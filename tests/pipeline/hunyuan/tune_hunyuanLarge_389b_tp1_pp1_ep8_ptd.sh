@@ -139,7 +139,7 @@ FITUNE_ARGS="
     --cut-max-seqlen \
     --finetune \
     --is-instruction-dataset \
-    --variable-seq-lengths \
+    --no-pad-to-seq-lengths \
     --pad-to-multiple-of 1 \
     --tokenizer-not-use-fast \
     "

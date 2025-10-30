@@ -24,7 +24,7 @@ DISTRIBUTED_ARGS="
 "
 
 GPT_ARGS="
-    --variable-seq-lengths \
+    --no-pad-to-seq-lengths \
     --attention-mask-type general \
     --sequence-parallel \
     --use-fused-rotary-pos-emb \

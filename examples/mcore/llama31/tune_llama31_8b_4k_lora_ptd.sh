@@ -35,7 +35,7 @@ TUNE_ARGS="
     --stage sft \
     --prompt-type llama3 \
     --is-instruction-dataset \
-    --variable-seq-lengths \
+    --no-pad-to-seq-lengths \
     --lora-r 8 \
     --lora-alpha 16 \
     --lora-fusion \

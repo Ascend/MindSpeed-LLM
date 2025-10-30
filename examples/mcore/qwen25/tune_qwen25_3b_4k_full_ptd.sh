@@ -36,7 +36,7 @@ GPT_ARGS="
     --is-instruction-dataset \
     --tokenizer-not-use-fast \
     --prompt-type qwen \
-    --variable-seq-lengths \
+    --no-pad-to-seq-lengths \
     --use-mcore-models \
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \

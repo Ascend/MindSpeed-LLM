@@ -161,7 +161,7 @@ FINETUNE_ARGS="
     --finetune \
     --stage sft \
     --is-instruction-dataset \
-    --variable-seq-lengths \
+    --no-pad-to-seq-lengths \
     --prompt-type deepseek3 \
 "
 

@@ -46,7 +46,7 @@ MOE_ARGS="
 
 GPT_ARGS="
     --save ${CKPT_SAVE_DIR} \
-    --variable-seq-lengths \
+    --no-pad-to-seq-lengths \
     --context-parallel-size ${CP} \
     --moe-token-dispatcher-type alltoall_seq \
     --use-mcore-models  \

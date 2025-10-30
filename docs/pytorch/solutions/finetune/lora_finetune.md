@@ -92,7 +92,7 @@ bash examples/mcore/llama2/tune_llama2_7b_lora_ptd.sh
 - **`--prompt-type`**  
   指定模型模板，使 base 模型在微调后具备更好的对话能力。
 
-- **`--variable-seq-lengths`**  
+- **`--no-pad-to-seq-lengths`**  
   支持动态序列长度微调，默认按 8 的倍数进行 padding，可以通过 `--pad-to-multiple-of` 参数修改 padding 的倍数。
 
 - **`--load`**  

@@ -83,7 +83,7 @@ GPT_ARGS="
     --recompute-method block \
     --recompute-num-layers 14 \
     --recompute-activation-function \
-    --variable-seq-lengths \
+    --no-pad-to-seq-lengths \
     --no-shared-storage \
     --use-distributed-optimizer \
     --reuse-fp32-param \

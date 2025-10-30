@@ -83,7 +83,7 @@ GPT_ARGS="
     --rotary-base 1000000 \
     --vocab-size 32000 \
     --is-instruction-dataset \
-    --variable-seq-lengths \
+    --no-pad-to-seq-lengths \
     --prompt-type llama2 \
     --finetune \
     --bf16

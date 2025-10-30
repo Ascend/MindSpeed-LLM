@@ -84,7 +84,7 @@ DATA_ARGS="
     --split 100,0,0 \
     --prompt-type llama3 \
     --is-instruction-dataset \
-    --variable-seq-lengths
+    --no-pad-to-seq-lengths
 "
 
 OUTPUT_ARGS="

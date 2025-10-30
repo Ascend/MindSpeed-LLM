@@ -72,7 +72,7 @@ GPT_ARGS="
     --use-fused-swiglu \
     --use-fused-rotary-pos-emb \
     --overlap-grad-reduce \
-    --variable-seq-lengths \
+    --no-pad-to-seq-lengths \
     --scale-emb 12 \
     --dim-model-base 256 \
     --scale-depth 1.4 \

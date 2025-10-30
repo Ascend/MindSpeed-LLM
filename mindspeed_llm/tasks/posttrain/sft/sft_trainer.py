@@ -37,7 +37,7 @@ class SFTTrainer(BaseTrainer):
         data_type = torch.int64
 
         if (not mpu.is_pipeline_first_stage()) and (not mpu.is_pipeline_last_stage()):
-            if args.variable_seq_lengths and args.pipeline_model_parallel_size > 2:
+            if args.no_pad_to_seq_lengths and args.pipeline_model_parallel_size > 2:
                 tokens, attention_mask = get_finetune_data_on_this_tp_rank(data_iterator)
                 return tokens, None, None, attention_mask, None
             else:

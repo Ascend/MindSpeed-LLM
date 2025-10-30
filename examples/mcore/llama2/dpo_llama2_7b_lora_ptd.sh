@@ -31,7 +31,7 @@ GPT_ARGS="
     --lora-r 16 \
     --lora-alpha 32 \
     --lora-target-modules linear_qkv linear_proj linear_fc1 linear_fc2 \
-    --variable-seq-lengths \
+    --no-pad-to-seq-lengths \
     --use-mcore-models \
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \

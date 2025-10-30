@@ -95,7 +95,7 @@ TUNE_ARGS="
     --is-instruction-dataset \
     --tokenizer-not-use-fast \
     --prompt-type deepseek3 \
-    --variable-seq-lengths \
+    --no-pad-to-seq-lengths \
 "
 
 DATA_ARGS="

@@ -33,7 +33,7 @@ GPT_ARGS="
     --finetune \
     --is-instruction-dataset \
     --tokenizer-padding-side right \
-    --variable-seq-lengths \
+    --no-pad-to-seq-lengths \
     --tokenizer-not-use-fast \
     --prompt-type baichuan2 \
     --tensor-model-parallel-size $TP \

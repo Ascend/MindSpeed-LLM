@@ -76,7 +76,7 @@ GPT_ARGS="
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \
     --sequence-parallel \
-    --variable-seq-lengths \
+    --no-pad-to-seq-lengths \
     --use-distributed-optimizer \
     --context-parallel-size ${CP} \
     --context-parallel-algo  ${CP_TYPE} \

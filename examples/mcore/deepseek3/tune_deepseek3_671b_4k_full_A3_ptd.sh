@@ -175,7 +175,7 @@ FINETUNE_ARGS="
     --finetune \
     --stage sft \
     --is-instruction-dataset \
-    --variable-seq-lengths \
+    --no-pad-to-seq-lengths \
 "
 
 python -m torch.distributed.launch $DISTRIBUTED_ARGS posttrain_gpt.py \

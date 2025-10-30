@@ -31,7 +31,7 @@ GPT_ARGS="
     --sequence-parallel \
     --use-fused-rotary-pos-emb \
     --npu-deterministic \
-    --variable-seq-lengths \
+    --no-pad-to-seq-lengths \
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \
     --use-mcore-models \

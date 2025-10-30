@@ -84,7 +84,7 @@ GPT_ARGS="
     --stage sft \
     --is-instruction-dataset \
     --tokenizer-padding-side right \
-    --variable-seq-lengths \
+    --no-pad-to-seq-lengths \
     --tokenizer-not-use-fast \
     --prompt-type gemma \
     --rotary-base 10000

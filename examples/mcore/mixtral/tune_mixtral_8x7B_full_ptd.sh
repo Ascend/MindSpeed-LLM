@@ -58,7 +58,7 @@ GPT_ARGS="
     --hidden-dropout 0.0 \
     --normalization RMSNorm \
     --prompt-type mixtral \
-    --variable-seq-lengths \
+    --no-pad-to-seq-lengths \
     --use-rotary-position-embeddings \
     --position-embedding-type rope \
     --no-check-for-nan-in-loss-and-grad \

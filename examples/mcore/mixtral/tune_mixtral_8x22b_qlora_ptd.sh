@@ -73,7 +73,7 @@ GPT_ARGS="
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \
     --sequence-parallel \
-    --variable-seq-lengths \
+    --no-pad-to-seq-lengths \
     --use-distributed-optimizer \
     --load ${CKPT_LOAD_DIR} \
     --save ${CKPT_SAVE_DIR} \

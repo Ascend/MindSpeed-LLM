@@ -28,7 +28,7 @@ DISTRIBUTED_ARGS="
 "
 
 GPT_ARGS="
-    --variable-seq-lengths \
+    --no-pad-to-seq-lengths \
     --no-shuffle \
     --finetune \
     --stage sft \

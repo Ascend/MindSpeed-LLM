@@ -80,7 +80,7 @@ GPT_ARGS="
     --spec mindspeed_llm.tasks.models.spec.deepseek_spec layer_spec \
     --num-layer-list 7,7,7,8,8,8,8,8 \
     --prompt-type deepseek3 \
-    --variable-seq-lengths \
+    --no-pad-to-seq-lengths \
     --no-shared-storage \
     --use-distributed-optimizer \
     --reuse-fp32-param \

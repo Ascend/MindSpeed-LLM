@@ -62,7 +62,7 @@ TRAINING_ARGS="
     --no-gradient-accumulation-fusion \
     --no-load-optim \
     --no-load-rng \
-    --variable-seq-lengths \
+    --no-pad-to-seq-lengths \
     --rotary-base 10000 \
     --norm-epsilon 1e-05 \
     --make-vocab-size-divisible-by 1 \

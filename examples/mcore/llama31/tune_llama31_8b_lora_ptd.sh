@@ -35,7 +35,7 @@ GPT_ARGS="
     --sequence-parallel \
     --use-flash-attn \
     --prompt-type llama3 \
-    --variable-seq-lengths \
+    --no-pad-to-seq-lengths \
     --use-rotary-position-embeddings \
     --rope-scaling-type llama3 \
     --rope-scaling-factor 8.0 \

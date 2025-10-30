@@ -39,7 +39,7 @@ GPT_ARGS="
     --tokenizer-name-or-path ${TOKENIZER_MODEL} \
     --tokenizer-not-use-fast \
     --prompt-type llama2 \
-    --variable-seq-lengths \
+    --no-pad-to-seq-lengths \
     --seq-length 4096 \
     --max-position-embeddings 4096 \
     --micro-batch-size 4 \

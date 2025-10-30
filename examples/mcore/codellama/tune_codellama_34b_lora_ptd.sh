@@ -89,7 +89,7 @@ GPT_ARGS="
     --lora-target-modules linear_qkv linear_proj linear_fc1 linear_fc2 \
     --lora-load ${LORA_CHECKPOINT} \
     --is-instruction-dataset \
-    --variable-seq-lengths \
+    --no-pad-to-seq-lengths \
     --prompt-type llama2 \
     --finetune \
     --no-shuffle \

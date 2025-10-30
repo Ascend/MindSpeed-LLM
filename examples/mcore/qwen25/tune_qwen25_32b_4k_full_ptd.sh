@@ -38,7 +38,7 @@ TUNE_ARGS="
     --tokenizer-not-use-fast \
     --prompt-type qwen \
     --padded-samples \
-    --variable-seq-lengths \
+    --no-pad-to-seq-lengths \
 "
 
 GPT_ARGS="

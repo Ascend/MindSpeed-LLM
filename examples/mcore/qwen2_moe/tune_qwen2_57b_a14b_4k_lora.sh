@@ -37,7 +37,7 @@ TUNE_ARGS="
     --prompt-type qwen \
     --is-instruction-dataset \
     --padded-samples \
-    --variable-seq-lengths \
+    --no-pad-to-seq-lengths \
     --lora-r 8 \
     --lora-alpha 16 \
     --lora-fusion \

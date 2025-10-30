@@ -35,7 +35,7 @@ GPT_ARGS="
     --stage sft \
     --prompt-type qwen \
     --is-instruction-dataset \
-    --variable-seq-lengths \
+    --no-pad-to-seq-lengths \
     --tokenizer-not-use-fast \
     --use-mcore-models \
     --tensor-model-parallel-size ${TP} \

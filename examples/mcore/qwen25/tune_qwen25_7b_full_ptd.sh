@@ -32,7 +32,7 @@ TUNE_ARGS="
     --finetune \
     --stage sft \
     --is-instruction-dataset \
-    --variable-seq-lengths \
+    --no-pad-to-seq-lengths \
     --tokenizer-not-use-fast \
     --prompt-type qwen \
 "

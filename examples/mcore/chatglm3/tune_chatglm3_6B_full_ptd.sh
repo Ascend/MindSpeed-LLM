@@ -42,7 +42,7 @@ GPT_ARGS="
     --micro-batch-size ${MBS} \
     --global-batch-size ${GBS} \
     --max-position-embeddings ${SEQ_LEN} \
-    --variable-seq-lengths \
+    --no-pad-to-seq-lengths \
     --padded-vocab-size 65024 \
     --make-vocab-size-divisible-by 1 \
     --group-query-attention \

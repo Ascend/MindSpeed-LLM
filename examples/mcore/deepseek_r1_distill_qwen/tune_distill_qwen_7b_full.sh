@@ -35,7 +35,7 @@ TUNE_ARGS="
     --stage sft \
     --is-instruction-dataset \
     --tokenizer-not-use-fast \
-    --variable-seq-lengths \
+    --no-pad-to-seq-lengths \
     --prompt-type deepseek3 \
 "
 

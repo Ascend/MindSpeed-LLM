@@ -26,7 +26,7 @@ DISTRIBUTED_ARGS="
 "
 
 GPT_ARGS="
-    --variable-seq-lengths \
+    --no-pad-to-seq-lengths \
     --use-mcore-models \
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \

@@ -59,7 +59,7 @@ def build_pretraining_data_loader(dataset, consumed_samples):
         tokenizer.padding_side = args.tokenizer_padding_side
         collator = PairwiseDataCollatorWithPadding(
             tokenizer,
-            pad_to_multiple_of=args.pad_to_multiple_of if args.variable_seq_lengths else args.seq_length,
+            pad_to_multiple_of=args.pad_to_multiple_of if args.no_pad_to_seq_lengths else args.seq_length,
             return_tensors='pt',
             padding=True
         )
@@ -67,7 +67,7 @@ def build_pretraining_data_loader(dataset, consumed_samples):
         tokenizer.padding_side = args.tokenizer_padding_side
         collator = DataCollatorForSeq2Seq(
             tokenizer,
-            pad_to_multiple_of=args.pad_to_multiple_of if args.variable_seq_lengths else args.seq_length,
+            pad_to_multiple_of=args.pad_to_multiple_of if args.no_pad_to_seq_lengths else args.seq_length,
             return_tensors='pt',
             padding=True
         )

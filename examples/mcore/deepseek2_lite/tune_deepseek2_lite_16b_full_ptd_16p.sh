@@ -71,7 +71,7 @@ FITUNE_ARGS="
     --stage sft \
     --finetune \
     --is-instruction-dataset \
-    --variable-seq-lengths \
+    --no-pad-to-seq-lengths \
     --prompt-type deepseek2-lite \
     --tokenizer-not-use-fast \
     "
