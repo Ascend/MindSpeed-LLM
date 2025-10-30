@@ -128,7 +128,7 @@ bash examples/mindspore/glm4/generate_glm4_9b_ms.sh
 ```sh
 # 以7b模型为例
 cd MindSpeed-LLM
-bash examples/mindspore/glm4/evalute_glm4_9b_ms.sh
+bash examples/mindspore/glm4/evaluate_glm4_9b_ms.sh
 ```
 
 用户需要根据实际情况修改脚本中以下变量
