@@ -18,9 +18,9 @@ DISTRIBUTED_ARGS="
     --master_port $MASTER_PORT
 "
 
-DATA_PATH="/data/datasets/Mixtral-8x7B_Finetune/alpaca"
-TOKENIZER_MODEL="/data/hf/Mixtral-8x7B-Hf/"
-CKPT_LOAD_DIR="/data/pipeline/Mixtral-tp2-pp2-ep1-mcore"
+DATA_PATH="/data/ci/datasets/processed/Mixtral-8x7B_Finetune/alpaca"
+TOKENIZER_MODEL="/data/ci/models/mixtral/hf/Mixtral-8x7B-Hf/"
+CKPT_LOAD_DIR="/data/ci/models/mixtral/mg/Mixtral-tp2-pp2-ep1-mcore"
 
 basepath=$(cd `dirname $0`; cd ../../../; pwd)
 

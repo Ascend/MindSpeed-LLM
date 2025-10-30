@@ -10,9 +10,9 @@ WORLD_SIZE=$((NPUS_PER_NODE*$NNODES))
 
 basepath=$(cd `dirname $0`; cd ../../../; pwd)
 
-DATA_PATH="/data/datasets/chatglm3-dataset-alpaca/alpaca_text_document"
-TOKENIZER_PATH="/data/hf/chatglm3-6b-base-hf/"
-CKPT_LOAD_DIR="/data/chatglm3-6b-tp1-pp1-cp8/"
+DATA_PATH="/data/ci/datasets/processed/chatglm3-dataset-alpaca/alpaca_text_document"
+TOKENIZER_PATH="/data/ci/models/chatglm3/hf/chatglm3-6b-base-hf/"
+CKPT_LOAD_DIR="/data/ci/models/chatglm3/mg/chatglm3-6b-tp1-pp1-cp8/"
 
 TP=1
 PP=1

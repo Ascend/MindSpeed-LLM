@@ -2,7 +2,7 @@
     "test_llama2_mcore_agieval_evaluate": [
         {
             "param": {
-                "task-data-path":"/data/eval_data/agieval",
+                "task-data-path":"/data/ci/datasets/eval_data/agieval",
                 "task":"agieval",
                 "tensor-model-parallel-size": 8,
                 "pipeline-model-parallel-size": 1,
@@ -27,9 +27,9 @@
                 "fp16": null,
                 "no-load-rng": null,
                 "no-load-optim": null,
-                "load":"/data/ci/ckpt",
+                "load":"/data/ci/models/llama2/mg/llama2-tp8pp1",
                 "tokenizer-type":"PretrainedFromHF",
-                "tokenizer-name-or-path":"/data/hf/llama-2-7b-hf",
+                "tokenizer-name-or-path":"/data/ci/models/llama2/hf/llama-2-7b-hf",
                 "npu-deterministic": null
             }
         }
@@ -38,7 +38,7 @@
     "test_llama2_mcore_bbh_evaluate": [
         {
             "param": {
-                "task-data-path":"/data/eval_data/bbh/test",
+                "task-data-path":"/data/ci/datasets/eval_data/bbh/test",
                 "task":"bbh",
                 "tensor-model-parallel-size": 8,
                 "pipeline-model-parallel-size": 1,
@@ -63,9 +63,9 @@
                 "fp16": null,
                 "no-load-rng": null,
                 "no-load-optim": null,
-                "load":"/data/ci/ckpt",
+                "load":"/data/ci/models/llama2/mg/llama2-tp8pp1",
                 "tokenizer-type":"PretrainedFromHF",
-                "tokenizer-name-or-path":"/data/hf/llama-2-7b-hf",
+                "tokenizer-name-or-path":"/data/ci/models/llama2/hf/llama-2-7b-hf",
                 "npu-deterministic": null
             }
         }
@@ -76,7 +76,7 @@
             "param": {
                 "use-mcore-models": null,
                 "use-kv-cache": null,
-                "task-data-path": "/data/eval_data/mmlu/data/test",
+                "task-data-path": "/data/ci/datasets/eval_data/mmlu/data/test",
                 "task": "mmlu",
                 "tensor-model-parallel-size": 1,
                 "pipeline-model-parallel-size": 1,
@@ -84,7 +84,7 @@
                 "seq-length": 4096,
                 "max-position-embeddings": 4096,
                 "tokenizer-type": "PretrainedFromHF",
-                "tokenizer-name-or-path": "/data/Qwen2-1.5B",
+                "tokenizer-name-or-path": "/data/ci/models/qwen2-1.5b/hf/Qwen2-1.5B",
                 "max-new-tokens": 1,
                 "make-vocab-size-divisible-by": 1,
                 "padded-vocab-size": 151936,
@@ -99,7 +99,7 @@
                 "disable-bias-linear": null,
                 "swiglu": null,
                 "position-embedding-type": "rope",
-                "load": "/data/qwen2-1.5b-hf-v0.1-tp1-pp1/",
+                "load": "/data/ci/models/qwen2-1.5b/mg/qwen2-1.5b-hf-v0.1-tp1-pp1/",
                 "normalization": "RMSNorm",
                 "norm-epsilon": 1e-06,
                 "tokenizer-not-use-fast": null,

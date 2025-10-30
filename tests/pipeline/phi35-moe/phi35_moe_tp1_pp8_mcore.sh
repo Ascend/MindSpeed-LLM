@@ -11,9 +11,9 @@ WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
 basepath=$(cd `dirname $0`; cd ../../../; pwd)
 
-CKPT_LOAD_DIR="/data/pipeline/phi35-moe-tp1pp8l8-mcore-base"
-DATA_PATH="/data/datasets/phi35-moe-data/alpaca_text_document"
-TOKENIZER_MODEL="/data/hf/Phi-3.5-MoE-instruct-hf"
+CKPT_LOAD_DIR="/data/ci/models/phi35/mg/phi35-moe-tp1pp8l8-mcore-base"
+DATA_PATH="/data/ci/datasets/processed/phi35-moe-data/alpaca_text_document"
+TOKENIZER_MODEL="/data/ci/models/phi35/hf/Phi-3.5-MoE-instruct-hf"
 
 TP=1
 PP=8

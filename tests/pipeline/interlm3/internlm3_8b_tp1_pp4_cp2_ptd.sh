@@ -11,7 +11,7 @@ WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
 # please fill these path configurations
 CKPT_SAVE_DIR="/data/cache"
-DATA_PATH="/data/datasets/internlm3/enwiki_text_document"
+DATA_PATH="/data/ci/datasets/processed/internlm3/enwiki_text_document"
 TOKENIZER_MODEL="/data/hf/internlm3-hf/tokenizer.model"
 CKPT_LOAD_DIR="/data/pipeline/internlm3_tp1_pp4"
 

@@ -163,7 +163,7 @@ class TestCheckpoint(object):
         os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
         exit_code = run_cmd(["python3", CKPT_PYPATH] + self.test_config_cmd['test_qwen2_moe_hf2mcore_tp2pp1ep2'])
         assert exit_code == 0
-        base_dir = "/data/ci/qwen2_moe/mg_base/qwen2_moe_l2_t2p1e2_base"
+        base_dir = "/data/ci/models/qwen2-moe/mg/qwen2_moe_l2_t2p1e2_base"
         save_dir = self.test_config['test_qwen2_moe_hf2mcore_tp2pp1ep2'][0]['save-dir']
         assert weight_compare(base_dir, save_dir)
         shutil.rmtree(save_dir)

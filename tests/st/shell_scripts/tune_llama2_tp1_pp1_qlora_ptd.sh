@@ -14,9 +14,9 @@ WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
 basepath=$(cd `dirname $0`; cd ../../../; pwd)
 
-CKPT_LOAD_DIR="/data/llama2-7b-tp1-pp1-nf4"
-DATA_PATH="/data/tune_dataset/alpaca"
-TOKENIZER_MODEL="/data/hf/llama-2-7b-hf"
+CKPT_LOAD_DIR="/data/ci/models/llama2/mg/llama2-7b-tp1-pp1-nf4"
+DATA_PATH="/data/ci/datasets/tune_dataset/alpaca"
+TOKENIZER_MODEL="/data/ci/models/llama2/hf/llama-2-7b-hf"
 
 TP=1
 PP=1

@@ -12,9 +12,9 @@ WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
 basepath=$(cd `dirname $0`; cd ../../../; pwd)
 
-DATA_PATH=/data/pretrain_dataset/alpaca_text_document
-TOKENIZER_PATH=/data/deepseek-v3-mcore-tp1-pp2-ep4-16experts
-CKPT_LOAD_DIR=/data/ci/deepseek2/mg_base/deepseek-v3-mcore-tp1-pp2-ep4-16expert
+DATA_PATH=/data/ci/datasets/processed/pretrain_dataset/alpaca_text_document
+TOKENIZER_PATH=/data/ci/models/deepseek3/mg/deepseek-v3-mcore-tp1-pp2-ep4-16experts
+CKPT_LOAD_DIR=/data/ci/models/deepseek2/mg/deepseek-v3-mcore-tp1-pp2-ep4-16expert
 
 TP=1
 PP=2

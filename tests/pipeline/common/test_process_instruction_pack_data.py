@@ -14,11 +14,11 @@ class TestProcessInstructionData:
     def setup_class(self):
         sys.argv = [
             sys.argv[0],
-            "--input", "/data/train-00000-of-00001-a09b74b3ef9c3b56.parquet",
+            "--input", "/data/ci/datasets/origin/train-00000-of-00001-a09b74b3ef9c3b56.parquet",
             "--tokenizer-type", "PretrainedFromHF",
             "--handler-name", "GeneralInstructionHandler",
-            "--output-prefix", "/data/tune_pack_dataset/alpaca_pack",
-            "--tokenizer-name-or-path", "/data/hf/llama-2-7b-hf",
+            "--output-prefix", "/data/ci/cache/tune_pack_dataset/alpaca_pack",
+            "--tokenizer-name-or-path", "/data/ci/models/llama2/hf/llama-2-7b-hf",
             "--workers", "4",
             "--log-interval", "1000",
             "--append-eod",
