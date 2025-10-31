@@ -83,7 +83,7 @@ TRAINING_ARGS=(
     --lora-alpha 32
     --lora-fusion
     --lora-target-modules linear_qkv linear_proj linear_fc1 linear_fc2
-    --variable-seq-lengths
+    --no-pad-to-seq-lengths
     --bf16
 )
 

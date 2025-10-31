@@ -96,7 +96,7 @@ TUNE_ARGS="
     --stage sft \
     --is-instruction-dataset \
     --prompt-type qwen \
-    --variable-seq-lengths
+    --no-pad-to-seq-lengths
 "
 
 torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \

@@ -92,7 +92,7 @@ MODEL_PARALLEL_ARGS="
     --context-parallel-algo megatron_cp_algo \
     --cp-attention-mask-type general \
     --use-cp-send-recv-overlap \
-    --variable-seq-lengths \
+    --no-pad-to-seq-lengths \
     --pad-to-multiple-of $((TP*CP)) \
 "
 
