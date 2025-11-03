@@ -36,7 +36,7 @@ class TestProcessInstructionData:
         Test generate pretrain object files and files are not None(MB).
         """
         self.handler.serialize_to_disk()
-        folder_path = "/data/tune_pack_dataset"
+        folder_path = "/data/ci/cache/tune_pack_dataset"
         bin_file = 0
         idx_file = 0
         total_size = 0
