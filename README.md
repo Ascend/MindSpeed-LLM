@@ -29,7 +29,7 @@ MindSpeed LLM：基于昇腾生态的大语言模型分布式训练框架，旨�
 ---
 
 
-
+- 致敬经典， 拥抱未来。 **[夕阳计划](https://gitcode.com/Ascend/MindSpeed-LLM/issues/943)** 启动，感谢每一份曾经的贡献。
 - **DeepSeek-V3**预训练已支持基于 **[MindSpore AI框架](./docs/mindspore/readme.md)** 运行
 - **glm4.5-moe** 系列模型同步首发支持
 - **Qwen3** 系列模型同步首发支持
