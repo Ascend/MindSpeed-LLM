@@ -2,22 +2,22 @@
     "instruction_dataset": [
         {
             "params" : {
-                "input-dataset": "/data/process_dataset/train-00000-of-00001-a09b74b3ef9c3b56.parquet",
-                "test-out-part": "/data/process_dataset/test_ins_subs/",
-                "base-out-part": "/data/process_dataset/base_ins_subs/",
-                "test-out-merge": "/data/process_dataset/test_ins_merge/",
-                "base-out-merge": "/data/process_dataset/base_ins_merge/"
+                "input-dataset": "/data/ci/datasets/origin/train-00000-of-00001-a09b74b3ef9c3b56.parquet",
+                "test-out-part": "/data/ci/cache/process_dataset/test_ins_subs/",
+                "base-out-part": "/data/ci/datasets/processed/base_ins_subs/",
+                "test-out-merge": "/data/ci/cache/process_dataset/test_ins_merge/",
+                "base-out-merge": "/data/ci/datasets/processed/base_ins_merge/"
             }
         }
     ],
     "test_instruction_datasets_part1": [
         {
             "params": {
-                "input": "/data/process_dataset/0001-alpaca.parquet",
+                "input": "/data/ci/datasets/origin/0001-alpaca.parquet",
                 "tokenizer-type": "PretrainedFromHF",
                 "handler-name": "GeneralInstructionHandler",
-                "output-prefix": "/data/process_dataset/test_ins_subs/part1", 
-                "tokenizer-name-or-path": "/data/hf/llama-2-7b-hf",
+                "output-prefix": "/data/ci/cache/process_dataset/test_ins_subs/part1", 
+                "tokenizer-name-or-path": "/data/ci/models/llama2/hf/llama-2-7b-hf",
                 "workers": 4,
                 "log-interval": 1000,
                 "append-eod": null
@@ -27,11 +27,11 @@
     "test_instruction_datasets_part2": [
         {
             "params": {
-                "input": "/data/process_dataset/0002-alpaca.parquet",
+                "input": "/data/ci/datasets/origin/0002-alpaca.parquet",
                 "tokenizer-type": "PretrainedFromHF",
                 "handler-name": "GeneralInstructionHandler",
-                "output-prefix": "/data/process_dataset/test_ins_subs/part2",
-                "tokenizer-name-or-path": "/data/hf/llama-2-7b-hf",
+                "output-prefix": "/data/ci/cache/process_dataset/test_ins_subs/part2",
+                "tokenizer-name-or-path": "/data/ci/models/llama2/hf/llama-2-7b-hf",
                 "workers": 4,
                 "log-interval": 1000,
                 "append-eod": null
@@ -41,8 +41,8 @@
     "test_merge_instrction_datasets": [
         {
             "params": {
-                "input": "/data/process_dataset/test_ins_subs/",
-                "output-prefix": "/data/process_dataset/test_ins_merge/merge",
+                "input": "/data/ci/cache/process_dataset/test_ins_subs/",
+                "output-prefix": "/data/ci/cache/process_dataset/test_ins_merge/merge",
                 "merge-group-keys": ["packed_attention_mask_document", "packed_input_ids_document", "packed_labels_document"]
             }
         }
@@ -58,11 +58,11 @@
     "alpaca_style_instruction_handler": [
         {
             "params": {
-                "input": "/data/process_dataset/0001-alpaca.parquet",
+                "input": "/data/ci/datasets/origin/0001-alpaca.parquet",
                 "tokenizer-type": "PretrainedFromHF",
                 "handler-name": "AlpacaStyleInstructionHandler",
                 "output-prefix": "/data/process_dataset/test_instruction_handler/alpaca_style",
-                "tokenizer-name-or-path": "/data/hf/llama-2-7b-hf",
+                "tokenizer-name-or-path": "/data/ci/models/llama2/hf/llama-2-7b-hf",
                 "workers": 4,
                 "log-interval": 1000,
                 "overwrite-cache": null,
@@ -73,11 +73,11 @@
     "alpaca_style_pack_instruction_handler": [
         {
             "params": {
-                "input": "/data/process_dataset/0001-alpaca.parquet",
+                "input": "/data/ci/datasets/origin/0001-alpaca.parquet",
                 "tokenizer-type": "PretrainedFromHF",
                 "handler-name": "AlpacaStyleInstructionHandler",
                 "output-prefix": "/data/process_dataset/test_instruction_handler/alpaca_style_pack",
-                "tokenizer-name-or-path": "/data/hf/llama-2-7b-hf",
+                "tokenizer-name-or-path": "/data/ci/models/llama2/hf/llama-2-7b-hf",
                 "workers": 4,
                 "log-interval": 1000,
                 "overwrite-cache": null,
@@ -91,11 +91,11 @@
     "sharegpt_style_instruction_handler": [
         {
             "params": {
-                "input": "/data/process_dataset/sharegpt_formatted_data-evol-gpt4.jsonl",
+                "input": "/data/ci/datasets/origin/sharegpt_formatted_data-evol-gpt4.jsonl",
                 "tokenizer-type": "PretrainedFromHF",
                 "handler-name": "SharegptStyleInstructionHandler",
                 "output-prefix": "/data/process_dataset/test_instruction_handler/sharegpt_style",
-                "tokenizer-name-or-path": "/data/hf/llama-2-7b-hf",
+                "tokenizer-name-or-path": "/data/ci/models/llama2/hf/llama-2-7b-hf",
                 "workers": 4,
                 "log-interval": 1000,
                 "prompt-type" : "llama2"

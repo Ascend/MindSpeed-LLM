@@ -20,9 +20,9 @@ DISTRIBUTED_ARGS="
 
 echo "NODE_RANK ${NODE_RANK}"
 
-DATA_PATH="/data/pretrain_dataset/alpaca_text_document"
-TOKENIZER_MODEL="/data/mixtral-8-7b-hf/Mixtral-8x7B/tokenizer.model"
-CKPT_LOAD_DIR="/data/mixtral-8*7b-tp4-ep2-mcore-base"
+DATA_PATH="/data/ci/datasets/processed/pretrain_dataset/alpaca_text_document"
+TOKENIZER_MODEL="/data/ci/models/mixtral/hf/Mixtral-8x7B/tokenizer.model"
+CKPT_LOAD_DIR="/data/ci/models/mixtral/mg/mixtral-8*7b-tp4-ep2-mcore-base"
 
 TP=4
 PP=1

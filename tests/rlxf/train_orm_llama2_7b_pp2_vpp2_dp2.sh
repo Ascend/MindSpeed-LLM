@@ -18,7 +18,7 @@ DISTRIBUTED_ARGS="
 
 DATA_PATH="/data/ci/orm/dpo-en-llama-2-7b/dpo_en"
 TOKENIZER_PATH="/data/hf/llama-2-7b-hf/"
-CKPT_LOAD_DIR="/data/ci/orm/llama-2-7b-layers8-rm-mcore_pp2vpp2/"
+CKPT_LOAD_DIR="/data/ci/models/llama2/mg/llama-2-7b-layers8-rm-mcore_pp2vpp2/"
 
 basepath=$(cd `dirname $0`; cd ../../../; pwd)
 

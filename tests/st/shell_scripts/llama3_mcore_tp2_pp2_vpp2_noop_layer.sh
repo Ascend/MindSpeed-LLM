@@ -10,9 +10,9 @@ WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
 basepath=$(cd `dirname $0`; cd ../../../; pwd)
 
-DATA_PATH="/data/llama-3-8b-dataset/alpaca_text_document"
-TOKENIZER_MODEL="/data/llama-3-8b-hf/"
-CKPT_LOAD_DIR="/data/llama-3-8b-hf-nooplayer-tp2pp2vpp2-mcore-base/"
+DATA_PATH="/data/ci/datasets/processed/llama-3-8b-dataset/alpaca_text_document"
+TOKENIZER_MODEL="/data/ci/models/llama3/hf/llama-3-8b-hf/"
+CKPT_LOAD_DIR="/data/ci/models/llama3/mg/llama-3-8b-hf-nooplayer-tp2pp2vpp2-mcore-base/"
 TP=2
 PP=2
 

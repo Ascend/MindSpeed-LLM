@@ -13,8 +13,8 @@ basepath=$(cd `dirname $0`; cd ../../../; pwd)
 
 CKPT_SAVE_DIR="/data/cache"
 DATA_PATH="/data/datasets/gemma2-dataset-alpaca/alpaca_text_document"
-TOKENIZER_MODEL="/data/hf/gemma2-9b-hf"
-CKPT_LOAD_DIR="/data/pipeline/gemma2-9b-mg-tp8pp1-mcore-base"
+TOKENIZER_MODEL="/data/ci/models/gemma2/hf/gemma2-9b-hf"
+CKPT_LOAD_DIR="/data/ci/models/gemma2/mg/gemma2-9b-mg-tp8pp1-mcore-base"
 
 TP=8
 PP=1

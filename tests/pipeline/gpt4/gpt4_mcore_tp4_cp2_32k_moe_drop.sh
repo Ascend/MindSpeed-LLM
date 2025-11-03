@@ -11,10 +11,10 @@ WORLD_SIZE=$((NPUS_PER_NODE*$NNODES))
 
 basepath=$(cd `dirname $0`; cd ../../../; pwd)
 
-DATA_PATH=/data/datasets/gpt/gpt-wiki_text_document
-VOCAB_FILE=/data/datasets/gpt/gpt2-vocab.json
-MERGE_FILE=/data/datasets/gpt/gpt2-merges.txt
-CKPT_LOAD_DIR=/data/pipeline/gpt_drop_moe_32k_base
+DATA_PATH=/data/ci/datasets/processed/gpt/gpt-wiki_text_document
+VOCAB_FILE=/data/ci/datasets/processed/gpt/gpt2-vocab.json
+MERGE_FILE=/data/ci/datasets/processed/gpt/gpt2-merges.txt
+CKPT_LOAD_DIR=/data/ci/models/gpt/mg/gpt_drop_moe_32k_base
 CKPT_SAVE_DIR=/data/cache
 
 TP=4

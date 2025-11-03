@@ -17,10 +17,10 @@ class TestProcessInstructionDataLf:
 
     @pytest.mark.parametrize("params, base_path", 
         [
-            (test_config["test_alpaca_dataset"][0], "/data/tune_dataset/Llamafactoryhandler/alpaca/alpaca"),
-            (test_config["test_alpaca_history_dataset"][0], "/data/tune_dataset/Llamafactoryhandler/alpaca_history/alpaca_history_new"),
-            (test_config["test_sharegpt_dataset"][0], "/data/tune_dataset/Llamafactoryhandler/sharegpt/sharegpt_lf"),
-            (test_config["test_openai_dataset"][0], "/data/tune_dataset/Llamafactoryhandler/openai/sss"),
+            (test_config["test_alpaca_dataset"][0], "/data/ci/datasets/tune_dataset/Llamafactoryhandler/alpaca/alpaca"),
+            (test_config["test_alpaca_history_dataset"][0], "/data/ci/datasets/tune_dataset/Llamafactoryhandler/alpaca_history/alpaca_history_new"),
+            (test_config["test_sharegpt_dataset"][0], "/data/ci/datasets/tune_dataset/Llamafactoryhandler/sharegpt/sharegpt_lf"),
+            (test_config["test_openai_dataset"][0], "/data/ci/datasets/tune_dataset/Llamafactoryhandler/openai/sss"),
             (test_config["test_abstract_prompt_type"][0], "/data/Llama2-7b-original-prompt-type/alpaca")
         ])
     def test_datasets(self, build_args, params, base_path):
@@ -62,7 +62,7 @@ class TestProcessInstructionDataLf:
 
     @pytest.mark.parametrize("params, base_path", 
         [
-            (test_config["test_alpaca_history_dataset"][1], "/data/tune_dataset/Llamafactoryhandler/alpaca_history/alpaca_history_seq1024"),
+            (test_config["test_alpaca_history_dataset"][1], "/data/ci/datasets/tune_dataset/Llamafactoryhandler/alpaca_history/alpaca_history_seq1024"),
         ])
     def test_skip_num(self, build_args, params, base_path):
         """
