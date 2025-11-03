@@ -846,6 +846,21 @@
         "mtp_layers_embed_tokens": "model.layers[layer_idx].embed_tokens",
         "mtp_layers_shared_head_norm": "model.layers[layer_idx].shared_head.norm"
       }
+    },
+    "magistral": {
+      "__base__": "base",
+      "config_set_value": {
+        "qkv_type": "unpack",
+        "tokenizer_type": "MagistralTokenizer",
+        "num_query_groups": 8,
+        "qk_layernorm": false
+      },
+      "config_hf_key_mapping": {
+        "num_layers": "num_hidden_layers",
+        "norm_epsilon": "rms_norm_eps",
+        "rotary_base": "rope_theta",
+        "kv_channels": "head_dim"
+      }
     }
   }
 }

@@ -67,7 +67,7 @@ def main():
     parser.add_argument('--model-type-hf', type=str, default="llama2",
                         choices=['baichuan', 'baichuan2', 'llama2', 'mixtral', 'chatglm3', 'gemma', 'gemma2', 'qwen3',
                                  'bloom', 'bloom_3b', 'qwen', 'internlm2', 'deepseek2', 'minicpm', 'minicpm3', 'minicpm-moe',
-                                 'deepseek2-lite', 'qwen2-moe', 'qwen3-moe', 'phi3.5', 'phi3.5-moe', 'hunyuan', 'glm4', 'seed-oss'],
+                                 'deepseek2-lite', 'qwen2-moe', 'qwen3-moe', 'phi3.5', 'phi3.5-moe', 'hunyuan', 'glm4', 'seed-oss', 'magistral'],
                         help='model type of huggingface')
     parser.add_argument('--ckpt-cfg-path', type=str, default="configs/checkpoint/model_cfg.json",
                         help="Path to the config directory. If not specified, the default path in the repository will be used.")

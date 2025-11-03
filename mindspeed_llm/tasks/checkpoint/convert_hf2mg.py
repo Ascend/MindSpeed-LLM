@@ -38,7 +38,10 @@ class Hf2MgConvert(Convert):
             )
             
         if self.first_k_dense_replace is None:
-            self.first_k_dense_replace = self.load_model.first_k_dense_replace
+            self.first_k_dense_replace = getattr(self.load_model, 'first_k_dense_replace', 0)
+            if not getattr(self.load_model, 'num_experts', None):
+                self.first_k_dense_replace = self.num_layers
+                self.load_model.first_k_dense_replace = self.num_layers
 
         # model arguments
         if self.noop_layers is None:
@@ -565,7 +568,7 @@ class Hf2MgConvert(Convert):
                 qkv_bias = qkv_concatenate_bias(qkv_bias)
                 qkv_bias_lst = torch.chunk(qkv_bias, self.tensor_model_parallel_size, dim=0)
 
-            if self.load_model.qk_layernorm:
+            if getattr(self.load_model, 'qk_layernorm', False):
                 q_layernorm = hf_weight.pop(hf_weight_key["layers_self_attention_q_layernorm"])
                 k_layernorm = hf_weight.pop(hf_weight_key["layers_self_attention_k_layernorm"])
 
@@ -670,7 +673,7 @@ class Hf2MgConvert(Convert):
                     qkv_key, dense_key, q_layernorm_key, k_layernorm_key = _generate_attn_layers_key(mtp_layer_flag)
                     mg_weight[ep_rank][tp_rank][qkv_key] = qkv_weight_lst[tp_rank].clone()
                     mg_weight[ep_rank][tp_rank][dense_key] = dense_lst[tp_rank].clone()
-                    if self.load_model.qk_layernorm:
+                    if getattr(self.load_model, 'qk_layernorm', False):
                         mg_weight[ep_rank][tp_rank][q_layernorm_key] = q_layernorm.clone()
                         mg_weight[ep_rank][tp_rank][k_layernorm_key] = k_layernorm.clone()
                     if hasattr(self.load_model, "add_qkv_bias"):
@@ -678,10 +681,10 @@ class Hf2MgConvert(Convert):
                         mg_weight[ep_rank][tp_rank][qkv_bias_key] = qkv_bias_lst[tp_rank].clone()
 
     def get_first_k_dense_replace(self):
-        if getattr(self, "first_k_dense_replace", None) is None:
+        if not getattr(self, 'first_k_dense_replace', 0):
             num_experts = (getattr(self.load_model, 'num_experts', None) or
                            getattr(self.load_model, 'num_local_experts', None))
-            if num_experts is None:
+            if not num_experts:
                 return self.num_layers
             else:
                 return 0

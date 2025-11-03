@@ -950,6 +950,17 @@
       <td>【Ascend】</td>
       <td>【Pass】</td>
     </tr>
+    <tr>
+      <td rowspan="1"><a href="https://huggingface.co/mistralai">Magistral-Small-2506</a></td>
+      <td><a href="https://huggingface.co/mistralai/Magistral-Small-2506/tree/main">24B</a></td>
+      <td rowspan="1"><a href="../../../examples/mcore/magistral">magistral</a></td>
+      <td> 4K </td>
+      <th>Mcore</th>
+      <td> 2x8 </td>
+      <td> </td>
+      <td>【NAIE】</td>
+      <td>【Test】</td>
+    </tr>
   </tbody>
 </table>
 

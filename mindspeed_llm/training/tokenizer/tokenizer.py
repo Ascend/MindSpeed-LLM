@@ -22,6 +22,7 @@ from megatron.training.tokenizer import build_tokenizer as megatron_build_tokeni
 from megatron.training.tokenizer.tokenizer import _vocab_size_with_padding
 from megatron.core.datasets.megatron_tokenizer import MegatronTokenizer
 from mindspeed_llm.tasks.preprocess.templates import fix_model_tokenizer
+from mindspeed_llm.training.tokenizer.magistral_tokenizer import create_magistral_tokenizer
 
 
 def build_tokenizer(args):
@@ -56,10 +57,22 @@ def build_tokenizer(args):
         if getattr(args, "padded_vocab_size", None) is None:
             args.padded_vocab_size = _vocab_size_with_padding(tokenizer.vocab_size,
                                                               args)
+    elif args.tokenizer_type == 'MagistralTokenizer':
+        if hasattr(args,'tokenizer_padding_side'):
+            magistral_tokenizer = create_magistral_tokenizer(args, args.tokenizer_model, args.tokenizer_padding_side)
+        else:
+            magistral_tokenizer = create_magistral_tokenizer(args, args.tokenizer_model)
+        tokenizer=TokenizerAdaptor(magistral_tokenizer)
+        tokenizer.tokenizer.batch_decode = MagistralTokenizer_batch_decode
+        if hasattr(args, "prompt_type") and args.prompt_type is not None:
+            fix_model_tokenizer(tokenizer.tokenizer, args.prompt_type.strip(), args.prompt_type_path.strip(),
+                                args.enable_thinking)
+
     else:
         tokenizer = TokenizerAdaptor(megatron_build_tokenizer(args))
 
-    if hasattr(args, "prompt_type") and args.prompt_type is not None and args.tokenizer_type != "GPTSentencePieceTokenizer":
+    is_valid_tokenizer_type = args.tokenizer_type not in ["GPTSentencePieceTokenizer", "MagistralTokenizer"]
+    if hasattr(args, "prompt_type") and args.prompt_type is not None and is_valid_tokenizer_type:
         if hasattr(args, "handler_name") and args.handler_name == "HunyuanInstructionHandler":
             pass
         else:
@@ -103,6 +116,14 @@ class TokenizerAdaptor:
     @property
     def unique_identifiers(self):
         return self.tokenizer.unique_identifiers
+
+    @property
+    def pad(self):
+        return self.tokenizer.pad_token_id
+
+    @property
+    def eos(self):
+        return self.tokenizer.eos_token_id
 
 
 class _AutoTokenizer(MegatronTokenizer):
@@ -228,4 +249,19 @@ def GPTSentencePieceTokenizer_batch_decode(input_token, skip_special_tokens):
             result.append(' ')
         else:
             result.append(id_to_word[token_id])
+    return "".join(result)
+
+def MagistralTokenizer_batch_decode(input_token, skip_special_tokens):
+    args=get_args()
+    if hasattr(args,'tokenizer_padding_side'):
+        magistral_tokenizer = create_magistral_tokenizer(args, args.tokenizer_model, args.tokenizer_padding_side)
+    else:
+        magistral_tokenizer = create_magistral_tokenizer(args, args.tokenizer_name_or_path)
+    tokenizer = TokenizerAdaptor(magistral_tokenizer)
+    result=[]
+    input_token = input_token if isinstance(input_token, list) else input_token.tolist()
+
+    for token in input_token:
+        result.append(tokenizer.tokenizer.decode(token))
+
     return "".join(result)

@@ -73,7 +73,8 @@ class Mg2HfConvert(Convert):
             self.num_layer_list = list(map(int, self.load_model.num_layer_list.split(',')))
         else:
             self.num_layer_list = [self.load_model.num_layers // self.load_model.pipeline_model_parallel_size] * self.load_model.pipeline_model_parallel_size
-
+        if not getattr(self.load_model, 'num_expert', None):
+            self.first_k_dense_replace = self.load_model.num_layers
         if getattr(self.load_model, 'num_layers_per_virtual_pipeline_stage', None) is not None:
             self.num_layers_per_virtual_pipeline_stage = self.load_model.num_layers_per_virtual_pipeline_stage
             self.vpp_size = self.load_model.num_layers // self.load_model.pipeline_model_parallel_size // self.load_model.num_layers_per_virtual_pipeline_stage
@@ -558,7 +559,7 @@ class Mg2HfConvert(Convert):
             linear_qkv_key, linear_proj_key, q_layernorm_key, k_layernorm_key = _generate_attn_layers_key()
             linear_qkv_list = []
             linear_proj_list = []
-            
+
             if self.expert_tensor_parallel_size == 1:
                 for(tp_rank, ep_rank) in self.attention_tp_ckpts_list:
                     linear_qkv_list.append(mg_weight[(tp_rank, ep_rank)].pop(linear_qkv_key))
@@ -584,15 +585,17 @@ class Mg2HfConvert(Convert):
 
             o_proj = torch.cat(linear_proj_list, dim=1)
 
-            q_a_layernorm = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(q_layernorm_key)
-            kv_a_layernorm = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(k_layernorm_key)
+
+            if getattr(self.load_model, 'qk_layernorm', False):
+                q_a_layernorm = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(q_layernorm_key)
+                kv_a_layernorm = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(k_layernorm_key)
+                hf_weight[hf_weight_key["layers_self_attention_q_layernorm"]] = q_a_layernorm.clone()
+                hf_weight[hf_weight_key["layers_self_attention_k_layernorm"]] = kv_a_layernorm.clone()
 
             hf_weight[hf_weight_key["layers_self_attention_linear_q_proj"]] = q_proj.clone()
             hf_weight[hf_weight_key["layers_self_attention_linear_k_proj"]] = k_proj.clone()
             hf_weight[hf_weight_key["layers_self_attention_linear_v_proj"]] = v_proj.clone()
             hf_weight[hf_weight_key["layers_self_attention_linear_proj"]] = o_proj.clone()
-            hf_weight[hf_weight_key["layers_self_attention_q_layernorm"]] = q_a_layernorm.clone()
-            hf_weight[hf_weight_key["layers_self_attention_k_layernorm"]] = kv_a_layernorm.clone()
 
         elif self.load_model.qkv_type == "mix":
             if (hf_layer_idx + 1) % self.load_model.full_attention_interval == 0 or mtp_layer_flag:
@@ -762,7 +765,6 @@ class Mg2HfConvert(Convert):
                         hf_weight[hf_weight_key["layers_mlp_experts_gate_proj"]] = local_gate.contiguous().clone()
                         hf_weight[hf_weight_key["layers_mlp_experts_up_proj"]] = local_up.contiguous().clone()
                         hf_weight[hf_weight_key["layers_mlp_experts_linear_fc2"]] = local_down.contiguous().clone()
-            
 
         if hf_layer_idx >= self.first_k_dense_replace:
             # moe

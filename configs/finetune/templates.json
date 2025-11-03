@@ -452,6 +452,33 @@
     }
   },
   {
+    "name": "magistral",
+    "format_user": {
+      "slots": [
+        "[INST]{{content}}[/INST]"
+      ]
+    },
+    "format_assistant": {
+      "slots": [
+        "{{content}}",["eos_token"]
+      ]
+    },
+    "format_system": {
+      "slots": [
+        "[SYSTEM_PROMPT]{{content}}[/SYSTEM_PROMPT]"
+      ]
+    },
+    "format_prefix": {
+      "slots": [
+        [
+          "bos_token"
+        ]
+      ]
+    },
+    "default_system": "system_prompt\n\nA user will ask you to solve a task. You should first draft your thinking process (inner monologue) until you have derived the final answer. Afterwards, write a self-contained summary of your thoughts (i.e. your summary should be succinct but contain all the critical steps you needed to reach the conclusion). You should use Markdown to format your response. Write both your thoughts and summary in the same language as the task posed by the user. NEVER use \\boxed{} in your response.\nYour thinking process must follow the template below:\n<think>\nYour thoughts or/and draft, like working through an exercise on scratch paper. Be as casual and as long as you want until you are confident to generate a correct answer.\n</think>\nHere, provide a concise summary that reflects your reasoning and presents a clear final answer to the user. Don't mention that this is a summary.\n\nProblem:\n\n",
+    "template_class":"ReasoningTemplate"
+  },
+  {
     "name": "gemma",
     "format_user": {
       "slots": [
