@@ -19,6 +19,10 @@ class RequirementsBasicFeature(MindspeedRequirementsBasicFeature):
     def register_patches(self, patch_manager, args):
         super().register_patches(patch_manager, args)
         self.version_patch(patch_manager, args)
+
+    def pre_register_patches(self, patch_manager, args):
+        super().pre_register_patches(patch_manager, args)
+        self.load_checkpoint_patch(patch_manager, args)
         
     def optimizer_selection(self, pm, args):
         from mindspeed.core.optimizer.adamw import FusedTorchAdamW, AdamW
@@ -41,4 +45,9 @@ class RequirementsBasicFeature(MindspeedRequirementsBasicFeature):
     def version_patch(self, pm, args):
         from mindspeed_llm.tasks.megatron_basic.requirements_basic import version_wrapper
         pm.register_patch('importlib.metadata.version', version_wrapper)
+
+    def load_checkpoint_patch(self, pm, args):
+        if hasattr(args, 'lora_target_modules') and args.lora_target_modules:
+            from mindspeed_llm.tasks.megatron_basic.requirements_basic import _load_from_state_dict_wrapper
+            pm.register_patch('torch.nn.Module._load_from_state_dict', _load_from_state_dict_wrapper)
 
