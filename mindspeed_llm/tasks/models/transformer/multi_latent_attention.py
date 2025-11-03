@@ -13,13 +13,18 @@ from mindspeed.core.transformer.moe.moe_feature.fb_overlap.modules.attention imp
 from mindspeed.core.transformer.moe.moe_feature.fb_overlap.modules.utils import TensorSwapManager
 
 from megatron.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb
+from megatron.core.tensor_parallel import ColumnParallelLinear, RowParallelLinear
 from megatron.core.tensor_parallel.mappings import gather_from_sequence_parallel_region
 from megatron.core.transformer import TransformerConfig, ModuleSpec, build_module
 from megatron.core.transformer.attention import SelfAttention, SelfAttentionSubmodules
 from megatron.core.transformer.enums import AttnMaskType
 from megatron.core import mpu, parallel_state
 from megatron.training import get_args
-from .mla_up_proj_overlap_tp_comm import mla_up_projection_overlap_tp_comm
+
+from mindspeed_llm.core.transformer.custom_layers.transformer_engine import PTNorm
+from mindspeed_llm.tasks.models.transformer.dsa_indexer import get_dsa_indexer_spec
+from mindspeed_llm.tasks.models.transformer.mla_dot_product_attention import MlaDotProductAttention
+from mindspeed_llm.tasks.models.transformer.mla_up_proj_overlap_tp_comm import mla_up_projection_overlap_tp_comm
 
 try:
     import bitsandbytes as bnb
@@ -37,7 +42,7 @@ class CustomMLASelfAttentionSubmodules(SelfAttentionSubmodules):
     kv_layernorm: Union[ModuleSpec, type] = None
     linear_q_up_proj: Union[ModuleSpec, type] = None
     linear_kv_up_proj: Union[ModuleSpec, type] = None
-    indexer: Union[ModuleSpec, type] = None
+    dsa_indexer: Union[ModuleSpec, type] = None
 
 
 @dataclass
@@ -51,7 +56,35 @@ class MLASelfAttentionWithMMSplitSubmodules(SelfAttentionSubmodules):
     linear_kv_nope: Union[ModuleSpec, type] = None
     linear_qk_rope: Union[ModuleSpec, type] = None
     linear_v: Union[ModuleSpec, type] = None
-    indexer: Union[ModuleSpec, type] = None
+    dsa_indexer: Union[ModuleSpec, type] = None
+
+
+def get_mla_self_attn_submodules(qk_layernorm, mla_mm_split, enable_dsa_indexer):
+    if not mla_mm_split:
+        return CustomMLASelfAttentionSubmodules(
+            linear_qkv=LinearNoTP,
+            core_attention=MlaDotProductAttention,
+            linear_proj=RowParallelLinear,
+            q_layernorm=PTNorm if qk_layernorm else IdentityOp,
+            kv_layernorm=PTNorm if qk_layernorm else IdentityOp,
+            linear_q_up_proj=ColumnParallelLinear,
+            linear_kv_up_proj=ColumnParallelLinear,
+            dsa_indexer=get_dsa_indexer_spec(enable_dsa_indexer=enable_dsa_indexer),
+        )
+
+    else:
+        return MLASelfAttentionWithMMSplitSubmodules(
+            linear_qkv=LinearNoTP,
+            core_attention=MlaDotProductAttention,
+            linear_proj=RowParallelLinear,
+            q_layernorm=PTNorm if qk_layernorm else IdentityOp,
+            kv_layernorm=PTNorm if qk_layernorm else IdentityOp,
+            linear_qk_nope=ColumnParallelLinear,
+            linear_qk_rope=ColumnParallelLinear,
+            linear_kv_nope=ColumnParallelLinear,
+            linear_v=ColumnParallelLinear,
+            dsa_indexer=get_dsa_indexer_spec(enable_dsa_indexer=enable_dsa_indexer),
+        )
 
 
 class CustomMLASelfAttention(SelfAttention):
@@ -218,10 +251,10 @@ class CustomMLASelfAttention(SelfAttention):
             tp_comm_buffer_name="proj",
         )
 
-        self.indexer = build_module(submodules.indexer,
-                                    config=self.config,
-                                    layer_number=layer_number
-                                    )
+        self.dsa_indexer = build_module(submodules.dsa_indexer,
+                                        config=self.config,
+                                        layer_number=layer_number
+                                        )
 
         # hook async A2A launcher inside mla forward when TP > 1.
         # a2a should be launched after TP communication finished to avoid bandwidth compete.
@@ -378,11 +411,11 @@ class CustomMLASelfAttention(SelfAttention):
                         key = key.repeat_interleave(heads_per_gqa_group, dim=2)
                         value = value.repeat_interleave(heads_per_gqa_group, dim=2)
 
-            # Indexer module computation
+            # DSAIndexer module computation
             nonlocal attention_mask
-            if args.use_indexer:
-                topk_score, topk_indices, attention_mask = self.indexer(hidden_states.detach(), q_compressed.detach(),
-                                                                        0, rotary_pos_emb)
+            if args.enable_dsa_indexer:
+                topk_score, topk_indices, attention_mask = self.dsa_indexer(hidden_states.detach(), q_compressed.detach(),
+                                                                            0, rotary_pos_emb)
 
             # ==================================
             # core attention computation

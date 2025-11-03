@@ -805,7 +805,7 @@
         "multi_latent_attention": true,
         "qk_layernorm": true,
         "router_bias": true,
-        "use_indexer": true
+        "enable_dsa_indexer": true
       },
       "config_hf_key_mapping": {
         "first_k_dense_replace": "first_k_dense_replace",

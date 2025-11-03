@@ -9,6 +9,8 @@ from functools import wraps
 
 from megatron.training import get_args
 from megatron.legacy.model import RMSNorm
+from megatron.core.transformer.identity_op import IdentityOp
+from megatron.core.tensor_parallel import ColumnParallelLinear, RowParallelLinear
 from megatron.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb
 from megatron.core.transformer import TransformerConfig, ModuleSpec, build_module, MegatronModule
 
@@ -16,11 +18,24 @@ from scipy.linalg import hadamard
 
 
 @dataclass
-class IndexerSubmodules:
+class DSAIndexerSubmodules:
     wq_b: Union[ModuleSpec, type] = None
     wk: Union[ModuleSpec, type] = None
     weights_proj: Union[ModuleSpec, type] = None
     k_norm: Union[ModuleSpec, type] = None
+
+
+def get_dsa_indexer_spec(enable_dsa_indexer):
+    """Helper function to get module spec for dsa_indexer"""
+    if enable_dsa_indexer:
+        return ModuleSpec(module=DSAIndexer,
+                          submodules=DSAIndexerSubmodules(
+                                wq_b=ColumnParallelLinear,
+                                wk=ColumnParallelLinear,
+                                weights_proj=ColumnParallelLinear,
+                                ))
+    else:
+        return IdentityOp
 
 
 def fp16module_init_wrapper(fn):
@@ -109,7 +124,7 @@ def rotate_activation(x: torch.Tensor) -> torch.Tensor:
 
 class LayerNorm(torch.nn.Module):
     """
-    Layer Normalization in Indexer.
+    Layer Normalization in DSAIndexer.
     """
     def __init__(self, dim: int, eps: float = 1e-6):
         super().__init__()
@@ -122,7 +137,7 @@ class LayerNorm(torch.nn.Module):
         return F.layer_norm(x.float(), (self.dim,), self.weight, self.bias, self.eps).type_as(x)
 
 
-class Indexer(MegatronModule):
+class DSAIndexer(MegatronModule):
     """
     An indexing module that computes sparse attention scores using learned queries and keys,
     with optional rotary positional embeddings and structured projection (e.g., via Hadamard rotation).
@@ -133,7 +148,7 @@ class Indexer(MegatronModule):
 
     def __init__(self,
                  config: TransformerConfig,
-                 submodules: IndexerSubmodules,
+                 submodules: DSAIndexerSubmodules,
                  layer_number: int):
         super().__init__(config=config)
         args = get_args()
@@ -183,7 +198,7 @@ class Indexer(MegatronModule):
 
     def forward(self, x: torch.Tensor, qr: torch.Tensor, start_pos: int, freqs_cis: torch.Tensor, mask=None):
         """
-        Forward pass of the indexer module.
+        Forward pass of the dsa_indexer module.
 
         Args:
             x (torch.Tensor): Input activations of shape [seq_len, batch_size, hidden_size].
