@@ -10,8 +10,8 @@ WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
 CKPT_SAVE_DIR="/data/cache"
 DATA_PATH="/data/datasets/glm4_9b_dataset/alpaca_text_document"
-TOKENIZER_PATH="/data/hf/glm4_9b_hf"
-CKPT_LOAD_DIR="/data/pipeline/glm4_tp2pp2"
+TOKENIZER_PATH="/data/ci/models/glm4/hf/glm4_9b_hf"
+CKPT_LOAD_DIR="/data/ci/models/glm4/mg/glm4_tp2pp2"
 
 TP=2
 PP=2

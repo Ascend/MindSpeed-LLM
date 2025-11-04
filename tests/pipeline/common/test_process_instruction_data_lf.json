@@ -2,12 +2,12 @@
     "test_alpaca_dataset": [
         {
             "params": {
-                "input": "/data/tune_dataset/train-00000-of-00001-a09b74b3ef9c3b56.parquet",
+                "input": "/data/ci/datasets/tune_dataset/train-00000-of-00001-a09b74b3ef9c3b56.parquet",
                 "tokenizer-type": "PretrainedFromHF",
                 "handler-name": "AlpacaStyleInstructionHandler",
                 "output-prefix": "/data/tune_dataset/alpaca/alpaca",
                 "overwrite-cache": null,
-                "tokenizer-name-or-path": "/data/qwen-7b/",
+                "tokenizer-name-or-path": "/data/ci/models/qwen-7b/hf/qwen-7b/",
                 "workers": 4,
                 "log-interval": 1000,
                 "prompt-type": "qwen"
@@ -17,11 +17,11 @@
     "test_alpaca_history_dataset": [
         {
             "params": {
-                "input": "/data/tune_dataset/oaast_sft.json",
+                "input": "/data/ci/datasets/tune_dataset/oaast_sft.json",
                 "tokenizer-type": "PretrainedFromHF",
                 "handler-name": "AlpacaStyleInstructionHandler",
-                "output-prefix": "/data/tune_dataset/alpaca_his/alpaca_his",
-                "tokenizer-name-or-path": "/data/qwen-7b/",
+                "output-prefix": "/data/ci/datasets/tune_dataset/alpaca_his/alpaca_his",
+                "tokenizer-name-or-path": "/data/ci/models/qwen-7b/hf/qwen-7b/",
                 "overwrite-cache": null,
                 "workers": 4,
                 "log-interval": 1000,
@@ -31,11 +31,11 @@
         },
         {
             "params": {
-                "input": "/data/tune_dataset/oaast_sft.json",
+                "input": "/data/ci/datasets/tune_dataset/oaast_sft.json",
                 "tokenizer-type": "PretrainedFromHF",
                 "handler-name": "AlpacaStyleInstructionHandler",
-                "output-prefix": "/data/tune_dataset/alpaca_his/alpaca_his_seq1024",
-                "tokenizer-name-or-path": "/data/qwen-7b/",
+                "output-prefix": "/data/ci/datasets/tune_dataset/alpaca_his/alpaca_his_seq1024",
+                "tokenizer-name-or-path": "/data/ci/models/qwen-7b/hf/qwen-7b/",
                 "overwrite-cache": null,
                 "workers": 4,
                 "log-interval": 1000,
@@ -49,11 +49,11 @@
     "test_sharegpt_dataset": [
         {
             "params": {
-                "input": "/data/tune_dataset/sharegpt_formatted_data-evol-gpt4.jsonl",
+                "input": "/data/ci/datasets/tune_dataset/sharegpt_formatted_data-evol-gpt4.jsonl",
                 "tokenizer-type": "PretrainedFromHF",
                 "handler-name": "SharegptStyleInstructionHandler",
-                "output-prefix": "/data/tune_dataset/sharegpt/sharegpt",
-                "tokenizer-name-or-path": "/data/qwen-7b/",
+                "output-prefix": "/data/ci/datasets/tune_dataset/sharegpt/sharegpt",
+                "tokenizer-name-or-path": "/data/ci/models/qwen-7b/hf/qwen-7b/",
                 "workers": 4,
                 "overwrite-cache": null,
                 "log-interval": 1000,
@@ -65,11 +65,11 @@
     "test_openai_dataset": [
         {
             "params": {
-                "input": "/data/tune_dataset/sss.json",
+                "input": "/data/ci/datasets/tune_dataset/sss.json",
                 "tokenizer-type": "PretrainedFromHF",
                 "handler-name": "SharegptStyleInstructionHandler",
-                "output-prefix": "/data/tune_dataset/sharegpt/sharegpt",
-                "tokenizer-name-or-path": "/data/qwen-7b/",
+                "output-prefix": "/data/ci/datasets/tune_dataset/sharegpt/sharegpt",
+                "tokenizer-name-or-path": "/data/ci/models/qwen-7b/hf/qwen-7b/",
                 "overwrite-cache": null,
                 "workers": 4,
                 "log-interval": 1000,
@@ -81,11 +81,11 @@
     "test_abstract_prompt_type": [
         {
             "params": {
-                "input": "/data/tune_dataset/train-00000-of-00001-a09b74b3ef9c3b56.parquet",
+                "input": "/data/ci/datasets/tune_dataset/train-00000-of-00001-a09b74b3ef9c3b56.parquet",
                 "tokenizer-type": "PretrainedFromHF",
                 "handler-name": "AlpacaStyleInstructionHandler",
-                "output-prefix": "/data/tune_dataset/prompt_abstract/alpaca",
-                "tokenizer-name-or-path": "/data/hf/llama-2-7b-hf/",
+                "output-prefix": "/data/ci/datasets/tune_dataset/prompt_abstract/alpaca",
+                "tokenizer-name-or-path": "/data/ci/models/llama2/hf/llama-2-7b-hf/",
                 "overwrite-cache": null,
                 "workers": 4,
                 "log-interval": 1000,

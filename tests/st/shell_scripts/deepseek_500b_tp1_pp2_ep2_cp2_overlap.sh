@@ -11,9 +11,9 @@ WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
 basepath=$(cd `dirname $0`; cd ../../../; pwd)
 
-CKPT_LOAD_DIR="/data/deepseek-500b-tp1-pp2-ep2-cp2-overlap-base/"
-DATA_PATH="/data/pretrain_dataset/alpaca_text_document"
-TOKENIZER_MODEL="/data/hf/llama-2-7b-hf"
+CKPT_LOAD_DIR="/data/ci/models/deepseek-v2/mg/deepseek-500b-tp1-pp2-ep2-cp2-overlap-base/"
+DATA_PATH="/data/ci/datasets/processed/pretrain_dataset/alpaca_text_document"
+TOKENIZER_MODEL="/data/ci/models/llama2/hf/llama-2-7b-hf"
 
 TP=1
 PP=2

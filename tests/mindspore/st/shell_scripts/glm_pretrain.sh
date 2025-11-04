@@ -16,9 +16,9 @@ NODE_RANK=0
 WORLD_SIZE=$(($GPUS_PER_NODE*$NNODES))
 
 
-DATA_PATH="/data/mindspore/st/test_glm_pretrain/dataset/dataset/alpaca_text_document"
-TOKENIZER_PATH="/data/mindspore/st/test_glm_pretrain/tokenizer"
-CKPT_LOAD_DIR="/data/mindspore/st/test_glm_pretrain/ckpt_ut"
+DATA_PATH="/data/ci/mindspore/st/test_glm_pretrain/dataset/dataset/alpaca_text_document"
+TOKENIZER_PATH="/data/ci/mindspore/st/test_glm_pretrain/tokenizer"
+CKPT_LOAD_DIR="/data/ci/mindspore/st/test_glm_pretrain/ckpt_ut"
 
 TP=2
 PP=2

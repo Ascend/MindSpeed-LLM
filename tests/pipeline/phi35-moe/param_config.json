@@ -7,11 +7,11 @@
                 "moe-grouped-gemm": null,
                 "spec": ["mindspeed_llm.tasks.models.spec.phi35_moe_spec", "layer_spec"],
                 "task": "mmlu",
-                "task-data-path": "/data/eval_data/mmlu/data/test",
+                "task-data-path": "/data/ci/datasets/eval_data/mmlu/data/test",
                 "tensor-model-parallel-size": 1,
                 "pipeline-model-parallel-size": 8,
                 "tokenizer-type": "PretrainedFromHF",
-                "tokenizer-name-or-path": "/data/hf/Phi-3.5-MoE-instruct-hf",
+                "tokenizer-name-or-path": "/data/ci/models/phi35/hf/Phi-3.5-MoE-instruct-hf",
                 "seq-length": 4096,
                 "max-position-embeddings": 131072,
                 "num-layers": 32,
@@ -26,7 +26,7 @@
                 "moe-input-jitter-eps": 0.01,
                 "moe-permutation-async-comm": null,
                 "swiglu": null,
-                "load": "/data/pipeline/phi35-moe-tp1pp8-mcore-base/",
+                "load": "/data/ci/models/phi35/mg/phi35-moe-tp1pp8-mcore-base/",
                 "evaluation-batch-size": 1,
                 "micro-batch-size": 1,
                 "max-new-tokens": 1,
@@ -71,7 +71,7 @@
                 "tensor-model-parallel-size": 1,
                 "pipeline-model-parallel-size": 8,
                 "tokenizer-type": "PretrainedFromHF",
-                "tokenizer-name-or-path": "/data/hf/Phi-3.5-MoE-instruct-hf",
+                "tokenizer-name-or-path": "/data/ci/models/phi35/hf/Phi-3.5-MoE-instruct-hf",
                 "seq-length": 4096,
                 "max-position-embeddings": 131072,
                 "num-layers": 32,
@@ -86,7 +86,7 @@
                 "moe-input-jitter-eps": 0.01,
                 "moe-permutation-async-comm": null,
                 "swiglu": null,
-                "load": "/data/pipeline/phi35-moe-tp1pp8-mcore-base",
+                "load": "/data/ci/models/phi35/mg/phi35-moe-tp1pp8-mcore-base",
                 "micro-batch-size": 1,
                 "max-new-tokens": 256,
                 "padded-vocab-size": 32064,
@@ -123,9 +123,9 @@
     "test_preprocess_pretrain_data": [
         {
             "param": {
-                "input": "/data/train-00000-of-00001-a09b74b3ef9c3b56.parquet",
+                "input": "/data/ci/datasets/origin/train-00000-of-00001-a09b74b3ef9c3b56.parquet",
                 "tokenizer-type": "PretrainedFromHF",
-                "tokenizer-name-or-path": "/data/hf/Phi-3.5-MoE-instruct-hf"
+                "tokenizer-name-or-path": "/data/ci/models/phi35/hf/Phi-3.5-MoE-instruct-hf"
             },
             "prefix": "alpaca"
         }
@@ -141,9 +141,9 @@
                 "save-model-type": "mg",
                 "target-tensor-parallel-size": "1",
                 "target-pipeline-parallel-size": "8",
-                "load-dir": "/data/hf/Phi-3.5-MoE-instruct-hf",
-                "save-dir": "/data/cache/test_phi35_moe_hf2mg_tp1pp8_save",
-                "tokenizer-model": "/data/hf/Phi-3.5-MoE-instruct-hf/tokenizer.model",
+                "load-dir": "/data/ci/models/phi35/hf/Phi-3.5-MoE-instruct-hf",
+                "save-dir": "/data/ci/cache/test_phi35_moe_hf2mg_tp1pp8_save",
+                "tokenizer-model": "/data/ci/models/phi35/hf/Phi-3.5-MoE-instruct-hf/tokenizer.model",
                 "spec": "mindspeed_llm.tasks.models.spec.phi35_moe_spec layer_spec",
                 "params-dtype": "bf16",
                 "add-qkv-bias": null,

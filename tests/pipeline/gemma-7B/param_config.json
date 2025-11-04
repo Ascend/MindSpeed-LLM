@@ -2,9 +2,9 @@
     "test_preprocess_pretrain_data": [
         {
             "param": {
-                "input": "/data/train-00000-of-00001-a09b74b3ef9c3b56.parquet",
+                "input": "/data/ci/datasets/origin/train-00000-of-00001-a09b74b3ef9c3b56.parquet",
                 "tokenizer-type": "PretrainedFromHF",
-                "tokenizer-name-or-path": "/data/hf/gemma-7b-hf/"
+                "tokenizer-name-or-path": "/data/ci/models/gemma/hf/gemma-7b-hf/"
             },
             "prefix": "alpaca"
         }

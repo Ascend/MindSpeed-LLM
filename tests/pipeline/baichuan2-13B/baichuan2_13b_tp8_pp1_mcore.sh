@@ -13,9 +13,9 @@ WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 basepath=$(cd `dirname $0`; cd ../../../; pwd)
 
 
-DATA_PATH="/data/datasets/baichuan2-13B-data/enwiki/enwiki_text_document"
-TOKENIZER_MODEL="/data/hf/baichuan2-13B-hf/tokenizer.model"
-CKPT_LOAD_DIR="/data/pipeline/Baichuan2-13B-tp8pp1-mcore-hf-layer2/"
+DATA_PATH="/data/ci/datasets/processed/baichuan2-13B-data/enwiki/enwiki_text_document"
+TOKENIZER_MODEL="/data/ci/models/baichuan2/hf/baichuan2-13B-hf/tokenizer.model"
+CKPT_LOAD_DIR="/data/ci/models/baichuan2/mg/Baichuan2-13B-tp8pp1-mcore-hf-layer2/"
 
 TP=8
 PP=1

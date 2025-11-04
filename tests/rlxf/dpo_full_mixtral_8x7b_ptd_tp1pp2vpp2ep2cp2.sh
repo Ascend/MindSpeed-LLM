@@ -23,7 +23,7 @@ DISTRIBUTED_ARGS="
 
 echo "NODE_RANK ${NODE_RANK}"
 
-DATA_PATH="/data/pairwise_dataset/baseline/orca_rlhf/orca_rlhf_mixtral"
+DATA_PATH="/data/ci/datasets/origin/pairwise_dataset/baseline/orca_rlhf/orca_rlhf_mixtral"
 TOKENIZER_MODEL="/data/Mixtral-8x7B-v0.1/"
 CKPT_LOAD_DIR="/data/mixtral_8x7b_tp1pp2vpp2ep2/"
 
