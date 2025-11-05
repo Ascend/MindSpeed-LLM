@@ -6,8 +6,8 @@ SHELL_SCRIPTS_DIR="$BASE_DIR/shell_scripts"
 BASELINE_DIR="$BASE_DIR/baseline_results"
 EXEC_PY_DIR=$(dirname "$BASE_DIR")
 
-GENERATE_LOG_DIR=/data/run_logs
-GENERATE_JSON_DIR=/data/run_jsons
+GENERATE_LOG_DIR=/data/ci/run_logs
+GENERATE_JSON_DIR=/data/ci/run_jsons
 
 rm -rf $GENERATE_LOG_DIR/*
 rm -rf $GENERATE_JSON_DIR/*

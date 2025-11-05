@@ -63,7 +63,7 @@
                 "swiglu": null,
                 "load": "/data/ci/models/deepseek2/mg/deepseek2-l2-tp1-pp1-ep8-new",
                 "tokenizer-type": "PretrainedFromHF",
-                "tokenizer-name-or-path": "/data/gemm/",
+                "tokenizer-name-or-path": "/data/ci/models/deepseek2/hf/deepseek2_hf/",
                 "bf16": null,
                 "normalization": "RMSNorm",
                 "untie-embeddings-and-output-weights": null,
