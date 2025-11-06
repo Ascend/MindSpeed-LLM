@@ -17,6 +17,8 @@ from time import time
 from functools import wraps
 from logging import getLogger
 import torch
+import torch_npu
+import socket
 
 from megatron.training import get_args
 from megatron.core import mpu, dist_checkpointing
@@ -302,4 +304,149 @@ def save_checkpoint_wrapper(fn):
 
         end_misc = time()
         logger.debug(f"rank: {rank}, takes {end_misc - start_misc} to finalize ckpt save ")
+    return wrapper
+
+
+def is_shared_path(path: str, retry: int = 3, wait: float = 0.5) -> bool:
+
+    if not torch.distributed.is_initialized() or torch.distributed.get_world_size() == 1:
+        return True
+
+    rank = torch.distributed.get_rank()
+    world_size = torch.distributed.get_world_size()
+
+    hostname = socket.gethostname()
+    local_rank = int(os.environ.get("LOCAL_RANK", 0))
+
+    os.makedirs(path, exist_ok=True)
+    marker_file = os.path.join(path, f".share_test_{hostname}")
+
+    try:
+        if local_rank == 0:
+            with open(marker_file, "w") as f:
+                f.write(f"marker from {hostname}")
+        torch.distributed.barrier()
+
+        visible_files = set()
+        for _ in range(retry):
+            visible_files = {f for f in os.listdir(path) if f.startswith(".share_test_")}
+            if len(visible_files) > 1 or world_size == 1:
+                break
+            time.sleep(wait)
+
+        visible_count = len(visible_files)
+        visible_tensor = torch.tensor(
+            [visible_count],
+            dtype=torch.int,
+            device="cuda" if torch.cuda.is_available() else "cpu"
+        )
+        torch.distributed.all_reduce(visible_tensor, op=torch.distributed.ReduceOp.MAX)
+        total_visible = visible_tensor.item()
+
+        if rank == 0:
+            if total_visible > 1:
+                logger.info(f"[is_shared_path] Detection result: Shared storage ({path}), detected {total_visible} node marker files.")
+                shared = True
+            elif total_visible == 1:
+                logger.info(f"[is_shared_path] Detection result: Non-shared storage ({path}), only local node can access its own marker.")
+                shared = False
+            else:
+                raise RuntimeError(f"[is_shared_path] Detection failed: No visible marker files, please check mount configuration.")
+        else:
+            shared = None
+
+        shared = torch.tensor([1 if shared else 0], dtype=torch.int, device="cuda" if torch.cuda.is_available() else "cpu")
+        torch.distributed.broadcast(shared, src=0)
+
+        torch.distributed.barrier()
+        if local_rank == 0 and os.path.exists(marker_file):
+            os.remove(marker_file)
+        torch.distributed.barrier()
+
+        return bool(shared.item())
+
+    except Exception as e:
+        if rank == 0:
+            logger.info(f"[is_shared_path] Exception during shared path check: {e}")
+        raise
+
+
+def _convert_weights_if_needed(args, shared: bool):
+    """Execute weight conversion logic.
+    - If shared=True, only rank0 executes once;
+    - If shared=False, each node's local_rank==0 executes once.
+    """
+    dist = torch.distributed
+
+    if shared:
+        if dist.get_rank() == 0:
+            logger.info("[Convert] Detected unconverted weights, starting conversion process...")
+            start = time.time()
+            converter = Hf2MgConvert(args)
+            converter.run()
+            logger.info(f"[Convert] Weight conversion completed, time elapsed: {time.time() - start:.2f}s")
+        dist.barrier()
+        return
+
+    if "LOCAL_RANK" in os.environ:
+        local_rank = int(os.environ["LOCAL_RANK"])
+    else:
+        local_rank = dist.get_rank() % torch.cuda.device_count()
+
+    if local_rank == 0:
+        logger.info("[Convert] Detected non-shared storage, starting conversion on this node...")
+        start = time.time()
+        converter = Hf2MgConvert(args)
+        converter.run()
+        logger.info(f"[Convert] Node conversion completed, time elapsed: {time.time() - start:.2f}s")
+
+    dist.barrier()
+
+
+def initialize_megatron_wrapper(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        result = fn(*args, **kwargs)
+
+        if not torch.distributed.is_initialized():
+            return result
+
+        args = get_args()
+        logger.info("[InitHook] Megatron initialization completed, starting weight conversion check...")
+
+
+        args.load_dir = args.load
+
+        # Add path validation
+        if not os.path.exists(args.load_dir):
+            raise ValueError(f"Specified weight path does not exist: {args.load_dir}")
+
+        # If hf conversion is enabled, check if the path is a valid huggingface weight path
+        files = os.listdir(args.load_dir)
+        if not (any(f == 'config.json' for f in files) and 
+                any(f.endswith(('.bin', '.safetensors')) and 'model' in f.lower() for f in files)):
+            raise ValueError(f"When enable_hf2mg_convert is enabled, path {args.load_dir} is not a valid huggingface weight path, missing necessary model files")
+
+        # check the supported models
+        supported_models = ['qwen3-moe', 'deepseek3', 'glm45-moe', 'bailing_mini', 
+                        'qwen3-next', 'seed-oss', 'deepseek32', 'magistral']
+        if args.model_type_hf not in supported_models:
+            raise ValueError(f"Current --enable-hf2mg-convert does not support model type '{args.model_type_hf}'. "
+                            f"Supported models: {', '.join(supported_models)}")
+
+        cache_dir = os.path.join(args.load_dir, "megatron_cache")
+        os.makedirs(cache_dir, exist_ok=True)
+        args.save_dir = cache_dir
+
+        logger.info(f"[InitHook] Conversion cache path: {args.save_dir}")
+
+        shared = is_shared_path(args.save_dir)
+        logger.info(f"[InitHook] save_dir={args.save_dir}, shared_storage={shared}")
+
+        _convert_weights_if_needed(args, shared)
+
+        args.load = args.save_dir
+        logger.info("[InitHook] Weight conversion phase completed.")
+        return result
+
     return wrapper

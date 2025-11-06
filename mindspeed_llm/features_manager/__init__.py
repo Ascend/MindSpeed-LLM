@@ -81,6 +81,7 @@ from mindspeed_llm.features_manager.pipeline_parallel.num_layer_list import NumL
 from mindspeed_llm.features_manager.ai_framework.ms_patch_feature import MindSporePatchFeature
 from mindspeed_llm.features_manager.tensor_parallel.tp_2d import TP2dFeature
 from mindspeed_llm.features_manager.arguments.deprecated_args import DeprecatedArgsFeature
+from mindspeed_llm.features_manager.common.convert_checkpoint import CheckpointFeature
 
 
 FEATURES_LIST = [
@@ -128,6 +129,7 @@ def add_llm_features(features_list: List[MindSpeedFeature]):
         DSAIndexerFeature(),
         MambaModel(),
         LanguageModelEmbeddingFeature(),
+        CheckpointFeature(),
     ])
 
 
