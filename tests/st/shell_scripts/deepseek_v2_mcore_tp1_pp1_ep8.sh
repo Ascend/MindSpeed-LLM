@@ -12,7 +12,7 @@ WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 basepath=$(cd `dirname $0`; cd ../../../; pwd)
 
 DATA_PATH="/data/ci/datasets/processed/pretrain_dataset/alpaca_text_document"
-TOKENIZER_MODEL="/data/gemm/"
+TOKENIZER_MODEL="/data/ci/models/deepseek2/hf/deepseek2_hf/"
 CKPT_LOAD_DIR="/data/ci/models/deepseek-v2/mg/deepseek-v2-l2_gemm_t1p1e8"
 
 TP=1

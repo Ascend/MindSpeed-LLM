@@ -17,10 +17,10 @@ NNODES=1
 NODE_RANK=0
 WORLD_SIZE=$(($GPUS_PER_NODE*$NNODES))
 
-CKPT_SAVE_DIR="/data/mindspore/st/test_ds3_pretrain/ckpt_tp2ep2pp2vpp1"
-DATA_PATH="/data/mindspore/st/test_ds3_pretrain/dataset/dataset/enwiki_text_document"
-TOKENIZER_PATH="/data/mindspore/st/test_ds3_pretrain/tokenizer"
-CKPT_LOAD_DIR="/data/mindspore/st/test_ds3_pretrain/ckpt_tp2ep2pp2vpp1"
+CKPT_SAVE_DIR="/data/ci/mindspore/st/test_ds3_pretrain/ckpt_tp2ep2pp2vpp1"
+DATA_PATH="/data/ci/mindspore/st/test_ds3_pretrain/dataset/dataset/enwiki_text_document"
+TOKENIZER_PATH="/data/ci/mindspore/st/test_ds3_pretrain/tokenizer"
+CKPT_LOAD_DIR="/data/ci/mindspore/st/test_ds3_pretrain/ckpt_tp2ep2pp2vpp1"
 
 TP=2
 PP=2
