@@ -114,7 +114,7 @@ TUNE_ARGS="
     --is-instruction-dataset \
     --tokenizer-not-use-fast \
     --prompt-type qwen3 \
-    --variable-seq-lengths
+    --no-pad-to-seq-lengths
 "
 
 msrun $DISTRIBUTED_ARGS posttrain_gpt.py \

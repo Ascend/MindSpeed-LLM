@@ -70,6 +70,7 @@ GPT_ARGS="
     --no-masked-softmax-fusion \
     --group-query-attention \
     --num-query-groups 8 \
+    --seed 42 \
     --bf16 \
     --min-lr 1.25e-7 \
     --weight-decay 1e-1 \
@@ -100,7 +101,7 @@ TUNE_ARGS="
     --stage sft \
     --is-instruction-dataset \
     --prompt-type qwen3 \
-    --variable-seq-lengths
+    --no-pad-to-seq-lengths
 "
 
 msrun $DISTRIBUTED_ARGS posttrain_gpt.py \
