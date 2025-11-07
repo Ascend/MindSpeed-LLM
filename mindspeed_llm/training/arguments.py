@@ -1067,6 +1067,11 @@ def _validate_yarn(args):
         if args.rope_scaling_original_max_position_embeddings is None:
             raise AssertionError('The parameter rope_scaling_original_max_position_embeddings should be set '
                                  'when use yarn.')
+        if args.multi_latent_attention and not args.rope_scaling_factor:
+             raise AssertionError('The parameter rope_scaling_factor should be set when use yarn.')
+        if args.max_position_embeddings / args.rope_scaling_original_max_position_embeddings != args.rope_scaling_factor:
+            raise AssertionError('The parameter rope_scaling_factor should be equal to max_position_embeddings'
+                                 'divided by rope_scaling_original_max_position_embeddings.')
 
 
 def _validate_transformer_block_build_layers(args):
