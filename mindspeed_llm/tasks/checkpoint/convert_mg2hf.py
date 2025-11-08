@@ -504,10 +504,10 @@ class Mg2HfConvert(Convert):
                         kv_nope_list.append(mg_weight[(tp_rank, ep_rank)].pop(kv_nope_key))
                         linear_v_list.append(mg_weight[(tp_rank, ep_rank)].pop(linear_v_key))
                     else:
-                        linear_qb = mg_weight[(tp_rank, ep_rank)].pop(linear_qb_key)
+                        if getattr(self.load_model, 'q_lora_rank', False):
+                            linear_qb = mg_weight[(tp_rank, ep_rank)].pop(linear_qb_key)
+                            linear_qb_list.append(linear_qb.clone())
                         linear_kvb = mg_weight[(tp_rank, ep_rank)].pop(linear_kvb_key)
-
-                        linear_qb_list.append(linear_qb.clone())
                         linear_kvb_list.append(linear_kvb.clone())
             else:
                 for tp_rank in self.tp_rank_list:
@@ -520,10 +520,10 @@ class Mg2HfConvert(Convert):
                         kv_nope_list.append(mg_weight[(tp_rank, self.ep_rank_list[0])].pop(kv_nope_key))
                         linear_v_list.append(mg_weight[(tp_rank, self.ep_rank_list[0])].pop(linear_v_key))
                     else:
-                        linear_qb = mg_weight[(tp_rank, self.ep_rank_list[0])].pop(linear_qb_key)
+                        if getattr(self.load_model, 'q_lora_rank', False):
+                            linear_qb = mg_weight[(tp_rank, self.ep_rank_list[0])].pop(linear_qb_key)
+                            linear_qb_list.append(linear_qb.clone())
                         linear_kvb = mg_weight[(tp_rank, self.ep_rank_list[0])].pop(linear_kvb_key)
-
-                        linear_qb_list.append(linear_qb.clone())
                         linear_kvb_list.append(linear_kvb.clone())
 
             o_proj = torch.cat(linear_proj_list, dim=1)
@@ -538,22 +538,28 @@ class Mg2HfConvert(Convert):
                 kv_b_proj = torch.cat([kv_nope_weight, linear_v_weight], dim=1)
                 kv_b_proj = kv_b_proj.reshape(self.num_attention_heads * (self.qk_nope_head_dim + self.v_head_dim), -1)
             else:
-                q_b_proj = torch.cat(linear_qb_list, dim=0)
+                if getattr(self.load_model, 'q_lora_rank', False):
+                    q_b_proj = torch.cat(linear_qb_list, dim=0)
                 kv_b_proj = torch.cat(linear_kvb_list, dim=0)
 
             linear_qkv_weights = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(linear_qkv_key)
-            q_a_proj = linear_qkv_weights[:self.load_model.q_lora_rank, :].clone()
-            kv_a_proj_with_mqa = linear_qkv_weights[self.load_model.q_lora_rank:, :].clone()
-
-            q_a_layernorm = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(q_norm_key)
+            if getattr(self.load_model, 'q_lora_rank', False):
+                q_a_proj = linear_qkv_weights[:self.load_model.q_lora_rank, :].clone()
+                kv_a_proj_with_mqa = linear_qkv_weights[self.load_model.q_lora_rank:, :].clone()
+                q_a_layernorm = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(q_norm_key)
+            else:
+                q_head_dim = self.load_model.qk_head_dim + self.load_model.qk_pos_emb_head_dim
+                q_a_proj = linear_qkv_weights[:self.load_model.num_attention_heads * q_head_dim, :].clone()
+                kv_a_proj_with_mqa = linear_qkv_weights[self.load_model.num_attention_heads * q_head_dim:, :].clone()
             kv_a_layernorm = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(k_norm_key)
 
             hf_weight[hf_weight_key["layers_self_attention_linear_q_proj"]] = q_a_proj
             hf_weight[hf_weight_key["layers_self_attention_linear_kv_proj"]] = kv_a_proj_with_mqa
             hf_weight[hf_weight_key["layers_self_attention_linear_proj"]] = o_proj
-            hf_weight[hf_weight_key["layers_self_attention_q_layernorm"]] = q_a_layernorm
-            hf_weight[hf_weight_key["layers_self_attention_k_layernorm"]] = kv_a_layernorm
-            hf_weight[hf_weight_key["layers_self_attention_linear_q_up_proj"]] = q_b_proj
+            if getattr(self.load_model, 'q_lora_rank', False):
+                hf_weight[hf_weight_key["layers_self_attention_q_layernorm"]] = q_a_layernorm
+                hf_weight[hf_weight_key["layers_self_attention_linear_q_up_proj"]] = q_b_proj
+            hf_weight[hf_weight_key["layers_self_attention_kv_layernorm"]] = kv_a_layernorm
             hf_weight[hf_weight_key["layers_self_attention_linear_kv_up_proj"]] = kv_b_proj
         elif self.load_model.qkv_type == 'unpack':
             linear_qkv_key, linear_proj_key, q_layernorm_key, k_layernorm_key = _generate_attn_layers_key()

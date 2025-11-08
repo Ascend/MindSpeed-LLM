@@ -3,19 +3,13 @@
 
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
 
-python convert_ckpt.py \
+python convert_ckpt_v2.py \
    --moe-grouped-gemm \
-   --use-mcore-models \
    --model-type-hf deepseek2-lite \
-   --model-type GPT \
    --load-model-type hf \
    --save-model-type mg \
-   --params-dtype bf16 \
    --target-tensor-parallel-size 1 \
    --target-pipeline-parallel-size 1 \
    --target-expert-parallel-size 8 \
-   --spec mindspeed_llm.tasks.models.spec.deepseek_spec layer_spec \
-   --load-dir ./model_from_hf/deepseek_v2_lite/ \
+   --load-dir /data/deepseek2_lite_hf \
    --save-dir ./model_weights/deepseek2_lite_mcore/ \
-   --tokenizer-model ./model_from_hf/deepseek_v2_lite/
-

@@ -512,10 +512,11 @@ class Hf2MgConvert(Convert):
 
             dense_weight = hf_weight.pop(hf_weight_key["layers_self_attention_linear_proj"])
             dense_lst = torch.chunk(dense_weight, self.tensor_model_parallel_size, dim=1)
-            q_b_proj = hf_weight.pop(hf_weight_key["layers_self_attention_linear_q_up_proj"])
+            if getattr(self.load_model, 'q_lora_rank', False):
+                q_b_proj = hf_weight.pop(hf_weight_key["layers_self_attention_linear_q_up_proj"])
+                q_layernorm = hf_weight.pop(hf_weight_key["layers_self_attention_q_layernorm"])
             kv_b_proj = hf_weight.pop(hf_weight_key["layers_self_attention_linear_kv_up_proj"])
-            q_layernorm = hf_weight.pop(hf_weight_key["layers_self_attention_q_layernorm"])
-            k_layernorm = hf_weight.pop(hf_weight_key["layers_self_attention_k_layernorm"])
+            k_layernorm = hf_weight.pop(hf_weight_key["layers_self_attention_kv_layernorm"])
 
             if self.mla_mm_split:
                 q_b_proj = q_b_proj.reshape(self.load_model.num_attention_heads,
@@ -538,7 +539,8 @@ class Hf2MgConvert(Convert):
                 kv_nope_lst = torch.chunk(kv_nope, self.tensor_model_parallel_size, dim=0)
                 linear_v_lst = torch.chunk(linear_v, self.tensor_model_parallel_size, dim=0)
             else:
-                linear_qb_lst = torch.chunk(q_b_proj, self.tensor_model_parallel_size, dim=0)
+                if getattr(self.load_model, 'q_lora_rank', False):
+                    linear_qb_lst = torch.chunk(q_b_proj, self.tensor_model_parallel_size, dim=0)
                 linear_kvb_lst = torch.chunk(kv_b_proj, self.tensor_model_parallel_size, dim=0)
 
             if hasattr(self.load_model, "enable_dsa_indexer"):
@@ -628,7 +630,8 @@ class Hf2MgConvert(Convert):
                         mtp_layer_flag)
                     mg_weight[ep_rank][tp_rank][qkv_key] = qkv_weight.clone()
                     mg_weight[ep_rank][tp_rank][dense_key] = dense_lst[tp_rank].clone()
-                    mg_weight[ep_rank][tp_rank][q_layernorm_key] = q_layernorm.clone()
+                    if getattr(self.load_model, 'q_lora_rank', False):
+                        mg_weight[ep_rank][tp_rank][q_layernorm_key] = q_layernorm.clone()
                     mg_weight[ep_rank][tp_rank][k_layernorm_key] = k_layernorm.clone()
 
                     if self.mla_mm_split:
@@ -639,7 +642,8 @@ class Hf2MgConvert(Convert):
                         mg_weight[ep_rank][tp_rank][kv_nope_key] = kv_nope_lst[tp_rank].clone()
                         mg_weight[ep_rank][tp_rank][linear_v_key] = linear_v_lst[tp_rank].clone()
                     else:
-                        mg_weight[ep_rank][tp_rank][q_b_key] = linear_qb_lst[tp_rank].clone()
+                        if getattr(self.load_model, 'q_lora_rank', False):
+                            mg_weight[ep_rank][tp_rank][q_b_key] = linear_qb_lst[tp_rank].clone()
                         mg_weight[ep_rank][tp_rank][kv_b_key] = linear_kvb_lst[tp_rank].clone()
                 
                     if hasattr(self.load_model, "enable_dsa_indexer"):
