@@ -36,7 +36,7 @@ from megatron.training.checkpointing import find_checkpoint_rank_0
 
 from mindspeed_llm.tasks.posttrain.lora.utils import is_enable_lora, merge_dicts, modify_keys_with_dict, filter_lora_keys
 from mindspeed_llm.tasks.posttrain.utils import load_checkpoint_loosely
-
+from mindspeed_llm.core.datasets.dataset_preprocess import convert_datasets
 try:
     from modelopt.torch.opt.plugins import (
         save_modelopt_state,
@@ -412,11 +412,16 @@ def initialize_megatron_wrapper(fn):
             return result
 
         args = get_args()
-        logger.info("[InitHook] Megatron initialization completed, starting weight conversion check...")
-
+        logger.info("[InitHook] Megatron initialization completed, starting data preprocessing...")
+        sample_p = str(args.data_path[0]) if isinstance(args.data_path, (list, tuple)) else str(args.data_path).split(",")[0].strip()
+        sample_p = sample_p.strip().strip('"').strip("'")
+        base_dir = os.path.dirname(sample_p) if os.path.isfile(sample_p) else \
+                   (sample_p if os.path.isdir(sample_p) else os.path.dirname(sample_p) or ".")
+        shared = is_shared_path(base_dir)
+        convert_datasets(args, shared)
 
         args.load_dir = args.load
-
+        logger.info("[InitHook] Data preprocessing completed, starting weight conversion check...")
         # Add path validation
         if not os.path.exists(args.load_dir):
             raise ValueError(f"Specified weight path does not exist: {args.load_dir}")

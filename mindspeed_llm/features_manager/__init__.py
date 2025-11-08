@@ -51,6 +51,7 @@ from mindspeed_llm.features_manager.common.training import TrainingDefaultFeatur
 from mindspeed_llm.features_manager.tensor_parallel.coc import CoCFeature
 from mindspeed_llm.features_manager.dataset.dataset import DatasetFeature
 from mindspeed_llm.features_manager.finetune.finetune import FinetuneFeature
+from mindspeed_llm.features_manager.dataset.data_preprocess import DatasetPreprocessFeature
 from mindspeed_llm.features_manager.finetune.lora import LoraFeature
 from mindspeed_llm.features_manager.finetune.lu_lora import LuLoraFeature
 from mindspeed_llm.features_manager.high_availability.high_availability import HighAvailabilityFeature
@@ -120,6 +121,7 @@ def add_llm_features(features_list: List[MindSpeedFeature]):
         ModelBasicFeature(),
         TrainingBasicFeature(),
         DatasetFeature(),
+        DatasetPreprocessFeature(),
         ModuleFeature(),
         NumLayerListFeature(),
         DPOFeature(),
