@@ -201,7 +201,7 @@ python convert_ckpt.py \
 # 根据链接提供地址，通过wget获取数据集元数据
 mkdir dataset
 cd dataset/
-wget https://huggingface.co/datasets/tatsu-lab/alpaca/blob/main/data/train-00000-of-00001-a09b74b3ef9c3b56.parquet
+wget https://huggingface.co/datasets/tatsu-lab/alpaca/resolve/main/data/train-00000-of-00001-a09b74b3ef9c3b56.parquet
 cd ..
 
 # 使用仓库提供的数据处理脚本，获取预训练数据集。
@@ -407,7 +407,7 @@ torch.configs.set_pyboost(False)
 # 根据链接提供地址，通过wget获取数据集元数据
 mkdir dataset
 cd dataset/
-wget https://huggingface.co/datasets/tatsu-lab/alpaca/blob/main/data/train-00000-of-00001-a09b74b3ef9c3b56.parquet
+wget https://huggingface.co/datasets/tatsu-lab/alpaca/resolve/main/data/train-00000-of-00001-a09b74b3ef9c3b56.parquet
 cd ..
 
 # 使用仓库提供的数据处理脚本，获取预训练数据集。
