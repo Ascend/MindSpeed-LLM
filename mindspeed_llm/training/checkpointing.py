@@ -37,6 +37,7 @@ from megatron.training.checkpointing import find_checkpoint_rank_0
 from mindspeed_llm.tasks.posttrain.lora.utils import is_enable_lora, merge_dicts, modify_keys_with_dict, filter_lora_keys
 from mindspeed_llm.tasks.posttrain.utils import load_checkpoint_loosely
 from mindspeed_llm.core.datasets.dataset_preprocess import convert_datasets
+from mindspeed_llm.tasks.checkpoint.convert_hf2mg import Hf2MgConvert
 try:
     from modelopt.torch.opt.plugins import (
         save_modelopt_state,
@@ -433,8 +434,8 @@ def initialize_megatron_wrapper(fn):
             raise ValueError(f"When enable_hf2mg_convert is enabled, path {args.load_dir} is not a valid huggingface weight path, missing necessary model files")
 
         # check the supported models
-        supported_models = ['qwen3-moe', 'deepseek3', 'glm45-moe', 'bailing_mini', 
-                        'qwen3-next', 'seed-oss', 'deepseek32', 'magistral']
+        supported_models = ['qwen3', 'qwen3-moe', 'deepseek3', 'glm45-moe', 'bailing_mini', 'qwen3-next',
+                            'seed-oss', 'deepseek32', 'magistral', 'deepseek2-lite']
         if args.model_type_hf not in supported_models:
             raise ValueError(f"Current --enable-hf2mg-convert does not support model type '{args.model_type_hf}'. "
                             f"Supported models: {', '.join(supported_models)}")
