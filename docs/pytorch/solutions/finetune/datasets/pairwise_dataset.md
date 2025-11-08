@@ -28,7 +28,7 @@ pairwise配对数据集样本示例：
 
 ```shell
 cd dataset/
-wget https://huggingface.co/datasets/Intel/orca_dpo_pairs/blob/main/orca_rlhf.jsonl
+wget https://huggingface.co/datasets/Intel/orca_dpo_pairs/resolve/main/orca_rlhf.jsonl
 cd ..
 ```
 

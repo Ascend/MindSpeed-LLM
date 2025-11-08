@@ -67,7 +67,7 @@ qwen3稀疏模型传入qwen3，稠密模型传入qwen3-moe
 ```commandline
 mkdir dataset
 cd dataset/
-wget https://huggingface.co/datasets/tatsu-lab/alpaca/blob/main/data/train-00000-of-00001-a09b74b3ef9c3b56.parquet
+wget https://huggingface.co/datasets/tatsu-lab/alpaca/resolve/main/data/train-00000-of-00001-a09b74b3ef9c3b56.parquet
 cd ..
 ```
 
