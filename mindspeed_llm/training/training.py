@@ -467,7 +467,7 @@ def pretrain(train_valid_test_dataset_provider,
         iteration = 0
         if args.do_train and args.train_iters > 0:
             if args.enable_high_availability:
-                from mindio_ttp.adaptor import tft_register_processor, tft_train
+                from mindspeed_llm.core.high_availability import tft_register_processor, tft_train
                 tft_register_processor(train_valid_test_dataset_provider, model_provider, model_type)
                 if args.enable_elastic_training:
                     from taskd.python.adaptor.elastic_training import register_callbacks

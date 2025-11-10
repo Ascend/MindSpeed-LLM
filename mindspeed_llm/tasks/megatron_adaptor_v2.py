@@ -1,6 +1,4 @@
-import abc
 import sys
-import types
 import shutil
 import argparse
 from logging import getLogger
@@ -54,7 +52,7 @@ class FeatureAdaptor:
             return cls._args
 
         from mindspeed_llm.training.arguments import process_args_v2
-        from mindspeed_llm.features_manager.high_availability.high_availability_helper import get_env_args
+        from mindspeed_llm.tasks.high_availability.high_availability_helper import get_env_args
         parser = argparse.ArgumentParser(description='MindSpeed-LLM Arguments', allow_abbrev=False)
         _args, unknown = process_args_v2(parser).parse_known_args()
         get_env_args(_args)

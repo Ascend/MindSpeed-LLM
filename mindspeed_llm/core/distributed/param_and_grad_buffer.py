@@ -134,7 +134,7 @@ def param_and_grad_bucket_group_init_wrapper(fn):
         for bucket in self.buckets:
             for param in bucket.params_list:
                 is_expert_parallel |= not getattr(param, 'allreduce', True)
-        from mindio_ttp.adaptor import (ttp_get_dp_cp_replica_group, ttp_get_dp_ep_replica_group)
+        from mindspeed_llm.core.high_availability import (ttp_get_dp_cp_replica_group, ttp_get_dp_ep_replica_group)
         if self.ddp_config.use_distributed_optimizer:
             self.intra_distributed_optimizer_instance_group_for_tft = ttp_get_dp_cp_replica_group \
                 if not is_expert_parallel else ttp_get_dp_ep_replica_group

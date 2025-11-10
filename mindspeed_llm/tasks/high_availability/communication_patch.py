@@ -1,4 +1,3 @@
-import signal
 from functools import wraps
 import torch
 
@@ -9,7 +8,7 @@ def communication_wrapper(fn):
         from megatron.training import get_args
         arguments = get_args()
         if arguments.enable_high_availability:
-            from mindio_ttp.adaptor import tft_is_arf_reboot_node
+            from mindspeed_llm.core.high_availability import tft_is_arf_reboot_node
             if tft_is_arf_reboot_node():
                 return None
             if arguments.enable_elastic_training:
@@ -25,7 +24,7 @@ def barrier_wrapper(fn):
         from megatron.training import get_args
         arguments = get_args()
         if arguments.enable_high_availability:
-            from mindio_ttp.adaptor import tft_is_arf_reboot_node, tft_get_node_group
+            from mindspeed_llm.core.high_availability import tft_is_arf_reboot_node, tft_get_node_group
             if tft_is_arf_reboot_node():
                 node_group = tft_get_node_group()
                 return fn(node_group) if node_group is not None else None
@@ -39,7 +38,7 @@ def new_group_wrapper(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
         backend = kwargs.get('backend', None)
-        from mindio_ttp.adaptor import tft_is_arf_reboot_node
+        from mindspeed_llm.core.high_availability import tft_is_arf_reboot_node
         if tft_is_arf_reboot_node() and isinstance(backend, str) and 'gloo' in backend:
             return None
 
@@ -115,7 +114,7 @@ def torch_wrapper(fn, group_index, *args, **kwargs):
     In the context of scale-in training scenarios, if the 'group' parameter passed in is 'None',
     change it to the scale-in world group.
     """
-    from mindio_ttp.adaptor.tft_arf_group_repair import tft_is_arf_reboot_node
+    from mindspeed_llm.core.high_availability.tft_arf_group_repair import tft_is_arf_reboot_node
     from taskd.python.adaptor.elastic_training import common
     if tft_is_arf_reboot_node():
         return None

@@ -498,6 +498,21 @@
         <td></td>
         <td></td>
     </tr>
+    <tr>
+        <td rowspan="2"><a href="pipeline/high_availability">HighAvailability</a></td>
+        <td>UCE ERROR</td>
+        <td><a href="pipeline/high_availability/high_availability_uce_error_ptd.sh">high_availability_uce_error_ptd.sh</a></td>
+        <td>Y</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>ERROR DUMP</td>
+        <td><a href="pipeline/high_availability/high_availability_error_dump_ptd.sh">high_availability_error_dump_ptd.sh</a></td>
+        <td>Y</td>
+        <td></td>
+        <td></td>
+    </tr>
 </table>
 
 ### DT覆盖率看护

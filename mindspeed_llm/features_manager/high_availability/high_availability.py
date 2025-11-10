@@ -21,7 +21,7 @@ class HighAvailabilityFeature(MindSpeedFeature):
                            help='high availability feature, enable elastic training')
 
     def pre_validate_args(self, args):
-        from .high_availability_helper import get_env_args
+        from mindspeed_llm.tasks.high_availability.high_availability_helper import get_env_args
         get_env_args(args)
 
     def validate_args(self, args):
@@ -63,15 +63,15 @@ class HighAvailabilityFeature(MindSpeedFeature):
                 'parallel size is set.')
 
     def pre_register_patches(self, patch_manager, args):
-        from .communication_patch import communication_wrapper, barrier_wrapper
-        from .high_availability_helper import skip_reuse_register_patches
+        from mindspeed_llm.tasks.high_availability.communication_patch import communication_wrapper, barrier_wrapper
+        from mindspeed_llm.tasks.high_availability.high_availability_helper import skip_reuse_register_patches
         patch_manager.register_patch('torch.distributed.barrier',
                                      barrier_wrapper)
         for communication in ['all_reduce', '_all_gather_base', 'broadcast', 'all_gather_into_tensor']:
             patch_manager.register_patch('torch.distributed.distributed_c10d.' + communication,
                                          communication_wrapper)
-        from .communication_patch import (group_index_two_torch_wrapper,
-                                                   group_index_three_torch_wrapper, all_to_all_single_wrapper)
+        from mindspeed_llm.tasks.high_availability.communication_patch import (group_index_two_torch_wrapper,
+                                                                               group_index_three_torch_wrapper, all_to_all_single_wrapper)
         patch_manager.register_patch('torch.distributed.all_to_all_single',
                                      all_to_all_single_wrapper)
         for communication in ['all_gather', 'all_to_all', 'all_reduce_coalesced', 'all_gather_object',
@@ -86,7 +86,7 @@ class HighAvailabilityFeature(MindSpeedFeature):
         ReuseFP32Param.register_patches = skip_reuse_register_patches(ReuseFP32Param.register_patches, args)
 
     def register_patches(self, patch_manager, args):
-        from .initialize_patch import setup_model_and_optimizer_wrapper, initialize_distributed_wrapper
+        from mindspeed_llm.tasks.high_availability.initialize_patch import setup_model_and_optimizer_wrapper, initialize_distributed_wrapper
         from mindspeed_llm.core import (start_grad_sync_wrapper, distributed_data_parallel_init_wrapper,
                                         start_param_sync_wrapper, param_and_grad_bucket_group_init_wrapper,
                                         get_megatron_optimizer_wrapper, get_grad_norm_fp32_wrapper,
@@ -124,11 +124,11 @@ class HighAvailabilityFeature(MindSpeedFeature):
                                               optimizer_config_init_wrapper)
                 patch_manager.register_patch('megatron.core.optimizer.distrib_optimizer.DistributedOptimizer.__init__',
                                               distributed_optimizer_init_for_reuse_fp32_wrapper)
-                patch_manager.register_patch('mindio_ttp.adaptor.TTPReplicaOptimizer.get_parameter_state_dp_zero_for_ttp',
+                patch_manager.register_patch('mindspeed_llm.core.high_availability.TTPReplicaOptimizer.get_parameter_state_dp_zero_for_ttp',
                                               get_parameter_state_dp_zero_with_high_availability_wrapper)
             if args.enable_worker_reboot or args.enable_elastic_training:
-                from .initialize_patch import build_train_valid_test_data_iterators_wrapper
-                from mindspeed_llm.features_manager.high_availability.communication_patch import new_group_wrapper
+                from mindspeed_llm.tasks.high_availability.initialize_patch import build_train_valid_test_data_iterators_wrapper
+                from mindspeed_llm.tasks.high_availability.communication_patch import new_group_wrapper
                 patch_manager.register_patch('megatron.training.training.build_train_valid_test_data_iterators',
                                               build_train_valid_test_data_iterators_wrapper)
                 patch_manager.register_patch('torch.distributed.distributed_c10d.new_group',

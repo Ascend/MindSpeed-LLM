@@ -183,7 +183,7 @@ def get_megatron_optimizer_based_on_param_groups(
             init_state_fn,
         ]
 
-        from mindio_ttp.adaptor import TTPReplicaOptimizer, TTPFP16ReplicaOptimizer
+        from mindspeed_llm.core.high_availability import TTPReplicaOptimizer, TTPFP16ReplicaOptimizer
         args = get_args()
         if config.use_distributed_optimizer and args.enable_elastic_training:
             from taskd.python.adaptor.elastic_training.optimizer import TTPElasticTrainingReplicaOptimizer
@@ -212,11 +212,8 @@ def get_megatron_optimizer_based_on_param_groups(
             optimizer = TTPFP16ReplicaOptimizer(*optimizer_args, ori_dp_group=ori_dp_group)
             setattr(optimizer, 'grad_stats_parallel_group', model_parallel_group)
     else:
-        # FP32.
-        from mindio_ttp.adaptor import TTPFP32ReplicaOptimizer
-        optimizer = TTPFP32ReplicaOptimizer(optimizer, config, init_state_fn, ori_dp_group=ori_dp_group)
-        setattr(optimizer, 'grad_stats_parallel_group', model_parallel_group)
-
+        # HA not support FP32.
+        raise Exception("High availability do not support FP32 Optimizer")
     return optimizer
 
 
@@ -269,8 +266,8 @@ def get_megatron_optimizer(
         )
     else:
         distributed_optimizer_instance_id = 0
-    from mindio_ttp.adaptor import TTPReplicaChainedOptimizer
-    from mindio_ttp.adaptor import (ttp_get_dp_cp_replica_group, ttp_get_dp_cp_replica_group_gloo,
+    from mindspeed_llm.core.high_availability import TTPReplicaChainedOptimizer
+    from mindspeed_llm.core.high_availability import (ttp_get_dp_cp_replica_group, ttp_get_dp_cp_replica_group_gloo,
                                     ttp_get_dp_ep_replica_group, ttp_get_dp_ep_replica_group_gloo)
     optimizers = []
     model_chunk_offset = 0

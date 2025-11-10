@@ -46,7 +46,7 @@ def forward_backward_func_wrapper(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
         losses_reduced = fn(*args, **kwargs)
-        from mindio_ttp.adaptor import tft_set_losses_reduced
+        from mindspeed_llm.core.high_availability import tft_set_losses_reduced
         tft_set_losses_reduced(losses_reduced)
         return losses_reduced
     return wrapper

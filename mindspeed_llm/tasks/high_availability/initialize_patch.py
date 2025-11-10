@@ -1,5 +1,4 @@
 from functools import wraps
-from typing import List
 
 import torch
 import megatron
@@ -23,8 +22,8 @@ def initialize_distributed_wrapper(fn):
         device_count = torch.cuda.device_count()
         device = get_args().rank % device_count
         torch.cuda.set_device(device)
-        from mindio_ttp.adaptor import tft_init_controller_processor, ttp_initialize_replica_dp_group
-        tft_init_controller_processor(enable_tls=False, tls_option_top_path='')
+        from mindspeed_llm.core.high_availability import tft_init_controller_processor, ttp_initialize_replica_dp_group
+        tft_init_controller_processor()
         fn(*args, **kwargs)
         world_size: int = torch.distributed.get_world_size()
         args = megatron.training.get_args()
@@ -45,7 +44,7 @@ def build_train_valid_test_data_iterators_wrapper(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
         res = fn(*args, **kwargs)
-        from mindio_ttp.adaptor import tft_is_arf_reboot_node
+        from mindspeed_llm.core.high_availability import tft_is_arf_reboot_node
         if tft_is_arf_reboot_node():
             get_args().do_train = True
         return res
