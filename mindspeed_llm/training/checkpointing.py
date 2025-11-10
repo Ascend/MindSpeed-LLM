@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-from time import time
+import time
 from functools import wraps
 from logging import getLogger
 import torch
@@ -155,7 +155,7 @@ def save_checkpoint_wrapper(fn):
         Checkpointing context is used to persist some checkpointing state
         throughout a single job. Must be initialized externally (not used if None).
         """
-        start_ckpt = time()
+        start_ckpt = time.time()
         args = get_args()
 
         # Prepare E2E metrics at start of save checkpoint
@@ -234,7 +234,7 @@ def save_checkpoint_wrapper(fn):
                 # Store save strategy for future checkpoint saves
                 if checkpointing_context is not None:
                     checkpointing_context['save_strategy'] = save_strategy
-                end_ckpt = time()
+                end_ckpt = time.time()
                 logger.debug(f"rank: {rank}, takes {end_ckpt - start_ckpt} to prepare state dict for ckpt ")
                 async_save_request = dist_checkpointing.save(state_dict, checkpoint_name, save_strategy,
                                                              async_sharded_save=args.async_save)
@@ -252,7 +252,7 @@ def save_checkpoint_wrapper(fn):
                 # Save.
                 ensure_directory_exists(checkpoint_name)
                 torch.save(state_dict, checkpoint_name)
-        start_misc = time()
+        start_misc = time.time()
         if not args.async_save:
             if async_save_request is not None:
                 raise ValueError("async_save_request should be None")
@@ -303,7 +303,7 @@ def save_checkpoint_wrapper(fn):
         if torch.distributed.is_initialized():
             torch.distributed.barrier()
 
-        end_misc = time()
+        end_misc = time.time()
         logger.debug(f"rank: {rank}, takes {end_misc - start_misc} to finalize ckpt save ")
     return wrapper
 

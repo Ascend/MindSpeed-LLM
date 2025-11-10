@@ -4,6 +4,7 @@ import time
 import torch
 import glob
 import os, sys, time, subprocess
+from megatron.training.utils import print_rank_0
 from mindspeed_llm.tasks.preprocess.data_handler import _get_data_format
 
 
@@ -83,6 +84,8 @@ def convert_datasets(args, shared: bool):
                         cmd += ["--enable-thinking", str(args.enable_thinking)]
                     if getattr(args, "prompt_type", None):
                         cmd += ["--prompt-type", args.prompt_type]
+                    if getattr(args, "seq_length", None):
+                        cmd += ["--seq-length", str(args.seq_length)]
 
                 # Run the subprocess to perform data preprocessing
                 subprocess.run(cmd, check=True)
