@@ -18,6 +18,7 @@ class Convert(abc.ABC):
         self.load_model = None
         self.save_model = None
         self.model_type_hf = args.model_type_hf
+        self.transformer_impl = args.transformer_impl
 
         # parallel train arguments
         if getattr(args, "enable_hf2mg_convert", False):

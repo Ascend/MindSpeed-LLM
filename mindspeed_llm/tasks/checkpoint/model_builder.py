@@ -193,6 +193,8 @@ class MegatronModel(Model):
         self.load_mg_args(args)
         self.mla_mm_split = args.mla_mm_split
         self.mtp_num_layers = args.mtp_num_layers
+        self.transformer_impl = args.transformer_impl
+        self.moe_grouped_gemm = args.moe_grouped_gemm
         self.module_mapping = self.get_module_mapping()
 
 
@@ -264,6 +266,13 @@ class MegatronModel(Model):
             module_key[key] = value + ".weight" if ("weight" not in value and "bias" not in value) else value
         return module_key
 
+    def get_te_weight(self, layer_idx=0, expert_idx=0):
+        module_key = {}
+        for key, value in self.module_mapping.items():
+            value = re.sub(r'\[layer_idx\]', f'.{layer_idx}', value)
+            value = re.sub(r'\[expert_idx\]', f'{expert_idx}', value)
+            module_key[key] = value + ".weight" if ("weight" not in value and "bias" not in value) else value
+        return module_key
 
     def get_bias(self, layer_idx=0, expert_idx=0):
         module_key = {}
@@ -362,6 +371,17 @@ class MegatronModel(Model):
                 "layers_self_attention_indexer_wk"] = module_layer + "self_attention.dsa_indexer.wk"
             module_mapping[
                 "layers_self_attention_indexer_wq_b"] = module_layer + "self_attention.dsa_indexer.wq_b"
+
+        if self.transformer_impl == "transformer_engine":
+            module_mapping[
+                "layers_input_layernorm"] = module_layer + "self_attention.linear_qkv.layer_norm_weight"
+            module_mapping[
+                "layers_self_attention_pre_mlp_layernorm_te_dense"] = module_layer + "mlp.linear_fc1.layer_norm_weight"
+            if self.moe_grouped_gemm:
+                module_mapping[
+                    "layers_mlp_experts_linear_fc1"] = module_layer + "mlp.experts.linear_fc1.weight[expert_idx]"
+                module_mapping[
+                    "layers_mlp_experts_linear_fc2"] = module_layer + "mlp.experts.linear_fc2.weight[expert_idx]"
 
         if self.mtp_num_layers:
             module_mapping[

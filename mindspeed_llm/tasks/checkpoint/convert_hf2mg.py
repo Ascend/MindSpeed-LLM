@@ -99,6 +99,9 @@ class Hf2MgConvert(Convert):
         if hasattr(self.load_model, "enable_dsa_indexer") and self.tensor_model_parallel_size > 1:
             raise ValueError('enable_dsa_indexer model and tp cannot be configured at the same time')
 
+        if self.transformer_impl == 'transformer_engine' and self.mtp_num_layers > 0:
+            raise ValueError('transformer_engine model and mtp_num_layers cannot be configured at the same time')
+
         self.check_etp_conflict()
 
     def get_pprank_hf_layeridxs(self) -> None:
@@ -358,6 +361,7 @@ class Hf2MgConvert(Convert):
         mg_weight_key = self.save_model.get_weight(local_layer_idx)
         input_norm = hf_weight.pop(hf_weight_key["layers_input_layernorm"])
         post_attn_norm = hf_weight.pop(hf_weight_key["layers_self_attention_pre_mlp_layernorm"])
+        first_k_dense_replace = self.get_first_k_dense_replace()
 
         # Weight key of the mtp layer is different from that of the transformers layer.
         if mtp_layer_flag:
@@ -365,9 +369,12 @@ class Hf2MgConvert(Convert):
             post_norm_key = mg_weight_key["mtp_layers_self_attention_post_attention_layernorm"]
         else:
             input_norm_key = mg_weight_key["layers_input_layernorm"]
-            post_norm_key = mg_weight_key["layers_self_attention_post_attention_layernorm"] if hasattr(self.load_model,
-                                                                                                       "post_attention") \
-                else mg_weight_key["layers_self_attention_pre_mlp_layernorm"]
+            if self.transformer_impl == "transformer_engine" and hf_layer_idx < first_k_dense_replace:
+                post_norm_key = mg_weight_key["layers_self_attention_pre_mlp_layernorm_te_dense"]
+            else:
+                post_norm_key = mg_weight_key["layers_self_attention_post_attention_layernorm"] if hasattr(self.load_model,
+                                                                                                        "post_attention") \
+                    else mg_weight_key["layers_self_attention_pre_mlp_layernorm"]
 
         for ep_rank in range(self.expert_model_parallel_size):
             for tp_rank in range(self.tensor_model_parallel_size):
@@ -795,7 +802,7 @@ class Hf2MgConvert(Convert):
                     if hasattr(self.load_model, "n_shared_experts"):
                         mg_weight[ep_rank][tp_rank][shared_fc1_key] = shared_l0_lst[tp_rank].clone()
                         mg_weight[ep_rank][tp_rank][shared_fc2_key] = shared_l1_lst[tp_rank].clone()
-            if self.moe_grouped_gemm:
+            if self.transformer_impl == 'local' and self.moe_grouped_gemm:
                 gemm_fc1 = torch.cat(experts_linear_fc1_list).view(self.load_model.hidden_size, -1)
                 gemm_fc2 = torch.cat(experts_linear_fc2_list).view(-1, self.load_model.hidden_size)
                 if self.moe_tp_extend_ep:
@@ -834,12 +841,19 @@ class Hf2MgConvert(Convert):
                 num_local_experts = self.load_model.num_experts // self.expert_model_parallel_size
                 for ep_rank in range(self.expert_model_parallel_size):
                     for local_experts_idx in range(num_local_experts):
-                        mg_weight_key = self.save_model.get_weight(local_layer_idx, local_experts_idx)
-                        local_fc1_key = mg_weight_key["layers_mlp_experts_linear_fc1"]
-                        local_fc2_key = mg_weight_key["layers_mlp_experts_linear_fc2"]
-                        if mtp_layer_flag:
-                            local_fc1_key = mg_weight_key["mtp_layers_mlp_experts_linear_fc1"]
-                            local_fc2_key = mg_weight_key["mtp_layers_mlp_experts_linear_fc2"]
+
+                        if self.transformer_impl == 'transformer_engine' and self.moe_grouped_gemm:
+                            mg_te_weight_key = self.save_model.get_te_weight(local_layer_idx, local_experts_idx)
+                            local_fc1_key = mg_te_weight_key["layers_mlp_experts_linear_fc1"]
+                            local_fc2_key = mg_te_weight_key["layers_mlp_experts_linear_fc2"]
+
+                        else:
+                            mg_weight_key = self.save_model.get_weight(local_layer_idx, local_experts_idx)
+                            local_fc1_key = mg_weight_key["layers_mlp_experts_linear_fc1"]
+                            local_fc2_key = mg_weight_key["layers_mlp_experts_linear_fc2"]
+                            if mtp_layer_flag:
+                                local_fc1_key = mg_weight_key["mtp_layers_mlp_experts_linear_fc1"]
+                                local_fc2_key = mg_weight_key["mtp_layers_mlp_experts_linear_fc2"]
 
                         global_experts_idx = local_experts_idx + ep_rank * num_local_experts
                         local_fc1_weight = experts_linear_fc1_list[global_experts_idx].t()

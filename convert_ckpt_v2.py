@@ -46,6 +46,9 @@ def get_args():
                         help='Customizing the number of dense layers.')
     parser.add_argument('--num-layers', type=int, default=None,
                         help='Specify the number of transformer layers to use.')
+    parser.add_argument('--transformer-impl', default='local',
+                       choices=['local', 'transformer_engine'],
+                       help='Which Transformer implementation to use.')
 
     args, _ = parser.parse_known_args()
     return args
