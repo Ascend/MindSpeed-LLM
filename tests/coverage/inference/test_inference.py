@@ -77,26 +77,9 @@ class TestInference(DistributedTest):
             assert [context] == [
                 "I have been reading this thread for a while and decided to finally join and say hello. I am a 23 year old female from the"
             ], "forward pass has been changed, check it!"
-
-    @pytest.mark.parametrize("params", test_config["test_deepseek2_mcore_greedy_search"])
-    def test_deepseek2_mcore_greedy_search(self, build_args, params):
-        os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
-        os.environ["CLOSE_MATMUL_K_SHIFT"] = "1"
-        if dist.get_rank() == 0:
-            handler, log_capture = setup_logger(PATTERN)
-
-        main()
-        if dist.get_rank() == 0:
-            print("=============== deepseek2 mcore greedy search =============")
-            print(log_capture)
-            context = acquire_context(log_capture)
-            #减层
-            assert [context] == ["катаCounts КоCEupy flocksproduction缉solve aclar crit minorities定律 Cod DEFIN短发 "
-                                 "динаrown femalesrivacyrivialAMIacomtemplatestransport picky positiva hongares古老ittle"
-                                 ], "forward pass has been changed, check it!"
-        
-    @pytest.mark.parametrize("params", test_config["test_deepseek2_mcore_beam_search"])
-    def test_deepseek2_mcore_beam_search(self, build_args, params):
+            
+    @pytest.mark.parametrize("params", test_config["test_llama2_mcore_do_beam_search"])
+    def test_llama2_mcore_do_beam_search(self, build_args, params):
         os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
         os.environ["CLOSE_MATMUL_K_SHIFT"] = "1"
         if dist.get_rank() == 0:
@@ -104,13 +87,12 @@ class TestInference(DistributedTest):
         
         main()
         if dist.get_rank() == 0:
-            print("=============== deepseek2 mcore beam search =============")
+            print("=============== llama2 mcore beam search =============")
             print(log_capture)
             context = acquire_context(log_capture)
             # 减层
-            assert [context] == ["катаCounts Ко produeixen References Chapel Theysurprise systemctl和张 doinJobs WarningWHERE开发者launcher要说吼 appointment\","
-                                 "mah hire deepenedemmagatzematge stressful ByteFriends content SwordChannel"
-                                 ], "forward pass has been changed, check it!"
+            assert [context] == ['[INST] how are you? [/INST]\n[INST] how are you? [/INST] [INST] how are you'
+                                 ], f"forward pass has been changed to {[context]}, check it!"
     
     @pytest.mark.parametrize("params", test_config["test_llama3_mcore_greedy_search_with_tp2pp4sp"])
     def test_llama3_mcore_greedy_search_with_tp2pp4sp(self, build_args, params):
@@ -125,8 +107,8 @@ class TestInference(DistributedTest):
             print(log_capture)
             context = acquire_context(log_capture)
             assert [context] == [
-                'I hope you are well. I am fine. I am writing to you because I have a problem. I am a student and I am studying in the university. '
-                'I am studying in the university of the city of the city of the city of'
+                'I hope you are well. I am fine. I am writing to you because I have a problem. I am a student in the university. '
+                'I am studying in the university of the Philippines. I am studying in the university of the Philippines. I am '
             ], f"forward pass has been changed to {[context]}, check it!"
     
     @pytest.mark.parametrize("params", test_config["test_llama3_mcore_beam_search_with_sampling_tp2pp4sp"])

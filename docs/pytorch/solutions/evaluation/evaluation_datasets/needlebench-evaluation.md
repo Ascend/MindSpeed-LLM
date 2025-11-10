@@ -6,8 +6,6 @@ NeedleBench 是由上海人工智能实验室和清华大学的研究团队开�
 
 下载tiktoken所需要的缓存文件：https://openaipublic.blob.core.windows.net/encodings/cl100k_base.tiktoken
 
-拷贝到/tmp/data-gym-cache/, 重命名为  9b5ad71b2ce5302211f9c61530b329a4922fc6a4
-
 目前MindSpeed-LLM仓库仅支持Single-Needle-Retrieval(S-RT)测试，脚本运行参照 examples/mcore/qwen2/evaluate_qwen2_7b_needle_bench_ptd.sh
 
 ## 参数配置

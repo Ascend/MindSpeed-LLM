@@ -14,7 +14,7 @@ WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
 basepath=$(cd `dirname $0`; cd ../../../; pwd)
 
-CKPT_SAVE_DIR="/data/cache"
+CKPT_SAVE_DIR="/data/ci/cache"
 CKPT_LOAD_DIR="/data/ci/models/llama2/mg/llama-2-7b-mcore-tp1pp1"
 DATA_PATH="/data/ci/datasets/processed/llama2_7b_finetune/alpaca"
 TOKENIZER_MODEL="/data/ci/models/llama2/hf/llama-2-7b-hf "

@@ -17,6 +17,7 @@
                 "tokenizer-type": "PretrainedFromHF",
                 "output-prefix": "/data/ci/cache/process_dataset/test_merge_subs/part1", 
                 "tokenizer-name-or-path": "/data/ci/models/llama2/hf/llama-2-7b-hf",
+                "cache-dir": "/data/ci/cache/process_dataset/tmp/",
                 "workers": 4,
                 "log-interval": 1000
             }
@@ -29,6 +30,7 @@
                 "tokenizer-type": "PretrainedFromHF",
                 "output-prefix": "/data/ci/cache/process_dataset/test_merge_subs/part2", 
                 "tokenizer-name-or-path": "/data/ci/models/llama2/hf/llama-2-7b-hf",
+                "cache-dir": "/data/ci/cache/process_dataset/tmp/",
                 "workers": 4,
                 "log-interval": 1000
             }
@@ -62,6 +64,7 @@
                 "handler-name": "GeneralInstructionHandler",
                 "output-prefix": "/data/ci/cache/process_dataset/test_ins_subs/part1", 
                 "tokenizer-name-or-path": "/data/ci/models/llama2/hf/llama-2-7b-hf",
+                "cache-dir": "/data/ci/cache/process_dataset/tmp/",
                 "workers": 4,
                 "log-interval": 1000,
                 "append-eod": null
@@ -76,6 +79,7 @@
                 "handler-name": "GeneralInstructionHandler",
                 "output-prefix": "/data/ci/cache/process_dataset/test_ins_subs/part2", 
                 "tokenizer-name-or-path": "/data/ci/models/llama2/hf/llama-2-7b-hf",
+                "cache-dir": "/data/ci/cache/process_dataset/tmp/",
                 "workers": 4,
                 "log-interval": 1000,
                 "append-eod": null

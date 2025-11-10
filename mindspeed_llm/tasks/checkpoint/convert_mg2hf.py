@@ -786,8 +786,8 @@ class Mg2HfConvert(Convert):
                 hf_weight[hf_weight_key["layers_mlp_shared_expert_gate"]] = mlp_shared_expert_gate.clone()
             if self.n_shared_experts and self.n_shared_experts != 0:
                 if self.expert_tensor_parallel_size == 1:
-                    shared_gate_weights, shared_up_weights = self.linear_fc1_get_for_etp(mg_weight, shared_fc1_key, tp_rank=self.tp_rank_list[0], ep_rank=self.ep_rank_list[0])
-                    shared_down_weights = self.linear_fc2_get_for_etp(mg_weight, shared_fc2_key, tp_rank=self.tp_rank_list[0], ep_rank=self.ep_rank_list[0])
+                    shared_gate_weights, shared_up_weights = self.linear_fc1_get_for_etp(mg_weight, shared_fc1_key, tp_rank=0, ep_rank=0)
+                    shared_down_weights = self.linear_fc2_get_for_etp(mg_weight, shared_fc2_key, tp_rank=0, ep_rank=0)
                 else:
                     shared_gate_weights, shared_up_weights = self.linear_fc1_gather_from_tp(mg_weight, shared_fc1_key)
                     shared_down_weights = self.linear_fc2_gather_from_tp(mg_weight, shared_fc2_key)
@@ -891,8 +891,8 @@ class Mg2HfConvert(Convert):
             # dense
             mg_weight_key = self.load_model.get_weight(local_layer_idx)
             if self.expert_tensor_parallel_size == 1:
-                gate_weights, up_weights = self.linear_fc1_get_for_etp(mg_weight, mg_weight_key["layers_mlp_linear_fc1"], tp_rank=self.tp_rank_list[0], ep_rank=self.ep_rank_list[0])
-                down_weights = self.linear_fc2_get_for_etp(mg_weight, mg_weight_key["layers_mlp_linear_fc2"], tp_rank=self.tp_rank_list[0], ep_rank=self.ep_rank_list[0])
+                gate_weights, up_weights = self.linear_fc1_get_for_etp(mg_weight, mg_weight_key["layers_mlp_linear_fc1"], tp_rank=0, ep_rank=0)
+                down_weights = self.linear_fc2_get_for_etp(mg_weight, mg_weight_key["layers_mlp_linear_fc2"], tp_rank=0, ep_rank=0)
             else:
                 gate_weights, up_weights = self.linear_fc1_gather_from_tp(mg_weight, mg_weight_key["layers_mlp_linear_fc1"])
                 down_weights = self.linear_fc2_gather_from_tp(mg_weight, mg_weight_key["layers_mlp_linear_fc2"])

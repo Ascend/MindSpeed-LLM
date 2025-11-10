@@ -78,6 +78,6 @@ find "$BASE_DIR" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
     fi
 done
 
-rm -rf /data/cache/*
+rm -rf /data/ci/cache/*
 echo "=================tar error log=================="
 tar -czvf "${GENERATE_LOG_BASE_DIR}/${CURRENT_TIME}.tar.gz" "${GENERATE_LOG_DIR}/"

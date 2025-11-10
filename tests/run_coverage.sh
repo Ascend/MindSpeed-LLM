@@ -15,7 +15,7 @@ ST_DIR="empty"
 GENERATE_LOG_DIR="$UT_DIR/logs"
 mkdir -p "$GENERATE_LOG_DIR"
 touch "$GENERATE_LOG_DIR/exec_error.log"
-echo "core0.8.0 Execution Results" > $GENERATE_LOG_DIR/exec_error.log
+echo "core0.12.1 Execution Results" > $GENERATE_LOG_DIR/exec_error.log
 
 
 # 带参1用于区分运行场景

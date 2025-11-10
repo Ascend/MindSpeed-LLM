@@ -15,7 +15,7 @@ DATA_PATH=/data/ci/datasets/processed/gpt/gpt-wiki_text_document
 VOCAB_FILE=/data/ci/datasets/processed/gpt/gpt2-vocab.json
 MERGE_FILE=/data/ci/datasets/processed/gpt/gpt2-merges.txt
 CKPT_LOAD_DIR=/data/ci/models/gpt/mg/gpt_drop_moe_32k_base
-CKPT_SAVE_DIR=/data/cache
+CKPT_SAVE_DIR=/data/ci/cache
 
 TP=4
 PP=1

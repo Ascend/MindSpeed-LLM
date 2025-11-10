@@ -11,10 +11,10 @@ WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
 basepath=$(cd `dirname $0`; cd ../../../; pwd)
 
-DATA_PATH="/data/datasets/deepseek2_tp1_pp1_moe_enwiki/enwiki_text_document"
+DATA_PATH="/data/ci/datasets/processed/deepseek2_tp1_pp1_moe_enwiki/enwiki_text_document"
 TOKENIZER_MODEL=" /data/ci/models/deepseek-v2/hf/deepseek2_tp1_pp1_moe_hf "
 CKPT_LOAD_DIR="/data/ci/models/deepseek-v2/mg/deepseek2_tp1_pp1_ckpt/"
-CKPT_SAVE_DIR="/data/cache"
+CKPT_SAVE_DIR="/data/ci/cache"
 
 TP=1
 PP=1

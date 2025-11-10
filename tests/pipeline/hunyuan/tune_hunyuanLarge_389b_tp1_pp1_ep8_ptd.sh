@@ -14,7 +14,7 @@ WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
 TOKENIZER_PATH="/data/ci/models/hunyuan/hf/Hunyuan-A52B-Instruct"
 CKPT_LOAD_DIR="/data/ci/models/hunyuan/mg/hunyuanlarge_tp1pp1ep8"
-CKPT_SAVE_DIR="/data/cache"
+CKPT_SAVE_DIR="/data/ci/cache"
 DATA_PATH="/data/ci/datasets/processed/hunyuan_finetune/hunyuan"
 
 TP=1

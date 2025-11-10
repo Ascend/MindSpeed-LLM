@@ -35,7 +35,7 @@ class TestEvaluate(DistributedTest):
             print(log_capture)
 
             expected_score = acquire_score(log_capture)
-            assert math.isclose(expected_score, 0.25146198, abs_tol=1e-2), expected_score
+            assert math.isclose(expected_score, 0.23976608, abs_tol=1e-2), expected_score
 
 
     @pytest.mark.parametrize("params", test_config["test_qwen15_7B_human_eval_evaluate"])

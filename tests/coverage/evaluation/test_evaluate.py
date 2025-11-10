@@ -88,7 +88,7 @@ class TestEvaluate(DistributedTest):
 
         main()
         if dist.get_rank() == 0:
-            print("=================== llama2 mcore NEEDLEBENCH score ===============")
+            print("=================== qwen2 mcore NEEDLEBENCH score ===============")
             print(log_capture)
 
             expected_score = acquire_score(log_capture)
