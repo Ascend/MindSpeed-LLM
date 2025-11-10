@@ -30,7 +30,6 @@ SHORT_FACTOR="1.0,1.0199999809265137,1.0299999713897705,1.0299999713897705,1.049
 GPT_ARGS="
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \
-    --num-layers-per-virtual-pipeline-stage 1 \
     --sequence-parallel \
     --use-mcore-models \
     --rope-scaling-type longrope \
@@ -89,7 +88,7 @@ DATA_ARGS="
 
 OUTPUT_ARGS="
     --log-interval 1 \
-    --save-interval 2000 \
+    --save-interval 1000 \
     --eval-interval 1000 \
     --eval-iters 0 \
 "
