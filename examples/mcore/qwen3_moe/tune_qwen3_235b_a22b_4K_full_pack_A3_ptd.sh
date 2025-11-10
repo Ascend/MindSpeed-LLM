@@ -154,7 +154,7 @@ TUNE_ARGS="
     --is-instruction-dataset \
     --tokenizer-not-use-fast \
     --prompt-type qwen3 \
-    --reset-position-ids \
+    --reset-attention-mask \
     --neat-pack
 "
 

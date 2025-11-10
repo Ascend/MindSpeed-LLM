@@ -201,4 +201,4 @@ def get_batch_on_this_tp_rank(data_iterator):
             'position_ids': position_ids
         }
 
-    return batch, actual_seq_len
+    return batch

@@ -25,9 +25,9 @@ DISTRIBUTED_ARGS="
     --master_port $MASTER_PORT
 "
 
-# To enable reset-position-ids, please use data_convert_qwen_instruction_pack.sh to convert dataset.
+# To enable --reset-attention-mask, please use data_convert_qwen_instruction_pack.sh to convert dataset.
 ACCELERATE_ARGS="
-    --reset-position-ids \
+    --reset-attention-mask \
     --overlap-grad-reduce \
 
 "

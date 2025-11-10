@@ -45,7 +45,7 @@
 ```
 
 ## 使用效果
-|    模型     | 序列长度 | 分布式策略（TP/PP/CP） | gbs |       CP类型       | attention-mask-type | reset-position-ids |  显存   | 吞吐 TFLOP/s/GPU |
+|    模型     | 序列长度 | 分布式策略（TP/PP/CP） | gbs |       CP类型       | attention-mask-type | reset-attention-mask |  显存   | 吞吐 TFLOP/s/GPU |
 |:---------:|:----:|:---------------:|:---:|:----------------:|:-------------------:|:------------------:|:-----:|:--------------:|
 | Llama2-7B | 32k  |      2/1/4      | 16  | megatron_cp_algo |       general       |        True        | 52777 |     102.7      |
 | Llama2-7B | 32k  |      2/1/4      | 16  | ulysses_cp_algo  |       general       |        True        | 53681 |     192.3      |

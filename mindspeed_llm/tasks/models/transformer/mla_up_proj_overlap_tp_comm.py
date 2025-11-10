@@ -143,8 +143,8 @@ def mla_up_projection_overlap_tp_comm(q_compressed, kv_compressed, k_pos_emb, ro
                 k_pos_emb = k_pos_emb.view(b, h, s, d // 2, 2).transpose(4, 3).reshape(b, h, s, d)
 
             if packed_seq_params is not None:
-                cu_seqlens_q = packed_seq_params.cu_seqlens_q
-                cu_seqlens_kv = packed_seq_params.cu_seqlens_kv
+                cu_seqlens_q = packed_seq_params
+                cu_seqlens_kv = packed_seq_params
             else:
                 cu_seqlens_q = cu_seqlens_kv = None
 

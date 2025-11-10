@@ -28,7 +28,7 @@ from megatron.training.utils import (
 )
 from megatron.training.arguments import core_transformer_config_from_args
 from mindspeed_llm.training.training import pretrain
-from mindspeed_llm.training.utils import generate_actual_seq_len
+
 
 stimer = StragglerDetector()
 
@@ -96,12 +96,12 @@ def get_batch(data_iterator):
     args = get_args()
 
     is_middle_stage = not (mpu.is_pipeline_first_stage() or mpu.is_pipeline_last_stage())
-    pretrain_not_tnd_flags = not args.is_instruction_dataset and not args.reset_position_ids
+    pretrain_not_tnd_flags = not args.is_instruction_dataset and not args.reset_attention_mask
     if pretrain_not_tnd_flags and is_middle_stage:
         return (None,) * 5
            
     # get batches based on the TP rank you are on
-    batch, actual_seq_len = get_batch_on_this_tp_rank(data_iterator)
+    batch  = get_batch_on_this_tp_rank(data_iterator)
     args = get_args()
     if args.return_document_ids and all(
     rank == 0 for rank in (
@@ -114,8 +114,6 @@ def get_batch(data_iterator):
         batch.pop('document_ids', None)
         batch.pop('idx', None)
 
-    if args.reset_position_ids:
-        generate_actual_seq_len(batch, actual_seq_len)
     # slice batch along sequence dimension for context parallelism
     batch = get_batch_on_this_cp_rank(batch)
     return batch.values()

@@ -96,7 +96,7 @@ GPT_ARGS="
     --no-gradient-accumulation-fusion \
     --group-query-attention \
     --num-query-groups 8 \
-    --reset-position-ids
+    --reset-attention-mask
 "
 
 DATA_ARGS="

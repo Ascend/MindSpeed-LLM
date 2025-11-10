@@ -104,7 +104,7 @@ ROPE_ARGS="
 
 GPT_ARGS="
     --spec mindspeed_llm.tasks.models.spec.deepseek_spec layer_spec \
-    --reset-position-ids \
+    --reset-attention-mask \
     --noop-layers 61,62,63 \
     --no-shared-storage \
     --use-flash-attn \

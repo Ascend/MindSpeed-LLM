@@ -24,8 +24,9 @@ from megatron.core.inference.contexts import BaseInferenceContext
 from megatron.training import get_args
 
 from mindspeed_llm.core.tensor_parallel.layers import SegmentedColumnParallelLinear
-
-from mindspeed.utils import get_actual_seq_len, compute_qkv_index, get_position_ids
+from mindspeed_llm.training.utils import set_actual_seq_len_list
+from mindspeed.core.context_parallel.get_batch_utils import get_actual_seq_len
+from mindspeed.utils import compute_qkv_index, get_position_ids
 
 
 class GPTModel(MegatronCoreGPTModel):
@@ -307,19 +308,26 @@ class GPTModel(MegatronCoreGPTModel):
 def gpt_forward_wrapper(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
+        _args = get_args()
         actual_seq_len = get_actual_seq_len()
-        
-        args_r = get_args()
-        if args_r.reset_attention_mask:
-            actual_seq_len = torch.tensor(actual_seq_len)
-        
+
         packed_seq_params = PackedSeqParams(
-            cu_seqlens_q=actual_seq_len, 
+            cu_seqlens_q=actual_seq_len,
             cu_seqlens_kv=actual_seq_len
         )
 
-        actual_seq_len = actual_seq_len.clone().tolist() if isinstance(actual_seq_len, Tensor) else actual_seq_len
-        q_index, kv_index = compute_qkv_index(actual_seq_len)
+        actual_seq_len_list = actual_seq_len.tolist()
+        set_actual_seq_len_list(actual_seq_len_list)
+        if _args.mtp_num_layers:
+            actual_seq_len_list = actual_seq_len_list[0]
+
+        max_actual_seq_len = actual_seq_len_list[0]
+        for i in range(1, len(actual_seq_len_list)):
+            max_actual_seq_len = max(max_actual_seq_len, actual_seq_len_list[i] - actual_seq_len_list[i - 1])
+        packed_seq_params.max_seqlen_q = max_actual_seq_len
+        packed_seq_params.max_seqlen_kv = max_actual_seq_len
+
+        q_index, kv_index = compute_qkv_index(actual_seq_len_list)
         packed_seq_params.q_index = q_index
         packed_seq_params.kv_index = kv_index
         packed_seq_params.position_ids = get_position_ids()

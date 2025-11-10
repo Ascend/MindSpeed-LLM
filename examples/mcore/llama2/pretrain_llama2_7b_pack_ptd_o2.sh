@@ -35,7 +35,7 @@ GPT_ARGS="
     --ffn-hidden-size 11008 \
     --num-attention-heads 32 \
     --tokenizer-type Llama2Tokenizer \
-    --reset-position-ids \
+    --reset-attention-mask \
     --tokenizer-model ${TOKENIZER_MODEL} \
     --seq-length 4096 \
     --max-position-embeddings 4096 \

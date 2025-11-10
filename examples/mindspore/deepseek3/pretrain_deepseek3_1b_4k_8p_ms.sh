@@ -105,7 +105,7 @@ MEM_ARGS="
 GPT_ARGS="
     --spec mindspeed_llm.tasks.models.spec.deepseek_spec layer_spec \
     --no-gradient-accumulation-fusion \
-    --reset-position-ids \
+    --reset-attention-mask \
     --noop-layers 3 \
     --no-shared-storage \
     --reuse-fp32-param \

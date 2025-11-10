@@ -26,7 +26,7 @@ DISTRIBUTED_ARGS="
 
 ACC_ARGS="
 
-    --reset-position-ids \
+    --reset-attention-mask \
     --num-layers-per-virtual-pipeline-stage 5 \
     --o2-optimizer \
     --o2-gradient \

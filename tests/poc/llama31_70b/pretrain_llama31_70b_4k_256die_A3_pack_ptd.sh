@@ -74,7 +74,7 @@ MODEL_ARGS="
     --swiglu \
     --no-masked-softmax-fusion \
     --attention-softmax-in-fp32 \
-    --reset-position-ids \
+    --reset-attention-mask \
     --use-distributed-optimizer \
     --overlap-grad-reduce \
     --overlap-param-gather

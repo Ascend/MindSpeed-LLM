@@ -27,7 +27,7 @@ DISTRIBUTED_ARGS="
 "
 GPT_ARGS="
     --stage sft \
-    --reset-position-ids \
+    --reset-attention-mask \
     --use-mcore-models \
     --reuse-fp32-param \
     --tensor-model-parallel-size ${TP} \

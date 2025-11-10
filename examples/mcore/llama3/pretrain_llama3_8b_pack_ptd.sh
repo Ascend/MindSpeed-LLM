@@ -27,7 +27,7 @@ GPT_ARGS="
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \
     --use-mcore-models \
-    --reset-position-ids \
+    --reset-attention-mask \
     --micro-batch-size 1 \
     --global-batch-size 64 \
     --sequence-parallel \

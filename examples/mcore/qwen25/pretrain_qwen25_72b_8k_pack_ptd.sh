@@ -83,7 +83,7 @@ GPT_ARGS="
     --use-distributed-optimizer \
     --reuse-fp32-param \
     --swap-attention \
-    --reset-position-ids \
+    --reset-attention-mask \
     --exit-on-missing-checkpoint \
     --use-fused-rmsnorm \
     --use-ascend-coc \

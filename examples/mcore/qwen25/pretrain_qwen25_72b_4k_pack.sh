@@ -88,7 +88,7 @@ GPT_ARGS="
     --overlap-param-gather \
     --exit-on-missing-checkpoint \
     --no-shared-storage \
-    --reset-position-ids \
+    --reset-attention-mask \
     --use-ascend-coc \
     --coc-fused-kernel \
     --recompute-activation-function \

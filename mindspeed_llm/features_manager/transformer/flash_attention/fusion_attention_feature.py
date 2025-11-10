@@ -20,6 +20,7 @@ class FusionAttentionFeature(MindSpeedFusionAttentionFeature):
         group.add_argument('--interleave-sliding-window', type=int,
                        help='Window size when use interleave sliding window attention.')
 
+
     def register_patches(self, patch_manager, args):
         from mindspeed.core.transformer.attention import attention_init
         from mindspeed_llm.core.transformer.custom_dot_product_attention import CustomDotProductAttention

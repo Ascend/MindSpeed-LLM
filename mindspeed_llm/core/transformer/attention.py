@@ -1,7 +1,7 @@
 from functools import wraps
 
 import torch
-import torch.nn.functional as F
+from einops import rearrange
 
 from megatron.core.transformer import TransformerConfig
 from megatron.core.transformer.attention import SelfAttentionSubmodules, SelfAttention
@@ -15,6 +15,8 @@ from mindspeed.core.parallel_state import get_tensor_model_parallel_world_size_f
 from mindspeed.core.tensor_parallel.tp_2d.group_api_2d import TPXCollectiveComm, TPXOverlapCollectiveComm, \
     TPYCollectiveComm, TPYOverlapCollectiveComm
 from mindspeed.core.tensor_parallel.tp_2d.parallel_linear_2d import ParallelLinear2D
+from mindspeed.core.fusions.fused_rope import apply_rotary_pos_emb_bshd, apply_rotary_pos_emb
+
 
 
 def self_attention_init_tp2d_wrapper(fn):
@@ -123,4 +125,95 @@ def self_attention_init(
                 eps=self.config.layernorm_epsilon,
             )
         else:
-            self.k_layernorm = None       
+            self.k_layernorm = None
+
+
+def attention_forward(
+        self,
+        hidden_states,
+        attention_mask,
+        key_value_states=None,
+        inference_context=None,
+        rotary_pos_emb=None,
+        rotary_pos_cos=None,
+        rotary_pos_sin=None,
+        attention_bias=None,
+        packed_seq_params=None,
+        sequence_len_offset=None,
+        *,
+        inference_params=None,
+):
+    # For self attention we just duplicate the rotary_pos_emb if it isn't already
+    if rotary_pos_emb is not None and not isinstance(rotary_pos_emb, tuple):
+        rotary_pos_emb = (rotary_pos_emb,) * 2
+    args = get_args()
+    # =====================
+    # Query, Key, and Value
+    # =====================
+    # Get the query, key and value tensors based on the type of attention -
+    # self or cross attn.
+    query, key, value = self.get_query_key_value_tensors(hidden_states, key_value_states)
+    bsz = query.shape[1]
+
+    # ===================================================
+    # Adjust key, value, and rotary_pos_emb for inference
+    # ===================================================
+    query, key, value, rotary_pos_emb, attn_mask_type = self._adjust_key_value_for_inference(
+        inference_context, query, key, value, rotary_pos_emb, rotary_pos_cos, rotary_pos_sin, sequence_len_offset
+    )
+
+    # ================================================
+    # relative positional embedding (rotary embedding)
+    # ================================================
+    if rotary_pos_emb is not None:
+        q_pos_emb, k_pos_emb = rotary_pos_emb
+
+        if packed_seq_params is not None:
+            cu_seqlens_q = packed_seq_params
+            cu_seqlens_kv = packed_seq_params
+        else:
+            cu_seqlens_q = cu_seqlens_kv = None
+        query = apply_rotary_pos_emb(
+            query, q_pos_emb, config=self.config, cu_seqlens=cu_seqlens_q,
+        )
+        key = apply_rotary_pos_emb(
+            key, k_pos_emb, config=self.config, cu_seqlens=cu_seqlens_kv,
+        )
+    is_ulysses_algo = (getattr(self.config, 'context_parallel_algo', None) == 'ulysses_cp_algo')
+
+    if packed_seq_params is not None and not is_ulysses_algo and args.context_parallel_size > 1:
+        query, key, value = [rearrange(x, 's b h d -> (b s) h d') for x in [query, key, value]]
+
+    # ==================================
+    # core attention computation
+    # ==================================
+
+    if self.checkpoint_core_attention and self.training:
+        core_attn_out = self._checkpointed_attention_forward(
+            query,
+            key,
+            value,
+            attention_mask,
+            attn_mask_type=attn_mask_type,
+            attention_bias=attention_bias,
+            packed_seq_params=packed_seq_params,
+        )
+    else:
+        core_attn_out = self.core_attention(
+            query,
+            key,
+            value,
+            attention_mask,
+            attn_mask_type=attn_mask_type,
+            attention_bias=attention_bias,
+            packed_seq_params=packed_seq_params,
+        )
+    # =================
+    # Output. [sq, b, h]
+    # =================
+    if packed_seq_params is not None and not is_ulysses_algo and args.context_parallel_size > 1:
+        core_attn_out = rearrange(core_attn_out, '(b s) h d -> s b (h d)', b=bsz)
+
+    output, bias = self.linear_proj(core_attn_out)
+
+    return output, bias

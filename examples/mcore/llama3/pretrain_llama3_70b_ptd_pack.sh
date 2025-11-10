@@ -25,9 +25,8 @@ DISTRIBUTED_ARGS="
 
 ACCELERATE_ARGS="
     --swap-attention \
-
     --reuse-fp32-param \
-    --reset-position-ids \
+    --reset-attention-mask \
     --use-distributed-optimizer \
     --overlap-grad-reduce \
     --overlap-param-gather \

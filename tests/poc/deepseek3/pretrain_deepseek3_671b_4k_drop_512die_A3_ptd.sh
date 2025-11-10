@@ -103,7 +103,7 @@ ROPE_ARGS="
 GPT_ARGS="
     --transformer-impl local \
     --spec mindspeed_llm.tasks.models.spec.deepseek_spec layer_spec \
-    --reset-position-ids \
+    --reset-attention-mask \
     --gemm-gradient-accumulation-fusion \
     --noop-layers 61,62,63 \
     --manual-gc \

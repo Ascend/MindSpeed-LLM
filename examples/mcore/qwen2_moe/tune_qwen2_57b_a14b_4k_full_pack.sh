@@ -40,7 +40,7 @@ TUNE_ARGS="
     --stage sft \
     --prompt-type qwen \
     --is-instruction-dataset \
-    --reset-position-ids \
+    --reset-attention-mask \
     --neat-pack \
     --padded-samples \
 "

@@ -81,7 +81,7 @@ GPT_ARGS="
     --overlap-grad-reduce \
     --reuse-fp32-param \
     --use-distributed-optimizer \
-    --reset-position-ids \
+    --reset-attention-mask \
     --bf16
 "
 

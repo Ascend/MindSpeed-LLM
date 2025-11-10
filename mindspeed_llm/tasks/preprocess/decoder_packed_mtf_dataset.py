@@ -30,6 +30,7 @@ from mindspeed_llm.training.tokenizer import build_tokenizer
 from mindspeed_llm.tasks.utils.error_utils import check_equal
 from mindspeed_llm.tasks.preprocess.mtf_dataset import MTFDataset, get_packed_indexed_dataset
 from mindspeed_llm.tasks.preprocess.templates import get_model_template
+from mindspeed_llm.training.utils import compute_actual_seq_len
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +49,7 @@ def build_train_valid_test_datasets(
     tokenizer = build_tokenizer(args)
     pad_token = tokenizer.pad
     eos_token = tokenizer.eos
-    
+
     # Only Support Single dataset.
     all_train_datasets, all_valid_datasets, all_test_datasets = _build_train_valid_test_datasets(
         data_prefix=data_prefix[0],
@@ -147,31 +148,9 @@ class DecoderPackedMTFDataset(torch.utils.data.Dataset):
         self.cur_batch_index = []
         self.iteration = 1
 
-
     def __len__(self):
         return len(self.shuffle_index)
 
-
-    def _get_reset_position_ids(self, data: torch.Tensor):
-        seq_length = data.numel()
-        # Position ids.
-        position_ids = torch.arange(seq_length, dtype=torch.long, device=data.device)
-
-        # Find indices where EOD token is.
-        eod_index = position_ids[data == self.eos_token]
-        # Detach indices from positions if going to modify positions.
-
-        eod_index = eod_index.clone()
-
-        # Loop through EOD indices:
-        prev_index = 0
-        for j in range(eod_index.numel()):
-            i = eod_index[j]
-            # Reset positions.
-            position_ids[(i + 1):] -= i + 1 - prev_index
-            prev_index = i + 1
-
-        return position_ids.clone()
 
     @staticmethod
     def _get_neat_pack_position_ids(data: torch.Tensor):
@@ -195,7 +174,8 @@ class DecoderPackedMTFDataset(torch.utils.data.Dataset):
             # No reward model is considered yet
             # Print all data one iteration at a time
             if len(self.cur_batch_index) == self.args.global_batch_size / self.args.data_parallel_size:
-                print("current iteration: {}, current rank:{}, data_parallel_rank:{}, document_ids:{}".format(self.iteration, torch.distributed.get_rank(), mpu.get_data_parallel_rank(), self.cur_batch_index))
+                print("current iteration: {}, current rank:{}, data_parallel_rank:{}, document_ids:{}".format(
+                    self.iteration, torch.distributed.get_rank(), mpu.get_data_parallel_rank(), self.cur_batch_index))
                 self.cur_batch_index = []
                 self.iteration += 1
 
@@ -203,17 +183,60 @@ class DecoderPackedMTFDataset(torch.utils.data.Dataset):
 
         if self.args.is_pairwise_dataset:
             return self._cut_pairwise_token(item, np.int64)
-        # pack模式下固定长度为seq_length，不需要cut
-        elif self.args.reset_position_ids:
-            if self.args.neat_pack:
+        data = torch.from_numpy(item['input_ids'])
+        seq_length = data.numel()
+        # Position ids.
+        actual_seq_len = None
+        position_ids = torch.arange(self.args.seq_length, dtype=torch.long, device=data.device)
+        if self.args.reset_position_ids:
+            position_ids = position_ids.clone()
+        if self.args.reset_attention_mask:
+            # Find indices where EOD token is.
+            eod_index = position_ids[:seq_length][data == self.eos_token]
+            # Detach indices from positions if going to modify positions.
+            if self.args.reset_position_ids:
+                eod_index = eod_index.clone()
+
+                # Loop through EOD indices:
+                prev_index = 0
+                for j in range(eod_index.numel()):
+                    i = eod_index[j]
+                    # Reset positions.
+                    if self.args.reset_position_ids:
+                        position_ids[(i + 1):] -= i + 1 - prev_index
+                        prev_index = i + 1
+
+            elif self.args.neat_pack:
                 position_ids = self._get_neat_pack_position_ids(torch.from_numpy(item['attention_mask']))
-            else:
-                position_ids = self._get_reset_position_ids(torch.from_numpy(item['input_ids']))
+                actual_seq_len = compute_actual_seq_len(position_ids)
+                actual_seq_len = torch.tensor(actual_seq_len)
+                position_ids = torch.arange(self.args.seq_length, dtype=torch.long, device=data.device)
+
+            if actual_seq_len is None:
+                seq_length_tensor = torch.tensor([self.args.seq_length])
+                actual_seq_len = torch.cat([eod_index + 1, seq_length_tensor])
+
+
+            mtp_res = None
+            if self.args.mtp_num_layers:
+                actual_seq_len = actual_seq_len.tolist()
+                mtp_res = [actual_seq_len]
+                for i in range(1, self.args.mtp_num_layers + 1):
+                    next_actual_seq_len = []
+                    for j in actual_seq_len:
+                        if j % seq_length == 0:
+                            next_actual_seq_len.append(j)
+                        else:
+                            next_actual_seq_len.append(j - i)
+                    mtp_res.append(next_actual_seq_len)
+                mtp_res = torch.tensor(mtp_res)
+
             return {
                 "input_ids": self._cut_token(item['input_ids'], np.int64),
                 "attention_mask": self._cut_token(item["attention_mask"], np.int64),
                 "labels": self._cut_token(item["labels"], np.int64),
-                "position_ids": self._cut_token(position_ids.numpy(), np.int64)
+                "position_ids": self._cut_token(position_ids.numpy(), np.int64),
+                "actual_seq_len": actual_seq_len if mtp_res is None else mtp_res
             }
         elif self.args.cut_max_seqlen:
             return {
@@ -224,7 +247,6 @@ class DecoderPackedMTFDataset(torch.utils.data.Dataset):
         # 为防止input_ids过长，input_ids与attention_mask等比例cut
         else:
             return self._cut_instruction_token(item, np.int64)
-
 
     def _cut_token(self, token, dtype):
         token_length = len(token)
@@ -237,7 +259,7 @@ class DecoderPackedMTFDataset(torch.utils.data.Dataset):
         if "labels" in item.keys() and not self.args.dataset_additional_keys:
             token_length = len(item["input_ids"])
             if token_length <= self.seq_length:
-                return {   
+                return {
                     "input_ids": item["input_ids"].astype(dtype),
                     "attention_mask": np.ones_like(item["input_ids"]).astype(dtype),
                     "labels": item["labels"].astype(dtype)
@@ -246,7 +268,8 @@ class DecoderPackedMTFDataset(torch.utils.data.Dataset):
             template = None
             # get model chat template
             if hasattr(self.args, "prompt_type") and self.args.prompt_type is not None:
-                template = get_model_template(self.args.prompt_type, self.args.prompt_type_path, self.args.enable_thinking)
+                template = get_model_template(self.args.prompt_type, self.args.prompt_type_path,
+                                              self.args.enable_thinking)
 
             prompt_begin_list, prompt_end_list = get_prompt_index(item["labels"], IGNORE_INDEX)
 
@@ -314,7 +337,6 @@ class DecoderPackedMTFDataset(torch.utils.data.Dataset):
             )
 
         return res
-
 
     def _cut_pairwise_token(self, item, dtype):
         """Cut prompt and response proportionally for pairwise datasets."""
@@ -411,7 +433,7 @@ def _build_index_mappings(
     shuffle_idx_filename = _filename + '_decoder_packed_idx.npy'
 
     # Build the indexed mapping if not exist.
-    if torch.distributed.get_rank() % torch.cuda.device_count() == 0 or args.stage in ["ray_ppo", "ray_online_dpo", "ray_grpo"]:
+    if torch.distributed.get_rank() % torch.cuda.device_count() == 0 or args.stage in ["ray_ppo", "ray_online_dpo",                                                                                "ray_grpo"]:
         if not os.path.isfile(shuffle_idx_filename):
 
             print_rank_0(' > WARNING: could not find index map files, building '
@@ -423,7 +445,8 @@ def _build_index_mappings(
             shuffle_idx = []
             while len(shuffle_idx) < num_samples:
                 if shuffle:
-                    new_document_ids = _build_shuffle_idx(nb_documents=nb_documents, start_index=start_index, np_rng=np_rng)
+                    new_document_ids = _build_shuffle_idx(nb_documents=nb_documents, start_index=start_index,
+                                                          np_rng=np_rng)
                 else:
                     new_document_ids = _build_sequential_idx(nb_documents=nb_documents, start_index=start_index)
                 shuffle_idx.extend(new_document_ids.tolist())

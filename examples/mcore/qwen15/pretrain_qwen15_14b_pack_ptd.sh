@@ -80,7 +80,7 @@ GPT_ARGS="
     --overlap-grad-reduce \
     --no-gradient-accumulation-fusion \
     --overlap-param-gather \
-    --reset-position-ids
+    --reset-attention-mask
 "
 
 DATA_ARGS="

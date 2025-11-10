@@ -33,7 +33,9 @@ from megatron.training import get_args
 from megatron.core import mpu
 from tqdm import tqdm
 
-from mindspeed.utils import (set_actual_seq_len, set_position_ids,
+from mindspeed.core.context_parallel.utils import pad_data
+from mindspeed.core.context_parallel.get_batch_utils import  set_actual_seq_len
+from mindspeed.utils import ( set_position_ids,
                              _get_batch_on_this_cp_rank_in_megatron_cp,
                              _get_batch_on_this_cp_rank_in_hybrid_cp_general,
                              _get_batch_on_this_cp_rank_in_hybrid_cp,
@@ -61,6 +63,17 @@ WRITE_FILE_DEFAULT_MODES = stat.S_IWUSR | stat.S_IRUSR
 _MTP_POSITION_ID = None
 _MTP_BATCH_LIST = None
 
+_ACTUAL_SEQ_LEN_LIST = None
+
+
+def set_actual_seq_len_list(actual_seq_len):
+    global _ACTUAL_SEQ_LEN_LIST
+    _ACTUAL_SEQ_LEN_LIST = actual_seq_len
+
+
+def get_actual_seq_len_list():
+    global _ACTUAL_SEQ_LEN_LIST
+    return _ACTUAL_SEQ_LEN_LIST
 
 def set_mtp_batch_list(mtp_batch_list):
     global _MTP_BATCH_LIST
@@ -132,15 +145,7 @@ def compute_actual_seq_len(origin_seq):
     return actual_seq_len
 
 
-def generate_actual_seq_len(batch, actual_seq_len=None):
-    position_ids = batch.get('position_ids').transpose(0, 1).contiguous()
-    set_position_ids(position_ids)
-    if actual_seq_len is not None:
-        set_actual_seq_len(actual_seq_len)
-    else:
-        position_ids = batch.get('position_ids')
-        actual_seq_len = compute_actual_seq_len(position_ids)
-        set_actual_seq_len(actual_seq_len)
+
 
 
 def regenerate_position_ids(tensor, offset):
@@ -201,6 +206,20 @@ def get_tune_attention_mask(attention_mask_1d):
 
     return attention_mask
 
+
+def get_batch_on_this_cp_rank_wrapper(fn):
+    @wraps(fn)
+    def wrapper(batch):
+        batch = fn(batch)
+        args = get_args()
+        if 'position_ids' in batch:
+            if args.reset_position_ids:
+                set_position_ids(batch['position_ids'].transpose(0, 1).contiguous())
+            else:
+                set_position_ids(batch['position_ids'])
+        return batch
+
+    return wrapper
 
 def print_args_wrapper(fn):
     """
@@ -595,7 +614,7 @@ def get_batch_on_this_tp_rank(data_iterator):
             'position_ids': position_ids
         }
 
-    return batch, actual_seq_len
+    return batch
 
 
 def get_batch_on_this_tp_rank_reset_attn_mask(data_iterator):
@@ -642,7 +661,10 @@ def get_batch_on_this_tp_rank_reset_attn_mask(data_iterator):
 
         if args.reset_attention_mask:
             actual_seq_len = broadcast_dynamic(data['actual_seq_len'])
-            if args.attention_mask_type == 'causal':
+            if args.attention_mask_type == 'causal' \
+              and args.context_parallel_size > 1 \
+              and args.context_parallel_algo == 'megatron_cp_algo':
+                actual_seq_len = pad_data(actual_seq_len, batch, args.context_parallel_size, args.tensor_model_parallel_size)
                 actual_seq_len /= get_ring_degree()
             set_actual_seq_len(actual_seq_len)
 
@@ -650,7 +672,7 @@ def get_batch_on_this_tp_rank_reset_attn_mask(data_iterator):
         tokens = torch.empty((args.micro_batch_size, args.seq_length), dtype=torch.int64, device=torch.cuda.current_device())
         labels = torch.empty((args.micro_batch_size, args.seq_length), dtype=torch.int64, device=torch.cuda.current_device())
         loss_mask = torch.empty((args.micro_batch_size, args.seq_length), dtype=torch.float32, device=torch.cuda.current_device())
-        if args.create_attention_mask_in_dataloader:
+        if getattr(args, 'create_attention_mask_in_dataloader', False):
             attention_mask = torch.empty(
                 (args.micro_batch_size, 1, args.seq_length, args.seq_length), dtype=torch.bool, device=torch.cuda.current_device()
             )
@@ -700,11 +722,15 @@ def get_batch_on_this_tp_rank_reset_attn_mask(data_iterator):
 
         if args.reset_attention_mask:
             actual_seq_len = broadcast_dynamic(None)
-            if args.attention_mask_type == 'causal':
+            if args.attention_mask_type == 'causal' \
+                    and args.context_parallel_size > 1 \
+                    and args.context_parallel_algo == 'megatron_cp_algo':
+                actual_seq_len = pad_data(actual_seq_len, batch, args.context_parallel_size,
+                                          args.tensor_model_parallel_size)
                 actual_seq_len /= get_ring_degree()
             set_actual_seq_len(actual_seq_len)
 
-    return batch, actual_seq_len
+    return batch
 
 
 def get_batch_on_this_cp_rank(batch):
@@ -766,7 +792,7 @@ def _get_batch_on_this_cp_rank_in_ulysses_cp(batch):
     cp_rank = mpu.get_context_parallel_rank()
     cp_size = mpu.get_context_parallel_world_size()
     for key, val in batch.items():
-        if key in ['attention_mask', 'position_ids']:
+        if key == 'attention_mask':
             continue
         if val is not None:
             seq_dim = 1 if key != 'attention_mask' else 2

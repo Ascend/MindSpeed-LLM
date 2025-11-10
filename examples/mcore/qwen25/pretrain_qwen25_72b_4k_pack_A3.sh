@@ -86,7 +86,7 @@ GPT_ARGS="
     --o2-gradient \
     --exit-on-missing-checkpoint \
     --no-shared-storage \
-    --reset-position-ids \
+    --reset-attention-mask \
     --recompute-activation-function \
     --num-layers-per-virtual-pipeline-stage 5
 "

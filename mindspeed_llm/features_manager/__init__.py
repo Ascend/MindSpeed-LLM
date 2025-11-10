@@ -34,7 +34,9 @@ from mindspeed.features_manager import (
     SwapAttentionFeature,
     ContextParallelKvCacheFeature,
     TorchFullyShardedDataParallelFeature,
-    ProfilerDefaultFeature
+    ProfilerDefaultFeature,
+    OptimizeP2PCommFeature,
+    FusionAttentionV2Feature
 )
 from mindspeed.features_manager.feature import MindSpeedFeature
 from mindspeed.features_manager.features_manager import MindSpeedFeaturesManager
@@ -173,6 +175,7 @@ def add_pipeline_parallel_features(features_list: List[MindSpeedFeature]):
         RiPipeSchedulesBubbleFeature(),
         RiPipeSchedulesAdvanceFeature(),
         NoopLayersFeature(),
+        OptimizeP2PCommFeature(),
         OptimizeSendRecvCommFeature(),
         UnalignedPipelineFeature(),
         DualpipeVFeature(),
@@ -192,6 +195,7 @@ def add_transformer_features(features_list: List[MindSpeedFeature]):
         AlibiFeature(),
         # LLM feature
         ResetAttentionMaskFeature(),
+        FusionAttentionV2Feature()
     ])
 
 

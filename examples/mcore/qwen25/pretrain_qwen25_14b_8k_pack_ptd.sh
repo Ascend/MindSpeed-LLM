@@ -87,7 +87,7 @@ GPT_ARGS="
     --no-load-optim \
     --no-load-rng \
     --seed 42 \
-    --reset-position-ids \
+    --reset-attention-mask \
     --reuse-fp32-param \
     --use-distributed-optimizer \
     --overlap-grad-reduce \

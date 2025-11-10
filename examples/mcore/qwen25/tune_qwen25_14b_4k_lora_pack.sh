@@ -100,7 +100,7 @@ TUNE_ARGS="
     --lora-alpha 16 \
     --lora-fusion \
     --lora-target-modules linear_qkv linear_proj linear_fc1 linear_fc2
-    --reset-position-ids 
+    --reset-attention-mask
 "
 
 DATA_ARGS="

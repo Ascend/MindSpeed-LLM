@@ -12,8 +12,8 @@ class DataFeature(MindSpeedFeature):
 
 
     def validate_args(self, args):
-        if args.enable_share_memory and not args.reset_position_ids:
-            raise AssertionError('Shared memory requires --reset-position-ids to be enabled.')
+        if args.enable_share_memory and  args.reset_attention_mask:
+            raise AssertionError('Shared memory is not supported  --reset-attention-mask.')
         if args.enable_share_memory and args.position_embedding_type == 'alibi':
             raise AssertionError('Shared memory is not supported with alibi position embeddings.')
 

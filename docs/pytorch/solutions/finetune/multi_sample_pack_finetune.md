@@ -168,4 +168,4 @@ bash examples/mcore/qwen25/tune_qwen25_7b_4k_full_pack.sh
 
 * 数据预处理时，使用 `--neat-pack` 参数的前提是必须使用 `--pack` 参数。
 
-* 微调时，使用 `--neat-pack` 参数的前提是必须使用 `--reset-position-ids` 参数。
+* 微调时，使用 `--neat-pack` 参数的前提是必须使用 `--reset-attention-mask` 参数。

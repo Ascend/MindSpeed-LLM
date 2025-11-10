@@ -22,7 +22,9 @@ from megatron.core.utils import make_viewless_tensor
 from megatron.training import get_args
 from megatron.training.utils import get_batch_on_this_cp_rank
 
-from mindspeed_llm.training.utils import generate_actual_seq_len, get_mtp_batch_list
+from mindspeed_llm.training.utils import get_mtp_batch_list
+from mindspeed.core.context_parallel.get_batch_utils import set_actual_seq_len, get_actual_seq_len, get_ring_degree
+from mindspeed.core.context_parallel.utils import pad_data
 
 
 def mtp_reduce_loss_in_tracker():
@@ -323,12 +325,30 @@ def get_mtp_layer_input(input_data, mtp_batch_list, layer_number):
 def generate_mtp_batch_list_on_this_tp_rank(batch):
     args = get_args()
 
+    if args.reset_attention_mask:
+        origin_seq = batch['position_ids']
+        actual_seq_len = get_actual_seq_len()
+        device = actual_seq_len.device
+        actual_seq_len = actual_seq_len.tolist()
+
+        seq_len = origin_seq.shape[1]
+        mtp_res = [actual_seq_len]
+        for i in range(1, args.mtp_num_layers + 1):
+            next_actual_seq_len = []
+            for j in actual_seq_len:
+                if j % seq_len == 0:
+                    next_actual_seq_len.append(j)
+                else:
+                    next_actual_seq_len.append(j - i)
+            mtp_res.append(next_actual_seq_len)
+        mtp_res = torch.tensor(mtp_res, device=device)
+        set_actual_seq_len(mtp_res)
+
     if not (args.mtp_num_layers and mpu.is_pipeline_last_stage() and args.context_parallel_size > 1):
         return None
 
     mtp_batch_list = []
     for i in range(args.mtp_num_layers):
-
         mtp_batch = {}
 
         mtp_batch['tokens'], _ = roll_tensor(batch['tokens'], shifts=-i - 1, dims=-1)
@@ -337,14 +357,8 @@ def generate_mtp_batch_list_on_this_tp_rank(batch):
         mtp_batch['attention_mask'] = batch['attention_mask'].clone() if batch['attention_mask'] is not None else None
         mtp_batch['position_ids'] = batch['position_ids'].clone() if batch['position_ids'] is not None else None
 
-        if args.reset_position_ids and not args.reset_attention_mask:
-            generate_actual_seq_len(mtp_batch)
-            mtp_batch = get_batch_on_this_cp_rank(mtp_batch)
-        else:
-            # slice batch along sequence dimension for context parallelism
-            mtp_batch = get_batch_on_this_cp_rank(mtp_batch)
+        mtp_batch = get_batch_on_this_cp_rank(mtp_batch)
 
         mtp_batch_list.append(mtp_batch)
 
     return mtp_batch_list
-        

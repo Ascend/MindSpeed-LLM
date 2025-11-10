@@ -32,7 +32,7 @@ TUNE_ARGS="
     --finetune \
     --stage sft \
     --prompt-type qwen \
-    --reset-position-ids \
+    --reset-attention-mask \
     --is-instruction-dataset \
     --neat-pack \
     --padded-samples

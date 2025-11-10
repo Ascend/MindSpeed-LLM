@@ -74,7 +74,7 @@ MODEL_ARGS="
     --use-distributed-optimizer \
     --exit-on-missing-checkpoint \
     --no-gradient-accumulation-fusion \
-    --reset-position-ids \
+    --reset-attention-mask \
     --overlap-grad-reduce \
     --overlap-param-gather
 "

@@ -79,7 +79,7 @@ TRAINING_ARGS=(
     --use-fused-rmsnorm
     --swiglu
     --use-flash-attn
-    --reset-position-ids
+    --reset-attention-mask
     --no-masked-softmax-fusion
     --attention-softmax-in-fp32
     --min-lr 1.25e-7

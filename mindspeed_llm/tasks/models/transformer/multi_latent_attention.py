@@ -8,7 +8,8 @@ import torch.nn.functional as F
 from mindspeed.core.context_parallel.ulysses_context_parallel.ulysses_context_parallel import UlyssesContextAttention
 from mindspeed.core.parallel_state import get_context_parallel_group_for_hybrid_ulysses
 from mindspeed.core.tensor_parallel.random import CheckpointWithoutOutput
-from mindspeed.utils import set_actual_seq_len, set_position_ids, get_actual_seq_len, get_position_ids
+from mindspeed.utils import  set_position_ids, get_position_ids
+from mindspeed.core.context_parallel.get_batch_utils import get_actual_seq_len, set_actual_seq_len
 from mindspeed.core.transformer.moe.moe_feature.fb_overlap.modules.attention import launch_async_all2all_hook, launch_async_all2all
 from mindspeed.core.transformer.moe.moe_feature.fb_overlap.modules.utils import TensorSwapManager
 
@@ -371,8 +372,8 @@ class CustomMLASelfAttention(SelfAttention):
                         k_pos_emb = k_pos_emb.view(s, b, n, d // 2, 2).transpose(4, 3).reshape(s, b, n, d)
 
                     if packed_seq_params is not None:
-                        cu_seqlens_q = packed_seq_params.cu_seqlens_q
-                        cu_seqlens_kv = packed_seq_params.cu_seqlens_kv
+                        cu_seqlens_q = packed_seq_params
+                        cu_seqlens_kv = packed_seq_params
                     else:
                         cu_seqlens_q = cu_seqlens_kv = None
 
@@ -465,7 +466,7 @@ class CustomMLASelfAttention(SelfAttention):
             core_attn_out = self.mla_checkpoint_manager.checkpoint(mla_attention,
                                                                         False,
                                                                         hidden_states)
-            if args.reset_position_ids:
+            if args.reset_attention_mask:
                 self.mla_checkpoint_manager.ctx.actual_len = get_actual_seq_len()
                 self.mla_checkpoint_manager.ctx.position_id = get_position_ids()
         else:
@@ -490,7 +491,7 @@ class CustomMLASelfAttention(SelfAttention):
         if args.mla_zero_memory:
             self.mla_checkpoint_manager.discard_output()
             if output.requires_grad:
-                if args.reset_position_ids:
+                if args.reset_attention_mask:
                     output.register_hook(recompute_mla(self.mla_checkpoint_manager))
                 else:
                     output.register_hook(self.mla_checkpoint_manager.recompute)

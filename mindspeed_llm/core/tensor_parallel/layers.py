@@ -26,7 +26,7 @@ from megatron.core.tensor_parallel.mappings import (
     reduce_scatter_to_sequence_parallel_region,
     reduce_from_tensor_model_parallel_region,
 )
-from mindspeed.utils import get_actual_seq_len, set_actual_seq_len
+from mindspeed.core.context_parallel.get_batch_utils import get_actual_seq_len, set_actual_seq_len
 
 
 def vocab_embedding_init_func(

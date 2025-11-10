@@ -52,7 +52,7 @@ GPT_ARGS="
     --use-mcore-models \
     --group-query-attention \
     --num-query-groups 8 \
-    --reset-position-ids \
+    --reset-attention-mask \
     --attention-mask-type general \
     --no-gradient-accumulation-fusion \
     --tensor-model-parallel-size ${TP} \

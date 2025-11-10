@@ -14,10 +14,10 @@ from megatron.core.transformer.dot_product_attention import DotProductAttention
 from megatron.core.transformer.utils import attention_mask_func
 from megatron.core.utils import divide
 from mindspeed.model.transformer import get_attention_mask
-from mindspeed.utils import get_actual_seq_len, get_position_ids
 
 from mindspeed_llm.tasks.models.common.alibi import Alibi
 from mindspeed_llm.training.utils import recompute_valid_actual_seq_len
+from mindspeed_llm.training.utils import get_actual_seq_len_list
 
 logger = logging.getLogger(__name__)
 
@@ -212,15 +212,14 @@ class CustomDotProductAttentionImpl:
         if heads_per_gqa_group > 1 and should_kv_repeat_before_pfa:
             key = key.repeat_interleave(heads_per_gqa_group, dim=2)
             value = value.repeat_interleave(heads_per_gqa_group, dim=2)
-
-        # Shapes prior to any layout rearrangement
         seq_length, batch_size, n_head, head_dim = query.shape[0], query.shape[1], query.shape[2], query.shape[3]
 
         # ---------------------------------------------------------------------
         # 3) Variable-length (packed) sequence handling
         #    - actual_seq_len may be per-token; trim / recompute if too long (core-dump risk)
         # ---------------------------------------------------------------------
-        actual_seq_len = get_actual_seq_len()
+        actual_seq_len = get_actual_seq_len_list()
+
         if actual_seq_len is not None and args.mtp_num_layers:
             actual_seq_len = actual_seq_len[self.mtp_idx]
 

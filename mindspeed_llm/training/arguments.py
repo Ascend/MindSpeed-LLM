@@ -234,9 +234,9 @@ def _add_cp_args(parser):
 
 def _validate_varlen_fa_args(args):
     # varlen FA layout must be TND
-    if args.reset_position_ids:
+    if args.reset_attention_mask:
         args.shape_order = 'TND'
-        print_rank0_by_args(args, f"When reset_position_ids is enabled, shape_order should be TND.")
+        print_rank0_by_args(args, f"When reset_attention_mask is enabled, shape_order should be TND.")
 
 
 def _validate_cp_args(args):
@@ -922,8 +922,8 @@ def _validate_create_attention_mask_in_dataloader(args):
                  f"since reset_data={reset_data} or alibi_without_flash_attn={alibi_without_flash_attn} or "
                  f"args.tokenizer_padding_side={args.tokenizer_padding_side}")
 
-    if not args.reset_position_ids and args.neat_pack:
-        raise ValueError("Require set `--reset-position-ids` when `--neat-pack` is set.")
+    if not args.reset_attention_mask and args.neat_pack:
+        raise ValueError("Require set `--reset-attention-mask` when `--neat-pack` is set.")
 
     if args.context_parallel_size > 1 and args.reset_attention_mask and args.attention_mask_type == 'causal':
         if args.context_parallel_algo != 'megatron_cp_algo':
@@ -1326,7 +1326,7 @@ def _valid_fa_div_args(args):
     if args.mla_fa_divide_qk:
         if args.context_parallel_size > 1:
             raise AssertionError('MLA FA currently not support CP>1.')
-        if not args.reset_position_ids:
+        if not args.reset_attention_mask:
             raise AssertionError('MLA FA currently only support TND.')
 
 

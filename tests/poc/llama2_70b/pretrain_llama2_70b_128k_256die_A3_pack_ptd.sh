@@ -99,7 +99,7 @@ GPT_ARGS="
     --swap-attention \
     --recompute-activation-function \
     --num-layers-per-virtual-pipeline-stage 2 \
-    --reset-position-ids \
+    --reset-attention-mask \
     --no-shared-storage \
 "
 

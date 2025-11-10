@@ -23,7 +23,7 @@ python ./preprocess_data.py \
 ```
 
 ### 2. 训练参数设置
-在模型训练脚本中增加 `--reset-position-ids`
+在模型训练脚本中增加 `reset-attention-mask`
 
 使能之后，会根据eod位置，生成变量actual_seq_len，标识多个文档（doc）拼接的实际长度。
 

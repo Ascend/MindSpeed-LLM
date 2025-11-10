@@ -17,22 +17,25 @@ class TrainingBasicFeature(MindSpeedFeature):
 
     def pre_validate_args(self, args):
         args.use_mcore_models = not args.use_legacy_models
-        if args.reset_position_ids:
+        if args.reset_attention_mask:
             args.shape_order = 'TND'
-            print_rank0_by_args(args, f"When reset_position_ids is enabled, shape_order should be TND.")
+            print_rank0_by_args(args, f"When reset_attention_mask is enabled, shape_order should be TND.")
 
         args.create_attention_mask_in_dataloader = False
-        reset_data = args.reset_attention_mask
         alibi_without_flash_attn = args.position_embedding_type == 'alibi' and not args.use_flash_attn
-        if reset_data or alibi_without_flash_attn or args.tokenizer_padding_side == "left":
+        if (args.reset_attention_mask and args.attention_mask_type == 'general') or alibi_without_flash_attn or args.tokenizer_padding_side == "left":
             args.create_attention_mask_in_dataloader = True
-        if reset_data and args.attention_mask_type == 'causal':
+        if args.reset_attention_mask and args.attention_mask_type == 'causal':
             args.create_attention_mask_in_dataloader = False
+        # Temporary code modification
+        if args.attention_mask_type == 'general' and args.context_parallel_algo == 'ulysses_cp_algo' and args.reset_attention_mask:
+            args.create_attention_mask_in_dataloader = False
+
         print_rank0_by_args(args, f"[INFO] Setting args.create_attention_mask_in_dataloader to {args.create_attention_mask_in_dataloader} "
-                    f"since reset_data={reset_data} or alibi_without_flash_attn={alibi_without_flash_attn} or "
+                    f"since reset_attention_mask={args.reset_attention_mask} or alibi_without_flash_attn={alibi_without_flash_attn} or "
                     f"args.tokenizer_padding_side={args.tokenizer_padding_side}")
-        if not args.reset_position_ids and args.neat_pack:
-            raise ValueError("Require set `--reset-position-ids` when `--neat-pack` is set.")
+        if not args.reset_attention_mask and args.neat_pack:
+            raise ValueError("Require set `--reset-attention-mask` when `--neat-pack` is set.")
 
         # Bypass megatron validation when pp == 2 and vpp is enabled.
         self.origin_num_layers_per_virtual_pipeline_stage = None
@@ -89,9 +92,9 @@ class TrainingBasicFeature(MindSpeedFeature):
         
         patch_manager.register_patch('megatron.training.training.build_pretraining_data_loader',
                                       build_pretraining_data_loader)
-
-        patch_manager.register_patch('megatron.training.utils.get_batch_on_this_tp_rank',
-                                      get_batch_on_this_tp_rank)
+        if not getattr(args, 'reset_attention_mask', None):
+            patch_manager.register_patch('megatron.training.utils.get_batch_on_this_tp_rank',
+                                         get_batch_on_this_tp_rank)
 
         patch_manager.register_patch('megatron.training.training.train',
                                       train)

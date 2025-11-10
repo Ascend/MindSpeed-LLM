@@ -87,7 +87,8 @@ class RotaryPositionEmbeddingFeature(MindSpeedFeature):
                                       apply_rotary_pos_emb_bshd)
         patch_manager.register_patch('megatron.core.models.common.embeddings.rope_utils.apply_rotary_pos_emb',
                                       apply_rotary_pos_emb)
-        patch_manager.register_patch('megatron.core.models.common.embeddings.rotary_pos_embedding.RotaryEmbedding.forward',
-                                      rotary_embedding_forward)
+        if not getattr(args, 'reset_attention_mask', None):
+            patch_manager.register_patch('megatron.core.models.common.embeddings.rotary_pos_embedding.RotaryEmbedding.forward',
+                                          rotary_embedding_forward)
         patch_manager.register_patch('megatron.core.models.common.embeddings.rotary_pos_embedding.RotaryEmbedding.__init__',
                                       rotary_embedding_init_wrapper)

@@ -35,7 +35,7 @@ from megatron.core.models.gpt.gpt_layer_specs import (
     get_gpt_layer_with_transformer_engine_spec,
     get_gpt_mtp_block_spec,
 )
-from mindspeed_llm.training.utils import generate_actual_seq_len, set_mtp_batch_list, get_mtp_batch_list
+from mindspeed_llm.training.utils import  set_mtp_batch_list, get_mtp_batch_list
 from mindspeed_llm.core.transformer.multi_token_prediction import generate_mtp_batch_list_on_this_tp_rank
 
 
@@ -111,12 +111,12 @@ def get_batch(data_iterator):
     args = get_args()
 
     is_middle_stage = not (mpu.is_pipeline_first_stage() or mpu.is_pipeline_last_stage())
-    pretrain_not_tnd_flags = not args.is_instruction_dataset and not args.reset_position_ids
+    pretrain_not_tnd_flags = not args.is_instruction_dataset and not args.reset_attention_mask
     if pretrain_not_tnd_flags and is_middle_stage:
         return (None,) * 5
 
     # get batches based on the TP rank you are on
-    batch, actual_seq_len = get_batch_on_this_tp_rank(data_iterator)
+    batch = get_batch_on_this_tp_rank(data_iterator)
 
     if args.return_document_ids and mpu.get_context_parallel_rank() == 0 and mpu.get_tensor_model_parallel_rank() == 0 and mpu.get_pipeline_model_parallel_rank() == 0:
         print("current idx: {}, current rank: {}, data_parallel_rank: {}, document_ids: {}".format(batch['idx'], torch.distributed.get_rank(), mpu.get_data_parallel_rank(), batch['document_ids']))
@@ -128,12 +128,8 @@ def get_batch(data_iterator):
         mtp_batch_list = generate_mtp_batch_list_on_this_tp_rank(batch)
         set_mtp_batch_list(mtp_batch_list)
 
-    if args.reset_position_ids and not args.reset_attention_mask:
-        generate_actual_seq_len(batch, actual_seq_len)
-        batch = get_batch_on_this_cp_rank(batch)
-    else:
-        # slice batch along sequence dimension for context parallelism
-        batch = get_batch_on_this_cp_rank(batch)
+    # slice batch along sequence dimension for context parallelism
+    batch = get_batch_on_this_cp_rank(batch)
     return batch.values()
 
 

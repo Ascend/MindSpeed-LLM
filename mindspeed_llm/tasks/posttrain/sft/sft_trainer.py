@@ -10,14 +10,17 @@ from megatron.training.utils import (
     average_losses_across_data_parallel_group
 )
 from megatron.training import get_timers
+
 try:
     from mindspeed.core.pipeline_parallel.dualpipev.dualpipev_schedules import set_post_process_flag
 except ImportError:
     pass
-from mindspeed_llm.training.utils import get_tune_attention_mask, get_finetune_data_on_this_tp_rank, generate_actual_seq_len
+from mindspeed_llm.training.utils import get_tune_attention_mask, get_finetune_data_on_this_tp_rank
 from mindspeed_llm.tasks.posttrain.base import BaseTrainer
-from mindspeed_llm.training.utils import generate_actual_seq_len, set_mtp_batch_list, get_mtp_batch_list
+from mindspeed_llm.training.utils import  set_mtp_batch_list
 from mindspeed_llm.core.transformer.multi_token_prediction import generate_mtp_batch_list_on_this_tp_rank
+from mindspeed.core.context_parallel.get_batch_utils import set_actual_seq_len, get_ring_degree
+from mindspeed.core.context_parallel.utils import pad_data
 
 IGNORE_INDEX = -100
 
@@ -32,8 +35,8 @@ class SFTTrainer(BaseTrainer):
         # Items and their type.
         keys = ['input_ids', 'attention_mask', 'labels']
         args = get_args()
-        if args.reset_position_ids:
-            keys += ['position_ids']
+        if args.reset_attention_mask:
+            keys += ['position_ids', 'actual_seq_len']
         data_type = torch.int64
 
         if (not mpu.is_pipeline_first_stage()) and (not mpu.is_pipeline_last_stage()):
@@ -43,8 +46,28 @@ class SFTTrainer(BaseTrainer):
             else:
                 # Broadcast data.
                 data_b = tensor_parallel.broadcast_data(keys, next(data_iterator), data_type)
-                if args.reset_position_ids:
-                    generate_actual_seq_len(data_b)
+                # Unpack
+                labels = data_b.get('labels').long()
+                tokens = data_b.get('input_ids').long()
+                # ignored label -100
+                loss_mask = torch.where(labels == IGNORE_INDEX, 0, 1)
+                if args.reset_attention_mask:
+                    position_ids = data_b.get('position_ids').long()
+                    batch = {
+                        'tokens': tokens,
+                        'labels': labels,
+                        'loss_mask': loss_mask,
+                        'attention_mask': None,
+                        'position_ids': position_ids
+                    }
+                    actual_seq_len = data_b['actual_seq_len'].view(-1)
+                    if args.attention_mask_type == 'causal' \
+                            and args.context_parallel_size > 1 \
+                            and args.context_parallel_algo == 'megatron_cp_algo':
+                        actual_seq_len = pad_data(data_b['actual_seq_len'].view(-1), batch, args.context_parallel_size,
+                                                  args.tensor_model_parallel_size)
+                        actual_seq_len /= get_ring_degree()
+                    set_actual_seq_len(actual_seq_len)
                     batch = {'attention_mask': None}
                 else:
                     attention_mask_1d = data_b.get('attention_mask').long()
@@ -53,9 +76,7 @@ class SFTTrainer(BaseTrainer):
                 batch = get_batch_on_this_cp_rank(batch)
                 return None, None, None, batch['attention_mask'], None
 
-        # Broadcast data.
         data_b = tensor_parallel.broadcast_data(keys, next(data_iterator), data_type)
-
         # Unpack
         labels = data_b.get('labels').long()
         tokens = data_b.get('input_ids').long()
@@ -82,18 +103,27 @@ class SFTTrainer(BaseTrainer):
                 'position_ids': position_ids
             }
         else:
-            if args.reset_position_ids:
-                position_ids = data_b.get('position_ids').long()
-                generate_actual_seq_len(data_b)
 
+            if args.reset_attention_mask:
+                position_ids = data_b.get('position_ids').long()
                 batch = {
                     'tokens': tokens,
                     'labels': labels,
                     'loss_mask': loss_mask,
+                    'attention_mask': None,
+                    'position_ids': position_ids
                 }
+                actual_seq_len = data_b['actual_seq_len'].view(-1)
+                if args.attention_mask_type == 'causal' \
+                        and args.context_parallel_size > 1 \
+                        and args.context_parallel_algo == 'megatron_cp_algo':
+                    actual_seq_len = pad_data(data_b['actual_seq_len'].view(-1), batch, args.context_parallel_size,
+                                              args.tensor_model_parallel_size)
+                    actual_seq_len /= get_ring_degree()
+                set_actual_seq_len(actual_seq_len)
+
                 batch = get_batch_on_this_cp_rank(batch)
-                batch['attention_mask'] = None
-                batch['position_ids'] = position_ids
+
                 return batch.values()
 
             attention_mask = get_tune_attention_mask(attention_mask_1d)

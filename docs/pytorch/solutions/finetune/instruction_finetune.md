@@ -229,6 +229,6 @@ bash examples/mcore/qwen3/generate_qwen3_8b_ptd.sh
 |--------|--------------------------------|----|---------------------------------------------------------|
 | 固定长度序列 | 性能低，不推荐使用 |  训练时不使用`--no-pad-to-seq-lengths`参数    | 使用默认预处理脚本，如`data_convert_qwen3_instruction.sh`         |
 | 动态长度序列 | sample吞吐高  |   训练脚本需要使用`--no-pad-to-seq-lengths`参数   | 使用默认预处理脚本，如`data_convert_qwen3_instruction.sh`         |
-| 样本拼接序列 | token吞吐高，支持长序列并行 |   训练脚本需要使用`--reset-position-ids`参数，不启用`--variable-seq-lengths`   | 使用pack配置的预处理脚本，详见[多样本pack微调](./multi_sample_pack_finetune.md) |
+| 样本拼接序列 | token吞吐高，支持长序列并行 |   训练脚本需要使用`--reset-attention-mask`参数，不启用`--no-pad-to-seq-lengths`   | 使用pack配置的预处理脚本，详见[多样本pack微调](./multi_sample_pack_finetune.md) |
 
 请根据自己的使用场景，灵活选择对应类型的指令微调训练脚本和数据预处理脚本。

@@ -132,7 +132,8 @@ def rotary_embedding_forward(self, max_seq_len: int, offset: int = 0, packed_seq
                 torch.outer(seq, 1.0 / ext_factors).to(device=self.inv_freq.device),
                 self.inv_freq.to(device=self.inv_freq.device).to(self.inv_freq.dtype)
             )
-    freqs = torch.outer(seq, self.inv_freq)
+    else:
+        freqs = torch.outer(seq, self.inv_freq)
     # first part even vector components, second part odd vector components,
     #  2 * dim in dimension size
 
@@ -252,3 +253,33 @@ def apply_rotary_pos_emb_bshd(
         t = (t * cos_) + (_rotate_half(t, rotary_interleaved) * sin_)
     
     return torch.cat((t, t_pass), dim=-1)
+
+
+def apply_rotary_pos_emb_thd(
+        t: Tensor, cu_seqlens: Tensor, freqs: Tensor, rotary_interleaved: bool = False,
+        multi_latent_attention: bool = False, mscale: float = 1.0
+) -> Tensor:
+    """A baseline implementation of applying RoPE for `thd` format.
+
+    Args:
+        t (Tensor): Input tensor T is of shape [t, h, d]
+        cu_seqlens(Tensor):  Cumulative sum of sequence lengths in a batch for `t`,
+        with shape [b + 1] and dtype torch.int32.
+        freqs (Tensor): Rotary Positional embedding tensor freq is of shape [max_s, 1, 1, d]
+
+    Returns:
+        Tensor: Shape [t, h, d]. The input tensor after applying RoPE.
+    """
+    args = get_args()
+
+    if args.reset_position_ids:
+        position_ids = cu_seqlens.position_ids
+        block_size, bsz = position_ids.shape
+        freqs = freqs[position_ids.view(-1)].reshape(block_size, bsz, 1, -1)
+    else:
+        # when args.reset_position_ids is False, use chunk is faster.
+        cp_size = parallel_state.get_context_parallel_world_size()
+        cp_rank = parallel_state.get_context_parallel_rank()
+        freqs = freqs.chunk(cp_size, dim=0)[cp_rank]
+
+    return apply_rotary_pos_emb_bshd(t, freqs, rotary_interleaved, multi_latent_attention, mscale)

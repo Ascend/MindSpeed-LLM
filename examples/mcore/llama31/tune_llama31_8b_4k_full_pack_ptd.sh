@@ -34,7 +34,7 @@ TUNE_ARGS="
     --finetune \
     --stage sft \
     --prompt-type llama3 \
-    --reset-position-ids \
+    --reset-attention-mask \
     --is-instruction-dataset \
     --neat-pack \
 "

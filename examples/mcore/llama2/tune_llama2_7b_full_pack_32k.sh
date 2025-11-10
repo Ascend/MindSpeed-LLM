@@ -94,7 +94,7 @@ GPT_ARGS="
 DATA_ARGS="
     --data-path $DATA_PATH \
     --split 100,0,0 \
-    --reset-position-ids \
+    --reset-attention-mask \
 "
 
 OUTPUT_ARGS="
