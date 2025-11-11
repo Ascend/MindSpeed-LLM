@@ -34,7 +34,6 @@ def transfer_logs_as_json(log_file, output_json_file):
         "lm loss": [],
         "grad norm": [],
         "time info": [],
-        "throughput": [],
         "memo info": [],
         
     }
@@ -44,7 +43,7 @@ def transfer_logs_as_json(log_file, output_json_file):
     memory_matches = memory_pattern.findall(log_content)
 
     if log_matches:
-        if log_matches[0][1][2] != "":
+        if log_matches[0][1] != "":
             data["lm loss"] = [float(match[1]) for match in log_matches]
             data["grad norm"] = [float(match[2]) for match in log_matches]
             data["time info"] = [float(match[0]) for match in log_matches]

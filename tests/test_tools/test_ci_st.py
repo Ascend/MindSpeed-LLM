@@ -73,14 +73,16 @@ class TestCIST:
         comparison_grad_norm = {
             GRAD_NORM_INFO: self._compare_grad_norm,
         }
-        
+
+        comparison_selection = {**comparison_base}
         if "time info" in self.expected:
-            comparison_selection = {**comparison_base, **comparison_time}
-        else:
-            comparison_selection = {**comparison_base, **comparison_throughput}
+            comparison_selection = {**comparison_selection, **comparison_time}
 
         if "grad norm" in self.expected:
             comparison_selection = {**comparison_selection, **comparison_grad_norm}
+
+        if "throughput" in self.actual:
+            comparison_selection = {**comparison_selection, **comparison_throughput}
         
         if test_obj in comparison_selection:
             expected_list = self.expected[test_obj]
