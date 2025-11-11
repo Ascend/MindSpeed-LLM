@@ -153,18 +153,21 @@ class ModelBase(abc.ABC):
 
         # Do ckpt conversion when noop layer is configured.
         # For example, hf_layer = [0, 1], add noop layer [1, 3], then mg_layers = [0(0), 1(noop), 2(1), 3(noop)]
-        hf_num_layers = self.args.num_layers - len(self.args.noop_layers)
+        if self.args_cmd.save_model_type == "hf":
+            hf_num_layers = self.args.num_layers
+        else:
+            hf_num_layers = self.args.num_layers - len(self.args.noop_layers)
         mg_layer_list = [i for i in range(hf_num_layers)]
         for i in self.args.noop_layers:
             # insert noop layer
             mg_layer_list.insert(i, -1)
-        for dst_layer_idx, src_layer_idx in enumerate(mg_layer_list):
+        for mg_layer_idx, hf_layer_idx in enumerate(mg_layer_list):
             if self.args_cmd.save_model_type == "hf":
-                if not self.is_noop_layer(src_layer_idx):
-                    self.set_layer_state_base(src_model, src_layer_idx=dst_layer_idx, dst_layer_idx=src_layer_idx)
+                if not self.is_noop_layer(hf_layer_idx):
+                    self.set_layer_state_base(src_model, src_layer_idx=mg_layer_idx, dst_layer_idx=hf_layer_idx)
             else:
-                if not self.is_noop_layer(src_layer_idx):
-                    self.set_layer_state_base(src_model, src_layer_idx=src_layer_idx, dst_layer_idx=dst_layer_idx)
+                if not self.is_noop_layer(hf_layer_idx):
+                    self.set_layer_state_base(src_model, src_layer_idx=hf_layer_idx, dst_layer_idx=mg_layer_idx)
 
     def set_preprocess_state(self, src_model):
         """Set embedding params."""
@@ -502,6 +505,10 @@ class HuggingfaceModel(ModelBase):
         self.args.post_norm = self.args_cmd.post_norm
         self.args.save_lora_to_hf = self.args_cmd.save_lora_to_hf
         self.args.noop_layers = self.args_cmd.noop_layers
+        if self.args.noop_layers is not None and self.args_cmd.save_model_type == 'hf':
+            mg_num_layers = self.args.num_layers + len(self.args.noop_layers)
+            logger.info(f"[INFO] When using noop_layer, origin layers from huggingface is {self.args.num_layers}, "
+                        f"megatron_ckpt has {mg_num_layers} with noop layer {self.args.noop_layers}")
 
     def get_modules_from_config(self, device_map="cpu", trust_remote_code=True):
         # Load Huggingface model.
