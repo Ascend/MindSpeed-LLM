@@ -1,5 +1,3 @@
-#### ！！！【重要通知】MSAdapter仓因平台网络问题暂不可用，或导致MindSpore-Core-MS仓库MindSpore后端一键启动暂不可用！！！
-
 ## 安装指导
 
 ### 驱动固件安装
