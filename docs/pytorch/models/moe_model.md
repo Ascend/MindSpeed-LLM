@@ -11,6 +11,7 @@
       <th>序列</th>
       <th>实现</th>
       <th>集群</th>
+      <th>支持版本</th>
       <th>贡献方</th>
       <th>认证</th>
     </tr>
@@ -23,6 +24,7 @@
       <td> 4K </td>
       <th> Mcore </th>
       <td> 2x8 </td>
+      <td>  </td>
       <td>【Ascend】</td>
       <td>【Pass】</td>
     </tr>
@@ -32,6 +34,7 @@
       <td> 4K </td>
       <th> Mcore </th>
       <td> 16x16 </td>
+      <td>  </td>
       <td>【Ascend】</td>
       <td>【Test】</td>
     </tr>
@@ -43,6 +46,7 @@
       <td> 4K</td>
       <th>Mcore</th>
       <td>8x8</td>
+      <td rowspan="1"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
       <tr>
@@ -54,6 +58,7 @@
       <td> 32K</td>
       <th>Mcore</th>
       <td>8x8</td>
+      <td rowspan="3"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
       <td>【Ascend】</td>
       <td>【Pass】</td>
     </tr>
@@ -79,6 +84,7 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td> 20x8 </td>
+      <td rowspan="1"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
       <td>【Ascend】</td>
       <td>【Pass】</td>
     </tr>
@@ -89,6 +95,7 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td> 20x8 </td>
+      <td rowspan="1"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
       <td>【Ascend】</td>
       <td>【Test】</td>
     </tr>
@@ -99,6 +106,7 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
+      <td>  </td>
       <td>【Ascend】</td>
       <td>【Pass】</td>
     </tr>
@@ -109,6 +117,7 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td> 20x8 </td>
+      <td rowspan="1"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
       <td>【NAIE】</td>
       <td>【Test】</td>
     </tr>
@@ -119,6 +128,7 @@
       <td> 4K </td>
       <th>Mcore</th>
       <td> 64x8 </td>
+      <td>  </td>
       <td>【Ascend】</td>
       <td>【Pass】</td>
     </tr>
@@ -129,6 +139,7 @@
       <td> 4K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
+      <td rowspan="1"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
       <td>【NAIE】</td>
       <td>【Test】</td>
     </tr>
@@ -139,6 +150,7 @@
       <td> 4K </td>
       <th> Mcore </th>
       <td> 2x8 </td>
+      <td>  </td>
       <td>【GTS】</td>
       <td>【Test】</td>
     </tr>

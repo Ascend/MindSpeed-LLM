@@ -142,7 +142,7 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
-      <td> </td>
+      <td rowspan="2"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -150,7 +150,6 @@
       <td> 32K </td>
       <th>Mcore</th>
       <td> 2x8 </td>
-      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -161,7 +160,7 @@
       <td>4K</td>
       <th>Mcore</th>
       <td> 2x8</td>
-      <td> </td>
+      <td> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -199,7 +198,7 @@
       <td> 32K </td>
       <th> Mcore </th>
       <td> 1x8 </td>
-      <td> </td>
+      <td> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -424,7 +423,7 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
-      <td> </td>
+      <td rowspan="9"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
       <tr>
@@ -432,7 +431,6 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
-      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
       <tr>
@@ -440,7 +438,6 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
-      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
       <tr>
@@ -448,7 +445,6 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
-      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
       <tr>
@@ -456,7 +452,6 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
-      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
       <tr>
@@ -464,7 +459,6 @@
       <td> 8K </td>
       <th> Mcore </th>
       <td> 4x8 </td>
-      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
       <tr>
@@ -472,7 +466,6 @@
       <td> 8K </td>
       <th> Mcore </th>
       <td> 8x8 </td>
-      <td> </td>
       <td>【GTS】</td>    
       <td>【Pass】</td>
       <tr>
@@ -480,7 +473,6 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td> 8x8 </td>
-      <td> </td>
       <td>【GTS】</td>    
       <td>【Pass】</td>
     </tr>
@@ -490,7 +482,6 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
-      <td> </td>
       <td>【GTS】</td>    
       <td>【Pass】</td>
     </tr>
@@ -502,14 +493,13 @@
       <td> 4K </td>
       <th> Mcore </th>
       <td> 1x8 </td>
-      <td> </td>
+      <td rowspan="7"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
       <tr>
       <td> 32K </td>
       <th> Mcore </th>
       <td> 1x8 </td>
-      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
       <tr>
@@ -517,14 +507,12 @@
       <td> 4K </td>
       <th> Mcore </th>
       <td> 1x8 </td>
-      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
       <tr>
       <td> 32K </td>
       <th> Mcore </th>
       <td> 1x8 </td>
-      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
       <tr>
@@ -532,14 +520,12 @@
       <td> 4K</td>
       <th>Mcore</th>
       <td>1x8</td>
-      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
       <tr>
       <td> 32K</td>
       <th>Mcore</th>
       <td>1x8</td>
-      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
       <tr>
@@ -547,7 +533,6 @@
       <td> 4K</td>
       <th>Mcore</th>
       <td>4x8</td>
-      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -682,7 +667,7 @@
       <td> 4K </td>
       <th>Mcore</th>
       <td>1x8</td>
-      <td> </td>
+      <td> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
       <td>【GTS】</td>
       <td>【Test】</td>
     </tr>
@@ -693,7 +678,7 @@
       <td> 4K </td>
       <th>Mcore</th>
       <td>1x8</td>
-      <td> </td>
+      <td rowspan="3"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -702,7 +687,6 @@
       <td> 4K </td>
       <th>Mcore</th>
       <td>1x8</td>
-      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -711,7 +695,6 @@
       <td> 4K </td>
       <th>Mcore</th>
       <td>4x8</td>
-      <td> </td>
       <td>【GTS】</td>
       <td>【Test】</td>
     </tr>
@@ -722,7 +705,7 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
-      <td> </td>
+      <td> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
       <td>【China Mobile Cloud】</td>    
       <td>【Test】</td>
     </tr>
@@ -742,7 +725,7 @@
       <td> 4K</td>
       <th>Mcore</th>
       <td>2x8</td>
-      <td> </td>
+      <td> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -753,7 +736,7 @@
       <td> 4K</td>
       <th>Mcore</th>
       <td>1x8</td>
-      <td> </td>
+      <td rowspan="3"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -762,7 +745,6 @@
       <td> 4K</td>
       <th>Mcore</th>
       <td>1x8</td>
-      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -771,7 +753,6 @@
       <td> 4K</td>
       <th>Mcore</th>
       <td>2x8</td>
-      <td> </td>
       <td>【GTS】</td>
       <td>【Test】</td>
     </tr>
@@ -782,7 +763,7 @@
       <td> 32K</td>
       <th>Mcore</th>
       <td>1x8</td>
-      <td> </td>
+      <td> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
       <td>【NAIE】</td>
       <td>【Pass】</td>
     </tr>
@@ -793,7 +774,7 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td>1x8</td>
-      <td> </td>
+      <td rowspan="2"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -802,7 +783,6 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td>1x8</td>
-      <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
     </tr>
@@ -855,7 +835,7 @@
       <td> 4K </td>
       <th> Mcore </th>
       <td> 1x8 </td>
-      <td> </td>
+      <td rowspan="1"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
       <td>【NAIE】</td>
       <td>【Pass】</td>
     </tr>
@@ -866,7 +846,7 @@
       <td> 32K </td>
       <th> Mcore </th>
       <td> 1x8 </td>
-      <td> </td>
+      <td rowspan="1"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
       <td>【GTS】</td>
       <td>【Test】</td>
     </tr>
@@ -888,7 +868,7 @@
       <td> 4K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
-      <td> </td>
+      <td rowspan="1"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
       <td>【Ascend】</td>
       <td>【Test】</td>
     </tr>
@@ -899,7 +879,7 @@
       <td> 4K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
-      <td> </td>
+      <td rowspan="4"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
       <td>【Ascend】</td>
       <td>【Pass】</td>
     </tr>
@@ -908,7 +888,6 @@
       <td> 4K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
-      <td> </td>
       <td>【Ascend】</td>
       <td>【Pass】</td>
     </tr>
@@ -917,7 +896,6 @@
       <td> 4K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
-      <td> </td>
       <td>【Ascend】</td>
       <td>【Pass】</td>
     </tr>
@@ -926,7 +904,6 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td> 2x8 </td>
-      <td> </td>
       <td>【Ascend】</td>
       <td>【Pass】</td>
     </tr>
@@ -937,7 +914,7 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
-      <td> </td>
+      <td rowspan="2"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
       <td>【Ascend】</td>
       <td>【Pass】</td>
     </tr>
@@ -946,7 +923,6 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td> 4x8 </td>
-      <td> </td>
       <td>【Ascend】</td>
       <td>【Pass】</td>
     </tr>
