@@ -179,6 +179,11 @@ def _patch_moe_and_communication(args):
     MindSporeAdaptation.register_patch(
         'megatron.core.transformer.moe.legacy_a2a_token_dispatcher.MoEAlltoAllSEQTokenDispatcher.__init__',
         moealltoallseqtokendispatcher_init)
+    
+    from mindspeed.mindspore.core.transformer.moe.moe_feature.overlap.token_dispatcher import token_permutation
+    MindSporeAdaptation.register_patch(
+        'mindspeed.core.transformer.moe.moe_feature.overlap.token_dispatcher.MoEAlltoAllSeqOverLapDispatcher.token_permutation', 
+        token_permutation)
 
 
 def _patch_optimizer_and_training(args):
