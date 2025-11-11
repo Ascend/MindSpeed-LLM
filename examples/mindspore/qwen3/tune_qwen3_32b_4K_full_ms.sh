@@ -21,12 +21,14 @@ SEQ_LENGTH=4096
 TRAIN_ITERS=2000
 
 DISTRIBUTED_ARGS="
-    --worker_num $WORLD_SIZE \
     --local_worker_num $NPUS_PER_NODE \
+    --worker_num $WORLD_SIZE \
+    --node_rank $NODE_RANK \
+    --master_addr $MASTER_ADDR \
+    --master_port $MASTER_PORT \
     --log_dir="msrun_log" \
     --join=True \
-    --cluster_time_out=300 \
-    --master_port $MASTER_PORT
+    --cluster_time_out=300
 "
 
 OPTIMIZE_ARGS="
