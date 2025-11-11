@@ -43,6 +43,9 @@ def mindspore_adaptation(patch_manager, args):
     if args.swap_optimizer:
         patch_swap_optimizer()
 
+    if args.seq1f1b_splits > 1:
+        patch_seq1f1b(args)
+        
 
 def _patch_third_party_libraries():
     from mindspeed.mindspore.third_party.safetensors.torch import save_file, load_file
@@ -98,9 +101,6 @@ def _patch_tensor_parallel_and_pipeline():
     from mindspeed.mindspore.core.tensor_parallel.random import local_set_cuda_rng_state
     MindSporeAdaptation.register_patch('megatron.core.tensor_parallel.random._set_cuda_rng_state',
                                        local_set_cuda_rng_state)
-
-    from ..mindspore.training.utils import get_batch_on_this_tp_rank
-    MindSporeAdaptation.register_patch('megatron.training.utils.get_batch_on_this_tp_rank', get_batch_on_this_tp_rank)
 
     from mindspeed.mindspore.core.pipeline_parallel.schedules import deallocate_output_tensor_, custom_backward
     MindSporeAdaptation.register_patch('megatron.core.pipeline_parallel.schedules.deallocate_output_tensor',
@@ -337,6 +337,44 @@ def patch_moe_fb_overlap():
     pass
 
 
+def patch_seq1f1b(args):
+    # attention
+    from mindspeed.mindspore.core.pipeline_parallel.seq1f1b.attention import attention_init_wrapper, attention_forward_wrapper, core_attention_forward_wrapper
+    MindSporeAdaptation.register_patch('megatron.core.transformer.attention.Attention.__init__', attention_init_wrapper)
+    MindSporeAdaptation.register_patch('megatron.core.transformer.attention.Attention.forward', attention_forward_wrapper)
+    MindSporeAdaptation.register_patch('megatron.core.transformer.dot_product_attention.DotProductAttention.forward', core_attention_forward_wrapper)
+    # rotary embedding
+    from mindspeed.mindspore.core.pipeline_parallel.seq1f1b.rotary_pos_embedding import rotary_embedding_forward_wrapper
+    MindSporeAdaptation.register_patch('megatron.core.models.common.embeddings.rotary_pos_embedding.RotaryEmbedding.forward', rotary_embedding_forward_wrapper)
+    # seq1f1b schedules
+    from mindspeed.mindspore.core.pipeline_parallel.seq1f1b.schedules import forward_backward_pipelining_without_interleaving_seq1f1b
+    MindSporeAdaptation.register_patch('megatron.core.pipeline_parallel.schedules.forward_backward_pipelining_without_interleaving', forward_backward_pipelining_without_interleaving_seq1f1b)
+    # recompute
+    from megatron.core.tensor_parallel.random import CheckpointFunction
+    from mindspeed.mindspore.core.pipeline_parallel.seq1f1b.random import checkpoint_forward_wrapper, checkpoint_backward_wrapper
+    target_func_name = 'megatron.core.tensor_parallel.random.CheckpointFunction.forward'
+    clear_wrapper_v2(target_func_name, CheckpointFunction.forward)
+    MindSporeAdaptation.register_patch(target_func_name, checkpoint_forward_wrapper)
+    target_func_name = 'megatron.core.tensor_parallel.random.CheckpointFunction.backward'
+    clear_wrapper_v2(target_func_name, CheckpointFunction.backward)
+    MindSporeAdaptation.register_patch(target_func_name, checkpoint_backward_wrapper)
+    # FA
+    from mindspeed_llm.mindspore.core.pipeline_parallel.seq1f1b.custom_dot_product_attention import npu_fusion_attention_wrapper
+    MindSporeAdaptation.register_patch('torch_npu.npu_fusion_attention', npu_fusion_attention_wrapper)
+    # moe
+    from mindspeed_llm.mindspore.core.pipeline_parallel.seq1f1b.router import topk_router_routing_wrapper
+    MindSporeAdaptation.register_patch('megatron.core.transformer.moe.router.TopKRouter.routing', topk_router_routing_wrapper)
+    # multi-head latent attention
+    from mindspeed_llm.mindspore.core.pipeline_parallel.seq1f1b.multi_latent_attention import custom_mla_self_attention_forward
+    MindSporeAdaptation.register_patch('mindspeed_llm.tasks.models.transformer.multi_latent_attention.CustomMLASelfAttention.forward', custom_mla_self_attention_forward)
+    # seq1f1b sft/pretrain dataloader
+    from mindspeed_llm.mindspore.core.pipeline_parallel.seq1f1b.seq1f1b_batch import get_batch_wrapper
+    from mindspeed_llm.mindspore.core.pipeline_parallel.seq1f1b.sft_trainer import sft_trainer_loss_func
+    MindSporeAdaptation.register_patch('megatron.training.utils.get_batch_on_this_tp_rank', get_batch_wrapper)
+    MindSporeAdaptation.register_patch('mindspeed_llm.tasks.posttrain.sft.sft_trainer.SFTTrainer.get_batch', get_batch_wrapper)
+    MindSporeAdaptation.register_patch('mindspeed_llm.tasks.posttrain.sft.sft_trainer.SFTTrainer.loss_func', sft_trainer_loss_func)
+    
+
 def mindspore_register_args(group):
     group.add_argument('--enable-a2avc', type=int, choices=[0, 1, 2], default=0,
                        help='0: Disable a2avc,'
@@ -344,3 +382,8 @@ def mindspore_register_args(group):
                             '2: Enable a2avc & Use msadapter comm_func.py & without verification (run faster than 1)')
     group.add_argument('--enable-share-memory', action='store_true', default=False,
                        help='Enable shared memory for passing actual_seq_len when reset-position-ids is enabled.')
+    group.add_argument('--seq1f1b-splits', type=int, default=1,
+                       help='num of splits in seq1f1b, if set to 1, then use 1f1b')
+    group.add_argument('--seq1f1b-balance-method', type=str,
+                       default='average', choices=['average', 'uniform_comp'],
+                       help='method to balance sequence and first-then-first-batch')
