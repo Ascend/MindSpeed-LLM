@@ -807,7 +807,7 @@ def _add_training_args(parser):
                        help='If enabled, --recompute-num-layers will mean the number of '
                             'layers recomputed in each pp rank. Otherwise it means the number '
                             'of layers recomputed in each vpp rank.')
-    group.add_argument('--pre-tockens', type=int, default=65536,
+    group.add_argument('--pre-tockens', type=int, default=1048576,
                        help='pre-tockens is used by Flash attention')
     group.add_argument('--next-tockens', type=int, default=0,
                        help='next-tockens is used by Flash attention')
