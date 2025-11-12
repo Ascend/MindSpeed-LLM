@@ -51,7 +51,7 @@ class Mg2HfConvert(Convert):
         self.tensor_model_parallel_size = self.load_model.tensor_model_parallel_size
         self.pipeline_model_parallel_size = self.load_model.pipeline_model_parallel_size
         self.expert_model_parallel_size = self.load_model.expert_model_parallel_size
-        self.first_k_dense_replace = getattr(self.load_model, 'first_k_dense_replace', 0)
+        self.first_k_dense_replace = self.get_first_k_dense_replace()
         self.n_shared_experts = getattr(self.load_model, "n_shared_experts", None)
         self.expert_tensor_parallel_size = getattr(self.load_model, "expert_tensor_parallel_size", self.tensor_model_parallel_size)
         self.tp_rank_list = list(range(self.load_model.tensor_model_parallel_size))
@@ -73,7 +73,7 @@ class Mg2HfConvert(Convert):
             self.num_layer_list = list(map(int, self.load_model.num_layer_list.split(',')))
         else:
             self.num_layer_list = [self.load_model.num_layers // self.load_model.pipeline_model_parallel_size] * self.load_model.pipeline_model_parallel_size
-        if not getattr(self.load_model, 'num_expert', None):
+        if not getattr(self.load_model, 'num_experts', None):
             self.first_k_dense_replace = self.load_model.num_layers
         if getattr(self.load_model, 'num_layers_per_virtual_pipeline_stage', None) is not None:
             self.num_layers_per_virtual_pipeline_stage = self.load_model.num_layers_per_virtual_pipeline_stage
@@ -90,7 +90,7 @@ class Mg2HfConvert(Convert):
 
         self.last_save_hf_layer = self.get_last_hf_layer()
         self._valid_parameter()
-
+        
     def check_etp_conflict(self):
         if self.expert_tensor_parallel_size is None:
             self.expert_tensor_parallel_size = self.tensor_model_parallel_size
@@ -131,6 +131,13 @@ class Mg2HfConvert(Convert):
 
         return directory
 
+    def get_first_k_dense_replace(self):
+        first_k_dense_replace = getattr(self.load_model, 'first_k_dense_replace', 0)
+        if first_k_dense_replace in (-1, 0, None):
+            return 0
+        else:
+            return first_k_dense_replace
+        
     def get_last_hf_layer(self):
         """Obtains the last saved hf layer index, combine the postprocess weight"""
         if self.schedules_method == "dualpipev":
