@@ -15,12 +15,12 @@ NODE_RANK=0
 WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
 # please fill these path configurations
+CKPT_LOAD_DIR="your model ckpt path"
 CKPT_SAVE_DIR="your model save ckpt path"
 DATA_PATH="your data path"
 TOKENIZER_PATH="your tokenizer path"
-CKPT_LOAD_DIR="your model ckpt path"
 
-TP=1
+TP=2
 PP=4
 EP=32
 CP=1
@@ -45,8 +45,8 @@ DISTRIBUTED_ARGS="
 RECOMPUTE_ARGS="
     --recompute-granularity full \
     --recompute-method block \
-    --recompute-num-layers 8 \
-"
+    --recompute-num-layers 12 \
+    "
 
 MOE_ARGS="
     --num-experts 128 \
@@ -58,9 +58,8 @@ MOE_ARGS="
     --moe-token-dispatcher-type alltoall_seq \
     --moe-aux-loss-coeff 0.001 \
     --moe-permutation-async-comm \
-    --moe-alltoall-overlap-comm \
-    --moe-layer-freq -1 \
-    --first-k-dense-replace -1 \
+    --moe-layer-freq 1 \
+    --first-k-dense-replace 0
 "
 
 OPTIMIZE_ARGS="
@@ -77,20 +76,10 @@ OPTIMIZE_ARGS="
     --overlap-param-gather
 "
 
-MODEL_PARALLEL_ARGS="
-    --tensor-model-parallel-size ${TP} \
-    --pipeline-model-parallel-size ${PP} \
-    --expert-model-parallel-size ${EP} \
-    --context-parallel-size ${CP} \
-    --context-parallel-algo ${CP_TYPE} \
-    --num-layers-per-virtual-pipeline-stage ${VPP} \
-    --sequence-parallel \
-"
-
 TRAIN_ARGS="
     --micro-batch-size ${MBS} \
     --global-batch-size ${GBS} \
-    --lr 1.25e-6 \
+    --lr 1.25e-5 \
     --lr-decay-style cosine \
     --min-lr 1.25e-7 \
     --weight-decay 1e-1 \
@@ -109,11 +98,22 @@ TRAIN_ARGS="
     --no-shared-storage
 "
 
+MODEL_PARALLEL_ARGS="
+    --tensor-model-parallel-size ${TP} \
+    --pipeline-model-parallel-size ${PP} \
+    --expert-model-parallel-size ${EP} \
+    --context-parallel-size ${CP} \
+    --context-parallel-algo ${CP_TYPE} \
+    --num-layers-per-virtual-pipeline-stage ${VPP} \
+    --sequence-parallel \
+"
+
 GPT_ARGS="
-    --kv-channels 128 \
-    --spec mindspeed_llm.tasks.models.spec.qwen3_spec layer_spec \
-    --qk-layernorm \
     --use-mcore-models \
+    --spec mindspeed_llm.tasks.models.spec.qwen3_spec layer_spec \
+    --kv-channels 128 \
+    --qk-layernorm \
+    --norm-topk-prob \
     --tokenizer-name-or-path ${TOKENIZER_PATH} \
     --max-position-embeddings ${SEQ_LENGTH} \
     --noop-layers 94,95 \
@@ -131,8 +131,9 @@ GPT_ARGS="
     --normalization RMSNorm \
     --swiglu \
     --attention-softmax-in-fp32 \
+    --no-gradient-accumulation-fusion \
     --group-query-attention \
-    --num-query-groups 4 \
+    --num-query-groups 4
 "
 
 DATA_ARGS="
@@ -149,17 +150,28 @@ OUTPUT_ARGS="
     --no-load-rng
 "
 
-msrun $DISTRIBUTED_ARGS pretrain_gpt.py \
+TUNE_ARGS="
+    --finetune \
+    --stage sft \
+    --is-instruction-dataset \
+    --tokenizer-not-use-fast \
+    --prompt-type qwen3 \
+    --reset-attention-mask \
+    --neat-pack
+"
+
+msrun $DISTRIBUTED_ARGS posttrain_gpt.py \
+    $TUNE_ARGS \
     $GPT_ARGS \
     $DATA_ARGS \
     $MOE_ARGS \
     $OUTPUT_ARGS \
     $OPTIMIZE_ARGS \
-    $TRAIN_ARGS \
     $RECOMPUTE_ARGS \
+    $TRAIN_ARGS \
     $MODEL_PARALLEL_ARGS \
-    --load ${CKPT_LOAD_DIR} \
-    --save ${CKPT_SAVE_DIR} \
     --distributed-backend nccl \
     --ai-framework mindspore \
-    | tee logs/train_ms_qwen3_235b.log
+    --load ${CKPT_LOAD_DIR} \
+    --save ${CKPT_SAVE_DIR} \
+    | tee logs/tune_ms_qwen3_235b_a22b_full.log

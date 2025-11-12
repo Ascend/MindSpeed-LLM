@@ -151,4 +151,4 @@ msrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     --load ${CKPT_LOAD_DIR} \
     --save ${CKPT_SAVE_DIR} \
     --ai-framework mindspore \
-    | tee logs/train_mcore_qwen3_30b_a3b.log
+    | tee logs/train_ms_qwen3_30b_a3b.log
