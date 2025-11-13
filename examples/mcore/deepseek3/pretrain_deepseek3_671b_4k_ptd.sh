@@ -56,7 +56,7 @@ MOE_ARGS="
     --moe-router-dtype fp32 \
     --moe-grouped-gemm \
     --moe-permutation-async-comm \
-    --moe-token-dispatcher-type alltoall_seq \
+    --moe-token-dispatcher-type alltoall \
     --moe-permute-fusion \
     --first-k-dense-replace 3 \
     --moe-layer-freq 1 \
@@ -73,7 +73,7 @@ MOE_ARGS="
     --norm-topk-prob \
     --moe-router-score-function sigmoid \
     --moe-router-enable-expert-bias \
-    --moe-tp-extend-ep
+    --expert-tensor-parallel-size 1
 "
 
 MTP_ARGS="

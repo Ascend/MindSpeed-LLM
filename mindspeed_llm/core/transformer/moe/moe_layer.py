@@ -246,6 +246,8 @@ def lora_moe_layer_init(self, config, submodules=None, layer_number=None):
             )
             from mindspeed_llm.tasks.posttrain.lora.moe.experts import LoraParallelGroupedMLP
             self.experts = LoraParallelGroupedMLP(self.num_local_experts, self.config, lora_config)
+    else:
+        self.experts = build_module(self.submodules.experts, self.num_local_experts, self.config)
 
     # Initialize token dispatcher
     if hasattr(global_args, "moe_alltoall_overlap_comm") and global_args.moe_alltoall_overlap_comm:
