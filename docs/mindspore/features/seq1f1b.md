@@ -6,19 +6,19 @@
 
 ## 原理
 
-![alt text](../../../sources/images/seq1f1b/seq1f1b_img.png)
+![alt text](../../../sources/images/mindspore/seq1f1b/seq1f1b_img.png)
 
 **预热阶段-累积前向**：该阶段只进行前向计算。使用序列划分的方法，将原始序列划分成$s$个子序列，依次读入并进行前向计算。因此，Seq1F1B中每个子序列对应的前向计算时间和动态显存降低至1F1B的$1/s$。
 
-**稳定阶段-交替前向和后向**：该阶段交替进行前向后向计算。Seq1F1B中每个子序列对应的前向和后向计算时间均降低至1F1B的$1/s$。当流水线并行阶段数量为$p$时，Device1在进行第一次反向之前，累积的前向数量峰值为$s+p-1$。
+**稳定阶段-交替前向和后向**：该阶段交替进行前向后向计算。Seq1F1B中每个子序列对应的前向和后向计算时间约为1F1B的$1/s$。当流水线并行阶段数量为$p$时，Device1在进行第一次反向之前，累积的前向数量峰值为$s+p-1$。
 
 **冷却阶段-结束后向**：该阶段进行剩余的后向计算，结束后同步更新优化器和模型参数。
 
 **总体来看**：Seq1F1B的收益如下
 
-- Device1的动态显存峰值降为1F1B的 $\frac{s+p-1}{sp} = \frac{1}{s}+\frac{1}{p}-\frac{1}{sp}$, 但KV缓存会增加一些额外的显存占用。
+- 每个子序列长度相等的情况下，Device1的动态显存峰值约为1F1B的 $\frac{s+p-1}{sp} = \frac{1}{s}+\frac{1}{p}-\frac{1}{sp}$, 但KV缓存会增加一些额外的显存占用。
 
-- 整体空泡降低至1F1B的 $\frac{1}{s}$ 
+- 每个子序列前后向计算时间相同的情况下，整体空泡降约为1F1B的 $\frac{1}{s}$
 
 因此，$s$和$p$越大，Seq1F1B的显存收益越明显。此外，我们实现了支持重计算（Recompute）特性的Seq1F1B，可以兼容现有的全量重计算和选择重计算特性，进一步降低动态显存占用。
 
@@ -26,8 +26,9 @@
 
 ### 参数详解
 在 msrun 启动bash 脚本中增加如下参数来使用Seq1F1B:
+- 使用参数 **--enable-seq1f1b** 使能Seq1F1B流水线并行特性。
 
-- 使用参数 **--seq1f1b-splits [int]** 控制seq1f1b中序列拆分后子序列的数量$s$，推荐使用4，如果设置大于1，则使用Seq1F1B，否则使用默认使用Megatron 1F1B。
+- 使用参数 **--seq1f1b-splits [int]** 控制seq1f1b中序列拆分后子序列的数量$s$，默认使用4。
 
 - 使用参数 **--seq1f1b-balance-method [string]** 平衡子序列的方法，可选项为['average', 'uniform_comp']，默认使用'average'。'average'方法是根据序列长度进行均匀切分，平衡每个子序列的token数目；'uniform_comp'方法是根据序列的计算量进行切分，平衡每个子序列的FLOPs。
 - 使用参数 **--reset-attention-mask** 进行多样本pack模式预训练/微调，此时**不能使用参数--no-pad-to-seq-lengths**。
@@ -35,6 +36,9 @@
 ## 使用效果分析及验证
 
 ### 性能及显存理论分析
+
+假设每个子序列的计算时间和显存占用近似相同，可得到下表分析结果：
+
 | PP\评价指标        | 空泡 | 动态显存 | 
 | ----------| ------------ | ----------------- |
 | 1F1B      | $(p-1)(F+B)$      |      $pM$          |
@@ -50,18 +54,59 @@
 
 | Qwen3-4b (PP=8,TP=1)  | 性能 ms/iter | Device1显存 MB |
 | ----------| ------------ | -------------| 
-| 1F1B<sup>R</sup>      |  11711 ($ \times 1.00$)     |  46214  |
-| Seq1F1B<sup>R</sup>  |  10257 ($ \times 1.14$)  |  26942  |
+| 1F1B<sup>R</sup>      |  11711 (× 1.00)     |  46214  |
+| Seq1F1B<sup>R</sup>  |  10257 (× 1.14)  |  26942  |
 
-#### DeepSeek3 微调
+#### DeepSeek v3(裁剪版) 微调
 
-| DeepSeek3 单机8卡 (PP=4,TP=2)  | 性能 ms/iter | Device1显存 MB |
+| DeepSeek v3 单机8卡 (PP=4,TP=2)  | 性能 ms/iter | Device1显存 MB |
 | ----------| ------------ | ----------------- |
-| 1F1B<sup>R</sup>       | 16532 ($ \times 1.00$)      |   31122    |
-| Seq1F1B<sup>R</sup>   | 15002 ($ \times 1.10$)   |   24539    |
+| 1F1B<sup>R</sup>       | 16532 (× 1.00)      |   31122    |
+| Seq1F1B<sup>R</sup>   | 15002 (× 1.10)   |   24539    |
 
 ## 注意
 
-- 当前seq1f1b仅支持--micro-batch-size为1
-- 当前seq1f1b仅支持多样本pack模式的预训练/微调
+- 当前Seq1F1B仅适配了Qwen3/DeepSeek3模型，其他模型待验证。
+- 当前Seq1F1B仅支持--micro-batch-size为1。
+- 当前Seq1F1B仅支持多样本pack模式的预训练/微调场景。
 - 由于序列切分会带来算子下发次数为原来的$s$倍，实验发现，seq1f1b在子序列长度不小于4k时能明显看到性能收益。
+- 目前在Seq1F1B场景中，下方的特性未支持或未验证
+
+<table>
+  <thead>
+    <tr>
+      <th>特性</th>
+      <th>未支持/未验证</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td> --micro-batch-size > 1</td>
+      <td> 未支持 </td>
+    </tr>
+    <tr>
+      <td> --mla-up-proj-tp-overlap </td>
+      <td> 未支持 </td>
+    </tr>
+    <tr>
+      <td> --mla-zero-memory </td>
+      <td> 未支持 </td>
+    </tr>
+    <tr>
+      <td> --context-parallel-size > 1</td>
+      <td> 未支持 </td>
+    </tr>
+    <tr>
+      <td> --mla-mm-split </td>
+      <td> 未验证 </td>
+    </tr>
+    <tr>
+      <td> --recompute-mla-up-proj </td>
+      <td> 未验证 </td>
+    </tr>
+    <tr>
+      <td> --mla-fa-divide-qk </td>
+      <td> 未验证 </td>
+    </tr>
+  </tbody>
+</table>

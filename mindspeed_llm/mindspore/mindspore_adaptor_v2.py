@@ -43,7 +43,7 @@ def mindspore_adaptation(patch_manager, args):
     if args.swap_optimizer:
         patch_swap_optimizer()
 
-    if args.seq1f1b_splits > 1:
+    if args.enable_seq1f1b:
         patch_seq1f1b(args)
         
 
@@ -338,6 +338,8 @@ def patch_moe_fb_overlap():
 
 
 def patch_seq1f1b(args):
+    if args.seq1f1b_splits <= 1:
+        raise ValueError("when setting enable_seq1f1b, seq1f1b_splits should be greater than 1")
     # attention
     from mindspeed.mindspore.core.pipeline_parallel.seq1f1b.attention import attention_init_wrapper, attention_forward_wrapper, core_attention_forward_wrapper
     MindSporeAdaptation.register_patch('megatron.core.transformer.attention.Attention.__init__', attention_init_wrapper)
@@ -382,7 +384,9 @@ def mindspore_register_args(group):
                             '2: Enable a2avc & Use msadapter comm_func.py & without verification (run faster than 1)')
     group.add_argument('--enable-share-memory', action='store_true', default=False,
                        help='Enable shared memory for passing actual_seq_len when reset-position-ids is enabled.')
-    group.add_argument('--seq1f1b-splits', type=int, default=1,
+    group.add_argument('--enable-seq1f1b', action='store_true', default=False,
+                       help='Enable seq1f1b')
+    group.add_argument('--seq1f1b-splits', type=int, default=4,
                        help='num of splits in seq1f1b, if set to 1, then use 1f1b')
     group.add_argument('--seq1f1b-balance-method', type=str,
                        default='average', choices=['average', 'uniform_comp'],

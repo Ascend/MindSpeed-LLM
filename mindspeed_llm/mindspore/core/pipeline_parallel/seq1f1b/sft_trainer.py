@@ -33,9 +33,11 @@ def sft_trainer_loss_func(self, input_tensor: torch.Tensor, output_tensor: torch
         loss = loss[0] / loss[1]
     else:
         loss = torch.sum(losses.view(-1) * loss_mask)
-        # handle cases where loss_mask.sum() is zero in Seq1F1B
-        loss_mask_sum = loss_mask.sum()
-        if loss_mask_sum > 1e-8:
+        if args.seq1f1b_splits > 1:
+            # Align the weight of each token with 1F1B
+            loss = loss / args.span_info.origin_loss_mask_sum
+        else:
+            loss_mask_sum = loss_mask.sum()
             loss = loss / loss_mask_sum
 
     # Check individual rank losses are not NaN prior to DP all-reduce.
@@ -47,11 +49,18 @@ def sft_trainer_loss_func(self, input_tensor: torch.Tensor, output_tensor: torch
 
     # Reduce loss for logging.
     averaged_loss = average_losses_across_data_parallel_group([loss])
-
+    loss_dict_key = 'lm loss'
     if args.calculate_per_token_loss:
         loss_mask_sum = loss_mask.sum()
         loss_sum = loss * loss_mask_sum
         averaged_loss_sum = averaged_loss[0] * loss_mask_sum
-        return loss_sum, loss_mask_sum.to(torch.int32), {'lm loss': [averaged_loss_sum, loss_mask_sum]}
+        return loss_sum, loss_mask_sum.to(torch.int32), {loss_dict_key: [averaged_loss_sum, loss_mask_sum]}
     else:
-        return loss, {'lm loss': averaged_loss[0]}
+        if args.seq1f1b_splits > 1:
+            # The loss in forward_step function will be divided by num_microbatches, which will become 
+            # seq1f1b_splits times of the value of 1F1B
+            loss *= args.seq1f1b_splits
+            valid_ratio = loss_mask.sum() / args.span_info.origin_loss_mask_sum
+            return loss, {loss_dict_key: [averaged_loss[0], valid_ratio]}
+        else:
+            return loss, {loss_dict_key: averaged_loss[0]}
