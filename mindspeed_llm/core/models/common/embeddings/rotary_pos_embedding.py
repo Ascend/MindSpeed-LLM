@@ -39,8 +39,15 @@ def apply_llama3_scaling(freqs: torch.Tensor):
 def apply_yarn_scaling(freqs: torch.Tensor):
     args = get_args()
     
-    scaling_factor = args.rope_scaling_factor
-    dim = args.qk_rope_head_dim if args.multi_head_latent_attention else (args.hidden_size // args.num_attention_heads)
+    #If it is an MLA model, follow the original DeepSeekV3 logic; otherwise, use the logic for Qwen3 below.
+    if args.multi_head_latent_attention:
+        scaling_factor = args.rope_scaling_factor
+        dim = args.qk_rope_head_dim
+    else:
+        scaling_factor = args.max_position_embeddings / args.rope_scaling_original_max_position_embeddings
+        args.rope_scaling_factor = scaling_factor
+        dim = args.kv_channels if args.kv_channels else (args.hidden_size // args.num_attention_heads)
+
     rotary_ratio = args.rotary_base ** (torch.arange(0, dim, 2, dtype=torch.float32, device=freqs.device) / dim)
     freq_extra = 1.0 / rotary_ratio
     freq_inter = 1.0 / (scaling_factor * rotary_ratio)
