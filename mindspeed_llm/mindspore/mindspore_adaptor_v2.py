@@ -102,10 +102,9 @@ def _patch_tensor_parallel_and_pipeline():
     MindSporeAdaptation.register_patch('megatron.core.tensor_parallel.random._set_cuda_rng_state',
                                        local_set_cuda_rng_state)
 
-    from mindspeed.mindspore.core.pipeline_parallel.schedules import deallocate_output_tensor_, custom_backward
+    from mindspeed.mindspore.core.pipeline_parallel.schedules import deallocate_output_tensor_
     MindSporeAdaptation.register_patch('megatron.core.pipeline_parallel.schedules.deallocate_output_tensor',
                                        deallocate_output_tensor_)
-    MindSporeAdaptation.register_patch('megatron.core.pipeline_parallel.schedules.custom_backward', custom_backward)
 
     from mindspeed.mindspore.core.timers import _get_global_min_max_time
     MindSporeAdaptation.register_patch('megatron.core.timers.Timers._get_global_min_max_time', _get_global_min_max_time)
@@ -182,11 +181,6 @@ def _patch_optimizer_and_training(args):
         clear_wrapper_v2(target_func_name, target_func)
         MindSporeAdaptation.register_patch(target_func_name, reuse_fp32_param_distrib_optimizer_init_wrapper)
 
-    # Loss scaling
-    if not hasattr(args, 'fp16') or not args.fp16:
-        from mindspeed.mindspore.core.optimizer.optimizer import scale_loss
-        MindSporeAdaptation.register_patch('megatron.core.optimizer.optimizer.MegatronOptimizer.scale_loss', scale_loss)
-        
 
 def _patch_fused_operators(args):
     from mindspeed.mindspore.ops.npu_rotary_position_embedding import npu_rotary_position_embedding
