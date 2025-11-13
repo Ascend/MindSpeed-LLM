@@ -90,6 +90,7 @@ def infer_max_len(source_len: int, target_len: int, max_len: int, reserved_label
     return max_source_len, max_target_len
 
 
+# aligned with llamafactory 0.8.2
 @dataclass
 class Template:
     format_user: "Formatter"
@@ -252,6 +253,106 @@ class Template:
         return tokenizer.encode(self.add_thought(), add_special_tokens=False)
 
 
+# aligned with llamafactory 0.9.4
+@dataclass
+class LFDefaultTemplate(Template):
+    def encode_oneturn(
+        self,
+        tokenizer: "PreTrainedTokenizer",
+        messages: list[dict[str, str]],
+        system: Optional[str] = None,
+        tools: Optional[str] = None,
+        cutoff_len: int = 1_000_000,
+        reserved_label_len: int = 1,
+    ) -> Tuple[list[int], list[int]]:
+        r"""Return a single pair of token ids representing prompt and response respectively."""
+        encoded_messages = self._encode(tokenizer, messages, system, tools)
+        prompt_ids = []
+        for encoded_ids in encoded_messages[:-1]:
+            prompt_ids += encoded_ids
+
+        response_ids = encoded_messages[-1]
+        return prompt_ids, response_ids
+
+    def encode_multiturn(
+        self,
+        tokenizer: "PreTrainedTokenizer",
+        messages: list[dict[str, str]],
+        system: Optional[str] = None,
+        tools: Optional[str] = None,
+        cutoff_len: int = 1_000_000,
+        reserved_label_len: int = 1,
+    ) -> Sequence[Tuple[List[int], List[int]]]:
+        r"""Return multiple pairs of token ids representing prompts and responses respectively."""
+        encoded_messages = self._encode(tokenizer, messages, system, tools)
+        return self._make_pairs(encoded_messages, cutoff_len, reserved_label_len)
+
+    def _encode(
+        self,
+        tokenizer: "PreTrainedTokenizer",
+        messages: list[dict[str, str]],
+        system: Optional[str],
+        tools: Optional[str],
+    ) -> Sequence[list[int]]:
+        r"""
+        Encodes formatted inputs to pairs of token ids.
+        Turn 0: prefix + system + query        resp
+        Turn t: sep + query           resp
+        """
+        system = system or self.default_system
+        encoded_messages = []
+        for i, message in enumerate(messages):
+            elements = []
+
+            if i == 0:
+                elements += self.format_prefix.apply()
+                if system or tools:
+                    tool_text = self.format_tools.apply(content=tools)[0] if tools else ""
+                    elements += self.format_system.apply(content=(system + tool_text))
+
+            if message["role"] == Role.USER:
+                elements += self.format_user.apply(content=message["content"], idx=str(i // 2))
+            elif message["role"] == Role.ASSISTANT:
+                elements += self.format_assistant.apply(content=message["content"])
+            elif message["role"] == Role.OBSERVATION:
+                elements += self.format_observation.apply(content=message["content"])
+            elif message["role"] == Role.FUNCTION:
+                elements += self.format_function.apply(content=message["content"])
+            else:
+                raise NotImplementedError("Unexpected role: {}".format(message["role"]))
+
+            encoded_messages.append(self._convert_elements_to_ids(tokenizer, elements))
+
+        return encoded_messages
+
+    def _make_pairs(
+        self,
+        encoded_messages: Sequence[List[int]],
+        cutoff_len: int,
+        reserved_label_len: int,
+    ) -> Sequence[Tuple[List[int], List[int]]]:
+        from .decoder_packed_mtf_dataset import _infer_seqlen
+
+        encoded_pairs = []
+        total_length = 0
+        cutoff_len = cutoff_len - reserved_label_len
+        for i in range(0, len(encoded_messages), 2):
+            if total_length >= cutoff_len:
+                break
+
+            max_source_len, max_target_len = _infer_seqlen(
+                source_len=len(encoded_messages[i]),
+                target_len=len(encoded_messages[i + 1]),
+                cutoff_len=(cutoff_len - total_length)
+            )
+            source_ids = encoded_messages[i][:max_source_len]
+            target_ids = encoded_messages[i + 1][:max_target_len]
+            total_length += len(source_ids) + len(target_ids)
+            encoded_pairs.append((source_ids, target_ids))
+
+        return encoded_pairs
+
+
 @dataclass
 class Llama2Template(Template):
     def _encode(
@@ -298,7 +399,7 @@ class Llama2Template(Template):
 
 
 @dataclass
-class ReasoningTemplate(Template):
+class ReasoningTemplate(LFDefaultTemplate):
     r"""A template that add thought to assistant message."""
 
     def _encode(
@@ -395,33 +496,6 @@ class ReasoningTemplate(Template):
                     encoded_messages[i + 1] = self.get_thought_word_ids(tokenizer) + encoded_messages[i + 1]
         
         return self._make_pairs(encoded_messages, cutoff_len, reserved_label_len)
-
-    def _make_pairs(
-        self,
-        encoded_messages: Sequence[List[int]],
-        cutoff_len: int,
-        reserved_label_len: int,
-    ) -> Sequence[Tuple[List[int], List[int]]]:
-        from .decoder_packed_mtf_dataset import _infer_seqlen
-        
-        encoded_pairs = []
-        total_length = 0
-        cutoff_len = cutoff_len - reserved_label_len
-        for i in range(0, len(encoded_messages), 2):
-            if total_length >= cutoff_len:
-                break
-
-            max_source_len, max_target_len = _infer_seqlen(
-                source_len=len(encoded_messages[i]),
-                target_len=len(encoded_messages[i + 1]),
-                cutoff_len=(cutoff_len - total_length)
-            )
-            source_ids = encoded_messages[i][:max_source_len]
-            target_ids = encoded_messages[i + 1][:max_target_len]
-            total_length += len(source_ids) + len(target_ids)
-            encoded_pairs.append((source_ids, target_ids))
-
-        return encoded_pairs
 
 
 templates: Dict[str, Template] = {}

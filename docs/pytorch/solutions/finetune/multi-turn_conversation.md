@@ -126,3 +126,7 @@ bash examples/mcore/gemma2/chat_gemma2_9b_ptd.sh
 ```
 
 在确认成功加载上微调权重后，在出现`You >> `的提示后，可以进行对话。
+
+## 使用约束
+
+- 当前微调数据预处理使用的默认模板已和LLaMA Factory 0.8.2对齐，如果需要与该版本之后的版本对齐，请修改[templates](../../../../configs/finetune/templates.json)文件中相应模板的`template_class`的键值为`LFDefaultTemplate`。例如使用`qwen`模板时，在[templates](../../../../configs/finetune/templates.json)中找到`"name": "qwen"`的字典，然后加上新的键值对`"template_class": "LFDefaultTemplate"`即可。

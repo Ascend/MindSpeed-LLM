@@ -315,6 +315,11 @@
         "<|im_start|>user\n{{content}}<|im_end|>\n<|im_start|>assistant\n"
       ]
     },
+    "format_assistant": {
+      "slots": [
+        "{{content}}<|im_end|>\n"
+      ]
+    },
     "format_system": {
       "slots": [
         "<|im_start|>system\n{{content}}<|im_end|>\n"
@@ -322,7 +327,7 @@
     },
     "format_observation": {
       "slots": [
-        "<|im_start|>tool\n{{content}}<|im_end|>\n<|im_start|>assistant\n"
+        "<|im_start|>user\n<tool_response>\n{{content}}\n</tool_response><|im_end|>\n<|im_start|>assistant\n"
       ]
     },
     "format_separator": {
@@ -330,7 +335,7 @@
         "\n"
       ]
     },
-    "default_system": "You are a helpful assistant.",
+    "default_system": "You are Qwen, created by Alibaba Cloud. You are a helpful assistant.",
     "stop_words": [
       "<|im_end|>"
     ],

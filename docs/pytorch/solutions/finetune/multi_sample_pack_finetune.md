@@ -166,6 +166,8 @@ bash examples/mcore/qwen25/tune_qwen25_7b_4k_full_pack.sh
 
 ## 使用约束
 
-* 数据预处理时，使用 `--neat-pack` 参数的前提是必须使用 `--pack` 参数。
+- 数据预处理时，使用 `--neat-pack` 参数的前提是必须使用 `--pack` 参数。
 
-* 微调时，使用 `--neat-pack` 参数的前提是必须使用 `--reset-attention-mask` 参数。
+- 微调时，使用 `--neat-pack` 参数的前提是必须使用 `--reset-attention-mask` 参数。
+
+- 当前微调数据预处理使用的默认模板已和LLaMA Factory 0.8.2对齐，如果需要与该版本之后的版本对齐，请修改[templates](../../../../configs/finetune/templates.json)文件中相应模板的`template_class`的键值为`LFDefaultTemplate`。例如使用`qwen`模板时，在[templates](../../../../configs/finetune/templates.json)中找到`"name": "qwen"`的字典，然后加上新的键值对`"template_class": "LFDefaultTemplate"`即可。

@@ -223,12 +223,14 @@ bash examples/mcore/qwen3/generate_qwen3_8b_ptd.sh
 
 ## 使用约束
 
-序列类型的不同，其对应的微调脚本和数据预处理方式也不同，这里以Qwen3的指令微调举例：
+- 序列类型的不同，其对应的微调脚本和数据预处理方式也不同，这里以Qwen3的指令微调举例：
 
-| 序列长度   | 特点                             | 训练脚本 | 数据预处理方式   |
-|--------|--------------------------------|----|---------------------------------------------------------|
-| 固定长度序列 | 性能低，不推荐使用 |  训练时不使用`--no-pad-to-seq-lengths`参数    | 使用默认预处理脚本，如`data_convert_qwen3_instruction.sh`         |
-| 动态长度序列 | sample吞吐高  |   训练脚本需要使用`--no-pad-to-seq-lengths`参数   | 使用默认预处理脚本，如`data_convert_qwen3_instruction.sh`         |
-| 样本拼接序列 | token吞吐高，支持长序列并行 |   训练脚本需要使用`--reset-attention-mask`参数，不启用`--no-pad-to-seq-lengths`   | 使用pack配置的预处理脚本，详见[多样本pack微调](./multi_sample_pack_finetune.md) |
+    | 序列长度   | 特点                             | 训练脚本 | 数据预处理方式   |
+    |--------|--------------------------------|----|---------------------------------------------------------|
+    | 固定长度序列 | 性能低，不推荐使用 |  训练时不使用`--no-pad-to-seq-lengths`参数    | 使用默认预处理脚本，如`data_convert_qwen3_instruction.sh`         |
+    | 动态长度序列 | sample吞吐高  |   训练脚本需要使用`--no-pad-to-seq-lengths`参数   | 使用默认预处理脚本，如`data_convert_qwen3_instruction.sh`         |
+    | 样本拼接序列 | token吞吐高，支持长序列并行 |   训练脚本需要使用`--reset-attention-mask`参数，不启用`--no-pad-to-seq-lengths`   | 使用pack配置的预处理脚本，详见[多样本pack微调](./multi_sample_pack_finetune.md) |
 
-请根据自己的使用场景，灵活选择对应类型的指令微调训练脚本和数据预处理脚本。
+    请根据自己的使用场景，灵活选择对应类型的指令微调训练脚本和数据预处理脚本。
+
+- 当前微调数据预处理使用的默认模板已和LLaMA Factory 0.8.2对齐，如果需要与该版本之后的版本对齐，请修改[templates](../../../../configs/finetune/templates.json)文件中相应模板的`template_class`的键值为`LFDefaultTemplate`。例如使用`qwen`模板时，在[templates](../../../../configs/finetune/templates.json)中找到`"name": "qwen"`的字典，然后加上新的键值对`"template_class": "LFDefaultTemplate"`即可。
