@@ -253,12 +253,14 @@ class Hf2MgConvert(Convert):
         if pp_rank == 0:
             st_filename_list.extend(list(layer_files_map_dict[hf_weight_key["embedding_word_embeddings"]]))
             if self.schedules_method == 'dualpipev':
-                st_filename_list.extend(list(layer_files_map_dict[hf_weight_key["output_layer"]]))
+                if self.load_model.untie_embeddings_and_output_weights:
+                    st_filename_list.extend(list(layer_files_map_dict[hf_weight_key["output_layer"]]))
                 st_filename_list.extend(list(layer_files_map_dict[hf_weight_key["final_layernorm"]]))
 
         if pp_rank == self.pipeline_model_parallel_size - 1 and self.schedules_method is None:
             st_filename_list.extend(list(layer_files_map_dict[hf_weight_key["final_layernorm"]]))
-            st_filename_list.extend(list(layer_files_map_dict[hf_weight_key["output_layer"]]))
+            if self.load_model.untie_embeddings_and_output_weights:
+                st_filename_list.extend(list(layer_files_map_dict[hf_weight_key["output_layer"]]))
 
         if self.pipeline_model_parallel_size > 1 and pp_rank == self.pipeline_model_parallel_size - 1 \
             and self.mtp_num_layers and "mtp_layers_embed_tokens" not in hf_weight_key.keys():
@@ -295,16 +297,19 @@ class Hf2MgConvert(Convert):
         hf_weight_key = self.load_model.get_weight()
         mg_weight_key = self.save_model.get_weight()
         final_norm = hf_weight.pop(hf_weight_key["final_layernorm"])
-        lm_head = hf_weight.pop(hf_weight_key["output_layer"])
+        if self.load_model.untie_embeddings_and_output_weights:
+            lm_head = hf_weight.pop(hf_weight_key["output_layer"])
 
         for ep_rank in range(self.expert_model_parallel_size):
-            lm_head_lst = torch.chunk(lm_head, self.tensor_model_parallel_size, dim=0)
+            if self.load_model.untie_embeddings_and_output_weights:
+                lm_head_lst = torch.chunk(lm_head, self.tensor_model_parallel_size, dim=0)
             for tp_rank in range(self.tensor_model_parallel_size):
                 if self.mtp_num_layers:
                     mg_weight[ep_rank][tp_rank][mg_weight_key["mtp_final_layernorms"]] = final_norm.clone()
                 else:
                     mg_weight[ep_rank][tp_rank][mg_weight_key["final_layernorm"]] = final_norm.clone()
-                mg_weight[ep_rank][tp_rank][mg_weight_key["output_layer"]] = lm_head_lst[tp_rank].clone()
+                if self.load_model.untie_embeddings_and_output_weights:
+                    mg_weight[ep_rank][tp_rank][mg_weight_key["output_layer"]] = lm_head_lst[tp_rank].clone()
 
     def set_mtp_preprocess(self, hf_layer_idx, mtp_layer_idx, hf_weight, mg_weight):
         """MTP layer preprocess"""

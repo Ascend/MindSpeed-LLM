@@ -343,17 +343,18 @@ class Mg2HfConvert(Convert):
         final_norm = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(final_norm_key)
         hf_weight[hf_weight_key["final_layernorm"]] = final_norm.clone()
 
-        lm_head_list = []
-        if self.expert_tensor_parallel_size == 1:
-            for(tp_rank, ep_rank) in self.attention_tp_ckpts_list:
-                cur_tp_head = mg_weight[(tp_rank, ep_rank)].pop(mg_weight_key["output_layer"])
-                lm_head_list.append(cur_tp_head.clone())
-        else:
-            for tp_rank in self.tp_rank_list:
-                cur_tp_head = mg_weight[(tp_rank, self.ep_rank_list[0])].pop(mg_weight_key["output_layer"])
-                lm_head_list.append(cur_tp_head.clone())
-        lm_head_weights = torch.cat(lm_head_list, dim=0)
-        hf_weight[hf_weight_key["output_layer"]] = lm_head_weights.clone()
+        if self.load_model.untie_embeddings_and_output_weights:
+            lm_head_list = []
+            if self.expert_tensor_parallel_size == 1:
+                for(tp_rank, ep_rank) in self.attention_tp_ckpts_list:
+                    cur_tp_head = mg_weight[(tp_rank, ep_rank)].pop(mg_weight_key["output_layer"])
+                    lm_head_list.append(cur_tp_head.clone())
+            else:
+                for tp_rank in self.tp_rank_list:
+                    cur_tp_head = mg_weight[(tp_rank, self.ep_rank_list[0])].pop(mg_weight_key["output_layer"])
+                    lm_head_list.append(cur_tp_head.clone())
+            lm_head_weights = torch.cat(lm_head_list, dim=0)
+            hf_weight[hf_weight_key["output_layer"]] = lm_head_weights.clone()
 
     def set_model_layer_norm(self, hf_weight, mg_weight, hf_layer_idx, local_layer_idx, mtp_layer_flag=False):
         """input norm & post attn norm"""
