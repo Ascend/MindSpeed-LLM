@@ -553,6 +553,8 @@ def _add_network_args(parser):
     group.add_argument('--query-pre-attn-scalar', type=int, help='attention scalar.')
     group.add_argument('--interleave-sliding-window', type=int,
                        help='Window size when use interleave sliding window attention.')
+    group.add_argument('--fc-type', type=str, default=None,
+                       help='Specifies the internal structure of the MLP module.')
     group.add_argument(
         '--stage',
         default=None,
@@ -787,7 +789,7 @@ def _add_training_args(parser):
     group.add_argument('--prompt-type', type=str, default=None,
                        choices=['default', 'empty', 'trl', 'chatglm2', 'chatglm3', 'chatglm3_system', 'glm4', 'chatml', 'bailing_mini',
                                 'chatml_de', 'qwen', 'qwen_r1', "qwen_math_r1", 'llama3', 'llama2', 'mistral', 'mixtral', 'gemma', 'alpaca',
-                                'deepseek2', 'deepseek2-lite', 'minicpm3', 'cpm', 'baichuan2', 'deepseek3', 'intern2', 'hunyuan', 'qwen3', 'magistral'],
+                                'deepseek2', 'deepseek2-lite', 'minicpm3', 'cpm', 'baichuan2', 'deepseek3', 'intern2', 'hunyuan', 'qwen3', 'magistral', 'plm'],
                        help='Which template to use for constructing prompts in training/inference.'  'e.g., "qwen"')
     group.add_argument('--prompt-type-path', type=str, default=TEMPLATES_DIR,
                        help='Path to the json file of templates.')

@@ -937,6 +937,17 @@
       <td>【NAIE】</td>
       <td>【Test】</td>
     </tr>
+    <tr>
+      <td rowspan="1"><a href="https://huggingface.co/PLM-Team/PLM-1.8B-Base">PLM-1.8B-Base</a></td>
+      <td><a href="https://huggingface.co/PLM-Team/PLM-1.8B-Base/tree/main">1.8B</a></td>
+      <td rowspan="1"><a href="../../../examples/mcore/plm">plm</a></td>
+      <td> 4K </td>
+      <th>Mcore</th>
+      <td> 1x8 </td>
+      <td> </td>
+      <td>【NAIE】</td>
+      <td>【Test】</td>
+    </tr>
   </tbody>
 </table>
 

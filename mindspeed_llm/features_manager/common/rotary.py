@@ -10,7 +10,7 @@ class RotaryPositionEmbeddingFeature(MindSpeedFeature):
         group = parser.add_argument_group(title=self.feature_name)
         group.add_argument("--use-fused-rotary-pos-emb", action='store_true',
                             help="Use fused rotary-pos-emb.")
-        group.add_argument('--rope-scaling-type', type=str, default=None, choices=["llama3", "yarn", "longrope"],
+        group.add_argument('--rope-scaling-type', type=str, default=None, choices=["llama3", "yarn", "longrope", "plm"],
                             help='Select RoPE scaling variant: '
                                 '"llama3" - Meta\'s official NTK-aware scaling for LLaMA3, '
                                 '"yarn" - YaRN method for context extension, '

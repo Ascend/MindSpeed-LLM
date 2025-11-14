@@ -669,6 +669,9 @@ class HuggingfaceModel(ModelBase):
             gate_proj = self.get_layers_mlp_gate_proj_weight(**kwargs)
             up_proj = self.get_layers_mlp_up_proj_weight(**kwargs)
             return torch.cat([gate_proj, up_proj], dim=0)
+        elif fc_type == "up_down":
+            up_proj = self.get_layers_mlp_up_proj_weight(**kwargs)
+            return up_proj
         else:
             raise ValueError(f"Unsupported fc_type {fc_type}")
 
@@ -681,8 +684,12 @@ class HuggingfaceModel(ModelBase):
         return self.layers_self_attention_linear_qkv_caches["bias"]
 
     def set_layers_mlp_linear_fc1_weight(self, data=None, **kwargs):
-        gate_proj, up_proj = torch.chunk(data, 2, dim=0)
-        self.set_layers_mlp_gate_proj_weight(data=gate_proj, **kwargs)
+        fc_type = self.args.fc_type
+        if fc_type == 'up_down':
+            up_proj = data
+        else:
+            gate_proj, up_proj = torch.chunk(data, 2, dim=0)
+            self.set_layers_mlp_gate_proj_weight(data=gate_proj, **kwargs)
         self.set_layers_mlp_up_proj_weight(data=up_proj, **kwargs)
 
     def set_layers_mlp_linear_fc1_lora_A_default_weight(self, data=None, **kwargs):
@@ -979,7 +986,8 @@ class MegatronModel(ModelBase):
                 'recompute_num_layers', 'recompute_method', 'encoder_num_layers', 'encoder_seq_length',
                 'distribute_saved_activations', 'train_iters', 'lr_decay_iters', 'lr_warmup_iters',
                 'lr_warmup_fraction', 'start_weight_decay', 'end_weight_decay', 'make_vocab_size_divisible_by',
-                'masked_softmax_fusion', 'num_layer_list', 'lora_target_modules', 'expert_model_parallel_size', 'use_mcore_models'
+                'masked_softmax_fusion', 'num_layer_list', 'lora_target_modules', 'expert_model_parallel_size', 'use_mcore_models',
+                'fc_type'
             ]
 
             for arg, value in vars(self.md.checkpoint_args).items():
@@ -996,6 +1004,10 @@ class MegatronModel(ModelBase):
 
             if hasattr(self.md, 'cla_share_factor'):
                 self.args.cla_share_factor = self.md.cla_share_factor
+
+            fc_type = getattr(getattr(self.md, 'checkpoint_args', None), 'fc_type', None)
+            if fc_type is not None:
+                self.args.fc_type = fc_type
 
             if hasattr(self.md, 'consumed_train_samples'):
                 self.args.consumed_train_samples = self.md.consumed_train_samples
@@ -1047,6 +1059,7 @@ class MegatronModel(ModelBase):
             self.args.multi_latent_attention = getattr(hf_args, "multi_latent_attention", False)
             self.args.cla_share_factor = getattr(hf_args, "cla_share_factor", 1)
             self.args.shared_expert_intermediate_size = getattr(hf_args, "shared_expert_intermediate_size", None)
+            self.args.fc_type = getattr(hf_args, "fc_type", None)
             if self.args.shared_expert_intermediate_size is not None and self.args.shared_expert_intermediate_size != 0 and self.args.n_shared_experts is None:
                 self.args.n_shared_experts = self.args.shared_expert_intermediate_size // self.args.moe_ffn_hidden_size 
             if self.args.multi_latent_attention:
@@ -1087,6 +1100,7 @@ class MegatronModel(ModelBase):
         self.args.q_lora_rank = getattr(self.args_megatron_checkpoint, "q_lora_rank", None)
         self.args.sequence_parallel = getattr(self.args_megatron_checkpoint, "sequence_parallel", False)
         self.args.shared_expert_gate = getattr(self.args_megatron_checkpoint, "shared_expert_gate", False)
+        self.args.fc_type = getattr(self.args_megatron_checkpoint, "fc_type", None)
 
     def update_megatron_args_from_cmd_config(self, loader_megatron):
         self.args.ckpt_format = self.args_cmd.ckpt_format

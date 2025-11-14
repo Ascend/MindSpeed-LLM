@@ -225,6 +225,17 @@ def core_mlp_init_wrapper(fn):
             _config.activation_func = gelu_tanh_approximation
             _config.bias_gelu_fusion = False
 
+        if hasattr(_args, 'fc_type') and _args.fc_type == 'up_down':
+            _config.gated_linear_unit = False
+
+        # HF model setup: Disable GLU for 'up_down' FFN in LLaMA models
+        if hasattr(_args, 'llama') and _args.llama.fc_type == 'up_down':
+            _config.gated_linear_unit = False
+
+        # Save HF model to Megatron model: Ensure GLU is disabled for 'up_down' FFN
+        if hasattr(_config, 'fc_type') and _config.fc_type == 'up_down':
+            _config.gated_linear_unit = False
+
         if 'config' in kwargs:
             kwargs['config'] = _config
             fn(self, *args, **kwargs)

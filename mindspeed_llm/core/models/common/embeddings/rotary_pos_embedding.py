@@ -66,6 +66,14 @@ def apply_yarn_scaling(freqs: torch.Tensor):
 
     return inv_freq
 
+def apply_plm_scaling(freqs: torch.Tensor):
+    args = get_args()
+
+    dim = args.qk_pos_emb_head_dim if args.multi_latent_attention else (args.hidden_size // args.num_attention_heads)
+    rotary_ratio = args.rotary_base ** (torch.arange(0, dim, 2, device=freqs.device) / dim)
+    inv_freq = 1.0 / rotary_ratio
+
+    return inv_freq
 
 def rotary_embedding_init_wrapper(fn):
     @wraps(fn)
@@ -87,6 +95,8 @@ def rotary_embedding_init_wrapper(fn):
             self.inv_freq = apply_llama3_scaling(self.inv_freq)
         elif hasattr(_args, "rope_scaling_type") and _args.rope_scaling_type == "yarn":
             self.inv_freq = apply_yarn_scaling(self.inv_freq)
+        elif hasattr(_args, "rope_scaling_type") and _args.rope_scaling_type == "plm":
+            self.inv_freq = apply_plm_scaling(self.inv_freq)
     return wrapper
 
 
