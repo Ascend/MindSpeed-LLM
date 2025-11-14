@@ -8,6 +8,7 @@ from collections import defaultdict
 import re
 import safetensors
 import safetensors.torch
+from safetensors import safe_open
 import torch
 
 
@@ -72,6 +73,7 @@ class HuggingFaceModel(Model):
         if args.load_model_type == 'hf':
             self.hf_path = args.load_dir
             self.load_hf_args()
+            self.update_args_from_hf_args()
         else:
             self.hf_path = args.save_dir
         self.module_mapping = self.get_module_mapping()
@@ -141,20 +143,34 @@ class HuggingFaceModel(Model):
         layer_map_dict = defaultdict(set)
         weights_map_file_path = os.path.join(self.hf_path, "model.safetensors.index.json")
 
-        with open(weights_map_file_path) as f:
-            weights_map = json.load(f)
-        weights_map = weights_map["weight_map"]
+        if os.path.exists(weights_map_file_path):
+            with open(weights_map_file_path, "r", encoding="utf-8") as f:
+                weights_map = json.load(f)
+            weights_map = weights_map["weight_map"]
+        else:
+            safetensor_files = [f for f in os.listdir(self.hf_path) if f.startswith("model") and f.endswith(".safetensors")]
+            if len(safetensor_files) == 1:
+                file_name = safetensor_files[0]
+                file_path = os.path.join(self.hf_path, file_name)
+                with safe_open(file_path, framework="pt") as f:
+                    keys = list(f.keys())
+                weights_map = {k: file_name for k in keys}
+            else:
+                raise FileNotFoundError(
+                    f"No index.json found and multiple safetensors exist in {self.hf_path}"
+                )
 
         for key, value in weights_map.items():
             if key.startswith("model.layers."):
-                layer_name = int(key.split('model.layers.')[1].split('.')[0])
-                layer_map_dict[layer_name].add(value)
+                layer_id = int(key.split("model.layers.")[1].split(".")[0])
+                layer_map_dict[layer_id].add(value)
             elif key.startswith("mtp.layers."):
                 layer_id = int(key.split("mtp.layers.")[1].split(".")[0])
                 new_layer_id = layer_id + self.num_layers
                 layer_map_dict[new_layer_id].add(value)
             else:
                 layer_map_dict[key].add(value)
+
         return layer_map_dict
 
 
@@ -178,6 +194,10 @@ class HuggingFaceModel(Model):
         """Load safetensors file"""
         logger.info(f"Loading the checkpoint from {file_path}.")
         return safetensors.torch.load_file(file_path)
+
+
+    def update_args_from_hf_args(self):
+        self.untie_embeddings_and_output_weights = not getattr(self, "tie_word_embeddings", False)
 
 
 class MegatronModel(Model):
