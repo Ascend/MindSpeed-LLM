@@ -36,7 +36,7 @@ from megatron.training.checkpointing import find_checkpoint_rank_0
 
 from mindspeed_llm.tasks.posttrain.lora.utils import is_enable_lora, merge_dicts, modify_keys_with_dict, filter_lora_keys
 from mindspeed_llm.tasks.posttrain.utils import load_checkpoint_loosely
-from mindspeed_llm.core.datasets.dataset_preprocess import convert_datasets
+from mindspeed_llm.core.datasets.dataset_preprocess import convert_datasets, _get_data_format
 from mindspeed_llm.tasks.checkpoint.convert_hf2mg import Hf2MgConvert
 try:
     from modelopt.torch.opt.plugins import (
@@ -404,55 +404,97 @@ def _convert_weights_if_needed(args, shared: bool):
     dist.barrier()
 
 
+def _is_raw_data_path(path: str) -> bool:
+    """Return True if the path is a raw file/dir recognizable by _get_data_format."""
+    p = str(path).strip().strip('"').strip("'")
+
+    if os.path.isfile(p):
+        data_files = [p]
+    elif os.path.isdir(p):
+        data_files = [os.path.join(p, f) for f in os.listdir(p)]
+    else:
+        return False
+
+    if not data_files:
+        return False
+
+    _, fmt = _get_data_format(data_files)
+    return fmt is not None
+
+
 def initialize_megatron_wrapper(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
         result = fn(*args, **kwargs)
 
+        # Skip if distributed not initialized
         if not torch.distributed.is_initialized():
             return result
 
         args = get_args()
-        logger.info("[InitHook] Megatron initialization completed, starting data preprocessing...")
-        sample_p = str(args.data_path[0]) if isinstance(args.data_path, (list, tuple)) else str(args.data_path).split(",")[0].strip()
-        sample_p = sample_p.strip().strip('"').strip("'")
-        base_dir = os.path.dirname(sample_p) if os.path.isfile(sample_p) else \
-                   (sample_p if os.path.isdir(sample_p) else os.path.dirname(sample_p) or ".")
+        data_path = getattr(args, "data_path", None)
+        if not data_path:
+            return result
+
+        # Support only single path; extract first component
+        if isinstance(data_path, (list, tuple)):
+            raw_path = str(data_path[0])
+        else:
+            raw_path = str(data_path).split(",")[0]
+
+        raw_path = raw_path.strip().strip('"').strip("'")
+
+        # If path is not raw, skip conversion
+        if not _is_raw_data_path(raw_path):
+            logger.info(f"[InitHook] data_path={raw_path} is not raw. Skip preprocessing.")
+            return result
+
+        logger.info("[InitHook] Megatron initialization completed. Starting data preprocessing...")
+
+        # Determine base directory for shared-path detection
+        if os.path.isfile(raw_path):
+            base_dir = os.path.dirname(raw_path)
+        elif os.path.isdir(raw_path):
+            base_dir = raw_path
+        else:
+            base_dir = os.path.dirname(raw_path) or "."
+
         shared = is_shared_path(base_dir)
         convert_datasets(args, shared)
 
-        args.load_dir = args.load
-        logger.info("[InitHook] Data preprocessing completed, starting weight conversion check...")
-        # Add path validation
-        if not os.path.exists(args.load_dir):
-            raise ValueError(f"Specified weight path does not exist: {args.load_dir}")
+        if getattr(args, 'enable_hf2mg_convert', False):
+            args.load_dir = args.load
+            logger.info("[InitHook] Data preprocessing completed, starting weight conversion check...")
+            # Add path validation
+            if not os.path.exists(args.load_dir):
+                raise ValueError(f"Specified weight path does not exist: {args.load_dir}")
 
-        # If hf conversion is enabled, check if the path is a valid huggingface weight path
-        files = os.listdir(args.load_dir)
-        if not (any(f == 'config.json' for f in files) and 
-                any(f.endswith(('.bin', '.safetensors')) and 'model' in f.lower() for f in files)):
-            raise ValueError(f"When enable_hf2mg_convert is enabled, path {args.load_dir} is not a valid huggingface weight path, missing necessary model files")
+            # If hf conversion is enabled, check if the path is a valid huggingface weight path
+            files = os.listdir(args.load_dir)
+            if not (any(f == 'config.json' for f in files) and 
+                    any(f.endswith(('.bin', '.safetensors')) and 'model' in f.lower() for f in files)):
+                raise ValueError(f"When enable_hf2mg_convert is enabled, path {args.load_dir} is not a valid huggingface weight path, missing necessary model files")
 
-        # check the supported models
-        supported_models = ['qwen3', 'qwen3-moe', 'deepseek3', 'glm45-moe', 'bailing_mini', 'qwen3-next',
-                            'seed-oss', 'deepseek32', 'magistral', 'deepseek2-lite']
-        if args.model_type_hf not in supported_models:
-            raise ValueError(f"Current --enable-hf2mg-convert does not support model type '{args.model_type_hf}'. "
-                            f"Supported models: {', '.join(supported_models)}")
+            # check the supported models
+            supported_models = ['qwen3', 'qwen3-moe', 'deepseek3', 'glm45-moe', 'bailing_mini', 'qwen3-next',
+                                'seed-oss', 'deepseek32', 'magistral', 'deepseek2-lite']
+            if args.model_type_hf not in supported_models:
+                raise ValueError(f"Current --enable-hf2mg-convert does not support model type '{args.model_type_hf}'. "
+                                f"Supported models: {', '.join(supported_models)}")
 
-        cache_dir = os.path.join(args.load_dir, "megatron_cache")
-        os.makedirs(cache_dir, exist_ok=True)
-        args.save_dir = cache_dir
+            cache_dir = os.path.join(args.load_dir, "megatron_cache")
+            os.makedirs(cache_dir, exist_ok=True)
+            args.save_dir = cache_dir
 
-        logger.info(f"[InitHook] Conversion cache path: {args.save_dir}")
+            logger.info(f"[InitHook] Conversion cache path: {args.save_dir}")
 
-        shared = is_shared_path(args.save_dir)
-        logger.info(f"[InitHook] save_dir={args.save_dir}, shared_storage={shared}")
+            shared = is_shared_path(args.save_dir)
+            logger.info(f"[InitHook] save_dir={args.save_dir}, shared_storage={shared}")
 
-        _convert_weights_if_needed(args, shared)
+            _convert_weights_if_needed(args, shared)
 
-        args.load = args.save_dir
-        logger.info("[InitHook] Weight conversion phase completed.")
+            args.load = args.save_dir
+            logger.info("[InitHook] Weight conversion phase completed.")
         return result
 
     return wrapper

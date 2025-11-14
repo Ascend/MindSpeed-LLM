@@ -57,6 +57,8 @@ class DatasetPreprocessFeature(MindSpeedFeature):
                                     'will be ignored.')
         group.add_argument('--reward-tokens', nargs='+', type=str, default=[],
                             help="The labels represent the correctness of each reasoning step in the entire reasoning process.")
+        group.add_argument('--output-prefix', type=str, default=None,
+                            help='Path to binary output file without suffix')
         group.add_argument('--dataset-impl', type=str, default='mmap',
                             choices=['lazy', 'cached', 'mmap'])
         group.add_argument('--workers', type=int, default=1,

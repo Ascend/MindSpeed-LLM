@@ -25,10 +25,8 @@ class CheckpointFeature(MindSpeedFeature):
         
 
     def register_patches(self, patch_manager, args):
-
-        if getattr(args, 'enable_hf2mg_convert', False):
-            from mindspeed_llm.training.checkpointing import initialize_megatron_wrapper
-            patch_manager.register_patch(
-                "megatron.training.initialize.initialize_megatron",
-                initialize_megatron_wrapper
-            )
+        from mindspeed_llm.training.checkpointing import initialize_megatron_wrapper
+        patch_manager.register_patch(
+            "megatron.training.initialize.initialize_megatron",
+            initialize_megatron_wrapper
+        )
