@@ -113,7 +113,7 @@ TUNE_ARGS="
     --stage sft \
     --is-instruction-dataset \
     --prompt-type magistral \
-    --variable-seq-lengths \
+    --no-pad-to-seq-lengths \
     --tokenizer-not-use-fast \
     --calculate-per-token-loss
 "

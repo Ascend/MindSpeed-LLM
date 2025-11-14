@@ -4,7 +4,7 @@ mkdir ./finetune_dataset
 
 python ./preprocess_data.py \
     --input ./dataset/alpaca_gpt4_data_zh.json \
-    --tokenizer-model ./model_from_hf/magistral_small/tekken.json \
+    --tokenizer-model ./model_from_hf/tekken.json \
     --output-prefix ./finetune_dataset/magistral/alpaca \
     --handler-name AlpacaStyleInstructionHandler \
     --tokenizer-type MagistralTokenizer \
