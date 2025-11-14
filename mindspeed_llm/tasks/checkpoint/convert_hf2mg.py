@@ -96,9 +96,6 @@ class Hf2MgConvert(Convert):
         if self.load_model.qkv_type == "mix" and self.tensor_model_parallel_size > 1:
             raise ValueError('mix qkv-type and tp cannot be configured at the same time')
 
-        if hasattr(self.load_model, "enable_dsa_indexer") and self.tensor_model_parallel_size > 1:
-            raise ValueError('enable_dsa_indexer model and tp cannot be configured at the same time')
-
         if self.transformer_impl == 'transformer_engine' and self.mtp_num_layers > 0:
             raise ValueError('transformer_engine model and mtp_num_layers cannot be configured at the same time')
 

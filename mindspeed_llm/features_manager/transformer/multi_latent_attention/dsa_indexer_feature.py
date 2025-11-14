@@ -25,8 +25,6 @@ class DSAIndexerFeature(MindSpeedFeature):
                 raise ValueError("DSAIndexer is currently only supported in MLA, plese check model_spec and open --multi-latent-attention.")
             if not args.use_flash_attn:
                 raise ValueError("DSAIndexer is currently only supported in FA, plese open --use-flash-attn.")
-            if args.tensor_model_parallel_size > 1:
-                raise ValueError("DSAIndexer is currently only supported in TP=1.")
 
     def register_patches(self, patch_manager, args):
         if args.enable_dsa_indexer:

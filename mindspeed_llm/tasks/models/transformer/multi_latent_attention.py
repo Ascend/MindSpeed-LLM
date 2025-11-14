@@ -8,6 +8,7 @@ import torch.nn.functional as F
 from mindspeed.core.context_parallel.ulysses_context_parallel.ulysses_context_parallel import UlyssesContextAttention
 from mindspeed.core.parallel_state import get_context_parallel_group_for_hybrid_ulysses
 from mindspeed.core.tensor_parallel.random import CheckpointWithoutOutput
+from megatron.core.transformer.identity_op import IdentityOp
 from mindspeed.utils import  set_position_ids, get_position_ids
 from mindspeed.core.context_parallel.get_batch_utils import get_actual_seq_len, set_actual_seq_len
 from mindspeed.core.transformer.moe.moe_feature.fb_overlap.modules.attention import launch_async_all2all_hook, launch_async_all2all
@@ -22,15 +23,11 @@ from megatron.core.transformer.enums import AttnMaskType
 from megatron.core import mpu, parallel_state
 from megatron.training import get_args
 
+from mindspeed_llm.core.tensor_parallel.layers import LinearNoTP
 from mindspeed_llm.core.transformer.custom_layers.transformer_engine import PTNorm
 from mindspeed_llm.tasks.models.transformer.dsa_indexer import get_dsa_indexer_spec
 from mindspeed_llm.tasks.models.transformer.mla_dot_product_attention import MlaDotProductAttention
 from mindspeed_llm.tasks.models.transformer.mla_up_proj_overlap_tp_comm import mla_up_projection_overlap_tp_comm
-
-try:
-    import bitsandbytes as bnb
-except ImportError:
-    bnb = None
 
 
 @dataclass
@@ -114,6 +111,7 @@ class CustomMLASelfAttention(SelfAttention):
         self.q_lora_rank = self.config.q_lora_rank
         self.kv_lora_rank = self.config.kv_lora_rank
         self.v_head_dim = self.config.v_head_dim
+        self.sequence_parallel = self.config.sequence_parallel
 
         self.mla_mm_split = args.mla_mm_split
         self.mla_fa_without_pad = args.mla_fa_without_pad
@@ -414,8 +412,15 @@ class CustomMLASelfAttention(SelfAttention):
 
             # DSAIndexer module computation
             nonlocal attention_mask
-            if args.enable_dsa_indexer:
-                topk_score, topk_indices, attention_mask = self.dsa_indexer(hidden_states.detach(), q_compressed.detach(),
+            if not isinstance(self.dsa_indexer, IdentityOp):
+                if self.sequence_parallel:
+                    dsa_hidden_states = gather_from_sequence_parallel_region(hidden_states)
+                    dsa_q_compressed = gather_from_sequence_parallel_region(q_compressed)
+                else:
+                    dsa_hidden_states, dsa_q_compressed = hidden_states, q_compressed
+
+                topk_score, topk_indices, attention_mask = self.dsa_indexer(dsa_hidden_states.detach().clone(),
+                                                                            dsa_q_compressed.detach().clone(),
                                                                             0, rotary_pos_emb)
 
             # ==================================
@@ -459,7 +464,6 @@ class CustomMLASelfAttention(SelfAttention):
                 core_attn_out = core_attn_out.reshape(q_len, bsz, self.num_attention_heads_per_partition * self.v_head_dim)
 
             return core_attn_out
-        
 
         if args.mla_zero_memory:
             self.mla_checkpoint_manager = CheckpointWithoutOutput()
@@ -524,62 +528,3 @@ def recompute_mla(mla_checkpoint_manager):
             set_actual_seq_len(old_actual_seq_len)
         
     return hook_fn
-
-
-class LinearNoTP(torch.nn.Linear):
-    def __init__(
-        self,
-        input_size,
-        output_size,
-        config,
-        **kwargs,
-    ):
-        super().__init__(
-            input_size, 
-            output_size, 
-            bias=kwargs.get('bias', True),
-            dtype=config.params_dtype,
-        )
-        setattr(self.weight, 'sequence_parallel', config.sequence_parallel)
-        self.config = config
-
-        # Set fixed random seed for weight initialization
-        current_seed = torch.random.initial_seed()
-        torch.manual_seed(123)
-        torch.nn.init.xavier_uniform_(self.weight)
-        torch.random.manual_seed(current_seed)
-
-        self._register_load_state_dict_pre_hook(
-            lambda state_dict, prefix, *args, **kwargs: state_dict.pop(
-                f'{prefix}_extra_state', None)
-        )
-
-    def forward(self, input_):
-        if hasattr(self.weight, "quant_state"):
-            output = bnb.matmul_4bit(input_, self.weight.t(), self.weight.quant_state, bias=self.bias)
-        else:
-            output = torch.matmul(input_, self.weight.t())
-        return output
-
-    def _save_to_state_dict(self, destination, prefix, keep_vars):
-        args = get_args()
-        if args.qlora_save_dequantize and getattr(self.weight, "quant_state", None) is not None:
-            self.weight = torch.nn.Parameter(bnb.functional.dequantize_4bit(self.weight.data, self.weight.quant_state))
-        super()._save_to_state_dict(destination, prefix, keep_vars)
-        if getattr(self.weight, "quant_state", None) is not None:
-            for k, v in self.weight.quant_state.as_dict(packed=True).items():
-                destination[prefix + "weight." + k] = v if keep_vars else v.detach()
-
-    def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs):
-        if any(['bitsandbytes' in i for i in state_dict.keys()]):  # is quantized linear
-            qs_dict = {}
-            for k, v in state_dict.items():
-                key = k.replace(prefix, "")
-                if key != '_extra_state':
-                    qs_dict[key] = v
-            self.weight = bnb.nn.Params4bit.from_prequantized(
-                data=qs_dict.get('weight'),
-                quantized_stats={key.replace('weight.', ''): qs_dict[key] for key in qs_dict if key != 'weight'},
-                requires_grad=False,
-                device='npu')
-        super()._load_from_state_dict(state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs)

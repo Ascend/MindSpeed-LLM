@@ -64,7 +64,7 @@ from mindspeed_llm.features_manager.megatron_basic.model_basic import ModelBasic
 from mindspeed_llm.features_manager.megatron_basic.requirements_basic import RequirementsBasicFeature
 from mindspeed_llm.features_manager.megatron_basic.training_basic import TrainingBasicFeature
 from mindspeed_llm.features_manager.models.mamba import MambaModel
-from mindspeed_llm.features_manager.transformer.dsa_indexer import DSAIndexerFeature
+from mindspeed_llm.features_manager.transformer.multi_latent_attention.dsa_indexer_feature import DSAIndexerFeature
 from mindspeed_llm.features_manager.moe.moe_router import MoERouter
 from mindspeed_llm.features_manager.moe.shared_expert import MoESharedExpertsFeature
 from mindspeed_llm.features_manager.moe.tp_extend_ep import MoETpExtendEpFeature

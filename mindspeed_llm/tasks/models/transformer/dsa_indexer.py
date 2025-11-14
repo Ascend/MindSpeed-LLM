@@ -16,6 +16,8 @@ from megatron.core.transformer import TransformerConfig, ModuleSpec, build_modul
 
 from scipy.linalg import hadamard
 
+from mindspeed_llm.core.tensor_parallel.layers import LinearNoTP
+
 
 @dataclass
 class DSAIndexerSubmodules:
@@ -30,9 +32,9 @@ def get_dsa_indexer_spec(enable_dsa_indexer):
     if enable_dsa_indexer:
         return ModuleSpec(module=DSAIndexer,
                           submodules=DSAIndexerSubmodules(
-                                wq_b=ColumnParallelLinear,
-                                wk=ColumnParallelLinear,
-                                weights_proj=ColumnParallelLinear,
+                                wq_b=LinearNoTP,
+                                wk=LinearNoTP,
+                                weights_proj=LinearNoTP,
                                 ))
     else:
         return IdentityOp
@@ -215,7 +217,7 @@ class DSAIndexer(MegatronModule):
         end_pos = start_pos + seq_len
 
         # Project low-rank query to full multi-head query
-        q, _ = self.wq_b(qr)
+        q = self.wq_b(qr)
         q = rearrange(q, 's b (h d) -> s b h d', d=self.head_dim)
 
         # Apply rotary positional embedding to the RoPE part of the query
@@ -226,7 +228,7 @@ class DSAIndexer(MegatronModule):
         q = torch.cat([q_pe, q_nope], dim=-1)
 
         # Project and normalize keys
-        k, _ = self.wk(x)
+        k = self.wk(x)
         k = self.k_norm(k)
         k_pe, k_nope = torch.split(k, [self.rope_head_dim, self.head_dim - self.rope_head_dim], dim=-1)
 
@@ -258,7 +260,7 @@ class DSAIndexer(MegatronModule):
 
         # ---------------------------------------------------------
         # Compute sparse attention scores in bf16
-        weights, _ = self.weights_proj(x)
+        weights = self.weights_proj(x)
         weights = weights * self.n_heads ** -0.5
         weights = weights.unsqueeze(-1) * self.softmax_scale
 
