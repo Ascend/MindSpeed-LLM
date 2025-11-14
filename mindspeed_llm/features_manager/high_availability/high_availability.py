@@ -36,6 +36,9 @@ class HighAvailabilityFeature(MindSpeedFeature):
                 'switch of the enable hbmfault repair is unsupported, please enable high availability feature first.')
         if args.enable_high_availability and args.use_dist_ckpt:
             raise AssertionError('switch of the high availability feature is unsupported')
+        if args.enable_high_availability and args.swap_attention:
+            raise AssertionError(
+                'switch of the high availability feature is unsupported, please disable swap attention first.')
         if args.swap_optimizer and args.enable_high_availability:
             raise AssertionError('switch of the high availability feature is unsupported')
         if args.enable_elastic_training:

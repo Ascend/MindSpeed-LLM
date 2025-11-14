@@ -62,19 +62,6 @@ def feature_rollback():
         mpu.destroy_global_memory_buffer()
         mpu._set_global_memory_buffer()
 
-    if hasattr(args, "swap_attention") and args.swap_attention:
-        #   reinit SwapPrefetch
-        from mindspeed.core.memory.adaptive_recomputing.prefetch import SwapPrefetch
-        SwapPrefetch.swap_prefetch.prefetch_data_ptr_list = []
-        SwapPrefetch.swap_prefetch.prefetch_list = []
-        SwapPrefetch.swap_prefetch.slice_tensor_storage_ptr_list = []
-        SwapPrefetch.swap_prefetch.swap_tensors = []
-        SwapPrefetch.swap_prefetch.data_ptr = {}
-        SwapPrefetch.swap_prefetch.cur_micro_num = 0
-        SwapPrefetch.swap_prefetch.remove_num = 0
-        SwapPrefetch.swap_prefetch.forward_flag = False
-        SwapPrefetch.swap_prefetch.slice_tensor_storage_ptr = {}
-
     if hasattr(args, "num_experts") and args.num_experts:
         mpu._MOE_AUX_LOSSES_LOGGING_TRACKER = {}
 

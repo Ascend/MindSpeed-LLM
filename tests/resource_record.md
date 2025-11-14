@@ -27,5 +27,23 @@
         <td>/</td>
         <td>/data/ci/cache/deepseek3-hf-L2-mtp-bk</td>
     </tr>
+    <tr>
+        <td>high_availability_error_dump_ptd</td>
+        <td>/data/ci/models/llama2/hf/llama-high-availability/tokenizer.model</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/data/ci/datasets/processed/dataset-high-availability/llama_text_document</td>
+        <td>/</td>
+        <td>/data/ci/cache/temp-checkpoint-high-availability/</td>
+    </tr>
+    <tr>
+        <td>high_availability_uce_error_ptd</td>
+        <td>/data/ci/models/llama2/hf/llama-high-availability/tokenizer.model</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/data/ci/datasets/processed/dataset-high-availability/llama_text_document</td>
+        <td>/</td>
+        <td>/</td>
+    </tr>
 
 </table>
