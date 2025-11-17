@@ -16,16 +16,18 @@ class CheckpointFeature(MindSpeedFeature):
                                  'deepseek2-lite', 'qwen2-moe', 'phi3.5', 'phi3.5-moe', 'hunyuan', 'glm4', 'magistral'],
                             help='model type of huggingface')
         group.add_argument('--load-dir', type=str, default=None,
-                            help='Directory to load model checkpoint from')
+                            help='Directory to load model checkpoint from which use in convert_checkpoint')
         group.add_argument('--save-dir', type=str, default=None,
-                            help='Directory to save model checkpoint to')
+                            help='Directory to save model checkpoint to which use in convert_checkpoint')
+        group.add_argument('--mg-cache-dir', type=str, default=None,
+                            help='Directory to save megatron checkpoint to')
         group.add_argument('--enable-hf2mg-convert', action='store_true',
                             help='Enable HuggingFace→Megatron weight conversion and patch. '
                                 'If set, weight conversion will run automatically during initialize_megatron().')
         
 
     def register_patches(self, patch_manager, args):
-        from mindspeed_llm.training.checkpointing import initialize_megatron_wrapper
+        from mindspeed_llm.training.initialize import initialize_megatron_wrapper
         patch_manager.register_patch(
             "megatron.training.initialize.initialize_megatron",
             initialize_megatron_wrapper

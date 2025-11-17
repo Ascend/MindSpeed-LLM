@@ -12,9 +12,10 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+import os
 import time
 from functools import wraps
+from logging import getLogger
 
 import torch
 import torch_npu
@@ -34,7 +35,12 @@ from megatron.training.initialize import (
 from mindspeed.core.tensor_parallel.ascend_turbo.initialize import initialize_cfg_from_args
 from mindspeed_llm.training.arguments import parse_args_decorator
 from mindspeed_llm.tasks.utils.error_utils import ensure_valid
-from mindspeed_llm.training.utils import seed_all
+from mindspeed_llm.training.utils import seed_all, is_shared_path
+from mindspeed_llm.training.checkpointing import _convert_weights_if_needed
+from mindspeed_llm.core.datasets.dataset_preprocess import convert_datasets, _is_raw_data_path
+
+
+logger = getLogger(__name__)
 
 
 def _compile_dependencies():
@@ -161,5 +167,107 @@ def coc_registration_wrapper(fn):
         args = get_args()
         initialize_coc_from_cfg(args)
         return res
+
+    return wrapper
+
+
+def initialize_megatron_wrapper(fn):
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        result = fn(*args, **kwargs)
+
+        # Skip if distributed not initialized
+        if not torch.distributed.is_initialized():
+            return result
+
+        args = get_args()
+        data_path = getattr(args, "data_path", None)
+        if not data_path:
+            return result
+
+        # Support only single path; extract first component
+        if isinstance(data_path, (list, tuple)):
+            raw_path = str(data_path[0])
+        else:
+            raw_path = str(data_path).split(",")[0]
+
+        raw_path = raw_path.strip().strip('"').strip("'")
+
+        # If path is not raw, skip conversion
+        if not _is_raw_data_path(raw_path):
+            logger.info(f"[InitHook] data_path={raw_path} is not raw. Skip preprocessing.")
+            return result
+
+        logger.info("[InitHook] Megatron initialization completed. Starting data preprocessing...")
+
+        # Determine base directory for shared-path detection
+        if os.path.isfile(raw_path):
+            base_dir = os.path.dirname(raw_path)
+        elif os.path.isdir(raw_path):
+            base_dir = raw_path
+        else:
+            base_dir = os.path.dirname(raw_path) or "."
+
+        shared = is_shared_path(base_dir)
+        convert_datasets(args, shared)
+
+        if getattr(args, 'enable_hf2mg_convert', False):
+            args.load_dir = args.load
+            logger.info("[InitHook] Data preprocessing completed, starting weight conversion check...")
+            # Add path validation
+            if not os.path.exists(args.load_dir):
+                raise ValueError(f"Specified weight path does not exist: {args.load_dir}")
+
+            # If hf conversion is enabled, check if the path is a valid huggingface weight path
+            files = os.listdir(args.load_dir)
+            if not (
+                any(f == 'config.json' for f in files) and
+                any(f.endswith(('.bin', '.safetensors')) and 'model' in f.lower() for f in files)
+            ):
+                raise ValueError(
+                    f"When enable_hf2mg_convert is enabled, path {args.load_dir} is not a valid HuggingFace path."
+                )
+
+            # Supported model types
+            supported_models = [
+                'llama2', 'qwen3', 'qwen3-moe', 'deepseek3', 'glm45-moe', 'bailing_mini',
+                'qwen3-next', 'seed-oss', 'deepseek32', 'magistral', 'deepseek2-lite'
+            ]
+            if args.model_type_hf not in supported_models:
+                raise ValueError(
+                    f"Current --enable-hf2mg-convert does not support model type '{args.model_type_hf}'. "
+                    f"Supported models: {', '.join(supported_models)}"
+                )
+
+            if getattr(args, "mg_cache_dir", None):
+                cache_dir = args.mg_cache_dir
+            else:
+                def _safe_int(attr_name):
+                    val = getattr(args, attr_name, None)
+                    try:
+                        return int(val) if val not in (None, "", 0) else 1
+                    except Exception:
+                        return 1
+
+                tp = _safe_int("tensor_model_parallel_size")
+                pp = _safe_int("pipeline_model_parallel_size")
+                ep = _safe_int("expert_model_parallel_size")
+
+                cache_dir = os.path.join(args.load_dir, f"megatron_cache_tp{tp}pp{pp}ep{ep}")
+
+            os.makedirs(cache_dir, exist_ok=True)
+            args.save_dir = cache_dir
+
+            logger.info(f"[InitHook] Conversion cache path: {args.save_dir}")
+
+            shared = is_shared_path(args.save_dir)
+            logger.info(f"[InitHook] save_dir={args.save_dir}, shared_storage={shared}")
+
+            _convert_weights_if_needed(args, shared)
+
+            args.load = args.save_dir
+            logger.info("[InitHook] Weight conversion phase completed.")
+
+        return result
 
     return wrapper

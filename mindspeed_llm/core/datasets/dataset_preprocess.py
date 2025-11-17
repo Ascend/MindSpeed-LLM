@@ -150,3 +150,21 @@ def convert_datasets(args, shared: bool):
         new_paths.append(matched_prefix)
 
     args.data_path = new_paths if was_list else ",".join(new_paths)
+
+
+def _is_raw_data_path(path: str) -> bool:
+    """Return True if the path is a raw file/dir recognizable by _get_data_format."""
+    p = str(path).strip().strip('"').strip("'")
+
+    if os.path.isfile(p):
+        data_files = [p]
+    elif os.path.isdir(p):
+        data_files = [os.path.join(p, f) for f in os.listdir(p)]
+    else:
+        return False
+
+    if not data_files:
+        return False
+
+    _, fmt = _get_data_format(data_files)
+    return fmt is not None

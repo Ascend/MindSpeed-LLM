@@ -15,10 +15,12 @@
 
 """General utilities."""
 import os
+import time
 import stat
 import random
 import warnings
 from functools import wraps
+from logging import getLogger
 from typing import Optional, Union, List
 from itertools import takewhile
 from packaging.version import Version as PkgVersion
@@ -26,6 +28,7 @@ from packaging.version import Version as PkgVersion
 import acl
 import torch
 import torch_npu
+import socket
 from torch import distributed as dist
 import numpy as np
 import megatron
@@ -55,6 +58,9 @@ try:
 except Exception:
     # This is a WAR for building docs, where torch is not actually imported
     _torch_version = PkgVersion("0.0.0")
+
+
+logger = getLogger(__name__)
 
 
 WRITE_FILE_DEFAULT_FLAGS = os.O_WRONLY | os.O_CREAT
@@ -837,3 +843,67 @@ def print_rank_last_wrapper(fn):
             message = message.replace(src_str, dest_str)
         return fn(message)
     return wrapper
+
+
+def is_shared_path(path: str, retry: int = 3, wait: float = 0.5) -> bool:
+
+    if not torch.distributed.is_initialized() or torch.distributed.get_world_size() == 1:
+        return True
+
+    rank = torch.distributed.get_rank()
+    world_size = torch.distributed.get_world_size()
+
+    hostname = socket.gethostname()
+    local_rank = int(os.environ.get("LOCAL_RANK", 0))
+
+    os.makedirs(path, exist_ok=True)
+    marker_file = os.path.join(path, f".share_test_{hostname}")
+
+    try:
+        if local_rank == 0:
+            with open(marker_file, "w") as f:
+                f.write(f"marker from {hostname}")
+        torch.distributed.barrier()
+
+        visible_files = set()
+        for _ in range(retry):
+            visible_files = {f for f in os.listdir(path) if f.startswith(".share_test_")}
+            if len(visible_files) > 1 or world_size == 1:
+                break
+            time.sleep(wait)
+
+        visible_count = len(visible_files)
+        visible_tensor = torch.tensor(
+            [visible_count],
+            dtype=torch.int,
+            device="cuda" if torch.cuda.is_available() else "cpu"
+        )
+        torch.distributed.all_reduce(visible_tensor, op=torch.distributed.ReduceOp.MAX)
+        total_visible = visible_tensor.item()
+
+        if rank == 0:
+            if total_visible > 1:
+                logger.info(f"[is_shared_path] Detection result: Shared storage ({path}), detected {total_visible} node marker files.")
+                shared = True
+            elif total_visible == 1:
+                logger.info(f"[is_shared_path] Detection result: Non-shared storage ({path}), only local node can access its own marker.")
+                shared = False
+            else:
+                raise RuntimeError(f"[is_shared_path] Detection failed: No visible marker files, please check mount configuration.")
+        else:
+            shared = None
+
+        shared = torch.tensor([1 if shared else 0], dtype=torch.int, device="cuda" if torch.cuda.is_available() else "cpu")
+        torch.distributed.broadcast(shared, src=0)
+
+        torch.distributed.barrier()
+        if local_rank == 0 and os.path.exists(marker_file):
+            os.remove(marker_file)
+        torch.distributed.barrier()
+
+        return bool(shared.item())
+
+    except Exception as e:
+        if rank == 0:
+            logger.info(f"[is_shared_path] Exception during shared path check: {e}")
+        raise
