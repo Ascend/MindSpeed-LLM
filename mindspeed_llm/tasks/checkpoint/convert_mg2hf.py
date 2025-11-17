@@ -397,6 +397,10 @@ class Mg2HfConvert(Convert):
         hf_module_key = self.save_model.get_module(hf_layer_idx)
         mg_module_key = self.load_model.get_module(local_layer_idx)
 
+        if hasattr(self.load_model, "add_qkv_bias") or hasattr(self.load_model, "enable_dsa_indexer"):
+            hf_bias_key = self.save_model.get_bias(hf_layer_idx)
+            mg_bias_key = self.load_model.get_bias(local_layer_idx)
+
         def _generate_mla_attn_layers_key(mtp_layer_flag):
             if mtp_layer_flag:
                 qkv_key = mg_weight_key["mtp_layers_self_attention_linear_qkv"]
@@ -482,6 +486,18 @@ class Mg2HfConvert(Convert):
                 return MixAttnKeys(A_log_key, conv1d_key, dt_bias_key,
                            in_proj_ba_key, in_proj_qkvz_key,
                            linear_norm_key, out_proj_key)
+
+        IndexerKeys = namedtuple("IndexerKeys", [
+                        "indexer_k_norm_key", "indexer_k_norm_bias_key", "indexer_weights_proj_key", "indexer_wk_key", "indexer_wq_b_key"])
+
+        def _generate_attn_indexer_layers_key(mtp_flag):
+            prefix = "mtp_" if mtp_flag else ""
+            indexer_k_norm_key = mg_weight_key[f"{prefix}layers_self_attention_indexer_k_norm"]
+            indexer_k_norm_bias_key = mg_bias_key[f"{prefix}layers_self_attention_indexer_k_norm"]
+            indexer_weights_proj_key = mg_weight_key[f"{prefix}layers_self_attention_indexer_weights_proj"]
+            indexer_wk_key = mg_weight_key[f"{prefix}layers_self_attention_indexer_wk"]
+            indexer_wq_b_key = mg_weight_key[f"{prefix}layers_self_attention_indexer_wq_b"]
+            return IndexerKeys(indexer_k_norm_key, indexer_k_norm_bias_key, indexer_weights_proj_key, indexer_wk_key, indexer_wq_b_key)
 
         # common params
         nh = self.load_model.num_attention_heads
@@ -569,6 +585,15 @@ class Mg2HfConvert(Convert):
                 hf_weight[hf_weight_key["layers_self_attention_linear_q_up_proj"]] = q_b_proj
             hf_weight[hf_weight_key["layers_self_attention_kv_layernorm"]] = kv_a_layernorm
             hf_weight[hf_weight_key["layers_self_attention_linear_kv_up_proj"]] = kv_b_proj
+
+            if hasattr(self.load_model, "enable_dsa_indexer"):
+                indexer_keys = _generate_attn_indexer_layers_key(mtp_layer_flag)
+                hf_weight[hf_weight_key["layers_self_attention_indexer_k_norm"]] = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(indexer_keys.indexer_k_norm_key).clone()
+                hf_weight[hf_bias_key["layers_self_attention_indexer_k_norm"]] = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(indexer_keys.indexer_k_norm_bias_key).clone()
+                hf_weight[hf_weight_key["layers_self_attention_indexer_weights_proj"]] = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(indexer_keys.indexer_weights_proj_key).clone()
+                hf_weight[hf_weight_key["layers_self_attention_indexer_wk"]] = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(indexer_keys.indexer_wk_key).clone()
+                hf_weight[hf_weight_key["layers_self_attention_indexer_wq_b"]] = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(indexer_keys.indexer_wq_b_key).clone()
+
         elif self.load_model.qkv_type == 'unpack':
             linear_qkv_key, linear_proj_key, q_layernorm_key, k_layernorm_key = _generate_attn_layers_key()
             linear_qkv_list = []
