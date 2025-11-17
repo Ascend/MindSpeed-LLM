@@ -1,0 +1,10 @@
+input: "*/dapo-math-17k.parquet"
+tokenizer_name_or_path: */qwen25-7b/
+output_prefix: */data
+handler_name: Math17kAlpacaStyleInstructionHandler
+tokenizer_type: HuggingFaceTokenizer
+workers: 8
+log_interval: 1000
+prompt_type: empty
+dataset_additional_keys: [labels]
+map_keys:  {"prompt":"prompt", "query":"", "response": "reward_model", "system":""}
