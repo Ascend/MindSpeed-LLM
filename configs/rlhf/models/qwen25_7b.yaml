@@ -1,0 +1,20 @@
+qwen25_7b:
+  use_mcore_models: true
+  num_layers: 28
+  hidden_size: 3584
+  ffn_hidden_size: 18944
+  num_attention_heads: 28
+  rotary_base: 1000000
+  max_position_embeddings: 32768
+  make_vocab_size_divisible_by: 1
+  padded_vocab_size: 152064
+  untie_embeddings_and_output_weights: true
+  add_qkv_bias: true
+  disable_bias_linear: true
+  group_query_attention: true
+  num_query_groups: 4
+  position_embedding_type: rope
+  norm_epsilon: 1e-6
+  normalization: RMSNorm
+  swiglu: true
+  attention_softmax_in_fp32: true

@@ -1,0 +1,114 @@
+defaults:
+  - model:
+      - qwen25_7b
+
+megatron_training:
+  use_ascend_coc: True
+  coc_fused_kernel: True
+  coc_parallel_num: 2
+  model: qwen25_7b
+  use_fused_rmsnorm: true
+  use_mcore_models: true
+  sequence_parallel: true
+  use_flash_attn: true
+  no_masked_softmax_fusion: true
+  attention_softmax_in_fp32: true
+  no_gradient_accumulation_fusion: true
+  use_fused_swiglu: true
+  use_fused_rotary_pos_emb: true
+  bf16: true
+  use_distributed_optimizer: true
+  tokenizer_type: PretrainedFromHF
+  tokenizer_name_or_path: ./Qwen2.5-7B
+  global_batch_size: 32
+  seq_length: 2048
+  save_interval: 100
+  train_iters: 500
+  stage: ray_grpo
+  attention_dropout: 0.0
+  init_method_std: 0.01
+  hidden_dropout: 0.0
+  distributed_backend: nccl
+  no_shared_storage: true
+  dataset_additional_keys: ['labels',]
+  data_path: ./dataset/deepscaler/data
+  split: 100,0,0
+  no_shuffle: false
+  full_shuffle_instruction_dataset: false
+  seed: 1
+  reuse_fp32_param: false
+
+actor_config:
+  model: qwen25_7b
+  micro_batch_size: 4
+  tensor_model_parallel_size: 2
+  pipeline_model_parallel_size: 2
+  lr: 1e-6
+  lr_decay_style: constant
+  min_lr: 0
+  weight_decay: 0.01
+  lr_warmup_fraction: 0.0
+  clip_grad: 1.0
+  adam_beta1: 0.9
+  adam_beta2: 0.95
+  finetune: true
+  load: ./ckpt
+  save: ./ckpt
+  no_load_optim: true
+  no_load_rng: true
+
+rl_config:
+  guarantee_order: false
+  use_integrated_worker: true
+  blocking: true
+  gamma: 1.0
+  lam: 0.95
+  actor_forward_micro_batch_size: 4
+  ref_forward_micro_batch_size: 4
+  adv_estimator: group_norm
+  kl_penalty: low_var_kl
+  kl_ctrl_type: fixed
+  init_kl_coef: 0.001
+  mini_batch_size: 32
+  max_prompt_length: 2048
+  epochs: 1
+  clip_ratio: 0.2
+  entropy_coeff: 0.0
+  shuffle_mini_batch: false
+  n_samples_per_prompt: 8
+  rule_reward: true
+  verifier_function: ["math_17k_acc"]
+  verifier_weight: [1.0]
+  log_max_throughput: false
+  num_cpus_for_local_task: 1.0
+  use_tensorboard: true
+  actor_resource:
+    num_npus: 16
+
+generate_config:
+  trust_remote_code: true
+  offload_train_optimizer: true
+  offload_train_grad: true
+  offload_train_param: true
+
+  # 推理时的并行配置
+  infer_tensor_parallel_size: 1 
+  infer_pipeline_parallel_size: 1
+  infer_expert_parallel_size: 1
+
+  # vllm 模型相关设置
+  max_num_seqs: 1024
+  max_model_len: 4096
+  max_num_batched_tokens: 8192
+  dtype: "bfloat16"
+  gpu_memory_utilization: 0.4
+
+  # 采样配置
+  sampling_config:
+    logprobs: 1
+    max_tokens: 2048
+    top_p: 1.0
+    top_k: -1
+    min_p: 0.0
+    temperature: 1.0
+    detokenize: false

@@ -1,0 +1,45 @@
+env_vars:
+  # 禁用 Ray 对 ASCEND_RT_VISIBLE_DEVICES 的自动设置
+  RAY_EXPERIMENTAL_NOSET_ASCEND_RT_VISIBLE_DEVICES: 'true'
+  #设置tokennizers是否支持并行
+  TOKENIZERS_PARALLELISM: 'true'
+  #设置 NCCL Debug日志级别
+  NCCL_DEBUG: 'WARN'
+  #允许 NPU 内存分配器动态扩展已分配的内存段
+  PYTORCH_NPU_ALLOC_CONF: 'expandable_segments:True'
+  #设置 HCCL 连接超时时间
+  HCCL_CONNECT_TIMEOUT: '1800'
+  #设置 HCCL 执行超时时间
+  HCCL_EXEC_TIMEOUT: '3600'
+  #设置 HCCL 通信端口
+  HCCL_IF_BASE_PORT: '12345'
+  #设置设备最大连接数
+  CUDA_DEVICE_MAX_CONNECTIONS: '1'
+  #设置 HYDRA 是否输出完整错误日志
+  HYDRA_FULL_ERROR: '1'
+  # vLLM数据并行度（Data Parallelism）大小，控制数据分片数量，稠密模型需要设置为1，MOE模型要求必须和EP一致
+  VLLM_DP_SIZE: '1'
+  # 指定不使用 LCCL 通信
+  USING_LCCL_COM: '0'
+  # HCCL通信层单次传输的最大缓冲区大小（单位MB），影响跨设备通信效率
+  HCCL_BUFFSIZE: '256'
+  # 使用vLLM的V1 engine API（v1接口），兼容性选项
+  VLLM_USE_V1: '1'
+  # 指定使用的vLLM版本号
+  VLLM_VERSION: '0.9.1'
+  # 使能vLLM TOPK性能优化
+  VLLM_ASCEND_ENABLE_TOPK_OPTIMIZE: "1"
+  # vLLM aclop init mode: 0: default, normal init.
+  VLLM_ASCEND_ACL_OP_INIT_MODE: '0'
+  # 指定使用 Level 2 级别的算子下发队列优化
+  TASK_QUEUE_ENABLE: "2"
+  # 指定使能 CPU 绑核
+  CPU_AFFINITY_CONF: '1'
+  # COC指定环境变量
+  LCAL_COMM_ID: '127.0.0.1:27001'
+#指定 GLOO 框架通信网卡
+#  GLOO_SOCKET_IFNAME: "Your SOCKET IFNAME"
+#指定 TP 相关通信网卡
+#  TP_SOCKET_IFNAME: "Your SOCKET IFNAME"
+#指定 HCCL 通信网卡
+#  HCCL_SOCKET_IFNAME: "Your SOCKET IFNAME"

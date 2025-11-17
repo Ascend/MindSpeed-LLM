@@ -1,0 +1,366 @@
+[
+    {
+      "name": "default",
+      "format_user": {
+        "slots": [
+          "Human: {{content}}\nAssistant:"
+        ]
+      },
+      "format_system": {
+        "slots": [
+          "{{content}}\n"
+        ]
+      },
+      "format_separator": {
+        "slots": [
+          "\n"
+        ]
+      }
+    },
+    {
+      "name": "empty",
+      "format_user": {
+        "slots": [
+          "{{content}}"
+        ]
+      },
+      "format_assistant": {
+        "slots": [
+          "{{content}}"
+        ]
+      }
+    },
+    {
+      "name": "trl",
+      "format_user": {
+        "slots": [
+          "{{content}}"
+        ]
+      },
+      "format_assistant": {
+        "slots": [
+          "{{content}}"
+        ]
+      },
+      "format_prefix": {
+        "slots": [
+          ["bos_token"]
+        ]
+      }
+    },
+    {
+      "name": "qwen",
+      "format_user": {
+        "slots": [
+          "<|im_start|>user\n{{content}}<|im_end|>\n<|im_start|>assistant\n"
+        ]
+      },
+      "format_system": {
+        "slots": [
+          "<|im_start|>system\n{{content}}<|im_end|>\n"
+        ]
+      },
+      "format_observation": {
+        "slots": [
+          "<|im_start|>tool\n{{content}}<|im_end|>\n<|im_start|>assistant\n"
+        ]
+      },
+      "format_separator": {
+        "slots": [
+          "\n"
+        ]
+      },
+      "default_system": "You are a helpful assistant.",
+      "stop_words": [
+        "<|im_end|>"
+      ],
+      "replace_eos": true
+    },
+    {
+      "name": "qwen_r1",
+      "format_user": {
+        "slots": [
+          "<|im_start|>user\nA conversation between User and Assistant. The user asks a question, and the Assistant solves it. The assistant first thinks about the reasoning process in the mind and then provides the user with the answer. The reasoning process and answer are enclosed within <think> </think> and <answer> </answer> tags, respectively, i.e., <think> reasoning process here </think><answer> answer here </answer>. Put your final answer within \\boxed{}.\n{{content}}<|im_end|>\n<|im_start|>assistant\n"
+        ]
+      },
+      "format_system": {
+        "slots": [
+          "<|im_start|>system\n{{content}}<|im_end|>\n"
+        ]
+      },
+      "format_observation": {
+        "slots": [
+          "<|im_start|>tool\n{{content}}<|im_end|>\n<|im_start|>assistant\n"
+        ]
+      },
+      "format_separator": {
+        "slots": [
+          "\n"
+        ]
+      },
+      "default_system": "You are a helpful assistant.",
+      "stop_words": [
+        "<|im_end|>"
+      ],
+      "replace_eos": true
+    },
+    {
+      "name": "qwen_math_r1",
+      "format_user": {
+        "slots": [
+          "<|im_start|>user\n{{content}}<|im_end|>\n<|im_start|>assistant\n"
+        ]
+      },
+      "format_system": {
+        "slots": [
+          "<|im_start|>system\n{{content}}<|im_end|>\n"
+        ]
+      },
+      "format_observation": {
+        "slots": [
+          "<|im_start|>tool\n{{content}}<|im_end|>\n<|im_start|>assistant\n"
+        ]
+      },
+      "format_separator": {
+        "slots": [
+          "\n"
+        ]
+      },
+      "default_system": "Please reason step by step, and put your final answer within \\boxed{}.",
+      "stop_words": [
+        "<|im_end|>"
+      ],
+      "replace_eos": true
+    },
+    {
+      "name": "qwen3",
+      "format_user": {
+        "slots": [
+          "<|im_start|>user\n{{content}}<|im_end|>\n<|im_start|>assistant\n"
+        ]
+      },
+      "format_assistant": {
+        "slots": [
+          "{{content}}<|im_end|>\n"
+        ]
+      },
+      "format_system": {
+        "slots": [
+          "<|im_start|>system\n{{content}}<|im_end|>\n"
+        ]
+      },
+      "format_function": {
+        "slots": [
+          "{{content}}<|im_end|>\n"
+        ],
+        "tool_format": "qwen"
+      },
+      "format_observation": {
+        "slots": [
+          "<|im_start|>user\n<tool_response>\n{{content}}\n</tool_response><|im_end|>\n<|im_start|>assistant\n"
+        ]
+      },
+      "format_tools": {
+        "tool_format": "qwen"
+      },
+      "stop_words": [
+        "<|im_end|>"
+      ],
+      "replace_eos": true,
+      "template_class": "ReasoningTemplate"
+    },
+    {
+      "name": "llama3",
+      "format_user": {
+        "slots": [
+          "<|start_header_id|>user<|end_header_id|>\n\n{{content}}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
+        ]
+      },
+      "format_system": {
+        "slots": [
+          "<|start_header_id|>system<|end_header_id|>\n\n{{content}}<|eot_id|>"
+        ]
+      },
+      "format_observation": {
+        "slots": [
+          "<|start_header_id|>tool<|end_header_id|>\n\n{{content}}<|eot_id|><|start_header_id|>assistant<|end_header_id|>\n\n"
+        ]
+      },
+      "format_prefix": {
+        "slots": [
+          ["bos_token"]
+        ]
+      },
+      "stop_words": [
+        "<|eot_id|>"
+      ],
+      "replace_eos": true
+    },
+    {
+      "name": "mistral",
+      "format_user": {
+        "slots": [
+          "[INST] {{content}} [/INST]"
+        ]
+      },
+      "format_prefix": {
+        "slots": [
+          ["bos_token"]
+        ]
+      }
+    },
+    {
+      "name": "mixtral",
+      "format_user": {
+        "slots": [
+          "[INST] {{content}} [/INST]"
+        ]
+      },
+      "format_prefix": {
+        "slots": [
+          ["bos_token"]
+        ]
+      }
+    },
+    {
+      "name": "gemma",
+      "format_user": {
+        "slots": [
+          "<start_of_turn>user\n{{content}}<end_of_turn>\n<start_of_turn>model\n"
+        ]
+      },
+      "format_observation": {
+        "slots": [
+          "<start_of_turn>tool\n{{content}}<end_of_turn>\n<start_of_turn>model\n"
+        ]
+      },
+      "format_separator": {
+        "slots": [
+          "<end_of_turn>\n"
+        ]
+      },
+      "format_prefix": {
+        "slots": [
+          ["bos_token"]
+        ]
+      },
+      "efficient_eos": true
+    },
+    {
+      "name": "llama2",
+      "format_user": {
+        "slots": [
+          ["bos_token"],
+          "[INST] {{content}} [/INST]"
+        ]
+      },
+      "format_system": {
+        "slots": [
+          "<<SYS>>\n{{content}}\n<</SYS>>\n\n"
+        ]
+      }
+    },
+    {
+      "name": "alpaca",
+      "format_user": {
+        "slots": [
+          "### Instruction:\n{{content}}\n\n### Response:\n"
+        ]
+      },
+      "format_separator": {
+        "slots": [
+          "\n\n"
+        ]
+      },
+      "default_system": "Below is an instruction that describes a task. Write a response that appropriately completes the request.\n\n"
+    },
+    {
+      "name": "deepseek2",
+      "format_user": {
+        "slots": [
+          "User: {{content}}\n\nAssistant:"
+        ]
+      },
+      "format_system": {
+        "slots": [
+          "{{content}}\n\n"
+        ]
+      },
+      "format_prefix": {
+        "slots": [
+          ["bos_token"]
+        ]
+      }
+    },
+    {
+      "name": "deepseek2-lite",
+      "format_user": {
+        "slots": [
+          "User: {{content}}\n\nAssistant:"
+        ]
+      },
+      "format_system": {
+        "slots": [
+          "{{content}}\n\n"
+        ]
+      },
+      "format_prefix": {
+        "slots": [
+          ["bos_token"]
+        ]
+      }
+    },
+    {
+      "name": "minicpm3",
+      "format_user": {
+        "slots": [
+          "User: {{content}}\n\nAssistant:"
+        ]
+      },
+      "format_system": {
+        "slots": [
+          "{{content}}\n\n"
+        ]
+      },
+      "format_prefix": {
+        "slots": [
+          ["bos_token"]
+        ]
+      }
+    },
+    {
+      "name": "baichuan2",
+      "format_user": {
+        "slots": [
+          "<reserved_106>{{content}}<reserved_107>"
+        ]
+      },
+      "efficient_eos": true
+    },
+    {
+      "name": "deepseek3",
+      "format_user": {
+        "slots": [
+          "<｜User｜>{{content}}<｜Assistant｜>"
+        ]
+      },
+      "format_prefix": {
+        "slots": [
+          ["bos_token"]
+        ]
+      }
+    },
+    {
+      "name": "deepseek3_r1",
+      "format_user": {
+        "slots": [
+          "A conversation between User and Assistant. The user asks a question, and the Assistant solves it. The assistant first thinks about the reasoning process in the mind and then provides the user with the answer. The reasoning process and answer are enclosed within <think> </think> and <answer> </answer> tags, respectively, i.e., <think> reasoning process here </think><answer> answer here </answer>. Put your final answer within \\boxed{}. <｜User｜>{{content}}<｜Assistant｜>"
+        ]
+      },
+      "format_prefix": {
+        "slots": [
+          ["bos_token"]
+        ]
+      }
+    }
+  ]
