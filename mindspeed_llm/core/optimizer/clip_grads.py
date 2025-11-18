@@ -21,8 +21,8 @@ def get_grad_norm_fp32_wrapper(fn):
 
 def get_grad_norm_fp32(fn, *args, **kwargs):
     try:
-        from taskd.python.adaptor.elastic_training import common
-        if not common.zit_scale_in_running_state():
+        from mindspeed_llm.core.high_availability import elastic_training_common
+        if not elastic_training_common.zit_scale_in_running_state():
             return get_grad_norm_fp32_default(fn, *args, **kwargs)
         return get_grad_norm_fp32_scale_in_running(fn, *args, **kwargs)
     except ImportError:
@@ -62,13 +62,14 @@ def get_grad_norm_fp32_scale_in_running(fn, *args, **kwargs):
     total_norm_tensor = torch.tensor([float(total_norm)], dtype=torch.float, device='cuda')
     replica_total_norm_tensor = total_norm_tensor.clone()
     from mindspeed_llm.core.high_availability import ttp_get_dp_cp_replica_group
-    from taskd.python.adaptor.elastic_training import common
+    from mindspeed_llm.core.high_availability import elastic_training_common
     group = ttp_get_dp_cp_replica_group()
-    if common.zit_fault_rank_in_dp_cp_replica_group():
-        group = common.zit_get_scale_in_dp_cp_replica_group()
+    if elastic_training_common.zit_fault_rank_in_dp_cp_replica_group():
+        group = elastic_training_common.zit_get_scale_in_dp_cp_replica_group()
     torch.distributed.all_reduce(total_norm_tensor, op=torch.distributed.ReduceOp.SUM, group=group)
-    if not common.zit_fault_rank_in_dp_cp_replica_group() and common.zit_is_fault_replica_rank():
+    if (not elastic_training_common.zit_fault_rank_in_dp_cp_replica_group()
+            and elastic_training_common.zit_is_fault_replica_rank()):
         total_norm_tensor = replica_total_norm_tensor
         torch.distributed.all_reduce(total_norm_tensor, op=torch.distributed.ReduceOp.SUM,
-                                     group=common.zit_get_scale_in_dp_cp_replica_group())
+                                     group=elastic_training_common.zit_get_scale_in_dp_cp_replica_group())
     return total_norm_tensor.item() ** (1.0 / norm_type)

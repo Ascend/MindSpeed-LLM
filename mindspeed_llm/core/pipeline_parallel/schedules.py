@@ -71,8 +71,8 @@ def forward_step_wrapper(fn):
         averaging across the num_microbatches dimension is not performed. Instead, averaging will be uniformly
         applied across the data_parallel_size*num_microbatches dimensions at the final stage.
         """
-        from taskd.python.adaptor.elastic_training import common
-        if not common.zit_scale_in_running_state():
+        from mindspeed_llm.core.high_availability import elastic_training_common
+        if not elastic_training_common.zit_scale_in_running_state():
             return fn(*args, **kwargs)
         new_args = args
         num_microbatches_index = 3
@@ -94,8 +94,8 @@ def elastic_training_get_forward_backward_func_wrapper(fn):
     """
     @wraps(fn)
     def wrapper():
-        from taskd.python.adaptor.elastic_training import common
-        if not common.zit_scale_in_running_state():
+        from mindspeed_llm.core.high_availability import elastic_training_common
+        if not elastic_training_common.zit_scale_in_running_state():
             return fn()
         forward_backward_func = fn()
 

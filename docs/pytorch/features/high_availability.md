@@ -1,4 +1,7 @@
 # 昇腾高可用性
+## 说明
+
+本文档仅提供特性介绍，若需使用完整的高可用特性请参考MindCluster官方指导文档：[[MindCluster指导文档](https://www.hiascend.com/software/mindcluster)]
 
 ## 使用场景
 
@@ -38,11 +41,10 @@ megatron原生的分布式优化器数据流及工作原理如下图：
 
 ### 环境准备
 
-MindIO的功能以whl包的形式提供，其中弹性训练功能依赖mindio_ttp和taskd两个whl包
+MindIO的功能以whl包的形式提供
 
 mindio_ttp下载地址：[MindIO TTP 下载软件包-昇腾社区](https://www.hiascend.com/document/detail/zh/mindx-dl/600/clusterscheduling/ref/mindioacp/mindioacp009.html)
 
-taskd下载地址：[TaskD 下载软件包-昇腾社区](https://www.hiascend.com/document/detail/zh/mindcluster/71RC1/clustersched/dlug/dlug_installation_009.html)
 
 ### 启动脚本中添加启动参数
 

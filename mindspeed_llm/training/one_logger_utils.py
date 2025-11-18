@@ -13,8 +13,8 @@ def track_app_tag_wrapper(fn):
     """
     @wraps(fn)
     def wrapper(batch_size, world_size, seq_length):
-        from taskd.python.adaptor.elastic_training import common
-        if common.zit_scale_in_running_state():
+        from mindspeed_llm.core.high_availability import elastic_training_common
+        if elastic_training_common.zit_scale_in_running_state():
             from megatron.training import get_args
             batch_size = get_args().global_batch_size
         return fn(batch_size, world_size, seq_length)

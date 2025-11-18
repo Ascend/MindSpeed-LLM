@@ -714,12 +714,12 @@ def is_last_rank_wrapper(fn):
         In the context of scale-in training scenarios, use the scale-in world group to determine
         if it is the last rank.
         """
-        from taskd.python.adaptor.elastic_training import common
-        if not common.zit_scale_in_running_state():
+        from mindspeed_llm.core.high_availability import elastic_training_common
+        if not elastic_training_common.zit_scale_in_running_state():
             return fn()
         else:
             return torch.distributed.get_rank() == torch.distributed.get_process_group_ranks(
-                group=common.zit_get_scale_in_world_group())[-1]
+                group=elastic_training_common.zit_get_scale_in_world_group())[-1]
     return wrapper
 
 
@@ -730,8 +730,8 @@ def print_rank_last_wrapper(fn):
         In the context of scale-in training scenarios, use the get_args().global_batch_size to
         replace the batch_size.
         """
-        from taskd.python.adaptor.elastic_training import common
-        if common.zit_scale_in_running_state():
+        from mindspeed_llm.core.high_availability import elastic_training_common
+        if elastic_training_common.zit_scale_in_running_state():
             args = get_args()
             from megatron.core.num_microbatches_calculator import get_num_microbatches
             batch_size = args.micro_batch_size * args.data_parallel_size * \

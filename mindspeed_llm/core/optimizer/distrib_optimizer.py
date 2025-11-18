@@ -223,15 +223,16 @@ def get_parameter_state_dp_zero_wrapper(fn):
     """
     @wraps(fn)
     def wrapper(self):
-        from taskd.python.adaptor.elastic_training import common
-        if not common.zit_scale_in_running_state():
+        from mindspeed_llm.core.high_availability import elastic_training_common
+        if not elastic_training_common.zit_scale_in_running_state():
             return fn(self)
         state = None
-        if not common.zit_fault_rank_in_dp_cp_replica_group():
+        if not elastic_training_common.zit_fault_rank_in_dp_cp_replica_group():
             state = fn(self)
-        if common.zit_fault_rank_in_dp_cp_replica_group() or common.zit_is_fault_replica_rank():
+        if (elastic_training_common.zit_fault_rank_in_dp_cp_replica_group()
+                or elastic_training_common.zit_is_fault_replica_rank()):
             dp_group_gloo = self.data_parallel_group_gloo
-            self.data_parallel_group_gloo = common.zit_get_scale_in_dp_cp_replica_group_gloo()
+            self.data_parallel_group_gloo = elastic_training_common.zit_get_scale_in_dp_cp_replica_group_gloo()
             state = fn(self)
             self.data_parallel_group_gloo = dp_group_gloo
         return state

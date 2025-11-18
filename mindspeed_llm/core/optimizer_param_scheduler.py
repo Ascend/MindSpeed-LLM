@@ -13,8 +13,8 @@ def optimizer_param_scheduler_step_wrapper(fn):
     """
     @wraps(fn)
     def wrapper(self, increment: int):
-        from taskd.python.adaptor.elastic_training import common
-        if common.zit_scale_in_running_state():
+        from mindspeed_llm.core.high_availability import elastic_training_common
+        if elastic_training_common.zit_scale_in_running_state():
             from megatron.training import get_args
             increment = get_args().global_batch_size
         return fn(self, increment)
