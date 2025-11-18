@@ -11,12 +11,14 @@ from megatron.core.optimizer.optimizer_config import OptimizerConfig
 from megatron.core.optimizer.grad_scaler import MegatronGradScaler
 from megatron.core.distributed.param_and_grad_buffer import _ParamAndGradBuffer
 from megatron.core.transformer.module import MegatronModule
+from megatron.core import mpu
 from logging import getLogger
 ttp_logger = getLogger(__name__)
 from mindio_ttp.framework_ttp import tft_start_updating_os, tft_end_updating_os
 from .tft_optimizer_data_repair import set_log_args
 from mindio_ttp.utils import tft_set_update_start_time, tft_set_update_end_time
 from .utils import FileUtils
+from .elastic_training_common import update_scale_in_flag, zit_scale_in_running_state
 
 
 class TTPReplicaOptimizer(DistributedOptimizer):
@@ -154,6 +156,7 @@ class TTPReplicaOptimizer(DistributedOptimizer):
         self.save_args['rank'] = rank
         self.save_args['rank_list'] = rank_list
         self.error_dump = True
+        update_scale_in_flag(False)
 
         dp_size = len(self.ori_dp_list)
         replica_size = dp_size // self.replica_num
@@ -339,6 +342,12 @@ class TTPReplicaOptimizer(DistributedOptimizer):
 
         return state_dict
 
+    def save_parameter_state_scale_in_running(self, filename: str, cur_rank, state_dict):
+        scale_in_dp_group = mpu.get_data_parallel_group()
+        if torch.distributed.get_rank(scale_in_dp_group) == 0:
+            torch.save(state_dict, filename)
+            ttp_logger.info(f"rank {cur_rank} save parameters successfully in scale-in training mode")
+
     def save_parameter_state(self, filename: str):
         cur_rank = torch.distributed.get_rank()
         state_dict = self.save_parameter_state_impl()
@@ -352,6 +361,8 @@ class TTPReplicaOptimizer(DistributedOptimizer):
             if cur_rank == save_rank:
                 torch.save(state_dict, filename)
                 ttp_logger.info(f"errdump rank: {cur_rank} successfully saved parameters")
+        elif zit_scale_in_running_state():
+            self.save_parameter_state_scale_in_running(filename, cur_rank, state_dict)
         else:
             if torch.distributed.get_rank(self.ori_dp_group) == 0:
                 torch.save(state_dict, filename)

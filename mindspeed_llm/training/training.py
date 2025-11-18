@@ -470,7 +470,7 @@ def pretrain(train_valid_test_dataset_provider,
                 from mindspeed_llm.core.high_availability import tft_register_processor, tft_train
                 tft_register_processor(train_valid_test_dataset_provider, model_provider, model_type)
                 if args.enable_elastic_training:
-                    from taskd.python.adaptor.elastic_training import register_callbacks
+                    from mindspeed_llm.core.high_availability import register_callbacks
                     register_callbacks()
                 iteration, num_floating_point_operations_so_far = tft_train(train_args, test_data_iterator_list)
             else:
@@ -836,8 +836,8 @@ def num_floating_point_operations_wrapper(fn):
     """
     @wraps(fn)
     def wrapper(args, batch_size):
-        from taskd.python.adaptor.elastic_training import common
-        if common.zit_scale_in_running_state():
+        from mindspeed_llm.core.high_availability import elastic_training_common
+        if elastic_training_common.zit_scale_in_running_state():
             batch_size = get_args().global_batch_size
         return fn(args, batch_size)
     return wrapper

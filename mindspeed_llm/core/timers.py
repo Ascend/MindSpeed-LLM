@@ -14,21 +14,21 @@ def patch_world_size_func_wrapper(fn):
     """
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        from taskd.python.adaptor.elastic_training import common
-        if not common.zit_scale_in_running_state():
+        from mindspeed_llm.core.high_availability import elastic_training_common
+        if not elastic_training_common.zit_scale_in_running_state():
             return fn(*args, **kwargs)
         get_world_size_func = torch.distributed.get_world_size
         get_rank_func = torch.distributed.get_rank
 
         def patch_get_world_size(group=None):
-            if group is not None or not common.zit_scale_in_running_state():
+            if group is not None or not elastic_training_common.zit_scale_in_running_state():
                 return get_world_size_func(group)
-            return get_world_size_func(group=common.zit_get_scale_in_world_group())
+            return get_world_size_func(group=elastic_training_common.zit_get_scale_in_world_group())
 
         def patch_get_rank(group=None):
-            if group is not None or not common.zit_scale_in_running_state():
+            if group is not None or not elastic_training_common.zit_scale_in_running_state():
                 return get_rank_func(group)
-            return get_rank_func(group=common.zit_get_scale_in_world_group())
+            return get_rank_func(group=elastic_training_common.zit_get_scale_in_world_group())
 
         torch.distributed.get_world_size = patch_get_world_size
         torch.distributed.get_rank = patch_get_rank
@@ -47,12 +47,12 @@ def log_wrapper(fn):
     """
     @wraps(fn)
     def wrapper(*args, **kwargs):
-        from taskd.python.adaptor.elastic_training import common
-        if not common.zit_scale_in_running_state():
+        from mindspeed_llm.core.high_availability import elastic_training_common
+        if not elastic_training_common.zit_scale_in_running_state():
             return fn(*args, **kwargs)
         rank_index = 2
         scale_in_word_ranks = torch.distributed.get_process_group_ranks(
-            group=common.zit_get_scale_in_world_group())
+            group=elastic_training_common.zit_get_scale_in_world_group())
         need_change_rank, change_str = is_need_change_rank(*args, **kwargs)
         if need_change_rank and change_str == 'args':
             args_list = list(args)

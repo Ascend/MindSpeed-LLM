@@ -10,3 +10,4 @@ from .tft_replica_group import (ttp_get_replica_dp_num, ttp_get_dp_cp_replica_gr
 from .tft_arf_group_repair import tft_is_arf_reboot_node
 from .tft_train_initialize import tft_train, tft_init_controller_processor, tft_register_processor
 from .tft_optimizer_data_repair import tft_set_losses_reduced
+from .elastic_training_register import register_callbacks

@@ -21,8 +21,8 @@ def start_grad_sync_wrapper(fn):
             if arguments.enable_elastic_training:
                 # let gradient_scaling_factor be divided by num_micro_batches more,
                 # because it wasn't divided during the loss calculation in the forward_step function.
-                from taskd.python.adaptor.elastic_training import common
-                if common.zit_scale_in_running_state():
+                from mindspeed_llm.core.high_availability import elastic_training_common
+                if elastic_training_common.zit_scale_in_running_state():
                     for bucket in self.buckets:
                         bucket.gradient_scaling_factor = 1.0 / (
                                     arguments.global_batch_size / arguments.micro_batch_size)
@@ -40,8 +40,8 @@ def recover_gradient_scaling_factors(self, gradient_scaling_factors):
     """
     Restore the modified parameter 'gradient_scaling_factor'.
     """
-    from taskd.python.adaptor.elastic_training import common
-    if not common.zit_scale_in_running_state():
+    from mindspeed_llm.core.high_availability import elastic_training_common
+    if not elastic_training_common.zit_scale_in_running_state():
         return
     index = 0
     for bucket in self.buckets:
@@ -77,11 +77,12 @@ def deal_param_gather_handle_scale_in_running(self, async_op):
     """
     In scale-in training state, the replica ranks of fault ranks need to do an addition gather operation.
     """
-    from taskd.python.adaptor.elastic_training import common
-    if not common.zit_scale_in_running_state():
+    from mindspeed_llm.core.high_availability import elastic_training_common
+    if not elastic_training_common.zit_scale_in_running_state():
         return
-    if not common.zit_fault_rank_in_dp_cp_replica_group() and common.zit_is_fault_replica_rank():
-        instance_group = common.SCALE_IN_DP_CP_REPLICA_GROUP
+    if (not elastic_training_common.zit_fault_rank_in_dp_cp_replica_group()
+            and elastic_training_common.zit_is_fault_replica_rank()):
+        instance_group = elastic_training_common.SCALE_IN_DP_CP_REPLICA_GROUP
         instance_rank = torch.distributed.get_rank(
             group=instance_group
         )

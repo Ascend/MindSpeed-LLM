@@ -115,17 +115,17 @@ def torch_wrapper(fn, group_index, *args, **kwargs):
     change it to the scale-in world group.
     """
     from mindspeed_llm.core.high_availability.tft_arf_group_repair import tft_is_arf_reboot_node
-    from taskd.python.adaptor.elastic_training import common
+    from mindspeed_llm.core.high_availability import elastic_training_common
     if tft_is_arf_reboot_node():
         return None
-    if common.zit_scale_in_running_state():
+    if elastic_training_common.zit_scale_in_running_state():
         need_change_group, change_str = is_need_change_group(group_index, *args, **kwargs)
         if need_change_group and change_str == 'args':
             args_list = list(args)
-            args_list[group_index] = common.zit_get_scale_in_world_group()
+            args_list[group_index] = elastic_training_common.zit_get_scale_in_world_group()
             new_args = tuple(args_list)
             return fn(*new_args, **kwargs)
         if need_change_group and change_str == 'kwargs':
-            kwargs['group'] = common.zit_get_scale_in_world_group()
+            kwargs['group'] = elastic_training_common.zit_get_scale_in_world_group()
             return fn(*args, **kwargs)
     return fn(*args, **kwargs)

@@ -184,20 +184,7 @@ def get_megatron_optimizer_based_on_param_groups(
         ]
 
         from mindspeed_llm.core.high_availability import TTPReplicaOptimizer, TTPFP16ReplicaOptimizer
-        args = get_args()
-        if config.use_distributed_optimizer and args.enable_elastic_training:
-            from taskd.python.adaptor.elastic_training.optimizer import TTPElasticTrainingReplicaOptimizer
-            optimizer = TTPElasticTrainingReplicaOptimizer(
-                *optimizer_args,
-                model_chunks=model_chunks,
-                per_model_buffers=per_model_buffers,
-                data_parallel_group=data_parallel_group,
-                data_parallel_group_gloo=data_parallel_group_gloo,
-                data_parallel_group_idx=data_parallel_group_idx,
-                distributed_optimizer_instance_id=distributed_optimizer_instance_id,
-                ori_dp_group=ori_dp_group
-            )
-        elif config.use_distributed_optimizer:
+        if config.use_distributed_optimizer:
             optimizer = TTPReplicaOptimizer(
                 *optimizer_args,
                 model_chunks=model_chunks,

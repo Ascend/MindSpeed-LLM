@@ -41,13 +41,6 @@ class HighAvailabilityFeature(MindSpeedFeature):
                 'switch of the high availability feature is unsupported, please disable swap attention first.')
         if args.swap_optimizer and args.enable_high_availability:
             raise AssertionError('switch of the high availability feature is unsupported')
-        if args.enable_elastic_training:
-            try:
-                import taskd.python.adaptor.elastic_training
-            except ModuleNotFoundError as e:
-                raise AssertionError(
-                    f"enable elastic training requires the taskd.python.adaptor.elastic_training package"
-                    f" but it is not installed.") from e
         if args.enable_elastic_training and not args.enable_high_availability:
             raise AssertionError(
                 'switch of the enable elastic training is unsupported, please enable high availability feature first.')
