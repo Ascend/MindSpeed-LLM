@@ -123,7 +123,7 @@ def compare_with_base_hash(file_path, base_hash, file_type='pt'):
             current_hash = calculate_hash_for_model(data)
         except Exception as e:
             raise ValueError(f"Error: Failed to process file {file_path} - {str(e)}") from e
-    elif file_type == 'safetensors':
+    elif file_type == 'safetensors' or 'bin':
         current_hash = get_md5sum(file_path)
     else:
         raise ValueError(f"Unsupported file type: {file_type}")
