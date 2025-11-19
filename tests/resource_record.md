@@ -44,7 +44,7 @@
         <td>/data/ci/datasets/processed/dataset-high-availability/llama_text_document</td>
         <td>/</td>
         <td>/</td>
-    </tr>s
+    </tr>
     <tr>
         <td>mamba2_8b_tp4_pp1_cp2_recompute_4k_ptd</td>
         <td>/data/ci/models/mamba2/hf/mamba2-8b-hf/mamba2_8b.model</td>
