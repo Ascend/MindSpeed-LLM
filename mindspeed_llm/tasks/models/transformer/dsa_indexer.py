@@ -1,3 +1,4 @@
+import contextlib
 import math
 from dataclasses import dataclass
 from typing import List, Tuple, Union, Optional
@@ -7,6 +8,12 @@ import torch.nn.functional as F
 from einops import rearrange
 from functools import wraps
 
+from megatron.core import parallel_state
+from megatron.core.enums import ModelType
+from megatron.core.pipeline_parallel.schedules import set_current_microbatch
+from megatron.core.transformer.moe.moe_utils import MoEAuxLossAutoScaler
+from megatron.core.transformer.multi_token_prediction import MTPLossAutoScaler
+from megatron.core.utils import get_attr_wrapped_model, get_model_type
 from megatron.training import get_args
 from megatron.legacy.model import RMSNorm
 from megatron.core.transformer.identity_op import IdentityOp
@@ -287,3 +294,273 @@ class DSAIndexer(MegatronModule):
             args.sparse_mode = 0
 
         return topk_score, topk_indices, attention_mask
+
+
+class DSAIndexerLossAutoScaler(torch.autograd.Function):
+    """An AutoScaler that triggers the backward pass and scales the grad for DSA indexer loss."""
+
+    main_loss_backward_scale: torch.Tensor = None
+
+    @staticmethod
+    def forward(ctx, output: torch.Tensor, aux_loss: torch.Tensor):
+        """Preserve the indexer_loss by storing it in the context to avoid garbage collection.
+
+        Args:
+            output (torch.Tensor): The output tensor.
+            aux_loss (torch.Tensor): The indexer loss tensor.
+
+        Returns:
+            torch.Tensor: The output tensor.
+        """
+        ctx.save_for_backward(aux_loss)
+        return output
+
+    @staticmethod
+    def backward(ctx, grad_output: torch.Tensor):
+        """Compute and scale the gradient for indexer loss.
+
+        Args:
+            grad_output (torch.Tensor): The gradient of the output.
+
+        Returns:
+            Tuple[torch.Tensor, torch.Tensor]: The gradient of the output, scaled indexer loss
+                                               gradient.
+        """
+        (loss,) = ctx.saved_tensors
+        if DSAIndexerLossAutoScaler.main_loss_backward_scale is None:
+            DSAIndexerLossAutoScaler.main_loss_backward_scale = torch.tensor(
+                1.0, device=loss.device
+            )
+        dsa_indexer_loss_backward_scale = DSAIndexerLossAutoScaler.main_loss_backward_scale
+        scaled_dsa_indexer_loss_grad = torch.ones_like(loss) * dsa_indexer_loss_backward_scale
+        return grad_output, scaled_dsa_indexer_loss_grad
+
+    @staticmethod
+    def set_loss_scale(scale: torch.Tensor):
+        """set the scale of the indexer loss.
+
+        Args:
+            scale (torch.Tensor): The scale value to set. Please ensure that the scale passed in
+                                  matches the scale of the main_loss.
+        """
+        if DSAIndexerLossAutoScaler.main_loss_backward_scale is None:
+            DSAIndexerLossAutoScaler.main_loss_backward_scale = scale
+        else:
+            DSAIndexerLossAutoScaler.main_loss_backward_scale.copy_(scale)
+
+
+def forward_step_dsa_wrapper(fn):
+    """Forward step for passed-in model. Patch for DSA indexer loss.
+    """
+
+    @wraps(fn)
+    def wrapper(
+            forward_step_func,
+            data_iterator,
+            model,
+            num_microbatches,
+            input_tensor,
+            forward_data_store,
+            config,
+            collect_non_loss_data=False,
+            checkpoint_activations_microbatch=None,
+            is_first_microbatch=False,
+            current_microbatch=None,
+            encoder_decoder_xattn=False,
+    ):
+        output_tensor, num_tokens = fn(
+            forward_step_func,
+            data_iterator,
+            model,
+            num_microbatches,
+            input_tensor,
+            forward_data_store,
+            config,
+            collect_non_loss_data=collect_non_loss_data,
+            checkpoint_activations_microbatch=checkpoint_activations_microbatch,
+            is_first_microbatch=is_first_microbatch,
+            current_microbatch=current_microbatch,
+            encoder_decoder_xattn=encoder_decoder_xattn,
+        )
+        if not isinstance(output_tensor, list):
+            output_tensor_device = output_tensor.device
+        else:
+            output_tensor_device = output_tensor[0].device
+        # Set the loss scale for DSA indexer loss.
+        global_args = get_args()
+        if global_args.enable_dsa_indexer:
+            # Calculate the loss scale based on the grad_scale_func if available, else default to 1.
+            loss_scale = (
+                config.grad_scale_func(torch.ones(1, device=output_tensor_device))
+                if config.grad_scale_func is not None
+                else torch.ones(1, device=output_tensor_device)
+            )
+            # Set the loss scale
+            if config.calculate_per_token_loss:
+                DSAIndexerLossAutoScaler.set_loss_scale(loss_scale)
+            else:
+                DSAIndexerLossAutoScaler.set_loss_scale(loss_scale / num_microbatches)
+        return output_tensor, num_tokens
+
+    return wrapper
+
+
+class DSAIndexerLossLoggingHelper:
+    """Helper class for logging DSAIndexer losses."""
+
+    tracker = {}
+
+    @staticmethod
+    def save_loss_to_tracker(
+        loss: torch.Tensor,
+        layer_number: int,
+        num_layers: int,
+        reduce_group: torch.distributed.ProcessGroup = None,
+        avg_group: torch.distributed.ProcessGroup = None,
+    ):
+        """Save the DSA indexer loss for logging.
+        Args:
+            loss (torch.Tensor): The loss tensor.
+            layer_number (int): Layer index of the loss.
+            num_layers (int): The number of total layers.
+            reduce_group (torch.distributed.ProcessGroup): The group for reducing the loss.
+            mean_group (torch.distributed.ProcessGroup): The group for averaging the loss.
+        """
+        # Skip DSA indexer loss logging if layer_number is None.
+        if layer_number is None:
+            return
+
+        tracker = DSAIndexerLossLoggingHelper.tracker
+        if "values" not in tracker:
+            tracker["values"] = torch.zeros(num_layers, device=loss.device)
+        tracker["values"][layer_number - 1] += loss.detach()
+        tracker["reduce_group"] = reduce_group
+        tracker["avg_group"] = avg_group
+
+    @staticmethod
+    def clean_loss_in_tracker():
+        """Clear the DSA indexer losses."""
+        tracker = DSAIndexerLossLoggingHelper.tracker
+        tracker["values"].zero_()
+        tracker["reduce_group"] = None
+        tracker["avg_group"] = None
+
+    @staticmethod
+    def reduce_loss_in_tracker():
+        """Collect and reduce the DSA indexer losses across ranks."""
+        tracker = DSAIndexerLossLoggingHelper.tracker
+        if "values" not in tracker:
+            return
+        values = tracker["values"]
+        # Collect DSA indexer losses across PP.
+        torch.distributed.all_reduce(
+            values, group=parallel_state.get_pipeline_model_parallel_group()
+        )
+        # Reduce DSA indexer losses across ranks.
+        if tracker.get('reduce_group') is not None:
+            torch.distributed.all_reduce(values, group=tracker.get('reduce_group'))
+        if tracker.get('avg_group') is not None:
+            torch.distributed.all_reduce(
+                values, group=tracker['avg_group'], op=torch.distributed.ReduceOp.AVG
+            )
+
+    @staticmethod
+    def track_das_indexer_metrics(loss_scale, iteration, writer, wandb_writer=None, total_loss_dict=None):
+        """Track the DSA Indexer metrics for logging."""
+        DSAIndexerLossLoggingHelper.reduce_loss_in_tracker()
+        tracker = DSAIndexerLossLoggingHelper.tracker
+        if "values" not in tracker:
+            return
+        das_indexer_losses = tracker["values"] * loss_scale
+        das_indexer_num_layers = das_indexer_losses.shape[0]
+        loss = das_indexer_losses.sum() / das_indexer_num_layers
+        name = "dsa_indexer_loss"
+        if total_loss_dict is not None:
+            total_loss_dict[name] = loss
+        if writer is not None:
+            writer.add_scalar(name, loss, iteration)
+        if wandb_writer is not None:
+            wandb_writer.log({f"{name}": loss}, iteration)
+
+        DSAIndexerLossLoggingHelper.clean_loss_in_tracker()
+
+def compute_dsa_indexer_loss(
+        main_attn_dist,
+        index_score,
+        topk_indices,
+        loss_scale,
+):
+    """Compute dsa indexer loss at sparse training stage
+    Reference: https://github.com/deepseek-ai/DeepSeek-V3.2-Exp/blob/main/DeepSeek_V3_2.pdf
+    Args:
+        main_attn_dist: Q dist
+        index_score: P dist
+        topk_indices: Selected top-K indices for sparse phase
+        loss_scale: Dsa indexer loss scale
+    """
+    index_score = F.softmax(index_score, dim=-1, dtype=torch.float32)
+    # considering only the selected token
+    selected_main_attn_dist = torch.gather(main_attn_dist, dim=-1, index=topk_indices)
+    selected_main_attn_dist = F.normalize(selected_main_attn_dist, p=1, dim=-1)
+    loss = F.kl_div((index_score + 1e-10).log(),
+                    selected_main_attn_dist + 1e-10,
+                    reduction='none',
+                    ).sum(dim=-1).mean()
+    loss *= loss_scale
+
+    return loss
+
+
+def get_attn_scores(
+        query,
+        key,
+        attention_mask,
+        num_attn_head_per_group,
+        attn_scale,
+):
+    """aggregate the main attention scores"""
+    if num_attn_head_per_group > 1:
+        key = key.repeat_interleave(
+            num_attn_head_per_group, dim=2
+        )
+
+    # [b, np, sq, sk]
+    output_size = (query.size(1), query.size(2), query.size(0), key.size(0))
+
+    # [sq, b, np, hn] -> [sq, b * np, hn]
+    # This will be a simple view when doing normal attention, but in group query attention
+    # the key and value tensors are repeated to match the queries so you can't use
+    # simple strides to extract the queries.
+    query = query.reshape(output_size[2], output_size[0] * output_size[1], -1)
+    # [sk, b, np, hn] -> [sk, b * np, hn]
+    key = key.view(output_size[3], output_size[0] * output_size[1], -1)
+
+    # preallocting input tensor: [b * np, sq, sk]
+    matmul_input_buffer = parallel_state.get_global_memory_buffer().get_tensor(
+        (output_size[0] * output_size[1], output_size[2], output_size[3]), query.dtype, "mpu"
+    )
+
+    # Raw attention scores. [b * np, sq, sk]
+    matmul_result = torch.baddbmm(
+        matmul_input_buffer,
+        query.transpose(0, 1),  # [b * np, sq, hn]
+        key.transpose(0, 1).transpose(1, 2),  # [b * np, hn, sk]
+        beta=0.0,
+        alpha=attn_scale,
+    )
+
+    # change view to [b, np, sq, sk]
+    attention_scores = matmul_result.view(*output_size)
+
+    if attention_mask is not None:
+        attention_scores.masked_fill_(attention_mask, float('-inf'))
+    # Attention probabilities [b, np, sq, sk]
+    attention_scores = F.softmax(
+        attention_scores, dim=-1, dtype=torch.float32
+    )
+    attention_scores = attention_scores.sum(dim=1)
+    if parallel_state.get_tensor_model_parallel_world_size() > 1:
+        # attention scores are scattered to TP ranks in head dimension.
+        torch.distributed.all_reduce(attention_scores.contiguous(),
+                                     group=parallel_state.get_tensor_model_parallel_group())
+    return attention_scores

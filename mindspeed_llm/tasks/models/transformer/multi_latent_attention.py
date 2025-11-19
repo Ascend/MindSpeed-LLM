@@ -5,15 +5,17 @@ from typing import Union
 
 import torch
 import torch.nn.functional as F
+
 from mindspeed.core.context_parallel.ulysses_context_parallel.ulysses_context_parallel import UlyssesContextAttention
 from mindspeed.core.parallel_state import get_context_parallel_group_for_hybrid_ulysses
 from mindspeed.core.tensor_parallel.random import CheckpointWithoutOutput
-from megatron.core.transformer.identity_op import IdentityOp
+from mindspeed.core.transformer.transformer_block import _get_layer_offset
 from mindspeed.utils import  set_position_ids, get_position_ids
 from mindspeed.core.context_parallel.get_batch_utils import get_actual_seq_len, set_actual_seq_len
 from mindspeed.core.transformer.moe.moe_feature.fb_overlap.modules.attention import launch_async_all2all_hook, launch_async_all2all
 from mindspeed.core.transformer.moe.moe_feature.fb_overlap.modules.utils import TensorSwapManager
 
+from megatron.core.transformer.identity_op import IdentityOp
 from megatron.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb
 from megatron.core.tensor_parallel import ColumnParallelLinear, RowParallelLinear
 from megatron.core.tensor_parallel.mappings import gather_from_sequence_parallel_region
@@ -25,7 +27,8 @@ from megatron.training import get_args
 
 from mindspeed_llm.core.tensor_parallel.layers import LinearNoTP
 from mindspeed_llm.core.transformer.custom_layers.transformer_engine import PTNorm
-from mindspeed_llm.tasks.models.transformer.dsa_indexer import get_dsa_indexer_spec
+from mindspeed_llm.tasks.models.transformer.dsa_indexer import get_dsa_indexer_spec, DSAIndexerLossAutoScaler, \
+    compute_dsa_indexer_loss, get_attn_scores, DSAIndexerLossLoggingHelper
 from mindspeed_llm.tasks.models.transformer.mla_dot_product_attention import MlaDotProductAttention
 from mindspeed_llm.tasks.models.transformer.mla_up_proj_overlap_tp_comm import mla_up_projection_overlap_tp_comm
 
@@ -289,7 +292,7 @@ class CustomMLASelfAttention(SelfAttention):
         def mla_attention(hidden_states):
             args = get_args()
             tp_size = parallel_state.get_tensor_model_parallel_world_size()
-        
+
             # For self attention we just duplicate the rotary_pos_emb if it isn't already
             nonlocal rotary_pos_emb
             if rotary_pos_emb is not None and not isinstance(rotary_pos_emb, tuple):
@@ -446,6 +449,28 @@ class CustomMLASelfAttention(SelfAttention):
                     attention_bias=None,
                     packed_seq_params=packed_seq_params,
                 )
+            if args.enable_dsa_indexer and self.training and torch.is_grad_enabled():
+                main_attn_dist = get_attn_scores(query,
+                                                 key,
+                                                 attention_mask,
+                                                 self.num_attention_heads_per_partition //
+                                                 self.num_query_groups_per_partition,
+                                                 self.core_attention.scale,
+                                                 )
+                loss = compute_dsa_indexer_loss(
+                    main_attn_dist.detach(),
+                    topk_score,
+                    topk_indices,
+                    args.indexer_loss_coeff,
+                )
+
+                DSAIndexerLossLoggingHelper.save_loss_to_tracker(
+                    loss,
+                    _get_layer_offset(args) + self.layer_number,
+                    self.config.num_layers,
+                    avg_group=parallel_state.get_tensor_and_context_parallel_group(),
+                )
+                core_attn_out = DSAIndexerLossAutoScaler.apply(core_attn_out, loss)
 
             if self.recompute_mla_up_proj_ckpt and core_attn_out.requires_grad:
                 self.recompute_mla_up_proj_ckpt.discard_output()
@@ -519,12 +544,12 @@ def recompute_mla(mla_checkpoint_manager):
             change_seq_len = True
             old_actual_seq_len = get_actual_seq_len()
             set_actual_seq_len(actual_seq_len)
-        
+
         mla_checkpoint_manager.recompute(grad)
-        
+
         if change_pos_id:
             set_position_ids(old_position_id)
         if change_seq_len:
             set_actual_seq_len(old_actual_seq_len)
-        
+
     return hook_fn

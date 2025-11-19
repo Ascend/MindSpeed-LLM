@@ -9,15 +9,17 @@ class DSAIndexerFeature(MindSpeedFeature):
         group = parser.add_argument_group(title=self.feature_name)
 
         group.add_argument('--enable-dsa-indexer', action='store_true', default=False,
-                            help='add dsa_indexer module in MLA.')
+                           help='add dsa_indexer module in MLA.')
         group.add_argument('--index-n-heads', type=int, default=64,
-                            help='dimension for index head number.')
+                           help='dimension for index head number.')
         group.add_argument('--index-head-dim', type=int, default=128,
                            help='dimension for index head dim.')
         group.add_argument('--index-topk', type=int, default=2048,
                            help='top-k for index head')
         group.add_argument('--scale-fmt', type=str, default=None,
                            help='format for quantization scale.')
+        group.add_argument('--indexer-loss-coeff', type=float, default=1.0,
+                           help='Indexer loss coeff.')
 
     def validate_args(self, args):
         if args.enable_dsa_indexer:
@@ -30,4 +32,7 @@ class DSAIndexerFeature(MindSpeedFeature):
         if args.enable_dsa_indexer:
             from mindspeed_llm.tasks.models.transformer.dsa_indexer import fp16module_init_wrapper
             patch_manager.register_patch('megatron.core.transformer.module.Float16Module.__init__',
-                                          fp16module_init_wrapper)
+                                         fp16module_init_wrapper)
+            from mindspeed_llm.tasks.models.transformer.dsa_indexer import forward_step_dsa_wrapper
+            patch_manager.register_patch('megatron.core.pipeline_parallel.schedules.forward_step',
+                                         forward_step_dsa_wrapper)

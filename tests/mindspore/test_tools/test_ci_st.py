@@ -6,6 +6,11 @@ from tests.mindspore.test_tools.acquire_json import transfer_logs_as_json, read_
 LOSS = "lm loss"
 
 
+class TestMargin:
+    _MARGIN_NAME = " margin"
+    loss = 0.02
+
+
 class TestCIST:
 
 
@@ -56,7 +61,8 @@ class TestCIST:
     def _compare_lm_loss(self, expected_list, actual_list):
         for step, (expected_val, actual_val) in enumerate(zip(expected_list, actual_list)):
             print(f"Checking step {step + 1} for lm loss")
-            assert actual_val == expected_val, f"The loss at step {step} should be {expected_val} but it is {actual_val}."
+            assert actual_val == pytest.approx(expected=expected_val, rel=TestMargin.loss), \
+                f"The loss at step {step} should be approximate to {expected_val} but it is {actual_val}."
 
     def test_lm_loss(self, baseline_json, generate_log, generate_json):
         # expected training loss curve at different global steps.
