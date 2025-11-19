@@ -137,3 +137,30 @@ class TestInference(DistributedTest):
             print("=============== llama3 mcore chat =============")
             
         main()
+
+    @pytest.mark.parametrize("params", test_config["test_lingmini2_mcore_greedy_search"])
+    def test_lingmini2_mcore_greedy_search(self, build_args, params):
+        os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
+        os.environ["CLOSE_MATMUL_K_SHIFT"] = "1"
+        if dist.get_rank() == 0:
+            handler, log_capture = setup_logger(PATTERN)
+
+        main()
+        if dist.get_rank() == 0:
+            print("=============== lingmini2 mcore greedy search only for coverage =============")
+            print(log_capture)
+            context = acquire_context(log_capture)
+
+
+    @pytest.mark.parametrize("params", test_config["test_minicpm3_mcore_greedy_search"])
+    def test_minicpm3_mcore_greedy_search(self, build_args, params):
+        os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
+        os.environ["CLOSE_MATMUL_K_SHIFT"] = "1"
+        if dist.get_rank() == 0:
+            handler, log_capture = setup_logger(PATTERN)
+
+        main()
+        if dist.get_rank() == 0:
+            print("=============== minicpm3 mcore greedy search only for coverage =============")
+            print(log_capture)
+            context = acquire_context(log_capture)

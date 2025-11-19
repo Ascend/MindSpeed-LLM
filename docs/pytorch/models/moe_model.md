@@ -144,6 +144,17 @@
       <td>【Test】</td>
     </tr>
     <tr>
+      <td rowspan="1"><a href="https://huggingface.co/inclusionAI/Ling-mini-base-2.0">Ling-mini-2.0</a></td>
+      <td> <a href="https://huggingface.co/inclusionAI/Ling-mini-base-2.0/tree/main">16B</a> </td>
+      <td><a href="../../../examples/mcore/ling_v2">ling_v2</a></td>
+      <td> 4K </td>
+      <th>Mcore</th>
+      <td> 1x16 </td>
+      <td rowspan="1"></td>
+      <td>【NAIE】</td>
+      <td>【Test】</td>
+    </tr>
+    <tr>
       <td rowspan="1"><a href="https://huggingface.co/microsoft">Phi3.5</a></td>
       <td> <a href="https://huggingface.co/microsoft/Phi-3.5-MoE-instruct">MoE-instruct</a> </td>
       <td><a href="../../../examples/mcore/phi35">phi35</a></td>
