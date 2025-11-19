@@ -103,9 +103,10 @@ class DPOTrainer(BaseTrainer):
         tokens = data_b.get('input_ids').long()
         # ignored label -100
         loss_mask = torch.where(labels == IGNORE_INDEX, 0, 1)
-        position_ids = data_b.get('position_ids').long()
 
+        position_ids = None
         if args.reset_attention_mask:
+            position_ids = data_b.get('position_ids').long()
             batch = {
                 'tokens': tokens,
                 'labels': labels,
