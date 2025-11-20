@@ -74,9 +74,9 @@ class ResetAttentionMaskFeature(MindSpeedFeature):
                     'megatron.core.models.common.embeddings.rotary_pos_embedding.get_pos_emb_on_this_cp_rank',
                     get_pos_emb_on_this_cp_rank)
 
-            from mindspeed_llm.training.utils import get_batch_on_this_tp_rank_reset_attn_mask
+            from mindspeed_llm.training.utils import get_batch_on_this_tp_rank
             patch_manager.register_patch('megatron.training.utils.get_batch_on_this_tp_rank',
-                                         get_batch_on_this_tp_rank_reset_attn_mask)
+                                         get_batch_on_this_tp_rank)
 
             from mindspeed_llm.core import apply_rotary_pos_emb_bshd
             patch_manager.register_patch('mindspeed.core.fusions.fused_rope.apply_rotary_pos_emb_bshd',
