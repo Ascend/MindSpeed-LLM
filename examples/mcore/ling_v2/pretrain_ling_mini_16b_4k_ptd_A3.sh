@@ -27,7 +27,7 @@ CP_TYPE='ulysses_cp_algo'
 NUM_LAYERS=20
 SEQ_LEN=4096
 MBS=1
-GBS=128
+GBS=32
 
 DISTRIBUTED_ARGS="
     --nproc_per_node $NPUS_PER_NODE \
