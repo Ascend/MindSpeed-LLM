@@ -167,8 +167,6 @@ def training_log_repair(iteration: int, train_args: list):
 def gather_model_params_from_optimizer(optimizer, step):
     args = get_args()
 
-    if hasattr(optimizer, 'set_update_successful'):
-        optimizer.set_update_successful(True)
     if getattr(args, "reuse_fp32_param", False):
         optimizer.fp32_tensor_to_fp16_tensor()
     else:

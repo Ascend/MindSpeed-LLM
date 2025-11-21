@@ -45,17 +45,11 @@ class TTPFP16ReplicaOptimizer(Float16OptimizerWithFloat16Params):
         self.fp32_tensor_to_fp16_tensor()
         return self.state_dict_func(is_loading)
 
-    def set_current_step(self, step):
-        self.current_step = step
-
     def set_dump_args(self, rank, step, rank_list):
         self.save_args['step'] = step
         self.save_args['rank'] = rank
         self.save_args['rank_list'] = rank_list
         self.error_dump = True
-
-    def set_update_successful(self, flag):
-        pass
 
     def need_write_file(self):
         cur_rank = torch.distributed.get_rank()
@@ -150,12 +144,12 @@ class TTPFP16ReplicaOptimizer(Float16OptimizerWithFloat16Params):
             timers('optimizer-inner-step', log_level=1
                    ).start(barrier=self.config.barrier_with_L1_time)
 
-        torch.distributed.barrier()
-        self.begin_to_update(self.args.iteration)
         if not self.is_stub_optimizer:
+            torch.distributed.barrier()
+            self.begin_to_update(self.args.iteration)
             self.optimizer.step()
-        torch.cuda.synchronize()
-        self.end_to_update()
+            torch.cuda.synchronize()
+            self.end_to_update()
 
         if timers is not None:
             timers('optimizer-inner-step').stop()
@@ -216,7 +210,7 @@ class TTPFP16ReplicaOptimizer(Float16OptimizerWithFloat16Params):
         logger.info(f"[repair] rank:{get_args().rank} send optim param consumed: "
                     f"{time.time() - start_time:.3f}s")
 
-    def recv_and_load_optim_param_state(self, src, group, step, optim_idx=None):
+    def recv_and_load_optim_param_state(self, src, group, optim_idx=None):
         start_time = time.time()
         self.fp16_tensor_to_fp32_tensor()
 
@@ -277,9 +271,6 @@ class TTPFP16ReplicaOptimizer(Float16OptimizerWithFloat16Params):
                     'checkpoint but it is None in the class. '
                     'Skipping loading grad scaler ...'
                 )
-
-    def remove_hook_handle(self):
-        pass
 
     def fp16_tensor_to_fp32_tensor(self, step=False):
         if hasattr(self.config, 'reuse_fp32_param') and self.config.reuse_fp32_param:
