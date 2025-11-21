@@ -8,7 +8,7 @@ export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
 NPUS_PER_NODE=16
 MASTER_ADDR=localhost
 MASTER_PORT=6000
-NNODES=1
+NNODES=2
 NODE_RANK=0
 WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
@@ -18,11 +18,11 @@ CKPT_SAVE_DIR="your model save ckpt path"
 DATA_PATH="your data path"
 TOKENIZER_PATH="your tokenizer path"
 
-PP=4
+PP=8
 TP=2
-CP=2
+CP=1
 
-SEQ_LENGTH=4096
+SEQ_LENGTH=16384
 TRAIN_ITERS=2000
 
 DISTRIBUTED_ARGS="
@@ -57,7 +57,6 @@ OPTIMIZE_ARGS="
 "
 
 MEMORY_ARGS="
-    --swap-attention \
     --recompute-granularity full \
     --recompute-method block \
     --recompute-num-layers 4 \
@@ -65,18 +64,19 @@ MEMORY_ARGS="
 
 TRAIN_ARGS="
     --micro-batch-size 1 \
-    --global-batch-size 32 \
+    --global-batch-size 64 \
     --lr 5e-8 \
-    --lr-decay-style cosine \
+    --lr-decay-style constant \
     --min-lr 0 \
     --weight-decay 0.0 \
-    --lr-warmup-fraction 0.01 \
+    --lr-warmup-fraction 0.0 \
     --attention-dropout 0.0 \
-    --init-method-std 0.01 \
+    --init-method-std 0.02 \
     --hidden-dropout 0.0 \
     --clip-grad 1.0 \
     --adam-beta1 0.9 \
-    --adam-beta2 0.95 \
+    --adam-beta2 0.999 \
+    --norm-epsilon 1e-06 \
     --initial-loss-scale 4096 \
     --seed 42 \
     --bf16 \
@@ -90,7 +90,7 @@ MODEL_PARALLEL_ARGS="
     --pipeline-model-parallel-size ${PP} \
     --context-parallel-size ${CP} \
     --context-parallel-algo megatron_cp_algo \
-    --cp-attention-mask-type general \
+    --attention-mask-type general \
     --use-cp-send-recv-overlap \
     --no-pad-to-seq-lengths \
     --pad-to-multiple-of $((TP*CP)) \
@@ -126,6 +126,8 @@ GPT_ARGS="
 DATA_ARGS="
     --data-path $DATA_PATH \
     --split 100,0,0 \
+    --no-shuffle \
+    --npu-deterministic \
 "
 
 OUTPUT_ARGS="
@@ -159,5 +161,6 @@ torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     $MODEL_PARALLEL_ARGS \
     $MEMORY_ARGS \
     --load ${CKPT_LOAD_DIR} \
+    --save ${CKPT_SAVE_DIR} \
     --distributed-backend nccl \
-    | tee logs/dpo_qwen3_30b_a3b_4k_ptd.log
+    | tee logs/dpo_qwen3_30b_a3b_16k_ptd.log
