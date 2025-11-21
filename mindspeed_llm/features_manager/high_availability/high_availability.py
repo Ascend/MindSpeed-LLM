@@ -82,7 +82,7 @@ class HighAvailabilityFeature(MindSpeedFeature):
         ReuseFP32Param.register_patches = skip_reuse_register_patches(ReuseFP32Param.register_patches, args)
 
     def register_patches(self, patch_manager, args):
-        from mindspeed_llm.tasks.high_availability.initialize_patch import setup_model_and_optimizer_wrapper, initialize_distributed_wrapper
+        from mindspeed_llm.tasks.high_availability.initialize_patch import initialize_distributed_wrapper
         from mindspeed_llm.core import (start_grad_sync_wrapper, distributed_data_parallel_init_wrapper,
                                         start_param_sync_wrapper, param_and_grad_bucket_group_init_wrapper,
                                         get_megatron_optimizer_wrapper, get_grad_norm_fp32_wrapper,
@@ -108,8 +108,6 @@ class HighAvailabilityFeature(MindSpeedFeature):
                                           get_grad_norm_fp32_wrapper)
             patch_manager.register_patch('megatron.core.optimizer.distrib_optimizer.DistributedOptimizer.__init__',
                                           distributed_optimizer_init_wrapper)
-            patch_manager.register_patch('megatron.training.training.setup_model_and_optimizer',
-                                          setup_model_and_optimizer_wrapper)
             patch_manager.register_patch('megatron.core.pipeline_parallel.schedules.get_forward_backward_func',
                                           high_availability_get_forward_backward_func_wrapper)
             if args.reuse_fp32_param:

@@ -20,14 +20,6 @@ class TTPReplicaChainedOptimizer(ChainedOptimizer):
 
         self.optim_nums = len(self.chained_optimizers)
 
-    def get_replica_optimizer_state(self, step, optim_idx):
-        if optim_idx >= self.optim_nums:
-            raise RuntimeError(f"optim index {optim_idx} is not right, please check.")
-        return self.chained_optimizers[optim_idx].get_replica_optimizer_state(step)
-
-    def state_dict_memory(self):
-        return [optimizer.state_dict_memory() for optimizer in self.chained_optimizers]
-
     def load_state_dict_memory(self, state_dict):
         if len(self.chained_optimizers) != len(state_dict):
             raise RuntimeError(
@@ -43,19 +35,6 @@ class TTPReplicaChainedOptimizer(ChainedOptimizer):
         if optim_idx >= self.optim_nums:
             raise RuntimeError(f"optim index {optim_idx} is not right, please check.")
         return self.chained_optimizers[optim_idx].state_dict_memory()
-
-    def load_state_dict_by_idx(self, state_dict, optim_idx):
-        if optim_idx >= self.optim_nums:
-            raise RuntimeError(f"optim index {optim_idx} is not right, please check.")
-        self.chained_optimizers[optim_idx].load_state_dict_memory(state_dict)
-
-    def set_current_step(self, step):
-        for optimizer in self.chained_optimizers:
-            optimizer.current_step = step
-
-    def set_update_successful(self, flag):
-        for optimizer in self.chained_optimizers:
-            optimizer.set_update_successful(flag)
 
     def set_dump_args(self, optim_idx, rank, step, rank_list):
         if optim_idx >= self.optim_nums:
@@ -82,15 +61,6 @@ class TTPReplicaChainedOptimizer(ChainedOptimizer):
         tft_end_updating_os(self.chained_optimizers[0].current_step)
 
     @torch.no_grad()
-    def prepare_grads(self) -> bool:
-        """Pre-processing gradients before the optimizer step, returns whether inf/nan is found."""
-        found_inf_flag = False
-        for optimizer in self.chained_optimizers:
-            found_inf_flag |= optimizer.prepare_grads()
-
-        return found_inf_flag
-
-    @torch.no_grad()
     def step_with_ready_grads(self) -> bool:
         """Step the optimizer with ready gradients, return successful."""
         success = True
@@ -113,25 +83,6 @@ class TTPReplicaChainedOptimizer(ChainedOptimizer):
                 optimizer.model_chunks[0].start_param_sync(force_dispatch=True)
 
         return success
-
-    @torch.no_grad()
-    def get_grad_norm(self):
-        if len(self.chained_optimizers) == 1:
-            return self.chained_optimizers[0].get_grad_norm()
-        if self.grads_states_parallel_group_is_shared():
-            grads_for_norm = []
-            for optimizer in self.chained_optimizers:
-                grads_for_norm += optimizer.get_main_grads_for_grad_norm()
-            grad_norm = get_grad_norm_fp32(
-                grads_for_norm, grad_stats_parallel_group=self.get_grad_stats_parallel_group()
-            )
-        else:
-            grad_norms = []
-            for optimizer in self.chained_optimizers:
-                _grad_norm = optimizer.get_grad_norm()
-                grad_norms += [_grad_norm if _grad_norm else 0.0]
-            grad_norm = math.sqrt(sum([x**2 for x in grad_norms]))
-        return grad_norm
 
     @torch.no_grad()
     def step(self):
@@ -192,26 +143,14 @@ class TTPReplicaChainedOptimizer(ChainedOptimizer):
             torch.save(states, filename)
 
     def send_optim_param_state(self, dst, group, optim_idx):
-        if optim_idx is None:
-            for optimizer in self.chained_optimizers:
-                optimizer.send_optim_param_state(dst, group)
-        else:
-            if optim_idx >= self.optim_nums:
-                raise RuntimeError(f"optim index {optim_idx} is not right, please check.")
-            self.chained_optimizers[optim_idx].send_optim_param_state(dst, group)
+        if optim_idx >= self.optim_nums:
+            raise RuntimeError(f"optim index {optim_idx} is not right, please check.")
+        self.chained_optimizers[optim_idx].send_optim_param_state(dst, group)
 
-    def recv_and_load_optim_param_state(self, src, group, step, optim_idx):
-        if optim_idx is None:
-            for optimizer in self.chained_optimizers:
-                optimizer.recv_and_load_optim_param_state(src, group, step)
-        else:
-            if optim_idx >= self.optim_nums:
-                raise RuntimeError(f"optim index {optim_idx} is not right, please check.")
-            self.chained_optimizers[optim_idx].recv_and_load_optim_param_state(src, group, step)
-
-    def remove_hook_handle(self):
-        for optimizer in self.chained_optimizers:
-            optimizer.remove_hook_handle()
+    def recv_and_load_optim_param_state(self, src, group, optim_idx):
+        if optim_idx >= self.optim_nums:
+            raise RuntimeError(f"optim index {optim_idx} is not right, please check.")
+        self.chained_optimizers[optim_idx].recv_and_load_optim_param_state(src, group)
 
     def fp32_tensor_to_fp16_tensor(self):
         for optimizer in self.chained_optimizers:

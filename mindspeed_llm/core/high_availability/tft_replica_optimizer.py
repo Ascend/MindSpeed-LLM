@@ -145,12 +145,6 @@ class TTPReplicaOptimizer(DistributedOptimizer):
 
         return data
 
-    def set_current_step(self, step):
-        self.current_step = step
-
-    def set_update_successful(self, flag):
-        self.update_successful = flag
-
     def set_dump_args(self, rank, step, rank_list):
         self.save_args['step'] = step
         self.save_args['rank'] = rank
@@ -204,8 +198,7 @@ class TTPReplicaOptimizer(DistributedOptimizer):
                         torch.distributed.send(tensors["exp_avg"].detach().npu(), dst=dst, group=group)
                         torch.distributed.send(tensors["exp_avg_sq"].detach().npu(), dst=dst, group=group)
 
-    def recv_and_load_optim_param_state(self, src, group, step, optim_idx=None):
-        # receive and load distributed optimizer state when UCE repair
+    def recv_and_load_optim_param_state(self, src, group, optim_idx=None):
         start_time = time.time()
         self.fp16_tensor_to_fp32_tensor()
         self.recv_param_state_impl(src, group)
@@ -611,47 +604,3 @@ class TTPReplicaOptimizer(DistributedOptimizer):
             tft_end_updating_os(self.current_step)
         else:
             self._copy_main_params_to_model_params()
-
-    def _dispatch_gather_model_params(self, all_gather_handle_index: int, force_sync: bool = False):
-        if self.error_dump:
-            self._tft_dispatch_gather_model_params(all_gather_handle_index, force_sync)
-        else:
-            super()._dispatch_gather_model_params(all_gather_handle_index, force_sync)
-
-    def _tft_dispatch_gather_model_params(self, all_gather_handle_index: int, force_sync: bool = False):
-
-        def pbuf_dp_view(buffer):
-            buffer[:(data_parallel_rank * shard_size)] = 0
-            buffer[((data_parallel_rank + 1) * shard_size):] = 0
-            return buffer
-
-        async_op = self.overlap_param_gather and not force_sync
-        if self.update_successful:
-            data_parallel_group = self.data_parallel_group
-            data_parallel_rank = torch.distributed.get_rank(data_parallel_group)
-            if self.error_dump:
-                rank2dprank = {}
-                for dprank, rank in enumerate(self.save_args['rank_list']):
-                    rank2dprank[rank] = dprank
-                data_parallel_rank = rank2dprank.get(torch.distributed.get_rank(), None)
-                ttp_logger.info(f"rank:{get_args().rank} start dispatch gather model params, "
-                                       f"rank list:{self.save_args['rank_list']}, "
-                                       f"error dump:{self.error_dump}, rank map:{rank2dprank}")
-
-            (gbuf_index, dtype, bucket_index, pbuf, _) = self.pbuf_view_items[
-                all_gather_handle_index
-            ]
-            data_parallel_world_size = torch.distributed.get_world_size(data_parallel_group)
-            shard_size = pbuf.numel() // data_parallel_world_size
-            if not all_gather_handle_index < len(self.all_gather_handles):
-                raise ValueError("all_gather_handle_index out of range")
-
-            pbuf = pbuf_dp_view(pbuf)
-            all_gather_handle = torch.distributed.all_reduce(pbuf, group=data_parallel_group, async_op=async_op)
-            self.all_gather_handles[all_gather_handle_index] = all_gather_handle
-            if not self.all_gather_handle_index_to_bucket_index_map[all_gather_handle_index] == (
-                    gbuf_index,
-                    dtype,
-                    bucket_index,
-            ):
-                raise ValueError("gbuf_index, dtype, or bucket_index not match all_gather_handle_index.")

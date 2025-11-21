@@ -76,11 +76,9 @@ def tft_save_callback(step: int, save_info: list, train_args, ctx):
         train_args[ha_constant.TRAIN_PARAM][ha_constant.SCHEDULER_INDEX].step(global_args.global_batch_size)
 
     def gather_all_model_params(optimizer):
-        optimizer.set_update_successful(True)
         if hasattr(optimizer, "data_parallel_group"):
             dump_group = torch.distributed.new_group(optimizer.save_args['rank_list'],
                                                      use_local_synchronization=True)
-            optimizer.data_parallel_group = dump_group
             tft_set_dump_group(dump_group)
         optimizer.sync_gather_all_model_params(force_sync=True)
 

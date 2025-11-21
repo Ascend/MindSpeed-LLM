@@ -10,7 +10,7 @@ from megatron.core import mpu, tensor_parallel
 from megatron.core.utils import get_model_config
 from megatron.core.num_microbatches_calculator import update_num_microbatches
 from megatron.training import get_args, get_timers
-from megatron.training.checkpointing import (get_rng_state, set_checkpoint_version, check_checkpoint_args,
+from megatron.training.checkpointing import (set_checkpoint_version, check_checkpoint_args,
                                              get_checkpoint_version, fix_query_key_value_ordering, load_checkpoint)
 from megatron.training.training import setup_model_and_optimizer
 from megatron.training.utils import print_rank_0, unwrap_model
@@ -88,16 +88,13 @@ def repair_callback(step: int, need_rebuild: bool, error_ranks: list, repair_inf
     ttp_logger.info("[repair] rank %s, repair type:%s, src ranks:%s, dst ranks:%s, "
                            "rank list:%s, optim idxs:%s, step:%s",
                            rank, repair_type, src_ranks, dest_ranks, rank_list, optim_idxs, step)
-    if step <= 0:
-        raise ValueError(f"step value is invalid")
 
     if repair_type == RepairType.RT_SEND.value:
-        send_rank_repair(src_ranks, dest_ranks, optim_idxs, step, rank_list, train_args[ha_constant.TRAIN_PARAM])
+        send_rank_repair(src_ranks, dest_ranks, optim_idxs, rank_list, train_args[ha_constant.TRAIN_PARAM])
     elif repair_type in [RepairType.RT_UCE_HIGHLEVEL.value,
                          RepairType.RT_UCE_LOWLEVEL.value,
                          RepairType.RT_RECV_REPAIR.value]:
-        recv_rank_repair(src_ranks, dest_ranks, optim_idxs, step,
-                         need_rebuild, rank_list, train_args[ha_constant.TRAIN_PARAM])
+        recv_rank_repair(src_ranks, dest_ranks, optim_idxs, need_rebuild, rank_list, train_args[ha_constant.TRAIN_PARAM])
     elif repair_type in [RepairType.RT_LOAD_CKPT.value,
                          RepairType.RT_LOAD_REBUILD.value]:
         load_ckpt_repair(need_rebuild, train_args[ha_constant.TRAIN_PARAM])
@@ -107,23 +104,15 @@ def repair_callback(step: int, need_rebuild: bool, error_ranks: list, repair_inf
     ttp_logger.info(f'[repair] rank {rank} repair total time consumed:{time.time() - t1:.3f}s')
 
 
-def send_rank_repair(src_ranks: list, dest_ranks: list, optim_idxs: list,
-                     step: int, rank_list: list, train_args):
+def send_rank_repair(src_ranks: list, dest_ranks: list, optim_idxs: list, rank_list: list, train_args):
     t1 = time.time()
-    rank_list.sort()
     rank = torch.distributed.get_rank()
     build_repair_group(rank_list)
     group = get_repair_group()
     t2 = time.time()
-    for idx, src_rank in enumerate(src_ranks):
+    for idx, _ in enumerate(src_ranks):
         dest_rank, optim_idx = dest_ranks[idx], optim_idxs[idx]
-        if src_rank != rank:
-            ttp_logger.error(f"[repair] current rank {rank} is not equal to send rank:{src_rank}!")
-            raise ValueError("src rank != current rank")
-        if src_rank == dest_rank:
-            ttp_logger.error(f"[repair] send rank {src_rank} and dest rank are not allowed to be the same!")
-            raise ValueError("src rank == dest rank")
-        save_and_send_ckpt(dest_rank, step, optim_idx, train_args)
+        save_and_send_ckpt(dest_rank, optim_idx, train_args)
 
     t3 = time.time()
     for idx, _ in enumerate(src_ranks):
@@ -144,13 +133,13 @@ def send_rank_repair(src_ranks: list, dest_ranks: list, optim_idxs: list,
                            f"send log args:{t5 - t4:.3f}s.")
 
 
-def save_and_send_ckpt(dest_rank, step, optim_idx, train_args):
+def save_and_send_ckpt(dest_rank, optim_idx, train_args):
     """
     Save memory checkpoint and send to dest rank.
     """
     t1 = time.time()
     rank = torch.distributed.get_rank()
-    state_dict = save_memory_ckpt(train_args[ha_constant.OPTIM_INDEX], train_args[ha_constant.SCHEDULER_INDEX], step, optim_idx)
+    state_dict = save_memory_ckpt(train_args[ha_constant.OPTIM_INDEX], train_args[ha_constant.SCHEDULER_INDEX], optim_idx)
     buffer = io.BytesIO()
     torch.save(state_dict, buffer)
     state_dict_bytes = buffer.getvalue()
@@ -169,14 +158,9 @@ def save_and_send_ckpt(dest_rank, step, optim_idx, train_args):
 
 
 def recv_rank_repair(src_ranks: list, dest_ranks: list, optim_idxs: list,
-                     step: int, need_rebuild: bool, rank_list: list, train_args):
-    # low level and only rollback case
-    if src_ranks == dest_ranks:
-        return
-
+                     need_rebuild: bool, rank_list: list, train_args):
     t1 = time.time()
     rank = torch.distributed.get_rank()
-    rank_list.sort()
     build_repair_group(rank_list)
 
     t2 = time.time()
@@ -191,24 +175,18 @@ def recv_rank_repair(src_ranks: list, dest_ranks: list, optim_idxs: list,
     group = get_repair_group()
     for idx, src_rank in enumerate(src_ranks):
         dest_rank, optim_idx = dest_ranks[idx], optim_idxs[idx]
-        if dest_rank != rank:
-            ttp_logger.error(f"[repair] current rank {rank} is not equal to dest rank!")
-            raise ValueError("dst rank != current rank")
-        if src_rank == dest_rank:
-            ttp_logger.error(f"[repair] send rank {src_rank} and dest rank are not allowed to be the same!")
-            raise ValueError("src rank == dest rank")
-        recv_ckpt_from_peer(src_rank, dest_rank, step, rank_list)
+        recv_ckpt_from_peer(src_rank, dest_rank)
 
     t4 = time.time()
     # combine state_dict and once load,fix precision problem
     state_dict = temp_memory_ckpt
     load_memory_ckpt(train_args[ha_constant.MODEL_INDEX], train_args[ha_constant.OPTIM_INDEX], train_args[ha_constant.SCHEDULER_INDEX],
-                     state_dict, None)
+                     state_dict)
 
     t5 = time.time()
     for idx, src_rank in enumerate(src_ranks):
         dest_rank, optim_idx = dest_ranks[idx], optim_idxs[idx]
-        train_args[ha_constant.OPTIM_INDEX].recv_and_load_optim_param_state(src_rank, group, step, optim_idx)
+        train_args[ha_constant.OPTIM_INDEX].recv_and_load_optim_param_state(src_rank, group, optim_idx)
 
     t6 = time.time()
     convert_log_args_to_tensors()
@@ -243,7 +221,7 @@ def build_model_and_optimizer(model_provider, model_type, skip_load):
     return model, optimizer, lr_scheduler, config
 
 
-def recv_ckpt_from_peer(src_rank, dest_rank, step, rank_list: list):
+def recv_ckpt_from_peer(src_rank, dest_rank):
     """
     receive memory checkpoint and repair train() param.
     """
@@ -361,8 +339,6 @@ def load_ckpt_repair(need_rebuild, train_args):
             train_args[ha_constant.MODEL_INDEX], train_args[ha_constant.OPTIM_INDEX], train_args[ha_constant.SCHEDULER_INDEX])
         timers('load-checkpoint').stop(barrier=True)
         timers.log(['load-checkpoint'])
-        if args.enable_high_availability and hasattr(train_args[ha_constant.OPTIM_INDEX], "set_current_step"):
-            train_args[ha_constant.OPTIM_INDEX].set_current_step(args.iteration)
 
     if args.iteration == 0:
         ttp_logger.error("[repair] rank %s failed to load ckpt, could not find any file", args.rank)
@@ -372,25 +348,23 @@ def load_ckpt_repair(need_rebuild, train_args):
     args.no_load_rng = no_load_rng
 
 
-def load_memory_ckpt(model, optimizer, opt_param_scheduler, state_dict, optim_idx):
+def load_memory_ckpt(model, optimizer, opt_param_scheduler, state_dict):
     args = get_args()
     model = unwrap_model(model)
-
-    if state_dict is None:
-        return 0
 
     set_checkpoint_version(state_dict.get('checkpoint_version', 0))
 
     args.iteration = state_dict['iteration']
-    args.num_query_groups = state_dict['args'].num_query_groups  # for arf
-    args.curr_iteration = state_dict['args'].curr_iteration  # for dino
+    state_dict_args = state_dict['args']
+    args.num_query_groups = state_dict_args.num_query_groups  # for arf
+    args.curr_iteration = state_dict_args.curr_iteration  # for dino
     args.do_train, args.do_valid, args.do_test = \
-        state_dict['args'].do_train, state_dict['args'].do_valid, state_dict['args'].do_test    # fix arf bug
+        state_dict_args.do_train, state_dict_args.do_valid, state_dict_args.do_test    # fix arf bug
     args.num_floating_point_operations_so_far = state_dict['num_floating_point_operations_so_far']
 
     # Check arguments.
     if 'args' in state_dict and not args.finetune:
-        checkpoint_args = state_dict['args']
+        checkpoint_args = state_dict_args
         check_checkpoint_args(checkpoint_args)
         args.consumed_train_samples = getattr(checkpoint_args,
                                               'consumed_train_samples', 0)
@@ -400,55 +374,34 @@ def load_memory_ckpt(model, optimizer, opt_param_scheduler, state_dict, optim_id
     else:
         print_rank_0('could not find arguments in the checkpoint ...')
 
-
     # Fix up query/key/value matrix ordering if needed.
     checkpoint_version = get_checkpoint_version()
     print_rank_0(f' checkpoint version {checkpoint_version}')
     fix_query_key_value_ordering(model, checkpoint_version)
 
-    # Optimizer.
-    if hasattr(optimizer, 'optim_nums') and optimizer.optim_nums > 1 and optim_idx is not None:
-        optimizer.load_state_dict_by_idx(state_dict['optimizer'], optim_idx)
-    else:
-        optimizer.load_state_dict_memory(state_dict['optimizer'])
-
+    optimizer.load_state_dict_memory(state_dict['optimizer'])
     opt_param_scheduler.load_state_dict(state_dict['opt_param_scheduler'])
 
-    # rng states.
-    if 'rng_state' in state_dict:
-        rng_state = state_dict['rng_state'][0]
-        random.setstate(rng_state['random_rng_state'])
-        np.random.set_state(rng_state['np_rng_state'])
-        torch.set_rng_state(rng_state['torch_rng_state'])
-        torch.cuda.set_rng_state(rng_state['cuda_rng_state'])
-        tensor_parallel.get_cuda_rng_tracker().set_states(rng_state['rng_tracker_states'])
-
-    cur_rank = torch.distributed.get_rank()
-    ttp_logger.info(f'rank:{cur_rank} successfully load checkpoint at iteration {args.iteration} to memory')
-
-    return args.iteration
+    ttp_logger.info(f'rank:{args.rank} successfully load checkpoint to memory')
 
 
-def save_memory_ckpt(optimizer, opt_param_scheduler, step, optim_idx=None):
+def save_memory_ckpt(optimizer, opt_param_scheduler, optim_idx):
     args = get_args()
     state_dict = {}
 
-    if hasattr(optimizer, 'optim_nums') and optimizer.optim_nums > 1 and optim_idx is not None:
+    if hasattr(optimizer, 'optim_nums') and optimizer.optim_nums > 1:
         state_dict['optimizer'] = optimizer.state_dict_by_idx(optim_idx)
     else:
         state_dict['optimizer'] = optimizer.state_dict_memory()
 
-    rng_state = get_rng_state(args.ckpt_format)
     state_dict['args'] = args
     state_dict['iteration'] = args.iteration
     state_dict['checkpoint_version'] = 3.0
-    state_dict['rng_state'] = rng_state
 
     state_dict['opt_param_scheduler'] = opt_param_scheduler.state_dict()
     state_dict['num_floating_point_operations_so_far'] = args.num_floating_point_operations_so_far
 
-    ttp_logger.info(f'rank:{torch.distributed.get_rank()} successfully saved checkpoint '
-                           f'at iteration {step} to memory')
+    ttp_logger.info(f'rank:{torch.distributed.get_rank()} successfully saved checkpoint to memory')
     return state_dict
 
 
@@ -459,6 +412,3 @@ def update_memory_ckpt(state_dict, moe_state_dict):
     optim_state_dict.append(state_dict[optimizer_key])
     optim_state_dict.append(moe_state_dict[optimizer_key])
     state_dict[optimizer_key] = optim_state_dict
-    # combine rng state
-    state_dict['rng_state'][0]['rng_tracker_states']['expert-parallel-rng'] = \
-        moe_state_dict['rng_state'][0]['rng_tracker_states']['expert-parallel-rng']

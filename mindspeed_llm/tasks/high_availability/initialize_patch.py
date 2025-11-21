@@ -5,17 +5,6 @@ import megatron
 from megatron.training import get_args
 
 
-def setup_model_and_optimizer_wrapper(fn):
-    @wraps(fn)
-    def wrapper(*args, **kwargs):
-        model, optimizer, opt_param_scheduler = fn(*args, **kwargs)
-        argument = get_args()
-        if hasattr(optimizer, "set_current_step"):
-            optimizer.set_current_step(argument.iteration)
-        return model, optimizer, opt_param_scheduler
-    return wrapper
-
-
 def initialize_distributed_wrapper(fn):
     @wraps(fn)
     def wrapper(*args, **kwargs):
