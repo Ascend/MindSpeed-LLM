@@ -200,19 +200,8 @@ def _patch_fused_operators(args):
 
     # CoC (Communication-Computation Overlap)
     if args.use_ascend_coc:
-        from mindspeed.mindspore.ops.lcal_functional import (
-            all_gather_matmul, all_gather_matmul_v2, matmul_reduce_scatter,
-            matmul_all_reduce, pure_matmul
-        )
-        MindSporeAdaptation.register_patch('mindspeed.ops.lcal_functional.CoCOperations.all_gather_matmul',
-                                           all_gather_matmul)
-        MindSporeAdaptation.register_patch('mindspeed.ops.lcal_functional.CoCOperations.all_gather_matmul_v2',
-                                           all_gather_matmul_v2)
-        MindSporeAdaptation.register_patch('mindspeed.ops.lcal_functional.CoCOperations.matmul_reduce_scatter',
-                                           matmul_reduce_scatter)
-        MindSporeAdaptation.register_patch('mindspeed.ops.lcal_functional.CoCOperations.matmul_all_reduce',
-                                           matmul_all_reduce)
-        MindSporeAdaptation.register_patch('mindspeed.ops.lcal_functional.CoCOperations.pure_matmul', pure_matmul)
+        import torch_npu
+        MindSporeAdaptation.register_patch('mindspeed.ops.lcal_functional.CoCOperations.mindspeed_ops', torch_npu)
 
     # A2AVC
     if args.enable_a2avc:
