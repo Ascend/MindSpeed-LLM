@@ -35,6 +35,7 @@ def mindspore_adaptation(patch_manager, args):
     _patch_moe_and_communication(args)
     _patch_optimizer_and_training(args)
     _patch_fused_operators(args)
+    _patch_fsdp()
 
     # Optional patches (remain in main for control)
     if args.moe_fb_overlap:
@@ -45,7 +46,6 @@ def mindspore_adaptation(patch_manager, args):
 
     if args.enable_seq1f1b:
         patch_seq1f1b(args)
-        
 
 def _patch_third_party_libraries():
     from mindspeed.mindspore.third_party.safetensors.torch import save_file, load_file
@@ -358,7 +358,24 @@ def patch_seq1f1b(args):
     MindSporeAdaptation.register_patch('megatron.training.utils.get_batch_on_this_tp_rank', get_batch_wrapper)
     MindSporeAdaptation.register_patch('mindspeed_llm.tasks.posttrain.sft.sft_trainer.SFTTrainer.get_batch', get_batch_wrapper)
     MindSporeAdaptation.register_patch('mindspeed_llm.tasks.posttrain.sft.sft_trainer.SFTTrainer.loss_func', sft_trainer_loss_func)
+
     
+def _patch_fsdp():
+    from mindspeed.core.distributed.custom_fsdp.param_and_grad_buffer import gradient_reduce_preprocessing
+    MindSporeAdaptation.register_patch('megatron.core.distributed.custom_fsdp.param_and_grad_buffer.gradient_reduce_preprocessing', gradient_reduce_preprocessing)
+
+    from mindspeed.mindspore.core.distributed.custom_fsdp.param_and_grad_buffer import all_gather_params_wo_coalescing, mark_bucket_ready_wo_coalescing, zero_grad, update_main_grads
+    MindSporeAdaptation.register_patch('megatron.core.distributed.custom_fsdp.param_and_grad_buffer.AllGatherPipeline.all_gather_params', all_gather_params_wo_coalescing)
+    MindSporeAdaptation.register_patch('megatron.core.distributed.custom_fsdp.param_and_grad_buffer.GradReducePipeline.mark_bucket_ready', mark_bucket_ready_wo_coalescing)
+    MindSporeAdaptation.register_patch('megatron.core.distributed.custom_fsdp.param_and_grad_buffer.ParamAndGradBuffer.zero_grad', zero_grad)
+    MindSporeAdaptation.register_patch('megatron.core.distributed.custom_fsdp.param_and_grad_buffer.ParamAndGradBuffer.update_main_grads', update_main_grads)
+
+    from mindspeed.mindspore.core.distributed.custom_fsdp.fully_sharded_data_parallel import _register_fsdp_hooks
+    MindSporeAdaptation.register_patch('megatron.core.distributed.custom_fsdp.fully_sharded_data_parallel.FullyShardedDataParallel._register_fsdp_hooks', _register_fsdp_hooks)
+
+    from mindspeed_llm.mindspore.core.transformer.moe.router import topk_router_gating_func
+    MindSporeAdaptation.register_patch('megatron.core.transformer.moe.router.TopKRouter.gating', topk_router_gating_func)
+
 
 def mindspore_register_args(group):
     group.add_argument('--enable-a2avc', type=int, choices=[0, 1, 2], default=0,
