@@ -22,18 +22,18 @@ DISTRIBUTED_ARGS="
 
 echo "NODE_RANK ${NODE_RANK}"
 
-DATA_PATH="/data/ci/datasets/processed/mamba_enwiki/mamba_enwiki_text_document"
-CKPT_LOAD_DIR="/data/ci/models/mamba2/mg/mamba2_tp8dp1_mbs2_gbs8"
-TOKENIZER_PATH="/data/ci/models/mamba/hf/mamba-hf/mt_nlg_plus_multilingual_ja_zh_the_stack_frac_015_256k.model"
+DATA_PATH="/data/ci/datasets/processed/mamba2_8b_enwiki/mamba_enwiki_text_document"
+CKPT_LOAD_DIR="/data/ci/models/mamba2/mg/mamba2_8b_tp4cp2"
+TOKENIZER_PATH="/data/ci/models/mamba2/hf/mamba2-8b-hf/mamba2_8b.model"
 
-
-
-TP=8
+TP=4
 PP=1
+CP=2
 NUM_LAYERS=56
 SEQ_LEN=4096
 MBS=2
 GBS=8
+CP_TYPE="mamba_cp_algo"
 
 DISTRIBUTED_ARGS="
     --nproc_per_node $NPUS_PER_NODE \
@@ -43,17 +43,27 @@ DISTRIBUTED_ARGS="
     --master_port $MASTER_PORT
 "
 
+ACCELERATE_ARGS="
+    --enable-recompute-layers-per-pp-rank \
+    --recompute-granularity full \
+    --recompute-method block \
+    --recompute-num-layers 1 \
+    --use-distributed-optimizer \
+"
+
+
 MAMBA_ARGS="
     --spec mindspeed_llm.tasks.models.spec.mamba_spec layer_spec \
     --reuse-fp32-param \
     --no-shared-storage \
-    --use-distributed-optimizer \
     --use-flash-attn \
     --use-mcore-models \
     --manual-gc \
     --manual-gc-interval 50 \
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \
+    --context-parallel-size ${CP} \
+    --context-parallel-algo ${CP_TYPE} \
     --sequence-parallel \
     --num-layers ${NUM_LAYERS} \
     --num-attention-heads 32 \
@@ -117,13 +127,14 @@ OUTPUT_ARGS="
     --save-interval 500 \
     --eval-interval 500 \
     --eval-iters 0 \
-    --load ${CKPT_LOAD_DIR} \
     --no-save-rng \
     --no-save-optim
 "
 
-torchrun $DISTRIBUTED_ARGS $basepath/pretrain_mamba.py \
+torchrun ${DISTRIBUTED_ARGS[@]} $basepath/pretrain_mamba.py \
+    $ACCELERATE_ARGS \
     $MAMBA_ARGS \
     $DATA_ARGS \
     $OUTPUT_ARGS \
+    --load ${CKPT_LOAD_DIR} \
     --distributed-backend nccl

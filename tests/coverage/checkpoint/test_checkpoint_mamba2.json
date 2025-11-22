@@ -1,0 +1,51 @@
+{
+    "test_mamba2_hf2mcore_tp1pp2": [
+        {
+            "param": {
+                "model-type":"GPT",
+                "load-model-type":"hf",
+                "save-model-type":"mg",
+                "target-tp-size": "1",
+                "target-pp-size": "2",
+                "d-model": "2560",
+                "mamba-d-state": "128",
+                "mamba2-head-dim": "64",
+                "mamba2-n-groups": "1",
+                "load-dir":"/data/ci/models/mamba2/hf/mamba2-2.7b-hf",
+                "save-dir":"/data/ci/cache/mamba2_tp1pp2",
+                "tokenizer-model":"/data/ci/models/mamba2/hf/mamba2-2.7b-hf"
+            }
+        },
+        {
+            "Base_MD5" : [
+            "0b1ff49aeee29576",
+            "00349c8c9a9da66c"
+            ]
+        }
+    ],
+
+    "test_mamba2_mcore2hf_tp1pp2": [
+        {
+            "param": {
+                "model-type":"GPT",
+                "load-model-type":"mg",
+                "save-model-type":"hf",
+                "load-dir":"/data/ci/cache/mamba2_tp1pp2",
+                "save-dir":"/data/ci/cache/mamba2_2.7b_hf",
+                "d-model": "2560",
+                "mamba-d-state": "128",
+                "mamba2-head-dim": "64",
+                "mamba2-n-groups": "1",
+                "input-tp-rank": "1",
+                "input-pp-rank": "2",
+                "num-layers": "64"
+            }
+
+        },
+        {
+            "Base_MD5" : [
+                "36818903d171c4eeca0c4e2c93fbd110"
+            ]
+        }
+    ]
+}

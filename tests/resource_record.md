@@ -44,6 +44,41 @@
         <td>/data/ci/datasets/processed/dataset-high-availability/llama_text_document</td>
         <td>/</td>
         <td>/</td>
+    </tr>s
+    <tr>
+        <td>mamba2_8b_tp4_pp1_cp2_recompute_4k_ptd</td>
+        <td>/data/ci/models/mamba2/hf/mamba2-8b-hf/mamba2_8b.model</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/data/ci/datasets/processed/mamba2_8b_enwiki/mamba_enwiki_text_document</td>
+        <td>/</td>
+        <td>/</td>
     </tr>
-
+    <tr>
+        <td>qwen3_next_80b_4K_A3_ptd</td>
+        <td>/data/ci/models/qwen3_next/hf/Qwen3-Next-80B-A3B-hf</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/data/ci/datasets/processed/qwen3_next_data/qwen3_next_aplaca_text_document</td>
+        <td>/</td>
+        <td>/</td>
+    </tr>
+    <tr>
+        <td>test_mamba2_hf2mcore_tp1pp2</td>
+        <td>/data/ci/models/mamba2/hf/mamba2-2.7b-hf</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/data/ci/cache/mamba2_tp1pp2</td>
+    </tr>
+    <tr>
+        <td>test_mamba2_mcore2hf_tp1pp2</td>
+        <td>/</td>
+        <td>/data/ci/cache/mamba2_tp1pp2</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/data/ci/cache/mamba2_2.7b_hf</td>
+    </tr>
 </table>
