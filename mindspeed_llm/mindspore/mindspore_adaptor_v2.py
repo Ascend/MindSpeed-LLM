@@ -83,13 +83,6 @@ def _patch_model_and_embedding():
         'mindspeed_llm.tasks.common.yarn_rope.YarnRotaryPositionEmbedding.yarn_linear_ramp_mask',
         yarn_linear_ramp_mask)
 
-    from mindspeed.mindspore.core.transformer.module import fp32_to_float16
-    MindSporeAdaptation.register_patch('megatron.core.transformer.module.fp32_to_float16', fp32_to_float16)
-
-    from mindspeed.mindspore.legacy.model.module import fp32_to_float16, float16_to_fp32
-    MindSporeAdaptation.register_patch('megatron.legacy.model.module.fp32_to_float16', fp32_to_float16)
-    MindSporeAdaptation.register_patch('megatron.legacy.model.module.float16_to_fp32', float16_to_fp32)
-
     from mindspeed_llm.mindspore.core.models.common.embeddings.rotary_pos_embedding import apply_llama3_scaling
     MindSporeAdaptation.register_patch(
         'mindspeed_llm.core.models.common.embeddings.rotary_pos_embedding.apply_llama3_scaling', apply_llama3_scaling)
@@ -157,10 +150,10 @@ def _patch_optimizer_and_training(args):
     # share memory
     if args.enable_share_memory:
         from ..mindspore.tasks.dataset.shared_memory_manager import SharedMemoryManager
-        MindSporeAdaptation.register(
+        MindSporeAdaptation.register_patch(
             'mindspeed_llm.tasks.dataset.shared_memory_manager.SharedMemoryManager', SharedMemoryManager)
         from ..mindspore.training.utils import _compute_actual_seq_len
-        MindSporeAdaptation.register(
+        MindSporeAdaptation.register_patch(
             'mindspeed_llm.training.utils._compute_actual_seq_len', _compute_actual_seq_len)
 
     # Optimizer: load and save parameter
@@ -201,19 +194,8 @@ def _patch_fused_operators(args):
 
     # CoC (Communication-Computation Overlap)
     if args.use_ascend_coc:
-        from mindspeed.mindspore.ops.lcal_functional import (
-            all_gather_matmul, all_gather_matmul_v2, matmul_reduce_scatter,
-            matmul_all_reduce, pure_matmul
-        )
-        MindSporeAdaptation.register_patch('mindspeed.ops.lcal_functional.CoCOperations.all_gather_matmul',
-                                           all_gather_matmul)
-        MindSporeAdaptation.register_patch('mindspeed.ops.lcal_functional.CoCOperations.all_gather_matmul_v2',
-                                           all_gather_matmul_v2)
-        MindSporeAdaptation.register_patch('mindspeed.ops.lcal_functional.CoCOperations.matmul_reduce_scatter',
-                                           matmul_reduce_scatter)
-        MindSporeAdaptation.register_patch('mindspeed.ops.lcal_functional.CoCOperations.matmul_all_reduce',
-                                           matmul_all_reduce)
-        MindSporeAdaptation.register_patch('mindspeed.ops.lcal_functional.CoCOperations.pure_matmul', pure_matmul)
+        import torch_npu
+        MindSporeAdaptation.register_patch('mindspeed.ops.lcal_functional.CoCOperations.mindspeed_ops', torch_npu)
 
     # A2AVC
     if args.enable_a2avc:
@@ -269,7 +251,6 @@ def _patch_fused_operators(args):
     # Matmul add ops
     from mindspeed.mindspore.ops.npu_matmul_add import npu_matmul_add_fp32
     MindSporeAdaptation.register_patch('fused_weight_gradient_mlp_cuda.wgrad_gemm_accum_fp32', npu_matmul_add_fp32)
-    MindSporeAdaptation.register_patch('mindspeed.ops.npu_matmul_add.npu_matmul_add_fp32', npu_matmul_add_fp32)
 
     # Fused AdamW v2
     from torch import npu_apply_fused_adamw_v2
