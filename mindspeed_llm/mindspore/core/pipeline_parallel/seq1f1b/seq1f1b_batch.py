@@ -19,7 +19,7 @@ from functools import wraps
 import numpy as np
 from megatron.training import get_args
 from megatron.core import mpu
-from mindspeed.core.context_parallel.get_batch_utils import get_actual_seq_len
+from mindspeed.core.context_parallel.get_batch_utils import get_actual_seq_len, set_actual_seq_len
 from mindspeed_llm.training.utils import recompute_valid_actual_seq_len
 from mindspeed_llm.core.transformer.custom_dot_product_attention import ACTUAL_SEQ_LEN_THRESHOLD
 from mindspeed.mindspore.core.pipeline_parallel.seq1f1b.seq1f1b_attn import SpanInfo
@@ -89,7 +89,7 @@ def get_batch_wrapper(get_batch_fn):
             if len(actual_seq_len_list) > get_actual_seq_len_threshold():
                 actual_seq_len_list = recompute_valid_actual_seq_len(actual_seq_len_list, global_args.micro_batch_size)
             span_lens = get_splits()
-
+        set_actual_seq_len(np.array(actual_seq_len_list))
         span_idx = (span_idx+1) % span_num
         if sft_stage:
             tokens, labels, loss_mask, attention_mask, position_ids = global_data
