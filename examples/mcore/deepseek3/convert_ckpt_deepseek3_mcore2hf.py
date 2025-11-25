@@ -171,8 +171,6 @@ class MgCkptConvert(object):
             raise ValueError("Does not contain a vaild model layer. Please check the parameters!")
 
         if self.lora_r is not None:
-            if self.moe_grouped_gemm:
-                raise ValueError("moe_grouped_gemm and lora/qlora can not exist together")
             if self.mtp_num_layers != 0:
                 raise ValueError("mtp_num_layers and lora/qlora can not exist together")
             if self.mla_mm_split:
@@ -797,8 +795,21 @@ class MgCkptConvert(object):
             elif merge_type == 2:
                 base = f"{name}.weight"
                 base_new = f"{name}.weight"
-            lora_a = f"{name}.lora_A.default.weight"
-            lora_b = f"{name}.lora_B.default.weight"
+
+            possible_a_keys = [
+                f"{name}.lora_A.default.weight",
+                f"{name}.lora_a.default.weight",
+            ]
+            possible_b_keys = [
+                f"{name}.lora_B.default.weight",
+                f"{name}.lora_b.default.weight",
+            ]
+
+            lora_a = next((k for k in possible_a_keys if k in model_dict), None)
+            lora_b = next((k for k in possible_b_keys if k in model_dict), None)
+
+            if lora_a is None or lora_b is None:
+                raise ValueError(f"[WARN] Missing LoRA keys for layer: {name}")
 
             # weight = base + matmul(B, A)
             model_dict[base_new] = model_dict[base].npu() + (self.lora_alpha / self.lora_r) * torch.matmul(
