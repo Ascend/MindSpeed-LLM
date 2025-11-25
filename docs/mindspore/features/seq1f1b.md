@@ -24,14 +24,36 @@
 
 ## 使用方法
 
+### 数据预处理
+目前Seq1F1B支持多样本Pack模式的预训练和微调场景，数据处理阶段需要进行如下修改，具体细节参考[大模型分布式预训练pack模式说明文档](../../pytorch/solutions/pretrain/pretrain_eod.md)和[多样本Pack模式微调说明文档](../../pytorch/solutions/finetune/multi_sample_pack_finetune.md)：
+
+- 多样本Pack模式预训练场景：数据预处理阶段额外添加`--append-eod`参数开启pack模式数据预处理，在每个输入序列的末尾添加一个特殊的标记来表示输入序列的结束。
+
+- 多样本Pack模式微调场景：数据预处理阶段加入`--pack`将数据转为Pack格式，使用`--seq-length`指定Pack数据集每条数据的长度，使用`--append-eod`在每个输入序列的末尾添加一个特殊的标记来表示输入序列的结束。
+
+
 ### 参数详解
 在 msrun 启动bash 脚本中增加如下参数来使用Seq1F1B:
-- 使用参数 **--enable-seq1f1b** 使能Seq1F1B流水线并行特性。
 
-- 使用参数 **--seq1f1b-splits [int]** 控制seq1f1b中序列拆分后子序列的数量$s$，默认使用4。
+- 使用参数 `--enable-seq1f1b` 使能Seq1F1B流水线并行特性。
 
-- 使用参数 **--seq1f1b-balance-method [string]** 平衡子序列的方法，可选项为['average', 'uniform_comp']，默认使用'average'。'average'方法是根据序列长度进行均匀切分，平衡每个子序列的token数目；'uniform_comp'方法是根据序列的计算量进行切分，平衡每个子序列的FLOPs。
-- 使用参数 **--reset-attention-mask** 进行多样本pack模式预训练/微调，此时**不能使用参数--no-pad-to-seq-lengths**。
+- 使用参数 `--seq1f1b-splits [int]` 控制seq1f1b中序列拆分后子序列的数量$s$，默认使用4。
+
+- 使用参数 `--seq1f1b-balance-method [string]` 平衡子序列的方法，可选项为['average', 'uniform_comp']，默认使用'average'。'average'方法是根据序列长度进行均匀切分，平衡每个子序列的token数目；'uniform_comp'方法是根据序列的计算量进行切分，平衡每个子序列的FLOPs。在多样本pack场景中推荐选择'average'，在单样本长序列训练场景中使用推荐使用'uniform_comp'。
+
+- 使用参数 `--reset-attention-mask` 进行多样本pack模式预训练/微调，此时`不能使用参数--no-pad-to-seq-lengths`。
+
+### 建议搭配特性
+
+- 使用Seq1F1B时，建议使用`gradient-accumulation-fusion`特性，即不添加`--no-gradient-accumulation-fusion`参数。由于序列切分会导致算子下发次数增加$s$倍，因此在使用Seq1F1B时，融合算子的性能提升将更加显著。
+
+- 在显存紧缺的场景中，建议Seq1F1B搭配重计算特性。可参考以下参数配置开启重计算，更多重计算特性说明及配置可参考[重计算相关文档](../../pytorch/features/recompute_relative.md)。
+
+```python
+    --recompute-granularity full \
+    --recompute-method block \
+    --recompute-num-layers ${N} \
+```
 
 ## 使用效果分析及验证
 
