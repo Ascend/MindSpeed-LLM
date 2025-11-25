@@ -103,6 +103,9 @@ def _patch_tensor_parallel_and_pipeline():
     from mindspeed.mindspore.core.timers import _get_global_min_max_time
     MindSporeAdaptation.register_patch('megatron.core.timers.Timers._get_global_min_max_time', _get_global_min_max_time)
 
+    from ..mindspore.training.utils import get_batch_on_this_tp_rank
+    MindSporeAdaptation.register_patch('megatron.training.utils.get_batch_on_this_tp_rank', get_batch_on_this_tp_rank)
+
 
 def _patch_moe_and_communication(args):
     from mindspeed.mindspore.core.transformer.moe.comm_utils import async_all_to_all
