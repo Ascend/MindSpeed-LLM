@@ -176,44 +176,43 @@ def initialize_megatron_wrapper(fn):
     def wrapper(*args, **kwargs):
         result = fn(*args, **kwargs)
 
-        # Skip if distributed not initialized
-        if not torch.distributed.is_initialized():
-            return result
-
         args = get_args()
+         # ========= 1) Data preprocessing (independent of weight conversion) =========
         data_path = getattr(args, "data_path", None)
-        if not data_path:
-            return result
+        if data_path:
+            # Support only single path; extract first component
+            if isinstance(data_path, (list, tuple)):
+                raw_path = str(data_path[0])
+            else:
+                raw_path = str(data_path).split(",")[0]
 
-        # Support only single path; extract first component
-        if isinstance(data_path, (list, tuple)):
-            raw_path = str(data_path[0])
+            raw_path = raw_path.strip().strip('"').strip("'")
+
+            # If path is raw, run conversion; otherwise just log and skip
+            if _is_raw_data_path(raw_path):
+                logger.info("[InitHook] Megatron initialization completed. Starting data preprocessing...")
+
+                # Determine base directory for shared-path detection
+                if os.path.isfile(raw_path):
+                    base_dir = os.path.dirname(raw_path)
+                elif os.path.isdir(raw_path):
+                    base_dir = raw_path
+                else:
+                    base_dir = os.path.dirname(raw_path) or "."
+
+                shared = is_shared_path(base_dir)
+                convert_datasets(args, shared)
+                logger.info("[InitHook] Data preprocessing finished.")
+            else:
+                logger.info(f"[InitHook] data_path={raw_path} is not raw. Skip preprocessing.")
         else:
-            raw_path = str(data_path).split(",")[0]
+            logger.info("[InitHook] args.data_path is empty. Skip preprocessing.")
 
-        raw_path = raw_path.strip().strip('"').strip("'")
-
-        # If path is not raw, skip conversion
-        if not _is_raw_data_path(raw_path):
-            logger.info(f"[InitHook] data_path={raw_path} is not raw. Skip preprocessing.")
-            return result
-
-        logger.info("[InitHook] Megatron initialization completed. Starting data preprocessing...")
-
-        # Determine base directory for shared-path detection
-        if os.path.isfile(raw_path):
-            base_dir = os.path.dirname(raw_path)
-        elif os.path.isdir(raw_path):
-            base_dir = raw_path
-        else:
-            base_dir = os.path.dirname(raw_path) or "."
-
-        shared = is_shared_path(base_dir)
-        convert_datasets(args, shared)
-
+        # ========= 2) Weight conversion (always checked after preprocessing) =========
         if getattr(args, 'enable_hf2mg_convert', False):
             args.load_dir = args.load
-            logger.info("[InitHook] Data preprocessing completed, starting weight conversion check...")
+            logger.info("[InitHook] Starting weight conversion check...")
+
             # Add path validation
             if not os.path.exists(args.load_dir):
                 raise ValueError(f"Specified weight path does not exist: {args.load_dir}")
