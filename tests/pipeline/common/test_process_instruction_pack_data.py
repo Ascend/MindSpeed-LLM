@@ -17,7 +17,7 @@ class TestProcessInstructionData:
             "--input", "/data/ci/datasets/origin/train-00000-of-00001-a09b74b3ef9c3b56.parquet",
             "--tokenizer-type", "PretrainedFromHF",
             "--handler-name", "GeneralInstructionHandler",
-            "--output-prefix", "/data/ci/cache/tune_pack_dataset/alpaca_pack",
+            "--output-prefix", "/data/ci/datasets/tune_dataset/tune_pack_dataset/alpaca",
             "--tokenizer-name-or-path", "/data/ci/models/llama2/hf/llama-2-7b-hf",
             "--workers", "4",
             "--log-interval", "1000",
@@ -36,7 +36,7 @@ class TestProcessInstructionData:
         Test generate pretrain object files and files are not None(MB).
         """
         self.handler.serialize_to_disk()
-        folder_path = "/data/ci/cache/tune_pack_dataset"
+        folder_path = "/data/ci/datasets/tune_dataset/tune_pack_dataset"
         bin_file = 0
         idx_file = 0
         total_size = 0

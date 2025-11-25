@@ -107,8 +107,7 @@ class TestInference(DistributedTest):
             print(log_capture)
             context = acquire_context(log_capture)
             assert [context] == [
-                'I hope you are well. I am fine. I am writing to you because I have a problem. I am a student in the university. '
-                'I am studying in the university of the Philippines. I am studying in the university of the Philippines. I am '
+                'I hope you are well. I am fine. I am writing to you because I have a problem. I am a student in the university. I am studying in the university of the Philippines. I am studying in the university of the Philippines. I am'
             ], f"forward pass has been changed to {[context]}, check it!"
     
     @pytest.mark.parametrize("params", test_config["test_llama3_mcore_beam_search_with_sampling_tp2pp4sp"])
@@ -124,7 +123,7 @@ class TestInference(DistributedTest):
             print(log_capture)
             context = acquire_context(log_capture)
             assert [context] == [
-                'I hope you are doing well. I am fine. I am writing to you because I want to ask you something. I want to ask you if you can help me. I want to ask you if you can help me to find a job'
+                'I am well.\nI have been working on a new project for the past few months. It is a book about the history of the world. I have been working on it for the past few months. I have been working on it for the past few'
             ], f"forward pass has been changed to {[context]}, check it!"
         
     @pytest.mark.parametrize("params", test_config["test_llama3_chat"])

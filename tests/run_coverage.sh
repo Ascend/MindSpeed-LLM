@@ -95,6 +95,15 @@ add_coverage() {
     sed -i "/    main()/a\    cov.stop()" convert_ckpt.py
     sed -i "/    cov.stop()/a\    cov.save()" convert_ckpt.py
 
+    sed -i "1a\import random" convert_ckpt_v2.py
+    sed -i "2a\import time" convert_ckpt_v2.py
+    sed -i "3a\import coverage" convert_ckpt_v2.py
+    sed -i '4a\cov = coverage.Coverage(data_suffix=f"usecase-{time.time_ns()}_{random.randint(0, 100)}")' convert_ckpt_v2.py
+
+    sed -i "/    main()/i\    cov.start()" convert_ckpt_v2.py
+    sed -i "/    main()/a\    cov.stop()" convert_ckpt_v2.py
+    sed -i "/    cov.stop()/a\    cov.save()" convert_ckpt_v2.py
+
     sed -i "1a\import random" evaluation.py
     sed -i "2a\import time" evaluation.py
     sed -i "3a\import coverage" evaluation.py
@@ -121,15 +130,6 @@ add_coverage() {
 
     sed -i "/    launch()/a\    cov.stop()" posttrain_gpt.py
     sed -i "/    cov.stop()/a\    cov.save()" posttrain_gpt.py
-
-    sed -i "1a\import random" ray_gpt.py
-    sed -i "2a\import time" ray_gpt.py
-    sed -i "3a\import coverage" ray_gpt.py
-    sed -i '4a\cov = coverage.Coverage(data_suffix=f"usecase-{time.time_ns()}_{random.randint(0, 100)}")' ray_gpt.py
-    sed -i "5a\cov.start()" ray_gpt.py
-
-    sed -i "/    main()/a\    cov.stop()" ray_gpt.py
-    sed -i "/    cov.stop()/a\    cov.save()" ray_gpt.py
 
     sed -i "1a\import random" preprocess_data.py
     sed -i "2a\import time" preprocess_data.py
@@ -169,6 +169,15 @@ remove_coverage() {
     sed -i "/    cov.stop()/d" convert_ckpt.py
     sed -i "/    cov.save()/d" convert_ckpt.py
 
+    sed -i "2d" convert_ckpt_v2.py
+    sed -i "2d" convert_ckpt_v2.py
+    sed -i "2d" convert_ckpt_v2.py
+    sed -i "2d" convert_ckpt_v2.py
+
+    sed -i "/    cov.start()/d" convert_ckpt_v2.py
+    sed -i "/    cov.stop()/d" convert_ckpt_v2.py
+    sed -i "/    cov.save()/d" convert_ckpt_v2.py
+
     sed -i "2d" evaluation.py
     sed -i "2d" evaluation.py
     sed -i "2d" evaluation.py
@@ -195,15 +204,6 @@ remove_coverage() {
 
     sed -i "/    cov.stop()/d" posttrain_gpt.py
     sed -i "/    cov.save()/d" posttrain_gpt.py
-
-    sed -i "2d" ray_gpt.py
-    sed -i "2d" ray_gpt.py
-    sed -i "2d" ray_gpt.py
-    sed -i "2d" ray_gpt.py
-    sed -i "2d" ray_gpt.py
-
-    sed -i "/    cov.stop()/d" ray_gpt.py
-    sed -i "/    cov.save()/d" ray_gpt.py
 
     sed -i "2d" preprocess_data.py
     sed -i "2d" preprocess_data.py

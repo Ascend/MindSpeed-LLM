@@ -68,7 +68,7 @@
                 "input": "/data/ci/datasets/tune_dataset/sss.json",
                 "tokenizer-type": "PretrainedFromHF",
                 "handler-name": "SharegptStyleInstructionHandler",
-                "output-prefix": "/data/ci/datasets/tune_dataset/sharegpt/sharegpt",
+                "output-prefix": "/data/ci/datasets/tune_dataset/openai/sss",
                 "tokenizer-name-or-path": "/data/ci/models/qwen-7b/hf/qwen-7b/",
                 "overwrite-cache": null,
                 "workers": 4,

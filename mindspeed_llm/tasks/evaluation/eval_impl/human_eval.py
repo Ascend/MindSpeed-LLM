@@ -141,6 +141,7 @@ class HumanEval(DatasetEval):
                         logger.info(f'answer: {answer}')
                         test_file = extract_answer_code(answer, task)
                         result = subprocess.run([python_execute, test_file], capture_output=True, timeout=10)
+                        os.remove(test_file)
                         if result.returncode != 0:
                             error_msg = result.stderr.decode("utf-8")
                             logger.info(error_msg)

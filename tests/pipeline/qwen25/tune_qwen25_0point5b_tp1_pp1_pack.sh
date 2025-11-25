@@ -11,14 +11,14 @@ WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 # please fill these path configurations
 CKPT_SAVE_DIR="/data/ci/cache"
 DATA_PATH="/data/ci/datasets/processed/qwen25_finetune/alpaca"
-TOKENIZER_PATH="/data/ci/models/qwen25/hf/qwen25-5b-hf"
-CKPT_LOAD_DIR="/data/pipeline/qwen25_tp1pp1"
+TOKENIZER_PATH="/data/ci/models/qwen25/hf/qwen2.5-0.5b-instruct"
+CKPT_LOAD_DIR="/data/ci/models/qwen25/hf/qwen2.5-0.5b-tp1pp1-layer2"
 
 TP=1
 PP=1
 MBS=1
 GBS=8
-SEQ_LEN=1024
+SEQ_LEN=4096
 
 DISTRIBUTED_ARGS="
     --nproc_per_node $NPUS_PER_NODE \

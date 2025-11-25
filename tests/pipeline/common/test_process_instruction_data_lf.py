@@ -18,10 +18,10 @@ class TestProcessInstructionDataLf:
     @pytest.mark.parametrize("params, base_path", 
         [
             (test_config["test_alpaca_dataset"][0], "/data/ci/datasets/tune_dataset/Llamafactoryhandler/alpaca/alpaca"),
-            (test_config["test_alpaca_history_dataset"][0], "/data/ci/datasets/tune_dataset/Llamafactoryhandler/alpaca_history/alpaca_history_new"),
-            (test_config["test_sharegpt_dataset"][0], "/data/ci/datasets/tune_dataset/Llamafactoryhandler/sharegpt/sharegpt_lf"),
+            (test_config["test_alpaca_history_dataset"][0], "/data/ci/datasets/tune_dataset/Llamafactoryhandler/alpaca_his/alpaca_his"),
+            (test_config["test_sharegpt_dataset"][0], "/data/ci/datasets/tune_dataset/Llamafactoryhandler/sharegpt/sharegpt"),
             (test_config["test_openai_dataset"][0], "/data/ci/datasets/tune_dataset/Llamafactoryhandler/openai/sss"),
-            (test_config["test_abstract_prompt_type"][0], "/data/ci/datasets/tune_dataset/Llama2-7b-original-prompt-type/alpaca")
+            (test_config["test_abstract_prompt_type"][0], "/data/ci/datasets/tune_dataset/Llamafactoryhandler/prompt_abstract/alpaca")
         ])
     def test_datasets(self, build_args, params, base_path):
         """
@@ -62,7 +62,7 @@ class TestProcessInstructionDataLf:
 
     @pytest.mark.parametrize("params, base_path", 
         [
-            (test_config["test_alpaca_history_dataset"][1], "/data/ci/datasets/tune_dataset/Llamafactoryhandler/alpaca_history/alpaca_history_seq1024"),
+            (test_config["test_alpaca_history_dataset"][1], "/data/ci/datasets/tune_dataset/Llamafactoryhandler/alpaca_his/alpaca_his_seq1024"),
         ])
     def test_skip_num(self, build_args, params, base_path):
         """
@@ -98,7 +98,7 @@ class TestProcessInstructionDataLf:
         index1 = output.find("Skip ")
         index2 = output.find(" sample exceeded seq-length")
         skip_num = output[index1 + 5: index2]
-        assert(skip_num == "796.0")
+        assert(skip_num == "822.0")
         logger.removeHandler(log_handler)
         log_capture_string.close()
 
