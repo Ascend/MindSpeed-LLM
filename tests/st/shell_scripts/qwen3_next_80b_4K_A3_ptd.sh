@@ -149,6 +149,7 @@ GPT_ARGS="
     --no-load-rng \
     --no-save-optim \
     --no-save-rng \
+    --mamba-chunk-size 64 \
 "
 
 DATA_ARGS="

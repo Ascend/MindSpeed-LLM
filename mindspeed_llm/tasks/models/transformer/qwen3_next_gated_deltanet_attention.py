@@ -18,6 +18,11 @@ try:
 except ImportError:
     bnb = None
 
+try:
+    from causal_conv1d import causal_conv1d_fn, causal_conv1d_update
+except ImportError:
+    causal_conv1d_update, causal_conv1d_fn = None, None
+
 
 @dataclass
 class CustomQwen3NextGatedDeltaNetAttentionSubmodules:
@@ -294,9 +299,15 @@ class CustomQwen3NextGatedDeltaNetAttention(MegatronModule):
             tp_comm_buffer_name='fc2',
         )
 
-        self.causal_conv1d_fn = None
-        self.causal_conv1d_update = torch_causal_conv1d_update
-        self.chunk_gated_delta_rule = torch_chunk_gated_delta_rule
+        self.causal_conv1d_fn = causal_conv1d_fn or None
+        self.causal_conv1d_update = causal_conv1d_update or torch_causal_conv1d_update
+        args = get_args()
+        if args.use_triton_gdn:
+            from mindspeed_llm.tasks.models.transformer.chunk_gated_delta_rule import chunk_gated_delta_rule
+            self.chunk_gated_delta_rule = chunk_gated_delta_rule
+        else:
+            self.chunk_gated_delta_rule = torch_chunk_gated_delta_rule
+
         self.recurrent_gated_delta_rule = torch_recurrent_gated_delta_rule
 
     def fix_query_key_value_ordering(self, mixed_qkvz, mixed_ba):
@@ -422,6 +433,7 @@ class CustomQwen3NextGatedDeltaNetAttention(MegatronModule):
             key = key.repeat_interleave(self.num_v_heads // self.num_k_heads, dim=2)
 
         if not use_precomputed_states:
+            args = get_args()
             core_attn_out, last_recurrent_state = self.chunk_gated_delta_rule(
                 query,
                 key,
@@ -431,6 +443,7 @@ class CustomQwen3NextGatedDeltaNetAttention(MegatronModule):
                 initial_state=None,
                 output_final_state=cache_params is not None,
                 use_qk_l2norm_in_kernel=True,
+                chunk_size=args.mamba_chunk_size
             )
 
         else:
