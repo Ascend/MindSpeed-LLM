@@ -82,6 +82,10 @@ class TrainingBasicFeature(MindSpeedFeature):
                             help='Setting jit compile mode to True')
         group.add_argument('--load-checkpoint-loosely', action='store_true', default=False,
                             help='Enable loading checkpoint not strictly.')
+        group.add_argument('--init-from-hf-path', type=str, default=None,
+                           help='Enable loading checkpoint not strictly.')
+        group.add_argument('--model-id', type=str, default=None, choices=["gpt_oss"],
+                           help='Enable loading checkpoint not strictly.')
 
     def register_patches(self, patch_manager, args):
         from mindspeed_llm.training.training import train

@@ -239,7 +239,7 @@ class Template:
 
     def add_thought(self, content: str = "") -> str:
         r"""Add empty thought to assistant message."""
-        return f"{self.thought_words[0]}\n\n{self.thought_words[1]}\n\n" + content
+        return f"{self.thought_words[0]}{self.thought_words[1]}" + content
 
 
     def remove_thought(self, content: str) -> str:
@@ -729,6 +729,7 @@ def register_custom_template(name, json_file_path=TEMPLATES_DIR, enable_thinking
     replace_eos = _format_custom_template(config.get("replace_eos", False))
     force_system = _format_custom_template(config.get("force_system", False))
     template_class = _format_custom_template(config.get("template_class", None))
+    thought_words = _format_custom_template(config.get("thought_words", None))
 
     if isinstance(default_system, list):
         default_system = "".join(default_system) if all(isinstance(sentence, str) for sentence in default_system) else default_system
@@ -758,7 +759,7 @@ def register_custom_template(name, json_file_path=TEMPLATES_DIR, enable_thinking
         format_prefix=format_prefix,
         default_system=default_system,
         stop_words=stop_words,
-        thought_words=("<think>", "</think>"),
+        thought_words=thought_words or ("<think>", "</think>"),
         efficient_eos=efficient_eos,
         replace_eos=replace_eos,
         force_system=force_system,
