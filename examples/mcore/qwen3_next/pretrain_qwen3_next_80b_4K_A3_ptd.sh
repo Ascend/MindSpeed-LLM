@@ -2,6 +2,9 @@
 
 export HCCL_CONNECT_TIMEOUT=1800
 export CUDA_DEVICE_MAX_CONNECTIONS=1
+export CPU_AFFINITY_CONF=1
+export TASK_QUEUE_ENABLE=2
+export STREAMS_PER_DEVICE=32
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
 export NPU_ASD_ENABLE=0
 
@@ -19,13 +22,14 @@ TOKENIZER_PATH="your tokenizer path"
 CKPT_LOAD_DIR="your model ckpt path"
 
 TP=1
-PP=1
-EP=64
+PP=8
+EP=8
 CP=1
+VPP=1
 
 MBS=1
 GBS=128
-SEQ_LENGTH=4096
+SEQ_LENGTH=16384
 TRAIN_ITERS=2000
 CP_TYPE='ulysses_cp_algo'
 ROUTER_BALANCING_TYPE='aux_loss'
@@ -64,10 +68,9 @@ OPTIMIZE_ARGS="
     --use-distributed-optimizer \
     --gemm-gradient-accumulation-fusion \
     --swap-optimizer \
-    --recompute-activation-function \
     --recompute-granularity full \
-    --recompute-method block \
-    --recompute-num-layers  40 \
+    --recompute-method uniform \
+    --recompute-num-layers  1 \
 "
 
 TRAIN_ARGS="
@@ -89,7 +92,6 @@ TRAIN_ARGS="
     --bf16 \
     --train-iters ${TRAIN_ITERS} \
     --seq-length ${SEQ_LENGTH} \
-    --no-shared-storage
 "
 
 MODEL_PARALLEL_ARGS="
@@ -98,6 +100,7 @@ MODEL_PARALLEL_ARGS="
     --expert-model-parallel-size ${EP} \
     --context-parallel-size ${CP} \
     --context-parallel-algo ${CP_TYPE} \
+    --num-layers-per-virtual-pipeline-stage ${VPP} \
 "
 
 GPT_ARGS="
@@ -136,18 +139,20 @@ GPT_ARGS="
     --group-query-attention \
     --num-query-groups 2 \
     --norm-epsilon 1e-06 \
-
+    --mamba-chunk-size 64 \
+    --use-triton-gdn \
 "
 
 DATA_ARGS="
     --data-path $DATA_PATH \
-    --split 100,0,0
+    --split 100,0,0 \
+    --handler-name GeneralPretrainHandler \
 "
 
-MTP_ARGS="
-    --mtp-num-layers 1 \
-    --mtp-loss-scaling-factor 0.3 \
-    --mtp-mem-efficient-logits \
+CKPT_ARGS="
+    --load $CKPT_LOAD_DIR \
+    --enable-hf2mg-convert \
+    --model-type-hf qwen3-next \
 "
 
 OUTPUT_ARGS="
@@ -160,9 +165,9 @@ OUTPUT_ARGS="
 "
 
 torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
-    $MTP_ARGS \
     $GPT_ARGS \
     $DATA_ARGS \
+    $CKPT_ARGS \
     $MOE_ARGS \
     $OUTPUT_ARGS \
     $OPTIMIZE_ARGS \
