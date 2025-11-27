@@ -86,6 +86,24 @@ add_coverage() {
     sed -i "/    main()/a\    cov.stop()" pretrain_mamba.py
     sed -i "/    cov.stop()/a\    cov.save()" pretrain_mamba.py
 
+    sed -i "1a\import random" mindspeed_llm/tasks/checkpoint/convert_ckpt_mamba2.py
+    sed -i "2a\import time" mindspeed_llm/tasks/checkpoint/convert_ckpt_mamba2.py
+    sed -i "3a\import coverage" mindspeed_llm/tasks/checkpoint/convert_ckpt_mamba2.py
+    sed -i '4a\cov = coverage.Coverage(data_suffix=f"usecase-{time.time_ns()}_{random.randint(0, 100)}")' mindspeed_llm/tasks/checkpoint/convert_ckpt_mamba2.py
+
+    sed -i "/    run()/i\    cov.start()" mindspeed_llm/tasks/checkpoint/convert_ckpt_mamba2.py
+    sed -i "/    run()/a\    cov.stop()" mindspeed_llm/tasks/checkpoint/convert_ckpt_mamba2.py
+    sed -i "/    cov.stop()/a\    cov.save()" mindspeed_llm/tasks/checkpoint/convert_ckpt_mamba2.py
+
+    sed -i "1a\import random" mindspeed_llm/tasks/checkpoint/convert_param.py
+    sed -i "2a\import time" mindspeed_llm/tasks/checkpoint/convert_param.py
+    sed -i "3a\import coverage" mindspeed_llm/tasks/checkpoint/convert_param.py
+    sed -i '4a\cov = coverage.Coverage(data_suffix=f"usecase-{time.time_ns()}_{random.randint(0, 100)}")' mindspeed_llm/tasks/checkpoint/convert_param.py
+
+    sed -i "/    main()/i\    cov.start()" mindspeed_llm/tasks/checkpoint/convert_param.py
+    sed -i "/    main()/a\    cov.stop()" mindspeed_llm/tasks/checkpoint/convert_param.py
+    sed -i "/    cov.stop()/a\    cov.save()" mindspeed_llm/tasks/checkpoint/convert_param.py
+
     sed -i "1a\import random" convert_ckpt.py
     sed -i "2a\import time" convert_ckpt.py
     sed -i "3a\import coverage" convert_ckpt.py
@@ -177,6 +195,25 @@ remove_coverage() {
     sed -i "/    cov.start()/d" convert_ckpt_v2.py
     sed -i "/    cov.stop()/d" convert_ckpt_v2.py
     sed -i "/    cov.save()/d" convert_ckpt_v2.py
+
+    sed -i "2d" mindspeed_llm/tasks/checkpoint/convert_ckpt_mamba2.py
+    sed -i "2d" mindspeed_llm/tasks/checkpoint/convert_ckpt_mamba2.py
+    sed -i "2d" mindspeed_llm/tasks/checkpoint/convert_ckpt_mamba2.py
+    sed -i "2d" mindspeed_llm/tasks/checkpoint/convert_ckpt_mamba2.py
+
+    sed -i "/    cov.start()/d" mindspeed_llm/tasks/checkpoint/convert_ckpt_mamba2.py
+    sed -i "/    cov.stop()/d" mindspeed_llm/tasks/checkpoint/convert_ckpt_mamba2.py
+    sed -i "/    cov.save()/d" mindspeed_llm/tasks/checkpoint/convert_ckpt_mamba2.py
+
+    sed -i "2d" mindspeed_llm/tasks/checkpoint/convert_param.py
+    sed -i "2d" mindspeed_llm/tasks/checkpoint/convert_param.py
+    sed -i "2d" mindspeed_llm/tasks/checkpoint/convert_param.py
+    sed -i "2d" mindspeed_llm/tasks/checkpoint/convert_param.py
+
+    sed -i "/    cov.start()/d" mindspeed_llm/tasks/checkpoint/convert_param.py
+    sed -i "/    cov.stop()/d" mindspeed_llm/tasks/checkpoint/convert_param.py
+    sed -i "/    cov.save()/d" mindspeed_llm/tasks/checkpoint/convert_param.py
+
 
     sed -i "2d" evaluation.py
     sed -i "2d" evaluation.py

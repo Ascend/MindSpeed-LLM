@@ -81,4 +81,22 @@
         <td>/</td>
         <td>/data/ci/cache/mamba2_2.7b_hf</td>
     </tr>
+    <tr>
+        <td>test_llama3_hf2mcore_tp8pp1_tp2d</td>
+        <td>/data/ci/models/llama3/hf/llama-3-8b-hf</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/data/ci/cache/llama3-8b-tp8pp1-tp2d</td>
+    </tr>
+    <tr>
+        <td>test_llama3_mcore2hf_tp8pp1_tp2d</td>
+        <td>/</td>
+        <td>/data/ci/cache/llama3-8b-tp8pp1-tp2d</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/data/ci/cache/llama-3-8b-hf-ckpt-param-mg2hf</td>
+    </tr>
 </table>

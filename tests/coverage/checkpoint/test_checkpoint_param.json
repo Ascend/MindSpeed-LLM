@@ -1,0 +1,58 @@
+{
+    "test_llama3_hf2mcore_tp8pp1_tp2d": [
+        {
+            "param": {
+                "cvt-type": "hf2mg",
+                "model-name": "llama",
+                "hf-dir": "/data/ci/models/llama3/hf/llama-3-8b-hf",
+                "mg-dir": "/data/ci/cache/llama3-8b-tp8pp1-tp2d",
+                "model-index-file": "/data/ci/models/llama3/hf/llama-3-8b-hf/model.safetensors.index.json",
+                "tensor-model-parallel-size": "8",
+                "pipeline-model-parallel-size": "1",
+                "make-vocab-size-divisible-by": "1",
+                "num-layers": "16",
+                "tp-2d": null,
+                "tp-x": "4",
+                "tp-y": "2"
+            }
+        },
+        {
+            "Base_MD5" : [
+                "9752e93716660e1c",
+                "6b9deb9366568abc",
+                "5eb75a3ffbad44de",
+                "7251c052740a1e55",
+                "75768182ed154242",
+                "65879ec01d2e0b11",
+                "1912904c8023d74c",
+                "057c1dc163df2f9d"
+            ]
+        }
+    ],
+    "test_llama3_mcore2hf_tp8pp1_tp2d": [
+        {
+            "param": {
+                "cvt-type": "mg2hf",
+                "model-name": "llama",
+                "hf-dir": "/data/ci/cache/llama-3-8b-hf-ckpt-param-mg2hf",
+                "mg-dir": "/data/ci/cache/llama3-8b-tp8pp1-tp2d",
+                "model-index-file": "/data/ci/models/llama3/hf/llama-3-8b-hf/model.safetensors.index.json",
+                "model-config-file": "/data/ci/models/llama3/hf/llama-3-8b-hf/config.json",
+                "tensor-model-parallel-size": "8",
+                "pipeline-model-parallel-size": "1",
+                "make-vocab-size-divisible-by": "1",
+                "num-layers": "16",
+                "tp-2d": null,
+                "tp-x": "4",
+                "tp-y": "2"
+            }
+        },
+        {
+            "Base_MD5" : [
+                "505195927f3774577c52759b3513bb24",
+                "1e1c73d0db1d394d8e552c9439ab3e09",
+                "3e0ea804411f57d70fdc6dc7f5240778"
+            ]
+        }
+    ]
+}
