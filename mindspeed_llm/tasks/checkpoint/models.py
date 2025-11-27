@@ -672,6 +672,8 @@ class HuggingfaceModel(ModelBase):
         elif fc_type == "up_down":
             up_proj = self.get_layers_mlp_up_proj_weight(**kwargs)
             return up_proj
+        elif fc_type == "gate_up":
+            return self.get_layers_mlp_linear_fc1_module(**kwargs).weight
         else:
             raise ValueError(f"Unsupported fc_type {fc_type}")
 
