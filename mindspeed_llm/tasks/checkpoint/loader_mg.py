@@ -97,6 +97,7 @@ def build_metadata(args, margs):
     md.moe_tp_extend_ep = margs.moe_tp_extend_ep
     md.spec = margs.spec
     md.num_experts = getattr(margs, "num_experts", None)
+    md.num_layer_list = getattr(margs, "num_layer_list", None)
     md.n_shared_experts = getattr(margs, "n_shared_experts", None)
     md.qk_layernorm = getattr(margs, "qk_layernorm", False)
     md.moe_intermediate_size = getattr(margs, "moe_intermediate_size", None)
