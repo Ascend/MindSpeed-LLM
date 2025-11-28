@@ -567,7 +567,8 @@
     "phi3.5": {
       "__base__": "base",
       "config_set_value": {
-        "qkv_type": "pack_gqa"
+        "qkv_type": "pack_gqa",
+        "fc_type": "gateup_down"
       },
       "model_hf_key_mapping": {
         "layers_self_attention_linear_qkv_pack": "model.layers[layer_idx].self_attn.qkv_proj",

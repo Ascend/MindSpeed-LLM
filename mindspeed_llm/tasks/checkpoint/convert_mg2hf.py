@@ -680,19 +680,21 @@ class Mg2HfConvert(Convert):
             qkv_weight = torch.cat([tranrq, tranrk, tranrv], dim=0)
 
             o_proj = torch.cat(linear_proj_list, dim=1)
-            q_a_layernorm = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(q_layernorm_key)
-            if mtp_layer_flag:
-                kv_a_layernorm = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(k_layernorm_key)
-            else:
-                kv_a_layernorm = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(k_layernorm_key)
-
             hf_weight[hf_weight_key["layers_self_attention_linear_qkv_pack"]] = qkv_weight.clone()
             hf_weight[hf_weight_key["layers_self_attention_linear_proj"]] = o_proj.clone()
-            hf_weight[hf_weight_key["layers_self_attention_q_layernorm"]] = q_a_layernorm.clone()
-            if mtp_layer_flag:
-                hf_weight[hf_weight_key["layers_self_attention_k_layernorm"]] = kv_a_layernorm.clone()
-            else:
-                hf_weight[hf_weight_key["layers_self_attention_k_layernorm"]] = kv_a_layernorm.clone()
+
+            if getattr(self.load_model, "qk_layernorm", False):
+                q_a_layernorm = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(q_layernorm_key)
+                if mtp_layer_flag:
+                    kv_a_layernorm = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(k_layernorm_key)
+                else:
+                    kv_a_layernorm = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(k_layernorm_key)
+
+                hf_weight[hf_weight_key["layers_self_attention_q_layernorm"]] = q_a_layernorm.clone()
+                if mtp_layer_flag:
+                    hf_weight[hf_weight_key["layers_self_attention_k_layernorm"]] = kv_a_layernorm.clone()
+                else:
+                    hf_weight[hf_weight_key["layers_self_attention_k_layernorm"]] = kv_a_layernorm.clone()
         else:
             logger.warning("[warning]: this attn_qkv_type is not supported. please check!")
 
@@ -930,8 +932,11 @@ class Mg2HfConvert(Convert):
                 gate_weights, up_weights = self.linear_fc1_gather_from_tp(mg_weight, mg_weight_key["layers_mlp_linear_fc1"])
                 down_weights = self.linear_fc2_gather_from_tp(mg_weight, mg_weight_key["layers_mlp_linear_fc2"])
 
-            hf_weight[hf_weight_key["layers_mlp_gate_proj"]] = gate_weights.clone()
-            hf_weight[hf_weight_key["layers_mlp_up_proj"]] = up_weights.clone()
+            if getattr(self.load_model, "fc_type", None) == "gateup_down":
+                hf_weight[hf_weight_key["layers_mlp_linear_fc1"]] = torch.cat([gate_weights.clone(), up_weights.clone()], dim=0)
+            else:
+                hf_weight[hf_weight_key["layers_mlp_gate_proj"]] = gate_weights.clone()
+                hf_weight[hf_weight_key["layers_mlp_up_proj"]] = up_weights.clone()
             hf_weight[hf_weight_key["layers_mlp_linear_fc2"]] = down_weights.clone()
 
 

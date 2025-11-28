@@ -607,7 +607,7 @@ class Hf2MgConvert(Convert):
                 qkv_bias = qkv_concatenate_weight(qkv_bias)
                 qkv_bias_lst = torch.chunk(qkv_bias, self.tensor_model_parallel_size, dim=0)
 
-            if self.load_model.qk_layernorm:
+            if getattr(self.load_model, 'qk_layernorm', False):
                 q_layernorm = hf_weight.pop(hf_weight_key["layers_self_attention_q_layernorm"])
                 k_layernorm = hf_weight.pop(hf_weight_key["layers_self_attention_k_layernorm"])
         
@@ -871,10 +871,13 @@ class Hf2MgConvert(Convert):
         else:
             mg_weight_key = self.save_model.get_weight(local_layer_idx)
             # dense layer
-            gate_proj = hf_weight.pop(hf_weight_key["layers_mlp_gate_proj"])
-            up_proj = hf_weight.pop(hf_weight_key["layers_mlp_up_proj"])
+            if getattr(self.load_model, "fc_type", None) == "gateup_down":
+                linear_fc1_weight = hf_weight.pop(hf_weight_key["layers_mlp_linear_fc1"])
+            else:
+                gate_proj = hf_weight.pop(hf_weight_key["layers_mlp_gate_proj"])
+                up_proj = hf_weight.pop(hf_weight_key["layers_mlp_up_proj"])
+                linear_fc1_weight = torch.cat([gate_proj, up_proj], dim=0)
 
-            linear_fc1_weight = torch.cat([gate_proj, up_proj], dim=0)
             linear_fc2_weight = hf_weight.pop(hf_weight_key["layers_mlp_linear_fc2"])
 
             for ep_rank in range(self.expert_model_parallel_size):
