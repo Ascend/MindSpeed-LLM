@@ -1132,6 +1132,10 @@ class MegatronModel(ModelBase):
             self.args.lora_load = self.args_cmd.lora_load
             self.args.lora_r = self.args_cmd.lora_r
             self.args.lora_alpha = self.args_cmd.lora_alpha
+
+        if self.args.lora_target_modules and self.args.num_experts:
+            self.args.moe_token_dispatcher_type = 'alltoall_seq'
+
         # Determine how to make our models.
         if not self.args_cmd.model_type == 'GPT':
             raise ValueError("Llama-2 is a GPT model.")
