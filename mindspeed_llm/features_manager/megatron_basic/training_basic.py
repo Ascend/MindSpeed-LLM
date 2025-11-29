@@ -84,8 +84,12 @@ class TrainingBasicFeature(MindSpeedFeature):
                             help='Enable loading checkpoint not strictly.')
         group.add_argument('--init-from-hf-path', type=str, default=None,
                            help='Enable loading checkpoint not strictly.')
-        group.add_argument('--model-id', type=str, default=None, choices=["gpt_oss"],
+        group.add_argument('--model-id', type=str, default=None, choices=["gpt_oss", "qwen3", "qwen3_moe"],
                            help='Enable loading checkpoint not strictly.')
+        group.add_argument('--loss-compute-mode', type=str, default='default', choices=['default', 'chunk'],
+                           help='calculate mode of CE(CrossEntropy) loss.')
+        group.add_argument('--loss-chunk-size', type=int, default=None,
+                           help='loss chunk size, used when loss-compute-mode=chunk. This parameter is applied.')
 
     def register_patches(self, patch_manager, args):
         from mindspeed_llm.training.training import train

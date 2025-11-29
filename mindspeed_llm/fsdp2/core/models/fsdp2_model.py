@@ -5,8 +5,10 @@ import torch.nn.functional as F
 from torch import Tensor
 from transformers import PretrainedConfig
 
-from megatron.training import get_args, print_rank_0
+from megatron.training import print_rank_0
 from megatron.core.transformer.module import MegatronModule
+
+from mindspeed_llm.fsdp2.core.chunkloss import chunk_loss, calculate_lm_loss
 
 
 class FSDP2Model(MegatronModule):
@@ -36,6 +38,8 @@ class FSDP2Model(MegatronModule):
         self.transformer_config = transformer_config
 
         hf_path = config.init_from_hf_path
+        self.loss_compute_mode = getattr(config, "loss_compute_mode", "default")
+        self.loss_chunk_size = getattr(config, "loss_chunk_size", 1024)
 
         if config.init_model_with_meta_device:
             # Initialize the model on meta device (without weights) for fast initialization
@@ -76,6 +80,12 @@ class FSDP2Model(MegatronModule):
         *args,
         **kwargs
     ) -> torch.Tensor:
+        if self.loss_compute_mode == "chunk":
+            if labels is None:
+                raise ValueError("when chunk loss is enabled(loss_compute_mode=chunk), labels must not be None.")
+            loss_ctx, loss_mask = self.build_loss_ctx(labels, chunk_size=self.loss_chunk_size)
+        else:
+            loss_ctx, loss_mask = None, None
 
         outputs = self.model(
             input_ids=input_ids,
@@ -84,11 +94,56 @@ class FSDP2Model(MegatronModule):
             labels=labels,
             cache_position=cache_position,
             use_cache=False,
+            loss_ctx=loss_ctx,
             **kwargs
         )
         loss = outputs.loss
         
         return loss
+
+    def build_loss_ctx(
+        self,
+        labels,
+        ignore_index=-100,
+        chunk_size=1024,
+    ):
+        labels = F.pad(labels, (0, 1), value=ignore_index)
+        shift_labels = labels
+
+        # Create a mask to identify valid tokens (typically > -1 means non-special tokens)
+        loss_mask = shift_labels > -1
+
+
+        # Default: normalize loss by total number of valid tokens in the batch.
+        alpha = loss_mask.sum()  # scalar
+        reduction = "sum"
+
+        # Split shifted labels into chunks along the sequence dimension for memory-efficient processing.
+        chunk_labels = torch.split(shift_labels, chunk_size, dim=1)
+
+        # Prepare keyword arguments for each chunk to be passed to the chunked loss function.
+        loss_ctx_kwargs = [
+            {
+                "shift_labels": chunk_labels[i],
+                "ignore_index": ignore_index,
+                "reduction": reduction,
+                "alpha": alpha,
+            }
+            for i in range(len(chunk_labels))
+        ]
+
+        # Return a closure that computes the chunked language modeling loss using the prepared config.
+        def loss_ctx(hidden_states, head_weight, head_bias):
+            return chunk_loss(
+                hidden_states,
+                head_weight,
+                head_bias,
+                loss_forward=calculate_lm_loss,
+                loss_kwargs_chunks=loss_ctx_kwargs,
+                chunk_size=chunk_size
+            )
+
+        return loss_ctx, loss_mask
 
     def fully_shard(self, process_group, fsdp2_config_path, **kwargs) -> bool:
         if hasattr(self.model, 'fully_shard') and callable(getattr(self.model, 'fully_shard')):

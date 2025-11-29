@@ -11,4 +11,7 @@ class GptOssFSDP2Mixin(FSDP2ShardingMixin):
 
 
 class GptOssForCausalLM(transformers.GptOssForCausalLM, GptOssFSDP2Mixin):
-    pass
+    @staticmethod
+    def register_patches(config):
+        """patching the transformers model."""
+        pass

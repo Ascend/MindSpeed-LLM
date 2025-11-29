@@ -21,6 +21,7 @@ class FSDP2ModelFactory:
 
         # 1. Strategy: Determine which HF class to use
         model_cls = FSDP2ModelFactory._resolve_model_class(config, transformer_config)
+        model_cls.register_patches(config)
 
         # 2. Composition: Inject configuration and class into the Wrapper
         model = FSDP2Model(
