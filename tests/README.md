@@ -419,7 +419,7 @@
         <td>Y</td>
     </tr>
     <tr>
-        <td rowspan="5"><a href="pipeline/llama2">Llama2</a></td>
+        <td rowspan="7"><a href="pipeline/llama2">Llama2</a></td>
         <td>LoRA</td>
         <td><a href="pipeline/llama2/tune_llama2_tp1_pp1_lora_ptd.sh">tune_llama2_tp1_pp1_lora_ptd.sh</a></td>
         <td>Y</td>
@@ -434,8 +434,26 @@
         <td>Y</td>
     </tr>
     <tr>
-        <td>pretrain</td>
+        <td rowspan="4">pretrain</td>
         <td><a href="pipeline/llama2/llama2_tp8_pp1_coc_ptd.sh">llama2_tp8_pp1_coc_ptd.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td><a href="pipeline/llama2/llama2_tp4cp2pp1_tp2d_tpx2tpy2_ulysses.sh">llama2_tp4cp2pp1_tp2d_tpx2tpy2_ulysses.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td><a href="pipeline/llama2_tp4cp2pp1_tp2d_tpx2tpy2_ringcp.sh">llama2_tp4cp2pp1_tp2d_tpx2tpy2_ringcp.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td><a href="pipeline/llama2/llama2_tp1_pp8_patch_gloo_ptd.sh">llama2_tp1_pp8_patch_gloo_ptd.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
@@ -446,13 +464,6 @@
         <td>Y</td>
         <td></td>
         <td></td>
-    </tr>
-    <tr>
-        <td>pretrain</td>
-        <td><a href="pipeline/llama2/llama2_tp1_pp8_patch_gloo_ptd.sh">llama2_tp1_pp8_patch_gloo_ptd.sh</a></td>
-        <td>Y</td>
-        <td>Y</td>
-        <td>Y</td>
     </tr>
     <tr>
         <td rowspan="1"><a href="pipeline/minicpm">Minicpm</a></td>

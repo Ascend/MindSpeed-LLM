@@ -99,4 +99,22 @@
         <td>/</td>
         <td>/data/ci/cache/llama-3-8b-hf-ckpt-param-mg2hf</td>
     </tr>
+    <tr>
+        <td>llama2_tp4cp2pp1_tp2d_tpx2tpy2_ulysses</td>
+        <td>/data/ci/models/llama2/hf/llama-2-7b-hf/</td>
+        <td>/data/ci/models/llama2/mg/llama2-2dtp-tp4cp2tpx2tpy2_ulyssescp/</td>
+        <td>/</td>
+        <td>/data/ci/datasets/processed/llama2_7b_pretrain/alpaca_text_document</td>
+        <td>/</td>
+        <td>/</td>
+    </tr>
+    <tr>
+        <td>llama2_tp4cp2pp1_tp2d_tpx2tpy2_ringcp</td>
+        <td>/data/ci/models/llama2/hf/llama-2-7b-hf/</td>
+        <td>/data/ci/models/llama2/mg/llama2-2dtp-tp4cp2pp1tpx2tpy2_ringcp/</td>
+        <td>/</td>
+        <td>/data/ci/datasets/processed/llama2_7b_pretrain/alpaca_text_document</td>
+        <td>/</td>
+        <td>/</td>
+    </tr>
 </table>
