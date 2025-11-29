@@ -25,7 +25,7 @@ CKPT_LOAD_DIR="your model ckpt path"
 
 TP=4
 PP=8
-EP=8
+EP=32
 CP=1
 CP_TYPE='ulysses_cp_algo'
 NUM_LAYERS=64
