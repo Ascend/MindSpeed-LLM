@@ -72,8 +72,3 @@ git checkout master
 
 pip3 install -r requirements.txt  # 安装其余依赖库
 ```
-
-
-> 注意:<br>
-> 1.qwen3,llama3.3系列模型依赖transformers 4.51.0, 需要在环境配置完成后手动执行pip install transformers==4.51.0;<br>
-> 2.glm4.5-moe系列模型依赖transformers 4.54.0, 需要在环境配置完成后手动执行pip install transformers==4.54.0;<br>
