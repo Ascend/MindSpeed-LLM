@@ -27,6 +27,9 @@ class Convert(abc.ABC):
             self.expert_model_parallel_size = args.expert_model_parallel_size
             args.load_model_type = 'hf'
             args.save_model_type = 'mg'
+            if args.noop_layers:
+                args.noop_layers = ",".join(str(x) for x in args.noop_layers)
+                args.num_layers = args.num_layers - len(args.noop_layers.split(","))
 
         else:
             self.tensor_model_parallel_size = args.target_tensor_parallel_size
