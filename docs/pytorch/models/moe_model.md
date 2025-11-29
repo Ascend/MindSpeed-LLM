@@ -20,7 +20,7 @@
     <tr>
       <td rowspan="2"> <a href="https://huggingface.co/collections/Qwen/qwen3-67dd247413f0e2e4f653967f">Qwen3</a> </td>
       <td><a href="https://huggingface.co/Qwen/Qwen3-30B-A3B-Base">30B</a></td>
-      <td><a href="../../../examples/mcore/qwen3_moe/">Qwen3-30B-A3B</a></td>
+      <td rowspan="2"><a href="../../../examples/mcore/qwen3_moe/">qwen3_moe</a></td>
       <td> 4K </td>
       <th> Mcore </th>
       <td> 2x8 </td>
@@ -30,10 +30,9 @@
     </tr>
     <tr>
       <td><a href="https://huggingface.co/Qwen/Qwen3-235B-A22B">235B</a></td>
-      <td><a href="../../../examples/mcore/qwen3_moe/">Qwen3-235B-A22B</a></td>
       <td> 4K </td>
       <th> Mcore </th>
-      <td> 16x16 </td>
+      <td> 16x8 </td>
       <td>  </td>
       <td>【Ascend】</td>
       <td>【Test】</td>
@@ -149,9 +148,9 @@
       <td><a href="../../../examples/mcore/ling_v2">ling_v2</a></td>
       <td> 4K </td>
       <th>Mcore</th>
-      <td> 1x16 </td>
+      <td> 1x8 </td>
       <td rowspan="1"></td>
-      <td>【NAIE】</td>
+      <td>【Ascend】</td>
       <td>【Test】</td>
     </tr>
     <tr>
@@ -163,6 +162,39 @@
       <td> 2x8 </td>
       <td>  </td>
       <td>【GTS】</td>
+      <td>【Test】</td>
+    </tr>
+    <tr>
+      <td rowspan="1"><a href="https://huggingface.co/tencent">Hunyuan</a></td>
+      <td> <a href="https://huggingface.co/tencent/Tencent-Hunyuan-Large">389B</a> </td>
+      <td><a href="../../../examples/mcore/hunyuanLarge">hunyuanLarge</a></td>
+      <td> 8K </td>
+      <th> Mcore </th>
+      <td> 8x8 </td>
+      <td>  </td>
+      <td>【Ascend】</td>
+      <td>【Pass】</td>
+    </tr>
+    <tr>
+      <td>GPT4</td>
+      <td>MoE-175B</td>
+      <td rowspan="1"><a href="../../../examples/mcore/gpt4">gpt4</a></td>
+      <td> 128K </td>
+      <th> Mcore </th>
+      <td> 8x8 </td>
+      <td>  </td>
+      <td>【Ascend】</td>
+      <td>【Pass】</td>
+    </tr>
+    <tr>
+      <td rowspan="1"><a href="https://huggingface.co/zai-org">GLM4.5</a></td>
+      <td> <a href="https://huggingface.co/zai-org/GLM-4.5-Air/tree/main">MoE-106B</a> </td>
+      <td><a href="../../../examples/mcore/glm45-moe">glm45-moe</a></td>
+      <td> 4K </td>
+      <th> Mcore </th>
+      <td> 8x8 </td>
+      <td>  </td>
+      <td>【Ascend】</td>
       <td>【Test】</td>
     </tr>
   </tbody>
