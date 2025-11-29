@@ -1285,7 +1285,8 @@ def _add_dummy_args_v2(args):
     args.attention_mask_on_cpu = False
     args.output_layer_slice_num = 1
     args.use_fused_mlp = False
-    args.transformer_impl = 'local'
+    if not args.fp8:
+        args.transformer_impl = 'local'
     args.ckpt_format = 'torch'
     args.use_dist_ckpt = False
 

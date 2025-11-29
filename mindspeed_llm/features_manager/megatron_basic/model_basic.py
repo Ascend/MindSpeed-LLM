@@ -33,9 +33,6 @@ class ModelBasicFeature(MindSpeedFeature):
                            checkpoint_backward_wrapper)
 
         # Layer Definition
-        # For NPU, we use local-mcore-structrue in te layer.
-        pm.register_patch('megatron.core.models.gpt.gpt_layer_specs.get_gpt_layer_with_transformer_engine_spec',
-                           get_gpt_layer_local_spec)
         pm.register_patch('megatron.core.models.gpt.gpt_layer_specs.get_gpt_layer_local_spec',
                            get_gpt_layer_local_spec_wrapper)
         pm.register_patch('megatron.training.dist_signal_handler.get_device',

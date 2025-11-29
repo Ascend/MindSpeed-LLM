@@ -10,6 +10,7 @@ import acl
 
 from megatron.core import InferenceParams, mpu, parallel_state, tensor_parallel
 from megatron.core.extensions.transformer_engine import TEDelayedScaling
+from megatron.core.fp8_utils import get_fp8_context
 from megatron.core.packed_seq_params import PackedSeqParams
 from megatron.core.tensor_parallel import (
     all_gather_last_dim_from_tensor_parallel_region,
@@ -103,28 +104,7 @@ def mtp_layer_forward(self,
         rng_context = nullcontext()
 
     if self.config.fp8:
-        import transformer_engine  # To keep out TE dependency when not training in fp8
-
-        if self.config.fp8 == "e4m3":
-            fp8_format = transformer_engine.common.recipe.Format.E4M3
-        elif self.config.fp8 == "hybrid":
-            fp8_format = transformer_engine.common.recipe.Format.HYBRID
-        else:
-            raise ValueError("E4M3 and HYBRID are the only supported FP8 formats.")
-
-        fp8_recipe = TEDelayedScaling(
-            config=self.config,
-            fp8_format=fp8_format,
-            override_linear_precision=(False, False, not self.config.fp8_wgrad),
-        )
-        fp8_group = None
-        if parallel_state.model_parallel_is_initialized():
-            fp8_group = parallel_state.get_amax_reduction_group(
-                with_context_parallel=True, tp_only_amax_red=self.tp_only_amax_red
-            )
-        fp8_context = transformer_engine.pytorch.fp8_autocast(
-            enabled=True, fp8_recipe=fp8_recipe, fp8_group=fp8_group
-        )
+        fp8_context = get_fp8_context(self.config)
     else:
         fp8_context = nullcontext()
 

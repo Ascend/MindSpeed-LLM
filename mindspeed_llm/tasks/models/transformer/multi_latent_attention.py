@@ -21,10 +21,12 @@ from megatron.core.tensor_parallel import ColumnParallelLinear, RowParallelLinea
 from megatron.core.tensor_parallel.mappings import gather_from_sequence_parallel_region
 from megatron.core.transformer import TransformerConfig, ModuleSpec, build_module
 from megatron.core.transformer.attention import SelfAttention, SelfAttentionSubmodules
+from megatron.core.transformer.custom_layers.transformer_engine import TEColumnParallelLinear, TERowParallelLinear
 from megatron.core.transformer.enums import AttnMaskType
 from megatron.core import mpu, parallel_state
 from megatron.training import get_args
 
+from mindspeed_llm.core.fp8_utils import fp8_context_wrapper
 from mindspeed_llm.core.tensor_parallel.layers import LinearNoTP
 from mindspeed_llm.core.transformer.custom_layers.transformer_engine import PTNorm
 from mindspeed_llm.tasks.models.transformer.dsa_indexer import get_dsa_indexer_spec, DSAIndexerLossAutoScaler, \
@@ -61,15 +63,22 @@ class MLASelfAttentionWithMMSplitSubmodules(SelfAttentionSubmodules):
 
 
 def get_mla_self_attn_submodules(qk_layernorm, mla_mm_split, enable_dsa_indexer):
+    args = get_args()
+    if args.transformer_impl == "transformer_engine":
+        ColumnLinear = TEColumnParallelLinear
+        RowLinear = TERowParallelLinear
+    else:
+        ColumnLinear = ColumnParallelLinear
+        RowLinear = RowParallelLinear
     if not mla_mm_split:
         return CustomMLASelfAttentionSubmodules(
             linear_qkv=LinearNoTP,
             core_attention=MlaDotProductAttention,
-            linear_proj=RowParallelLinear,
+            linear_proj=RowLinear,
             q_layernorm=PTNorm if qk_layernorm else IdentityOp,
             kv_layernorm=PTNorm if qk_layernorm else IdentityOp,
-            linear_q_up_proj=ColumnParallelLinear,
-            linear_kv_up_proj=ColumnParallelLinear,
+            linear_q_up_proj=ColumnLinear,
+            linear_kv_up_proj=ColumnLinear,
             dsa_indexer=get_dsa_indexer_spec(enable_dsa_indexer=enable_dsa_indexer),
         )
 
@@ -77,13 +86,13 @@ def get_mla_self_attn_submodules(qk_layernorm, mla_mm_split, enable_dsa_indexer)
         return MLASelfAttentionWithMMSplitSubmodules(
             linear_qkv=LinearNoTP,
             core_attention=MlaDotProductAttention,
-            linear_proj=RowParallelLinear,
+            linear_proj=RowLinear,
             q_layernorm=PTNorm if qk_layernorm else IdentityOp,
             kv_layernorm=PTNorm if qk_layernorm else IdentityOp,
-            linear_qk_nope=ColumnParallelLinear,
-            linear_qk_rope=ColumnParallelLinear,
-            linear_kv_nope=ColumnParallelLinear,
-            linear_v=ColumnParallelLinear,
+            linear_qk_nope=ColumnLinear,
+            linear_qk_rope=ColumnLinear,
+            linear_kv_nope=ColumnLinear,
+            linear_v=ColumnLinear,
             dsa_indexer=get_dsa_indexer_spec(enable_dsa_indexer=enable_dsa_indexer),
         )
 
@@ -289,6 +298,7 @@ class CustomMLASelfAttention(SelfAttention):
         """
         args = get_args()
 
+        @fp8_context_wrapper(config=self.config)
         def mla_attention(hidden_states):
             args = get_args()
             tp_size = parallel_state.get_tensor_model_parallel_world_size()

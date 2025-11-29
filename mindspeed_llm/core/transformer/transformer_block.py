@@ -24,6 +24,8 @@ from megatron.core import InferenceParams, tensor_parallel, parallel_state, mpu
 from megatron.core.packed_seq_params import PackedSeqParams
 from megatron.core.transformer.identity_op import IdentityOp
 from megatron.training import get_args
+from megatron.core.enums import Fp8Recipe
+from megatron.core.fp8_utils import get_fp8_context
 from megatron.core.models.gpt.gpt_layer_specs import _get_mlp_module_spec
 from megatron.core.transformer import build_module
 from megatron.core.transformer.transformer_config import TransformerConfig
@@ -238,37 +240,19 @@ def transformer_block_forward(
     else:
         rng_context = nullcontext()
 
-    if self.config.fp8:
-        import transformer_engine  # To keep out TE dependency when not training in fp8
-
-        if self.config.fp8 == "e4m3":
-            fp8_format = transformer_engine.common.recipe.Format.E4M3
-        elif self.config.fp8 == "hybrid":
-            fp8_format = transformer_engine.common.recipe.Format.HYBRID
-        else:
-            raise ValueError("E4M3 and HYBRID are the only supported FP8 formats.")
-
-        fp8_recipe = transformer_engine.common.recipe.DelayedScaling(
-            margin=self.config.fp8_margin,
-            interval=self.config.fp8_interval,
-            fp8_format=fp8_format,
-            amax_compute_algo=self.config.fp8_amax_compute_algo,
-            amax_history_len=self.config.fp8_amax_history_len,
-            override_linear_precision=(False, False, not self.config.fp8_wgrad),
-        )
-        fp8_group = None
-        if parallel_state.model_parallel_is_initialized():
-            fp8_group = parallel_state.get_amax_reduction_group(with_context_parallel=True)
-        fp8_context = transformer_engine.pytorch.fp8_autocast(
-            enabled=True, fp8_recipe=fp8_recipe, fp8_group=fp8_group
-        )
-    else:
-        fp8_context = nullcontext()
+    # If fp8_recipe is delayed, wrap the entire pass with get_fp8_context(),
+    # otherwise do nothing extra at the outer level
+    # if we are using other fp8 recipes, then the context manager enter&exit are free
+    # we can wrap fp8_context within the for loop over layers, so that we can fine-grained
+    # control which layer will be fp8 or bf16
+    use_outer_fp8_context = self.config.fp8 and self.config.fp8_recipe == Fp8Recipe.delayed
+    use_inner_fp8_context = self.config.fp8 and self.config.fp8_recipe != Fp8Recipe.delayed
+    outer_fp8_context = get_fp8_context(self.config) if use_outer_fp8_context else nullcontext()
 
     global_args = get_args()
     key_value_states = None
 
-    with rng_context and fp8_context:
+    with rng_context, outer_fp8_context:
         # Forward pass.
         if self.config.recompute_granularity == 'full' and self.training:
             if global_args.share_kvstates:
@@ -292,8 +276,13 @@ def transformer_block_forward(
                     packed_seq_params=packed_seq_params,
                 )
         else:
-            for layer in self.layers:
-                with self.offload_context:
+            for _, layer in enumerate(self.layers):
+                inner_fp8_context = (
+                    get_fp8_context(self.config, layer.layer_number - 1)
+                    if use_inner_fp8_context
+                    else nullcontext()
+                )
+                with self.offload_context, inner_fp8_context:
                     if global_args.share_kvstates:
                         hidden_states, context, key_value_states = layer(
                             hidden_states=hidden_states,

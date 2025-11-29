@@ -22,6 +22,8 @@ num_experts, moe_grouped_gemm, qk_layernorm, mla_mm_split, enable_dsa_indexer = 
     args.enable_dsa_indexer,
 )
 
+use_te = args.transformer_impl == "transformer_engine"
+
 layer_spec = ModuleSpec(
     module=TransformerLayer,
     submodules=TransformerLayerSubmodules(
@@ -38,7 +40,7 @@ layer_spec = ModuleSpec(
         # different mlp spec varied from different layers.
         # So the real deepseek_mlp_spec would be defined in build_layer of Transformer Block
         mlp=_get_mlp_module_spec(
-            use_te=False, num_experts=num_experts, moe_grouped_gemm=moe_grouped_gemm
+            use_te=use_te, num_experts=num_experts, moe_grouped_gemm=moe_grouped_gemm
         ),
         mlp_bda=get_bias_dropout_add,
         sharded_state_dict_keys_map={

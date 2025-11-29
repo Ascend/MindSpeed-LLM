@@ -278,6 +278,11 @@ class LinearNoTP(torch.nn.Linear):
     def forward(self, input_):
         if hasattr(self.weight, "quant_state"):
             output = bnb.matmul_4bit(input_, self.weight.t(), self.weight.quant_state, bias=self.bias)
+        elif get_args().fp8:
+            from mindspeed.te.pytorch.fp8.recipes import matmul_fp8
+            output = matmul_fp8(input_, self.weight)
+            if self.bias is not None:
+                output = output + self.bias
         else:
             output = torch.matmul(input_, self.weight.t())
             if self.bias is not None:
