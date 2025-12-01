@@ -80,5 +80,3 @@ git checkout 2.1.0
 
 pip install -r requirements.txt  # 安装其余依赖库
 ```
->注意:<br>
->1.qwen3, llama3.3系列模型依赖transformers 4.51.0, 需要在环境配置完成后手动执行pip install transformers==4.51.0;<br>
