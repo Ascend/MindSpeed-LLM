@@ -39,6 +39,19 @@
     </tr>
     <tr>
        <tr>
+       <td rowspan="1"><a href="https://huggingface.co/collections/Qwen/qwen3-next">Qwen3-next</a></td>
+      <td><a href="https://huggingface.co/Qwen/Qwen3-Next-80B-A3B-Instruct">80B-A3B</a></td>
+      <td><a href="../../../examples/mcore/qwen2_moe">Qwen3-Next-80B-A3B</a></td>
+      <td> 16K </td>
+      <th>Mcore</th>
+      <td>4x16</td>
+      <td rowspan="1"> <a href="../../../examples/mcore/qwen3_next/"></a> </td>
+      <td>【Ascend】</td>
+      <td>【Test】</td>
+      <tr>
+    </tr>
+    <tr>
+       <tr>
        <td rowspan="1"><a href="https://huggingface.co/Qwen">Qwen2</a></td>
       <td><a href="https://huggingface.co/Qwen/Qwen2-57B-A14B/tree/main">57B-A14B</a></td>
       <td><a href="../../../examples/mcore/qwen2_moe">qwen2_moe</a></td>
