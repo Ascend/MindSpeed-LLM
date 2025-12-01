@@ -6,7 +6,9 @@
                 "test-out-part": "/data/ci/cache/process_dataset/test_merge_subs/",
                 "base-out-part": "/data/ci/datasets/processed/base_merge_subs/",
                 "test-out-merge": "/data/ci/cache/process_dataset/test_merge/",
-                "base-out-merge": "/data/ci/datasets/processed/base_merge/"
+                "base-out-merge": "/data/ci/datasets/processed/base_merge/",
+                "test-out-tokenizer-type": "/data/ci/cache/process_dataset/test_tokenizer_type/",
+                "base-out-tokenizer-type": "/data/ci/datasets/processed/base_tokenizer_type/"
             }
         }
     ],
@@ -40,6 +42,18 @@
                 "input": "/data/ci/cache/process_dataset/test_merge_subs/",
                 "output-prefix": "/data/ci/cache/process_dataset/test_merge/merge",
                 "merge-group-keys": "text_document"
+            }
+        }
+    ],
+    "test_pretrain_datasets_GPTSentencePieceTokenizer": [
+        {
+            "params": {
+                "input": "/data/ci/datasets/origin/train-00000-of-00001-a09b74b3ef9c3b56.parquet",
+                "tokenizer-type": "GPTSentencePieceTokenizer",
+                "output-prefix": "/data/ci/cache/process_dataset/test_tokenizer_type/gptsentencepiece", 
+                "tokenizer-model": "/data/ci/models/mamba2/hf/mamba2-2.7b-hf/mt_nlg_plus_multilingual_ja_zh_the_stack_frac_015_256k.model",
+                "workers": 4,
+                "log-interval": 1000
             }
         }
     ]

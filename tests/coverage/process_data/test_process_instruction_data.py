@@ -146,3 +146,28 @@ class TestProcessInstructionDataMultiHandler:
                 test_file = params["output-prefix"] + end_str
                 assert compare_file_md5_same(base_file, test_file)
 
+
+class TestProcessInstructionDataTemplate:
+    test_config = create_testconfig(Path(__file__).with_suffix(".json"))
+
+    @pytest.mark.parametrize("full_params, params", 
+        [(test_config["template_dir"][0], test_config["reasoning_template"][0])])
+    def test_reasoning_template(self, build_args, full_params, params):
+        # create output dir if it doesn't exist
+        if not os.path.isdir(full_params["test-out-template"]):
+            os.makedirs(full_params["test-out-template"])
+        
+        # process instruction dataset
+        print("\n=============== reasoning template test =============")
+        main()
+
+        # compare file MD5 hashes
+        prefix_str = params["output-prefix"].split('/')[-1]
+        mid_strs = ["packed_attention_mask_document", "packed_input_ids_document", "packed_labels_document"]
+        end_suffixs = [".bin", ".idx"]
+        for mid_str in mid_strs:
+            for end_suffix in end_suffixs:
+                end_str = "_" + mid_str + end_suffix
+                base_file = full_params["base-out-template"] + prefix_str + end_str
+                test_file = params["output-prefix"] + end_str
+                assert compare_file_md5_same(base_file, test_file)

@@ -106,5 +106,29 @@
                 "prompt-type" : "llama2"
             }
         }
+    ],
+    "template_dir": [
+        {
+            "params" : {
+                "test-out-template": "/data/ci/cache/process_dataset/test_template/",
+                "base-out-template": "/data/ci/datasets/processed/base_template/"
+            }
+        }
+    ],
+    "reasoning_template": [
+        {
+            "params": {
+                "input": "/data/ci/datasets/origin/train-00000-of-00001-a09b74b3ef9c3b56.parquet",
+                "tokenizer-type": "PretrainedFromHF",
+                "handler-name": "AlpacaStyleInstructionHandler",
+                "output-prefix": "/data/ci/cache/process_dataset/test_template/qwen3_reasoning_template",
+                "tokenizer-name-or-path": "/data/ci/models/qwen3_next/hf/Qwen3-Next-80B-A3B-hf",
+                "cache-dir": "/data/ci/cache/process_dataset/tmp/",
+                "workers": 4,
+                "log-interval": 1000,
+                "prompt-type": "qwen3",
+                "enable-thinking": "true"
+            }
+        }
     ]
 }

@@ -117,4 +117,31 @@
         <td>/</td>
         <td>/</td>
     </tr>
+    <tr>
+        <td>dpo_llama2_tp1_pp1_cyclic_pairwise</td>
+        <td>/data/ci/models/llama2/hf/llama-2-7b-hf</td>
+        <td>/data/ci/models/llama2/mg/llama2-7b_2l_tp1pp1</td>
+        <td>/</td>
+        <td>/data/ci/datasets/processed/orca/orca_rlhf</td>
+        <td>/</td>
+        <td>/</td>
+    </tr>
+    <tr>
+        <td>test_pretrain_datasets_GPTSentencePieceTokenizer</td>
+        <td>/data/ci/models/mamba2/hf/mamba2-2.7b-hf/mt_nlg_plus_multilingual_ja_zh_the_stack_frac_015_256k.model</td>
+        <td>/</td>
+        <td>/data/ci/datasets/origin/train-00000-of-00001-a09b74b3ef9c3b56.parquet</td>
+        <td>/data/ci/cache/process_dataset/test_tokenizer_type/gptsentencepiece</td>
+        <td>/</td>
+        <td>/</td>
+    </tr>
+    <tr>
+        <td>test_reasoning_template</td>
+        <td>/data/ci/models/qwen3_next/hf/Qwen3-Next-80B-A3B-hf</td>
+        <td>/</td>
+        <td>/data/ci/datasets/origin/train-00000-of-00001-a09b74b3ef9c3b56.parquet</td>
+        <td>/data/ci/cache/process_dataset/test_template/qwen3_reasoning_template</td>
+        <td>/</td>
+        <td>/data/ci/cache/process_dataset/tmp</td>
+    </tr>
 </table>

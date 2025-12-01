@@ -14,7 +14,7 @@
         <th>Mem.</th>
     </tr>
     <tr>
-        <td rowspan="15">ST</td>
+        <td rowspan="16">ST</td>
         <td rowspan="14">Pretrain</td>
         <td>TP，PP，VPP，distributed_optimizer，o2_gradient，o2_optimizer，重计算，enable_recompute_layers_per_pp_rank，FA_TND，use_fused_rotary_pos_emb</td>
         <td><a href="st/shell_scripts/llama2_tp2_pp4_vpp2_ptd.sh">llama2_tp2_pp4_vpp2_ptd.sh</a></td>
@@ -117,6 +117,14 @@
         <td rowspan="1">LoRA</td>
         <td>CCLoRA, QLoRA</td>
         <td><a href="st/shell_scripts/tune_llama2_tp1_pp1_qlora_ptd.sh">tune_llama2_tp1_pp1_qlora_ptd.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td rowspan="1">DPO</td>
+        <td>is_pairwise_dataset, cyclic</td>
+        <td><a href="st/shell_scripts/dpo_llama2_tp1_pp1_cyclic_pairwise.sh">dpo_llama2_tp1_pp1_cyclic_pairwise.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
@@ -248,7 +256,7 @@
         <td></td>
     </tr>
 	<tr>
-        <td rowspan="3"><a href="pipeline/common">ProcessData</td>
+        <td rowspan="5"><a href="pipeline/common">ProcessData</td>
         <td>instruction_data_alpaca,
         instruction_data_alpaca_history,
         instruction_data_sharegpt,
@@ -268,6 +276,20 @@
     <tr>
         <td>pairwise_data_alpaca, pairwise_data_sharegpt</td>
         <td><a href="ut/process_data/test_process_pairwise_data_lf.py">test_process_pairwise_data_lf.py</a></td>
+        <td>Y</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>GPTSentencePieceTokenizer</td>
+        <td><a href="coverage/process_data/test_process_pretrain_data.py">test_process_pretrain_data.py</a></td>
+        <td>Y</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>reasoning_template</td>
+        <td><a href="coverage/process_data/test_process_instruction_data.py">test_process_instruction_data.py</a></td>
         <td>Y</td>
         <td></td>
         <td></td>
