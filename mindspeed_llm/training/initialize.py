@@ -210,21 +210,21 @@ def initialize_megatron_wrapper(fn):
 
         # ========= 2) Weight conversion (always checked after preprocessing) =========
         if getattr(args, 'enable_hf2mg_convert', False):
-            args.load_dir = args.load
+
             logger.info("[InitHook] Starting weight conversion check...")
 
             # Add path validation
-            if not os.path.exists(args.load_dir):
-                raise ValueError(f"Specified weight path does not exist: {args.load_dir}")
+            if not os.path.exists(args.load):
+                raise ValueError(f"Specified weight path does not exist: {args.load}")
 
             # If hf conversion is enabled, check if the path is a valid huggingface weight path
-            files = os.listdir(args.load_dir)
+            files = os.listdir(args.load)
             if not (
                 any(f == 'config.json' for f in files) and
                 any(f.endswith(('.bin', '.safetensors')) and 'model' in f.lower() for f in files)
             ):
                 raise ValueError(
-                    f"When enable_hf2mg_convert is enabled, path {args.load_dir} is not a valid HuggingFace path."
+                    f"When enable_hf2mg_convert is enabled, path {args.load} is not a valid HuggingFace path."
                 )
 
             # Supported model types
@@ -238,9 +238,8 @@ def initialize_megatron_wrapper(fn):
                     f"Supported models: {', '.join(supported_models)}"
                 )
 
-            if getattr(args, "mg_cache_dir", None):
-                cache_dir = args.mg_cache_dir
-            else:
+            if not getattr(args, "mg_cache_dir", None):
+
                 def _safe_int(attr_name):
                     val = getattr(args, attr_name, None)
                     try:
@@ -252,19 +251,18 @@ def initialize_megatron_wrapper(fn):
                 pp = _safe_int("pipeline_model_parallel_size")
                 ep = _safe_int("expert_model_parallel_size")
 
-                cache_dir = os.path.join(args.load_dir, f"megatron_cache_tp{tp}pp{pp}ep{ep}")
+                args.mg_cache_dir = os.path.join(args.load, f"megatron_cache_tp{tp}pp{pp}ep{ep}")
 
-            os.makedirs(cache_dir, exist_ok=True)
-            args.save_dir = cache_dir
+            os.makedirs(args.mg_cache_dir, exist_ok=True)
 
-            logger.info(f"[InitHook] Conversion cache path: {args.save_dir}")
+            logger.info(f"[InitHook] Conversion cache path: {args.mg_cache_dir}")
 
-            shared = is_shared_path(args.save_dir)
-            logger.info(f"[InitHook] save_dir={args.save_dir}, shared_storage={shared}")
+            shared = is_shared_path(args.mg_cache_dir)
+            logger.info(f"[InitHook] save_dir={args.mg_cache_dir}, shared_storage={shared}")
 
             _convert_weights_if_needed(args, shared)
 
-            args.load = args.save_dir
+            args.load = args.mg_cache_dir
             logger.info("[InitHook] Weight conversion phase completed.")
 
         return result

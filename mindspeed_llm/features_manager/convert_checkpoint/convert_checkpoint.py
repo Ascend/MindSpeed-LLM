@@ -15,10 +15,6 @@ class CheckpointFeature(MindSpeedFeature):
                                  'bloom', 'bloom_3b', 'qwen', 'internlm2', 'deepseek2', 'minicpm', 'minicpm3', 'minicpm-moe',
                                  'deepseek2-lite', 'qwen2-moe', 'phi3.5', 'phi3.5-moe', 'hunyuan', 'glm4', 'magistral'],
                             help='model type of huggingface')
-        group.add_argument('--load-dir', type=str, default=None,
-                            help='Directory to load model checkpoint from which use in convert_checkpoint')
-        group.add_argument('--save-dir', type=str, default=None,
-                            help='Directory to save model checkpoint to which use in convert_checkpoint')
         group.add_argument('--mg-cache-dir', type=str, default=None,
                             help='Directory to save megatron checkpoint to')
         group.add_argument('--enable-hf2mg-convert', action='store_true',

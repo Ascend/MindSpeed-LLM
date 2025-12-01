@@ -30,6 +30,8 @@ class Convert(abc.ABC):
             if args.noop_layers:
                 args.noop_layers = ",".join(str(x) for x in args.noop_layers)
                 args.num_layers = args.num_layers - len(args.noop_layers.split(","))
+            args.load_dir = args.load
+            args.save_dir = args.mg_cache_dir
 
         else:
             self.tensor_model_parallel_size = args.target_tensor_parallel_size
