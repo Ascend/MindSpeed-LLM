@@ -26,7 +26,7 @@ from megatron.core.tensor_parallel.mappings import (
     reduce_scatter_to_sequence_parallel_region,
     reduce_from_tensor_model_parallel_region,
 )
-from mindspeed.core.context_parallel.get_batch_utils import get_actual_seq_len, set_actual_seq_len
+from mindspeed_llm.training.utils import get_actual_seq_len_list, set_actual_seq_len_list
 
 try:
     import bitsandbytes as bnb
@@ -233,7 +233,7 @@ class SegmentedColumnParallelLinear(ColumnParallelLinear):
 
 def checkpoint_forward_wrapper(fn):
     def wrapper(ctx, run_function, distribute_saved_activations, *args):
-        ctx.actual_seq_len = get_actual_seq_len()
+        ctx.actual_seq_len_list = get_actual_seq_len_list()
         return fn(ctx, run_function, distribute_saved_activations, *args)
 
     return wrapper
@@ -241,7 +241,7 @@ def checkpoint_forward_wrapper(fn):
 
 def checkpoint_backward_wrapper(fn):
     def wrapper(ctx, *args):
-        set_actual_seq_len(ctx.actual_seq_len)
+        set_actual_seq_len_list(ctx.actual_seq_len_list)
         return fn(ctx, *args)
 
     return wrapper
