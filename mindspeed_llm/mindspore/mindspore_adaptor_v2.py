@@ -47,6 +47,7 @@ def mindspore_adaptation(patch_manager, args):
     if args.enable_seq1f1b:
         patch_seq1f1b(args)
 
+
 def _patch_third_party_libraries():
     from mindspeed.mindspore.third_party.safetensors.torch import save_file, load_file
     MindSporeAdaptation.register_patch('safetensors.torch.save_file', save_file)
@@ -105,6 +106,13 @@ def _patch_tensor_parallel_and_pipeline():
     from ..mindspore.training.utils import get_batch_on_this_tp_rank
     MindSporeAdaptation.register_patch('megatron.training.utils.get_batch_on_this_tp_rank', get_batch_on_this_tp_rank)
 
+    from ..mindspore.core.tensor_parallel.layers import vocab_embedding_init_func
+    MindSporeAdaptation.register_patch('megatron.core.tensor_parallel.layers.VocabParallelEmbedding.__init__',
+                                       vocab_embedding_init_func)
+    from ..mindspore.core.tensor_parallel.random import fork
+    MindSporeAdaptation.register_patch('megatron.core.tensor_parallel.random.CudaRNGStatesTracker.fork', fork)
+
+
 def _patch_moe_and_communication(args):
     from mindspeed.mindspore.core.transformer.moe.comm_utils import async_all_to_all
     MindSporeAdaptation.register_patch('mindspeed.core.transformer.moe.moe_feature.overlap.comm_utils.async_all_to_all',
@@ -124,6 +132,11 @@ def _patch_moe_and_communication(args):
         'mindspeed.core.transformer.moe.moe_feature.overlap.token_dispatcher.MoEAlltoAllSeqOverLapDispatcher.token_permutation', 
         token_permutation)
 
+    if hasattr(args, 'moe_grouped_gemm') and args.moe_grouped_gemm:
+        from ..mindspore.core.transformer.moe.legacy_a2a_token_dispatcher import ascend_gmm_preprocess
+        MindSporeAdaptation.register_patch(
+            'megatron.core.transformer.moe.legacy_a2a_token_dispatcher.MoEAlltoAllSEQTokenDispatcher.preprocess',
+            ascend_gmm_preprocess)
 
 def _patch_optimizer_and_training(args):
     # Cross Entropy
