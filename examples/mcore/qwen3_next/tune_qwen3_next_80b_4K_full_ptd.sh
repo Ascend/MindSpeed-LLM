@@ -170,7 +170,7 @@ TUNE_ARGS="
     --stage sft \
     --is-instruction-dataset \
     --tokenizer-not-use-fast \
-    --prompt-type qwen \
+    --prompt-type qwen3 \
 "
 
 torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
