@@ -22,9 +22,9 @@ DISTRIBUTED_ARGS="
 
 echo "NODE_RANK ${NODE_RANK}"
 
-DATA_PATH="/data/ci/datasets/processed/mamba_enwiki/mamba_enwiki_text_document"
-CKPT_LOAD_DIR="/data/ci/models/mamba2/mg/mamba2_tp8dp1_mbs2_gbs8"
-TOKENIZER_PATH="/data/ci/models/mamba/hf/mamba-hf/mt_nlg_plus_multilingual_ja_zh_the_stack_frac_015_256k.model"
+DATA_PATH="/data/ci/datasets/processed/mamba2_8b_enwiki/mamba_enwiki_text_document"
+CKPT_LOAD_DIR="/data/ci/models/mamba2/mg/mamba2_8b_tp8pp1"
+TOKENIZER_PATH="/data/ci/models/mamba2/hf/mamba2-8b-hf/mamba2_8b.model"
 
 
 
