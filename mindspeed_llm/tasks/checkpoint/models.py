@@ -1104,6 +1104,7 @@ class MegatronModel(ModelBase):
         self.args.q_lora_rank = getattr(self.args_megatron_checkpoint, "q_lora_rank", None)
         self.args.sequence_parallel = getattr(self.args_megatron_checkpoint, "sequence_parallel", False)
         self.args.shared_expert_gate = getattr(self.args_megatron_checkpoint, "shared_expert_gate", False)
+        self.args.num_layer_list = getattr(self.args_megatron_checkpoint, "num_layer_list", None)
 
     def update_megatron_args_from_cmd_config(self, loader_megatron):
         self.args.ckpt_format = self.args_cmd.ckpt_format
@@ -1141,8 +1142,9 @@ class MegatronModel(ModelBase):
         if not self.args_cmd.model_type == 'GPT':
             raise ValueError("Llama-2 is a GPT model.")
 
-        if self.md and self.args_cmd.num_layer_list:
-            self.args.num_layer_list = self.args_cmd.num_layer_list
+        if self.args_cmd.save_model_type != "mg":
+            if self.md and self.args_cmd.num_layer_list:
+                self.args.num_layer_list = self.args_cmd.num_layer_list
         
         if self.args_cmd.noop_layers:
             self.args.noop_layers = self.args_cmd.noop_layers.split(',')

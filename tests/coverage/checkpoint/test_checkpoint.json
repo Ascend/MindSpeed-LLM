@@ -127,6 +127,7 @@
                 "save-dir":"/data/ci/models/qwen25/hf/Qwen2.5-7B",
                 "use-mcore-models": null,
                 "add-qkv-bias": null,
+                "num-layer-list": "1,3",
                 "model-type-hf": "llama2",
                 "params-dtype": "bf16"
             }

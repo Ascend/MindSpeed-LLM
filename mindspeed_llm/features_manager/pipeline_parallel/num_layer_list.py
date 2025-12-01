@@ -23,8 +23,9 @@ class NumLayerListFeature(MindSpeedFeature):
 
     def validate_args(self, args: Namespace):
         if args.num_layer_list:
-            if len(args.num_layer_list.split(',')) != args.pipeline_model_parallel_size:
-                raise ValueError("len(args.num_layer_list) != args.pipeline_model_parallel_size")
+            if getattr(args, 'save_model_type', None) != 'hf':
+                if len(args.num_layer_list.split(',')) != args.pipeline_model_parallel_size:
+                    raise ValueError("len(args.num_layer_list) != args.pipeline_model_parallel_size")
             if not args.pipeline_model_parallel_size > 1:
                 raise ValueError("Dynamic pipeline model should work with pipeline parallel.")
             if args.num_layers_per_virtual_pipeline_stage:
