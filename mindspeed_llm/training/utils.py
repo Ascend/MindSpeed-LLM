@@ -116,13 +116,16 @@ def compute_actual_seq_len(origin_seq):
     return actual_seq_len
 
 
-def recompute_valid_actual_seq_len(pos_ids, actual_seq_len):
-    seq = pos_ids.view(-1)
-    valid_seq = (seq != 0).nonzero()[-1] + 1 + 1
-    valid_actual_seq_len_clip = (torch.tensor(actual_seq_len).to(pos_ids.device) < valid_seq).nonzero()[-1]
-    valid_actual_seq_len = actual_seq_len[:valid_actual_seq_len_clip + 1]
-    valid_actual_seq_len.append(actual_seq_len[-1])
-    return valid_actual_seq_len
+def recompute_valid_actual_seq_len(actual_seq_len, micro_batch_size):
+    if len(actual_seq_len) <= 1:
+        return actual_seq_len
+    s = torch.tensor(actual_seq_len)
+    diffs = s[1:] - s[:-1]
+    indices = (diffs == 1).nonzero()
+    if len(indices) < micro_batch_size:
+        return s
+    first_continuous = indices[micro_batch_size - 1].item()
+    return torch.cat([s[:first_continuous + 1], s[-1:]]).tolist()
 
 
 def generate_actual_seq_len(batch, actual_seq_len=None):
