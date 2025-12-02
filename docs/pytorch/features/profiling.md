@@ -3,7 +3,7 @@ MindSpeed-LLM支持基于昇腾芯片采集profiling数据，以提供对模型�
 
 ```shell
 --profile                        # 打开profiling采集数据开关
---profile-export-type            # 指定导出的性能数据结果文件格式, db, text, 默认text格式
+--profile-export-type text       # 指定导出的性能数据结果文件格式, db, text, 默认text格式
 --profile-data-simplification    # 使用数据精简模式
 --profile-step-start  5          # 指定开启采集数据的步骤
 --profile-step-end 6             # 指定结束采集数据的步骤，实际采集步数从start到end，包括第start步，不包括第end步
