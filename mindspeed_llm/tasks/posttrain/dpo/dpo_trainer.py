@@ -5,7 +5,7 @@ from functools import partial
 import torch
 import torch.nn.functional as F
 from megatron.training import get_args, get_model
-from megatron.core import mpu, tensor_parallel
+from megatron.core import mpu, tensor_parallel, parallel_state
 from megatron.core.enums import ModelType
 from megatron.training.checkpointing import load_checkpoint
 from megatron.training.utils import average_losses_across_data_parallel_group
@@ -166,7 +166,9 @@ class DPOTrainer(BaseTrainer):
         for key in metrics.keys():
             metrics[key] = average_losses_across_data_parallel_group([metrics[key]])
 
-        return loss, metrics
+        # Return the average loss, which will be used to calculate the global loss in the forward_step function.
+        cp = parallel_state.get_context_parallel_world_size()
+        return loss / cp, metrics
 
     def forward_step(self, data_iterator, model):
         """DPO Forward training step.
