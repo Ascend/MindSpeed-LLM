@@ -13,12 +13,34 @@ MindSpeed-LLM已支持接入华为自研AI框架MindSpore，旨在提供华为�
 
 MindSpeed-LLM + MindSpore后端的依赖配套如下表，安装步骤参考[基础安装指导](./install_guide.md)。
 
-| 依赖软件        |                                                                                                                                    |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| 昇腾NPU驱动固件 | [Ascend HDK 25.2.0](https://www.hiascend.com/hardware/firmware-drivers/community?product=1&model=30&cann=8.3.RC1.alpha003&driver=Ascend+HDK+25.2.0) |
-| 昇腾 CANN       | [8.3.RC1](https://www.hiascend.com/developer/download/community/result?module=cann&cann=8.3.RC1.alpha003)                                               |
-| MindSpore       | 在研版本                                                                                       |
-| Python          | >=3.9                                                                                                                              |
+<table>
+  <tr>
+    <th>依赖软件</th>
+    <th>版本</th>
+  </tr>
+  <tr>
+    <td>昇腾NPU驱动</td>
+    <td rowspan="2">在研版本</td>
+  <tr>
+    <td>昇腾NPU固件</td>
+  </tr>
+  <tr>
+    <td>Toolkit（开发套件）</td>
+      <td rowspan="3">CANN 8.5.0</td>
+  </tr>
+  <tr>
+    <td>Kernel（算子包）</td>
+  </tr>
+  <tr>
+    <td>NNAL（Ascend Transformer Boost加速库）</td>
+  </tr>
+  <tr>
+  </tr>
+  <tr>
+    <td>Python</td>
+    <td>3.10</td>
+  </tr>
+</table>   
 
 ## 模型支持
 
@@ -52,7 +74,7 @@ MindSpore后端对MindSpeed的重要加速特性的支持情况如下表所示�
   </tr></thead>
 <tbody>
   <tr>
-    <td rowspan="5">SPTD并行</td>
+    <td rowspan="7">SPTD并行</td>
     <td><a href="https://gitcode.com/ascend/MindSpeed/blob/master/docs/features/tensor-parallel.md">张量并行</a></td>
     <td>✅</td>
   </tr>
@@ -71,6 +93,14 @@ MindSpore后端对MindSpeed的重要加速特性的支持情况如下表所示�
   <tr>
     <td><a href="https://gitcode.com/ascend/MindSpeed/blob/master/docs/features/noop-layers.md">Noop Layers</a></td>
     <td>✅</td>
+  </tr>
+    <tr>
+    <td><a href="../mindspore/features/seq1f1b.md">Seq1F1B流水线并行</a></td>
+    <td>✅</td>
+  </tr>
+  <tr>
+    <td><a href="https://gitcode.com/ascend/MindSpeed/blob/master/docs/features/custom_fsdp.md">全分片并行</a></td>
+    <td>暂不支持开启pp及--reuse-fp32-param参数配置</td>
   </tr>
   <tr>
     <td rowspan="2">长序列并行</td>
