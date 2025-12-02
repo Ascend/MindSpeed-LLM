@@ -19,8 +19,8 @@ TOKENIZER_PATH="your tokenizer path"
 CKPT_LOAD_DIR="your model ckpt path"
 
 TP=1
-PP=4
-EP=4
+PP=2
+EP=8
 CP=1
 
 MBS=1
