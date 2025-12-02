@@ -101,7 +101,7 @@ MindSpore后端对MindSpeed的重要加速特性的支持情况如下表所示�
   </tr>
   <tr>
     <td><a href="https://gitcode.com/ascend/MindSpeed/blob/master/docs/features/custom_fsdp.md">全分片并行</a></td>
-    <td>✅</td>
+    <td>暂不支持开启pp及--reuse-fp32-param参数配置</td>
   </tr>
   <tr>
     <td rowspan="2">长序列并行</td>
