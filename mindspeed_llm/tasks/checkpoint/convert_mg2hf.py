@@ -586,7 +586,7 @@ class Mg2HfConvert(Convert):
             hf_weight[hf_weight_key["layers_self_attention_kv_layernorm"]] = kv_a_layernorm
             hf_weight[hf_weight_key["layers_self_attention_linear_kv_up_proj"]] = kv_b_proj
 
-            if hasattr(self.load_model, "enable_dsa_indexer"):
+            if getattr(self.load_model, "enable_dsa_indexer", None):
                 indexer_keys = _generate_attn_indexer_layers_key(mtp_layer_flag)
                 hf_weight[hf_weight_key["layers_self_attention_indexer_k_norm"]] = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(indexer_keys.indexer_k_norm_key).clone()
                 hf_weight[hf_bias_key["layers_self_attention_indexer_k_norm"]] = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(indexer_keys.indexer_k_norm_bias_key).clone()
