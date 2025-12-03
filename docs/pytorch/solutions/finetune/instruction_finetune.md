@@ -233,4 +233,4 @@ bash examples/mcore/qwen3/generate_qwen3_8b_ptd.sh
 
     请根据自己的使用场景，灵活选择对应类型的指令微调训练脚本和数据预处理脚本。
 
-- 当前微调数据预处理使用的默认模板已和LLaMA Factory 0.8.2对齐，如果需要与该版本之后的版本对齐，请修改[templates](../../../../configs/finetune/templates.json)文件中相应模板的`template_class`的键值为`LFDefaultTemplate`。例如使用`qwen`模板时，在[templates](../../../../configs/finetune/templates.json)中找到`"name": "qwen"`的字典，然后加上新的键值对`"template_class": "LFDefaultTemplate"`即可。
+- 当前微调数据预处理使用的默认模板已和LLaMA Factory 0.8.2对齐，如果需要与该版本之后的版本对齐，请在微调数据预处理阶段设置`prompt-type`参数值为`qwen_lf`。
