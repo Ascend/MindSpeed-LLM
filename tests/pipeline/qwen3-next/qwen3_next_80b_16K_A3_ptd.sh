@@ -1,33 +1,51 @@
 #!/bin/bash
-
-export HCCL_CONNECT_TIMEOUT=1800
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
-export NPU_ASD_ENABLE=0
+export HCCL_CONNECT_TIMEOUT=3600
 
-NPUS_PER_NODE=16
+# 删缓存 预编译，提高用例执行稳定性
+rm -rf /root/.cache
+python -c "import mindspeed; from mindspeed.op_builder import GMMOpBuilder; GMMOpBuilder().load()" &
+python -c "import mindspeed; from mindspeed.op_builder import GMMV2OpBuilder; GMMV2OpBuilder().load()" &
+python -c "import mindspeed; from mindspeed.op_builder import MatmulAddOpBuilder; MatmulAddOpBuilder().load()" &
+python -c "import mindspeed; from mindspeed.op_builder import MoeTokenPermuteOpBuilder; MoeTokenPermuteOpBuilder().load()" &
+python -c "import mindspeed; from mindspeed.op_builder import MoeTokenUnpermuteOpBuilder; MoeTokenUnpermuteOpBuilder().load()" &
+python -c "import mindspeed; from mindspeed.op_builder import RotaryPositionEmbeddingOpBuilder; RotaryPositionEmbeddingOpBuilder().load()" &
+python -c "import mindspeed; from mindspeed.op_builder import GroupMatmulAddOpBuilder; GroupMatmulAddOpBuilder().load()"
+
+NPUS_PER_NODE=8
 MASTER_ADDR=localhost
 MASTER_PORT=6000
-NNODES=4
+NNODES=1
 NODE_RANK=0
 WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
-# please fill these path configurations
-CKPT_SAVE_DIR="your model save ckpt path"
-DATA_PATH="your data path"
-TOKENIZER_PATH="your tokenizer path"
-CKPT_LOAD_DIR="your model ckpt path"
+basepath=$(cd `dirname $0`; cd ../../../; pwd)
+
+DISTRIBUTED_ARGS="
+    --nproc_per_node $NPUS_PER_NODE \
+    --nnodes $NNODES \
+    --node_rank $NODE_RANK \
+    --master_addr $MASTER_ADDR \
+    --master_port $MASTER_PORT
+"
+
+echo "NODE_RANK ${NODE_RANK}"
+
+
+DATA_PATH="/data/ci/datasets/processed/qwen3_next_data/qwen3_next_aplaca_text_document"
+CKPT_LOAD_DIR="/data/ci/models/qwen3_next/mg/qwen3_next_tp1dp1ep8_mbs1_gbs8"
+TOKENIZER_PATH="/data/ci/models/qwen3_next/hf/Qwen3-Next-80B-A3B-hf"
 
 TP=1
 PP=1
-EP=64
+EP=8
 CP=1
 
 MBS=1
-GBS=128
+GBS=8
 SEQ_LENGTH=4096
-TRAIN_ITERS=2000
-CP_TYPE='ulysses_cp_algo'
+TRAIN_ITERS=15
 ROUTER_BALANCING_TYPE='aux_loss'
 
 DISTRIBUTED_ARGS="
@@ -64,10 +82,10 @@ OPTIMIZE_ARGS="
     --use-distributed-optimizer \
     --gemm-gradient-accumulation-fusion \
     --swap-optimizer \
-    --recompute-activation-function \
+    --enable-recompute-layers-per-pp-rank \
     --recompute-granularity full \
     --recompute-method block \
-    --recompute-num-layers  40 \
+    --recompute-num-layers 1 \
 "
 
 TRAIN_ARGS="
@@ -89,15 +107,16 @@ TRAIN_ARGS="
     --bf16 \
     --train-iters ${TRAIN_ITERS} \
     --seq-length ${SEQ_LENGTH} \
-    --no-shared-storage
+    --no-shared-storage \
+    --train-iters 15 \
+    --finetune \
+    --log-throughput \
 "
 
 MODEL_PARALLEL_ARGS="
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \
     --expert-model-parallel-size ${EP} \
-    --context-parallel-size ${CP} \
-    --context-parallel-algo ${CP_TYPE} \
 "
 
 GPT_ARGS="
@@ -115,7 +134,7 @@ GPT_ARGS="
     --partial-rotary-factor 0.25 \
     --tokenizer-name-or-path ${TOKENIZER_PATH} \
     --max-position-embeddings ${SEQ_LENGTH} \
-    --num-layers 48 \
+    --num-layers 4 \
     --hidden-size 2048 \
     --ffn-hidden-size 5120 \
     --num-attention-heads 16 \
@@ -136,7 +155,11 @@ GPT_ARGS="
     --group-query-attention \
     --num-query-groups 2 \
     --norm-epsilon 1e-06 \
-
+    --no-load-optim \
+    --no-load-rng \
+    --no-save-optim \
+    --no-save-rng \
+    --mamba-chunk-size 64 \
 "
 
 DATA_ARGS="
@@ -152,14 +175,14 @@ MTP_ARGS="
 
 OUTPUT_ARGS="
     --log-interval 1 \
-    --save-interval ${TRAIN_ITERS} \
-    --eval-interval ${TRAIN_ITERS} \
+    --save-interval 10 \
+    --eval-interval 500 \
     --eval-iters 0 \
-    --no-load-optim \
-    --no-load-rng \
+    --no-save-optim \
+    --no-save-rng \
 "
 
-torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
+torchrun ${DISTRIBUTED_ARGS[@]} $basepath/pretrain_gpt.py \
     $MTP_ARGS \
     $GPT_ARGS \
     $DATA_ARGS \
@@ -168,7 +191,5 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     $OPTIMIZE_ARGS \
     $TRAIN_ARGS \
     $MODEL_PARALLEL_ARGS \
-    --load ${CKPT_LOAD_DIR} \
-    --save ${CKPT_SAVE_DIR} \
-    --distributed-backend nccl \
-    | tee logs/train_mcore_qwen3_next_80b.log
+    --load  ${CKPT_LOAD_DIR} \
+    --distributed-backend nccl
