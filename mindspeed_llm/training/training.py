@@ -28,6 +28,7 @@ import torch
 import torch_npu
 
 from megatron.core.transformer.moe.moe_utils import track_moe_metrics
+from megatron.core.transformer.multi_token_prediction import MTPLossLoggingHelper
 from megatron.training import get_args
 from megatron.training import get_timers
 from megatron.training import get_signal_handler
@@ -35,24 +36,27 @@ from megatron.training import get_tensorboard_writer
 from megatron.training import get_wandb_writer
 from megatron.training import one_logger_utils
 from megatron.core.num_microbatches_calculator import get_num_microbatches, update_num_microbatches
-from megatron.core import mpu
+from megatron.core import mpu, parallel_state
 from megatron.core.utils import get_model_config
 from megatron.core.enums import ModelType
 from megatron.training.checkpointing import save_checkpoint
 from megatron.training.initialize import initialize_megatron
 from megatron.training.initialize import write_args_to_tensorboard
 from megatron.training.arguments import core_transformer_config_from_args
-from megatron.training.training import disable_forward_pre_hook, enable_forward_pre_hook, training_log
+from megatron.training.theoretical_memory_usage import report_theoretical_memory
+from megatron.training.training import disable_forward_pre_hook, enable_forward_pre_hook
 from megatron.training.training import (
     train_step, calc_params_l2_norm,
     evaluate_and_print_results,
     save_checkpoint_and_time, print_datetime,
-    num_floating_point_operations, get_one_logger,
+    get_one_logger,
     append_to_progress_log, build_train_valid_test_data_iterators
 )
 import megatron.training.utils
 from megatron.training.utils import (
     check_adlr_autoresume_termination,
+    reduce_max_stat_across_model_parallel_group,
+    is_last_rank,
     print_rank_0,
     print_rank_last,
     report_memory,
@@ -61,6 +65,7 @@ from megatron.core.distributed import DistributedDataParallel as DDP
 from megatron.core.distributed import finalize_model_grads
 from mindspeed_llm.training.initialize import set_jit_fusion_options
 from mindspeed_llm.tasks.posttrain.lora.utils import is_enable_lora
+from mindspeed_llm.training.utils import get_actual_attn_ratio, clear_actual_attn_ratio
 
 # The earliest we can measure the start time.
 _TRAIN_START_TIME = time.time()
@@ -841,3 +846,552 @@ def num_floating_point_operations_wrapper(fn):
             batch_size = get_args().global_batch_size
         return fn(args, batch_size)
     return wrapper
+
+
+def training_log(loss_dict, total_loss_dict, learning_rate, decoupled_learning_rate, iteration,
+                 loss_scale, report_memory_flag, skipped_iter,
+                 grad_norm, params_norm, num_zeros_in_grad):
+    """Log training information such as losses, timing, ...."""
+    args = get_args()
+    timers = get_timers()
+    writer = get_tensorboard_writer()
+    wandb_writer = get_wandb_writer()
+    one_logger = get_one_logger()
+
+    # Advanced, skipped, and Nan iterations.
+    advanced_iters_key = 'advanced iterations'
+    skipped_iters_key = 'skipped iterations'
+    nan_iters_key = 'nan iterations'
+    # Advanced iterations.
+    if not skipped_iter:
+        total_loss_dict[advanced_iters_key] = total_loss_dict.get(
+            advanced_iters_key, 0) + 1
+    else:
+        if advanced_iters_key not in total_loss_dict:
+            total_loss_dict[advanced_iters_key] = 0
+    # Skipped iterations.
+    total_loss_dict[skipped_iters_key] = total_loss_dict.get(
+        skipped_iters_key, 0) + skipped_iter
+    # Update losses and set nan iterations
+    got_nan = False
+    for key in loss_dict:
+        if not skipped_iter:
+            total_loss_dict[key] = total_loss_dict.get(
+                key, torch.tensor([0.0], dtype=torch.float, device='cuda')) + loss_dict[key]
+        else:
+            value = loss_dict[key].float().sum().item()
+            is_nan = value == float('inf') or \
+                     value == -float('inf') or \
+                     value != value
+            got_nan = got_nan or is_nan
+    total_loss_dict[nan_iters_key] = total_loss_dict.get(
+        nan_iters_key, 0) + int(got_nan)
+
+    # Logging.
+    timers_to_log = [
+        'forward-backward',
+        'forward-compute',
+        'backward-compute',
+        'batch-generator',
+        'forward-recv',
+        'forward-send',
+        'backward-recv',
+        'backward-send',
+        'forward-send-forward-recv',
+        'forward-send-backward-recv',
+        'backward-send-forward-recv',
+        'backward-send-backward-recv',
+        'forward-backward-send-forward-backward-recv',
+        'layernorm-grads-all-reduce',
+        'embedding-grads-all-reduce',
+        'all-grads-sync',
+        'params-all-gather',
+        'optimizer-copy-to-main-grad',
+        'optimizer-unscale-and-check-inf',
+        'optimizer-clip-main-grad',
+        'optimizer-count-zeros',
+        'optimizer-inner-step',
+        'optimizer-copy-main-to-model-params',
+        'optimizer']
+
+    # Calculate batch size.
+    batch_size = args.micro_batch_size * args.data_parallel_size * \
+        get_num_microbatches()
+
+    # Track app tag & app tag ID
+    one_logger_utils.track_app_tag(batch_size, args.world_size, args.seq_length)
+
+    total_iterations = total_loss_dict[advanced_iters_key] + \
+                       total_loss_dict[skipped_iters_key]
+
+    # learning rate will be None on ranks without trainable params, so we must gather across mp ranks
+    learning_rate = reduce_max_stat_across_model_parallel_group(learning_rate)
+    # Tensorboard values.
+    # Timer requires all the ranks to call.
+    if args.log_timers_to_tensorboard and \
+       (iteration % args.tensorboard_log_interval == 0):
+        timers.write(timers_to_log, writer, iteration,
+                     normalizer=total_iterations)
+    if writer and (iteration % args.tensorboard_log_interval == 0):
+        if wandb_writer:
+            wandb_writer.log({'samples vs steps': args.consumed_train_samples},
+                             iteration)
+        writer.add_scalar('learning-rate', learning_rate, iteration)
+        writer.add_scalar('learning-rate vs samples', learning_rate,
+                            args.consumed_train_samples)
+        if wandb_writer:
+            wandb_writer.log({'learning-rate': learning_rate}, iteration)
+        if args.decoupled_lr is not None:
+            writer.add_scalar('decoupled-learning-rate', decoupled_learning_rate, iteration)
+        if args.skipped_train_samples > 0:
+            writer.add_scalar('skipped-train-samples', args.skipped_train_samples, iteration)
+            if wandb_writer:
+                wandb_writer.log({'skipped-train-samples': args.skipped_train_samples}, iteration)
+        writer.add_scalar('batch-size', batch_size, iteration)
+        writer.add_scalar('batch-size vs samples', batch_size,
+                          args.consumed_train_samples)
+        if wandb_writer:
+            wandb_writer.log({'batch-size': batch_size}, iteration)
+        for key in loss_dict:
+            writer.add_scalar(key , loss_dict[key], iteration)
+            writer.add_scalar(key + ' vs samples', loss_dict[key],
+                              args.consumed_train_samples)
+            if wandb_writer:
+                wandb_writer.log({key: loss_dict[key]}, iteration)
+        if args.log_loss_scale_to_tensorboard:
+            writer.add_scalar('loss-scale', loss_scale, iteration)
+            writer.add_scalar('loss-scale vs samples', loss_scale,
+                              args.consumed_train_samples)
+            if wandb_writer:
+                wandb_writer.log({'loss-scale': loss_scale}, iteration)
+        if args.log_world_size_to_tensorboard:
+            writer.add_scalar('world-size', args.world_size, iteration)
+            writer.add_scalar('world-size vs samples', args.world_size,
+                              args.consumed_train_samples)
+            if wandb_writer:
+                wandb_writer.log({'world-size': args.world_size}, iteration)
+        if grad_norm is not None:
+            writer.add_scalar('grad-norm', grad_norm, iteration)
+            writer.add_scalar('grad-norm vs samples', grad_norm,
+                              args.consumed_train_samples)
+            if wandb_writer:
+                wandb_writer.log({'grad-norm': grad_norm}, iteration)
+        if num_zeros_in_grad is not None:
+            writer.add_scalar('num-zeros', num_zeros_in_grad, iteration)
+            writer.add_scalar('num-zeros vs samples', num_zeros_in_grad,
+                              args.consumed_train_samples)
+            if wandb_writer:
+                wandb_writer.log({'num-zeros': num_zeros_in_grad}, iteration)
+        if params_norm is not None:
+            writer.add_scalar('params-norm', params_norm, iteration)
+            writer.add_scalar('params-norm vs samples', params_norm,
+                              args.consumed_train_samples)
+            if wandb_writer:
+                wandb_writer.log({'params-norm': params_norm}, iteration)
+        if args.log_memory_to_tensorboard:
+            mem_stats = torch.cuda.memory_stats()
+            writer.add_scalar(
+                "mem-reserved-bytes",
+                mem_stats["reserved_bytes.all.current"],
+                iteration,
+            )
+            writer.add_scalar(
+                "mem-allocated-bytes",
+                mem_stats["allocated_bytes.all.current"],
+                iteration,
+            )
+            writer.add_scalar(
+                "mem-max-allocated-bytes",
+                mem_stats["allocated_bytes.all.peak"],
+                iteration,
+            )
+            writer.add_scalar(
+                "mem-allocated-count",
+                mem_stats["allocation.all.current"],
+                iteration,
+            )
+    if args.num_experts is not None:
+        moe_loss_scale = 1 / get_num_microbatches()
+        track_names = []
+        if args.moe_router_load_balancing_type in ["aux_loss", "seq_aux_loss"]:
+            track_names.append("load_balancing_loss")
+        if args.moe_z_loss_coeff is not None:
+            track_names.append("z_loss")
+        track_moe_metrics(
+            loss_scale=moe_loss_scale,
+            iteration=iteration,
+            writer=writer,
+            wandb_writer=wandb_writer,
+            total_loss_dict=total_loss_dict,
+            per_layer_logging=args.moe_per_layer_logging,
+            force_initialize=True,
+            track_names=track_names,
+            num_layers=args.num_layers,
+            moe_layer_freq=args.moe_layer_freq
+        )
+    if args.mtp_num_layers is not None:
+        mtp_loss_scale = 1 / get_num_microbatches()
+        MTPLossLoggingHelper.track_mtp_metrics(
+            mtp_loss_scale, iteration, writer, wandb_writer, total_loss_dict
+            )
+
+    if iteration % args.log_interval == 0:
+        if args.record_memory_history and is_last_rank():
+            snapshot = torch.cuda.memory._snapshot()
+            from pickle import dump
+            with open(args.memory_snapshot_path, 'wb') as f:
+                dump(snapshot, f)
+
+        elapsed_time = timers('interval-time').elapsed(barrier=True)
+        elapsed_time_per_iteration = elapsed_time / total_iterations
+
+        attn_ratio = get_average_attn_ratio(args) * 100
+        throughput = num_floating_point_operations(args, batch_size) / (
+            elapsed_time_per_iteration * 10**12 * args.world_size)
+        clear_actual_attn_ratio()
+
+        one_logger_utils.track_e2e_metrics(args.log_throughput, throughput)
+
+        if args.log_timers_to_tensorboard:
+            if writer:
+                writer.add_scalar('iteration-time',
+                                  elapsed_time_per_iteration, iteration)
+            if wandb_writer:
+                wandb_writer.log({'iteration-time': elapsed_time_per_iteration},
+                                 iteration)
+        log_string = f" [{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}]"
+        log_string += ' iteration {:8d}/{:8d} |'.format(
+            iteration, args.train_iters)
+        log_string += ' consumed samples: {:12d} |'.format(
+            args.consumed_train_samples)
+        if args.skipped_train_samples > 0:
+            log_string += ' skipped samples: {:12d} |'.format(
+                args.skipped_train_samples)
+        log_string += ' elapsed time per iteration (ms): {:.1f} |'.format(
+            elapsed_time_per_iteration * 1000.0)
+        if args.log_throughput:
+            log_string += f' throughput per GPU (TFLOP/s/GPU): {throughput:.1f} |'
+            log_string += f' core attn ratio (%): {attn_ratio:.1f} |'
+            if args.log_timers_to_tensorboard:
+                if writer:
+                    writer.add_scalar('throughput', throughput, iteration)
+                if wandb_writer:
+                    wandb_writer.log({'throughput': throughput}, iteration)
+        # Decoupled_learning_rate should be not None only on first and last pipeline stage.
+        log_string += f' learning rate: {learning_rate:.6E} |'
+        if args.decoupled_lr is not None and (mpu.is_pipeline_first_stage(ignore_virtual=True) or
+                                              mpu.is_pipeline_last_stage(ignore_virtual=True)):
+            assert decoupled_learning_rate is not None
+            log_string += f' decoupled learning rate: {decoupled_learning_rate:.6E} |'
+        else:
+            assert decoupled_learning_rate is None
+        log_string += f' global batch size: {batch_size:5d} |'
+        for key in total_loss_dict:
+            if key not in [advanced_iters_key, skipped_iters_key,
+                           nan_iters_key]:
+                avg = total_loss_dict[key].item() / \
+                      float(max(1, total_loss_dict[advanced_iters_key]))
+                if avg > 0.0:
+                    log_string += ' {}: {:.6E} |'.format(key, avg)
+                total_loss_dict[key] = torch.tensor([0.0], dtype=torch.float, device='cuda')
+        log_string += f' loss scale: {loss_scale:.1f} |'
+        if grad_norm is not None:
+            log_string += f' grad norm: {grad_norm:.3f} |'
+        if num_zeros_in_grad is not None:
+            log_string += f' num zeros: {num_zeros_in_grad} |'
+        if params_norm is not None:
+            log_string += f' params norm: {params_norm:.3f} |'
+        log_string += ' number of skipped iterations: {:3d} |'.format(
+            total_loss_dict[skipped_iters_key])
+        log_string += ' number of nan iterations: {:3d} |'.format(
+            total_loss_dict[nan_iters_key])
+        total_loss_dict[advanced_iters_key] = 0
+        total_loss_dict[skipped_iters_key] = 0
+        total_loss_dict[nan_iters_key] = 0
+        print_rank_last(log_string)
+        if report_memory_flag:
+            # Report memory after optimizer state has been initialized.
+            if torch.distributed.get_rank() == 0:
+                num_microbatches = get_num_microbatches()
+                report_theoretical_memory(args, num_microbatches=num_microbatches, verbose=True)
+            report_memory(f'(after {iteration} iterations)')
+            report_memory_flag = False
+        timers.log(timers_to_log, normalizer=args.log_interval)
+
+    return report_memory_flag
+
+
+def get_average_attn_ratio(args):
+    # Now get_average_attn_ratio does not support schedules_method
+    if args.reset_attention_mask and args.schedules_method is None:
+        ratio_list, seq_count = get_actual_attn_ratio()
+        dp_size = parallel_state.get_data_parallel_world_size(with_context_parallel=False)
+
+        assert len(ratio_list) == seq_count
+        average_ratio = torch.tensor(sum(ratio_list), dtype=torch.float32, device=torch.npu.current_device())
+        torch.distributed.all_reduce(average_ratio,
+                                     group=parallel_state.get_data_parallel_group(with_context_parallel=False))
+        average_ratio = (average_ratio / dp_size).item()
+    else:
+        average_ratio = 0.5
+    return average_ratio
+
+
+def num_floating_point_operations(args, batch_size):
+    def calculate_layer_counts():
+        """Calculate the number of attention, Mamba, and MLP layers."""
+        if args.hybrid_override_pattern:
+            counts = {'M': 0, '*': 0, '-': 0}
+            for layer_type in args.hybrid_override_pattern:
+                if layer_type in counts:
+                    counts[layer_type] += 1
+            return counts['*'], counts['M'], counts['-']
+        else:
+            num_attn_layers = round(args.num_layers * args.hybrid_attention_ratio)
+            num_mlp_layers = round(args.num_layers * args.hybrid_mlp_ratio)
+            num_mamba_layers = args.num_layers - num_attn_layers - num_mlp_layers
+            return num_attn_layers, num_mamba_layers, num_mlp_layers
+
+    def mlp_layer_flops(batch_size, seq_len, hidden_size, expansion=4.0, swiglu=False):
+        """Calculate FLOPs for an MLP layer."""
+        scale_factor = 3.0 / 2.0 if swiglu else 1.0
+        return 4 * expansion * scale_factor * batch_size * seq_len * hidden_size ** 2
+
+    def attn_layer_flops(batch_size, seq_len, hidden_size, num_heads, gqa=True,
+                         gqa_groups=8, kv_channels=None):
+        """Calculate FLOPs for an attention layer."""
+        p = (kv_channels * num_heads / hidden_size) if kv_channels else 1
+        g = gqa_groups if gqa else num_heads
+        return 4 * batch_size * seq_len * hidden_size * p * (
+                hidden_size + (hidden_size * (g / num_heads)) + (seq_len / 2))
+
+    def mamba_layer_flops(batch_size, seq_len, hidden_size, state_dim=16,
+                          head_dim=64, num_groups=1):
+        """Calculate FLOPs for a Mamba layer."""
+        # Note (rwaleffe): flops estimate for scan should be updated based on new SSD kernels,
+        # but small percent of overall layer flops
+        d_in = 2 * hidden_size
+        nheads = d_in // head_dim
+        return (
+                (2 * batch_size * seq_len * hidden_size * (
+                        2 * d_in + 2 * num_groups * state_dim + nheads)) +  # in_proj
+                (7 * batch_size * seq_len * d_in * state_dim) +  # scan
+                (2 * batch_size * seq_len * d_in * hidden_size)  # out_proj
+        )
+
+    def hybrid_flops(batch_size, seq_len, hidden_size,
+                     num_attn_layers, num_mamba_layers, num_mlp_layers,
+                     mamba_state_dim=128, mamba_head_dim=64,
+                     mamba_num_groups=8, num_attn_heads=32,
+                     gqa=True, gqa_groups=8, kv_channels=None,
+                     mlp_expansion=4.0, swiglu=False,
+                     vocab_size=256000):
+        """Calculate total FLOPs for the hybrid model."""
+        flops_fwd = (
+                num_attn_layers * attn_layer_flops(batch_size, seq_len, hidden_size,
+                                                   num_attn_heads, gqa, gqa_groups, kv_channels) +
+                num_mlp_layers * mlp_layer_flops(batch_size, seq_len, hidden_size,
+                                                 mlp_expansion, swiglu) +
+                num_mamba_layers * mamba_layer_flops(batch_size, seq_len, hidden_size,
+                                                     mamba_state_dim, mamba_head_dim,
+                                                     mamba_num_groups) +
+                (2 * batch_size * seq_len * hidden_size * vocab_size)  # logits computation
+        )
+        return flops_fwd * 3
+
+    def transformer_flops():
+        """Calculate FLOPs for a standard Transformer model."""
+
+        average_ratio = get_average_attn_ratio(args)
+
+        # TODO(helenn/dnarayanan): Refactor this to reuse the helper methods.
+        # Attention projection size.
+        query_projection_size = args.kv_channels * args.num_attention_heads
+        query_projection_to_hidden_size_ratio = query_projection_size / args.hidden_size
+        # Group Query Attention.
+        if not args.group_query_attention:
+            args.num_query_groups = args.num_attention_heads
+        # MoE.
+        if args.num_experts is None:
+            # Every Transformer MLP is dense.
+            num_dense_layers = args.num_layers
+            num_moe_layers = 0
+            num_experts_routed_to = 0
+            last_layer_is_moe = 0
+        else:
+            # Calculate number of dense and MoE Transformer MLPs.
+            if isinstance(args.moe_layer_freq, int):
+                moe_layer_pattern = [
+                    1 if (i % args.moe_layer_freq == 0) else 0 for i in range(args.num_layers)
+                ]
+            elif isinstance(args.moe_layer_freq, list):
+                moe_layer_pattern = args.moe_layer_freq
+            else:
+                raise RuntimeError("Illegal --moe-layer-freq argument provided!")
+            assert len(moe_layer_pattern) == args.num_layers, (
+                f"Invalid length of moe_layer_pattern: {len(moe_layer_pattern)}, "
+                f"expected {args.num_layers}, "
+                f"current moe layer pattern: {args.moe_layer_freq}"
+            )
+            num_moe_layers = sum(moe_layer_pattern)  # Number of 1s in `moe_layer_pattern`.
+            num_dense_layers = args.num_layers - num_moe_layers
+            num_experts_routed_to = args.moe_router_topk
+            last_layer_is_moe = moe_layer_pattern[-1]
+
+        if args.mtp_num_layers is not None:
+            mtp_num_layers = args.mtp_num_layers
+            num_moe_layers += last_layer_is_moe * mtp_num_layers
+            num_dense_layers += (1 - last_layer_is_moe) * mtp_num_layers
+            num_layers = args.num_layers + mtp_num_layers
+        else:
+            mtp_num_layers = 0
+            num_layers = args.num_layers
+
+        moe_ffn_hidden_size = args.moe_ffn_hidden_size if args.moe_ffn_hidden_size is not None else args.ffn_hidden_size
+        shared_expert_ffn_hidden_size = (
+            0
+            if args.moe_shared_expert_intermediate_size is None
+            else args.moe_shared_expert_intermediate_size
+        )
+        # SwiGLU.
+        gated_linear_multiplier = 3 / 2 if args.swiglu else 1
+
+        # The 12x term below comes from the following factors; for more details, see
+        # "APPENDIX: FLOATING-POINT OPERATIONS" in https://arxiv.org/abs/2104.04473.
+        # - 3x: Each GEMM in the model needs to be performed 3 times (forward pass,
+        #       backward wgrad [weight gradient], backward dgrad [data gradient]).
+        # - 2x: GEMMs of a particular size are stacked twice in the standard Transformer model
+        #       architectures implemented in this codebase (e.g., h->ffn_h GEMM and ffn_h->h GEMM
+        #       in MLP layer).
+        # - 2x: A GEMM of a m*n tensor with a n*k tensor requires 2mnk floating-point operations.
+        expansion_factor = 3 * 2 * 2
+
+        if args.multi_latent_attention:
+            assert not args.group_query_attention
+            '''
+            Basic arithmetic
+            let B is batch size, s is seq_len, h is embedding dim,
+            for one self_attnetion block (prenorm is not included)
+            qkv projection:  6Bsh^2
+            attn:            2Bs^2h
+            attn over value: 2Bs^2h
+            oproj:           2Bsh^2
+
+            references
+            https://arxiv.org/abs/2305.10403
+            https://arxiv.org/abs/2205.05198
+            '''
+            ## MLA
+            if args.q_lora_rank is None:
+                q_term = args.hidden_size * args.num_attention_heads * (args.qk_head_dim + args.qk_pos_emb_head_dim)
+            else:
+                q_term = args.q_lora_rank * (args.hidden_size + args.num_attention_heads * (
+                            args.qk_head_dim + args.qk_pos_emb_head_dim) + 1)
+            self_attn_term = (
+                    3 * 2  # fwd(1) + bwd(2) *FMA
+                    * num_layers
+                    * (
+                        ## q lora + rope + q norm
+                            q_term
+
+                            ## kv lora + rope + kv norm
+                            + args.kv_lora_rank
+                            * (args.hidden_size + args.num_attention_heads * (args.qk_head_dim + args.v_head_dim) + 1)
+                            + args.hidden_size * args.qk_pos_emb_head_dim
+
+                            ## o proj
+                            + (args.num_attention_heads * args.v_head_dim) * args.hidden_size
+
+                            ## core attn
+                            + args.seq_length * (
+                                        args.num_attention_heads * (args.qk_head_dim + args.qk_pos_emb_head_dim)) * average_ratio
+                            + args.seq_length * args.num_attention_heads * args.v_head_dim * average_ratio
+                    )
+            )
+
+        else:
+            ## MHA or GQA
+            self_attn_term = (
+                    expansion_factor
+                    * num_layers
+                    * args.hidden_size
+                    * args.hidden_size
+                    * (
+                            (
+                                    1
+                                    + (args.num_query_groups / args.num_attention_heads)
+                                    # # Only half of the attention matrix is non-zero and needs to be multiplied with V.
+                                    + (args.seq_length / args.hidden_size * average_ratio)
+                            ) * query_projection_to_hidden_size_ratio
+                    )
+            )
+
+        total_floating_point_operations = batch_size * args.seq_length * (
+            # MLP
+                expansion_factor
+                * num_layers
+                * args.hidden_size
+                * (
+                    # dense layer (deepseek v2, v3 style)
+                        (
+                                args.ffn_hidden_size
+                                * gated_linear_multiplier
+                        ) * (num_dense_layers / num_layers)
+                        # routed experts
+                        + (
+                                moe_ffn_hidden_size
+                                * num_experts_routed_to
+                                * gated_linear_multiplier
+                        ) * (num_moe_layers / num_layers)
+                        # Shared Experts.
+                        + (
+                                shared_expert_ffn_hidden_size
+                                * gated_linear_multiplier
+                        ) * (num_moe_layers / num_layers)
+                )
+                # Self Attention
+                + self_attn_term
+                # MTP norms and proj
+                + 3 * 2
+                * mtp_num_layers
+                * (
+                    # MTP eh norm + final nrom
+                        3 * args.hidden_size
+                        # MTH eh proj
+                        + 2 * args.hidden_size * args.hidden_size
+                )
+                # Logit.
+                + 3 * 2
+                * args.hidden_size
+                * args.padded_vocab_size
+                * (mtp_num_layers + 1)
+        )
+        return total_floating_point_operations
+
+    # Main entrypoint for FLOPs calculation.
+    if args.is_hybrid_model:
+        # Calculate the number of each type of layer.
+        num_attn_layers, num_mamba_layers, num_mlp_layers = calculate_layer_counts()
+
+        # Compute hybrid model FLOPs.
+        return hybrid_flops(
+            batch_size=batch_size,
+            seq_len=args.seq_length,
+            hidden_size=args.hidden_size,
+            num_attn_layers=num_attn_layers,
+            num_mamba_layers=num_mamba_layers,
+            num_mlp_layers=num_mlp_layers,
+            mamba_state_dim=args.mamba_state_dim,
+            mamba_head_dim=args.mamba_head_dim,
+            mamba_num_groups=args.mamba_num_groups,
+            num_attn_heads=args.num_attention_heads,
+            gqa=args.group_query_attention,
+            gqa_groups=args.num_query_groups,
+            kv_channels=args.kv_channels,
+            mlp_expansion=args.ffn_hidden_size / args.hidden_size,
+            swiglu=args.swiglu,
+            vocab_size=args.padded_vocab_size
+        )
+    else:
+        # Compute standard Transformer model FLOPs.
+        return transformer_flops()

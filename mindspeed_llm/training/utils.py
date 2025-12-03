@@ -34,6 +34,7 @@ import numpy as np
 import megatron
 from megatron.training import get_args
 from megatron.core import mpu
+from megatron.core.parallel_state import is_pipeline_last_stage
 from tqdm import tqdm
 
 from mindspeed.core.context_parallel.utils import pad_data
@@ -70,16 +71,47 @@ _MTP_POSITION_ID = None
 _MTP_BATCH_LIST = None
 
 _ACTUAL_SEQ_LEN_LIST = None
+_ACTUAL_ATTN_RATIO_LIST = []
+_ACTUAL_COUNT = 0
+
+
+def get_attn_ratio(actual_seq_len, seq_length):
+    first_seq_list = np.array(actual_seq_len[:-1])
+    last_seq_list = np.array(actual_seq_len[1:])
+
+    seq_list_without_first = (last_seq_list - first_seq_list).tolist()
+    seq_length_list = np.array([actual_seq_len[0], ] + seq_list_without_first)
+    ratio = 0.5 * sum(seq_length_list * seq_length_list) / (seq_length * seq_length)
+
+    return ratio
+
+
+def clear_actual_attn_ratio():
+    global _ACTUAL_ATTN_RATIO_LIST, _ACTUAL_COUNT
+    _ACTUAL_ATTN_RATIO_LIST = []
+    _ACTUAL_COUNT = 0
 
 
 def set_actual_seq_len_list(actual_seq_len):
-    global _ACTUAL_SEQ_LEN_LIST
+    global _ACTUAL_SEQ_LEN_LIST, _ACTUAL_ATTN_RATIO_LIST, _ACTUAL_COUNT
     _ACTUAL_SEQ_LEN_LIST = actual_seq_len
+
+    args = get_args()
+    if actual_seq_len is not None and args.log_throughput and is_pipeline_last_stage():
+        actual_attn_ratio = get_attn_ratio(actual_seq_len, args.seq_length)
+        _ACTUAL_ATTN_RATIO_LIST.append(actual_attn_ratio)
+        _ACTUAL_COUNT += 1
 
 
 def get_actual_seq_len_list():
     global _ACTUAL_SEQ_LEN_LIST
     return _ACTUAL_SEQ_LEN_LIST
+
+
+def get_actual_attn_ratio():
+    global _ACTUAL_ATTN_RATIO_LIST, _ACTUAL_COUNT
+    return _ACTUAL_ATTN_RATIO_LIST, _ACTUAL_COUNT
+
 
 def set_mtp_batch_list(mtp_batch_list):
     global _MTP_BATCH_LIST
