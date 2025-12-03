@@ -144,4 +144,13 @@
         <td>/</td>
         <td>/data/ci/cache/process_dataset/tmp</td>
     </tr>
+        <td>tune_llama3_8b_lora_tp1pp8.sh</td>
+        <td>/data/ci/models/llama3/hf/llama-3-8b-hf/</td>
+        <td>/data/ci/cache/llama-3-8b-tp1pp8</td>
+        <td>/data/ci/datasets/origin/train-00000-of-00001-a09b74b3ef9c3b56.parquet</td>
+        <td>/data/ci/cache/llama3-8b-dataset/llama3_8b</td>
+        <td>/</td>
+        <td>/data/ci/cache/llama-3-8b-tp1pp8</td>
+    </tr>
+
 </table>

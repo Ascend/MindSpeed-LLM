@@ -14,7 +14,7 @@
         <th>Mem.</th>
     </tr>
     <tr>
-        <td rowspan="16">ST</td>
+        <td rowspan="17">ST</td>
         <td rowspan="14">Pretrain</td>
         <td>TP，PP，VPP，distributed_optimizer，o2_gradient，o2_optimizer，重计算，enable_recompute_layers_per_pp_rank，FA_TND，use_fused_rotary_pos_emb</td>
         <td><a href="st/shell_scripts/llama2_tp2_pp4_vpp2_ptd.sh">llama2_tp2_pp4_vpp2_ptd.sh</a></td>
@@ -114,9 +114,16 @@
         <td>Y</td>
     </tr>
     <tr>
-        <td rowspan="1">LoRA</td>
+        <td rowspan="2">Finetune</td>
         <td>CCLoRA, QLoRA</td>
         <td><a href="st/shell_scripts/tune_llama2_tp1_pp1_qlora_ptd.sh">tune_llama2_tp1_pp1_qlora_ptd.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td>LoRA, lora-fusion, llama3-rope, no-pad-to-seq-lengths, enable-hf2mg-convert, auto_data_process</td>
+        <td><a href="st/shell_scripts/tune_llama3_8b_lora_tp1pp8.sh">tune_llama3_8b_lora_tp1pp8.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
