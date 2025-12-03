@@ -171,11 +171,11 @@ def _patch_optimizer_and_training(args):
             'mindspeed_llm.training.utils._compute_actual_seq_len', _compute_actual_seq_len)
 
     # Optimizer: load and save parameter
-    from ..mindspore.core.optimizer.distrib_optimizer import get_parameter_state_dp_zero
+    from mindspeed.mindspore.core.optimizer.distrib_optimizer import get_parameter_state_dp_zero
     MindSporeAdaptation.register_patch(
         'megatron.core.optimizer.distrib_optimizer.DistributedOptimizer.get_parameter_state_dp_zero',
         get_parameter_state_dp_zero)
-    from ..mindspore.core.optimizer.distrib_optimizer import load_parameter_state_from_dp_zero
+    from mindspeed.mindspore.core.optimizer.distrib_optimizer import load_parameter_state_from_dp_zero
     MindSporeAdaptation.register_patch(
         'megatron.core.optimizer.distrib_optimizer.DistributedOptimizer.load_parameter_state_from_dp_zero',
         load_parameter_state_from_dp_zero)
