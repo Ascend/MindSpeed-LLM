@@ -12,6 +12,15 @@ GENERATE_JSON_DIR=/data/ci/run_jsons
 rm -rf $GENERATE_LOG_DIR/*
 rm -rf $GENERATE_JSON_DIR/*
 
+# 删缓存 预编译，提高用例执行稳定性
+rm -rf /root/.cache
+python -c "import mindspeed; from mindspeed.op_builder import GMMOpBuilder; GMMOpBuilder().load()" &
+python -c "import mindspeed; from mindspeed.op_builder import GMMV2OpBuilder; GMMV2OpBuilder().load()" &
+python -c "import mindspeed; from mindspeed.op_builder import MatmulAddOpBuilder; MatmulAddOpBuilder().load()" &
+python -c "import mindspeed; from mindspeed.op_builder import MoeTokenPermuteOpBuilder; MoeTokenPermuteOpBuilder().load()" &
+python -c "import mindspeed; from mindspeed.op_builder import MoeTokenUnpermuteOpBuilder; MoeTokenUnpermuteOpBuilder().load()" &
+python -c "import mindspeed; from mindspeed.op_builder import RotaryPositionEmbeddingOpBuilder; RotaryPositionEmbeddingOpBuilder().load()" &
+python -c "import mindspeed; from mindspeed.op_builder import GroupMatmulAddOpBuilder; GroupMatmulAddOpBuilder().load()"
 
 # step 2: running scripts and execute `test_ci_pipeline.py`
 for test_case in "$SHELL_SCRIPTS_DIR"/*.sh; do
