@@ -60,6 +60,10 @@ class TrainingBasicFeature(MindSpeedFeature):
         if args.pipeline_model_parallel_size != 2 or args.num_layers_per_virtual_pipeline_stage is None:
             return
 
+        if args.num_layers_per_virtual_pipeline_stage and args.num_layer_list:
+            raise AssertionError(
+                'num_layers_per_virtual_pipeline_stage is not support work with num_layer_list')
+
         # VPP enabled when pp == 2, do check.
         num_layers_per_pipeline_stage = args.num_layers // args.pipeline_model_parallel_size
         if num_layers_per_pipeline_stage % args.num_layers_per_virtual_pipeline_stage != 0:
