@@ -61,6 +61,10 @@ def is_need_change_group(group_index, *args, **kwargs):
         return True, 'kwargs'
     if len(args) > group_index and args[group_index] is None:
         return True, 'args'
+    if len(args) > group_index and args[group_index] == torch.distributed.group.WORLD:
+        return True, 'args'
+    if kwargs.get('group', None) == torch.distributed.group.WORLD:
+        return True, 'kwargs'
     return False, ""
 
 
