@@ -26,12 +26,12 @@ TOKENIZER_PATH="your tokenizer path"
 TP=4
 PP=8
 EP=32
-CP=4
+CP=8
 VPP=4
 MBS=1
 GBS=32
 CP_TYPE='ulysses_cp_algo'
-SEQ_LENGTH=65536
+SEQ_LENGTH=131072
 TRAIN_ITERS=2000
 ROUTER_BALANCING_TYPE='aux_loss'
 
@@ -174,4 +174,4 @@ torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     $TRAIN_ARGS \
     $MODEL_PARALLEL_ARGS \
     --distributed-backend nccl \
-    | tee logs/tune_qwen3_235b_64k_a22b_full.log
+    | tee logs/tune_qwen3_235b_128k_a22b_full.log
