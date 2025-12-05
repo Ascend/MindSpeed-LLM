@@ -186,6 +186,49 @@
     "efficient_eos": true
   },
   {
+    "name": "glm4_moe",
+    "format_user": {
+      "slots": [
+        "<|user|>\n{{content}}<|assistant|>"
+      ]
+    },
+    "format_assistant": {
+      "slots": [
+        "\n{{content}}"
+      ]
+    },
+    "format_system": {
+      "slots": [
+        "<|system|>\n{{content}}"
+      ]
+    },
+    "format_function": {
+      "slots": [
+        "{{name}}\n{{arguments}}"
+      ],
+      "tool_format": "glm4_moe"
+    },
+    "format_observation": {
+      "slots": [
+        "<|observation|>\n{{content}}<|assistant|>"
+      ]
+    },
+    "format_tools": {
+      "tool_format": "glm4_moe"
+    },
+    "format_prefix": {
+      "slots": [
+        "[gMASK]<sop>"
+      ]
+    },
+    "stop_words": [
+      "<|user|>",
+      "<|observation|>"
+    ],
+    "efficient_eos": true,
+    "template_class": "ReasoningTemplate"
+  },
+  {
     "name": "chatml",
     "format_user": {
       "slots": [
