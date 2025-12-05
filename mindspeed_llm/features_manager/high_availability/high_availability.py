@@ -71,7 +71,7 @@ class HighAvailabilityFeature(MindSpeedFeature):
         patch_manager.register_patch('torch.distributed.all_to_all_single',
                                      all_to_all_single_wrapper)
         for communication in ['all_gather', 'all_to_all', 'all_reduce_coalesced', 'all_gather_object',
-                              'broadcast_object_list', 'all_gather_coalesced']:
+                              'broadcast_object_list', 'all_gather_coalesced', 'irecv', 'isend']:
             patch_manager.register_patch('torch.distributed.' + communication,
                                          group_index_two_torch_wrapper)
         for communication in ['gather', 'scatter', 'reduce', 'reduce_scatter', 'gather_object',
