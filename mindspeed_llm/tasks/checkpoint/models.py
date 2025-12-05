@@ -1142,7 +1142,7 @@ class MegatronModel(ModelBase):
         if not self.args_cmd.model_type == 'GPT':
             raise ValueError("Llama-2 is a GPT model.")
 
-        if self.args_cmd.save_model_type != "mg":
+        if self.args_cmd.load_model_type != "mg":
             if self.md and self.args_cmd.num_layer_list:
                 self.args.num_layer_list = self.args_cmd.num_layer_list
         
