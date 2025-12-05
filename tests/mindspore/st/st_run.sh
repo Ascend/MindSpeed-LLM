@@ -51,13 +51,13 @@ modifyTrainingLogs() {
     echo "Modifying training log precision..."
     # replace log_string += ' {}: {:.6E} |'.format(key, avg)
     sed -i 's/log_string += '\'' {}: {:.6E} |'\''.format(key, avg)/log_string += '\'' {}: {:.16f} |'\''.format(key, avg)/g' "$fname"
-    # replace log_string += ' grad norm: {:.3f} |'.format(grad_norm)
-    sed -i 's/log_string += '\'' grad norm: {:.3f} |'\''.format(grad_norm)/log_string += '\'' grad norm: {:.16f} |'\''.format(grad_norm)/g' "$fname"
-    # replace log_string += ' params norm: {:.3f} |'.format(params_norm)
-    sed -i 's/log_string += '\'' params norm: {:.3f} |'\''.format(params_norm)/log_string += '\'' params norm: {:.16f} |'\''.format(params_norm)/g' "$fname"
+    # replace log_string += f' grad norm: {grad_norm:.3f} |'
+    sed -i 's/log_string += f\s*'\'' grad norm: {grad_norm:\.3f} |'\''/log_string += f'\'' grad norm: {grad_norm:.16f} |'\''/g' "$fname"
+    # replace log_string += f' params norm: {params_norm:.3f} |'
+    sed -i 's/log_string += f\s*'\'' params norm: {params_norm:\.3f} |'\''/log_string += f'\'' params norm: {params_norm:.16f} |'\''/g' "$fname"
     echo "Log precision has been updated to 16 decimal places in $fname"
 }
-modifyTrainingLogs ${Megatron_LM_PATH}/megatron/training/training.py
+modifyTrainingLogs ${MindSpeed_LLM_PATH}/mindspeed_llm/training/training.py
 addSeedAll ${MindSpeed_LLM_PATH}/pretrain_gpt.py
 addSeedAll ${MindSpeed_LLM_PATH}/posttrain_gpt.py
 #sed -i 's/\ \ \ \ \ \ \ \ logits = F.linear(input, self.weight)/\ \ \ \ \ \ \ \ logits = F.linear(input, self.weight, self.bias)/g' ${MindSpeed_LLM_PATH}/mindspeed_llm/core/transformer/moe/router.py
