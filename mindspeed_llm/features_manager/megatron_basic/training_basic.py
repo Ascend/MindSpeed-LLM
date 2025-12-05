@@ -65,6 +65,10 @@ class TrainingBasicFeature(MindSpeedFeature):
         if num_layers_per_pipeline_stage % args.num_layers_per_virtual_pipeline_stage != 0:
             raise AssertionError('number of layers per pipeline stage must be divisible number of layers per virtual pipeline stage')
 
+        if args.num_layers_per_virtual_pipeline_stage and args.num_layer_list:
+            raise AssertionError(
+                'num_layers_per_virtual_pipeline_stage is not support work with num_layer_list')
+
         pp_stage_layers = args.num_layers / args.pipeline_model_parallel_size
         if args.num_layers_per_virtual_pipeline_stage and args.num_layers_per_virtual_pipeline_stage >= pp_stage_layers:
             raise ValueError("Num of layers in vpp stage should be less than pp stage, "
