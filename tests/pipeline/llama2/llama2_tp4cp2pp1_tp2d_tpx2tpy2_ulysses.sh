@@ -103,6 +103,6 @@ torchrun $DISTRIBUTED_ARGS $basepath/pretrain_gpt.py \
     $GPT_ARGS \
     $DATA_ARGS \
     $OUTPUT_ARGS \
-    --load ${CKPT_LOAD_DIR}
+    --load ${CKPT_LOAD_DIR} \
     --distributed-backend nccl \
 
