@@ -1,5 +1,6 @@
 # Copyright (c) 2025, Huawei Technologies Co., Ltd. All rights reserved.
 # Copyright (c) 2022-2024, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+import torch
 from megatron.training import get_args
 from megatron.core import mpu
 from mindspeed.model.transformer import set_attention_mask
@@ -59,8 +60,8 @@ def _get_batch_on_this_cp_rank_in_megatron_cp_general(batch):
         if key == 'attention_mask' and val is not None:
             seq_dim = 2 if len(val.shape) == 4 else 0
             mask_row = val.chunk(cp_size, dim=seq_dim)[cp_rank].contiguous()
-            mask_list = [m.contiguous() for m in mask_row.chunk(cp_size, dim=seq_dim + 1)]
-            batch[key] = mask_list
+            mask_tensor = torch.stack([m.contiguous() for m in mask_row.chunk(cp_size, dim=seq_dim + 1)])
+            batch[key] = mask_tensor
             continue
         if val is not None:
             seq_dim = 1
