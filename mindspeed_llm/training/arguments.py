@@ -1127,8 +1127,8 @@ def _validate_transformer_block_build_layers(args):
             raise ValueError("len(args.num_layer_list) != args.pipeline_model_parallel_size")
         if not args.pipeline_model_parallel_size > 1:
             raise ValueError("Dynamic pipeline model should work with pipeline parallel.")
-        if args.num_layers_per_virtual_pipeline_stage:
-            raise ValueError("Dynamic pipeline model and virtual pipeline cannot be enabled at the same time.")
+        if args.num_layers_per_virtual_pipeline_stage or args.noop_layers:
+            raise ValueError("Dynamic pipeline model is not support work with virtual pipeline or noop layers.")
 
     if args.use_ascend_mc2 and args.use_ascend_coc:
         raise AssertionError('--mc2 and coc can not be used together')
@@ -1482,6 +1482,7 @@ def validate_args_decorator(megatron_validate_args):
         _validate_o2(args)
         _validate_varlen_fa_args(args)
         _validate_cp_args(args)
+        _validate_transformer_block_build_layers(args)
         _validate_vpp(args)
         _validate_recompute_args(args)
         _validate_recompute_in_advance(args)
@@ -1493,7 +1494,6 @@ def validate_args_decorator(megatron_validate_args):
         _validate_moe_args(args)
         _validate_mla(args)
         _validate_yarn(args)
-        _validate_transformer_block_build_layers(args)
         _validate_evaluation_args(args)
         _validate_output_layer_slice_num(args)
         _validate_optimizer(args)
