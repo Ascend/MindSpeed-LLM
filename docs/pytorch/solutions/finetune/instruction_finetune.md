@@ -156,7 +156,10 @@ source /usr/local/Ascend/ascend-toolkit/set_env.sh # 修改为真实的ascend-to
 bash examples/mcore/qwen3/data_convert_qwen3_instruction.sh
 ```
 
-第五步，配置模型微调脚本，详细的参数配置请参考[Qwen3-8b微调脚本](../../../../examples/mcore/qwen3/tune_qwen3_8b_4K_full_ptd.sh)。脚本中的环境变量配置见[环境变量说明](../../features/environment_variable.md)。模型微调可在单机或者多机上运行，以下是单机运行的相关参数配置说明：
+第五步，配置模型微调脚本，详细的参数配置请参考[Qwen3-8b微调脚本](../../../../examples/mcore/qwen3/tune_qwen3_8b_4K_full_ptd.sh)。脚本中的环境变量配置见[环境变量说明](../../features/environment_variable.md)。
+注意：训练参数的并行配置，如TP/PP/EP/VPP等（具体列表查看[权重转换指南](../../../pytorch/solutions/checkpoint/checkpoint_convert_v2.md#21-huggingface权重转换到megatron-mcore格式)）需要与第三步保持一致。
+
+模型微调可在单机或者多机上运行，以下是单机运行的相关参数配置说明：
 
 ```shell
 # 单机配置
