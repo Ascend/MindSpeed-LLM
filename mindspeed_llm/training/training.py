@@ -1122,13 +1122,20 @@ def training_log(loss_dict, total_loss_dict, learning_rate, decoupled_learning_r
 
 
 def get_average_attn_ratio(args):
+
+    def safe_mean(num_list):
+        if len(num_list) == 0:
+            return 0.0
+        else:
+            return sum(num_list) / float(len(num_list))
+
     # Now get_average_attn_ratio does not support schedules_method
     if args.reset_attention_mask and args.schedules_method is None:
         ratio_list, seq_count = get_actual_attn_ratio()
         dp_size = parallel_state.get_data_parallel_world_size(with_context_parallel=False)
 
         assert len(ratio_list) == seq_count
-        average_ratio = torch.tensor(sum(ratio_list), dtype=torch.float32, device=torch.npu.current_device())
+        average_ratio = torch.tensor(safe_mean(ratio_list), dtype=torch.float32, device=torch.npu.current_device())
         torch.distributed.all_reduce(average_ratio,
                                      group=parallel_state.get_data_parallel_group(with_context_parallel=False))
         average_ratio = (average_ratio / dp_size).item()
