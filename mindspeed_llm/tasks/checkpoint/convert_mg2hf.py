@@ -23,6 +23,7 @@ logger.getLogger().setLevel(logger.INFO)
 
 TENSOR_SIZE = 0
 hf_weight_dict = defaultdict()
+GLOBAL_LM_HEAD_WEIGHTS = None
 
 
 def load_data(file_path):
@@ -384,6 +385,7 @@ class Mg2HfConvert(Convert):
 
     def set_model_postprocess(self, hf_weight, mg_weight):
         """final_norm & output_layer"""
+        global GLOBAL_LM_HEAD_WEIGHTS
         hf_weight_key = self.save_model.get_weight()
         mg_weight_key = self.load_model.get_weight()
         final_norm_key = mg_weight_key["final_layernorm"]
@@ -405,6 +407,7 @@ class Mg2HfConvert(Convert):
                     lm_head_list.append(cur_tp_head.clone())
             lm_head_weights = torch.cat(lm_head_list, dim=0)
             hf_weight[hf_weight_key["output_layer"]] = lm_head_weights.clone()
+        GLOBAL_LM_HEAD_WEIGHTS = lm_head_weights.clone()
 
     def set_model_layer_norm(self, hf_weight, mg_weight, hf_layer_idx, local_layer_idx, mtp_layer_flag=False):
         """input norm & post attn norm"""
@@ -489,11 +492,18 @@ class Mg2HfConvert(Convert):
 
             return qk_nope_key, qk_rope_key, kv_nope_key, linear_v_key
 
-        def _generate_attn_layers_key():
-            qkv_key = mg_weight_key["layers_self_attention_linear_qkv"]
-            dense_key = mg_weight_key["layers_self_attention_linear_proj"]
-            q_layernorm_key = mg_weight_key["layers_self_attention_q_layernorm"]
-            k_layernorm_key = mg_weight_key["layers_self_attention_k_layernorm"]
+        def _generate_attn_layers_key(mtp_layer_flag):
+            if mtp_layer_flag:
+                qkv_key = mg_weight_key["mtp_layers_self_attention_linear_qkv"]
+                dense_key = mg_weight_key["mtp_layers_self_attention_linear_proj"]
+                q_layernorm_key = mg_weight_key["mtp_layers_self_attention_q_layernorm"]
+                k_layernorm_key = mg_weight_key["mtp_layers_self_attention_k_layernorm"]
+            else:
+                qkv_key = mg_weight_key["layers_self_attention_linear_qkv"]
+                dense_key = mg_weight_key["layers_self_attention_linear_proj"]
+                q_layernorm_key = mg_weight_key["layers_self_attention_q_layernorm"]
+                k_layernorm_key = mg_weight_key["layers_self_attention_k_layernorm"]
+
             return qkv_key, dense_key, q_layernorm_key, k_layernorm_key
 
         AttnKeys = namedtuple("AttnKeys", [
@@ -540,6 +550,13 @@ class Mg2HfConvert(Convert):
             indexer_wk_key = mg_weight_key[f"{prefix}layers_self_attention_indexer_wk"]
             indexer_wq_b_key = mg_weight_key[f"{prefix}layers_self_attention_indexer_wq_b"]
             return IndexerKeys(indexer_k_norm_key, indexer_k_norm_bias_key, indexer_weights_proj_key, indexer_wk_key, indexer_wq_b_key)
+
+        def _generate_attn_layers_bias_key(mtp_flag):
+            if mtp_flag:
+                qkv_bias_key = mg_bias_key["mtp_layers_self_attention_linear_qkv"]
+            else:
+                qkv_bias_key = mg_bias_key["layers_self_attention_linear_qkv"]
+            return qkv_bias_key
 
         # common params
         nh = self.load_model.num_attention_heads
@@ -637,7 +654,7 @@ class Mg2HfConvert(Convert):
                 hf_weight[hf_weight_key["layers_self_attention_indexer_wq_b"]] = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(indexer_keys.indexer_wq_b_key).clone()
 
         elif self.load_model.qkv_type == 'unpack':
-            linear_qkv_key, linear_proj_key, q_layernorm_key, k_layernorm_key = _generate_attn_layers_key()
+            linear_qkv_key, linear_proj_key, q_layernorm_key, k_layernorm_key = _generate_attn_layers_key(mtp_layer_flag)
             linear_qkv_list = []
             linear_proj_list = []
 
@@ -666,6 +683,33 @@ class Mg2HfConvert(Convert):
 
             o_proj = torch.cat(linear_proj_list, dim=1)
 
+            if hasattr(self.load_model, "add_qkv_bias"):
+                qkv_bias_key = _generate_attn_layers_bias_key(mtp_layer_flag)
+                qkv_bias_list = []
+
+                if self.expert_tensor_parallel_size == 1:
+                    for(tp_rank, ep_rank) in self.attention_tp_ckpts_list:
+                        qkv_bias_list.append(mg_weight[(tp_rank, ep_rank)].pop(qkv_bias_key))
+                else:
+                    for tp_rank in self.tp_rank_list:
+                        qkv_bias_list.append(mg_weight[(tp_rank, self.ep_rank_list[0])].pop(qkv_bias_key))
+
+                qkv_bias = torch.cat(qkv_bias_list, dim=0)
+
+                dim = self.load_model.kv_channels if hasattr(self.load_model, "kv_channels") \
+                    else self.load_model.hidden_size // self.load_model.num_attention_heads
+
+                qkv_bias = qkv_bias.reshape(ng, -1)
+                split_sizes = [dim * nh // ng, dim, dim]
+                q_bias, k_bias, v_bias = torch.split(qkv_bias, split_sizes, dim=1)
+
+                q_bias = q_bias.reshape(-1)
+                k_bias = k_bias.reshape(-1)
+                v_bias = v_bias.reshape(-1)
+
+                hf_weight[hf_bias_key["layers_self_attention_linear_q_proj"]] = q_bias.clone()
+                hf_weight[hf_bias_key["layers_self_attention_linear_k_proj"]] = k_bias.clone()
+                hf_weight[hf_bias_key["layers_self_attention_linear_v_proj"]] = v_bias.clone()
 
             if getattr(self.load_model, 'qk_layernorm', False):
                 q_a_layernorm = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(q_layernorm_key)
@@ -985,6 +1029,7 @@ class Mg2HfConvert(Convert):
     def set_mtp_layer(self, hf_weight, mg_weight, hf_layer_idx, mtp_local_idx=0):
         """all mtp"""
         # preprocess
+        global GLOBAL_LM_HEAD_WEIGHTS
         hf_weight_key = self.save_model.get_weight(layer_idx=hf_layer_idx)
         mg_weight_key = self.load_model.get_weight(mtp_local_idx)
         enorm = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(mg_weight_key["mtp_layers_enorm"])
@@ -1016,6 +1061,8 @@ class Mg2HfConvert(Convert):
         # postprocess
         mtp_final_norm = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(mg_weight_key["mtp_post_norm"])
         hf_weight[hf_weight_key["mtp_layers_shared_head_norm"]] = mtp_final_norm.clone()
+        if "mtp_layers_shared_head_head" in hf_weight_key.keys():
+            hf_weight[hf_weight_key["mtp_layers_shared_head_head"]] = GLOBAL_LM_HEAD_WEIGHTS.clone()
 
         self.set_model_layer_norm(hf_weight, mg_weight, hf_layer_idx, mtp_local_idx, mtp_layer_flag=True)
         self.set_model_layer_attn(hf_weight, mg_weight, hf_layer_idx, mtp_local_idx, mtp_layer_flag=True)
