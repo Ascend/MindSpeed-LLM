@@ -18,84 +18,72 @@
 
 ---
 
-
-
 MindSpeed LLM：基于昇腾生态的大语言模型分布式训练框架，旨在为华为 [昇腾芯片](https://www.hiascend.com/) 生态合作伙伴提供端到端的大语言模型训练方案，包含分布式预训练、分布式指令微调以及对应的开发工具链，如：数据预处理、权重转换、在线推理、基线评估等。
 
 **<small>注意 : 原仓名ModelLink更改为MindSpeed LLM，原包名modellink更改为mindspeed_llm </small>**
 
+
+# 未来规划
+
+---
+
+未来规划会刷新在[MindSpeed LLM RoadMap](https://gitcode.com/Ascend/MindSpeed-LLM/issues/982)中，欢迎访问LLM最新规划动态。
+
+
+# 加入我们
+
+---
+
+为了交流开发经验、分享使用心得、及时获取项目更新，我们创建了MindSpeed LLM社区交流群。无论你是正在使用这个项目，还是有奇思妙想，都欢迎加入。
+
+加入方式：
+1. 直接扫码加入微信交流群（二维码7天有效，定期更新）
+2. 添加昇腾开源小助手，获取群链接，进入MindSpeed LLM社区交流群
+
+<div style="display: flex; justify-content: flex-start; gap: 30px; align-items: flex-start; padding-left: 60px;">
+  <div style="text-align: center;">
+    <div>MindSpeed LLM社区交流群</div>
+    <img src="sources/images/wechat/llm_group.jpg" width="150" alt="MindSpeed LLM 微信群">
+  </div>
+  <div style="text-align: center;">
+    <div>昇腾开源小助手</div>
+    <img src="sources/images/wechat/ascend_assistant.jpg" width="150" alt="昇腾小助手 微信">
+  </div>
+</div>
+
 # 最新消息
 
 ---
+- [Dec. 25, 2025]: 🚀 权重转换、数据处理和训练功能合一【Prototype】
+- [Dec. 14, 2025]: 🚀 **magistral** 模型支持 【Prototype】
+- [Dec. 03, 2025]: 🚀 MindSpeed LLM 模型下架**[夕阳计划](https://gitcode.com/Ascend/MindSpeed-LLM/issues/943)** 启动，感谢每一份曾经的贡献。
+- [Oct. 28, 2025]: 🌴 MindSpeed LLM发布v2.2.0分支，支持core_v0.12.1版本
+- [Oct. 16, 2025]: 🚀 Qwen3-30B支持DPO训练
+- [Oct. 14, 2025]: 🚀 **DeepSeek-V3**预训练已支持基于 **[MindSpore AI框架](./docs/mindspore/readme.md)** 运行
+- [Oct. 22, 2025]: 🚀 **Ling mini v2** 模型支持
+- [Sep. 16, 2025]: 🚀 **Qwen3-Next** 模型支持 【Prototype】
+- [Aug. 23, 2025]: 🚀 大参数模型权重转换v2优化版本上线
+- [Jul. 28, 2025]: 🚀 **glm4.5-moe** 系列模型同步首发支持
+- [Jul. 25, 2025]: 🌴 MindSpeed LLM发布v2.1.0分支，支持core_r0.8.0版本
+- [Jul. 10, 2025]: 🚀 **[DeepSeek-R1](https://gitcode.com/Ascend/MindSpeed-RL/blob/master/docs/solutions/r1_zero_deepseek_671b.md)**  系列功能逐步上线
+- [May. 19, 2025]: 🚀 **Qwen3** 系列模型同步首发支持
+- [Mar. 27, 2025]: 🚀 **[DeepSeek-R1-ZERO Qwen-7B](https://gitcode.com/ascend/MindSpeed-RL/blob/master/docs/solutions/r1_zero_qwen25_7b.md)**  **[DeepSeek-R1-ZERO Qwen-32B](https://gitcode.com/ascend/MindSpeed-RL/blob/master/docs/solutions/r1_zero_qwen25_32b.md)**
+
+- [Mar. 26, 2025]: 🚀  **[DeepSeek-V3-671B模型全家桶](./examples/mcore/deepseek3/)** 上线
 
 
-- 致敬经典， 拥抱未来。 **[夕阳计划](https://gitcode.com/Ascend/MindSpeed-LLM/issues/943)** 启动，感谢每一份曾经的贡献。
-- **DeepSeek-V3**预训练已支持基于 **[MindSpore AI框架](./docs/mindspore/readme.md)** 运行
-- **glm4.5-moe** 系列模型同步首发支持
-- **Qwen3** 系列模型同步首发支持
-- **DeepSeek-R1** 系列功能逐步上线
-
--  **[DeepSeek-R1-ZERO Qwen-7B](https://gitcode.com/ascend/MindSpeed-RL/blob/master/docs/solutions/r1_zero_qwen25_7b.md)**  **[DeepSeek-R1-ZERO Qwen-32B](https://gitcode.com/ascend/MindSpeed-RL/blob/master/docs/solutions/r1_zero_qwen25_32b.md)**
-
--  **[DeepSeek-V3-671B模型全家桶](./examples/mcore/deepseek3/)** 已上线
-
-- **支持数据集处理、权重转换、预训练、全参微调、LoRA微调、QLoRA微调** 
-- **DeepSeek-R1-Distill** 系列模型已上线
-
-- **[DeepSeek-R1-Distill-Qwen](./examples/mcore/deepseek_r1_distill_qwen/)**  **[DeepSeek-R1-Distill-LLaMA](./examples/mcore/deepseek_r1_distill_llama/)**
-
-> 注意：<br>
-> 当前Qwen3系列模型功能已逐步完善，移步[examples/mcore](./examples/mcore)使用更完整功能； <br>
-> glm4.5-moe系列模型功能完善、验证中，非商用版本，移步[examples/mcore](./examples/mcore)使用更完整功能。<br>
-
-#  版本说明
+# 版本说明
 
 ---
 
+MindSpeed LLM支持Atlas 800T A2等昇腾训练硬件形态，软件版本配套表如下：
 
+| MindSpeed LLM版本 | MindSpeed版本      | Megatron版本 | PyTorch版本  | torch_npu版本 | CANN版本 | Python版本            |
+| ---------------- | ------------------ | ------------ | -----------  | ------------- | -------- | --------------------- |
+| master（主线）   | master             | core_v0.12.1  | 2.7.1       | 在研版本       | 在研版本  | Python3.10            |
+| 2.2.0（商用）    | 2.2.0_core_r0.12.1 | core_v0.12.1  | 2.7.1       | 7.2.0         | 8.3.RC1  | Python3.10            |
+| 2.1.0（商用）    | 2.1.0_core_r0.8.0  | core_r0.8.0   | 2.1.0, 2.6.0 | 7.1.0         | 8.2.RC1  | Python3.8, Python3.10 |
 
-MindSpeed LLM的依赖配套如下表
-
-<table>
-  <tr>
-    <th>依赖软件</th>
-    <th>版本</th>
-  </tr>
-  <tr>
-    <td>昇腾NPU驱动</td>
-    <td rowspan="2">在研版本</td>
-  <tr>
-    <td>昇腾NPU固件</td>
-  </tr>
-  <tr>
-    <td>Toolkit（开发套件）</td>
-      <td rowspan="3">在研版本</td>
-  </tr>
-  <tr>
-    <td>Kernel（算子包）</td>
-  </tr>
-  <tr>
-    <td>NNAL（Ascend Transformer Boost加速库）</td>
-  </tr>
-  <tr>
-  </tr>
-  <tr>
-    <td>Python</td>
-    <td>3.10</td>
-  </tr>
-  <tr>
-    <td>PyTorch</td>
-    <td>2.7.1</td>
-  </tr>
-  <tr>
-    <td>torch_npu插件</td>
-    <td rowspan="2">在研版本</td>
-  </tr>
-  <tr>
-    <td>apex</td>
-  </tr>
-</table>
-注：由于master分支使用在研版本的驱动以及CANN包，因此master上的一些新特性老版本配套可能有不支持情况，要使用稳定版本，请切换到商发分支并下载对应依赖版本进行安装。
 
 # 安装
 
