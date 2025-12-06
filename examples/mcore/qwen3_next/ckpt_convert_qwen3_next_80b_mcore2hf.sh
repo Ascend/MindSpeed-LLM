@@ -6,6 +6,7 @@ python convert_ckpt_v2.py \
     --save-model-type hf \
     --load-dir ./model_weights/qwen3_next_mcore/ \
     --save-dir ./model_from_hf/qwen3_next_hf/ \
+    --hf-dir ./origin_hf_cfg \
     --moe-grouped-gemm \
     --model-type-hf qwen3-next
 

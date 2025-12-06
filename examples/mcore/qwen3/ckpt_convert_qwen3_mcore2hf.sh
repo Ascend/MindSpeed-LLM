@@ -7,4 +7,5 @@ python convert_ckpt_v2.py \
     --save-model-type hf \
     --load-dir ./model_weights/qwen3_mcore/ \
     --save-dir ./hf_weights/qwen3_hf/ \
+    --hf-dir ./origin_hf_cfg \
     --model-type-hf qwen3

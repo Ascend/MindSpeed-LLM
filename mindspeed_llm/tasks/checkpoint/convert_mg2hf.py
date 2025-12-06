@@ -11,6 +11,7 @@ from collections import namedtuple
 from itertools import product
 
 import numpy as np
+import re
 import tqdm
 import torch
 import safetensors.torch
@@ -43,10 +44,13 @@ class Mg2HfConvert(Convert):
 
         self.iter_path = self.get_iter_path(args.load_dir)
         self.save_dir = args.save_dir
-
+        self.hf_dir = args.hf_dir
 
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
+
+        if self.hf_dir is not None:
+            self.copy_hf_cfg()
 
         self.tensor_model_parallel_size = self.load_model.tensor_model_parallel_size
         self.pipeline_model_parallel_size = self.load_model.pipeline_model_parallel_size
@@ -131,6 +135,19 @@ class Mg2HfConvert(Convert):
 
         return directory
 
+    @staticmethod
+    def copy_hf_cfg_file(src_path: str, dst_path: str) -> bool:
+        if not os.path.isfile(src_path):
+            return False
+        try:
+            with open(src_path, 'rb') as fsrc:
+                data = fsrc.read()
+            with open(dst_path, 'wb') as fdst:
+                fdst.write(data)
+            return True
+        except (OSError, IOError) as e:
+            raise OSError(f"Failed to copy '{src_path}' to '{dst_path}': {e}") from e
+
     def get_first_k_dense_replace(self):
         first_k_dense_replace = getattr(self.load_model, 'first_k_dense_replace', 0)
         if first_k_dense_replace in (-1, 0, None):
@@ -158,6 +175,31 @@ class Mg2HfConvert(Convert):
                 if layer_list:
                     return layer_list[-1]
         return -1
+
+    def copy_hf_cfg(self) -> None:
+        if not os.path.isdir(self.hf_dir):
+            raise FileNotFoundError(f"Hugging Face directory not found: {self.hf_dir}")
+
+        os.makedirs(self.save_dir, exist_ok=True)
+
+        hf_file_pattern = re.compile(
+        r'^(?:'
+            r'.*\.json|'
+            r'.*\.model(?:\.[\w\d]+)?|'
+            r'.*\.jinja|'
+            r'merges\.txt|'
+            r'(?:modeling|configuration|tokenization)_[\w_]+\.py|'
+            r'sample_finetune\.py'
+        r')$'
+        )
+
+        for filename in os.listdir(self.hf_dir):
+            if hf_file_pattern.match(filename):
+                src_path = os.path.join(self.hf_dir, filename)
+                dst_path = os.path.join(self.save_dir, filename)
+                if os.path.isfile(src_path):
+                    if self.copy_hf_cfg_file(src_path, dst_path):
+                        logger.info(f"Copied: {filename} from {src_path} to {dst_path}")
 
     def calc_pprank_layeridxs(self) -> None:
         """pp->hf layers, {pp1: [0,1,2,3]}"""

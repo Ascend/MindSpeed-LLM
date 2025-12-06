@@ -49,6 +49,8 @@ def get_args():
     parser.add_argument('--transformer-impl', default='local',
                        choices=['local', 'transformer_engine'],
                        help='Which Transformer implementation to use.')
+    parser.add_argument('--hf-dir', type=str, default=None,
+                       help='Directory to load hugging face config files')
 
     args, _ = parser.parse_known_args()
     return args
