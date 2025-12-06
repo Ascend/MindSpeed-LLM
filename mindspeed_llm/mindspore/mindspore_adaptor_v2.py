@@ -112,6 +112,8 @@ def _patch_tensor_parallel_and_pipeline():
     from ..mindspore.core.tensor_parallel.random import fork
     MindSporeAdaptation.register_patch('megatron.core.tensor_parallel.random.CudaRNGStatesTracker.fork', fork)
 
+    from ..mindspore.core.tensor_parallel.data import broadcast_data
+    MindSporeAdaptation.register_patch('megatron.core.tensor_parallel.data.broadcast_data', broadcast_data)
 
 def _patch_moe_and_communication(args):
     from mindspeed.mindspore.core.transformer.moe.comm_utils import async_all_to_all
