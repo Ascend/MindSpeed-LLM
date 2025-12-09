@@ -71,7 +71,9 @@ def scale_out_rebuild_process_group_callback(fault_ranks: list, train_args, para
         args.data_parallel_size = elastic_training_common.ORIGIN_DP_SIZE
         ttp_logger.info(f'rank:{args.rank} new DP size:{args.data_parallel_size}')
     timers = get_timers()
-    timers('interval-time').reset()
+    for _, timer in timers._timers.items():
+        timer.set_barrier_group(None)
+        timer.reset()
     timers('interval-time', log_level=0).start(barrier=False)
     os.environ['TORCH_DIST_INIT_BARRIER'] = '1'
     tft_arf_group_repair.update_arf_reboot_flag(False)
