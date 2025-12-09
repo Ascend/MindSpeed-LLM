@@ -460,12 +460,15 @@ class CustomMLASelfAttention(SelfAttention):
                     packed_seq_params=packed_seq_params,
                 )
             if args.enable_dsa_indexer and self.training and torch.is_grad_enabled():
+                if args.context_parallel_size > 1 and args.context_parallel_algo=='ulysses_cp_algo':
+                    query = gather_from_sequence_parallel_region(query,group=mpu.get_context_parallel_group())
+                    key = gather_from_sequence_parallel_region(key,group=mpu.get_context_parallel_group())
                 main_attn_dist = get_attn_scores(query,
                                                  key,
                                                  attention_mask,
                                                  self.num_attention_heads_per_partition //
                                                  self.num_query_groups_per_partition,
-                                                 self.core_attention.scale,
+                                                 self.core_attention.local_attn.scale if args.context_parallel_size > 1 and args.context_parallel_algo=='ulysses_cp_algo' else self.core_attention.scale, 
                                                  )
                 loss = compute_dsa_indexer_loss(
                     main_attn_dist.detach(),

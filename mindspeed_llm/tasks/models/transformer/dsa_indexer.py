@@ -20,6 +20,8 @@ from megatron.core.transformer.identity_op import IdentityOp
 from megatron.core.tensor_parallel import ColumnParallelLinear, RowParallelLinear
 from megatron.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb
 from megatron.core.transformer import TransformerConfig, ModuleSpec, build_module, MegatronModule
+from megatron.core import mpu
+from megatron.core.tensor_parallel.mappings import gather_from_sequence_parallel_region
 
 from scipy.linalg import hadamard
 
@@ -220,8 +222,8 @@ class DSAIndexer(MegatronModule):
 
         args = get_args()
         rotary_q_pos_emb, rotary_k_pos_emb = freqs_cis
-        seq_len, batch_size, _ = x.size()
-        end_pos = start_pos + seq_len
+        s, b, _ = x.size()
+        end_pos = start_pos + s
 
         # Project low-rank query to full multi-head query
         q = self.wq_b(qr)
@@ -245,7 +247,11 @@ class DSAIndexer(MegatronModule):
         k_pe = k_pe.view(s, b, n, d // 2, 2).transpose(4, 3).reshape(s, b, n, d)
         k_pe = apply_rotary_pos_emb(k_pe, rotary_k_pos_emb, config=self.config).view(s, b, d)
         k = torch.cat([k_pe, k_nope], dim=-1).unsqueeze(2)
-
+        
+        if args.context_parallel_size > 1 and args.context_parallel_algo=='ulysses_cp_algo':
+            k = gather_from_sequence_parallel_region(k,group=mpu.get_context_parallel_group())
+            q = gather_from_sequence_parallel_region(q,group=mpu.get_context_parallel_group())
+            x = gather_from_sequence_parallel_region(x,group=mpu.get_context_parallel_group())
         # Apply structured rotation (e.g., scaled Hadamard transform) to both query and key
         # This promotes mixing and can improve retrieval performance in sparse attention
         q = rotate_activation(q)
@@ -273,7 +279,7 @@ class DSAIndexer(MegatronModule):
 
         index_score = bf16_index(q.contiguous(), weights, k.contiguous())
         # ---------------------------------------------------------
-
+        s *=  args.context_parallel_size
         if mask is None:
             mask = torch.where(torch.triu(torch.ones((b, s, s),
                                                      dtype=x.dtype,
@@ -285,7 +291,7 @@ class DSAIndexer(MegatronModule):
         topk_score, topk_indices = index_score.topk(min(self.index_topk, end_pos), dim=-1)
 
         # Build a full attention mask where only top-k positions are unmasked (0), others are -inf
-        attention_mask = torch.full((batch_size, seq_len, seq_len), float('-inf'), dtype=x.dtype, device=x.device).scatter_(-1, topk_indices, 0)
+        attention_mask = torch.full((b, s, s), float('-inf'), dtype=x.dtype, device=x.device).scatter_(-1, topk_indices, 0)
         attention_mask += mask
 
         # Convert to boolean mask if using FlashAttention
