@@ -719,14 +719,10 @@ class Hf2MgConvert(Convert):
                 hf_weight_key = self.load_model.get_weight(layer_idx=hf_layer_idx, expert_idx=expert_idx)
 
                 if hasattr(self.load_model, "n_shared_experts"):
-                    if self.expert_tensor_parallel_size == 1:
-                        shared_l0_lst = [torch.cat([shared_gate_proj, shared_up_proj], dim=0).clone() for i in range(self.tensor_model_parallel_size)]
-                        shared_l1_lst = [shared_fc2_weight.clone() for i in range(self.tensor_model_parallel_size)]
-                    else:
-                        shared_l0_W = torch.chunk(shared_gate_proj, self.tensor_model_parallel_size, dim=0)
-                        shared_l0_V = torch.chunk(shared_up_proj, self.tensor_model_parallel_size, dim=0)
-                        shared_l0_lst = [torch.cat(weights, dim=0) for weights in zip(shared_l0_W, shared_l0_V)]
-                        shared_l1_lst = torch.chunk(shared_fc2_weight, self.tensor_model_parallel_size, dim=1)
+                    shared_l0_W = torch.chunk(shared_gate_proj, self.tensor_model_parallel_size, dim=0)
+                    shared_l0_V = torch.chunk(shared_up_proj, self.tensor_model_parallel_size, dim=0)
+                    shared_l0_lst = [torch.cat(weights, dim=0) for weights in zip(shared_l0_W, shared_l0_V)]
+                    shared_l1_lst = torch.chunk(shared_fc2_weight, self.tensor_model_parallel_size, dim=1)
 
                 gate_proj = hf_weight.pop(hf_weight_key["layers_mlp_experts_gate_proj"])
                 up_proj = hf_weight.pop(hf_weight_key["layers_mlp_experts_up_proj"])
