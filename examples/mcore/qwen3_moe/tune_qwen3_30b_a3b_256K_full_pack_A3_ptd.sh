@@ -40,18 +40,18 @@ DISTRIBUTED_ARGS="
 
 MOE_ARGS="
     --num-experts 128 \
+    --expert-tensor-parallel-size 1 \
     --moe-router-topk 8 \
     --moe-ffn-hidden-size 768 \
     --moe-grouped-gemm \
     --moe-permutation-async-comm \
     --moe-permute-fusion \
     --moe-alltoall-overlap-comm \
-    --moe-token-dispatcher-type alltoall_seq \
+    --moe-token-dispatcher-type alltoall \
     --moe-router-load-balancing-type aux_loss \
     --moe-layer-freq -1 \
     --first-k-dense-replace -1 \
-    --moe-aux-loss-coeff 0.001 \
-    --moe-tp-extend-ep
+    --moe-aux-loss-coeff 0.001
 "
 
 OPTIMIZE_ARGS="
@@ -136,7 +136,7 @@ DATA_ARGS="
     --tokenizer-type PretrainedFromHF \
     --workers 4 \
     --log-interval 1000 \
-    --enable-thinking true
+    --enable-thinking true \
     --pack \
     --neat-pack
 "
