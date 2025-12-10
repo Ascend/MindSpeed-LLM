@@ -131,7 +131,7 @@ GPT_ARGS="
 
 DATA_ARGS="
     --data-path $DATA_PATH \
-    --split 100,0,0
+    --split 100,0,0 \
     --handler-name AlpacaStyleInstructionHandler \
     --tokenizer-type PretrainedFromHF \
     --workers 4 \
