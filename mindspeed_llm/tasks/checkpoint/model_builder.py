@@ -480,13 +480,13 @@ class MegatronModel(Model):
 
             if hasattr(self, "enable_dsa_indexer"):
                 module_mapping[
-                    "layers_self_attention_indexer_k_norm"] = module_layer_mtp + "self_attention.dsa_indexer.k_norm"
+                    "mtp_layers_self_attention_indexer_k_norm"] = module_layer_mtp + "self_attention.dsa_indexer.k_norm"
                 module_mapping[
-                    "layers_self_attention_indexer_weights_proj"] = module_layer_mtp + "self_attention.dsa_indexer.weights_proj.weight"
+                    "mtp_layers_self_attention_indexer_weights_proj"] = module_layer_mtp + "self_attention.dsa_indexer.weights_proj.weight"
                 module_mapping[
-                    "layers_self_attention_indexer_wk"] = module_layer_mtp + "self_attention.dsa_indexer.wk"
+                    "mtp_layers_self_attention_indexer_wk"] = module_layer_mtp + "self_attention.dsa_indexer.wk"
                 module_mapping[
-                    "layers_self_attention_indexer_wq_b"] = module_layer_mtp + "self_attention.dsa_indexer.wq_b"
+                    "mtp_layers_self_attention_indexer_wq_b"] = module_layer_mtp + "self_attention.dsa_indexer.wq_b"
 
 
             if self.mla_mm_split:
