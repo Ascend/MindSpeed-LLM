@@ -17,6 +17,7 @@ basepath=$(cd `dirname $0`; cd ../../../; pwd)
 CKPT_LOAD_DIR="/data/ci/models/qwen2-moe/mg/qwen2-moe-t1p2e2-new-spec"
 DATA_PATH="/data/ci/datasets/processed/qwen2_moe_dataset/enwiki_text_document"
 TOKENIZER_PATH="/data/ci/models/qwen2-moe/hf/qwen2-moe-hf"
+PROFILE_DIR="/data/ci/cache/qwen2_moe_profile"
 
 TP=1
 PP=2
@@ -137,6 +138,17 @@ OUTPUT_ARGS="
     --no-load-rng
 "
 
+PROFILE_ARGS="
+    --profile \
+    --profile-step-start 5 \
+    --profile-step-end 6 \
+    --profile-ranks 0 \
+    --profile-level level1 \
+    --profile-with-cpu \
+    --profile-record-shapes \
+    --profile-save-path ${PROFILE_DIR} \
+"
+
 torchrun $DISTRIBUTED_ARGS $basepath/pretrain_gpt.py \
     ${GPT_ARGS} \
     ${DATA_ARGS} \
@@ -144,7 +156,11 @@ torchrun $DISTRIBUTED_ARGS $basepath/pretrain_gpt.py \
     ${OUTPUT_ARGS} \
     ${OPTIMIZE_ARGS} \
     ${TRAIN_ARGS} \
+    ${PROFILE_ARGS} \
     ${MODEL_PARALLEL_ARGS} \
     --load ${CKPT_LOAD_DIR} \
     --log-throughput \
     --distributed-backend nccl
+
+#!/bin/bash
+rm -rf ${PROFILE_DIR}
