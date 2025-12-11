@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from torch import Tensor
 from transformers import PretrainedConfig
 
-from megatron.training import print_rank_0
+from megatron.training import get_args, print_rank_0
 from megatron.core.transformer.module import MegatronModule
 
 from mindspeed_llm.fsdp2.core.chunkloss import chunk_loss, calculate_lm_loss
@@ -69,6 +69,25 @@ class FSDP2Model(MegatronModule):
     def set_input_tensor(self, input_tensor: Tensor) -> None:
         self.input_tensor = input_tensor
 
+    def compute_language_model_loss(self, logits: Tensor, labels: Tensor, ignore_index: int = -100, **kwargs) -> Tensor:
+        args = get_args()
+
+        # For supervised finetuning stages (SFT/DPO), labels must be shifted by one position, for pretraining, labels already include shift.
+        if args.stage:
+            labels = F.pad(labels, (0, 1), value=ignore_index)
+            shift_labels = labels[..., 1:].contiguous()
+        else:
+            shift_labels = labels
+        shift_labels = shift_labels.view(-1)
+        logits = logits.view(-1, logits.shape[-1])
+
+        if args.calculate_per_token_loss:
+            loss = F.cross_entropy(logits, shift_labels, reduction='none', ignore_index=ignore_index)
+        else:
+            loss = F.cross_entropy(logits, shift_labels, ignore_index=ignore_index)
+            
+        return loss
+
     def forward(
         self,
         input_ids: torch.Tensor,
@@ -80,24 +99,43 @@ class FSDP2Model(MegatronModule):
         *args,
         **kwargs
     ) -> torch.Tensor:
+        args = get_args()
+
         if self.loss_compute_mode == "chunk":
             if labels is None:
                 raise ValueError("when chunk loss is enabled(loss_compute_mode=chunk), labels must not be None.")
             loss_ctx, loss_mask = self.build_loss_ctx(labels, chunk_size=self.loss_chunk_size)
         else:
             loss_ctx, loss_mask = None, None
+        # In finetuning stages (e.g., SFT or DPO), we pass `labels` to the model so that the model can internally compute the language modeling loss.
+        # For pretraining or inference-like stages, `labels` are not required.
+        if args.stage:
+            outputs = self.model(
+                input_ids=input_ids,
+                position_ids=position_ids,
+                attention_mask=attention_mask,
+                labels=labels,
+                cache_position=cache_position,
+                use_cache=False,
+                loss_ctx=loss_ctx,
+                **kwargs
+            )
+        else:
+            outputs = self.model(
+                input_ids=input_ids,
+                position_ids=position_ids,
+                attention_mask=attention_mask,
+                cache_position=cache_position,
+                use_cache=False,
+                loss_ctx=loss_ctx,
+                **kwargs
+            )
 
-        outputs = self.model(
-            input_ids=input_ids,
-            position_ids=position_ids,
-            attention_mask=attention_mask,
-            labels=labels,
-            cache_position=cache_position,
-            use_cache=False,
-            loss_ctx=loss_ctx,
-            **kwargs
-        )
-        loss = outputs.loss
+        if outputs.loss is not None:
+            loss = outputs.loss
+        else:
+            logits = outputs.logits.contiguous().float()
+            loss = self.compute_language_model_loss(logits, labels, **kwargs)
         
         return loss
 
@@ -107,8 +145,14 @@ class FSDP2Model(MegatronModule):
         ignore_index=-100,
         chunk_size=1024,
     ):
-        labels = F.pad(labels, (0, 1), value=ignore_index)
-        shift_labels = labels
+        args = get_args()
+
+        # For supervised finetuning stages (SFT/DPO), labels must be shifted by one position, for pretraining, labels already include shift.
+        if args.stage:
+            labels = F.pad(labels, (0, 1), value=ignore_index)
+            shift_labels = labels[..., 1:].contiguous()
+        else:
+            shift_labels = labels
 
         # Create a mask to identify valid tokens (typically > -1 means non-special tokens)
         loss_mask = shift_labels > -1

@@ -140,26 +140,20 @@ class FSDP2BaseTrainer(ABC):
     # ==============================================================
     def forward_step(self, data_iterator, model):
         self.timers("batch-generator", log_level=2).start()
-        tokens, labels, loss_mask, attention_mask, position_ids = self.get_batch(data_iterator)
+        batch_sample = self.get_batch(data_iterator)
         self.timers("batch-generator").stop()
 
         compute_dtype = torch.bfloat16 if self.args.bf16 else None
         with autocast(dtype=compute_dtype):
-            output_tensor = model(
-                tokens,
-                position_ids,
-                attention_mask,
-                labels=labels,
-                loss_mask=loss_mask,
-            )
-        return output_tensor, partial(self.loss_func, loss_mask)
+            output_tensor = model(**batch_sample)
+        return output_tensor, partial(self.loss_func, batch_sample['loss_mask'])
 
     # ==============================================================
     # Must implement in subclass
     # ==============================================================
     @abstractmethod
     def get_batch(self, data_iterator):
-        """Return (tokens, labels, loss_mask, attention_mask, position_ids)"""
+        """Return a batch sample of the dataset in dictionary format"""
         pass
 
     @abstractmethod

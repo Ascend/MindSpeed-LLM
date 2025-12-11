@@ -4,11 +4,8 @@ sub_modules_to_wrap:
   - "model.layers.{*}"
   - "lm_head"
 recompute_modules:
-  - "model.embed_tokens"
   - "model.layers.{*}"
-  - "lm_head"
 reshard_after_forward: True
 param_dtype: "bf16"
 reduce_dtype: "fp32"
 cast_forward_inputs: True
-output_dtype: "bf16"

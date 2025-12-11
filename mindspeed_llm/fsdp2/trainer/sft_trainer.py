@@ -4,12 +4,11 @@ import torch
 # Megatron Imports
 from megatron.training import get_args, print_rank_0
 from megatron.core import mpu, tensor_parallel
-from megatron.training.utils import get_batch_on_this_cp_rank
+from megatron.training.utils import get_batch_on_this_cp_rank, average_losses_across_data_parallel_group
 
 from mindspeed.core.context_parallel.get_batch_utils import set_actual_seq_len, get_ring_degree
 from mindspeed.core.context_parallel.utils import pad_data
 from mindspeed_llm.fsdp2.trainer.base_trainer import FSDP2BaseTrainer
-from mindspeed_llm.training.utils import get_finetune_data_on_this_tp_rank
 from mindspeed_llm.training.utils import  set_mtp_batch_list
 from mindspeed_llm.core.transformer.multi_token_prediction import generate_mtp_batch_list_on_this_tp_rank
 from mindspeed_llm.tasks.preprocess.decoder_packed_mtf_dataset import build_train_valid_test_datasets as build_instruction_dataset
@@ -31,42 +30,7 @@ class FSDP2SFTTrainer(FSDP2BaseTrainer):
         if args.reset_attention_mask:
             keys += ['position_ids', 'actual_seq_len']
         data_type = torch.int64
-
-        if (not mpu.is_pipeline_first_stage()) and (not mpu.is_pipeline_last_stage()):
-            if args.no_pad_to_seq_lengths and args.pipeline_model_parallel_size > 2:
-                tokens, attention_mask = get_finetune_data_on_this_tp_rank(data_iterator)
-                return tokens, None, None, attention_mask, None
-            else:
-                # Broadcast data.
-                data_b = tensor_parallel.broadcast_data(keys, next(data_iterator), data_type)
-                # Unpack
-                labels = data_b.get('labels').long()
-                tokens = data_b.get('input_ids').long()
-                # ignored label -100
-                loss_mask = torch.where(labels == IGNORE_INDEX, 0, 1)
-                if args.reset_attention_mask:
-                    position_ids = data_b.get('position_ids').long()
-                    batch = {
-                        'tokens': tokens,
-                        'labels': labels,
-                        'loss_mask': loss_mask,
-                        'attention_mask': None,
-                        'position_ids': position_ids
-                    }
-                    actual_seq_len = data_b['actual_seq_len'].view(-1)
-                    if args.attention_mask_type == 'causal' \
-                            and args.context_parallel_size > 1 \
-                            and args.context_parallel_algo == 'megatron_cp_algo':
-                        actual_seq_len = pad_data(data_b['actual_seq_len'].view(-1), batch, args.context_parallel_size,
-                                                  args.tensor_model_parallel_size)
-                        actual_seq_len /= get_ring_degree()
-                    set_actual_seq_len(actual_seq_len)
-                    batch = {'attention_mask': None}
-                else:
-                    attention_mask_1d = data_b.get('attention_mask').long()
-                    batch = {'attention_mask': attention_mask_1d}
-                batch = get_batch_on_this_cp_rank(batch)
-                return None, None, None, batch['attention_mask'], None
+        num_items_in_batch = None
 
         data_b = tensor_parallel.broadcast_data(keys, next(data_iterator), data_type)
         # Unpack
@@ -79,7 +43,7 @@ class FSDP2SFTTrainer(FSDP2BaseTrainer):
         if args.reset_attention_mask:
             position_ids = data_b.get('position_ids').long()
             batch = {
-                'tokens': tokens,
+                'input_ids': tokens,
                 'labels': labels,
                 'loss_mask': loss_mask,
                 'attention_mask': None,
@@ -95,12 +59,15 @@ class FSDP2SFTTrainer(FSDP2BaseTrainer):
             set_actual_seq_len(actual_seq_len)
 
             batch = get_batch_on_this_cp_rank(batch)
+            num_items_in_batch = self.get_num_items_in_batch(batch, batch["labels"].device)
 
-            return batch.values()
+            if num_items_in_batch:
+                batch['num_items_in_batch'] = num_items_in_batch
+            return batch
 
         position_ids = None
         batch = {
-                'tokens': tokens,
+                'input_ids': tokens,
                 'labels': labels,
                 'loss_mask': loss_mask,
                 'attention_mask': attention_mask,
@@ -111,7 +78,11 @@ class FSDP2SFTTrainer(FSDP2BaseTrainer):
             mtp_batch_list = generate_mtp_batch_list_on_this_tp_rank(batch)
             set_mtp_batch_list(mtp_batch_list)
         batch = get_batch_on_this_cp_rank(batch)
-        return batch.values()
+        num_items_in_batch = self.get_num_items_in_batch(batch, batch["labels"].device)
+
+        if num_items_in_batch:
+            batch['num_items_in_batch'] = num_items_in_batch
+        return batch
 
     def train_valid_test_datasets_provider(self, train_val_test_num_samples):
         args = get_args()
@@ -127,3 +98,60 @@ class FSDP2SFTTrainer(FSDP2BaseTrainer):
 
         print_rank_0("> finished creating FSDP2 Finetune datasets ...")
         return train_ds, valid_ds, test_ds
+
+    def get_num_items_in_batch(self, batch, device):
+        # calculate number of tokens in current rank
+        labels = batch["labels"]
+        num_items_in_batch = (labels.ne(IGNORE_INDEX)).sum()
+
+        # ensure the type is tensor on this device
+        if not torch.is_tensor(num_items_in_batch):
+            num_items_in_batch = torch.tensor(num_items_in_batch, device=device, dtype=torch.long)
+        else:
+            num_items_in_batch = num_items_in_batch.to(device)
+
+        # all_reduce in current dp group
+        if torch.distributed.is_initialized():
+            try:
+                dp_group = mpu.get_data_parallel_group()
+                dp_world_size = mpu.get_data_parallel_world_size()
+            except Exception:
+                dp_group = None
+                dp_world_size = torch.distributed.get_world_size()
+
+            if dp_world_size > 1:
+                torch.distributed.all_reduce(num_items_in_batch, op=torch.distributed.ReduceOp.SUM, group=dp_group)
+
+        return num_items_in_batch
+
+    def loss_func(self, loss_mask: torch.Tensor, output_tensor: torch.Tensor):
+        args = self.args
+        losses = output_tensor.float()
+        loss_mask = loss_mask[..., 1:].contiguous().view(-1).float()
+
+        if args.context_parallel_size > 1:
+            summed = torch.sum(losses.view(-1) * loss_mask)
+            count = loss_mask.sum()
+            agg = torch.cat([summed.view(1), count.view(1)])
+            torch.distributed.all_reduce(agg, group=mpu.get_context_parallel_group())
+            loss = agg[0] / agg[1]
+        else:
+            loss = torch.sum(losses.view(-1) * loss_mask) / loss_mask.sum()
+
+        if args.check_for_nan_in_loss_and_grad and loss.isnan():
+            raise ValueError(f"Rank {torch.distributed.get_rank()}: NaN detected in loss")
+
+        # aligned with llamafactory 
+        dp_world_size = mpu.get_data_parallel_world_size()
+        loss = loss * dp_world_size
+        averaged_loss = average_losses_across_data_parallel_group([loss])
+
+        if args.calculate_per_token_loss:
+            total_tokens = loss_mask.sum()
+            return (
+                loss * total_tokens,
+                total_tokens.to(torch.int32),
+                {"lm loss": [averaged_loss[0] * total_tokens, total_tokens]},
+            )
+
+        return loss, {"lm loss": averaged_loss[0]}

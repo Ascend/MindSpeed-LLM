@@ -103,8 +103,7 @@ class Qwen3MoEForCausalLM(transformers.Qwen3MoePreTrainedModel, Qwen3MoEFSDP2Mix
 
             loss = None
             if labels is not None:
-                loss = self.loss_function(logits=logits, labels=None, shift_labels=labels,
-                                          vocab_size=self.config.vocab_size, **kwargs)
+                loss = self.loss_function(logits=logits, labels=labels, vocab_size=self.config.vocab_size, **kwargs)
 
         aux_loss = None
         if output_router_logits:

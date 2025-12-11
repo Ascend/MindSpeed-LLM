@@ -101,8 +101,7 @@ class Qwen3ForCausalLM(transformers.Qwen3PreTrainedModel, Qwen3FSDP2Mixin):
 
             loss = None
             if labels is not None:
-                loss = self.loss_function(logits=logits, labels=None, shift_labels=labels,
-                                          vocab_size=self.config.vocab_size, **kwargs)
+                loss = self.loss_function(logits=logits, labels=labels, vocab_size=self.config.vocab_size, **kwargs)
 
         return CausalLMOutputWithPast(
             loss=loss,

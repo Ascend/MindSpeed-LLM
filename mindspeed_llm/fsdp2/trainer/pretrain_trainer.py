@@ -31,11 +31,6 @@ class FSDP2PretrainTrainer(FSDP2BaseTrainer):
         """Generate a batch."""
         args = get_args()
 
-        is_middle_stage = not (mpu.is_pipeline_first_stage() or mpu.is_pipeline_last_stage())
-        pretrain_not_tnd_flags = not args.is_instruction_dataset and not args.reset_attention_mask
-        if pretrain_not_tnd_flags and is_middle_stage:
-            return (None,) * 5
-
         # get batches based on the TP rank you are on
         batch = get_batch_on_this_tp_rank(data_iterator)
 
@@ -51,7 +46,8 @@ class FSDP2PretrainTrainer(FSDP2BaseTrainer):
 
         # slice batch along sequence dimension for context parallelism
         batch = get_batch_on_this_cp_rank(batch)
-        return batch.values()
+        batch['input_ids'] = batch.pop('tokens', None)
+        return batch
 
     def train_valid_test_datasets_provider(self, train_val_test_num_samples):
         args = get_args()
