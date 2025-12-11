@@ -21,6 +21,8 @@ class Qwen3NextFeature(MindSpeedFeature):
                             help='linear value head dim')
         group.add_argument('--partial-rotary-factor', type=float, default=0.0,
                             help='partial rotary factor')
+        group.add_argument('--use-triton-gdn', action="store_true", default=False,
+                           help='use triton gdn')
 
     def register_patches(self, patch_manager, args):
         from mindspeed_llm.core.transformer.attention import self_attention_init
