@@ -12,6 +12,7 @@ from megatron.core.transformer.moe.experts import GroupedMLP
 from megatron.core.transformer.moe import grouped_gemm_util as gg
 from megatron.training import get_args
 from megatron.core.jit import jit_fuser
+from mindspeed.core.fusions.fused_bias_swiglu import fused_swiglu
 from mindspeed.ops.npu_groupmatmul_add import npu_groupmatmul_add_fp32
 from mindspeed.core.transformer.moe.moe_feature.overlap.moe_layer_overlap_all2all import gmm_op
 from mindspeed.model.transformer import should_recompute_activation
@@ -35,12 +36,13 @@ class LoraParallelGroupedMlpWithCompAndCommOverlapAll2AllSEQ(torch.autograd.Func
     @staticmethod
     def forward(ctx, inputs, weights1_a, weights1_b, weights2_a, weights2_b, args, moe_layer_ctx):
         weights1, weights2, original_weight1_a, original_weight1_b, \
-        original_weight2_a, original_weight2_b, activation_func_with_probs, \
+        original_weight2_a, original_weight2_b, activation_func, \
         permuted_probs, group_list, layer_number, scaling, config = args
         ctx.config = config
         moe_zero_memory = config.moe_zero_memory
         ctx.layer_number = layer_number
         ctx.moe_zero_memory = moe_zero_memory
+        ctx.activation_func = activation_func
         use_gmm = (inputs.nelement() != 0)
         ctx.use_gmm = use_gmm
         weights1_a_scaling = weights1_a * scaling
@@ -65,17 +67,18 @@ class LoraParallelGroupedMlpWithCompAndCommOverlapAll2AllSEQ(torch.autograd.Func
 
         def activation_func_with_probs_detach(x, probs):
             dtype = x.dtype
-            res = activation_func_with_probs(x, probs.unsqueeze(-1)).to(dtype)
-            return res
+            act_without_probs = activation_func(x)
+            fin_res = act_without_probs * (probs.unsqueeze(-1))
+            return fin_res.to(dtype), act_without_probs
 
-        act_out, detached_act_inputs, permuted_probs_inputs_detach = forward_func(
-                                                                     activation_func_with_probs_detach, 
-                                                                     (mm1_out, 
-                                                                     permuted_probs))
+        (act_out, act_without_probs), detached_act_inputs, permuted_probs_inputs_detach = forward_func(
+                                                                                          activation_func_with_probs_detach,
+                                                                                          (mm1_out,
+                                                                                          permuted_probs))
 
         is_only_recompute_activation = only_recompute_activation(config, layer_number)
         if moe_zero_memory == "level1" and not is_only_recompute_activation:
-            #In zm1, recompute mm1_out and permuted_probs.
+            # In zm1, recompute mm1_out and permuted_probs.
             mm1_out.untyped_storage().resize_(0)
             permuted_probs.untyped_storage().resize_(0)
         if use_gmm:
@@ -90,24 +93,26 @@ class LoraParallelGroupedMlpWithCompAndCommOverlapAll2AllSEQ(torch.autograd.Func
             mm2_out += mm2_b
 
         if moe_zero_memory == "level1" and not is_only_recompute_activation:
+            act_without_probs.untyped_storage().resize_(0)
             act_out.untyped_storage().resize_(0)
-            moe_layer_ctx.recompute_tensors = (inputs, mm1_out, permuted_probs, act_out)
+            moe_layer_ctx.recompute_tensors = (inputs, mm1_out, permuted_probs, act_out, act_without_probs)
 
         is_recompute_activation = moe_zero_memory == "level0" or should_recompute_activation(layer_number) or (
-                    moe_zero_memory == "level1" and is_only_recompute_activation)
+                moe_zero_memory == "level1" and is_only_recompute_activation)
         if is_recompute_activation:
+            act_without_probs.untyped_storage().resize_(0)
             act_out.untyped_storage().resize_(0)
-            ctx.activation_func_with_probs = activation_func_with_probs
+
         if moe_zero_memory != "level0" and not (moe_zero_memory == "level1" and is_only_recompute_activation):
-            ctx.save_for_backward(inputs, mm1_a, permuted_probs_inputs_detach, detached_act_inputs, act_out, mm2_a,
-                                  weights1, weights1_a_scaling, weights1_b, weights2, weights2_a_scaling, weights2_b,
-                                  original_weight1_a, original_weight1_b, original_weight2_a, original_weight2_b, 
-                                  group_list)
+            ctx.save_for_backward(inputs, mm1_a, permuted_probs_inputs_detach, detached_act_inputs, act_out,
+                                  act_without_probs, mm2_a, weights1, weights1_a_scaling, weights1_b, weights2,
+                                  weights2_a_scaling, weights2_b, original_weight1_a, original_weight1_b,
+                                  original_weight2_a, original_weight2_b, group_list)
         else:
-            ctx.save_for_backward(mm1_a, permuted_probs_inputs_detach, detached_act_inputs, act_out, mm2_a, weights1, 
-                                  weights1_a_scaling, weights1_b, weights2, weights2_a_scaling, weights2_b, 
-                                  original_weight1_a, original_weight1_b, original_weight2_a, original_weight2_b, 
-                                  group_list)
+            ctx.save_for_backward(mm1_a, permuted_probs_inputs_detach, detached_act_inputs, act_out, act_without_probs,
+                                  mm2_a, weights1, weights1_a_scaling, weights1_b, weights2, weights2_a_scaling, weights2_b,
+                                  original_weight1_a, original_weight1_b, original_weight2_a, original_weight2_b, group_list)
+
         return mm2_out, None
 
     @staticmethod
@@ -118,20 +123,20 @@ class LoraParallelGroupedMlpWithCompAndCommOverlapAll2AllSEQ(torch.autograd.Func
         moe_zero_memory = ctx.moe_zero_memory
         is_only_recompute_activation = only_recompute_activation(config, layer_number)
         if moe_zero_memory != "level0" and not (moe_zero_memory == "level1" and is_only_recompute_activation):
-            mm1_inputs, mm1_a, permuted_probs_inputs_detach, act_inputs, mm2_inputs, mm2_a, \
+            mm1_inputs, mm1_a, permuted_probs_inputs_detach, act_inputs, mm2_inputs, act_without_probs, mm2_a, \
             weights1, weights1_a, weights1_b, weights2, weights2_a, weights2_b, \
             original_weight1_a, original_weight1_b, original_weight2_a, original_weight2_b, \
             group_list = ctx.saved_tensors
         else:
-            mm1_a, permuted_probs_inputs_detach, act_inputs, mm2_inputs, mm2_a, \
+            mm1_a, permuted_probs_inputs_detach, act_inputs, mm2_inputs, act_without_probs, mm2_a, \
             weights1, weights1_a, weights1_b, weights2, weights2_a, weights2_b, \
             original_weight1_a, original_weight1_b, original_weight2_a, original_weight2_b, \
             group_list = ctx.saved_tensors
 
         ((detach_input, probs, routing_map, num_global_tokens_per_local_expert_cpu, sort_input_by_local_experts),
-         permute2_input_detach, permute2_graph, 
+         permute2_input_detach, permute2_graph,
          permute2_prob_detach, permute2_prob_graph,
-         output_splits, input_splits) = get_gemm_backward_need_tensors()
+         output_splits, input_splits, num_out_tokens) = get_gemm_backward_need_tensors()
 
         ep_group = parallel_state.get_expert_model_parallel_group()
         if config.moe_tp_extend_ep:
@@ -151,14 +156,20 @@ class LoraParallelGroupedMlpWithCompAndCommOverlapAll2AllSEQ(torch.autograd.Func
             grad_mm2_b_inputs = torch.matmul(grad_outs, weights2_b.t())
             grad_mm2_inputs_a = torch.matmul(grad_mm2_b_inputs, weights2_a.t())
 
-        grad_mm2_inputs += grad_mm2_inputs_a # add
+        grad_mm2_inputs += grad_mm2_inputs_a  # add
         act_graph = mm2_inputs
         is_recompute_activation = moe_zero_memory == "level0" or should_recompute_activation(layer_number) or (
-                    moe_zero_memory == "level1" and is_only_recompute_activation)
+                moe_zero_memory == "level1" and is_only_recompute_activation)
 
         if is_recompute_activation:
-            activation_func_with_probs = ctx.activation_func_with_probs
-            mm2_inputs = activation_func_with_probs(act_inputs, permuted_probs_inputs_detach.unsqueeze(-1))
+            activation_func = ctx.activation_func
+            act_without_probs_ = activation_func(act_inputs)
+            mm2_inputs = act_without_probs_ * permuted_probs_inputs_detach.unsqueeze(-1)
+            act_without_probs_size = act_without_probs_.untyped_storage().size()
+            act_without_probs.untyped_storage().resize_(act_without_probs_size)
+            act_without_probs.untyped_storage().copy_(act_without_probs_.untyped_storage())
+            act_without_probs = None
+            act_without_probs_.untyped_storage().resize_(0)
             # add
             if ctx.use_gmm:
                 mm2_a = gmm_op(mm2_inputs, weights2_a.transpose(-1, -2), [], group_list, 0)[0]
@@ -226,7 +237,7 @@ class LoraParallelGroupedMlpWithCompAndCommOverlapAll2AllSEQ(torch.autograd.Func
             def alltoall_token_permutation1(hidden_states, routing_map, probs=None):
                 hidden_states = hidden_states.view(-1, hidden_states.shape[-1])
                 permutated_local_input_tokens, permuted_probs_, _ = permute(
-                    hidden_states, routing_map, probs
+                    hidden_states, routing_map, probs, num_out_tokens=num_out_tokens, fused=ctx.config.moe_permute_fusion
                 )
                 return permutated_local_input_tokens, permuted_probs_
 
@@ -248,6 +259,10 @@ class LoraParallelGroupedMlpWithCompAndCommOverlapAll2AllSEQ(torch.autograd.Func
                 ep_group
             )
 
+        if not config.moe_permute_fusion:
+            # Because the moe_permute_fusion fusion operator needs to save routing_map for backward
+            routing_map.untyped_storage().resize_(0)
+
         if ctx.use_gmm:
             weights1_tmp, _ = dequantize(weights1, act_inputs.dtype, act_inputs.device)
             weights1 = rearrange(weights1_tmp, 'n h f -> n f h')
@@ -259,7 +274,8 @@ class LoraParallelGroupedMlpWithCompAndCommOverlapAll2AllSEQ(torch.autograd.Func
         else:
             mm1_inputs_grad = torch.matmul(act_inputs.grad, weights1.t())
             mm1_b_inputs_grad = torch.matmul(act_inputs.grad, weights1_b.t())
-            mm1_inputs_grad += torch.matmul(mm1_b_inputs_grad, weights1_a.t()) 
+            mm1_inputs_grad += torch.matmul(mm1_b_inputs_grad, weights1_a.t())
+        probs.untyped_storage().resize_(0)
 
         # backward for probs. 
         backward_func(permute2_prob_graph, permuted_probs_inputs_detach.grad) 
@@ -376,12 +392,7 @@ class LoraParallelGroupedMLP(GroupedMLP):
             if self.config.activation_func not in (F.silu, F.gelu):
                 raise ValueError("Activation function must be silu or gelu when using GroupedMLP.")
 
-            @jit_fuser
-            def glu(x):
-                x = torch.chunk(x, 2, dim=-1)
-                return self.config.activation_func(x[0]) * x[1]
-
-            self.activation_func = glu
+            self.activation_func = fused_swiglu
         else:
             self.activation_func = self.config.activation_func
         self.activation_recompute = (
@@ -559,7 +570,7 @@ class LoraParallelGroupedMLP(GroupedMLP):
                                                                                     self.weight1_lora_b,
                                                                                     self.weight2_lora_a,
                                                                                     self.weight2_lora_b,
-                                                                                    self.activation_func_with_probs,
+                                                                                    self.activation_func,
                                                                                     permuted_probs,
                                                                                     group_list,
                                                                                     self.layer_number,
