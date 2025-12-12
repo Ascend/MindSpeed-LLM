@@ -112,7 +112,8 @@ class Mg2HfConvert(Convert):
                 raise ValueError("Sum of num_layer_list must equal num_layers")
         if self.last_save_hf_layer == -1:
             raise ValueError("Does not contain a vaild model layer. Please check the parameters!")
-        self.check_etp_conflict()
+        if self.expert_tensor_parallel_size is not None:
+            raise ValueError("Expert Tensor Parallel (ETP) is not currently supported")
 
     @staticmethod
     def get_iter_path(ckpt_path, iteration=None):
