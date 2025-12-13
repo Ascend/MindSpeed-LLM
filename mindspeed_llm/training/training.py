@@ -1081,10 +1081,12 @@ def training_log(loss_dict, total_loss_dict, learning_rate, decoupled_learning_r
         log_string += f' learning rate: {learning_rate:.6E} |'
         if args.decoupled_lr is not None and (mpu.is_pipeline_first_stage(ignore_virtual=True) or
                                               mpu.is_pipeline_last_stage(ignore_virtual=True)):
-            assert decoupled_learning_rate is not None
+            if decoupled_learning_rate is None:
+                raise ValueError("decoupled_learning_rate must be specified")
             log_string += f' decoupled learning rate: {decoupled_learning_rate:.6E} |'
         else:
-            assert decoupled_learning_rate is None
+            if decoupled_learning_rate is not None:
+                raise ValueError("decoupled_learning_rate should not be configured")
         log_string += f' global batch size: {batch_size:5d} |'
         for key in total_loss_dict:
             if key not in [advanced_iters_key, skipped_iters_key,
@@ -1134,7 +1136,8 @@ def get_average_attn_ratio(args):
         ratio_list, seq_count = get_actual_attn_ratio()
         dp_size = parallel_state.get_data_parallel_world_size(with_context_parallel=False)
 
-        assert len(ratio_list) == seq_count
+        if len(ratio_list) != seq_count:
+            raise ValueError("len(ratio_list) should be equal to seq_count")
         average_ratio = torch.tensor(safe_mean(ratio_list), dtype=torch.float32, device=torch.npu.current_device())
         torch.distributed.all_reduce(average_ratio,
                                      group=parallel_state.get_data_parallel_group(with_context_parallel=False))
@@ -1235,11 +1238,12 @@ def num_floating_point_operations(args, batch_size):
                 moe_layer_pattern = args.moe_layer_freq
             else:
                 raise RuntimeError("Illegal --moe-layer-freq argument provided!")
-            assert len(moe_layer_pattern) == args.num_layers, (
-                f"Invalid length of moe_layer_pattern: {len(moe_layer_pattern)}, "
-                f"expected {args.num_layers}, "
-                f"current moe layer pattern: {args.moe_layer_freq}"
-            )
+            if len(moe_layer_pattern) != args.num_layers:
+                raise ValueError(
+                    f"Invalid length of moe_layer_pattern: {len(moe_layer_pattern)}, "
+                    f"expected {args.num_layers}, "
+                    f"current moe layer pattern: {args.moe_layer_freq}"
+                )
             num_moe_layers = sum(moe_layer_pattern)  # Number of 1s in `moe_layer_pattern`.
             num_dense_layers = args.num_layers - num_moe_layers
             num_experts_routed_to = args.moe_router_topk
@@ -1274,7 +1278,8 @@ def num_floating_point_operations(args, batch_size):
         expansion_factor = 3 * 2 * 2
 
         if args.multi_latent_attention:
-            assert not args.group_query_attention
+            if args.group_query_attention:
+                raise ValueError("group_query_attention should not be enabled")
             '''
             Basic arithmetic
             let B is batch size, s is seq_len, h is embedding dim,
