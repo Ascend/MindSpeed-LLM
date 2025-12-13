@@ -1,0 +1,13 @@
+sharding_size: auto
+sub_modules_to_wrap:
+  - "model.embed_tokens"
+  - "model.layers.{*}"
+  - "lm_head"
+recompute_modules:
+  - "model.layers.{*}.self_attn"
+  - "model.layers.{*}.mlp"
+reshard_after_forward: True
+cast_forward_inputs: True
+param_dtype: "bf16"
+reduce_dtype: "fp32"
+num_to_forward_prefetch: 2

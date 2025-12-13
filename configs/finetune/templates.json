@@ -833,5 +833,30 @@
       "<|endoftext|>"
     ],
     "replace_eos": true
+  },
+  {
+    "name": "gpt_oss",
+    "format_user": {
+      "slots": [
+        "<|start|>user<|message|>{{content}}<|end|><|start|>assistant"
+      ]
+    },
+    "format_assistant": {
+      "slots": [
+        "{{content}}<|end|>"
+      ]
+    },
+    "format_system": {
+      "slots": [
+        "<|start|>system<|message|>{{content}}<|end|>"
+      ]
+    },
+    "thought_words": [
+      "<|channel|>analysis<|message|>",
+      "<|end|><|start|>assistant<|channel|>final<|message|>"
+    ],
+    "default_system": "You are ChatGPT, a large language model trained by OpenAI.",
+    "efficient_eos": true,
+    "template_class": "ReasoningTemplate"
   }
 ]
