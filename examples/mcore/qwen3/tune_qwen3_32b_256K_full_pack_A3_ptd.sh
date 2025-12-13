@@ -1,3 +1,4 @@
+# 验证所使用数据集下载自 https://huggingface.co/datasets/Congliu/Chinese-DeepSeek-R1-Distill-data-110k-SFT/tree/main
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export HCCL_CONNECT_TIMEOUT=6000
 export HCCL_EXEC_TIMEOUT=5400
