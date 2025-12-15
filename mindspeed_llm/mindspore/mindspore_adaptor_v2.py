@@ -139,6 +139,11 @@ def _patch_moe_and_communication(args):
         MindSporeAdaptation.register_patch(
             'megatron.core.transformer.moe.legacy_a2a_token_dispatcher.MoEAlltoAllSEQTokenDispatcher.preprocess',
             ascend_gmm_preprocess)
+    
+    from ..mindspore.core.transformer.moe.moe_feature.tp_extend_ep.moe_layer import all2allseq_tp_extend_ep_moe_layer_impl_forward
+    MindSporeAdaptation.register_patch('mindspeed.core.transformer.moe.moe_feature.tp_extend_ep.moe_layer.All2AllSeqTpExtendEpMoELayerImpl.forward',
+                                       all2allseq_tp_extend_ep_moe_layer_impl_forward)
+
 
 def _patch_optimizer_and_training(args):
     # Cross Entropy
