@@ -1,10 +1,17 @@
 sharding_size: auto
 sub_modules_to_wrap:
   - "model.embed_tokens"
-  - "model.layers.{*}"
+  - "model.layers.{*}.self_attn"
+  - "model.layers.{*}.mlp"
+  - "model.layers.{*}.input_layernorm"
+  - "model.layers.{*}.post_attention_layernorm"
   - "lm_head"
 recompute_modules:
-  - "model.layers.{*}"
+  - "model.layers.{*}.self_attn"
+  - "model.layers.{*}.mlp"
+  - "model.layers.{*}.input_layernorm"
+  - "model.layers.{*}.post_attention_layernorm"
+  - "lm_head"
 reshard_after_forward: True
 param_dtype: "bf16"
 reduce_dtype: "fp32"

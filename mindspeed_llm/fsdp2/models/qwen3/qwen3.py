@@ -1,16 +1,18 @@
+# Copyright (c) 2025, HUAWEI CORPORATION.  All rights reserved.
 from typing import Optional, Union
 
 import torch
 import torch_npu
 import transformers
-from torch import nn
 from transformers.cache_utils import Cache
 from transformers.modeling_outputs import BaseModelOutputWithPast, CausalLMOutputWithPast
 from transformers.utils import can_return_tuple
 
 from mindspeed.patch_utils import MindSpeedPatchesManager as pm
 from mindspeed_llm.fsdp2.core.fully_shard.fsdp2_sharding import FSDP2ShardingMixin
-from .modules import Qwen3LMHead
+from mindspeed_llm.fsdp2.models.common.fusions import apply_rotary_pos_emb, \
+    fused_rmsnorm_forward
+from mindspeed_llm.fsdp2.models.common.modules import LMHead
 
 
 class Qwen3FSDP2Mixin(FSDP2ShardingMixin):
@@ -30,7 +32,7 @@ class Qwen3ForCausalLM(transformers.Qwen3PreTrainedModel, Qwen3FSDP2Mixin):
         self.config = config
         self.model = transformers.Qwen3Model(config)
         self.vocab_size = config.vocab_size
-        self.lm_head = Qwen3LMHead(config.hidden_size, config.vocab_size, bias=False)
+        self.lm_head = LMHead(config.hidden_size, config.vocab_size, bias=False)
 
         # Initialize weights and apply final processing
         self.post_init()
@@ -72,13 +74,6 @@ class Qwen3ForCausalLM(transformers.Qwen3PreTrainedModel, Qwen3FSDP2Mixin):
         >>> tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
         "Hey, are you conscious? Can you talk to me?\nI'm not conscious, but I can talk to you."
         ```"""
-        if getattr(self.config, "use_flash_attn", False):
-            if attention_mask.dtype == torch.bool:
-                attention_mask = torch.logical_not(attention_mask.bool()).to(
-                    torch.cuda.current_device())  # attention_mask需要取反
-            else:
-                attention_mask = attention_mask.bool().to(torch.cuda.current_device())
-
         outputs: BaseModelOutputWithPast = self.model(
             input_ids=input_ids,
             attention_mask=attention_mask,
@@ -116,63 +111,9 @@ class Qwen3ForCausalLM(transformers.Qwen3PreTrainedModel, Qwen3FSDP2Mixin):
         """patching the transformers model."""
         if getattr(config, "use_fused_rmsnorm", False):
             pm.register_patch("transformers.models.qwen3.modeling_qwen3.Qwen3RMSNorm.forward",
-                              qwen3rmsnorm_forward)
-        if getattr(config, "use_fused_swiglu", False):
-            pm.register_patch("transformers.models.qwen3.modeling_qwen3.Qwen3MLP.forward",
-                              qwen3mlp_forward)
+                              fused_rmsnorm_forward)
         if getattr(config, "use_fused_rotary_pos_emb", False):
             pm.register_patch("transformers.models.qwen3.modeling_qwen3.apply_rotary_pos_emb",
                               apply_rotary_pos_emb)
-        if getattr(config, "use_flash_attn", False):
-            pm.register_patch("transformers.models.qwen3.modeling_qwen3.eager_attention_forward",
-                              eager_attention_forward)
 
         pm.apply_patches()
-
-
-def qwen3rmsnorm_forward(self, x):
-    return torch_npu.npu_rms_norm(x, self.weight, epsilon=self.variance_epsilon)[0]
-
-
-def qwen3mlp_forward(self, x):
-    gate_up_w = torch.cat([self.gate_proj.weight, self.up_proj.weight], dim=0)
-    gate_up_output = torch.matmul(x, gate_up_w.t())
-
-    swiglu_output = torch_npu.npu_swiglu(gate_up_output, dim=-1)
-    down_proj = self.down_proj(swiglu_output)
-    return down_proj
-
-
-def apply_rotary_pos_emb(q, k, cos, sin, position_ids=None, unsqueeze_dim=1):
-    cos = cos.unsqueeze(unsqueeze_dim)
-    sin = sin.unsqueeze(unsqueeze_dim)
-    q_embed = torch_npu.npu_rotary_mul(q, cos, sin)
-    k_embed = torch_npu.npu_rotary_mul(k, cos, sin)
-    return q_embed, k_embed
-
-
-def eager_attention_forward(
-        module: nn.Module,
-        query: torch.Tensor,
-        key: torch.Tensor,
-        value: torch.Tensor,
-        attention_mask: Optional[torch.Tensor],
-        scaling: float,
-        dropout: float = 0.0,
-        **kwargs):
-    shape_order = "BNSD"
-    output = torch_npu.npu_fusion_attention(
-        query, key, value,
-        query.shape[1],
-        shape_order,
-        pse=None,
-        padding_mask=None,
-        attention_mask=attention_mask,
-        scale=scaling,
-        pre_tockens=2147483647,
-        next_tockens=2147483647,
-        keep_prob=1 - dropout,
-    )[0]
-
-    output = output.transpose(1, 2).contiguous()
-    return output, None

@@ -27,12 +27,10 @@ TP=1
 PP=1
 EP=1
 CP=1
-MBS=2
-GRAD_ACC_STEP=2
-DP=$(($WORLD_SIZE/$TP/$PP/$CP))
-GBS=$(($MBS*$GRAD_ACC_STEP*$DP))
+MBS=4
+GBS=128
 
-SEQ_LENGTH=32768
+SEQ_LENGTH=4096
 TRAIN_ITERS=2000
 
 time=$(date "+%Y%m%d-%H%M%S")
@@ -57,7 +55,6 @@ FSDP2_ARGS="
 "
 
 OPTIMIZE_ARGS="
-    --use-flash-attn \
     --use-fused-rotary-pos-emb \
     --use-fused-rmsnorm \
     --no-masked-softmax-fusion \
@@ -100,7 +97,8 @@ MODEL_ARGS="
 
 DATA_ARGS="
     --data-path $DATA_PATH \
-    --split 100,0,0
+    --split 100,0,0 \
+    --handler-name GeneralPretrainHandler \
 "
 
 OUTPUT_ARGS="
@@ -121,4 +119,4 @@ torchrun $DISTRIBUTED_ARGS train_fsdp2.py \
     $TRAIN_ARGS \
     $FSDP2_ARGS \
     --distributed-backend nccl \
-    | tee logs/train_fsdp2_qwen3_8b_32k_A3-${time}.log
+    | tee logs/train_fsdp2_qwen3_8b_seqlen${SEQ_LENGTH}_A3-${time}.log
