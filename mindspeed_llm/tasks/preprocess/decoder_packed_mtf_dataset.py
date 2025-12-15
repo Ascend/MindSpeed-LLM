@@ -206,11 +206,12 @@ class DecoderPackedMTFDataset(torch.utils.data.Dataset):
                         position_ids[(i + 1):] -= i + 1 - prev_index
                         prev_index = i + 1
 
-            elif self.args.neat_pack:
+            if self.args.neat_pack:
                 position_ids = self._get_neat_pack_position_ids(torch.from_numpy(item['attention_mask']))
                 actual_seq_len = compute_actual_seq_len(position_ids)
                 actual_seq_len = torch.tensor(actual_seq_len)
-                position_ids = torch.arange(self.args.seq_length, dtype=torch.long, device=data.device)
+                if not self.args.reset_position_ids:
+                    position_ids = torch.arange(self.args.seq_length, dtype=torch.long, device=data.device)
 
             if actual_seq_len is None:
                 seq_length_tensor = torch.tensor([self.args.seq_length])
