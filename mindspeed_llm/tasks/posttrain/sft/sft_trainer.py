@@ -4,6 +4,7 @@ from functools import partial
 import torch
 from megatron.training import get_args, get_tokenizer
 from megatron.core import mpu, tensor_parallel
+from megatron.core import parallel_state
 from megatron.training.utils import (
     get_batch_on_this_cp_rank,
     get_batch_on_this_tp_rank,
@@ -158,26 +159,30 @@ class SFTTrainer(BaseTrainer):
         if args.context_parallel_size > 1:
             loss = torch.cat([torch.sum(losses.view(-1) * loss_mask).view(1), loss_mask.sum().view(1)])
             torch.distributed.all_reduce(loss, group=mpu.get_context_parallel_group())
-            loss = loss[0] / loss[1]
+            loss_sum = loss[0]
+            loss_mask_sum = loss[1]
         else:
-            loss = torch.sum(losses.view(-1) * loss_mask) / loss_mask.sum()
+            loss_sum = torch.sum(losses.view(-1) * loss_mask)
+            loss_mask_sum = loss_mask.sum()
 
         # Check individual rank losses are not NaN prior to DP all-reduce.
         if args.check_for_nan_in_loss_and_grad:
             global_rank = torch.distributed.get_rank()
-            if loss.isnan():
+            if loss_sum.isnan():
                 raise ValueError(f'Rank {global_rank}: found NaN in local forward loss calculation. '
                                  f'Device: {torch.cuda.current_device()}, node: {os.uname()[1]}')
 
-        # Reduce loss for logging.
-        averaged_loss = average_losses_across_data_parallel_group([loss])
-
         if args.calculate_per_token_loss:
-            loss_mask_sum = loss_mask.sum()
-            loss_sum = loss * loss_mask_sum
-            averaged_loss_sum = averaged_loss[0] * loss_mask_sum
-            return loss_sum, loss_mask_sum.to(torch.int32), {'lm loss': [averaged_loss_sum, loss_mask_sum]}
+            total_loss_sum = loss_sum.clone().detach()
+            total_loss_mask_sum = loss_mask_sum.clone().detach()
+            torch.distributed.all_reduce(total_loss_sum, group=parallel_state.get_data_parallel_group())
+            torch.distributed.all_reduce(total_loss_mask_sum, group=parallel_state.get_data_parallel_group())
+
+            return loss_sum, loss_mask_sum.to(torch.int32), {'lm loss': [total_loss_sum, total_loss_mask_sum]}
         else:
+            loss = loss_sum / loss_mask_sum
+            # Reduce loss for logging.
+            averaged_loss = average_losses_across_data_parallel_group([loss])
             return loss, {'lm loss': averaged_loss[0]}
 
     def forward_step(self, data_iterator, model):
