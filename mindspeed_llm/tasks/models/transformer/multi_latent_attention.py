@@ -432,8 +432,8 @@ class CustomMLASelfAttention(SelfAttention):
                 else:
                     dsa_hidden_states, dsa_q_compressed = hidden_states, q_compressed
 
-                topk_score, topk_indices, attention_mask = self.dsa_indexer(dsa_hidden_states.detach().clone(),
-                                                                            dsa_q_compressed.detach().clone(),
+                topk_score, topk_indices, attention_mask = self.dsa_indexer(dsa_hidden_states.detach(),
+                                                                            dsa_q_compressed.detach(),
                                                                             0, rotary_pos_emb)
 
             # ==================================
@@ -463,15 +463,15 @@ class CustomMLASelfAttention(SelfAttention):
                 if args.context_parallel_size > 1 and args.context_parallel_algo=='ulysses_cp_algo':
                     query = gather_from_sequence_parallel_region(query,group=mpu.get_context_parallel_group())
                     key = gather_from_sequence_parallel_region(key,group=mpu.get_context_parallel_group())
-                main_attn_dist = get_attn_scores(query,
-                                                 key,
+                main_attn_dist = get_attn_scores(query.detach(),
+                                                 key.detach(),
                                                  attention_mask,
                                                  self.num_attention_heads_per_partition //
                                                  self.num_query_groups_per_partition,
                                                  self.core_attention.local_attn.scale if args.context_parallel_size > 1 and args.context_parallel_algo=='ulysses_cp_algo' else self.core_attention.scale, 
                                                  )
                 loss = compute_dsa_indexer_loss(
-                    main_attn_dist.detach(),
+                    main_attn_dist,
                     topk_score,
                     topk_indices,
                     args.indexer_loss_coeff,

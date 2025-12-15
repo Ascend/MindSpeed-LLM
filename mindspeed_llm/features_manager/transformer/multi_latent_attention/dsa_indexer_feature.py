@@ -20,6 +20,8 @@ class DSAIndexerFeature(MindSpeedFeature):
                            help='format for quantization scale.')
         group.add_argument('--indexer-loss-coeff', type=float, default=1.0,
                            help='Indexer loss coeff.')
+        group.add_argument('--use-fused-lightning-indexer', action='store_true', default=False,
+                           help='Use fused fused operator in lightning indexer.')
 
     def validate_args(self, args):
         if args.enable_dsa_indexer:

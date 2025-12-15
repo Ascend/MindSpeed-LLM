@@ -8,6 +8,8 @@ import torch.nn.functional as F
 from einops import rearrange
 from functools import wraps
 
+import torch_npu
+
 from megatron.core import parallel_state
 from megatron.core.enums import ModelType
 from megatron.core.pipeline_parallel.schedules import set_current_microbatch
@@ -207,7 +209,14 @@ class DSAIndexer(MegatronModule):
         # self.register_buffer("k_scale_cache", torch.zeros(args.max_batch_size, args.max_seq_len, self.head_dim // block_size, dtype=torch.float32), persistent=False)
         # ---------------------------------------------------------
 
-    def forward(self, x: torch.Tensor, qr: torch.Tensor, start_pos: int, freqs_cis: torch.Tensor, mask=None):
+    def forward(self,
+                x: torch.Tensor,
+                qr: torch.Tensor,
+                start_pos: int,
+                freqs_cis: torch.Tensor,
+                mask=None,
+                packed_seq_params=None,
+                ):
         """
         Forward pass of the dsa_indexer module.
 
@@ -218,6 +227,7 @@ class DSAIndexer(MegatronModule):
             freqs_cis (tuple): Rotary positional embedding frequencies for queries and keys,
                                shape:[seq_len, batch_size, 1, qk_pos_emb_head_dim].
             mask (torch.Tensor, optional): Attention mask.
+            packed_seq_params (PackedSeqParams, optional): Parameters for packed sequence processing.
         """
 
         args = get_args()
@@ -275,9 +285,8 @@ class DSAIndexer(MegatronModule):
         # Compute sparse attention scores in bf16
         weights = self.weights_proj(x)
         weights = weights * self.n_heads ** -0.5
-        weights = weights.unsqueeze(-1) * self.softmax_scale
+        weights = weights * self.softmax_scale
 
-        index_score = bf16_index(q.contiguous(), weights, k.contiguous())
         # ---------------------------------------------------------
         s *=  args.context_parallel_size
         if mask is None:
@@ -285,10 +294,32 @@ class DSAIndexer(MegatronModule):
                                                      dtype=x.dtype,
                                                      device=x.device),
                                           diagonal=1) == 1, float('-inf'), 0.0)
-        index_score += mask
 
-        # Select top-k most relevant tokens for each query position
-        topk_score, topk_indices = index_score.topk(min(self.index_topk, end_pos), dim=-1)
+        if not args.use_fused_lightning_indexer:
+            index_score = bf16_index(q.contiguous(), weights.unsqueeze(-1), k.contiguous())
+            index_score += mask
+
+            # Select top-k most relevant tokens for each query position
+            topk_score, topk_indices = index_score.topk(min(self.index_topk, end_pos), dim=-1)
+        else:
+            li_query = rearrange(q, 's b h d -> b s h d').to(torch.bfloat16)
+            li_key = rearrange(k, 's b h d -> b s h d').to(torch.bfloat16)
+            li_weights = rearrange(weights, 's b d -> b s d').to(torch.bfloat16)
+
+            topk_indices, topk_score = torch_npu.npu_lightning_indexer(
+                li_query,
+                li_key,
+                li_weights,
+                actual_seq_lengths_query=None if packed_seq_params is None else packed_seq_params.cu_seqlens_q,
+                actual_seq_lengths_key=None if packed_seq_params is None else packed_seq_params.cu_seqlens_kv,
+                layout_query='BSND',
+                layout_key='BSND',
+                sparse_count=args.index_topk,
+                sparse_mode=3,
+                return_value=True,
+            )
+            topk_indices = topk_indices.squeeze(2)
+            topk_score = topk_score.squeeze(2)
 
         # Build a full attention mask where only top-k positions are unmasked (0), others are -inf
         attention_mask = torch.full((b, s, s), float('-inf'), dtype=x.dtype, device=x.device).scatter_(-1, topk_indices, 0)
