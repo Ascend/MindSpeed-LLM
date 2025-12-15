@@ -32,33 +32,29 @@ def convert_datasets(args, shared: bool):
     # Build metadata map (output prefix + base prefix)
     out_map = {}
     user_out = getattr(args, "output_prefix", None)
-    user_out_is_dir = isinstance(user_out, str) and (
-        user_out.endswith("/") or user_out.endswith("\\") or user_out.endswith(os.sep)
-    )
 
     for raw in paths:
         p = raw.strip().strip('"').strip("'")
 
         if os.path.isfile(p):
             auto_prefix = os.path.splitext(p)[0]
+            raw_base = os.path.splitext(os.path.basename(p))[0]
         elif os.path.isdir(p):
             auto_prefix = os.path.join(p, os.path.basename(os.path.normpath(p)))
+            raw_base = os.path.basename(os.path.normpath(p))
         else:
             raise FileNotFoundError(f"[DataConvert] Expected raw file/dir but got: {p}")
 
-        # Determine output prefix
-        if not user_out:
-            out_prefix = auto_prefix
-        else:
-            if os.path.isdir(user_out) or user_out_is_dir:
-                out_prefix = os.path.join(user_out.rstrip("/\\"), os.path.basename(auto_prefix))
+        if user_out:
+            user_prefix = str(user_out).strip().strip('"').strip("'")
+            if len(paths) == 1:
+                out_prefix = user_prefix
             else:
-                if len(paths) == 1:
-                    out_prefix = user_out
-                else:
-                    parent = os.path.dirname(user_out) or "."
-                    out_prefix = os.path.join(parent, os.path.basename(auto_prefix))
+                out_prefix = f"{user_prefix}_{raw_base}"
+        else:
+            out_prefix = auto_prefix
 
+        # Ensure parent directory exists
         os.makedirs(os.path.dirname(out_prefix) or ".", exist_ok=True)
 
         out_map[p] = {
