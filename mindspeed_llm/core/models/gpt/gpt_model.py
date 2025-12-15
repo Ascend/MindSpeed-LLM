@@ -22,8 +22,11 @@ from megatron.core.transformer.transformer_block import TransformerBlock
 from megatron.core.utils import deprecate_inference_params
 from megatron.core.inference.contexts import BaseInferenceContext
 from megatron.training import get_args
+from megatron.core.transformer.moe.router import TopKRouter
 
 from mindspeed_llm.core.tensor_parallel.layers import SegmentedColumnParallelLinear
+from mindspeed_llm.training.utils import (set_actual_seq_len_list, _CAN_RECORD_REGISTRY, 
+                           check_model_inputs)
 from mindspeed_llm.training.utils import set_actual_seq_len_list
 from mindspeed.core.context_parallel.get_batch_utils import get_actual_seq_len
 from mindspeed.utils import compute_qkv_index, get_position_ids
@@ -56,6 +59,9 @@ class GPTModel(MegatronCoreGPTModel):
 
         global_args = get_args()
         post_layer_norm = kwargs.pop('post_layer_norm', True)
+
+        if global_args.use_global_aux_loss:
+            _CAN_RECORD_REGISTRY[str(self.__class__)] = { "router_logits": TopKRouter}
 
         self.transformer_layer_spec: ModuleSpec = transformer_layer_spec
         self.vocab_size = vocab_size
@@ -183,7 +189,8 @@ class GPTModel(MegatronCoreGPTModel):
 
         if self.pre_process or self.post_process:
             self.setup_embeddings_and_output_layer()
-
+    
+    @check_model_inputs
     def forward(self,
                 input_ids: Tensor,
                 position_ids: Tensor,

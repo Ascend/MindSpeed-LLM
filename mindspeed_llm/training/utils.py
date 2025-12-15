@@ -24,6 +24,7 @@ from logging import getLogger
 from typing import Optional, Union, List
 from itertools import takewhile
 from packaging.version import Version as PkgVersion
+from collections import defaultdict
 
 import acl
 import torch
@@ -63,7 +64,7 @@ except Exception:
 
 logger = getLogger(__name__)
 
-
+_CAN_RECORD_REGISTRY = {}
 WRITE_FILE_DEFAULT_FLAGS = os.O_WRONLY | os.O_CREAT
 WRITE_FILE_DEFAULT_MODES = stat.S_IWUSR | stat.S_IRUSR
 
@@ -838,3 +839,72 @@ def is_shared_path(path: str, retry: int = 3, wait: float = 0.5) -> bool:
         if rank == 0:
             logger.info(f"[is_shared_path] Exception during shared path check: {e}")
         raise
+
+def check_model_inputs(func):
+    """
+    Decorator to intercept Router c layer outputs without using hooks.
+    """
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+
+        # _can_record_outputs is None by default
+        capture_flags = _CAN_RECORD_REGISTRY.get(str(self.__class__)) or {}  # there is a weak ref for executorch
+        
+        if capture_flags:
+
+            recordable_keys = {
+                f"output_{k}": True
+                for k in capture_flags
+            }
+            
+            collected_outputs = defaultdict(tuple)
+            monkey_patched_layers = []
+
+            def make_capture_wrapper(module, orig_forward, key):
+                @wraps(orig_forward)
+                def wrapped_forward(*args, **kwargs):
+                    output = orig_forward(*args, **kwargs)
+                    if output[2] is not None: 
+                        if key not in collected_outputs:
+                            collected_outputs[key] = (output[2],)
+                        else:
+                            collected_outputs[key] += (output[2],)
+                    return output
+
+                return wrapped_forward
+
+            if any(recordable_keys.values()):
+                capture_tasks = []
+                for key, layer_specs in capture_flags.items():
+                    if not recordable_keys.get(f"output_{key}", False):
+                        continue
+                    if not isinstance(layer_specs, list):
+                        layer_specs = [layer_specs]
+                    for specs in layer_specs:
+                        capture_tasks.append((key, specs))
+
+                for name, module in self.named_modules():
+                    for key, specs in capture_tasks:
+                        if (specs is not None and isinstance(module, specs)):
+                            # Monkey patch forward
+                            original_forward = module.forward
+                            module.forward = make_capture_wrapper(module, original_forward, key)
+                            monkey_patched_layers.append((module, original_forward))
+
+           
+            outputs = func(self, *args, **kwargs)
+
+            # Restore original forward methods
+            for module, original_forward in monkey_patched_layers:
+                module.forward = original_forward
+            
+            # Inject collected outputs into global variable
+            for key in collected_outputs:
+                globals()[key] = collected_outputs[key]
+                
+            return outputs
+        else:
+            outputs = func(self, *args, **kwargs)
+            return outputs
+
+    return wrapper

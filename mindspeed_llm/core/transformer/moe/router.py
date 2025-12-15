@@ -556,31 +556,6 @@ def topk_router_routing(self, logits: torch.Tensor):
     return scores, routing_map
 
 
-def topk_router_forward(self, input: torch.Tensor):
-    """
-    Forward pass of the router.
-
-    Args:
-        input (torch.Tensor): Input tensor.
-
-    Returns:
-        Tuple[torch.Tensor, torch.Tensor]: scores and indices.
-    """
-    args = get_args()
-    self.hidden = input.shape[-1]
-    _maintain_float32_expert_bias(self)
-
-    # add input_jitter to distinguish whether to use
-    if args.input_jitter:
-        input = self.apply_input_jitter(input)
-    logits = self.gating(input)
-    logits = logits.view(-1, self.config.num_moe_experts)
-
-    scores, indices = self.routing(logits)
-
-    return scores, indices
-
-
 def _maintain_float32_expert_bias(self):
     """
     Maintain the expert bias in float32.
@@ -591,3 +566,128 @@ def _maintain_float32_expert_bias(self):
     if hasattr(self, 'expert_bias') and self.expert_bias is not None:
         if self.expert_bias.dtype != torch.float32:
             self.expert_bias.data = self.expert_bias.data.to(torch.float32)
+
+
+def global_aux_loss_load_balancing(self, logits: torch.Tensor):
+    """Apply auxiliary loss-based load balancing to the logits tensor.
+
+    Args:
+        logits (torch.Tensor): The logits tensor after gating, shape: [num_tokens, num_experts].
+
+    Returns:
+        probs (torch.Tensor): The probabilities of token to experts assignment.
+        routing_map (torch.Tensor): The mask of token to experts assignment.
+    """
+    probs, routing_map, _ = topk_softmax_with_capacity(
+        logits,
+        self.topk,
+        capacity_factor=self.config.moe_expert_capacity_factor,
+        pad_to_capacity=self.config.moe_pad_expert_input_to_capacity,
+        drop_policy=self.config.moe_token_drop_policy,
+        use_pre_softmax=self.config.moe_router_pre_softmax,
+        num_groups=self.config.moe_router_num_groups,
+        group_topk=self.config.moe_router_group_topk,
+        scaling_factor=self.config.moe_router_topk_scaling_factor,
+        deterministic_mode=self.config.deterministic_mode,
+        score_function=self.score_function,
+        expert_bias=self.expert_bias,
+    )
+
+    return probs, routing_map
+
+
+def global_aux_loss_topk_router_forward(self, input: torch.Tensor):
+    """
+    Forward pass of the router.
+
+    Args:
+        input (torch.Tensor): Input tensor.
+    """
+    self._maintain_float32_expert_bias()
+
+    # Apply input jitter
+    input = self.apply_input_jitter(input)
+    logits = self.gating(input)
+
+    scores, routing_map = self.routing(logits)
+
+    return scores, routing_map, logits.detach()
+
+def global_load_balancing_loss_func(router_logits, attention_mask, config):
+    """
+    Computes auxiliary load balancing loss as in Switch Transformer - implemented in Pytorch.
+
+    See Switch Transformer (https://huggingface.co/papers/2101.03961) for more details. This function implements the loss
+    function presented in equations (4) - (6) of the paper. It aims at penalizing cases where the routing between
+    experts is too unbalanced.
+
+    Args:
+        router_logits:
+            Logits from the `router`, should be a tuple of model.config.num_hidden_layers tensors of
+            shape [sequence_length, batch_size, num_experts].
+        attention_mask (`torch.Tensor`, *optional*):
+            The attention_mask used in forward function
+            shape [batch_size X sequence_length] if not None.
+        config: config arguments
+
+    Returns:
+        The auxiliary loss.
+    """
+
+    if router_logits is None or not isinstance(router_logits, tuple):
+        return 0
+
+    if isinstance(router_logits, tuple):
+        compute_device = router_logits[0].device
+        concatenated_gate_logits = torch.cat(
+            [layer_gate.to(compute_device).transpose(0, 1).reshape(-1, layer_gate.shape[2]) 
+            for layer_gate in router_logits], dim=0)
+    
+    top_k = config.moe_router_topk
+    num_experts = concatenated_gate_logits.shape[1]
+
+    routing_weights = torch.nn.functional.softmax(concatenated_gate_logits, dim=-1)
+
+    _, selected_experts = torch.topk(routing_weights, top_k, dim=-1)
+
+    expert_mask = torch.nn.functional.one_hot(selected_experts, num_experts)
+
+    if attention_mask is None:
+        # Compute the percentage of tokens routed to each experts
+        tokens_per_expert = torch.mean(expert_mask.float(), dim=0)
+
+        # Compute the average probability of routing to these experts
+        router_prob_per_expert = torch.mean(routing_weights, dim=0)
+    else:
+        batch_size, sequence_length = attention_mask.shape
+        num_hidden_layers = concatenated_gate_logits.shape[0] // (batch_size * sequence_length)
+
+        # Compute the mask that masks all padding tokens as 0 with the same shape of expert_mask
+        expert_attention_mask = (
+            attention_mask[None, :, :, None, None]
+            .expand((num_hidden_layers, batch_size, sequence_length, top_k, num_experts))
+            .reshape(-1, top_k, num_experts)
+            .to(compute_device)
+        )
+
+        # Compute the percentage of tokens routed to each experts
+        tokens_per_expert = torch.sum(expert_mask.float() * expert_attention_mask, dim=0) / torch.sum(
+            expert_attention_mask, dim=0
+        )
+
+        # Compute the mask that masks all padding tokens as 0 with the same shape of tokens_per_expert
+        router_per_expert_attention_mask = (
+            attention_mask[None, :, :, None]
+            .expand((num_hidden_layers, batch_size, sequence_length, num_experts))
+            .reshape(-1, num_experts)
+            .to(compute_device)
+        )
+
+        # Compute the average probability of routing to these experts
+        router_prob_per_expert = torch.sum(routing_weights * router_per_expert_attention_mask, dim=0) / torch.sum(
+            router_per_expert_attention_mask, dim=0
+        )
+
+    overall_loss = torch.sum(tokens_per_expert * router_prob_per_expert.unsqueeze(0))
+
+    return overall_loss * num_experts

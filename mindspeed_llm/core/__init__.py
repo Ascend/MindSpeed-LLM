@@ -26,7 +26,7 @@ from .models.common.embeddings.rotary_pos_embedding import (rotary_embedding_for
 from .datasets.blended_megatron_dataset_builder import build_generic_dataset
 from .datasets.gpt_dataset import _build_document_sample_shuffle_indices
 from .datasets.indexed_dataset import indexed_dataset_builder_init_wrapper, add_item_wrapper, finalize_wrapper
-from .transformer.moe.router import (topk_router_forward, topk_router_routing, topk_router_init_wrapper,
+from .transformer.moe.router import (topk_router_routing, topk_router_init_wrapper,
                                      topk_router_gating_func)
 from .transformer.transformer_layer import TransformerLayer
 from .transformer.transformer_block import get_num_layers_to_build, transformer_block_init_wrapper, transformer_block_forward

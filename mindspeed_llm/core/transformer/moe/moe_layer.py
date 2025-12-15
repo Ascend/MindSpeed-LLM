@@ -131,7 +131,12 @@ def moe_layer_forward(self, hidden_states: torch.Tensor):
 
     # process MoE
     def custom_forward(hidden_states):
-        probs, routing_map = self.router(hidden_states)
+        args = get_args()
+        if args.use_global_aux_loss:
+            probs, routing_map, _ = self.router(hidden_states)
+        else:
+            probs, routing_map = self.router(hidden_states)
+            
         (dispatched_input, tokens_per_expert, permuted_probs) = (
             self.token_dispatcher.token_permutation(hidden_states, probs, routing_map)
         )
