@@ -12,11 +12,11 @@ logger.basicConfig(format="")
 logger.getLogger().setLevel(logger.INFO)
 
 
-class CheckpointConverter:
+class MambaConverter:
     def __init__(self, args):
         self.args = args
-        self.args.mamba_d_inner = self.args.d_model * 2
-        self.args.mamba2_n_heads = self.args.mamba_d_inner // self.args.mamba2_head_dim
+        self.args.mamba_d_inner = self.args.mamba_d_model * 2
+        self.args.mamba2_n_heads = self.args.mamba_d_inner // self.args.mamba_head_dim
         self._valid_parameter()
         self.tp_split_dim = {
             'word_embeddings.weight': 0,
@@ -54,8 +54,8 @@ class CheckpointConverter:
         raise Exception(f"Unknown tensor name {tensor_name}")
 
     def _valid_parameter(self):
-        if self.args.mamba2_n_groups % self.args.target_tp_size != 0:
-            raise ValueError("target_tp_size must can divide n_groups. Please adjust values.")
+        if self.args.mamba_n_groups % self.args.target_tensor_parallel_size != 0:
+            raise ValueError("target_tensor_parallel_size must can divide n_groups. Please adjust values.")
 
     @staticmethod
     def load_hf_files_to_dict(directory_path):
@@ -161,8 +161,8 @@ class CheckpointConverter:
             for tensor in tensors:
                 x, z, B, C, dt = torch.split(tensor, [params.mamba_d_inner // tp_size,
                                                     params.mamba_d_inner // tp_size,
-                                                    (params.mamba2_n_groups // tp_size) * self.args.mamba_d_state,
-                                                    (params.mamba2_n_groups // tp_size) * self.args.mamba_d_state,
+                                                    (params.mamba_n_groups // tp_size) * self.args.mamba_d_state,
+                                                    (params.mamba_n_groups // tp_size) * self.args.mamba_d_state,
                                                     params.mamba2_n_heads // tp_size], dim=dim)
                 xs.append(x)
                 zs.append(z)
@@ -188,8 +188,8 @@ class CheckpointConverter:
             Cs = []
             for tensor in tensors:
                 x, B, C = torch.split(tensor, [params.mamba_d_inner // tp_size,
-                                            (params.mamba2_n_groups // tp_size) * params.mamba_d_state,
-                                            (params.mamba2_n_groups // tp_size) * params.mamba_d_state], dim=dim)
+                                            (params.mamba_n_groups // tp_size) * params.mamba_d_state,
+                                            (params.mamba_n_groups // tp_size) * params.mamba_d_state], dim=dim)
                 xs.append(x)
                 Bs.append(B)
                 Cs.append(C)
@@ -214,13 +214,13 @@ class CheckpointConverter:
 
     @staticmethod
     def split_tensor_for_tp(params, key, dim, tensor):
-        tp_size = params.target_tp_size
+        tp_size = params.target_tensor_parallel_size
         tensor_sliced = []
 
         if 'mixer.in_proj.weight' in key:
             x, z, B, C, dt = torch.split(tensor, [params.mamba_d_inner, params.mamba_d_inner,
-                                                        params.mamba2_n_groups * params.mamba_d_state,
-                                                        params.mamba2_n_groups * params.mamba_d_state,
+                                                        params.mamba_n_groups * params.mamba_d_state,
+                                                        params.mamba_n_groups * params.mamba_d_state,
                                                         params.mamba2_n_heads], dim=dim)
             B = torch.reshape(B, (-1, params.mamba_d_state, B.shape[-1]))
             C = torch.reshape(C, (-1, params.mamba_d_state, C.shape[-1]))
@@ -237,8 +237,8 @@ class CheckpointConverter:
 
         elif 'mixer.conv1d' in key:
             x, B, C = torch.split(tensor, [params.mamba_d_inner,
-                                                params.mamba2_n_groups * params.mamba_d_state,
-                                                params.mamba2_n_groups * params.mamba_d_state], dim=dim)
+                                                params.mamba_n_groups * params.mamba_d_state,
+                                                params.mamba_n_groups * params.mamba_d_state], dim=dim)
             if 'weight' in key:
                 B = torch.reshape(B, (-1, params.mamba_d_state, B.shape[-2], B.shape[-1]))
                 C = torch.reshape(C, (-1, params.mamba_d_state, C.shape[-2], C.shape[-1]))
@@ -265,8 +265,8 @@ class CheckpointConverter:
     def finalize_checkpoint(src_model, model, params, verbose=False):
         if 'args' in src_model.keys():
             model['args'] = copy.deepcopy(src_model['args'])
-            model['args'].tensor_model_parallel_size = params.target_tp_size
-            model['args'].pipeline_model_parallel_size = params.target_pp_size
+            model['args'].tensor_model_parallel_size = params.target_tensor_parallel_size
+            model['args'].pipeline_model_parallel_size = params.target_pipeline_parallel_size
 
         if 'checkpoint_version' in src_model.keys():
             model['checkpoint_version'] = copy.deepcopy(src_model['checkpoint_version'])
@@ -419,10 +419,10 @@ class CheckpointConverter:
         split Megatron model by pipeline rank and tensor parallel rank
         """
         split_models = {}
-        layers_per_pp = args.num_layers // args.target_pp_size
+        layers_per_pp = args.num_layers // args.target_pipeline_parallel_size
 
-        for pp_idx in range(args.target_pp_size):
-            tp_models = [{'model': OrderedDict()} for _ in range(args.target_tp_size)]
+        for pp_idx in range(args.target_pipeline_parallel_size):
+            tp_models = [{'model': OrderedDict()} for _ in range(args.target_tensor_parallel_size)]
 
             for key, tensor in full_model.items():
                 try:
@@ -441,7 +441,7 @@ class CheckpointConverter:
                 split_dim = self.get_split_dim(new_key)
                 if split_dim != -1:
                     slices = self.split_tensor_for_tp(args, new_key, split_dim, tensor)
-                    for i in range(args.target_tp_size):
+                    for i in range(args.target_tensor_parallel_size):
                         tp_models[i]['model'][new_key] = slices[i]
                 else:
                     for tp_model in tp_models:
@@ -462,7 +462,7 @@ class CheckpointConverter:
         - out_iteration: Current iteration number (int)
         - tp_idx: Tensor parallel rank
         - pp_idx: Pipeline parallel rank (default is 0)
-        - target_pp_size: Pipeline parallel size (default is 1)
+        - target_pipeline_parallel_size: Pipeline parallel size (default is 1)
         - filename: Filename (default is 'model_optim_rng.pt')
 
         Returns:
@@ -471,7 +471,7 @@ class CheckpointConverter:
 
         filename = "model_optim_rng.pt"
         dir_name = f"mp_rank_{tp_idx:02d}"
-        if args.target_pp_size > 1:
+        if args.target_pipeline_parallel_size > 1:
             dir_name += f"_{pp_idx:03d}"
 
         save_path = os.path.join(args.save_dir, f"iter_{out_iteration:07d}", dir_name)
@@ -547,51 +547,8 @@ class CheckpointConverter:
         split_models = self.split_model_by_pp_tp(hf_model_new, args)
         self.save_split_models(split_models, hf_model, args, out_iteration=1)
 
-    def main(self):
+    def run(self):
         if self.args.load_model_type == "mg":
             self.convert_mg_checkpoint(self.args)
         else:
             self.convert_hf2mg(self.args)
-
-
-def run():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--load-dir', type=str,
-                        help='Directory from which to load the model checkpoint')
-    parser.add_argument('--save-dir', type=str,
-                        help='Directory to save the converted model checkpoint')
-    parser.add_argument('--target-tp-size', type=int, default=1,
-                        help='Target Tensor Parallel (TP) size for the output model')
-    parser.add_argument('--target-pp-size', type=int, default=1,
-                        help='Target Pipeline Parallel (PP) size for the output model')
-    parser.add_argument('--reset-iterations', action='store_true',
-                        help='Whether to reset the iteration count in the saved model')
-    parser.add_argument('--input-tp-rank', type=int,
-                        help='Tensor Parallel rank of the input model shard')
-    parser.add_argument('--input-pp-rank', type=int,
-                        help='Pipeline Parallel rank of the input model shard')
-    parser.add_argument('--num-layers', type=int,
-                        help='Number of layers in the model')
-    parser.add_argument('--d-model', type=int, default=4096,
-                        help='Model dimension (hidden size)')
-    parser.add_argument('--mamba-d-state', type=int, default=128,
-                        help='State dimension used in the Mamba model')
-    parser.add_argument('--mamba2-n-groups', type=int, default=8,
-                        help='Number of groups in Mamba v2 model')
-    parser.add_argument('--mamba2-head-dim', type=int, default=64,
-                        help='Head dimension in Mamba v2 model')
-    parser.add_argument('--load-model-type', type=str, nargs='?',
-                        default=None, const=None, choices=['hf', 'mg'],
-                        help='Checkpoint format to load: "hf" for HuggingFace or "mg" for Megatron')
-    parser.add_argument('--save-model-type', type=str, default='mg',
-                        choices=['mg', 'hf'],
-                        help='Checkpoint format to save: "hf" for HuggingFace or "mg" for Megatron')
-
-    args, _ = parser.parse_known_args()
-
-    converter = CheckpointConverter(args)
-    converter.main()
-
-
-if __name__ == "__main__":
-    run()

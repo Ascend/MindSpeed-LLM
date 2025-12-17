@@ -18,7 +18,7 @@
   <tbody>
     <tr>
       <td rowspan="2">Mamba2</td>
-      <td><a href="https://www.modelscope.cn/models/mlx-community/mamba2-2.7b/files">2.7B</a></td>
+      <td><a href="https://huggingface.co/state-spaces/mamba2-2.7b/tree/main">2.7B</a></td>
       <td rowspan="2"><a href="../../../examples/mcore/mamba2">mamba2</a></td>
       <td>4K</td>
       <th>Mcore</th>
@@ -46,6 +46,9 @@
     </tr>   
   </tbody>
 </table>
+
+## 注意：
+开源未提供模型词表文件，内部测试阶段使用的词表文件mamba2_2.7b_from_8b.model为自定义设计，用户请使用自己构建的词表，训练效果不保证。
 
 ## 以上模型脚本环境变量声明：
 HCCL_CONNECT_TIMEOUT：设置HCCL超时时间，默认值为120<br>

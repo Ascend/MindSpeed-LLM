@@ -4,6 +4,7 @@ import logging as logger
 import time
 from mindspeed_llm.tasks.checkpoint.convert_hf2mg import Hf2MgConvert
 from mindspeed_llm.tasks.checkpoint.convert_mg2hf import Mg2HfConvert
+from mindspeed_llm.tasks.checkpoint.convert_ckpt_mamba2 import MambaConverter
 
 
 def get_args():
@@ -18,7 +19,7 @@ def get_args():
     parser.add_argument('--save-dir', type=str, required=True,
                         help='Directory to save model checkpoint to')
     parser.add_argument('--model-type-hf', type=str, default="qwen3",
-                        choices=['qwen3', 'qwen3-moe', 'deepseek3', 'glm45-moe', 'bailing_mini', 'qwen3-next', 'seed-oss', 'deepseek32', 'magistral', 'deepseek2-lite', 'phi3.5'],
+                        choices=['qwen3', 'qwen3-moe', 'deepseek3', 'glm45-moe', 'bailing_mini', 'qwen3-next', 'seed-oss', 'deepseek32', 'magistral', 'deepseek2-lite', 'phi3.5', 'mamba2'],
                         help='model type of huggingface')
     parser.add_argument('--target-tensor-parallel-size', type=int, default=1,
                         help='Target tensor model parallel size, defaults to 1.')
@@ -51,7 +52,18 @@ def get_args():
                        help='Which Transformer implementation to use.')
     parser.add_argument('--hf-dir', type=str, default=None,
                        help='Directory to load hugging face config files')
-
+    parser.add_argument('--input-tp-rank', type=int,
+                        help='Tensor Parallel rank of the input model shard')
+    parser.add_argument('--input-pp-rank', type=int,
+                        help='Pipeline Parallel rank of the input model shard')
+    parser.add_argument('--mamba-d-model', type=int, default=4096,
+                        help='Model dimension (hidden size)')
+    parser.add_argument('--mamba-d-state', type=int, default=128,
+                        help='State dimension used in the Mamba model')
+    parser.add_argument('--mamba-n-groups', type=int, default=8,
+                        help='Number of groups in Mamba v2 model')
+    parser.add_argument('--mamba-head-dim', type=int, default=64,
+                        help='Head dimension in Mamba v2 model')
     args, _ = parser.parse_known_args()
     return args
 
@@ -59,8 +71,9 @@ def get_args():
 def main():
     args = get_args()
     logger.info(f"Arguments: {args}")
-
-    if args.load_model_type == 'hf' and args.save_model_type == 'mg':
+    if args.model_type_hf == 'mamba2':
+        converter = MambaConverter(args)
+    elif args.load_model_type == 'hf' and args.save_model_type == 'mg':
         converter = Hf2MgConvert(args)
     elif args.load_model_type == 'mg' and args.save_model_type == 'hf':
         converter = Mg2HfConvert(args)
