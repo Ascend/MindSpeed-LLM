@@ -156,8 +156,8 @@
       <td>【Test】</td>
     </tr>
     <tr>
-      <td rowspan="1"><a href="https://huggingface.co/inclusionAI/Ling-mini-base-2.0">Ling-mini-2.0</a></td>
-      <td> <a href="https://huggingface.co/inclusionAI/Ling-mini-base-2.0/tree/main">16B</a> </td>
+      <td rowspan="1"><a href="https://huggingface.co/inclusionAI/Ling-mini-2.0">Ling-mini-2.0</a></td>
+      <td> <a href="https://huggingface.co/inclusionAI/Ling-mini-2.0/tree/main">16B</a> </td>
       <td><a href="../../../examples/mcore/ling_v2">ling_v2</a></td>
       <td> 4K </td>
       <th>Mcore</th>
@@ -229,6 +229,12 @@ MTP说明：master分支是参考Megatron-LM实现，与2.0.0分支实现方案�
   # MTP loss系数
   --mtp-loss-scaling-factor
   ```
+
+### ling-mini-2.0模型
+
+注意：当前分支ling-mini-2.0未适配mtp功能。
+    
+版本要求：CANN版本≥8.1.RC1，PTA版本≥7.0.RC1。
 
 ### 社区BUG列表
 

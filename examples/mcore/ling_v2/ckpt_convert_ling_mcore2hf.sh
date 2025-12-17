@@ -8,7 +8,6 @@ python convert_ckpt_v2.py \
     --save-dir ./model_from_hf/ling_mini_v2-hf/mg2hf/ \
     --moe-grouped-gemm \
     --model-type-hf bailing_mini \
-    --mtp-num-layers 1 \
 
 # 脚本配置仅供参考，具体配置请根据训练策略修改，该模型暂不支持开启tp
 # mtp层请根据需要配置--mtp-num-layers 1 \
