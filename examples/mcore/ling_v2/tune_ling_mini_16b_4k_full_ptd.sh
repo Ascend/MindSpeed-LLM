@@ -75,7 +75,6 @@ MOE_ARGS="
 "
 
 GPT_ARGS="
-    --mtp-num-layers 1 \
     --mtp-after-norm \
     --use-mcore-models \
     --spec mindspeed_llm.tasks.models.spec.bailing_spec layer_spec \
