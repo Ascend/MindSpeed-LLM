@@ -9,7 +9,6 @@ python convert_ckpt_v2.py \
     --load-model-type hf \
     --save-model-type mg \
     --params-dtype bf16 \
-    --mtp-num-layers 1 \
     --target-tensor-parallel-size 1 \
     --target-pipeline-parallel-size 1 \
     --target-expert-parallel-size 8 \

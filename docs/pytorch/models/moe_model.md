@@ -156,8 +156,8 @@
       <td>【Test】</td>
     </tr>
     <tr>
-      <td rowspan="1"><a href="https://huggingface.co/inclusionAI/Ling-mini-base-2.0">Ling-mini-2.0</a></td>
-      <td> <a href="https://huggingface.co/inclusionAI/Ling-mini-base-2.0/tree/main">16B</a> </td>
+      <td rowspan="1"><a href="https://huggingface.co/inclusionAI/Ling-mini-2.0">Ling-mini-2.0</a></td>
+      <td> <a href="https://huggingface.co/inclusionAI/Ling-mini-2.0/tree/main">16B</a> </td>
       <td rowspan="2"><a href="../../../examples/mcore/ling_v2">ling_v2</a></td>
       <td> 4K </td>
       <th>Mcore</th>

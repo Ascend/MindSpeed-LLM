@@ -60,7 +60,7 @@ MindSpeed LLM：基于昇腾生态的大语言模型分布式训练框架，旨�
 - [Oct. 28, 2025]: 🌴 MindSpeed LLM发布v2.2.0分支，支持core_v0.12.1版本
 - [Oct. 16, 2025]: 🚀 Qwen3-30B支持DPO训练
 - [Oct. 14, 2025]: 🚀 **DeepSeek-V3**预训练已支持基于 **[MindSpore AI框架](./docs/mindspore/readme.md)** 运行
-- [Oct. 22, 2025]: 🚀 **Ling mini v2** 模型支持
+- [Oct. 22, 2025]: 🚀 **Ling mini v2** 模型支持, 暂不支持mtp
 - [Sep. 16, 2025]: 🚀 **Qwen3-Next** 模型支持 【Prototype】
 - [Aug. 23, 2025]: 🚀 大参数模型权重转换v2优化版本上线
 - [Jul. 28, 2025]: 🚀 **glm4.5-moe** 系列模型同步首发支持
