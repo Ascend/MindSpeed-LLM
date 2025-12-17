@@ -26,12 +26,14 @@ env_vars:
   # 使用vLLM的V1 engine API（v1接口），兼容性选项
   VLLM_USE_V1: '1'
   # 指定使用的vLLM版本号
-  VLLM_VERSION: '0.9.1'
+  VLLM_VERSION: '0.11.0'
   # 使能vLLM TOPK性能优化
   VLLM_ASCEND_ENABLE_TOPK_OPTIMIZE: "1"
   # vLLM aclop init mode: 0: default, normal init.
   VLLM_ASCEND_ACL_OP_INIT_MODE: '0'
-  # 指定使用 Level 2 级别的算子下发队列优化
+  # vLLM使能NZ: '0' 关闭
+  VLLM_ASCEND_ENABLE_NZ: '0'
+  # 指定使用 Level 2 级别的算子下发队列优化，若开启图模式，则应指定 Level 1 以下级别的算子下发队列优化
   TASK_QUEUE_ENABLE: "2"
   # 指定使能 CPU 绑核
   CPU_AFFINITY_CONF: '1'

@@ -412,7 +412,8 @@ def get_megatron_module():
     from megatron.training.training import setup_model_and_optimizer
     from megatron.core.enums import ModelType
     from megatron.core.distributed import finalize_model_grads
-    from mindspeed.utils import set_actual_seq_len, set_position_ids, get_actual_seq_len
+    from mindspeed.utils import set_position_ids
+    from mindspeed.core.context_parallel.get_batch_utils import set_actual_seq_len, get_actual_seq_len
     from megatron.core.optimizer.distrib_optimizer import DistributedOptimizer
     from megatron.core.optimizer.optimizer import Float16OptimizerWithFloat16Params
 
@@ -736,6 +737,7 @@ def main(config):
             runtime_env = yaml.safe_load(file)
         if algorithm == 'grpo' or algorithm == 'dapo':
             runtime_env["env_vars"]["IS_MULTIMODAL"] = str(rl_config.is_multimodal)
+            runtime_env["env_vars"]["HCCL_BUFFSIZE"] = str(rl_config.hccl_buffersize)
         logger.info(f"ray init with runtime_env: {runtime_env}")
         ray.init(runtime_env=runtime_env)
 

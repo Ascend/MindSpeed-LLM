@@ -553,6 +553,14 @@
         <td></td>
         <td></td>
     </tr>
+    <tr>
+        <td rowspan="2"><a href="pipeline/rlhf">RLHF</a></td>
+        <td>posttrain</td>
+        <td><a href="pipeline/rlhf/test_rlhf_qwen25_7b_tp2_pp2.sh">test_rlhf_qwen25_7b_tp2_pp2.sh</a></td>
+        <td></td>
+        <td></td>
+        <td></td>
+    </tr>
 </table>
 
 ### DT覆盖率看护

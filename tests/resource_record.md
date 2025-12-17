@@ -152,5 +152,14 @@
         <td>/</td>
         <td>/data/ci/cache/llama-3-8b-tp1pp8</td>
     </tr>
+        <tr>
+        <td>test_rlhf_qwen25_7b_tp2_pp2</td>
+        <td>/data/ci/models/qwen25/hf/Qwen2.5-7B</td>
+        <td>/data/ci/models/qwen25/mg/qwen2.5_mcore_tp2_pp2_layers28</td>
+        <td>/data/ci/datasets/origin/dapo-math-17k.parquet</td>
+        <td>/data/ci/datasets/processed/dapo-math-17k</td>
+        <td>/</td>
+        <td>/</td>
+    </tr>
 
 </table>
