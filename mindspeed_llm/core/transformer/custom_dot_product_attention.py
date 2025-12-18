@@ -169,6 +169,7 @@ class CustomDotProductAttentionImpl:
         key,
         value,
         attention_mask,
+        topk_indices=None,
         attn_mask_type=None,
         attention_bias=None,
         packed_seq_params=None,
@@ -179,6 +180,7 @@ class CustomDotProductAttentionImpl:
             key:   Tensor with same logical layout as query.
             value: Tensor with same logical layout as query.
             attention_mask: Precomputed mask (e.g., causal) or None to fetch global mask.
+            topk_indices: Optional top-k indices for sparse attention.
             attn_mask_type: Optional mask type override (unused here; parity with base API).
             attention_bias: Optional additive attention bias (unused here; PSE used for ALiBi).
             packed_seq_params: Optional varlen pack info for FA (handled via shape_order logic).
@@ -328,48 +330,78 @@ class CustomDotProductAttentionImpl:
                 )
             output = output.transpose(0, 1)
         else:
-            # No KV cache: fused attention over full sequences
-            if not args.mla_fa_divide_qk:
-                # Standard FA path
-                if actual_seq_len is not None and len(actual_seq_len) > ACTUAL_SEQ_LEN_THRESHOLD:
-                    actual_seq_len = recompute_valid_actual_seq_len(actual_seq_len, args.micro_batch_size)
-                    if len(actual_seq_len) > ACTUAL_SEQ_LEN_THRESHOLD:
-                        logger.warning(
-                            f"FlashAttention received unexpectedly long 'actual_seq_len' (length={len(actual_seq_len)}, threshold={ACTUAL_SEQ_LEN_THRESHOLD}). "
-                            f"This may cause the FA operator to terminate abnormally."
-                        )
-                output = torch_npu.npu_fusion_attention(
-                    query, key, value, n_head, args.shape_order,
-                    pse=pse,
-                    padding_mask=None,
-                    atten_mask=self.attention_mask,
-                    actual_seq_qlen=actual_seq_len,
-                    actual_seq_kvlen=actual_seq_len,
-                    scale=self.scale,
-                    pre_tockens=args.pre_tockens,
-                    next_tockens=args.next_tockens,
-                    keep_prob=1 - self.attention_dropout.p,
-                    inner_precise=0,
-                    sparse_mode=args.sparse_mode
-                )[0]
-            else:
-                # FA v2 with separate Q/K RoPE inputs
-                output = torch_npu.npu_fusion_attention_v2(
-                    query, key, value, n_head, args.shape_order,
-                    pse=pse,
-                    padding_mask=None,
-                    atten_mask=self.attention_mask,
+            if args.use_sparse_flash_attn:
+                if args.shape_order == 'SBH':
+                    query = rearrange(query, 's b (h d1) -> b s h d1', h=n_head, d1=query.shape[2]//n_head)
+                    key = rearrange(key, 's b d -> b s d').unsqueeze(2)
+                    value = rearrange(value, 's b d -> b s d').unsqueeze(2)
+                elif args.shape_order == "BNSD":
+                    query, key, value = [rearrange(x, 'b h s d -> b s h d') for x in [query, key, value]]
+
+                topk_indices = topk_indices.unsqueeze(2)
+                query_rope = rearrange(query_rope, 's b h d -> b s h d')
+                key_rope = rearrange(key_rope, 's b h d -> b s h d')
+                actual_seq_len = torch.tensor([query.shape[1]], dtype=torch.int32, device=query.device)
+
+                output = torch_npu.npu_sparse_flash_attention(
+                    query, key, value,
+                    sparse_indices=topk_indices.to(torch.int32),
+                    block_table=None,                # TODO: (B, S2/block_size)
+                    actual_seq_lengths_query=actual_seq_len,
+                    actual_seq_lengths_kv=actual_seq_len,
                     query_rope=query_rope,
                     key_rope=key_rope,
-                    actual_seq_qlen=actual_seq_len,
-                    actual_seq_kvlen=actual_seq_len,
-                    scale=self.scale,
-                    pre_tokens=args.pre_tockens,
-                    next_tokens=args.next_tockens,
-                    keep_prob=1 - self.attention_dropout.p,
-                    inner_precise=0,
-                    sparse_mode=args.sparse_mode
+                    scale_value=self.scale,
+                    sparse_block_size=1,
+                    layout_query='BSND',  
+                    layout_kv='BSND',     
+                    sparse_mode=3,      
+                    attention_mode=2,            # 0: GQA/MHA, 1: MLA-naive, 2: MLA-absorb
+                    return_softmax_lse=True,     # it must be True in training mode
                 )[0]
+            else:
+                # No KV cache: fused attention over full sequences
+                if not args.mla_fa_divide_qk:
+                    # Standard FA path
+                    if actual_seq_len is not None and len(actual_seq_len) > ACTUAL_SEQ_LEN_THRESHOLD:
+                        actual_seq_len = recompute_valid_actual_seq_len(actual_seq_len, args.micro_batch_size)
+                        if len(actual_seq_len) > ACTUAL_SEQ_LEN_THRESHOLD:
+                            logger.warning(
+                                f"FlashAttention received unexpectedly long 'actual_seq_len' (length={len(actual_seq_len)}, threshold={ACTUAL_SEQ_LEN_THRESHOLD}). "
+                                f"This may cause the FA operator to terminate abnormally."
+                            )
+                    output = torch_npu.npu_fusion_attention(
+                        query, key, value, n_head, args.shape_order,
+                        pse=pse,
+                        padding_mask=None,
+                        atten_mask=self.attention_mask,
+                        actual_seq_qlen=actual_seq_len,
+                        actual_seq_kvlen=actual_seq_len,
+                        scale=self.scale,
+                        pre_tockens=args.pre_tockens,
+                        next_tockens=args.next_tockens,
+                        keep_prob=1 - self.attention_dropout.p,
+                        inner_precise=0,
+                        sparse_mode=args.sparse_mode
+                    )[0]
+                else:
+                    # FA v2 with separate Q/K RoPE inputs
+                    output = torch_npu.npu_fusion_attention_v2(
+                        query, key, value, n_head, args.shape_order,
+                        pse=pse,
+                        padding_mask=None,
+                        atten_mask=self.attention_mask,
+                        query_rope=query_rope,
+                        key_rope=key_rope,
+                        actual_seq_qlen=actual_seq_len,
+                        actual_seq_kvlen=actual_seq_len,
+                        scale=self.scale,
+                        pre_tokens=args.pre_tockens,
+                        next_tokens=args.next_tockens,
+                        keep_prob=1 - self.attention_dropout.p,
+                        inner_precise=0,
+                        sparse_mode=args.sparse_mode
+                    )[0]
 
         # ---------------------------------------------------------------------
         # 9) Restore to canonical [S, B, H*Dh] layout expected by upper layers

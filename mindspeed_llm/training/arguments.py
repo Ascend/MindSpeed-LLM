@@ -1063,7 +1063,6 @@ def _validate_mla(args):
             if not args.moe_fb_overlap:
                 raise AssertionError('--mla-swap-core-attn-out can only be used with --moe-fb-overlap by now.')
 
-
 def _validate_yarn(args):
     if args.rope_scaling_type == "yarn":
         if args.rope_scaling_original_max_position_embeddings is None:

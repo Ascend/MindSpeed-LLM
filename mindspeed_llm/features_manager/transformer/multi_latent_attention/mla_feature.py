@@ -25,7 +25,11 @@ class MLAFeature(MindSpeedFeature):
                             help='swap core_attn_out only in mla.')
         group.add_argument('--mla-fa-divide-qk', action='store_true', default=False,
                             help='Flash attn support mla with seperate q and k.')
-
+        group.add_argument('--enable-mla-absorb', action='store_true', default=False,
+                            help='Enable MLA up-projection matrix absorption.')
+        group.add_argument('--use-sparse-flash-attn', action='store_true', default=False,
+                            help='Use sparse attention in multi-latent-attention.')
+                            
     def validate_args(self, args):
         if args.multi_latent_attention:
             if args.kv_lora_rank is None:

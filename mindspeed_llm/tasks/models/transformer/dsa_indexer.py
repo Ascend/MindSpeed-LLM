@@ -289,18 +289,22 @@ class DSAIndexer(MegatronModule):
 
         # ---------------------------------------------------------
         s *=  args.context_parallel_size
-        if mask is None:
-            mask = torch.where(torch.triu(torch.ones((b, s, s),
-                                                     dtype=x.dtype,
-                                                     device=x.device),
-                                          diagonal=1) == 1, float('-inf'), 0.0)
 
         if not args.use_fused_lightning_indexer:
             index_score = bf16_index(q.contiguous(), weights.unsqueeze(-1), k.contiguous())
+            if mask is None:
+                mask = torch.where(torch.triu(torch.ones((b, s, s),
+                                                        dtype=x.dtype,
+                                                        device=x.device),
+                                            diagonal=1) == 1, float('-inf'), 0.0)
             index_score += mask
 
             # Select top-k most relevant tokens for each query position
             topk_score, topk_indices = index_score.topk(min(self.index_topk, end_pos), dim=-1)
+            # Post-process topk_indices to enforce causal masking constraints
+            query_positions = torch.arange(s, device=topk_indices.device).unsqueeze(0).unsqueeze(-1)  
+            valid_positions = topk_indices <= query_positions  
+            topk_indices = torch.where(valid_positions, topk_indices, torch.full_like(topk_indices, -1))
         else:
             li_query = rearrange(q, 's b h d -> b s h d').to(torch.bfloat16)
             li_key = rearrange(k, 's b h d -> b s h d').to(torch.bfloat16)
@@ -322,14 +326,21 @@ class DSAIndexer(MegatronModule):
             topk_score = topk_score.squeeze(2)
 
         # Build a full attention mask where only top-k positions are unmasked (0), others are -inf
-        attention_mask = torch.full((b, s, s), float('-inf'), dtype=x.dtype, device=x.device).scatter_(-1, topk_indices, 0)
-        attention_mask += mask
+        if not args.use_sparse_flash_attn:
+            attention_mask = torch.full((b, s, s), float('-inf'), dtype=x.dtype, device=x.device).scatter_(-1, topk_indices, 0)
+            if mask is None:
+                mask = torch.where(torch.triu(torch.ones((b, s, s),
+                                                        dtype=x.dtype,
+                                                        device=x.device),
+                                            diagonal=1) == 1, float('-inf'), 0.0)
+            attention_mask += mask
 
-        # Convert to boolean mask if using FlashAttention
-        if getattr(args, 'use_flash_attn', False):
-            attention_mask = torch.isinf(attention_mask) & (attention_mask < 0).unsqueeze(1)
-            args.sparse_mode = 0
-
+            # Convert to boolean mask if using FlashAttention
+            if getattr(args, 'use_flash_attn', False):
+                attention_mask = torch.isinf(attention_mask) & (attention_mask < 0).unsqueeze(1)
+                args.sparse_mode = 0
+        else:
+            attention_mask = None
         return topk_score, topk_indices, attention_mask
 
 
