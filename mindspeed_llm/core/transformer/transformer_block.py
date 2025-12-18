@@ -255,6 +255,11 @@ def transformer_block_forward(
     with rng_context, outer_fp8_context:
         # Forward pass.
         if self.config.recompute_granularity == 'full' and self.training:
+            # te 版本 131 引入fix inner 采用fp8
+            kwargs = {}
+            if 'use_inner_fp8_context' in self._checkpointed_forward.__code__.co_varnames:
+                kwargs['use_inner_fp8_context'] = use_inner_fp8_context
+
             if global_args.share_kvstates:
                 hidden_states, key_value_states = self._checkpointed_forward(
                     hidden_states=hidden_states,
@@ -264,6 +269,7 @@ def transformer_block_forward(
                     context_mask=context_mask,
                     rotary_pos_emb=rotary_pos_emb,
                     packed_seq_params=packed_seq_params,
+                    **kwargs
                 )
             else:
                 hidden_states = self._checkpointed_forward(
@@ -274,6 +280,7 @@ def transformer_block_forward(
                     rotary_pos_emb=rotary_pos_emb,
                     attention_bias=None,
                     packed_seq_params=packed_seq_params,
+                    **kwargs
                 )
         else:
             for _, layer in enumerate(self.layers):

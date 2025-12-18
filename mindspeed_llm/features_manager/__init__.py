@@ -19,7 +19,6 @@ from mindspeed.features_manager import (
     ReuseFP32Param,
     RiPipeSchedulesAdvanceFeature,
     RiPipeSchedulesBubbleFeature,
-    TransformerEngineBasicFeature,
     UnalignedLinearFeature,
     UnalignedPipelineFeature,
     VirtualOptimizerFeature,
@@ -63,6 +62,7 @@ from mindspeed_llm.features_manager.megatron_basic.megatron_basic import Megatro
 from mindspeed_llm.features_manager.megatron_basic.model_basic import ModelBasicFeature
 from mindspeed_llm.features_manager.megatron_basic.requirements_basic import RequirementsBasicFeature
 from mindspeed_llm.features_manager.megatron_basic.training_basic import TrainingBasicFeature
+from mindspeed_llm.features_manager.megatron_basic.transformer_engine_basic import TransformerEngineBasicFeature
 from mindspeed_llm.features_manager.models.mamba import MambaModel
 from mindspeed_llm.features_manager.transformer.multi_latent_attention.dsa_indexer_feature import DSAIndexerFeature
 from mindspeed_llm.features_manager.moe.moe_router import MoERouter

@@ -427,11 +427,7 @@ def apply_seq_aux_loss(self, activation, logits, topk_idx):
 
 def topk_router_gating_func(self, input: torch.Tensor):
     _args = get_args()
-    router_dtype = input.dtype
-    if self.config.moe_router_dtype == 'fp32':
-        router_dtype = torch.float32
-    elif self.config.moe_router_dtype == 'fp64':
-        router_dtype = torch.float64
+
     if _args.router_gating_in_fp32:
         if not self.weight.requires_grad:
             # if weight is not requires_grad like lora finetune, can not autograd for weight in checkpoint_manager
@@ -447,7 +443,18 @@ def topk_router_gating_func(self, input: torch.Tensor):
             if logits.requires_grad:
                 logits.register_hook(self.fp32_checkpoint_manager.recompute)
     else:
-        logits = torch.nn.functional.linear(input.to(router_dtype), self.weight.to(router_dtype))
+        if self.config.moe_router_dtype == 'fp8':
+            from mindspeed.te.pytorch.fp8.recipes import matmul_fp8
+            logits = matmul_fp8(input, self.weight)
+        else:
+            if self.config.moe_router_dtype == 'fp32':
+                router_dtype = torch.float32
+            elif self.config.moe_router_dtype == 'fp64':
+                router_dtype = torch.float64
+            else:
+                router_dtype = input.dtype
+
+            logits = torch.nn.functional.linear(input.to(router_dtype), self.weight.to(router_dtype))
 
     return logits
 
