@@ -54,48 +54,13 @@ MindSpeed LLM：基于昇腾生态的大语言模型分布式训练框架，旨�
 
 
 
-MindSpeed LLM的依赖配套如下表
+MindSpeed LLM支持Atlas 800T A2等昇腾训练硬件形态，软件版本配套表如下：
 
-<table>
-  <tr>
-    <th>依赖软件</th>
-    <th>版本</th>
-  </tr>
-  <tr>
-    <td>昇腾NPU驱动</td>
-    <td rowspan="2">在研版本</td>
-  <tr>
-    <td>昇腾NPU固件</td>
-  </tr>
-  <tr>
-    <td>Toolkit（开发套件）</td>
-      <td rowspan="3">在研版本</td>
-  </tr>
-  <tr>
-    <td>Kernel（算子包）</td>
-  </tr>
-  <tr>
-    <td>NNAL（Ascend Transformer Boost加速库）</td>
-  </tr>
-  <tr>
-  </tr>
-  <tr>
-    <td>Python</td>
-    <td>3.10</td>
-  </tr>
-  <tr>
-    <td>PyTorch</td>
-    <td>2.7.1</td>
-  </tr>
-  <tr>
-    <td>torch_npu插件</td>
-    <td rowspan="2">在研版本</td>
-  </tr>
-  <tr>
-    <td>apex</td>
-  </tr>
-</table>
-注：由于master分支使用在研版本的驱动以及CANN包，因此master上的一些新特性老版本配套可能有不支持情况，要使用稳定版本，请切换到商发分支并下载对应依赖版本进行安装。
+| MindSpeed LLM版本 | MindSpeed版本      | Megatron版本 | PyTorch版本  | torch_npu版本 | CANN版本 | Python版本            |
+| ---------------- | ------------------ | ------------ | -----------  | ------------- | -------- | --------------------- |
+| master（主线）   | master             | core_v0.12.1  | 2.7.1       | 在研版本       | 在研版本  | Python3.10            |
+| 2.2.0（商用）    | 2.2.0_core_r0.12.1 | core_v0.12.1  | 2.7.1       | 7.2.0         | 8.3.RC1  | Python3.10            |
+| 2.1.0（商用）    | 2.1.0_core_r0.8.0  | core_r0.8.0   | 2.1.0, 2.6.0 | 7.1.0         | 8.2.RC1  | Python3.8, Python3.10 |
 
 # 安装
 
