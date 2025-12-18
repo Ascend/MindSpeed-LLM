@@ -22,7 +22,7 @@ class FSDP2Feature(MindSpeedFeature):
         group = parser.add_argument_group(title=self.feature_name)
         group.add_argument('--init-from-hf-path', type=str, default=None,
                            help='Enable loading checkpoint not strictly.')
-        group.add_argument('--model-id', type=str, default=None, choices=["gpt_oss", "qwen3", "qwen3_moe"],
+        group.add_argument('--model-id', type=str, default=None, choices=["gpt_oss", "qwen3", "qwen3_moe", "qwen3_next"],
                            help='Enable loading checkpoint not strictly.')
         group.add_argument('--loss-compute-mode', type=str, default='default', choices=['default', 'chunk'],
                            help='calculate mode of CE(CrossEntropy) loss.')

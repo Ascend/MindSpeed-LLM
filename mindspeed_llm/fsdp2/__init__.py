@@ -4,6 +4,7 @@ from typing import Type, Any, Dict, Optional
 from mindspeed_llm.fsdp2.models.gpt_oss.gpt_oss import GptOssForCausalLM
 from mindspeed_llm.fsdp2.models.qwen3.qwen3 import Qwen3ForCausalLM
 from mindspeed_llm.fsdp2.models.qwen3.qwen3_moe import Qwen3MoEForCausalLM
+from mindspeed_llm.fsdp2.models.qwen3_next.qwen3_next import Qwen3NextForCausalLM
 
 
 class ModelRegistry:
@@ -17,6 +18,7 @@ class ModelRegistry:
         "gpt_oss": GptOssForCausalLM,
         "qwen3": Qwen3ForCausalLM,
         "qwen3_moe": Qwen3MoEForCausalLM,  # Can be easily added here in the future
+        "qwen3_next": Qwen3NextForCausalLM,
     }
 
     @classmethod
