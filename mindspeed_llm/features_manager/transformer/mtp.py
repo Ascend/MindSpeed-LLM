@@ -49,8 +49,21 @@ class MultiTokenPredictionFeature(MindSpeedFeature):
         patch_manager.register_patch('megatron.core.transformer.multi_token_prediction.MultiTokenPredictionBlock.forward',
                                       mtp_block_forward)
 
+    def pre_validate_args(self, args):
+        self.origin_mtp_num_layers = None
+        if args.mtp_num_layers and args.context_parallel_size > 1:
+            self.origin_mtp_num_layers = args.mtp_num_layers
+            args.mtp_num_layers = None
+
     def validate_args(self, args):
         LING_MINI_HIDDEN_SIZE = 2048
         if hasattr(args, 'spec') and args.spec == ["mindspeed_llm.tasks.models.spec.bailing_spec","layer_spec"]:
             if args.mtp_num_layers is not None and args.mtp_num_layers >= 1 and args.hidden_size == LING_MINI_HIDDEN_SIZE:
-                raise AssertionError('ling-mini-2.0 is not support mtp_num_layers.')
+                raise AssertionError('ling-mini-2.0 is not supported with mtp_num_layers.')
+
+        if self.origin_mtp_num_layers and args.context_parallel_size > 1 and args.reset_attention_mask:
+            raise AssertionError('Multi-Token Prediction(MTP) is not supported with Context Parallelism(CP) in pack scene.')
+
+    def post_validate_args(self, args):
+        if self.origin_mtp_num_layers:
+            args.mtp_num_layers = self.origin_mtp_num_layers
