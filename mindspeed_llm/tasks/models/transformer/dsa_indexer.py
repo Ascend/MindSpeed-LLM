@@ -241,8 +241,6 @@ class DSAIndexer(MegatronModule):
 
         # Apply rotary positional embedding to the RoPE part of the query
         q_pe, q_nope = torch.split(q, [self.rope_head_dim, self.head_dim - self.rope_head_dim], dim=-1)
-        s, b, n, d = q_pe.shape
-        q_pe = q_pe.view(s, b, n, d // 2, 2).transpose(4, 3).reshape(s, b, n, d)
         q_pe = apply_rotary_pos_emb(q_pe, rotary_q_pos_emb, config=self.config)
         q = torch.cat([q_pe, q_nope], dim=-1)
 
@@ -254,7 +252,6 @@ class DSAIndexer(MegatronModule):
         # Apply rotary positional embedding to the RoPE part of the key
         k_pe = k_pe.unsqueeze(2)
         s, b, n, d = k_pe.shape
-        k_pe = k_pe.view(s, b, n, d // 2, 2).transpose(4, 3).reshape(s, b, n, d)
         k_pe = apply_rotary_pos_emb(k_pe, rotary_k_pos_emb, config=self.config).view(s, b, d)
         k = torch.cat([k_pe, k_nope], dim=-1).unsqueeze(2)
         
