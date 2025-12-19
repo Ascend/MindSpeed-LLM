@@ -49,7 +49,7 @@ GPT_ARGS="
     --group-query-attention \
     --num-query-groups 2 \
     --tokenizer-type Llama2Tokenizer \
-    --tokenizer-model ${TOKENIZER_MODEL} \
+    --tokenizer-model ${TOKENIZER_PATH} \
     --seq-length ${SEQ_LEN} \
     --max-position-embeddings 32768 \
     --micro-batch-size ${MBS} \
