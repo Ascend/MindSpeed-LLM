@@ -19,7 +19,7 @@ MindSpeed LLM的依赖配套如下表
       <td rowspan="3">在研版本</td>
   </tr>
   <tr>
-    <td>CANN Kernel（算子包）</td>
+    <td>CANN Ops（算子包）</td>
   </tr>
   <tr>
     <td>NNAL（Ascend Transformer Boost加速库）</td>
