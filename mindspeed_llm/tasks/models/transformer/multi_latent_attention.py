@@ -696,9 +696,7 @@ class CustomMLASelfAttention(SelfAttention):
                     self.config.num_layers,
                     avg_group=parallel_state.get_tensor_and_context_parallel_group(),
                 )
-                core_attn_out_reshaped = core_attn_out.permute(1, 0, 2, 3).contiguous()  # [s, b, h, d]
-                core_attn_out_reshaped = core_attn_out.view(q_len, bsz, h * self.kv_lora_rank) 
-                core_attn_out_reshaped = DSAIndexerLossAutoScaler.apply(core_attn_out_reshaped, loss)
+                core_attn_out = DSAIndexerLossAutoScaler.apply(core_attn_out, loss)
 
             core_attn_out = core_attn_out.view(q_len, bsz, h, self.kv_lora_rank)  # [s, b, h, kv_rank]
             # absorb W_UV into W_O (i.e. linear_proj)
