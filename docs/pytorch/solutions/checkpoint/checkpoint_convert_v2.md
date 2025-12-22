@@ -231,7 +231,7 @@ bash examples/mcore/qwen3_moe/ckpt_convert_qwen3_moe_235b_hf2mcore.sh
 
 **注意**：
 
-1、转到Huggingface权重**无需设置--target-tensor-parallel-size 、--target-pipeline-parallel-size、--target-expert-parallel-size、--expert-tensor-parallel-size、--num-layers-per-virtual-pipeline-stage** ，因为Huggingface权重不涉及并行切分。
+1、转到Huggingface权重**无需设置--target-tensor-parallel-size 、--target-pipeline-parallel-size、--target-expert-parallel-size、--num-layers-per-virtual-pipeline-stage** ，因为Huggingface权重不涉及并行切分。
 
 2、转换成功后的权重保存目录下仅包含模型权重文件，不会生成config.json模型配置文件和tokenizer.model、vocab.json等词表文件。
 
@@ -289,6 +289,18 @@ MTP层的层数。默认值为 0，支持减层时配置MTP层，不能大于原
 如需要配置MTP层，可通过命令行设置，如 `--mtp-num-layers 1 `。
 
 如果需要配合训练脚本进行减层调试，请注意此参数需要**和训练脚本保持一致**。
+
+
+## 使用约束
+
+1、权重转换v2当前暂不支持开启etp（--expert-tensor-parallel-size）的Megatron-Mcore权重转换到Huggingface功能；
+
+2、权重转换v2当前暂不支持LoRA/QLoRA权重转换到Huggingface功能，包括：LoRA/QLoRA权重与base权重合并转到Huggingface格式、LoRA/QLoRA权重单独转为Huggingface格式；
+
+3、权重转换v2当前暂不支持从Huggingface到Megatron-Mcore的QLoRA量化权重转换；
+
+4、权重转换v1与权重转换v2为两套不同的方案，请不要混用，如使用权重转换v2做hf-mg，再使用v1做mg-hf。
+
 
 ## 社区贡献
 
