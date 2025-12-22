@@ -46,6 +46,10 @@ class Hf2MgConvert(Convert):
         else:
             self.num_layers = self.num_layers + len(eval(self.noop_layers))
 
+        if self.schedules_method == 'dualpipev':
+            self.vpp_size = 2
+            self.num_layers_per_virtual_pipeline_stage = self.num_layers // self.pipeline_model_parallel_size // self.vpp_size
+
         if self.num_layers_per_virtual_pipeline_stage is None:
             self.pprank_layer_idxs = defaultdict()
             self.get_pprank_hf_layeridxs()
