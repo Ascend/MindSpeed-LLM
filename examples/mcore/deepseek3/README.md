@@ -112,7 +112,7 @@ bash examples/mcore/deepseek3/ckpt_convert_deepseek3_merge_lora2hf.sh
     <tr>
       <td>--moe-grouped-gemm</td>
       <td>当每个专家组有多个专家时，可以使用Grouped GEMM功能来提高利用率和性能。
-注意，QLoRA和LoRA权重转换不支持该参数。</td>
+注意，不能和--save-lora-to-hf同时使用，即开启gemm后，不支持仅将单独的lora权重转为huggingface格式。</td>
       <td>✅</td>
     </tr>
     <tr>
