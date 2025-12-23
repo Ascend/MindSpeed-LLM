@@ -10,12 +10,9 @@ from transformers.utils import can_return_tuple, TransformersKwargs
 from transformers.processing_utils import Unpack
 from transformers.modeling_outputs import MoeCausalLMOutputWithPast, MoeModelOutputWithPast
 from transformers.models.qwen3_next.modeling_qwen3_next import Qwen3NextDynamicCache
-
-from mindspeed.patch_utils import MindSpeedPatchesManager as pm
-
 from mindspeed_llm.fsdp2.core.fully_shard.fsdp2_sharding import FSDP2ShardingMixin
 from mindspeed_llm.fsdp2.models.common.modules import LMHead
-
+from mindspeed_llm.fsdp2.models.qwen3_next.modeling_qwen3_next import Qwen3NextModel
 
 
 class Qwen3NextFSDP2Mixin(FSDP2ShardingMixin):
@@ -33,7 +30,7 @@ class Qwen3NextForCausalLM(transformers.Qwen3NextPreTrainedModel, Qwen3NextFSDP2
     def __init__(self, config):
         super().__init__(config)
         self.config = config
-        self.model = transformers.Qwen3NextModel(config)
+        self.model = Qwen3NextModel(config)
         self.vocab_size = config.vocab_size
         self.lm_head = LMHead(config.hidden_size, config.vocab_size, bias=False)
         self.router_aux_loss_coef = config.router_aux_loss_coef
