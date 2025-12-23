@@ -50,8 +50,6 @@ from transformers.utils.import_utils import (
 )
 from transformers.models.qwen3_next.configuration_qwen3_next import Qwen3NextConfig
 
-from mindspeed_llm.tasks.models.transformer.chunk_gated_delta_rule import chunk_gated_delta_rule
-from megatron.training import get_args
 
 
 if is_causal_conv1d_available():
@@ -422,7 +420,7 @@ class Qwen3NextAttention(nn.Module):
             key_states,
             value_states,
             attention_mask,
-            input_layout="BNSD"
+            input_layout="BNSD",
             dropout=0.0 if not self.training else self.attention_dropout,
             scaling=self.scaling,
             **kwargs,
@@ -654,9 +652,10 @@ class Qwen3NextGatedDeltaNet(nn.Module):
 
         self.causal_conv1d_fn = causal_conv1d_fn
         self.causal_conv1d_update = causal_conv1d_update or torch_causal_conv1d_update
-        
+        from megatron.training import get_args
         args = get_args()
         if args.use_triton_gdn:
+            from mindspeed_llm.tasks.models.transformer.chunk_gated_delta_rule import chunk_gated_delta_rule
             self.chunk_gated_delta_rule = chunk_gated_delta_rule
         else:
             self.chunk_gated_delta_rule = torch_chunk_gated_delta_rule
@@ -778,6 +777,7 @@ class Qwen3NextGatedDeltaNet(nn.Module):
             key = key.repeat_interleave(self.num_v_heads // self.num_k_heads, dim=2)
 
         if not use_precomputed_states:
+            from megatron.training import get_args
             args = get_args()
             core_attn_out, last_recurrent_state = self.chunk_gated_delta_rule(
                 query,
