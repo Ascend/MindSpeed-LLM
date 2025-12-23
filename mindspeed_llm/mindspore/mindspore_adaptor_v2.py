@@ -61,7 +61,6 @@ def _patch_third_party_libraries():
     from mindspeed.mindspore.third_party.transformers.modeling_utils import (
         load_state_dict, _load_state_dict_into_meta_model, safe_open, get_parameter_dtype, get_parameter_or_buffer
     )
-    from mindspeed.mindspore.third_party.transformers.integrations.deepspeed import is_deepspeed_available
     MindSporeAdaptation.register_patch(
         'transformers.configuration_utils.PretrainedConfig.dict_torch_dtype_to_str', dict_torch_dtype_to_str)
     MindSporeAdaptation.register_patch('transformers.modeling_utils.load_state_dict', load_state_dict)
@@ -69,8 +68,6 @@ def _patch_third_party_libraries():
         'transformers.modeling_utils._load_state_dict_into_meta_model', _load_state_dict_into_meta_model)
     MindSporeAdaptation.register_patch('transformers.modeling_utils.safe_open', safe_open)
     MindSporeAdaptation.register_patch('transformers.modeling_utils.get_parameter_dtype', get_parameter_dtype)
-    MindSporeAdaptation.register_patch('transformers.integrations.deepspeed.is_deepspeed_available',
-                                       is_deepspeed_available)
     MindSporeAdaptation.register_patch('transformers.modeling_utils.PreTrainedModel.get_parameter_or_buffer',
                                         get_parameter_or_buffer)
 
@@ -297,32 +294,6 @@ def mindspore_post_validate_args(args):
 
 def mindspore_pre_register_patches(manager, args):
     pass
-
-
-def patch_moe_zerc():
-    from mindspeed.mindspore.core.transformer.moe.moe_zerc.fwdbwd import \
-        transformer_layer_forward_moe_backward_dense_overlaping_zerc, \
-        transformer_layer_forward_moe_backward_moe_overlaping_zerc
-    MindSporeAdaptation.register_patch(
-        'mindspeed.core.pipeline_parallel.fb_overlap.overlap_funcs.fwdbwd.transformer_layer_forward_moe_backward_dense_overlaping',
-        transformer_layer_forward_moe_backward_dense_overlaping_zerc)
-    MindSporeAdaptation.register_patch(
-        'mindspeed.core.pipeline_parallel.fb_overlap.overlap_funcs.fwdbwd.transformer_layer_forward_moe_backward_moe_overlaping',
-        transformer_layer_forward_moe_backward_moe_overlaping_zerc)
-    from mindspeed.mindspore.core.transformer.moe.moe_zerc.token_dispatcher import zerc_alltoall_token_perm1, \
-        zerc_alltoall_token_perm2, zerc_alltoall_token_unperm1, zerc_alltoall_token_unperm2
-    MindSporeAdaptation.register_patch(
-        'mindspeed.core.pipeline_parallel.fb_overlap.modules.token_dispatcher.alltoall_token_perm1',
-        zerc_alltoall_token_perm1)
-    MindSporeAdaptation.register_patch(
-        'mindspeed.core.pipeline_parallel.fb_overlap.modules.token_dispatcher.alltoall_token_perm2',
-        zerc_alltoall_token_perm2)
-    MindSporeAdaptation.register_patch(
-        'mindspeed.core.pipeline_parallel.fb_overlap.modules.token_dispatcher.alltoall_token_unperm1',
-        zerc_alltoall_token_unperm1)
-    MindSporeAdaptation.register_patch(
-        'mindspeed.core.pipeline_parallel.fb_overlap.modules.token_dispatcher.alltoall_token_unperm2',
-        zerc_alltoall_token_unperm2)
 
 
 def patch_swap_optimizer():
