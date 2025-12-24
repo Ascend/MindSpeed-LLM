@@ -81,6 +81,10 @@ class Hf2MgConvert(Convert):
                 raise ValueError('number of layers should be divisible by the pipeline parallel size')
 
             if self.num_layers_per_virtual_pipeline_stage is not None:
+                pp_stage_layers = self.num_layers // self.pipeline_model_parallel_size
+                if self.num_layers_per_virtual_pipeline_stage >= pp_stage_layers:
+                    raise ValueError("Num of layers in vpp stage should be less than pp stage, "
+                                    "please turn down args.num_layers_per_virtual_pipeline_stage.")     
                 if self.num_layers % self.pipeline_model_parallel_size % self.num_layers_per_virtual_pipeline_stage != 0:
                     raise ValueError('number of pp_stage should bu divisible by the vpp_stage')
         else:
