@@ -98,3 +98,6 @@ class LoraFeature(MindSpeedFeature):
 
         if args.num_experts and (has_valid_lora_target and args.moe_token_dispatcher_type != "alltoall_seq"):
             raise AssertionError('Lora and Qlora in the moe only enable the alltoall_seq.')
+
+        if has_valid_lora_target and args.moe_tp_extend_ep:
+            raise AssertionError('Lora and Qlora are not supported with moe-tp-extend-ep.')
