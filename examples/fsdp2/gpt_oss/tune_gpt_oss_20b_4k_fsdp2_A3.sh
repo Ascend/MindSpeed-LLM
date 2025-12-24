@@ -43,6 +43,7 @@ FSDP2_ARGS="
 "
 
 OPTIMIZE_ARGS="
+    --use-flash-attn \
     --use-fused-rotary-pos-emb \
     --moe-grouped-gemm \
     --use-fused-rmsnorm \
@@ -84,7 +85,6 @@ GPT_ARGS="
     --interleave-sliding-window 128 \
     --kv-channels 64 \
     --position-embedding-type rope \
-    --spec mindspeed_llm.tasks.models.spec.gpt_oss_spec layer_spec \
     --tokenizer-name-or-path ${TOKENIZER_PATH} \
     --max-position-embeddings ${SEQ_LENGTH} \
     --num-layers 24 \
@@ -126,7 +126,8 @@ TUNE_ARGS="
     --finetune \
     --stage sft \
     --is-instruction-dataset \
-    --no-pad-to-seq-lengths
+    --no-pad-to-seq-lengths \
+    --no-shuffle \
 "
 
 PREPROCESS_ARGS="
@@ -147,6 +148,6 @@ torchrun $DISTRIBUTED_ARGS train_fsdp2.py \
     $OUTPUT_ARGS \
     $TUNE_ARGS \
     $PREPROCESS_ARGS \
-   --save ${CKPT_SAVE_DIR} \
+    --save ${CKPT_SAVE_DIR} \
     --distributed-backend nccl \
     | tee logs/tune_gpt_oss_20b.log

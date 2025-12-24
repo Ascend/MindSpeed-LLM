@@ -262,7 +262,7 @@ class GptOssTopKRouter(nn.Module):
             router_scores = router_top_value
         else:
             router_scores = torch.zeros_like(router_logits).scatter_(1, router_indices, router_top_value)
-        
+
         return router_scores, router_indices
 
 
@@ -317,7 +317,7 @@ class GptOssRotaryEmbedding(nn.Module):
                 emb = torch.cat((freqs, freqs), dim=-1)
             else:
                 emb = freqs
-            
+
             cos = emb.cos() * self.attention_scaling
             sin = emb.sin() * self.attention_scaling
 
@@ -361,6 +361,51 @@ def apply_rotary_pos_emb(q, k, cos, sin, position_ids=None, unsqueeze_dim=1):
     return q_embed, k_embed
 
 
+def flash_attention_forward(
+        module: nn.Module,
+        query: torch.Tensor,
+        key: torch.Tensor,
+        value: torch.Tensor,
+        attention_mask: Optional[torch.Tensor],
+        scaling: float,
+        dropout: float = 0.0,
+        sliding_window: int = None,
+        **kwargs,
+):
+    args = get_args()
+    pre_tokens = args.pre_tockens
+    next_tokens = args.next_tockens
+    bsz, n_head, seq_length, head_dim = (
+        query.shape[0], query.shape[1], query.shape[2], query.shape[3])
+
+    sparse_mode = 4
+    shape_order = "BNSD"
+
+    if sliding_window:
+        pre_tokens = sliding_window
+
+    # When sparse_mode is 2 or 4, a compressed mask of [2048, 2048] should be passed.
+    new_mask = torch.ones((2048, 2048), device=torch.cuda.current_device(), dtype=torch.bool)
+    atten_mask = torch.triu(new_mask, diagonal=1)
+
+    attn_output = torch_npu.npu_fusion_attention_v2(
+        query, key, value,
+        n_head,
+        shape_order,
+        pse=None,
+        sparse_mode=sparse_mode,
+        sink=module.sinks.float(),
+        atten_mask=atten_mask,
+        scale=scaling,
+        pre_tokens=pre_tokens,
+        next_tokens=next_tokens,
+        keep_prob=1 - dropout,
+    )[0]
+
+    attn_output = attn_output.transpose(1, 2).contiguous()
+    return attn_output, None
+
+
 def eager_attention_forward(
         module: nn.Module,
         query: torch.Tensor,
@@ -391,6 +436,7 @@ def eager_attention_forward(
     attn_output = torch.matmul(attn_weights, value_states)
     attn_output = attn_output.transpose(1, 2).contiguous()
     return attn_output, attn_weights
+
 
 class GptOssAttention(nn.Module):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
@@ -448,18 +494,33 @@ class GptOssAttention(nn.Module):
         if self.config._attn_implementation != "eager":
             attention_interface = ALL_ATTENTION_FUNCTIONS[self.config._attn_implementation]
 
-        attn_output, attn_weights = attention_interface(
-            self,
-            query_states,
-            key_states,
-            value_states,
-            attention_mask,
-            dropout=0.0 if not self.training else self.attention_dropout,
-            scaling=self.scaling,
-            sliding_window=self.sliding_window,
-            s_aux=self.sinks,  # diff with Llama
-            **kwargs,
-        )
+        args = get_args()
+        if args.use_flash_attn:
+            attn_output, attn_weights = flash_attention_forward(
+                self,
+                query_states,
+                key_states,
+                value_states,
+                attention_mask,
+                dropout=0.0 if not self.training else self.attention_dropout,
+                scaling=self.scaling,
+                sliding_window=self.sliding_window,
+                s_aux=self.sinks,
+                **kwargs,
+            )
+        else:
+            attn_output, attn_weights = attention_interface(
+                self,
+                query_states,
+                key_states,
+                value_states,
+                attention_mask,
+                dropout=0.0 if not self.training else self.attention_dropout,
+                scaling=self.scaling,
+                sliding_window=self.sliding_window,
+                s_aux=self.sinks,  # diff with Llama
+                **kwargs,
+            )
         attn_output = attn_output.reshape(*input_shape, -1).contiguous()
         attn_output = self.o_proj(attn_output)
         return attn_output, attn_weights
@@ -638,6 +699,7 @@ class GptOssModel(GptOssPreTrainedModel):
             last_hidden_state=hidden_states,
             past_key_values=past_key_values,
         )
+
 
 def load_balancing_loss_func(
         gate_logits: Union[torch.Tensor, tuple[torch.Tensor], None],
