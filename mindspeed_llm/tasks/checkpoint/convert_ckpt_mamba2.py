@@ -15,9 +15,8 @@ logger.getLogger().setLevel(logger.INFO)
 class MambaConverter:
     def __init__(self, args):
         self.args = args
-        self.args.mamba_d_inner = self.args.mamba_d_model * 2
+        self.args.mamba_d_inner = self.args.hidden_size * 2
         self.args.mamba2_n_heads = self.args.mamba_d_inner // self.args.mamba_head_dim
-        self._valid_parameter()
         self.tp_split_dim = {
             'word_embeddings.weight': 0,
             'norm.weight': -1,
@@ -41,6 +40,16 @@ class MambaConverter:
             'self_attention.linear_qkv.layer_norm_weight': -1,
             'self_attention.linear_qkv.weight': 0,
         }
+
+        if getattr(self.args, "enable_hf2mg_convert", False):
+                self.args.target_tensor_parallel_size = self.args.tensor_model_parallel_size
+                self.args.target_pipeline_parallel_size = self.args.pipeline_model_parallel_size
+                self.args.load_model_type = 'hf'
+                self.args.save_model_type = 'mg'
+                self.args.load_dir = self.args.load
+                self.args.save_dir = self.args.mg_cache_dir
+        
+        self._valid_parameter()
         
     def get_split_dim(self, tensor_name):
         if 'norm.weight' in tensor_name:
@@ -54,7 +63,7 @@ class MambaConverter:
         raise Exception(f"Unknown tensor name {tensor_name}")
 
     def _valid_parameter(self):
-        if self.args.mamba_n_groups % self.args.target_tensor_parallel_size != 0:
+        if self.args.mamba_num_groups % self.args.target_tensor_parallel_size != 0:
             raise ValueError("target_tensor_parallel_size must can divide n_groups. Please adjust values.")
 
     @staticmethod
@@ -95,7 +104,10 @@ class MambaConverter:
         return model_dict
 
     @staticmethod
-    def load_config_and_get_n_layer(directory_path):
+    def load_config_and_get_n_layer(directory_path, n_layers):
+        if n_layers is not None:
+            return n_layers
+
         config_file_path = os.path.join(directory_path, "config.json")
 
         if not os.path.exists(config_file_path):
@@ -161,8 +173,8 @@ class MambaConverter:
             for tensor in tensors:
                 x, z, B, C, dt = torch.split(tensor, [params.mamba_d_inner // tp_size,
                                                     params.mamba_d_inner // tp_size,
-                                                    (params.mamba_n_groups // tp_size) * self.args.mamba_d_state,
-                                                    (params.mamba_n_groups // tp_size) * self.args.mamba_d_state,
+                                                    (params.mamba_num_groups // tp_size) * self.args.mamba_state_dim,
+                                                    (params.mamba_num_groups // tp_size) * self.args.mamba_state_dim,
                                                     params.mamba2_n_heads // tp_size], dim=dim)
                 xs.append(x)
                 zs.append(z)
@@ -171,8 +183,8 @@ class MambaConverter:
                 dts.append(dt)
 
             for tensor_index, (B_tensor, C_tensor) in enumerate(zip(Bs, Cs)):
-                Bs[tensor_index] = torch.reshape(B_tensor, (-1, params.mamba_d_state, B_tensor.shape[-1]))
-                Cs[tensor_index] = torch.reshape(C_tensor, (-1, params.mamba_d_state, C_tensor.shape[-1]))
+                Bs[tensor_index] = torch.reshape(B_tensor, (-1, params.mamba_state_dim, B_tensor.shape[-1]))
+                Cs[tensor_index] = torch.reshape(C_tensor, (-1, params.mamba_state_dim, C_tensor.shape[-1]))
 
             B = torch.cat(Bs, dim=dim)
             C = torch.cat(Cs, dim=dim)
@@ -188,19 +200,19 @@ class MambaConverter:
             Cs = []
             for tensor in tensors:
                 x, B, C = torch.split(tensor, [params.mamba_d_inner // tp_size,
-                                            (params.mamba_n_groups // tp_size) * params.mamba_d_state,
-                                            (params.mamba_n_groups // tp_size) * params.mamba_d_state], dim=dim)
+                                            (params.mamba_num_groups // tp_size) * params.mamba_state_dim,
+                                            (params.mamba_num_groups // tp_size) * params.mamba_state_dim], dim=dim)
                 xs.append(x)
                 Bs.append(B)
                 Cs.append(C)
 
             for tensor_index, (B_tensor, C_tensor) in enumerate(zip(Bs, Cs)):
                 if 'weight' in key:
-                    Bs[tensor_index] = torch.reshape(B_tensor, (-1, params.mamba_d_state, B_tensor.shape[-2], B_tensor.shape[-1]))
-                    Cs[tensor_index] = torch.reshape(C_tensor, (-1, params.mamba_d_state, C_tensor.shape[-2], C_tensor.shape[-1]))
+                    Bs[tensor_index] = torch.reshape(B_tensor, (-1, params.mamba_state_dim, B_tensor.shape[-2], B_tensor.shape[-1]))
+                    Cs[tensor_index] = torch.reshape(C_tensor, (-1, params.mamba_state_dim, C_tensor.shape[-2], C_tensor.shape[-1]))
                 elif 'bias' in key:
-                    Bs[tensor_index] = torch.reshape(B_tensor, (-1, params.mamba_d_state))
-                    Cs[tensor_index] = torch.reshape(C_tensor, (-1, params.mamba_d_state))
+                    Bs[tensor_index] = torch.reshape(B_tensor, (-1, params.mamba_state_dim))
+                    Cs[tensor_index] = torch.reshape(C_tensor, (-1, params.mamba_state_dim))
                 else:
                     raise Exception("Unknown key")
             B = torch.cat(Bs, dim=dim)
@@ -219,11 +231,11 @@ class MambaConverter:
 
         if 'mixer.in_proj.weight' in key:
             x, z, B, C, dt = torch.split(tensor, [params.mamba_d_inner, params.mamba_d_inner,
-                                                        params.mamba_n_groups * params.mamba_d_state,
-                                                        params.mamba_n_groups * params.mamba_d_state,
+                                                        params.mamba_num_groups * params.mamba_state_dim,
+                                                        params.mamba_num_groups * params.mamba_state_dim,
                                                         params.mamba2_n_heads], dim=dim)
-            B = torch.reshape(B, (-1, params.mamba_d_state, B.shape[-1]))
-            C = torch.reshape(C, (-1, params.mamba_d_state, C.shape[-1]))
+            B = torch.reshape(B, (-1, params.mamba_state_dim, B.shape[-1]))
+            C = torch.reshape(C, (-1, params.mamba_state_dim, C.shape[-1]))
 
             B_sliced = torch.chunk(B, tp_size, dim=dim)
             C_sliced = torch.chunk(C, tp_size, dim=dim)
@@ -237,14 +249,14 @@ class MambaConverter:
 
         elif 'mixer.conv1d' in key:
             x, B, C = torch.split(tensor, [params.mamba_d_inner,
-                                                params.mamba_n_groups * params.mamba_d_state,
-                                                params.mamba_n_groups * params.mamba_d_state], dim=dim)
+                                                params.mamba_num_groups * params.mamba_state_dim,
+                                                params.mamba_num_groups * params.mamba_state_dim], dim=dim)
             if 'weight' in key:
-                B = torch.reshape(B, (-1, params.mamba_d_state, B.shape[-2], B.shape[-1]))
-                C = torch.reshape(C, (-1, params.mamba_d_state, C.shape[-2], C.shape[-1]))
+                B = torch.reshape(B, (-1, params.mamba_state_dim, B.shape[-2], B.shape[-1]))
+                C = torch.reshape(C, (-1, params.mamba_state_dim, C.shape[-2], C.shape[-1]))
             elif 'bias' in key:
-                B = torch.reshape(B, (-1, params.mamba_d_state))
-                C = torch.reshape(C, (-1, params.mamba_d_state))
+                B = torch.reshape(B, (-1, params.mamba_state_dim))
+                C = torch.reshape(C, (-1, params.mamba_state_dim))
             else:
                 raise Exception("Unknown key")
 
@@ -542,7 +554,7 @@ class MambaConverter:
 
         hf_model = self.load_hf_files_to_dict(args.load_dir)
         hf_model_new = self.modify_keys_hf2mg(hf_model)
-        args.num_layers = self.load_config_and_get_n_layer(args.load_dir)
+        args.num_layers = self.load_config_and_get_n_layer(args.load_dir, args.num_layers)
 
         split_models = self.split_model_by_pp_tp(hf_model_new, args)
         self.save_split_models(split_models, hf_model, args, out_iteration=1)

@@ -37,6 +37,7 @@ from megatron.training.checkpointing import find_checkpoint_rank_0
 from mindspeed_llm.tasks.posttrain.lora.utils import is_enable_lora, merge_dicts, modify_keys_with_dict, filter_lora_keys
 from mindspeed_llm.tasks.posttrain.utils import load_checkpoint_loosely
 from mindspeed_llm.tasks.checkpoint.convert_hf2mg import Hf2MgConvert
+from mindspeed_llm.tasks.checkpoint.convert_ckpt_mamba2 import MambaConverter
 try:
     from modelopt.torch.opt.plugins import (
         save_modelopt_state,
@@ -318,7 +319,10 @@ def _convert_weights_if_needed(args, shared: bool):
         if dist.get_rank() == 0:
             logger.info("[Convert] Detected unconverted weights, starting conversion process...")
             start = time.time()
-            converter = Hf2MgConvert(args)
+            if args.model_type_hf == 'mamba2':
+                converter = MambaConverter(args)
+            else:
+                converter = Hf2MgConvert(args)
             converter.run()
             logger.info(f"[Convert] Weight conversion completed, time elapsed: {time.time() - start:.2f}s")
         dist.barrier()
@@ -332,7 +336,10 @@ def _convert_weights_if_needed(args, shared: bool):
     if local_rank == 0:
         logger.info("[Convert] Detected non-shared storage, starting conversion on this node...")
         start = time.time()
-        converter = Hf2MgConvert(args)
+        if args.model_type_hf == 'mamba2':
+            converter = MambaConverter(args)
+        else:
+            converter = Hf2MgConvert(args)
         converter.run()
         logger.info(f"[Convert] Node conversion completed, time elapsed: {time.time() - start:.2f}s")
 

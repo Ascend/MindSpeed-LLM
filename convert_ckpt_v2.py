@@ -56,11 +56,11 @@ def get_args():
                         help='Tensor Parallel rank of the input model shard')
     parser.add_argument('--input-pp-rank', type=int,
                         help='Pipeline Parallel rank of the input model shard')
-    parser.add_argument('--mamba-d-model', type=int, default=4096,
+    parser.add_argument('--hidden-size', type=int, default=4096,
                         help='Model dimension (hidden size)')
-    parser.add_argument('--mamba-d-state', type=int, default=128,
+    parser.add_argument('--mamba-state-dim', type=int, default=128,
                         help='State dimension used in the Mamba model')
-    parser.add_argument('--mamba-n-groups', type=int, default=8,
+    parser.add_argument('--mamba-num-groups', type=int, default=8,
                         help='Number of groups in Mamba v2 model')
     parser.add_argument('--mamba-head-dim', type=int, default=64,
                         help='Head dimension in Mamba v2 model')

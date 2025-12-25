@@ -230,7 +230,7 @@ def initialize_megatron_wrapper(fn):
             # Supported model types
             supported_models = [
                 'llama2', 'qwen3', 'qwen3-moe', 'deepseek3', 'glm45-moe', 'bailing_mini',
-                'qwen3-next', 'seed-oss', 'deepseek32', 'magistral', 'deepseek2-lite'
+                'qwen3-next', 'seed-oss', 'deepseek32', 'magistral', 'deepseek2-lite', 'mamba2'
             ]
             if args.model_type_hf not in supported_models:
                 raise ValueError(

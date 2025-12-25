@@ -97,7 +97,8 @@ MAMBA_ARGS="
 
 DATA_ARGS="
     --data-path $DATA_PATH \
-    --split 100,0,0
+    --split 100,0,0 \
+    --workers 4
 "
 
 OUTPUT_ARGS="
@@ -111,9 +112,15 @@ OUTPUT_ARGS="
     --no-save-optim
 "
 
+CKPT_ARGS="
+    --enable-hf2mg-convert \
+    --model-type-hf mamba2
+"
+
 python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_mamba.py \
     $MAMBA_ARGS \
     $DATA_ARGS \
     $OUTPUT_ARGS \
+    $CKPT_ARGS \
     --distributed-backend nccl \
     | tee logs/pretrain_mamba2_2.7b_4k_ptd.log

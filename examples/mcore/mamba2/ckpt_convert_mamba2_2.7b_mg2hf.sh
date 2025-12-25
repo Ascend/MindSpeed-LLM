@@ -7,10 +7,10 @@ python convert_ckpt_v2.py \
     --save-model-type hf \
     --load-dir ./ckpt/mamba2-mcore \
     --save-dir ./ckpt/mamba2-hf \
-    --mamba-d-model 2560 \
-    --mamba-d-state 128 \
+    --hidden-size 2560 \
+    --mamba-state-dim 128 \
     --mamba-head-dim 64 \
-    --mamba-n-groups 1 \
+    --mamba-num-groups 1 \
     --model-type-hf 'mamba2'
 
     # 注意，如果load权重不是训练后保存的权重，则需要增加如下配置参数
