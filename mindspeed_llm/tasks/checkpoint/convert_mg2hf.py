@@ -117,8 +117,7 @@ class Mg2HfConvert(Convert):
                 raise ValueError("Sum of num_layer_list must equal num_layers")
         if self.last_save_hf_layer == -1:
             raise ValueError("Does not contain a vaild model layer. Please check the parameters!")
-        if self.expert_tensor_parallel_size is not None:
-            raise ValueError("Expert Tensor Parallel (ETP) is not currently supported")
+        self.check_etp_conflict()
 
     @staticmethod
     def get_iter_path(ckpt_path, iteration=None):
@@ -796,6 +795,30 @@ class Mg2HfConvert(Convert):
         return cur_linear_fc2
 
 
+    def linear_fc1_gather_from_etp(self, mg_weight, fc1_key):
+        """cat linear fc1"""
+        gate_list, up_list = [], []
+        for (tp_rank, ep_rank) in self.attention_tp_ckpts_list:
+            cur_linear_fc1 = mg_weight[(tp_rank, ep_rank)].pop(fc1_key)
+            cur_gate, cur_up = torch.chunk(cur_linear_fc1, 2, dim=0)
+            gate_list.append(cur_gate.clone())
+            up_list.append(cur_up.clone())
+
+        gate_weights = torch.cat(gate_list, dim=0)
+        up_weights = torch.cat(up_list, dim=0)
+        return gate_weights, up_weights
+
+    def linear_fc2_gather_from_etp(self, mg_weight, fc2_key):
+        """cat linear fc2"""
+        down_list = []
+        for (tp_rank, ep_rank) in self.attention_tp_ckpts_list:
+            cur_linear_fc2 = mg_weight[(tp_rank, ep_rank)].pop(fc2_key)
+            down_list.append(cur_linear_fc2.clone())
+
+        down_weights = torch.cat(down_list, dim=1)
+        return down_weights
+
+
     def linear_fc1_gather_from_tp(self, mg_weight, fc1_key, ep_rank=0):
         """cat linear fc1"""
         gate_list, up_list = [], []
@@ -908,8 +931,8 @@ class Mg2HfConvert(Convert):
                 hf_weight[hf_weight_key["layers_mlp_shared_expert_gate"]] = mlp_shared_expert_gate.clone()
             if self.n_shared_experts and self.n_shared_experts != 0:
                 if self.expert_tensor_parallel_size == 1:
-                    shared_gate_weights, shared_up_weights = self.linear_fc1_get_for_etp(mg_weight, shared_fc1_key, tp_rank=0, ep_rank=0)
-                    shared_down_weights = self.linear_fc2_get_for_etp(mg_weight, shared_fc2_key, tp_rank=0, ep_rank=0)
+                    shared_gate_weights, shared_up_weights = self.linear_fc1_gather_from_etp(mg_weight, shared_fc1_key)
+                    shared_down_weights = self.linear_fc2_gather_from_etp(mg_weight, shared_fc2_key)
                 else:
                     shared_gate_weights, shared_up_weights = self.linear_fc1_gather_from_tp(mg_weight, shared_fc1_key)
                     shared_down_weights = self.linear_fc2_gather_from_tp(mg_weight, shared_fc2_key)
@@ -1013,8 +1036,8 @@ class Mg2HfConvert(Convert):
             # dense
             mg_weight_key = self.load_model.get_weight(local_layer_idx)
             if self.expert_tensor_parallel_size == 1:
-                gate_weights, up_weights = self.linear_fc1_get_for_etp(mg_weight, mg_weight_key["layers_mlp_linear_fc1"], tp_rank=0, ep_rank=0)
-                down_weights = self.linear_fc2_get_for_etp(mg_weight, mg_weight_key["layers_mlp_linear_fc2"], tp_rank=0, ep_rank=0)
+                gate_weights, up_weights = self.linear_fc1_gather_from_etp(mg_weight, mg_weight_key["layers_mlp_linear_fc1"])
+                down_weights = self.linear_fc2_gather_from_etp(mg_weight, mg_weight_key["layers_mlp_linear_fc2"])
             else:
                 gate_weights, up_weights = self.linear_fc1_gather_from_tp(mg_weight, mg_weight_key["layers_mlp_linear_fc1"])
                 down_weights = self.linear_fc2_gather_from_tp(mg_weight, mg_weight_key["layers_mlp_linear_fc2"])
