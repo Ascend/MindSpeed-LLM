@@ -18,13 +18,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# Copyright (c) 2025, HUAWEI CORPORATION.  All rights reserved.
 
 from typing import Any, Callable, Optional, Union
 
 import torch
-import torch_npu
 import torch.nn.functional as F
+import torch_npu
 from torch import nn
+from torch.distributed.tensor import DTensor
 
 from transformers.activations import ACT2FN
 from transformers.cache_utils import Cache
@@ -39,7 +41,8 @@ from transformers.modeling_layers import (
 )
 from transformers.modeling_outputs import MoeCausalLMOutputWithPast, MoeModelOutputWithPast
 from transformers.modeling_rope_utils import ROPE_INIT_FUNCTIONS, dynamic_rope_update
-from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS, PreTrainedModel
+from transformers.modeling_utils import PreTrainedModel
+from transformers.models.qwen3_next.configuration_qwen3_next import Qwen3NextConfig
 from transformers.processing_utils import Unpack
 from transformers.utils import TransformersKwargs, auto_docstring, can_return_tuple, logging
 from transformers.utils.deprecation import deprecate_kwarg
@@ -48,9 +51,11 @@ from transformers.utils.import_utils import (
     is_causal_conv1d_available,
     is_flash_linear_attention_available,
 )
-from transformers.models.qwen3_next.configuration_qwen3_next import Qwen3NextConfig
+from megatron.training import get_args
 
-
+from mindspeed.core.fusions.grouped_matmul import Ops
+from mindspeed.ops.npu_moe_token_permute import npu_moe_token_permute
+from mindspeed.ops.npu_moe_token_unpermute import npu_moe_token_unpermute
 
 if is_causal_conv1d_available():
     from causal_conv1d import causal_conv1d_fn, causal_conv1d_update
@@ -311,7 +316,7 @@ def flash_attention_forward(
             "`sdpa` attention does not support `output_attentions=True` or `head_mask`."
             " Please set your attention to `eager` if you want any of these features."
         )
-        
+
     if hasattr(module, "num_key_value_groups"):
         key = repeat_kv(key, module.num_key_value_groups)
         value = repeat_kv(value, module.num_key_value_groups)
@@ -413,7 +418,7 @@ class Qwen3NextAttention(nn.Module):
             key_states, value_states = past_key_values.update(key_states, value_states, self.layer_idx, cache_kwargs)
 
         attention_interface: Callable = flash_attention_forward
-        
+
         attn_output, attn_weights = attention_interface(
             self,
             query_states,
@@ -652,7 +657,6 @@ class Qwen3NextGatedDeltaNet(nn.Module):
 
         self.causal_conv1d_fn = causal_conv1d_fn
         self.causal_conv1d_update = causal_conv1d_update or torch_causal_conv1d_update
-        from megatron.training import get_args
         args = get_args()
         if args.use_triton_gdn:
             from mindspeed_llm.tasks.models.transformer.chunk_gated_delta_rule import chunk_gated_delta_rule
@@ -777,7 +781,7 @@ class Qwen3NextGatedDeltaNet(nn.Module):
             key = key.repeat_interleave(self.num_v_heads // self.num_k_heads, dim=2)
 
         if not use_precomputed_states:
-            from megatron.training import get_args
+
             args = get_args()
             core_attn_out, last_recurrent_state = self.chunk_gated_delta_rule(
                 query,
@@ -852,7 +856,6 @@ class Qwen3NextSparseMoeBlock(nn.Module):
         self.shared_expert_gate = torch.nn.Linear(config.hidden_size, 1, bias=False)
 
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
-        """ """
         batch_size, sequence_length, hidden_dim = hidden_states.shape
         hidden_states = hidden_states.view(-1, hidden_dim)
         # router_logits: (batch * sequence_length, n_experts)
@@ -898,10 +901,106 @@ class Qwen3NextSparseMoeBlock(nn.Module):
         return final_hidden_states, router_logits
 
 
+class Qwen3NextMoeExperts(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+        self.num_experts = config.num_experts
+        self.hidden_dim = config.hidden_size
+        self.intermediate_size = config.moe_intermediate_size
+        self.gate_up_proj = torch.nn.Parameter(
+            torch.empty(self.num_experts * self.hidden_dim, 2 * self.intermediate_size))
+
+        self.down_proj = torch.nn.Parameter(
+            torch.empty(self.num_experts * self.intermediate_size, self.hidden_dim))
+        self.act_fn = ACT2FN[config.hidden_act]
+
+    def forward(self, hidden_states, routing_weights=None, selected_experts=None):
+        gate_up_proj, down_proj = self._view_experts_weight()
+
+        # permute
+        permuted_hidden_states, row_ids_map = npu_moe_token_permute(hidden_states, selected_experts.to(torch.int32))
+        tokens_per_expert = torch.histc(selected_experts, bins=self.num_experts, min=0, max=self.num_experts)
+
+        fc1_output = Ops.gmm(permuted_hidden_states, gate_up_proj, tokens_per_expert.to(torch.int64), trans_b=False)
+        fc1_activation = torch_npu.npu_swiglu(fc1_output, dim=-1)
+        fc2_out = Ops.gmm(fc1_activation, down_proj, tokens_per_expert.to(torch.int64), trans_b=False)
+
+        # unpermute
+        output = npu_moe_token_unpermute(fc2_out, row_ids_map, probs=routing_weights)
+        return output
+
+    def _view_experts_weight(self):
+        gate_up_proj = self.gate_up_proj.to_local() if isinstance(self.gate_up_proj, DTensor) else self.gate_up_proj
+        gate_up_proj = gate_up_proj.view(self.num_experts, self.hidden_dim, -1)
+
+        down_proj = self.down_proj.to_local() if isinstance(self.down_proj, DTensor) else self.down_proj
+        down_proj = down_proj.view(self.num_experts, -1, self.hidden_dim)
+        return gate_up_proj, down_proj
+
+
+class Qwen3NextMoeSharedExpert(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+        self.hidden_dim = config.hidden_size
+        self.intermediate_size = config.shared_expert_intermediate_size
+
+        self.gate_proj = nn.Linear(self.hidden_dim, self.intermediate_size, bias=False)
+        self.up_proj = nn.Linear(self.hidden_dim, self.intermediate_size, bias=False)
+        self.down_proj = nn.Linear(self.intermediate_size, self.hidden_dim, bias=False)
+
+    def forward(self, hidden_states):
+        gate_out = self.gate_proj(hidden_states)
+        up_out = self.up_proj(hidden_states)
+        activated = F.silu(gate_out) * up_out
+        output = self.down_proj(activated)
+        return output
+
+
+class Qwen3NextSparseFusedMoeBlock(nn.Module):
+    def __init__(self, config):
+        super().__init__()
+        self.num_experts = config.num_experts
+        self.top_k = config.num_experts_per_tok
+        self.norm_topk_prob = config.norm_topk_prob
+        self.hidden_size = config.hidden_size
+
+        # --- gating ---
+        self.gate = nn.Linear(config.hidden_size, config.num_experts, bias=False)
+        self.experts = Qwen3NextMoeExperts(config)
+
+        # --- Shared expert ---
+        self.shared_expert = Qwen3NextMoeSharedExpert(config)
+        self.shared_expert_gate = torch.nn.Linear(config.hidden_size, 1, bias=False)
+
+    def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        batch_size, sequence_length, hidden_dim = hidden_states.shape
+        hidden_states = hidden_states.view(-1, hidden_dim)
+        router_logits = self.gate(hidden_states)
+
+        routing_weights = F.softmax(router_logits, dim=1, dtype=torch.float)
+        routing_weights, selected_experts = torch.topk(routing_weights, self.top_k, dim=-1)
+        if self.norm_topk_prob:
+            routing_weights /= routing_weights.sum(dim=-1, keepdim=True)
+        routing_weights = routing_weights.to(hidden_states.dtype)
+
+        final_hidden_states = self.experts(
+            hidden_states, routing_weights=routing_weights, selected_experts=selected_experts
+        )
+
+        # --- Shared expert ---
+        shared_expert_output = self.shared_expert(hidden_states)
+        shared_expert_output = F.sigmoid(self.shared_expert_gate(hidden_states)) * shared_expert_output
+
+        final_hidden_states = final_hidden_states + shared_expert_output
+        final_hidden_states = final_hidden_states.reshape(batch_size, sequence_length, hidden_dim)
+        return final_hidden_states, router_logits
+
+
 class Qwen3NextDecoderLayer(GradientCheckpointingLayer):
     def __init__(self, config: Qwen3NextConfig, layer_idx: int):
         super().__init__()
         self.hidden_size = config.hidden_size
+
         # token mixer
         self.layer_type = config.layer_types[layer_idx]
         if self.layer_type == "linear_attention":
@@ -912,7 +1011,10 @@ class Qwen3NextDecoderLayer(GradientCheckpointingLayer):
         if (layer_idx not in config.mlp_only_layers) and (
             config.num_experts > 0 and (layer_idx + 1) % config.decoder_sparse_step == 0
         ):
-            self.mlp = Qwen3NextSparseMoeBlock(config)
+            if config.moe_grouped_gemm:
+                self.mlp = Qwen3NextSparseFusedMoeBlock(config)
+            else:
+                self.mlp = Qwen3NextSparseMoeBlock(config)
         else:
             self.mlp = Qwen3NextMLP(config, intermediate_size=config.intermediate_size)
 
@@ -1002,7 +1104,7 @@ class Qwen3NextPreTrainedModel(PreTrainedModel):
     _supports_sdpa = True
     _keys_to_ignore_on_load_unexpected = [r"^mtp.*"]
     _can_record_outputs = {
-        "router_logits": OutputRecorder(Qwen3NextSparseMoeBlock, index=1),
+        "router_logits": OutputRecorder(Qwen3NextSparseFusedMoeBlock, index=1),
         "hidden_states": Qwen3NextDecoderLayer,
         "attentions": Qwen3NextAttention,
     }

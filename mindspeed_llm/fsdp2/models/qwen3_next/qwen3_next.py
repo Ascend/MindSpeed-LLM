@@ -1,15 +1,15 @@
+# Copyright 2024 AI21 Labs Ltd. and the HuggingFace Inc. team
+# Copyright (c) 2025, HUAWEI CORPORATION.  All rights reserved.
+
 from typing import Optional, Union
 
 import torch
-import torch_npu
 import transformers
-from torch import nn
-from transformers.cache_utils import Cache
-from transformers.modeling_outputs import BaseModelOutputWithPast, CausalLMOutputWithPast
-from transformers.utils import can_return_tuple, TransformersKwargs
-from transformers.processing_utils import Unpack
 from transformers.modeling_outputs import MoeCausalLMOutputWithPast, MoeModelOutputWithPast
 from transformers.models.qwen3_next.modeling_qwen3_next import Qwen3NextDynamicCache
+from transformers.processing_utils import Unpack
+from transformers.utils import can_return_tuple, TransformersKwargs
+
 from mindspeed_llm.fsdp2.core.fully_shard.fsdp2_sharding import FSDP2ShardingMixin
 from mindspeed_llm.fsdp2.models.common.modules import LMHead
 from mindspeed_llm.fsdp2.models.qwen3_next.modeling_qwen3_next import Qwen3NextModel
@@ -26,10 +26,12 @@ class Qwen3NextForCausalLM(transformers.Qwen3NextPreTrainedModel, Qwen3NextFSDP2
     _tied_weights_keys = ["lm_head.weight"]
     _tp_plan = {"lm_head": "colwise_rep"}
     _pp_plan = {"lm_head": (["hidden_states"], ["logits"])}
+    moe_grouped_gemm = False
 
     def __init__(self, config):
         super().__init__(config)
         self.config = config
+        config.moe_grouped_gemm = Qwen3NextForCausalLM.moe_grouped_gemm
         self.model = Qwen3NextModel(config)
         self.vocab_size = config.vocab_size
         self.lm_head = LMHead(config.hidden_size, config.vocab_size, bias=False)
@@ -133,4 +135,5 @@ class Qwen3NextForCausalLM(transformers.Qwen3NextPreTrainedModel, Qwen3NextFSDP2
     @staticmethod
     def register_patches(config):
         """patching the transformers model."""
-        pass
+        if getattr(config, "moe_grouped_gemm", False):
+            Qwen3NextForCausalLM.moe_grouped_gemm = True
