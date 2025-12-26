@@ -28,18 +28,19 @@ class Qwen3NextFeature(MindSpeedFeature):
                        help='Use global aux loss for loss calculation.')
 
     def register_patches(self, patch_manager, args):
-        from mindspeed_llm.core.transformer.attention import self_attention_init 
+        from mindspeed_llm.core.transformer.attention import self_attention_init
         from mindspeed_llm.core.pipeline_parallel.schedules import global_aux_loss_forward_step
         from mindspeed_llm.core.transformer.moe.router import global_aux_loss_topk_router_forward, global_aux_loss_load_balancing
 
-        patch_manager.register_patch('megatron.core.transformer.attention.SelfAttention.__init__', self_attention_init)   
+        patch_manager.register_patch('megatron.core.transformer.attention.SelfAttention.__init__', self_attention_init)
 
-        if args.use_global_aux_loss: 
+        if args.use_global_aux_loss:
             if int(args.pipeline_model_parallel_size) > 1:
                 raise AssertionError('use-global-aux-loss is not support for pipeline-model-parallel-size > 1, please use FSDP2')
-                
-            patch_manager.register_patch('megatron.core.transformer.moe.router.TopKRouter.forward', 
-                                        global_aux_loss_topk_router_forward)
-            patch_manager.register_patch('megatron.core.transformer.moe.router.TopKRouter.aux_loss_load_balancing', 
-                                        global_aux_loss_load_balancing)
-            patch_manager.register_patch('megatron.core.pipeline_parallel.schedules.forward_step', global_aux_loss_forward_step)                                                                                                                                                                                                     
+
+            patch_manager.register_patch('megatron.core.transformer.moe.router.TopKRouter.forward',
+                                         global_aux_loss_topk_router_forward)
+            patch_manager.register_patch('megatron.core.transformer.moe.router.TopKRouter.aux_loss_load_balancing',
+                                         global_aux_loss_load_balancing)
+            patch_manager.register_patch('megatron.core.pipeline_parallel.schedules.forward_step',
+                                         global_aux_loss_forward_step)

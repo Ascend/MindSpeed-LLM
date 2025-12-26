@@ -142,6 +142,8 @@ GPT_ARGS="
     --norm-epsilon 1e-06 \
     --mamba-chunk-size 64 \
     --use-triton-gdn \
+    --loss-compute-mode default \
+    --loss-chunk-size 1024 \
 "
 
 DATA_ARGS="

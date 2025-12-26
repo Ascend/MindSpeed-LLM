@@ -6,6 +6,7 @@ from functools import wraps
 
 import torch
 from torch import Tensor
+import torch.nn.functional as F
 
 from megatron.core import InferenceParams, tensor_parallel
 from megatron.core.models.common.embeddings.language_model_embedding import LanguageModelEmbedding
@@ -30,6 +31,7 @@ from mindspeed_llm.training.utils import (set_actual_seq_len_list, _CAN_RECORD_R
 from mindspeed_llm.training.utils import set_actual_seq_len_list
 from mindspeed.core.context_parallel.get_batch_utils import get_actual_seq_len
 from mindspeed.utils import compute_qkv_index, get_position_ids
+from mindspeed_llm.core.models.common.chunk_loss import chunk_loss, calculate_lm_loss
 
 
 class GPTModel(MegatronCoreGPTModel):
@@ -278,24 +280,52 @@ class GPTModel(MegatronCoreGPTModel):
             hidden_states = hidden_states / (args.hidden_size / args.dim_model_base)
         if getattr(args, "task", False) and args.task[0] == 'needlebench':
             hidden_states = hidden_states[-100:]
-        logits, _ = self.output_layer(hidden_states, weight=output_weight)
 
-        # new add to scale logits
-        if args.output_multiplier_scale:
-            logits = logits * args.output_multiplier_scale
+        if args.loss_compute_mode == "chunk" and args.tensor_model_parallel_size == 1 and args.context_parallel_size == 1:
+            labels = F.pad(labels, (0, 1), value=-100)
+            shift_labels = labels
+            # Create a mask to identify valid tokens (typically > -1 means non-special tokens)
+            loss_mask = shift_labels > -1
 
-        if args.output_logit_softcapping:
-            logits = logits / args.output_logit_softcapping
-            logits = torch.tanh(logits)
-            logits = logits * args.output_logit_softcapping
+            # Default: normalize loss by total number of valid tokens in the batch.
+            alpha = loss_mask.sum()
+            reduction = "sum"
+            chunk_labels = torch.split(shift_labels, args.loss_chunk_size, dim=1)
 
-        if labels is None:
-            # [s b h] => [b s h]
-            return logits.transpose(0, 1).contiguous()
-        if args.is_instruction_dataset:
-            labels = labels[:, 1:].contiguous()
-            logits = logits[:-1, :, :].contiguous()
-        loss = self.compute_language_model_loss(labels, logits)
+            loss_kwargs_chunks = [
+                {
+                    "shift_labels": chunk_labels[i],
+                    "reduction": reduction,
+                    "alpha": alpha,
+                }
+                for i in range(len(chunk_labels))
+            ]
+            loss = chunk_loss(
+                hidden_states=hidden_states.transpose(0, 1).contiguous(),
+                head_weight=self.output_layer.weight,
+                head_bias=None,
+                loss_forward=calculate_lm_loss,
+                loss_kwargs_chunks=loss_kwargs_chunks,
+                chunk_size=args.loss_chunk_size)
+        else:
+            logits, _ = self.output_layer(hidden_states, weight=output_weight)
+
+            # new add to scale logits
+            if args.output_multiplier_scale:
+                logits = logits * args.output_multiplier_scale
+
+            if args.output_logit_softcapping:
+                logits = logits / args.output_logit_softcapping
+                logits = torch.tanh(logits)
+                logits = logits * args.output_logit_softcapping
+
+            if labels is None:
+                # [s b h] => [b s h]
+                return logits.transpose(0, 1).contiguous()
+            if args.is_instruction_dataset:
+                labels = labels[:, 1:].contiguous()
+                logits = logits[:-1, :, :].contiguous()
+            loss = self.compute_language_model_loss(labels, logits)
         return loss
 
     def shared_embedding_or_output_weight(self) -> Tensor:

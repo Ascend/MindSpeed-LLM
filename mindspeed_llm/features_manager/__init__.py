@@ -86,6 +86,7 @@ from mindspeed_llm.features_manager.tensor_parallel.tp_2d import TP2dFeature
 from mindspeed_llm.features_manager.arguments.deprecated_args import DeprecatedArgsFeature
 from mindspeed_llm.features_manager.convert_checkpoint.convert_checkpoint import CheckpointFeature
 from mindspeed_llm.features_manager.fsdp2.fsdp2 import FSDP2Feature
+from mindspeed_llm.features_manager.memory.chunk_loss import ChunkLossFeature
 
 
 FEATURES_LIST = [
@@ -115,7 +116,8 @@ def add_megatron_basic_features(features_list: List[MindSpeedFeature]):
         RequirementsBasicFeature(),
         MegatronBasicFeature(),
         TransformerEngineBasicFeature(),
-        Qwen3NextFeature(),        
+        Qwen3NextFeature(),
+        ChunkLossFeature(),
     ])
 
 
