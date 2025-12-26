@@ -1,6 +1,7 @@
 # Copyright (c) 2024, HUAWEI CORPORATION.  All rights reserved.
 import logging
 import math
+from contextlib import nullcontext
 from dataclasses import dataclass
 from typing import Union
 
@@ -31,7 +32,8 @@ from mindspeed_llm.core.fp8_utils import fp8_context_wrapper
 from mindspeed_llm.core.tensor_parallel.layers import LinearNoTP
 from mindspeed_llm.core.transformer.custom_layers.transformer_engine import PTNorm
 from mindspeed_llm.tasks.models.transformer.dsa_indexer import get_dsa_indexer_spec, DSAIndexerLossAutoScaler, \
-    compute_dsa_indexer_loss, get_attn_scores, DSAIndexerLossLoggingHelper
+    compute_dsa_indexer_loss, get_attn_scores, DSAIndexerLossLoggingHelper, \
+    fused_sparse_lightning_indexer_kl_loss
 from mindspeed_llm.tasks.models.transformer.mla_dot_product_attention import MlaDotProductAttention
 from mindspeed_llm.tasks.models.transformer.mla_up_proj_overlap_tp_comm import mla_up_projection_overlap_tp_comm
 
@@ -516,6 +518,7 @@ class CustomMLASelfAttention(SelfAttention):
                 core_attn_out = core_attn_out.reshape(q_len, bsz, self.num_attention_heads_per_partition * self.v_head_dim)
 
             return core_attn_out
+
         @fp8_context_wrapper(config=self.config)
         def mla_absorb_attention(hidden_states):
             args = get_args()
@@ -632,35 +635,73 @@ class CustomMLASelfAttention(SelfAttention):
                 else:
                     dsa_hidden_states, dsa_q_compressed = hidden_states, q_compressed
 
-                topk_score, topk_indices, attention_mask = self.dsa_indexer(dsa_hidden_states.detach(),
-                                                                            dsa_q_compressed.detach(),
-                                                                            0, rotary_pos_emb)
+                query_index, key_index, weights, dsa_hidden_states = self.dsa_indexer.forward_with_index(
+                    dsa_hidden_states.detach(),
+                    dsa_q_compressed.detach(),
+                    rotary_pos_emb, )
+                # Fuse LILossTrain includes LIG
+                dsa_indexer_context = torch.no_grad() if args.use_fused_lightning_indexer_loss else nullcontext()
+                with dsa_indexer_context:
+                    topk_indices, topk_score = self.dsa_indexer.forward_with_scores(
+                        dsa_hidden_states, query_index, key_index, weights, attention_mask, packed_seq_params, 0,
+                        args.index_topk)
+
+                s, b, _ = dsa_hidden_states.size()
+                attention_mask = self.dsa_indexer.generate_sparse_mask(topk_indices, attention_mask, (b, s, s),
+                                                                       dsa_hidden_states.dtype,
+                                                                       dsa_hidden_states.device)
 
             # ==================================
             # core attention computation
             # ==================================
             attn_mask_type = AttnMaskType.causal
-            if self.checkpoint_core_attention and self.training:
-                core_attn_out = self._checkpointed_attention_forward(
-                    query,
-                    key,
-                    value,
-                    attention_mask,
-                    topk_indices=topk_indices,
-                    attn_mask_type=attn_mask_type,
-                    packed_seq_params=packed_seq_params,
-                )
+            # Fuse LILossTrain requires extra return softmax
+            if args.use_fused_lightning_indexer_loss:
+                if self.checkpoint_core_attention and self.training:
+                    core_attn_out, softmax_max, softmax_sum = self._checkpointed_attention_forward(
+                        query,
+                        key,
+                        value,
+                        attention_mask,
+                        topk_indices=topk_indices,
+                        attn_mask_type=attn_mask_type,
+                        packed_seq_params=packed_seq_params,
+                        return_softmax=True,
+                    )
+                else:
+                    core_attn_out, softmax_max, softmax_sum = self.core_attention(
+                        query,
+                        key,
+                        value,
+                        attention_mask,
+                        topk_indices=topk_indices,
+                        attn_mask_type=attn_mask_type,
+                        attention_bias=None,
+                        packed_seq_params=packed_seq_params,
+                        return_softmax=True,
+                    )
             else:
-                core_attn_out = self.core_attention(
-                    query,
-                    key,
-                    value,
-                    attention_mask,
-                    topk_indices=topk_indices,
-                    attn_mask_type=attn_mask_type,
-                    attention_bias=None,
-                    packed_seq_params=packed_seq_params,
-                )
+                if self.checkpoint_core_attention and self.training:
+                    core_attn_out = self._checkpointed_attention_forward(
+                        query,
+                        key,
+                        value,
+                        attention_mask,
+                        topk_indices=topk_indices,
+                        attn_mask_type=attn_mask_type,
+                        packed_seq_params=packed_seq_params,
+                    )
+                else:
+                    core_attn_out = self.core_attention(
+                        query,
+                        key,
+                        value,
+                        attention_mask,
+                        topk_indices=topk_indices,
+                        attn_mask_type=attn_mask_type,
+                        attention_bias=None,
+                        packed_seq_params=packed_seq_params,
+                    )
             h = self.num_attention_heads_per_partition
             
             # DSA indexer loss calculation
@@ -668,27 +709,44 @@ class CustomMLASelfAttention(SelfAttention):
                 if args.context_parallel_size > 1 and args.context_parallel_algo=='ulysses_cp_algo':
                     query = gather_from_sequence_parallel_region(query,group=mpu.get_context_parallel_group())
                     key = gather_from_sequence_parallel_region(key,group=mpu.get_context_parallel_group())
-                
-                # For absorb mode, query and key are list format, they need to be concatenated for dsa indexer
-                query = torch.cat([query[0], query[1]], dim=-1)
-                key = torch.cat([key[0], key[1]], dim=-1)
-                key = key.expand(-1, -1, h, -1) if key.shape[2] == 1 else key
 
-                main_attn_dist = get_attn_scores(query.detach(),
-                                                key.detach(),
-                                                attention_mask,
-                                                self.num_attention_heads_per_partition //
-                                                self.num_query_groups_per_partition,
-                                                self.core_attention.local_attn.scale \
-                                                if args.context_parallel_size > 1 and args.context_parallel_algo=='ulysses_cp_algo' \
-                                                else self.core_attention.scale, 
-                                                )
-                loss = compute_dsa_indexer_loss(
-                    main_attn_dist,
-                    topk_score,
-                    topk_indices,
-                    args.indexer_loss_coeff,
-                )
+                if args.use_fused_lightning_indexer_loss:
+                    loss = fused_sparse_lightning_indexer_kl_loss(
+                        query[0],
+                        key[0],
+                        query_index,
+                        key_index,
+                        weights,
+                        topk_indices,
+                        softmax_max,
+                        softmax_sum,
+                        scale_value=self.core_attention.local_attn.scale if args.context_parallel_size > 1 and args.context_parallel_algo == 'ulysses_cp_algo' else self.core_attention.scale,
+                        query_rope=query[1],
+                        key_rope=key[1],
+                        actual_seq_qlen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_q,
+                        actual_seq_klen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_kv,
+                        layout='BSND',
+                    )
+                    loss *= args.indexer_loss_coeff
+                else:
+                    # For absorb mode, query and key are list format, they need to be concatenated for dsa indexer
+                    query = torch.cat([query[0], query[1]], dim=-1)
+                    key = torch.cat([key[0], key[1]], dim=-1)
+                    key = key.expand(-1, -1, h, -1) if key.shape[2] == 1 else key
+
+                    main_attn_dist = get_attn_scores(query.detach(),
+                                                     key.detach(),
+                                                     attention_mask,
+                                                     self.num_attention_heads_per_partition //
+                                                     self.num_query_groups_per_partition,
+                                                     self.core_attention.local_attn.scale if args.context_parallel_size > 1 and args.context_parallel_algo == 'ulysses_cp_algo' else self.core_attention.scale,
+                                                     )
+                    loss = compute_dsa_indexer_loss(
+                        main_attn_dist,
+                        topk_score,
+                        topk_indices,
+                        args.indexer_loss_coeff,
+                    )
 
                 DSAIndexerLossLoggingHelper.save_loss_to_tracker(
                     loss,
@@ -779,6 +837,7 @@ class CustomMLASelfAttention(SelfAttention):
         attn_mask_type=None,
         attention_bias=None,
         packed_seq_params=None,
+        return_softmax=False,
     ):
         """Forward method with selective activation checkpointing."""
 
@@ -819,6 +878,7 @@ class CustomMLASelfAttention(SelfAttention):
             attention_mask = inputs[input_idx + 2]
             attn_mask_type = inputs[input_idx + 4]
             attn_mask_type = AttnMaskType(attn_mask_type.item())
+            return_softmax = inputs[input_idx + 5]
             output_ = self.core_attention(
                 query,
                 key,
@@ -828,6 +888,7 @@ class CustomMLASelfAttention(SelfAttention):
                 attn_mask_type=attn_mask_type,
                 attention_bias=attention_bias,
                 packed_seq_params=packed_seq_params,
+                return_softmax=return_softmax,
             )
             return output_
 
@@ -845,7 +906,7 @@ class CustomMLASelfAttention(SelfAttention):
             checkpoint_inputs.extend([k_no_pe, k_pos_emb])
         else:
             checkpoint_inputs.append(key)
-        checkpoint_inputs.extend([value, topk_indices, attention_mask, rotary_pos_emb, attn_mask_type])
+        checkpoint_inputs.extend([value, topk_indices, attention_mask, rotary_pos_emb, attn_mask_type, return_softmax])
         
         hidden_states = tensor_parallel.checkpoint(custom_forward, False, *checkpoint_inputs)
 

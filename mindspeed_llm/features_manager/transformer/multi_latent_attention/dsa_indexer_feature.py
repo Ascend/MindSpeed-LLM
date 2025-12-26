@@ -22,6 +22,8 @@ class DSAIndexerFeature(MindSpeedFeature):
                            help='Indexer loss coeff.')
         group.add_argument('--use-fused-lightning-indexer', action='store_true', default=False,
                            help='Use fused fused operator in lightning indexer.')
+        group.add_argument('--use-fused-lightning-indexer-loss', action='store_true', default=False,
+                           help='Use fused fused operator in lightning indexer.')
 
     def validate_args(self, args):
         if args.enable_dsa_indexer:
@@ -31,7 +33,7 @@ class DSAIndexerFeature(MindSpeedFeature):
                 raise ValueError("DSAIndexer is currently only supported in FA, plese open --use-flash-attn.")
             if args.context_parallel_size > 1 and args.context_parallel_algo!='ulysses_cp_algo':
                 raise ValueError("DSAIndexer is currently only supported `ulysses_cp_algo` when use context parallel.")
-            
+
 
     def register_patches(self, patch_manager, args):
         if args.enable_dsa_indexer:

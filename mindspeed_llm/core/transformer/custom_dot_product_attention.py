@@ -173,6 +173,7 @@ class CustomDotProductAttentionImpl:
         attn_mask_type=None,
         attention_bias=None,
         packed_seq_params=None,
+        return_softmax=False,
     ):
         """
         Args:
@@ -184,6 +185,7 @@ class CustomDotProductAttentionImpl:
             attn_mask_type: Optional mask type override (unused here; parity with base API).
             attention_bias: Optional additive attention bias (unused here; PSE used for ALiBi).
             packed_seq_params: Optional varlen pack info for FA (handled via shape_order logic).
+            return_softmax: Optional condition whether return FA softmax sum and max.
 
         Returns:
             output: Tensor of shape [S, B, H * Dh] (SBH merged heads×dim at the end).
@@ -301,6 +303,7 @@ class CustomDotProductAttentionImpl:
         #         - npu_fusion_attention (standard FA)
         #         - npu_fusion_attention_v2 (FA supports mla with seperate q and k)
         # ---------------------------------------------------------------------
+        softmax_max, softmax_sum = None, None
         if hasattr(args, 'use_kv_cache') and args.use_kv_cache:
             query, key, value = [rearrange(x, 's b h -> b s h') for x in [query, key, value]]
 
@@ -343,7 +346,7 @@ class CustomDotProductAttentionImpl:
                 key_rope = rearrange(key_rope, 's b h d -> b s h d')
                 actual_seq_len = torch.tensor([query.shape[1]], dtype=torch.int32, device=query.device)
 
-                output = torch_npu.npu_sparse_flash_attention(
+                output, softmax_max, softmax_sum, *_  = torch_npu.npu_sparse_flash_attention(
                     query, key, value,
                     sparse_indices=topk_indices.to(torch.int32),
                     block_table=None,                # TODO: (B, S2/block_size)
@@ -358,7 +361,7 @@ class CustomDotProductAttentionImpl:
                     sparse_mode=3,      
                     attention_mode=2,            # 0: GQA/MHA, 1: MLA-naive, 2: MLA-absorb
                     return_softmax_lse=True,     # it must be True in training mode
-                )[0]
+                )
             else:
                 # No KV cache: fused attention over full sequences
                 if not args.mla_fa_divide_qk:
@@ -370,7 +373,7 @@ class CustomDotProductAttentionImpl:
                                 f"FlashAttention received unexpectedly long 'actual_seq_len' (length={len(actual_seq_len)}, threshold={ACTUAL_SEQ_LEN_THRESHOLD}). "
                                 f"This may cause the FA operator to terminate abnormally."
                             )
-                    output = torch_npu.npu_fusion_attention(
+                    output, softmax_max, softmax_sum, *_  = torch_npu.npu_fusion_attention(
                         query, key, value, n_head, args.shape_order,
                         pse=pse,
                         padding_mask=None,
@@ -383,7 +386,7 @@ class CustomDotProductAttentionImpl:
                         keep_prob=1 - self.attention_dropout.p,
                         inner_precise=0,
                         sparse_mode=args.sparse_mode
-                    )[0]
+                    )
                 else:
                     # FA v2 with separate Q/K RoPE inputs
                     output = torch_npu.npu_fusion_attention_v2(
@@ -410,7 +413,8 @@ class CustomDotProductAttentionImpl:
             output = rearrange(output, '(s b) h d -> s b (h d)', s=seq_length)
         elif args.shape_order == "BNSD":
             output = rearrange(output, 'b h s d -> s b (h d)')
-
+        if return_softmax:
+            return output, softmax_max, softmax_sum
         return output
 
 

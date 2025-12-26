@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import List, Tuple, Union, Optional
 
 import torch
+from torch import Tensor
 import torch.nn.functional as F
 from einops import rearrange
 from functools import wraps
@@ -229,11 +230,18 @@ class DSAIndexer(MegatronModule):
             mask (torch.Tensor, optional): Attention mask.
             packed_seq_params (PackedSeqParams, optional): Parameters for packed sequence processing.
         """
+        q, k, weights, x = self.forward_with_index(x, qr, freqs_cis)
 
+        topk_indices, topk_score = self.forward_with_scores(
+            x, q, k, weights, mask, packed_seq_params, start_pos, self.index_topk)
+
+        s, b, _ = x.size()
+        attention_mask = self.generate_sparse_mask(topk_indices, mask, (b, s, s), x.dtype, x.device)
+        return topk_score, topk_indices, attention_mask
+
+    def forward_with_index(self, x: Tensor, qr: Tensor, freqs_cis: Tensor):
         args = get_args()
         rotary_q_pos_emb, rotary_k_pos_emb = freqs_cis
-        s, b, _ = x.size()
-        end_pos = start_pos + s
 
         # Project low-rank query to full multi-head query
         q = self.wq_b(qr)
@@ -254,11 +262,11 @@ class DSAIndexer(MegatronModule):
         s, b, n, d = k_pe.shape
         k_pe = apply_rotary_pos_emb(k_pe, rotary_k_pos_emb, config=self.config).view(s, b, d)
         k = torch.cat([k_pe, k_nope], dim=-1).unsqueeze(2)
-        
-        if args.context_parallel_size > 1 and args.context_parallel_algo=='ulysses_cp_algo':
-            k = gather_from_sequence_parallel_region(k,group=mpu.get_context_parallel_group())
-            q = gather_from_sequence_parallel_region(q,group=mpu.get_context_parallel_group())
-            x = gather_from_sequence_parallel_region(x,group=mpu.get_context_parallel_group())
+
+        if args.context_parallel_size > 1 and args.context_parallel_algo == 'ulysses_cp_algo':
+            k = gather_from_sequence_parallel_region(k, group=mpu.get_context_parallel_group())
+            q = gather_from_sequence_parallel_region(q, group=mpu.get_context_parallel_group())
+            x = gather_from_sequence_parallel_region(x, group=mpu.get_context_parallel_group())
         # Apply structured rotation (e.g., scaled Hadamard transform) to both query and key
         # This promotes mixing and can improve retrieval performance in sparse attention
         q = rotate_activation(q)
@@ -283,53 +291,53 @@ class DSAIndexer(MegatronModule):
         weights = self.weights_proj(x)
         weights = weights * self.n_heads ** -0.5
         weights = weights * self.softmax_scale
+        return q, k, weights, x
 
-        # ---------------------------------------------------------
-        s *=  args.context_parallel_size
-
-        if not args.use_fused_lightning_indexer:
+    @staticmethod
+    def forward_with_scores(x, q, k, weights, mask, packed_seq_params, start_pos, index_topk):
+        args = get_args()
+        if args.use_fused_lightning_indexer:
+            topk_indices, topk_score = fused_lightning_indexer(
+                q,
+                k,
+                weights,
+                index_topk,
+                actual_seq_qlen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_q,
+                actual_seq_klen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_kv,
+                layout_query='BSND',
+                layout_key='BSND',
+                )
+        else:
+            s, b, _ = x.size()
+            end_pos = start_pos + s
             index_score = bf16_index(q.contiguous(), weights.unsqueeze(-1), k.contiguous())
             if mask is None:
                 mask = torch.where(torch.triu(torch.ones((b, s, s),
-                                                        dtype=x.dtype,
-                                                        device=x.device),
-                                            diagonal=1) == 1, float('-inf'), 0.0)
+                                                         dtype=x.dtype,
+                                                         device=x.device),
+                                              diagonal=1) == 1, float('-inf'), 0.0)
             index_score += mask
 
             # Select top-k most relevant tokens for each query position
-            topk_score, topk_indices = index_score.topk(min(self.index_topk, end_pos), dim=-1)
+            topk_score, topk_indices = index_score.topk(min(index_topk, end_pos), dim=-1)
             # Post-process topk_indices to enforce causal masking constraints
-            query_positions = torch.arange(s, device=topk_indices.device).unsqueeze(0).unsqueeze(-1)  
-            valid_positions = topk_indices <= query_positions  
+            query_positions = torch.arange(s, device=topk_indices.device).unsqueeze(0).unsqueeze(-1)
+            valid_positions = topk_indices <= query_positions
             topk_indices = torch.where(valid_positions, topk_indices, torch.full_like(topk_indices, -1))
-        else:
-            li_query = rearrange(q, 's b h d -> b s h d').to(torch.bfloat16)
-            li_key = rearrange(k, 's b h d -> b s h d').to(torch.bfloat16)
-            li_weights = rearrange(weights, 's b d -> b s d').to(torch.bfloat16)
 
-            topk_indices, topk_score = torch_npu.npu_lightning_indexer(
-                li_query,
-                li_key,
-                li_weights,
-                actual_seq_lengths_query=None if packed_seq_params is None else packed_seq_params.cu_seqlens_q,
-                actual_seq_lengths_key=None if packed_seq_params is None else packed_seq_params.cu_seqlens_kv,
-                layout_query='BSND',
-                layout_key='BSND',
-                sparse_count=args.index_topk,
-                sparse_mode=3,
-                return_value=True,
-            )
-            topk_indices = topk_indices.squeeze(2)
-            topk_score = topk_score.squeeze(2)
+        return topk_indices, topk_score
 
+    @staticmethod
+    def generate_sparse_mask(topk_indices, mask, shape, dtype, device):
+        args = get_args()
         # Build a full attention mask where only top-k positions are unmasked (0), others are -inf
         if not args.use_sparse_flash_attn:
-            attention_mask = torch.full((b, s, s), float('-inf'), dtype=x.dtype, device=x.device).scatter_(-1, topk_indices, 0)
+            attention_mask = torch.full(shape, float('-inf'), dtype=dtype, device=device).scatter_(-1, topk_indices, 0)
             if mask is None:
-                mask = torch.where(torch.triu(torch.ones((b, s, s),
-                                                        dtype=x.dtype,
-                                                        device=x.device),
-                                            diagonal=1) == 1, float('-inf'), 0.0)
+                mask = torch.where(torch.triu(torch.ones(shape,
+                                                         dtype=dtype,
+                                                         device=device),
+                                              diagonal=1) == 1, float('-inf'), 0.0)
             attention_mask += mask
 
             # Convert to boolean mask if using FlashAttention
@@ -338,8 +346,7 @@ class DSAIndexer(MegatronModule):
                 args.sparse_mode = 0
         else:
             attention_mask = None
-        return topk_score, topk_indices, attention_mask
-
+        return attention_mask
 
 class DSAIndexerLossAutoScaler(torch.autograd.Function):
     """An AutoScaler that triggers the backward pass and scales the grad for DSA indexer loss."""
@@ -347,17 +354,18 @@ class DSAIndexerLossAutoScaler(torch.autograd.Function):
     main_loss_backward_scale: torch.Tensor = None
 
     @staticmethod
-    def forward(ctx, output: torch.Tensor, aux_loss: torch.Tensor):
+    def forward(ctx, output: torch.Tensor, loss: torch.Tensor):
         """Preserve the indexer_loss by storing it in the context to avoid garbage collection.
 
         Args:
+            ctx: Context object used to save tensors for backward pass.
             output (torch.Tensor): The output tensor.
-            aux_loss (torch.Tensor): The indexer loss tensor.
+            loss (torch.Tensor): The indexer loss tensor.
 
         Returns:
             torch.Tensor: The output tensor.
         """
-        ctx.save_for_backward(aux_loss)
+        ctx.save_for_backward(loss)
         return output
 
     @staticmethod
@@ -365,6 +373,7 @@ class DSAIndexerLossAutoScaler(torch.autograd.Function):
         """Compute and scale the gradient for indexer loss.
 
         Args:
+            ctx: Context object used to save tensors for backward pass.
             grad_output (torch.Tensor): The gradient of the output.
 
         Returns:
@@ -534,6 +543,7 @@ def compute_dsa_indexer_loss(
         index_score,
         topk_indices,
         loss_scale,
+        eps=1e-8,
 ):
     """Compute dsa indexer loss at sparse training stage
     Reference: https://github.com/deepseek-ai/DeepSeek-V3.2-Exp/blob/main/DeepSeek_V3_2.pdf
@@ -547,8 +557,8 @@ def compute_dsa_indexer_loss(
     # considering only the selected token
     selected_main_attn_dist = torch.gather(main_attn_dist, dim=-1, index=topk_indices)
     selected_main_attn_dist = F.normalize(selected_main_attn_dist, p=1, dim=-1)
-    loss = F.kl_div((index_score + 1e-10).log(),
-                    selected_main_attn_dist + 1e-10,
+    loss = F.kl_div((index_score + eps).log(),
+                    selected_main_attn_dist + eps,
                     reduction='none',
                     ).sum(dim=-1).mean()
     loss *= loss_scale
@@ -609,3 +619,174 @@ def get_attn_scores(
         torch.distributed.all_reduce(attention_scores.contiguous(),
                                      group=parallel_state.get_tensor_model_parallel_group())
     return attention_scores
+
+
+def fused_lightning_indexer(q: Tensor,
+                            k: Tensor,
+                            weights: Tensor,
+                            index_topk,
+                            actual_seq_qlen=None,
+                            actual_seq_klen=None,
+                            layout_query='BSND',
+                            layout_key='BSND',
+                            ):
+    q = rearrange(q, 's b h d -> b s h d').to(torch.bfloat16)
+    k = rearrange(k, 's b h d -> b s h d').to(torch.bfloat16)
+    weights = rearrange(weights, 's b d -> b s d').to(torch.bfloat16)
+
+    topk_indices, topk_score = torch_npu.npu_lightning_indexer(
+        q,
+        k,
+        weights,
+        actual_seq_lengths_query=actual_seq_qlen,
+        actual_seq_lengths_key=actual_seq_klen,
+        layout_query=layout_query,
+        layout_key=layout_key,
+        sparse_count=index_topk,
+        sparse_mode=3,
+        return_value=True,
+    )
+    topk_indices = topk_indices.squeeze(2)
+    topk_score = topk_score.squeeze(2)
+    return topk_indices, topk_score
+
+
+def fused_sparse_lightning_indexer_kl_loss(
+        query,
+        key,
+        query_index,
+        key_index,
+        weights,
+        topk_indices,
+        softmax_max,
+        softmax_sum,
+        scale_value=1,
+        *,
+        query_rope=None,
+        key_rope=None,
+        actual_seq_qlen=None,
+        actual_seq_klen=None,
+        layout='BSND',
+        sparse_mode=3,
+        pre_tokens=65536,
+        next_tokens=65536,
+):
+    """NPU Sparse Lightning Indexer KL Divergence Loss Function"""
+    query, key, query_index, key_index, weights = [x.transpose(0, 1) for x in
+                                                   [query, key, query_index, key_index, weights]]
+    topk_indices = topk_indices.unsqueeze(2)
+    if query_rope is not None:
+        query_rope, key_rope = [x.transpose(0, 1) for x in [query_rope, key_rope]]
+
+    sq = query.shape[1]
+    loss = LILossTrain.apply(query, key, query_index, key_index, weights, topk_indices, softmax_max, softmax_sum,
+                             scale_value, query_rope, key_rope, actual_seq_qlen, actual_seq_klen, layout, sparse_mode,
+                             pre_tokens, next_tokens, )
+    return loss / sq
+
+
+class LILossTrain(torch.autograd.Function):
+    """
+    A custom autograd function that computes kl loss in sparse lightning indexer.
+
+    This interface implements the backward functionality of npu_lightning_indexer and integrates the loss computation.
+    The npu_lightning_indexer selects the top-k pairs between queries and keys in attention that exhibit the strongest
+    intrinsic correlations, storing them in sparse_indices. This reduces the computational cost of attention in
+    long-sequence scenarios and improves training performance.
+    """
+
+    @staticmethod
+    def forward(
+            ctx,
+            query,
+            key,
+            query_index,
+            key_index,
+            weights,
+            sparse_indices,
+            softmax_max,
+            softmax_sum,
+            scale_value=1,
+            query_rope=None,
+            key_rope=None,
+            actual_seq_qlen=None,
+            actual_seq_klen=None,
+            layout='BSND',
+            sparse_mode=3,
+            pre_tokens=65536,
+            next_tokens=65536,
+    ):
+        """
+        Forward pass: compute the total loss by processing hidden states in chunks.
+
+        Args:
+            ctx: Context object used to save tensors for backward pass.
+            query (Tensor): Required. Represents the Attention query. Shapes: (B, S1, N1, D), (T1, N1, D)
+            key (Tensor): Required. Represents the Attention key. Shapes: (B, S2, N2, D), (T2, N2, D)
+            query_index (Tensor): Required. Input query for the lightning_indexer forward pass.
+            key_index (Tensor): Required. Input key for the lightning_indexer forward pass.
+            weights (Tensor): Required. Weight coefficients of lightning_indexer.
+            sparse_indices (Tensor): Required. Token indices of sorted key and key_index.
+            softmax_max (Tensor): Required. Maximum values from Attention softmax results.
+            softmax_sum (Tensor): Required. Sum values from Attention softmax results.
+            scale_value (float): Required scaling coefficient.
+            query_rope (Tensor, optional): RoPE information for query in MLA architecture.
+            key_rope (Tensor, optional): RoPE information for key in MLA architecture.
+            actual_seq_qlen (list[int], optional): Required in TND layout. Cumulative sequence lengths for query.
+            actual_seq_klen (list[int], optional): Required in TND layout. Cumulative sequence lengths for key.
+            layout (str, optional): Input data layout format. Supported: "BSND", "TND". Default: "BSND".
+            sparse_mode (int, optional): Sparse computation mode. Default: 3.
+            pre_tokens (int, optional): Number of preceding tokens for sparse Attention. Default: 65536.
+            next_tokens (int, optional): Number of succeeding tokens for sparse Attention. Default: 65536.
+        Returns:
+            d_query_index (Tensor): Gradient of query_index.
+            d_key_index (Tensor): Gradient of key_index.
+            d_weights (Tensor): Gradient of weights.
+            loss (Tensor): Difference between network forward output and golden value.
+        """
+
+        d_query_index, d_key_index, d_weights, loss = torch_npu.npu_sparse_lightning_indexer_grad_kl_loss(
+            query,
+            key,
+            query_index,
+            key_index,
+            weights,
+            sparse_indices,
+            softmax_max,
+            softmax_sum,
+            scale_value=scale_value,
+            query_rope=query_rope,
+            key_rope=key_rope,
+            actual_seq_qlen=actual_seq_qlen,
+            actual_seq_klen=actual_seq_klen,
+            layout=layout,
+            sparse_mode=sparse_mode,
+            pre_tokens=pre_tokens,
+            next_tokens=next_tokens,
+        )
+
+        # Save computed gradients for use in backward pass
+        ctx.save_for_backward(d_query_index, d_key_index, d_weights)
+        return loss[0]
+
+    @staticmethod
+    def backward(ctx, *grad_output) -> Tuple:
+        """
+        Backward pass: propagate upstream gradients through the precomputed gradients.
+
+        Args:
+            ctx: Context object with saved tensors from forward pass.
+            grad_output: Gradient output.
+
+        Returns:
+            tuple: Gradients.
+        """
+        d_query_index, d_key_index, d_weights = ctx.saved_tensors
+        grad_scale = grad_output[0]
+        if torch.ne(grad_scale, torch.tensor(1.0, device=grad_scale.device)):
+            d_query_index = d_query_index * grad_scale
+            d_key_index = d_key_index * grad_scale
+            d_weights = d_weights * grad_scale
+
+        res_list = [None] * 12
+        return None, None, d_query_index, d_key_index, d_weights, *res_list
