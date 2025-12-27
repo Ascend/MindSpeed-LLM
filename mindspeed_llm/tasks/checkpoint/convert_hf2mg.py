@@ -75,10 +75,6 @@ class Hf2MgConvert(Convert):
             raise ValueError("Currently if expert-tensor-parallel-size is set to 1, then it is no need to set moe-tp-extend-ep")
             
     def _valid_parameter(self):
-        if self.schedules_method == 'dualpipev':
-            if self.tensor_model_parallel_size > 1 and not self.moe_tp_extend_ep:
-                raise ValueError("When dualpipe is enabled, moe-tp-extend-ep should be used at the same time.")
-
         if self.num_layer_list is None:
             if self.num_layers % self.pipeline_model_parallel_size != 0:
                 raise ValueError('number of layers should be divisible by the pipeline parallel size')
