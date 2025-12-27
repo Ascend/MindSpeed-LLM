@@ -24,8 +24,26 @@ from mindspeed_llm.core.transformer.custom_layers.transformer_engine import PTNo
 
 def get_gpt_layer_local_spec_wrapper(fn):
     @wraps(fn)
-    def wrapper(num_experts: int = None, moe_grouped_gemm: bool = False, qk_layernorm: bool = False):
-        res = fn(num_experts, moe_grouped_gemm, qk_layernorm)
+    def wrapper(
+        num_experts: int = None,
+        moe_grouped_gemm: bool = False,
+        qk_layernorm: bool = False,
+        multi_latent_attention: bool = False,
+        fp8: str = None,
+        moe_use_legacy_grouped_gemm: bool = False,
+        normalization: str = None,
+        qk_l2_norm: bool = False,
+    ):
+        res = fn(
+            num_experts,
+            moe_grouped_gemm,
+            qk_layernorm,
+            multi_latent_attention,
+            fp8,
+            moe_use_legacy_grouped_gemm,
+            normalization,
+            qk_l2_norm,
+        )
 
         res.submodules.input_layernorm = PTNorm
         res.submodules.pre_mlp_layernorm = PTNorm
