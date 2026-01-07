@@ -94,18 +94,18 @@ python convert_ckpt.py \
 
 参数解析
 
-| 参数                                  | 说明                                                         | 必填 |
-|-------------------------------------|------------------------------------------------------------|---|
-| `--model-type GPT`                  | 指定模型类型为GPT系列                                               | ✅ |
-| `--use-mcore-models`                | 转换为Megatron-Mcore格式                        | ✅ |
-| `--target-tensor-parallel-size 1`   | 张量并行度设置（建议配置1）                                             | ✅ |
-| `--target-pipeline-parallel-size 4` | 流水线并行度设置（建议保持4）                                            | ✅ |
-| `--tokenizer-model`                 | 指定分词器路径                                                    | ✅ |
-| `--load-model-type`                 | 加载权重的类别（可以是hf、mg）                                          | ✅ |
-| `--save-model-type`                 | 存储权重的类别（可以是hf、mg）                                          | ✅ |
-| `--load-dir`                 | 权重文件加载路径                                          | ✅ |
-| `--save-dir`                 | 权重文件保存路径                                          | ✅ |
-| `--model-type-hf`                 | huggingface模型类别，默认为llama2                                  |   |
+| 参数                                  | 说明                                             | 必填 |
+|-------------------------------------|------------------------------------------------|---|
+| `--model-type GPT`                  | 指定模型类型为GPT系列                                   | ✅ |
+| `--use-mcore-models`                | 转换为Megatron-Mcore格式                            | ✅ |
+| `--target-tensor-parallel-size 1`   | 张量并行度设置（建议配置1）                                 | ✅ |
+| `--target-pipeline-parallel-size 4` | 流水线并行度设置（建议保持4）                                | ✅ |
+| `--tokenizer-model`                 | 指定分词器路径                                        | ✅ |
+| `--load-model-type`                 | 加载权重的类别（可以是hf、mg）                              | ✅ |
+| `--save-model-type`                 | 存储权重的类别（可以是hf、mg）                              | ✅ |
+| `--load-dir`                 | 权重文件加载路径                                       | ✅ |
+| `--save-dir`                 | 权重文件保存路径                                       | ✅ |
+| `--model-type-hf`                 | HuggingFace模型类别，默认为llama2                      |   |
 | `--params-dtype`                 | 指定权重转换后的权重精度模式，默认为fp16，如果源文件格式为bf16，则需要设置为bf16 | ✅  |
 
 - 注意：对该qwen2.5-7b模型，此处推荐的切分配置是tp1pp4，对应上述配置。
@@ -201,7 +201,7 @@ bash examples/mcore/qwen25/pretrain_qwen25_7b_32k_ptd.sh
 ```
 ![img_2.png](../sources/images/quick_start/running_log.png)
 
-脚本中特性包含训练参数也包含优化特性，如下部分参数解释
+脚本中特性包含训练参数和优化特性，如下部分参数解释
 
 | 参数名                                     | 说明                              |
 |-----------------------------------------|---------------------------------| 
@@ -313,7 +313,7 @@ import torch
 torch.configs.set_pyboost(False)
 ```
 
-- MindSpore 后端转换出的模型权重无法直接用于 Torch后端训练或推理。
+- MindSpore 后端转换出的模型权重无法直接用于 PyTorch后端训练或推理。
 
 
 ## 4.2 预训练数据集处理
@@ -407,7 +407,7 @@ bash examples/mindspore/qwen25/pretrain_qwen25_7b_32k_ms.sh
 ```
 ![img_2.png](../sources/images/quick_start/running_log.png)
 
-脚本中特性包含训练参数也包含优化特性，如下部分参数解释
+脚本中特性包含训练参数和优化特性，如下部分参数解释
 
 | 参数名                                     | 说明                              |
 |-----------------------------------------|---------------------------------| 
@@ -447,13 +447,13 @@ TOKENIZER_PATH="./model_from_hf/qwen2.5-7b-hf/"
 **注意**：
 
 - 多机训练需在多个终端同时启动预训练脚本(每个终端的预训练脚本只有NODE_RANK参数不同，其他参数均相同)
-- 如果使用多机训练，且没有设置数据共享，需要在训练启动脚本中增加`--no-shared-storage`参数，设置此参数之后将会根据布式参数判断非主节点是否需要load数据，并检查相应缓存和生成数据
+- 如果使用多机训练，且没有设置数据共享，需要在训练启动脚本中增加`--no-shared-storage`参数，设置此参数之后将会根据分布式参数判断非主节点是否需要load数据，并检查相应缓存和生成数据
 
 
 # 附录
 ## 常见问题
 - **问题1：训练日志显示"Checkpoint path not found"？**  
-  → 检查`CKPT_LOAD_DIR`是否指向正确的权重转换后路径，确认文件夹内包含`.ckpt`或`.bin`文件，否则路径错误请更正权重路径。
+  → 检查`CKPT_LOAD_DIR`是否指向正确的权重转换后路径，确认文件夹内包含`.ckpt`或`.bin`文件，若路径错误，请更正权重路径。
 
 ![img_2.png](../sources/images/quick_start/img_2.png)
 
