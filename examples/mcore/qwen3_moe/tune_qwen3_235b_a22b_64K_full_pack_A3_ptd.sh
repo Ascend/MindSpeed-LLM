@@ -109,7 +109,7 @@ MODEL_PARALLEL_ARGS="
     --context-parallel-algo ${CP_TYPE} \
     --num-layers-per-virtual-pipeline-stage ${VPP} \
     --expert-tensor-parallel-size 1 \
-    --attention-mask-type causal \
+    --attention-mask-type general \
 "
 
 GPT_ARGS="

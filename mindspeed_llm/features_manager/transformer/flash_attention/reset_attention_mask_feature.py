@@ -10,6 +10,13 @@ class ResetAttentionMaskFeature(MindSpeedFeature):
     def __init__(self):
         super().__init__('reset-attention-mask', optimization_level=2)
 
+    def validate_args(self, args):
+        if args.context_parallel_size > 1 and hasattr(args, 'reset_attention_mask') and args.reset_attention_mask:
+            if args.attention_mask_type == 'causal' and args.context_parallel_algo != 'megatron_cp_algo':
+                raise AssertionError('accelerated eod reset mode only support ring attention')
+            if args.attention_mask_type == 'causal' and not getattr(args, 'variable_seq_lengths', None):
+                raise AssertionError('accelerated eod reset mode needs variable_seq_lengths.')
+
     def register_patches(self, patch_manager, args):
         if getattr(args, self.feature_name, None):
             from mindspeed.core.transformer.flash_attention.reset_attention_mask.utils import (
