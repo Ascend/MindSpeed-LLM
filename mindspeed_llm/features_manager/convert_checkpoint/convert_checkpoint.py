@@ -13,7 +13,7 @@ class CheckpointFeature(MindSpeedFeature):
                             choices=['qwen3', 'qwen3-moe', 'deepseek3', 'glm45-moe', 'bailing_mini', 'qwen3-next', 'seed-oss',
                                  'baichuan','baichuan2', 'llama2', 'mixtral', 'chatglm3', 'gemma', 'gemma2',
                                  'bloom', 'bloom_3b', 'qwen', 'internlm2', 'deepseek2', 'minicpm', 'minicpm3', 'minicpm-moe',
-                                 'deepseek2-lite', 'qwen2-moe', 'phi3.5', 'phi3.5-moe', 'hunyuan', 'glm4', 'magistral', 'deepseek32', 'mamba2'],
+                                 'deepseek2-lite', 'qwen2-moe', 'phi3.5', 'phi3.5-moe', 'hunyuan', 'glm4', 'magistral', 'deepseek32', 'mamba2', 'plm'],
                             help='model type of huggingface')
         group.add_argument('--mg-cache-dir', type=str, default=None,
                             help='Directory to save megatron checkpoint to')

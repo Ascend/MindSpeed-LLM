@@ -2,7 +2,7 @@
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
 
-NPUS_PER_NODE=1
+NPUS_PER_NODE=8
 MASTER_ADDR=localhost
 MASTER_PORT=8080
 NNODES=1
@@ -67,8 +67,8 @@ GPT_ARGS="
     --tokenizer-name-or-path ${TOKENIZER_MODEL} \
     --seq-length 4096 \
     --max-position-embeddings 4096 \
-    --micro-batch-size 8 \
-    --global-batch-size 32 \
+    --micro-batch-size 2 \
+    --global-batch-size 16 \
     --make-vocab-size-divisible-by 1 \
     --lr 1.25e-06 \
     --train-iters 2000 \

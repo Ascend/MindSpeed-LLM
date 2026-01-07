@@ -43,6 +43,8 @@ ROPE_ARGS="
 GPT_ARGS="
     --load $CKPT_LOAD_DIR \
     --use-distributed-optimizer \
+    --overlap-grad-reduce \
+    --overlap-param-gather \
     --use-flash-attn \
     --use-mcore-models \
     --tensor-model-parallel-size ${TP} \
@@ -57,8 +59,8 @@ GPT_ARGS="
     --tokenizer-name-or-path ${TOKENIZER_MODEL} \
     --seq-length 4096 \
     --max-position-embeddings 4096 \
-    --micro-batch-size 1 \
-    --global-batch-size 32 \
+    --micro-batch-size 2 \
+    --global-batch-size 16 \
     --make-vocab-size-divisible-by 1 \
     --lr 1.25e-06 \
     --train-iters 2000 \
@@ -75,7 +77,6 @@ GPT_ARGS="
     --use-rotary-position-embeddings \
     --use-fused-rmsnorm \
     --squared-relu \
-    --finetune \
     --no-masked-softmax-fusion \
     --attention-softmax-in-fp32 \
     --weight-decay 0.1 \
