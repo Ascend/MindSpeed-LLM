@@ -20,7 +20,8 @@ from mindspeed.core.transformer.moe.moe_feature.fb_overlap.modules.utils import 
 from megatron.core.transformer.identity_op import IdentityOp
 from megatron.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb
 from megatron.core.tensor_parallel import ColumnParallelLinear, RowParallelLinear
-from megatron.core.tensor_parallel.mappings import gather_from_sequence_parallel_region
+from megatron.core.tensor_parallel.mappings import gather_from_sequence_parallel_region, \
+    gather_from_tensor_model_parallel_region
 from megatron.core.transformer import TransformerConfig, ModuleSpec, build_module
 from megatron.core.transformer.attention import SelfAttention, SelfAttentionSubmodules
 from megatron.core.transformer.custom_layers.transformer_engine import TEColumnParallelLinear, TERowParallelLinear
@@ -711,8 +712,27 @@ class CustomMLASelfAttention(SelfAttention):
                     key = gather_from_sequence_parallel_region(key,group=mpu.get_context_parallel_group())
 
                 if args.use_fused_lightning_indexer_loss:
+                    if args.tensor_model_parallel_size > 1:
+                        query_shape = list(query[0].size())
+                        query_shape[2] *= mpu.get_tensor_model_parallel_world_size()
+                        total_query = torch.empty(query_shape, dtype=query[0].dtype, device=torch.cuda.current_device())
+                        torch.distributed.all_gather_into_tensor(total_query, query[0].contiguous(),
+                                                                 group=mpu.get_tensor_model_parallel_group())
+
+                        query_rope_shape = list(query[1].size())
+                        query_rope_shape[2] *= mpu.get_tensor_model_parallel_world_size()
+                        total_query_rope = torch.empty(query_rope_shape, dtype=query[1].dtype,
+                                                       device=torch.cuda.current_device())
+                        torch.distributed.all_gather_into_tensor(total_query_rope, query[1].contiguous(),
+                                                                 group=mpu.get_tensor_model_parallel_group())
+
+                        softmax_max = gather_from_tensor_model_parallel_region(softmax_max)
+                        softmax_sum = gather_from_tensor_model_parallel_region(softmax_sum)
+                    else:
+                        total_query = query[0]
+                        total_query_rope = query[1]
                     loss = fused_sparse_lightning_indexer_kl_loss(
-                        query[0],
+                        total_query,
                         key[0],
                         query_index,
                         key_index,
@@ -721,7 +741,7 @@ class CustomMLASelfAttention(SelfAttention):
                         softmax_max,
                         softmax_sum,
                         scale_value=self.core_attention.local_attn.scale if args.context_parallel_size > 1 and args.context_parallel_algo == 'ulysses_cp_algo' else self.core_attention.scale,
-                        query_rope=query[1],
+                        query_rope=total_query_rope,
                         key_rope=key[1],
                         actual_seq_qlen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_q,
                         actual_seq_klen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_kv,
