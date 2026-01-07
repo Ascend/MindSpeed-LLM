@@ -48,6 +48,9 @@ def model_provider(pre_process=True, post_process=True) -> Union[GPTModelInfer, 
     if args.sequence_parallel and args.use_kv_cache:
         raise AssertionError('Use_kv_cache can not be true in sequence_parallel mode.')
 
+    if args.num_layers_per_virtual_pipeline_stage is not None:
+        raise AssertionError('VPP is not supported for inference.')
+
     print_rank_0('building GPT model ...')
     # Experimental loading arguments from yaml
     if args.yaml_cfg is not None:
