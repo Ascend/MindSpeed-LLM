@@ -35,11 +35,12 @@ from mindspeed.features_manager import (
     TorchFullyShardedDataParallelFeature,
     ProfilerDefaultFeature,
     OptimizeP2PCommFeature,
-    FusionAttentionV2Feature
+    FusionAttentionV2Feature,
 )
 from mindspeed.features_manager.feature import MindSpeedFeature
 from mindspeed.features_manager.features_manager import MindSpeedFeaturesManager
 
+from mindspeed_llm.features_manager.low_precision.low_precision_optimizer_feature import LowPrecisionOptimizerFeature
 from mindspeed_llm.features_manager.affinity.affinity import AffinityFeature
 from mindspeed_llm.features_manager.context_parallel.context_parallel_feature import ContextParallelFeature
 from mindspeed_llm.features_manager.context_parallel.ulysses_context_parallel import UlyssesContextParallelFeature
@@ -254,6 +255,7 @@ def add_optimizer_features(features_list: List[MindSpeedFeature]):
     features_list.extend([
         FusedEmaAdamwFeature(),
         VirtualOptimizerFeature(),
+        LowPrecisionOptimizerFeature(),
     ])
 
 

@@ -74,12 +74,15 @@ class LoraFeature(MindSpeedFeature):
             patch_manager.register_patch('megatron.training.training.get_model', 
                                           get_model_wrapper)
 
-        from mindspeed_llm.core.distributed.finalize_model_grads import _allreduce_word_embedding_grads
         from mindspeed_llm.training.utils import unwrap_model_wrapper
         from mindspeed_llm.training.checkpointing import _load_base_checkpoint_wrapper, save_checkpoint_wrapper
         from mindspeed_llm.core.transformer.moe.moe_layer import lora_moe_layer_init
-        patch_manager.register_patch('megatron.core.distributed.finalize_model_grads._allreduce_word_embedding_grads',
-                                      _allreduce_word_embedding_grads)
+        from mindspeed_llm.core.distributed.finalize_model_grads import _allreduce_word_embedding_grads
+        patch_manager.register_patch(
+            'megatron.core.distributed.finalize_model_grads._allreduce_word_embedding_grads',
+            _allreduce_word_embedding_grads
+        ) 
+
         # fix unwrap PerfModel 
         patch_manager.register_patch('megatron.training.checkpointing.unwrap_model',
                                       unwrap_model_wrapper)
