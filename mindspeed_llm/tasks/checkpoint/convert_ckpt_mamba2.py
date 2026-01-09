@@ -527,6 +527,7 @@ class CheckpointConverter:
             hf_model = self.modify_keys_mg2hf(full_model)
             # Ensure the parent directory exists
             model_file = os.path.join(args.save_dir, "torch_model.bin")
+            os.makedirs(os.path.dirname(model_file), exist_ok=True)
             torch.save(hf_model, model_file)
             logger.info(f"Model saved to {model_file}.")
 

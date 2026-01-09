@@ -65,6 +65,7 @@ MAMBA_ARGS="
     --make-vocab-size-divisible-by 1 \
     --train-iters 2000 \
     --lr-decay-style cosine \
+    --untie-embeddings-and-output-weights \
     --disable-bias-linear \
     --attention-dropout 0.0 \
     --init-method-std 0.02 \
