@@ -409,6 +409,14 @@
         <td>Y</td>
     </tr>
     <tr>
+        <td rowspan="1"><a href="pipeline/qwen3-30b">Qwen3-30B</a></td>
+        <td>DPO</td>
+        <td><a href="pipeline/qwen3-30b/dpo_qwen3_30b_a3b_16K_A3_ptd_tp2pp4.sh“</a>dpo_qwen3_30b_a3b_16K_A3_ptd_tp2pp4.sh</td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
         <td rowspan="1"><a href="pipeline/gpt4">GPT4</a></td>
         <td>pretrain</td>
         <td><a href="pipeline/gpt4/gpt4_mcore_tp4_cp2_32k_moe_drop.sh">gpt4_mcore_tp4_cp2_32k_moe_drop.sh</a></td>

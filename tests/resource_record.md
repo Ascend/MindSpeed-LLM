@@ -64,6 +64,15 @@
         <td>/</td>
     </tr>
     <tr>
+        <td>dpo_qwen3_30b_a3b_16K_A3_ptd_tp2pp4.sh</td>
+        <td>/data/ci/models/Qwen3-30B-A3B-Instruct-2507</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/data/ci/datasets/origin/pairwise_dataset/output/orca_rlhf/orca_rlhf</td>
+        <td>/</td>
+        <td>/data/ci/cache/qwen3-30b-pp4tp2layer4</td>
+    </tr>
+    <tr>
         <td>test_mamba2_hf2mcore_tp1pp2</td>
         <td>/data/ci/models/mamba2/hf/mamba2-2.7b-hf</td>
         <td>/</td>
