@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import json
 import torch
 import glob
 import os, sys, time, subprocess
@@ -82,6 +83,10 @@ def convert_datasets(args, shared: bool):
                 "--n-subs", str(getattr(args, "n_subs", 1)),
             ]
             cmd += ["--json-keys"] + list(args.json_keys)
+
+            if getattr(args, "map_keys", None):
+                map_keys = json.dumps(args.map_keys)
+                cmd += ["--map-keys", map_keys]
 
             if getattr(args, "tokenizer_model", False):
                 cmd += ["--tokenizer-model", str(args.tokenizer_model)]
