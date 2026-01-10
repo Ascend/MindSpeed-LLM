@@ -29,8 +29,8 @@ class TransformerEngineBasicFeature(MindSpeedFeature):
             raise AssertionError('FP8 just support TE implement.')
         if args.use_ascend_coc and args.transformer_impl == 'transformer_engine':
             raise AssertionError('transformer engine does not support ascend coc')
-        if args.fp8 and args.use_ascend_mc2:
-            raise AssertionError('FP8 currently does not support mc2.')
+        if args.use_ascend_mc2 and args.fp8 and args.fp8_recipe != 'mxfp8':
+            raise AssertionError('MC2 is supported only by the mxfp8 recipe in fp8.')
         if (getattr(args, "transformer_impl", "transformer_engine") == "transformer_engine"
             and getattr(args, "use_legacy_models", False)):
             raise AssertionError('transformer engine only support for mcore models')
