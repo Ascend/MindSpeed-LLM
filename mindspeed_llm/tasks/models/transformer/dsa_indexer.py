@@ -52,7 +52,7 @@ def get_dsa_indexer_spec(enable_dsa_indexer):
         return IdentityOp
 
 
-def fp16module_init_wrapper(fn):
+def norm2fp32_fp16module_init_wrapper(fn):
     @wraps(fn)
     def wrapper(self, *args, **kwargs):
         fn(self, *args, **kwargs)
