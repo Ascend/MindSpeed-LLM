@@ -31,7 +31,7 @@ source /usr/local/Ascend/nnal/atb/set_env.sh --cxx_abi=0
 
 ### MindSpore安装
 
-参考[mindspore](https://gitee.com/mindspore/mindspore#%E5%AE%89%E8%A3%85)完成mindspore的安装。
+参考[MindSpore](https://gitee.com/mindspore/mindspore#%E5%AE%89%E8%A3%85)完成MindSpore的安装。
 
 
 ### MindSpeed-LLM及相关依赖安装
