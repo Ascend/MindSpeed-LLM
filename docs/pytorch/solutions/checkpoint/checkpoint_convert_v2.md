@@ -141,7 +141,7 @@ ModelScope 下载指南：https://modelscope.cn/docs/models/download
     </tr>
     <tr>
       <td>--expert-tensor-parallel-size</td>
-      <td>ETP，指定专家张量并行，默认为 1</td>
+      <td>ETP，指定专家张量并行，默认等于TP，当前仅支持开启后ETP=1</td>
       <td>✅</td>
     </tr>
     <tr>
@@ -237,6 +237,8 @@ bash examples/mcore/qwen3_moe/ckpt_convert_qwen3_moe_235b_hf2mcore.sh
 
 3、如果Megatron-Mcore权重配置了空层，在Megatron-Mcore权重转换到Huggingface格式时，也需要在命令行加上相同的空层配置。
 
+4、若原始 Megatron-Mcore 权重的专家张量并行度（ETP）为 1，则在执行 mcore2hf 转换脚本时，必须添加 **--expert-tensor-parallel-size 1** 参数。
+
 下面提供一个Qwen3-235b模型的mg-hf权重转换脚本仅供参考：
 
 ```shell
@@ -293,13 +295,11 @@ MTP层的层数。默认值为 0，支持减层时配置MTP层，不能大于原
 
 ## 使用约束
 
-1、权重转换v2当前暂不支持开启etp（--expert-tensor-parallel-size）的Megatron-Mcore权重转换到Huggingface功能；
+1、权重转换v2当前暂不支持LoRA/QLoRA权重转换到Huggingface功能，包括：LoRA/QLoRA权重与base权重合并转到Huggingface格式、LoRA/QLoRA权重单独转为Huggingface格式；
 
-2、权重转换v2当前暂不支持LoRA/QLoRA权重转换到Huggingface功能，包括：LoRA/QLoRA权重与base权重合并转到Huggingface格式、LoRA/QLoRA权重单独转为Huggingface格式；
+2、权重转换v2当前暂不支持从Huggingface到Megatron-Mcore的QLoRA量化权重转换；
 
-3、权重转换v2当前暂不支持从Huggingface到Megatron-Mcore的QLoRA量化权重转换；
-
-4、权重转换v1与权重转换v2为两套不同的方案，请不要混用，如使用权重转换v2做hf-mg，再使用v1做mg-hf。
+3、权重转换v1与权重转换v2为两套不同的方案，请不要混用，如使用权重转换v2做hf-mg，再使用v1做mg-hf。
 
 ## 社区贡献
 
