@@ -28,7 +28,7 @@ CP_TYPE='ulysses_cp_algo'
 NUM_LAYERS=64
 SEQ_LEN=4096
 MBS=1
-GBS=4096
+GBS=7680
 
 DISTRIBUTED_ARGS="
     --nproc_per_node $NPUS_PER_NODE \
@@ -97,11 +97,11 @@ DSA_ARGS="
     --enable-mla-absorb \
     --index-topk 1024 \
     --indexer-loss-coeff 1.0 \
+    --init-norm-weight-in-fp32 \
 "
 
 OTHERS_ARGS="
     --tensorboard-dir ./tb \
-    --fix-router \
     --no-shared-storage \
 "
 
@@ -144,7 +144,7 @@ GPT_ARGS="
     --global-batch-size ${GBS} \
     --make-vocab-size-divisible-by 1 \
     --lr 1.0e-5 \
-    --train-iters 30 \
+    --train-iters 2000 \
     --lr-decay-style cosine \
     --untie-embeddings-and-output-weights \
     --disable-bias-linear \
@@ -203,4 +203,6 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     $MTP_ARGS \
     $DSA_ARGS \
     $OTHERS_ARGS \
-    --distributed-backend nccl | tee logs/pretrain_deepseek32_671b_8k_A3_ptd.log
+    --save $CKPT_SAVE_DIR \
+    --load $CKPT_LOAD_DIR \
+    --distributed-backend nccl | tee logs/pretrain_deepseek32_671b_4k_A3_ptd.log
