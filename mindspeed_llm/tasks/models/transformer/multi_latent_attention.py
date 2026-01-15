@@ -898,7 +898,7 @@ class CustomMLASelfAttention(SelfAttention):
             attention_mask = inputs[input_idx + 2]
             attn_mask_type = inputs[input_idx + 4]
             attn_mask_type = AttnMaskType(attn_mask_type.item())
-            return_softmax = inputs[input_idx + 5]
+            return_softmax = inputs[input_idx + 5].item()
             output_ = self.core_attention(
                 query,
                 key,
@@ -915,7 +915,8 @@ class CustomMLASelfAttention(SelfAttention):
         if attn_mask_type is None:
             attn_mask_type = self.attn_mask_type
         attn_mask_type = torch.tensor([attn_mask_type.value], dtype=torch.int)
-        
+        return_softmax = torch.tensor([return_softmax], dtype=torch.bool)
+
         # Prepare checkpoint inputs: unpack lists into individual tensors
         checkpoint_inputs = []
         if is_query_list:

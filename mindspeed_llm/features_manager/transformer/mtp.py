@@ -41,7 +41,7 @@ class MultiTokenPredictionFeature(MindSpeedFeature):
         )
         patch_manager.register_patch('megatron.core.transformer.multi_token_prediction.MultiTokenPredictionLayer.__init__',
                                       mtp_layer_init_wrapper)
-        if not args.schedules_method == "dualpipev":
+        if not args.moe_fb_overlap:
             patch_manager.register_patch('megatron.core.transformer.multi_token_prediction.MultiTokenPredictionLayer.forward',
                                           mtp_layer_forward, force_patch=True)
         patch_manager.register_patch('megatron.core.transformer.multi_token_prediction.MultiTokenPredictionBlock._build_layers',
