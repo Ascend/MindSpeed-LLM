@@ -72,7 +72,7 @@ GPT_ARGS="
     --make-vocab-size-divisible-by 1 \
     --lr 1.25e-06 \
     --train-iters 2000 \
-    --lr-decay-style cosine \
+    --lr-decay-style constant \
     --lr-decay-iters 2000 \
     --disable-bias-linear \
     --attention-dropout 0 \

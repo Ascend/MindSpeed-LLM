@@ -2,6 +2,8 @@
 export HCCL_CONNECT_TIMEOUT=1800
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export NPU_ASD_ENABLE=0
+export HCCL_BUFFSIZE=64
+export CPU_AFFINITY_CONF=1,lazy_bind:0
 
 NPUS_PER_NODE=8
 MASTER_ADDR=localhost
@@ -64,7 +66,7 @@ GPT_ARGS="
     --make-vocab-size-divisible-by 1 \
     --lr 1.25e-06 \
     --train-iters 2000 \
-    --lr-decay-style cosine \
+    --lr-decay-style constant \
     --lr-decay-iters 2000 \
     --disable-bias-linear \
     --attention-dropout 0 \
@@ -90,8 +92,7 @@ GPT_ARGS="
     --norm-epsilon 1e-6 \
     --no-load-optim \
     --no-load-rng \
-    --bf16 \
-    --reuse-fp32-param
+    --bf16
 "
 
 DATA_ARGS="
