@@ -403,6 +403,17 @@ class MegatronModel(Model):
                 module_mapping[
                     "layers_mlp_experts_linear_fc2"] = module_layer + "mlp.experts.linear_fc2.weight[expert_idx]"
 
+        if self.mla_mm_split:
+            module_mapping[
+                "layers_self_attention_linear_qk_nope"] = module_layer + "self_attention.linear_qk_nope"
+            module_mapping[
+                "layers_self_attention_linear_qk_rope"] = module_layer + "self_attention.linear_qk_rope"
+            module_mapping[
+                "layers_self_attention_linear_kv_nope"] = module_layer + "self_attention.linear_kv_nope"
+            module_mapping[
+                "layers_self_attention_linear_v"] = module_layer + "self_attention.linear_v"
+
+
         if self.mtp_num_layers:
             module_mapping[
                 "mtp_layers_enorm"] = "mtp.layers[layer_idx].enorm"

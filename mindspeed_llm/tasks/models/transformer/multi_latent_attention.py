@@ -137,10 +137,10 @@ class CustomMLASelfAttention(SelfAttention):
 
         # NOTE:Current implementation only supports sparse attention mode 
         # Future extensions may support other modes 
-        if self.enable_mla_absorb and (not args.use_sparse_flash_attn):
+        if self.enable_mla_absorb and (not args.use_sparse_flash_attn) and (not args.mla_mm_split):
             logger.warning(
-                f"enable_mla_absorb currently only supports sparse attention mode."
-                f"Please enable use_sparse_flash_attn. enable_mla_absorb will be disabled."
+                f"enable_mla_absorb currently only supports sparse attention and mm-split mode."
+                f"Please enable use_sparse_flash_attn and mla_mm_split. enable_mla_absorb will be disabled."
             )
             self.enable_mla_absorb = False
 
