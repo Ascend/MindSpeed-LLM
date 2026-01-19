@@ -29,7 +29,7 @@ from megatron.core.tensor_parallel.mappings import gather_from_sequence_parallel
 from scipy.linalg import hadamard
 
 from mindspeed_llm.core.tensor_parallel.layers import LinearNoTP
-
+from mindspeed_llm.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb_bshd_in_complex
 
 @dataclass
 class DSAIndexerSubmodules:
@@ -249,7 +249,7 @@ class DSAIndexer(MegatronModule):
 
         # Apply rotary positional embedding to the RoPE part of the query
         q_pe, q_nope = torch.split(q, [self.rope_head_dim, self.head_dim - self.rope_head_dim], dim=-1)
-        q_pe = apply_rotary_pos_emb(q_pe, rotary_q_pos_emb, config=self.config)
+        q_pe = apply_rotary_pos_emb_bshd_in_complex(q_pe, rotary_q_pos_emb, rotary_interleaved=True)
         q = torch.cat([q_pe, q_nope], dim=-1)
 
         # Project and normalize keys
@@ -260,7 +260,7 @@ class DSAIndexer(MegatronModule):
         # Apply rotary positional embedding to the RoPE part of the key
         k_pe = k_pe.unsqueeze(2)
         s, b, n, d = k_pe.shape
-        k_pe = apply_rotary_pos_emb(k_pe, rotary_k_pos_emb, config=self.config).view(s, b, d)
+        k_pe = apply_rotary_pos_emb_bshd_in_complex(k_pe, rotary_k_pos_emb, rotary_interleaved=True).view(s, b, d)
         k = torch.cat([k_pe, k_nope], dim=-1).unsqueeze(2)
 
         if args.context_parallel_size > 1 and args.context_parallel_algo == 'ulysses_cp_algo':

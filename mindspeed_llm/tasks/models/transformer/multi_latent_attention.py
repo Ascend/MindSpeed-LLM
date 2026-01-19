@@ -37,6 +37,7 @@ from mindspeed_llm.tasks.models.transformer.dsa_indexer import get_dsa_indexer_s
     fused_sparse_lightning_indexer_kl_loss
 from mindspeed_llm.tasks.models.transformer.mla_dot_product_attention import MlaDotProductAttention
 from mindspeed_llm.tasks.models.transformer.mla_up_proj_overlap_tp_comm import mla_up_projection_overlap_tp_comm
+from mindspeed_llm.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb_bshd_in_complex
 
 logger = logging.getLogger(__name__)
 
@@ -392,7 +393,7 @@ class CustomMLASelfAttention(SelfAttention):
                 if rotary_pos_emb is not None:
                     rotary_q_pos_emb, rotary_k_pos_emb = rotary_pos_emb
 
-                    if hasattr(args, "rope_scaling_type") and args.rope_scaling_type in ("yarn", "plm"):
+                    if not args.enable_dsa_indexer and hasattr(args, "rope_scaling_type") and args.rope_scaling_type in ("yarn", "plm"):
                         s, b, n, d = q_pos_emb.shape
                         q_pos_emb = q_pos_emb.view(s, b, n, d // 2, 2).transpose(4, 3).reshape(s, b, n, d)
                         s, b, n, d = k_pos_emb.shape
@@ -403,9 +404,12 @@ class CustomMLASelfAttention(SelfAttention):
                         cu_seqlens_kv = packed_seq_params
                     else:
                         cu_seqlens_q = cu_seqlens_kv = None
-
-                    q_pos_emb = apply_rotary_pos_emb(q_pos_emb, rotary_q_pos_emb, config=self.config, cu_seqlens=cu_seqlens_q)
-                    k_pos_emb = apply_rotary_pos_emb(k_pos_emb, rotary_k_pos_emb, config=self.config, cu_seqlens=cu_seqlens_kv)
+                    if not args.enable_dsa_indexer:
+                        q_pos_emb = apply_rotary_pos_emb(q_pos_emb, rotary_q_pos_emb, config=self.config, cu_seqlens=cu_seqlens_q)
+                        k_pos_emb = apply_rotary_pos_emb(k_pos_emb, rotary_k_pos_emb, config=self.config, cu_seqlens=cu_seqlens_kv)
+                    else:
+                        q_pos_emb = apply_rotary_pos_emb_bshd_in_complex(q_pos_emb, rotary_q_pos_emb, rotary_interleaved=False)
+                        k_pos_emb = apply_rotary_pos_emb_bshd_in_complex(k_pos_emb, rotary_k_pos_emb, rotary_interleaved=False)
 
                 k_pos_emb = k_pos_emb.expand(k_pos_emb.shape[0], k_pos_emb.shape[1], q_no_pe.shape[2], k_pos_emb.shape[3])
                 if args.mla_fa_divide_qk:
@@ -591,7 +595,7 @@ class CustomMLASelfAttention(SelfAttention):
             if rotary_pos_emb is not None:
                 rotary_q_pos_emb, rotary_k_pos_emb = rotary_pos_emb
 
-                if hasattr(args, "rope_scaling_type") and args.rope_scaling_type in ("yarn", "plm"):
+                if not args.enable_dsa_indexer and hasattr(args, "rope_scaling_type") and args.rope_scaling_type in ("yarn", "plm"):
                     s, b, n, d = q_pos_emb.shape
                     q_pos_emb = q_pos_emb.view(s, b, n, d // 2, 2).transpose(4, 3).reshape(s, b, n, d)
                     s, b, n, d = k_pos_emb.shape
@@ -602,9 +606,12 @@ class CustomMLASelfAttention(SelfAttention):
                     cu_seqlens_kv = packed_seq_params.cu_seqlens_kv if hasattr(packed_seq_params, 'cu_seqlens_kv') else packed_seq_params
                 else:
                     cu_seqlens_q = cu_seqlens_kv = None
-
-                q_pos_emb = apply_rotary_pos_emb(q_pos_emb, rotary_q_pos_emb, config=self.config, cu_seqlens=cu_seqlens_q)
-                k_pos_emb = apply_rotary_pos_emb(k_pos_emb, rotary_k_pos_emb, config=self.config, cu_seqlens=cu_seqlens_kv)
+                if not args.enable_dsa_indexer:
+                    q_pos_emb = apply_rotary_pos_emb(q_pos_emb, rotary_q_pos_emb, config=self.config, cu_seqlens=cu_seqlens_q)
+                    k_pos_emb = apply_rotary_pos_emb(k_pos_emb, rotary_k_pos_emb, config=self.config, cu_seqlens=cu_seqlens_kv)
+                else:
+                    q_pos_emb = apply_rotary_pos_emb_bshd_in_complex(q_pos_emb, rotary_q_pos_emb, rotary_interleaved=False)
+                    k_pos_emb = apply_rotary_pos_emb_bshd_in_complex(k_pos_emb, rotary_k_pos_emb, rotary_interleaved=False)
 
             k_pos_emb = k_pos_emb.expand(k_pos_emb.shape[0], k_pos_emb.shape[1], q_no_pe.shape[2], k_pos_emb.shape[3])
             # For absorb mode, k_pos_emb needs to be squeezed to 1 head
