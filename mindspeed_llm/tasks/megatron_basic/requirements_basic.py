@@ -20,7 +20,7 @@ def _load_from_state_dict_wrapper(fn):
         fn(self, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs)
         from megatron.training import get_args
         args = get_args()
-        if hasattr(args, 'lora_target_modules') and args.lora_target_modules:
+        if not getattr(args, 'save_lora_to_hf', False) and hasattr(args, 'lora_target_modules') and args.lora_target_modules:
             if not any(('lora_a' in key.lower() or 'lora_b' in key.lower()) and key.endswith('weight') for key in state_dict):
                 import warnings
                 warnings.warn("The lora weights is missing from the checkpoint and will be randomly initialized.", RuntimeWarning)
