@@ -81,7 +81,9 @@ def main():
     parser.add_argument('--ckpt-format', default='torch',
                         choices=['torch', 'torch_dist', 'zarr'],
                         help='Checkpoint format to use.')
-    
+    parser.add_argument('--lora-target-modules', nargs='+', type=str, default=[],
+                       help='Lora target modules.')
+
     known_args, _ = parser.parse_known_args()
 
     use_saver = known_args.load_model_type is None
