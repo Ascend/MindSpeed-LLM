@@ -209,9 +209,10 @@ def set_model_layer_attn(model_mg, msg, md, **kwargs):
     if md.linear_bias or margs.add_qkv_bias:
         qkv_bias = torch.chunk(msg.pop("qkv bias"), margs.tensor_model_parallel_size, dim=0)
 
-    if margs.save_lora_to_hf:
+    if margs.save_lora_to_hf and 'linear_qkv' in margs.lora_target_modules:
         qkv_lora_A = msg.pop("qkv lora A")
         qkv_lora_B = msg.pop("qkv lora B")
+    if margs.save_lora_to_hf and 'linear_proj' in margs.lora_target_modules:
         proj_lora_A = msg.pop("proj lora A")
         proj_lora_B = msg.pop("proj lora B")
 
@@ -266,10 +267,12 @@ def set_model_layer_attn(model_mg, msg, md, **kwargs):
             if margs.add_dense_bias:
                 model_mg.set_layers_self_attention_linear_proj_bias(**kwargs, data=dense_bias)
 
-            if margs.save_lora_to_hf:
-                logger.info(f"begin to convert attn of lora.")
+            if margs.save_lora_to_hf and 'linear_proj' in margs.lora_target_modules:
+                logger.info(f"begin to convert attn linear_proj of lora.")
                 model_mg.set_layers_self_attention_linear_proj_lora_A_default_weight(**kwargs, data=proj_lora_A)
                 model_mg.set_layers_self_attention_linear_proj_lora_B_default_weight(**kwargs, data=proj_lora_B)
+            if margs.save_lora_to_hf and 'linear_qkv' in margs.lora_target_modules:
+                logger.info(f"begin to convert attn linear_qkv of lora.")
                 model_mg.set_layers_self_attention_linear_qkv_lora_A_default_weight(**kwargs, data=qkv_lora_A)
                 model_mg.set_layers_self_attention_linear_qkv_lora_B_default_weight(**kwargs, data=qkv_lora_B)
 
@@ -282,9 +285,10 @@ def _set_set_model_layer_mlp(model_mg, msg, md, pop_flag=True, is_moe_mlp=False,
         num_experts_local = margs.num_experts // margs.expert_model_parallel_size
     # Save them to the model
 
-    if margs.save_lora_to_hf:
+    if margs.save_lora_to_hf and 'linear_fc1' in margs.lora_target_modules:
         fc1_lora_A = func(f"fc1 lora A")
         fc1_lora_B = func(f"fc1 lora B")
+    if margs.save_lora_to_hf and 'linear_fc2' in margs.lora_target_modules:
         fc2_lora_A = func(f"fc2 lora A")
         fc2_lora_B = func(f"fc2 lora B")
     if md.linear_bias:
@@ -313,19 +317,23 @@ def _set_set_model_layer_mlp(model_mg, msg, md, pop_flag=True, is_moe_mlp=False,
         if is_moe_mlp:
             model_mg.set_layers_mlp_experts_linear_fc1_weight(**kwargs, data=mlp_l0_weight[tp_rank])
             model_mg.set_layers_mlp_experts_linear_fc2_weight(**kwargs, data=mlp_l1_weight[tp_rank])
-            if margs.save_lora_to_hf:
-                logger.info(f"begin to convert mlp experts of lora.")
+            if margs.save_lora_to_hf and 'linear_fc1' in margs.lora_target_modules:
+                logger.info(f"begin to convert mlp experts linear_fc1 of lora.")
                 model_mg.set_layers_mlp_experts_linear_fc1_lora_A_default_weight(**kwargs, data=fc1_lora_A)
                 model_mg.set_layers_mlp_experts_linear_fc1_lora_B_default_weight(**kwargs, data=fc1_lora_B)
+            if margs.save_lora_to_hf and 'linear_fc2' in margs.lora_target_modules:
+                logger.info(f"begin to convert mlp experts linear_fc2 of lora.")
                 model_mg.set_layers_mlp_experts_linear_fc2_lora_A_default_weight(**kwargs, data=fc2_lora_A)
                 model_mg.set_layers_mlp_experts_linear_fc2_lora_B_default_weight(**kwargs, data=fc2_lora_B)
         else:
             model_mg.set_layers_mlp_linear_fc1_weight(**kwargs, data=mlp_l0_weight[tp_rank])
             model_mg.set_layers_mlp_linear_fc2_weight(**kwargs, data=mlp_l1_weight[tp_rank])
-            if margs.save_lora_to_hf:
-                logger.info(f"begin to convert mlp of lora.")
+            if margs.save_lora_to_hf and 'linear_fc1' in margs.lora_target_modules:
+                logger.info(f"begin to convert mlp linear_fc1 of lora.")
                 model_mg.set_layers_mlp_linear_fc1_lora_A_default_weight(**kwargs, data=fc1_lora_A)
                 model_mg.set_layers_mlp_linear_fc1_lora_B_default_weight(**kwargs, data=fc1_lora_B)
+            if margs.save_lora_to_hf and 'linear_fc2' in margs.lora_target_modules:
+                logger.info(f"begin to convert mlp linear_fc2 of lora.")
                 model_mg.set_layers_mlp_linear_fc2_lora_A_default_weight(**kwargs, data=fc2_lora_A)
                 model_mg.set_layers_mlp_linear_fc2_lora_B_default_weight(**kwargs, data=fc2_lora_B)
 

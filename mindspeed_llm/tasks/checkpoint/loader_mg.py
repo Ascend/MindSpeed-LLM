@@ -178,8 +178,9 @@ def get_message_layer_attn(message, model, md=None, **kwargs):
                 qb_weight.append(model.get_layers_self_attention_linear_q_up_proj_weight(**kwargs))
             kvb_weight.append(model.get_layers_self_attention_linear_kv_up_proj_weight(**kwargs))
 
-        if margs.save_lora_to_hf:
+        if margs.save_lora_to_hf and 'linear_proj' in margs.lora_target_modules:
             proj_lora_A_weight.append(model.get_layers_self_attention_linear_proj_lora_A_default_weight(**kwargs))
+        if margs.save_lora_to_hf and 'linear_qkv' in margs.lora_target_modules:
             qkv_lora_B_weight.append(model.get_layers_self_attention_linear_qkv_lora_B_default_weight(**kwargs))
 
     # Handle gated linear units
@@ -204,9 +205,10 @@ def get_message_layer_attn(message, model, md=None, **kwargs):
     if md.linear_bias or margs.add_dense_bias:
         message["dense bias"] = model.get_layers_self_attention_linear_proj_bias(**kwargs)
 
-    if margs.save_lora_to_hf:
+    if margs.save_lora_to_hf and 'linear_proj' in margs.lora_target_modules:
         message["proj lora A"] = torch.cat(proj_lora_A_weight, dim=1)
         message["proj lora B"] = model.get_layers_self_attention_linear_proj_lora_B_default_weight(**kwargs)
+    if margs.save_lora_to_hf and 'linear_qkv' in margs.lora_target_modules:
         message["qkv lora A"] = model.get_layers_self_attention_linear_qkv_lora_A_default_weight(**kwargs)
         message["qkv lora B"] = torch.cat(qkv_lora_B_weight, dim=0)
 
@@ -225,17 +227,19 @@ def _get_message_layer_mlp(message, model, md=None, is_moe_mlp=False, **kwargs):
         if is_moe_mlp:
             mlp_l0_weight.append(model.get_layers_mlp_experts_linear_fc1_weight(**kwargs))
             mlp_l1_weight.append(model.get_layers_mlp_experts_linear_fc2_weight(**kwargs))
-            if margs.save_lora_to_hf:
+            if margs.save_lora_to_hf and 'linear_fc1' in margs.lora_target_modules:
                 fc1_lora_A = model.get_layers_mlp_experts_linear_fc1_lora_A_default_weight(**kwargs)
                 fc1_lora_B.append(model.get_layers_mlp_experts_linear_fc1_lora_B_default_weight(**kwargs))
+            if margs.save_lora_to_hf and 'linear_fc2' in margs.lora_target_modules:
                 fc2_lora_A.append(model.get_layers_mlp_experts_linear_fc2_lora_A_default_weight(**kwargs))
                 fc2_lora_B = model.get_layers_mlp_experts_linear_fc2_lora_B_default_weight(**kwargs)
         else:
             mlp_l0_weight.append(model.get_layers_mlp_linear_fc1_weight(**kwargs))
             mlp_l1_weight.append(model.get_layers_mlp_linear_fc2_weight(**kwargs))
-            if margs.save_lora_to_hf:
+            if margs.save_lora_to_hf and 'linear_fc1' in margs.lora_target_modules:
                 fc1_lora_A = model.get_layers_mlp_linear_fc1_lora_A_default_weight(**kwargs)
                 fc1_lora_B.append(model.get_layers_mlp_linear_fc1_lora_B_default_weight(**kwargs))
+            if margs.save_lora_to_hf and 'linear_fc2' in margs.lora_target_modules:
                 fc2_lora_A.append(model.get_layers_mlp_linear_fc2_lora_A_default_weight(**kwargs))
                 fc2_lora_B = model.get_layers_mlp_linear_fc2_lora_B_default_weight(**kwargs)
         if md.linear_bias:
@@ -265,9 +269,10 @@ def _get_message_layer_mlp(message, model, md=None, is_moe_mlp=False, **kwargs):
         else:
             message[f"mlp l0 bias"] = torch.cat(mlp_l0_bias, dim=0)
         message[f"mlp l1 bias"] = model.get_layers_mlp_linear_fc2_bias(**kwargs)
-    if margs.save_lora_to_hf:
+    if margs.save_lora_to_hf and 'linear_fc1' in margs.lora_target_modules:
         message[f"fc1 lora A"] = fc1_lora_A
         message[f"fc1 lora B"] = torch.cat(fc1_lora_B, dim=0)
+    if margs.save_lora_to_hf and 'linear_fc2' in margs.lora_target_modules:
         message[f"fc2 lora A"] = torch.cat(fc2_lora_A, dim=1)
         message[f"fc2 lora B"] = fc2_lora_B
 
