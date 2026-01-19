@@ -342,7 +342,7 @@ class DSAIndexer(MegatronModule):
 
             # Convert to boolean mask if using FlashAttention
             if getattr(args, 'use_flash_attn', False):
-                attention_mask = torch.isinf(attention_mask) & (attention_mask < 0).unsqueeze(1)
+                attention_mask = (torch.isinf(attention_mask) & (attention_mask < 0)).unsqueeze(1)
                 args.sparse_mode = 0
         else:
             attention_mask = None

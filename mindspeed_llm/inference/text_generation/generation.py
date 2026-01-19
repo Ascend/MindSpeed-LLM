@@ -399,6 +399,11 @@ def beam_search_and_return_on_first_stage(
                 for beam_id in range(beam_size):
                     beam_hyp.add(tokens[beam_id].clone(), scores[beam_id].squeeze(), context_length + 1 - prompt_length)
 
+            if done and len(beam_hyp.beam) == 0:
+                # EOS at first step or early done
+                for beam_id in range(beam_size):
+                    beam_hyp.add(tokens[beam_id].clone(), scores[beam_id].squeeze(), max(context_length + 1 - prompt_length), 1)
+
             # rank based on scores
             sorted_hyps = sorted(beam_hyp.beams, key=lambda x: x[0], reverse=True)
             num_return_gen = min(num_return_gen, len(sorted_hyps))
