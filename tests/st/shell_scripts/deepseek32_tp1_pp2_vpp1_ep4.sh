@@ -3,32 +3,32 @@
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export CPU_AFFINITY_CONF=1
 export TASK_QUEUE_ENABLE=2
-export TORCH_HCCL_ZERO_COPY=1
 export PYTORCH_NPU_ALLOC_CONF="expandable_segments:True"
 export HCCL_CONNECT_TIMEOUT=3600
 export STREAMS_PER_DEVICE=32
 
-NPUS_PER_NODE=16
-MASTER_ADDR=localhost #主节点IP
+NPUS_PER_NODE=8
+MASTER_ADDR=localhost
 MASTER_PORT=6000
-NNODES=32
+NNODES=1
 NODE_RANK=0
 WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
-CKPT_SAVE_DIR="your model save ckpt path"
-DATA_PATH="your data path"
-TOKENIZER_PATH="your tokenizer path"
-CKPT_LOAD_DIR="your model ckpt path"
+basepath=$(cd `dirname $0`; cd ../../../; pwd)
+
+DATA_PATH=/data/ci/datasets/processed/pretrain_dataset/alpaca_text_document
+TOKENIZER_PATH=/data/ci/models/deepseek3/mg/deepseek-v3-mcore-tp1-pp2-ep4-16experts
+CKPT_LOAD_DIR=/data/ci/models/deepseek32/mg/deepseek32-tp1-pp2-ep4-8expert
 
 TP=1
-PP=8
-EP=64
+PP=2
+EP=4
 CP=1
 CP_TYPE='ulysses_cp_algo'
-NUM_LAYERS=64
+NUM_LAYERS=4
 SEQ_LEN=4096
 MBS=1
-GBS=7680
+GBS=16
 
 DISTRIBUTED_ARGS="
     --nproc_per_node $NPUS_PER_NODE \
@@ -55,15 +55,15 @@ MOE_ARGS="
     --moe-permutation-async-comm \
     --moe-token-dispatcher-type alltoall \
     --moe-permute-fusion \
-    --first-k-dense-replace 3 \
+    --first-k-dense-replace 0 \
     --moe-layer-freq 1 \
     --moe-shared-expert-intermediate-size 2048 \
-    --num-experts 256 \
-    --moe-router-topk 8 \
+    --num-experts 8 \
+    --moe-router-topk 2 \
     --moe-ffn-hidden-size 2048 \
     --moe-router-load-balancing-type seq_aux_loss \
-    --moe-router-num-groups 8 \
-    --moe-router-group-topk 4 \
+    --moe-router-num-groups 4 \
+    --moe-router-group-topk 1 \
     --moe-router-topk-scaling-factor 2.5 \
     --moe-aux-loss-coeff 0.0001 \
     --moe-router-score-function sigmoid \
@@ -78,7 +78,7 @@ MTP_ARGS="
 
 PIPELINE_ARGS="
     --moe-fb-overlap \
-    --num-layers-per-virtual-pipeline-stage 2 \
+    --num-layers-per-virtual-pipeline-stage 1 \
 "
 
 MEM_ARGS="
@@ -91,10 +91,6 @@ MEM_ARGS="
 
 DSA_ARGS="
     --enable-dsa-indexer \
-    --use-fused-lightning-indexer \
-    --use-fused-lightning-indexer-loss \
-    --use-sparse-flash-attn \
-    --enable-mla-absorb \
     --index-topk 1024 \
     --indexer-loss-coeff 1.0 \
     --init-norm-weight-in-fp32 \
@@ -102,7 +98,6 @@ DSA_ARGS="
 
 OTHERS_ARGS="
     --tensorboard-dir ./tb \
-    --fix-router \
     --no-shared-storage \
 "
 
@@ -117,10 +112,11 @@ ROPE_ARGS="
 "
 
 GPT_ARGS="
+    --finetune \
     --transformer-impl local \
     --spec mindspeed_llm.tasks.models.spec.deepseek_spec layer_spec \
     --gemm-gradient-accumulation-fusion \
-    --noop-layers 7,62,63 \
+    --noop-layers 3 \
     --manual-gc \
     --manual-gc-interval 50 \
     --use-distributed-optimizer \
@@ -145,7 +141,7 @@ GPT_ARGS="
     --global-batch-size ${GBS} \
     --make-vocab-size-divisible-by 1 \
     --lr 1.0e-5 \
-    --train-iters 30 \
+    --train-iters 15 \
     --lr-decay-style cosine \
     --untie-embeddings-and-output-weights \
     --disable-bias-linear \
@@ -184,6 +180,7 @@ DATA_ARGS="
 "
 
 OUTPUT_ARGS="
+    --log-throughput \
     --log-interval 1 \
     --save-interval 2000 \
     --eval-interval 2000 \
@@ -192,7 +189,7 @@ OUTPUT_ARGS="
     --no-save-rng
 "
 
-python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
+python -m torch.distributed.launch $DISTRIBUTED_ARGS $basepath/pretrain_gpt.py \
     $GPT_ARGS \
     $DATA_ARGS \
     $OUTPUT_ARGS \
@@ -201,7 +198,7 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     $MEM_ARGS \
     $ROPE_ARGS \
     $MOE_ARGS \
-    $MTP_ARGS \
     $DSA_ARGS \
     $OTHERS_ARGS \
-    --distributed-backend nccl | tee logs/pretrain_deepseek32_671b_4k_A3_ptd.log
+    --load $CKPT_LOAD_DIR \
+    --distributed-backend nccl

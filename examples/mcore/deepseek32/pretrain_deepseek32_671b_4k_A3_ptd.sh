@@ -78,7 +78,7 @@ MTP_ARGS="
 
 PIPELINE_ARGS="
     --moe-fb-overlap \
-    --num-layers-per-virtual-pipeline-stage 4 \
+    --num-layers-per-virtual-pipeline-stage 2 \
 "
 
 MEM_ARGS="
@@ -119,7 +119,7 @@ GPT_ARGS="
     --transformer-impl local \
     --spec mindspeed_llm.tasks.models.spec.deepseek_spec layer_spec \
     --gemm-gradient-accumulation-fusion \
-    --noop-layers 61,62,63 \
+    --noop-layers 7,62,63 \
     --manual-gc \
     --manual-gc-interval 50 \
     --use-distributed-optimizer \
