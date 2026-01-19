@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import json
 import torch
 import glob
 import os, sys, time, subprocess
@@ -74,7 +75,6 @@ def convert_datasets(args, shared: bool):
             cmd = [
                 sys.executable, os.path.abspath("preprocess_data.py"),
                 "--input", p,
-                "--tokenizer-name-or-path", args.tokenizer_name_or_path,
                 "--tokenizer-type", args.tokenizer_type,
                 "--handler-name", args.handler_name,
                 "--output-prefix", out_prefix,
@@ -84,6 +84,14 @@ def convert_datasets(args, shared: bool):
             ]
             cmd += ["--json-keys"] + list(args.json_keys)
 
+            if getattr(args, "map_keys", None):
+                map_keys = json.dumps(args.map_keys)
+                cmd += ["--map-keys", map_keys]
+
+            if getattr(args, "tokenizer_model", False):
+                cmd += ["--tokenizer-model", str(args.tokenizer_model)]
+            if getattr(args, "tokenizer_name_or_path", False):
+                cmd += ["--tokenizer-name-or-path", str(args.tokenizer_name_or_path)]
             if getattr(args, "pack", False):
                 cmd.append("--pack")
             if getattr(args, "neat_pack", False):
