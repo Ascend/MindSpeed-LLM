@@ -144,6 +144,17 @@
       <td>【Ascend】</td>
       <td>【Pass】</td>
     </tr>
+      <tr>
+      <td rowspan="1"><a href="https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp">DeepSeek-V3.2</a></td>
+      <td><a href="https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp/tree/main">671B</a></td>
+      <td><a href="../../../examples/mcore/deepseek32">deepseek3.2</a></td>
+      <td> 4K </td>
+      <th>Mcore</th>
+      <td> 32x16 </td>
+      <td>  </td>
+      <td>【Ascend】</td>
+      <td>【Test】</td>
+    </tr>
     <tr>
       <td rowspan="1"><a href="https://github.com/OpenBMB/MiniCPM">MiniCPM</a></td>
       <td> <a href="https://huggingface.co/openbmb/MiniCPM-MoE-8x2B/tree/main">8x2B</a> </td>
