@@ -79,6 +79,7 @@ GPT_ARGS="
     --add-qkv-bias \
     --position-embedding-type rope \
     --rotary-percent 0.5 \
+    --rotary-base 1000000 \
     --no-rope-fusion \
     --normalization RMSNorm \
     --swiglu \
