@@ -135,7 +135,7 @@ class DataArguments:
         metadata={"help": "The name of dataset(s) to use for evaluation. Use commas to separate multiple datasets."},
     )
     dataset_dir: str = field(
-        default="data",
+        default="./configs/FSDP2/data",
         metadata={"help": "Path to the folder containing the datasets."},
     )
     cutoff_len: int = field(
@@ -233,6 +233,10 @@ class DataArguments:
         metadata={"help": "Whether or not to use a shared file system for the datasets."},
     )
 
+    data_manager_type: Literal["lf", "mg"] = field(
+        default="lf",
+        metadata={"help": "Data Manager type for building the different data manager"},
+    )
     def __post_init__(self):
         def split_arg(arg):
             if isinstance(arg, str):

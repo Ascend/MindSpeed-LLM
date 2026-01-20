@@ -1,0 +1,17 @@
+{
+    "sharegpt4_zh": {
+        "file_name": "./sharegpt_zh_38K_format.jsonl",
+        "formatting": "sharegpt"
+    },
+
+    "distill_r1_110k_sft_mix":{
+        "file_name": "./distill_r1_110k_sft_mix.jsonl",
+        "columns": {
+        "prompt": "instruction",
+        "response": "output"
+        }
+    },
+    "alpaca_full": {
+        "file_name": "./train-00000-of-00001-a09b74b3ef9c3b56.parquet"
+    }
+}
