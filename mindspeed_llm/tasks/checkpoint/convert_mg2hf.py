@@ -407,7 +407,7 @@ class Mg2HfConvert(Convert):
                     lm_head_list.append(cur_tp_head.clone())
             lm_head_weights = torch.cat(lm_head_list, dim=0)
             hf_weight[hf_weight_key["output_layer"]] = lm_head_weights.clone()
-        GLOBAL_LM_HEAD_WEIGHTS = lm_head_weights.clone()
+            GLOBAL_LM_HEAD_WEIGHTS = lm_head_weights.clone()
 
     def set_model_layer_norm(self, hf_weight, mg_weight, hf_layer_idx, local_layer_idx, mtp_layer_flag=False):
         """input norm & post attn norm"""
@@ -683,7 +683,7 @@ class Mg2HfConvert(Convert):
 
             o_proj = torch.cat(linear_proj_list, dim=1)
 
-            if hasattr(self.load_model, "add_qkv_bias"):
+            if getattr(self.load_model, "add_qkv_bias", None):
                 qkv_bias_key = _generate_attn_layers_bias_key(mtp_layer_flag)
                 qkv_bias_list = []
 
