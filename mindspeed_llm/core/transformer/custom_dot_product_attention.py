@@ -236,7 +236,7 @@ class CustomDotProductAttentionImpl:
                 if query_rope is not None and key_rope is not None:
                     query_rope, key_rope = [rearrange(x, 's b h d -> (b s) h d') for x in [query_rope, key_rope]]
             else:
-                query, key, value = [rearrange(x, 's b h d -> (s b) h d') for x in [query, key, value]]
+                query, key, value = [rearrange(x, 's b h d -> (b s) h d') for x in [query, key, value]]
             args.sparse_mode = 4
         elif args.shape_order == "BNSD":
             query, key, value = [rearrange(x, 's b h d -> b h s d') for x in [query, key, value]]
@@ -375,7 +375,7 @@ class CustomDotProductAttentionImpl:
         # 9) Restore to canonical [S, B, H*Dh] layout expected by upper layers
         # ---------------------------------------------------------------------
         if args.shape_order == "TND":  # varlen FA
-            output = rearrange(output, '(s b) h d -> s b (h d)', s=seq_length)
+            output = rearrange(output, '(b s) h d -> s b (h d)', s=seq_length)
         elif args.shape_order == "BNSD":
             output = rearrange(output, 'b h s d -> s b (h d)')
 
