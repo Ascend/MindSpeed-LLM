@@ -56,6 +56,7 @@ GPT_ARGS="
     --max-position-embeddings 131072 \
     --position-embedding-type rope \
     --rotary-percent 0.5 \
+    --rotary-base 1000000 \
     --no-rope-fusion \
     --disable-bias-linear \
     --add-qkv-bias \
