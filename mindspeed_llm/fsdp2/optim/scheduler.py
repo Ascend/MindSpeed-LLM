@@ -2,12 +2,13 @@
 Learning rate scheduler factory for unified construction of single scheduler and multi-scheduler, support constant, linear and cosine.
 """
 import math
-import logging
 import torch
 from typing import Dict, Union
 from torch.optim.lr_scheduler import LambdaLR
+from mindspeed_llm.fsdp2.utils.logging import get_logger
 
-logger = logging.getLogger(__name__)
+
+logger = get_logger(__name__)
 
 
 class MultiLRScheduler(dict):
