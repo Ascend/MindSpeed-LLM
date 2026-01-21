@@ -2,9 +2,12 @@ from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any, Optional
 
-from ...utils.logging import print_rank_0
+from mindspeed_llm.fsdp2.utils.logging import get_logger
 from .processor_utils import IGNORE_INDEX
 from .processor_utils import DatasetProcessor, greedy_knapsack, infer_seqlen
+
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -68,7 +71,7 @@ class SFTDatasetProcessor(DatasetProcessor):
         model_inputs = defaultdict(list)
         for i in range(len(examples["_prompt"])):
             if len(examples["_prompt"][i]) % 2 != 1 or len(examples["_response"][i]) != 1:
-                print_rank_0(
+                logger.info_rank0(
                     "Dropped invalid example: {}".format(examples["_prompt"][i] + examples["_response"][i])
                 )
                 continue
@@ -104,7 +107,7 @@ class PackedSFTDatasetProcessor(SFTDatasetProcessor):
         length2indexes = defaultdict(list)
         for i in range(len(examples["_prompt"])):
             if len(examples["_prompt"][i]) % 2 != 1 or len(examples["_response"][i]) != 1:
-                print_rank_0(
+                logger.info_rank0(
                     "Dropped invalid example: {}".format(examples["_prompt"][i] + examples["_response"][i])
                 )
                 continue
@@ -117,7 +120,7 @@ class PackedSFTDatasetProcessor(SFTDatasetProcessor):
             )
             length = len(input_ids)
             if length > self.data_args.cutoff_len:
-                print_rank_0(f"Dropped lengthy example with length {length} > {self.data_args.cutoff_len}.")
+                logger.info_rank0(f"Dropped lengthy example with length {length} > {self.data_args.cutoff_len}.")
             else:
                 lengths.append(length)
                 length2indexes[length].append(valid_num)

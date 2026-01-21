@@ -8,7 +8,7 @@ from megatron.training.utils import get_batch_on_this_cp_rank, average_losses_ac
 
 from mindspeed.core.context_parallel.get_batch_utils import set_actual_seq_len, get_ring_degree
 from mindspeed.core.context_parallel.utils import pad_data
-from mindspeed_llm.fsdp2.trainer.base_trainer import FSDP2BaseTrainer
+from mindspeed_llm.fsdp2.train.base_trainer import FSDP2BaseTrainer
 from mindspeed_llm.training.utils import  set_mtp_batch_list
 from mindspeed_llm.core.transformer.multi_token_prediction import generate_mtp_batch_list_on_this_tp_rank
 from mindspeed_llm.tasks.preprocess.decoder_packed_mtf_dataset import build_train_valid_test_datasets as build_instruction_dataset

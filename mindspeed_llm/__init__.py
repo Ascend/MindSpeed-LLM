@@ -12,5 +12,8 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import os
 
-from mindspeed_llm.tasks import megatron_adaptor_v2 as megatron_adaptor
+backend = os.environ.get("TRAINING_BACKEND", "mcore").lower()
+if backend == "mcore":
+    from mindspeed_llm.tasks import megatron_adaptor_v2 as megatron_adaptor

@@ -8,7 +8,7 @@ from transformers import PretrainedConfig
 from megatron.training import get_args, print_rank_0
 from megatron.core.transformer.module import MegatronModule
 
-from mindspeed_llm.fsdp2.core.chunkloss import chunk_loss, calculate_lm_loss
+from mindspeed_llm.fsdp2.features.chunkloss import chunk_loss, calculate_lm_loss
 
 
 class FSDP2Model(MegatronModule):

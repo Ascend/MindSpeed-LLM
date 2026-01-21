@@ -10,7 +10,7 @@ from transformers.models.qwen3_next.modeling_qwen3_next import Qwen3NextDynamicC
 from transformers.processing_utils import Unpack
 from transformers.utils import can_return_tuple, TransformersKwargs
 
-from mindspeed_llm.fsdp2.core.fully_shard.fsdp2_sharding import FSDP2ShardingMixin
+from mindspeed_llm.fsdp2.distributed.fully_shard.fsdp2_sharding import FSDP2ShardingMixin
 from mindspeed_llm.fsdp2.models.common.modules import LMHead
 from mindspeed_llm.fsdp2.models.qwen3_next.modeling_qwen3_next import Qwen3NextModel
 

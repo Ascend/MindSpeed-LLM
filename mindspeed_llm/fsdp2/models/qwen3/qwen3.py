@@ -9,7 +9,7 @@ from transformers.modeling_outputs import BaseModelOutputWithPast, CausalLMOutpu
 from transformers.utils import can_return_tuple
 
 from mindspeed.patch_utils import MindSpeedPatchesManager as pm
-from mindspeed_llm.fsdp2.core.fully_shard.fsdp2_sharding import FSDP2ShardingMixin
+from mindspeed_llm.fsdp2.distributed.fully_shard.fsdp2_sharding import FSDP2ShardingMixin
 from mindspeed_llm.fsdp2.models.common.fusions import apply_rotary_pos_emb, \
     fused_rmsnorm_forward
 from mindspeed_llm.fsdp2.models.common.modules import LMHead

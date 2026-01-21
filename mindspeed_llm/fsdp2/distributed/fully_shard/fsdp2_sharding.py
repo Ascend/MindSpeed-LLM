@@ -14,8 +14,8 @@ from torch.distributed.algorithms._checkpoint.checkpoint_wrapper import (
 
 from megatron.training import get_args
 
-from mindspeed_llm.fsdp2.core.fully_shard.config import Fsdp2Config
-from mindspeed_llm.fsdp2.core.fully_shard.utils import get_submodules_by_path
+from mindspeed_llm.fsdp2.distributed.fully_shard.config import Fsdp2Config
+from mindspeed_llm.fsdp2.distributed.fully_shard.utils import get_submodules_by_path
 
 
 def _create_device_mesh(sharding_size: Optional[int], process_group: ProcessGroup) -> DeviceMesh:

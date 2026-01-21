@@ -14,7 +14,7 @@ from megatron.training.utils import (
 )
 
 # MindSpeed Imports
-from mindspeed_llm.fsdp2.trainer.base_trainer import FSDP2BaseTrainer
+from mindspeed_llm.fsdp2.train.base_trainer import FSDP2BaseTrainer
 from mindspeed_llm.training.utils import set_mtp_batch_list
 from mindspeed_llm.core.transformer.multi_token_prediction import generate_mtp_batch_list_on_this_tp_rank
 
