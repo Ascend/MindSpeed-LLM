@@ -3,16 +3,18 @@
 # Modification description：Modify save_checkpoint method for MindIo.
 
 import os
+from logging import getLogger
 from time import time
+
 import torch
 from megatron.core import mpu
 from megatron.training import get_args
-from megatron.training.utils import print_rank_0, unwrap_model
 from megatron.training.checkpointing import (get_checkpoint_tracker_filename, get_distributed_optimizer_checkpoint_name,
                                              get_rng_state, generate_state_dict, ensure_directory_exists)
+from megatron.training.utils import print_rank_0, unwrap_model
+
 from .tft_replica_group import tft_set_dump_group
 from .utils import ha_constant, FileUtils
-from logging import getLogger
 
 ttp_logger = getLogger(__name__)
 
@@ -61,9 +63,9 @@ def get_checkpoint_name(checkpoints_path, iteration, release=False,
 
 
 def tft_save_callback(step: int, save_info: list, train_args, ctx):
-    model = train_args[ha_constant.TRAIN_PARAM][ha_constant.MODEL_INDEX]
-    optimizer = train_args[ha_constant.TRAIN_PARAM][ha_constant.OPTIM_INDEX]
-    opt_param_scheduler = train_args[ha_constant.TRAIN_PARAM][ha_constant.SCHEDULER_INDEX]
+    model = train_args[ha_constant.MODEL_INDEX]
+    optimizer = train_args[ha_constant.OPTIM_INDEX]
+    opt_param_scheduler = train_args[ha_constant.SCHEDULER_INDEX]
     global_args = get_args()
     cur_rank = torch.distributed.get_rank()
     if global_args.save is None:
@@ -72,8 +74,8 @@ def tft_save_callback(step: int, save_info: list, train_args, ctx):
     # Update learning rate.
     if global_args.train_samples is None:
         global_args.consumed_train_samples = step * global_args.global_batch_size
-    if train_args[ha_constant.TRAIN_PARAM][ha_constant.SCHEDULER_INDEX].num_steps != global_args.consumed_train_samples:
-        train_args[ha_constant.TRAIN_PARAM][ha_constant.SCHEDULER_INDEX].step(global_args.global_batch_size)
+    if train_args[ha_constant.SCHEDULER_INDEX].num_steps != global_args.consumed_train_samples:
+        train_args[ha_constant.SCHEDULER_INDEX].step(global_args.global_batch_size)
 
     def gather_all_model_params(optimizer):
         if hasattr(optimizer, "data_parallel_group"):

@@ -2,12 +2,13 @@
 # Copyright (c) Huawei Technologies Co., Ltd. 2024. All rights reserved.
 
 import time
+from logging import getLogger
+
 import torch
 import torch_npu
-from .utils import ha_constant
-
 from mindio_ttp.framework_ttp.ttp_decorator import tft_get_repair_type
-from logging import getLogger
+
+from .utils import ha_constant
 
 ttp_logger = getLogger(__name__)
 
@@ -38,13 +39,10 @@ def clean_callback(is_uce_error: bool, train_args, ctx):
         if check_memory_result == ha_constant.UCE_LOW_LEVEL:  # no need rebuild
             ret = ha_constant.RET_NO_REBUILD
         elif check_memory_result == ha_constant.UCE_HIGH_LEVEL:  # need rebuild
-            uce_clear_memory(train_args[ha_constant.TRAIN_PARAM][ha_constant.MODEL_INDEX],
-                             train_args[ha_constant.TRAIN_PARAM][ha_constant.OPTIM_INDEX],
-                             train_args[ha_constant.TRAIN_PARAM][ha_constant.CONFIG_INDEX])
-            train_args[ha_constant.TRAIN_PARAM][ha_constant.MODEL_INDEX] = None
-            train_args[ha_constant.TRAIN_PARAM][ha_constant.OPTIM_INDEX] = None
-            train_args[ha_constant.TRAIN_PARAM][ha_constant.SCHEDULER_INDEX] = None
-            train_args[ha_constant.TRAIN_PARAM][ha_constant.CONFIG_INDEX] = None
+            model = train_args[ha_constant.MODEL_INDEX]
+            optim = train_args[ha_constant.OPTIM_INDEX]
+            optim.update_npu_tensor_to_safe()
+            model_update_npu_tensor_to_safe(model)
             ret = ha_constant.RET_OK
         else:  # exit
             ret = ha_constant.RET_ERROR
@@ -59,48 +57,35 @@ def clean_callback(is_uce_error: bool, train_args, ctx):
     return ret
 
 
-def unset_gather_handle(train_args):
-    for model in train_args[ha_constant.TRAIN_PARAM][ha_constant.MODEL_INDEX]:
-        for bucket_group in model.bucket_groups:
-            bucket_group.grad_reduce_handle = None
-            bucket_group.param_gather_handle = None
-            if bucket_group.next_param_gather_bucket_group:
-                bucket_group.next_param_gather_bucket_group.param_gather_handle = None
-
-        for bucket_group in model.expert_parallel_bucket_groups:
-            bucket_group.grad_reduce_handle = None
-            bucket_group.param_gather_handle = None
-            if bucket_group.next_param_gather_bucket_group:
-                bucket_group.next_param_gather_bucket_group.param_gather_handle = None
-
-
-def uce_clear_memory(models, optimizer, config):
-    config.grad_scale_func = None
-    config.no_sync_func = None
-    config.grad_sync_func = None
-    config.param_sync_func = None
-
+def model_update_npu_tensor_to_safe(models):
+    from torch_npu.npu._recovery import update_npu_tensor_to_safe as update_tensor_to_safe
     for model in models:
-        for handle in model.removablehandles:
-            handle.remove()
-        model.removablehandles = []
+        for buffer in model.buffers:
+            for bucket in buffer.buckets:
+                if bucket.param_data is not None:
+                    update_tensor_to_safe(bucket.param_data)
+                if bucket.grad_data is not None:
+                    update_tensor_to_safe(bucket.grad_data)
+        for buffer in model.expert_parallel_buffers:
+            for bucket in buffer.buckets:
+                if bucket.param_data is not None:
+                    update_tensor_to_safe(bucket.param_data)
+                if bucket.grad_data is not None:
+                    update_tensor_to_safe(bucket.grad_data)
+
+def unset_gather_handle(train_args):
+    for model in train_args[ha_constant.MODEL_INDEX]:
         for bucket_group in model.bucket_groups:
-            bucket_group.reset()
+            bucket_group.grad_reduce_handle = None
+            bucket_group.param_gather_handle = None
+            if bucket_group.next_param_gather_bucket_group:
+                bucket_group.next_param_gather_bucket_group.param_gather_handle = None
+
         for bucket_group in model.expert_parallel_bucket_groups:
-            bucket_group.reset()
-        clear_buffer_data(model.buffers)
-        clear_buffer_data(model.expert_parallel_buffers)
-
-
-def clear_buffer_data(model_buffers):
-    for buffer in model_buffers:
-        for bucket in buffer.buckets:
-            if bucket.param_data is not None:
-                bucket.param_data.untyped_storage().resize_(0)
-            if bucket.grad_data is not None:
-                bucket.grad_data.untyped_storage().resize_(0)
-            bucket.param_data = None
-            bucket.grad_data = None
+            bucket_group.grad_reduce_handle = None
+            bucket_group.param_gather_handle = None
+            if bucket_group.next_param_gather_bucket_group:
+                bucket_group.next_param_gather_bucket_group.param_gather_handle = None
 
 
 def torch_sync():

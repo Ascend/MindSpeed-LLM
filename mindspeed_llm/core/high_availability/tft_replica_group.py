@@ -3,16 +3,17 @@
 # Modification description：Modify the compose of processor group DP-CP-EP for MindIo.
 
 import os
+from logging import getLogger
+
 import torch
 from megatron.core import mpu
-from megatron.training import get_args
 from megatron.core.parallel_state import RankGenerator
-from logging import getLogger
+from megatron.training import get_args
+
 ttp_logger = getLogger(__name__)
 
 REPAIR_GROUP = None
 REPAIR_GROUP_GLOO = None
-_LOCAL_EMBEDDING_GROUP = None
 DP_ORIGIN_RANKS = None
 DP_CP_ORIGIN_RANKS = None
 DP_CP_REPLICA_GROUP = None
@@ -47,17 +48,6 @@ def reinit_node_group():
 def tft_get_node_group():
     restart_fault_process_type = os.getenv("RESTART_FAULT_PROCESS_TYPE", "pod")
     return NODE_GROUP if restart_fault_process_type == 'pod' else None
-
-
-def build_local_embedding_group():
-    global _LOCAL_EMBEDDING_GROUP
-    _LOCAL_EMBEDDING_GROUP = torch.distributed.new_group(
-        [torch.distributed.get_rank()], use_local_synchronization=True
-    )
-
-
-def get_local_embedding_group():
-    return _LOCAL_EMBEDDING_GROUP
 
 
 def build_repair_group(rank_list: list):

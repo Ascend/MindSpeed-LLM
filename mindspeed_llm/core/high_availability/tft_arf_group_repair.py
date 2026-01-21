@@ -5,15 +5,17 @@
 import os
 import time
 from datetime import timedelta
+from logging import getLogger
+
 import torch
 from megatron.core import mpu
-from megatron.training import get_args, get_timers
 from megatron.core.parallel_state import create_group, RankGenerator
+from megatron.training import get_args, get_timers
+from mindio_ttp.framework_ttp.ttp_decorator import get_mindio_export_version
+
 from .tft_replica_group import destroy_sub_process_group, ttp_initialize_replica_dp_group, \
     ttp_get_dp_cp_replica_group_gloo, ttp_get_dp_ep_replica_group_gloo
 from .utils import ha_constant
-from mindio_ttp.framework_ttp.ttp_decorator import get_mindio_export_version
-from logging import getLogger
 
 ttp_logger = getLogger(__name__)
 
@@ -24,7 +26,7 @@ PRETRAINED_CHECKPOINT = None
 
 def arf_rebuild_process_group_callback(fault_ranks: list, train_args, ctx):
     t1 = time.time()
-    models, optimizer = train_args[ha_constant.TRAIN_PARAM][ha_constant.MODEL_INDEX], train_args[ha_constant.TRAIN_PARAM][ha_constant.OPTIM_INDEX]
+    models, optimizer = train_args[ha_constant.MODEL_INDEX], train_args[ha_constant.OPTIM_INDEX]
     args = get_args()
     timeout = timedelta(minutes=args.distributed_timeout_minutes)
     nccl_comm_cfgs = {}

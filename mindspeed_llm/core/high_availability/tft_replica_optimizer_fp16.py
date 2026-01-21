@@ -3,17 +3,18 @@
 # Modification description：Modify Float16OptimizerwithFloat16Params for MindIo.
 
 import time
-from typing import Callable
 from logging import getLogger
-import torch
+from typing import Callable
 
-from megatron.core.optimizer.optimizer import Float16OptimizerWithFloat16Params
-from megatron.training import get_args
-from megatron.core.optimizer.optimizer_config import OptimizerConfig
+import torch
 from megatron.core.optimizer.grad_scaler import MegatronGradScaler
+from megatron.core.optimizer.optimizer import Float16OptimizerWithFloat16Params
+from megatron.core.optimizer.optimizer_config import OptimizerConfig
+from megatron.training import get_args
 from mindio_ttp.framework_ttp import tft_start_updating_os, tft_end_updating_os
-from .tft_optimizer_data_repair import set_log_args
 from mindio_ttp.utils import tft_set_update_start_time, tft_set_update_end_time
+
+from .tft_optimizer_data_repair import set_log_args
 
 logger = getLogger(__name__)
 
@@ -304,3 +305,11 @@ class TTPFP16ReplicaOptimizer(Float16OptimizerWithFloat16Params):
 
     def sync_gather_all_model_params(self, force_sync: bool):
         pass
+
+    def update_npu_tensor_to_safe(self):
+        from torch_npu.npu._recovery import update_npu_tensor_to_safe as update_tensor_to_safe
+
+        for main_param, optim_state in self.optimizer.state.items():
+            update_tensor_to_safe(main_param)
+            update_tensor_to_safe(optim_state['exp_avg'])
+            update_tensor_to_safe(optim_state['exp_avg_sq'])

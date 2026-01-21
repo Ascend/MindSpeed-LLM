@@ -1,19 +1,22 @@
 # Copyright (c) Huawei Technologies Co., Ltd. 2024. All rights reserved.
 
 import time
+import types
+from logging import getLogger
+from typing import Optional
+
+import megatron.training.global_vars
 import torch
 from megatron.core import mpu
+from megatron.legacy.data.data_samplers import build_pretraining_data_loader
 from megatron.training import get_args
-
-from megatron.training.training import build_train_valid_test_data_iterators, training_log
+from megatron.training.training import training_log
 from megatron.training.utils import calc_params_l2_norm
-import megatron.training.global_vars
 
-from .tft_optimizer_data_repair import (LogArgs, get_build_data_args, unset_memory_ckpt, set_load_ckpt,
+from .tft_optimizer_data_repair import (LogArgs, unset_memory_ckpt, set_load_ckpt,
                                         average_losses_across_microbatches, get_load_ckpt)
 from .tft_replica_group import destroy_repair_group
 from .utils import ha_constant
-from logging import getLogger
 
 ttp_logger = getLogger(__name__)
 
@@ -26,22 +29,23 @@ def rollback_callback(step: int, train_args, ctx):
     if load_ckpt:
         step = args.iteration
         if args.train_samples is None:
-            train_args[ha_constant.TRAIN_PARAM][ha_constant.SCHEDULER_INDEX].num_steps = step * args.global_batch_size
+            train_args[ha_constant.SCHEDULER_INDEX].num_steps = step * args.global_batch_size
         set_load_ckpt(False)
 
     # Update learning rate.
     if args.train_samples is None:
         args.consumed_train_samples = step * args.global_batch_size
-    if train_args[ha_constant.TRAIN_PARAM][ha_constant.SCHEDULER_INDEX].num_steps != args.consumed_train_samples:
-        train_args[ha_constant.TRAIN_PARAM][ha_constant.SCHEDULER_INDEX].step(args.global_batch_size)
+    if train_args[ha_constant.SCHEDULER_INDEX].num_steps != args.consumed_train_samples:
+        train_args[ha_constant.SCHEDULER_INDEX].step(args.global_batch_size)
 
     t2 = time.time()
     feature_rollback()
     t3 = time.time()
 
-    gather_model_params_from_optimizer(train_args[ha_constant.TRAIN_PARAM][ha_constant.OPTIM_INDEX], step)
+    gather_model_params_from_optimizer(train_args[ha_constant.OPTIM_INDEX], step)
     t4 = time.time()
     build_dataset(train_args)
+    torch.distributed.barrier()
     t5 = time.time()
     unset_memory_ckpt()
     destroy_repair_group()
@@ -70,34 +74,78 @@ def feature_rollback():
         moe_utils.AG_SHARED_EXPERTS_INPUTS = []
 
 
+def _get_dataloader_iter(dataloader_type, dataloader):
+    """Return dataloader iterator."""
+
+    def cyclic_iter(iter):
+        while True:
+            for x in iter:
+                yield x
+
+    if dataloader_type == "single":
+        return iter(dataloader)
+    elif dataloader_type == "cyclic":
+        return iter(cyclic_iter(dataloader))
+    else:
+        raise RuntimeError('{} dataloader type is not supported.'.format(dataloader_type))
+
+
+def _extract_dataset_from_iterable(iterable) -> Optional[torch.utils.data.Dataset]:
+    # iterable has a _dataset attribute
+    ds = getattr(iterable, "_dataset", None)
+    if ds is not None:
+        return ds
+
+    # iterable is a DataLoader
+    if isinstance(iterable, torch.utils.data.DataLoader):
+        return iterable.dataset
+
+    # iterable is a generator(cyclic_iter returns a generator): check its frame locals
+    if isinstance(iterable, types.GeneratorType):
+        frame = getattr(iterable, "gi_frame", None)
+        if frame is not None and frame.f_locals:
+            for val in frame.f_locals.values():
+                ds = _extract_dataset_from_iterable(val)
+                if ds is not None:
+                    return ds
+
+    return None
+
+
+def _rebuild_dataloader_iter(ds_iterator, consumed_train_samples):
+    if ds_iterator is None:
+        return
+
+    # if ds_iterator is a list or tuple, rebuild each element
+    if isinstance(ds_iterator, (list, tuple)):
+        for it in ds_iterator:
+            _rebuild_dataloader_iter(it, consumed_train_samples)
+        return
+
+    # get dataloader type and dataset
+    dl_type = get_args().dataloader_type
+    dataset = _extract_dataset_from_iterable(ds_iterator.iterable)
+
+    if dataset is None:
+        raise RuntimeError(
+            f"Cannot rebuild dataloader for type '{dl_type}': "
+            "dataset not accessible. Please ensure dataset reference is saved."
+        )
+    # Rebuild the dataloader iterator with the current dataset and consumed samples.
+    new_data_loader = build_pretraining_data_loader(dataset, consumed_train_samples)
+    # reset the dataloader iterator
+    ds_iterator.iterable = _get_dataloader_iter(dl_type, new_data_loader)
+    ds_iterator.saved_microbatches = []
+    ds_iterator.replaying = False
+    ds_iterator.replay_pos = 0
+
+
 def build_dataset(args):
     # repair data iterator
-    train_data_iterator, valid_data_iterator, test_data_iterator \
-        = build_data_iterator(args[ha_constant.TRAIN_PARAM][ha_constant.MODEL_INDEX])
-    args[ha_constant.TRAIN_PARAM][ha_constant.TRAIN_DATA_INDEX] = train_data_iterator
-    args[ha_constant.TRAIN_PARAM][ha_constant.VALID_DATA_INDEX] = valid_data_iterator
-    args[ha_constant.TEST_DATA_ITER][0] = test_data_iterator
-
-
-def build_data_iterator(model):
-    args = get_args()
-    _, _, train_valid_test_datasets_provider_ = get_build_data_args()
-    if args.virtual_pipeline_model_parallel_size is not None:
-        train_data_iterator = []
-        valid_data_iterator = []
-        test_data_iterator = []
-        for i in range(len(model)):
-            mpu.set_virtual_pipeline_model_parallel_rank(i)
-            iterators = build_train_valid_test_data_iterators(
-                train_valid_test_datasets_provider_)
-            train_data_iterator.append(iterators[0])
-            valid_data_iterator.append(iterators[1])
-            test_data_iterator.append(iterators[2])
-    else:
-        train_data_iterator, valid_data_iterator, test_data_iterator \
-            = build_train_valid_test_data_iterators(
-            train_valid_test_datasets_provider_)
-    return train_data_iterator, valid_data_iterator, test_data_iterator
+    train_ds_iterator = args[ha_constant.TRAIN_DATA_INDEX]
+    valid_ds_iterator = args[ha_constant.VALID_DATA_INDEX]
+    _rebuild_dataloader_iter(train_ds_iterator, get_args().consumed_train_samples)
+    _rebuild_dataloader_iter(valid_ds_iterator, 0 if get_args().skip_train else get_args().consumed_valid_samples)
 
 
 def rebuild_global_vars(step, args):
@@ -130,14 +178,14 @@ def training_log_repair(iteration: int, train_args: list):
         return
 
     # Get necessary parameters
-    loss_scale = train_args[ha_constant.TRAIN_PARAM][ha_constant.OPTIM_INDEX].get_loss_scale().item()
+    loss_scale = train_args[ha_constant.OPTIM_INDEX].get_loss_scale().item()
     params_norm = None
     if args.log_params_norm:
-        params_norm = calc_params_l2_norm(train_args[ha_constant.TRAIN_PARAM][ha_constant.MODEL_INDEX])
+        params_norm = calc_params_l2_norm(train_args[ha_constant.MODEL_INDEX])
 
     learning_rate = None
     decoupled_learning_rate = None
-    for param_group in train_args[ha_constant.TRAIN_PARAM][ha_constant.OPTIM_INDEX].param_groups:
+    for param_group in train_args[ha_constant.OPTIM_INDEX].param_groups:
         if param_group['is_decoupled_lr']:
             decoupled_learning_rate = param_group['lr']
         else:

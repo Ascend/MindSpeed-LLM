@@ -58,16 +58,17 @@ def rollback_callback(step: int, train_args, params: str):
     if load_ckpt:
         step = args.iteration
         if args.train_samples is None:
-            train_args[ha_constant.TRAIN_PARAM][ha_constant.SCHEDULER_INDEX].num_steps = step * args.global_batch_size
+            train_args[ha_constant.SCHEDULER_INDEX].num_steps = step * args.global_batch_size
         set_load_ckpt(False)
     # update learning rate
     if args.train_samples is None:
         args.consumed_train_samples = step * args.global_batch_size
-    if train_args[ha_constant.TRAIN_PARAM][ha_constant.SCHEDULER_INDEX].num_steps != args.consumed_train_samples:
-        train_args[ha_constant.TRAIN_PARAM][ha_constant.SCHEDULER_INDEX].step(args.global_batch_size)
+    if train_args[ha_constant.SCHEDULER_INDEX].num_steps != args.consumed_train_samples:
+        train_args[ha_constant.SCHEDULER_INDEX].step(args.global_batch_size)
     feature_rollback()
-    gather_model_params_from_optimizer(train_args[ha_constant.TRAIN_PARAM][ha_constant.OPTIM_INDEX], step)
+    gather_model_params_from_optimizer(train_args[ha_constant.OPTIM_INDEX], step)
     build_dataset(train_args)
+    torch.distributed.barrier()
     unset_memory_ckpt()
     destroy_repair_group()
     training_log_repair(step, train_args)

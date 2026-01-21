@@ -456,6 +456,8 @@ def pretrain(train_valid_test_dataset_provider,
                                                            model_provider,
                                                            model_type, forward_step_func, process_non_loss_data_func,
                                                            app_metrics)
+    forward_step_func, model, optimizer, opt_param_scheduler, train_data_iterator, valid_data_iterator, process_non_loss_data_func, config = train_args
+    test_data_iterator = test_data_iterator_list[0]
     one_logger = get_one_logger()
     one_logger and one_logger.log_metrics(app_metrics)
     if not args.do_train and not args.do_valid and not args.do_test:
@@ -474,16 +476,21 @@ def pretrain(train_valid_test_dataset_provider,
         if args.do_train and args.train_iters > 0:
             if args.enable_high_availability:
                 from mindspeed_llm.core.high_availability import tft_register_processor, tft_train
-                tft_register_processor(train_valid_test_dataset_provider, model_provider, model_type)
+                tft_register_processor()
                 if args.enable_elastic_training:
                     from mindspeed_llm.core.high_availability import register_callbacks
                     register_callbacks()
-                iteration, num_floating_point_operations_so_far = tft_train(train_args, test_data_iterator_list)
+                iteration, num_floating_point_operations_so_far = tft_train(
+                    forward_step_func,
+                    model, optimizer, opt_param_scheduler,
+                    train_data_iterator, valid_data_iterator,
+                    process_non_loss_data_func, config)
             else:
-                iteration, num_floating_point_operations_so_far = train(*train_args)
-
-            test_data_iterator = test_data_iterator_list[0]
-            forward_step_func, model, optimizer, opt_param_scheduler, train_data_iterator, valid_data_iterator, process_non_loss_data_func, config = train_args
+                iteration, num_floating_point_operations_so_far = train(
+                    forward_step_func,
+                    model, optimizer, opt_param_scheduler,
+                    train_data_iterator, valid_data_iterator,
+                    process_non_loss_data_func, config)
 
         print_datetime('after training is done')
 

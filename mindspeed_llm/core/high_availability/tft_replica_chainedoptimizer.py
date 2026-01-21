@@ -2,16 +2,16 @@
 # Modifications Copyright (c) Huawei Technologies Co., Ltd. 2025-2025. All rights reserved.
 # Modification description：Modify ChainedOptimizer for MindIo.
 
-import math
 from typing import List
+
 import torch
 from megatron.core.optimizer import ChainedOptimizer
-from megatron.core.optimizer.optimizer import MegatronOptimizer
 from megatron.core.optimizer.clip_grads import clip_grad_by_total_norm_fp32
-from megatron.core.optimizer.clip_grads import get_grad_norm_fp32
+from megatron.core.optimizer.optimizer import MegatronOptimizer
 from mindio_ttp.framework_ttp import tft_start_updating_os, tft_end_updating_os
-from .tft_optimizer_data_repair import set_log_args
 from mindio_ttp.utils import tft_set_update_start_time, tft_set_update_end_time
+
+from .tft_optimizer_data_repair import set_log_args
 
 
 class TTPReplicaChainedOptimizer(ChainedOptimizer):
@@ -159,6 +159,10 @@ class TTPReplicaChainedOptimizer(ChainedOptimizer):
     def sync_gather_all_model_params(self, force_sync: bool):
         for optimizer in self.chained_optimizers:
             optimizer.sync_gather_all_model_params(force_sync)
+
+    def update_npu_tensor_to_safe(self):
+        for optimizer in self.chained_optimizers:
+            optimizer.update_npu_tensor_to_safe()
 
     def _copy_main_params_to_model_params(self):
         for optimizer in self.chained_optimizers:

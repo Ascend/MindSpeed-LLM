@@ -25,8 +25,9 @@ class TestRollbackCallback(unittest.TestCase):
     @patch('torch.distributed.get_rank')
     @patch('torch.npu.set_device')
     @patch('mindio_ttp.framework_ttp.ttp_decorator.get_device')
+    @patch('torch.distributed.barrier')
     def test_rollback_callback(self, *mocks):
-        (mock_get_device, mock_set_device, mock_get_rank,
+        (mock_barrier, mock_get_device, mock_set_device, mock_get_rank,
          mock_get_args, mock_gather_model_params, mock_feature_rollback,
          mock_training_log_repair, mock_rebuild_global_vars, mock_build_dataset) = mocks
         mock_get_args.return_value = mock.MagicMock()
@@ -34,7 +35,7 @@ class TestRollbackCallback(unittest.TestCase):
         ORIGIN_GLOBAL_NUM_MICROBATCHES_CALCULATOR = num_microbatches_calculator._GLOBAL_NUM_MICROBATCHES_CALCULATOR
         num_microbatches_calculator._GLOBAL_NUM_MICROBATCHES_CALCULATOR = mock.MagicMock()
         from mindspeed_llm.core.high_availability import elastic_training_common, elastic_training_rollback
-        train_args = [[1, 1, 1, mockOptimizerParamScheduler(num_steps=1)]]
+        train_args = [1, 1, 1, mockOptimizerParamScheduler(num_steps=1)]
         from mindspeed_llm.core.high_availability.tft_optimizer_data_repair import set_load_ckpt, get_load_ckpt
         set_load_ckpt(True)
         from mindspeed_llm.core.high_availability.elastic_training_rollback import get_args
@@ -52,20 +53,20 @@ class TestRollbackCallback(unittest.TestCase):
         mock_rebuild_global_vars.assert_called()
         self.assertFalse(get_load_ckpt())
         from mindspeed_llm.core.high_availability.utils import ha_constant
-        self.assertEqual(train_args[ha_constant.TRAIN_PARAM][ha_constant.SCHEDULER_INDEX].num_steps, 8)
+        self.assertEqual(train_args[ha_constant.SCHEDULER_INDEX].num_steps, 8)
         self.assertEqual(args.consumed_train_samples, 8)
 
         # test load_ckpt is True and train_samples is not None
         set_load_ckpt(True)
         args.consumed_train_samples = 2
-        train_args[ha_constant.TRAIN_PARAM][ha_constant.SCHEDULER_INDEX].num_steps = 1
+        train_args[ha_constant.SCHEDULER_INDEX].num_steps = 1
         args.train_samples = mock.MagicMock()
         elastic_training_rollback.rollback_callback(1, train_args, params)
         mock_get_rank.assert_called()
         mock_rebuild_global_vars.assert_called()
         self.assertFalse(get_load_ckpt())
         from mindspeed_llm.core.high_availability.utils import ha_constant
-        self.assertEqual(train_args[ha_constant.TRAIN_PARAM][ha_constant.SCHEDULER_INDEX].num_steps, 1)
+        self.assertEqual(train_args[ha_constant.SCHEDULER_INDEX].num_steps, 1)
         self.assertEqual(args.consumed_train_samples, 2)
-        self.assertEqual(train_args[ha_constant.TRAIN_PARAM][ha_constant.SCHEDULER_INDEX].global_batch_size, 8)
+        self.assertEqual(train_args[ha_constant.SCHEDULER_INDEX].global_batch_size, 8)
         num_microbatches_calculator._GLOBAL_NUM_MICROBATCHES_CALCULATOR = ORIGIN_GLOBAL_NUM_MICROBATCHES_CALCULATOR

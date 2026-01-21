@@ -3,16 +3,18 @@
 # Modification description：Modify DistributedOptimizer for MindIo.
 
 import time
-from typing import Callable, Dict, List, Optional
-import torch
-from megatron.core.optimizer.distrib_optimizer import DistributedOptimizer, Range
-from megatron.training import get_args
-from megatron.core.optimizer.optimizer_config import OptimizerConfig
-from megatron.core.optimizer.grad_scaler import MegatronGradScaler
-from megatron.core.distributed.param_and_grad_buffer import _ParamAndGradBuffer
-from megatron.core.transformer.module import MegatronModule
-from megatron.core import mpu
 from logging import getLogger
+from typing import Callable, Dict, List, Optional
+
+import torch
+from megatron.core import mpu
+from megatron.core.distributed.param_and_grad_buffer import _ParamAndGradBuffer
+from megatron.core.optimizer.distrib_optimizer import DistributedOptimizer, Range
+from megatron.core.optimizer.grad_scaler import MegatronGradScaler
+from megatron.core.optimizer.optimizer_config import OptimizerConfig
+from megatron.core.transformer.module import MegatronModule
+from megatron.training import get_args
+
 ttp_logger = getLogger(__name__)
 from mindio_ttp.framework_ttp import tft_start_updating_os, tft_end_updating_os
 from .tft_optimizer_data_repair import set_log_args
@@ -604,3 +606,21 @@ class TTPReplicaOptimizer(DistributedOptimizer):
             tft_end_updating_os(self.current_step)
         else:
             self._copy_main_params_to_model_params()
+
+    def update_npu_tensor_to_safe(self):
+        from torch_npu.npu._recovery import update_npu_tensor_to_safe
+
+        for _, gbuf_range_maps in enumerate(self.gbuf_ranges):
+            for _, gbuf_range_map_for_all_buckets in gbuf_range_maps.items():
+                for _, gbuf_range_map in enumerate(gbuf_range_map_for_all_buckets):
+                    for model_param, _ in gbuf_range_map["param_map"].items():
+                        group_index, group_order = self.model_param_group_index_map[model_param]
+                        main_param = self.optimizer.param_groups[group_index]["params"][group_order]
+                        optim_state = self.optimizer.state[main_param]
+                        tensors = {
+                            "param": main_param,
+                            **optim_state,
+                        }
+                        update_npu_tensor_to_safe(tensors["param"])
+                        update_npu_tensor_to_safe(tensors["exp_avg"])
+                        update_npu_tensor_to_safe(tensors["exp_avg_sq"])

@@ -23,7 +23,7 @@ class TestElasticTrainingScaleOutRebuild(unittest.TestCase):
         fault_ranks = [1, 2]
         mock_model = mock.MagicMock()
         mock_optimizer = mock.MagicMock()
-        train_args = {0: {0: mock_model, 1: mock_optimizer}}
+        train_args = {0: mock_model, 1: mock_optimizer}
         params = '{"scale-out-strategy": "DP"}'
         mock_get_rank.return_value = 0
         mock_args = mock.MagicMock()
@@ -45,7 +45,7 @@ class TestElasticTrainingScaleOutRebuild(unittest.TestCase):
         # test normal
         tft_arf_group_repair.ARF_REBOOT_FLAG = False
         elastic_training_common.update_scale_in_flag(False)
-        train_args = {0: {0: MagicMock(), 1: mock_model, 2: mock_optimizer}}
+        train_args = {0: MagicMock(), 1: mock_model, 2: mock_optimizer}
         elastic_training_scale_out_rebuild.scale_out_rebuild_process_group_callback(
             fault_ranks, train_args, params)
         self.assertEqual(mock_args.data_parallel_size, 2)

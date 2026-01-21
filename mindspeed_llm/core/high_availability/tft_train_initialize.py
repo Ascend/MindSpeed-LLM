@@ -1,22 +1,27 @@
 # Copyright (c) Huawei Technologies Co., Ltd. 2024. All rights reserved.
 
 import os
-from megatron.training import get_args
-from .tft_replica_group import ttp_get_replica_dp_num, ttp_get_dp_cp_ranks, ttp_get_dp_ep_ranks, \
-    build_local_embedding_group, ttp_get_dp_ranks, reinit_node_group
-from .tft_arf_group_repair import arf_rebuild_process_group_callback, update_arf_reboot_flag, tft_is_arf_reboot_node
-from .tft_dump import tft_save_callback, tft_rename_callback
-from .tft_stop_clean import stop_callback, clean_callback, torch_sync
-from .tft_optimizer_data_repair import repair_callback, set_build_data_args
-from .tft_rollback import rollback_callback
+from functools import wraps
 from logging import getLogger
 
-from mindio_ttp.framework_ttp import (tft_exception_handler, tft_init_controller, tft_start_controller, tft_init_processor,
-                             tft_start_processor, tft_register_rename_handler, set_mindio_export_version,
-                             tft_register_save_ckpt_handler, tft_set_optimizer_replica, tft_set_dp_group_info,
-                             tft_register_stop_handler, tft_register_clean_handler, tft_register_repair_handler,
-                             tft_register_rollback_handler, tft_register_rebuild_group_handler, tft_is_reboot_node,
-                             tft_register_stream_sync_handler)
+from megatron.training import get_args
+from mindio_ttp.framework_ttp import (tft_exception_handler, tft_init_controller, tft_start_controller,
+                                      tft_init_processor,
+                                      tft_start_processor, tft_register_rename_handler, set_mindio_export_version,
+                                      tft_register_save_ckpt_handler, tft_set_optimizer_replica, tft_set_dp_group_info,
+                                      tft_register_stop_handler, tft_register_clean_handler,
+                                      tft_register_repair_handler,
+                                      tft_register_rollback_handler, tft_register_rebuild_group_handler,
+                                      tft_is_reboot_node,
+                                      tft_register_stream_sync_handler)
+
+from .tft_arf_group_repair import arf_rebuild_process_group_callback, update_arf_reboot_flag, tft_is_arf_reboot_node
+from .tft_dump import tft_save_callback, tft_rename_callback
+from .tft_optimizer_data_repair import repair_callback
+from .tft_replica_group import ttp_get_replica_dp_num, ttp_get_dp_cp_ranks, ttp_get_dp_ep_ranks, \
+    ttp_get_dp_ranks, reinit_node_group
+from .tft_rollback import rollback_callback
+from .tft_stop_clean import stop_callback, clean_callback, torch_sync
 
 ttp_logger = getLogger(__name__)
 REPLICA_OFFSET = 0
@@ -52,7 +57,7 @@ def tft_init_controller_processor():
         update_arf_reboot_flag(True)
 
 
-def tft_register_processor(train_valid_test_dataset_provider, model_provider, model_type):
+def tft_register_processor():
     args = get_args()
     replica_info = []
     dp_cp_ranks = ttp_get_dp_cp_ranks()
@@ -79,8 +84,6 @@ def tft_register_processor(train_valid_test_dataset_provider, model_provider, mo
         }
         replica_info.append(replica_dict)
 
-    build_local_embedding_group()
-    set_build_data_args(model_type, model_provider, train_valid_test_dataset_provider)
     tft_set_optimizer_replica(cur_rank, replica_info)
     tft_set_dp_group_info(cur_rank, dp_ranks)
     tft_register_save_ckpt_handler(tft_save_callback)
@@ -96,7 +99,7 @@ def tft_register_processor(train_valid_test_dataset_provider, model_provider, mo
 
 
 @tft_exception_handler
-def tft_train(args: list, test_data_iterator: list):
+def tft_train(*args, **kwarg):
     try:
         from mindspeed_llm.training.training import train
         # gitee MindSpeed-LLM/1.0.0
@@ -109,4 +112,18 @@ def tft_train(args: list, test_data_iterator: list):
     if tft_is_arf_reboot_node():
         raise RuntimeError("ARF FINISH")
 
-    return train(*args)
+    return train(*args, **kwarg)
+
+
+def tft_train_wrapper(fn):
+    @wraps(fn)
+    @tft_exception_handler
+    def wrapper(*args, **kwargs):
+        # For MindSpeed-LLM
+        set_mindio_export_version("MindSpeed-LLM")
+
+        if tft_is_arf_reboot_node():
+            raise RuntimeError("ARF FINISH")
+
+        return fn(*args, **kwargs)
+    return wrapper

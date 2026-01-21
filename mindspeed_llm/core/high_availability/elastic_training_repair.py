@@ -66,11 +66,10 @@ def repair_callback(*repair_args, **repair_kwargs):
     if step <= 0:
         raise ValueError(f"repair step {step} is not valid")
     if repair_type == RepairType.RT_SEND.value:
-        tft_optimizer_data_repair.send_rank_repair(src_ranks, dest_ranks, optim_idxs, rank_list,
-                                                   train_args[ha_constant.TRAIN_PARAM])
+        tft_optimizer_data_repair.send_rank_repair(src_ranks, dest_ranks, optim_idxs,
+                                                   rank_list, train_args)
     elif repair_type == RepairType.RT_RECV_REPAIR.value:
-        tft_optimizer_data_repair.recv_rank_repair(src_ranks, dest_ranks, optim_idxs, need_rebuild, rank_list,
-                                                   train_args[ha_constant.TRAIN_PARAM])
+        tft_optimizer_data_repair.recv_rank_repair(src_ranks, dest_ranks, optim_idxs, rank_list, train_args)
     else:
         ttp_logger.error(f"rank:{rank} repair type {repair_type} not supported")
         raise ValueError(f"rank:{rank} repair type {repair_type} not supported")

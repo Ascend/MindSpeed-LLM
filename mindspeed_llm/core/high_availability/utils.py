@@ -10,8 +10,6 @@ class HighAvailabilityConstant:
     RET_ERROR = 1
     RET_NO_REBUILD = 2
 
-    TRAIN_PARAM = 0
-    TEST_DATA_ITER = 1
     MODEL_INDEX = 1
     OPTIM_INDEX = 2
     SCHEDULER_INDEX = 3

@@ -1,48 +1,26 @@
 # Copyright (c) Huawei Technologies Co., Ltd. 2024. All rights reserved.
 
 import io
-import random
 import time
 from dataclasses import dataclass
-import numpy as np
+from logging import getLogger
+
 import torch
-from megatron.core import mpu, tensor_parallel
-from megatron.core.utils import get_model_config
 from megatron.core.num_microbatches_calculator import update_num_microbatches
 from megatron.training import get_args, get_timers
 from megatron.training.checkpointing import (set_checkpoint_version, check_checkpoint_args,
                                              get_checkpoint_version, fix_query_key_value_ordering, load_checkpoint)
-from megatron.training.training import setup_model_and_optimizer
 from megatron.training.utils import print_rank_0, unwrap_model
+from mindio_ttp.framework_ttp import (OptimizerType, RepairType)
+from mindio_ttp.framework_ttp.ttp_decorator import tft_report_load_ckpt_step
 
 from .tft_replica_group import get_repair_group, build_repair_group
 from .utils import ha_constant
-from mindio_ttp.framework_ttp.ttp_decorator import tft_report_load_ckpt_step
-from mindio_ttp.framework_ttp import (OptimizerType, RepairType)
-from logging import getLogger
+
 ttp_logger = getLogger(__name__)
 
 temp_memory_ckpt = None
 load_ckpt = False
-model_provider_ = None
-model_type_ = None
-train_valid_test_datasets_provider_ = None
-
-
-def set_build_data_args(model_type, model_provider, train_valid_test_datasets_provider):
-    global model_type_
-    global model_provider_
-    global train_valid_test_datasets_provider_
-    model_type_ = model_type
-    model_provider_ = model_provider
-    train_valid_test_datasets_provider_ = train_valid_test_datasets_provider
-
-
-def get_build_data_args():
-    global model_type_
-    global model_provider_
-    global train_valid_test_datasets_provider_
-    return model_type_, model_provider_, train_valid_test_datasets_provider_
 
 
 def set_load_ckpt(status):
@@ -90,14 +68,14 @@ def repair_callback(step: int, need_rebuild: bool, error_ranks: list, repair_inf
                            rank, repair_type, src_ranks, dest_ranks, rank_list, optim_idxs, step)
 
     if repair_type == RepairType.RT_SEND.value:
-        send_rank_repair(src_ranks, dest_ranks, optim_idxs, rank_list, train_args[ha_constant.TRAIN_PARAM])
+        send_rank_repair(src_ranks, dest_ranks, optim_idxs, rank_list, train_args)
     elif repair_type in [RepairType.RT_UCE_HIGHLEVEL.value,
                          RepairType.RT_UCE_LOWLEVEL.value,
                          RepairType.RT_RECV_REPAIR.value]:
-        recv_rank_repair(src_ranks, dest_ranks, optim_idxs, need_rebuild, rank_list, train_args[ha_constant.TRAIN_PARAM])
+        recv_rank_repair(src_ranks, dest_ranks, optim_idxs, rank_list, train_args)
     elif repair_type in [RepairType.RT_LOAD_CKPT.value,
                          RepairType.RT_LOAD_REBUILD.value]:
-        load_ckpt_repair(need_rebuild, train_args[ha_constant.TRAIN_PARAM])
+        load_ckpt_repair(train_args)
     else:
         ttp_logger.error("[repair] rank %s received invalid repair type:%s", rank, repair_type)
         raise ValueError(f"repair type is invalid")
@@ -157,19 +135,10 @@ def save_and_send_ckpt(dest_rank, optim_idx, train_args):
                            f"send ckpt:{time.time() - t1:.3f}s")
 
 
-def recv_rank_repair(src_ranks: list, dest_ranks: list, optim_idxs: list,
-                     need_rebuild: bool, rank_list: list, train_args):
+def recv_rank_repair(src_ranks: list, dest_ranks: list, optim_idxs: list, rank_list: list, train_args):
     t1 = time.time()
     rank = torch.distributed.get_rank()
     build_repair_group(rank_list)
-
-    t2 = time.time()
-    if need_rebuild:
-        model, optimizer, lr_scheduler, config = build_model_and_optimizer(model_provider_, model_type_, True)
-        train_args[ha_constant.MODEL_INDEX] = model
-        train_args[ha_constant.OPTIM_INDEX] = optimizer
-        train_args[ha_constant.SCHEDULER_INDEX] = lr_scheduler
-        train_args[ha_constant.CONFIG_INDEX] = config
 
     t3 = time.time()
     group = get_repair_group()
@@ -180,7 +149,9 @@ def recv_rank_repair(src_ranks: list, dest_ranks: list, optim_idxs: list,
     t4 = time.time()
     # combine state_dict and once load,fix precision problem
     state_dict = temp_memory_ckpt
-    load_memory_ckpt(train_args[ha_constant.MODEL_INDEX], train_args[ha_constant.OPTIM_INDEX], train_args[ha_constant.SCHEDULER_INDEX],
+    load_memory_ckpt(train_args[ha_constant.MODEL_INDEX],
+                     train_args[ha_constant.OPTIM_INDEX],
+                     train_args[ha_constant.SCHEDULER_INDEX],
                      state_dict)
 
     t5 = time.time()
@@ -196,29 +167,11 @@ def recv_rank_repair(src_ranks: list, dest_ranks: list, optim_idxs: list,
 
     t7 = time.time()
     ttp_logger.info(f"[repair] rank {rank} recv total time consumed:{t7 - t1:.3f}s, "
-                           f"build repair group:{t2 - t1:.3f}s, "
-                           f"rebuild:{t3 - t2:.3f}s, "
+                           f"rebuild:{t3 - t1:.3f}s, "
                            f"recv ckpt:{t4 - t3:.3f}s, "
                            f"load ckpt:{t5 - t4:.3f}s, "
                            f"recv optim:{t6 - t5:.3f}s, "
                            f"recv log args:{t7 - t6:.3f}s.")
-
-
-def build_model_and_optimizer(model_provider, model_type, skip_load):
-    args = get_args()
-    if skip_load:
-        load, args.load = args.load, None
-
-    from .tft_replica_group import get_local_embedding_group
-    ori_embedding_group = mpu._EMBEDDING_GROUP
-    mpu._EMBEDDING_GROUP = get_local_embedding_group()
-    model, optimizer, lr_scheduler = setup_model_and_optimizer(model_provider, model_type)
-    mpu._EMBEDDING_GROUP = ori_embedding_group
-    if skip_load:
-        args.load = load
-    config = get_model_config(model[0])
-
-    return model, optimizer, lr_scheduler, config
 
 
 def recv_ckpt_from_peer(src_rank, dest_rank):
@@ -316,7 +269,7 @@ def recv_log_args(src_rank):
     torch.distributed.recv(LogArgs.num_zeros_in_grad_, src=src_rank, group=get_repair_group(True))
 
 
-def load_ckpt_repair(need_rebuild, train_args):
+def load_ckpt_repair(train_args):
     args, timers = get_args(), get_timers()
     args.consumed_train_samples, args.consumed_valid_samples = 0, 0
     no_load_optim, args.no_load_optim = args.no_load_optim, None
@@ -324,21 +277,15 @@ def load_ckpt_repair(need_rebuild, train_args):
 
     global load_ckpt
     load_ckpt = True
-    if need_rebuild:
-        model, optimizer, lr_scheduler, config = build_model_and_optimizer(model_provider_, model_type_, False)
-        train_args[ha_constant.MODEL_INDEX] = model
-        train_args[ha_constant.OPTIM_INDEX] = optimizer
-        train_args[ha_constant.SCHEDULER_INDEX] = lr_scheduler
-        train_args[ha_constant.CONFIG_INDEX] = config
-    else:
-        from megatron.training.training import get_optimizer_param_scheduler
-        opt_param_scheduler = get_optimizer_param_scheduler(train_args[ha_constant.OPTIM_INDEX])
-        train_args[ha_constant.SCHEDULER_INDEX] = opt_param_scheduler
-        timers('load-checkpoint', log_level=0).start(barrier=True)
-        args.iteration, args.num_floating_point_operations_so_far = load_checkpoint(
-            train_args[ha_constant.MODEL_INDEX], train_args[ha_constant.OPTIM_INDEX], train_args[ha_constant.SCHEDULER_INDEX])
-        timers('load-checkpoint').stop(barrier=True)
-        timers.log(['load-checkpoint'])
+
+    from megatron.training.training import get_optimizer_param_scheduler
+    opt_param_scheduler = get_optimizer_param_scheduler(train_args[ha_constant.OPTIM_INDEX])
+    train_args[ha_constant.SCHEDULER_INDEX] = opt_param_scheduler
+    timers('load-checkpoint', log_level=0).start(barrier=True)
+    args.iteration, args.num_floating_point_operations_so_far = load_checkpoint(
+        train_args[ha_constant.MODEL_INDEX], train_args[ha_constant.OPTIM_INDEX], train_args[ha_constant.SCHEDULER_INDEX])
+    timers('load-checkpoint').stop(barrier=True)
+    timers.log(['load-checkpoint'])
 
     if args.iteration == 0:
         ttp_logger.error("[repair] rank %s failed to load ckpt, could not find any file", args.rank)
@@ -380,6 +327,7 @@ def load_memory_ckpt(model, optimizer, opt_param_scheduler, state_dict):
     fix_query_key_value_ordering(model, checkpoint_version)
 
     optimizer.load_state_dict_memory(state_dict['optimizer'])
+    opt_param_scheduler.num_steps = 0
     opt_param_scheduler.load_state_dict(state_dict['opt_param_scheduler'])
 
     ttp_logger.info(f'rank:{args.rank} successfully load checkpoint to memory')

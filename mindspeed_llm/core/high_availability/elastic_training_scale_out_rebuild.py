@@ -50,12 +50,10 @@ def scale_out_rebuild_process_group_callback(fault_ranks: list, train_args, para
     ttp_logger.debug(f"scale out train args: {train_args}")
     elastic_training_common.check_scale_out_params(params)
     t1 = time.time()
-    if (len(train_args) <= ha_constant.TRAIN_PARAM or len(train_args[ha_constant.TRAIN_PARAM]) <=
-            ha_constant.MODEL_INDEX or
-            len(train_args[ha_constant.TRAIN_PARAM]) <= ha_constant.OPTIM_INDEX):
+    if len(train_args) <= ha_constant.OPTIM_INDEX:
         raise RuntimeError(f"train_args error: {train_args}")
-    models = train_args[ha_constant.TRAIN_PARAM][ha_constant.MODEL_INDEX]
-    optimizer = train_args[ha_constant.TRAIN_PARAM][ha_constant.OPTIM_INDEX]
+    models = train_args[ha_constant.MODEL_INDEX]
+    optimizer = train_args[ha_constant.OPTIM_INDEX]
     args = get_args()
     timeout = timedelta(minutes=args.distributed_timeout_minutes)
     nccl_comm_cfgs = {}

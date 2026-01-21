@@ -23,8 +23,9 @@ class TestElasticTrainingScaleInRebuild(unittest.TestCase):
     @patch('mindspeed_llm.core.high_availability.elastic_training_scale_in_rebuild.torch.distributed.get_rank')
     @patch('mindspeed_llm.core.high_availability.elastic_training_scale_in_rebuild.update_model_and_optim_related_group')
     @patch('torch.distributed.get_process_group_ranks')
+    @patch('torch.distributed.barrier')
     def test_scale_in_rebuild_callback(self, *mocks):
-        (mock_get_process_group_ranks_mock, mock_update_model_and_optim_related_group, mock_get_rank, mock_new_group,
+        (mock_barrier, mock_get_process_group_ranks_mock, mock_update_model_and_optim_related_group, mock_get_rank, mock_new_group,
          mock_get_args,
          mock_get_num_microbatches,
          mock_num_microbatches_calculator, mock_change_num_micro_batches, mock_get_timers,
@@ -53,7 +54,7 @@ class TestElasticTrainingScaleInRebuild(unittest.TestCase):
         from mindspeed_llm.core.high_availability import elastic_training_scale_in_rebuild
         new_dp_ranks = [0, 2]
         new_world_ranks = [0, 2]
-        args = [[mock.MagicMock(), mock.MagicMock(), mock.MagicMock()]]
+        args = [mock.MagicMock(), mock.MagicMock(), mock.MagicMock()]
         params = '{"scale-in-strategy": "DP"}'
 
         elastic_training_scale_in_rebuild.scale_in_rebuild_callback(new_dp_ranks, new_world_ranks, args, params)

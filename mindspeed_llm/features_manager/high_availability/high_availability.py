@@ -39,6 +39,9 @@ class HighAvailabilityFeature(MindSpeedFeature):
         if args.enable_high_availability and args.swap_attention:
             raise AssertionError(
                 'switch of the high availability feature is unsupported, please disable swap attention first.')
+        if args.enable_high_availability and args.disable_gloo_group:
+            raise AssertionError(
+                'switch of the high availability feature is unsupported, please disable disable-gloo-group first.')
         if args.swap_optimizer and args.enable_high_availability:
             raise AssertionError('switch of the high availability feature is unsupported')
         if args.enable_elastic_training and not args.enable_high_availability:
@@ -83,7 +86,7 @@ class HighAvailabilityFeature(MindSpeedFeature):
 
     def register_patches(self, patch_manager, args):
         from mindspeed_llm.tasks.high_availability.initialize_patch import initialize_distributed_wrapper
-        from mindspeed_llm.core import (start_grad_sync_wrapper, distributed_data_parallel_init_wrapper,
+        from mindspeed_llm.core import (start_grad_sync_wrapper,
                                         start_param_sync_wrapper, param_and_grad_bucket_group_init_wrapper,
                                         get_megatron_optimizer_wrapper, get_grad_norm_fp32_wrapper,
                                         distributed_optimizer_init_wrapper,
@@ -92,8 +95,6 @@ class HighAvailabilityFeature(MindSpeedFeature):
         from mindspeed_llm.core.pipeline_parallel.schedules import high_availability_get_forward_backward_func_wrapper
 
         if args.enable_high_availability:
-            patch_manager.register_patch('megatron.core.distributed.distributed_data_parallel.DistributedDataParallel.__init__',
-                                          distributed_data_parallel_init_wrapper)
             patch_manager.register_patch('megatron.core.distributed.param_and_grad_buffer._ParamAndGradBucketGroup.start_grad_sync',
                                           start_grad_sync_wrapper)
             patch_manager.register_patch('megatron.core.distributed.param_and_grad_buffer._ParamAndGradBucketGroup.__init__',
@@ -160,8 +161,3 @@ class HighAvailabilityFeature(MindSpeedFeature):
                                              num_floating_point_operations_wrapper)
                 patch_manager.register_patch('megatron.training.utils.print_rank_last',
                                              print_rank_last_wrapper)
-
-
-
-
-

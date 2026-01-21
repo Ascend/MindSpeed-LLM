@@ -45,10 +45,10 @@ def scale_in_rebuild_callback(new_dp_ranks: list, new_world_ranks: list, args, p
     ttp_logger.info(f"scale-in strategy params: {params}, new_dp_ranks: {new_dp_ranks}, new_world_ranks: {new_world_ranks}")
     elastic_training_common.check_scale_in_params(params)
     cur_rank = torch.distributed.get_rank()
-    if len(args) <= ha_constant.TRAIN_PARAM or len(args[ha_constant.TRAIN_PARAM]) <= ha_constant.MODEL_INDEX:
+    if len(args) <= ha_constant.OPTIM_INDEX:
         raise RuntimeError(f"args error: {args}")
-    models = args[ha_constant.TRAIN_PARAM][ha_constant.MODEL_INDEX]
-    optimizer = args[ha_constant.TRAIN_PARAM][ha_constant.OPTIM_INDEX]
+    models = args[ha_constant.MODEL_INDEX]
+    optimizer = args[ha_constant.OPTIM_INDEX]
     arguments = get_args()
     if arguments.expert_model_parallel_size > 1 or arguments.context_parallel_size > 1:
         raise RuntimeError(f"not support ep or cp bigger than 1, but got ep: {arguments.expert_model_parallel_size} "
@@ -86,6 +86,7 @@ def scale_in_rebuild_callback(new_dp_ranks: list, new_world_ranks: list, args, p
                            f"FAULT_REPLICA_RANK:{elastic_training_common.FAULT_REPLICA_RANK}")
     ttp_logger.info(f"rank:{cur_rank} start to build dataset")
     build_dataset(args)
+    torch.distributed.barrier()
     ttp_logger.info(f"rank:{cur_rank} finished build dataset")
     from megatron.core.rerun_state_machine import destroy_rerun_state_machine
     destroy_rerun_state_machine()

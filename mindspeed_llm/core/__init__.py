@@ -31,7 +31,6 @@ from .transformer.moe.router import (topk_router_routing, topk_router_init_wrapp
 from .transformer.transformer_layer import TransformerLayer
 from .transformer.transformer_block import get_num_layers_to_build, transformer_block_init_wrapper, transformer_block_forward
 from .distributed.param_and_grad_buffer import start_grad_sync_wrapper, param_and_grad_bucket_group_init_wrapper, start_param_sync_wrapper
-from .distributed.distributed_data_parallel import distributed_data_parallel_init_wrapper
 from .optimizer import get_megatron_optimizer_wrapper
 from .optimizer.clip_grads import get_grad_norm_fp32_wrapper
 from .optimizer.distrib_optimizer import distributed_optimizer_init_wrapper, distributed_optimizer_init_for_reuse_fp32_wrapper
