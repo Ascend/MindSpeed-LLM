@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright (c) 2020, NVIDIA CORPORATION.  All rights reserved.
+# Copyright (c) 2025, HUAWEI CORPORATION.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ if sys.version_info < (3,):
     raise Exception("Python 2 is not supported by MindSpeed-LLM.")
 
 __description__ = 'MindSpeed-LLM for LLMs of Ascend'
-__version__ = '0.0.1'
+__version__ = '2.2.0'
 __author__ = 'Ascend'
 __long_description__ = 'MindSpeed-LLM for LLMs of Ascend'
 __keywords__ = 'Ascend, langauge, deep learning, NLP'
@@ -97,16 +97,13 @@ setuptools.setup(
         'Topic :: Scientific/Engineering :: Artificial Intelligence',
         'Topic :: Software Development :: Libraries :: Python Modules',
         # Supported python versions
-        'Programming Language :: Python :: 3.6',
-        'Programming Language :: Python :: 3.7',
-        'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
         # Additional Setting
         'Environment :: Console',
         'Natural Language :: English',
         'Operating System :: OS Independent',
     ],
-    python_requires='>=3.6',
+    python_requires='>=3.10',
     packages=setuptools.find_packages(),
     install_requires=install_requires,
     # Add in any packaged data.
