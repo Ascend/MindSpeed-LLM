@@ -614,12 +614,12 @@ class LoraParallelGroupedMLP(GroupedMLP):
                     mm2_b = torch.matmul(mm2_a, w2_b) * self.scaling
                     fc2_output = torch.matmul(h, w2)
                     self.activation_checkpoint.discard_output_and_register_recompute(fc2_output)
-                    fc2_output = h + mm2_b
+                    fc2_output += mm2_b
                 else:
                     h = self.activation_func_with_probs(h + mm1_b, permuted_probs.unsqueeze(-1))
                     mm2_a = torch.matmul(h, w2_a)
                     mm2_b = torch.matmul(mm2_a, w2_b) * self.scaling
                     fc2_output = torch.matmul(h, w2)
-                    fc2_output = h + mm2_b
+                    fc2_output += mm2_b
 
             return fc2_output, None
