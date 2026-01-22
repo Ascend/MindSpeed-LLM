@@ -37,10 +37,27 @@ wget https://huggingface.co/Qwen/Qwen2.5-7B/resolve/main/tokenizer_config.json
 wget https://huggingface.co/Qwen/Qwen2.5-7B/resolve/main/vocab.json
 ```
 
+国内可从ModelScope寻找对应资源
+```shell
+# wget获取权重文件
+wget https://www.modelscope.cn/models/Qwen/Qwen2.5-7B/resolve/master/config.json
+wget https://www.modelscope.cn/models/Qwen/Qwen2.5-7B/resolve/master/generation_config.json
+wget https://www.modelscope.cn/models/Qwen/Qwen2.5-7B/resolve/master/merges.txt
+wget https://www.modelscope.cn/models/Qwen/Qwen2.5-7B/resolve/master/model-00001-of-00004.safetensors
+wget https://www.modelscope.cn/models/Qwen/Qwen2.5-7B/resolve/master/model-00002-of-00004.safetensors
+wget https://www.modelscope.cn/models/Qwen/Qwen2.5-7B/resolve/master/model-00003-of-00004.safetensors
+wget https://www.modelscope.cn/models/Qwen/Qwen2.5-7B/resolve/master/model-00004-of-00004.safetensors
+wget https://www.modelscope.cn/models/Qwen/Qwen2.5-7B/resolve/master/model.safetensors.index.json
+wget https://www.modelscope.cn/models/Qwen/Qwen2.5-7B/resolve/master/tokenizer.json
+wget https://www.modelscope.cn/models/Qwen/Qwen2.5-7B/resolve/master/tokenizer_config.json
+wget https://www.modelscope.cn/models/Qwen/Qwen2.5-7B/resolve/master/vocab.json
+```
+
 通过sha256sum验证模型权重文件完整性
 ```shell
 # 利用sha256sum计算sha256数值
 # 打开文件明细可获取sha256值，https://huggingface.co/Qwen/Qwen2.5-7B/blob/main/model-00001-of-00004.safetensors
+# 如果从ModelScope下载，则打开 https://www.modelscope.cn/models/Qwen/Qwen2.5-7B/file/view/master/model-00001-of-00004.safetensors
 sha256sum model-00001-of-00004.safetensors
 sha256sum model-00002-of-00004.safetensors
 sha256sum model-00003-of-00004.safetensors
@@ -124,9 +141,13 @@ python convert_ckpt.py \
 # 根据链接提供地址，通过wget获取数据集元数据
 mkdir dataset
 cd dataset/
-wget https://huggingface.co/datasets/tatsu-lab/alpaca/resolve/main/data/train-00000-of-00001-a09b74b3ef9c3b56.parquet
-cd ..
 
+# HuggingFace数据集链接（择一获取）
+wget https://huggingface.co/datasets/tatsu-lab/alpaca/resolve/main/data/train-00000-of-00001-a09b74b3ef9c3b56.parquet
+# ModelScope 数据集链接（择一获取）
+wget https://www.modelscope.cn/datasets/angelala00/tatsu-lab-alpaca/resolve/master/train-00000-of-00001-a09b74b3ef9c3b56.parquet
+
+cd ..
 # 使用仓库提供的数据处理脚本，获取预训练数据集。
 # 请根据如下指导完成脚本修改配置
 bash examples/mcore/qwen25/data_convert_qwen25_pretrain.sh
