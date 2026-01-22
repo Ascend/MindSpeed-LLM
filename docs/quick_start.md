@@ -12,84 +12,7 @@
 
 # 1 环境搭建
 
-如果已经完成了环境搭建，请跳转2，进行预训练任务拉起。
-
-请参考MindSpeed-LLM仓首页[版本说明](../README.md#版本说明)，选择下载对应版本的软件依赖，如下主要提供一些图示指导说明，完成环境搭建，本章节通过配图辅助您完成环境安装。
-> 具体配套版本关系，以版本配套表为准。
-
-## 1.1 驱动固件安装
-
-参考版本配套表，根据系统和硬件产品型号，选择对应版本的`driver`和`firmware`下载[驱动固件](https://www.hiascend.com/hardware/firmware-drivers/community)，并参考完成[NPU驱动固件安装](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/82RC1/softwareinst/instg/instg_0005.html?Mode=PmIns&InstallType=local&OS=Ubuntu&Software=cannToolKit)，安装后重启os系统生效。
-
-## 1.2 CANN安装
-
-参考版本配套表，根据系统选择`aarch64`或`x86_64`对应版本的`cann-toolkit`、`cann-kernel`和`cann-nnal`，下载[CANN软件包](https://www.hiascend.com/developer/download/community/result?module=cann)，参考[CANN安装教程](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/81RC1alpha002/softwareinst/instg/instg_0008.html?Mode=PmIns&OS=Ubuntu&Software=cannToolKit)完成cann包安装。
-
-## 1.3 PyTorch后端及相关依赖安装
-
-**PyTorch后端环境安装，该环境与MindSpore环境冲突，请根据需要，择一安装。**
-
-请参考MindSpeed-LLM仓首页[“版本配套表”](../README.md#版本配套表)，准备[torch_npu](https://www.hiascend.com/developer/download/community/result?module=pt)和[apex](https://gitcode.com/ascend/apex)，参考[Ascend Extension for PyTorch](https://www.hiascend.com/document/detail/zh/Pytorch/700/configandinstg/instg/insg_0001.html)或执行以下命令安装
-
-```shell
-# 安装torch和torch_npu，因为版本迭代，包名存在出入，根据实际修改
-wget https://download.pytorch.org/whl/cpu/torch-2.1.0-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
-pip3 install torch-2.1.0-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
-wget https://gitcode.com/ascend/pytorch/releases/download/v7.0.0-pytorch2.1.0/torch_npu-2.1.0.post12-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
-pip3 install torch_npu-2.1.0.post12-cp38-cp38-manylinux_2_17_aarch64.manylinux2014_aarch64.whl
-
-# apex for Ascend 需要自行参考 https://gitcode.com/ascend/apex 完成whl包的构建，再通过如下指令完成安装
-pip3 install apex-*.whl
-```
-
-拉取代码仓并完成安装:
-```shell
-# 设置环境变量
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
-source /usr/local/Ascend/nnal/atb/set_env.sh
-
-# 安装MindSpeed加速库
-git clone https://gitcode.com/ascend/MindSpeed.git
-cd MindSpeed
-git checkout master              # 以install_guide.md中的版本为准，此处仅做参考
-pip3 install -r requirements.txt
-pip3 install -e .
-cd ..
-
-# 准备MindSpeed-LLM及Megatron-LM源码
-git clone https://gitcode.com/ascend/MindSpeed-LLM.git
-git clone https://github.com/NVIDIA/Megatron-LM.git  # megatron从github下载，请确保网络能访问
-cd Megatron-LM
-git checkout core_r0.8.0         # 以install_guide.md中的版本为准，此处仅做参考
-cp -r megatron ../MindSpeed-LLM/
-cd ../MindSpeed-LLM
-git checkout master              # 以install_guide.md中的版本为准，此处仅做参考
-
-pip3 install -r requirements.txt  # 安装其余依赖库
-```
-
-## 1.4 MindSpore后端及相关依赖安装
-
-**MindSpore后端环境安装，该环境与PyTorch环境冲突，请根据需要，择一安装。**
-
-请参考MindSpore仓[“版本配套表”](mindspore/readme.md#版本配套表)，安装指定版本。
-
-参考[MindSpore官方安装指导](https://www.mindspore.cn/install)，根据系统类型、CANN版本及Python版本选择匹配的对应的安装命令进行安装，安装前请确保网络畅通。或执行以下命令安装：
-
-```shell
-pip3 install mindspore==2.7.1  # 以docs/mindspore/readme.md中的版本为准，此处仅做参考
-```
-
-```shell
-# 拉取MindSpeed-Core-MS仓库
-git clone https://gitcode.com/ascend/MindSpeed-Core-MS.git -b r0.4.0
-cd MindSpeed-Core-MS
-pip3 install -r requirements.txt
-source auto_convert.sh llm
-
-# 完成安装，返回LLM执行模型任务
-cd MindSpeed-LLM
-```
+基于不同的后端，环境搭建请参考[MindSpeed LLM安装指导-PyTorch后端](./pytorch/install_guide.md)和[MindSpeed LLM安装指导-MindSpore后端](./mindspore/install_guide.md)。
 
 # 2 开源模型权重获取
 
@@ -114,10 +37,27 @@ wget https://huggingface.co/Qwen/Qwen2.5-7B/resolve/main/tokenizer_config.json
 wget https://huggingface.co/Qwen/Qwen2.5-7B/resolve/main/vocab.json
 ```
 
+国内可从ModelScope寻找对应资源
+```shell
+# wget获取权重文件
+wget https://www.modelscope.cn/models/Qwen/Qwen2.5-7B/resolve/master/config.json
+wget https://www.modelscope.cn/models/Qwen/Qwen2.5-7B/resolve/master/generation_config.json
+wget https://www.modelscope.cn/models/Qwen/Qwen2.5-7B/resolve/master/merges.txt
+wget https://www.modelscope.cn/models/Qwen/Qwen2.5-7B/resolve/master/model-00001-of-00004.safetensors
+wget https://www.modelscope.cn/models/Qwen/Qwen2.5-7B/resolve/master/model-00002-of-00004.safetensors
+wget https://www.modelscope.cn/models/Qwen/Qwen2.5-7B/resolve/master/model-00003-of-00004.safetensors
+wget https://www.modelscope.cn/models/Qwen/Qwen2.5-7B/resolve/master/model-00004-of-00004.safetensors
+wget https://www.modelscope.cn/models/Qwen/Qwen2.5-7B/resolve/master/model.safetensors.index.json
+wget https://www.modelscope.cn/models/Qwen/Qwen2.5-7B/resolve/master/tokenizer.json
+wget https://www.modelscope.cn/models/Qwen/Qwen2.5-7B/resolve/master/tokenizer_config.json
+wget https://www.modelscope.cn/models/Qwen/Qwen2.5-7B/resolve/master/vocab.json
+```
+
 通过sha256sum验证模型权重文件完整性
 ```shell
 # 利用sha256sum计算sha256数值
 # 打开文件明细可获取sha256值，https://huggingface.co/Qwen/Qwen2.5-7B/blob/main/model-00001-of-00004.safetensors
+# 如果从ModelScope下载，则打开 https://www.modelscope.cn/models/Qwen/Qwen2.5-7B/file/view/master/model-00001-of-00004.safetensors
 sha256sum model-00001-of-00004.safetensors
 sha256sum model-00002-of-00004.safetensors
 sha256sum model-00003-of-00004.safetensors
@@ -201,9 +141,13 @@ python convert_ckpt.py \
 # 根据链接提供地址，通过wget获取数据集元数据
 mkdir dataset
 cd dataset/
-wget https://huggingface.co/datasets/tatsu-lab/alpaca/resolve/main/data/train-00000-of-00001-a09b74b3ef9c3b56.parquet
-cd ..
 
+# HuggingFace数据集链接（择一获取）
+wget https://huggingface.co/datasets/tatsu-lab/alpaca/resolve/main/data/train-00000-of-00001-a09b74b3ef9c3b56.parquet
+# ModelScope 数据集链接（择一获取）
+wget https://www.modelscope.cn/datasets/angelala00/tatsu-lab-alpaca/resolve/master/train-00000-of-00001-a09b74b3ef9c3b56.parquet
+
+cd ..
 # 使用仓库提供的数据处理脚本，获取预训练数据集。
 # 请根据如下指导完成脚本修改配置
 bash examples/mcore/qwen25/data_convert_qwen25_pretrain.sh

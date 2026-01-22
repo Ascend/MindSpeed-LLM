@@ -14,9 +14,13 @@
 
 <img src="../../../../sources/images/multi_sample_pack_fine_tuning/samples_pack.png" width="60%"/>
 
+微调数据每个样本的组成是一个problem(p)对应一个response(r)，即一问一答相对应，写做p1r1、p2r2等。
+
 参与计算式的`attn_mask` 也改变成锯齿状的矩阵类型：
 
 <img src="../../../../sources/images/multi_sample_pack_fine_tuning/zigzag_attn_mask.png" width="20%"/>
+
+在非pack场景下，矩阵是完整下三角矩阵，多个样本之间的self attention没有掩盖，所有token均参与计算，而pack场景下数据为锯齿状白色三角，其余区域为mask，样本之间保持独立，不能互相做self attention，减少了微调数据的处理量，同时可以保持样本之间的独立性，提升训练效率。
 
 业界还有其他pack模式（下三角pack等），敬请期待支持。
 
