@@ -38,7 +38,10 @@ class Hf2MgConvert(Convert):
             )
             
         if self.first_k_dense_replace is None:
-            self.first_k_dense_replace = self.load_model.first_k_dense_replace
+            self.first_k_dense_replace = getattr(self.load_model, 'first_k_dense_replace', 0)
+            if not getattr(self.load_model, 'num_experts', None):
+                self.first_k_dense_replace = self.num_layers
+                self.load_model.first_k_dense_replace = self.num_layers
 
         # model arguments
         if self.noop_layers is None:
