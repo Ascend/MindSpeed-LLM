@@ -7,7 +7,7 @@ from torch.utils._foreach_utils import (
     _group_tensors_by_device_and_dtype,
     _has_foreach_support,
 )
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Iterable
 from mindspeed.fsdp.distributed.parallel_state import ParallelState
 import logging
 from mindspeed_llm.fsdp2.utils.device import get_device_type
@@ -27,7 +27,7 @@ def clip_grad_norm(
             foreach=foreach,
         )
 
-    grad_norm = torch.nn.utils.clip_grad_norm_(
+    grad_norm = fsdp2_clip_grad_norm(
         model.parameters(),
         max_norm,
         norm_type=norm_type,
@@ -37,6 +37,48 @@ def clip_grad_norm(
     if isinstance(grad_norm, DTensor):
         grad_norm = grad_norm.full_tensor()
     return grad_norm
+
+@torch.no_grad()
+def fsdp2_clip_grad_norm(
+    parameters: torch.Tensor | Iterable[torch.Tensor],
+    max_norm: float,
+    norm_type: float = 2.0,
+    error_if_nonfinite: bool = False,
+    foreach: Optional[bool] = None,
+) -> torch.Tensor:
+    r"""
+    Clip the gradient norm of parameters, with FSDP2 DTensor support.
+
+    Args:
+        parameters (Iterable[Tensor] or Tensor): an iterable of Tensors or a
+            single Tensor that will have gradients normalized
+        max_norm (float): max norm of the gradients
+        norm_type (float): type of the used p-norm. Can be ``'inf'`` for
+            infinity norm.
+        error_if_nonfinite (bool): if True, an error is thrown if the total
+            norm of the gradients from :attr:`parameters` is ``nan``,
+            ``inf``, or ``-inf``. Default: False (will switch to True in the future)
+        foreach (bool): use the faster foreach-based implementation.
+            If ``None``, use the foreach implementation for CUDA and CPU native tensors and silently
+            fall back to the slow implementation for other device types.
+            Default: ``None``
+
+    Returns:
+        Total norm of the parameter gradients (viewed as a single vector).
+    """
+    if isinstance(parameters, torch.Tensor):
+        parameters = [parameters]
+    else:
+        # prevent generators from being exhausted
+        parameters = list(parameters)
+    grads = [p.grad for p in parameters if p.grad is not None]
+    total_norm = torch.nn.utils.get_total_norm(grads, norm_type, error_if_nonfinite, foreach)
+    # In FSDP2, total_norm is a DTensor. Call full_tensor() to all-gather the global norm so all ranks clip gradients consistently.
+    if isinstance(total_norm, DTensor):
+        total_norm = total_norm.full_tensor()
+    torch.nn.utils.clip_grads_with_norm_(parameters, max_norm, total_norm, foreach)
+
+    return total_norm
 
 @torch.no_grad()
 def ep_fsdp2_clip_grad_norm(
