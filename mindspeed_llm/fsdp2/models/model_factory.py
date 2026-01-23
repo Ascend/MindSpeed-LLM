@@ -78,7 +78,7 @@ class ModelFactory:
             model = AutoModelForCausalLM.from_config(
                 hf_config,
                 trust_remote_code=True,
-                torch_dtype=torch.bfloat16 # Use BF16 for initialization to save memory
+                torch_dtype=torch.float32 # Use FP32 for mixed precision training
             )
         else:
             logger.info_rank0(f"> Loading pretrained weights from {model_args.model_name_or_path}...")
@@ -86,7 +86,7 @@ class ModelFactory:
                 model_args.model_name_or_path,
                 config=hf_config,
                 trust_remote_code=True,
-                torch_dtype=torch.bfloat16,
+                torch_dtype=torch.float32,  # Use FP32 for mixed precision training
                 low_cpu_mem_usage=True,  # Reduce memory peak usage during loading
                 device_map="cpu"         # Load to CPU first; MindSpeed FSDP handles sharding and moving
             )
@@ -127,9 +127,13 @@ class ModelFactory:
             ignored_modules=[],
             apply_modules= {
                 'model.layers.{*}': {'reshard_after_forward': True, 'shard_placement_fn': None},
-                'model.embed_tokens': {},
-                'lm_head': {},
-            }
+                'model.embed_tokens': {'reshard_after_forward': True},
+                'lm_head': {'reshard_after_forward': True},
+            },
+            param_dtype='bf16',
+            reduce_dtype='fp32',
+            num_to_forward_prefetch=1,
+            num_to_backward_prefetch=1
         )
 
         # --- 2. Tensor Parallel Plan ---
