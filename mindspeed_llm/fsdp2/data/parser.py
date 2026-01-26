@@ -87,11 +87,27 @@ def use_openmind() -> bool:
     return is_env_enabled("USE_OPENMIND_HUB")
 
 
-def get_dataset_list(dataset_names: Optional[list[str]], dataset_dir: Union[str, dict]) -> list["DatasetAttr"]:
-    r"""Get the attributes of the datasets."""
-    if dataset_names is None:
-        dataset_names = []
+def get_dataset_list(
+    dataset_input: Optional[Union[dict[str, Any], str]],
+    dataset_dir: Union[str, dict]
+) -> list["DatasetAttr"]:
+    if dataset_input is None:
+        return []
 
+    # Case 1: Local single dataset (dict)
+    if isinstance(dataset_input, dict):
+        return [build_dataset_attr_from_dict(dataset_input)]
+
+    # Case 2: Dataset names from dataset_info.json (str)
+    if isinstance(dataset_input, str):
+        dataset_names = [name.strip() for name in dataset_input.split(",") if name.strip()]
+    else:
+        raise ValueError(f"Invalid dataset input: {dataset_input}")
+
+    if not dataset_names:
+        return []
+
+    # Load dataset_info.json
     if isinstance(dataset_dir, dict):
         dataset_info = dataset_dir
     elif dataset_dir == "ONLINE":
@@ -101,46 +117,76 @@ def get_dataset_list(dataset_names: Optional[list[str]], dataset_dir: Union[str,
             config_path = hf_hub_download(repo_id=dataset_dir[7:], filename=DATA_CONFIG, repo_type="dataset")
         else:
             config_path = os.path.join(dataset_dir, DATA_CONFIG)
-
         try:
             with open(config_path) as f:
                 dataset_info = json.load(f)
         except Exception as err:
-            if len(dataset_names) != 0:
-                raise ValueError(f"Cannot open {config_path} due to {str(err)}.")
+            raise ValueError(f"Cannot open {config_path} due to {str(err)}.")
 
-            dataset_info = None
-
-    dataset_list: list[DatasetAttr] = []
+    # Build attrs from dataset_info
+    dataset_attrs = []
     for name in dataset_names:
-        if dataset_info is None:  # dataset_dir is ONLINE
+        if dataset_info is None:
             load_from = "ms_hub" if use_modelscope() else "om_hub" if use_openmind() else "hf_hub"
-            dataset_attr = DatasetAttr(load_from, dataset_name=name)
-            dataset_list.append(dataset_attr)
-            continue
-
-        if name not in dataset_info:
-            raise ValueError(f"Undefined dataset {name} in {DATA_CONFIG}.")
-
-        has_hf_url = "hf_hub_url" in dataset_info[name]
-        has_ms_url = "ms_hub_url" in dataset_info[name]
-        has_om_url = "om_hub_url" in dataset_info[name]
-
-        if has_hf_url or has_ms_url or has_om_url:
-            if has_ms_url and (use_modelscope() or not has_hf_url):
-                dataset_attr = DatasetAttr("ms_hub", dataset_name=dataset_info[name]["ms_hub_url"])
-            elif has_om_url and (use_openmind() or not has_hf_url):
-                dataset_attr = DatasetAttr("om_hub", dataset_name=dataset_info[name]["om_hub_url"])
-            else:
-                dataset_attr = DatasetAttr("hf_hub", dataset_name=dataset_info[name]["hf_hub_url"])
-        elif "script_url" in dataset_info[name]:
-            dataset_attr = DatasetAttr("script", dataset_name=dataset_info[name]["script_url"])
-        elif "cloud_file_name" in dataset_info[name]:
-            dataset_attr = DatasetAttr("cloud_file", dataset_name=dataset_info[name]["cloud_file_name"])
+            attr = DatasetAttr(load_from, dataset_name=name)
         else:
-            dataset_attr = DatasetAttr("file", dataset_name=dataset_info[name]["file_name"])
+            if name not in dataset_info:
+                raise ValueError(f"Undefined dataset '{name}' in {DATA_CONFIG}.")
+            config = dataset_info[name]
+            attr = build_dataset_attr_from_dict(config)
+        dataset_attrs.append(attr)
 
-        dataset_attr.join(dataset_info[name])
-        dataset_list.append(dataset_attr)
+    return dataset_attrs
 
-    return dataset_list
+
+def build_dataset_attr_from_dict(config: dict[str, Any]) -> "DatasetAttr":
+    r"""
+    Build a DatasetAttr object from a config dictionary.
+    
+    The config dict should follow the same format as entries in dataset_info.json,
+    supporting keys like:
+      - file_name, script_url, cloud_file_name
+      - hf_hub_url, ms_hub_url, om_hub_url
+      - formatting, ranking, split, num_samples, subset, folder
+      - columns, tags, etc.
+    
+    Example:
+        config = {
+            "file_name": "alpaca.json",
+            "formatting": "alpaca",
+            "columns": {"prompt": "instruction", "response": "output"}
+        }
+    """
+    # Determine load_from and dataset_name based on available keys
+    if "file_name" in config:
+        load_from = "file"
+        dataset_name = config["file_name"]
+    elif "script_url" in config:
+        load_from = "script"
+        dataset_name = config["script_url"]
+    elif "cloud_file_name" in config:
+        load_from = "cloud_file"
+        dataset_name = config["cloud_file_name"]
+    elif "hf_hub_url" in config:
+        load_from = "hf_hub"
+        dataset_name = config["hf_hub_url"]
+    elif "ms_hub_url" in config:
+        load_from = "ms_hub"
+        dataset_name = config["ms_hub_url"]
+    elif "om_hub_url" in config:
+        load_from = "om_hub"
+        dataset_name = config["om_hub_url"]
+    else:
+        raise ValueError(
+            "Config must contain one of: "
+            "'file_name', 'script_url', 'cloud_file_name', "
+            "'hf_hub_url', 'ms_hub_url', or 'om_hub_url'."
+        )
+
+    # Create DatasetAttr with basic info
+    attr = DatasetAttr(load_from=load_from, dataset_name=dataset_name)
+
+    # Apply all other fields (formatting, ranking, columns, tags, etc.)
+    attr.join(config)
+
+    return attr

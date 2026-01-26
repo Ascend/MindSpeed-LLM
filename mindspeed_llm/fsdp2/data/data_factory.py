@@ -74,7 +74,7 @@ class LFDataManager(DataManager):
     ):
         super().__init__(model_args, data_args, training_args, stage, tokenizer, template)
 
-        self.dataset_module = get_dataset(self.template, model_args, data_args, training_args, stage="sft", tokenizer=self.tokenizer)
+        self.dataset_module = get_dataset(self.template, model_args, data_args, training_args, stage=stage, tokenizer=self.tokenizer)
         self.data_collator = DataCollatorForSeq2Seq(
             tokenizer=self.tokenizer,
             padding=True,

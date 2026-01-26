@@ -10,7 +10,7 @@ import json
 import os
 import sys
 import types
-from typing import Optional, List, Union, Any, Callable, Dict, Literal, TypeVar, get_type_hints
+from typing import Optional, List, Union, Any, Callable, Dict, Literal, TypeVar, get_type_hints, get_origin, get_args
 import yaml
 from mindspeed_llm.fsdp2.utils.logging import get_logger
 
@@ -130,13 +130,13 @@ class DataArguments:
         default=None,
         metadata={"help": "Which template to use for constructing prompts in training and inference."},
     )
-    dataset: Optional[str] = field(
+    dataset: Optional[Union[Dict[str, Any], str]] = field(
         default=None,
-        metadata={"help": "The name of dataset(s) to use for training. Use commas to separate multiple datasets."},
+        metadata={"help": "Train dataset: config dict or comma-separated dataset names."}
     )
-    eval_dataset: Optional[str] = field(
+    eval_dataset: Optional[Union[Dict[str, Any], str]] = field(
         default=None,
-        metadata={"help": "The name of dataset(s) to use for evaluation. Use commas to separate multiple datasets."},
+        metadata={"help": "Eval dataset: config dict or comma-separated eval dataset names."}
     )
     dataset_dir: str = field(
         default="./configs/FSDP2/data",
@@ -247,8 +247,10 @@ class DataArguments:
                 return [item.strip() for item in arg.split(",")]
             return arg
 
-        self.dataset = split_arg(self.dataset)
-        self.eval_dataset = split_arg(self.eval_dataset)
+        if isinstance(self.dataset, dict) and not self.dataset:
+            self.dataset = None
+        if isinstance(self.eval_dataset, dict) and not self.eval_dataset:
+            self.eval_dataset = None
 
         if self.dataset is None and self.val_size > 1e-6:
             raise ValueError(f"val_size={self.val_size} but dataset=None (dataset must be specified when val_size>0).")
@@ -518,154 +520,276 @@ def _make_choice_type_function(choices: List[Any]) -> Callable[[str], Any]:
 
 def fsdp2_parse_args(rootclass: TypeVar) -> TypeVar:
     """
-    Parses the root argument class using the CLI inputs or yaml inputs. For example:
-
-    Input YAML file content:
-        model:
-          model_path: /path/llm
-        parallel:
-          fsdp_size: 8
-          recompute: true
-        train:
-          lr: 1e-6
-
-    This function converts the YAML parameters into CLI argument format as follows:
-       --model.model_path /path/llm --parallel.fsdp_size 8 --parallel.recompute true --train.lr 1e-6
-
-    After parsing, return the instantiated rootclass. Access parameters via:
-       rootclass.model.model_path (returns /path/llm), rootclass.train.lr (returns 1e-6).
+    Parses the root argument class from CLI or YAML input.
+    Supports complex types like List[Dict] and Dict via JSON serialization.
     """
-    # ======================== Step 1: Initialize Parser & Sub-dataclass Mapping ========================
-    # Initialize command line argument parser
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    base_to_subclass = {}
-    dict_fields = set()
-    # Generate parsing rules, iterate through fields of root dataclass
-    for subclass in fields(rootclass):
-        base = subclass.name  # Sub-dataclass name: model/data/parallel/train
-        base_to_subclass[base] = subclass.default_factory  # Sub-dataclass type: ModelArguments/DataArguments/ParallelArguments/TrainingArguments
-        try:
-            type_hints: Dict[str, type] = get_type_hints(subclass.default_factory)
-        except Exception as e:
-            raise RuntimeError(f"Type resolution failed for {subclass.default_factory}.") from e
+    # 1: Create ArgumentParser and register all fields
+    parser = _create_argument_parser(rootclass)
 
-        # ======================== Step 2: Generate CLI Parsing Rules for Sub-dataclass Fields ========================
-        for attr in fields(subclass.default_factory):  # Iterate through fields of sub-dataclass, add CLI arguments for each field
+    # 2: Parse command-line args
+    cmd_args = sys.argv[1:]
+    if not cmd_args:
+        raise ValueError("No arguments provided.")
+
+    # 3: Load YAML config if the first arg is a .yaml/.yml file
+    yaml_config = _load_yaml_if_provided(cmd_args)
+
+    # 4: Merge YAML into CLI args (CLI has higher priority)
+    final_cmd_args = _merge_yaml_into_cmd_args(cmd_args, yaml_config)
+
+    # 5: Parse arguments
+    args, remaining_args = parser.parse_known_args(final_cmd_args)
+    if remaining_args:
+        logger.info_rank0(f"Some specified arguments are not used by the ArgumentParser: {remaining_args}")
+
+    # 6: Post-process fields that require JSON deserialization
+    parse_result = _postprocess_json_fields(args, parser.dict_fields)
+
+    # 7: Build dataclass instances
+    return _build_dataclass_instances(rootclass, parse_result)
+
+
+# =============================================================================
+#  Create ArgumentParser from dataclass structure
+# =============================================================================
+def _create_argument_parser(rootclass):
+    """Dynamically creates an ArgumentParser based on the dataclass schema."""
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.dict_fields = set()  # Tracks fields needing JSON deserialization
+
+    for subclass in fields(rootclass):
+        base = subclass.name
+        subclass_type = subclass.default_factory
+
+        try:
+            type_hints = get_type_hints(subclass_type)
+        except Exception as e:
+            raise RuntimeError(f"Type resolution failed for {subclass_type}: {e}") from e
+
+        for attr in fields(subclass_type):
             if not attr.init:
                 continue
-            # Get field type
-            attr_type = type_hints[attr.name]
-            origin_type = getattr(attr_type, "__origin__", attr_type)
-            if isinstance(attr_type, str):
-                raise RuntimeError(f"Cannot resolve string-based type annotation for field '{attr.name}' in sub-dataclass '{base}'. The problematic type annotation is: {attr.type}.")
-            # Handle Optional type
-            if origin_type is Union or (hasattr(types, "UnionType") and isinstance(origin_type, types.UnionType)):
-                if len(attr_type.__args__) != 2 or type(None) not in attr_type.__args__:  # only allows Optional[X]
-                    raise RuntimeError(f"Invalid Union type for field '{attr.name}' in sub-dataclass '{base}'. Only Optional[X] (Union[X, None]) is supported.")
 
-                if bool not in attr_type.__args__:  # except for `Union[bool, NoneType]`
-                    attr_type = (
-                        attr_type.__args__[0] if isinstance(None, attr_type.__args__[1]) else attr_type.__args__[1]
-                    )
-                    origin_type = getattr(attr_type, "__origin__", attr_type)
-
+            attr_name = attr.name
+            attr_type = type_hints[attr_name]
+            origin_type = get_origin(attr_type)
             parser_kwargs = attr.metadata.copy()
-            # Handle Literal/Enum type
-            if origin_type is Literal or (isinstance(attr_type, type) and issubclass(attr_type, Enum)):
-                if origin_type is Literal:
-                    parser_kwargs["choices"] = attr_type.__args__
+
+            # Resolve Optional[T] → T
+            effective_type, effective_origin = _resolve_optional_type(attr_type, origin_type)
+
+            # Dispatch by type
+            if effective_origin is Union or (hasattr(types, "UnionType") and isinstance(effective_origin, types.UnionType)):
+                # For Union[Dict, str], we treat it as a dict field (since str is simple)
+                # But actually, we'll handle it in post-processing
+                _handle_dict(parser_kwargs, base, attr_name, attr, parser)
+                parser.add_argument(f"--{base}.{attr_name}", **parser_kwargs)
+                continue
+            if effective_origin is Literal or (isinstance(effective_type, type) and issubclass(effective_type, Enum)):
+                _handle_literal_or_enum(parser_kwargs, effective_type, effective_origin, attr)
+
+            elif effective_type is bool or (effective_origin is Union and bool in get_args(effective_type)):
+                _handle_bool(parser_kwargs, attr)
+
+            elif effective_origin is list:
+                item_type = get_args(effective_type)[0]
+                item_origin = get_origin(item_type)
+                if item_origin is dict or item_type is dict:
+                    _handle_list_of_dict(parser_kwargs, base, attr_name, attr, parser)
                 else:
-                    parser_kwargs["choices"] = [x.value for x in attr_type]
+                    _handle_list_of_scalar(parser_kwargs, item_type, attr)
 
-                parser_kwargs["type"] = _make_choice_type_function(parser_kwargs["choices"])
-
-                if attr.default is not MISSING:
-                    parser_kwargs["default"] = attr.default
-                else:
-                    parser_kwargs["required"] = True
-
-            # Handle Bool type
-            elif attr_type is bool or attr_type == Optional[bool]:
-                parser_kwargs["type"] = _string_to_bool
-                if attr_type is bool or (attr.default is not None and attr.default is not MISSING):
-                    parser_kwargs["default"] = False if attr.default is MISSING else attr.default
-                    parser_kwargs["nargs"] = "?"
-                    parser_kwargs["const"] = True
-
-            # Handle list type
-            elif isclass(origin_type) and issubclass(origin_type, list):
-                parser_kwargs["type"] = attr_type.__args__[0]
-                parser_kwargs["nargs"] = "+"
-                if attr.default_factory is not MISSING:
-                    parser_kwargs["default"] = attr.default_factory()
-                elif attr.default is MISSING:
-                    parser_kwargs["required"] = True
-
-            # Handle Dict type
-            elif isclass(origin_type) and issubclass(origin_type, dict):
-                parser_kwargs["type"] = str  # parse dict inputs with json string
-                dict_fields.add(f"{base}.{attr.name}")
-                if attr.default_factory is not MISSING:
-                    parser_kwargs["default"] = str(attr.default_factory())
-                elif attr.default is MISSING:
-                    parser_kwargs["required"] = True
+            elif effective_origin is dict or effective_type is dict:
+                _handle_dict(parser_kwargs, base, attr_name, attr, parser)
 
             else:
-                parser_kwargs["type"] = attr_type
-                if attr.default is not MISSING:
-                    parser_kwargs["default"] = attr.default
-                elif attr.default_factory is not MISSING:
-                    parser_kwargs["default"] = attr.default_factory()
-                else:
-                    parser_kwargs["required"] = True
-            # Generate CLI arguments in format --model.model_path
-            parser.add_argument(f"--{base}.{attr.name}", **parser_kwargs)
+                _handle_scalar(parser_kwargs, effective_type, attr)
 
-    # ======================== Step 3: Merge YAML & CLI Arguments and Parse ========================
-    cmd_args = sys.argv[1:]
-    cmd_args_string = "=".join(cmd_args)  # use `=` to mark the end of arg name
-    input_data = {}
-    # Identify and load yaml file
-    if cmd_args[0].endswith(".yaml") or cmd_args[0].endswith(".yml"):
-        input_path = cmd_args.pop(0)
+            parser.add_argument(f"--{base}.{attr_name}", **parser_kwargs)
+
+    return parser
+
+
+def _resolve_optional_type(attr_type, origin_type):
+    """Extract inner type(s) from Union types, handling Optional[Union[A, B]]."""
+    if origin_type is Union or (hasattr(types, "UnionType") and isinstance(origin_type, types.UnionType)):
+        args = get_args(attr_type)
+        non_none_types = [t for t in args if t is not type(None)]
+        
+        if len(non_none_types) == 0:
+            raise RuntimeError(f"Union type contains only None: {attr_type}")
+        elif len(non_none_types) == 1:
+            # Standard Optional[T]
+            effective_type = non_none_types[0]
+            effective_origin = get_origin(effective_type)
+            return effective_type, effective_origin
+        else:
+            # Multi-type Union like Union[Dict, str]
+            # Return the original union as effective_type
+            return attr_type, origin_type
+    return attr_type, origin_type
+
+
+def _handle_literal_or_enum(parser_kwargs, effective_type, effective_origin, attr):
+    """Configure parser for Literal or Enum types."""
+    choices = effective_type.__args__ if effective_origin is Literal else [x.value for x in effective_type]
+    parser_kwargs["choices"] = choices
+    parser_kwargs["type"] = _make_choice_type_function(choices)
+    if attr.default is not MISSING:
+        parser_kwargs["default"] = attr.default
+    else:
+        parser_kwargs["required"] = True
+
+
+def _handle_bool(parser_kwargs, attr):
+    """Configure parser for bool or Optional[bool]."""
+    parser_kwargs["type"] = _string_to_bool
+    if attr.default is not MISSING and attr.default is not None:
+        parser_kwargs["default"] = attr.default
+        parser_kwargs["nargs"] = "?"
+        parser_kwargs["const"] = True
+    else:
+        parser_kwargs["default"] = False
+        parser_kwargs["nargs"] = "?"
+
+
+def _handle_list_of_dict(parser_kwargs, base, attr_name, attr, parser):
+    """Handle List[Dict]: each item is passed as a JSON string."""
+    parser_kwargs["type"] = str
+    parser_kwargs["nargs"] = "+"
+    parser.dict_fields.add(f"{base}.{attr_name}")
+    if attr.default is not MISSING:
+        parser_kwargs["default"] = [] if attr.default is None else attr.default
+    elif attr.default_factory is not MISSING:
+        parser_kwargs["default"] = attr.default_factory()
+    else:
+        parser_kwargs["required"] = True
+
+
+def _handle_list_of_scalar(parser_kwargs, item_type, attr):
+    """Handle List[str], List[int], etc."""
+    parser_kwargs["type"] = item_type
+    parser_kwargs["nargs"] = "+"
+    if attr.default_factory is not MISSING:
+        parser_kwargs["default"] = attr.default_factory()
+    elif attr.default is not MISSING:
+        parser_kwargs["default"] = attr.default
+    else:
+        parser_kwargs["required"] = True
+
+
+def _handle_dict(parser_kwargs, base, attr_name, attr, parser):
+    """Handle Dict: passed as a single JSON string."""
+    parser_kwargs["type"] = str
+    parser_kwargs["nargs"] = None
+    parser.dict_fields.add(f"{base}.{attr_name}")
+    if attr.default_factory is not MISSING:
+        parser_kwargs["default"] = str(attr.default_factory())
+    elif attr.default is not MISSING:
+        parser_kwargs["default"] = str(attr.default) if attr.default is not None else "{}"
+    else:
+        parser_kwargs["required"] = True
+
+
+def _handle_scalar(parser_kwargs, effective_type, attr):
+    """Handle scalar types: int, float, str, etc."""
+    parser_kwargs["type"] = effective_type
+    if attr.default is not MISSING:
+        parser_kwargs["default"] = attr.default
+    elif attr.default_factory is not MISSING:
+        parser_kwargs["default"] = attr.default_factory()
+    else:
+        parser_kwargs["required"] = True
+
+
+# =============================================================================
+#  Load YAML config
+# =============================================================================
+def _load_yaml_if_provided(cmd_args):
+    """Load YAML config if the first argument is a .yaml or .yml file."""
+    if cmd_args and (cmd_args[0].endswith(".yaml") or cmd_args[0].endswith(".yml")):
+        input_path = cmd_args[0]
         with open(os.path.abspath(input_path), encoding="utf-8") as f:
-            input_data: Dict[str, Dict[str, Any]] = yaml.safe_load(f)
+            return yaml.safe_load(f) or {}
+    return {}
 
-    # Convert yaml parameters to CLI argument format, lower priority than explicit CLI arguments
-    for base, arg_dict in input_data.items():  # Iterate through base classes in yaml
-        for arg_name, arg_value in arg_dict.items():  # Iterate through each parameter under base class
-            if f"--{base}.{arg_name}=" not in cmd_args_string:  # Check if parameter is explicitly specified in CLI, skip if specified
-                cmd_args.append(f"--{base}.{arg_name}")
-                # Process according to parameter value type
-                if isinstance(arg_value, str):
-                    cmd_args.append(arg_value)
-                elif isinstance(arg_value, list):
-                    cmd_args.extend(str(x) for x in arg_value)
-                else:
-                    cmd_args.append(json.dumps(arg_value))
-    # Parser parses merged CLI arguments
-    args, unknown_args = parser.parse_known_args(cmd_args)
 
-    if unknown_args:
-        logger.warn_rank0(f"Some specified arguments are not used by the ArgumentParser: {unknown_args}")  # unknown_args empty means all parameters are parsed
+# =============================================================================
+#  Merge YAML into CLI args
+# =============================================================================
+def _merge_yaml_into_cmd_args(cmd_args, yaml_config):
+    """Convert YAML config to CLI-style arguments (lower priority than explicit CLI)."""
+    working_args = cmd_args[1:] if yaml_config else cmd_args[:]
+    cmd_args_string = "=".join(working_args)
+    result = working_args[:]
 
-    # ======================== Step 4: Convert Parsed Results & Instantiate Dataclasses ========================
-    # Split parameters
+    for base, arg_dict in yaml_config.items():
+        if not isinstance(arg_dict, dict):
+            continue
+        for arg_name, arg_value in arg_dict.items():
+            if arg_value is None:
+                continue
+            if f"--{base}.{arg_name}=" in cmd_args_string:
+                continue  # Skip if overridden by CLI
+
+            result.append(f"--{base}.{arg_name}")
+            if isinstance(arg_value, list):
+                result.extend(json.dumps(item, ensure_ascii=False) for item in arg_value)
+            elif isinstance(arg_value, dict):
+                result.append(json.dumps(arg_value, ensure_ascii=False))
+            else:
+                result.append(str(arg_value))
+
+    return result
+
+
+# =============================================================================
+#  Post-process JSON fields
+# =============================================================================
+def _postprocess_json_fields(args, dict_fields):
+    """Deserialize JSON strings back to dict/list for marked fields."""
     parse_result = defaultdict(dict)
     for key, value in vars(args).items():
-        if key in dict_fields:
-            if isinstance(value, str) and value.startswith("{"):
-                value = _convert_str_dict(json.loads(value))
+        base, name = key.split(".", maxsplit=1)
+        full_key = f"{base}.{name}"
+
+        if full_key in dict_fields:
+            if value is None:
+                parsed_value = None
+            elif isinstance(value, list):
+                try:
+                    parsed_value = [json.loads(item) for item in value]
+                except json.JSONDecodeError as e:
+                    raise ValueError(f"Failed to parse list of dict for {full_key}: {e}") from e
+            elif isinstance(value, str):
+                stripped = value.strip()
+                if stripped == "":
+                    parsed_value = {} 
+                elif stripped.startswith("{") and stripped.endswith("}"):
+                    try:
+                        parsed_value = json.loads(stripped)
+                    except json.JSONDecodeError as e:
+                        raise ValueError(f"Invalid JSON for dict field {full_key}: {value}, error: {e}") from e
+                else:
+                    parsed_value = value
             else:
-                raise ValueError(f"Expect a json string for dict argument, but got {value}")
+                raise ValueError(f"Unexpected type for dict field {full_key}: {type(value)}")
+            parse_result[base][name] = parsed_value
+        else:
+            parse_result[base][name] = value
 
-        base, name = key.split(".", maxsplit=1)  # model.config_path
-        parse_result[base][name] = value
+    return parse_result
 
-    # instantiate sub-dataclasses
+
+# =============================================================================
+#  Build dataclass instances
+# =============================================================================
+def _build_dataclass_instances(rootclass, parse_result):
+    """Construct dataclass instances from parsed arguments."""
     data_classes = {}
-    for base, subclass_type in base_to_subclass.items():
+    for subclass in fields(rootclass):
+        base = subclass.name
+        subclass_type = subclass.default_factory
         data_classes[base] = subclass_type(**parse_result.get(base, {}))
 
-    # instantiate root class
     return rootclass(**data_classes)
