@@ -16,6 +16,7 @@ from mindio_ttp.framework_ttp.ttp_decorator import tft_report_load_ckpt_step
 
 from .tft_replica_group import get_repair_group, build_repair_group
 from .utils import ha_constant
+from .tft_precision_error_handler import modify_ckpt_step
 
 ttp_logger = getLogger(__name__)
 
@@ -282,6 +283,7 @@ def load_ckpt_repair(train_args):
     opt_param_scheduler = get_optimizer_param_scheduler(train_args[ha_constant.OPTIM_INDEX])
     train_args[ha_constant.SCHEDULER_INDEX] = opt_param_scheduler
     timers('load-checkpoint', log_level=0).start(barrier=True)
+    modify_ckpt_step(args.load)
     args.iteration, args.num_floating_point_operations_so_far = load_checkpoint(
         train_args[ha_constant.MODEL_INDEX], train_args[ha_constant.OPTIM_INDEX], train_args[ha_constant.SCHEDULER_INDEX])
     timers('load-checkpoint').stop(barrier=True)

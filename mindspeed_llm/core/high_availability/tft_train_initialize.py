@@ -22,9 +22,19 @@ from .tft_replica_group import ttp_get_replica_dp_num, ttp_get_dp_cp_ranks, ttp_
     ttp_get_dp_ranks, reinit_node_group
 from .tft_rollback import rollback_callback
 from .tft_stop_clean import stop_callback, clean_callback, torch_sync
+from .tft_precision_error_handler import handle_precision_error
 
 ttp_logger = getLogger(__name__)
 REPLICA_OFFSET = 0
+
+
+try:
+    from mindio_ttp.framework_ttp import tft_register_exception_handler
+except ImportError:
+    ttp_logger.warning(
+        "Warning: tft_register_exception_handler does not take effect, please install the latest mindio_ttp."
+    )
+    tft_register_exception_handler = lambda *args, **kwargs: None
 
 
 def tft_init_controller_processor():
@@ -94,7 +104,7 @@ def tft_register_processor():
     tft_register_rollback_handler(rollback_callback)
     tft_register_rebuild_group_handler(arf_rebuild_process_group_callback)
     tft_register_stream_sync_handler(torch_sync)
-
+    tft_register_exception_handler("PRECISION ERROR", "RS_RETRY", handle_precision_error)
     reinit_node_group()
 
 
