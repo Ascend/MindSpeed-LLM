@@ -1,5 +1,6 @@
 import os
 import sys
+import types
 
 # ==============================================================================
 # [Mcore Imports] Dependencies for Megatron
@@ -34,6 +35,7 @@ from mindspeed_llm.fsdp2.utils.logging import setup_global_logging, get_logger
 from mindspeed_llm.fsdp2.utils.arguments import (
    ModelArguments, DataArguments, ParallelArguments, TrainingArguments, fsdp2_parse_args
 )
+from mindspeed_llm.fsdp2.utils.global_vars import set_args
 
 from mindspeed.fsdp.utils.device import set_accelerator_compatible
 from mindspeed.fsdp.utils.random import set_seed
@@ -190,6 +192,13 @@ class MindSpeedAutoTrainer:
       self.data_args = root_args.data
       self.parallel_args = root_args.parallel
       self.training_args = root_args.training
+
+      self.args = types.SimpleNamespace(**{
+         k: v for ns in [root_args.model, root_args.data, root_args.parallel, root_args.training]
+         for k, v in ns.__dict__.items()
+      })
+
+      set_args(self.args)
       
 
    def _print_parsed_args(self):

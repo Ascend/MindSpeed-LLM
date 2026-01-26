@@ -25,6 +25,14 @@ class ModelArguments:
     model_name_or_path: str = field(
         metadata={"help": "Path to pretrained model or model identifier from huggingface.co/models"}
     )
+    model_id: Optional[Literal["gpt_oss", "qwen3", "qwen3_moe"]] = field(
+        default=None,
+        metadata={"help": "Model type. New model needs to be registered in the class ModelRegistry of mindspeed_llm/fsdp2/models/model_registry.py"}
+    )
+    init_model_with_meta_device: bool = field(
+        default=False,
+        metadata={"help": "Whether or not to initialize the model using the meta device."}
+    )
     trust_remote_code: bool = field(
         default=False,
         metadata={"help": "Whether or not to allow for custom models defined on the Hub in their own modeling files."}
@@ -118,10 +126,6 @@ class DataArguments:
     """
     Arguments pertaining to what data we are going to input our model for training and evaluation.
     """
-    num_workers: int = field(
-        default=4,
-        metadata={"help": "Number of subprocesses to use for data loading."}
-    )
     template: Optional[str] = field(
         default=None,
         metadata={"help": "Which template to use for constructing prompts in training and inference."},
@@ -454,6 +458,22 @@ class TrainingArguments:
     )
     per_device_train_batch_size: int = field(
         default=8, metadata={"help": "Batch size per device accelerator core/CPU for training."}
+    )
+    use_fused_rmsnorm: bool = field(
+        default=False,
+        metadata={"help": "Use fused rmsnorm."}
+    )
+    moe_grouped_gemm: bool = field(
+        default=False,
+        metadata={"help": "When there are multiple experts per rank, launch multiple local GEMM kernels in multiple streams to improve the utilization and performance with GroupedLinear in TransformerEngine."}
+    )
+    use_fused_rotary_pos_emb: bool = field(
+        default=False,
+        metadata={"help": "Use fused rotary-pos-emb."}
+    )
+    use_flash_attn: bool = field(
+        default=False,
+        metadata={"help": "use FlashAttention implementation of attention."}
     )
 
     def __post_init__(self):  # Path parameter validation

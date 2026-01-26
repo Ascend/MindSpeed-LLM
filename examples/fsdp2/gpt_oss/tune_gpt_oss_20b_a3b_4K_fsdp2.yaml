@@ -1,4 +1,5 @@
 model:
+  model_id: gpt_oss
   model_name_or_path: /home/data/gpt-oss-20b-hf/
   trust_remote_code: False
   train_from_scratch: False
@@ -6,7 +7,6 @@ model:
 
 data:
   dataset: alpaca_full
-  num_workers: 4
   template: gpt
   cutoff_len: 2048
   max_samples: 100000

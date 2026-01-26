@@ -13,7 +13,7 @@ logger = get_logger(__name__)
 # ==============================================================================
 try:
     from mindspeed_llm.fsdp2.models.fsdp2_model import FSDP2Model
-    from mindspeed_llm.fsdp2 import ModelRegistry
+    from mindspeed_llm.fsdp2.models.model_registry import ModelRegistry
 except ImportError:
     # Graceful fallback if mcore dependencies are missing in a pure MindSpeed FSDP environment
     pass
@@ -63,33 +63,50 @@ class ModelFactory:
 
         # 2. Load HF Config
         logger.info_rank0(f"> Loading AutoConfig from {model_args.model_name_or_path}...")
+        trust_remote_code = model_args.trust_remote_code
         hf_config = AutoConfig.from_pretrained(
             model_args.model_name_or_path,
-            trust_remote_code=True
+            trust_remote_code=trust_remote_code
         )
 
         # 3. Load HF Model
         # Decide loading method based on whether training from scratch or fine-tuning.
         # Typically: SFT uses `from_pretrained`, Pretrain (from scratch) uses `from_config`.
-        train_from_scratch = getattr(model_args, 'train_from_scratch', False)
+        # if model_id is configured, load model according to model_id.
+        if getattr(model_args, 'model_id', None):
+            logger.info_rank0(f"> Using factory mode with model_id: {model_args.model_id}")
 
-        if train_from_scratch:
-            logger.info_rank0(f"> Initializing model from config (Random Weights) for Pretraining...")
-            model = AutoModelForCausalLM.from_config(
-                hf_config,
-                trust_remote_code=True,
-                torch_dtype=torch.float32 # Use FP32 for mixed precision training
-            )
-        else:
-            logger.info_rank0(f"> Loading pretrained weights from {model_args.model_name_or_path}...")
-            model = AutoModelForCausalLM.from_pretrained(
+            model_cls = ModelRegistry.get_model_class(model_args.model_id)
+            model_cls.register_patches(model_args)
+
+            logger.info_rank0(f"> Loading model {model_cls.__name__} from pretrained path...")
+            model = model_cls.from_pretrained(
                 model_args.model_name_or_path,
                 config=hf_config,
-                trust_remote_code=True,
-                torch_dtype=torch.float32,  # Use FP32 for mixed precision training
-                low_cpu_mem_usage=True,  # Reduce memory peak usage during loading
-                device_map="cpu"         # Load to CPU first; MindSpeed FSDP handles sharding and moving
+                low_cpu_mem_usage=True,
+                device_map="cpu",
+                dtype=torch.float32
             )
+            logger.info_rank0("> Load model successfully")
+
+        else:
+            if getattr(model_args, 'train_from_scratch', False):
+                logger.info_rank0(f"> Initializing model from config (Random Weights) for Pretraining...")
+                model = AutoModelForCausalLM.from_config(
+                    hf_config,
+                    trust_remote_code=trust_remote_code,
+                    torch_dtype=torch.float32 # Use FP32 for mixed precision training
+                )
+            else:
+                logger.info_rank0(f"> Loading pretrained weights from {model_args.model_name_or_path}...")
+                model = AutoModelForCausalLM.from_pretrained(
+                    model_args.model_name_or_path,
+                    config=hf_config,
+                    trust_remote_code=trust_remote_code,
+                    torch_dtype=torch.float32,  # Use FP32 for mixed precision training
+                    low_cpu_mem_usage=True,  # Reduce memory peak usage during loading
+                    device_map="cpu"  # Load to CPU first; MindSpeed FSDP handles sharding and moving
+                )
 
         # 4. Build MindSpeed FSDP Configuration
         # Dynamically calculate Data Parallel (DP) Size

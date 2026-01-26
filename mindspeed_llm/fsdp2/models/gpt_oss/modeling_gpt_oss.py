@@ -1,3 +1,4 @@
+import os
 from typing import Callable, Optional, Union
 
 import torch
@@ -23,7 +24,12 @@ from transformers.utils.deprecation import deprecate_kwarg
 from transformers.utils.generic import OutputRecorder, check_model_inputs
 from transformers.models.gpt_oss.configuration_gpt_oss import GptOssConfig
 from mindspeed.core.context_parallel.get_batch_utils import get_actual_seq_len
-from megatron.training import get_args
+
+backend = os.environ.get("TRAINING_BACKEND", "mcore").lower()
+if backend == "mcore":
+    from megatron.training import get_args
+else:
+    from mindspeed_llm.fsdp2.utils.global_vars import get_args
 
 try:
     from einops import rearrange
