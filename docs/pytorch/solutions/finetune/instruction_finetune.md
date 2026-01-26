@@ -85,8 +85,8 @@
 第一步，请参考[安装指导](../../install_guide.md)，完成环境安装。请注意由于Qwen3要求使用`transformers>=4.51.0`，因此Python需使用3.9及以上版本。请在训练开始前配置好昇腾NPU套件相关的环境变量，如下所示：
 
 ```shell
-source /usr/local/Ascend/ascend-toolkit/set_env.sh # 以具体的ascend-toolkit路径为主
-source /usr/local/Ascend/nnal/atb/set_env.sh # 以具体的nnal路径为主
+source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路径
+source /usr/local/Ascend/nnal/atb/set_env.sh # 修改为实际安装的nnal包路径
 ```
 第二步，准备好模型权重和微调数据集。模型权重下载请参考[Dense模型](../../models/dense_model.md)、[MOE模型](../../models/moe_model.md)和[SSM模型](../../models/ssm_model.md)文档中对应模型的下载链接。以[Qwen3-8B](https://huggingface.co/Qwen/Qwen3-8B/tree/main)模型为例，完整的模型文件夹应该包括以下内容：
 
@@ -134,7 +134,7 @@ bash examples/mcore/qwen3/ckpt_convert_qwen3_hf2mcore.sh
 接下来将以Alpaca数据集为例执行数据预处理，详细配置请参考[Qwen3数据预处理脚本](../../../../examples/mcore/qwen3/data_convert_qwen3_instruction.sh)。需要修改脚本内的路径：
 
 ```shell
-source /usr/local/Ascend/ascend-toolkit/set_env.sh # 修改为真实的ascend-toolkit路径
+source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路径
 ......
 --input ./dataset/train-00000-of-00001-a09b74b3ef9c3b56.parquet # 原始数据集路径 
 --tokenizer-name-or-path ./model_from_hf/qwen3_hf # HF的tokenizer路径

@@ -28,9 +28,10 @@ HuggingFace: "I hope you are doing well. I am writing to ask for your help with 
 
 ### 初始化环境变量 
 
-`source /usr/local/Ascend/ascend-toolkit/set_env.sh`
-
-`source /usr/local/Ascend/nnal/atb/set_env.sh`
+```shell
+source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路径
+source /usr/local/Ascend/nnal/atb/set_env.sh # 修改为实际安装的nnal包路径
+```
 
 ### 启动脚本
 

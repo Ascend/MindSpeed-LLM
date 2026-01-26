@@ -24,8 +24,8 @@
 第一步，请在训练开始前参考[安装指导](../../install_guide.md)，完成环境安装。请注意由于Qwen3要求使用`transformers>=4.51.0`，因此Python需使用3.9及以上版本。环境搭建完成后，确保在预训练开始前已经配置好昇腾NPU套件相关的环境变量，如下所示：
 
 ```shell
-source /usr/local/Ascend/ascend-toolkit/set_env.sh # 以具体的ascend-toolkit路径为主
-source /usr/local/Ascend/nnal/atb/set_env.sh # 以具体的nnal路径为主
+source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路径
+source /usr/local/Ascend/nnal/atb/set_env.sh # 修改为实际安装的nnal包路径
 ```
 
 第二步，数据预处理。首先准备好原始数据集，常见的预训练数据集有：
@@ -36,8 +36,10 @@ source /usr/local/Ascend/nnal/atb/set_env.sh # 以具体的nnal路径为主
 
 接下来以[Enwiki数据集](https://huggingface.co/datasets/lsb/enwiki20230101)为例执行数据预处理，详细的脚本配置可参考[Qwen3预训练数据处理脚本](../../../../examples/mcore/qwen3/data_convert_qwen3_pretrain.sh)，需要修改脚本中的以下路径：
 
+
 ```shell
-source /usr/local/Ascend/ascend-toolkit/set_env.sh # 修改为真实的ascend-toolkit路径
+source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路径
+
 ......
 --input ./dataset/train-00000-of-00042-d964455e17e96d5a.parquet # 原始数据集路径 
 --tokenizer-name-or-path ./model_from_hf/qwen3_hf # HF的tokenizer路径

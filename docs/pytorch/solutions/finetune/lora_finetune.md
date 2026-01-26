@@ -81,8 +81,8 @@ MindSpeed-LLM LoRA微调脚本命名和启动方法：
 
 ```shell
 # 初始化环境变量
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
-source /usr/local/Ascend/nnal/atb/set_env.sh
+source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路径
+source /usr/local/Ascend/nnal/atb/set_env.sh # 修改为实际安装的nnal包路径
 
 # 启动任务
 bash examples/mcore/llama2/tune_llama2_7b_lora_ptd.sh
@@ -128,8 +128,7 @@ bash examples/mcore/llama2/tune_llama2_7b_lora_ptd.sh
 以下是将 Lora权重 合并转换为 Mcore 权重的示例命令：
 
 ```shell
-# 请确保您已配置好环境变量
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
+source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路径
 
 python convert_ckpt.py \
     --use-mcore-models \
@@ -159,8 +158,7 @@ bash examples/mcore/llama2/ckpt_convert_llama2_mg2mg_lora.sh
 若希望将lora权重合并并权重转换为 Hugging Face（HF）格式，可以使用以下命令：
 
 ```shell
-# 请确保您已配置好环境变量
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
+source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路径
 
 python convert_ckpt.py \
     --model-type GPT \
@@ -192,8 +190,8 @@ MindSpeed-LLM 推理脚本命名和启动方法：
 
 ```shell
 # 初始化环境变量
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
-source /usr/local/Ascend/nnal/atb/set_env.sh
+source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路径
+source /usr/local/Ascend/nnal/atb/set_env.sh # 修改为实际安装的nnal包路径
 ```
 
 启动前需根据实际情况修改启动脚本中的模型权重路径和分词器路径：
@@ -213,8 +211,8 @@ bash examples/mcore/llama2/generate_llama2_7b_lora_ptd.sh
 
 ```shell
 # 初始化环境变量
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
-source /usr/local/Ascend/nnal/atb/set_env.sh
+source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路径
+source /usr/local/Ascend/nnal/atb/set_env.sh # 修改为实际安装的nnal包路径
 
 # 启动任务
 bash examples/mcore/llama2/evaluate_llama2_7B_lora_mmlu_ptd.sh

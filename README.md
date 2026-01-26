@@ -27,26 +27,26 @@ MindSpeed LLM：基于昇腾生态的大语言模型分布式训练框架，旨�
 # 最新消息
 
 ---
+- [Jan. 16, 2026]: 🌴 MindSpeed LLM发布[v2.3.0分支](https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.3.0)，支持core_v0.12.1版本
+- [Dec. 11, 2025]: 🚀 **Qwen3-Next** 模型训练支持triton融合加速GDN模块计算 【Prototype】
+- [Nov. 25, 2025]: 🚀 [权重转换、数据处理和训练功能合一](./docs/pytorch/solutions/pretrain/all_in_one_tranier.md)【Prototype】
+- [Nov. 14, 2025]: 🚀 **magistral** 模型支持 【Prototype】
+- [Oct. 30, 2025]: 🚀 MindSpeed LLM 模型下架[夕阳计划](https://gitcode.com/Ascend/MindSpeed-LLM/issues/943) 启动，感谢每一份曾经的贡献
+- [Oct. 28, 2025]: 🌴 MindSpeed LLM发布[v2.2.0分支](https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.2.0)，支持core_v0.12.1版本
+- [Oct. 16, 2025]: 🚀 Qwen3-30B支持DPO训练
+- [Oct. 14, 2025]: 🚀 **DeepSeek-V3**预训练已支持基于 **[MindSpore AI框架](./docs/mindspore/readme.md)** 运行
+- [Oct. 22, 2025]: 🚀 **Ling mini v2** 模型支持, 暂不支持mtp
+- [Sep. 16, 2025]: 🚀 **Qwen3-Next** 模型支持 【Prototype】
+- [Aug. 23, 2025]: 🚀 大参数模型[权重转换v2](./docs/pytorch/solutions/checkpoint/checkpoint_convert_v2.md)优化版本上线
+- [Jul. 28, 2025]: 🚀 **glm4.5-moe** 系列模型同步首发支持
+- [Jul. 25, 2025]: 🌴 MindSpeed LLM发布[v2.1.0分支](https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.1.0)，支持core_r0.8.0版本
+- [Jul. 10, 2025]: 🚀 **[DeepSeek-R1](https://gitcode.com/Ascend/MindSpeed-RL/blob/master/docs/solutions/r1_zero_deepseek_671b.md)**  系列功能逐步上线
+- [May. 19, 2025]: 🚀 **Qwen3** 系列模型同步首发支持
+- [Mar. 27, 2025]: 🚀 **[DeepSeek-R1-ZERO Qwen-7B](https://gitcode.com/ascend/MindSpeed-RL/blob/master/docs/solutions/r1_zero_qwen25_7b.md)**  **[DeepSeek-R1-ZERO Qwen-32B](https://gitcode.com/ascend/MindSpeed-RL/blob/master/docs/solutions/r1_zero_qwen25_32b.md)**
 
+- [Mar. 26, 2025]: 🚀  **[DeepSeek-V3-671B模型全家桶](./examples/mcore/deepseek3/)** 上线
 
-- 致敬经典， 拥抱未来。 **[夕阳计划](https://gitcode.com/Ascend/MindSpeed-LLM/issues/943)** 启动，感谢每一份曾经的贡献。
-- **DeepSeek-V3**预训练已支持基于 **[MindSpore AI框架](./docs/mindspore/readme.md)** 运行
-- **glm4.5-moe** 系列模型同步首发支持
-- **Qwen3** 系列模型同步首发支持
-- **DeepSeek-R1** 系列功能逐步上线
-
--  **[DeepSeek-R1-ZERO Qwen-7B](https://gitcode.com/ascend/MindSpeed-RL/blob/master/docs/solutions/r1_zero_qwen25_7b.md)**  **[DeepSeek-R1-ZERO Qwen-32B](https://gitcode.com/ascend/MindSpeed-RL/blob/master/docs/solutions/r1_zero_qwen25_32b.md)**
-
--  **[DeepSeek-V3-671B模型全家桶](./examples/mcore/deepseek3/)** 已上线
-
-- **支持数据集处理、权重转换、预训练、全参微调、LoRA微调、QLoRA微调** 
-- **DeepSeek-R1-Distill** 系列模型已上线
-
-- **[DeepSeek-R1-Distill-Qwen](./examples/mcore/deepseek_r1_distill_qwen/)**  **[DeepSeek-R1-Distill-LLaMA](./examples/mcore/deepseek_r1_distill_llama/)**
-
-> 注意：<br>
-> 当前Qwen3系列模型功能已逐步完善，移步[examples/mcore](./examples/mcore)使用更完整功能； <br>
-> glm4.5-moe系列模型功能完善、验证中，非商用版本，移步[examples/mcore](./examples/mcore)使用更完整功能。<br>
+注意：【Prototype】表示特性未经过充分验证，若使用存在问题请至[issue](https://gitcode.com/Ascend/MindSpeed-LLM/issues)反馈。
 
 #  版本说明
 
@@ -59,6 +59,7 @@ MindSpeed LLM支持Atlas 800T A2等昇腾训练硬件形态，软件版本配套
 | MindSpeed LLM版本 | MindSpeed版本      | Megatron版本 | PyTorch版本  | torch_npu版本 | CANN版本 | Python版本            |
 | ---------------- | ------------------ | ------------ | -----------  | ------------- | -------- | --------------------- |
 | master（主线）   | master             | core_v0.12.1  | 2.7.1       | 在研版本       | 在研版本  | Python3.10            |
+| 2.3.0（商用）    | 2.3.0_core_r0.12.1 | core_v0.12.1  | 2.7.1       | 7.3.0         | 8.5.0     | Python3.10            |
 | 2.2.0（商用）    | 2.2.0_core_r0.12.1 | core_v0.12.1  | 2.7.1       | 7.2.0         | 8.3.RC1  | Python3.10            |
 | 2.1.0（商用）    | 2.1.0_core_r0.8.0  | core_r0.8.0   | 2.1.0, 2.6.0 | 7.1.0         | 8.2.RC1  | Python3.8, Python3.10 |
 
@@ -454,27 +455,15 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
   </tr></thead>
 <tbody>
   <tr>
-    <td rowspan="2"><a href="docs/pytorch/solutions/finetune/lora_finetune.md">LoRA微调</a></td>
+    <td rowspan="1"><a href="docs/pytorch/solutions/finetune/lora_finetune.md">LoRA微调</a></td>
     <td><a href="docs/pytorch/features/cc_lora.md">CCLoRA</a></td>
     <td>✅</td>
     <td>✅</td>
     <td>【Ascend】</td>
   </tr>
   <tr>
-    <td><a href="docs/pytorch/features/fused_mlp.md">Fused_MLP</a></td>
-    <td>✅</td>
-    <td>✅</td>
-    <td>【Ascend】</td>
-  </tr>
-  <tr>
-    <td rowspan="2"><a href="docs/pytorch/solutions/finetune/qlora_finetune.md">QLoRA微调</a></td>
+    <td rowspan="1"><a href="docs/pytorch/solutions/finetune/qlora_finetune.md">QLoRA微调</a></td>
     <td><a href="docs/pytorch/features/cc_lora.md">CCLoRA</a></td>
-    <td>❌</td>
-    <td>❌</td>
-    <td>【NAIE】</td>
-  </tr>
-  <tr>
-    <td><a href="docs/pytorch/features/fused_mlp.md">Fused_MLP</a></td>
     <td>❌</td>
     <td>❌</td>
     <td>【NAIE】</td>
