@@ -787,6 +787,39 @@ class MgCkptConvert(object):
         lora_layer_base_names = list(set([k.split(".lora")[0] for k in model_dict.keys() if ".lora" in k]))
         unused_keys = [k for k in model_dict if ".lora" in k and k.endswith("_extra_state")]
 
+        if self.moe_grouped_gemm:
+            gemm_base_names = list(set([k.split("_lora_")[0] for k in model_dict.keys() if "_lora_" in k]))
+            unused_keys = [k for k in model_dict if "_lora_" in k]
+            for _, base in enumerate(gemm_base_names):
+                lora_a = f"{base}_lora_a"
+                lora_b = f"{base}_lora_b"
+
+                local_expert_nums = self.num_experts // self.ep_size
+
+                if "weight1" in base:
+                    w1 = model_dict[base].view(local_expert_nums, self.hidden_size, -1)
+                    w1_a = model_dict[lora_a].view(local_expert_nums, -1 ,self.lora_r)
+                    w1_b = model_dict[lora_b].view(local_expert_nums, self.lora_r, -1)
+
+                    for i in tqdm.tqdm(range(local_expert_nums)):
+                        w1[i] = w1[i].npu() + (self.lora_alpha / self.lora_r) * torch.matmul(
+                            w1_a[i].float().npu(), w1_b[i].float().npu()
+                        ).to(w1[i].dtype)
+
+                    model_dict[base] = w1.view(self.hidden_size, -1)
+
+                if "weight2" in base:
+                    w2 = model_dict[base].view(local_expert_nums, -1, self.hidden_size)
+                    w2_a = model_dict[lora_a].view(local_expert_nums, -1 ,self.lora_r)
+                    w2_b = model_dict[lora_b].view(local_expert_nums, self.lora_r, -1)
+
+                    for i in tqdm.tqdm(range(local_expert_nums)):
+                        w2[i] = w2[i].npu() + (self.lora_alpha / self.lora_r) * torch.matmul(
+                            w2_a[i].float().npu(), w2_b[i].float().npu()
+                        ).to(w2[i].dtype)
+
+                    model_dict[base] = w2.view(-1, self.hidden_size)
+
         for i in tqdm.tqdm(range(len(lora_layer_base_names))):
             name = lora_layer_base_names[i]
             if merge_type == 1:
