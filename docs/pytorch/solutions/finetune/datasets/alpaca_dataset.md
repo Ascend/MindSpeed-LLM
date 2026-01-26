@@ -27,8 +27,7 @@ cd ..
 在指令监督微调时，`instruction` 列对应的内容会与 `input` 列对应的内容拼接后作为人类指令，即人类指令为 `instruction\ninput`其中 `\n`为用于连接的换行符。而 `output` 列对应的内容为模型回答。如果指定了history，则会将历史对话内容也加入进来。如果指定system 列，则对应的内容将被作为系统提示词。
 
 ```shell
-# 请按照您的真实环境 source set_env.sh 环境变量
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
+source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路径
 mkdir ./finetune_dataset
 
 python ./preprocess_data.py \

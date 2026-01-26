@@ -75,6 +75,7 @@ MindSpeed LLM：基于昇腾生态的大语言模型分布式训练套件，旨�
 
 注意：【Prototype】表示特性未经过充分验证，若使用存在问题请至[issue](https://gitcode.com/Ascend/MindSpeed-LLM/issues)反馈。
 
+
 # 版本说明
 
 ---
@@ -481,27 +482,15 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
   </tr></thead>
 <tbody>
   <tr>
-    <td rowspan="2"><a href="docs/pytorch/solutions/finetune/lora_finetune.md">LoRA微调</a></td>
+    <td rowspan="1"><a href="docs/pytorch/solutions/finetune/lora_finetune.md">LoRA微调</a></td>
     <td><a href="docs/pytorch/features/cc_lora.md">CCLoRA</a></td>
     <td>✅</td>
     <td>✅</td>
     <td>【Ascend】</td>
   </tr>
   <tr>
-    <td><a href="docs/pytorch/features/fused_mlp.md">Fused_MLP</a></td>
-    <td>✅</td>
-    <td>✅</td>
-    <td>【Ascend】</td>
-  </tr>
-  <tr>
-    <td rowspan="2"><a href="docs/pytorch/solutions/finetune/qlora_finetune.md">QLoRA微调</a></td>
+    <td rowspan="1"><a href="docs/pytorch/solutions/finetune/qlora_finetune.md">QLoRA微调</a></td>
     <td><a href="docs/pytorch/features/cc_lora.md">CCLoRA</a></td>
-    <td>❌</td>
-    <td>❌</td>
-    <td>【NAIE】</td>
-  </tr>
-  <tr>
-    <td><a href="docs/pytorch/features/fused_mlp.md">Fused_MLP</a></td>
     <td>❌</td>
     <td>❌</td>
     <td>【NAIE】</td>

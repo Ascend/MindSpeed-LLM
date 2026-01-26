@@ -21,12 +21,12 @@ chmod +x Ascend-cann-toolkit_<version>_linux-<arch>.run
 ./Ascend-cann-toolkit_<version>_linux-<arch>.run --install
 chmod +x Ascend-cann-<chip_type>-ops_<version>_linux-<arch>.run
 ./Ascend-cann-<chip_type>-ops_<version>_linux-<arch>.run --install
-source /usr/local/Ascend/ascend-toolkit/set_env.sh # 安装nnal包需要source环境变量
+source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路径
 chmod +x Ascend-cann-nnal_<version>_linux-<arch>.run
 ./Ascend-cann-nnal_<version>_linux-<arch>.run --install
 # 设置环境变量
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
-source /usr/local/Ascend/nnal/atb/set_env.sh --cxx_abi=0
+source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路径
+source /usr/local/Ascend/nnal/atb/set_env.sh --cxx_abi=0 # 修改为实际安装的nnal包路径
 ```
 
 ### MindSpore安装
@@ -38,8 +38,8 @@ source /usr/local/Ascend/nnal/atb/set_env.sh --cxx_abi=0
 
 ```shell
 # 使用环境变量
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
-source /usr/local/Ascend/nnal/atb/set_env.sh --cxx_abi=0
+source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路径
+source /usr/local/Ascend/nnal/atb/set_env.sh --cxx_abi=0 # 修改为实际安装的nnal包路径
 
 # 安装MindSpeed-Core-MS转换工具
 git clone https://gitcode.com/ascend/MindSpeed-Core-MS.git -b master

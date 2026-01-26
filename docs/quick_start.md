@@ -75,7 +75,7 @@ bash examples/mcore/qwen25/ckpt_convert_qwen25_hf2mcore.sh
 如下为调整后的hf2mcore权重转换示例脚本
 
 ```shell
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
+source /usr/local/Ascend/cann/set_env.sh  # 修改为实际安装的Toolkit包路径
 
 python convert_ckpt.py \
        --use-mcore-models \
@@ -133,8 +133,7 @@ bash examples/mcore/qwen25/data_convert_qwen25_pretrain.sh
 ```
 data_convert_qwen25_pretrain.sh中的配置需做如下修改：
 ```shell
-# 请按照您的真实环境修改 set_env.sh 路径
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
+source /usr/local/Ascend/cann/set_env.sh  # 修改为实际安装的Toolkit包路径
 
 python ./preprocess_data.py \
 	--input ./dataset/train-00000-of-00001-a09b74b3ef9c3b56.parquet \
@@ -192,9 +191,8 @@ GBS=64              # 设置global-batch-size为64
  ```
 
 ```shell
-# 初始化环境变量
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
-source /usr/local/Ascend/nnal/atb/set_env.sh
+source /usr/local/Ascend/cann/set_env.sh  # 修改为实际安装的Toolkit包路径
+source /usr/local/Ascend/nnal/atb/set_env.sh # 修改为实际安装的nnal包路径
 
 # 启动预训练脚本
 bash examples/mcore/qwen25/pretrain_qwen25_7b_32k_ptd.sh
@@ -268,7 +266,7 @@ bash examples/mindspore/qwen25/ckpt_convert_qwen25_hf2mcore.sh
 如下为调整后的hf2mcore权重转换示例脚本
 
 ```shell
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
+source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路径
 
 python convert_ckpt.py \
        --use-mcore-models \
@@ -339,8 +337,7 @@ bash examples/mindspore/qwen25/data_convert_qwen25_pretrain.sh
 ```
 data_convert_qwen25_pretrain.sh中的配置需做如下修改：
 ```shell
-# 请按照您的真实环境修改 set_env.sh 路径
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
+source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路径
 
 python ./preprocess_data.py \
     --input ./dataset/train-00000-of-00001-a09b74b3ef9c3b56.parquet \
@@ -398,9 +395,8 @@ GBS=64              # 设置global-batch-size为64
  ```
 
 ```shell
-# 初始化环境变量
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
-source /usr/local/Ascend/nnal/atb/set_env.sh cxx_abi=0
+source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路径
+source /usr/local/Ascend/nnal/atb/set_env.sh cxx_abi=0 # 修改为实际安装的nnal包路径
 
 # 启动预训练脚本
 bash examples/mindspore/qwen25/pretrain_qwen25_7b_32k_ms.sh

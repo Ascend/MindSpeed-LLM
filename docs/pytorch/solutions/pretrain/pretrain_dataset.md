@@ -23,8 +23,7 @@ cd ..
 ### 预训练数据集处理方法
 
 ```shell
-# 请按照您的真实环境 source set_env.sh 环境变量
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
+source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路径
 mkdir ./dataset
 
 python ./preprocess_data.py \

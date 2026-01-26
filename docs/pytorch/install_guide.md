@@ -54,7 +54,7 @@ MindSpeed LLM的依赖配套如下表
 
 #### 驱动固件安装
 
-下载[驱动固件](https://www.hiascend.com/hardware/firmware-drivers/community?product=4&model=26&cann=8.0.RC3.beta1&driver=1.0.27.alpha)，请根据系统和硬件产品型号选择对应版本的`driver`和`firmware`。参考[安装NPU驱动固件](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/80RC3alpha003/softwareinst/instg/instg_0005.html?Mode=PmIns&OS=Ubuntu&Software=cannToolKit)或执行以下命令安装：
+下载[驱动固件](https://www.hiascend.com/hardware/firmware-drivers/community?product=4&model=26&cann=8.5.0&driver=Ascend+HDK+25.5.0)，请根据系统和硬件产品型号选择对应版本的`driver`和`firmware`。参考[安装NPU驱动固件](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/850/softwareinst/instg/instg_0000.html?Mode=PmIns&InstallType=netconda&OS=Ubuntu)或执行以下命令安装：
 
 ```shell
 chmod +x Ascend-hdk-<chip_type>-npu-driver_<version>_linux-<arch>.run
@@ -65,7 +65,7 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
 
 #### CANN安装
 
-下载[CANN](https://www.hiascend.com/developer/download/community/result?module=cann)，请根据系统选择`aarch64`或`x86_64`对应版本的`cann-toolkit`、`cann-ops`和`cann-nnal`。参考[CANN安装](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/80RC3alpha003/softwareinst/instg/instg_0001.html?Mode=PmIns&OS=Ubuntu&Software=cannToolKit)或执行以下命令安装：
+下载[CANN](https://www.hiascend.com/developer/download/community/result?module=cann)，请根据系统选择`aarch64`或`x86_64`对应版本的`cann-toolkit`、`cann-ops`和`cann-nnal`。参考[CANN安装](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/850/softwareinst/instg/instg_0000.html?Mode=PmIns&InstallType=netconda&OS=Ubuntu)或执行以下命令安装：
 
 ```shell
 # 因为版本迭代，包名存在出入，根据实际修改
@@ -73,17 +73,17 @@ chmod +x Ascend-cann-toolkit_<version>_linux-<arch>.run
 ./Ascend-cann-toolkit_<version>_linux-<arch>.run --install
 chmod +x Ascend-cann-<chip_type>-ops_<version>_linux-<arch>.run
 ./Ascend-cann-<chip_type>-ops_<version>_linux-<arch>.run --install
-source /usr/local/Ascend/ascend-toolkit/set_env.sh # 安装nnal包需要source环境变量
+source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路径
 chmod +x Ascend-cann-nnal_<version>_linux-<arch>.run
 ./Ascend-cann-nnal_<version>_linux-<arch>.run --install
 # 设置环境变量
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
-source /usr/local/Ascend/nnal/atb/set_env.sh
+source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路径
+source /usr/local/Ascend/nnal/atb/set_env.sh # 修改为实际安装的nnal包路径
 ```
 
 #### PyTorch/Torch_npu安装
 
-准备[Torch_npu](https://www.hiascend.com/developer/download/community/result?module=pt)，执行以下命令安装或参考[Ascend Extension for PyTorch 配置与安装](https://www.hiascend.com/document/detail/zh/Pytorch/710/configandinstg/instg/insg_0001.html)：
+准备[Torch_npu](https://www.hiascend.com/developer/download/community/result?module=pt)，执行以下命令安装或参考[Ascend Extension for PyTorch 配置与安装](https://www.hiascend.com/document/detail/zh/Pytorch/730/configandinstg/instg/docs/zh/installation_guide/installation_description.md)：
 
 ```shell
 # 安装torch和torch_npu 构建参考 https://gitcode.com/ascend/pytorch/releases
@@ -95,8 +95,8 @@ pip3 install torch_npu-2.7.1rc1-cp310-cp310-manylinux_2_28_aarch64.whl
 
 ```shell
 # 使能环境变量
-source /usr/local/Ascend/ascend-toolkit/set_env.sh
-source /usr/local/Ascend/nnal/atb/set_env.sh
+source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路径
+source /usr/local/Ascend/nnal/atb/set_env.sh # 修改为实际安装的nnal包路径
 
 # 安装MindSpeed加速库
 git clone https://gitcode.com/ascend/MindSpeed.git

@@ -8,9 +8,10 @@
 
 ### 初始化环境变量 
 
-`source /usr/local/Ascend/ascend-toolkit/set_env.sh`
-
-`source /usr/local/Ascend/nnal/atb/set_env.sh`
+```shell
+source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路径
+source /usr/local/Ascend/nnal/atb/set_env.sh # 修改为实际安装的nnal包路径
+```
 
 ### 启动脚本
 使用LLaMA2-7B模型目录下的[chat脚本](../../../../examples/mcore/llama2/chat_llama2_7b_ptd.sh)。
