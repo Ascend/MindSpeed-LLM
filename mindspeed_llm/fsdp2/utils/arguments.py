@@ -318,10 +318,76 @@ class ParallelArguments:
         default="ddp",
         metadata={"help": "Data parallel mode."},
     )
+    fsdp_modules: List[str] = field(
+        default_factory=lambda:['model.layers.{}', 'model.embed_tokens', 'lm_head'],
+        metadata={"help": "Model structure of layers with Fully Sharded Data Parallel."},
+    )
+    reshard_after_forward: bool = field(
+        default=True,
+        metadata={"help": "Whether to reshard parameters after forward pass (for main FSDP module)"},
+    )
+    shard_placement_fn: Optional[str] = field(
+        default=None,
+        metadata={"help": "Custom shard placement function for main FSDP module"}
+    )
+    tp_colwise: List[str] = field(
+        default_factory=lambda:['*.q_proj', '*.k_proj', '*.v_proj', '*.gate_proj', '*.up_proj'],
+        metadata={"help": "Model structure of layers with Tensor Parallel(Cols splitting)."},
+    )
+    tp_rowwise: List[str] = field(
+        default_factory=lambda:['*.o_proj', '*.down_proj'],
+        metadata={"help": "Model structure of layers with Tensor Parallel(Rows splitting)."},
+    )
+    ep_modules: List[str] = field(
+        default_factory=lambda:['model.layers.{*}.mlp.experts'],
+        metadata={"help": "Model structure of layers with Expert Parallel."},
+    )
+    ep_fsdp_modules: List[str] = field(
+        default_factory=lambda:['model.layers.{*}.mlp.experts'],
+        metadata={"help": "Model structure of layers with FSDP inside Expert Parallel groups."},
+    )
+    ep_dispatcher: Literal["eager", "fused", "mc2"] = field(
+        default="eager",
+        metadata={
+            "help": "Dispatcher strategy for Expert Parallel (MoE). "
+                    "Options: 'eager' (immediate token dispatch to experts, default), "
+                    "'fused' (fused routing & expert computation for higher throughput), "
+                    "'mc2' (mixed compression dispatch to reduce cross-card communication cost). Defaults to 'eager'."
+        },
+    )
+    recompute_modules: List[str] = field(
+        default_factory=lambda:['model.layers.{*}'],
+        metadata={"help": "Model structure of layers with Gradient Checkpointing (Activation Recomputation)."},
+    )
+    param_dtype: Literal["bf16", "fp16", "fp32"] = field(
+        default="bf16",
+        metadata={"help": "Data type for FSDP parameter storage. Defaults to 'bf16'"}
+    )
+    reduce_dtype: Literal["bf16", "fp16", "fp32"] = field(
+        default="fp32",
+        metadata={
+            "help": "Data type for FSDP gradient reduction . Using 'fp32' ensures numerical stability. Defaults to 'fp32'."}
+    )
+    num_to_forward_prefetch: int = field(
+        default=1,
+        metadata={
+            "help": "Number of modules to prefetch during FSDP forward pass (optimizes pipeline efficiency). Defaults to 1."}
+    )
+    num_to_backward_prefetch: int = field(
+        default=1,
+        metadata={
+            "help": "Number of modules to prefetch during FSDP backward pass (optimizes pipeline efficiency). Defaults to 1."}
+    )
 
-    # Reserved for ParallelArguments Parameter Validation
     def __post_init__(self):
-        pass
+        if self.fsdp_modules is None:
+            raise ValueError(
+                "Parameter 'fsdp_modules' cannot be None! Please provide a non-empty list of module paths (e.g. ['model.layers.{*}'])."
+            )
+        if len(self.fsdp_modules) == 0:
+            raise ValueError(
+                "Parameter 'fsdp_modules' cannot be an empty list! Please provide at least one module path (e.g. ['model.layers.{*}'])."
+            )
 
 
 @dataclass

@@ -113,8 +113,8 @@ class ModelFactory:
         world_size = dist.get_world_size() if dist.is_initialized() else 1
         
         # Guard against division by zero if args are not set correctly
-        tp_size = getattr(parallel_args, 'tp_size', 1)
-        fsdp_size = getattr(parallel_args, 'fsdp_size', 1)
+        tp_size = parallel_args.tp_size
+        fsdp_size = parallel_args.fsdp_size
         dp_size = world_size // (tp_size * fsdp_size)
 
         parallel_config = ModelFactory._build_parallel_config(parallel_args, dp_size)
@@ -140,13 +140,15 @@ class ModelFactory:
         """
         # --- 1. FSDP Plan ---
         # Requirement: Apply FSDP to transformer layers
+        apply_modules = {
+            parallel_args.fsdp_modules[0]: {'reshard_after_forward': parallel_args.reshard_after_forward,
+                                            'shard_placement_fn': parallel_args.shard_placement_fn},
+        }
+        for modules in parallel_args.fsdp_modules[1:]:
+            apply_modules[modules] = {'reshard_after_forward': parallel_args.reshard_after_forward,}
         fsdp_plan = FSDPPlanConfig(
             ignored_modules=[],
-            apply_modules= {
-                'model.layers.{*}': {'reshard_after_forward': True, 'shard_placement_fn': None},
-                'model.embed_tokens': {'reshard_after_forward': True},
-                'lm_head': {'reshard_after_forward': True},
-            },
+            apply_modules= apply_modules,
             param_dtype='bf16',
             reduce_dtype='fp32',
             num_to_forward_prefetch=1,
@@ -156,29 +158,29 @@ class ModelFactory:
         # --- 2. Tensor Parallel Plan ---
         # Requirement: Column Parallel for Q/K/V/Gate/Up, Row Parallel for O/Down
         tp_plan = TPPlanConfig(
-            colwise_parallel=['*.q_proj', '*.k_proj', '*.v_proj', '*.gate_proj', '*.up_proj'],
-            rowwise_parallel=['*.o_proj', '*.down_proj']
+            colwise_parallel=parallel_args.tp_colwise,
+            rowwise_parallel=parallel_args.tp_rowwise
         )
 
         # --- 3. Expert Parallel Plan ---
         # For Mixture-of-Experts (MoE) models
-        ep_size = getattr(parallel_args, 'ep_size', 1)
-        ep_fsdp_size = getattr(parallel_args, 'ep_fsdp_size', 1)
+        ep_size = parallel_args.ep_size
+        ep_fsdp_size = parallel_args.ep_fsdp_size
 
         ep_plan = EPPlanConfig(
-            apply_modules=['model.layers.{*}.mlp.experts'],
-            apply_efsdp_modules=['model.layers.{*}.mlp.experts'],
-            dispatcher='eager',
+            apply_modules=parallel_args.ep_modules,
+            apply_efsdp_modules=parallel_args.ep_fsdp_modules,
+            dispatcher=parallel_args.ep_dispatcher,
         )
 
         # --- 4. Recompute Plan ---
         # Activation Checkpointing
-        recompute_plan = ['model.layers.{*}'] if parallel_args.recompute else []
+        recompute_plan = parallel_args.recompute_modules if parallel_args.recompute else []
 
         # --- 5. Assemble Config ---
         # Get parallel sizes safely
-        tp_size = getattr(parallel_args, 'tp_size', 1)
-        fsdp_size = getattr(parallel_args, 'fsdp_size', 1)
+        tp_size = parallel_args.tp_size
+        fsdp_size = parallel_args.fsdp_size
 
         config = ParallelEngineConfig(
             # Parallelism parameters
