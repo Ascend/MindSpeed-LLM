@@ -326,7 +326,8 @@ class Hf2MgConvert(Convert):
                     mg_weight[ep_rank][tp_rank][mg_weight_key["mtp_final_layernorms"]] = final_norm.clone()
                 else:
                     mg_weight[ep_rank][tp_rank][mg_weight_key["final_layernorm"]] = final_norm.clone()
-                mg_weight[ep_rank][tp_rank][mg_weight_key["output_layer"]] = lm_head_lst[tp_rank].clone()
+                if self.load_model.untie_embeddings_and_output_weights or self.pipeline_model_parallel_size > 1:
+                    mg_weight[ep_rank][tp_rank][mg_weight_key["output_layer"]] = lm_head_lst[tp_rank].clone()
 
     def set_mtp_preprocess(self, hf_layer_idx, mtp_layer_idx, hf_weight, mg_weight):
         """MTP layer preprocess"""
