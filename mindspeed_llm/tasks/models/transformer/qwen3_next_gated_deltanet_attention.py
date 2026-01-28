@@ -219,6 +219,9 @@ class CustomQwen3NextGatedDeltaNetAttention(MegatronModule):
         cp_comm_type: str = None,
     ):
         super().__init__(config)
+        args = get_args()
+        if args.tensor_model_parallel_size > 1 or args.context_parallel_size > 1:
+            raise AssertionError("Qwen3-next's CustomQwen3NextGatedDeltaNetAttention does not support tensor parallel and context parallel")
         self.use_flash_attn = config.use_flash_attn
         self.shape_order = config.shape_order
 
@@ -300,7 +303,6 @@ class CustomQwen3NextGatedDeltaNetAttention(MegatronModule):
 
         self.causal_conv1d_fn = causal_conv1d_fn or None
         self.causal_conv1d_update = causal_conv1d_update or torch_causal_conv1d_update
-        args = get_args()
         if args.use_triton_gdn:
             from mindspeed_llm.tasks.models.transformer.chunk_gated_delta_rule import chunk_gated_delta_rule
             self.chunk_gated_delta_rule = chunk_gated_delta_rule
