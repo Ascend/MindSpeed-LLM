@@ -5,6 +5,7 @@ export CUDA_DEVICE_MAX_CONNECTIONS=1
 # 权重格式转换，设置需要的并行配置，--num-layers-per-virtual-pipeline-stage 5，--params-dtype bf16 结合需要使用
 python convert_ckpt.py \
     --model-type GPT \
+    --model-type-hf llama2 \
     --load-model-type mg \
     --save-model-type hf \
     --target-tensor-parallel-size 1 \

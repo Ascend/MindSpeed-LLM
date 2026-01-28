@@ -37,6 +37,7 @@ from megatron.training.checkpointing import find_checkpoint_rank_0
 from mindspeed_llm.tasks.posttrain.lora.utils import is_enable_lora, merge_dicts, modify_keys_with_dict, filter_lora_keys
 from mindspeed_llm.tasks.posttrain.utils import load_checkpoint_loosely
 from mindspeed_llm.tasks.checkpoint.convert_hf2mg import Hf2MgConvert
+from mindspeed_llm.tasks.checkpoint.convert_mg2hf import Mg2HfConvert
 from mindspeed_llm.tasks.checkpoint.convert_ckpt_mamba2 import MambaConverter
 try:
     from modelopt.torch.opt.plugins import (
@@ -320,9 +321,9 @@ def _convert_weights_if_needed(args, shared: bool):
             logger.info("[Convert] Detected unconverted weights, starting conversion process...")
             start = time.time()
             if args.model_type_hf == 'mamba2':
-                converter = MambaConverter(args)
+                converter = MambaConverter(args, convert="hf2mg")
             else:
-                converter = Hf2MgConvert(args)
+                converter = Hf2MgConvert(args, from_train=True)
             converter.run()
             logger.info(f"[Convert] Weight conversion completed, time elapsed: {time.time() - start:.2f}s")
         dist.barrier()
@@ -337,10 +338,41 @@ def _convert_weights_if_needed(args, shared: bool):
         logger.info("[Convert] Detected non-shared storage, starting conversion on this node...")
         start = time.time()
         if args.model_type_hf == 'mamba2':
-            converter = MambaConverter(args)
+            converter = MambaConverter(args, convert="hf2mg")
         else:
-            converter = Hf2MgConvert(args)
+            converter = Hf2MgConvert(args, from_train=True)
         converter.run()
         logger.info(f"[Convert] Node conversion completed, time elapsed: {time.time() - start:.2f}s")
 
     dist.barrier()
+
+
+def _convert_weights_mg2hf(args, iteration):
+    """
+    if have full checkpoint,  only rank0 executes once
+    """
+    dist = torch.distributed
+
+    if not hasattr(args, "hf_save_dir_base"):
+        args.hf_save_dir_base = (
+            args.hf_save_dir if getattr(args, "hf_save_dir", None) else args.save
+        )
+
+    args.hf_save_dir = os.path.join(
+        args.hf_save_dir_base, f"mg2hf_iteration{iteration}"
+    )
+
+    os.makedirs(args.hf_save_dir, exist_ok=True)
+    logger.info(f"[InitHook] Conversion checkpoint to huggingface path: {args.hf_save_dir}")
+    if dist.get_rank() == 0:
+        logger.info("[Convert] starting conversion process...")
+        start = time.time()
+        if args.model_type_hf == 'mamba2':
+            converter = MambaConverter(args, convert="mg2hf")
+        else:
+            converter = Mg2HfConvert(args, from_train=True)
+        converter.run()
+        logger.info(f"[Convert] Weight conversion completed, time elapsed: {time.time() - start:.2f}s")
+    dist.barrier()
+    return
+

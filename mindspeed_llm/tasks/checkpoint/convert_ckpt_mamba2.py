@@ -13,7 +13,7 @@ logger.getLogger().setLevel(logger.INFO)
 
 
 class MambaConverter:
-    def __init__(self, args):
+    def __init__(self, args, convert=None):
         self.args = args
         self.args.mamba_d_inner = self.args.hidden_size * 2
         self.args.mamba2_n_heads = self.args.mamba_d_inner // self.args.mamba_head_dim
@@ -41,13 +41,21 @@ class MambaConverter:
             'self_attention.linear_qkv.weight': 0,
         }
 
-        if getattr(self.args, "enable_hf2mg_convert", False):
-                self.args.target_tensor_parallel_size = self.args.tensor_model_parallel_size
-                self.args.target_pipeline_parallel_size = self.args.pipeline_model_parallel_size
-                self.args.load_model_type = 'hf'
-                self.args.save_model_type = 'mg'
-                self.args.load_dir = self.args.load
-                self.args.save_dir = self.args.mg_cache_dir
+        if convert == 'hf2mg':
+            self.args.target_tensor_parallel_size = self.args.tensor_model_parallel_size
+            self.args.target_pipeline_parallel_size = self.args.pipeline_model_parallel_size
+            self.args.load_model_type = 'hf'
+            self.args.save_model_type = 'mg'
+            self.args.load_dir = self.args.load
+            self.args.save_dir = self.args.mg_save_dir
+
+        elif  convert == 'mg2hf':
+            self.args.target_tensor_parallel_size = self.args.tensor_model_parallel_size
+            self.args.target_pipeline_parallel_size = self.args.pipeline_model_parallel_size
+            self.args.load_model_type = 'mg'
+            self.args.save_model_type = 'hf'
+            self.args.load_dir = self.args.save
+            self.args.save_dir = self.args.hf_save_dir
         
         self._valid_parameter()
         

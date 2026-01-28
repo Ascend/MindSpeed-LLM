@@ -238,7 +238,7 @@ def initialize_megatron_wrapper(fn):
                     f"Supported models: {', '.join(supported_models)}"
                 )
 
-            if not getattr(args, "mg_cache_dir", None):
+            if not getattr(args, "mg_save_dir", None):
 
                 def _safe_int(attr_name):
                     val = getattr(args, attr_name, None)
@@ -251,19 +251,26 @@ def initialize_megatron_wrapper(fn):
                 pp = _safe_int("pipeline_model_parallel_size")
                 ep = _safe_int("expert_model_parallel_size")
 
-                args.mg_cache_dir = os.path.join(args.load, f"megatron_cache_tp{tp}pp{pp}ep{ep}")
+                args.mg_save_dir = os.path.join(args.load, f"megatron_cache_tp{tp}pp{pp}ep{ep}")
 
-            os.makedirs(args.mg_cache_dir, exist_ok=True)
+            os.makedirs(args.mg_save_dir, exist_ok=True)
 
-            logger.info(f"[InitHook] Conversion cache path: {args.mg_cache_dir}")
+            logger.info(f"[InitHook] Conversion cache path: {args.mg_save_dir}")
 
-            shared = is_shared_path(args.mg_cache_dir)
-            logger.info(f"[InitHook] save_dir={args.mg_cache_dir}, shared_storage={shared}")
+            shared = is_shared_path(args.mg_save_dir)
+            logger.info(f"[InitHook] save_dir={args.mg_save_dir}, shared_storage={shared}")
 
             _convert_weights_if_needed(args, shared)
 
-            args.load = args.mg_cache_dir
+            args.load = args.mg_save_dir
             logger.info("[InitHook] Weight conversion phase completed.")
+
+        if getattr(args, 'enable_mg2hf_convert', False):
+            shared = is_shared_path(args.save)
+            if not shared:
+                raise ValueError(
+                    f"When enable_mg2hf_convert is enabled, path {args.save} should be shared path."
+                )
 
         return result
 

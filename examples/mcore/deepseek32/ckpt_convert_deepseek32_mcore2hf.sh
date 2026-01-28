@@ -12,7 +12,7 @@ python convert_ckpt_v2.py \
     --noop-layers 61,62,63 \
     --expert-tensor-parallel-size 1 \
     --mtp-num-layers 1 \
-    --hf-dir ./origin_hf_cfg
+    --hf-cfg-dir ./origin_hf_cfg
 
 # 脚本配置仅供参考，具体并行度及参数配置需根据实际训练集群硬件和规模调整
 # mtp层请根据需要配置--mtp-num-layers 1 \

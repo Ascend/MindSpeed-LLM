@@ -4,6 +4,7 @@ export CUDA_DEVICE_MAX_CONNECTIONS=1
 python convert_ckpt.py \
     --model-type GPT \
     --use-mcore-models \
+    --model-type-hf llama2 \
     --load-model-type mg \
     --save-model-type hf \
     --load-dir ./ckpt/llama2_lora_filter \

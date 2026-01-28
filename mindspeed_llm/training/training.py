@@ -66,7 +66,9 @@ from megatron.core.distributed import finalize_model_grads
 from mindspeed_llm.tasks.models.transformer.dsa_indexer import DSAIndexerLossLoggingHelper
 from mindspeed_llm.training.initialize import set_jit_fusion_options
 from mindspeed_llm.tasks.posttrain.lora.utils import is_enable_lora
-from mindspeed_llm.training.utils import get_actual_attn_ratio, clear_actual_attn_ratio
+from mindspeed_llm.training.utils import get_actual_attn_ratio, clear_actual_attn_ratio, is_distributed_ckpt_complete
+from mindspeed_llm.training.checkpointing import _convert_weights_mg2hf
+
 
 # The earliest we can measure the start time.
 _TRAIN_START_TIME = time.time()
@@ -766,6 +768,14 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
                                      opt_param_scheduler,
                                      num_floating_point_operations_so_far,
                                      checkpointing_context=None)
+            if args.enable_mg2hf_convert:
+                full_checkpoint = False
+                full_checkpoint = is_distributed_ckpt_complete(args.save, iteration)
+                if full_checkpoint:
+                    if not args.only_convert_last_checkpoint or iteration == args.train_iters:
+                        _convert_weights_mg2hf(args, iteration)
+                    else:
+                        logging.warning("checkpoint not found, cannot convert mg2hf")
             update_save_checkpoint_chmod(config.save)
             saved_checkpoint = True
 

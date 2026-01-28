@@ -1134,6 +1134,7 @@ class MegatronModel(ModelBase):
         if self.args_cmd.add_dense_bias:
             self.args.skip_bias_add = False
         self.args.use_mcore_models = self.args_cmd.use_mcore_models
+        self.args.load_model_type = self.args_cmd.load_model_type
 
         if loader_megatron or self.args.save_lora_to_hf:
             self.args.lora_target_modules = self.args_cmd.lora_target_modules

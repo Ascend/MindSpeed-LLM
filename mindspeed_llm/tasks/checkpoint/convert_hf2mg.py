@@ -17,8 +17,19 @@ GLOBAL_OUTPUT_WEIGHTS = None
 
 class Hf2MgConvert(Convert):
 
-    def __init__(self, args):
+    def __init__(self, args, from_train=False):
         super().__init__(args)
+        if from_train:
+            self.tensor_model_parallel_size = args.tensor_model_parallel_size
+            self.pipeline_model_parallel_size = args.pipeline_model_parallel_size
+            self.expert_model_parallel_size = args.expert_model_parallel_size
+            args.load_model_type = 'hf'
+            args.save_model_type = 'mg'
+            if args.noop_layers:
+                args.noop_layers = ",".join(str(x) for x in args.noop_layers)
+                args.num_layers = args.num_layers - len(args.noop_layers.split(","))
+            args.load_dir = args.load
+            args.save_dir = args.mg_save_dir
         self.load_model = HuggingFaceModel(args)
         self.save_model = MegatronModel(args)
 

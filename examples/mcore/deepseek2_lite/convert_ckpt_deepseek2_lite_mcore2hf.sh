@@ -11,4 +11,4 @@ python convert_ckpt_v2.py \
     --target-expert-parallel-size 1 \
     --load-dir ./model_weights/deepseek2_lite_mcore/ \
     --save-dir ./model/deepseek2_lite/ \
-    --hf-dir ./origin_hf_cfg \
+    --hf-cfg-dir ./origin_hf_cfg \

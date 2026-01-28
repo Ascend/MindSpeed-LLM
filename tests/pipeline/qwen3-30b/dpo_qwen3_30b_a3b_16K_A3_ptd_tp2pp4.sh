@@ -153,7 +153,7 @@ TUNE_ARGS="
 CKPT_ARGS="
     --enable-hf2mg-convert \
     --model-type-hf qwen3-moe \
-    --mg-cache-dir /data/ci/cache/qwen3-30b-pp4tp2layer4 \
+    --mg-save-dir /data/ci/cache/qwen3-30b-pp4tp2layer4 \
 "
 
 torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \

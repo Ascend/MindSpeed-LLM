@@ -33,11 +33,11 @@
 |------|------|------|------|
 | `--enable-hf2mg-convert` | flag | 是 | 启用 HF 到 Megatron 权重转换功能 |
 | `--model-type-hf` | string | 是 | 指定 HuggingFace 模型类型 |
-|`--mg-cache-dir` | string | 否 | 指定转换后mg权重的储存路径, 不指定则默认存到 `{load}/megatron_cache{TP}{PP}{EP}` |
+|`--mg-save-dir` | string | 否 | 指定转换后mg权重的储存路径, 不指定则默认存到 `{load}/megatron_cache{TP}{PP}{EP}` |
 | `--load` | string | 是 | 在增加`--enable-hf2mg-convert`后, `--load`要求权重类型: Huggingface格式权重。Huggingface权重路径下必须包含配置文件 `config.json` 和模型文件（`.bin` 或 `.safetensors` 格式），并且模型文件名中需包含 "model" 关键词 | 
 
 注意：
-- 请确保有足够的磁盘空间存放转换后的权重，如果指定`--mg-cache-dir`则权重会储存在该路径, 不指定则默认保存在`{load}/megatron_cache{TP}{PP}{EP}`，训练过程会自动使用该路径作为权重加载路径。
+- 请确保有足够的磁盘空间存放转换后的权重，如果指定`--mg-save-dir`则权重会储存在该路径, 不指定则默认保存在`{load}/megatron_cache{TP}{PP}{EP}`，训练过程会自动使用该路径作为权重加载路径。
 - 训练初始化后自动进行权重转换过程, 根据模型参数时间预计需要2分钟-2小时, 请耐心等待。
 - 开启`--enable-hf2mg-convert`参数后, 不支持使用离线转换的mcore格式Megatron权重。
 - 请确保对`{load}`路径有读写权限

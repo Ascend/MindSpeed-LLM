@@ -11,4 +11,4 @@ python convert_ckpt_v2.py \
    --target-pipeline-parallel-size 1 \
    --load-dir ./model_weights/phi35_mini_mcore/ \
    --save-dir ./model_from_hf/Phi-3.5-mini-instruct/ \
-   --hf-dir ./origin_hf_cfg \
+   --hf-cfg-dir ./origin_hf_cfg \

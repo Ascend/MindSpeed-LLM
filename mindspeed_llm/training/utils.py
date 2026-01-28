@@ -15,6 +15,8 @@
 
 """General utilities."""
 import os
+import json
+import re
 import time
 import stat
 import random
@@ -74,6 +76,13 @@ _MTP_BATCH_LIST = None
 _ACTUAL_SEQ_LEN_LIST = None
 _ACTUAL_ATTN_RATIO_LIST = []
 _ACTUAL_COUNT = 0
+
+ARCH_ALIAS_MAP = {
+    # HF architecture  ->  model-type-hf
+    "bailingmoev2": "bailing_mini",
+    "phi3": "phi3.5",
+    "glm4moe": "glm45-moe" 
+}
 
 
 def get_attn_ratio(actual_seq_len, seq_length):
@@ -782,10 +791,14 @@ def is_shared_path(path: str, retry: int = 3, wait: float = 0.5) -> bool:
     if not torch.distributed.is_initialized() or torch.distributed.get_world_size() == 1:
         return True
 
-    rank = torch.distributed.get_rank()
-    world_size = torch.distributed.get_world_size()
-
     hostname = socket.gethostname()
+    hostnames = [None] * dist.get_world_size()
+    dist.all_gather_object(hostnames, hostname)
+    if len(set(hostnames)) == 1:
+        return True
+
+    rank = dist.get_rank()
+    world_size = dist.get_world_size()
     local_rank = int(os.environ.get("LOCAL_RANK", 0))
 
     os.makedirs(path, exist_ok=True)
@@ -808,7 +821,7 @@ def is_shared_path(path: str, retry: int = 3, wait: float = 0.5) -> bool:
         visible_tensor = torch.tensor(
             [visible_count],
             dtype=torch.int,
-            device="cuda" if torch.cuda.is_available() else "cpu"
+            device="npu"
         )
         torch.distributed.all_reduce(visible_tensor, op=torch.distributed.ReduceOp.MAX)
         total_visible = visible_tensor.item()
@@ -825,7 +838,7 @@ def is_shared_path(path: str, retry: int = 3, wait: float = 0.5) -> bool:
         else:
             shared = None
 
-        shared = torch.tensor([1 if shared else 0], dtype=torch.int, device="cuda" if torch.cuda.is_available() else "cpu")
+        shared = torch.tensor([1 if shared else 0], dtype=torch.int, device="npu")
         torch.distributed.broadcast(shared, src=0)
 
         torch.distributed.barrier()
@@ -908,3 +921,109 @@ def check_model_inputs(func):
             return outputs
 
     return wrapper
+
+
+def is_distributed_ckpt_complete(
+    save_path: str,
+    iteration: int,
+    weight_filename: str = "model_optim_rng.pt",
+) -> bool:
+    """
+    check distributed checkpoint in path completely
+    """
+    args = get_args()
+
+    def _check_ckpt() -> bool:
+        tp = args.tensor_model_parallel_size
+        pp = args.pipeline_model_parallel_size
+        ep = args.expert_model_parallel_size
+
+        iter_dir = os.path.join(save_path, f"iter_{iteration:07d}")
+
+        if not os.path.isdir(iter_dir):
+            return False
+
+        for tp_rank in range(tp):
+            for pp_rank in range(pp):
+                for ep_rank in rangr(ep):
+                    if ep == 1 and pp == 1:
+                        rank_dir = f"mp_rank_{tp_rank:02d}"
+                    elif pp ==1 and ep != 1:
+                        rank_dir = f"mp_rank_{tp_rank:02d}_{ep_rank:03d}"
+                    elif ep ==1 and pp != 1:
+                        rank_dir = f"mp_rank_{tp_rank:02d}_{pp_rank:03d}"
+                    else:
+                        rank_dir = (
+                            f"mp_rank_{tp_rank:02d}_{pp_rank:03d}_{ep_rank:03d}"
+                        )
+                    weight_path = os.path.join(
+                        iter_dir, rank_dir, weight_filename
+                    )
+
+                    if not os.path.isfile(weight_path):
+                        return False
+
+        return True
+
+    if not torch.distributed.is_initialized():
+        return _check_ckpt()
+
+    torch.distributed.barrier()
+
+    result = False
+    if torch.distributed.get_rank() == 0:
+        result = _check_ckpt()
+
+    torch.distributed.barrier()
+
+    flag = torch.tensor(int(result), device="npu")
+    torch.distributed.broadcast(flag, src=0)
+
+    return bool(flag.item())
+    
+
+def _normalize_name(name: str) -> str:
+    name = name.lower()
+    name = re.sub(r'for.*$', '', name)
+    if name.startswith("deepseekv"):
+        name = re.sub(r'^deepseekv(\d+)$', r'deepseek\1', name)
+    name = re.sub(r'[^a-z0-9]', '', name)
+    return name
+
+
+def infer_model_type_from_hf_config(
+    config_path: str,
+    choices: List[str]
+) -> str:
+    """
+    from architectures of Huggingface config.json to inference model_type_hf
+    """
+    if not os.path.exists(config_path):
+        raise FileNotFoundError(f"config.json not found: {config_path}")
+
+    with open(config_path, "r", encoding="utf-8") as f:
+        config = json.load(f)
+
+    architectures = config.get("architectures", [])
+    if not architectures:
+        raise RuntimeError(
+            "Cannot infer model type: 'architectures' field is missing in config.json. "
+            "Please specify --model-type-hf explicitly."
+        )
+
+    arch_raw = architectures[0]
+    arch_norm = _normalize_name(arch_raw)
+
+    if arch_norm in ARCH_ALIAS_MAP:
+        return ARCH_ALIAS_MAP[arch_norm]
+
+    normalized_choices = {c: _normalize_name(c) for c in choices}
+
+    for c, n in normalized_choices.items():
+        if n == arch_norm:
+            return c
+
+    raise RuntimeError(
+        "Cannot infer model type from architectures of Huggingface config.json '{arch_row}'. "
+        "Please specify --model-type-hf explicitly."
+    )

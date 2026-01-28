@@ -38,19 +38,24 @@ def tensor_memory_size(tensor):
 
 class Mg2HfConvert(Convert):
 
-    def __init__(self, args):
+    def __init__(self, args, from_train=False):
         super().__init__(args)
+        if from_train:
+            args.load_model_type = 'mg'
+            args.save_model_type = 'hf'
+            args.load_dir = args.save
+            args.save_dir = args.hf_save_dir
         self.load_model = MegatronModel(args)
         self.save_model = HuggingFaceModel(args)
 
         self.iter_path = self.get_iter_path(args.load_dir)
         self.save_dir = args.save_dir
-        self.hf_dir = args.hf_dir
+        self.hf_cfg_dir = args.hf_cfg_dir
 
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
 
-        if self.hf_dir is not None:
+        if self.hf_cfg_dir is not None:
             self.copy_hf_cfg()
 
         self.tensor_model_parallel_size = self.load_model.tensor_model_parallel_size
@@ -178,8 +183,8 @@ class Mg2HfConvert(Convert):
         return -1
 
     def copy_hf_cfg(self) -> None:
-        if not os.path.isdir(self.hf_dir):
-            raise FileNotFoundError(f"Hugging Face directory not found: {self.hf_dir}")
+        if not os.path.isdir(self.hf_cfg_dir):
+            raise FileNotFoundError(f"Hugging Face directory not found: {self.hf_cfg_dir}")
 
         os.makedirs(self.save_dir, exist_ok=True)
 
@@ -194,9 +199,9 @@ class Mg2HfConvert(Convert):
         r')$'
         )
 
-        for filename in os.listdir(self.hf_dir):
+        for filename in os.listdir(self.hf_cfg_dir):
             if hf_file_pattern.match(filename):
-                src_path = os.path.join(self.hf_dir, filename)
+                src_path = os.path.join(self.hf_cfg_dir, filename)
                 dst_path = os.path.join(self.save_dir, filename)
                 if os.path.isfile(src_path):
                     if self.copy_hf_cfg_file(src_path, dst_path):

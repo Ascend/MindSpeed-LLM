@@ -50,7 +50,7 @@ def get_args():
     parser.add_argument('--transformer-impl', default='local',
                        choices=['local', 'transformer_engine'],
                        help='Which Transformer implementation to use.')
-    parser.add_argument('--hf-dir', type=str, default=None,
+    parser.add_argument('--hf-cfg-dir', type=str, default=None,
                        help='Directory to load hugging face config files')
     parser.add_argument('--input-tp-rank', type=int,
                         help='Tensor Parallel rank of the input model shard')

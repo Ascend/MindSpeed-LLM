@@ -21,19 +21,7 @@ class Convert(abc.ABC):
         self.transformer_impl = args.transformer_impl
 
         # parallel train arguments
-        if getattr(args, "enable_hf2mg_convert", False):
-            self.tensor_model_parallel_size = args.tensor_model_parallel_size
-            self.pipeline_model_parallel_size = args.pipeline_model_parallel_size
-            self.expert_model_parallel_size = args.expert_model_parallel_size
-            args.load_model_type = 'hf'
-            args.save_model_type = 'mg'
-            if args.noop_layers:
-                args.noop_layers = ",".join(str(x) for x in args.noop_layers)
-                args.num_layers = args.num_layers - len(args.noop_layers.split(","))
-            args.load_dir = args.load
-            args.save_dir = args.mg_cache_dir
-
-        else:
+        if not getattr(args, "enable_hf2mg_convert", False) and not getattr(args, "enable_mg2hf_convert", False):
             self.tensor_model_parallel_size = args.target_tensor_parallel_size
             self.pipeline_model_parallel_size = args.target_pipeline_parallel_size
             self.expert_model_parallel_size = args.target_expert_parallel_size
@@ -47,7 +35,7 @@ class Convert(abc.ABC):
         self.moe_tp_extend_ep = args.moe_tp_extend_ep
         self.mla_mm_split = args.mla_mm_split
         self.schedules_method = args.schedules_method
-        self.mtp_num_layers = args.mtp_num_layers
+        self.mtp_num_layers = 0 if args.mtp_num_layers is None else args.mtp_num_layers
 
         self.num_layers = args.num_layers
         self.first_k_dense_replace = args.first_k_dense_replace
