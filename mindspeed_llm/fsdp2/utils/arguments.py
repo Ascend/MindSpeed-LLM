@@ -800,7 +800,7 @@ def _merge_yaml_into_cmd_args(cmd_args, yaml_config):
 
             result.append(f"--{base}.{arg_name}")
             if isinstance(arg_value, list):
-                result.extend(json.dumps(item, ensure_ascii=False) for item in arg_value)
+                result.extend(str(item) for item in arg_value)
             elif isinstance(arg_value, dict):
                 result.append(json.dumps(arg_value, ensure_ascii=False))
             else:
