@@ -44,7 +44,7 @@ torchrun $DISTRIBUTED_ARGS evaluation.py \
         --num-query-groups 8 \
         --seq-length ${SEQ_LENGTH} \
         --max-new-tokens 2 \
-        --max-position-embeddings 4096 \
+        --max-position-embeddings 32768 \
         --disable-bias-linear \
         --swiglu \
         --norm-epsilon 1e-6 \
