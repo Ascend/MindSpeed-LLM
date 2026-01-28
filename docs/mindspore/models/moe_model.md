@@ -84,7 +84,7 @@
       <td> 8K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
-      <td></td>
+      <td> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.3.0/">2.3.0</a> </td>
     </tr>
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/deepseek-ai/DeepSeek-V2.5">DeepSeek-V2.5</a></td>
