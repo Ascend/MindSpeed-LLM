@@ -10,6 +10,11 @@ class ResetAttentionMaskFeature(MindSpeedFeature):
     def __init__(self):
         super().__init__('reset-attention-mask', optimization_level=2)
 
+    def register_args(self, parser):
+        group = parser.add_argument_group(title=self.feature_name)
+        group.add_argument('--fix-sub-seq-length', type=int, default=-1,
+                            help='[only for test] set sub-seq-length, when it > 0, the subseqlen of the seqlens is fixed')
+
     def validate_args(self, args):
         if args.context_parallel_size > 1 and hasattr(args, 'reset_attention_mask') and args.reset_attention_mask:
             if args.attention_mask_type == 'causal' and args.context_parallel_algo != 'megatron_cp_algo':

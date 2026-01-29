@@ -1129,6 +1129,8 @@ def training_log(loss_dict, total_loss_dict, learning_rate, decoupled_learning_r
             total_loss_dict[skipped_iters_key])
         log_string += ' number of nan iterations: {:3d} |'.format(
             total_loss_dict[nan_iters_key])
+        if args.fix_sub_seq_length > 0 or args.fix_router:
+            log_string += ' fix-router or fix-sub-seq-length is set, current loss is not reliable, only for test |'
         total_loss_dict[advanced_iters_key] = 0
         total_loss_dict[skipped_iters_key] = 0
         total_loss_dict[nan_iters_key] = 0
