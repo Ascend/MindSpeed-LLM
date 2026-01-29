@@ -11,6 +11,7 @@ from mindspeed_llm.fsdp2.utils.dist_op import all_reduce
 from mindspeed_llm.fsdp2.data.data_factory import DataManager
 from mindspeed_llm.fsdp2.distributed.clip_grad_norm import clip_grad_norm
 from mindspeed_llm.fsdp2.utils.logging import get_logger
+from mindspeed_llm.fsdp2.utils.profiler import ProfilerConfig, ProfilerManager
 from mindspeed_llm.fsdp2.data.processor.processor_utils import IGNORE_INDEX
 
 logger = get_logger(__name__)
@@ -51,6 +52,25 @@ class Trainer:
         # Timing state
         self._step_start_time = None
 
+        # Profiling support
+        current_rank = dist.get_rank() if dist.is_initialized() else 0
+        prof_config = ProfilerConfig(
+            enabled=args.profile,
+            profile_step_start=args.profile_step_start,
+            profile_step_end=args.profile_step_end,
+            profile_ranks=args.profile_ranks,
+            profile_level=args.profile_level,
+            profile_export_type=args.profile_export_type,
+            profile_data_simplification=args.profile_data_simplification,
+            profile_with_cpu=args.profile_with_cpu,
+            profile_with_stack=args.profile_with_stack,
+            profile_with_memory=args.profile_with_memory,
+            profile_record_shapes=args.profile_record_shapes,
+            profile_save_path=args.profile_save_path,
+            current_rank=current_rank,
+        )
+        self.profiler_manager = ProfilerManager(prof_config)
+
     def train(self, resume_from_checkpoint: Optional[str] = None):
         """
         Main training loop.
@@ -90,6 +110,10 @@ class Trainer:
         self.model.train()
         train_start_time = time.time()
         self._step_start_time = time.time()
+
+        # Start profiler
+        if self.profiler_manager.profiler is not None:
+            self.profiler_manager.start()
 
         # --- Epoch Loop ---
         epochs_trained = int(self.global_step // total_updates_per_epoch)
@@ -158,6 +182,12 @@ class Trainer:
 
                 self.global_step += 1
 
+                # PROFILING HOOK 
+                if self.profiler_manager.profiler is not None:
+                    self.profiler_manager.step()
+                # HOOK END 
+
+
                 # 3. Distributed Aggregation of Loss and GradNorm
                 # Only perform this when global_step updates.
                 # current_step_loss is sum(micro_batches), conceptually it represents the loss of the mini-batch.
@@ -181,9 +211,13 @@ class Trainer:
                     break
             
             if self.global_step >= total_steps: break
+        # Final Save
+        self._save_checkpoint()
 
-        self._save_checkpoint()  # Final Save
-
+        # Stop profiler
+        if self.profiler_manager.profiler is not None:
+            self.profiler_manager.stop()
+        
         logger.info_rank0(f"Training completed in {time.time() - train_start_time:.2f}s")
 
     def training_step(self, inputs: Dict[str, Any], num_items_in_batch: Optional[int]) -> torch.Tensor:

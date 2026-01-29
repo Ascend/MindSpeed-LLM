@@ -553,9 +553,64 @@ class TrainingArguments:
         metadata={"help": "use FlashAttention implementation of attention."}
     )
 
+    # --- Profiling (NPU) ---
+    profile: bool = field(
+        default=False,
+        metadata={"help": "Enable NPU profiling using torch_npu.profiler."}
+    )
+    profile_step_start: int = field(
+        default=0,
+        metadata={"help": "Start profiling at this global step (inclusive)."}
+    )
+    profile_step_end: int = field(
+        default=-1,
+        metadata={"help": "Stop profiling before this global step (exclusive). If -1, profile until end."}
+    )
+    profile_ranks: List[int] = field(
+        default_factory=lambda: [-1],
+        metadata={"help": "List of ranks to enable profiling on. Use [-1] to profile all ranks."}
+    )
+    profile_level: str = field(
+        default="level0",
+        metadata={"help": "Profiling level: 'level_none', 'level0', 'level1', 'level2'."}
+    )
+    profile_export_type: str = field(
+        default="text",
+        metadata={"help": "Export type: 'text' or 'db'."}
+    )
+    profile_data_simplification: bool = field(
+        default=False,
+        metadata={"help": "Use data simplification mode in profiler."}
+    )
+    profile_with_cpu: bool = field(
+        default=False,
+        metadata={"help": "Record CPU activities in profiler."}
+    )
+    profile_with_stack: bool = field(
+        default=False,
+        metadata={"help": "Record call stack in profiler."}
+    )
+    profile_with_memory: bool = field(
+        default=False,
+        metadata={"help": "Profile memory allocation and usage."}
+    )
+    profile_record_shapes: bool = field(
+        default=False,
+        metadata={"help": "Record tensor shapes in profiler."}
+    )
+    profile_save_path: str = field(
+        default="./profile",
+        metadata={"help": "Directory to save profiling traces (TensorBoard format)."}
+    )
+
     def __post_init__(self):  # Path parameter validation
         if self.output_dir is None:
             raise ValueError("`output_dir` must be specified.")
+        if self.profile:
+            if self.profile_step_start < 0:
+                raise ValueError("`profile_step_start` must be >= 0")
+            if self.profile_step_end != -1 and self.profile_step_end <= self.profile_step_start:
+                raise ValueError("`profile_step_end` must be > profile_step_start or -1")
 
 
 def _string_to_bool(value: Union[bool, str]) -> bool:
