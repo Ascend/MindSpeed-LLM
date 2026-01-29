@@ -6,7 +6,7 @@ export CUDA_DEVICE_MAX_CONNECTIONS=1
 python mindspeed_llm/tasks/checkpoint/convert_param.py \
           --cvt-type hf2mg \
           --model-name llama \
-          --hf-cfg-dir ./model_from_hf/llama31-hf \
+          --hf-dir ./model_from_hf/llama31-hf \
           --mg-dir /tmp/llama31-mcore-tp2d \
           --model-index-file ./model_from_hf/llama31-hf/model.safetensors.index.json \
           --tensor-model-parallel-size 8 \

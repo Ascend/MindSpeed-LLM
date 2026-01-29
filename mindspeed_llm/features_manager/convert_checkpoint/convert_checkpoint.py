@@ -61,6 +61,8 @@ class CheckpointFeature(MindSpeedFeature):
             for name in os.listdir(dir_path):
                 if name.endswith(".safetensors"):
                     return True
+                if name.startswith("pytorch_model") and name.endswith(".bin"):
+                    return True
             return False
         
         enable_hf_train = has_safetensor_weights(args.load)

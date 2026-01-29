@@ -9,7 +9,7 @@ python mindspeed_llm/tasks/checkpoint/convert_param.py \
           --mg-dir /tmp/llama31-mcore-tp2d \
           --model-index-file ./model_from_hf/llama31-hf/model.safetensors.index.json \
           --model-config-file ./model_from_hf/llama31-hf/config.json \
-          --hf-cfg-dir ./model_from_hf/llama31-hf \
+          --hf-dir ./model_from_hf/llama31-hf \
           --tensor-model-parallel-size 8 \
           --pipeline-model-parallel-size 1 \
           --make-vocab-size-divisible-by 1 \
