@@ -6,6 +6,7 @@ python examples/mcore/deepseek3/convert_ckpt_deepseek3_mcore2hf.py \
     --source-tensor-parallel-size 1 \
     --source-pipeline-parallel-size 4 \
     --source-expert-parallel-size 8 \
+    --moe-grouped-gemm \
     --load-dir ./model_weights/deepseek3-mcore \   
     --save-dir ./model_from_hf/deepseek3-hf \
     --num-layers 61 \
