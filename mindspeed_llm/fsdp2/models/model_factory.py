@@ -4,6 +4,15 @@ import torch.distributed as dist
 from typing import Any, Type
 from transformers import AutoConfig, AutoModelForCausalLM, PretrainedConfig
 
+from mindspeed_llm.fsdp2.distributed.mindspeed_parallel_engine import MindSpeedParallelEngine
+from mindspeed_llm.fsdp2.distributed.parallel_engine_config import (
+    ParallelEngineConfig,
+    FSDPPlanConfig,
+    TPPlanConfig,
+    EPPlanConfig,
+    CPPlanConfig
+)
+
 from mindspeed_llm.fsdp2.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -18,19 +27,7 @@ except ImportError:
     # Graceful fallback if mcore dependencies are missing in a pure MindSpeed FSDP environment
     pass
 
-# ==============================================================================
-# Dependencies for the New Scheme (MindSpeed FSDP)
-# ==============================================================================
-try:
-    from mindspeed.fsdp.mindspeed_parallel_engine import MindSpeedParallelEngine
-    from mindspeed.fsdp.parallel_engine_config import (
-        ParallelEngineConfig,
-        FSDPPlanConfig,
-        TPPlanConfig,
-        EPPlanConfig
-    )
-except ImportError:
-    pass
+
 
 
 # ==============================================================================
@@ -115,12 +112,13 @@ class ModelFactory:
         # Guard against division by zero if args are not set correctly
         tp_size = parallel_args.tp_size
         fsdp_size = parallel_args.fsdp_size
-        dp_size = world_size // (tp_size * fsdp_size)
+        cp_size = parallel_args.cp_size
+        dp_size = world_size // (tp_size * fsdp_size * cp_size)
 
-        parallel_config = ModelFactory._build_parallel_config(parallel_args, dp_size)
+        parallel_config = ModelFactory._build_parallel_config(model_args, parallel_args, dp_size)
 
         # 5. Wrap & Move
-        logger.info_rank0(f"> Wrapping model with MindSpeed FSDP (TP={tp_size}, FSDP={fsdp_size})...")
+        logger.info_rank0(f"> Wrapping model with MindSpeed FSDP (TP={tp_size},CP={cp_size}, FSDP={fsdp_size})...")
 
         # MindSpeed FSDP will shard and wrap the CPU model based on the config.
         # The wrapped model automatically handles forward/backward communication.
@@ -132,7 +130,7 @@ class ModelFactory:
         return model
 
     @staticmethod
-    def _build_parallel_config(parallel_args, dp_size) -> 'ParallelEngineConfig':
+    def _build_parallel_config(model_args, parallel_args, dp_size) -> 'ParallelEngineConfig':
         """
         Builds the Config based on parallel_args and hardcoded layer name rules.
         Note: The wildcards here (e.g., 'model.layers.{*}') are suitable for standard structures like Llama/Qwen.
@@ -173,6 +171,12 @@ class ModelFactory:
             dispatcher=parallel_args.ep_dispatcher,
         )
 
+
+        cp_plan = CPPlanConfig(
+            context_parallel_type=parallel_args.cp_type,
+            is_pack=getattr(model_args, "pack", False)
+        )
+
         # --- 4. Recompute Plan ---
         # Activation Checkpointing
         recompute_plan = parallel_args.recompute_modules if parallel_args.recompute else []
@@ -197,6 +201,11 @@ class ModelFactory:
             expert_fully_shard_parallel_size=ep_fsdp_size,
             expert_data_parallel_size=dp_size,  # Usually EP data parallel size matches global or has specific logic
             ep_plan=ep_plan,
+
+            # Context Parallelism
+            context_parallel_size=parallel_args.cp_size,
+            context_parallel_type=parallel_args.cp_type,
+            cp_plan=cp_plan,
 
             # Recomputation
             recompute=parallel_args.recompute,

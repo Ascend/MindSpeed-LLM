@@ -30,7 +30,7 @@ from transformers import (
 from transformers.utils import SAFE_WEIGHTS_INDEX_NAME, WEIGHTS_INDEX_NAME
 
 from mindspeed_llm.fsdp2.utils.logging import get_logger
-from mindspeed.lite.distributed.parallel_state import ParallelState
+from mindspeed_llm.fsdp2.distributed.parallel_state import ParallelState
 from .utils import empty_cache, get_shard_info, save_state_dict, synchronize
 
 

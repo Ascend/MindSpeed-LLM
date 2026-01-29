@@ -27,6 +27,7 @@ from .processor import (
 )
 
 from mindspeed_llm.fsdp2.utils.logging import get_logger
+from mindspeed_llm.fsdp2.distributed.parallel_state import ParallelState
 logger = get_logger(__name__)
 
 
@@ -452,18 +453,18 @@ def main_process_first(local=True, desc="work"):
     if dist.get_world_size() > 1:
         main_process_desc = "main local process" if local else "main process"
         is_main_process = (get_local_rank() == 0) if local else (dist.get_rank() == 0)
-
+        ps = ParallelState()
         try:
             if not is_main_process:
                 # tell all replicas to wait
                 print(f"waiting for the {main_process_desc} to perform {desc}")
-                dist.barrier()
+                dist.barrier(group = ps.get_group('dp_fsdp'))
             yield
         finally:
             if is_main_process:
                 # the wait is over
                 print(f"{main_process_desc} completed {desc}, releasing all replicas")
-                dist.barrier()
+                dist.barrier(group = ps.get_group('dp_fsdp'))
     else:
         yield
 

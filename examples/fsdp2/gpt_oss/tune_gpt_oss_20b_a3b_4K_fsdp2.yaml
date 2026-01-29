@@ -31,6 +31,8 @@ parallel:
   recompute: True
   recompute_modules:
     - model.layers.{*}
+  cp_size: 1
+  cp_type: ulysses
 
 training:
   per_device_train_batch_size: 1

@@ -5,12 +5,13 @@ import contextlib
 from typing import Optional, Tuple, Dict, Any, Union
 
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
-from mindspeed.fsdp.distributed.parallel_state import ParallelState
+
+from mindspeed_llm.fsdp2.distributed.parallel_state import ParallelState
 from mindspeed_llm.fsdp2.utils.dist_op import all_reduce
 from mindspeed_llm.fsdp2.data.data_factory import DataManager
 from mindspeed_llm.fsdp2.distributed.clip_grad_norm import clip_grad_norm
 from mindspeed_llm.fsdp2.utils.logging import get_logger
-
+from mindspeed_llm.fsdp2.data.processor.processor_utils import IGNORE_INDEX
 
 logger = get_logger(__name__)
 
@@ -27,6 +28,7 @@ class Trainer:
         lr_scheduler: torch.optim.lr_scheduler.LRScheduler,
         data_manager: DataManager,
         args,  # TrainingArguments
+        parallel_args,
         ckpt_manager,
         tokenizer=None, 
     ):
@@ -35,6 +37,7 @@ class Trainer:
         self.lr_scheduler = lr_scheduler
         self.train_dataloader = data_manager.create_train_dataloader()
         self.args = args
+        self.parallel_args = parallel_args,
         self.ckpt_manager = ckpt_manager
         self.tokenizer = tokenizer 
 
@@ -71,8 +74,7 @@ class Trainer:
         total_steps = args.max_steps if args.max_steps > 0 else (total_updates_per_epoch * args.num_train_epochs)
         
         # Calculate global batch size safely
-        world_size = dist.get_world_size() if dist.is_initialized() else 1
-        global_batch_size = args.per_device_train_batch_size * args.gradient_accumulation_steps * world_size
+        global_batch_size = args.per_device_train_batch_size * args.gradient_accumulation_steps * ps.get_group_size('dp_fsdp')
 
         logger.info_rank0("***** Running training (FSDP2) *****")
         logger.info_rank0(f"  Num examples = {len(train_dataloader.dataset)}")
@@ -113,8 +115,7 @@ class Trainer:
                 num_batches = args.gradient_accumulation_steps if update_step != (total_updates - 1) else remainder
 
                 # [Helper] Fetch N samples from the iterator and calculate valid token count
-                batch_samples, num_items_in_batch = self._get_batch_samples(epoch_iterator, num_batches)
-
+                batch_samples, num_items_in_batch = self.get_batch_samples_func()(ps, epoch_iterator, num_batches)
                 # Initialize accumulated loss for the current step
                 current_step_loss = 0.0
 
@@ -214,6 +215,14 @@ class Trainer:
         # 6. Return detached loss
         return loss.detach()
 
+    def get_batch_samples_func(self):
+
+        if self.parallel_args[0].cp_size > 1:
+            if self.parallel_args[0].cp_type == "ulysses":
+                return self._get_batch_samples_ulysses
+        else:
+            return self._get_batch_samples
+
     def _compute_loss(self, inputs, return_outputs=False, num_items_in_batch=None):
         """
         Computes the loss for the batch.
@@ -222,7 +231,7 @@ class Trainer:
         kwargs = {}
         if num_items_in_batch is not None:
             kwargs["num_items_in_batch"] = num_items_in_batch
-        
+
         # Merge inputs without modifying the original dictionary in-place
         model_inputs = {**inputs, **kwargs}
 
@@ -238,21 +247,73 @@ class Trainer:
         # If the loss was calculated using 'mean' locally but needs global scaling based on tokens
         # sometimes we multiply by world size here so standard all_reduce(mean) works correctly.
         # This depends heavily on the specific loss function implementation.
+        ps = ParallelState()
         if dist.is_initialized():
-             loss *= dist.get_world_size()
+            loss *= ps.get_group_size("dp_fsdp")
 
         # 5. Return loss (or tuple of loss + outputs)
         return (loss, outputs) if return_outputs else loss
 
-    def _get_batch_samples(self, epoch_iterator, num_batches):
+
+    def _get_batch_samples_ulysses(self,parallel_state, epoch_iterator, num_batches):
+
+        cp_size = parallel_state.get_group_size("cp")
+        cp_rank = parallel_state.get_rank("cp")
+        batch, num_items_in_batch = self._get_batch_samples(parallel_state, epoch_iterator, num_batches)
+
+        for sample in batch:
+
+            labels = torch.nn.functional.pad(sample['labels'], (0, 1), value=IGNORE_INDEX)
+            shift_labels = labels[..., 1:].contiguous()
+            sample['shift_labels'] = shift_labels
+            if "position_ids" not in sample:
+                position_ids = torch.arange(0, shift_labels.shape[1], device=shift_labels.device).unsqueeze(0)
+                sample['position_ids'] = position_ids
+
+            for key, val in sample.items():
+                if key == 'attention_mask':
+                    continue
+                if val is not None:
+                    seq_dim = 1
+                    # 2. Calculate total sequence length
+                    seq_total_len = val.size(seq_dim)
+
+                    # 3. Calculate the sequence length each rank is responsible for (handle indivisible cases)
+                    chunk_size = seq_total_len // cp_size
+                    remainder = seq_total_len % cp_size  # Remainder, the first 'remainder' ranks take 1 more token each
+
+                    # 4. Calculate the start and end indices of the slice for current rank (core logic of Ring slicing)
+                    if cp_rank < remainder:
+                        # For the first 'remainder' ranks, each rank is responsible for (chunk_size + 1) tokens
+                        start_idx = cp_rank * (chunk_size + 1)
+                        end_idx = start_idx + (chunk_size + 1)
+                    else:
+                        # For the remaining ranks, each rank is responsible for 'chunk_size' tokens
+                        start_idx = remainder * (chunk_size + 1) + (cp_rank - remainder) * chunk_size
+                        end_idx = start_idx + chunk_size
+                    # 5. Perform slicing: retain only the sequence part responsible for current rank
+                    val_sliced = val.narrow(seq_dim, start_idx, end_idx - start_idx)
+                    # 6. Update the value in sample with the sliced tensor
+                    sample[key] = val_sliced.npu(non_blocking=True)
+
+        return batch, num_items_in_batch
+
+    def _get_batch_samples(self, parallel_state, epoch_iterator, num_batches):
         """Fetch num_batches samples from the iterator at once."""
         batch_samples = []
         for _ in range(num_batches):
             try:
-                batch_samples.append(next(epoch_iterator))
+                data = next(epoch_iterator)
+                data["input_ids"] = data["input_ids"].npu(non_blocking=True)
+                data["attention_mask"] = data["attention_mask"].npu(non_blocking=True)
+                data["labels"] = data["labels"].npu(non_blocking=True)
+                if "position_ids" in data:
+                    data["position_ids"] = data["position_ids"].npu(non_blocking=True)
+                batch_samples.append(data)
+
             except StopIteration:
                 break
-        
+
         # Calculate valid tokens for the gathered batches
         num_items_in_batch = self._get_num_items_in_batch(batch_samples)
         return batch_samples, num_items_in_batch
@@ -264,13 +325,14 @@ class Trainer:
         """
         num_items_in_batch = None
         device = torch.npu.current_device()
-        
+        ps = ParallelState()
+
         # Check if 'labels' exist in the data
         count_num_items_in_batch = (
                 len(batch_samples) > 0
                 and "labels" in batch_samples[0]
         )
-        
+
         if count_num_items_in_batch:
             try:
                 # Local sum of valid tokens
@@ -283,7 +345,7 @@ class Trainer:
             if dist.is_initialized():
                 num_items_tensor = torch.tensor(num_items_in_batch, device=device, dtype=torch.int64)
                 # Note: Using all_reduce(SUM) is often more efficient than all_gather + sum
-                dist.all_reduce(num_items_tensor, op=dist.ReduceOp.SUM)
+                dist.all_reduce(num_items_tensor, op=dist.ReduceOp.SUM,group = ps.get_group("dp_fsdp"))
                 num_items_in_batch = num_items_tensor.item()
 
             # Adjustment for non-data-parallel ranks (e.g., pipeline parallelism)

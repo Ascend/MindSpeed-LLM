@@ -318,6 +318,15 @@ class ParallelArguments:
         default="ddp",
         metadata={"help": "Data parallel mode."},
     )
+    cp_size: int = field(
+        default=1,
+        metadata={"help": "context parallel size."}
+    )
+
+    cp_type: Literal["ulysses"] = field(
+        default="ulysses",
+        metadata={"help": "Use context parallel algo."},
+    )
     fsdp_modules: List[str] = field(
         default_factory=lambda:['model.layers.{}', 'model.embed_tokens', 'lm_head'],
         metadata={"help": "Model structure of layers with Fully Sharded Data Parallel."},

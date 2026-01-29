@@ -14,8 +14,9 @@ from transformers import PreTrainedTokenizer
 from transformers import DataCollatorForSeq2Seq
 from transformers.trainer_utils import seed_worker
 
-from ..utils.arguments import DataArguments, ModelArguments, TrainingArguments
+from ..utils.arguments import DataArguments, ModelArguments, TrainingArguments, ParallelArguments
 from .processor.processor_utils import IGNORE_INDEX
+from mindspeed_llm.fsdp2.distributed.parallel_state import ParallelState
 
 from .data_utils import get_dataset
 from .template import Template
@@ -30,6 +31,7 @@ class DataManager(ABC):
         model_args: "ModelArguments",
         data_args: "DataArguments",
         training_args: "TrainingArguments",
+        parallel_args: "ParallelArguments",
         stage: Literal["pt", "sft", "rm", "ppo", "kto"],
         tokenizer: "PreTrainedTokenizer",
         template: "Template"
@@ -37,6 +39,7 @@ class DataManager(ABC):
         self.model_args=model_args
         self.data_args=data_args
         self.training_args=training_args
+        self.parallel_args=parallel_args
         self.stage=stage
 
         self.template = template
@@ -68,17 +71,19 @@ class LFDataManager(DataManager):
         model_args: "ModelArguments",
         data_args: "DataArguments",
         training_args: "TrainingArguments",
+        parallel_args: "ParallelArguments",
         stage: Literal["pt", "sft", "rm", "ppo", "kto"],
         tokenizer: "PreTrainedTokenizer",
         template: "Template"
     ):
-        super().__init__(model_args, data_args, training_args, stage, tokenizer, template)
+        super().__init__(model_args, data_args, training_args, parallel_args, stage, tokenizer, template)
+
 
         self.dataset_module = get_dataset(self.template, model_args, data_args, training_args, stage=stage, tokenizer=self.tokenizer)
         self.data_collator = DataCollatorForSeq2Seq(
             tokenizer=self.tokenizer,
             padding=True,
-            pad_to_multiple_of=8,
+            pad_to_multiple_of=parallel_args.cp_size if parallel_args.cp_size > 1 else 8,
             label_pad_token_id=IGNORE_INDEX if data_args.ignore_pad_token_for_loss else self.tokenizer.pad_token_id
         )
 
@@ -135,11 +140,11 @@ class LFDataManager(DataManager):
     def _get_train_sampler(self, train_dataset: Optional[Dataset] = None) -> Optional[Sampler]:
         if train_dataset is None or len(train_dataset) is None:
             return None
-            
+        parallel_state = ParallelState()
         return DistributedSampler(
             train_dataset,
-            num_replicas=dist.get_world_size(),
-            rank=dist.get_rank(),
+            num_replicas=parallel_state.get_group_size("dp_fsdp"),
+            rank=parallel_state.get_rank("dp_fsdp"),
             shuffle=not self.training_args.disable_shuffling,
             seed=self.training_args.seed,
             drop_last=self.training_args.dataloader_drop_last
@@ -149,11 +154,11 @@ class LFDataManager(DataManager):
     def _get_eval_sampler(self, eval_dataset: Dataset) -> Optional[Sampler]:
         if eval_dataset is None or len(eval_dataset) is None:
             return None
-            
+        parallel_state = ParallelState()
         return DistributedSampler(
             eval_dataset,
-            num_replicas=dist.get_world_size(),
-            rank=dist.get_rank(),
+            num_replicas=parallel_state.get_group_size("dp_fsdp"),
+            rank=parallel_state.get_rank("dp_fsdp"),
             shuffle=not self.training_args.disable_shuffling,
             seed=self.training_args.seed,
             drop_last=self.training_args.dataloader_drop_last
@@ -167,6 +172,7 @@ class DataFactory:
         model_args: "ModelArguments",
         data_args: "DataArguments",
         training_args: "TrainingArguments",
+        parallel_args: "ParallelArguments",
         stage: Literal["pt", "sft", "rm", "ppo", "kto"],
         tokenizer: "PreTrainedTokenizer",
         template: "Template"
@@ -176,6 +182,7 @@ class DataFactory:
                 model_args=model_args,
                 data_args=data_args,
                 training_args=training_args,
+                parallel_args=parallel_args,
                 stage=stage,
                 tokenizer=tokenizer,
                 template=template

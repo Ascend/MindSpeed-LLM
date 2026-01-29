@@ -8,7 +8,7 @@ from torch.utils._foreach_utils import (
     _has_foreach_support,
 )
 from typing import List, Tuple, Optional, Iterable
-from mindspeed.fsdp.distributed.parallel_state import ParallelState
+from mindspeed_llm.fsdp2.distributed.parallel_state import ParallelState
 import logging
 from mindspeed_llm.fsdp2.utils.device import get_device_type
 
@@ -73,9 +73,11 @@ def fsdp2_clip_grad_norm(
         parameters = list(parameters)
     grads = [p.grad for p in parameters if p.grad is not None]
     total_norm = torch.nn.utils.get_total_norm(grads, norm_type, error_if_nonfinite, foreach)
+    ps = ParallelState()
     # In FSDP2, total_norm is a DTensor. Call full_tensor() to all-gather the global norm so all ranks clip gradients consistently.
     if isinstance(total_norm, DTensor):
         total_norm = total_norm.full_tensor()
+    total_norm *= ps.get_group_size("cp")
     torch.nn.utils.clip_grads_with_norm_(parameters, max_norm, total_norm, foreach)
 
     return total_norm

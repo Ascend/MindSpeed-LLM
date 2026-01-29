@@ -1,3 +1,5 @@
+
+
 import os
 import sys
 import types
@@ -113,11 +115,12 @@ class MindSpeedAutoTrainer:
       self._print_parsed_args()
 
       # 3. Build components
+      self.model = self._build_model()
       self.tokenizer = self._build_tokenizer()
       self.template = get_template_and_fix_tokenizer(self.tokenizer, self.data_args)
       self.data_manager = self._build_data_manager(self.tokenizer, self.template)
 
-      self.model = self._build_model()
+      
       self.optimizer = self._build_optimizer(self.model)
       self.lr_scheduler = self._build_scheduler(self.optimizer)
 
@@ -130,6 +133,7 @@ class MindSpeedAutoTrainer:
          lr_scheduler=self.lr_scheduler,
          data_manager=self.data_manager,
          args=self.training_args,
+         parallel_args = self.parallel_args,
          ckpt_manager=self.checkpoint_manager,
          tokenizer=self.tokenizer
       )
@@ -266,6 +270,7 @@ class MindSpeedAutoTrainer:
          data_manager_type=self.data_args.data_manager_type,
          model_args=self.model_args,
          data_args=self.data_args,
+         parallel_args=self.parallel_args,
          training_args=self.training_args,
          stage="sft",
          tokenizer=tokenizer,
