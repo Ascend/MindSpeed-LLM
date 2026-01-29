@@ -24,7 +24,7 @@ echo "NODE_RANK ${NODE_RANK}"
 
 DATA_PATH="/data/ci/datasets/processed/mamba2_2.7b_enwiki/enwiki_50288_text_document"
 CKPT_LOAD_DIR="/data/ci/models/mamba2/mg/mamba2_2.7b_tp1pp1_ngroup1"
-TOKENIZER_PATH="/data/ci/models/mamba2/hf/mamba2-hf/mamba2_2.7b_from_8b.model"
+TOKENIZER_PATH="/data/ci/models/mamba2/hf/mamba2-2.7b-hf/mamba2_2.7b.model"
 
 TP=1
 PP=1

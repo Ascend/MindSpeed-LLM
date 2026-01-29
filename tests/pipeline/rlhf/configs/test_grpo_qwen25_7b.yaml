@@ -23,7 +23,7 @@ megatron_training:
   global_batch_size: 32
   seq_length: 2048
   save_interval: 100
-  train_iters: 500
+  train_iters: 1
   stage: ray_grpo
   attention_dropout: 0.0
   init_method_std: 0.01
