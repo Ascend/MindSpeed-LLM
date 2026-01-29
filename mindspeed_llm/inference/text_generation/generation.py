@@ -399,7 +399,7 @@ def beam_search_and_return_on_first_stage(
                 for beam_id in range(beam_size):
                     beam_hyp.add(tokens[beam_id].clone(), scores[beam_id].squeeze(), context_length + 1 - prompt_length)
 
-            if done and len(beam_hyp.beam) == 0:
+            if done and len(beam_hyp.beams) == 0:
                 # EOS at first step or early done
                 for beam_id in range(beam_size):
                     beam_hyp.add(tokens[beam_id].clone(), scores[beam_id].squeeze(), max(context_length + 1 - prompt_length), 1)

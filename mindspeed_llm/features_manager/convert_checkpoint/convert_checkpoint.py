@@ -32,7 +32,8 @@ class CheckpointFeature(MindSpeedFeature):
                             help='Directory to save huggingface checkpoint to')
         group.add_argument('--hf-cfg-dir', type=str, default=None,
                         help='Directory to load huggingface config files')
-
+        group.add_argument('--save-layer-by-layer', action='store_true', default=False,
+                            help='Enable layer-by-layer saving to avoid OOM when the product of TP and EP is high')
         
 
     def register_patches(self, patch_manager, args):

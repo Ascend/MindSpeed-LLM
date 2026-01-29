@@ -14,6 +14,8 @@ logger.basicConfig(format="")
 logger.getLogger().setLevel(logger.INFO)
 
 GLOBAL_OUTPUT_WEIGHTS = None
+LAYER_BY_LAYER_SAVING_THRESHOLD = 256
+
 
 class Hf2MgConvert(Convert):
 
@@ -36,6 +38,12 @@ class Hf2MgConvert(Convert):
         self.load_dir = args.load_dir
         self.save_dir = self.mg_path_process(args.save_dir)
 
+        self.save_layer_by_layer = args.save_layer_by_layer
+        # Safety guard: Enable layer-by-layer saving to avoid OOM when the product of TP and EP is high.
+        # You can adjust this threshold value to control when this feature is applied.
+        if self.tensor_model_parallel_size * self.expert_model_parallel_size >= LAYER_BY_LAYER_SAVING_THRESHOLD:
+            self.save_layer_by_layer = True
+ 
         if self.num_layers is None:
             self.num_layers = self.load_model.num_layers
         else:
@@ -775,14 +783,14 @@ class Hf2MgConvert(Convert):
                     experts_weight2_key = mg_weight_key["layers_mlp_experts_weight2"]
                 return experts_weight1_key, experts_weight2_key
 
+            if hasattr(self.load_model, "n_shared_experts"):
+                shared_l0_W = torch.chunk(shared_gate_proj, self.tensor_model_parallel_size, dim=0)
+                shared_l0_V = torch.chunk(shared_up_proj, self.tensor_model_parallel_size, dim=0)
+                shared_l0_lst = [torch.cat(weights, dim=0) for weights in zip(shared_l0_W, shared_l0_V)]
+                shared_l1_lst = torch.chunk(shared_fc2_weight, self.tensor_model_parallel_size, dim=1)
+
             for expert_idx in range(self.load_model.num_experts):
                 hf_weight_key = self.load_model.get_weight(layer_idx=hf_layer_idx, expert_idx=expert_idx)
-
-                if hasattr(self.load_model, "n_shared_experts"):
-                    shared_l0_W = torch.chunk(shared_gate_proj, self.tensor_model_parallel_size, dim=0)
-                    shared_l0_V = torch.chunk(shared_up_proj, self.tensor_model_parallel_size, dim=0)
-                    shared_l0_lst = [torch.cat(weights, dim=0) for weights in zip(shared_l0_W, shared_l0_V)]
-                    shared_l1_lst = torch.chunk(shared_fc2_weight, self.tensor_model_parallel_size, dim=1)
 
                 gate_proj = hf_weight.pop(hf_weight_key["layers_mlp_experts_gate_proj"])
                 up_proj = hf_weight.pop(hf_weight_key["layers_mlp_experts_up_proj"])
@@ -990,25 +998,62 @@ class Hf2MgConvert(Convert):
                     self.set_model_layer_norm(hf_layer, local_layer_idx, hf_pp_weights, mg_weight)
                     self.set_model_layer_attn(hf_layer, local_layer_idx, hf_pp_weights, mg_weight)
                     self.set_model_layer_mlp(hf_layer, local_layer_idx, hf_pp_weights, mg_weight)
+                    if self.save_layer_by_layer:
+                        for ep_rank in range(self.expert_model_parallel_size):
+                            for tp_rank in range(self.tensor_model_parallel_size):
+
+                                if self.expert_tensor_parallel_size == 1 and (tp_rank, ep_rank) not in self.etp_valid_ckpts_list:
+                                    continue
+                                save_prefix = self.generate_mg_weights_dir(tp_rank=tp_rank, pp_rank=pp_rank, ep_rank=ep_rank)
+                                parallel_save_path = os.path.join(self.save_dir, save_prefix)
+                                os.makedirs(parallel_save_path, exist_ok=True)
+                                save_file_name = os.path.join(parallel_save_path, "model_optim_rng.pt")
+                                if os.path.exists(save_file_name):
+                                    model_dict = torch.load(save_file_name, map_location="cpu", weights_only=False)
+                                else:
+                                    model_dict = {"args" : args, "checkpoint_version" : 3.0, "iteration" : 1, "model" : {}}
+
+                                model_dict["model"].update(mg_weight[ep_rank][tp_rank])
+                                logger.info(f"Saving to {save_file_name}")
+
+                                torch.save(model_dict, save_file_name, pickle_protocol=4, _use_new_zipfile_serialization=True)
                     local_idx += 1
+                    if self.save_layer_by_layer:
+                        mg_weight = defaultdict(lambda: defaultdict(lambda: defaultdict(dict)))
 
                 if pp_rank == self.pipeline_model_parallel_size - 1:
                     self.set_model_postprocess(hf_pp_weights, mg_weight)
+                    if self.save_layer_by_layer:
+                        for ep_rank in range(self.expert_model_parallel_size):
+                            for tp_rank in range(self.tensor_model_parallel_size):
 
-                for ep_rank in range(self.expert_model_parallel_size):
-                    for tp_rank in range(self.tensor_model_parallel_size):
-                        # # if expert-tensor-parallel-size is set to 1, some (tp_rank, ep_rank) weights are redundant and should not be saved.
-                        if self.expert_tensor_parallel_size == 1 and (tp_rank, ep_rank) not in self.etp_valid_ckpts_list:
-                            continue
-                        save_prefix = self.generate_mg_weights_dir(tp_rank=tp_rank, pp_rank=pp_rank, ep_rank=ep_rank)
-                        parallel_save_path = os.path.join(self.save_dir, save_prefix)
-                        os.makedirs(parallel_save_path, exist_ok=True)
-                        save_file_name = os.path.join(parallel_save_path, "model_optim_rng.pt")
-                        logger.info(f"Saving to {save_file_name}")
+                                if self.expert_tensor_parallel_size == 1 and (tp_rank, ep_rank) not in self.etp_valid_ckpts_list:
+                                    continue
+                                save_prefix = self.generate_mg_weights_dir(tp_rank=tp_rank, pp_rank=pp_rank, ep_rank=ep_rank)
+                                parallel_save_path = os.path.join(self.save_dir, save_prefix)
+                                os.makedirs(parallel_save_path, exist_ok=True)
+                                save_file_name = os.path.join(parallel_save_path, "model_optim_rng.pt")
+                                model_dict = torch.load(save_file_name, map_location="cpu", weights_only=False)
+                                model_dict["model"].update(mg_weight[ep_rank][tp_rank])
+                                logger.info(f"Saving to {save_file_name}")
 
-                        model_dict = {"args" : args, "checkpoint_version" : 3.0, "iteration" : 1}
-                        model_dict["model"] = mg_weight[ep_rank][tp_rank]
-                        torch.save(model_dict, save_file_name, pickle_protocol=4, _use_new_zipfile_serialization=True)
+                                torch.save(model_dict, save_file_name, pickle_protocol=4, _use_new_zipfile_serialization=True)
+
+                if not self.save_layer_by_layer:
+                    for ep_rank in range(self.expert_model_parallel_size):
+                        for tp_rank in range(self.tensor_model_parallel_size):
+                            # # if expert-tensor-parallel-size is set to 1, some (tp_rank, ep_rank) weights are redundant and should not be saved.
+                            if self.expert_tensor_parallel_size == 1 and (tp_rank, ep_rank) not in self.etp_valid_ckpts_list:
+                                continue
+                            save_prefix = self.generate_mg_weights_dir(tp_rank=tp_rank, pp_rank=pp_rank, ep_rank=ep_rank)
+                            parallel_save_path = os.path.join(self.save_dir, save_prefix)
+                            os.makedirs(parallel_save_path, exist_ok=True)
+                            save_file_name = os.path.join(parallel_save_path, "model_optim_rng.pt")
+                            logger.info(f"Saving to {save_file_name}")
+
+                            model_dict = {"args" : args, "checkpoint_version" : 3.0, "iteration" : 1}
+                            model_dict["model"] = mg_weight[ep_rank][tp_rank]
+                            torch.save(model_dict, save_file_name, pickle_protocol=4, _use_new_zipfile_serialization=True)
         else:
             vpp_local_layer_idx = self.generate_vpp_local_layer_idx()
             for pp_rank in range(self.pipeline_model_parallel_size):
@@ -1053,26 +1098,70 @@ class Hf2MgConvert(Convert):
                         self.set_model_layer_norm(hf_layer, local_layer_idx, hf_pp_weight, mg_weight[vpp_rank])
                         self.set_model_layer_attn(hf_layer, local_layer_idx, hf_pp_weight, mg_weight[vpp_rank])
                         self.set_model_layer_mlp(hf_layer, local_layer_idx, hf_pp_weight, mg_weight[vpp_rank])
+                        if self.save_layer_by_layer:
+                            for ep_rank in range(self.expert_model_parallel_size):
+                                for tp_rank in range(self.tensor_model_parallel_size):
+
+                                    if self.expert_tensor_parallel_size == 1 and (tp_rank, ep_rank) not in self.etp_valid_ckpts_list:
+                                        continue
+                                    save_prefix = self.generate_mg_weights_dir(tp_rank=tp_rank, pp_rank=pp_rank, ep_rank=ep_rank)
+                                    parallel_save_path = os.path.join(self.save_dir, save_prefix)
+                                    os.makedirs(parallel_save_path, exist_ok=True)
+                                    save_file_name = os.path.join(parallel_save_path, "model_optim_rng.pt")
+                                    if os.path.exists(save_file_name):
+                                        model_dict = torch.load(save_file_name, map_location="cpu", weights_only=False)
+                                    else:
+                                        model_dict = {"args" : args, "checkpoint_version" : 3.0, "iteration" : 1}
+
+                                    model_key = f"model{vpp_rank}"
+                                    if model_key not in model_dict:
+                                        model_dict[model_key] = {}
+                                    logger.info(f"Saving to {save_file_name}")
+
+                                    model_dict[model_key].update(mg_weight[vpp_rank][ep_rank][tp_rank])
+                                    torch.save(model_dict, save_file_name, pickle_protocol=4, _use_new_zipfile_serialization=True)
                         local_idx += 1
+                        if self.save_layer_by_layer:
+                            mg_weight[vpp_rank] = defaultdict(lambda: defaultdict(lambda: defaultdict(dict)))
 
                     if self.schedules_method != 'dualpipev' and pp_rank == self.pipeline_model_parallel_size - 1 and vpp_rank == self.vpp_size - 1:
                         self.set_model_postprocess(hf_pp_weight, mg_weight[vpp_rank])
+                        if self.save_layer_by_layer:
+                            for ep_rank in range(self.expert_model_parallel_size):
+                                for tp_rank in range(self.tensor_model_parallel_size):
 
-                for ep_rank in range(self.expert_model_parallel_size):
-                    for tp_rank in range(self.tensor_model_parallel_size):
-                        if self.expert_tensor_parallel_size == 1 and (tp_rank, ep_rank) not in self.etp_valid_ckpts_list:
-                            continue
-                        save_prefix = self.generate_mg_weights_dir(tp_rank=tp_rank, pp_rank=pp_rank, ep_rank=ep_rank)
-                        parallel_save_path = os.path.join(self.save_dir, save_prefix)
-                        os.makedirs(parallel_save_path, exist_ok=True)
-                        save_file_name = os.path.join(parallel_save_path, "model_optim_rng.pt")
-                        logger.info(f"Saving to {save_file_name}")
-                        model_dict = {"args" : args, "checkpoint_version" : 3.0, "iteration" : 1}
+                                    if self.expert_tensor_parallel_size == 1 and (tp_rank, ep_rank) not in self.etp_valid_ckpts_list:
+                                        continue
+                                    save_prefix = self.generate_mg_weights_dir(tp_rank=tp_rank, pp_rank=pp_rank, ep_rank=ep_rank)
+                                    parallel_save_path = os.path.join(self.save_dir, save_prefix)
+                                    os.makedirs(parallel_save_path, exist_ok=True)
+                                    save_file_name = os.path.join(parallel_save_path, "model_optim_rng.pt")
+                                    model_dict = torch.load(save_file_name, map_location="cpu", weights_only=False)
 
-                        for vpp_rank in range(self.vpp_size):
-                            model_key = f"model{vpp_rank}"
-                            model_dict[model_key] = mg_weight[vpp_rank][ep_rank][tp_rank]
+                                    model_key = f"model{vpp_rank}"
+                                    if model_key not in model_dict:
+                                        model_dict[model_key] = {}
+                                    logger.info(f"Saving to {save_file_name}")
+                                    
+                                    model_dict[model_key].update(mg_weight[vpp_rank][ep_rank][tp_rank])
+                                    torch.save(model_dict, save_file_name, pickle_protocol=4, _use_new_zipfile_serialization=True)
 
-                        torch.save(model_dict, save_file_name, pickle_protocol=4, _use_new_zipfile_serialization=True)
+                if not self.save_layer_by_layer:
+                    for ep_rank in range(self.expert_model_parallel_size):
+                        for tp_rank in range(self.tensor_model_parallel_size):
+                            if self.expert_tensor_parallel_size == 1 and (tp_rank, ep_rank) not in self.etp_valid_ckpts_list:
+                                continue
+                            save_prefix = self.generate_mg_weights_dir(tp_rank=tp_rank, pp_rank=pp_rank, ep_rank=ep_rank)
+                            parallel_save_path = os.path.join(self.save_dir, save_prefix)
+                            os.makedirs(parallel_save_path, exist_ok=True)
+                            save_file_name = os.path.join(parallel_save_path, "model_optim_rng.pt")
+                            logger.info(f"Saving to {save_file_name}")
+                            model_dict = {"args" : args, "checkpoint_version" : 3.0, "iteration" : 1}
+
+                            for vpp_rank in range(self.vpp_size):
+                                model_key = f"model{vpp_rank}"
+                                model_dict[model_key] = mg_weight[vpp_rank][ep_rank][tp_rank]
+
+                            torch.save(model_dict, save_file_name, pickle_protocol=4, _use_new_zipfile_serialization=True)
 
         logger.info("Done!")
