@@ -11,7 +11,6 @@ import torch.distributed as dist
 from torch.utils.data import DataLoader, Sampler, RandomSampler, SequentialSampler, DistributedSampler
 
 from transformers import PreTrainedTokenizer
-from transformers import DataCollatorForSeq2Seq
 from transformers.trainer_utils import seed_worker
 
 from ..utils.arguments import DataArguments, ModelArguments, TrainingArguments, ParallelArguments
@@ -20,6 +19,7 @@ from mindspeed_llm.fsdp2.distributed.parallel_state import ParallelState
 
 from .data_utils import get_dataset
 from .template import Template
+from .collator import SFTDataCollatorWith4DAttentionMask
 
 from mindspeed_llm.fsdp2.utils.logging import get_logger
 logger = get_logger(__name__)
@@ -80,11 +80,13 @@ class LFDataManager(DataManager):
 
 
         self.dataset_module = get_dataset(self.template, model_args, data_args, training_args, stage=stage, tokenizer=self.tokenizer)
-        self.data_collator = DataCollatorForSeq2Seq(
+        self.data_collator = SFTDataCollatorWith4DAttentionMask(
             tokenizer=self.tokenizer,
             padding=True,
             pad_to_multiple_of=parallel_args.cp_size if parallel_args.cp_size > 1 else 8,
-            label_pad_token_id=IGNORE_INDEX if data_args.ignore_pad_token_for_loss else self.tokenizer.pad_token_id
+            label_pad_token_id=IGNORE_INDEX if data_args.ignore_pad_token_for_loss else self.tokenizer.pad_token_id,
+            block_diag_attn=data_args.neat_packing,
+            compute_dtype=torch.bfloat16
         )
 
 
