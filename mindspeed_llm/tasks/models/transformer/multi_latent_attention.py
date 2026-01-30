@@ -34,7 +34,7 @@ from mindspeed_llm.core.tensor_parallel.layers import LinearNoTP
 from mindspeed_llm.core.transformer.custom_layers.transformer_engine import PTNorm
 from mindspeed_llm.tasks.models.transformer.dsa_indexer import get_dsa_indexer_spec, DSAIndexerLossAutoScaler, \
     compute_dsa_indexer_loss, get_attn_scores, DSAIndexerLossLoggingHelper, \
-    fused_sparse_lightning_indexer_kl_loss
+    fused_sparse_lightning_indexer_kl_loss, fused_sparse_lightning_indexer_kl_loss_kvallgather
 from mindspeed_llm.tasks.models.transformer.mla_dot_product_attention import MlaDotProductAttention
 from mindspeed_llm.tasks.models.transformer.mla_up_proj_overlap_tp_comm import mla_up_projection_overlap_tp_comm
 from mindspeed_llm.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb_bshd_in_complex
@@ -734,40 +734,51 @@ class CustomMLASelfAttention(SelfAttention):
 
                 if args.use_fused_lightning_indexer_loss:
                     if args.tensor_model_parallel_size > 1:
-                        query_shape = list(query[0].size())
-                        query_shape[2] *= mpu.get_tensor_model_parallel_world_size()
-                        total_query = torch.empty(query_shape, dtype=query[0].dtype, device=torch.cuda.current_device())
-                        torch.distributed.all_gather_into_tensor(total_query, query[0].contiguous(),
-                                                                 group=mpu.get_tensor_model_parallel_group())
+                        total_query = gather_from_tensor_model_parallel_region(query[0].view(*query[0].shape[:2], -1))
+                        total_query = total_query.view(*query[0].shape[:2], -1, query[0].shape[-1])
 
-                        query_rope_shape = list(query[1].size())
-                        query_rope_shape[2] *= mpu.get_tensor_model_parallel_world_size()
-                        total_query_rope = torch.empty(query_rope_shape, dtype=query[1].dtype,
-                                                       device=torch.cuda.current_device())
-                        torch.distributed.all_gather_into_tensor(total_query_rope, query[1].contiguous(),
-                                                                 group=mpu.get_tensor_model_parallel_group())
+                        total_query_rope = gather_from_tensor_model_parallel_region(query[1].view(*query[1].shape[:2], -1))
+                        total_query_rope = total_query_rope.view(*query[1].shape[:2], -1, query[1].shape[-1])
 
                         softmax_max = gather_from_tensor_model_parallel_region(softmax_max)
                         softmax_sum = gather_from_tensor_model_parallel_region(softmax_sum)
                     else:
                         total_query = query[0]
                         total_query_rope = query[1]
-                    loss = fused_sparse_lightning_indexer_kl_loss(
-                        total_query,
-                        key[0],
-                        query_index,
-                        key_index,
-                        weights,
-                        topk_indices,
-                        softmax_max,
-                        softmax_sum,
-                        scale_value=self.core_attention.local_attn.scale if args.context_parallel_size > 1 and args.context_parallel_algo == 'ulysses_cp_algo' else self.core_attention.scale,
-                        query_rope=total_query_rope,
-                        key_rope=key[1],
-                        actual_seq_qlen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_q,
-                        actual_seq_klen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_kv,
-                        layout='BSND',
-                    )
+                    if args.context_parallel_size > 1 and args.context_parallel_algo == 'kvallgather_cp_algo':
+                        loss = fused_sparse_lightning_indexer_kl_loss_kvallgather(
+                                total_query,
+                                key[0],
+                                query_index,
+                                key_index,
+                                weights,
+                                topk_indices,
+                                softmax_max,
+                                softmax_sum,
+                                scale_value=self.core_attention.local_attn.scale if args.context_parallel_size > 1 and args.context_parallel_algo == 'ulysses_cp_algo' else self.core_attention.scale,
+                                query_rope=total_query_rope,
+                                key_rope=key[1],
+                                actual_seq_qlen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_q,
+                                actual_seq_klen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_kv,
+                                layout='BSND',
+                            )
+                    else:
+                        loss = fused_sparse_lightning_indexer_kl_loss(
+                            total_query,
+                            key[0],
+                            query_index,
+                            key_index,
+                            weights,
+                            topk_indices,
+                            softmax_max,
+                            softmax_sum,
+                            scale_value=self.core_attention.local_attn.scale if args.context_parallel_size > 1 and args.context_parallel_algo == 'ulysses_cp_algo' else self.core_attention.scale,
+                            query_rope=total_query_rope,
+                            key_rope=key[1],
+                            actual_seq_qlen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_q,
+                            actual_seq_klen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_kv,
+                            layout='BSND',
+                        )
                     loss *= args.indexer_loss_coeff
                 else:
                     # For absorb mode, query and key are list format, they need to be concatenated for dsa indexer

@@ -12,7 +12,7 @@ class ContextParallelFeature(MindspeedContextParallelFeature):
     def register_args(self, parser: ArgumentParser):
         group = parser.add_argument_group(title=self.feature_name)
         group.add_argument('--context-parallel-algo', type=str, default='megatron_cp_algo',
-                           choices=['megatron_cp_algo', 'hybrid_cp_algo'],
+                           choices=['megatron_cp_algo', 'hybrid_cp_algo', 'kvallgather_cp_algo'],
                            help='context parallel algorithm')
 
         # ring context parallel
@@ -36,6 +36,17 @@ class ContextParallelFeature(MindspeedContextParallelFeature):
                 raise AssertionError("Context parallel does not support use_kv_cache")
             if args.sliding_window is not None and args.seq_length > args.sliding_window:
                 raise AssertionError("Context parallel does not support sliding_windows")
+
+        # kvallgather_cp_algo
+        if args.context_parallel_size > 1 and args.context_parallel_algo == 'kvallgather_cp_algo':
+            if not args.use_fused_lightning_indexer:
+                raise AssertionError("kvallgather_cp_algo only supports fused_lightning_indexer")
+            if not args.use_fused_lightning_indexer_loss:
+                raise AssertionError("kvallgather_cp_algo only supports fused_lightning_indexer_loss")
+            if not args.use_sparse_flash_attn:
+                raise AssertionError("kvallgather_cp_algo only supports sparse_flash_attn")
+            if args.reset_attention_mask:
+                raise AssertionError("kvallgather_cp_algo does not support reset_attention_mask")
 
 
     def register_patches(self, patch_manager, args):
@@ -61,3 +72,8 @@ class ContextParallelFeature(MindspeedContextParallelFeature):
                                          CPDotProductAttention)
             patch_manager.register_patch('megatron.core.extensions.transformer_engine.TEDotProductAttention',
                                          CPDotProductAttention)
+            if getattr(args, 'context_parallel_algo', 'megatron_cp_algo') == 'kvallgather_cp_algo':
+                from mindspeed_llm.core.transformer.custom_dot_product_attention import CustomDotProductAttention
+                patch_manager.register_patch(
+                    'megatron.core.transformer.dot_product_attention.DotProductAttention.forward',
+                    CustomDotProductAttention.forward)

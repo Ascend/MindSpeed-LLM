@@ -33,7 +33,7 @@ class DSAIndexerFeature(MindSpeedFeature):
                 raise ValueError("DSAIndexer is currently only supported in MLA, plese check model_spec and open --multi-latent-attention.")
             if not args.use_flash_attn:
                 raise ValueError("DSAIndexer is currently only supported in FA, plese open --use-flash-attn.")
-            if args.context_parallel_size > 1 and args.context_parallel_algo!='ulysses_cp_algo':
+            if args.context_parallel_size > 1 and args.context_parallel_algo not in ['ulysses_cp_algo', 'kvallgather_cp_algo']:
                 raise ValueError("DSAIndexer is currently only supported `ulysses_cp_algo` when use context parallel.")
             if args.reset_attention_mask or args.reset_position_ids:
                 raise ValueError("DSAIndexer is currently only supported in BNSD.")

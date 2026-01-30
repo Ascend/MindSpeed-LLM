@@ -30,6 +30,9 @@ from scipy.linalg import hadamard
 
 from mindspeed_llm.core.tensor_parallel.layers import LinearNoTP
 from mindspeed_llm.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb_bshd_in_complex
+from mindspeed_llm.core.context_parallel.kvallgather_context_parallel import (
+    get_seq_chunk_ids_for_reordering_before_attn, get_distributed_world_size
+)
 
 @dataclass
 class DSAIndexerSubmodules:
@@ -297,16 +300,28 @@ class DSAIndexer(MegatronModule):
     def forward_with_scores(x, q, k, weights, mask, packed_seq_params, start_pos, index_topk):
         args = get_args()
         if args.use_fused_lightning_indexer:
-            topk_indices, topk_score = fused_lightning_indexer(
-                q,
-                k,
-                weights,
-                index_topk,
-                actual_seq_qlen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_q,
-                actual_seq_klen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_kv,
-                layout_query='BSND',
-                layout_key='BSND',
-                )
+            if args.context_parallel_size > 1 and args.context_parallel_algo == 'kvallgather_cp_algo':
+                topk_indices, topk_score = fused_lightning_indexer_kvallgather(
+                    q,
+                    k,
+                    weights,
+                    index_topk,
+                    actual_seq_qlen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_q,
+                    actual_seq_klen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_kv,
+                    layout_query='BSND',
+                    layout_key='BSND',
+                    )
+            else:
+                topk_indices, topk_score = fused_lightning_indexer(
+                    q,
+                    k,
+                    weights,
+                    index_topk,
+                    actual_seq_qlen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_q,
+                    actual_seq_klen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_kv,
+                    layout_query='BSND',
+                    layout_key='BSND',
+                    )
         else:
             s, b, _ = x.size()
             end_pos = start_pos + s
@@ -796,3 +811,141 @@ class LILossTrain(torch.autograd.Function):
 
         res_list = [None] * 12
         return None, None, d_query_index, d_key_index, d_weights, *res_list
+
+def gather_and_permute_cp_shard(
+        t: torch.Tensor,
+        cp_group: torch.distributed.ProcessGroup
+) -> torch.Tensor:
+    cp_size = get_distributed_world_size(cp_group)
+
+    # [s, ...] -> [cp, s, ...]
+    t_ag = gather_from_sequence_parallel_region(t, group=cp_group)
+
+    # [cp, s, ...] -> [cp*2, s//2, ...]
+    t_ag = t_ag.view(2 * cp_size, -1, *t.shape[1:])
+
+    chunk_ids = get_seq_chunk_ids_for_reordering_before_attn(cp_size, t.device)
+    t_ag = torch.index_select(t_ag, dim=0, index=chunk_ids).contiguous()
+
+    # [cp*2, s//2, ...] -> [cp*s, ...]
+    return t_ag.view(-1, *t.shape[1:])
+
+def fused_lightning_indexer_kvallgather(
+        q: Tensor,
+        k: Tensor,
+        weights: Tensor,
+        index_topk,
+        actual_seq_qlen=None,
+        actual_seq_klen=None,
+        layout_query='BSND',
+        layout_key='BSND',
+):
+    cp_group = parallel_state.get_context_parallel_group()
+
+    # [s, b, ...] -> [2, s//2, b, ...] -> [2, b, s//2, ...]
+    q, weights = [
+        t.view(2, t.shape[0] // 2, *t.shape[1:]).transpose(1, 2)
+        for t in [q, weights]
+    ]
+
+    # [s, b, ...] -> [cp*s, b, ...] -> [b, cp*s, ...]
+    k_ag = gather_and_permute_cp_shard(k, cp_group).transpose(0, 1)
+
+    topk_indices = torch.empty((*q.shape[:3], 1, index_topk), device=k.device, dtype=torch.int32)
+    topk_scores = torch.empty((*q.shape[:3], 1, index_topk), device=k.device, dtype=torch.bfloat16)
+
+    indices = [None, None]
+    scores = [None, None]
+    cp_size = parallel_state.get_context_parallel_world_size()
+    rank = parallel_state.get_context_parallel_rank()
+
+    local_seq_chunk_ids = [rank + 1, 2 * cp_size - rank]
+    chunk = k_ag.shape[1] // cp_size // 2
+    for i, chunk_id in enumerate(local_seq_chunk_ids):
+        indices[i], scores[i] = torch_npu.npu_lightning_indexer(
+            q[i],
+            k_ag[:, 0 : chunk_id * chunk, ...],
+            weights[i],
+            layout_query="BSND",
+            layout_key="BSND",
+            sparse_count=index_topk,
+            sparse_mode=3,
+            return_value=True
+        )
+    topk_indices = torch.cat(indices, dim=1).squeeze(2)
+    topk_scores = torch.cat(scores, dim=1).squeeze(2)
+
+    return topk_indices, topk_scores
+
+def fused_sparse_lightning_indexer_kl_loss_kvallgather(
+        query,
+        key,
+        query_index,
+        key_index,
+        weights,
+        topk_indices,
+        softmax_max,
+        softmax_sum,
+        scale_value=1,
+        *,
+        query_rope=None,
+        key_rope=None,
+        actual_seq_qlen=None,
+        actual_seq_klen=None,
+        layout='BSND',
+        sparse_mode=3,
+        pre_tokens=65536,
+        next_tokens=65536,
+):
+    cp_group = parallel_state.get_context_parallel_group()
+    sq = query.shape[0]
+    topk_indices = topk_indices.unsqueeze(2).transpose(0, 1)
+
+    # [s, b, ...] -> [2, s//2, b, ...] -> [2, b, s//2, ...]
+    query, query_rope, topk_indices, query_index, weights = [
+        t.view(2, t.shape[0] // 2, *t.shape[1:]).transpose(1, 2)
+        for t in [query, query_rope, topk_indices, query_index, weights]
+    ]
+
+    # [b, 1, s, n] -> [2, b, 1, s//2, n]
+    softmax_max, softmax_sum = [
+        rearrange(t, 'b n2 (c s) n1 -> c b n2 s n1', c=2)
+        for t in [softmax_max, softmax_sum]
+    ]
+
+    # [s, b, ...] -> [cp*s, b, ...] -> [b, cp*s, ...]
+    key_ag, key_index_ag, key_rope_ag = [
+        gather_and_permute_cp_shard(t, cp_group).transpose(0, 1)
+        for t in [key, key_index, key_rope]
+    ]
+
+    loss = [None, None]
+
+    cp_size = parallel_state.get_context_parallel_world_size()
+    rank = parallel_state.get_context_parallel_rank()
+    local_seq_chunk_ids = [rank + 1, 2 * cp_size - rank]
+    chunk = key_ag.shape[1] // cp_size // 2
+
+    for i, chunk_id in enumerate(local_seq_chunk_ids):
+        loss[i] = LILossTrain.apply(
+            query[i],
+            key_ag[:, 0 : chunk_id * chunk, ...],
+            query_index[i],
+            key_index_ag[:, 0 : chunk_id * chunk, ...],
+            weights[i],
+            topk_indices[i],
+            softmax_max[i],
+            softmax_sum[i],
+            scale_value,
+            query_rope[i],
+            key_rope_ag[:, 0 : chunk_id * chunk, ...],
+            None,
+            None,
+            layout,
+            sparse_mode,
+            pre_tokens,
+            next_tokens,
+            )
+        
+    return (loss[0] + loss[1]) / sq
+

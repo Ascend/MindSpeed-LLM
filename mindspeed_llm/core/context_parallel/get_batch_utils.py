@@ -50,6 +50,8 @@ def get_batch_on_this_cp_rank(batch):
             batch = _get_batch_on_this_cp_rank_in_hybrid_cp_general(batch)
         else:
             batch = _get_batch_on_this_cp_rank_in_hybrid_cp(batch)
+    elif args.context_parallel_algo == 'kvallgather_cp_algo':
+        batch = _get_batch_on_this_cp_rank_in_megatron_cp(batch)
     return batch
 
 
