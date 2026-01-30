@@ -517,6 +517,11 @@ class DSAIndexerLossLoggingHelper:
             torch.distributed.all_reduce(
                 values, group=tracker['avg_group'], op=torch.distributed.ReduceOp.AVG
             )
+        torch.distributed.all_reduce(
+            values,
+            group=parallel_state.get_data_parallel_group(with_context_parallel=False),
+            op=torch.distributed.ReduceOp.AVG,
+        )
 
     @staticmethod
     def track_das_indexer_metrics(loss_scale, iteration, writer, wandb_writer=None, total_loss_dict=None):
@@ -678,11 +683,12 @@ def fused_sparse_lightning_indexer_kl_loss(
     if query_rope is not None:
         query_rope, key_rope = [x.transpose(0, 1) for x in [query_rope, key_rope]]
 
+    bsz = query.shape[0]
     sq = query.shape[1]
     loss = LILossTrain.apply(query, key, query_index, key_index, weights, topk_indices, softmax_max, softmax_sum,
                              scale_value, query_rope, key_rope, actual_seq_qlen, actual_seq_klen, layout, sparse_mode,
                              pre_tokens, next_tokens, )
-    return loss / sq
+    return loss / (sq * bsz)
 
 
 class LILossTrain(torch.autograd.Function):

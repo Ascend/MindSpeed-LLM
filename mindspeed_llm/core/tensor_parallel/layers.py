@@ -261,7 +261,6 @@ class LinearNoTP(torch.nn.Linear):
             bias=kwargs.get('bias', True),
             dtype=config.params_dtype,
         )
-        setattr(self.weight, 'sequence_parallel', config.sequence_parallel)
         self.config = config
 
         # Set fixed random seed for weight initialization
@@ -269,6 +268,8 @@ class LinearNoTP(torch.nn.Linear):
         torch.manual_seed(123)
         torch.nn.init.xavier_uniform_(self.weight)
         torch.random.manual_seed(current_seed)
+        setattr(self.weight, 'sequence_parallel', config.sequence_parallel)
+        setattr(self.weight, 'all_reduce', True)
 
         self._register_load_state_dict_pre_hook(
             lambda state_dict, prefix, *args, **kwargs: state_dict.pop(
