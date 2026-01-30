@@ -1,15 +1,15 @@
 # Copyright (c) 2025, Huawei Technologies Co., Ltd. All rights reserved.
 import torch
 
-from mindspeed.lite.distributed.expert_parallel.expert_fully_shard_parallel import expert_fully_shard_modules
-from mindspeed.lite.distributed.fully_shard_parallel.fully_shard_parallel import \
+from mindspeed.fsdp.distributed.expert_parallel.expert_fully_shard_parallel import expert_fully_shard_modules
+from mindspeed.fsdp.distributed.fully_shard_parallel.fully_shard_parallel import \
     fully_shard_parallel_modules
 from mindspeed_llm.fsdp2.distributed.parallel_state import init_parallel_state
-from mindspeed.lite.distributed.tensor_parallel.tensor_parallel import tensor_parallel_modules
-from mindspeed.lite.memory.recompute.recompute import recompute_modules
+from mindspeed.fsdp.distributed.tensor_parallel.tensor_parallel import tensor_parallel_modules
+from mindspeed.fsdp.memory.recompute.recompute import recompute_modules
 from mindspeed_llm.fsdp2.distributed.parallel_engine_config import ParallelEngineConfig
 from mindspeed_llm.fsdp2.distributed.context_parallel.ulysses_cp_parallel import ulysses_parallelize_modules
-from mindspeed.lite.distributed.expert_parallel.expert_parallel import expert_parallelize_modules
+from mindspeed.fsdp.distributed.expert_parallel.expert_parallel import expert_parallelize_modules
 
 
 class MindSpeedParallelEngine(torch.nn.Module):

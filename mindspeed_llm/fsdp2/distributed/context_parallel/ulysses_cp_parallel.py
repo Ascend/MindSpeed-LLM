@@ -25,6 +25,12 @@ def ulysses_parallelize_modules(modules: torch.nn.Module, plan: CPPlanConfig):
 
 def apply_transformers_modules(modules):
     model_type = modules.config.model_type
+    if model_type not in MODEL_CP_MAPPING:
+        supported_models = list(MODEL_CP_MAPPING.keys())
+        raise ValueError(
+            f"Context parallel does not support model type '{model_type}'. "
+            f"Supported model types: {supported_models}"
+        )
 
     model_patch_list = MODEL_CP_MAPPING[model_type]
     for target_name, func_patch_name in model_patch_list:
