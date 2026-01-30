@@ -83,11 +83,13 @@ class DeprecatedArgsFeature(MindSpeedFeature):
                 """The '--topk-group' argument is deprecated and will be removed in the next future version, 
                    please use '--moe-router-group-topk' instead!""", DeprecationWarning)
             args.moe_router_group_topk = args.deprecated_topk_group
+        if args.moe_router_group_topk == 0:
+            raise ValueError("'--moe-router-group-topk' cannot be 0.")
         if args.deprecated_routed_scaling_factor and not args.moe_router_topk_scaling_factor:
             warnings.warn(
                 """The '--routed-scaling-factor' argument is deprecated and will be removed in the next future version, 
                    please use '--moe-router-topk-scaling-factor' instead!""", DeprecationWarning)
-            args.moe_router_topk_scaling_factor = args.deprecated_topk_group
+            args.moe_router_topk_scaling_factor = args.deprecated_routed_scaling_factor
         if args.deprecated_qk_rope_head_dim:
             warnings.warn(
                 """The '--qk-rope-head-dim' argument is deprecated and will be removed in the next future version, 
