@@ -56,7 +56,7 @@ MindSpeed LLM：基于昇腾生态的大语言模型分布式训练套件，旨�
 - [Jan. 16, 2026]: 🌴 MindSpeed LLM发布[v2.3.0分支](https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.3.0)，支持core_v0.12.1版本
 - [Dec. 24, 2025]: 🚀 **GPT-OSS** 模型支持 【Prototype】
 - [Dec. 11, 2025]: 🚀 **Qwen3-Next** 模型训练支持triton融合加速GDN模块计算 【Prototype】
-- [Nov. 25, 2025]: 🚀 [权重转换、数据处理和训练功能合一](./docs/pytorch/solutions/pretrain/all_in_one_tranier.md)【Prototype】
+- [Nov. 25, 2025]: 🚀 [数据/权重在线加载训练](./docs/pytorch/solutions/pretrain/train_from_hf.md)【Prototype】
 - [Nov. 14, 2025]: 🚀 **magistral** 模型支持 【Prototype】
 - [Oct. 30, 2025]: 🚀 MindSpeed LLM 模型下架[夕阳计划](https://gitcode.com/Ascend/MindSpeed-LLM/issues/943) 启动，感谢每一份曾经的贡献
 - [Oct. 28, 2025]: 🌴 MindSpeed LLM发布[v2.2.0分支](https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.2.0)，支持core_v0.12.1版本
