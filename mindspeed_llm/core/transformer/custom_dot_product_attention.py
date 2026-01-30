@@ -15,6 +15,7 @@ from megatron.core.transformer.utils import attention_mask_func
 from megatron.core.utils import divide
 from mindspeed.model.transformer import get_attention_mask
 
+from mindspeed_llm.core.context_parallel.kvallgather_context_parallel import sfa_with_kvallgather_context_parallel
 from mindspeed_llm.tasks.models.common.alibi import Alibi
 from mindspeed_llm.training.utils import recompute_valid_actual_seq_len
 from mindspeed_llm.training.utils import get_actual_seq_len_list
@@ -334,34 +335,51 @@ class CustomDotProductAttentionImpl:
             output = output.transpose(0, 1)
         else:
             if args.use_sparse_flash_attn:
-                if args.shape_order == 'SBH':
-                    query = rearrange(query, 's b (h d1) -> b s h d1', h=n_head, d1=query.shape[2]//n_head)
-                    key = rearrange(key, 's b d -> b s d').unsqueeze(2)
-                    value = rearrange(value, 's b d -> b s d').unsqueeze(2)
-                elif args.shape_order == "BNSD":
-                    query, key, value = [rearrange(x, 'b h s d -> b s h d') for x in [query, key, value]]
+                if args.context_parallel_size > 1 and args.context_parallel_algo == 'kvallgather_cp_algo':
+                    if args.shape_order == "BNSD":
+                        query, key, value = [rearrange(x, 'b h s d -> s b (h d)') for x in [query, key, value]]
 
-                topk_indices = topk_indices.unsqueeze(2)
-                query_rope = rearrange(query_rope, 's b h d -> b s h d')
-                key_rope = rearrange(key_rope, 's b h d -> b s h d')
-                actual_seq_len = torch.tensor([query.shape[1]], dtype=torch.int32, device=query.device)
+                    cp_group = parallel_state.get_context_parallel_group()
+                    cp_stream = torch.npu.Stream(device=torch.npu.current_device())
 
-                output, softmax_max, softmax_sum, *_  = torch_npu.npu_sparse_flash_attention(
-                    query, key, value,
-                    sparse_indices=topk_indices.to(torch.int32),
-                    block_table=None,                # TODO: (B, S2/block_size)
-                    actual_seq_lengths_query=actual_seq_len,
-                    actual_seq_lengths_kv=actual_seq_len,
-                    query_rope=query_rope,
-                    key_rope=key_rope,
-                    scale_value=self.scale,
-                    sparse_block_size=1,
-                    layout_query='BSND',  
-                    layout_kv='BSND',     
-                    sparse_mode=3,      
-                    attention_mode=2,            # 0: GQA/MHA, 1: MLA-naive, 2: MLA-absorb
-                    return_softmax_lse=True,     # it must be True in training mode
-                )
+                    output, softmax_max, softmax_sum, *_ = sfa_with_kvallgather_context_parallel(
+                        query, key, value,
+                        query_rope,
+                        key_rope,
+                        n_head,
+                        topk_indices,
+                        self.scale,
+                        cp_group,
+                        cp_stream)
+                else:
+                    if args.shape_order == 'SBH':
+                        query = rearrange(query, 's b (h d1) -> b s h d1', h=n_head, d1=query.shape[2] // n_head)
+                        key = rearrange(key, 's b d -> b s d').unsqueeze(2)
+                        value = rearrange(value, 's b d -> b s d').unsqueeze(2)
+                    elif args.shape_order == "BNSD":
+                        query, key, value = [rearrange(x, 'b h s d -> b s h d') for x in [query, key, value]]
+
+                    topk_indices = topk_indices.unsqueeze(2)
+                    query_rope = rearrange(query_rope, 's b h d -> b s h d')
+                    key_rope = rearrange(key_rope, 's b h d -> b s h d')
+                    actual_seq_len = torch.tensor([query.shape[1]], dtype=torch.int32, device=query.device)
+
+                    output, softmax_max, softmax_sum, *_ = torch_npu.npu_sparse_flash_attention(
+                        query, key, value,
+                        sparse_indices=topk_indices.to(torch.int32),
+                        block_table=None,  # TODO: (B, S2/block_size)
+                        actual_seq_lengths_query=actual_seq_len,
+                        actual_seq_lengths_kv=actual_seq_len,
+                        query_rope=query_rope,
+                        key_rope=key_rope,
+                        scale_value=self.scale,
+                        sparse_block_size=1,
+                        layout_query='BSND',
+                        layout_kv='BSND',
+                        sparse_mode=3,
+                        attention_mode=2,  # 0: GQA/MHA, 1: MLA-naive, 2: MLA-absorb
+                        return_softmax_lse=True,  # it must be True in training mode
+                    )
             else:
                 # No KV cache: fused attention over full sequences
                 if not args.mla_fa_divide_qk:
