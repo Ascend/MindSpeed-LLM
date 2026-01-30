@@ -16,7 +16,6 @@ logger.getLogger().setLevel(logger.INFO)
 GLOBAL_OUTPUT_WEIGHTS = None
 LAYER_BY_LAYER_SAVING_THRESHOLD = 256
 
-
 class Hf2MgConvert(Convert):
 
     def __init__(self, args, from_train=False):
@@ -83,9 +82,7 @@ class Hf2MgConvert(Convert):
         self._valid_parameter()
 
     def check_etp_conflict(self):
-        if self.expert_tensor_parallel_size is None:
-            self.expert_tensor_parallel_size = self.tensor_model_parallel_size
-        if self.expert_tensor_parallel_size != 1 and self.expert_tensor_parallel_size != self.tensor_model_parallel_size:
+        if self.expert_tensor_parallel_size is not None and self.expert_tensor_parallel_size != 1:
             raise ValueError("Currently expert-tensor-parallel-size is only support to be set to 1 or None")
         if self.expert_tensor_parallel_size == 1:
             if self.tensor_model_parallel_size % self.expert_model_parallel_size != 0 and self.expert_model_parallel_size % self.tensor_model_parallel_size != 0:

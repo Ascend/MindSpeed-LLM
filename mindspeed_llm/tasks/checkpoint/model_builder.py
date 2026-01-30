@@ -92,6 +92,8 @@ class HuggingFaceModel(Model):
         config_value = self.model_cfg.get(self.model_type_hf).get('config_set_value')
         for key_target in config_key_mapping:
             key_hf = config_key_mapping[key_target]
+            if key_hf == "None":
+                continue
             if key_hf in hf_args:
                 setattr(self, key_target, hf_args[key_hf])
             else:
@@ -206,6 +208,7 @@ class MegatronModel(Model):
         self.model_cfg = self.read_model_cfg()
         self.model_type_hf = args.model_type_hf
         self.save_lora_to_hf = False
+        self.transformerlayer_type = None
         if args.load_model_type == 'mg':
             self.mg_path = args.load_dir
         else:
@@ -536,4 +539,27 @@ class MegatronModel(Model):
                 "layers_mlp_experts_linear_fc2_lora_A_default"] = module_layer + "mlp.experts.local_experts[expert_idx].linear_fc2.lora_A.default"
             module_mapping[
                 "layers_mlp_experts_linear_fc2_lora_B_default"] = module_layer + "mlp.experts.local_experts[expert_idx].linear_fc2.lora_B.default"
+        if self.transformerlayer_type == "longcat":
+            module_mapping["layers_input_layernorm0"] = module_layer + "input_layernorm_0"
+            module_mapping["layers_self_attention0_linear_qkv"] = module_layer + "self_attention_0.linear_qkv"
+            module_mapping["layers_self_attention0_linear_proj"] = module_layer + "self_attention_0.linear_proj"
+            module_mapping["layers_self_attention0_linear_q_up_proj"] = module_layer + "self_attention_0.linear_q_up_proj"
+            module_mapping["layers_self_attention0_linear_kv_up_proj"] = module_layer + "self_attention_0.linear_kv_up_proj"
+            module_mapping["layers_self_attention0_q_layernorm"] = module_layer + "self_attention_0.q_layernorm"
+            module_mapping["layers_self_attention0_kv_layernorm"] = module_layer + "self_attention_0.kv_layernorm"
+            module_mapping["layers_self_attention0_pre_mlp_layernorm"] = module_layer + "pre_mlp_layernorm_0"
+            module_mapping["layers_mlp0_linear_fc1"] = module_layer + "mlps_0.linear_fc1"
+            module_mapping["layers_mlp0_linear_fc2"] = module_layer + "mlps_0.linear_fc2"
+
+            module_mapping["layers_input_layernorm1"] = module_layer + "input_layernorm_1"
+            module_mapping["layers_self_attention1_linear_qkv"] = module_layer + "self_attention_1.linear_qkv"
+            module_mapping["layers_self_attention1_linear_proj"] = module_layer + "self_attention_1.linear_proj"
+            module_mapping["layers_self_attention1_linear_q_up_proj"] = module_layer + "self_attention_1.linear_q_up_proj"
+            module_mapping["layers_self_attention1_linear_kv_up_proj"] = module_layer + "self_attention_1.linear_kv_up_proj"
+            module_mapping["layers_self_attention1_q_layernorm"] = module_layer + "self_attention_1.q_layernorm"
+            module_mapping["layers_self_attention1_kv_layernorm"] = module_layer + "self_attention_1.kv_layernorm"
+            module_mapping["layers_self_attention1_pre_mlp_layernorm"] = module_layer + "pre_mlp_layernorm_1"
+            module_mapping["layers_mlp1_linear_fc1"] = module_layer + "mlps_1.linear_fc1"
+            module_mapping["layers_mlp1_linear_fc2"] = module_layer + "mlps_1.linear_fc2"
+            
         return module_mapping

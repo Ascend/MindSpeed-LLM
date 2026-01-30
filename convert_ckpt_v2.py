@@ -5,6 +5,7 @@ import time
 from mindspeed_llm.tasks.checkpoint.convert_hf2mg import Hf2MgConvert
 from mindspeed_llm.tasks.checkpoint.convert_mg2hf import Mg2HfConvert
 from mindspeed_llm.tasks.checkpoint.convert_ckpt_mamba2 import MambaConverter
+from mindspeed_llm.tasks.checkpoint.convert_ckpt_longcat import LongCatConverter
 
 
 def get_args():
@@ -19,7 +20,7 @@ def get_args():
     parser.add_argument('--save-dir', type=str, required=True,
                         help='Directory to save model checkpoint to')
     parser.add_argument('--model-type-hf', type=str, default="qwen3",
-                        choices=['qwen3', 'qwen3-moe', 'deepseek3', 'glm45-moe', 'bailing_mini', 'qwen3-next', 'seed-oss', 'deepseek32', 'magistral', 'deepseek2-lite', 'phi3.5', 'mamba2'],
+                        choices=['qwen3', 'qwen3-moe', 'deepseek3', 'glm45-moe', 'bailing_mini', 'qwen3-next', 'seed-oss', 'deepseek32', 'magistral', 'deepseek2-lite', 'phi3.5', 'mamba2', 'longcat'],
                         help='model type of huggingface')
     parser.add_argument('--target-tensor-parallel-size', type=int, default=1,
                         help='Target tensor model parallel size, defaults to 1.')
@@ -75,6 +76,8 @@ def main():
     logger.info(f"Arguments: {args}")
     if args.model_type_hf == 'mamba2':
         converter = MambaConverter(args)
+    elif args.model_type_hf == 'longcat':
+        converter = LongCatConverter(args)
     elif args.load_model_type == 'hf' and args.save_model_type == 'mg':
         converter = Hf2MgConvert(args)
     elif args.load_model_type == 'mg' and args.save_model_type == 'hf':

@@ -366,6 +366,29 @@ def topk_router_init_wrapper(function):
         function(self, *args, **kwargs)
         mg_args = get_args()
 
+        if mg_args.num_zero_experts is not None:
+            self.num_experts = mg_args.num_experts + mg_args.num_zero_experts
+            self.weight = torch.nn.Parameter(
+                torch.empty((self.num_experts, self.config.hidden_size), dtype=torch.float32)
+            )
+
+            if self.config.perform_initialization:
+                self.config.init_method(self.weight)
+            self.weight.data = self.weight.data.to(dtype=self.config.params_dtype)
+
+            if self.enable_expert_bias:
+                self.register_buffer(
+                    'local_tokens_per_expert',
+                    torch.zeros(self.num_experts, dtype=torch.float32),
+                    persistent=False,
+                )
+                self.register_buffer(
+                    'expert_bias', torch.zeros(self.num_experts, dtype=torch.float32)
+                )
+            else:
+                self.local_tokens_per_expert = None
+                self.expert_bias = None
+
         self.n_group = mg_args.moe_router_num_groups if mg_args.moe_router_num_groups is not None else (
             mg_args.expert_model_parallel_size)
         self.topk_group = mg_args.moe_router_group_topk
@@ -471,7 +494,7 @@ def topk_router_routing(self, logits: torch.Tensor):
     """
     args = get_args()
     seq_length, bsz = logits.shape[:2]
-    logits = logits.view(-1, self.config.num_moe_experts)
+    logits = logits.view(-1, self.num_experts)
 
     # Apply Z-Loss
     logits = self.apply_z_loss(logits)
@@ -503,6 +526,8 @@ def topk_router_routing(self, logits: torch.Tensor):
         scores, indices = torch.topk(logits_, k=self.topk, dim=1)
         if args.norm_topk_prob:
             scores = scores / scores.sum(dim=-1, keepdim=True)
+        if self.config.moe_router_topk_scaling_factor is not None:
+            scores *= self.config.moe_router_topk_scaling_factor
         scores = torch.zeros_like(logits_).scatter(1, indices, scores)
         routing_map = torch.zeros_like(logits_).int().scatter(1, indices, 1).bool()
     elif self.routing_type == "group_limited_greedy":

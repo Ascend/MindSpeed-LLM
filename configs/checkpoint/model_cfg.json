@@ -893,6 +893,61 @@
         "final_layernorm": "model.norm",
         "output_layer": "lm_head"
       }
+    },
+    "longcat": {
+      "__base__": "base",
+      "config_set_value": {
+        "qkv_type": "pack_mla",
+        "transformerlayer_type": "longcat",
+        "multi_latent_attention": true,
+        "qk_layernorm": true
+      },
+      "config_hf_key_mapping": {
+        "num_layers": "num_layers",
+        "num_key_value_heads": "num_attention_heads",
+        "intermediate_size": "ffn_hidden_size",
+        "moe_intermediate_size": "expert_ffn_hidden_size",
+        "num_experts": "n_routed_experts",
+        "kv_lora_rank": "kv_lora_rank",
+        "q_lora_rank": "q_lora_rank",
+        "qk_head_dim": "qk_nope_head_dim",
+        "qk_pos_emb_head_dim": "qk_rope_head_dim",
+        "v_head_dim": "v_head_dim",
+        "tie_word_embeddings": "None",
+        "torch_dtype": "None",
+        "num_zero_experts": "zero_expert_num"
+      },
+      "model_hf_key_mapping": {
+        "layers_input_layernorm0": "model.layers[layer_idx].input_layernorm.0",
+        "layers_self_attention0_linear_q_proj": "model.layers[layer_idx].self_attn.0.q_a_proj",
+        "layers_self_attention0_linear_kv_proj": "model.layers[layer_idx].self_attn.0.kv_a_proj_with_mqa",
+        "layers_self_attention0_linear_proj": "model.layers[layer_idx].self_attn.0.o_proj",
+        "layers_self_attention0_linear_q_up_proj": "model.layers[layer_idx].self_attn.0.q_b_proj",
+        "layers_self_attention0_linear_kv_up_proj": "model.layers[layer_idx].self_attn.0.kv_b_proj",
+        "layers_self_attention0_q_layernorm": "model.layers[layer_idx].self_attn.0.q_a_layernorm",
+        "layers_self_attention0_kv_layernorm": "model.layers[layer_idx].self_attn.0.kv_a_layernorm",
+        "layers_self_attention0_pre_mlp_layernorm": "model.layers[layer_idx].post_attention_layernorm.0",
+        "layers_mlp_router": "model.layers[layer_idx].mlp.router.classifier",
+        "layers_mlp_experts_gate_proj": "model.layers[layer_idx].mlp.experts[expert_idx].gate_proj",
+        "layers_mlp_experts_up_proj": "model.layers[layer_idx].mlp.experts[expert_idx].up_proj",
+        "layers_mlp_experts_linear_fc2": "model.layers[layer_idx].mlp.experts[expert_idx].down_proj",
+        "layers_mlp0_gate_proj": "model.layers[layer_idx].mlps.0.gate_proj",
+        "layers_mlp0_up_proj": "model.layers[layer_idx].mlps.0.up_proj",
+        "layers_mlp0_linear_fc2": "model.layers[layer_idx].mlps.0.down_proj",
+
+        "layers_input_layernorm1": "model.layers[layer_idx].input_layernorm.1",
+        "layers_self_attention1_linear_q_proj": "model.layers[layer_idx].self_attn.1.q_a_proj",
+        "layers_self_attention1_linear_kv_proj": "model.layers[layer_idx].self_attn.1.kv_a_proj_with_mqa",
+        "layers_self_attention1_linear_proj": "model.layers[layer_idx].self_attn.1.o_proj",
+        "layers_self_attention1_linear_q_up_proj": "model.layers[layer_idx].self_attn.1.q_b_proj",
+        "layers_self_attention1_linear_kv_up_proj": "model.layers[layer_idx].self_attn.1.kv_b_proj",
+        "layers_self_attention1_q_layernorm": "model.layers[layer_idx].self_attn.1.q_a_layernorm",
+        "layers_self_attention1_kv_layernorm": "model.layers[layer_idx].self_attn.1.kv_a_layernorm",
+        "layers_self_attention1_pre_mlp_layernorm": "model.layers[layer_idx].post_attention_layernorm.1",
+        "layers_mlp1_gate_proj": "model.layers[layer_idx].mlps.1.gate_proj",
+        "layers_mlp1_up_proj": "model.layers[layer_idx].mlps.1.up_proj",
+        "layers_mlp1_linear_fc2": "model.layers[layer_idx].mlps.1.down_proj"
+      }
     }
   }
 }

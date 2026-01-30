@@ -28,6 +28,8 @@ class MoERouter(MindSpeedFeature):
                             help="fix router for load balancing.")
         group.add_argument("--topk-softmax-in-fp32", action='store_true',
                             help="topk softmax in fp32.")
+        group.add_argument('--num-zero-experts', type=int, default=None,
+                       help='Number of Experts in MoE (None means no MoE)')
 
     def pre_validate_args(self, args):
         self.origin_spec = None
@@ -92,8 +94,14 @@ class MoERouter(MindSpeedFeature):
                                       topk_router_gating_func)
         patch_manager.register_patch('megatron.core.transformer.moe.router.z_loss_func', 
                                       z_loss_func)
-        # add moe layer forward patch for deepseekv2
-        if not (args.moe_allgather_overlap_comm or args.moe_alltoall_overlap_comm):
+        if args.num_zero_experts:
+            # add moe layer forward patch for longcat-flash-chat
+            from mindspeed_llm.tasks.models.transformer.zero_experts_moe_layer import zero_experts_moe_layer_init_wrapper, zero_experts_moe_forward
+            patch_manager.register_patch('megatron.core.transformer.moe.moe_layer.MoELayer.__init__', zero_experts_moe_layer_init_wrapper)
+            patch_manager.register_patch('megatron.core.transformer.moe.moe_layer.MoELayer.forward', zero_experts_moe_forward)
+
+        elif not (args.moe_allgather_overlap_comm or args.moe_alltoall_overlap_comm):
+            # add moe layer forward patch for deepseekv2
             patch_manager.register_patch('megatron.core.transformer.moe.moe_layer.MoELayer.forward',
                                           moe_layer_forward)
         # add topk softmax in fp32 in topk_softmax_with_capacity

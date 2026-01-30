@@ -134,6 +134,14 @@ class CustomMLASelfAttention(SelfAttention):
         self.mla_mm_split = args.mla_mm_split
         self.mla_fa_without_pad = args.mla_fa_without_pad
 
+        self.mla_scale_q_lora = None
+        if args.enable_mla_scale_q_lora:
+            self.mla_scale_q_lora = (self.config.hidden_size / self.q_lora_rank) ** 0.5
+        
+        self.mla_scale_kv_lora = None
+        if args.enable_mla_scale_kv_lora:
+            self.mla_scale_kv_lora = (self.config.hidden_size / self.kv_lora_rank) ** 0.5
+
         self.enable_mla_absorb = args.enable_mla_absorb
 
         # NOTE:Current implementation only supports sparse attention mode 
@@ -347,6 +355,9 @@ class CustomMLASelfAttention(SelfAttention):
             else:
                 if self.q_layernorm is not None:
                     q_compressed = self.q_layernorm(q_compressed)
+                    if self.mla_scale_q_lora is not None:
+                        q_compressed = q_compressed * self.mla_scale_q_lora
+
                     if not self.mla_mm_split:
                         q, _ = self.linear_q_up_proj(q_compressed)
                         q = q.view(q_len, bsz, self.num_attention_heads_per_partition, -1)
@@ -371,6 +382,9 @@ class CustomMLASelfAttention(SelfAttention):
 
                 k_pos_emb = k_pos_emb.view(q_len, bsz, 1, self.qk_pos_emb_head_dim)
                 compressed_kv_norm = self.kv_layernorm(kv_compressed)
+
+                if self.mla_scale_kv_lora is not None:
+                    compressed_kv_norm = compressed_kv_norm * self.mla_scale_kv_lora
 
                 if not self.mla_mm_split:
                     kv, _ = self.linear_kv_up_proj(compressed_kv_norm)

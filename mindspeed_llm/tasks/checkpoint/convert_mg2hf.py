@@ -63,7 +63,7 @@ class Mg2HfConvert(Convert):
         self.expert_model_parallel_size = self.load_model.expert_model_parallel_size
         self.first_k_dense_replace = self.get_first_k_dense_replace()
         self.n_shared_experts = getattr(self.load_model, "n_shared_experts", None)
-        self.expert_tensor_parallel_size = getattr(self.load_model, "expert_tensor_parallel_size", self.tensor_model_parallel_size)
+        self.expert_tensor_parallel_size = getattr(self.load_model, "expert_tensor_parallel_size", None)
         self.tp_rank_list = list(range(self.load_model.tensor_model_parallel_size))
         self.ep_rank_list = list(range(self.load_model.expert_model_parallel_size))
         self.pp_rank_list = list(range(self.load_model.pipeline_model_parallel_size))
@@ -102,9 +102,7 @@ class Mg2HfConvert(Convert):
         self._valid_parameter()
         
     def check_etp_conflict(self):
-        if self.expert_tensor_parallel_size is None:
-            self.expert_tensor_parallel_size = self.tensor_model_parallel_size
-        if self.expert_tensor_parallel_size != 1 and self.expert_tensor_parallel_size != self.tensor_model_parallel_size:
+        if self.expert_tensor_parallel_size is not None and self.expert_tensor_parallel_size != 1:
             raise ValueError("Currently expert-tensor-parallel-size is only support to be set to 1 or None")
         if self.expert_tensor_parallel_size == 1:
             if self.tensor_model_parallel_size % self.expert_model_parallel_size != 0 and self.expert_model_parallel_size % self.tensor_model_parallel_size != 0:

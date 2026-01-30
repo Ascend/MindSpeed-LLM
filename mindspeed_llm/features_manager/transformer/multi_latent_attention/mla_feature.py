@@ -27,6 +27,10 @@ class MLAFeature(MindSpeedFeature):
                             help='Flash attn support mla with seperate q and k.')
         group.add_argument('--enable-mla-absorb', action='store_true', default=False,
                             help='Enable MLA up-projection matrix absorption.')
+        group.add_argument('--enable-mla-scale-q-lora', action='store_true', default=False,
+                            help='Enable MLA q lora scaling.')
+        group.add_argument('--enable-mla-scale-kv-lora', action='store_true', default=False,
+                            help='Enable MLA kv lora scaling.')    
         group.add_argument('--use-sparse-flash-attn', action='store_true', default=False,
                             help='Use sparse attention in multi-latent-attention.')
                             
