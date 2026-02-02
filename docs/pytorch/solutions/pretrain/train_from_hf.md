@@ -16,7 +16,7 @@
 
 通过检测加载目录中的权重文件，当加载目录中存在 `.safetensors` 文件或者 mamba 模型的 `.bin` 格式文件，并且用户未显式设置转换标志，系统会自动开启权重转换，无需手动配置其他参数，将 HuggingFace 权重转换为 Megatron 格式权重用于训练，并在训练每次保存分布式权重后，将其转为 HuggingFace 格式权重。
 
-当`--load`参数指定为 HuggingFace 权重路径时，需包含config.json等文件用于读取参数配置。如果未指定 `--model-type-hf` 参数，系统会尝试读取 `{load}/config.json` 文件从配置文件自动推断匹配支持的模型类型，请注意，对于mamba模型需要手动配置此参数。
+当`--load`参数指定为 HuggingFace 权重路径时，需包含`config.json`等文件用于读取参数配置。如果未指定 `--model-type-hf` 参数，系统会尝试读取 `{load}/config.json` 文件从配置文件自动推断匹配支持的模型类型，请注意，对于mamba模型需要手动配置此参数。
 
 
 #### 快速开始
@@ -39,7 +39,7 @@
 ```bash
 # 从 HuggingFace 格式加载，自动转换为 Megatron 格式进行训练
 --enable-hf2mg-convert \
---model-type-hf <model_type> \
+--model-type-hf <model_type>
 ```
 
 
@@ -51,7 +51,7 @@
 # 训练时同时保存两种格式的权重，作用等同于自动启用双向转换
     --enable-hf2mg-convert \
     --enable-mg2hf-convert \
-    --model-type-hf <model_type> \
+    --model-type-hf <model_type>
 ```
 
 
@@ -62,7 +62,7 @@
 ```bash
 # 将训练过程中每次保存的 Megatron 格式权重转换为 HuggingFace 格式
     --enable-mg2hf-convert \
-    --model-type-hf  <model_type> \
+    --model-type-hf  <model_type>
 ```
 
 **场景4：仅转换最终保存模型为 HuggingFace 格式**
@@ -70,10 +70,10 @@
 在`pretrain_xxx.sh` 或者`tune_xxx.sh`的预训练和微调脚本中，增加以下参数来开启权重转换：
 
 ```bash
-# 仅将训练结束后保存的 Megatron 格式权重为 HuggingFace 格式，不转换训练中间过程保存的 Megatron 格式权重
+# 仅将训练结束后保存的 Megatron 格式权重转换为 HuggingFace 格式，不转换训练中间过程保存的 Megatron 格式权重
     --enable-mg2hf-convert \
     --only-convert-last-checkpoint \
-    --model-type-hf  <model_type> \
+    --model-type-hf  <model_type>
 ```
 
 **参数说明**
@@ -163,7 +163,7 @@ DATA_PATH="/path/your_dataset/xxx.parquet"
 CKPT_LOAD_DIR="/path/to/huggingface_model/Qwen3-8B"
 --data-path DATA_PATH \
 --load CKPT_LOAD_DIR \
---enable-hf2mg-convert \ 
+--enable-hf2mg-convert \
 --model-type-hf qwen3 \
 --handler-name AlpacaStyleInstructionHandler \
 --prompt-type qwen3 \
