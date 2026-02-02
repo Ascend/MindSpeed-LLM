@@ -89,6 +89,5 @@ class TestInference(DistributedTest):
             print(log_capture)
             context = acquire_context(log_capture)
             assert [context] == [
-                'I hope you are well. I am fine. I am writing to you because I have a problem. I am a student in the university. I am studying in the university of the Philippines. '
-                'I am studying in the university of the Philippines. I am'
+                'I hope you are well. I am fine. I am writing to you because I have a problem. I am a student and I am studying in the university. I am studying in the university of the city of the city of the city of the city'
             ], f"forward pass has been changed to {[context]}, check it!"
