@@ -1,8 +1,8 @@
 # LoRA 微调迁移开发
 
-MindSpeed LLM支持在微调任务上使用LoRA进行低参数训练，使用方法为在基准任务上加上lora参数进行使能。
+MindSpeed LLM支持在微调任务上使用LoRA进行低参数训练，使用方法为在基准任务上加上LoRA参数进行使能。
 
-本教程旨在为用户提供模型LoRA微调迁移开发指导。接下来以Qwen3-8B模型和单台`Atlas 900 A2 POD`（1x8集群）为例，逐步说明如何进行lora微调脚本开发。
+本教程旨在为用户提供模型LoRA微调迁移开发指导。接下来以Qwen3-8B模型和单台`Atlas 900 A2 POD`（1x8集群）为例，逐步说明如何进行LoRA微调脚本开发。
 
 在按照如下步骤操作前，需要先参考[安装指导](../install_guide.md)完成环境安装，并准备好模型权重和微调数据集。模型权重下载请参考[Dense模型](../models/dense_model.md)、[MOE模型](../models/moe_model.md)和[SSM模型](../models/ssm_model.md)文档中对应模型的下载链接。数据集下载请参考[Alpaca风格数据集](../solutions/finetune/datasets/alpaca_dataset.md)、[ShareGPT风格数据集](../solutions/finetune/datasets/sharegpt_dataset.md)和[Pairwise风格数据集](../solutions/finetune/datasets/pairwise_dataset.md)文档中数据集下载章节的内容。
 
@@ -76,7 +76,7 @@ LoRA微调需要在全参微调脚本基础上，在TUNE_ARGS中增加LoRA参数
 --lora-fusion \
 --lora-target-modules linear_qkv linear_proj linear_fc1 linear_fc2 \
 ......
-| tee logs/tune_qwen3_8b_4K_full_ptd.log # 对应日志文件名称
+| tee logs/tune_qwen3_8b_4K_lora_ptd.log # 对应日志文件名称
 ```
 
 微调脚本相关参数说明：
@@ -88,7 +88,7 @@ LoRA微调需要在全参微调脚本基础上，在TUNE_ARGS中增加LoRA参数
 上述参数配置完成后运行LoRA微调脚本：
 
 ```shell
-bash examples/mcore/qwen3/tune_qwen3_8b_4K_full_ptd.sh
+bash examples/mcore/qwen3/tune_qwen3_8b_4K_lora_ptd.sh
 ```
 
 ## 4、LoRA推理脚本开发
@@ -160,10 +160,10 @@ bash examples/mcore/qwen3/evaluate_qwen3_8b_lora_ptd.sh
 --lora-load ${CHECKPOINT_LORA}  \
 --lora-r 16 \
 --lora-alpha 32 \
---lora-target-modules linear_qkv linear_proj linear_fc1 linear_fc2 \
+--lora-target-modules linear_qkv linear_proj linear_fc1 linear_fc2
 ```
 
-以Qwen3-8B为例，若希望将lora权重合并后转换为Hugging Face格式，对应的权重转换脚本可命名为`ckpt_convert_qwen3_mcore2hf_lora.sh`。
+以Qwen3-8B为例，若希望将LoRA权重合并后转换为Hugging Face格式，对应的权重转换脚本可命名为`ckpt_convert_qwen3_mcore2hf_lora.sh`。
 
 ```shell
 source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路径
@@ -182,7 +182,7 @@ python convert_ckpt.py
     --lora-r 16 \
     --lora-alpha 32 \
     --lora-target-modules linear_qkv linear_proj linear_fc1 linear_fc2 \
-    --model-type-hf qwen3 \
+    --model-type-hf qwen3
 ```
 
 路径参数设置完毕后，运行权重转换脚本：
@@ -199,7 +199,7 @@ bash examples/mcore/qwen3/ckpt_convert_qwen3_mcore2hf_lora.sh
 Qwen3-8B对应的V1权重转换脚本示例：
 
 ```shell
-source /usr/local/Ascend/ascend-toolkit/set_env.sh # 修改为实际安装的Toolkit包路径
+source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路径
 
 python convert_ckpt.py
     --use-mcore-models \
@@ -213,5 +213,5 @@ python convert_ckpt.py
     --save-dir ./model_weights/qwen3_mcore/ \                    # Megatron权重保存路径
     --tokenizer-model ./model_from_hf/qwen3_hf/tokenizer.json \  # HF权重分词器模型文件路径
     --model-type-hf qwen3 \
-    --params-dtype bf16 \
+    --params-dtype bf16
 ```

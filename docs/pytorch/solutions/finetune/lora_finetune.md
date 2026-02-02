@@ -128,7 +128,7 @@ PP=2                                      # 权重转换时target-pipeline-paral
 第六步，启动LoRA微调脚本。参数配置完毕后，如果是单机运行场景，只需要在一台机器上启动LoRA微调脚本：
 
 ```shell
-bash examples/mcore/qwen3/tune_qwen3_8b_4K_full_ptd.sh
+bash examples/mcore/qwen3/tune_qwen3_8b_4K_lora_ptd.sh
 ```
 
 如果是多机运行，则需要在单机的脚本上修改以下参数：
@@ -139,7 +139,7 @@ bash examples/mcore/qwen3/tune_qwen3_8b_4K_full_ptd.sh
 NPUS_PER_NODE=8  # 每个节点的卡数
 MASTER_ADDR="your master node IP"  # 都需要修改为主节点的IP地址（不能为localhost）
 MASTER_PORT=6000
-NNODES=2  # 集群里的节点数，以实际情况填写,
+NNODES=2  # 集群里的节点数，以实际情况填写
 NODE_RANK="current node id"  # 当前节点的RANK，多个节点不能重复，主节点为0, 其他节点可以是1,2..
 WORLD_SIZE=$(($NPUS_PER_NODE * $NNODES))
 ```
