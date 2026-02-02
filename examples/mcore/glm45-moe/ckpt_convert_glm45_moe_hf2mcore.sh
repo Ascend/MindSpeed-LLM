@@ -5,7 +5,6 @@ export CUDA_DEVICE_MAX_CONNECTIONS=1
 # 权重格式转换
 python convert_ckpt_v2.py \
    --model-type-hf glm45-moe \
-   --post-norm \
    --load-model-type hf \
    --save-model-type mg \
    --target-tensor-parallel-size 8 \

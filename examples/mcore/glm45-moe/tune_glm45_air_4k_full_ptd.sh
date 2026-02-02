@@ -105,7 +105,6 @@ MODEL_PARALLEL_ARGS="
 GPT_ARGS="
     --use-mcore-models \
     --mtp-num-layers 1 \
-    --post-norm \
     --kv-channels 128 \
     --num-layers 46 \
     --hidden-size 4096 \
