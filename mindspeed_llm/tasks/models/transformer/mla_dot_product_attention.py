@@ -30,9 +30,12 @@ class MlaDotProductAttention(DotProductAttention):
             attention_dropout=attention_dropout
         )
         args = get_args()
+        from megatron.core import parallel_state
+        self.tp_size = parallel_state.get_tensor_model_parallel_world_size()
 
         self.scale_mask_softmax.scale = True
-        self.hidden_size_per_partition = args.num_attention_heads * args.v_head_dim
+        from megatron.core.tensor_parallel.utils import divide
+        self.hidden_size_per_partition = divide(args.num_attention_heads * args.v_head_dim, self.tp_size)
         self.q_head_dim = args.qk_head_dim + args.qk_pos_emb_head_dim
         self.softmax_scale = self.q_head_dim ** (-0.5)
 

@@ -46,8 +46,15 @@ DeepSeek系列模型创造性地提出多头潜在注意力：Multi-head Latent 
 
 使用稀疏注意力sparse_flash_attention，通过Lightning Indexer选择top-k最相关的token进行注意力计算，从而在保持模型效果的同时显著减少计算量。需要配合--enable-dsa-indexer使用。
 
+【--mla-swap-core-attn-out】
+
+在使能--multi-latent-attention特性时，开启--mla-swap-core-attn-out特性对core attention输出进行预存取，从而减少内存开销。
+
 ## 使用约束
 
 【--multi-latent-attention】
 
 如果使用MLA特性，需要在shell脚本里面指定支持MLA的spec(目前仓上支持MLA的spec有[deepseek_spec](mindspeed_llm/tasks/models/spec/deepseek_spec.py) 、[minicpm_spec](mindspeed_llm/tasks/models/spec/minicpm_spec.py))，同时shell里面添加--multi-latent-attention特性。
+
+【--mla-swap-core-attn-out】
+如果使用--mla-swap-core-attn-out特性，需要同时使能--moe-fb-overlap和dualpipev特性。

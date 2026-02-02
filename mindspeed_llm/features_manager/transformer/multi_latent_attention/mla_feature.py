@@ -48,3 +48,21 @@ class MLAFeature(MindSpeedFeature):
             elif args.qk_head_dim is None:
                 raise AssertionError('The parameter qk-head-dim should be set when use multi_head_latent_attention.'
                 )
+
+            if args.padded_base_length < 1:
+                raise AssertionError('The value of padded_base_length cannot be less than 1.')
+            if args.mla_up_proj_tp_overlap:
+                if not args.mla_mm_split:
+                    raise ValueError('--mla-up-proj-tp-overlap can only be used with mla-mm-split by now')
+                if not args.sequence_parallel:
+                    raise ValueError('--mla-up-proj-tp-overlap should be used with sequence parallel')
+            if args.recompute_mla_up_proj:
+                if not args.mla_up_proj_tp_overlap:
+                    raise ValueError('--recompute-mla-up-proj can only be used with --mla-up-proj-tp-overlap')
+                if args.mla_zero_memory:
+                    raise ValueError('--recompute-mla-up-proj is incompatible with --mla-zero-memory')
+            if args.mla_swap_core_attn_out:
+                if args.schedules_method != "dualpipev":
+                    raise AssertionError('--mla-swap-core-attn-out can only be used with dualpipev by now.')
+                if not args.moe_fb_overlap:
+                    raise AssertionError('--mla-swap-core-attn-out can only be used with --moe-fb-overlap by now.')
