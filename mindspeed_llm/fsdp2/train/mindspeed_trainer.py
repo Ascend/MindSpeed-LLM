@@ -1,3 +1,4 @@
+import os
 import torch
 import torch.distributed as dist
 import time
@@ -11,6 +12,7 @@ from mindspeed_llm.fsdp2.utils.dist_op import all_reduce
 from mindspeed_llm.fsdp2.data.data_factory import DataManager
 from mindspeed_llm.fsdp2.distributed.clip_grad_norm import clip_grad_norm
 from mindspeed_llm.fsdp2.utils.logging import get_logger
+from mindspeed_llm.fsdp2.checkpoint.utils import empty_cache, dcp_to_torch_state_dict, cleanup_old_checkpoints
 from mindspeed_llm.fsdp2.utils.profiler import ProfilerConfig, ProfilerManager
 from mindspeed_llm.fsdp2.data.processor.processor_utils import IGNORE_INDEX
 
@@ -85,14 +87,16 @@ class Trainer:
         else:
             reduce_group = None
 
-        # 1. Calculate total steps
+        # 1. Calculate total steps and current step in the epoch
         steps_in_epoch = len(train_dataloader)
         # Calculate total updates per epoch considering gradient accumulation
         total_updates_per_epoch = steps_in_epoch // args.gradient_accumulation_steps + int(
             steps_in_epoch % args.gradient_accumulation_steps > 0
         )
         total_steps = args.max_steps if args.max_steps > 0 else (total_updates_per_epoch * args.num_train_epochs)
-        
+        epochs_trained = 0
+        steps_trained_in_current_epoch = 0
+        save_checkpoint_path = None
         # Calculate global batch size safely
         global_batch_size = args.per_device_train_batch_size * args.gradient_accumulation_steps * ps.get_group_size('dp_fsdp')
 
@@ -103,9 +107,35 @@ class Trainer:
         logger.info_rank0(f"  Gradient Accumulation steps = {args.gradient_accumulation_steps}")
         logger.info_rank0(f"  Total optimization steps = {total_steps}")
 
-        # 2. Resume from checkpoint logic
+        # 2. Resume training from checkpoint
         if resume_from_checkpoint:
-            pass
+            # Prepare state dict containing model, optimizer and extra state
+            state = {"model": self.model, "optimizer": self.optimizer, "extra_state": {}}
+            # Load checkpoint from the specified path
+            self.ckpt_manager.load(resume_from_checkpoint, state)
+            extra_state = state.get("extra_state", {})
+            
+            if extra_state:
+                # Restore training step counters
+                self.global_step = state["extra_state"]["global_step"]
+                self._globalstep_last_logged = state['extra_state']['_globalstep_last_logged']
+
+                # Calculate completed epochs and steps within current epoch based on global step
+                epochs_trained = int(self.global_step // total_updates_per_epoch)
+                steps_trained_in_current_epoch = self.global_step % total_updates_per_epoch
+                
+                # Restore learning rate scheduler and RNG state for reproducibility
+                self.lr_scheduler.load_state_dict(state["extra_state"]["lr_scheduler"])
+                torch.set_rng_state(state["extra_state"]["torch_rng_state"])
+
+                # Synchronize all processes before continuing
+                dist.barrier()
+                logger.info_rank0(f"Load distributed checkpoint from {resume_from_checkpoint} successfully!")
+                logger.info_rank0(f"Resuming from epoch {epochs_trained}, step {steps_trained_in_current_epoch}")
+                logger.info_rank0(f"Global step = {self.global_step}")
+            else:
+                # No extra state found, only model weights were loaded, start from scratch
+                logger.info_rank0("Loaded model weights only, starting training from step 0")
 
         self.model.train()
         train_start_time = time.time()
@@ -116,8 +146,6 @@ class Trainer:
             self.profiler_manager.start()
 
         # --- Epoch Loop ---
-        epochs_trained = int(self.global_step // total_updates_per_epoch)
-
         for epoch in range(epochs_trained, int(args.num_train_epochs)):
             self.epoch = epoch
 
@@ -133,8 +161,26 @@ class Trainer:
                 remainder = args.gradient_accumulation_steps
 
             total_updates = total_updates_per_epoch
+            # Calculate the starting update_step for this epoch
+            # If resuming in the first epoch after checkpoint, start from steps_trained_in_current_epoch
+            # Otherwise start from 0
+            if epoch == epochs_trained and steps_trained_in_current_epoch > 0:
+                # Calculate number of batches to skip (accounting for gradient accumulation)
+                steps_to_skip = steps_trained_in_current_epoch * args.gradient_accumulation_steps
+                logger.info_rank0(f"  Skipping {steps_to_skip} batches in epoch {epoch}")
+                
+                # Skip already trained batches by advancing the iterator
+                for _ in range(steps_to_skip):
+                    try:
+                        next(epoch_iterator)
+                    except StopIteration:
+                        break
+                
+                start_update_step = steps_trained_in_current_epoch
+            else:
+                start_update_step = 0
 
-            for update_step in range(total_updates):
+            for update_step in range(start_update_step, total_updates):
                 # Determine how many micro-batches are in this update
                 num_batches = args.gradient_accumulation_steps if update_step != (total_updates - 1) else remainder
 
@@ -205,19 +251,65 @@ class Trainer:
 
                 # 5. Saving
                 if args.save_steps > 0 and self.global_step % args.save_steps == 0:
-                    self._save_checkpoint()
+                    if not args.output_dir:
+                        logger.info_rank0("output_dir is not set, skipping checkpoint saving")
+                    else:
+                        empty_cache()
+                        save_checkpoint_path = os.path.join(args.output_dir, "checkpoints", f"global_step_{self.global_step}")
+                        state = {
+                            "model": self.model,
+                            "optimizer": self.optimizer,
+                            "extra_state": {
+                                "global_step": self.global_step,
+                                "_globalstep_last_logged": self._globalstep_last_logged,
+                                "lr_scheduler": self.lr_scheduler.state_dict(),
+                                "torch_rng_state": torch.get_rng_state(),
+                            },
+                        }
+                        self.ckpt_manager.save(path=save_checkpoint_path, state=state, save_only_model=args.save_only_model, global_steps=self.global_step)
+                        dist.barrier()
+                        logger.info_rank0(f"Distributed checkpoint saved at {save_checkpoint_path} successfully!")
+                        cleanup_old_checkpoints(args)
 
                 if self.global_step >= total_steps:
                     break
-            
-            if self.global_step >= total_steps: break
-        # Final Save
-        self._save_checkpoint()
+            # Reset counter after completing an epoch
+            steps_trained_in_current_epoch = 0
+            # Save checkpoint at specified epoch intervals
+            if args.save_epochs and (epoch + 1) % args.save_epochs == 0:
+                if not args.output_dir:
+                    logger.info_rank0("output_dir is not set, skipping checkpoint saving")
+                else:
+                    empty_cache()
+                    save_checkpoint_path = os.path.join(args.output_dir, "checkpoints", f"global_step_{self.global_step}")
+                    state = {
+                        "model": self.model,
+                        "optimizer": self.optimizer,
+                        "extra_state": {
+                            "global_step": self.global_step,
+                            "_globalstep_last_logged": self._globalstep_last_logged,
+                            "lr_scheduler": self.lr_scheduler.state_dict(),
+                            "torch_rng_state": torch.get_rng_state(),
+                        },
+                    }
+                    self.ckpt_manager.save(path=save_checkpoint_path, state=state, save_only_model=args.save_only_model, global_steps=self.global_step)
+                    dist.barrier()
+                    logger.info_rank0(f"Distributed checkpoint saved at {save_checkpoint_path} successfully!")
+                    cleanup_old_checkpoints(args)
 
+            if self.global_step >= total_steps: break
         # Stop profiler
         if self.profiler_manager.profiler is not None:
             self.profiler_manager.stop()
-        
+        # save model in HF format
+        if dist.get_rank() == 0 and args.save_hf_weights and save_checkpoint_path is not None:
+            model_state_dict = dcp_to_torch_state_dict(save_checkpoint_path)  # convert sharded weights to HF weights
+            model_configs = [self.model.model.config, self.tokenizer]
+            self.ckpt_manager.save_model_weights(args.output_dir, model_state_dict, model_configs=model_configs)
+            logger.info_rank0(f"Huggingface checkpoint saved at {args.output_dir} successfully!")
+        if dist.get_rank() == 0 and args.output_dir:
+            self.ckpt_manager.save_args(args, args.output_dir)
+            logger.info_rank0(f"Training arguments saved at {args.output_dir} successfully!")
         logger.info_rank0(f"Training completed in {time.time() - train_start_time:.2f}s")
 
     def training_step(self, inputs: Dict[str, Any], num_items_in_batch: Optional[int]) -> torch.Tensor:
@@ -445,19 +537,6 @@ class Trainer:
             f"global batch size: {batch_size:4d} | "
             f"lm loss: {avg_loss:.4f} | "
             f"grad norm: {grad_norm:.4f}"
-        )
-
-    def _save_checkpoint(self):
-        """
-        Delegates saving to the Checkpoint Manager.
-        """
-        self.ckpt_manager.save(
-            global_step=self.global_step,
-            model=self.model,
-            optimizer=self.optimizer,
-            scheduler=self.lr_scheduler,
-            args=self.args,
-            tokenizer=self.tokenizer 
         )
 
     def _get_fsdp_root(self):

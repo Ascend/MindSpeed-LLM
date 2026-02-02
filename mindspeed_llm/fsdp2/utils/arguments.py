@@ -552,7 +552,18 @@ class TrainingArguments:
         default=False,
         metadata={"help": "use FlashAttention implementation of attention."}
     )
-
+    save_only_model: bool = field(
+        default=False, metadata={"help": "When checkpointing, whether to only save the model, or also the optimizer, scheduler & rng state."}
+    )
+    save_async: bool = field(
+        default=False, metadata={"help": "Whether to save checkpoint asynchronously."},
+    )
+    save_epochs: int = field(
+        default=1, metadata={"help": "Number of epochs between two checkpoint saves."},
+    )
+    save_hf_weights: bool = field(
+        default=True, metadata={"help": "Save the huggingface format weights to the last checkpoint dir."},
+    )
     # --- Profiling (NPU) ---
     profile: bool = field(
         default=False,
@@ -602,7 +613,6 @@ class TrainingArguments:
         default="./profile",
         metadata={"help": "Directory to save profiling traces (TensorBoard format)."}
     )
-
     def __post_init__(self):  # Path parameter validation
         if self.output_dir is None:
             raise ValueError("`output_dir` must be specified.")
