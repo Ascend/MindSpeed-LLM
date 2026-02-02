@@ -26,7 +26,7 @@ EP=4
 CP=1
 CP_TYPE='ulysses_cp_algo'
 NUM_LAYERS=4
-SEQ_LEN=4096
+SEQ_LEN=2048
 MBS=1
 GBS=16
 

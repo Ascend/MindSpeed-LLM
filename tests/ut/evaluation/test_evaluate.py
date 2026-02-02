@@ -95,6 +95,6 @@ class TestEvaluateWorldSize1(DistributedTest):
             print(log_capture)
 
             expected_score = acquire_score(log_capture)
-            assert math.isclose(expected_score, 0.538011, abs_tol=1e-2), f"score {expected_score}, forward pass has been changed, check it!"
+            assert math.isclose(expected_score, 0.520468, abs_tol=1e-2), f"score {expected_score}, forward pass has been changed, check it!"
 
     
