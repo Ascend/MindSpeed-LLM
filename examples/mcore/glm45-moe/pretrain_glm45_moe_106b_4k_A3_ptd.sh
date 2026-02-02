@@ -57,7 +57,6 @@ GPT_ARGS="
     --use-mcore-models \
     --use-flash-attn \
     --mtp-num-layers 1 \
-    --post-norm \
     --kv-channels 128 \
     --use-fused-rmsnorm \
     --use-fused-swiglu \

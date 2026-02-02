@@ -61,7 +61,6 @@ GPT_ARGS="
     --disable-bias-linear \
     --add-qkv-bias \
     --swiglu \
-    --post-norm \
     --norm-epsilon 1e-05 \
     --hidden-dropout 0.0 \
     --attention-dropout 0.0 \
