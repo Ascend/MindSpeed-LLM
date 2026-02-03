@@ -58,65 +58,46 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
 
 ### 2.2.1 使用配套镜像安装
 
+使用镜像前请先确定机器型号，最新镜像只支持aarch64系统，先通过uname -a确认自身系统是aarch64，Atlas 800T A2 训练服务器请选择openeuler22.03-mindspeed-llm-2.2.0-a2-arm 镜像，Atlas 900 A3 SuperPoD服务器请选择openeuler22.03-mindspeed-llm-2.2.0-a3-arm 镜像。
 本仓库在昇腾社区提供aarch64系统的配套镜像，且镜像已安装CANN 8.3.RC1和配套torch_npu插件，您可以按需使用。
 如果您的环境与提供的镜像不兼容，也可以[使用自定义环境安装](#222-使用自定义环境安装)。
 
-**1.镜像下载**
+**1.拉取镜像**
 
 - 最新镜像区分A2、A3机型，均配套MindSpeed-LLM的2.2.0分支。
+  - openeuler22.03-mindspeed-llm-2.2.0-a2-arm 镜像版本匹配 [MindSpeed-LLM的2.2.0分支](https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.2.0)
+  
+  - openeuler22.03-mindspeed-llm-2.2.0-a3-arm 镜像版本匹配 [MindSpeed-LLM的2.2.0分支](https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.2.0)
 
-- 最新镜像只支持aarch64系统，先通过uname -a确认自身系统是aarch64，再按需[下载镜像](https://www.hiascend.com/developer/ascendhub/detail/e26da9266559438b93354792f25b2f4a)。
-
-**2.镜像加载**
+- 按需[拉取镜像](https://www.hiascend.com/developer/ascendhub/detail/e26da9266559438b93354792f25b2f4a)。
 
 ```bash
-# 挂载镜像,
-docker load -i 镜像.tar
-# 确认挂载是否成功                          
+# 确认是否成功拉取镜像
 docker image list
 ```
 
-**3.创建容器**
+**2.创建容器**
 
 注意当前默认配置驱动和固件安装在/usr/local/Ascend，如有差异请修改指令路径。
-当前容器默认初始化npu驱动和CANN环境信息，如需要安装新的，请自行替换或手动source，详见容器的bashrc
+当前容器默认初始化npu驱动和CANN环境信息，如需要安装新的，请自行替换或手动source，详见容器的~/.bashrc
 
 ```bash
 # 挂载镜像
 docker run -dit --ipc=host --network host --name 'llm_test' --privileged -v /usr/local/Ascend/driver:/usr/local/Ascend/driver -v /usr/local/Ascend/firmware:/usr/local/Ascend/firmware -v /usr/local/sbin/:/usr/local/sbin/ -v /home/:/home/ -v /data/:/data 镜像名:标签 /bin/bash
 ```
 
-**4.进入容器并确认环境状态**
+**3.进入容器并确认环境状态**
 
 ```bash
 # 进入容器
-docker exec -it llm_test bash                           
+docker exec -it llm_test bash
 # 确认npu是否可以正常使用，否则返回3.检查配置
 npu-smi info
 ```
 
-**5.安装MindSpeed-LLM及相关依赖**
+**4.单机以及多机模型的预训练任务运行**
 
-```bash
-# 安装MindSpeed加速库
-git clone https://gitcode.com/ascend/MindSpeed.git
-cd MindSpeed
-git checkout 2.2.0_core_r0.12.1
-pip3 install -r requirements.txt
-pip3 install -e .
-cd ..
-
-# 准备MindSpeed-LLM及Megatron-LM源码
-git clone https://gitcode.com/ascend/MindSpeed-LLM.git
-git clone https://github.com/NVIDIA/Megatron-LM.git  # megatron从github下载，请确保网络能访问
-cd Megatron-LM
-git checkout core_v0.12.1
-cp -r megatron ../MindSpeed-LLM/
-cd ../MindSpeed-LLM
-git checkout 2.2.0
-
-pip3 install -r requirements.txt  # 安装其余依赖库
-```
+进入容器后会进入conda环境llm_test，并且工作目录切换到/MindSpeed-LLM/MindSpeed-LLM,该目录下为MindSpeed-LLM的2.2.0分支代码仓，用户可直接参考[基于PyTorch后端的预训练](https://gitcode.com/Ascend/MindSpeed-LLM/blob/2.2.0/docs/quick_start.md#3-%E5%9F%BA%E4%BA%8Epytorch%E5%90%8E%E7%AB%AF%E7%9A%84%E9%A2%84%E8%AE%AD%E7%BB%83)进行训练。
 
 ### 2.2.2 使用自定义环境安装
 
@@ -174,3 +155,7 @@ git checkout 2.2.0
 
 pip3 install -r requirements.txt  # 安装其余依赖库
 ```
+
+**4.单机以及多机模型的预训练任务运行**
+
+参考[基于PyTorch后端的预训练](https://gitcode.com/Ascend/MindSpeed-LLM/blob/2.2.0/docs/quick_start.md#3-%E5%9F%BA%E4%BA%8Epytorch%E5%90%8E%E7%AB%AF%E7%9A%84%E9%A2%84%E8%AE%AD%E7%BB%83)进行训练。
