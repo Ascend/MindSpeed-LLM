@@ -43,7 +43,7 @@ megatron原生的分布式优化器数据流及工作原理如下图：
 
 MindIO的功能以whl包的形式提供
 
-mindio_ttp下载地址：[MindIO TTP 下载软件包-昇腾社区](https://www.hiascend.com/document/detail/zh/mindx-dl/600/clusterscheduling/ref/mindioacp/mindioacp009.html)
+mindio_ttp下载地址：[MindIO TTP 下载软件包-昇腾社区](https://www.hiascend.com/document/detail/zh/mindcluster/730/clustersched/dlug/mindiotft009.html)
 
 
 ### 启动脚本中添加启动参数
@@ -85,4 +85,11 @@ mindio_ttp下载地址：[MindIO TTP 下载软件包-昇腾社区](https://www.h
 
 4、当前缩容后不可再次缩容，扩容仅支持直接扩容回原有规模
 
-详见：[MindIO TTP 约束限制-昇腾社区](https://www.hiascend.com/document/detail/zh/mindx-dl/600/clusterscheduling/ref/mindiottp/mindiotft005.html)
+详见：[MindIO TTP 约束限制-昇腾社区](https://www.hiascend.com/document/detail/zh/mindcluster/730/clustersched/dlug/mindiotft005.html)
+
+### CheckPoint保存与加载优化
+开启enable-high-availability时，若环境上安装了MindIO ACP SDK，则会使用mindio_acp的一级异步CheckPoint保存与加载优化
+
+安装指导：[安装MindIO ACP SDK-昇腾社区](https://www.hiascend.com/document/detail/zh/mindcluster/730/clustersched/dlug/mindioacp010.html)
+
+mindio_acp下载地址：[MindIO ACP 下载软件包-昇腾社区](https://www.hiascend.com/document/detail/zh/mindcluster/730/clustersched/dlug/mindioacp009.html)

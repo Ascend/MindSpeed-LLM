@@ -29,3 +29,11 @@ def skip_reuse_register_patches(fn, argument):
         if not argument.enable_high_availability:
             fn(self, *args, **kwargs)
     return wrapper
+
+
+def check_mindio_acp_available():
+    try:
+        import mindio_acp
+        return True
+    except Exception:
+        return False

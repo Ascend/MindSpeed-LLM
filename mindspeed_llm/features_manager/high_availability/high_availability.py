@@ -60,6 +60,9 @@ class HighAvailabilityFeature(MindSpeedFeature):
             raise AssertionError(
                 'switch of the enable elastic training is unsupported when expert-model-parallel-size, context '
                 'parallel size is set.')
+        if args.enable_high_availability and args.lora_target_modules:
+            raise AssertionError(
+                'switch of the high availability feature is unsupported, please disable lora-target-modules first.')
 
     def pre_register_patches(self, patch_manager, args):
         from mindspeed_llm.tasks.high_availability.communication_patch import communication_wrapper, barrier_wrapper
@@ -111,6 +114,17 @@ class HighAvailabilityFeature(MindSpeedFeature):
                                           distributed_optimizer_init_wrapper)
             patch_manager.register_patch('megatron.core.pipeline_parallel.schedules.get_forward_backward_func',
                                           high_availability_get_forward_backward_func_wrapper)
+            from mindspeed_llm.core.high_availability.tft_acp_compatibility import (
+                distrib_optimizer_load_parameter_state_patch, chained_optimizer_load_parameter_state_patch,
+                checkpointing_load_base_checkpoint_patch, initialize_model_parallel_wrapper)
+            patch_manager.register_patch('megatron.core.optimizer.optimizer.ChainedOptimizer.load_parameter_state',
+                                          chained_optimizer_load_parameter_state_patch)
+            patch_manager.register_patch('megatron.core.optimizer.distrib_optimizer.DistributedOptimizer.load_parameter_state',
+                                          distrib_optimizer_load_parameter_state_patch)
+            patch_manager.register_patch('megatron.training.checkpointing._load_base_checkpoint',
+                                          checkpointing_load_base_checkpoint_patch)
+            patch_manager.register_patch('megatron.core.parallel_state.initialize_model_parallel',
+                                          initialize_model_parallel_wrapper)
             if args.reuse_fp32_param:
                 from mindspeed.core.memory.reuse_param.adaptor import reuse_fp32_param_init_wrapper, optimizer_config_init_wrapper
                 patch_manager.register_patch('megatron.core.optimizer.optimizer.Float16OptimizerWithFloat16Params.__init__',

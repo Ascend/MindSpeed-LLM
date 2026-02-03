@@ -10,6 +10,7 @@ from megatron.core.optimizer.clip_grads import clip_grad_by_total_norm_fp32
 from megatron.core.optimizer.optimizer import MegatronOptimizer
 from mindio_ttp.framework_ttp import tft_start_updating_os, tft_end_updating_os
 from mindio_ttp.utils import tft_set_update_start_time, tft_set_update_end_time
+from mindspeed_llm.tasks.high_availability.high_availability_helper import check_mindio_acp_available
 
 from .tft_optimizer_data_repair import set_log_args
 
@@ -140,7 +141,11 @@ class TTPReplicaChainedOptimizer(ChainedOptimizer):
                     states.append(None)
 
         if save_states:
-            torch.save(states, filename)
+            if check_mindio_acp_available():
+                import mindio_acp
+                mindio_acp.save(states, filename)
+            else:
+                torch.save(states, filename)
 
     def send_optim_param_state(self, dst, group, optim_idx):
         if optim_idx >= self.optim_nums:

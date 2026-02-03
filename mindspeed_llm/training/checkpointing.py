@@ -252,7 +252,12 @@ def save_checkpoint_wrapper(fn):
                     state_dict = filter_lora_keys(state_dict)
                 # Save.
                 ensure_directory_exists(checkpoint_name)
-                torch.save(state_dict, checkpoint_name)
+                from mindspeed_llm.tasks.high_availability.high_availability_helper import check_mindio_acp_available
+                if args.enable_high_availability and check_mindio_acp_available():
+                    import mindio_acp
+                    mindio_acp.save(state_dict, checkpoint_name)
+                else:
+                    torch.save(state_dict, checkpoint_name)
         start_misc = time.time()
         if not args.async_save:
             if async_save_request is not None:

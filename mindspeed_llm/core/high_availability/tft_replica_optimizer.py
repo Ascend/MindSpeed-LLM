@@ -14,6 +14,7 @@ from megatron.core.optimizer.grad_scaler import MegatronGradScaler
 from megatron.core.optimizer.optimizer_config import OptimizerConfig
 from megatron.core.transformer.module import MegatronModule
 from megatron.training import get_args
+from mindspeed_llm.tasks.high_availability.high_availability_helper import check_mindio_acp_available
 
 ttp_logger = getLogger(__name__)
 from mindio_ttp.framework_ttp import tft_start_updating_os, tft_end_updating_os
@@ -360,7 +361,11 @@ class TTPReplicaOptimizer(DistributedOptimizer):
             self.save_parameter_state_scale_in_running(filename, cur_rank, state_dict)
         else:
             if torch.distributed.get_rank(self.ori_dp_group) == 0:
-                torch.save(state_dict, filename)
+                if check_mindio_acp_available():
+                    import mindio_acp
+                    mindio_acp.save(state_dict, filename)
+                else:
+                    torch.save(state_dict, filename)
                 ttp_logger.info(f"normal rank: {cur_rank} successfully saved parameters")
 
     def begin_to_update(self, iteration):
