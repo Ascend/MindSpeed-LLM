@@ -58,4 +58,5 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS inference.py \
        --exit-on-missing-checkpoint \
        --seed 42 \
        --fp16 \
+       --transformer-impl local \
        | tee logs/generate_mcore_chatglm3_6B.log

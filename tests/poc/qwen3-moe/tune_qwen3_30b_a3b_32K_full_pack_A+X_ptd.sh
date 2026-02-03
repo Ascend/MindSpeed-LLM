@@ -182,4 +182,5 @@ torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     $MODEL_PARALLEL_ARGS \
     $CKPT_ARGS \
     --distributed-backend nccl \
+    --transformer-impl local \
     | tee logs/tune_qwen3_30b_a3b_32K_full_pack.log

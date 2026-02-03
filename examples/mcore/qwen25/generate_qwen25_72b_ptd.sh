@@ -60,5 +60,6 @@ torchrun $DISTRIBUTED_ARGS inference.py \
        --make-vocab-size-divisible-by 1 \
        --padded-vocab-size 152064 \
        --bf16 \
+       --transformer-impl local \
        --seed 42 | tee logs/generate_mcore_qwen25_72b.log
 

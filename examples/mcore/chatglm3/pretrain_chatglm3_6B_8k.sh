@@ -102,4 +102,5 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     $DATA_ARGS \
     $OUTPUT_ARGS \
     --distributed-backend nccl \
+    --transformer-impl local \
     | tee logs/train_mcore_chatglm3_6B_8K.log

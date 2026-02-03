@@ -194,4 +194,5 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS posttrain_gpt.py \
     $DSA_ARGS \
     $FINETUNE_ARGS \
     $OTHERS_ARGS \
+    --transformer-impl local \
     --distributed-backend nccl | tee logs/tune_deepseek32_671b_128k_A3_ptd.log

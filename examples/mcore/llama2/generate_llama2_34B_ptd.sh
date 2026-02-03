@@ -50,6 +50,7 @@ torchrun $DISTRIBUTED_ARGS inference.py \
        --vocab-size 32000 \
        --group-query-attention \
        --num-query-groups 8 \
+       --transformer-impl local \
        | tee logs/generate_llama2_34b_mcore.log
 
 

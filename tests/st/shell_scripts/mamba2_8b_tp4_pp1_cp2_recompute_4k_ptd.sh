@@ -137,4 +137,5 @@ torchrun ${DISTRIBUTED_ARGS[@]} $basepath/pretrain_mamba.py \
     $DATA_ARGS \
     $OUTPUT_ARGS \
     --load ${CKPT_LOAD_DIR} \
+    --transformer-impl local \
     --distributed-backend nccl

@@ -67,4 +67,5 @@ torchrun $DISTRIBUTED_ARGS evaluation.py \
        --exit-on-missing-checkpoint \
        --no-load-rng \
        --no-load-optim \
+       --transformer-impl local \
        | tee logs/evaluation_mcore_qwen25_7b_${TASK}.log

@@ -53,4 +53,5 @@ torchrun $DISTRIBUTED_ARGS evaluation.py   \
        --no-load-optim \
        --untie-embeddings-and-output-weights \
        --seed 42 \
+       --transformer-impl local \
        | tee logs/eval_mcore_chatglm3_6B_${TASK}.log

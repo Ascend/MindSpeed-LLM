@@ -140,4 +140,5 @@ torchrun  $DISTRIBUTED_ARGS pretrain_gpt.py \
     $CKPT_ARGS \
     $TRAIN_ARGS \
     $MOE_ARGS \
+    --transformer-impl local \
     --distributed-backend nccl

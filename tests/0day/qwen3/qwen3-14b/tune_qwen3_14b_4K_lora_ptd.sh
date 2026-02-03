@@ -130,4 +130,5 @@ torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     $TUNE_ARGS \
     $MODEL_PARALLEL_ARGS \
     --distributed-backend nccl \
+    --transformer-impl local \
     | tee logs/tune_qwen3_14b_lora_ptd.log

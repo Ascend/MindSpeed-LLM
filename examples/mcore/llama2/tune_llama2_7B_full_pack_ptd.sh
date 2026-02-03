@@ -95,4 +95,5 @@ torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     $OUTPUT_ARGS \
     --distributed-backend nccl \
     --save $CKPT_SAVE_DIR \
+    --transformer-impl local \
     | tee logs/tune_llama2_7b.log

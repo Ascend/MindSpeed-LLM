@@ -50,4 +50,5 @@ torchrun $DISTRIBUTED_ARGS evaluation.py \
     --no-masked-softmax-fusion \
     --make-vocab-size-divisible-by 32 \
     --use-mcore-models \
+    --transformer-impl local \
     --seed 42 | tee logs/eval_baichuan2_13b_mcore_${TASK}.log

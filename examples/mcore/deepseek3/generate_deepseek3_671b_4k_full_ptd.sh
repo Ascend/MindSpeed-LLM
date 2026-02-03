@@ -127,4 +127,5 @@ torchrun $DISTRIBUTED_ARGS inference.py \
     $MOE_ARGS \
     --load ${CHECKPOINT} \
     --distributed-backend nccl \
+    --transformer-impl local \
     | tee logs/generate_deepseek3_671B_full_512.log

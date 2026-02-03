@@ -103,4 +103,5 @@ msrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     $GPT_ARGS \
     $DATA_ARGS \
     $OUTPUT_ARGS \
+    --transformer-impl local \
     --distributed-backend nccl

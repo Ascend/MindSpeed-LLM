@@ -94,4 +94,5 @@ torchrun $DISTRIBUTED_ARGS evaluation.py \
          $MOE_ARGS \
          $GPT_ARGS \
          --load ${CHECKPOINT} \
+        --transformer-impl local \
         | tee logs/evaluate_qwen3_30b_a3b_ptd.log

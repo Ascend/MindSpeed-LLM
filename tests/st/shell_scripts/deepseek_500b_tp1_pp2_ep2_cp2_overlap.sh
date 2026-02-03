@@ -138,4 +138,5 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS $basepath/pretrain_gpt.py \
     ${OUTPUT_ARGS} \
     ${MEMORY_ARGS} \
     --log-throughput \
+    --transformer-impl local \
     --distributed-backend nccl

@@ -201,4 +201,5 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS $basepath/pretrain_gpt.py \
     $DSA_ARGS \
     $OTHERS_ARGS \
     --load $CKPT_LOAD_DIR \
+    --transformer-impl local \
     --distributed-backend nccl

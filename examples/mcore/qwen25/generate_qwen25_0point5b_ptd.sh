@@ -60,4 +60,5 @@ torchrun $DISTRIBUTED_ARGS inference.py \
        --attention-softmax-in-fp32 \
        --seed 42 \
        --bf16 \
+       --transformer-impl local \
        | tee logs/generate_mcore_qwen25_0point5b.log

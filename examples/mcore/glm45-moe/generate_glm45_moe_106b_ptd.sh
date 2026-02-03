@@ -85,4 +85,5 @@ torchrun ${DISTRIBUTED_ARGS} inference.py \
          ${GPT_ARGS} \
          --load ${CHECKPOINT}  \
          --distributed-backend nccl \
+         --transformer-impl local \
          | tee logs/generate_glm45_moe_106b_mcore.log

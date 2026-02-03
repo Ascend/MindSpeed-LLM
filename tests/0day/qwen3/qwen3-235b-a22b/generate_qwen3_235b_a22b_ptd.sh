@@ -98,4 +98,5 @@ torchrun $DISTRIBUTED_ARGS inference.py \
          $GPT_ARGS \
          --load ${CHECKPOINT} \
          --distributed-backend nccl \
+         --transformer-impl local \
          | tee logs/generate_mcore_qwen3_30b_a3b.log

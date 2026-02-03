@@ -176,4 +176,5 @@ torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     --load ${CKPT_LOAD_DIR} \
     --save ${CKPT_SAVE_DIR} \
     --distributed-backend nccl \
+    --transformer-impl local \
     | tee logs/tune_mcore_qwen3_480b_A3.log

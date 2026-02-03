@@ -112,4 +112,5 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     $DATA_ARGS \
     $OUTPUT_ARGS \
     --distributed-backend nccl \
+    --transformer-impl local \
     | tee logs/train_llama31_mcore_50b_128k.log

@@ -52,4 +52,5 @@ torchrun $DISTRIBUTED_ARGS evaluation.py \
        --make-vocab-size-divisible-by 1 \
        --group-query-attention \
        --num-query-groups 8 \
+       --transformer-impl local \
        --seed 42  | tee logs/evaluation_llama2_34b_mcore_${TASK}.log

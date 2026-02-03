@@ -100,4 +100,5 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     --save ${CKPT_SAVE_DIR} \
     --load ${CKPT_LOAD_DIR}  \
     --log-throughput \
+    --transformer-impl local \
     | tee logs/train_llama2_13b_pack_o2.log

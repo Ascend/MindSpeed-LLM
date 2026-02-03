@@ -119,4 +119,5 @@ torchrun ${DISTRIBUTED_ARGS[@]} $basepath/pretrain_gpt.py \
     --load ${CKPT_LOAD_DIR} \
     --finetune \
     --log-throughput \
+    --transformer-impl local \
     --distributed-backend nccl

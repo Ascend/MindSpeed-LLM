@@ -97,4 +97,5 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     --distributed-backend nccl \
     --save $CKPT_SAVE_DIR \
     --log-throughput \
+    --transformer-impl local \
     | tee logs/train_llama2_13b_pack.log

@@ -7,5 +7,6 @@ SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 export PYTHONPATH=$SCRIPT_DIR/../../..:$PYTHONPATH
 PROJECT_PATH=$SCRIPT_DIR/../../..
 
+--transformer-impl local \
 python "$PROJECT_PATH"/rlhf_gpt.py --config-dir="$PROJECT_PATH"/tests/pipeline/rlhf/configs --config-name=test_grpo_qwen25_7b
 

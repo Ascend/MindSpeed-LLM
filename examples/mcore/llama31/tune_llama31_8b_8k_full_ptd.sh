@@ -106,4 +106,5 @@ torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     $DATA_ARGS \
     $OUTPUT_ARGS \
     --distributed-backend nccl \
+    --transformer-impl local \
     | tee logs/tune_llama31_8b_8k_full_ptd.log

@@ -102,4 +102,5 @@ torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     --log-throughput \
     --load ${CKPT_LOAD_DIR} \
     --save ${CKPT_SAVE_DIR} \
+    --transformer-impl local \
     | tee logs/train_mcore_qwen25_0point5b_4k_full_ptd.log

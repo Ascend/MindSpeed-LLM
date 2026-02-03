@@ -95,4 +95,5 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     $OUTPUT_ARGS \
     --distributed-backend nccl \
     --save ${CKPT_SAVE_DIR} \
+    --transformer-impl local \
     | tee logs/train_baichuan2_13b_mcore.log

@@ -150,4 +150,5 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     $RECOMPUTE_ARGS \
     --load ${CKPT_LOAD_DIR} \
     --distributed-backend nccl \
+    --transformer-impl local \
     | tee logs/train_hunyuanLarge_389b_mcore.log

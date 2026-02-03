@@ -118,4 +118,5 @@ torchrun $DISTRIBUTED_ARGS postrain_gpt.py \
     --log-throughput \
     --load ${CKPT_LOAD_DIR} \
     --save ${CKPT_SAVE_DIR} \
+    --transformer-impl local \
     | tee logs/tune_mcore_qwen25_0point5b_4k_lora.log

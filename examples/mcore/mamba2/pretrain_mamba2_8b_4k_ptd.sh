@@ -113,4 +113,5 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_mamba.py \
     $DATA_ARGS \
     $OUTPUT_ARGS \
     --distributed-backend nccl \
+    --transformer-impl local \
     | tee logs/pretrain_mamba2_8b_4k_ptd.log

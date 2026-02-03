@@ -52,5 +52,6 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS inference.py \
        --use-mcore-models \
        --use-kv-cache \
        --use-flash-attn \
+       --transformer-impl local \
        | tee logs/generate_mcore_llama2_13b.log
 

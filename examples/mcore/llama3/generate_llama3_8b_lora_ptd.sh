@@ -58,4 +58,5 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS inference.py \
        --rotary-base 500000 \
        --group-query-attention \
        --num-query-groups 8 \
+       --transformer-impl local \
        | tee logs/generate_llama3_8b_lora.log

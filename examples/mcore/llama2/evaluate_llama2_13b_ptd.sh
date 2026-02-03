@@ -52,4 +52,5 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS evaluation.py   \
        --no-masked-softmax-fusion \
        --make-vocab-size-divisible-by 1 \
        --use-mcore-models \
+       --transformer-impl local \
        --seed 42  | tee logs/evaluation_llama2_13b_${TASK}.log

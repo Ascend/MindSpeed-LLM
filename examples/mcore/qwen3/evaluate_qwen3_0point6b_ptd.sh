@@ -71,4 +71,5 @@ torchrun $DISTRIBUTED_ARGS evaluation.py \
          --num-query-groups 8 \
          --seed 42 \
          --bf16 \
+         --transformer-impl local \
          | tee logs/evaluate_qwen3_0point6b.log

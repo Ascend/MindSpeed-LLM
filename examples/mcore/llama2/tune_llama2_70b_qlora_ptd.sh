@@ -115,4 +115,5 @@ torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     --save $CKPT_SAVE_DIR \
     --log-throughput \
     --distributed-backend nccl \
+    --transformer-impl local \
     | tee logs/tune_llama2_70b_mocre_qlora.log

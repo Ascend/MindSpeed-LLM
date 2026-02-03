@@ -68,4 +68,5 @@ torchrun ${DISTRIBUTED_ARGS} evaluation.py   \
        --no-load-optim \
        --bf16 \
        --seed 42 \
+       --transformer-impl local \
        | tee logs/evaluate_glm_z1_32b_mcore_${TASK}.log

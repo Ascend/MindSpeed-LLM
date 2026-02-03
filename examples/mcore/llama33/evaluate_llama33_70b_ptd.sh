@@ -59,4 +59,5 @@ torchrun $DISTRIBUTED_ARGS evaluation.py \
        --make-vocab-size-divisible-by 1 \
        --padded-vocab-size 128256 \
        --bf16  \
+       --transformer-impl local \
        --seed 42 | tee logs/evaluation_llama33_70b_mcore_${TASK}.log

@@ -131,4 +131,5 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     ${DATA_ARGS} \
     ${CKPT_ARGS} \
     ${OUTPUT_ARGS} \
+    --transformer-impl local \
     --distributed-backend nccl | tee logs/pretrain_llama2_70b_128k_mcore_256die_A3_pack.log

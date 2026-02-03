@@ -168,4 +168,5 @@ torchrun $DISTRIBUTED_ARGS $basepath/pretrain_gpt.py \
     $MOE_ARGS \
     $MTP_ARGS \
     --load $CKPT_LOAD_DIR \
+    --transformer-impl local \
     --distributed-backend nccl

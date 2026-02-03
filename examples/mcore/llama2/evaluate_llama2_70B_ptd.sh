@@ -49,4 +49,5 @@ torchrun $DISTRIBUTED_ARGS evaluation.py \
        --untie-embeddings-and-output-weights \
        --no-masked-softmax-fusion \
        --make-vocab-size-divisible-by 1 \
+       --transformer-impl local \
        --seed 42 | tee logs/eval_llama2_70b_mcore_${TASK}.log

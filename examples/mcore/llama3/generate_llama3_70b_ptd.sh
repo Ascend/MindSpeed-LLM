@@ -53,5 +53,6 @@ torchrun $DISTRIBUTED_ARGS inference.py \
        --make-vocab-size-divisible-by 16032 \
        --bf16 \
        --seed 42 \
+       --transformer-impl local \
        | tee logs/generate_mcore_llama3_70b.log
 

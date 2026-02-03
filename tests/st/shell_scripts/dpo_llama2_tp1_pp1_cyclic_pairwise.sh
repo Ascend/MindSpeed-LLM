@@ -104,4 +104,5 @@ torchrun ${DISTRIBUTED_ARGS[@]} $basepath/posttrain_gpt.py \
     ${OUTPUT_ARGS[@]} \
     --load ${CKPT_LOAD_DIR} \
     --finetune \
+    --transformer-impl local \
     --distributed-backend nccl

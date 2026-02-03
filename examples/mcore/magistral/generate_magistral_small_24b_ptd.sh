@@ -62,4 +62,5 @@ torchrun $DISTRIBUTED_ARGS inference.py \
        --load ${CHECKPOINT} \
        --exit-on-missing-checkpoint \
        --bf16 \
+       --transformer-impl local \
        | tee logs/generate_magistral_small_24b.log

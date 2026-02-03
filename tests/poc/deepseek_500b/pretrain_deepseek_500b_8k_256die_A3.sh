@@ -134,4 +134,5 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     ${DATA_ARGS} \
     ${OUTPUT_ARGS} \
     --distributed-backend nccl \
+    --transformer-impl local \
     | tee logs/pretrain_deepseek_500b_8k_256die_mcore_A3.log

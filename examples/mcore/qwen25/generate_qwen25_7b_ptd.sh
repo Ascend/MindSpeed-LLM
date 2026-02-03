@@ -62,4 +62,5 @@ torchrun $DISTRIBUTED_ARGS inference.py \
        --seed 42 \
        --load ${CHECKPOINT} \
        --exit-on-missing-checkpoint \
+       --transformer-impl local \
        | tee logs/generate_mcore_qwen25_7b.log

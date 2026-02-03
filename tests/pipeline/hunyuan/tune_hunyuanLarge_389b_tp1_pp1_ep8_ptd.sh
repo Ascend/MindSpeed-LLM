@@ -160,4 +160,5 @@ torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     $FITUNE_ARGS \
     $RECOMPUTE_ARGS \
     --load ${CKPT_LOAD_DIR} \
+    --transformer-impl local \
     --distributed-backend nccl

@@ -102,4 +102,5 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     --log-throughput \
     --load ${CKPT_LOAD_DIR} \
     --save ${CKPT_SAVE_DIR} \
+    --transformer-impl local \
     | tee logs/train_mcore_qwen3_0point6b.log

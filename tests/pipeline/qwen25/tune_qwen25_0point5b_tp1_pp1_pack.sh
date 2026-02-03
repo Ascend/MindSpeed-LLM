@@ -113,4 +113,5 @@ torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     $TUNE_ARGS \
     --distributed-backend nccl \
     --log-throughput \
+    --transformer-impl local \
     --load ${CKPT_LOAD_DIR}

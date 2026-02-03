@@ -163,4 +163,5 @@ torchrun $DISTRIBUTED_ARGS $basepath/pretrain_gpt.py \
     --distributed-backend nccl
 
 #!/bin/bash
+--transformer-impl local \
 rm -rf ${PROFILE_DIR}

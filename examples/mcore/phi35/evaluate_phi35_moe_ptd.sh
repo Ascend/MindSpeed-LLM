@@ -88,4 +88,5 @@ torchrun $DISTRIBUTED_ARGS evaluation.py \
     --no-load-rng \
     --seed 42 \
     --bf16 \
+    --transformer-impl local \
     | tee logs/evaluate_mcore_phi35_moe.log

@@ -102,4 +102,5 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     --save ${CKPT_SAVE_DIR} \
     --long-factor ${LONG_FACTOR} \
     --short-factor ${SHORT_FACTOR} \
+    --transformer-impl local \
     | tee logs/train_phi35_mini_mcore.log

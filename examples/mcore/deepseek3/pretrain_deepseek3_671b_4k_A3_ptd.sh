@@ -192,4 +192,5 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     $MTP_ARGS \
     --save $CKPT_SAVE_DIR \
     --load $CKPT_LOAD_DIR \
+    --transformer-impl local \
     --distributed-backend nccl | tee logs/pretrain_deepseek3_671b_4k_A3_ptd.log

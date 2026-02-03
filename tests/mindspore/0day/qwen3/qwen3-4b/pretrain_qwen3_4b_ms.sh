@@ -121,4 +121,5 @@ msrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     $OPTIMIZE_ARGS \
     $TRAIN_ARGS \
     $MODEL_PARALLEL_ARGS \
+    --transformer-impl local \
     --distributed-backend nccl

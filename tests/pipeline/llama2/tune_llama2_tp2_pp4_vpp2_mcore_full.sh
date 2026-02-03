@@ -104,4 +104,5 @@ torchrun ${DISTRIBUTED_ARGS[@]} $basepath/posttrain_gpt.py \
     ${DATA_ARGS[@]} \
     ${OUTPUT_ARGS[@]} \
     --log-throughput \
+    --transformer-impl local \
     --distributed-backend nccl

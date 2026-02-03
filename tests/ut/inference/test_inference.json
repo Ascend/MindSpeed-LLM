@@ -36,7 +36,8 @@
                 "fp16": null,
                 "task":"greedy",
                 "npu-deterministic": null,
-                "prompt-type": "llama2"
+                "prompt-type": "llama2",
+                "transformer-impl": "local"
             }
         }
     ],
@@ -116,7 +117,8 @@
                 "rope-scaling-mscale": 1.0,
                 "rope-scaling-mscale-all-dim": 1.0,
                 "rope-scaling-original-max-position-embeddings": 4096,
-                "rope-scaling-type": "yarn"
+                "rope-scaling-type": "yarn",
+                "transformer-impl": "local"
             }
         }
     ],
@@ -162,7 +164,8 @@
                 "bf16": null,
                 "task":"greedy",
                 "seed": 42,
-                "npu-deterministic": null
+                "npu-deterministic": null,
+                "transformer-impl": "local"
             }
         }
     ]

@@ -125,6 +125,7 @@ torchrun $DISTRIBUTED_ARGS $basepath/pretrain_gpt.py \
     --distributed-backend nccl
 
 mv $training_file.back $training_file
+--transformer-impl local \
 mv $stop_clean_file.back $stop_clean_file
 
 

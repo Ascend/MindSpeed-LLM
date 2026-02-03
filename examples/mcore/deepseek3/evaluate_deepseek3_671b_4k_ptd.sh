@@ -136,4 +136,5 @@ torchrun $DISTRIBUTED_ARGS evaluation.py \
     --task ${TASK} \
     --no-chat-template \
     --distributed-backend nccl \
+    --transformer-impl local \
     | tee logs/evaluation_deepseek3_671b.log

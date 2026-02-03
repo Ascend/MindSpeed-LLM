@@ -165,4 +165,5 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS posttrain_gpt.py \
     $MEMORY_ARGS \
     --load $CKPT_LOAD_DIR \
     --distributed-backend nccl \
+    --transformer-impl local \
     | tee logs/tune_dpo_ling_1t_32k.log

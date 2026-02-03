@@ -99,4 +99,5 @@ msrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     $OUTPUT_ARGS \
     --distributed-backend nccl \
     --log-throughput \
+    --transformer-impl local \
     --load ${CKPT_LOAD_DIR}

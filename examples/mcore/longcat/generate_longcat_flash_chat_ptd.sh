@@ -135,4 +135,5 @@ torchrun $DISTRIBUTED_ARGS inference.py \
     $MODEL_PARALLEL_ARGS \
     --load ${CKPT_LOAD_DIR} \
     --distributed-backend nccl \
+    --transformer-impl local \
     | tee logs/generate_mcore_longcat_ptd.log

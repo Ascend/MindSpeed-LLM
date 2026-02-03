@@ -102,4 +102,5 @@ torchrun ${DISTRIBUTED_ARGS} pretrain_gpt.py \
     --load ${CKPT_LOAD_DIR} \
     --save ${CKPT_SAVE_DIR} \
     --distributed-backend nccl \
+    --transformer-impl local \
     | tee logs/pretrain_glm_z1_rumination_32b_0414.log

@@ -120,5 +120,6 @@ torchrun $DISTRIBUTED_ARGS $basepath/posttrain_gpt.py \
     --distributed-backend nccl \
     --enable-hf2mg-convert \
     --model-type-hf llama2 \
+    --transformer-impl local \
     --mg-save-dir ${MG_CACHE_DIR} \
 

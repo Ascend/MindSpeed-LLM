@@ -52,4 +52,5 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS inference.py \
        --make-vocab-size-divisible-by 1 \
        --use-mcore-models \
        --dynamic-factor 6.0 \
+       --transformer-impl local \
        | tee logs/generate_internlm3_8b.log

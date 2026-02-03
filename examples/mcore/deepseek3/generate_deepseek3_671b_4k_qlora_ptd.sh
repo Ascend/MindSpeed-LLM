@@ -131,4 +131,5 @@ torchrun $DISTRIBUTED_ARGS inference.py \
     --load ${CHECKPOINT} \
     --lora-load ${QLORA_CHECKPOINT} \
     --distributed-backend nccl \
+    --transformer-impl local \
     | tee logs/generate_deepseek3_671b_4K_qlora.log

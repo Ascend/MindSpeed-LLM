@@ -59,4 +59,5 @@ torchrun $DISTRIBUTED_ARGS inference.py \
        --exit-on-missing-checkpoint \
        --attention-softmax-in-fp32 \
        --seed 42 \
+       --transformer-impl local \
        | tee logs/generate_mcore_qwen25_14b.log

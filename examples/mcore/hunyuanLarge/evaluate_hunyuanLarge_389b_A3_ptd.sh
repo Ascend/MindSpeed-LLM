@@ -105,4 +105,5 @@ torchrun $DISTRIBUTED_ARGS evaluation.py \
     --load ${CHECKPOINT} \
     --distributed-backend nccl \
     --broadcast \
+    --transformer-impl local \
     | tee logs/evaluate_hunyuanLarge_389b_mmlu.log

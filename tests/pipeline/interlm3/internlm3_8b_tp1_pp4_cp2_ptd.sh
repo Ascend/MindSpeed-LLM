@@ -112,4 +112,5 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     $OUTPUT_ARGS \
     --distributed-backend nccl \
     --distributed-timeout-minutes 10 \
+    --transformer-impl local \
     --load ${CKPT_LOAD_DIR}

@@ -193,4 +193,5 @@ torchrun ${DISTRIBUTED_ARGS[@]} $basepath/pretrain_gpt.py \
     $TRAIN_ARGS \
     $MODEL_PARALLEL_ARGS \
     --load  ${CKPT_LOAD_DIR} \
+    --transformer-impl local \
     --distributed-backend nccl

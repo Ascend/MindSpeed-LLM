@@ -104,4 +104,5 @@ torchrun $DISTRIBUTED_ARGS inference.py \
     $OPTIMIZE_ARGS \
     $CHAT_ARGS \
     --load ${CHECKPOINT} \
+    --transformer-impl local \
     | tee logs/generate_hunyuanLarge_389b.log

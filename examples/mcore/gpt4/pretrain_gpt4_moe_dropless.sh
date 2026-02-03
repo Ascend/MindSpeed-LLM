@@ -129,4 +129,5 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     $CKPT_ARGS \
     $OUTPUT_ARGS \
     --distributed-backend nccl \
+    --transformer-impl local \
     | tee logs/pretrain_gpt4_mcore_moe_dropless_tp${TP}_pp${PP}_ep${EP}_cp${CP}_layer${NUM_LAYERS}.log

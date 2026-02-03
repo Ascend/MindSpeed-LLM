@@ -185,4 +185,5 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     $MODEL_PARALLEL_ARGS \
     $PROFILE_ARGS \
     --distributed-backend nccl \
+    --transformer-impl local \
     | tee logs/pretrain_mcore_longcat_ptd_128K.log

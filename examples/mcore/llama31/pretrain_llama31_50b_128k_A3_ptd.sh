@@ -116,4 +116,5 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     $OUTPUT_ARGS \
     --distributed-backend nccl \
     --save ${CKPT_SAVE_DIR} \
+    --transformer-impl local \
     | tee logs/train_llama31_mcore_50b_128k.log

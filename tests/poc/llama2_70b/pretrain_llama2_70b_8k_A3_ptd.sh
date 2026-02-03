@@ -104,4 +104,5 @@ python3 -m torch.distributed.launch ${DISTRIBUTED_ARGS} pretrain_gpt.py \
     --distributed-backend nccl \
     --load ${CKPT_LOAD_DIR} \
     --save ${CKPT_SAVE_DIR} \
+    --transformer-impl local \
     | tee logs/train_llama2_70b_8k_A3_ptd.log

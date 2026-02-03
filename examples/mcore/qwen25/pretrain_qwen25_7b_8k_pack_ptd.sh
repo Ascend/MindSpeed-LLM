@@ -113,4 +113,5 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     $DATA_ARGS \
     $CKPT_ARGS \
     $OUTPUT_ARGS \
+    --transformer-impl local \
     --distributed-backend nccl | tee pretrain_qwen25_7b_8K_pack_ptd.log

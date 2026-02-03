@@ -164,4 +164,5 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     --distributed-backend nccl \
     --save $CKPT_SAVE_DIR \
     --load $CKPT_LOAD_DIR \
+    --transformer-impl local \
     | tee logs/pretrain_kimi2_18b_4k_ptd.log

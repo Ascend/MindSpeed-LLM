@@ -30,7 +30,8 @@
                 "load":"/data/ci/models/llama2/mg/llama2-tp8pp1",
                 "tokenizer-type":"PretrainedFromHF",
                 "tokenizer-name-or-path":"/data/ci/models/llama2/hf/llama-2-7b-hf",
-                "npu-deterministic": null
+                "npu-deterministic": null,
+                "transformer-impl": "local"
             }
         }
     ],
@@ -66,7 +67,8 @@
                 "load":"/data/ci/models/llama2/mg/llama2-tp8pp1",
                 "tokenizer-type":"PretrainedFromHF",
                 "tokenizer-name-or-path":"/data/ci/models/llama2/hf/llama-2-7b-hf",
-                "npu-deterministic": null
+                "npu-deterministic": null,
+                "transformer-impl": "local"
             }
         }
     ],
@@ -118,7 +120,8 @@
                 "rope-scaling-original-max-position-embeddings": 32768,
                 "rope-scaling-type": "yarn",
                 "use-flash-attn": null,
-                "bf16": null
+                "bf16": null,
+                "transformer-impl": "local"
             }
         }
     ],
@@ -162,7 +165,8 @@
                 "attention-softmax-in-fp32": null,
                 "seed": 42,
                 "bf16": null,
-                "no-chat-template": null
+                "no-chat-template": null,
+                "transformer-impl": "local"
             }
         }
     ],
@@ -206,7 +210,8 @@
                 "attention-softmax-in-fp32": null,
                 "seed": 42,
                 "bf16": null,
-                "no-chat-template": null
+                "no-chat-template": null,
+                "transformer-impl": "local"
             }
         }
     ],
@@ -250,7 +255,8 @@
                 "attention-softmax-in-fp32": null,
                 "seed": 42,
                 "bf16": null,
-                "no-chat-template": null
+                "no-chat-template": null,
+                "transformer-impl": "local"
             }
         }
     ],
@@ -294,7 +300,8 @@
                 "attention-softmax-in-fp32": null,
                 "seed": 42,
                 "bf16": null,
-                "no-chat-template": null
+                "no-chat-template": null,
+                "transformer-impl": "local"
             }
         }
     ],
@@ -338,7 +345,8 @@
                 "attention-softmax-in-fp32": null,
                 "seed": 42,
                 "bf16": null,
-                "no-chat-template": null
+                "no-chat-template": null,
+                "transformer-impl": "local"
             }
         }
     ],
@@ -382,7 +390,8 @@
                 "attention-softmax-in-fp32": null,
                 "seed": 42,
                 "bf16": null,
-                "no-chat-template": null
+                "no-chat-template": null,
+                "transformer-impl": "local"
             }
         }
     ]

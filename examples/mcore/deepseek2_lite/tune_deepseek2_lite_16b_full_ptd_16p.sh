@@ -161,4 +161,5 @@ torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     $FITUNE_ARGS \
     --distributed-backend nccl \
     --save $CKPT_SAVE_DIR \
+    --transformer-impl local \
     | tee ./logs/tune_deepseek2_lite_ptd_16p.log

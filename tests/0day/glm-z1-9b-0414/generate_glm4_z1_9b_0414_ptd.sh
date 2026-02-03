@@ -62,4 +62,5 @@ torchrun ${DISTRIBUTED_ARGS} inference.py \
        --exit-on-missing-checkpoint \
        --seed 42 \
        --bf16 \
+       --transformer-impl local \
        | tee logs/generate_GLM-4-Z1-9B-0414_mcore.log

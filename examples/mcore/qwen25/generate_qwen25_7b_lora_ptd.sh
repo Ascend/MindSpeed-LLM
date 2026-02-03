@@ -70,4 +70,5 @@ torchrun $DISTRIBUTED_ARGS inference.py \
        --group-query-attention \
        --num-query-groups 4 \
        ${LORA_ARGS} \
+       --transformer-impl local \
        | tee logs/generate_mcore_qwen25_7b_lora.log

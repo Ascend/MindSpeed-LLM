@@ -190,4 +190,5 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS posttrain_gpt.py \
     $MOE_ARGS \
     $FINETUNE_ARGS \
     --distributed-backend nccl \
+    --transformer-impl local \
     | tee tune_deepseek3_671b_4k_full_A3_256_ptd.log

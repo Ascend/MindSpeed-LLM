@@ -186,4 +186,5 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     $MOE_ARGS \
     $MTP_ARGS \
     --distributed-backend nccl \
+    --transformer-impl local \
     | tee logs/pretrain_deepseek3_60b_4k_A3_ptd.log

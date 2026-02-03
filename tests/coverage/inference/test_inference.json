@@ -36,7 +36,8 @@
                 "fp16": null,
                 "task":"greedy",
                 "npu-deterministic": null,
-                "prompt-type": "llama2"
+                "prompt-type": "llama2",
+                "transformer-impl": "local"
             }
         }
     ],
@@ -78,7 +79,8 @@
                 "fp16": null,
                 "task":"do_sample",
                 "npu-deterministic": null,
-                "prompt-type": "llama2"
+                "prompt-type": "llama2",
+                "transformer-impl": "local"
             }
         }
     ],
@@ -120,7 +122,8 @@
                 "fp16": null,
                 "task":"beam_search",
                 "npu-deterministic": null,
-                "prompt-type": "llama2"
+                "prompt-type": "llama2",
+                "transformer-impl": "local"
             }
         }
     ],
@@ -167,7 +170,8 @@
                 "bf16": null,
                 "task":"greedy",
                 "seed": 42,
-                "npu-deterministic": null
+                "npu-deterministic": null,
+                "transformer-impl": "local"
             }
         }
     ],
@@ -213,7 +217,8 @@
                 "bf16": null,
                 "task":"beam_search_with_sampling",
                 "seed": 42,
-                "npu-deterministic": null
+                "npu-deterministic": null,
+                "transformer-impl": "local"
             }
         }
     ],
@@ -258,7 +263,8 @@
                 "bf16": null,
                 "task":"chat",
                 "seed": 42,
-                "npu-deterministic": null
+                "npu-deterministic": null,
+                "transformer-impl": "local"
             }
         }
     ],
@@ -328,7 +334,8 @@
                 "router-gating-in-fp32": null,
                 "moe-alltoall-overlap-comm": null,
                 "moe-router-score-function": "sigmoid",
-                "norm-topk-prob": null
+                "norm-topk-prob": null,
+                "transformer-impl": "local"
             }
         }
     ],
@@ -384,7 +391,8 @@
                 "rope-scaling-type": "longrope",
                 "long-factor": "1.0591234137867171,1.1241891283591912,1.2596935748670968,1.5380380402321725,2.093982484148734,3.1446935121267696,4.937952647693647,7.524541999994549,10.475458000005451,13.062047352306353,14.85530648787323,15.906017515851266,16.461961959767827,16.740306425132907,16.87581087164081,16.940876586213285",
                 "short-factor": "1.0591234137867171,1.1241891283591912,1.2596935748670968,1.5380380402321725,2.093982484148734,3.1446935121267696,4.937952647693647,7.524541999994549,10.475458000005451,13.062047352306353,14.85530648787323,15.906017515851266,16.461961959767827,16.740306425132907,16.87581087164081,16.940876586213285",
-                "top-p": 0.7
+                "top-p": 0.7,
+                "transformer-impl": "local"
             }
         }
     ]

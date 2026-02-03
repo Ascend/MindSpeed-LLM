@@ -87,4 +87,5 @@ torchrun $DISTRIBUTED_ARGS inference.py \
     --no-load-rng \
     --seed 42 \
     --bf16 \
+    --transformer-impl local \
     | tee logs/generate_mcore_phi35_moe.log

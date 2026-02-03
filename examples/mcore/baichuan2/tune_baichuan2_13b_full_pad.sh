@@ -113,4 +113,5 @@ torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     $OUTPUT_ARGS \
     --distributed-backend nccl \
     --save $CKPT_SAVE_DIR \
+    --transformer-impl local \
     | tee logs/tune_baichuan2_13b_full_pad.log

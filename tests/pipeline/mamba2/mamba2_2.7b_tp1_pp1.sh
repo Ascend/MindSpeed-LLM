@@ -120,4 +120,5 @@ torchrun $DISTRIBUTED_ARGS $basepath/pretrain_mamba.py \
     $MAMBA_ARGS \
     $DATA_ARGS \
     $OUTPUT_ARGS \
+    --transformer-impl local \
     --distributed-backend nccl \

@@ -131,4 +131,5 @@ torchrun $DISTRIBUTED_ARGS inference.py \
     $MOE_ARGS \
     --load ${CHECKPOINT} \
     --lora-load ${LORA_CHECKPOINT} \
+    --transformer-impl local \
     --distributed-backend nccl

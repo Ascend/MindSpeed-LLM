@@ -110,4 +110,5 @@ msrun ${DISTRIBUTED_ARGS} $basepath/pretrain_gpt.py \
     --load ${CKPT_LOAD_DIR} \
     --distributed-backend nccl \
     --ai-framework mindspore \
+    --transformer-impl local \
 

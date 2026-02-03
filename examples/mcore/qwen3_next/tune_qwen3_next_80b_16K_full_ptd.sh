@@ -187,4 +187,5 @@ torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     $TRAIN_ARGS \
     $MODEL_PARALLEL_ARGS \
     --distributed-backend nccl \
+    --transformer-impl local \
     | tee logs/tune_mcore_qwen3_next_80b.log

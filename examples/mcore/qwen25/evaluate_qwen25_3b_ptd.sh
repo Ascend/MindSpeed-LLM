@@ -66,4 +66,5 @@ torchrun $DISTRIBUTED_ARGS evaluation.py \
        --seed 42 \
        --bf16 \
        --no-chat-template \
+       --transformer-impl local \
        | tee logs/eval_mcore_qwen25_3b_${TASK}.log

@@ -146,4 +146,5 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     --distributed-backend nccl \
     --save $CKPT_SAVE_DIR \
     --load $CKPT_LOAD_DIR \
+    --transformer-impl local \
     | tee logs/pretrain_ling_mini_4k_ptd.log

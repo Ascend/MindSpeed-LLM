@@ -51,4 +51,5 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS inference.py \
        --seed 42 \
        --make-vocab-size-divisible-by 1 \
        --use-mcore-models \
+       --transformer-impl local \
        | tee logs/generate_internlm25_7b.log

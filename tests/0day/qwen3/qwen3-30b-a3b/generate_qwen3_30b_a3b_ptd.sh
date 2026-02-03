@@ -84,4 +84,5 @@ torchrun $DISTRIBUTED_ARGS inference.py \
          --num-query-groups 4 \
          --seed 42 \
          --bf16 \
+         --transformer-impl local \
          | tee logs/generate_mcore_qwen3_30b_a3b.log

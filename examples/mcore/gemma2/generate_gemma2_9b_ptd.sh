@@ -64,4 +64,5 @@ torchrun $DISTRIBUTED_ARGS inference.py \
        --vocab-size 256000 \
        --bf16 \
        --seed 42 \
+       --transformer-impl local \
        | tee logs/generate_gemma2_9b_mcore.log

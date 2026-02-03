@@ -70,4 +70,5 @@ torchrun $DISTRIBUTED_ARGS evaluation.py \
     --bf16 \
     --task-data-path ${DATA_PATH} \
     --task ${TASK} \
+    --transformer-impl local \
     | tee logs/evaluate_qwen3_ptd.log

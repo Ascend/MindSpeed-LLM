@@ -168,4 +168,5 @@ torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     $MODEL_PARALLEL_ARGS \
     $MEMORY_ARGS \
     --load ${CKPT_LOAD_DIR} \
+    --transformer-impl local \
     --distributed-backend nccl \

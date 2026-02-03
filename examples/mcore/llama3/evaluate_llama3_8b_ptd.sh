@@ -53,6 +53,7 @@ torchrun $DISTRIBUTED_ARGS evaluation.py \
        --untie-embeddings-and-output-weights \
        --make-vocab-size-divisible-by 16032 \
        --bf16 \
+       --transformer-impl local \
        --seed 42 | tee logs/evaluation_llama3_8b_mcore_${TASK}.log
 
 

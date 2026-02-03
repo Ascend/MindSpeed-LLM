@@ -117,4 +117,5 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     $ROPE_ARGS \
     --distributed-backend nccl \
     --save $CKPT_SAVE_DIR \
+    --transformer-impl local \
     | tee ./logs/train_plm_1point8b.log

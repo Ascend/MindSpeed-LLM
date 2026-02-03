@@ -62,4 +62,5 @@ torchrun ${DISTRIBUTED_ARGS} evaluation.py   \
        --no-gradient-accumulation-fusion \
        --make-vocab-size-divisible-by 1 \
        --seed 42 \
+       --transformer-impl local \
        | tee logs/evaluate_internlm25_7b_mcore_${TASK}.log

@@ -45,4 +45,5 @@ torchrun $DISTRIBUTED_ARGS inference.py \
        --no-gradient-accumulation-fusion \
        --exit-on-missing-checkpoint \
        --make-vocab-size-divisible-by 1 \
+       --transformer-impl local \
        | tee logs/generate_llama2_70b_mcore.log

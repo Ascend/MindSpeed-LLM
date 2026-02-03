@@ -65,4 +65,5 @@ torchrun $DISTRIBUTED_ARGS inference.py \
        --load ${CHECKPOINT} \
        --exit-on-missing-checkpoint \
        --spec mindspeed_llm.tasks.models.spec.qwen3_spec layer_spec 
+       --transformer-impl local \
        | tee logs/generate_mcore_qwen3_8b.log

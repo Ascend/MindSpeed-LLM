@@ -71,6 +71,7 @@ torchrun $DISTRIBUTED_ARGS evaluation.py \
       --bf16 \
       --long-factor ${LONG_FACTOR} \
       --short-factor ${SHORT_FACTOR} \
+      --transformer-impl local \
       | tee logs/evaluate_mcore_phi35_mini.log
 
 

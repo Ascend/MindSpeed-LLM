@@ -129,4 +129,5 @@ torchrun ${DISTRIBUTED_ARGS} pretrain_gpt.py \
     --load ${CKPT_LOAD_DIR} \
     --save ${CKPT_SAVE_DIR} \
     --distributed-backend nccl \
+    --transformer-impl local \
     | tee logs/pretrain_glm45_moe_106b_4k_mcore_A3.log

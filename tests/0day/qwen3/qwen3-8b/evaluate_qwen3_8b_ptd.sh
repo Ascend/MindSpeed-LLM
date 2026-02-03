@@ -73,4 +73,5 @@ torchrun $DISTRIBUTED_ARGS evaluation.py \
         --no-load-optim \
         --seed 42 \
         --bf16 \
+        --transformer-impl local \
         | tee logs/evaluate_qwen3_8b_ptd.log

@@ -177,5 +177,6 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS posttrain_gpt.py \
     --load ${CKPT_LOAD_DIR} \
     --save ${CKPT_SAVE_DIR} \
     --distributed-backend nccl \
+    --transformer-impl local \
     | tee logs/tune_deepseek3_671b_4k_qlora.log
 

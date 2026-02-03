@@ -117,4 +117,5 @@ python3 -m torch.distributed.launch ${DISTRIBUTED_ARGS} pretrain_gpt.py \
     ${CKPT_ARGS} \
     ${OUTPUT_ARGS} \
     --distributed-backend nccl \
+    --transformer-impl local \
     | tee logs/train_llama3_405b_32k_256die_A3.log

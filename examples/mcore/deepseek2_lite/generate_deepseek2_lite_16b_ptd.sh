@@ -94,5 +94,6 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS inference.py \
     --rope-scaling-original-max-position-embeddings 4096 \
     --rope-scaling-type yarn \
     --distributed-backend nccl \
+    --transformer-impl local \
     | tee logs/generate_deepseek2_lite.log
 

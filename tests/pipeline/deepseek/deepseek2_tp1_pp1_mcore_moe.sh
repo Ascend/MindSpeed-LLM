@@ -150,4 +150,5 @@ torchrun $DISTRIBUTED_ARGS $basepath/pretrain_gpt.py \
     $ROPE_ARGS \
     $MOE_ARGS \
     --distributed-backend nccl \
+    --transformer-impl local \
     --log-throughput

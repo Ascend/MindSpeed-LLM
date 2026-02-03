@@ -124,4 +124,5 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     --load ${CKPT_LOAD_DIR} \
     --save ${CKPT_SAVE_DIR} \
     --distributed-backend nccl \
+    --transformer-impl local \
     | tee logs/train_mcore_qwen3_4b.log

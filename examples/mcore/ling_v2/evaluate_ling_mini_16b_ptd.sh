@@ -117,4 +117,5 @@ torchrun $DISTRIBUTED_ARGS evaluation.py \
     $GQA_ARGS \
     $MOE_ARGS \
     --distributed-backend nccl \
+    --transformer-impl local \
     | tee logs/evaluation_ling_mini_16b.log

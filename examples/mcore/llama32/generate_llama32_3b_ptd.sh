@@ -58,5 +58,6 @@ torchrun $DISTRIBUTED_ARGS inference.py \
        --padded-vocab-size 128256 \
        --bf16 \
        --seed 42 \
+       --transformer-impl local \
        | tee logs/generate_mcore_llama32_3b.log
 
