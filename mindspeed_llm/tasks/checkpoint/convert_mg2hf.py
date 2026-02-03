@@ -553,14 +553,14 @@ class Mg2HfConvert(Convert):
             o_proj = torch.cat(linear_proj_list, dim=1)
 
             if self.mla_mm_split:
-                qk_nope_weight = torch.cat(qk_nope_list, dim=0).reshape(self.num_attention_heads, self.qk_nope_head_dim, -1)
-                qk_rope_weight = torch.cat(qk_rope_list, dim=0).reshape(self.num_attention_heads, self.qk_rope_head_dim, -1)
-                kv_nope_weight = torch.cat(kv_nope_list, dim=0).reshape(self.num_attention_heads, self.qk_nope_head_dim, -1)
-                linear_v_weight = torch.cat(linear_v_list, dim=0).reshape(self.num_attention_heads, self.v_head_dim, -1)
+                qk_nope_weight = torch.cat(qk_nope_list, dim=0).reshape(self.load_model.num_attention_heads, self.load_model.qk_head_dim, -1)
+                qk_rope_weight = torch.cat(qk_rope_list, dim=0).reshape(self.load_model.num_attention_heads, self.load_model.qk_pos_emb_head_dim, -1)
+                kv_nope_weight = torch.cat(kv_nope_list, dim=0).reshape(self.load_model.num_attention_heads, self.load_model.qk_head_dim, -1)
+                linear_v_weight = torch.cat(linear_v_list, dim=0).reshape(self.load_model.num_attention_heads, self.load_model.v_head_dim, -1)
                 q_b_proj = torch.cat([qk_nope_weight, qk_rope_weight], dim=1)
-                q_b_proj = q_b_proj.reshape(self.num_attention_heads * (self.qk_nope_head_dim + self.qk_rope_head_dim), -1)
+                q_b_proj = q_b_proj.reshape(self.load_model.num_attention_heads * (self.load_model.qk_head_dim + self.load_model.qk_pos_emb_head_dim), -1)
                 kv_b_proj = torch.cat([kv_nope_weight, linear_v_weight], dim=1)
-                kv_b_proj = kv_b_proj.reshape(self.num_attention_heads * (self.qk_nope_head_dim + self.v_head_dim), -1)
+                kv_b_proj = kv_b_proj.reshape(self.load_model.num_attention_heads * (self.load_model.qk_head_dim + self.load_model.v_head_dim), -1)
             else:
                 if getattr(self.load_model, 'q_lora_rank', False):
                     q_b_proj = torch.cat(linear_qb_list, dim=0)
