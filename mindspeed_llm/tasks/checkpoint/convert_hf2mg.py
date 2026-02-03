@@ -523,18 +523,18 @@ class Hf2MgConvert(Convert):
 
             if self.mla_mm_split:
                 q_b_proj = q_b_proj.reshape(self.load_model.num_attention_heads,
-                                            (self.load_model.qk_nope_head_dim + self.load_model.qk_rope_head_dim),
+                                            (self.load_model.qk_head_dim + self.load_model.qk_pos_emb_head_dim),
                                             -1)
                 kv_b_proj = kv_b_proj.reshape(self.load_model.num_attention_heads,
-                                              (self.load_model.qk_nope_head_dim + self.load_model.v_head_dim), -1)
+                                              (self.load_model.qk_head_dim + self.load_model.v_head_dim), -1)
                 qk_nope, qk_rope = torch.split(q_b_proj,
-                                               [self.load_model.qk_nope_head_dim, self.load_model.qk_rope_head_dim],
+                                               [self.load_model.qk_head_dim, self.load_model.qk_pos_emb_head_dim],
                                                dim=1)
                 kv_nope, linear_v = torch.split(kv_b_proj,
-                                                [self.load_model.qk_nope_head_dim, self.load_model.v_head_dim], dim=1)
-                qk_nope = qk_nope.reshape(self.load_model.num_attention_heads * self.load_model.qk_nope_head_dim, -1)
-                qk_rope = qk_rope.reshape(self.load_model.num_attention_heads * self.load_model.qk_rope_head_dim, -1)
-                kv_nope = kv_nope.reshape(self.load_model.num_attention_heads * self.load_model.qk_nope_head_dim, -1)
+                                                [self.load_model.qk_head_dim, self.load_model.v_head_dim], dim=1)
+                qk_nope = qk_nope.reshape(self.load_model.num_attention_heads * self.load_model.qk_head_dim, -1)
+                qk_rope = qk_rope.reshape(self.load_model.num_attention_heads * self.load_model.qk_pos_emb_head_dim, -1)
+                kv_nope = kv_nope.reshape(self.load_model.num_attention_heads * self.load_model.qk_head_dim, -1)
                 linear_v = linear_v.reshape(self.load_model.num_attention_heads * self.load_model.v_head_dim, -1)
 
                 qk_nope_lst = torch.chunk(qk_nope, self.tensor_model_parallel_size, dim=0)
