@@ -52,6 +52,19 @@
     </tr>
     <tr>
        <tr>
+       <td rowspan="1"><a href="https://huggingface.co/Qwen/Qwen3-Coder-Next/tree/main">Qwen3-Coder-Next</a></td>
+      <td><a href="https://huggingface.co/Qwen/Qwen3-Coder-Next/tree/main">80B-A3B</a></td>
+      <td><a href="../../../examples/mcore/qwen3_coder_next">Qwen3-Coder-Next-80B-A3B</a></td>
+      <td> 16K </td>
+      <th>Mcore</th>
+      <td>4x16</td>
+      <td rowspan="1"> <a href="../../../examples/mcore/qwen3_coder_next/"></a> </td>
+      <td>【Ascend】</td>
+      <td>【Test】</td>
+      <tr>
+    </tr>
+    <tr>
+       <tr>
        <td rowspan="1"><a href="https://huggingface.co/Qwen">Qwen2</a></td>
       <td><a href="https://huggingface.co/Qwen/Qwen2-57B-A14B/tree/main">57B-A14B</a></td>
       <td><a href="../../../examples/mcore/qwen2_moe">qwen2_moe</a></td>

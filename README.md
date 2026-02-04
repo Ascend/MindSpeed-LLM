@@ -53,6 +53,7 @@ MindSpeed LLM：基于昇腾生态的大语言模型分布式训练套件，旨�
 
 # 最新消息
 ---
+- [Feb. 04, 2026]: 🚀 **Qwen3-Coder-Next** 模型支持
 - [Jan. 16, 2026]: 🌴 MindSpeed LLM发布[v2.3.0分支](https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.3.0)，支持core_v0.12.1版本
 - [Dec. 24, 2025]: 🚀 **GPT-OSS** 模型支持 【Prototype】
 - [Dec. 11, 2025]: 🚀 **Qwen3-Next** 模型训练支持triton融合加速GDN模块计算 【Prototype】
