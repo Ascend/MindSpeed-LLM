@@ -1,10 +1,5 @@
+import os
 from typing import Type, Any, Dict, Optional
-
-# Import specific model classes for registration.
-from mindspeed_llm.fsdp2.models.gpt_oss.gpt_oss import GptOssForCausalLM
-from mindspeed_llm.fsdp2.models.qwen3.qwen3 import Qwen3ForCausalLM
-from mindspeed_llm.fsdp2.models.qwen3.qwen3_moe import Qwen3MoEForCausalLM
-from mindspeed_llm.fsdp2.models.qwen3_next.qwen3_next import Qwen3NextForCausalLM
 
 
 class ModelRegistry:
@@ -14,12 +9,28 @@ class ModelRegistry:
     """
 
     # Core data mapping
-    _REGISTRY: Dict[str, Type[Any]] = {
-        "gpt_oss": GptOssForCausalLM,
-        "qwen3": Qwen3ForCausalLM,
-        "qwen3_moe": Qwen3MoEForCausalLM,  # Can be easily added here in the future
-        "qwen3_next": Qwen3NextForCausalLM,
-    }
+    backend = os.environ.get("TRAINING_BACKEND", "mcore").lower()
+
+    if backend == "mindspeed_fsdp":
+        from mindspeed_llm.fsdp2.models.gpt_oss.modeling_gpt_oss import GptOssForCausalLM
+        _REGISTRY: Dict[str, Type[Any]] = {
+            "gpt_oss": GptOssForCausalLM,
+        }
+
+    else:
+        # Import specific model classes for registration.
+        from mindspeed_llm.fsdp2.models.gpt_oss.gpt_oss import GptOssForCausalLM
+        from mindspeed_llm.fsdp2.models.qwen3.qwen3 import Qwen3ForCausalLM
+        from mindspeed_llm.fsdp2.models.qwen3.qwen3_moe import Qwen3MoEForCausalLM
+        from mindspeed_llm.fsdp2.models.qwen3_next.qwen3_next import Qwen3NextForCausalLM
+
+        # Core data mapping
+        _REGISTRY: Dict[str, Type[Any]] = {
+            "gpt_oss": GptOssForCausalLM,
+            "qwen3": Qwen3ForCausalLM,
+            "qwen3_moe": Qwen3MoEForCausalLM,  # Can be easily added here in the future
+            "qwen3_next": Qwen3NextForCausalLM,
+        }
 
     @classmethod
     def get_model_class(cls, key: str) -> Optional[Type[Any]]:

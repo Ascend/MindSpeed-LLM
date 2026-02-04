@@ -23,7 +23,6 @@ from transformers.utils import TransformersKwargs, auto_docstring, can_return_tu
 from transformers.utils.deprecation import deprecate_kwarg
 from transformers.utils.generic import OutputRecorder, check_model_inputs
 from transformers.models.gpt_oss.configuration_gpt_oss import GptOssConfig
-from mindspeed.core.context_parallel.get_batch_utils import get_actual_seq_len
 
 backend = os.environ.get("TRAINING_BACKEND", "mcore").lower()
 if backend == "mcore":

@@ -4,6 +4,7 @@ import torch.distributed as dist
 from typing import Any, Type
 from transformers import AutoConfig, AutoModelForCausalLM, PretrainedConfig
 
+from mindspeed_llm.fsdp2.models.model_registry import ModelRegistry
 from mindspeed_llm.fsdp2.distributed.mindspeed_parallel_engine import MindSpeedParallelEngine
 from mindspeed_llm.fsdp2.distributed.parallel_engine_config import (
     ParallelEngineConfig,
@@ -22,12 +23,9 @@ logger = get_logger(__name__)
 # ==============================================================================
 try:
     from mindspeed_llm.fsdp2.models.fsdp2_model import FSDP2Model
-    from mindspeed_llm.fsdp2.models.model_registry import ModelRegistry
 except ImportError:
     # Graceful fallback if mcore dependencies are missing in a pure MindSpeed FSDP environment
     pass
-
-
 
 
 # ==============================================================================
@@ -74,7 +72,6 @@ class ModelFactory:
             logger.info_rank0(f"> Using factory mode with model_id: {model_args.model_id}")
 
             model_cls = ModelRegistry.get_model_class(model_args.model_id)
-            model_cls.register_patches(model_args)
 
             logger.info_rank0(f"> Loading model {model_cls.__name__} from pretrained path...")
             model = model_cls.from_pretrained(
@@ -147,10 +144,10 @@ class ModelFactory:
         fsdp_plan = FSDPPlanConfig(
             ignored_modules=[],
             apply_modules= apply_modules,
-            param_dtype='bf16',
-            reduce_dtype='fp32',
-            num_to_forward_prefetch=1,
-            num_to_backward_prefetch=1
+            param_dtype=parallel_args.param_dtype,
+            reduce_dtype=parallel_args.reduce_dtype,
+            num_to_forward_prefetch=parallel_args.num_to_forward_prefetch,
+            num_to_backward_prefetch=parallel_args.num_to_backward_prefetch
         )
 
         # --- 2. Tensor Parallel Plan ---
