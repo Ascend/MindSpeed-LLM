@@ -29,7 +29,7 @@ def chunk_gated_delta_rule_fwd(
     cu_seqlens: Optional[torch.LongTensor] = None,
     chunk_size: int = 64,
 ):
-    g = chunk_local_cumsum(g, chunk_size=chunk_size, cu_seqlens=cu_seqlens, head_first=True)
+    g = chunk_local_cumsum(g, chunk_size=chunk_size, cu_seqlens=cu_seqlens, head_first=False)
     # obtain WY representation. u is actually the new v.
     A = chunk_scaled_dot_kkt_fwd(
         k=k,
@@ -160,7 +160,7 @@ def chunk_gated_delta_rule_bwd(
         raise ValueError(
             f"dg current type is {dg.dtype} , should be float32"
         )
-    dg = chunk_local_cumsum(dg, chunk_size=chunk_size, reverse=True, cu_seqlens=cu_seqlens, head_first=True)
+    dg = chunk_local_cumsum(dg, chunk_size=chunk_size, reverse=True, cu_seqlens=cu_seqlens, head_first=False)
     return dq, dk, dv, db, dg, dh0
 
 
