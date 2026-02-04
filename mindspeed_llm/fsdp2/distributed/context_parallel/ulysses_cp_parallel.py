@@ -10,6 +10,8 @@ MODEL_CP_MAPPING = {
     "gpt_oss":
         [ ("transformers.models.gpt_oss.modeling_gpt_oss.eager_attention_forward",
            "mindspeed_llm.fsdp2.distributed.context_parallel.ulysses_cp_function.flash_attention_forward_fa"),
+         ("mindspeed_llm.fsdp2.models.gpt_oss.modeling_gpt_oss.flash_attention_forward",
+           "mindspeed_llm.fsdp2.distributed.context_parallel.ulysses_cp_function.flash_attention_forward_fa"),
           ("transformers.loss.loss_utils.fixed_cross_entropy",
            "mindspeed_llm.fsdp2.distributed.context_parallel.ulysses_cp_function.fixed_cross_entropy_with_cp"),
         ],

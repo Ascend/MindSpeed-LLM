@@ -35,7 +35,7 @@ class MindSpeedParallelEngine(torch.nn.Module):
 
     def apply_ep_modules(self):
         if self.config.expert_parallel_size > 1:
-            self.model = expert_parallelize_modules(self.model, self.parallel_state.get_ep_group(), self.config.ep_plan)
+            self.model = expert_parallelize_modules(self.model, self.parallel_state.get_ep_device_mesh(), self.config.ep_plan)
         if self.config.expert_fully_shard_parallel_size > 1:
             self.model = expert_fully_shard_modules(self.model, self.parallel_state.get_efsdp_device_mesh(), self.config.ep_plan)
 

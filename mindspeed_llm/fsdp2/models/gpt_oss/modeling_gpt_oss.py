@@ -378,9 +378,9 @@ def flash_attention_forward(
         sliding_window: int = None,
         **kwargs,
 ):
-    args = get_args()
-    pre_tokens = args.pre_tockens
-    next_tokens = args.next_tockens
+
+    pre_tokens = 1048576
+    next_tokens = 0
     bsz, n_head, seq_length, head_dim = (
         query.shape[0], query.shape[1], query.shape[2], query.shape[3])
 
@@ -391,7 +391,7 @@ def flash_attention_forward(
         pre_tokens = sliding_window
 
     # When sparse_mode is 2 or 4, a compressed mask of [2048, 2048] should be passed.
-    new_mask = torch.ones((2048, 2048), device=torch.cuda.current_device(), dtype=torch.bool)
+    new_mask = torch.ones((2048, 2048), device=torch.npu.current_device(), dtype=torch.bool)
     atten_mask = torch.triu(new_mask, diagonal=1)
 
     attn_output = torch_npu.npu_fusion_attention_v2(

@@ -50,7 +50,7 @@ def flash_attention_forward_fa(
     sparse_mode = 4
     shape_order = "BNSD"
 
-    num_groups = module.config.num_attention_heads / module.config.num_key_value_heads
+    num_groups = int(module.config.num_attention_heads / module.config.num_key_value_heads)
     if ps.context_parallel_size > module.config.num_key_value_heads:
         key = torch.repeat_interleave(key, dim=1, repeats=num_groups)
         value = torch.repeat_interleave(value, dim=1, repeats=num_groups)

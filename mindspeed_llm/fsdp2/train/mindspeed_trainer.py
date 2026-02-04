@@ -390,15 +390,13 @@ class Trainer:
         for sample in batch:
 
             labels = torch.nn.functional.pad(sample['labels'], (0, 1), value=IGNORE_INDEX)
-            shift_labels = labels[..., 1:].contiguous()
+            shift_labels = labels[..., 1:]
             sample['shift_labels'] = shift_labels
             if "position_ids" not in sample:
                 position_ids = torch.arange(0, shift_labels.shape[1], device=shift_labels.device).unsqueeze(0)
                 sample['position_ids'] = position_ids
 
             for key, val in sample.items():
-                if key == 'attention_mask':
-                    continue
                 if val is not None:
                     seq_dim = 1
                     # 2. Calculate total sequence length
@@ -420,6 +418,8 @@ class Trainer:
                     # 5. Perform slicing: retain only the sequence part responsible for current rank
                     val_sliced = val.narrow(seq_dim, start_idx, end_idx - start_idx)
                     # 6. Update the value in sample with the sliced tensor
+                    if key == 'shift_labels':
+                        val_sliced = val_sliced.contiguous()
                     sample[key] = val_sliced.npu(non_blocking=True)
 
         return batch, num_items_in_batch
