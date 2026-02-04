@@ -30,9 +30,11 @@ from scipy.linalg import hadamard
 
 from mindspeed_llm.core.tensor_parallel.layers import LinearNoTP
 from mindspeed_llm.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb_bshd_in_complex
-from mindspeed_llm.core.context_parallel.kvallgather_context_parallel import (
-    get_seq_chunk_ids_for_reordering_before_attn, get_distributed_world_size
+from mindspeed.te.pytorch.attention.dot_product_attention.kvallgather_context_parallel import (
+    get_distributed_world_size,
+    get_seq_chunk_ids_for_reordering_before_attn,
 )
+
 
 @dataclass
 class DSAIndexerSubmodules:
@@ -949,3 +951,90 @@ def fused_sparse_lightning_indexer_kl_loss_kvallgather(
         
     return (loss[0] + loss[1]) / sq
 
+
+def fused_sparse_flash_attention_kvallgather(
+    q,
+    k,
+    v,
+    topk_indices,
+    q_rope,
+    k_rope,
+    scale,
+    cp_group
+    ):
+    """
+    q: [s, b, n, d]
+    k: [s, b, n, d]
+    v: [s, b, n, d]
+    topk_indices: [b, s, sparse_size]
+    q_rope: [s, b, n, d]
+    k_rope: [s, b, n, d]
+    scale: float
+    cp_group: ProcessGroup
+    cp_stream: Stream
+    """
+
+    if scale is None:
+        scale = q.shape[-1] ** (-0.5)
+
+    if not (q.shape[0] % 2 == 0 and k.shape[0] % 2 == 0):
+        raise AssertionError("Sequence length per GPU needs to be divisible by 2!")
+
+    # [s, b, ...] -> [2, s//2, b, ...] -> [2, b, s//2, ...]
+    q, q_rope = [
+        t.view(2, t.shape[0] // 2, *t.shape[1:]).transpose(1, 2)
+        for t in [q, q_rope]
+    ]
+
+    # [s, b, ...] -> [cp*s, b, ...] -> [b, cp*s, ...]
+    k_ag, v_ag, k_rope_ag = [
+        gather_and_permute_cp_shard(t, cp_group).transpose(0, 1)
+        for t in [k, v, k_rope]
+    ]
+
+    # [b, s, sparse_size] -> [2, b, s//2, 1, sparse_size]
+    b, s, sparse_size = topk_indices.shape
+    topk_indices = topk_indices.view(b, 2, s // 2, sparse_size).transpose(0, 1).unsqueeze(3)
+
+    out_per_step = [None, None]
+    softmax_max = [None, None]
+    softmax_sum = [None, None]
+    # [2, b, s//2, n, d]
+    out = torch.empty_like(q)
+
+    num_steps = 2
+    for i in range(num_steps):
+        attn_outs = torch_npu.npu_sparse_flash_attention(
+            q[i],
+            k_ag,
+            v_ag,
+            sparse_indices=topk_indices[i].to(torch.int32),
+            block_table=None,
+            actual_seq_lengths_query=None,
+            actual_seq_lengths_kv=None,
+            query_rope=q_rope[i],
+            key_rope=k_rope_ag,
+            scale_value=scale,
+            sparse_block_size=1,
+            layout_query='BSND',
+            layout_kv='BSND',
+            sparse_mode=3,
+            attention_mode=2,
+            return_softmax_lse=True,
+        )
+
+        out_per_step[i] = attn_outs[0]
+        softmax_max[i] = attn_outs[1]
+        softmax_sum[i] = attn_outs[2]
+
+        out[i].copy_(out_per_step[i])
+
+    # [b, n2, s, n1/n2]
+    softmax_max_out = torch.cat(softmax_max, dim=2)
+    softmax_sum_out = torch.cat(softmax_sum, dim=2)
+    # [2, b, s//2, n, d] -> [b, s, n, d]
+    out = out.transpose(0, 1).contiguous()
+    out = out.view(out.shape[0], -1, *out.shape[-2:])
+    out = rearrange(out, 'b s h d -> s b h d')
+
+    return out, softmax_max_out, softmax_sum_out

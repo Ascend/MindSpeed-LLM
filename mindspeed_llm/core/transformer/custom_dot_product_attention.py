@@ -15,7 +15,7 @@ from megatron.core.transformer.utils import attention_mask_func
 from megatron.core.utils import divide
 from mindspeed.model.transformer import get_attention_mask
 
-from mindspeed_llm.core.context_parallel.kvallgather_context_parallel import sfa_with_kvallgather_context_parallel
+from mindspeed_llm.tasks.models.transformer.dsa_indexer import fused_sparse_flash_attention_kvallgather
 from mindspeed_llm.tasks.models.common.alibi import Alibi
 from mindspeed_llm.training.utils import recompute_valid_actual_seq_len
 from mindspeed_llm.training.utils import get_actual_seq_len_list
@@ -336,21 +336,24 @@ class CustomDotProductAttentionImpl:
         else:
             if args.use_sparse_flash_attn:
                 if args.context_parallel_size > 1 and args.context_parallel_algo == 'kvallgather_cp_algo':
-                    if args.shape_order == "BNSD":
-                        query, key, value = [rearrange(x, 'b h s d -> s b (h d)') for x in [query, key, value]]
+                    if args.shape_order == 'SBH':
+                        query = rearrange(query, 's b (h d1) -> s b h d1', h=n_head, d1=query.shape[2] // n_head)
+                        key = key.unsqueeze(2)
+                        value = value.unsqueeze(2)
+                    elif args.shape_order == "BNSD":
+                        query, key, value = [rearrange(x, 'b h s d -> b s h d') for x in [query, key, value]]
 
                     cp_group = parallel_state.get_context_parallel_group()
-                    cp_stream = torch.npu.Stream(device=torch.npu.current_device())
 
-                    output, softmax_max, softmax_sum, *_ = sfa_with_kvallgather_context_parallel(
-                        query, key, value,
+                    output, softmax_max, softmax_sum, *_ = fused_sparse_flash_attention_kvallgather(
+                        query,
+                        key,
+                        value,
+                        topk_indices,
                         query_rope,
                         key_rope,
-                        n_head,
-                        topk_indices,
                         self.scale,
-                        cp_group,
-                        cp_stream)
+                        cp_group)
                 else:
                     if args.shape_order == 'SBH':
                         query = rearrange(query, 's b (h d1) -> b s h d1', h=n_head, d1=query.shape[2] // n_head)
