@@ -267,11 +267,16 @@ TOKENIZER_PATH="./model_from_hf/qwen2.5-7b-hf/"
 
 在这一阶段，我们将基于下载的HuggingFace(hf)原数据，完成权重转换、数据集预处理，启动模型预训练，包含步骤如下：
 
+- MindSpore后端环境变量设置
 - hf权重转换成megatron权重；
 - 预训练数据集处理；
 - 预训练任务启动。
 
-## 4.1 权重转换
+## 4.1 MindSpore后端环境变量设置
+
+使用MindSpeed-Core-MS仓内部脚本配置环境。详见[环境配置](./mindspore/install_guide.md#mindspeed-llm及相关依赖安装)
+
+## 4.2 权重转换
 
 昇腾MindSpeed-LLM要求模型权重采用Megatron-Mcore格式，在这里我们将原始HuggingFace权重格式转换为Megatron-Mcore格式。
 详见[hf2mg权重转换](./pytorch/solutions/checkpoint/checkpoint_convert.md#21-huggingface权重转换到megatron-mcore格式)
@@ -336,7 +341,7 @@ torch.configs.set_pyboost(False)
 - MindSpore 后端转换出的模型权重无法直接用于 PyTorch后端训练或推理。
 
 
-## 4.2 预训练数据集处理
+## 4.3 预训练数据集处理
 
 通过对各种格式的数据做提前预处理，避免原始数据的反复处理加载，将所有的数据都统一存储到后缀为.bin和.idx两个文件中，详见[预训练数据处理](./pytorch/solutions/pretrain/pretrain_dataset.md)。
 
@@ -381,7 +386,7 @@ python ./preprocess_data.py \
 | `--output-prefix`  | 转换后输出的数据集文件的文件名前缀                                                | ✅ |
 | `--workers`               | 多进程数据集处理                                                         | ✅ |
 
-## 4.3 预训练任务启动
+## 4.4 预训练任务启动
 
 完成了数据集处理和权重转换之后，可以开始拉起预训练任务。
 

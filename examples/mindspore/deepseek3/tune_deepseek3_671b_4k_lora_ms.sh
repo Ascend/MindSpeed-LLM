@@ -136,6 +136,7 @@ GPT_ARGS="
     --no-load-rng \
     --bf16 \
     --distributed-timeout-minutes 120 \
+    --transformer-impl local \
 "
 
 DATA_ARGS="

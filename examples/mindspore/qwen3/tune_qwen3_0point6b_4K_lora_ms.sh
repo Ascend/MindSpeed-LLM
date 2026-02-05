@@ -81,6 +81,7 @@ GPT_ARGS="
     --no-load-optim \
     --no-load-rng \
     --lr 1.25e-5 \
+    --transformer-impl local \
 "
 
 DATA_ARGS="

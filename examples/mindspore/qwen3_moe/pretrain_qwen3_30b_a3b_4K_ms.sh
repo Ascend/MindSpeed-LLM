@@ -122,7 +122,8 @@ GPT_ARGS="
     --attention-softmax-in-fp32 \
     --no-gradient-accumulation-fusion \
     --group-query-attention \
-    --num-query-groups 4
+    --num-query-groups 4 \
+    --transformer-impl local \
 "
 
 DATA_ARGS="

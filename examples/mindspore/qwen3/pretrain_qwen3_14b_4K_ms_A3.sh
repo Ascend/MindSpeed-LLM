@@ -99,7 +99,8 @@ GPT_ARGS="
     --num-query-groups 8 \
     --no-load-optim \
     --no-load-rng \
-    --sequence-parallel
+    --sequence-parallel \
+    --transformer-impl local \
 "
 
 DATA_ARGS="

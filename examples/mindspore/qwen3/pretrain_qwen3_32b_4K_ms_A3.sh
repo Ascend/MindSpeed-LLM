@@ -99,7 +99,8 @@ GPT_ARGS="
     --num-query-groups 8 \
     --reset-attention-mask \
     --use-ascend-coc \
-    --coc-fused-kernel
+    --coc-fused-kernel \
+    --transformer-impl local \
 "
 
 DATA_ARGS="

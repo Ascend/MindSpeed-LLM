@@ -94,7 +94,8 @@ GPT_ARGS="
     --num-query-groups 8 \
     --no-load-optim \
     --no-load-rng \
-    --bf16
+    --bf16 \
+    --transformer-impl local \
 "
 
 DATA_ARGS="

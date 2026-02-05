@@ -106,7 +106,8 @@ TRAIN_ARGS="
     --bf16 \
     --train-iters ${TRAIN_ITERS} \
     --seq-length ${SEQ_LENGTH} \
-    --no-shared-storage
+    --no-shared-storage \
+    --transformer-impl local \
 "
 
 GPT_ARGS="
