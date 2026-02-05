@@ -1,0 +1,57 @@
+model:
+  model_name_or_path: /home/data/Qwen3-8B/
+  trust_remote_code: False
+  train_from_scratch: False
+  tokenizer_name_or_path: /home/data/Qwen3-8B/
+
+data:
+  dataset: "your origin data path.example: /home/train-00000-of-a09b74b3ef9c3b56.parquet"
+  template: qwen3
+  cutoff_len: 4096
+  max_samples: 100000
+  overwrite_cache: True
+  preprocessing_num_workers: 1
+  data_manager_type: mg
+
+parallel:
+  data_parallel_mode: fsdp2
+  fsdp_size: 8
+  fsdp_modules:
+    - model.layers.{*}
+    - model.embed_tokens
+    - lm_head
+  tp_size: 1
+  ep_size: 1
+  ep_modules:
+    - model.layers.{*}.mlp.experts
+  ep_fsdp_size: 1
+  ep_fsdp_modules:
+    - model.layers.{*}.mlp.experts
+  ep_dispatcher: eager
+  recompute: True
+  recompute_modules:
+    - model.layers.{*}
+
+training:
+  stage: pt
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 1
+  dataloader_num_workers : 4
+  seed: 42
+  dataloader_drop_last: True
+  output_dir: ./output
+  optimizer: adamw
+  lr: 1e-05
+  weight_decay: 0.01
+  adam_beta1: 0.9
+  adam_beta2: 0.95
+  adam_epsilon: 1e-08
+  max_grad_norm: 1.0
+  lr_scheduler_type: cosine
+  warmup_ratio: 0.0
+  min_lr: 1e-06
+  num_train_epochs: 3.0
+  max_steps: 2000
+  save_steps: 500
+  resume_from_checkpoint: None
+  logging_steps: 1

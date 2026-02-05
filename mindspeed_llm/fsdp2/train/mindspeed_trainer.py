@@ -1,6 +1,7 @@
 import os
 import torch
 import torch.distributed as dist
+import torch.nn.functional as F
 import time
 import contextlib
 from typing import Optional, Tuple, Dict, Any, Union
@@ -114,7 +115,7 @@ class Trainer:
             # Load checkpoint from the specified path
             self.ckpt_manager.load(resume_from_checkpoint, state)
             extra_state = state.get("extra_state", {})
-            
+
             if extra_state:
                 # Restore training step counters
                 self.global_step = state["extra_state"]["global_step"]
@@ -123,7 +124,7 @@ class Trainer:
                 # Calculate completed epochs and steps within current epoch based on global step
                 epochs_trained = int(self.global_step // total_updates_per_epoch)
                 steps_trained_in_current_epoch = self.global_step % total_updates_per_epoch
-                
+
                 # Restore learning rate scheduler and RNG state for reproducibility
                 self.lr_scheduler.load_state_dict(state["extra_state"]["lr_scheduler"])
                 torch.set_rng_state(state["extra_state"]["torch_rng_state"])
@@ -168,14 +169,14 @@ class Trainer:
                 # Calculate number of batches to skip (accounting for gradient accumulation)
                 steps_to_skip = steps_trained_in_current_epoch * args.gradient_accumulation_steps
                 logger.info_rank0(f"  Skipping {steps_to_skip} batches in epoch {epoch}")
-                
+
                 # Skip already trained batches by advancing the iterator
                 for _ in range(steps_to_skip):
                     try:
                         next(epoch_iterator)
                     except StopIteration:
                         break
-                
+
                 start_update_step = steps_trained_in_current_epoch
             else:
                 start_update_step = 0
@@ -341,6 +342,20 @@ class Trainer:
         # 6. Return detached loss
         return loss.detach()
 
+    def _compute_language_model_pretrain_loss(self, logits, labels, ignore_index: int = -100, **kwargs) -> torch.Tensor:
+        args = self.args
+
+        shift_labels = labels
+        shift_labels = shift_labels.view(-1)
+        logits = logits.view(-1, logits.shape[-1])
+
+        if args.calculate_per_token_loss:
+            loss = F.cross_entropy(logits, shift_labels, reduction='none', ignore_index=ignore_index)
+        else:
+            loss = F.cross_entropy(logits, shift_labels, ignore_index=ignore_index)
+
+        return loss
+
     def get_batch_samples_func(self):
 
         if self.parallel_args[0].cp_size > 1:
@@ -353,10 +368,17 @@ class Trainer:
         """
         Computes the loss for the batch.
         """
+        args = self.args
+        device = torch.npu.current_device()
         # 1. Inject num_items_in_batch into inputs if present (for token-weighted loss)
         kwargs = {}
         if num_items_in_batch is not None:
             kwargs["num_items_in_batch"] = num_items_in_batch
+
+        labels = inputs['labels'].npu(device, non_blocking=True)
+        if args.stage == 'pt':
+            inputs['labels'] = None
+
 
         # Merge inputs without modifying the original dictionary in-place
         model_inputs = {**inputs, **kwargs}
@@ -365,16 +387,20 @@ class Trainer:
         outputs = self.model(**model_inputs)
 
         # 3. Extract loss from outputs
-        if isinstance(outputs, dict) and "loss" not in outputs:
-            raise ValueError(f"Model outputs have no loss key: {list(outputs.keys())}")
-        loss = outputs["loss"] if isinstance(outputs, dict) else outputs[0]
+        if args.stage == 'pt':
+            logits = outputs.logits.contiguous().float()
+            loss = self._compute_language_model_pretrain_loss(logits, labels, **kwargs)
+        else:
+            if isinstance(outputs, dict) and "loss" not in outputs:
+                raise ValueError(f"Model outputs have no loss key: {list(outputs.keys())}")
+            loss = outputs["loss"] if isinstance(outputs, dict) else outputs[0]
 
         # 4. Cross-device token averaging adjustment
         # If the loss was calculated using 'mean' locally but needs global scaling based on tokens
         # sometimes we multiply by world size here so standard all_reduce(mean) works correctly.
         # This depends heavily on the specific loss function implementation.
         ps = ParallelState()
-        if dist.is_initialized():
+        if dist.is_initialized() and args.stage != 'pt':
             loss *= ps.get_group_size("dp_fsdp")
 
         # 5. Return loss (or tuple of loss + outputs)

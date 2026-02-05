@@ -20,6 +20,9 @@ from mindspeed_llm.fsdp2.distributed.parallel_state import ParallelState
 from .data_utils import get_dataset
 from .template import Template
 from .collator import SFTDataCollatorWith4DAttentionMask
+from mindspeed.fsdp.distributed.parallel_state import ParallelState
+from mindspeed_llm.fsdp2.data.megatron_data.megatron_dataset_generate import train_valid_test_datasets_provider
+from mindspeed_llm.fsdp2.data.megatron_data.megatron_dataset_samplers import MegatronPretrainingSampler, MegatronPretrainingRandomSampler
 
 from mindspeed_llm.fsdp2.utils.logging import get_logger
 logger = get_logger(__name__)
@@ -32,7 +35,7 @@ class DataManager(ABC):
         data_args: "DataArguments",
         training_args: "TrainingArguments",
         parallel_args: "ParallelArguments",
-        stage: Literal["pt", "sft", "rm", "ppo", "kto"],
+        stage: Literal["pt", "sft"],
         tokenizer: "PreTrainedTokenizer",
         template: "Template"
     ):
@@ -72,7 +75,7 @@ class LFDataManager(DataManager):
         data_args: "DataArguments",
         training_args: "TrainingArguments",
         parallel_args: "ParallelArguments",
-        stage: Literal["pt", "sft", "rm", "ppo", "kto"],
+        stage: Literal["pt", "sft"],
         tokenizer: "PreTrainedTokenizer",
         template: "Template"
     ):
@@ -167,6 +170,70 @@ class LFDataManager(DataManager):
         )
 
 
+class MegatronDataManager(DataManager):
+    """
+    Data manager, provides the create_train_dataloader and create_eval_dataloader interfaces for obtaining training and evaluation data.
+    """
+    def __init__(
+        self,
+        model_args: "ModelArguments",
+        data_args: "DataArguments",
+        training_args: "TrainingArguments",
+        stage: Literal["pt", "sft"],
+        tokenizer: "PreTrainedTokenizer",
+        template: "Template"
+    ):
+        super().__init__(model_args, data_args, training_args, stage, tokenizer, template)
+        self.model_args = model_args
+        self.data_args = data_args
+        self.training_args = training_args
+        self.train_dataset, self.eval_dataset, _ = train_valid_test_datasets_provider(self.model_args, self.data_args, self.training_args)
+
+
+    def create_train_dataloader(self) -> DataLoader:
+        dataloader=self._build_dataloader(
+            dataset=self.train_dataset,
+            data_args=self.data_args,
+            training_args=self.training_args)
+
+        return dataloader
+
+
+    def create_eval_dataloader(self) -> DataLoader:
+        dataloader=self._build_dataloader(
+            dataset=self.eval_dataset,
+            data_args=self.data_args,
+            training_args=self.training_args)
+
+        return dataloader
+
+
+    def _build_dataloader(self, dataset, data_args, training_args):
+        """Build dataloader given an input dataset."""
+        ps = ParallelState()
+        if dataset is None:
+            return None
+
+        if data_args.dataloader_type == 'single':
+            batch_sampler = MegatronPretrainingSampler(
+                total_samples=len(dataset),
+                consumed_samples=0,
+                micro_batch_size=training_args.per_device_train_batch_size,
+                data_parallel_rank=ps.get_fsdp_rank(),
+                data_parallel_size=ps.get_fsdp_group_size())
+        else:
+            raise Exception('{} dataloader type is not supported.'.format(
+                    data_args.dataloader_type))
+
+        # Torch dataloader.
+        return DataLoader(dataset,
+                          batch_sampler=batch_sampler,
+                          num_workers=training_args.dataloader_num_workers,
+                          pin_memory=True,
+                          persistent_workers=True if training_args.dataloader_num_workers > 0 else False,
+                          )
+
+
 class DataFactory:
     @staticmethod
     def create(
@@ -175,11 +242,12 @@ class DataFactory:
         data_args: "DataArguments",
         training_args: "TrainingArguments",
         parallel_args: "ParallelArguments",
-        stage: Literal["pt", "sft", "rm", "ppo", "kto"],
+        stage: Literal["pt", "sft"],
         tokenizer: "PreTrainedTokenizer",
         template: "Template"
     ):
-        if data_manager_type == "lf":
+        #Fine-tuning supports Llamafactory data processing style
+        if training_args.stage == "sft" and data_manager_type == "lf":
             return LFDataManager(
                 model_args=model_args,
                 data_args=data_args,
@@ -189,6 +257,14 @@ class DataFactory:
                 tokenizer=tokenizer,
                 template=template
             )
-        elif data_manager_type == "mg":
-            raise ValueError(f"megatron data manager is not supported currently")
+        #Pre-training supports Megatron data processing style
+        elif training_args.stage == "pt" and data_manager_type == "mg":
+            return MegatronDataManager(
+                model_args=model_args,
+                data_args=data_args,
+                training_args=training_args,
+                stage=stage,
+                tokenizer=tokenizer,
+                template=template
+            )
         

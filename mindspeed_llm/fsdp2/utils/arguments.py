@@ -241,6 +241,25 @@ class DataArguments:
         default="lf",
         metadata={"help": "Data Manager type for building the different data manager"},
     )
+    #megatron dataset args
+    split: str = field(
+        default="100,0,0",
+        metadata={"help": "Comma-separated list of proportions for training, validation, and test split."}
+    )
+    create_attention_mask_in_dataloader: Optional[bool] = field(
+        default=False,
+        metadata={"help": "If set, do create attention_masks in dataloader."}
+    )     
+    no_shared_storage: Optional[bool] = field(
+        default=False,
+        metadata={"help": "if no shared storage, set it."}
+    )
+    dataloader_type: Literal["single", "cyclic", "external"] = field(
+        default="single",
+        metadata={
+            "help": ("Single pass vs multiple pass data loader")
+        },
+    )
     def __post_init__(self):
         def split_arg(arg):
             if isinstance(arg, str):
@@ -328,7 +347,7 @@ class ParallelArguments:
         metadata={"help": "Use context parallel algo."},
     )
     fsdp_modules: List[str] = field(
-        default_factory=lambda:['model.layers.{}', 'model.embed_tokens', 'lm_head'],
+        default_factory=lambda:['model.layers.{*}', 'model.embed_tokens', 'lm_head'],
         metadata={"help": "Model structure of layers with Fully Sharded Data Parallel."},
     )
     reshard_after_forward: bool = field(
@@ -494,12 +513,15 @@ class TrainingArguments:
         default="wandb",
         metadata={"help": "The list of integrations to report the results and logs to (e.g. 'wandb', 'tensorboard')."}
     )
-
     stage: Literal["pt", "sft"] = field(
         default="sft",
         metadata={"help": "Which stage will be performed in training."},
     )
-
+    #megatron train args
+    calculate_per_token_loss: bool = field(
+        default=False,
+        metadata={"help": "Scale cross entropy loss by the number of non-padded tokens in the global batch, versus the default behavior of assuming all tokens are non-padded"}
+    )
     dataloader_num_workers: int = field(
         default=0,
         metadata={

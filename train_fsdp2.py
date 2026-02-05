@@ -1,5 +1,3 @@
-
-
 import os
 import sys
 import types
@@ -120,7 +118,7 @@ class MindSpeedAutoTrainer:
       self.template = get_template_and_fix_tokenizer(self.tokenizer, self.data_args)
       self.data_manager = self._build_data_manager(self.tokenizer, self.template)
 
-      
+
       self.optimizer = self._build_optimizer(self.model)
       self.lr_scheduler = self._build_scheduler(self.optimizer)
 
