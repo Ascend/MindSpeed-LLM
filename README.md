@@ -76,6 +76,9 @@ MindSpeed LLM：基于昇腾生态的大语言模型分布式训练套件，旨�
 
 注意：【Prototype】表示特性未经过充分验证，若使用存在问题请至[issue](https://gitcode.com/Ascend/MindSpeed-LLM/issues)反馈。
 
+# 社区会议
+---
+- MindSpeed LLM系列TC及SIG会议安排请查看[Ascend会议中心](https://meeting.ascend.osinfra.cn/)
 
 # 版本说明
 
