@@ -76,6 +76,7 @@ OPTIMIZE_ARGS="
     --recompute-granularity full \
     --recompute-method block \
     --recompute-num-layers 1 \
+    --use-triton-gdn
 "
 
 TRAIN_ARGS="
