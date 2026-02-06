@@ -1,5 +1,5 @@
 # Copyright (c) 2025, Huawei Technologies Co., Ltd. All rights reserved.
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Callable, Literal, Union, Optional
 
 import torch
@@ -43,6 +43,18 @@ class EPPlanConfig:
 
 
 @dataclass
+class QuantizeConfig:
+    quant_format: Optional[str] = None
+    quant_recipe: Optional[str] = None
+    block_size: int = 32
+    quant_apply_modules: List[str] = None
+    quant_ignored_modules: List[str] = None
+    converters: List[str] = None
+    extra_args: Dict[str, Any] = field(default_factory=dict)  # for future extensibility
+
+
+
+@dataclass
 class ParallelEngineConfig:
     data_parallel_size: int = 1
 
@@ -63,6 +75,8 @@ class ParallelEngineConfig:
 
     recompute: bool = False
     recompute_plan: List[str] = None
+
+    quantization_plan: Optional[QuantizeConfig] = None
 
     def __post_init__(self):
         self.validate_tp_config()
@@ -131,5 +145,6 @@ class ParallelEngineConfig:
         if self.context_parallel_type not in ["ulysses"]:
             raise Exception("context parallel type must be `ulysses`.")
 
-
+    def validate_quantize_config(self):
+        self.quantization_plan = QuantizeConfig() if self.quantization_plan is None else self.quantization_plan
 

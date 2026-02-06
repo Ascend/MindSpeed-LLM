@@ -115,6 +115,37 @@ class ModelArguments:
         default=None,
         metadata={"help": "Auth token to log in with Modelers Hub."},
     )
+    quant_recipe: Literal["mxfp8"] = field(
+        default=None,
+        metadata={"help": "Quantization strategy"},
+    )
+    quant_format: Literal["E4M3", "E5M2", "HIF8"] = field(
+        default=None,
+        metadata={"help": "FP8 format: 'E4M3', 'E5M2', or 'HIF8'."},
+    )
+    quant_block_size: int = field(
+        default=32,
+        metadata={"help": "Block size for MXFP8 quantization, default 32."},
+    )
+    quant_apply_modules: List[str] = field(
+        default_factory=lambda: ['model.layers.{*}'],
+        metadata={
+            "help":
+                "List of model module patterns to apply MXFP8 quantization."
+                "Example: 'model.layers.{*}'applies quantization to all transformer layers."},
+    )
+    quant_ignored_modules: List[str] = field(
+        default_factory=lambda: ['lm_head'],
+        metadata={"help": "List of module patterns to exclude from MXFP8 quantization. "},
+    )
+    converters: List[str] = field(
+        default_factory=lambda: ["quantize.linear.mx"],
+        metadata={
+            "help":
+                "This field specifies the quantization converters to use. "
+                "It's a list of strings where each string represents a specific quantization implementation."
+                "Default uses 'quantize.linear.mx' for mxfp8 quantization."},
+    )
 
     def __post_init__(self):
         if self.model_name_or_path is None:

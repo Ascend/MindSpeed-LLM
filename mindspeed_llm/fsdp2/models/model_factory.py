@@ -11,7 +11,8 @@ from mindspeed_llm.fsdp2.distributed.parallel_engine_config import (
     FSDPPlanConfig,
     TPPlanConfig,
     EPPlanConfig,
-    CPPlanConfig
+    CPPlanConfig,
+    QuantizeConfig
 )
 
 from mindspeed_llm.fsdp2.utils.logging import get_logger
@@ -178,7 +179,17 @@ class ModelFactory:
         # Activation Checkpointing
         recompute_plan = parallel_args.recompute_modules if parallel_args.recompute else []
 
-        # --- 5. Assemble Config ---
+        # --- 5. Quantization Config ---
+        quantization_plan = QuantizeConfig(
+            quant_format=model_args.quant_format,
+            quant_recipe=model_args.quant_recipe,
+            block_size=model_args.quant_block_size,
+            quant_apply_modules=model_args.quant_apply_modules,
+            quant_ignored_modules=model_args.quant_ignored_modules,
+            converters=model_args.converters
+        )
+
+        # --- 6. Assemble Config ---
         # Get parallel sizes safely
         tp_size = parallel_args.tp_size
         fsdp_size = parallel_args.fsdp_size
@@ -206,7 +217,10 @@ class ModelFactory:
 
             # Recomputation
             recompute=parallel_args.recompute,
-            recompute_plan=recompute_plan
+            recompute_plan=recompute_plan,
+
+            # Quantization
+            quantization_plan = quantization_plan
         )
 
         return config

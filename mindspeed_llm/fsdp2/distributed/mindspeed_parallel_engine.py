@@ -10,6 +10,7 @@ from mindspeed.fsdp.memory.recompute.recompute import recompute_modules
 from mindspeed_llm.fsdp2.distributed.parallel_engine_config import ParallelEngineConfig
 from mindspeed_llm.fsdp2.distributed.context_parallel.ulysses_cp_parallel import ulysses_parallelize_modules
 from mindspeed.fsdp.distributed.expert_parallel.expert_parallel import expert_parallelize_modules
+from mindspeed.fsdp.quantization.converter.model_converter import build_model_converter
 
 
 class MindSpeedParallelEngine(torch.nn.Module):
@@ -23,6 +24,7 @@ class MindSpeedParallelEngine(torch.nn.Module):
         self.apply_ep_modules()
         self.apply_cp_modules()
         self.apply_recompute_modules()
+        self.apply_quantization_modules()
         self.apply_fsdp_modules()
 
     def apply_fsdp_modules(self):
@@ -55,6 +57,13 @@ class MindSpeedParallelEngine(torch.nn.Module):
         if not self.config.recompute:
             return
         self.model = recompute_modules(self.model, self.config.recompute_plan)
+
+    def apply_quantization_modules(self):
+        """Apply quantization based on quantization_format + quantization_recipe."""
+        if not self.config.quantization_plan.quant_recipe:
+            return
+        model_converters = build_model_converter(self.config.quantization_plan)
+        model_converters.convert(self.model)
 
     def forward(self, *args, **kwargs):
         return self.model(*args, **kwargs)
