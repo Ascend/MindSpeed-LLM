@@ -98,12 +98,14 @@ class HighAvailabilityFeature(MindSpeedFeature):
         from mindspeed_llm.core.pipeline_parallel.schedules import high_availability_get_forward_backward_func_wrapper
 
         if args.enable_high_availability:
-            patch_manager.register_patch('megatron.core.distributed.param_and_grad_buffer._ParamAndGradBucketGroup.start_grad_sync',
-                                          start_grad_sync_wrapper)
-            patch_manager.register_patch('megatron.core.distributed.param_and_grad_buffer._ParamAndGradBucketGroup.__init__',
-                                          param_and_grad_bucket_group_init_wrapper)
-            patch_manager.register_patch('megatron.core.distributed.param_and_grad_buffer._ParamAndGradBucketGroup.start_param_sync',
-                                          start_param_sync_wrapper)
+            no_replica = getattr(args, 'distributed_optimizer_no_replica', False)
+            if not no_replica:
+                patch_manager.register_patch('megatron.core.distributed.param_and_grad_buffer._ParamAndGradBucketGroup.start_grad_sync',
+                                              start_grad_sync_wrapper)
+                patch_manager.register_patch('megatron.core.distributed.param_and_grad_buffer._ParamAndGradBucketGroup.__init__',
+                                              param_and_grad_bucket_group_init_wrapper)
+                patch_manager.register_patch('megatron.core.distributed.param_and_grad_buffer._ParamAndGradBucketGroup.start_param_sync',
+                                              start_param_sync_wrapper)
             patch_manager.register_patch('megatron.training.training.get_megatron_optimizer',
                                           get_megatron_optimizer_wrapper)
             patch_manager.register_patch('megatron.training.initialize._initialize_distributed',
