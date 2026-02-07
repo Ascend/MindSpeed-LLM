@@ -130,7 +130,6 @@ class HuggingFaceModel(Model):
         return module_key
 
 
-
     def get_bias(self, layer_idx=0, expert_idx=0):
         module_key = {}
         for key, value in self.module_mapping.items():
@@ -141,26 +140,13 @@ class HuggingFaceModel(Model):
 
 
     def get_layer_files_map(self):
-        """layer -> safetensors file map"""
+        """layer -> weight file map"""
         layer_map_dict = defaultdict(set)
-        weights_map_file_path = os.path.join(self.hf_path, "model.safetensors.index.json")
-
-        if os.path.exists(weights_map_file_path):
-            with open(weights_map_file_path, "r", encoding="utf-8") as f:
-                weights_map = json.load(f)
-            weights_map = weights_map["weight_map"]
-        else:
-            safetensor_files = [f for f in os.listdir(self.hf_path) if f.startswith("model") and f.endswith(".safetensors")]
-            if len(safetensor_files) == 1:
-                file_name = safetensor_files[0]
-                file_path = os.path.join(self.hf_path, file_name)
-                with safe_open(file_path, framework="pt") as f:
-                    keys = list(f.keys())
-                weights_map = {k: file_name for k in keys}
-            else:
-                raise FileNotFoundError(
-                    f"No index.json found and multiple safetensors exist in {self.hf_path}"
-                )
+        weight_format = self.infer_weight_format(self.hf_path)
+        if weight_format == "safetensors":
+            weights_map = self._load_safetensors_map(self.hf_path)
+        elif weight_format == "bin":
+            weights_map = self._load_bin_map(self.hf_path)
 
         for key, value in weights_map.items():
             if key.startswith("model.layers."):
@@ -168,12 +154,23 @@ class HuggingFaceModel(Model):
                 layer_map_dict[layer_id].add(value)
             elif key.startswith("mtp.layers."):
                 layer_id = int(key.split("mtp.layers.")[1].split(".")[0])
-                new_layer_id = layer_id + self.num_layers
-                layer_map_dict[new_layer_id].add(value)
+                layer_map_dict[layer_id + self.num_layers].add(value)
             else:
                 layer_map_dict[key].add(value)
 
-        return layer_map_dict
+        return layer_map_dict, weight_format
+
+
+    @staticmethod
+    def infer_weight_format(hf_path):
+        has_safetensors = any(f.startswith("model") and f.endswith(".safetensors") for f in os.listdir(hf_path))
+        has_bin = any(f.startswith("pytorch_model") and f.endswith(".bin") for f in os.listdir(hf_path))
+        
+        if has_safetensors:
+            return "safetensors"
+        elif has_bin:
+            return "bin"
+        raise FileNotFoundError(f"No supported weight files found in {hf_path}. Expected safetensors or pytorch_model*.bin")
 
 
     @staticmethod
@@ -191,11 +188,54 @@ class HuggingFaceModel(Model):
                 new_dict[key] = value
         return new_dict
 
+
     @staticmethod
-    def load_hf_model(file_path):
-        """Load safetensors file"""
+    def load_hf_model(file_path, weight_format):
+        """Load safetensors or bin file"""
         logger.info(f"Loading the checkpoint from {file_path}.")
-        return safetensors.torch.load_file(file_path)
+        if weight_format == "safetensors":
+            return safetensors.torch.load_file(file_path)
+        elif weight_format == "bin":
+            return torch.load(file_path, map_location='cpu', weights_only=False)
+        else:
+            raise FileNotFoundError(
+                            "Not found supported weight file"
+                            "Expected safetensors or pytorch_model*.bin"
+                        )
+
+
+    @staticmethod
+    def _load_safetensors_map(hf_path):
+        index_path = os.path.join(hf_path, "model.safetensors.index.json")
+        if os.path.exists(index_path):
+            with open(index_path, "r", encoding="utf-8") as f:
+                return json.load(f)["weight_map"]
+        files = [f for f in os.listdir(hf_path) if f.startswith("model") and f.endswith(".safetensors")]
+        if len(files) != 1:
+            raise FileNotFoundError(
+                f"Expected a single safetensors file in {hf_path}, but found {len(files)}. "
+                "For multiple weight files, an index.json file is required."
+            )
+        file_name = files[0]
+        with safe_open(os.path.join(hf_path, file_name), framework="pt") as f:
+            return {k: file_name for k in f.keys()}
+
+
+    @staticmethod
+    def _load_bin_map(hf_path):
+        index_path = os.path.join(hf_path, "pytorch_model.bin.index.json")
+        if os.path.exists(index_path):
+            with open(index_path, "r", encoding="utf-8") as f:
+                return json.load(f)["weight_map"]
+        files = [f for f in os.listdir(hf_path) if f.startswith("pytorch_model") and f.endswith(".bin")]
+        if len(files) != 1:
+            raise FileNotFoundError(
+                f"Expected a single .bin file in {hf_path}, but found {len(files)}. "
+                "For multiple weight files, an index.json file is required."
+            )
+        file_name = files[0]
+        state_dict = torch.load(os.path.join(hf_path, file_name), map_location='cpu', weights_only=False)
+        return {k: file_name for k in state_dict.keys()}
 
 
     def update_args_from_hf_args(self):

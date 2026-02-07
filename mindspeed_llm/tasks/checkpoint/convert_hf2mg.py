@@ -270,7 +270,7 @@ class Hf2MgConvert(Convert):
             if pp_rank == self.pipeline_model_parallel_size - 1 and self.mtp_num_layers:
                 nextn_layer_list = [self.load_model.num_layers + i for i in range(self.mtp_num_layers)]
                 layer_list.extend(nextn_layer_list)
-        layer_files_map_dict = self.load_model.get_layer_files_map()
+        layer_files_map_dict, weight_format = self.load_model.get_layer_files_map()
 
         st_filename_list = []
         for layer in layer_list:
@@ -299,7 +299,7 @@ class Hf2MgConvert(Convert):
 
         all_pp_weights = {}
         for filename in st_filename_list:
-            cur_weights = self.load_model.load_hf_model(os.path.join(self.load_dir, filename))
+            cur_weights = self.load_model.load_hf_model(os.path.join(self.load_dir, filename), weight_format)
             all_pp_weights.update(cur_weights)
 
         if self.mtp_num_layers and hasattr(self.load_model, "mtp_reorder_flag") \
