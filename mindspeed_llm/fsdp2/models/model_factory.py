@@ -143,7 +143,7 @@ class ModelFactory:
         for modules in parallel_args.fsdp_modules[1:]:
             apply_modules[modules] = {'reshard_after_forward': parallel_args.reshard_after_forward,}
         fsdp_plan = FSDPPlanConfig(
-            ignored_modules=[],
+            ignored_modules=parallel_args.ignored_modules if parallel_args.ignored_modules else [],
             apply_modules= apply_modules,
             param_dtype=parallel_args.param_dtype,
             reduce_dtype=parallel_args.reduce_dtype,

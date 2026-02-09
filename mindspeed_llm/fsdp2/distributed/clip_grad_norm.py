@@ -143,7 +143,7 @@ def _local_pth_sum(params: List[torch.nn.Parameter], p: float) -> torch.Tensor:
     grads = [p.grad for p in params if p.grad is not None]
     if not grads:
         # At this point, 0.0 on the current device needs to be returned; otherwise, an error may occur in the subsequent all_reduce operation.
-        return torch.tensor(0.0, device=torch.cuda.current_device(), dtype=torch.float32)
+        return torch.tensor(0.0, device=torch.npu.current_device(), dtype=torch.float32)
         
     grads_local = [
         g.to_local().detach().to(torch.float32) if isinstance(g, DTensor) else g.detach().to(torch.float32)

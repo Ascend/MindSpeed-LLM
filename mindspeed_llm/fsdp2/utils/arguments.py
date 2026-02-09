@@ -381,6 +381,10 @@ class ParallelArguments:
         default_factory=lambda:['model.layers.{*}', 'model.embed_tokens', 'lm_head'],
         metadata={"help": "Model structure of layers with Fully Sharded Data Parallel."},
     )
+    ignored_modules: List[str] = field(
+        default=None,
+        metadata={"help": "Model structure of layers with not Fully Sharded Data Parallel."},
+    )
     reshard_after_forward: bool = field(
         default=True,
         metadata={"help": "Whether to reshard parameters after forward pass (for main FSDP module)"},

@@ -21,10 +21,10 @@ parallel:
     - model.embed_tokens
     - lm_head
   tp_size: 1
-  ep_size: 1
+  ep_size: 4
   ep_modules:
     - model.layers.{*}.mlp.experts
-  ep_fsdp_size: 1
+  ep_fsdp_size: 2
   ep_fsdp_modules:
     - model.layers.{*}.mlp.experts
   ep_dispatcher: eager

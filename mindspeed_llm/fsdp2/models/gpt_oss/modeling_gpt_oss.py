@@ -24,6 +24,7 @@ from transformers.utils.deprecation import deprecate_kwarg
 from transformers.utils.generic import OutputRecorder, check_model_inputs
 from transformers.models.gpt_oss.configuration_gpt_oss import GptOssConfig
 
+from mindspeed.ops.grouped_matmul import eager_grouped_matmul, fused_grouped_matmul
 backend = os.environ.get("TRAINING_BACKEND", "mcore").lower()
 if backend == "mcore":
     from megatron.training import get_args
@@ -171,6 +172,49 @@ class GptOssFusedExperts(nn.Module):
 
         return next_states.view(batch_size, -1, self.hidden_size)
 
+    def ep_forward(self, hidden_states, split_list):
+    
+        def as_local(t):
+            return t.to_local() if hasattr(t, "to_local") else t
+        gate_up_weights = as_local(self.gate_up_proj)
+        down_weights = as_local(self.down_proj)
+        gate_up_bias = as_local(self.gate_up_proj_bias)
+        down_bias = as_local(self.down_proj_bias)
+    
+        split_list_tensor = None
+        if gate_up_bias is not None or down_bias is not None:
+            if isinstance(split_list, list):
+                split_list_tensor = torch.tensor(split_list, device=hidden_states.device)
+            else:
+                split_list_tensor = split_list
+
+        gate_up_out = fused_grouped_matmul(hidden_states, split_list, gate_up_weights)
+    
+        # Add Bias
+        if gate_up_bias is not None:
+            expanded_bias = gate_up_bias.repeat_interleave(split_list_tensor, dim=0)
+            gate_up_out = gate_up_out + expanded_bias
+    
+        # --- Activation (SwiGLU) ---
+        gate_up_view = gate_up_out.view(gate_up_out.shape[0], self.expert_dim, 2)
+    
+        gate = gate_up_view[:, :, 0]
+        up = gate_up_view[:, :, 1]
+    
+        gate = gate.clamp(min=None, max=self.limit)
+        up = up.clamp(min=-self.limit, max=self.limit)
+        glu = gate * torch.sigmoid(gate * self.alpha)
+        intermediate_activations = (up + 1.0) * glu
+
+        output = fused_grouped_matmul(intermediate_activations, split_list, down_weights)
+    
+        # Add Bias
+        if down_bias is not None:
+            expanded_down_bias = down_bias.repeat_interleave(split_list_tensor, dim=0)
+            output = output + expanded_down_bias
+    
+        return output
+
 
 class GptOssExperts(nn.Module):
     def __init__(self, config):
@@ -247,6 +291,49 @@ class GptOssExperts(nn.Module):
             next_states = next_states.sum(dim=0)
         return next_states
 
+    def ep_forward(self, hidden_states, split_list):
+    
+        def as_local(t):
+            return t.to_local() if hasattr(t, "to_local") else t
+    
+        gate_up_weights = as_local(self.gate_up_proj)
+        down_weights = as_local(self.down_proj)
+        gate_up_bias = as_local(self.gate_up_proj_bias)
+        down_bias = as_local(self.down_proj_bias)
+    
+        split_list_tensor = None
+        if gate_up_bias is not None or down_bias is not None:
+            if isinstance(split_list, list):
+                split_list_tensor = torch.tensor(split_list, device=hidden_states.device)
+            else:
+                split_list_tensor = split_list
+        gate_up_out = eager_grouped_matmul(hidden_states, split_list, gate_up_weights)
+    
+        # Add Bias
+        if gate_up_bias is not None:
+            expanded_bias = gate_up_bias.repeat_interleave(split_list_tensor, dim=0)
+            gate_up_out = gate_up_out + expanded_bias
+    
+        # --- Activation (SwiGLU) ---
+        gate_up_view = gate_up_out.view(gate_up_out.shape[0], self.expert_dim, 2)
+    
+        gate = gate_up_view[:, :, 0]
+        up = gate_up_view[:, :, 1]
+    
+        gate = gate.clamp(min=None, max=self.limit)
+        up = up.clamp(min=-self.limit, max=self.limit)
+        glu = gate * torch.sigmoid(gate * self.alpha)
+        intermediate_activations = (up + 1.0) * glu
+
+        output = eager_grouped_matmul(intermediate_activations, split_list, down_weights)
+    
+        # Add Bias
+        if down_bias is not None:
+            expanded_down_bias = down_bias.repeat_interleave(split_list_tensor, dim=0)
+            output = output + expanded_down_bias
+    
+        return output
+
 
 class GptOssTopKRouter(nn.Module):
     def __init__(self, config):
@@ -277,14 +364,14 @@ class GptOssMLP(nn.Module):
         super().__init__()
         self.router = GptOssTopKRouter(config)
         args = get_args()
-        if args.moe_grouped_gemm:
+        if args.moe_grouped_gemm or args.ep_dispatcher == 'fused':
             self.experts = GptOssFusedExperts(config)
         else:
             self.experts = GptOssExperts(config)
 
     def forward(self, hidden_states):
         router_scores, router_indices = self.router(hidden_states)  # (num_experts, seq_len)
-        routed_out = self.experts(hidden_states, router_indices=router_indices, routing_weights=router_scores)
+        routed_out = self.experts(hidden_states, router_indices, router_scores)
         return routed_out, router_scores
 
 
