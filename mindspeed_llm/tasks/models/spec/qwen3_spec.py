@@ -48,7 +48,7 @@ layer_spec = ModuleSpec(
             ),
         ),
         self_attn_bda=get_bias_dropout_add,
-        pre_mlp_layernorm=PTNorm if num_experts else IdentityOp,
+        pre_mlp_layernorm=IdentityOp if not num_experts and use_te else PTNorm,
         mlp=_get_mlp_module_spec(
             use_te=use_te, num_experts=num_experts, moe_grouped_gemm=moe_grouped_gemm
         ),
