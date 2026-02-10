@@ -179,11 +179,12 @@ class MegatronDataManager(DataManager):
         model_args: "ModelArguments",
         data_args: "DataArguments",
         training_args: "TrainingArguments",
+        parallel_args: "ParallelArguments",
         stage: Literal["pt", "sft"],
         tokenizer: "PreTrainedTokenizer",
         template: "Template"
     ):
-        super().__init__(model_args, data_args, training_args, stage, tokenizer, template)
+        super().__init__(model_args, data_args, training_args, parallel_args, stage, tokenizer, template)
         self.model_args = model_args
         self.data_args = data_args
         self.training_args = training_args
@@ -263,6 +264,7 @@ class DataFactory:
                 model_args=model_args,
                 data_args=data_args,
                 training_args=training_args,
+                parallel_args=parallel_args,
                 stage=stage,
                 tokenizer=tokenizer,
                 template=template

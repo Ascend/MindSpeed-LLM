@@ -1,0 +1,63 @@
+model:
+  model_id: step35
+  model_name_or_path: /home/hf_weights/Step-3.5-Flash/
+  trust_remote_code: True
+  train_from_scratch: False
+  tokenizer_name_or_path: /home/hf_weights/Step-3.5-Flash/
+  init_model_with_meta_device: True
+
+data:
+  dataset: /home/dataset/train-00000-of-00042-d964455e17e96d5a.parquet
+  template: gpt
+  cutoff_len: 4096
+  max_samples: 100000
+  overwrite_cache: True
+  preprocessing_num_workers: 1
+  data_manager_type: mg
+
+parallel:
+  data_parallel_mode: fsdp2
+  fsdp_size: 192
+  fsdp_modules:
+    - model.layers.{*}
+    - model.embed_tokens
+    - lm_head
+  tp_size: 1
+  ep_modules:
+    - model.layers.{*}.mlp.experts
+  ep_size: 96
+  ep_fsdp_size: 2
+  ep_fsdp_modules:
+    - model.layers.{*}.mlp.experts
+  ignored_modules: 
+    - model.layers.{*}.mlp.router
+  ep_dispatcher: eager
+  recompute: False
+  recompute_modules:
+    - model.layers.{*}
+  cp_size: 1
+  cp_type: ulysses
+
+training:
+  stage: pt
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 1
+  dataloader_num_workers : 1
+  disable_shuffling: 1
+  seed: 42
+  dataloader_drop_last: True
+  output_dir: ./output
+  optimizer: adamw
+  lr: 1e-05
+  weight_decay: 0.01
+  adam_beta1: 0.9
+  adam_beta2: 0.95
+  adam_epsilon: 1e-08
+  max_grad_norm: 1.0
+  lr_scheduler_type: cosine
+  warmup_ratio: 0.0
+  min_lr: 1e-06
+  num_train_epochs: 3.0
+  max_steps: -1
+  save_steps: 500
+  logging_steps: 1

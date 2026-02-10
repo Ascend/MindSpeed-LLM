@@ -13,8 +13,10 @@ class ModelRegistry:
 
     if backend == "mindspeed_fsdp":
         from mindspeed_llm.fsdp2.models.gpt_oss.modeling_gpt_oss import GptOssForCausalLM
+        from mindspeed_llm.fsdp2.models.step35.modeling_step3p5 import Step3p5ForCausalLM
         _REGISTRY: Dict[str, Type[Any]] = {
             "gpt_oss": GptOssForCausalLM,
+            "step35": Step3p5ForCausalLM,
         }
 
     else:

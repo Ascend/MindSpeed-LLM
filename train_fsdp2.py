@@ -22,6 +22,7 @@ except ImportError:
 from dataclasses import dataclass, field, fields
 import torch
 import torch_npu
+from torch_npu.contrib import transfer_to_npu
 
 from mindspeed_llm.fsdp2.models.model_factory import ModelFactory
 from mindspeed_llm.fsdp2.optim.optimizer import OptimizerFactory
