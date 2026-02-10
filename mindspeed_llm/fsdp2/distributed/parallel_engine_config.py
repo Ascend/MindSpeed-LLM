@@ -53,7 +53,6 @@ class QuantizeConfig:
     extra_args: Dict[str, Any] = field(default_factory=dict)  # for future extensibility
 
 
-
 @dataclass
 class ParallelEngineConfig:
     data_parallel_size: int = 1
@@ -83,6 +82,7 @@ class ParallelEngineConfig:
         self.validate_ep_config()
         self.validate_cp_config()
         self.validate_recompute_config()
+        self.validate_quantization_config()
         self.validate_fsdp_config()
 
     def validate_fsdp_config(self):
@@ -145,6 +145,7 @@ class ParallelEngineConfig:
         if self.context_parallel_type not in ["ulysses"]:
             raise Exception("context parallel type must be `ulysses`.")
 
-    def validate_quantize_config(self):
+    def validate_quantization_config(self):
         self.quantization_plan = QuantizeConfig() if self.quantization_plan is None else self.quantization_plan
+
 
