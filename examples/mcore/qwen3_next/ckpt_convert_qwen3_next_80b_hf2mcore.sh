@@ -5,8 +5,8 @@ python convert_ckpt_v2.py \
     --load-model-type hf \
     --save-model-type mg \
     --target-tensor-parallel-size 1 \
-    --target-pipeline-parallel-size 1 \
-    --target-expert-parallel-size 64 \
+    --target-pipeline-parallel-size 8 \
+    --target-expert-parallel-size 8 \
     --load-dir ./model_from_hf/qwen3_next_hf/ \
     --save-dir ./model_weights/qwen3_next_mcore/ \
     --moe-grouped-gemm \
