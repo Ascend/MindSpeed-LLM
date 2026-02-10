@@ -11,8 +11,6 @@ from mindspeed_llm.fsdp2.distributed.parallel_engine_config import ParallelEngin
 from mindspeed_llm.fsdp2.distributed.context_parallel.ulysses_cp_parallel import ulysses_parallelize_modules
 from mindspeed_llm.fsdp2.distributed.expert_parallel.expert_parallel import expert_parallelize_modules
 from mindspeed_llm.fsdp2.distributed.expert_parallel.expert_fully_shard_parallel import expert_fully_shard_modules
-from mindspeed.fsdp.distributed.expert_parallel.expert_parallel import expert_parallelize_modules
-from mindspeed.fsdp.quantization.converter.model_converter import build_model_converter
 from mindspeed_llm.fsdp2.models.model_loader import WeightLoader
 from mindspeed_llm.fsdp2.utils.logging import get_logger
 

@@ -458,6 +458,8 @@ class Trainer:
                 data = next(epoch_iterator)
                 data["input_ids"] = data["input_ids"].npu(non_blocking=True)
                 data["labels"] = data["labels"].npu(non_blocking=True)
+                if "attention_mask" in data:
+                    data["attention_mask"] = data["attention_mask"].npu(non_blocking=True)
                 if "position_ids" in data:
                     data["position_ids"] = data["position_ids"].npu(non_blocking=True)
                 batch_samples.append(data)

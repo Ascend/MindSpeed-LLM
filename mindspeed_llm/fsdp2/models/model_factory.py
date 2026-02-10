@@ -86,7 +86,8 @@ class ModelFactory:
         if getattr(model_args, 'model_id', None):
             logger.info_rank0(f"> Using factory mode with model_id: {model_args.model_id}")
             model_cls = ModelRegistry.get_model_class(model_args.model_id)
-            model_cls.register_patches(model_args)
+            if hasattr(model_cls, 'register_patches'):
+                model_cls.register_patches(model_args)
 
         # Use ModelLoader to create model based on init_device
         loader = ModelLoader(model_args, init_device=init_device)
