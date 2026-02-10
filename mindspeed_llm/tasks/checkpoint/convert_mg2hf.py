@@ -102,8 +102,13 @@ class Mg2HfConvert(Convert):
         self._valid_parameter()
         
     def check_etp_conflict(self):
-        if self.expert_tensor_parallel_size is not None and self.expert_tensor_parallel_size != 1:
-            raise ValueError("Currently expert-tensor-parallel-size is only support to be set to 1 or None")
+        if self.expert_tensor_parallel_size is None:
+            self.expert_tensor_parallel_size = self.tensor_model_parallel_size
+        if self.expert_tensor_parallel_size != 1 and self.expert_tensor_parallel_size != self.tensor_model_parallel_size:
+            raise ValueError(
+                f"Invalid expert-tensor-parallel-size configuration: only 1 or None are supported. "
+                f"When set to None, it defaults to tensor_model_parallel_size={self.tensor_model_parallel_size}."
+            )
         if self.expert_tensor_parallel_size == 1:
             if self.tensor_model_parallel_size % self.expert_model_parallel_size != 0 and self.expert_model_parallel_size % self.tensor_model_parallel_size != 0:
                 raise ValueError("Currently if expert-tensor-parallel-size is set to 1, then target-tensor-parallel-size must be divisible by target-expert-parallel-size or target-expert-parallel-size must be divisible by target-tensor-parallel-size")

@@ -945,7 +945,7 @@ def is_distributed_ckpt_complete(
 
         for tp_rank in range(tp):
             for pp_rank in range(pp):
-                for ep_rank in rangr(ep):
+                for ep_rank in range(ep):
                     if ep == 1 and pp == 1:
                         rank_dir = f"mp_rank_{tp_rank:02d}"
                     elif pp ==1 and ep != 1:
