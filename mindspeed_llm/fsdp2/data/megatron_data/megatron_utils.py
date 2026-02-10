@@ -8,7 +8,7 @@ import numpy
 import torch
 from torch import distributed as dist
 
-from mindspeed.fsdp.distributed.parallel_state import ParallelState
+from mindspeed_llm.fsdp2.distributed.parallel_state import ParallelState
 from mindspeed_llm.fsdp2.utils.logging import get_logger
 from mindspeed_llm.fsdp2.utils.global_vars import get_args
 logger = get_logger(__name__)

@@ -1,4 +1,5 @@
 # Copyright (c) 2025, Huawei Technologies Co., Ltd. All rights reserved.
+from typing import Optional
 import torch
 
 from mindspeed.fsdp.distributed.fully_shard_parallel.fully_shard_parallel import \
@@ -10,13 +11,21 @@ from mindspeed_llm.fsdp2.distributed.parallel_engine_config import ParallelEngin
 from mindspeed_llm.fsdp2.distributed.context_parallel.ulysses_cp_parallel import ulysses_parallelize_modules
 from mindspeed_llm.fsdp2.distributed.expert_parallel.expert_parallel import expert_parallelize_modules
 from mindspeed_llm.fsdp2.distributed.expert_parallel.expert_fully_shard_parallel import expert_fully_shard_modules
+from mindspeed.fsdp.distributed.expert_parallel.expert_parallel import expert_parallelize_modules
+from mindspeed.fsdp.quantization.converter.model_converter import build_model_converter
+from mindspeed_llm.fsdp2.models.model_loader import WeightLoader
+from mindspeed_llm.fsdp2.utils.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class MindSpeedParallelEngine(torch.nn.Module):
-    def __init__(self, config: ParallelEngineConfig, model: torch.nn.Module):
+    def __init__(self, config: ParallelEngineConfig, model: torch.nn.Module, init_device: str = "cpu", weights_path: Optional[str] = None):
         super(MindSpeedParallelEngine, self).__init__()
         self.config = config
         self.model = model
+        self.init_device = init_device
+        self.weights_path = weights_path
 
         self.parallel_state = init_parallel_state(self.config)
         self.apply_tp_modules()
@@ -25,6 +34,15 @@ class MindSpeedParallelEngine(torch.nn.Module):
         self.apply_recompute_modules()
         self.apply_quantization_modules()
         self.apply_fsdp_modules()
+
+        # For meta device: load weights after fsdp wrapping
+        if self.init_device == "meta":
+            logger.info_rank0("> Loading weights after FSDP wrapping...")
+            WeightLoader.load(
+                model=self.model,
+                weights_path=self.weights_path,
+                device=None  # Auto-detect device
+            )
 
     def apply_fsdp_modules(self):
         self.model = fully_shard_parallel_modules(self.model, self.parallel_state.get_fsdp_device_mesh(), self.config.fsdp_plan)

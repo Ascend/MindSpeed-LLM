@@ -53,5 +53,4 @@ training:
   num_train_epochs: 3.0
   max_steps: 2000
   save_steps: 500
-  resume_from_checkpoint: None
   logging_steps: 1

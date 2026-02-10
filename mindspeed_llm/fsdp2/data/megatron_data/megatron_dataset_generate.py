@@ -15,7 +15,7 @@ from mindspeed_llm.fsdp2.data.megatron_data.megatron_gpt_dataset import GPTDatas
 from mindspeed_llm.fsdp2.data.megatron_data.indexed_dataset import IndexedDataset
 from mindspeed_llm.fsdp2.data.megatron_data.blended_megatron_dataset_builder import BlendedMegatronDatasetBuilder
 from mindspeed_llm.fsdp2.data.megatron_data.megatron_tokenizer import _AutoTokenizer
-from mindspeed.fsdp.distributed.parallel_state import ParallelState
+from mindspeed_llm.fsdp2.distributed.parallel_state import ParallelState
 
 
 logger = get_logger(__name__)

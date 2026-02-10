@@ -20,7 +20,6 @@ from mindspeed_llm.fsdp2.distributed.parallel_state import ParallelState
 from .data_utils import get_dataset
 from .template import Template
 from .collator import SFTDataCollatorWith4DAttentionMask
-from mindspeed.fsdp.distributed.parallel_state import ParallelState
 from mindspeed_llm.fsdp2.data.megatron_data.megatron_dataset_generate import train_valid_test_datasets_provider
 from mindspeed_llm.fsdp2.data.megatron_data.megatron_dataset_samplers import MegatronPretrainingSampler, MegatronPretrainingRandomSampler
 
