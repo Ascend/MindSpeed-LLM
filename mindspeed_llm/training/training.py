@@ -774,8 +774,8 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
                 if full_checkpoint:
                     if not args.only_convert_last_checkpoint or iteration == args.train_iters:
                         _convert_weights_mg2hf(args, iteration)
-                    else:
-                        logging.warning("checkpoint not found, cannot convert mg2hf")
+                else:
+                    logging.warning("checkpoint not found, cannot convert mg2hf")
             update_save_checkpoint_chmod(config.save)
             saved_checkpoint = True
 

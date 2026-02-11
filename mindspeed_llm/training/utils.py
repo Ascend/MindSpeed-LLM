@@ -933,35 +933,59 @@ def is_distributed_ckpt_complete(
     """
     args = get_args()
 
+    def get_etp_valid_ckpts_list(tp: int, ep: int):
+        valid = []
+        if tp % ep == 0:
+            for tp_rank in range(tp):
+                ep_rank = tp_rank % ep
+                valid.append((tp_rank, ep_rank))
+        elif ep % tp == 0:
+            for ep_rank in range(ep):
+                tp_rank = ep_rank % tp
+                valid.append((tp_rank, ep_rank))
+        return valid
+
     def _check_ckpt() -> bool:
         tp = args.tensor_model_parallel_size
         pp = args.pipeline_model_parallel_size
         ep = args.expert_model_parallel_size
+        etp = args.expert_tensor_parallel_size
+        enable_etp = (etp == 1) and (tp != 1)
 
         iter_dir = os.path.join(save_path, f"iter_{iteration:07d}")
 
         if not os.path.isdir(iter_dir):
             return False
 
-        for tp_rank in range(tp):
+        if enable_etp and ep > 1:
+            tp_ep_pairs = get_etp_valid_ckpts_list(tp, ep)
+        else:
+            tp_ep_pairs = [
+                (tp_rank, ep_rank)
+                for tp_rank in range(tp)
+                for ep_rank in range(ep)
+            ]
+
+        for tp_rank, ep_rank in tp_ep_pairs:
             for pp_rank in range(pp):
-                for ep_rank in range(ep):
-                    if ep == 1 and pp == 1:
-                        rank_dir = f"mp_rank_{tp_rank:02d}"
-                    elif pp ==1 and ep != 1:
-                        rank_dir = f"mp_rank_{tp_rank:02d}_{ep_rank:03d}"
-                    elif ep ==1 and pp != 1:
-                        rank_dir = f"mp_rank_{tp_rank:02d}_{pp_rank:03d}"
-                    else:
-                        rank_dir = (
-                            f"mp_rank_{tp_rank:02d}_{pp_rank:03d}_{ep_rank:03d}"
-                        )
-                    weight_path = os.path.join(
-                        iter_dir, rank_dir, weight_filename
+                if ep == 1 and pp == 1:
+                    rank_dir = f"mp_rank_{tp_rank:02d}"
+                elif pp == 1 and ep != 1:
+                    rank_dir = f"mp_rank_{tp_rank:02d}_{ep_rank:03d}"
+                elif ep == 1 and pp != 1:
+                    rank_dir = f"mp_rank_{tp_rank:02d}_{pp_rank:03d}"
+                else:
+                    rank_dir = (
+                        f"mp_rank_{tp_rank:02d}_{pp_rank:03d}_{ep_rank:03d}"
                     )
 
-                    if not os.path.isfile(weight_path):
-                        return False
+
+                weight_path = os.path.join(
+                    iter_dir, rank_dir, weight_filename
+                )
+
+                if not os.path.isfile(weight_path):
+                    return False
 
         return True
 
