@@ -20,4 +20,4 @@ DISTRIBUTED_ARGS="
     --master_port $MASTER_PORT
 "
 
-torchrun $DISTRIBUTED_ARGS train_fsdp2.py examples/fsdp2/step35/pretrain_step_3p5_flash_196b_a3b_4K_fsdp2.yaml
+torchrun $DISTRIBUTED_ARGS train_fsdp2.py examples/fsdp2/step35/pretrain_step_3p5_flash_196b_4K_fsdp2.yaml
