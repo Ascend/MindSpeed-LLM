@@ -16,7 +16,6 @@ data:
   data_manager_type: mg
 
 parallel:
-  data_parallel_mode: fsdp2
   fsdp_size: 192
   fsdp_modules:
     - model.layers.{*}

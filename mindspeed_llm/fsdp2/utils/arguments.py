@@ -99,10 +99,6 @@ class ModelArguments:
         default="main",
         metadata={"help": "The specific model version to use (can be a branch name, tag name or commit id)."},
     )
-    infer_dtype: Literal["auto", "float16", "bfloat16", "float32"] = field(
-        default="auto",
-        metadata={"help": "Data type for model weights and activations at inference."},
-    )
     hf_hub_token: Optional[str] = field(
         default=None,
         metadata={"help": "Auth token to log in with Hugging Face Hub."},
@@ -170,7 +166,7 @@ class DataArguments:
         metadata={"help": "Eval dataset: config dict or comma-separated eval dataset names."}
     )
     dataset_dir: str = field(
-        default="./configs/FSDP2/data",
+        default="./configs/fsdp2/data",
         metadata={"help": "Path to the folder containing the datasets."},
     )
     cutoff_len: int = field(
@@ -233,9 +229,9 @@ class DataArguments:
         default=False,
         metadata={"help": "Whether or not to evaluate on each dataset separately."},
     )
-    packing: Optional[bool] = field(
-        default=None,
-        metadata={"help": "Enable sequences packing in training. Will automatically enable in pre-training."},
+    packing: bool = field(
+        default=False,
+        metadata={"help": "Enable sequences packing in training."},
     )
     neat_packing: bool = field(
         default=False,
@@ -285,7 +281,7 @@ class DataArguments:
         default=False,
         metadata={"help": "if no shared storage, set it."}
     )
-    dataloader_type: Literal["single", "cyclic", "external"] = field(
+    dataloader_type: Literal["single"] = field(
         default="single",
         metadata={
             "help": ("Single pass vs multiple pass data loader")
@@ -363,10 +359,6 @@ class ParallelArguments:
     ep_fsdp_size: int = field(
         default=1,
         metadata={"help": "FSDP size inside Expert Parallel groups."}
-    )
-    data_parallel_mode: Literal["ddp", "fsdp1", "fsdp2"] = field(
-        default="ddp",
-        metadata={"help": "Data parallel mode."},
     )
     cp_size: int = field(
         default=1,
@@ -468,11 +460,11 @@ class TrainingArguments:
     )
     lr: float = field(
         default=1e-5,
-        metadata={"help": "The initial learning rate for AdamW."}
+        metadata={"help": "The initial learning rate."}
     )
     weight_decay: float = field(
         default=0.01,
-        metadata={"help": "Weight decay for AdamW if we apply some."}
+        metadata={"help": "Weight decay if we apply some."}
     )
     adam_beta1: float = field(
         default=0.9,
@@ -492,7 +484,7 @@ class TrainingArguments:
     )
 
     # --- Scheduling ---
-    lr_scheduler_type: str = field(
+    lr_scheduler_type: Literal["cosine", "linear", "constant"] = field(
         default="cosine",
         metadata={"help": "The scheduler type to use. (cosine, linear, constant)"}
     )
@@ -544,10 +536,7 @@ class TrainingArguments:
         default=1,
         metadata={"help": "Log every X updates steps."}
     )
-    report_to: Optional[str] = field(
-        default="wandb",
-        metadata={"help": "The list of integrations to report the results and logs to (e.g. 'wandb', 'tensorboard')."}
-    )
+
     stage: Literal["pt", "sft"] = field(
         default="sft",
         metadata={"help": "Which stage will be performed in training."},

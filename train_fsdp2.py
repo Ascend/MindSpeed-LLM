@@ -234,7 +234,6 @@ class MindSpeedAutoTrainer:
       logger.info_rank0("> Building Optimizer...")
       return OptimizerFactory.create(
          model=model,
-         data_parallel_mode=self.parallel_args.data_parallel_mode,
          ep_size=self.parallel_args.ep_size,
          lr=self.training_args.lr,
          optimizer_type=self.training_args.optimizer,

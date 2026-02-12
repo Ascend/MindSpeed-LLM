@@ -14,7 +14,6 @@ data:
   preprocessing_num_workers: 1
 
 parallel:
-  data_parallel_mode: fsdp2
   fsdp_size: 8
   fsdp_modules:
     - model.layers.{*}

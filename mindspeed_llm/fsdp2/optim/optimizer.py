@@ -67,7 +67,6 @@ class OptimizerFactory:
     @staticmethod
     def create(
             model: torch.nn.Module,
-            data_parallel_mode: str,
             ep_size: int,
             lr: float,
             optimizer_type: str,
@@ -84,7 +83,6 @@ class OptimizerFactory:
 
         Args:
             model: Model to be optimized
-            data_parallel_mode: Data parallel mode
             ep_size: Expert parallel size
             lr: Base learning rate
             optimizer_type: Type of optimizer
@@ -97,7 +95,7 @@ class OptimizerFactory:
             no_decay_params: List of parameter names that do not require weight decay
         """
         # Multi-optimizer (EP+FSDP2) Processing
-        if data_parallel_mode == "fsdp2" and ep_size > 1:
+        if ep_size > 1:
             logger.info_rank0("Building EP+FSDP2 optimizer (MultiOptimizer)")
             return OptimizerFactory._build_ep_fsdp2_optimizer(
                 model=model,
