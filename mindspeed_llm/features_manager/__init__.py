@@ -36,6 +36,7 @@ from mindspeed.features_manager import (
     ProfilerDefaultFeature,
     OptimizeP2PCommFeature,
     FusionAttentionV2Feature,
+    MoEAlltoAllMC2Feature
 )
 from mindspeed.features_manager.feature import MindSpeedFeature
 from mindspeed.features_manager.features_manager import MindSpeedFeaturesManager
@@ -232,6 +233,7 @@ def add_swap_manage_features(features_list: List[MindSpeedFeature]):
 def add_moe_features(features_list: List[MindSpeedFeature]):
     features_list.extend([
         MoEGmmFeature(),
+        MoEAlltoAllMC2Feature(),
         # LLM feature
         MoERouter(),
         MoETpExtendEpFeature(),

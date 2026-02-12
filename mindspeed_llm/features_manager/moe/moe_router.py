@@ -100,7 +100,7 @@ class MoERouter(MindSpeedFeature):
             patch_manager.register_patch('megatron.core.transformer.moe.moe_layer.MoELayer.__init__', zero_experts_moe_layer_init_wrapper)
             patch_manager.register_patch('megatron.core.transformer.moe.moe_layer.MoELayer.forward', zero_experts_moe_forward)
 
-        elif not (args.moe_allgather_overlap_comm or args.moe_alltoall_overlap_comm):
+        elif not (args.moe_alltoall_mc2 or args.moe_allgather_overlap_comm or args.moe_alltoall_overlap_comm):
             # add moe layer forward patch for deepseekv2
             patch_manager.register_patch('megatron.core.transformer.moe.moe_layer.MoELayer.forward',
                                           moe_layer_forward)
