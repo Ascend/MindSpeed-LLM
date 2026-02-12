@@ -949,6 +949,59 @@
         "layers_mlp1_up_proj": "model.layers[layer_idx].mlps.1.up_proj",
         "layers_mlp1_linear_fc2": "model.layers[layer_idx].mlps.1.down_proj"
       }
+    },
+    "glm5": {
+      "__base__": "base",
+      "config_set_value": {
+        "qkv_type": "pack_mla",
+        "multi_latent_attention": true,
+        "qk_layernorm": true,
+        "router_bias": true,
+        "enable_dsa_indexer": true,
+        "moe_grouped_gemm": true,
+        "first_k_dense_replace": 3,
+        "torch_dtype": "bfloat16"
+      },
+      "config_hf_key_mapping": {
+        "torch_dtype": "dtype",
+        "kv_lora_rank": "kv_lora_rank",
+        "q_lora_rank": "q_lora_rank",
+        "v_head_dim": "v_head_dim",
+        "qk_head_dim": "qk_nope_head_dim",
+        "qk_pos_emb_head_dim": "qk_rope_head_dim",
+        "num_experts": "n_routed_experts",
+        "moe_intermediate_size": "moe_intermediate_size",
+        "moe_layer_freq": "moe_layer_freq",
+        "n_shared_experts": "n_shared_experts"
+      },
+      "model_hf_key_mapping": {
+        "layers_self_attention_linear_q_proj": "model.layers[layer_idx].self_attn.q_a_proj",
+        "layers_self_attention_linear_kv_proj": "model.layers[layer_idx].self_attn.kv_a_proj_with_mqa",
+        "layers_self_attention_linear_proj": "model.layers[layer_idx].self_attn.o_proj",
+        "layers_self_attention_linear_q_up_proj": "model.layers[layer_idx].self_attn.q_b_proj",
+        "layers_self_attention_linear_kv_up_proj": "model.layers[layer_idx].self_attn.kv_b_proj",
+        "layers_self_attention_q_layernorm": "model.layers[layer_idx].self_attn.q_a_layernorm",
+        "layers_self_attention_kv_layernorm": "model.layers[layer_idx].self_attn.kv_a_layernorm",
+        "layers_self_attention_indexer_k_norm": "model.layers[layer_idx].self_attn.indexer.k_norm",
+        "layers_self_attention_indexer_weights_proj": "model.layers[layer_idx].self_attn.indexer.weights_proj.weight",
+        "layers_self_attention_indexer_wk": "model.layers[layer_idx].self_attn.indexer.wk",
+        "layers_self_attention_indexer_wq_b": "model.layers[layer_idx].self_attn.indexer.wq_b",
+        "layers_mlp_router": "model.layers[layer_idx].mlp.gate",
+        "layers_mlp_router_bias": "model.layers[layer_idx].mlp.gate.e_score_correction_bias",
+        "layers_mlp_experts_gate_proj": "model.layers[layer_idx].mlp.experts[expert_idx].gate_proj",
+        "layers_mlp_experts_up_proj": "model.layers[layer_idx].mlp.experts[expert_idx].up_proj",
+        "layers_mlp_experts_linear_fc2": "model.layers[layer_idx].mlp.experts[expert_idx].down_proj",
+        "layers_mlp_shared_experts_gate_proj": "model.layers[layer_idx].mlp.shared_experts.gate_proj",
+        "layers_mlp_shared_experts_up_proj": "model.layers[layer_idx].mlp.shared_experts.up_proj",
+        "layers_mlp_shared_experts_linear_fc2": "model.layers[layer_idx].mlp.shared_experts.down_proj",
+        "final_layernorm": "model.norm",
+        "output_layer": "lm_head",
+        "mtp_layers_enorm": "model.layers[layer_idx].enorm",
+        "mtp_layers_hnorm": "model.layers[layer_idx].hnorm",
+        "mtp_layers_eh_proj": "model.layers[layer_idx].eh_proj",
+        "mtp_layers_embed_tokens": "model.layers[layer_idx].embed_tokens",
+        "mtp_layers_shared_head_norm": "model.layers[layer_idx].shared_head.norm"
+      }
     }
   }
 }
