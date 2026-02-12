@@ -1,0 +1,60 @@
+model:
+  model_id: gpt_oss
+  model_name_or_path: /data/ci/models/gpt_oss_20b/
+  trust_remote_code: False
+  train_from_scratch: False
+  tokenizer_name_or_path: None
+
+data:
+  dataset: 
+    file_name: "/data/ci/datasets/origin/train-00000-of-00001-a09b74b3ef9c3b56.parquet"
+    formatting: "alpaca"
+  template: gpt
+  cutoff_len: 2048
+  max_samples: 100000
+  overwrite_cache: True
+  preprocessing_num_workers: 1
+
+parallel:
+  fsdp_size: 8
+  fsdp_modules:
+    - model.layers.{*}
+    - model.embed_tokens
+    - lm_head
+  tp_size: 1
+  ep_size: 4
+  ep_modules:
+    - model.layers.{*}.mlp.experts
+  ep_fsdp_size: 2
+  ep_fsdp_modules:
+    - model.layers.{*}.mlp.experts
+  ep_dispatcher: eager
+  recompute: True
+  recompute_modules:
+    - model.layers.{*}
+  cp_size: 1
+  cp_type: ulysses
+
+training:
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 1
+  dataloader_num_workers : 1
+  disable_shuffling: 1
+  seed: 42
+  dataloader_drop_last: True
+  output_dir: ./output
+  optimizer: adamw
+  lr: 1e-05
+  weight_decay: 0.01
+  adam_beta1: 0.9
+  adam_beta2: 0.95
+  adam_epsilon: 1e-08
+  max_grad_norm: 1.0
+  lr_scheduler_type: cosine
+  warmup_ratio: 0.0
+  min_lr: 1e-06
+  num_train_epochs: 3.0
+  max_steps: 15
+  save_steps: 0
+  save_epochs: 0
+  logging_steps: 1

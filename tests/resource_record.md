@@ -170,5 +170,24 @@
         <td>/</td>
         <td>/</td>
     </tr>
-
+        </tr>
+        <tr>
+        <td>pretrain_qwen3_8b_4k_fsdp2</td>
+        <td>/data/ci/models/qwen3_8b</td>
+        <td>/</td>
+        <td>/data/ci/datasets/origin/train-00000-of-00001-a09b74b3ef9c3b56.parquet</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/</td>
+    </tr>
+        </tr>
+        <tr>
+        <td>tune_gpt_oss_20b_a3b_4k_fsdp2</td>
+        <td>/data/ci/models/gpt_oss_20b/</td>
+        <td>/</td>
+        <td>/data/ci/datasets/origin/train-00000-of-00001-a09b74b3ef9c3b56.parquet</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/</td>
+    </tr>
 </table>

@@ -129,9 +129,6 @@ def ep_fsdp2_clip_grad_norm(
     else:
         total_norm = (non_ep_total + ep_total) ** (1.0 / float(norm_type))
 
-    if isinstance(total_norm, DTensor):
-        total_norm = total_norm.to_local()
-
     # Apply the same clip coefficient to both groups
     torch.nn.utils.clip_grads_with_norm_(ep_params, max_norm, total_norm, foreach=False)
     torch.nn.utils.clip_grads_with_norm_(non_ep_params, max_norm, total_norm, foreach=False)

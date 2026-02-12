@@ -23,9 +23,8 @@ def transfer_logs_as_json(log_file, output_json_file):
     """
 
     log_pattern = re.compile(
-        r"elapsed time per iteration \(ms\):\s+([0-9.]+)\s+\| .*?lm loss:\s+([0-9.]+E[+-][0-9]+)\s+\| .*?grad norm:\s+([0-9.]+) | .* actor/pg_loss : ([0-9.]+)"
+        r"elapsed time per iteration \(ms\):\s+(\d+\.?\d*)\s*\|.*?lm loss:\s+([\d.E+-]+)\s*\|.*?grad norm:\s+(\d+\.?\d*)(?:\s*\|.*?actor/pg_loss\s*:\s*(\d+\.?\d*))?"
     )
-        
     memory_pattern = re.compile(
         r"\[Rank (\d+)\] \(after \d+ iterations\) memory \(MB\) \| allocated: ([0-9.]+) \| max allocated: ([0-9.]+)"
     )
@@ -41,7 +40,6 @@ def transfer_logs_as_json(log_file, output_json_file):
         log_content = f.read()
     log_matches = log_pattern.findall(log_content)
     memory_matches = memory_pattern.findall(log_content)
-
     if log_matches:
         if log_matches[0][1] != "":
             data["lm loss"] = [float(match[1]) for match in log_matches]

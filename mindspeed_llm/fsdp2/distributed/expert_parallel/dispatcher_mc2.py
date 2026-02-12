@@ -2,7 +2,7 @@
 import torch
 
 from mindspeed_llm.fsdp2.distributed.expert_parallel.utils import permute, unpermute
-from mindspeed.fsdp.distributed.dist_ops import gather_along_first_dim_expert_parallel
+from mindspeed_llm.fsdp2.distributed.dist_ops import gather_along_first_dim_expert_parallel
 from mindspeed.ops.grouped_matmul_mc2 import all2all_grouped_matmul, grouped_matmul_all2all
 
 
