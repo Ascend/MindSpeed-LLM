@@ -130,17 +130,23 @@ class ModelLoader:
     def _create_on_meta(self, model_cls=None) -> Tuple[nn.Module, Optional[str]]:
         """Create empty model on meta device."""
         weights_path = None if self.train_from_scratch else self.model_path
-        
+
+        try:
+            ctx = torch.device("meta")
+        except:
+            import contextlib
+            ctx = contextlib.nullcontext()
+
         if model_cls is not None:
             logger.info_rank0(f"> Creating empty {model_cls.__name__} on meta device...")
-            with init_empty_weights(), no_init_weights():
+            with init_empty_weights(), no_init_weights(), ctx:
                 if hasattr(model_cls, '_from_config'):
                     model = model_cls._from_config(self.hf_config)
                 else:
                     model = model_cls.from_config(self.hf_config)
         elif self.train_from_scratch:
             logger.info_rank0("> Creating empty model on meta device for random init...")
-            with init_empty_weights():
+            with init_empty_weights(), ctx:
                 model = AutoModelForCausalLM.from_config(
                     self.hf_config,
                     trust_remote_code=self.trust_remote_code,
@@ -148,7 +154,7 @@ class ModelLoader:
                 )
         else:
             logger.info_rank0(f"> Creating empty model on meta device (weights: {self.model_path})...")
-            with init_empty_weights(), no_init_weights():
+            with init_empty_weights(), no_init_weights(), ctx:
                 model = AutoModelForCausalLM.from_config(
                     self.hf_config,
                     trust_remote_code=self.trust_remote_code,
@@ -370,7 +376,7 @@ class WeightLoader:
         
         # Initialize missing parameters
         if parameter_names_left:
-            logger.info_rank0(f"> Missing {len(parameter_names_left)} parameters, initializing them...")
+            logger.info_rank0(f"> Missing {parameter_names_left} parameters, initializing them...")
             for name in parameter_names_left:
                 try:
                     WeightLoader._init_parameter(model, name)

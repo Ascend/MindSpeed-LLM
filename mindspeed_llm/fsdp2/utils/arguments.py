@@ -25,7 +25,7 @@ class ModelArguments:
     model_name_or_path: str = field(
         metadata={"help": "Path to pretrained model or model identifier from huggingface.co/models"}
     )
-    model_id: Optional[Literal["gpt_oss", "qwen3", "qwen3_moe", "step35"]] = field(
+    model_id: Optional[Literal["gpt_oss", "qwen3", "qwen3_moe", "qwen3_next", "step35"]] = field(
         default=None,
         metadata={"help": "Model type. New model needs to be registered in the class ModelRegistry of mindspeed_llm/fsdp2/models/model_registry.py"}
     )
@@ -557,6 +557,10 @@ class TrainingArguments:
         default=False,
         metadata={"help": "Scale cross entropy loss by the number of non-padded tokens in the global batch, versus the default behavior of assuming all tokens are non-padded"}
     )
+    chunk_loss_size : int = field(
+        default=None,
+        metadata={"help": "Chunk loss size: set to > 0 to enable chunk loss calculation"}
+    )
     dataloader_num_workers: int = field(
         default=0,
         metadata={
@@ -608,6 +612,14 @@ class TrainingArguments:
     use_flash_attn: bool = field(
         default=False,
         metadata={"help": "use FlashAttention implementation of attention."}
+    )
+    use_triton_gdn: bool = field(
+        default=False,
+        metadata={"help": "Use triton kernel accelerate training."}
+    )
+    gdn_chunk_size:int = field(
+        default=64,
+        metadata={"help": "Matrix blocking size of Gated DeltaNet."}
     )
     save_only_model: bool = field(
         default=False, metadata={"help": "When checkpointing, whether to only save the model, or also the optimizer, scheduler & rng state."}

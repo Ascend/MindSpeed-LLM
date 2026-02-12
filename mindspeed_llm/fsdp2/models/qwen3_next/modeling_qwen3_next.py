@@ -20,6 +20,7 @@
 # limitations under the License.
 # Copyright (c) 2025, HUAWEI CORPORATION.  All rights reserved.
 
+import os
 from typing import Any, Callable, Optional, Union
 
 import torch
@@ -51,11 +52,16 @@ from transformers.utils.import_utils import (
     is_causal_conv1d_available,
     is_flash_linear_attention_available,
 )
-from megatron.training import get_args
 
 from mindspeed.core.fusions.grouped_matmul import Ops
 from mindspeed.ops.npu_moe_token_permute import npu_moe_token_permute
 from mindspeed.ops.npu_moe_token_unpermute import npu_moe_token_unpermute
+
+backend = os.environ.get("TRAINING_BACKEND", "mcore").lower()
+if backend == "mcore":
+    from megatron.training import get_args
+else:
+    from mindspeed_llm.fsdp2.utils.global_vars import get_args
 
 if is_causal_conv1d_available():
     from causal_conv1d import causal_conv1d_fn, causal_conv1d_update
@@ -71,20 +77,26 @@ else:
 
 logger = logging.get_logger(__name__)
 
+_GLOBAL_ATTN_MASK = None
+
 
 class Qwen3NextRMSNormGated(nn.Module):
     def __init__(self, hidden_size, eps=1e-6, **kwargs):
         super().__init__()
         self.weight = nn.Parameter(torch.ones(hidden_size))
         self.variance_epsilon = eps
+        self.args = get_args()
 
     def forward(self, hidden_states, gate=None):
         input_dtype = hidden_states.dtype
         hidden_states = hidden_states.to(torch.float32)
-        variance = hidden_states.pow(2).mean(-1, keepdim=True)
-        # Norm before gate
-        hidden_states = hidden_states * torch.rsqrt(variance + self.variance_epsilon)
-        hidden_states = self.weight * hidden_states.to(input_dtype)
+        if self.args.use_fused_rmsnorm:
+            hidden_states = torch_npu.npu_rms_norm(hidden_states, self.weight.float(), epsilon=self.variance_epsilon)[0]
+        else:
+            variance = hidden_states.pow(2).mean(-1, keepdim=True)
+            # Norm before gate
+            hidden_states = hidden_states * torch.rsqrt(variance + self.variance_epsilon)
+            hidden_states = self.weight * hidden_states.to(input_dtype)
         hidden_states = hidden_states * F.silu(gate.to(torch.float32))
 
         return hidden_states.to(input_dtype)
@@ -127,11 +139,11 @@ class Qwen3NextDynamicCache:
         return self.key_cache[layer_idx], self.value_cache[layer_idx]
 
     def update(
-        self,
-        key_states: torch.Tensor,
-        value_states: torch.Tensor,
-        layer_idx: int,
-        cache_kwargs: Optional[dict[str, Any]] = None,
+            self,
+            key_states: torch.Tensor,
+            value_states: torch.Tensor,
+            layer_idx: int,
+            cache_kwargs: Optional[dict[str, Any]] = None,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         if self.key_cache[layer_idx] is None:
             self.key_cache[layer_idx] = key_states
@@ -224,16 +236,20 @@ class Qwen3NextRMSNorm(nn.Module):
         super().__init__()
         self.eps = eps
         self.weight = nn.Parameter(torch.zeros(dim))
+        self.args = get_args()
 
     def _norm(self, x):
         return x * torch.rsqrt(x.pow(2).mean(-1, keepdim=True) + self.eps)
 
     def forward(self, x):
-        output = self._norm(x.float())
-        # Llama does x.to(float16) * w whilst Qwen3Next is (x * w).to(float16)
-        # See https://github.com/huggingface/transformers/pull/29402
-        output = output * (1.0 + self.weight.float())
-        return output.type_as(x)
+        if self.args.use_fused_rmsnorm:
+            return torch_npu.npu_rms_norm(x.float(), 1.0 + self.weight.float(), epsilon=self.eps)[0].type_as(x)
+        else:
+            output = self._norm(x.float())
+            # Llama does x.to(float16) * w whilst Qwen3Next is (x * w).to(float16)
+            # See https://github.com/huggingface/transformers/pull/29402
+            output = output * (1.0 + self.weight.float())
+            return output.type_as(x)
 
     def extra_repr(self):
         return f"{tuple(self.weight.shape)}, eps={self.eps}"
@@ -242,7 +258,7 @@ class Qwen3NextRMSNorm(nn.Module):
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
-    x2 = x[..., x.shape[-1] // 2 :]
+    x2 = x[..., x.shape[-1] // 2:]
     return torch.cat((-x2, x1), dim=-1)
 
 
@@ -277,13 +293,21 @@ def apply_rotary_pos_emb(q, k, cos, sin, position_ids=None, unsqueeze_dim=1):
     q_rot, q_pass = q[..., :rotary_dim], q[..., rotary_dim:]
     k_rot, k_pass = k[..., :rotary_dim], k[..., rotary_dim:]
 
-    # Apply rotary embeddings on the first half or full tensor
-    q_embed = (q_rot * cos) + (rotate_half(q_rot) * sin)
-    k_embed = (k_rot * cos) + (rotate_half(k_rot) * sin)
+    args = get_args()
+    if args.use_fused_rotary_pos_emb:
 
-    # Concatenate back to full shape
-    q_embed = torch.cat([q_embed, q_pass], dim=-1)
-    k_embed = torch.cat([k_embed, k_pass], dim=-1)
+        q_embed = torch_npu.npu_rotary_mul(q_rot, cos, sin).to(q.dtype)
+        k_embed = torch_npu.npu_rotary_mul(k_rot, cos, sin).to(k.dtype)
+        q_embed = torch.cat([q_embed, q_pass], dim=-1)
+        k_embed = torch.cat([k_embed, k_pass], dim=-1)
+        return q_embed, k_embed
+    else:
+        # Apply rotary embeddings on the first half or full tensor
+        q_embed = (q_rot * cos) + (rotate_half(q_rot) * sin)
+        k_embed = (k_rot * cos) + (rotate_half(k_rot) * sin)
+        # Concatenate back to full shape
+        q_embed = torch.cat([q_embed, q_pass], dim=-1)
+        k_embed = torch.cat([k_embed, k_pass], dim=-1)
     return q_embed, k_embed
 
 
@@ -341,7 +365,6 @@ def flash_attention_forward(
         # Convert to boolean type, making sdpa to force call FlashAttentionScore to improve performance.
         attention_mask = torch.logical_not(attention_mask.bool()).to(query.device)
 
-    attention_mask = ~attention_mask[0, 0, :2048, :2048]
     attn_output = torch_npu.npu_fusion_attention(
         query,
         key,
@@ -366,7 +389,7 @@ class Qwen3NextAttention(nn.Module):
         self.layer_idx = layer_idx
         self.head_dim = getattr(config, "head_dim", config.hidden_size // config.num_attention_heads)
         self.num_key_value_groups = config.num_attention_heads // config.num_key_value_heads
-        self.scaling = self.head_dim**-0.5
+        self.scaling = self.head_dim ** -0.5
         self.attention_dropout = config.attention_dropout
         self.is_causal = True
         self.q_proj = nn.Linear(
@@ -385,7 +408,6 @@ class Qwen3NextAttention(nn.Module):
         self.k_norm = Qwen3NextRMSNorm(
             self.head_dim, eps=config.rms_norm_eps
         )  # thus post q_norm does not need reshape
-
 
     @deprecate_kwarg("past_key_value", new_name="past_key_values", version="4.58")
     def forward(
@@ -658,6 +680,8 @@ class Qwen3NextGatedDeltaNet(nn.Module):
         self.causal_conv1d_fn = causal_conv1d_fn
         self.causal_conv1d_update = causal_conv1d_update or torch_causal_conv1d_update
         args = get_args()
+        self.gdn_chunk_size = args.gdn_chunk_size
+
         if args.use_triton_gdn:
             from mindspeed_llm.tasks.models.transformer.chunk_gated_delta_rule import chunk_gated_delta_rule
             self.chunk_gated_delta_rule = chunk_gated_delta_rule
@@ -782,7 +806,7 @@ class Qwen3NextGatedDeltaNet(nn.Module):
 
         if not use_precomputed_states:
 
-            args = get_args()
+
             core_attn_out, last_recurrent_state = self.chunk_gated_delta_rule(
                 query,
                 key,
@@ -792,7 +816,7 @@ class Qwen3NextGatedDeltaNet(nn.Module):
                 initial_state=None,
                 output_final_state=cache_params is not None,
                 use_qk_l2norm_in_kernel=True,
-                chunk_size=args.mamba_chunk_size
+                chunk_size=self.gdn_chunk_size
             )
 
         else:
@@ -868,12 +892,15 @@ class Qwen3NextSparseMoeBlock(nn.Module):
         # we cast back to the input dtype
         routing_weights = routing_weights.to(hidden_states.dtype)
 
+
+
         final_hidden_states = torch.zeros(
             (batch_size * sequence_length, hidden_dim), dtype=hidden_states.dtype, device=hidden_states.device
         )
 
         # One hot encode the selected experts to create an expert mask
         # this will be used to easily index which expert is going to be sollicitated
+
         expert_mask = torch.nn.functional.one_hot(selected_experts, num_classes=self.num_experts).permute(2, 1, 0)
 
         # Loop over all available experts in the model and perform the computation on each expert
@@ -983,6 +1010,8 @@ class Qwen3NextSparseFusedMoeBlock(nn.Module):
             routing_weights /= routing_weights.sum(dim=-1, keepdim=True)
         routing_weights = routing_weights.to(hidden_states.dtype)
 
+
+
         final_hidden_states = self.experts(
             hidden_states, routing_weights=routing_weights, selected_experts=selected_experts
         )
@@ -1009,9 +1038,10 @@ class Qwen3NextDecoderLayer(GradientCheckpointingLayer):
             self.self_attn = Qwen3NextAttention(config, layer_idx)
 
         if (layer_idx not in config.mlp_only_layers) and (
-            config.num_experts > 0 and (layer_idx + 1) % config.decoder_sparse_step == 0
+                config.num_experts > 0 and (layer_idx + 1) % config.decoder_sparse_step == 0
         ):
-            if config.moe_grouped_gemm:
+            self.args = get_args()
+            if self.args.moe_grouped_gemm:
                 self.mlp = Qwen3NextSparseFusedMoeBlock(config)
             else:
                 self.mlp = Qwen3NextSparseMoeBlock(config)
@@ -1163,15 +1193,8 @@ class Qwen3NextModel(Qwen3NextPreTrainedModel):
         if position_ids is None:
             position_ids = cache_position.unsqueeze(0)
 
-        causal_mask = create_causal_mask(
-            config=self.config,
-            input_embeds=inputs_embeds,
-            attention_mask=attention_mask,
-            cache_position=cache_position,
-            past_key_values=past_key_values,
-            position_ids=position_ids,
-        )
-        linear_attn_mask = self._update_linear_attn_mask(attention_mask, cache_position)
+        causal_mask = get_attention_mask_in_transformers()
+        linear_attn_mask = None
 
         hidden_states = inputs_embeds
 
@@ -1210,6 +1233,19 @@ class Qwen3NextModel(Qwen3NextPreTrainedModel):
         if cache_position[0] > 0 or (attention_mask is not None and torch.all(attention_mask == 1)):
             linear_attn_mask = None
         return linear_attn_mask
+
+
+def get_attention_mask_in_transformers():
+    global _GLOBAL_ATTN_MASK
+    if _GLOBAL_ATTN_MASK is not None:
+        return _GLOBAL_ATTN_MASK
+
+    _GLOBAL_ATTN_MASK = torch.triu(
+        torch.ones((2048, 2048),
+                   device="npu", dtype=torch.bool), diagonal=1)
+
+
+    return _GLOBAL_ATTN_MASK
 
 
 def load_balancing_loss_func(

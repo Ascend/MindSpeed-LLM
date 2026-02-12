@@ -16,6 +16,7 @@ from mindspeed_llm.fsdp2.utils.logging import get_logger
 from mindspeed_llm.fsdp2.checkpoint.utils import empty_cache, dcp_to_torch_state_dict, cleanup_old_checkpoints
 from mindspeed_llm.fsdp2.utils.profiler import ProfilerConfig, ProfilerManager
 from mindspeed_llm.fsdp2.data.processor.processor_utils import IGNORE_INDEX
+from mindspeed_llm.fsdp2.features.chunkloss import chunk_loss, calculate_lm_loss
 
 logger = get_logger(__name__)
 
@@ -364,6 +365,47 @@ class Trainer:
         else:
             return self._get_batch_samples
 
+    @staticmethod
+    def _build_chunk_loss(labels, ignore_index=-100, chunk_size=1024):
+
+        # For supervised finetuning stages (SFT), labels must be shifted by one position, for pretraining, labels already include shift.
+
+        shift_labels = labels
+
+        # Create a mask to identify valid tokens
+        loss_mask = shift_labels != ignore_index
+
+        # Default: normalize loss by total number of valid tokens in the batch.
+        alpha = loss_mask.sum()  # scalar
+        reduction = "sum"
+
+        # Split shifted labels into chunks along the sequence dimension for memory-efficient processing.
+        chunk_labels = torch.split(shift_labels, chunk_size, dim=1)
+
+        # Prepare keyword arguments for each chunk to be passed to the chunked loss function.
+        loss_ctx_kwargs = [
+            {
+                "shift_labels": chunk_labels[i],
+                "ignore_index": ignore_index,
+                "reduction": reduction,
+                "alpha": alpha,
+            }
+            for i in range(len(chunk_labels))
+        ]
+
+        # Return a closure that computes the chunked language modeling loss using the prepared config.
+        def loss_ctx(hidden_states, head_weight, head_bias):
+            return chunk_loss(
+                hidden_states,
+                head_weight,
+                head_bias,
+                loss_forward=calculate_lm_loss,
+                loss_kwargs_chunks=loss_ctx_kwargs,
+                chunk_size=chunk_size
+            )
+
+        return loss_ctx, loss_mask
+
     def _compute_loss(self, inputs, return_outputs=False, num_items_in_batch=None):
         """
         Computes the loss for the batch.
@@ -379,7 +421,10 @@ class Trainer:
         if args.stage == 'pt':
             inputs['labels'] = None
 
-
+        if args.chunk_loss_size and args.stage == 'pt':
+            loss_ctx, loss_mask = self._build_chunk_loss(labels, chunk_size=args.chunk_loss_size)
+            kwargs['loss_ctx'] = loss_ctx
+            kwargs['loss_mask'] = loss_mask
         # Merge inputs without modifying the original dictionary in-place
         model_inputs = {**inputs, **kwargs}
 
@@ -387,7 +432,7 @@ class Trainer:
         outputs = self.model(**model_inputs)
 
         # 3. Extract loss from outputs
-        if args.stage == 'pt':
+        if args.stage == 'pt' and "loss" not in outputs:
             logits = outputs.logits.contiguous().float()
             loss = self._compute_language_model_pretrain_loss(logits, labels, **kwargs)
         else:
@@ -405,6 +450,7 @@ class Trainer:
 
         # 5. Return loss (or tuple of loss + outputs)
         return (loss, outputs) if return_outputs else loss
+
 
 
     def _get_batch_samples_ulysses(self,parallel_state, epoch_iterator, num_batches):
