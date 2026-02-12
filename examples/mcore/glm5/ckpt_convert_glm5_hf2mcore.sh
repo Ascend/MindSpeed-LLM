@@ -4,7 +4,7 @@ source /usr/local/Ascend/ascend-toolkit/set_env.sh
 python convert_ckpt_v2.py \
     --load-model-type hf \
     --save-model-type mg \
-    --num-layers-per-virtual-pipeline-stage 2
+    --num-layers-per-virtual-pipeline-stage 2 \
     --target-tensor-parallel-size 1 \
     --target-pipeline-parallel-size 8 \
     --target-expert-parallel-size 64 \
