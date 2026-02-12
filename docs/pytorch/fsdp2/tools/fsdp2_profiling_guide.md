@@ -114,19 +114,19 @@ localhost.localdomain_3687609_20260129150104894_ascend_pt
 
 时间线界面包含工具栏（区域一）、时间线树状图（区域二）、图形化窗格（区域三）和数据窗格（区域四）四个部分组成，如图界面所示。
 
-![时间线](../assets/fsdp2_profiling_guide/timeline.png)
+![时间线](../../../../sources/images/fsdp2_profiling_guide/timeline.png)
 
 #### 内存（Memory）  
 
 内存界面由参数配置栏（区域一）、算子内存折线图（区域二）、内存申请/释放详情表（区域三）三个部分组成，如图所示。
 
-![内存](../assets/fsdp2_profiling_guide/memory.png)
+![内存](../../../../sources/images/fsdp2_profiling_guide/memory.png)
 
 #### 算子（Operator） 
 
 算子界面由参数配置栏（区域一）、耗时百分比饼状图（区域二）、耗时统计及详情数据表（区域三）三个部分组成，如图所示  
 
-![算子](../assets/fsdp2_profiling_guide/operator.png)
+![算子](../../../../sources/images/fsdp2_profiling_guide/operator.png)
 
 这里只对工具的界面进行了简单介绍，如果想要更多了解工具的使用方法，可以参考MindStudio Insight的使用方法指导官方文档 
 [MindStudio Insight系统调优](https://gitcode.com/Ascend/msinsight/blob/master/docs/zh/user_guide/system_tuning.md#%E5%9F%BA%E7%A1%80%E5%8A%9F%E8%83%BD  ) 。
