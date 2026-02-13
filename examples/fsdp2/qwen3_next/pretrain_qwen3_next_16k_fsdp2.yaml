@@ -3,11 +3,11 @@ model:
   model_name_or_path: ./qwen3-next/
   trust_remote_code: False
   train_from_scratch: True
-  tokenizer_name_or_path: ./qwen3-next/
   init_model_with_meta_device: True
 
 data:
-  dataset: "train-00000-of-00001-a09b74b3ef9c3b56.parquet"
+  dataset:
+    file_name: "./train-00000-of-a09b74b3ef9c3b56.parquet"
   template: qwen3
   cutoff_len: 16384
   max_samples: 100000
@@ -17,7 +17,6 @@ data:
   packing: False
 
 parallel:
-  data_parallel_mode: fsdp2
   fsdp_size: 64
   fsdp_modules:
     - model.layers.{*}

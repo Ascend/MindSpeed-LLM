@@ -1,11 +1,13 @@
 model:
-  model_name_or_path: /home/data/Qwen3-8B/
-  trust_remote_code: False
+  model_id: qwen3
+  model_name_or_path: /home/hf_weights/Qwen3-32B/
+  trust_remote_code: True
   train_from_scratch: False
-  tokenizer_name_or_path: /home/data/Qwen3-8B/
+  init_model_with_meta_device: True
 
 data:
-  dataset: "your origin data path.example: /home/train-00000-of-a09b74b3ef9c3b56.parquet"
+  dataset:
+    file_name: "your origin data path.example: /home/train-00000-of-a09b74b3ef9c3b56.parquet"
   template: qwen3
   cutoff_len: 4096
   max_samples: 100000
@@ -14,7 +16,7 @@ data:
   data_manager_type: mg
 
 parallel:
-  fsdp_size: 8
+  fsdp_size: 16
   fsdp_modules:
     - model.layers.{*}
     - model.embed_tokens
@@ -38,7 +40,6 @@ training:
   dataloader_num_workers : 4
   seed: 42
   dataloader_drop_last: True
-  output_dir: ./output
   optimizer: adamw
   lr: 1e-05
   weight_decay: 0.01
@@ -51,5 +52,10 @@ training:
   min_lr: 1e-06
   num_train_epochs: 3.0
   max_steps: 2000
+  output_dir: ./output
   save_steps: 500
+  save_epochs: 1
   logging_steps: 1
+  use_fused_rmsnorm: True
+  use_fused_rotary_pos_emb: True
+  use_flash_attn: True

@@ -166,7 +166,7 @@ def add_tokenizer_args(parser):
                        help='Path to the BPE merge file (if necessary).')
     group.add_argument('--append-eod', action='store_true',
                        help='Append an <eod> token to the end of a document.')
-    group.add_argument("--tokenizer-name-or-path", type=str, default=None,
+    group.add_argument("--model-name-or-path", type=str, default=None,
                        help="Name or path of the huggingface tokenizer.")
     group.add_argument("--tokenizer-model", type=str, default=None,
                        help="tokenizer model file.")                       
@@ -318,7 +318,7 @@ def main():
         return
 
     tokenizer =  _AutoTokenizer(
-        args.tokenizer_name_or_path,
+        args.model_name_or_path,
         vocab_extra_ids=0,
         model_max_length=args.seq_length,
         use_fast=False,

@@ -25,10 +25,10 @@ def convert_datasets(model_args, data_args, shared: bool, ):
     IDX_EXT = ".idx"
     BIN_EXT = ".bin"
 
-    was_list = isinstance(data_args.dataset, (list, tuple))
+    was_list = isinstance(data_args.dataset['file_name'], (list, tuple))
 
-    paths = [str(p).strip() for p in data_args.dataset] if was_list else [
-        p.strip() for p in str(data_args.dataset).split(",") if p.strip()
+    paths = [str(p).strip() for p in data_args.dataset['file_name']] if was_list else [
+        p.strip() for p in str(data_args.dataset['file_name']).split(",") if p.strip()
     ]
     if not paths:
         return
@@ -81,21 +81,6 @@ def convert_datasets(model_args, data_args, shared: bool, ):
             p = raw.strip().strip('"').strip("'")
             meta = out_map[p]
             out_prefix = meta["out_prefix"]
-            # skip prerocess if .bin and .idx files exist
-            skip_conversion = False
-            check_candidates = [
-                (f"{out_prefix}{BIN_EXT}", f"{out_prefix}{IDX_EXT}"),
-                (f"{out_prefix}_text_document{BIN_EXT}", f"{out_prefix}_text_document{IDX_EXT}")
-            ]
-
-            for bin_file, idx_file in check_candidates:
-                if os.path.exists(bin_file) and os.path.exists(idx_file):
-                    logger.info_rank0(f"[DataConvert] Found existing dataset files: {bin_file}, {idx_file}. Skipping conversion.")
-                    skip_conversion = True
-                    break
-            
-            if skip_conversion:
-                continue
             logger.info_rank0(f"[DataConvert] Converting: {p} -> {out_prefix}")
 
             cmd = [
@@ -112,8 +97,8 @@ def convert_datasets(model_args, data_args, shared: bool, ):
 
             if getattr(model_args, "tokenizer_model", False):
                 cmd += ["--tokenizer-model", str(data_args.tokenizer_model)]
-            if getattr(model_args, "tokenizer_name_or_path", False):
-                cmd += ["--tokenizer-name-or-path", str(model_args.tokenizer_name_or_path)]
+            if getattr(model_args, "model_name_or_path", False):
+                cmd += ["--model-name-or-path", str(model_args.model_name_or_path)]
             if getattr(model_args, "append_eod", False):
                 cmd.append("--append-eod")
             if getattr(data_args, "enable_thinking", None) is not None:
@@ -161,7 +146,7 @@ def convert_datasets(model_args, data_args, shared: bool, ):
 
         new_paths.extend(current_matches)
 
-    data_args.dataset = new_paths
+    data_args.dataset['file_name'] = new_paths
 
 
 def _is_raw_data_path(path: str) -> bool:
@@ -183,7 +168,7 @@ def _is_raw_data_path(path: str) -> bool:
 
 
 def get_document_dataset(model_args, data_args):
-    data_path = getattr(data_args, "dataset", None)
+    data_path = getattr(data_args, "dataset", None)['file_name']
     if data_path:
         # Support only single path; extract first component
         if isinstance(data_path, (list, tuple)):
@@ -258,7 +243,7 @@ def get_blend_from_list(
 def core_gpt_dataset_config_from_args(model_args, data_args, training_args):
 
     tokenizer = _AutoTokenizer(
-        model_args.tokenizer_name_or_path,
+        model_args.model_name_or_path,
         vocab_extra_ids=0,
         model_max_length=data_args.cutoff_len,
         use_fast=False,
@@ -268,7 +253,7 @@ def core_gpt_dataset_config_from_args(model_args, data_args, training_args):
     return GPTDatasetConfig(
         random_seed=training_args.seed,
         sequence_length=data_args.cutoff_len,
-        blend=get_blend_from_list(data_args.dataset),
+        blend=get_blend_from_list(data_args.dataset['file_name']),
         blend_per_split=None,
         split=data_args.split,
         path_to_cache=None,
@@ -303,7 +288,7 @@ def get_train_valid_test_num_samples(training_args, data_args):
         train_iters = training_args.max_steps 
     elif training_args.num_train_epochs > 0:
         train_iters = 0
-        raw_paths = data_args.dataset if isinstance(data_args.dataset, list) else str(data_args.dataset or "").split(',')
+        raw_paths = data_args.dataset['file_name'] if isinstance(data_args.dataset['file_name'], list) else str(data_args.dataset['file_name'] or "").split(',')
         dataset_path = [
             p.strip() for p in raw_paths 
             if p.strip() and os.path.isfile(f"{p.strip()}.bin") and os.path.isfile(f"{p.strip()}.idx")

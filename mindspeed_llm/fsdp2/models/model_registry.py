@@ -14,10 +14,12 @@ class ModelRegistry:
     if backend == "mindspeed_fsdp":
         from mindspeed_llm.fsdp2.models.gpt_oss.modeling_gpt_oss import GptOssForCausalLM
         from mindspeed_llm.fsdp2.models.step35.modeling_step3p5 import Step3p5ForCausalLM
+        from mindspeed_llm.fsdp2.models.qwen3.qwen3 import Qwen3ForCausalLM
         from mindspeed_llm.fsdp2.models.qwen3_next.qwen3_next import Qwen3NextForCausalLM
         _REGISTRY: Dict[str, Type[Any]] = {
             "gpt_oss": GptOssForCausalLM,
             "step35": Step3p5ForCausalLM,
+            "qwen3": Qwen3ForCausalLM,
             "qwen3_next": Qwen3NextForCausalLM,
         }
 

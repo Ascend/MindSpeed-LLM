@@ -1,12 +1,11 @@
 model:
-  model_name_or_path: /data/ci/models/qwen3_8b
+  model_name_or_path: /home/data/Qwen3-8B/
   trust_remote_code: False
   train_from_scratch: False
-  init_model_with_meta_device: True
 
 data:
   dataset:
-    file_name: "/data/ci/datasets/origin/train-00000-of-00001-a09b74b3ef9c3b56.parquet"
+    file_name: "your origin data path.example: /home/train-00000-of-a09b74b3ef9c3b56.parquet"
   template: qwen3
   cutoff_len: 4096
   max_samples: 100000
@@ -51,7 +50,6 @@ training:
   warmup_ratio: 0.0
   min_lr: 1e-06
   num_train_epochs: 3.0
-  max_steps: 15
-  save_steps: 0
-  save_epochs: 0
+  max_steps: 2000
+  save_steps: 500
   logging_steps: 1

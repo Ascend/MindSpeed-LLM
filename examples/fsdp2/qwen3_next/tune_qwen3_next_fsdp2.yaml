@@ -3,7 +3,6 @@ model:
   model_name_or_path: ./qwen3-next/
   trust_remote_code: False
   train_from_scratch: False
-  tokenizer_name_or_path: ./qwen3-next/
   init_model_with_meta_device: True
 
 data:
@@ -16,7 +15,6 @@ data:
   packing: False
 
 parallel:
-  data_parallel_mode: fsdp2
   fsdp_size: 64
   fsdp_modules:
     - model.layers.{*}
