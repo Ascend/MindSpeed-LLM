@@ -83,6 +83,9 @@ except Exception as e:
 
 
 def update_save_checkpoint_chmod(save_path, permission=0o640):
+    args = get_args()
+    if args.enable_high_availability:
+        return
     if os.path.exists(save_path) and os.path.isdir(save_path):
         for root, _, files in os.walk(save_path):
             for file in files:
