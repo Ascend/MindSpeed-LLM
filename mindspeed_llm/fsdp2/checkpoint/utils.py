@@ -6,6 +6,7 @@ import os
 import torch
 from collections import OrderedDict
 from functools import lru_cache
+from dataclasses import dataclass
 from typing import Any, Dict, Optional, Union, Tuple
 from transformers.utils import SAFE_WEIGHTS_NAME, WEIGHTS_NAME
 from safetensors.torch import save_file
@@ -13,7 +14,9 @@ from torch.distributed.checkpoint.metadata import STATE_DICT_TYPE
 from torch.distributed.checkpoint.state_dict_loader import _load_state_dict
 from torch.distributed.checkpoint import FileSystemReader
 from torch.distributed.checkpoint.default_planner import _EmptyStateDictLoadPlanner
+from torch.distributed._tensor import DeviceMesh, DTensor, Shard, Replicate
 
+from mindspeed_llm.fsdp2.distributed.expert_parallel.expert_parallel import get_ep_modules
 from mindspeed_llm.fsdp2.utils.logging import get_logger
 
 # --------------------------
@@ -311,3 +314,131 @@ def dcp_to_torch_state_dict(
         state_dict = state_dict["state"]
 
     return state_dict["model"]
+
+
+# --------------------------
+# EP Checkpoint  Utilities
+# --------------------------
+def drop_ep_dim(loaded_tensor: torch.Tensor, device_mesh: DeviceMesh) -> torch.Tensor:
+    """Drop the Expert Parallelism (EP) dimension from a tensor loaded from a DCP checkpoint.
+
+    Args:
+        loaded_tensor (torch.Tensor | DTensor): The tensor loaded from a DCP checkpoint,
+            potentially containing an extra EP dimension.
+        device_mesh (DeviceMesh): A 2D device mesh with dimensions ("ep", "ep_fsdp").
+
+    Returns:
+        torch.Tensor | DTensor: The tensor with the EP dimension removed, ready to be
+            copied into model parameters.
+    """
+    if device_mesh.ndim != 2:
+        raise ValueError(f"device_mesh.ndim must be 2, got {device_mesh.ndim}")
+    ep_fsdp_mesh = device_mesh["ep_fsdp"]
+
+    if isinstance(loaded_tensor, DTensor):
+        if len(loaded_tensor.placements) == 2:
+            # EP + FSDP sharded: keep only the FSDP shard on the ep_fsdp sub-mesh
+            tensor_to_put = DTensor.from_local(
+                loaded_tensor.to_local(), device_mesh=ep_fsdp_mesh, placements=[Shard(1)]
+            )
+        elif len(loaded_tensor.placements) == 1:
+            # EP-only sharded: collapse to plain local tensor
+            tensor_to_put = loaded_tensor.to_local()
+        else:
+            raise RuntimeError(
+                f"Expect EP parameters to be DTensor with 1 or 2 placements, got {loaded_tensor.placements}"
+            )
+    else:
+        # Plain tensor — no EP dimension present
+        tensor_to_put = loaded_tensor
+
+    return tensor_to_put
+
+
+def restore_ep_dim(origin_tensor: torch.Tensor, device_mesh: DeviceMesh) -> DTensor:
+    """Restore the Expert Parallelism (EP) dimension on a tensor for DCP checkpoint saving.
+
+    Args:
+        origin_tensor (torch.Tensor | DTensor): The model tensor to be saved, in its current EP-sharded layout.
+        device_mesh (DeviceMesh): A 2D device mesh with dimensions ("ep", "ep_fsdp").
+
+    Returns:
+        DTensor: The tensor with the EP dimension restored, suitable for DCP saving.
+
+    """
+    if device_mesh.ndim != 2:
+        raise ValueError(f"device_mesh.ndim must be 2, got {device_mesh.ndim}")
+    ep_mesh = device_mesh["ep"]
+
+    if isinstance(origin_tensor, DTensor):
+        # Already a DTensor (EP + FSDP): re-wrap with both shard dimensions on the full mesh
+        dtensor = DTensor.from_local(
+            origin_tensor.to_local(), device_mesh=device_mesh, placements=[Shard(0), Shard(1)]
+        )
+    elif torch.is_tensor(origin_tensor):
+        # Plain tensor (EP-only): wrap with EP shard on the EP sub-mesh
+        dtensor = DTensor.from_local(origin_tensor, device_mesh=ep_mesh, placements=[Shard(0)])
+    else:
+        raise RuntimeError(f"origin_tensor - {origin_tensor} is not a tensor!")
+
+    return dtensor
+
+
+@dataclass
+class EPSpecInfo:
+    """Specification for how an Expert Parallelism (EP) parameter should be
+    saved/restored as a DTensor during checkpointing.
+
+    Attributes:
+        placement (Union[Shard, Replicate]): The DTensor placement strategy for the EP dimension (typically Shard(0) for expert-parallel parameters).
+        ep_fsdp_mesh (DeviceMesh): A 2D device mesh with dimensions ("ep", "ep_fsdp") used to construct the DTensor layout during save/load.
+    """
+    placement: Union[Shard, Replicate]
+    ep_fsdp_mesh: DeviceMesh  # ("ep", "ep_fsdp") 2D mesh
+
+
+def build_ep_fqn2spec_info(
+    model, parallel_state, ep_plan
+) -> Dict[str, EPSpecInfo]:
+    """Build a mapping from parameter fully-qualified names (FQNs) to their EP spec info.
+
+    Args:
+        model: The model instance. Must support `named_modules()` and `named_parameters()`. Its inner `model.model` attribute is passed
+            to `get_ep_modules` to resolve expert modules.
+        parallel_state (ParallelState): The current parallelism configuration, used to query EP and E-FSDP group sizes.
+        ep_plan: The expert parallelism plan (from `model.config.ep_plan`)
+            that defines which modules are expert-parallel.
+
+    Returns:
+        Dict[str, EPSpecInfo]: A dictionary mapping each expert parameter's FQN
+            to its `EPSpecInfo`, containing the placement strategy and the 2D
+            ("ep", "ep_fsdp") device mesh for checkpoint transformations.
+    """
+    ep_size = parallel_state.get_ep_group_size()
+    efsdp_size = (
+        parallel_state.get_efsdp_group_size()
+        if parallel_state.is_efsdp_enable() else 1
+    )
+
+    # Construct a logical 2D mesh: rows = EP ranks, cols = E-FSDP ranks
+    ep_fsdp_mesh = DeviceMesh(
+        device_type="npu",
+        mesh=torch.arange(ep_size * efsdp_size).view(ep_size, efsdp_size),
+        mesh_dim_names=("ep", "ep_fsdp"),
+    )
+
+    # Identify all modules designated as expert-parallel by the EP plan
+    ep_modules = get_ep_modules(model.model, ep_plan)
+    ep_module_fqns = {
+        name for name, module in model.named_modules()
+        if module in ep_modules
+    }
+
+    # Map each parameter belonging to an EP module to its spec info
+    fqn2spec = {}
+    for fqn, _ in model.named_parameters():
+        if any(fqn == m or fqn.startswith(m + ".") for m in ep_module_fqns):
+            fqn2spec[fqn] = EPSpecInfo(
+                placement=Shard(0), ep_fsdp_mesh=ep_fsdp_mesh
+            )
+    return fqn2spec

@@ -5,21 +5,27 @@ import gc
 import json
 import os
 from collections import OrderedDict
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from typing import Any, Dict, Optional, Sequence, Union, Set
 import yaml
 
 import torch
 import torch.distributed as dist
 import torch.distributed.checkpoint as dcp
+from torch.distributed._tensor import DeviceMesh, DTensor, Shard
 from torch.distributed.checkpoint import FileSystemReader, FileSystemWriter
+from torch.distributed.checkpoint.default_planner import _EmptyStateDictLoadPlanner
+from torch.distributed.checkpoint.metadata import STATE_DICT_TYPE
 from torch.distributed.checkpoint.state_dict import (
     get_model_state_dict,
     get_optimizer_state_dict,
     set_model_state_dict,
     set_optimizer_state_dict,
+    StateDictOptions
 )
 from torch.distributed.checkpoint.stateful import Stateful
+from torch.distributed.checkpoint.state_dict_loader import _load_state_dict
+from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 
 from transformers import (
     GenerationConfig,
@@ -31,8 +37,15 @@ from transformers.utils import SAFE_WEIGHTS_INDEX_NAME, WEIGHTS_INDEX_NAME
 
 from mindspeed_llm.fsdp2.utils.logging import get_logger
 from mindspeed_llm.fsdp2.distributed.parallel_state import ParallelState
-from .utils import empty_cache, get_shard_info, save_state_dict, synchronize
-
+from .utils import (
+    empty_cache,
+    get_shard_info,
+    save_state_dict,
+    synchronize,
+    drop_ep_dim,
+    restore_ep_dim,
+    build_ep_fqn2spec_info
+)
 
 # --------------------------
 # Global Variables
@@ -58,85 +71,222 @@ _EXTRA_STATE_DIR = "extra_state"
 # Model State Wrapper
 # --------------------------
 class ModelState(Stateful):
-    """
-    Stateful wrapper for a model to enable integration with
-    PyTorch Distributed Checkpoint (DCP).
+    """Stateful wrapper for model parameters, integrating with DCP (Distributed Checkpoint).
 
-    This class defines how the model state is extracted and restored
-    in a distributed environment (FSDP2 / DTensor aware).
+    Args:
+        model: The model whose parameters are managed by this state wrapper.
+
+    Attributes:
+        model: The underlying model instance.
+        parallel_state (ParallelState): Tracks the current distributed parallelism configuration.
+        should_ep_aware (bool): Whether Expert Parallelism-aware checkpointing is needed.
+        ep_fqn2spec_info (dict): Mapping from fully-qualified parameter names to their
+            EP specification info (e.g., FSDP mesh layout). Empty if EP is not enabled.
     """
 
     def __init__(self, model):
         self.model = model
-        # ParallelState is required to make the state DCP-compatible
         self.parallel_state = ParallelState()
+
+        ep_plan = getattr(getattr(model, "config", None), "ep_plan", None)
+        self.should_ep_aware = ep_plan is not None and self.parallel_state.is_ep_enable()
+        self.ep_fqn2spec_info = (
+            build_ep_fqn2spec_info(model, self.parallel_state, ep_plan)
+            if self.should_ep_aware else {}
+        )
 
     @torch.no_grad()
     def state_dict(self):
-        """
-        Extract model parameters into a DCP-compatible state_dict.
+        """Extract model parameters into a DCP-compatible state dictionary.
 
         Returns:
-            Dict[str, Tensor]: Model state dictionary
+            Dict[str, torch.Tensor]: The model state dictionary, with EP dimensions
+                restored for expert parameters when applicable.
         """
         model_state_dict = get_model_state_dict(model=self.model)
+
+        if self.should_ep_aware:
+            if dist.get_rank() == 0:
+                logger.info("ModelState: Restoring EP dimension for Expert modules")
+
+            for name, tensor in model_state_dict.items():
+                if name in self.ep_fqn2spec_info and torch.is_tensor(tensor) and tensor.ndim > 0:
+                    model_state_dict[name] = restore_ep_dim(
+                        tensor, self.ep_fqn2spec_info[name].ep_fsdp_mesh
+                    )
+
         return model_state_dict
 
     @torch.no_grad()
     def load_state_dict(self, state_dict):
-        """
-        Restore model parameters from a DCP state_dict.
+        """Load a state dictionary into the model.
+
+        For non-EP models, delegates directly to `set_model_state_dict`.
+        For EP-aware models, it first drops the EP dimension from expert tensors,
+        then manually copies the loaded tensors into the model parameters,
+        handling both DTensor and plain Tensor cases. Shape mismatches are logged
+        and the corresponding parameter is skipped.
 
         Args:
-            state_dict (Dict[str, Tensor]): Loaded model state
+            state_dict (Dict[str, torch.Tensor]): The state dictionary to load.
+                Expected to contain EP-restored dimensions if the model is EP-aware.
+
+        Returns:
+            None
         """
-        set_model_state_dict(
-            model=self.model,
-            model_state_dict=state_dict,
-        )
+        if not self.should_ep_aware:
+            set_model_state_dict(model=self.model, model_state_dict=state_dict)
+            return
+
+        if dist.get_rank() == 0:
+            logger.info("ModelState: Dropping EP dimension for Expert modules")
+
+        # Drop the EP dimension from expert tensors to match the model's sharded layout
+        for name, tensor in state_dict.items():
+            if name in self.ep_fqn2spec_info and torch.is_tensor(tensor) and tensor.ndim > 0:
+                state_dict[name] = drop_ep_dim(
+                    tensor, self.ep_fqn2spec_info[name].ep_fsdp_mesh
+                )
+
+        # Copy loaded tensors into model parameters, extracting local tensors from DTensors
+        param_dict = dict(self.model.named_parameters())
+        for name, loaded_tensor in state_dict.items():
+            if name not in param_dict:
+                continue
+
+            model_param = param_dict[name]
+            local_tensor = loaded_tensor.to_local() if isinstance(loaded_tensor, DTensor) else loaded_tensor
+            target_tensor = model_param.to_local() if isinstance(model_param, DTensor) else model_param.data
+
+            if target_tensor.shape != local_tensor.shape:
+                if dist.get_rank() == 0:
+                    logger.error(
+                        f"Shape mismatch for '{name}': "
+                        f"loaded={local_tensor.shape}, model={target_tensor.shape}"
+                    )
+                continue
+
+            target_tensor.copy_(local_tensor)
 
 
-# --------------------------
-# Optimizer State Wrapper
-# --------------------------
 class OptimizerState(Stateful):
-    """
-    Stateful wrapper for optimizer state to support DCP save/load.
+    """Stateful wrapper for optimizer state, integrating with DCP (Distributed Checkpoint).
 
-    This wrapper ensures optimizer states are properly sharded
-    and restored under FSDP2 and EP setups.
+    Args:
+        model: The model associated with the optimizer.
+        optimizer: The optimizer (or MultiOptimizer for EP) whose state is managed.
+
+    Attributes:
+        model: The underlying model instance.
+        optimizer: The optimizer instance.
+        parallel_state (ParallelState): Tracks the current distributed parallelism configuration.
+        should_ep_aware (bool): Whether Expert Parallelism-aware checkpointing is needed.
+        ep_fqn2spec_info (dict): Mapping from fully-qualified parameter names to their
+            EP specification info. Only populated when EP is enabled.
+        param_fqn_to_param (dict): Mapping from fully-qualified names to model parameters.
+            Only populated when EP is enabled; used to reconstruct DTensors on load.
     """
 
     def __init__(self, model, optimizer):
         self.model = model
         self.optimizer = optimizer
-        # Optimizer state must also be parallel-aware
         self.parallel_state = ParallelState()
 
+        ep_plan = getattr(getattr(model, "config", None), "ep_plan", None)
+        self.should_ep_aware = ep_plan is not None and self.parallel_state.is_ep_enable()
+
+        if self.should_ep_aware:
+            self.ep_fqn2spec_info = build_ep_fqn2spec_info(model, self.parallel_state, ep_plan)
+            self.param_fqn_to_param = dict(self.model.named_parameters())
+
+    @torch.no_grad()
     def state_dict(self):
-        """
-        Extract optimizer state in a DCP-compatible format.
+        """Extract optimizer state into a DCP-compatible state dictionary.
 
         Returns:
-            Dict[str, Any]: Optimizer state dictionary
+            dict: The optimizer state dictionary, with EP dimensions restored
+                for expert parameters when applicable.
         """
-        return get_optimizer_state_dict(
-            model=self.model,
-            optimizers=self.optimizer,
-        )
+        if self.should_ep_aware:
+            if dist.get_rank() == 0:
+                logger.info("OptimizerState: Restoring EP dimension for Expert modules")
 
+            # EP → MultiOptimizer, which produces a merged flattened dict
+            optim_sd = self.optimizer.state_dict()
+
+            for name in list(optim_sd.keys()):
+                ep_fqn = self._find_ep_fqn(name)
+                if ep_fqn is None:
+                    continue
+                tensor = optim_sd[name]
+                if torch.is_tensor(tensor) and tensor.ndim > 0:
+                    optim_sd[name] = restore_ep_dim(
+                        tensor, self.ep_fqn2spec_info[ep_fqn].ep_fsdp_mesh
+                    )
+
+            return optim_sd
+
+        # Non-EP → single optimizer
+        return get_optimizer_state_dict(model=self.model, optimizers=self.optimizer)
+
+    @torch.no_grad()
     def load_state_dict(self, state_dict):
-        """
-        Restore optimizer state from a DCP checkpoint.
+        """Load an optimizer state dictionary.
 
         Args:
-            state_dict (Dict[str, Any]): Loaded optimizer state
+            state_dict (dict): The optimizer state dictionary to load. Expected to
+                contain EP-restored dimensions if the model is EP-aware.
+
+        Returns:
+            None
         """
+        if self.should_ep_aware:
+            if dist.get_rank() == 0:
+                logger.info("OptimizerState: Dropping EP dimension for Expert modules")
+
+            for name in list(state_dict.keys()):
+                ep_fqn = self._find_ep_fqn(name)
+                if ep_fqn is None:
+                    continue
+                tensor = state_dict[name]
+                if not torch.is_tensor(tensor) or tensor.ndim == 0:
+                    continue
+
+                local_tensor = tensor.to_local() if isinstance(tensor, DTensor) else tensor
+
+                # Reconstruct DTensor to match model parameter layout
+                model_param = self.param_fqn_to_param.get(ep_fqn)
+                if model_param is not None and isinstance(model_param, DTensor):
+                    state_dict[name] = DTensor.from_local(
+                        local_tensor,
+                        device_mesh=model_param.device_mesh,
+                        placements=model_param.placements,
+                    )
+                else:
+                    state_dict[name] = local_tensor
+
+            # EP → MultiOptimizer handles splitting/filtering internally
+            self.optimizer.load_state_dict(state_dict)
+            return
+
+        # Non-EP → single optimizer
         set_optimizer_state_dict(
-            model=self.model,
-            optimizers=self.optimizer,
-            optim_state_dict=state_dict,
+            model=self.model, optimizers=self.optimizer, optim_state_dict=state_dict,
         )
+    
+    def _find_ep_fqn(self, key: str) -> Optional[str]:
+        """Find the EP parameter fully-qualified name (FQN) matching a state dict key.
+
+        Args:
+            key (str): The optimizer state dict key to look up.
+
+        Returns:
+            Optional[str]: The matching EP FQN, or None if no match is found.
+        """
+        if key in self.ep_fqn2spec_info:
+            return key
+        matches = [fqn for fqn in self.ep_fqn2spec_info if fqn in key]
+        return max(matches, key=len) if matches else None
 
 
 # --------------------------
