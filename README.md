@@ -53,7 +53,12 @@ MindSpeed LLM：基于昇腾生态的大语言模型分布式训练套件，旨�
 
 # 最新消息
 ---
-- [Feb. 04, 2026]: 🚀 **Qwen3-Coder-Next** 模型支持
+- [Feb. 12, 2026]: 🚀 [**GLM5** 模型支持](./examples/mcore/glm5)【Prototype】
+- [Feb. 11, 2026]: 🚀 [**Step-3.5-Flash** 模型支持](./examples/fsdp2/step35)【Prototype】
+- [Feb. 10, 2026]: 🚀 [FSDP2训练后端上线，支持**Qwen3-Next** 模型](./examples/fsdp2/qwen3_next/)【Prototype】
+- [Feb. 04, 2026]: 🚀 [**Qwen3-Coder-Next** 模型支持mcore后端](./examples/mcore/qwen3_coder_next/)【Prototype】
+- [Jan. 28, 2026]: 🌴 [社区版镜像配套2.3.0分支上线](https://gitcode.com/Ascend/MindSpeed-LLM/blob/2.3.0/docs/pytorch/install_guide.md)【Prototype】
+- [Jan. 23, 2026]: 🌴 [社区版镜像配套2.2.0分支上线](https://gitcode.com/Ascend/MindSpeed-LLM/blob/2.2.0/docs/pytorch/install_guide.md)【Prototype】
 - [Jan. 16, 2026]: 🌴 MindSpeed LLM发布[v2.3.0分支](https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.3.0)，支持core_v0.12.1版本
 - [Dec. 24, 2025]: 🚀 **GPT-OSS** 模型支持 【Prototype】
 - [Dec. 11, 2025]: 🚀 **Qwen3-Next** 模型训练支持triton融合加速GDN模块计算 【Prototype】
@@ -64,7 +69,7 @@ MindSpeed LLM：基于昇腾生态的大语言模型分布式训练套件，旨�
 - [Oct. 16, 2025]: 🚀 Qwen3-30B支持DPO训练
 - [Oct. 14, 2025]: 🚀 **DeepSeek-V3**预训练已支持基于 **[MindSpore AI框架](./docs/mindspore/readme.md)** 运行
 - [Oct. 22, 2025]: 🚀 **Ling mini v2** 模型支持, 暂不支持mtp
-- [Sep. 16, 2025]: 🚀 **Qwen3-Next** 模型支持 【Prototype】
+- [Sep. 16, 2025]: 🚀 **Qwen3-Next** 模型支持
 - [Aug. 23, 2025]: 🚀 大参数模型[权重转换v2](./docs/pytorch/solutions/checkpoint/checkpoint_convert_v2.md)优化版本上线
 - [Jul. 28, 2025]: 🚀 **glm4.5-moe** 系列模型同步首发支持
 - [Jul. 25, 2025]: 🌴 MindSpeed LLM发布[v2.1.0分支](https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.1.0)，支持core_r0.8.0版本
@@ -91,7 +96,6 @@ MindSpeed LLM支持Atlas 800T A2等昇腾训练硬件形态，软件版本配套
 | master（在研版本）| master（在研版本）  | core_v0.12.1  | 2.7.1       | 在研版本       | 在研版本  | Python3.10            |
 | 2.3.0（商用）    | 2.3.0_core_r0.12.1 | core_v0.12.1  | 2.7.1       | 7.3.0         | 8.5.0  | Python3.10            |
 | 2.2.0（商用）    | 2.2.0_core_r0.12.1 | core_v0.12.1  | 2.7.1       | 7.2.0         | 8.3.RC1  | Python3.10            |
-| 2.1.0（商用）    | 2.1.0_core_r0.8.0  | core_r0.8.0   | 2.1.0, 2.6.0 | 7.1.0         | 8.2.RC1  | Python3.8, Python3.10 |
 
 
 # 安装
@@ -756,7 +760,7 @@ MindSpeed LLM已发布版本维护策略：
 | --------------------- | ------------| ------------ | ------------ | ------------ | ---------------------- | ----------- |
 | 2.3.0                 | v2.3.0       | 常规版本     | 维护         | 2025/12/30   | 预计2026/6/30起无维护   |             |
 | 2.2.0                 | v2.2.0       | 常规版本     | 维护         | 2025/9/30    | 预计2026/3/30起无维护   |             |
-| 2.1.0                 | v2.1.0       | 常规版本     | 维护         | 2025/6/30    | 预计2025/12/30起无维护  |             |
+| 2.1.0                 | v2.1.0       | 常规版本     | EOL         | 2025/6/30    | 生命周期终止  |     2025/12/30        |
 | 2.0.0                 | v2.0.0       | 常规版本     | EOL          | 2025/3/30    | 生命周期终止           | 2025/9/30    |
 | 1.0.0                 | v1.0.0       | 常规版本     | EOL          | 2024/12/30   | 生命周期终止           | 2025/6/30    |
 | 1.0.RC3               | v1.0.RC3.0   | 常规版本     | EOL          | 2024/09/30   | 生命周期终止           | 2025/3/30    |
