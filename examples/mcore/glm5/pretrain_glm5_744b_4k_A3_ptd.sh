@@ -49,6 +49,7 @@ MLA_ARGS="
     --mla-mm-split \
     --mla-fa-without-pad \
     --enable-mla-absorb \
+    --index-n-heads 32 \
 "
 
 
@@ -83,8 +84,6 @@ MTP_ARGS="
 
 DSA_ARGS="
     --enable-dsa-indexer \
-    --use-fused-lightning-indexer \
-    --use-fused-lightning-indexer-loss \
 "
 
 
@@ -166,9 +165,9 @@ GPT_ARGS="
     --adam-beta1 0.9 \
     --adam-beta2 0.999 \
     --initial-loss-scale 65536 \
-    --vocab-size 129280 \
-    --padded-vocab-size 129280 \
-    --rotary-base 10000 \
+    --vocab-size 154880 \
+    --padded-vocab-size 154880 \
+    --rotary-base 1000000 \
     --norm-epsilon 1e-5 \
     --no-load-optim \
     --no-load-rng \

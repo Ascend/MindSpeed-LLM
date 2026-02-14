@@ -1,10 +1,5 @@
 #!/bin/bash
 export CUDA_DEVICE_MAX_CONNECTIONS=1
-export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
-export HCCL_SOCKET_IFNAME=enp48s3u1u1
-export GLOO_SOCKET_IFNAME=enp48s3u1u1
-export HCCL_CONNECT_TIMEOUT=3600
-export HCCL_EXEC_TIMEOUT=3600
 
 NPUS_PER_NODE=16
 MASTER_ADDR=localhost #主节点IP
@@ -127,6 +122,7 @@ GPT_ARGS="
     --norm-epsilon 1e-5 \
     --max-new-tokens 256 \
     --bf16 \
+    --transformer-impl local \
 "
 
 
