@@ -20,7 +20,7 @@ DATA_PATH="your data path"
 TOKENIZER_PATH="your tokenizer path"
 CKPT_LOAD_DIR="your model ckpt path"
 
-TP=1
+TP=4
 PP=8
 EP=64
 CP=1
@@ -69,6 +69,7 @@ MOE_ARGS="
     --moe-router-score-function sigmoid \
     --moe-router-enable-expert-bias \
     --moe-router-dtype fp32 \
+    --expert-tensor-parallel-size 1 \
 "
 
 MTP_ARGS="
