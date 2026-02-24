@@ -1,4 +1,5 @@
 # Copyright (c) 2025, HUAWEI CORPORATION.  All rights reserved.
+import os
 from typing import Optional, Union
 
 import torch
@@ -22,6 +23,12 @@ from mindspeed_llm.fsdp2.features.async_offload import async_save_on_cpu
 from mindspeed_llm.fsdp2.distributed.fully_shard.fsdp2_sharding import FSDP2ShardingMixin
 from mindspeed_llm.fsdp2.models.common.fusions import fused_rmsnorm_forward, apply_rotary_pos_emb
 from mindspeed_llm.fsdp2.models.common.modules import LMHead
+
+backend = os.environ.get("TRAINING_BACKEND", "mcore").lower()
+if backend == "mcore":
+    from megatron.training import get_args
+else:
+    from mindspeed_llm.fsdp2.utils.global_vars import get_args
 
 offload_stream = torch.npu.Stream()
 
@@ -144,19 +151,20 @@ class Qwen3MoEForCausalLM(transformers.Qwen3MoePreTrainedModel, Qwen3MoEFSDP2Mix
     @staticmethod
     def register_patches(config):
         """patching the transformers model."""
-        if getattr(config, "moe_grouped_gemm", False):
+        args = get_args()
+        if getattr(args, "moe_grouped_gemm", False):
             pm.register_patch("transformers.models.qwen3_moe.modeling_qwen3_moe.Qwen3MoeSparseMoeBlock",
                               Qwen3MoeSparseFusedMoeBlock)
 
-        if getattr(config, "activation_offload", False):
+        if getattr(args, "activation_offload", False):
             pm.register_patch("transformers.models.qwen3_moe.modeling_qwen3_moe.Qwen3MoeModel.forward",
                               qwen3_moe_model_forward)
 
-        if getattr(config, "use_fused_rmsnorm", False):
+        if getattr(args, "use_fused_rmsnorm", False):
             pm.register_patch("transformers.models.qwen3_moe.modeling_qwen3_moe.Qwen3MoeRMSNorm.forward",
                               fused_rmsnorm_forward)
 
-        if getattr(config, "use_fused_rotary_pos_emb", False):
+        if getattr(args, "use_fused_rotary_pos_emb", False):
             pm.register_patch("transformers.models.qwen3_moe.modeling_qwen3_moe.apply_rotary_pos_emb",
                               apply_rotary_pos_emb)
 
