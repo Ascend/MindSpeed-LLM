@@ -20,10 +20,8 @@ PP=1
 basepath=$(cd `dirname $0`; cd ../../../; pwd)
 
 training_file=$basepath/mindspeed_llm/training/training.py
-stop_clean_file=$basepath/mindspeed_llm/core/high_availability/tft_stop_clean.py
 
 cp $training_file $training_file.back
-cp $stop_clean_file $stop_clean_file.back
 
 sed -i '/def model_provider_func_wrapper/i\
 GLB_CNT = 0\
@@ -35,15 +33,11 @@ def raise_dump_error(iteration):\
         GLB_CNT = GLB_CNT + 1\
         if cur_rank == 1:\
             print(f"############# rank:{cur_rank} start error dump")\
-            raise RuntimeError("Other ERROR")\
-        else:\
-            print(f"############# rank:{cur_rank} start FORCE STOP")\
-            raise RuntimeError("FORCE STOP")' $training_file
+            raise RuntimeError("Other ERROR")' $training_file
 
 sed -i '/args\.curr_iteration = iteration/a\
         raise_dump_error(iteration)' $training_file
 
-sed -i '/if clean_type == "retry":/,/torch.npu.restart_device(device)/s/^/#/' $stop_clean_file
 
 DISTRIBUTED_ARGS="
     --nproc_per_node $NPUS_PER_NODE \
@@ -120,10 +114,10 @@ torchrun $DISTRIBUTED_ARGS $basepath/pretrain_gpt.py \
     $DATA_ARGS \
     $OUTPUT_ARGS \
     --distributed-backend nccl \
-    --save $CKPT_SAVE_DIR 
+    --transformer-impl local \
+    --save $CKPT_SAVE_DIR
 
 mv $training_file.back $training_file
-mv $stop_clean_file.back $stop_clean_file
 
 torchrun $DISTRIBUTED_ARGS $basepath/pretrain_gpt.py \
     $GPT_ARGS \
@@ -131,4 +125,4 @@ torchrun $DISTRIBUTED_ARGS $basepath/pretrain_gpt.py \
     $OUTPUT_ARGS \
     --distributed-backend nccl \
     --transformer-impl local \
-    --load $CKPT_LOAD_DIR 
+    --load $CKPT_LOAD_DIR

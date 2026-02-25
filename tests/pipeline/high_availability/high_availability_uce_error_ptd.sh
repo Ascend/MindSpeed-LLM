@@ -36,17 +36,13 @@ def raise_uce_error(iteration):\
         GLB_CNT = GLB_CNT + 1\
         if cur_rank == 1:\
             print(f"############# rank:{cur_rank} start UCE ERROR")\
-            raise RuntimeError("UCE ERROR")\
-        else:\
-            print(f"############# rank:{cur_rank} start FORCE STOP")\
-            raise RuntimeError("FORCE STOP")' $training_file
+            raise RuntimeError("UCE ERROR")' $training_file
 
 sed -i '/args\.curr_iteration = iteration/a\
         raise_uce_error(iteration)' $training_file
 
 sed -i 's/check_memory_result = torch_npu.npu.check_uce_in_memory(device)/check_memory_result = ha_constant.UCE_HIGH_LEVEL/g' $stop_clean_file
 
-sed -i '/if clean_type == "retry":/,/torch.npu.restart_device(device)/s/^/#/' $stop_clean_file
 
 DISTRIBUTED_ARGS="
     --nproc_per_node $NPUS_PER_NODE \
@@ -122,10 +118,10 @@ torchrun $DISTRIBUTED_ARGS $basepath/pretrain_gpt.py \
     $GPT_ARGS \
     $DATA_ARGS \
     $OUTPUT_ARGS \
-    --distributed-backend nccl
+    --distributed-backend nccl \
+    --transformer-impl local
 
 mv $training_file.back $training_file
---transformer-impl local \
 mv $stop_clean_file.back $stop_clean_file
 
 
