@@ -71,6 +71,7 @@ class TransformerLayerWithPostNorm(TransformerLayer):
             inference_params=None,
             inference_context=None,
             packed_seq_params=None,
+            attention_bias=None,
     ):
         # hidden_states: [s, b, h]
         if self.interleave_sliding_window is not None and self.is_sliding and attention_mask is not None:
