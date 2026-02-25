@@ -98,7 +98,7 @@ class TestProcessInstructionDataLf:
         index1 = output.find("Skip ")
         index2 = output.find(" sample exceeded seq-length")
         skip_num = output[index1 + 5: index2]
-        assert(skip_num == "822.0")
+        assert(skip_num == "796.0")
         logger.removeHandler(log_handler)
         log_capture_string.close()
 

@@ -27,6 +27,7 @@
                 "fp16": null,
                 "no-load-rng": null,
                 "no-load-optim": null,
+                "transformer-impl": "local",
                 "load":"/data/ci/models/llama2/mg/llama2-tp8pp1",
                 "tokenizer-type":"PretrainedFromHF",
                 "tokenizer-name-or-path":"/data/ci/models/llama2/hf/llama-2-7b-hf"
