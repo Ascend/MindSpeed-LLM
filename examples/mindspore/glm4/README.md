@@ -33,7 +33,7 @@
 
 ### 环境配置
 
-MindSpeed-LLM MindSpore后端的安装步骤参考[基础安装指导](../../../docs/mindspore/install_guide.md)。
+MindSpeed-LLM MindSpore后端的安装步骤参考[基础安装指导](../../../docs/zh/mindspore/install_guide.md)。
 
 
 
@@ -67,7 +67,7 @@ torch.configs.set_pyboost(False)
 
 ### 数据预处理
 
-当前MindSpore后端已完全支持MindSpeed-LLM的多种任务场景下的数据预处理，数据预处理指南参见[数据预处理](../../../docs/pytorch/solutions/pretrain/pretrain_dataset.md)。
+当前MindSpore后端已完全支持MindSpeed-LLM的多种任务场景下的数据预处理，数据预处理指南参见[数据预处理](../../../docs/zh/pytorch/solutions/pretrain/pretrain_dataset.md)。
 
 以预训练场景为例，只需在预训练数据预处理脚本`data_convert_glm4_pretrain.sh`中配置好数据输入/输出路径、tokenizer模型路径，并启动即可：
 ```sh

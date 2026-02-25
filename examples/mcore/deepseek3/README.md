@@ -4,7 +4,7 @@
 
 ## 1. 预训练使用指导
 
-<a href="../../../docs/pytorch/solutions/pretrain/pretrain.md">预训练指导文档</a>
+<a href="../../../docs/zh/pytorch/solutions/pretrain/pretrain.md">预训练指导文档</a>
 
 预训练过程脚本使用顺序为：
 ```shell
@@ -15,7 +15,7 @@ b. pretrain_deepseek3_671b_4k_xxx.sh (根据集群选择A2或者A3脚本)
 
 ## 2. 微调训练使用指导
 
-<a href="../../../docs/pytorch/solutions/finetune/instruction_finetune.md">微调训练指导文档</a>
+<a href="../../../docs/zh/pytorch/solutions/finetune/instruction_finetune.md">微调训练指导文档</a>
 
 全参微调过程脚本使用顺序为：
 

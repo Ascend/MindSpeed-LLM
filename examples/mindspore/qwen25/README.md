@@ -44,7 +44,7 @@
 
 ### 环境配置
 
-MindSpeed-LLM MindSpore后端的安装步骤参考[基础安装指导](../../../docs/mindspore/features/install_guide.md)。
+MindSpeed-LLM MindSpore后端的安装步骤参考[基础安装指导](../../../docs/zh/mindspore/install_guide.md)。
 
 
 
@@ -81,7 +81,7 @@ torch.configs.set_pyboost(False)
 当前MindSpore后端，已完全支持MindSpeed-LLM的多种任务场景下的数据预处理
 
 #### 预训练
-以Alpaca数据集为例，在进行[数据预处理](../../../docs/pytorch/solutions/pretrain/pretrain_dataset.md)时，只需在预训练数据预处理脚本`data_convert_qwen25_pretrain.sh`中配置好数据输入/输出路径、tokenizer模型路径，并启动即可：
+以Alpaca数据集为例，在进行[数据预处理](../../../docs/zh/pytorch/solutions/pretrain/pretrain_dataset.md)时，只需在预训练数据预处理脚本`data_convert_qwen25_pretrain.sh`中配置好数据输入/输出路径、tokenizer模型路径，并启动即可：
 ```sh
 bash examples/mindspore/qwen25/data_convert_qwen25_pretrain.sh
 ```
@@ -93,7 +93,7 @@ bash examples/mindspore/qwen25/data_convert_qwen25_pretrain.sh
 预训练时，数据集路径 --data-path 参数传入 ./dataset/alpaca_text_document 即可
 
 #### 微调
-以[Alpaca风格微调数据集处理](../../../docs/pytorch/solutions/finetune/datasets/alpaca_dataset.md)为例，只需在预训练数据预处理脚本`data_convert_qwen25_instruction.sh`中配置好数据输入/输出路径、tokenizer模型路径，并启动即可：
+以[Alpaca风格微调数据集处理](../../../docs/zh/pytorch/solutions/finetune/datasets/alpaca_dataset.md)为例，只需在预训练数据预处理脚本`data_convert_qwen25_instruction.sh`中配置好数据输入/输出路径、tokenizer模型路径，并启动即可：
 ```sh
 bash examples/mindspore/qwen25/data_convert_qwen25_instruction.sh
 ```
@@ -162,7 +162,7 @@ cd MindSpeed-LLM
 bash examples/mindspore/qwen25/evaluate_qwen25_7b_ms.sh
 ```
 
-用户需要根据实际情况修改脚本中以下变量。关于数据集，可参考[评估数据集](../../../docs/pytorch/solutions/evaluation/evaluation_datasets/mmlu_evaluation.md)
+用户需要根据实际情况修改脚本中以下变量。关于数据集，可参考[评估数据集](../../../docs/zh/pytorch/solutions/evaluation/evaluation_datasets/mmlu_evaluation.md)
 
   | 变量名  | 含义                    |
   |--------|-----------------------|

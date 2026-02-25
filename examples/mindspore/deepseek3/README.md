@@ -1,7 +1,7 @@
 ## DeepSeek-V3 指南
 ### 1. 准备工作
 
-参考[安装指导](../../../docs/mindspore/install_guide.md)，完成环境安装和[预训练数据处理](../../../docs/pytorch/solutions/pretrain/pretrain_dataset.md)。
+参考[安装指导](../../../docs/zh/mindspore/install_guide.md)，完成环境安装和[预训练数据处理](../../../docs/zh/pytorch/solutions/pretrain/pretrain_dataset.md)。
 
 
 ### 2. 权重转换
@@ -134,7 +134,7 @@ bash examples/mindspore/deepseek3/tune_deepseek3_671b_4k_lora_ms.sh
   控制 LoRA 权重对原始权重的影响比例, 数值越高则影响越大。一般保持 `α/r` 为 2。
 
 - **`--lora-fusion`**  
-  是否启用<td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/docs/pytorch/features/cc_lora.md">CCLoRA</a></td>算法，该算法通过计算通信掩盖提高性能。
+  是否启用<td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/docs/zh/pytorch/features/cc_lora.md">CCLoRA</a></td>算法，该算法通过计算通信掩盖提高性能。
 
 - **`--lora-target-modules`**  
   选择需要添加 LoRA 的模块。  

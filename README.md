@@ -62,15 +62,15 @@ MindSpeed LLM：基于昇腾生态的大语言模型分布式训练套件，旨�
 - [Jan. 16, 2026]: 🌴 MindSpeed LLM发布[v2.3.0分支](https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.3.0)，支持core_v0.12.1版本
 - [Dec. 24, 2025]: 🚀 **GPT-OSS** 模型支持 【Prototype】
 - [Dec. 11, 2025]: 🚀 **Qwen3-Next** 模型训练支持triton融合加速GDN模块计算 【Prototype】
-- [Nov. 25, 2025]: 🚀 [数据/权重在线加载训练](./docs/pytorch/solutions/pretrain/train_from_hf.md)【Prototype】
+- [Nov. 25, 2025]: 🚀 [数据/权重在线加载训练](./docs/zh/pytorch/solutions/pretrain/train_from_hf.md)【Prototype】
 - [Nov. 14, 2025]: 🚀 **magistral** 模型支持 【Prototype】
 - [Oct. 30, 2025]: 🚀 MindSpeed LLM 模型下架[夕阳计划](https://gitcode.com/Ascend/MindSpeed-LLM/issues/943) 启动，感谢每一份曾经的贡献
 - [Oct. 28, 2025]: 🌴 MindSpeed LLM发布[v2.2.0分支](https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.2.0)，支持core_v0.12.1版本
 - [Oct. 16, 2025]: 🚀 Qwen3-30B支持DPO训练
-- [Oct. 14, 2025]: 🚀 **DeepSeek-V3**预训练已支持基于 **[MindSpore AI框架](./docs/mindspore/readme.md)** 运行
+- [Oct. 14, 2025]: 🚀 **DeepSeek-V3**预训练已支持基于 **[MindSpore AI框架](./docs/zh/mindspore/readme.md)** 运行
 - [Oct. 22, 2025]: 🚀 **Ling mini v2** 模型支持, 暂不支持mtp
 - [Sep. 16, 2025]: 🚀 **Qwen3-Next** 模型支持
-- [Aug. 23, 2025]: 🚀 大参数模型[权重转换v2](./docs/pytorch/solutions/checkpoint/checkpoint_convert_v2.md)优化版本上线
+- [Aug. 23, 2025]: 🚀 大参数模型[权重转换v2](./docs/zh/pytorch/solutions/checkpoint/checkpoint_convert_v2.md)优化版本上线
 - [Jul. 28, 2025]: 🚀 **glm4.5-moe** 系列模型同步首发支持
 - [Jul. 25, 2025]: 🌴 MindSpeed LLM发布[v2.1.0分支](https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.1.0)，支持core_r0.8.0版本
 - [Jul. 10, 2025]: 🚀 **[DeepSeek-R1](https://gitcode.com/Ascend/MindSpeed-RL/blob/master/docs/solutions/r1_zero_deepseek_671b.md)**  系列功能逐步上线
@@ -104,7 +104,7 @@ MindSpeed LLM支持Atlas 800T A2等昇腾训练硬件形态，软件版本配套
 
 
 
-MindSpeed LLM具体的安装步骤请参考[安装指导](./docs/pytorch/install_guide.md)。
+MindSpeed LLM具体的安装步骤请参考[安装指导](./docs/zh/pytorch/install_guide.md)。
 
 # 快速上手
 
@@ -112,7 +112,7 @@ MindSpeed LLM具体的安装步骤请参考[安装指导](./docs/pytorch/install
 
 
 
-MindSpeed LLM将以Qwen2.5-7B模型为例，指导开发者完成Qwen2.5-7B大语言模型的预训练任务，具体的操作请参考[快速入门](./docs/quick_start.md)。
+MindSpeed LLM将以Qwen2.5-7B模型为例，指导开发者完成Qwen2.5-7B大语言模型的预训练任务，具体的操作请参考[快速入门](./docs/zh/quick_start.md)。
 
 # 预置模型
 
@@ -130,15 +130,15 @@ MindSpeed LLM目前已内置支持百余个业界常用LLM大模型的预训练�
 <tbody>
   <tr>
     <td rowspan="1">稠密模型</td>
-    <td><a href="docs/pytorch/models/dense_model.md">Dense</a></td>
+    <td><a href="docs/zh/pytorch/models/dense_model.md">Dense</a></td>
   </tr>
   <tr>
     <td rowspan="1">MOE模型</td>
-    <td><a href="docs/pytorch/models/moe_model.md">MOE</a></td>
+    <td><a href="docs/zh/pytorch/models/moe_model.md">MOE</a></td>
   </tr>
   <tr>
     <td rowspan="1">SSM模型</td>
-    <td><a href="./docs/pytorch/models/ssm_model.md">SSM</a></td>
+    <td><a href="./docs/zh/pytorch/models/ssm_model.md">SSM</a></td>
   </tr>  
 </tbody></table>
 
@@ -186,7 +186,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
     </tr>
     <tr>
       <td>Mixtral</td>
-      <td><a href="./examples/mcore/mixtral/pretrain_mixtral_8x7b_ptd.sh">Mixtral-8x7B</a></td>
+      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/blob/2.2.0/examples/mcore/mixtral/pretrain_mixtral_8x7b_ptd.sh">Mixtral-8x7B</a></td>
       <td>Atlas 900 A2 PODc</td>
       <td>8x8</td>
       <td>31.7%</td>
@@ -207,13 +207,13 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
   </thead>
   <tbody>
     <tr>
-      <td><a href="docs/pytorch/solutions/pretrain/pretrain.md">多样本集预训练</a></td>
+      <td><a href="docs/zh/pytorch/solutions/pretrain/pretrain.md">多样本集预训练</a></td>
       <td>✅</td>
       <td>✅</td>
       <td rowspan="2">【Ascend】</td>
     </tr>
     <tr>
-      <td><a href="docs/pytorch/solutions/pretrain/pretrain_eod.md">多样本pack模式预训练</a></td>
+      <td><a href="docs/zh/pytorch/solutions/pretrain/pretrain_eod.md">多样本pack模式预训练</a></td>
       <td>✅</td>
       <td>❌</td>
 </tr>
@@ -244,7 +244,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="docs/pytorch/features/virtual_pipeline_parallel.md">虚拟流水并行</a></td>
+    <td><a href="docs/zh/pytorch/features/virtual_pipeline_parallel.md">虚拟流水并行</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
@@ -260,7 +260,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
   </tr>
   <tr>
     <td rowspan="3">长序列并行</td>
-    <td><a href="docs/pytorch/features/ring-attention-context-parallel.md">Ascend Ring Attention 长序列并行</a></td>
+    <td><a href="docs/zh/pytorch/features/ring-attention-context-parallel.md">Ascend Ring Attention 长序列并行</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
@@ -302,7 +302,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="docs/pytorch/features/recompute_relative.md">重计算</a></td>
+    <td><a href="docs/zh/pytorch/features/recompute_relative.md">重计算</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
@@ -312,7 +312,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="docs/pytorch/features/o2.md">O2 BF16 Optimizer</a></td>
+    <td><a href="docs/zh/pytorch/features/o2.md">O2 BF16 Optimizer</a></td>
     <td>✅</td>
     <td>❌</td>
   </tr>
@@ -323,7 +323,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="docs/pytorch/features/variable_length_flash_attention.md">Flash attention variable length</a></td>
+    <td><a href="docs/zh/pytorch/features/variable_length_flash_attention.md">Flash attention variable length</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
@@ -369,12 +369,12 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="docs/pytorch/features/mc2.md">MC2</a></td>
+    <td><a href="docs/zh/pytorch/features/mc2.md">MC2</a></td>
     <td>✅</td>
     <td>❌</td>
   </tr>
   <tr>
-    <td><a href="docs/pytorch/features/communication-over-computation.md">CoC</a></td>
+    <td><a href="docs/zh/pytorch/features/communication-over-computation.md">CoC</a></td>
     <td>✅</td>
     <td>❌</td>
   </tr>
@@ -446,14 +446,14 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
   <tr>
     <th>方案名称</th>
     <th>Mcore</th>
-    <th><a href="docs/pytorch/solutions/finetune/lora_finetune.md">LoRA</a></th>
-    <th><a href="docs/pytorch/solutions/finetune/qlora_finetune.md">QLoRA</a></th>
+    <th><a href="docs/zh/pytorch/solutions/finetune/lora_finetune.md">LoRA</a></th>
+    <th><a href="docs/zh/pytorch/solutions/finetune/qlora_finetune.md">QLoRA</a></th>
     <th>Released</th>
     <th>贡献方</th>
   </tr></thead>
 <tbody>
   <tr>
-    <td><a href="docs/pytorch/solutions/finetune/instruction_finetune.md">单样本微调</a></td>
+    <td><a href="docs/zh/pytorch/solutions/finetune/instruction_finetune.md">单样本微调</a></td>
     <td>✅</td>
     <td>✅</td>
     <td>✅</td>
@@ -461,7 +461,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
     <td>【Ascend】</td>
   </tr>
   <tr>
-    <td><a href="docs/pytorch/solutions/finetune/multi_sample_pack_finetune.md">多样本pack微调</a></td>
+    <td><a href="docs/zh/pytorch/solutions/finetune/multi_sample_pack_finetune.md">多样本pack微调</a></td>
     <td>✅</td>
     <td>✅</td>
     <td>❌</td>
@@ -469,7 +469,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
     <td>【NAIE】</td>
   </tr>
     <tr>
-    <td><a href="docs/pytorch/solutions/finetune/multi-turn_conversation.md">多轮对话微调</a></td>
+    <td><a href="docs/zh/pytorch/solutions/finetune/multi-turn_conversation.md">多轮对话微调</a></td>
     <td>✅</td>
     <td>✅</td>
     <td>❌</td>
@@ -490,22 +490,22 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
   </tr></thead>
 <tbody>
   <tr>
-    <td rowspan="1"><a href="docs/pytorch/solutions/finetune/lora_finetune.md">LoRA微调</a></td>
-    <td><a href="docs/pytorch/features/cc_lora.md">CCLoRA</a></td>
+    <td rowspan="1"><a href="docs/zh/pytorch/solutions/finetune/lora_finetune.md">LoRA微调</a></td>
+    <td><a href="docs/zh/pytorch/features/cc_lora.md">CCLoRA</a></td>
     <td>✅</td>
     <td>✅</td>
     <td>【Ascend】</td>
   </tr>
   <tr>
-    <td rowspan="1"><a href="docs/pytorch/solutions/finetune/qlora_finetune.md">QLoRA微调</a></td>
-    <td><a href="docs/pytorch/features/cc_lora.md">CCLoRA</a></td>
+    <td rowspan="1"><a href="docs/zh/pytorch/solutions/finetune/qlora_finetune.md">QLoRA微调</a></td>
+    <td><a href="docs/zh/pytorch/features/cc_lora.md">CCLoRA</a></td>
     <td>❌</td>
     <td>❌</td>
     <td>【NAIE】</td>
   </tr>
   <tr>
     <td>长序列微调</td>
-    <td><a href="docs/pytorch/features/fine-tuning-with-context-parallel.md">长序列CP</a></td>
+    <td><a href="docs/zh/pytorch/features/fine-tuning-with-context-parallel.md">长序列CP</a></td>
     <td>✅</td>
     <td>❌</td>
     <td>【Ascend】</td>
@@ -529,19 +529,19 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
   </thead>
   <tbody>
     <tr>
-      <td><a href="docs/pytorch/solutions/inference/inference.md">流式推理 </a></td>
+      <td><a href="docs/zh/pytorch/solutions/inference/inference.md">流式推理 </a></td>
       <td>✅</td>
       <td>✅</td>
       <td>【NAIE】</td>
     </tr>
     <tr>
-      <td><a href="docs/pytorch/solutions/inference/chat.md"> Chat对话</a></td>
+      <td><a href="docs/zh/pytorch/solutions/inference/chat.md"> Chat对话</a></td>
       <td>✅</td>
       <td>✅</td>
       <td>【NAIE】</td>
     </tr>
     <tr>
-      <td><a href="docs/pytorch/features/yarn.md"> yarn上下文扩展 </a></td>
+      <td><a href="docs/zh/pytorch/features/yarn.md"> yarn上下文扩展 </a></td>
       <td>✅</td>
       <td>❌</td>
       <td>【Ascend】</td>
@@ -555,7 +555,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
 
 
 
-仓库模型基线见[开源数据集评测基线](docs/pytorch/models/models_evaluation.md)
+仓库模型基线见[开源数据集评测基线](docs/zh/pytorch/models/models_evaluation.md)
 <table>
   <thead>
     <tr>
@@ -568,7 +568,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
   </thead>
   <tbody>
     <tr>
-      <td rowspan="8"><a href="docs/pytorch/solutions/evaluation/evaluation_guide.md">评测</a></td>
+      <td rowspan="8"><a href="docs/zh/pytorch/solutions/evaluation/evaluation_guide.md">评测</a></td>
       <td><a href="https://people.eecs.berkeley.edu/~hendrycks/data.tar">MMLU</a></td>
       <td>✅</td>
       <td>❌</td>
@@ -616,7 +616,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
 
 ## 权重转换
 
-MindSpeed LLM支持Huggingface、Megatron-core两种格式的权重互转，支持LoRA权重合并。权重转换特性参数和使用说明参考[权重转换](docs/pytorch/solutions/checkpoint/checkpoint_convert.md)。
+MindSpeed LLM支持Huggingface、Megatron-core两种格式的权重互转，支持LoRA权重合并。权重转换特性参数和使用说明参考[权重转换](docs/zh/pytorch/solutions/checkpoint/checkpoint_convert.md)。
 
 <table>
   <thead>
@@ -669,19 +669,19 @@ MindSpeed LLM支持预训练、指令微调等多种任务的数据预处理。
   <tbody>
     <tr>
       <td>预训练</td>
-      <td><a href="docs/pytorch/solutions/pretrain/pretrain_dataset.md">预训练数据处理</a></td>
+      <td><a href="docs/zh/pytorch/solutions/pretrain/pretrain_dataset.md">预训练数据处理</a></td>
       <td>✅</td>
       <td>✅</td>
       <td rowspan="3">【Ascend】</td>
     </tr>
     <tr>
       <td rowspan="2">微调</td>
-      <td><a href="docs/pytorch/solutions/finetune/datasets/alpaca_dataset.md">Alpaca风格</a></td>
+      <td><a href="docs/zh/pytorch/solutions/finetune/datasets/alpaca_dataset.md">Alpaca风格</a></td>
       <td>✅</td>
       <td>✅</td>
     </tr>
     <tr>
-      <td><a href="docs/pytorch/solutions/finetune/datasets/sharegpt_dataset.md">ShareGPT风格</a></td>
+      <td><a href="docs/zh/pytorch/solutions/finetune/datasets/sharegpt_dataset.md">ShareGPT风格</a></td>
       <td>✅</td>
       <td>✅</td>
     </tr>
@@ -704,7 +704,7 @@ MindSpeed LLM支持预训练、指令微调等多种任务的数据预处理。
   <tbody>
     <tr>
       <td rowspan="1">性能采集</td>
-      <td><a href="docs/pytorch/features/profiling.md">基于昇腾芯片采集 profiling 数据</a></td>
+      <td><a href="docs/zh/pytorch/features/profiling.md">基于昇腾芯片采集 profiling 数据</a></td>
       <td>✅</td>
       <td>❌</td>
       <td>【Ascend】</td>
@@ -728,7 +728,7 @@ MindSpeed LLM支持预训练、指令微调等多种任务的数据预处理。
   <tbody>
     <tr>
       <td rowspan="2">高可用性</td>
-      <td><a href="docs/pytorch/features/deterministic_computation.md">基于昇腾芯片开启确定性计算</a></td>
+      <td><a href="docs/zh/pytorch/features/deterministic_computation.md">基于昇腾芯片开启确定性计算</a></td>
       <td>✅</td>
       <td>❌</td>
       <td rowspan="2">【Ascend】</td>

@@ -27,7 +27,7 @@
 
 ### 环境配置
 
-MindSpeed-LLM MindSpore后端的安装步骤参考[基础安装指导](../../../docs/mindspore/features/install_guide.md)。
+MindSpeed-LLM MindSpore后端的安装步骤参考[基础安装指导](../../../docs/zh/mindspore/features/install_guide.md)。
 
 
 ### 训练
