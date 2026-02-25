@@ -189,6 +189,7 @@ class WeightLoader:
         logger.info_rank0(f"> Initializing random weights on {device}...")
         
         model.to_empty(device=device)
+        model = model.float()
         reset_hf_initialized_flag(model)
         
         if hasattr(model, 'init_weights'):
@@ -214,6 +215,7 @@ class WeightLoader:
         
         # Step 2: Materialize model to device
         model.to_empty(device=device)
+        model = model.float()
         logger.info_rank0(f"> Model materialized to {device}")
         
         # Step 3: Load state dict and dispatch parameters
