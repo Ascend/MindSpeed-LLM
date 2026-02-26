@@ -30,6 +30,11 @@ MindSpeed LLM：基于昇腾生态的大语言模型分布式训练套件，旨�
 未来规划会刷新在[MindSpeed LLM RoadMap](https://gitcode.com/Ascend/MindSpeed-LLM/issues/982)中，欢迎访问LLM最新规划动态。
 
 
+# 社区会议
+---
+MindSpeed LLM系列TC及SIG会议安排请查看[Ascend会议中心](https://meeting.ascend.osinfra.cn/)
+
+
 # 加入我们
 
 ---
@@ -81,9 +86,6 @@ MindSpeed LLM：基于昇腾生态的大语言模型分布式训练套件，旨�
 
 注意：【Prototype】表示特性未经过充分验证，若使用存在问题请至[issue](https://gitcode.com/Ascend/MindSpeed-LLM/issues)反馈。
 
-# 社区会议
----
-- MindSpeed LLM系列TC及SIG会议安排请查看[Ascend会议中心](https://meeting.ascend.osinfra.cn/)
 
 # 版本说明
 
@@ -102,23 +104,18 @@ MindSpeed LLM支持Atlas 800T A2等昇腾训练硬件形态，软件版本配套
 
 ---
 
-
-
 MindSpeed LLM具体的安装步骤请参考[安装指导](./docs/zh/pytorch/install_guide.md)。
+
 
 # 快速上手
 
 ---
-
-
 
 MindSpeed LLM将以Qwen2.5-7B模型为例，指导开发者完成Qwen2.5-7B大语言模型的预训练任务，具体的操作请参考[快速入门](./docs/zh/quick_start.md)。
 
 # 预置模型
 
 ---
-
-
 
 MindSpeed LLM目前已内置支持百余个业界常用LLM大模型的预训练与微调，预置模型清单详见下表。
 
@@ -141,6 +138,34 @@ MindSpeed LLM目前已内置支持百余个业界常用LLM大模型的预训练�
     <td><a href="./docs/zh/pytorch/models/ssm_model.md">SSM</a></td>
   </tr>  
 </tbody></table>
+
+# 目录结构
+
+关键目录如下，详细介绍参见[项目导读](./docs/zh/guide.md)。
+
+```
+MindSpeed-LLM/
+ ├── ci                        # 门禁看护
+ ├── configs                   # 配置文件目录
+ ├── docs                      # 项目文档目录
+ ├── examples                  # 模型示例脚本
+ ├── mindspeed_llm             # 核心代码目录
+ ├── tests                     # 测试用例目录
+ ├── convert_ckpt.py           # 权重转换工具
+ ├── convert_ckpt_v2.py        # 权重转换工具 v2
+ ├── preprocess_data.py        # 数据预处理工具
+ ├── pretrain_gpt.py           # 预训练流程
+ ├── pretrain_mamba.py         # 预训练mamba模型流程
+ ├── posttrain_gpt.py          # 后训练流程
+ ├── preprocess_prompt.py      # 提示词预处理工具
+ ├── rlhf_gpt.py               # RLHF 训练流程
+ ├── train_fsdp2.py            # FSDP2 训练流程
+ ├── inference.py              # 模型推理工具
+ ├── evaluation.py             # 模型评估工具
+ ├── setup.py                  # 安装配置文件
+ ├── README.md                 # 项目说明文档
+```
+
 
 # 训练方案与特性
 
