@@ -1,4 +1,6 @@
-## MindSpore后端支持说明
+# MindSpore后端
+
+## 支持说明
 
 MindSpeed-LLM已支持接入华为自研AI框架MindSpore，旨在提供华为全栈易用的端到端的大语言模型训练解决方案，以此获得更极致的性能体验。MindSpore后端提供了一套对标PyTorch的API，用户无需进行额外代码适配即可无缝切换。
 
@@ -7,7 +9,6 @@ MindSpeed-LLM已支持接入华为自研AI框架MindSpore，旨在提供华为�
 ## NEWS !!! 📣📣📣
 
 🚀🚀🚀MindSpore后端已支持 **[Deepseek-V3](../../../examples/mindspore/deepseek3/README.md)/[QWEN3](../../../examples/mindspore/qwen3/README.md)/[GLM-4.5](../../../examples/mindspore/glm45-moe/README.md)** ！！！🚀🚀🚀
-
 
 ## 版本配套表
 
@@ -21,12 +22,13 @@ MindSpeed-LLM + MindSpore后端的依赖配套如下表，安装步骤参考[基
   <tr>
     <td>昇腾NPU驱动</td>
     <td rowspan="2">在研版本</td>
+  </tr>
   <tr>
     <td>昇腾NPU固件</td>
   </tr>
   <tr>
     <td>Toolkit（开发套件）</td>
-      <td rowspan="3">在研版本</td>
+    <td rowspan="3">在研版本</td>
   </tr>
   <tr>
     <td>Kernel（算子包）</td>
@@ -219,7 +221,6 @@ MindSpore后端对MindSpeed的重要加速特性的支持情况如下表所示�
 
 即将上线，敬请期待！
 
-
 ## 开发工具链
 
 ### 数据预处理
@@ -321,7 +322,6 @@ MindSpeed MindSpore后端的权重转换与PyTorch后端保持了一致，当前
     </tr>
   </tbody>
 </table>
-
 
 ### 高可用性
 

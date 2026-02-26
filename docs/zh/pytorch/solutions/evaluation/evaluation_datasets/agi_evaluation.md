@@ -12,7 +12,6 @@
 
 ![AGIEval](../../../figures/evaluation/AGIEval_tasks.png)
 
-
 目前MindSpeed-LLM仓库对 AGI 评估有两种评估模式：
 
 ## 使用方法
@@ -47,4 +46,4 @@
 
 ## 参考文献
 
-Zhong, W., Cui, R., Guo, Y., Liang, Y., Lu, S., Wang, Y., Saied, A., Chen, W., & Duan, N. (2023). AGIEval: A Human-Centric Benchmark for Evaluating Foundation Models [Preprint]. arXiv. https://arxiv.org/abs/2304.06364
+Zhong, W., Cui, R., Guo, Y., Liang, Y., Lu, S., Wang, Y., Saied, A., Chen, W., & Duan, N. (2023). AGIEval: A Human-Centric Benchmark for Evaluating Foundation Models [Preprint]. arXiv. <https://arxiv.org/abs/2304.06364>

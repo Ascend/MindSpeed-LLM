@@ -52,11 +52,13 @@
             {"other keys": "optional content"}
         ]
         ```
+
     - `json-keys`：从文件中提取的列名列表，默认为 `text`，可以为 `text`, `input`, `title` 等多个输入，结合具体需求及数据集内容使用，如：
 
         ```shell
         --json-keys text input output
         ```
+
     - `n-subs`：数据预处理并行加速参数。当需要预处理的数据集比较大时，可以通过并行处理进行加速，方法为设置参数`--n-subs`，通过该参数设置并行处理数量。在数据预处理过程会将原始数据集切分为`n-subs`个子集，对子集进行并行处理，然后合并，从而实现加速。建议预处理数据集超过GB级别时加上该参数。
     - `append-eod`：该参数的作用是将文档结束标记`EOD`显示地添加到每条数据的末尾，防止模型学习无意义的关联。该参数使能后的效果如下：  
     ![append-eod示意图](../../figures/pretrain/append-eod.png)
@@ -73,6 +75,7 @@
     环境变量确认无误后，需要在脚本中修改节点相关配置，单机和多机配置如下：
 
     - 单机配置
+
         ```shell
         NPUS_PER_NODE=8 # 单节点的卡数
         MASTER_ADDR=localhost
@@ -83,6 +86,7 @@
         ```
 
     - 多机配置
+
         ```shell
         # 根据分布式集群实际情况配置分布式参数
         NPUS_PER_NODE=8  # 每个节点的卡数
@@ -94,6 +98,7 @@
         ```
 
     然后需要在脚本中修改相关路径参数和模型切分配置：
+
     ```shell
     CKPT_SAVE_DIR="your model save ckpt path" # 训练完成后的权重保存路径
     DATA_PATH="your data path" # 数据集路径，填入数据预处理时保存的数据路径
@@ -128,6 +133,7 @@
 
 4. 启动预训练  
     预训练脚本配置完毕后，可运行脚本启动预训练（多机场景中需要在多个终端上同时启动脚本）：
+
     ```shell
     bash examples/mcore/qwen3/pretrain_qwen3_8b_4K_ptd.sh
     ```

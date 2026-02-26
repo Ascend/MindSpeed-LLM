@@ -1,4 +1,4 @@
-## MindSpeed-LLM MindSpore后端稀疏模型支持
+# MindSpeed-LLM MindSpore后端稀疏模型支持
 
 <table>
   <thead>
@@ -37,7 +37,6 @@
       <th>Mcore</th>
       <td>8x8</td>
       <td rowspan="1"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
-      <tr>
     </tr>
     <tr>
       <td rowspan="3"><a href="https://huggingface.co/mistralai">Mixtral</a></td>
@@ -53,7 +52,7 @@
       <td> 32K</td>
       <th>Mcore</th>
       <td>8x8</td>
-    </tr></a>
+    </tr>
     <tr>
       <td> 64K</td>
       <th>Mcore</th>
@@ -89,7 +88,7 @@
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/deepseek-ai/DeepSeek-V2.5">DeepSeek-V2.5</a></td>
       <td><a href="https://huggingface.co/deepseek-ai/DeepSeek-V2.5/tree/main">236B</a></td>
-      <td>deepseek25</a></td>
+      <td>deepseek25</td>
       <td> 8K </td>
       <th>Mcore</th>
       <td> 20x8 </td>

@@ -11,6 +11,7 @@ MindSpeed LLM是基于训练加速库MindSpeed的大语言模型分布式训练�
 ## MindSpeed LLM架构
 
 MindSpeed LLM架构关系如[图1](#架构图)所示，整体分为两个层次：
+
 - **MindSpeed Core基础加速**  
     提供融合算子、融合优化器及自研加速模块等底层能力，围绕并行、内存、通信、计算进行深度优化。MindSpeed LLM调用上述加速特性以保障训练性能。
 - **MindSpeed LLM**  

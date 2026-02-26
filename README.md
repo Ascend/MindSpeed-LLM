@@ -1,4 +1,4 @@
-  <p align="center"> <img src="sources/images/readme/logo.png" height="110px" width="500px"> </p>
+  <p align="center"> <img src="docs/zh/pytorch/figures/readme/logo.png" height="110px" width="500px"> </p>
 
 <p align="center">
     <a href="https://gitcode.com/ascend/MindSpeed-LLM/blob/master/LICENSE">
@@ -43,11 +43,11 @@ MindSpeed LLM：基于昇腾生态的大语言模型分布式训练套件，旨�
 <div style="display: flex; justify-content: flex-start; gap: 30px; align-items: flex-start; padding-left: 60px;">
   <div style="text-align: center;">
     <div>MindSpeed LLM社区交流群</div>
-    <img src="sources/images/wechat/llm_group.jpg" width="150" alt="MindSpeed LLM 微信群">
+    <img src="docs/zh/pytorch/figures/wechat/llm_group.jpg" width="150" alt="MindSpeed LLM 微信群">
   </div>
   <div style="text-align: center;">
     <div>昇腾开源小助手</div>
-    <img src="sources/images/wechat/ascend_assistant.jpg" width="150" alt="昇腾小助手 微信">
+    <img src="docs/zh/pytorch/figures/wechat/ascend_assistant.jpg" width="150" alt="昇腾小助手 微信">
   </div>
 </div>
 

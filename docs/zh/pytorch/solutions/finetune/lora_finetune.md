@@ -116,6 +116,7 @@ PP=2                                      # 权重转换时target-pipeline-paral
 ```
 
 微调脚本相关参数说明：
+
 - `DATA_PATH`：数据集路径。请注意实际数据预处理生成文件末尾会增加`_input_ids_document`等后缀，该参数填写到数据集的前缀即可。例如实际的数据集相对路径是`./finetune_dataset/alpaca/alpaca_packed_input_ids_document.bin`等，那么只需要填`./finetune_dataset/alpaca/alpaca`即可。
 - `is-instruction-dataset`：用于指定微调过程中采用指令微调数据集，以确保模型依据特定指令数据进行微调。
 - `prompt-type`：指定模型模板，使 base 模型在微调后具备更好的对话能力。
@@ -166,6 +167,7 @@ CHECKPOINT_LORA="your lora model directory path" # LoRA微调完成后的权重�
 ```
 
 参数说明：
+
 - `lora-load`：加载 LoRA 权重断点继续训练或用于推理。在推理时需与 `--load` 参数配合使用，加载 `CKPT_SAVE_DIR` 路径下的 LoRA 权重。
 
 相关参数设置完毕后，运行推理脚本：

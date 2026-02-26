@@ -25,14 +25,15 @@
 ## 使用方法
 
 ### 数据预处理
+
 目前Seq1F1B支持多样本Pack模式的预训练和微调场景，数据处理阶段需要进行如下修改，具体细节参考[大模型分布式预训练pack模式说明文档](../../pytorch/solutions/pretrain/pretrain_eod.md)和[多样本Pack模式微调说明文档](../../pytorch/solutions/finetune/multi_sample_pack_finetune.md)：
 
 - 多样本Pack模式预训练场景：数据预处理阶段额外添加`--append-eod`参数开启pack模式数据预处理，在每个输入序列的末尾添加一个特殊的标记来表示输入序列的结束。
 
 - 多样本Pack模式微调场景：数据预处理阶段加入`--pack`将数据转为Pack格式，使用`--seq-length`指定Pack数据集每条数据的长度，使用`--append-eod`在每个输入序列的末尾添加一个特殊的标记来表示输入序列的结束。
 
-
 ### 参数详解
+
 在 msrun 启动bash 脚本中增加如下参数来使用Seq1F1B:
 
 - 使用参数 `--enable-seq1f1b` 使能Seq1F1B流水线并行特性。

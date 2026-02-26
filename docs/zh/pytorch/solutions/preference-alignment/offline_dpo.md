@@ -42,7 +42,7 @@ dpo训练脚本参照：[dpo_llama3_8b_full_ptd.sh](../../../../../examples/mcor
 
   必选，指定dpo使用pairwise配对数据集
 
-- **`--dpo-loss-type `**
+- **`--dpo-loss-type`**
 
   可选参数，指定loss计算方法，目前支持：sigmoid（dpo原始方案）, hinge, ipo
 

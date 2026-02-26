@@ -12,14 +12,14 @@
 
 在预训练脚本的 `GPT_ARGS` 里要注意：
 
-```
+```bash
 GPT_ARGS="
     [其他参数...] \
     --use-distributed-optimizer \  # 使用分布式优化器（必选）
 "
 ```
 
-#### 关键参数说明：
+#### 关键参数说明
 
 | 参数 | 说明 |
 |------|------|
@@ -41,13 +41,15 @@ GPT_ARGS="
 - 随机状态（random states）等
 
 示例：
-```
+
+```bash
 --save /your/checkpoint/path \
 --save-interval 500   # 每 500 步保存一次
 ```
 
 每次保存生成如下结构：
-```
+
+```shell
 /your/checkpoint/path/
 ├── latest_checkpointed_iteration.txt
 ├── iter_0000001/
@@ -68,7 +70,7 @@ GPT_ARGS="
 
 要从中断处继续训练，在预训练脚本中的启动命令中指定 `--load` 为之前的保存路径：
 
-```
+```bash
 GPT_ARGS="
     [其他参数...] \
     --use-distributed-optimizer \  # 使用分布式优化器（必选）
@@ -83,14 +85,16 @@ msrun ${DISTRIBUTED_ARGS} pretrain_gpt.py \
 
 > 系统会自动读取 `latest_checkpointed_iteration.txt` 文件，找到最新的迭代步数，并恢复模型和优化器状态。
 
-#### 自动恢复内容包括：
+### 自动恢复内容包括
+
 - 模型参数
 - 优化器状态（Adam momentum, variance 等）
 - 学习率调度器状态
 - 已完成的训练步数（避免重复训练）
 
 恢复后训练将继续从断点开始，打印如下日志内容
-```
+
+```shell
 successfully loaded checkpoint from xx at iteration x
 (min, max) time across ranks(ms):
 load-checkpoint ....................:(9289.88, 9288.22)

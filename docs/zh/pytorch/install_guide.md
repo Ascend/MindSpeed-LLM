@@ -1,6 +1,7 @@
 # 安装指导
 
 ## 依赖配套总览
+
 MindSpeed LLM的依赖配套如下表
 
 <table>
@@ -11,12 +12,13 @@ MindSpeed LLM的依赖配套如下表
   <tr>
     <td>昇腾NPU驱动</td>
     <td rowspan="2">在研版本</td>
+  </tr>
   <tr>
     <td>昇腾NPU固件</td>
   </tr>
   <tr>
     <td>CANN Toolkit（开发套件）</td>
-      <td rowspan="3">在研版本</td>
+    <td rowspan="3">在研版本</td>
   </tr>
   <tr>
     <td>CANN Ops（算子包）</td>
@@ -45,10 +47,10 @@ MindSpeed LLM的依赖配套如下表
 </table>
 
 > [!NOTE]
+>
 > - master分支是在研版本，使用在研版本的驱动以及CANN包，因此master的部分新特性老版本配套可能有不支持情况。如果要使用稳定版本，请切换到商发分支并下载对应依赖版本进行安装。
 > - PyTorch 2.6及以上版本不支持Python3.8，请优先使用Python3.10。
 > - qwen3，glm45-moe系列模型要求高版本transformers，因此需要使用Python3.10及以上版本。
-
 
 ## 依赖安装指导
 
@@ -94,6 +96,7 @@ pip3 install torch_npu-2.7.1rc1-cp310-cp310-manylinux_2_28_aarch64.whl
 ### MindSpeed LLM代码仓及相关依赖安装
 
 1. 使能环境变量：
+
     ```shell
     # 请根据实际路径进行替换
     source /usr/local/Ascend/cann/set_env.sh 
@@ -101,6 +104,7 @@ pip3 install torch_npu-2.7.1rc1-cp310-cp310-manylinux_2_28_aarch64.whl
     ```
 
 2. 安装MindSpeed加速库：
+
     ```shell
     git clone https://gitcode.com/ascend/MindSpeed.git
     cd MindSpeed
@@ -111,6 +115,7 @@ pip3 install torch_npu-2.7.1rc1-cp310-cp310-manylinux_2_28_aarch64.whl
     ```
 
 3. 准备MindSpeed LLM及Megatron-LM源码：
+
     ```shell
     git clone https://gitcode.com/ascend/MindSpeed-LLM.git 
     git clone https://github.com/NVIDIA/Megatron-LM.git  # megatron从github下载，请确保网络能访问

@@ -1,4 +1,5 @@
 # PyTorch FSDP2 后端特性介绍
+
 FSDP2 是 PyTorch 分布式并行的下一代范式，旨在解决 FSDP1（`FlatParameter` 包装器模式）在灵活性与组合性上的痛点。它不再通过 Python 类包装模型，而是通过 **`torch.distributed.fsdp.fully_shard`** API 对模型进行原位（In-place）的并行化处理。
 
 ---

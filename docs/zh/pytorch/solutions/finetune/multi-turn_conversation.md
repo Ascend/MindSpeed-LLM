@@ -25,6 +25,7 @@ You >> Here I go again. Remember why I came to buy flowers yesterday?
 MindSpeed-LLM:
 Yes, I do remember. You came to buy flowers for your sister's birthday, and you mentioned that she likes pink roses. Is there anything else related to that purchase that I can help you with today?
 ```
+
 ## 开始多轮对话指令微调
 
 有关Alpaca数据集的详细介绍，请参阅[**Alpaca风格数据的说明文档**](datasets/alpaca_dataset.md)。
@@ -124,7 +125,7 @@ CHECKPOINT="./ckpt/"
 bash examples/mcore/gemma2/chat_gemma2_9b_ptd.sh
 ```
 
-在确认成功加载上微调权重后，在出现`You >> `的提示后，可以进行对话。
+在确认成功加载上微调权重后，在出现`You >>的提示后，可以进行对话。
 
 ## 使用约束
 

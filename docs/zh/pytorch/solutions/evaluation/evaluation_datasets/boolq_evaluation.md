@@ -72,4 +72,3 @@ MindSpeed-LLM 会对`dev`问题集中的内容进行评估。
 【--origin-postprocess】
 
 若使能该参数，模型输出的答案会经过答案的映射mapping。例如，模型没有按照预期输出选项`A`或`B`，而是输出了`True`。若使能该参数，则会将`True`重新映射回`A`。
-

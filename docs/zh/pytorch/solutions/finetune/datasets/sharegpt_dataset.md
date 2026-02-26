@@ -24,7 +24,7 @@ cd ..
 
 `ShareGPT`风格示例：
 
-```
+```json
 [
   {
     "conversations": [
@@ -81,12 +81,11 @@ python ./preprocess_data.py \
 
 其中key值`"messages"、"tags"`代表数据集列映射后的属性，在代码中是固定的，不应改变。value值中`"conversations"`对应数据集的列名、`"from"`对应角色标志、`"human"、"gpt"、"system"、"observation"、"function_call"`对应角色种类、`"value"`对应具体内容标志。
 
-
 以OpenAI格式为例，OpenAI 格式是 sharegpt 格式的一种特殊情况，其中第一条消息可能是系统提示词。
 
 OpenAI格式示例：
 
-```
+```json
 [
   {
     "messages": [
@@ -131,7 +130,7 @@ python ./preprocess_data.py \
 
 **示例1：**
 
-```
+```bash
 --map-keys '{"messages":"chat"}'
 ```
 
@@ -139,7 +138,7 @@ python ./preprocess_data.py \
 
 **示例2：**
 
-```
+```bash
 --map-keys '{"messages":"messages", "tags":{"role_tag": "role","content_tag": "content","user_tag": "user","assistant_tag": "assistant"}}'
 ```
 

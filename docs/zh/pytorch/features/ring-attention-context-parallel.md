@@ -7,9 +7,9 @@
 ## 解决方案
 
 支持Ring Attention长序列并行方案，以此解决序列维度扩展问题。具体细节参见原文：
-> Ring Attention with Blockwise Transformers for Near-Infinite Context (https://arxiv.org/pdf/2310.01889)
+> Ring Attention with Blockwise Transformers for Near-Infinite Context (<https://arxiv.org/pdf/2310.01889>)
 
-### 解决思路:
+### 解决思路
 
 Ring Attention借鉴了分块Softmax原理，在不需要获取整个序列的完整矩阵情况下进行分块attention计算。因此作者提出以分块方式执行自注意力和前馈网络计算，跨多个设备分布序列维度。具体地，该方法在进程之间构建注意力计算块的环状通信结构（Ring），每个进程具有一个切分后的本地QKV块。在计算完本地的attention后，通过向后发送和向前获取KV块，遍历进程设备环，以逐块的方式进行注意力和前馈网络计算。同时，本地的attention计算和KV块的通信理想情况下可以互相掩盖，从而消除了额外引入的通信开销。另外该方案在计算attention的过程中全程不需要数据拼接，支持的序列长度理论上可以无限拓展。
 
@@ -22,7 +22,6 @@ Ring Attention借鉴了分块Softmax原理，在不需要获取整个序列的�
 可兼容FlashAttention，目前已默认开启FlashAttention。
 
 如果想要使得计算和通信可以互相掩盖，理论上需要确保每个计算块分到的序列长度$c \geq F/B$。其中F是每个device的FLOPS，B是每个device间的带宽。具体推导过程参见原文。在实践中，需要确保每个计算块分到的序列长度足够大，才能较好掩盖。
-
 
 ## 使用方法
 
@@ -38,8 +37,7 @@ Ring Attention借鉴了分块Softmax原理，在不需要获取整个序列的�
 
 利用多个计算设备对输入序列进行并行切分，降低单设备的内存消耗，相比不开启序列并行单步耗时增加，相比重计算计算效率提升。
 
-
-## 注意事项：
+## 注意事项
 
 1. 开启Context Parallel时需要同时开启Flash Attention特性，否则特性不支持。
 2. 在使用GPT类模型进行训练的场景下，建议attention-mask-type设置为causal。

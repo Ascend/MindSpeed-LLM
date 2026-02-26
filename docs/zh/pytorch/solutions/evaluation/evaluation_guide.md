@@ -1,13 +1,18 @@
+# 评估指导手册
+
 MindSpeed-LLM 支持大模型在公开基准数据集上进行准确率评估，当前支持的 Benchmark 如下：
 详细统计信息见[evaluation.md](../../models/models_evaluation.md)
 
-## 以上模型脚本环境变量声明：
+## 环境变量
+
 脚本中的环境变量配置见[环境变量说明](../../features/environment_variable.md)
 
 ## 大模型分布式评估使用介绍
 
-####  1. 基准评估
+### 1. 基准评估
+
 MindSpeed-LLM 基准评估脚本命名风格及启动方法为：
+
 ```shell
 # 命名及启动：examples/mcore/model_name/evaluate_xxx.sh
 bash examples/mcore/llama2/evaluate_llama2_7b_mmlu_ptd.sh
@@ -29,7 +34,6 @@ bash examples/mcore/llama2/evaluate_llama2_7b_mmlu_ptd.sh
 
 表示模型输出的生成长度，多项选择问题的输出长度会比编码任务的输出长度小，该参数很大程度上影响了模型的评估性能
 
-
 【--evaluation-batch-size】
 
 可以设置多batch推理，提升模型评估性能
@@ -38,8 +42,7 @@ bash examples/mcore/llama2/evaluate_llama2_7b_mmlu_ptd.sh
 
 在开启Expert Parallel时，需启用该参数进行评估
 
-
-####  2. 指令微调评估
+### 2. 指令微调评估
 
 使用指令微调后权重的评估脚本命名风格及启动方法为：
 
@@ -59,7 +62,7 @@ bash examples/mcore/llama2/evaluate_llama2_7b_full_mmlu_ptd.sh
 
 根据评估数据集语言来确定，默认为`en`，如果评估数据集为中文数据集，则应设置为`zh`
 
-####  3. LoRA权重评估
+### 3. LoRA权重评估
 
 使用lora权重的评估脚本命名风格及启动方法为：
 

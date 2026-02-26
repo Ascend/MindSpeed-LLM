@@ -40,6 +40,7 @@ DeepSeek系列模型创造性地提出多头潜在注意力：Multi-head Latent 
 【--enable-mla-absorb】
 
 矩阵吸收（Matrix Absorption）是MLA中的优化技术，通过将上采样矩阵及输出投影矩阵合并，使得MLA中原本的MHA注意力机制变成MQA,从而减少显存开销。在MLA的注意力计算流程中，原本需要先通过上采样矩阵将低秩潜在表示恢复到完整维度，然后进行注意力计算，最后通过输出投影矩阵得到最终输出。矩阵吸收技术将q、k上采样矩阵，v上采样矩阵和输出投影矩阵预先合并，直接在低秩潜在空间进行注意力计算。
+
 - 当前矩阵吸收功能需配合--use-sparse-flash-attn特性使用。
 
 【--use-sparse-flash-attn】

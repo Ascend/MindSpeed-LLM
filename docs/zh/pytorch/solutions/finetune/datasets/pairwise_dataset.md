@@ -6,7 +6,7 @@
 
 pairwise配对数据集样本示例：
 
-```
+```json
 {"system": "You are an AI assistant. You will be given a task. You must generate a detailed and long answer.", 
  "question": "Generate an approximately fifteen-word sentence that describes all this data: Midsummer House eatType restaurant; Midsummer House food Chinese; Midsummer House priceRange moderate; Midsummer House customer rating 3 out of 5; Midsummer House near All Bar One", 
  "chosen": "Midsummer House is a moderately priced Chinese restaurant with a 3/5 customer rating, located near All Bar One.", 

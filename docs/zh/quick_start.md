@@ -3,15 +3,16 @@
 ## 概述
 
 本文档提供了一个简易示例，帮助初次接触MindSpeed LLM的开发者快速启动模型训练任务。以下将以Qwen2.5-7B模型为例，指导开发者完成Qwen2.5-7B大语言模型的预训练任务，主要步骤包括：
+
 - 环境准备：根据仓库指导文件搭建环境
 - 获取开源模型权重：从HuggingFace下载Qwen2.5-7B原始模型
 - 启动预训练：在昇腾NPU上进行模型预训练
 
 开发者入门基础：
+
 - 具备基础的PyTorch使用经验
 - 具备初级的Python开发经验
 - 对Megatron-LM仓库有基本的了解
-
 
 ## 环境准备
 
@@ -23,7 +24,8 @@
 
 1. 获取模型权重文件。
     - 通过HuggingFace
-        ```
+
+        ```shell
         # 创建一个目录存储权重文件
         mkdir -p ./model_from_hf/qwen2.5-7b-hf
         cd ./model_from_hf/qwen2.5-7b-hf
@@ -41,8 +43,10 @@
         wget https://huggingface.co/Qwen/Qwen2.5-7B/resolve/main/tokenizer_config.json
         wget https://huggingface.co/Qwen/Qwen2.5-7B/resolve/main/vocab.json
         ```
+
     - 通过ModelScope 
-        ```
+
+        ```shell
         # 创建一个目录存储权重文件
         mkdir -p ./model_from_hf/qwen2.5-7b-hf
         cd ./model_from_hf/qwen2.5-7b-hf
@@ -62,7 +66,8 @@
         ```
 
 2. 通过sha256sum验证模型权重文件完整性。  
-    ```
+
+    ```shell
     # 利用sha256sum计算sha256数值
     # 打开文件明细可获取sha256值，https://huggingface.co/Qwen/Qwen2.5-7B/blob/main/model-00001-of-00004.safetensors
     # 如果从ModelScope下载，则打开 https://www.modelscope.cn/models/Qwen/Qwen2.5-7B/file/view/master/model-00001-of-00004.safetensors
@@ -71,6 +76,7 @@
     sha256sum model-00003-of-00004.safetensors
     sha256sum model-00004-of-00004.safetensors
     ```
+
     **图 1**  计算本地权重文件sha256数值  
     ![img.png](./pytorch/figures/quick_start/sha256.png)
 
@@ -93,10 +99,12 @@
 使用官方提供的转换脚本，获取对应切分的mg权重。
 
 1. 编辑权重转换脚本。
+
     ```shell
     cd MindSpeed-LLM
     vi examples/mcore/qwen25/ckpt_convert_qwen25_hf2mcore.sh
     ```
+
 2. 完成转换脚本的修改配置并保存。
 
     如下为调整后的hf2mcore权重转换示例脚本。
@@ -119,6 +127,7 @@
            --model-type-hf llama2 \
            --params-dtype bf16
     ```
+
       **表 1**  权重转换参数解析
 
     |参数|说明|必填|
@@ -136,20 +145,24 @@
     |`--params-dtype`|指定权重转换后的权重精度模式，默认为fp16，如果源文件格式为bf16，则需要设置为bf16 | ✅ |
 
 3. 执行权重转换脚本。
+
     ```shell
     bash examples/mcore/qwen25/ckpt_convert_qwen25_hf2mcore.sh
     ```
 
 > [!NOTE]  
+>
 > - 对于Qwen2.5-7B模型，此处推荐的切分配置是tp1pp4，对应上述配置。
 > - MindSpore框架尚不支持QLoRA权重量化转换，【--qlora-nf4】参数仅可置为False。
 > - MindSpore框架默认在Device侧进行权重转换，在模型较大时存在OOM风险，因此建议用户手动修改`convert_ckpt.py`，在包导入时加> 入如下代码设置CPU侧执行权重转换：
+>
 >     ```python
 >     import mindspore as ms
 >     ms.set_context(device_target="CPU", pynative_synchronize=True)
 >     import torch
 >     torch.configs.set_pyboost(False)
 >     ```
+>
 > - MindSpore框架转换出的模型权重无法直接用于PyTorch框架训练或推理。
 
 ### 预训练数据集处理
@@ -159,7 +172,9 @@
 常用的预训练数据集包括alpaca、enwiki、c4等，[预训练数据处理](./pytorch/solutions/pretrain/pretrain_dataset.md)中提供了数据集下载地址。
 
 如下以Alpaca数据集为例，进行预训练数据集示例。
+
 1. 获取数据集元数据。
+
     ```shell
     mkdir dataset
     cd dataset/
@@ -169,10 +184,13 @@
     wget https://www.modelscope.cn/datasets/angelala00/tatsu-lab-alpaca/resolve/master/train-00000-of-00001-a09b74b3ef9c3b56.parquet
     cd ..
     ```
+
 2. 编辑预训数据处理脚本。
+
     ```shell
     vi examples/mcore/qwen25/data_convert_qwen25_pretrain.sh
     ```
+
 3. 完成数据处理脚本的修改配置并保存。
 
     如下为调整后的数据处理示例脚本。
@@ -202,6 +220,7 @@
     |`--workers`|多进程数据集处理| ✅ |
 
 4. 执行预训数据处理脚本。
+
     ```shell
     bash examples/mcore/qwen25/data_convert_qwen25_pretrain.sh
     ```
@@ -211,10 +230,13 @@
 完成了数据集处理和权重转换之后，可以开始拉起预训练任务。
 
 1. 编辑示例脚本。
+
     ```shell
     vi examples/mcore/qwen25/pretrain_qwen25_7b_32k_ptd.sh
     ```
+
 2. 修改并报错预训练参数配置，配置示例如下：
+
     ```bash
     NPUS_PER_NODE=8           # 使用单节点的8卡NPU
     MASTER_ADDR=localhost     # 单机使用本节点ip，多机所有节点都配置为master_ip
@@ -235,23 +257,29 @@
     MBS=1               # 设置micro-batch-size为1
     GBS=64              # 设置global-batch-size为64
     ```
+
 3. 设置环境变量。
+
     ```shell
     source /usr/local/Ascend/cann/set_env.sh
     source /usr/local/Ascend/nnal/atb/set_env.sh
     ```
+
     以上命令以root用户安装后的默认路径为例，请用户根据set_env.sh的实际路径进行替换。
 
 4. 执行预训练脚本。
+
     ```shell
     bash examples/mcore/qwen25/pretrain_qwen25_7b_32k_ptd.sh
     ```
+
     **图 1**  启动预训练  
     ![img_2.png](./pytorch/figures/quick_start/running_log.png)
 
     脚本中特性包含训练参数或优化特性，下表为部分参数解释。
 
     **表 3**  训练脚本参数说明  
+
     |参数名|说明|
     |----|----| 
     |`--use-mcore-models`|使用Mcore分支运行模型|
@@ -264,5 +292,6 @@
     |`--bf16`|昇腾芯片对BF16精度支持良好，可显著提升训练速度|
 
 > [!NOTE]
+>
 > - 多机训练需在多个终端同时启动预训练脚本（每个终端的预训练脚本只有NODE_RANK参数不同，其他参数均相同）。
 > - 如果使用多机训练，且没有设置数据共享，需要在训练启动脚本中增加`--no-shared-storage`参数，设置此参数之后将会根据分布式参数判断非主节点是否需要load数据，并检查相应缓存和生成数据。

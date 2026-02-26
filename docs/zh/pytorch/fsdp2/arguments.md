@@ -864,7 +864,6 @@
   </tbody>
 </table>
 
-
 # megatron参数对照
 
 <table>

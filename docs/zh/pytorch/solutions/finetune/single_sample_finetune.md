@@ -3,6 +3,7 @@
 ## 使用场景
 
 单样本微调是最基础、最通用的指令微调形式。每条样本由独立的“指令”和“目标回复”构成，不依赖任何上下文信息。该模式适用于**单轮、无历史依赖**的任务，例如：
+
 - 问答（知识问答、常识推理）
 - 文本翻译
 - 文本摘要与改写
@@ -54,6 +55,7 @@
     请参考[权重转换v1](../checkpoint/checkpoint_convert.md)和[权重转换v2](../checkpoint/checkpoint_convert_v2.md)，即将模型原始的HF权重转换成Megatron权重，以Qwen3-8B模型在TP1PP4切分为例，详细配置请参考[Qwen3-8B权重转换脚本](../../../../../examples/mcore/qwen3/ckpt_convert_qwen3_hf2mcore.sh)。
 
     首先需要修改脚本中的以下参数配置：
+
     ```bash
     --load-dir ./model_from_hf/qwen3_hf/ # HF权重路径
     --save-dir ./model_weights/qwen3_mcore/ # Megatron权重保存路径
@@ -63,6 +65,7 @@
     ```
 
     然后，确认路径无误后运行权重转换脚本：
+
     ```shell
     bash examples/mcore/qwen3/ckpt_convert_qwen3_hf2mcore.sh
     ```
@@ -95,6 +98,7 @@
     - `prompt-type`：用于指定模型模板，能够让base模型微调后能具备更好的对话能力。`prompt-type`的可选项可以在[`templates`](../../../../../configs/finetune/templates.json)文件内查看。
 
     相关参数设置完毕后，运行数据预处理脚本：
+
     ```shell
     bash examples/mcore/qwen3/data_convert_qwen3_instruction.sh
     ```
@@ -105,6 +109,7 @@
     环境变量确认无误后，需要在脚本中修改节点相关配置，单机和多机配置如下：
 
     - 单机配置
+
         ```bash
         NPUS_PER_NODE=8 # 单节点的卡数
         MASTER_ADDR=localhost
@@ -115,6 +120,7 @@
         ```
 
     - 多机配置
+
         ```bash
         # 根据分布式集群实际情况配置分布式参数
         NPUS_PER_NODE=8  # 每个节点的卡数
@@ -126,6 +132,7 @@
         ```
 
     然后需要在脚本中修改相关路径参数和模型切分配置：
+
     ```bash
     CKPT_LOAD_DIR="your model ckpt path"  # 指向权重转换后保存的路径
     CKPT_SAVE_DIR="your model save ckpt path" # 指向用户指定的微调后权重保存路径
@@ -151,6 +158,7 @@
 
 6. 启动微调  
     参数配置完毕后，可运行脚本启动微调（多机场景中需要在多个终端上同时启动脚本）：
+
     ```shell
     bash examples/mcore/qwen3/tune_qwen3_8b_4K_full_ptd.sh
     ```
@@ -159,12 +167,14 @@
     完成微调后，需要进一步验证模型是否具备了预期的输出能力。我们提供了简单的模型生成脚本，只需要加载微调后的模型权重，便可观察模型在不同生成参数配置下的回复，详细配置请参考[Qwen3-8B推理脚本](../../../../../examples/mcore/qwen3/generate_qwen3_8b_ptd.sh)。
 
     首先在脚本中修改以下参数：
+
     ```shell
     CKPT_DIR="your model save ckpt path" # 指向微调后权重的保存路径
     TOKENIZER_PATH="your tokenizer path" # 指向模型tokenizer的路径
     ```
 
     然后运行推理脚本：
+
     ```shell
     bash examples/mcore/qwen3/generate_qwen3_8b_ptd.sh
     ```

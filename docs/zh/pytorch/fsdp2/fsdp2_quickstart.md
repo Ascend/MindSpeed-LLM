@@ -2,13 +2,14 @@
 
 本文档以 **微调场景** GPT-OSS 20B 为例，介绍如何使用 MindSpeed LLM 的 FSDP2 后端进行大语言模型训练，涵盖环境准备、配置说明与训练启动全流程。
 
-
 ## 1. 环境安装
 
 环境安装请参考 [安装指导](../install_guide.md)
 
 ## 2 目录结构  
+
 拉起微调相关脚本位置如下所示
+
 ```bash
 MindSpeed-LLM/
 ├── examples/fsdp2/gpt_oss/
@@ -21,6 +22,7 @@ MindSpeed-LLM/
 ## 3. 配置修改
 
 ### 3.1 模型路径配置  
+
 ```yaml
 model:
   model_name_or_path: /path/to/gpt-oss-20b-hf/      # 替换为您的模型本地路径或Hugging Face模型ID
@@ -42,26 +44,26 @@ model:
 
 1. 编辑 `configs/fsdp2/data/dataset_info.json`，添加数据集条目：
 
-```json
-{
-  "alpaca_full": {
-    "file_name": "./train-00000-of-00001.parquet"
-  },
-  "sharegpt4_zh": {
-    "file_name": "./sharegpt_zh.jsonl",
-    "formatting": "sharegpt"
-  }
-}
-```
+    ```json
+    {
+      "alpaca_full": {
+        "file_name": "./train-00000-of-00001.parquet"
+      },
+      "sharegpt4_zh": {
+        "file_name": "./sharegpt_zh.jsonl",
+        "formatting": "sharegpt"
+      }
+    }
+    ```
 
 2. 在 YAML 配置中引用：
 
-```yaml
-data:
-  dataset: alpaca_full, sharegpt4_zh                # 微调数据集：可填写逗号分隔的数据集名称，支持多数据集混合
-  template: gpt                                     # 微调构建prompt的模板名称
-  cutoff_len: 2048                                  # 分词后输入序列的截断长度，超过该长度的序列会被截断
-```
+    ```yaml
+    data:
+      dataset: alpaca_full, sharegpt4_zh                # 微调数据集：可填写逗号分隔的数据集名称，支持多数据集混合
+      template: gpt                                     # 微调构建prompt的模板名称
+      cutoff_len: 2048                                  # 分词后输入序列的截断长度，超过该长度的序列会被截断
+    ```
 
 ## 4. 分布式训练启动脚本说明
 
@@ -91,15 +93,19 @@ torchrun \
 ```
 
 ## 5. 启动训练
+
 在仓库根目录执行：
+
 ```bash
 bash examples/fsdp2/gpt_oss/tune_gpt_oss_20b_a3b_4K_fsdp2_mindspeed.sh
 ```
+
 即可成功拉起训练任务。
 
-
 ## 6. 其他配置参数说明
+
 ### 6.1 模型配置
+
 ```yaml
 model:
   model_id: gpt_oss                                 # 模型类型标识，新增模型类型需在 mindspeed_llm/fsdp2/models/model_registry.py 的ModelRegistry类中注册
@@ -110,6 +116,7 @@ model:
 ```
 
 ### 6.2 并行策略
+
 ```yaml
 parallel:
   fsdp_size: 8                                      # 全分片数据并行(FSDP)大小，将模型参数分片存储到8张卡
@@ -133,6 +140,7 @@ parallel:
 ```
 
 ### 6.3 训练参数
+
 ```yaml
 training:
   per_device_train_batch_size: 1                    # 每张卡的训练batch size大小
@@ -183,24 +191,25 @@ data:
 #### 方式二：通过 `dataset_info.json` 注册  
 
 1. 编辑 `configs/fsdp2/data/dataset_info.json`，添加数据集条目：
-```json
-{
-  "alpaca_full": {
-    "file_name": "./train-00000-of-00001.parquet"
-  },
-  "sharegpt4_zh": {
-    "file_name": "./sharegpt_zh.jsonl",
-    "formatting": "sharegpt"
-  }
-}
-```
+
+    ```json
+    {
+      "alpaca_full": {
+        "file_name": "./train-00000-of-00001.parquet"
+      },
+      "sharegpt4_zh": {
+        "file_name": "./sharegpt_zh.jsonl",
+        "formatting": "sharegpt"
+      }
+    }
+    ```
 
 2. 在 YAML 配置中引用：  
 
-```yaml
-data:
-  dataset: alpaca_full, sharegpt4_zh                # 微调数据集：可填写逗号分隔的在 dataset_info.json 中配置的数据集名称，支持多数据集混合
-```
+    ```yaml
+    data:
+      dataset: alpaca_full, sharegpt4_zh                # 微调数据集：可填写逗号分隔的在 dataset_info.json 中配置的数据集名称，支持多数据集混合
+    ```
 
 ### 6.5 预训练场景数据集配置  
 

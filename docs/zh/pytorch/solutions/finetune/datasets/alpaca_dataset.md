@@ -52,7 +52,7 @@ python ./preprocess_data.py \
 
 Alpaca风格示例：
 
-```
+```json
 [
 {
     "instruction": "人类指令（必填）",
@@ -77,7 +77,6 @@ Alpaca风格示例：
 
 若数据集中无`system`与`history`列，则`--map-keys`可省略。
 
-
 【--prompt-type】
 
 用于指定模型模板，能够让base模型微调后能具备更好的对话能力。`prompt-type`的可选项可以在[templates](../../../../../../mindspeed_llm/tasks/preprocess/templates.py)文件内查看。
@@ -88,7 +87,7 @@ Alpaca风格示例：
 
 **示例1：**
 
-```
+```bash
 --map-keys '{"prompt":"notice","query":"question","response":"answer","system":"system_test","history":"histories"}'
 ```
 
@@ -96,7 +95,7 @@ Alpaca风格示例：
 
 **示例2：**
 
-```
+```bash
 --map-keys '{"history":"histories"}'
 ```
 

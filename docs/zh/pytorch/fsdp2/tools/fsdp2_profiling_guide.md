@@ -1,8 +1,8 @@
 # MindSpeed LLM FSDP2后端 Profiling 工具使用指南
+
 ## 使用场景  
 
 本工具基于 `torch_npu.profiler` 实现，集成于 MindSpeed FSDP2 训练流程。通过配置 YAML 或命令行参数，即可在指定训练步数和指定 rank 上自动采集性能数据，并生成 profiling 文件。
-
 
 ## 使用方法  
 
@@ -51,47 +51,51 @@ training:
 这里给出两种配置示例，展示比较常用的使用场景：
 
 1. 初步分析性能时，可以只采集0号卡的CPU信息，查看通信和计算时间占比，各类算子占比以及算子调度信息，推荐配置如下：
-```yaml
-training:
-  # ... 其他训练参数 ...
 
-  # --- Profiling: 初步性能分析 ---
-  profile: true
-  profile_step_start: 5
-  profile_step_end: 6 # 采集[5, 6), 区间左闭右开
-  profile_ranks: [0] # 只采集0号卡
-  profile_level: level1
-  profile_with_cpu: true
-  profile_save_path: ./profile_dir
-```
+    ```yaml
+    training:
+      # ... 其他训练参数 ...
+    
+      # --- Profiling: 初步性能分析 ---
+      profile: true
+      profile_step_start: 5
+      profile_step_end: 6 # 采集[5, 6), 区间左闭右开
+      profile_ranks: [0] # 只采集0号卡
+      profile_level: level1
+      profile_with_cpu: true
+      profile_save_path: ./profile_dir
+    ```
+
 2. 如果想要进一步查看算子内存占用信息以及算子详细调用情况，可以加入 profile_with_stack、profile_with_memory 和profile_record_shapes 等参数，但是这会导致数据膨胀，性能劣化。具体配置如下:
 
-```yaml
-training:
-  # ... 其他训练参数 ...
-
-  # --- Profiling: 深度分析（含堆栈/内存/shape）---
-  profile: true
-  profile_step_start: 5
-  profile_step_end: 6 # 采集[5, 6), 区间左闭右开
-  profile_ranks: [0] # 只采集0号卡
-  profile_level: level1
-  profile_with_cpu: true
-  profile_with_stack: true # 采集算子详细调用情况
-  profile_with_memory: true # 采集内存占用信息
-  profile_record_shapes: true # 记录张量 shape
-  profile_save_path: ./profile_dir_with_stack
-```
+    ```yaml
+    training:
+      # ... 其他训练参数 ...
+    
+      # --- Profiling: 深度分析（含堆栈/内存/shape）---
+      profile: true
+      profile_step_start: 5
+      profile_step_end: 6 # 采集[5, 6), 区间左闭右开
+      profile_ranks: [0] # 只采集0号卡
+      profile_level: level1
+      profile_with_cpu: true
+      profile_with_stack: true # 采集算子详细调用情况
+      profile_with_memory: true # 采集内存占用信息
+      profile_record_shapes: true # 记录张量 shape
+      profile_save_path: ./profile_dir_with_stack
+    ```
 
 ### 4. 输出文件
 
 训练结束后，指定路径下将生成 profiling 文件，命名格式示例：
-```
+
+```shell
 localhost.localdomain_3687609_20260129150104894_ascend_pt
 ```
 
 该文件的目录结构如下：  
-```
+
+```shell
  localhost.localdomain_3687609_20260129150104894_ascend_pt
     ├─ASCEND_PROFILER_OUTPUT
     ├─logs
@@ -110,6 +114,7 @@ localhost.localdomain_3687609_20260129150104894_ascend_pt
 参考文档指导[MindStudio Insight 工具部署文档](https://gitcode.com/Ascend/msinsight#%E7%8E%AF%E5%A2%83%E9%83%A8%E7%BD%B2  ) 进行工具部署。  
 将路径生成的profiling文件导入到工具中，进行性能的拆解分析。  
 在这里我们简单介绍MindStudio Insight 工具主要使用的几个界面。  
+
 #### 时间线（Timeline）  
 
 时间线界面包含工具栏（区域一）、时间线树状图（区域二）、图形化窗格（区域三）和数据窗格（区域四）四个部分组成，如图界面所示。

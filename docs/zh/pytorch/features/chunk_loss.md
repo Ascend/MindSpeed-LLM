@@ -12,6 +12,7 @@
 
 **第1步** 替换模型的lm_head(output_layer)实现（原实现为nn.Linear)
 当前所有模型的lm_head都是没有bias的线性层，可改为以下实现
+
 ```python
 class LMHead(nn.Linear):
     def forward(self, hidden_states: torch.Tensor, loss_ctx: callable = None):
@@ -40,12 +41,14 @@ class LMHead(nn.Linear):
             # which typically enables memory-efficient or chunked loss calculation.
             return None, loss_ctx(hidden_states, w, b)
 ```
+
 **第2步**在模型的forward函数里添加loss_ctx入参，并在forward实现里添加使能判断
 
 参考fsdp2 Qwen3ForCausalLM实现，[参考链接](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/mindspeed_llm/fsdp2/models/qwen3/qwen3.py)
-此外，具体模型需要注意loss计算方式，如有新的loss计算方式，应在 build_loss_ctx 里适配修改，[修改位置在FSDP2Model的build_loss_ctx方法](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/mindspeed_llm/fsdp2/core/models/fsdp2_model.py)
+此外，具体模型需要注意loss计算方式，如有新的loss计算方式，应在 build_loss_ctx 里适配修改，[修改位置在FSDP2Model的build_loss_ctx方法](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/mindspeed_llm/fsdp2/models/fsdp2_model.py)
 
 **第3步**在启动脚本中添加使能参数
+
 ```shell
    --loss-compute-mode  chunk \
    --loss-chunk-size 1024 \

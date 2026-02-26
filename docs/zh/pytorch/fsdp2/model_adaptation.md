@@ -1,4 +1,5 @@
 # MindSpeed LLM FSDP2后端模型适配指南
+
 本指南旨在帮助开发者将新的大语言模型（LLM）接入 MindSpeed LLM FSDP2 训练后端。仓库提供了两种的适配路径，以满足不同层次的定制需求。
 
 ---
@@ -20,6 +21,7 @@
 
 模型权重和配置文件（`config.json`）需符合 Hugging Face 标准格式。
 以Qwen3为例：
+
 ```json
 {
   "architectures": [
@@ -98,6 +100,7 @@ mindspeed_llm/fsdp2/models/
 **代码示例 (`mindspeed_llm/fsdp2/models/gpt_oss/modeling_gpt_oss.py`)：**
 
 以GPT-OSS模型为例，基于原生开源实现进行二次开发：专家并行和GMM融合算子适配
+
 ```python
 class GptOssMLP(nn.Module):
     def __init__(self, config):

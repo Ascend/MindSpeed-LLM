@@ -1,4 +1,6 @@
-## MindSpeed-LLM 预置MoE大模型
+# MindSpeed-LLM 预置MoE大模型
+
+## 模型列表
 
 认证`【Pass】`表示经过昇腾官方版本测试的模型。`【Test】`表示模型处于内部测试阶段，未完成充分的性能测试和验收，在实际使用中可能存在未被发现的问题，待后续充分验证后会发布正式版本。相关使用问题可反馈至[MindSpeed-LLM/issues](https://gitcode.com/ascend/MindSpeed-LLM/issues)。
 
@@ -20,7 +22,7 @@
     <tr>
       <td rowspan="2"> <a href="https://huggingface.co/collections/Qwen/qwen3-67dd247413f0e2e4f653967f">Qwen3</a> </td>
       <td><a href="https://huggingface.co/Qwen/Qwen3-30B-A3B-Base">30B</a></td>
-      <td rowspan="2"><a href="../../../../examples/mcore/qwen3_moe/">qwen3_moe</a></td>
+      <td rowspan="2"><a href="../../../../examples/mcore/qwen3_moe">qwen3_moe</a></td>
       <td> 4K </td>
       <th> Mcore </th>
       <td> 2x8 </td>
@@ -38,34 +40,29 @@
       <td>【Test】</td>
     </tr>
     <tr>
-       <tr>
-       <td rowspan="1"><a href="https://huggingface.co/collections/Qwen/qwen3-next">Qwen3-next</a></td>
+      <td rowspan="1"><a href="https://huggingface.co/collections/Qwen/qwen3-next">Qwen3-next</a></td>
       <td><a href="https://huggingface.co/Qwen/Qwen3-Next-80B-A3B-Instruct">80B-A3B</a></td>
-      <td><a href="../../../../examples/mcore/qwen3_next/">Qwen3-Next-80B-A3B</a></td>
+      <td><a href="../../../../examples/mcore/qwen3_next">Qwen3-Next-80B-A3B</a></td>
       <td> 16K </td>
       <th>Mcore</th>
       <td>4x16</td>
-      <td rowspan="1"> <a href="../../../../examples/mcore/qwen3_next/"></a> </td>
+      <td rowspan="1"> <a href="../../../../examples/mcore/qwen3_next"></a> </td>
       <td>【Ascend】</td>
       <td>【Test】</td>
-      <tr>
     </tr>
     <tr>
-       <tr>
-       <td rowspan="1"><a href="https://huggingface.co/Qwen/Qwen3-Coder-Next/tree/main">Qwen3-Coder-Next</a></td>
+      <td rowspan="1"><a href="https://huggingface.co/Qwen/Qwen3-Coder-Next/tree/main">Qwen3-Coder-Next</a></td>
       <td><a href="https://huggingface.co/Qwen/Qwen3-Coder-Next/tree/main">80B-A3B</a></td>
       <td><a href="../../../../examples/mcore/qwen3_coder_next">Qwen3-Coder-Next-80B-A3B</a></td>
       <td> 16K </td>
       <th>Mcore</th>
       <td>4x16</td>
-      <td rowspan="1"> <a href="../../../../examples/mcore/qwen3_coder_next/"></a> </td>
+      <td rowspan="1"> <a href="../../../../examples/mcore/qwen3_coder_next"></a> </td>
       <td>【Ascend】</td>
       <td>【Test】</td>
-      <tr>
     </tr>
     <tr>
-       <tr>
-       <td rowspan="1"><a href="https://huggingface.co/Qwen">Qwen2</a></td>
+      <td rowspan="1"><a href="https://huggingface.co/Qwen">Qwen2</a></td>
       <td><a href="https://huggingface.co/Qwen/Qwen2-57B-A14B/tree/main">57B-A14B</a></td>
       <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.2.0/examples/mcore/qwen2_moe">qwen2_moe</a></td>
       <td> 4K</td>
@@ -74,7 +71,6 @@
       <td rowspan="1"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
-      <tr>
     </tr>
     <tr>
       <td rowspan="3"><a href="https://huggingface.co/mistralai">Mixtral</a></td>
@@ -272,5 +268,3 @@ MTP说明：master分支是参考Megatron-LM实现，与2.0.0分支实现方案�
     # 查询host内存，通过free字段确定当前可用host内存
     free -h
     ```
-
-    

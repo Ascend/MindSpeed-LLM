@@ -1,4 +1,6 @@
-## MindSpeed-LLM 预置稠密大模型
+# MindSpeed-LLM 预置稠密大模型
+
+## 模型列表
 
 认证`【Pass】`表示经过昇腾官方版本测试的模型。`【Test】`表示模型处于内部测试阶段，未完成充分的性能测试和验收，在实际使用中可能存在未被发现的问题，待后续充分验证后会发布正式版本。相关使用问题可反馈至[MindSpeed-LLM/issues](https://gitcode.com/ascend/MindSpeed-LLM/issues)。
 
@@ -194,7 +196,8 @@
       <td> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
-      <tr>
+    </tr>
+    <tr>
       <td> 32K </td>
       <th> Mcore </th>
       <td> 1x8 </td>
@@ -478,7 +481,6 @@
       <td>【Pass】</td>
     </tr>
     <tr>
-      <tr>
       <td rowspan="8"><a href="https://huggingface.co/Qwen">Qwen1.5</a></td>
       <td> <a href="https://huggingface.co/Qwen/Qwen1.5-0.5B/tree/main">0.5B</a> </td>
       <td rowspan="9"><a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/examples/mcore/qwen15">qwen15</a></td>
@@ -488,49 +490,56 @@
       <td rowspan="9"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
-      <tr>
+    </tr>
+    <tr>
       <td> <a href="https://huggingface.co/Qwen/Qwen1.5-1.8B/tree/main">1.8B</a> </td>
       <td> 8K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
-      <tr>
+    </tr>
+    <tr>
       <td> <a href="https://huggingface.co/Qwen/Qwen1.5-4B/tree/main">4B</a> </td>
       <td> 8K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
-      <tr>
+    </tr>
+    <tr>
       <td> <a href="https://huggingface.co/Qwen/Qwen1.5-7B/tree/main">7B</a> </td>
       <td> 8K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
-      <tr>
+    </tr>
+    <tr>
       <td> <a href="https://huggingface.co/Qwen/Qwen1.5-14B/tree/main">14B</a> </td>
       <td> 8K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
-      <tr>
+    </tr>
+    <tr>
       <td> <a href="https://huggingface.co/Qwen/Qwen1.5-32B/tree/main">32B</a> </td>
       <td> 8K </td>
       <th> Mcore </th>
       <td> 4x8 </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
-      <tr>
+    </tr>
+    <tr>
       <td> <a href="https://huggingface.co/Qwen/Qwen1.5-72B/tree/main">72B</a> </td>
       <td> 8K </td>
       <th> Mcore </th>
       <td> 8x8 </td>
       <td>【GTS】</td>    
       <td>【Pass】</td>
-      <tr>
+    </tr>
+    <tr>
       <td> <a href="https://huggingface.co/Qwen/Qwen1.5-110B/tree/main">110B</a> </td>
       <td> 8K </td>
       <th>Mcore</th>
@@ -548,7 +557,6 @@
       <td>【Pass】</td>
     </tr>
     <tr>
-      <tr>
       <td rowspan="8"><a href="https://huggingface.co/Qwen">Qwen2</a></td>
       <td rowspan="2"> <a href="https://huggingface.co/Qwen/Qwen2-0.5B/tree/main">0.5B</a> </td>
       <td rowspan="8"><a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/examples/mcore/qwen2">qwen2</a></td>
@@ -558,46 +566,53 @@
       <td rowspan="8"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
-      <tr>
+    </tr>
+    <tr>
       <td> 32K </td>
       <th> Mcore </th>
       <td> 1x8 </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
-      <tr>
+    </tr>
+    <tr>
       <td rowspan="2"> <a href="https://huggingface.co/Qwen/Qwen2-1.5B/tree/main">1.5B</a> </td>
       <td> 4K </td>
       <th> Mcore </th>
       <td> 1x8 </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
-      <tr>
+    </tr>
+    <tr>
       <td> 32K </td>
       <th> Mcore </th>
       <td> 1x8 </td>
       <td>【GTS】</td>
       <td>【Pass】</td>
-      <tr>
+    </tr>
+    <tr>
       <td rowspan="2"><a href="https://huggingface.co/Qwen/Qwen2-7B/tree/main">7B</a></td>
       <td> 4K</td>
       <th>Mcore</th>
       <td>1x8</td>
       <td>【GTS】</td>
       <td>【Pass】</td>
-      <tr>
+    </tr>
+    <tr>
       <td> 32K</td>
       <th>Mcore</th>
       <td>1x8</td>
       <td>【GTS】</td>
       <td>【Pass】</td>
-      <tr>
+    </tr>
+    <tr>
       <td rowspan="2"><a href="https://huggingface.co/Qwen/Qwen2-72B/tree/main">72B</a></td>
       <td> 4K</td>
       <th>Mcore</th>
       <td>4x8</td>
       <td>【GTS】</td>
       <td>【Pass】</td>
-      <tr>
+    </tr>
+    <tr>
       <td> 32K </td>
       <th> Mcore </th>
       <td> 16x8 </td>
@@ -761,8 +776,8 @@
       <td>【GTS】</td>
       <td>【Test】</td>
     </tr>
-	<tr>
-	  <td rowspan="1"><a href="https://huggingface.co/Qwen">CodeQwen2.5</a></td>
+ <tr>
+   <td rowspan="1"><a href="https://huggingface.co/Qwen">CodeQwen2.5</a></td>
       <td> <a href="https://huggingface.co/Qwen/Qwen2.5-Coder-7B">7B</a> </td>
       <td rowspan="1"><a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/examples/mcore/qwen25_coder">qwen25_coder</a></td>
       <td> 8K </td>
@@ -772,7 +787,7 @@
       <td>【China Mobile Cloud】</td>    
       <td>【Test】</td>
     </tr>
-	<tr>
+ <tr>
       <td rowspan="2"><a href="https://huggingface.co/01-ai">Yi</a></td>
       <td><a href="https://huggingface.co/01-ai/Yi-9B/tree/main">9B</a></td>
       <td rowspan="2"><a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.0.0/examples/legacy/yi">yi</a></td>

@@ -6,7 +6,6 @@
 
 yarn通过ntk-by-part调整位置编码，提升序列扩增后的精度。
 
-
 ![posiiton_embedding.png](../figures/yarn/position_embedding.PNG)
 
 ![ntk_by_parts.png](../figures/yarn/ntk_by_parts.png)
@@ -31,7 +30,6 @@ yarn通过ntk-by-part调整位置编码，提升序列扩增后的精度。
 
 --rope-scaling-original-max-position-embeddings  （预训练模型未扩展时的上下文长度）
 
-
 ## 使用效果
 
 使用deepseekv2系列的yarn默认配置，mmlu精度测试如下
@@ -42,11 +40,3 @@ yarn通过ntk-by-part调整位置编码，提升序列扩增后的精度。
 | DeepSeek-Math-7B     |MMLU-STEM| 56.5%    | [56.5%](https://github.com/deepseek-ai/DeepSeek-Math)          |
 | DeepSeek-V2-236B     | MMLU   | 78.1%         | [78.5%](https://huggingface.co/deepseek-ai/DeepSeek-V2)          |
 | DeepSeek-V2.5        | MMLU   | 79.3%         | [80.6%](https://huggingface.co/deepseek-ai/DeepSeek-V2.5)          |
-
-
-
-
-
-
-
-

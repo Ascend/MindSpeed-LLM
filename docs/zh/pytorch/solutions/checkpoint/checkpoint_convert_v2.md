@@ -4,7 +4,6 @@
 
 随着模型规模从亿级向万亿级跃迁，TB级别参数模型在实际部署与迁移过程中对系统资源提出了极高的要求，单一设备无法容纳完整模型参数。MindSpeed-LLM使用了一种支持按需加载并具备内存高效性的权重转换方案，以解决大参数规模模型在转换阶段易崩溃的问题，为超大模型的高效训练与应用提供基础技术支持。
 
-
 - [权重下载](#1-权重下载)
 
   从Huggingface等网站下载开源模型权重，支持命令行和网页下载。
@@ -21,9 +20,6 @@
 
     支持将Huggingface模型权重减层转换为Megatron-Mcore格式，支持多种并行切分。
 
-
-- [大参数权重转换特性清单](#权重转换特性清单)
-
 ## 权重转换使用
 
 权重转换旨在解决不同深度学习框架和训练策略下模型权重的兼容性问题，支持在多个模型和训练配置之间进行高效的权重互转。核心功能包括：
@@ -31,8 +27,6 @@
 **权重互转**：能够在 HuggingFace、Megatron-LM主流框架之间，实现任意并行切分策略的权重格式互转。
 
 **训练并行策略权重转换**：支持多种训练并行策略之间的权重转换，包括 张量并行(TP)、流水线并行(PP)、专家并行(EP)、专家张量并行(ETP) 和 虚拟流水并行(VPP) 等。无论是针对不同并行策略的训练，还是需要在不同策略之间切换的场景，都能实现灵活的权重转换，以适应各种训练和推理需求。
-
-
 
 ## 1. 权重下载
 
@@ -43,11 +37,12 @@
 ### 下载方式
 
 #### 方法一：网页直接下载
+
 通过浏览器访问链接，手动下载所有权重文件。
 
 #### 方法二：命令行下载
-将权重保存到 `MindSpeed-LLM/model_from_hf` 目录，示例：
 
+将权重保存到 `MindSpeed-LLM/model_from_hf` 目录，示例：
 
 ```shell
 #!/bin/bash
@@ -66,15 +61,17 @@ cd ../../
 ```
 
 ### 常见问题
+
 如果下载过程中遇到问题，请参考：
 
-HuggingFace 官方文档：https://huggingface.co/docs/hub/models-downloading
+HuggingFace 官方文档：<https://huggingface.co/docs/hub/models-downloading>
 
-ModelScope 下载指南：https://modelscope.cn/docs/models/download
+ModelScope 下载指南：<https://modelscope.cn/docs/models/download>
 
 网络问题解决方案：可尝试使用国内镜像源或代理
 
 ### 注意事项
+
 确保有足够的磁盘空间存放模型权重
 
 检查文件完整性，下载后验证文件大小和MD5值
@@ -193,7 +190,6 @@ ModelScope 下载指南：https://modelscope.cn/docs/models/download
 
 2、VPP(--num-layers-per-virtual-pipeline-stage)和动态PP划分(--num-layer-list)只能二选一
 
-
 下面提供一个Qwen3-235b模型的hf-mg权重转换脚本仅供参考：
 
 ```shell
@@ -211,7 +207,6 @@ python convert_ckpt_v2.py \
     --model-type-hf qwen3-moe
 ```
 
-
 【启动脚本】
 
 MindSpeed LLM提供预制好的模型权重转换脚本，以下为Huggingface到Megatron-Mcore的权重转换脚本命名风格及启动方法，可按模型类别进行查找：
@@ -223,7 +218,6 @@ MindSpeed LLM提供预制好的模型权重转换脚本，以下为Huggingface�
 
 bash examples/mcore/qwen3_moe/ckpt_convert_qwen3_moe_235b_hf2mcore.sh
 ```
-
 
 ### 2.2 Megatron-Mcore权重转换到Huggingface格式
 
@@ -252,7 +246,6 @@ python convert_ckpt_v2.py \
     --model-type-hf qwen3-moe
 ```
 
-
 【启动脚本】
 
 MindSpeed LLM提供预制好的模型权重转换脚本，以下为Megatron-Mcore到Huggingface的权重转换脚本命名风格及启动方法，可按模型类别进行查找：
@@ -264,7 +257,6 @@ MindSpeed LLM提供预制好的模型权重转换脚本，以下为Megatron-Mcor
 
 bash examples/mcore/qwen3_moe/ckpt_convert_qwen3_moe_235b_mcore2hf.sh
 ```
-
 
 ### 2.3 【调试功能】Huggingface权重减层转换到Megatron-Mcore格式
 
@@ -288,10 +280,9 @@ bash examples/mcore/qwen3_moe/ckpt_convert_qwen3_moe_235b_mcore2hf.sh
 
 MTP层的层数。默认值为 0，支持减层时配置MTP层，不能大于原始模型的MTP层数。
 
-如需要配置MTP层，可通过命令行设置，如 `--mtp-num-layers 1 `。
+如需要配置MTP层，可通过命令行设置，如 `--mtp-num-layers 1`。
 
 如果需要配合训练脚本进行减层调试，请注意此参数需要**和训练脚本保持一致**。
-
 
 ## 使用约束
 

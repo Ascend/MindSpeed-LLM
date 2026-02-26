@@ -33,66 +33,70 @@
     ```
 
 2. 微调数据预处理  
-	以[`Qwen2.5-7B的pack场景下的数据预处理脚本`](../../../../../examples/mcore/qwen25/data_convert_qwen25_instruction_pack.sh)为例，请重点关注以下参数配置：
+    以[`Qwen2.5-7B的pack场景下的数据预处理脚本`](../../../../../examples/mcore/qwen25/data_convert_qwen25_instruction_pack.sh)为例，请重点关注以下参数配置：
 
-	- `--pack`：将数据转为Pack格式。
-	- `--neat-pack`：是 Pack 场景下使用锯齿状的`attention_mask`参与计算的开关，其作用是调整数据集处理阶段生成的`attention_mask`，为训练阶段生成对应的`actual_seq_len`准备。
-	- `--seq-length`：指定Pack数据集每条数据的长度。
-	-  `--append-eod`【可选参数】：在每个输入序列的末尾添加一个特殊的标记来表示输入序列的结束。
-	- `--overwrite-cache`【可选参数】：用于控制是否覆盖已存在的缓存分词器。
-	- `--input`：设置数据集路径，可以填写数据集目录或具体文件，如果是目录，则处理全部文件, 支持.parquet/.csv/.json/.jsonl/.txt/.arrow 格式， 同一个文件夹下的数据格式需要保持一致 
-	- `--map-keys`：参数用于配置字段映射来使用数据集。
+    - `--pack`：将数据转为Pack格式。
+    - `--neat-pack`：是 Pack 场景下使用锯齿状的`attention_mask`参与计算的开关，其作用是调整数据集处理阶段生成的`attention_mask`，为训练阶段生成对应的`actual_seq_len`准备。
+    - `--seq-length`：指定Pack数据集每条数据的长度。
+    - `--append-eod`【可选参数】：在每个输入序列的末尾添加一个特殊的标记来表示输入序列的结束。
+    - `--overwrite-cache`【可选参数】：用于控制是否覆盖已存在的缓存分词器。
+    - `--input`：设置数据集路径，可以填写数据集目录或具体文件，如果是目录，则处理全部文件, 支持.parquet/.csv/.json/.jsonl/.txt/.arrow 格式， 同一个文件夹下的数据格式需要保持一致 
+    - `--map-keys`：参数用于配置字段映射来使用数据集。
 
-	相关参数设置完毕后可运行数据预处理脚本：
-	```shell
-	bash examples/mcore/qwen25/data_convert_qwen25_instruction_pack.sh
-	```
+    相关参数设置完毕后可运行数据预处理脚本：
 
-	指令微调数据集处理结果如下：
-	```shell
-	./finetune_dataset/alpaca_packed_attention_mask_document.bin
-	./finetune_dataset/alpaca_packed_attention_mask_document.idx
-	./finetune_dataset/alpaca_packed_input_ids_document.bin
-	./finetune_dataset/alpaca_packed_input_ids_document.idx
-	./finetune_dataset/alpaca_packed_labels_document.bin
-	./finetune_dataset/alpaca_packed_labels_document.idx
-	```
+    ```shell
+    bash examples/mcore/qwen25/data_convert_qwen25_instruction_pack.sh
+    ```
 
-	> [!NOTE]
-	> - 微调时，数据集路径输入 `./finetune_dataset/alpaca` 即可
-	> - 可以使用任意的[**Alpaca风格数据**](datasets/alpaca_dataset.md)和[**ShareGPT风格数据**](datasets/sharegpt_dataset.md)的数据集
+    指令微调数据集处理结果如下：
+
+    ```shell
+    ./finetune_dataset/alpaca_packed_attention_mask_document.bin
+    ./finetune_dataset/alpaca_packed_attention_mask_document.idx
+    ./finetune_dataset/alpaca_packed_input_ids_document.bin
+    ./finetune_dataset/alpaca_packed_input_ids_document.idx
+    ./finetune_dataset/alpaca_packed_labels_document.bin
+    ./finetune_dataset/alpaca_packed_labels_document.idx
+    ```
+
+    > [!NOTE]
+    > - 微调时，数据集路径输入 `./finetune_dataset/alpaca` 即可
+    > - 可以使用任意的[**Alpaca风格数据**](datasets/alpaca_dataset.md)和[**ShareGPT风格数据**](datasets/sharegpt_dataset.md)的数据集
 
 3. 配置指令微调脚本  
-	详细的参数配置请参考[`Qwen2.5-7B的pack微调脚本`](../../../../../examples/mcore/qwen25/tune_qwen25_7b_4k_full_pack.sh)。
+    详细的参数配置请参考[`Qwen2.5-7B的pack微调脚本`](../../../../../examples/mcore/qwen25/tune_qwen25_7b_4k_full_pack.sh)。
 
-	需要在脚本中修改相关路径参数：
-	```shell
-	DATA_PATH="./finetune_dataset/alpaca" # 指定数据预处理后的保存路径
-	CKPT_SAVE_DIR="./ckpt/" # 指向用户指定的微调后权重保存路径（例如指定保存到`ckpt`文件夹下）
-	TOKENIZER_MODEL="./model_from_hf/qwen25-7b-hf/" # 指定模型的分词器路径（例如`tokenizer.model`）
-	CKPT_LOAD_DIR="./model_weights/qwen25-7b-mcore/" # 指向权重转换后保存的路径
-	```
+    需要在脚本中修改相关路径参数：
 
-	微调相关参数说明：
+    ```shell
+    DATA_PATH="./finetune_dataset/alpaca" # 指定数据预处理后的保存路径
+    CKPT_SAVE_DIR="./ckpt/" # 指向用户指定的微调后权重保存路径（例如指定保存到`ckpt`文件夹下）
+    TOKENIZER_MODEL="./model_from_hf/qwen25-7b-hf/" # 指定模型的分词器路径（例如`tokenizer.model`）
+    CKPT_LOAD_DIR="./model_weights/qwen25-7b-mcore/" # 指向权重转换后保存的路径
+    ```
 
-	- `--is-instruction-dataset`：用于指定微调过程中采用指令微调数据集，以确保模型依据特定指令数据进行微调。
-	- `--prompt-type`：用于指定模型模板，能够让base模型微调后能具备更好的对话能力。`prompt-type`的可选项可以在[templates](../../../../../configs/finetune/templates.json)文件内查看。
-	- `--reset-position-ids`：每条数据由不同的样本拼接而成，因此其位置 ID 并不连续。该参数用于为每条拼接的数据重置位置 ID，以确保在处理多个样本时，位置编码保持一致性。
-	- `--neat-pack`：是Pack场景下使用锯齿状的`attention_mask`参与计算的开关，其作用是利用数据集处理阶段生成的`attention_mask`生成对应的`actual_seq_len`。
-	- `--padded-samples` 【可选参数】：将样本总数凑成`batch-size`的整数倍。
-	- `--no-shuffle`【可选参数】：数据顺序加载。
+    微调相关参数说明：
+
+    - `--is-instruction-dataset`：用于指定微调过程中采用指令微调数据集，以确保模型依据特定指令数据进行微调。
+    - `--prompt-type`：用于指定模型模板，能够让base模型微调后能具备更好的对话能力。`prompt-type`的可选项可以在[templates](../../../../../configs/finetune/templates.json)文件内查看。
+    - `--reset-position-ids`：每条数据由不同的样本拼接而成，因此其位置 ID 并不连续。该参数用于为每条拼接的数据重置位置 ID，以确保在处理多个样本时，位置编码保持一致性。
+    - `--neat-pack`：是Pack场景下使用锯齿状的`attention_mask`参与计算的开关，其作用是利用数据集处理阶段生成的`attention_mask`生成对应的`actual_seq_len`。
+    - `--padded-samples` 【可选参数】：将样本总数凑成`batch-size`的整数倍。
+    - `--no-shuffle`【可选参数】：数据顺序加载。
 
 4. 启动微调  
-	微调脚本配置完毕后，可运行脚本启动微调：
-	```shell
-	bash examples/mcore/qwen25/tune_qwen25_7b_4k_full_pack.sh
-	```
+    微调脚本配置完毕后，可运行脚本启动微调：
+
+    ```shell
+    bash examples/mcore/qwen25/tune_qwen25_7b_4k_full_pack.sh
+    ```
 
 > [!NOTE]
+>
 > - Pack 模式受数据长度限制，如果初始样本的长度超过模型设定的最大序列长度，需要进行截断处理；如果初始样本长度过短，可能会导致 Pack 中包含过多样本，增加计算复杂度。
 > - 微调时选择 Pack 模式，可有效减少训练时迭代的样本数量，初始的短序列长度的样本被 Pack 成一个新的样本，可以有效减少计算资源的浪费，提高微调效率。
 > - 选择Pack模式进行微调时，由于输入的`inputs`，`labels`，`attn_mask`等数据流改变，训练的效果和精度也会随之改变，所以效果和精度对比时，两边都需要采用Pack模式进行微调。
-
 
 ## 使用约束
 

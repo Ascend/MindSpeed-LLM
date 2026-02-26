@@ -4,7 +4,6 @@
 
 随着大规模预训练模型的广泛应用，不同的训练框架和硬件平台之间的适配性问题逐渐显现。专有训练框架如MindSpeed-LLM通常采用定制的并行化策略（例如Tensor Parallelism、Pipeline Parallelism）以应对大规模模型训练中的内存和计算瓶颈。随着训练需求和硬件的变化，模型参数的切分策略也需进行相应的调整。然而，跨框架的权重转换往往面临格式不兼容和切分策略不同等挑战。权重转换旨在促进大规模预训练模型在不同训练框架之间的无缝迁移与评估，解决框架间权重格式不兼容及切分策略差异等问题，从而增强模型迁移的灵活性和可扩展性，支持更广泛的应用场景和业务需求。
 
-
 - [权重下载](#1-权重下载)
 
   从Huggingface等网站下载开源模型权重，支持命令行和网页下载。
@@ -17,13 +16,13 @@
 
     将Megatron-Mcore模型权重转换为Huggingface格式，适用于不同框架间的模型迁移。
 
-  - [Lora权重转换](#24-lora权重转换)
+  - [Lora权重转换](#23-lora权重转换)
 
-    - [mcore格式权重合并](#242-megatron-mcore格式权重合并)
+    - [mcore格式权重合并](#231-megatron-mcore格式权重合并)
 
       支持将mcore格式的Lora微调权重与基础模型权重合并，转换为Megatron或Huggingface格式；    
     
-    - [lora权重转换为Huggingface格式](#243-lora权重转换为huggingface权重)
+    - [lora权重转换为Huggingface格式](#232-lora权重转换为huggingface权重)
       
       支持将Lora微调权重单独转为Huggingface格式。
 
@@ -39,7 +38,6 @@
 
 **Lora权重合并与转换**：支持将 Lora 权重与 Base 权重合并，简化了模型推理过程中的加载步骤。合并后的模型可直接用于推理，显著提升了推理效率，减少了不必要的计算资源消耗。支持将Lora微调权重单独转为Huggingface格式，以支持客户下游任务。
 
-
 ## 1. 权重下载
 
 从Huggingface等网站下载开源模型权重
@@ -47,7 +45,6 @@
 预训练权重链接在 [稠密模型](../../models/dense_model.md)和[MoE模型](../../models/moe_model.md) 章节列表的`参数`列链接中可以获取；更多社区资源可以在`模型`列链接中获取，如`Chat/Instruct`权重等。
 
 权重可以基于网页直接下载，也可以基于命令行下载，保存到MindSpeed-LLM/model_from_hf目录，比如：
-
 
 ```shell
 #!/bin/bash
@@ -160,7 +157,6 @@ python convert_ckpt.py \
     --save-dir ./model_weights/llama-2-7b-mcore/ \
     --tokenizer-model ./model_from_hf/llama-2-7b-hf/tokenizer.model
 ```
-
 
 【启动脚本】
 
@@ -333,6 +329,7 @@ python convert_ckpt.py \
 ```
 
 转换脚本命名风格及启动方法为：
+
 ```shell
 #命令启动方式以 llama2 为例
 bash examples/mcore/llama2/ckpt_convert_llama2_mcore2hf_lora.sh
@@ -410,7 +407,6 @@ MindSpeed-LLM lora到Huggingface的权重转换脚本命名风格及启动方法
 
 bash examples/mcore/llama2/ckpt_convert_llama2_lora2hf.sh
 ```
-
 
 ### 权重转换特性清单
 
@@ -533,5 +529,5 @@ MindSpeed-LLM 支持 Huggingface 和 Megatron-Mcore 之间的权重格式互转�
       <td>自定义空操作层</td>
       <td>--noop-layers</td>
     </tr>
-
+  </tbody>
 </table>

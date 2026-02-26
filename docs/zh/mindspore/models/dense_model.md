@@ -1,4 +1,4 @@
-## MindSpeed-LLM MindSpore后端稠密模型支持详情
+# MindSpeed-LLM MindSpore后端稠密模型支持详情
 
 MindSpore后端仅支持以mcore方式实现的稠密模型，对Legacy方式实现的模型无支持计划。
 
@@ -101,7 +101,7 @@ MindSpore后端仅支持以mcore方式实现的稠密模型，对Legacy方式实
       <td></td>
     </tr>
     <tr>
-      <td rowspan="6"><a href="https://huggingface.co/meta-llama">LLaMA2</td>
+      <td rowspan="6"><a href="https://huggingface.co/meta-llama">LLaMA2</a></td>
       <td rowspan="3"><a href="https://huggingface.co/daryl149/llama-2-7b-hf/tree/main">7B</a></td>
       <td rowspan="6"><a href="../../../../examples/mindspore/llama2">llama2</a></td>
       <td>4K</td>
@@ -141,7 +141,7 @@ MindSpore后端仅支持以mcore方式实现的稠密模型，对Legacy方式实
       <td></td>
     </tr>
     <tr>
-      <td rowspan="2"><a href="https://huggingface.co/meta-llama">LLaMA3</td>
+      <td rowspan="2"><a href="https://huggingface.co/meta-llama">LLaMA3</a></td>
       <td><a href="https://huggingface.co/unsloth/llama-3-8b/tree/main">8B</a></td>
       <td rowspan="2"><a href="../../../../examples/mindspore/llama3">llama3</a></td>
       <td> 8K </td>
@@ -157,7 +157,7 @@ MindSpore后端仅支持以mcore方式实现的稠密模型，对Legacy方式实
       <td></td>
     </tr>
     <tr>
-      <td rowspan="3"><a href="https://modelscope.cn/organization/LLM-Research">LLaMA3.1</td>
+      <td rowspan="3"><a href="https://modelscope.cn/organization/LLM-Research">LLaMA3.1</a></td>
       <td rowspan="2"><a href="https://modelscope.cn/models/LLM-Research/Meta-Llama-3.1-8B">8B</a></td>
       <td rowspan="3"><a href="../../../../examples/mindspore/llama31">llama31</a></td>
       <td> 8K </td>
@@ -179,7 +179,7 @@ MindSpore后端仅支持以mcore方式实现的稠密模型，对Legacy方式实
       <td></td>
     </tr>
     <tr>
-      <td rowspan="2"><a href="https://huggingface.co/meta-llama">LLaMA3.2</td>
+      <td rowspan="2"><a href="https://huggingface.co/meta-llama">LLaMA3.2</a></td>
       <td><a href="https://huggingface.co/unsloth/Llama-3.2-1B/tree/main">1B</a></td>
       <td rowspan="2"><a href="../../../../examples/mindspore/llama32">llama32</a></td>
       <td> 8K </td>
@@ -203,7 +203,6 @@ MindSpore后端仅支持以mcore方式实现的稠密模型，对Legacy方式实
       <td></td>
     </tr>
     <tr>
-      <tr>
       <td rowspan="8"><a href="https://huggingface.co/Qwen">Qwen1.5</a></td>
       <td> <a href="https://huggingface.co/Qwen/Qwen1.5-0.5B/tree/main">0.5B</a> </td>
       <td rowspan="9"><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.2.0/examples/mindspore/qwen15">qwen15</a></td>
@@ -211,37 +210,44 @@ MindSpore后端仅支持以mcore方式实现的稠密模型，对Legacy方式实
       <th>Mcore</th>
       <td> 1x8 </td>
       <td rowspan="8"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
-      <tr>
+    </tr>
+    <tr>
       <td> <a href="https://huggingface.co/Qwen/Qwen1.5-1.8B/tree/main">1.8B</a> </td>
       <td> 8K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
-      <tr>
+    </tr>
+    <tr>
       <td> <a href="https://huggingface.co/Qwen/Qwen1.5-4B/tree/main">4B</a> </td>
       <td> 8K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
-      <tr>
+    </tr>
+    <tr>
       <td> <a href="https://huggingface.co/Qwen/Qwen1.5-7B/tree/main">7B</a> </td>
       <td> 8K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
-      <tr>
+    </tr>  
+    <tr>
       <td> <a href="https://huggingface.co/Qwen/Qwen1.5-14B/tree/main">14B</a> </td>
       <td> 8K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
-      <tr>
+    </tr>
+    <tr>
       <td> <a href="https://huggingface.co/Qwen/Qwen1.5-32B/tree/main">32B</a> </td>
       <td> 8K </td>
       <th> Mcore </th>
       <td> 4x8 </td>
-      <tr>
+    </tr>
+    <tr>
       <td> <a href="https://huggingface.co/Qwen/Qwen1.5-72B/tree/main">72B</a> </td>
       <td> 8K </td>
       <th> Mcore </th>
       <td> 8x8 </td>
-      <tr>
+    </tr>
+    <tr>
       <td> <a href="https://huggingface.co/Qwen/Qwen1.5-110B/tree/main">110B</a> </td>
       <td> 8K </td>
       <th>Mcore</th>
@@ -274,12 +280,14 @@ MindSpore后端仅支持以mcore方式实现的稠密模型，对Legacy方式实
       <td>1x8</td>
       <td></td>
     </tr>
+    <tr>
       <td><a href="https://huggingface.co/Qwen/Qwen2.5-1.5B/tree/main">1.5B</a></td>
       <td> 32K </td>
       <th>Mcore</th>
       <td>1x8</td>
       <td></td>
     </tr>
+    <tr>
       <td><a href="https://huggingface.co/Qwen/Qwen2.5-3B/tree/main">3B</a></td>
       <td> 32K </td>
       <th>Mcore</th>
@@ -394,6 +402,7 @@ MindSpore后端仅支持以mcore方式实现的稠密模型，对Legacy方式实
       <th>Mcore</th>
       <td>1x8</td>
       <td rowspan="3"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
+    </tr>
     <tr>
       <td><a href="https://huggingface.co/01-ai/Yi-1.5-9B/tree/main">9B</a></td>
       <td> 4K</td>
@@ -517,4 +526,3 @@ MindSpore后端仅支持以mcore方式实现的稠密模型，对Legacy方式实
     </tr>
   </tbody>
 </table>
-

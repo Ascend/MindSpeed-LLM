@@ -90,7 +90,8 @@ MMLU（Massive Multitask Language Understanding）评估包含一系列多样化
 ## MMLU评估的子集
 
 <a name="STEM"></a>
-### **STEM** 包含的问题集：
+
+### **STEM** 包含的问题集
 
 1. **abstract_algebra**（抽象代数）
 2. **astronomy**（天文学）
@@ -112,7 +113,8 @@ MMLU（Massive Multitask Language Understanding）评估包含一系列多样化
 18. **machine_learning**（机器学习）
 
 <a name="人文学科"></a>
-### **人文学科** 包含的问题集：
+
+### **人文学科** 包含的问题集
 
 1. **formal_logic**（形式逻辑）
 2. **high_school_european_history**（高中欧洲历史）
@@ -129,7 +131,8 @@ MMLU（Massive Multitask Language Understanding）评估包含一系列多样化
 13. **world_religions**（世界宗教）
 
 <a name="社会科学"></a>
-### **社会科学** 包含的问题集：
+
+### **社会科学** 包含的问题集
 
 1. **clinical_knowledge**（临床知识）
 2. **college_medicine**（大学医学）

@@ -14,6 +14,7 @@
 ## 使用说明
 
 > [!NOTE]
+>
 > - 数据预处理时如果需要使用数据集pack模式，请参考[多样本pack模式预训练](./pretrain_eod.md)。
 > - 预训练时可以不加载初始权重，此时模型权重采用随机初始化。如果需要加载权重，则需提前进行权重转换，具体请参考[权重转换v1](../checkpoint/checkpoint_convert.md)或[权重转换v2](../checkpoint/checkpoint_convert_v2.md)。
 
@@ -60,16 +61,18 @@
             {"other keys": "optional content"}
         ]
         ```
+
     - `json-keys`：从文件中提取的列名列表，默认为 `text`，可以为 `text`, `input`, `title` 等多个输入，结合具体需求及数据集内容使用，如：
 
         ```shell
         --json-keys text input output
         ```
+
     - `n-subs`：数据预处理并行加速参数。当需要预处理的数据集比较大时，可以通过并行处理进行加速，方法为设置参数`--n-subs`，通过该参数设置并行处理数量。在数据预处理过程会将原始数据集切分为`n-subs`个子集，对子集进行并行处理，然后合并，从而实现加速。建议预处理数据集超过GB级别时加上该参数。
 
     最后，相关参数设置完毕后可运行数据预处理脚本：
 
-    ```
+    ```shell
     bash examples/mcore/qwen3/data_convert_qwen3_pretrain.sh
     ```
 
@@ -79,6 +82,7 @@
     环境变量确认无误后，需要在脚本中修改节点相关配置，单机和多机配置如下：
 
     - 单机配置
+
         ```bash
         NPUS_PER_NODE=8 # 单节点的卡数
         MASTER_ADDR=localhost
@@ -89,6 +93,7 @@
         ```
 
     - 多机配置
+
         ```bash
         # 根据分布式集群实际情况配置分布式参数
         NPUS_PER_NODE=8  # 每个节点的卡数
@@ -100,6 +105,7 @@
         ```
 
     然后需要在脚本中修改相关路径参数和模型切分配置：
+
     ```bash
     CKPT_SAVE_DIR="your model save ckpt path" # 训练完成后的权重保存路径
     DATA_PATH="your data path" # 数据集路径，填入数据预处理时保存的数据路径
@@ -132,6 +138,7 @@
 
 4. 启动预训练  
    预训练脚本配置完毕后，可运行脚本启动预训练（多机场景中需要在多个终端上同时启动脚本）：
+
     ```shell
     bash examples/mcore/qwen3/pretrain_qwen3_8b_4K_ptd.sh
     ```

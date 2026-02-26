@@ -1,4 +1,5 @@
 # 昇腾高可用性
+
 ## 说明
 
 本文档仅提供特性介绍，若需使用完整的高可用特性请参考MindCluster官方指导文档：[[MindCluster指导文档](https://www.hiascend.com/software/mindcluster)]
@@ -45,7 +46,6 @@ MindIO的功能以whl包的形式提供
 
 mindio_ttp下载地址：[MindIO TTP 下载软件包-昇腾社区](https://www.hiascend.com/document/detail/zh/mindcluster/730/clustersched/dlug/mindiotft009.html)
 
-
 ### 启动脚本中添加启动参数
 
 `--enable-high-availability`  # 使能开启高可用功能的总开关，并使能TTP临终遗言功能，保存checkpoint时要求全局至少存在一份完整的优化器数据；
@@ -75,6 +75,7 @@ mindio_ttp下载地址：[MindIO TTP 下载软件包-昇腾社区](https://www.h
 由于原理限制，为了保证故障发生后，有完整的优化器状态数据，需要在ptd切分时保障Data Parallel Size大于1，在使用MoE特性时还要求稠密层与稀疏层的Data Parallel Size均大于1，在使用长序列并行特性时还要求dp_cp_size大于1。
 
 ### 弹性训练功能使用约束
+
 除上述使用约束外，针对弹性训练功能还需遵守以下使用约束：
 
 1、当前仅支持开启enable-high-availability、use-distributed-optimizer
@@ -88,6 +89,7 @@ mindio_ttp下载地址：[MindIO TTP 下载软件包-昇腾社区](https://www.h
 详见：[MindIO TTP 约束限制-昇腾社区](https://www.hiascend.com/document/detail/zh/mindcluster/730/clustersched/dlug/mindiotft005.html)
 
 ### CheckPoint保存与加载优化
+
 开启enable-high-availability时，若环境上安装了MindIO ACP SDK，则会使用mindio_acp的一级异步CheckPoint保存与加载优化
 
 安装指导：[安装MindIO ACP SDK-昇腾社区](https://www.hiascend.com/document/detail/zh/mindcluster/730/clustersched/dlug/mindioacp010.html)

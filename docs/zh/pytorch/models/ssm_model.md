@@ -1,4 +1,6 @@
-## MindSpeed-LLM 预置ssm大模型
+# MindSpeed-LLM 预置ssm大模型
+
+## 模型列表
 
 认证`【Pass】`表示经过昇腾官方版本测试的模型。`【test】`表示模型处于内部测试阶段，未完成充分的性能测试和验收，在实际使用中可能存在未被发现的问题，待后续充分验证后会发布正式版本。相关使用问题可反馈至[MindSpeed-LLM/issues](https://gitcode.com/ascend/MindSpeed-LLM/issues)。
 
@@ -47,10 +49,12 @@
   </tbody>
 </table>
 
-## 注意：
+## 注意
+
 开源未提供模型词表文件，内部测试阶段使用的词表文件mamba2_2.7b_from_8b.model为自定义设计，用户请使用自己构建的词表，训练效果不保证。
 
-## 以上模型脚本环境变量声明：
+## 以上模型脚本环境变量声明
+
 HCCL_CONNECT_TIMEOUT：设置HCCL超时时间，默认值为120<br>
 CUDA_DEVICE_MAX_CONNECTIONS：定义了任务流能够利用或映射到的硬件队列的数量<br>
 PYTORCH_NPU_ALLOC_CONF：内存碎片优化开关，默认是expandable_segments:False，使能时expandable_segments:True<br>

@@ -1,4 +1,4 @@
-## MindSpeed-LLM Docs 目录
+# MindSpeed-LLM Docs 目录
 
 <table>
   <thead>
@@ -34,7 +34,7 @@
     </tr>
     <tr>
       <td rowspan="1">特性清单</td>
-      <td rowspan="1"><a href="pytorch/features/">features</a></td>
+      <td rowspan="1"><a href="pytorch/features">features</a></td>
       <td rowspan="1">收集了部分仓库支持的性能优化和显存优化的特性</td>
     </tr>
     <tr>
@@ -114,9 +114,6 @@
     </tr>
   </tbody>
 </table>
-
-
-【线性度性能展示】
 
 基于 `GPT3-175B` 稠密大模型，从128颗 NPU 扩展到 7968颗 NPU 进行 MFU 与线性度实验，下图是实验数据：
 
