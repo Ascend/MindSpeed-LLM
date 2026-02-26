@@ -126,7 +126,7 @@ OUTPUT_ARGS="
 
 FSDP2_ARGS="
     --use-torch-fsdp2 \
-    --fsdp2-config-path "configs/FSDP2/fsdp2_config_qwen3_30b.yaml" \
+    --fsdp2-config-path "configs/fsdp2/fsdp2_config_qwen3_30b.yaml" \
     --ckpt-format torch_dist \
 "
 
