@@ -40,6 +40,10 @@ MindSpeed-LLM + MindSpore后端的依赖配套如下表，安装步骤参考[基
     <td>Python</td>
     <td>3.10</td>
   </tr>
+  <tr>
+    <td>MindSpore</td>
+    <td>2.7.2</td>
+  </tr>
 </table>   
 
 ## 模型支持
