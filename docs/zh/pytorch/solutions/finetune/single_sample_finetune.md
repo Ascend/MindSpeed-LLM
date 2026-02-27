@@ -146,7 +146,7 @@
 
     - `DATA_PATH`：数据集路径。请注意实际数据预处理生成文件末尾会增加`_input_ids_document`等后缀，该参数填写到数据集的前缀即可。例如实际的数据集相对路径是`./finetune_dataset/alpaca/alpaca_packed_input_ids_document.bin`等，那么只需要填`./finetune_dataset/alpaca/alpaca`即可。
     - `is-instruction-dataset`：用于指定微调过程中采用指令微调数据集，以确保模型依据特定指令数据进行微调。
-    - `no-pad-to-seq-lengths`：在不同的mini-batch间支持以动态的序列长度进行微调，默认padding到`8`的整数倍，可以通过`pad-to-multiple-of`参数来修改padding的倍数。假设微调时指定`--seq-length`序列长度为1024，开启`--no-pad-to-seq-lengths`后，序列长度会padding到真实数据长度的8整数倍。
+    - `no-pad-to-seq-lengths`：在不同的mini-batch间支持以动态的序列长度进行微调，默认padding到8的整数倍，可以通过`pad-to-multiple-of`参数来指定修改padding到几的倍数。假设微调时指定`--seq-length`序列长度为1024，开启`--no-pad-to-seq-lengths`后，序列长度会padding到大于等于真实数据长度且为8的整数倍的值。
 
         **图 2**  variable-seq-lengths图示  
         ![variable-seq-lengths图示](../../figures/instruction_finetune/variable_seq_lengths.png)
