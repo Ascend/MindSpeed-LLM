@@ -13,12 +13,12 @@ MindSpeed-LLM已支持接入华为自研AI框架MindSpore，旨在提供华为�
 
 MindSpeed-LLM + MindSpore后端的依赖配套如下表，安装步骤参考[基础安装指导](./install_guide.md)。
 
-| 依赖软件        |                                                                                                                                    |
-| --------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| 依赖软件        |                                                                                                                                                     |
+| --------------- |-----------------------------------------------------------------------------------------------------------------------------------------------------|
 | 昇腾NPU驱动固件 | [Ascend HDK 25.2.0](https://www.hiascend.com/hardware/firmware-drivers/community?product=1&model=30&cann=8.3.RC1.alpha003&driver=Ascend+HDK+25.2.0) |
-| 昇腾 CANN       | [8.3.RC1](https://www.hiascend.com/developer/download/community/result?module=cann&cann=8.3.RC1.alpha003)                                               |
-| MindSpore       | 在研版本                                                                                       |
-| Python          | >=3.9                                                                                                                              |
+| 昇腾 CANN       | [8.3.RC1](https://www.hiascend.com/developer/download/community/result?module=cann&cann=8.3.RC1.alpha003)                                           |
+| MindSpore       | 2.7.1                                                                                                                                               |
+| Python          | >=3.9                                                                                                                                               |
 
 ## 模型支持
 
