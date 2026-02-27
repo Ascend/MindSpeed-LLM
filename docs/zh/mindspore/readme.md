@@ -28,7 +28,7 @@ MindSpeed-LLM + MindSpore后端的依赖配套如下表，安装步骤参考[基
   </tr>
   <tr>
     <td>Toolkit（开发套件）</td>
-    <td rowspan="3">在研版本</td>
+    <td rowspan="3">CANN 8.5.0</td>
   </tr>
   <tr>
     <td>Kernel（算子包）</td>
@@ -41,6 +41,10 @@ MindSpeed-LLM + MindSpore后端的依赖配套如下表，安装步骤参考[基
   <tr>
     <td>Python</td>
     <td>3.10</td>
+  </tr>
+  <tr>
+    <td>MindSpore</td>
+    <td>2.8.0</td>
   </tr>
 </table>
 注：由于master分支使用在研版本的驱动以及CANN包，因此master上的一些新特性老版本配套可能有不支持情况，要使用稳定版本，请切换到商发分支并下载对应依赖版本进行安装。                                                                                                                           |
