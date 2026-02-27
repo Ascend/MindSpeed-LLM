@@ -451,13 +451,6 @@ class CustomMLASelfAttention(SelfAttention):
                 self.recompute_mla_up_proj_ckpt.discard_output()
                 core_attn_out.register_hook(self.recompute_mla_up_proj_ckpt.recompute)
 
-            if packed_seq_params is not None:
-                # reshape to same output shape as unpacked case
-                # (t, np, hn) -> (t, b=1, h=np*hn)
-                # t is the pack size = sum (sq_i)
-                # note that batch is a dummy dimension in the packed case
-                core_attn_out = core_attn_out.reshape(core_attn_out.size(0), 1, -1)
-
             if self.use_flash_attn and not self.mla_fa_without_pad:
                 core_attn_out = core_attn_out.view(q_len, bsz, self.num_attention_heads_per_partition, -1)
                 core_attn_out = core_attn_out[:, :, :, : self.v_head_dim]
