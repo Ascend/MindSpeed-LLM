@@ -85,13 +85,17 @@ TP=1 # 模型权重转换的tp大小，在本例中是1
 PP=4 # 模型权重转换的pp大小，在本例中是4
 ```
 
-以上通用配置完成后，要开启pack模式训练，需要在[Qwen3-8B预训练脚本](../../../../examples/mcore/qwen3/pretrain_qwen3_8b_4K_ptd.sh)基础上，加上`--reset-position-ids`参数，该参数开启时，模型将在每个EOD之后，将对position id从0开始重新编号，从而隔离不同句子间的位置计算。该参数的使能效果如下图所示：  
-
+以上通用配置完成后，要开启pack模式训练，需要在[Qwen3-8B预训练脚本](../../../../examples/mcore/qwen3/pretrain_qwen3_8b_4K_ptd.sh)基础上，加上`--reset-position-ids`参数，该参数开启时，会按照EOD计算句子的分隔位置，生成actual_seq_len，传入FA算子中相当于锯齿状的mask计算效果。该参数的使能效果如下图所示：
 ![reset-position-ids图示0](../../../../sources/images/pretrain/reset-position-ids.png)
+
+另外，使用`--attention-mask-type`需要注意：默认是causal，支持causal和general格式。
+1. `--attention-mask-type`是general，attention-mask会从数据获取生成。
+2. `--attention-mask-type`是causal，attention-mask会在FA前生成压缩固定长度(2048)的mask，性能和显存会比方案1更好，推荐使用。
 
 脚本内的其他相关参数说明:
 
 - `DATA_PATH`：数据集路径。请注意实际数据预处理生成文件末尾会增加`_text_document`，该参数填写到数据集的前缀即可。例如实际的数据集相对路径是`./finetune_dataset/enwiki_text_document.bin`等，那么只需要填`./finetune_dataset/enwiki_text_document`即可。
+- `CKPT_LOAD_DIR`: 权重加载路径。预训练时可以选择随机初始化模型权重，此时该参数不用配置，同时需要注释掉预训练脚本中的`--load ${CKPT_LOAD_DIR} \`代码行。
 - `tokenizer-type`：参数值为PretrainedFromHF时， 词表路径仅需要填到模型文件夹即可，不需要到tokenizer.model文件；参数值不为PretrainedFromHF时，例如Qwen3Tokenizer，需要指定到tokenizer.model文件。示例如下
 
     ```shell 
@@ -104,6 +108,10 @@ PP=4 # 模型权重转换的pp大小，在本例中是4
     TOKENIZER_MODEL="./model_from_hf/Qwen3-8B/tokenizer.model"
     --tokenizer-model ${TOKENIZER_MODEL} \
     ```
+  
+> [!NOTE]
+> - 提供的路径需要加双引号。
+> - 多机训练中请确保每台机器上的模型路径和数据集路径等无误，如果没有设置数据共享，需要在训练启动脚本中增加`no-shared-storage`参数。设置此参数之后将会根据布式参数判断非主节点是否需要load数据，并检查相应缓存和生成数据。
 
 第四步，预训练脚本配置完毕后，运行脚本启动预训练。
 
@@ -126,4 +134,7 @@ WORLD_SIZE=$(($NPUS_PER_NODE * $NNODES))
 
 ## 使用约束
 
-- 数据预处理阶段的`append-eod`参数需要和预训练阶段的`reset-position-ids`参数搭配一起使用。如果只开`append-eod`的话，文档末尾添加了 `<EOD>`，但位置编码不重置，不同文档的token编号连续，模型仍可能学习跨文档的位置信息；如果只开`reset-position-ids`，触发位置重置需要 `<EOD>`，如果没加`append-eod`，重置逻辑根本不会生效。因此这两个参数需要同时开启。
+数据预处理阶段的`append-eod`参数需要和预训练阶段的`reset-position-ids`参数搭配一起使用：
+1. 如果只开`append-eod`的话，文档末尾添加了 `<EOD>`，FA计算缺失了文档的长度信息，计算FA的时候按照跨文档计算，模型仍学习的是跨文档的信息。
+2. 如果只开`reset-position-ids`，FA计算虽然统计了文档的长度信息，但由于数据缺失`<EOD>`分割，导致统计的文档还是按照跨文档计算，模型仍学习的是跨文档的信息。
+3. 如果数据预处理开启`append-eod`且预训练开启`reset-position-ids`，FA计算可以统计每个有`<EOD>`分割的文档长度，FA计算是对每个文档进行独立计算，模型学习到的是非跨文档信息。
