@@ -248,7 +248,7 @@
     # 根据实际情况配置权重保存、权重加载、词表、数据集路径，多机中所有节点都要有如下数据
     CKPT_LOAD_DIR="./model_weights/qwen2.5_mcore/"  # 权重加载路径，填入权重转换时保存的权重路径
     CKPT_SAVE_DIR="./ckpt/qwen25-7b"                # 训练完成后的权重保存路径
-    DATA_PATH="./dataset/alpaca_text_document"      # 数据集路径，填入数据预处理时保存的数据路径，注意需要添加后缀
+    DATA_PATH="./dataset/alpaca_text_document"      # 数据集路径，填入数据预处理时保存的数据路径，注意需要添加后缀,如使用alpaca数据集预处理会生成alpaca_text_document.bin和.idx，则在数据集路径后再加上alpaca_text_document
     TOKENIZER_PATH="./model_from_hf/qwen2.5-7b-hf/" # 词表路径，填入下载的开源权重词表路径
 
     TP=1                # 权重转换设置--target-tensor-parallel-size 1，修改为1
