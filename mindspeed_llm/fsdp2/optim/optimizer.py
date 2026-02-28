@@ -1,5 +1,5 @@
 """
-Optimizer factory for unified construction of single optimizer and EP+FSDP2 multi-optimizer, support Adamw now.
+Optimizer factory for unified construction of single optimizer and EP+FSDP2 multi-optimizer, support Adamw and Muon now.
 """
 import torch
 import torch.nn as nn
@@ -13,6 +13,7 @@ from torch.distributed.checkpoint.state_dict import (
 from torch.distributed.checkpoint.stateful import Stateful
 from torch.optim import AdamW
 from torch.optim.optimizer import Optimizer
+from mindspeed_llm.fsdp2.optim.muon import Muon
 from mindspeed_llm.fsdp2.utils.logging import get_logger
 
 
@@ -63,6 +64,47 @@ class MultiOptimizer(Optimizer, Stateful):
 
 class OptimizerFactory:
     """Optimizer factory class for unified construction of single optimizer/EP+FSDP2 multi-optimizer"""
+
+    @staticmethod
+    def _split_muon_and_adamw_params(
+            model: nn.Module,
+            all_params: Optional[List[nn.Parameter]] = None
+    ) -> Tuple[List[nn.Parameter], List[nn.Parameter]]:
+        """
+        Split parameters into Muon parameters and AdamW parameters
+        - Muon params: 2D parameters that aren't embeddings or lm_head (requires_grad=True)
+        - AdamW params: All other trainable parameters
+        Args:
+            model: Model to be optimized (for parameter name matching)
+            all_params: Optional, only split parameters in this list (for EP+FSDP2 subset splitting)
+        """
+        muon_params, adamw_params = [], []
+        # Build a mapping from parameter names to parameters
+        name_to_param = {n: p for n, p in model.named_parameters()}
+
+        # For EP+FSDP2, split the specified all_params
+        if all_params is not None:
+            for param in all_params:
+                # Find the corresponding name of the parameter
+                param_name = next((n for n, p in name_to_param.items() if p is param), None)
+                if param_name is None or not param.requires_grad:
+                    adamw_params.append(param)
+                    continue
+                # Use Muon for 2D parameters that aren't embeddings or heads
+                if param.ndim == 2 and "embed" not in param_name and "lm_head" not in param_name:
+                    muon_params.append(param)
+                else:
+                    adamw_params.append(param)
+        # For single optimizer, iterate through all parameters of the model
+        else:
+            for name, param in model.named_parameters():
+                if param.requires_grad:
+                    if param.ndim == 2 and "embed" not in name and "lm_head" not in name:
+                        muon_params.append(param)
+                    else:
+                        adamw_params.append(param)
+
+        return muon_params, adamw_params
 
     @staticmethod
     def create(
@@ -130,41 +172,51 @@ class OptimizerFactory:
         """
         Create single optimizer instance.
         """
-        # Build parameter groups for single optimizer, automatically split parameters that need/don't need decay
-        # when no custom parameter groups are provided
-        if param_groups is None:
-            decay_param_names = OptimizerFactory._get_parameter_names(
-                model, no_decay_modules, no_decay_params
-            )
-            # Build parameter group for parameters that need weight decay
-            param_groups = [
-                {
-                    "params": [
-                        p for n, p in model.named_parameters()
-                        if n in decay_param_names and p.requires_grad
-                    ],
-                    "weight_decay": weight_decay,
-                }
-            ]
-            # Collect parameters that do not need weight decay
-            no_decay_parameters, no_decay_param_names = [], []
-            for n, p in model.named_parameters():
-                if n not in decay_param_names and p.requires_grad:
-                    no_decay_param_names.append(n)
-                    no_decay_parameters.append(p)
-            # Build parameter group for parameters that do not need weight decay
-            if no_decay_parameters:
-                logger.debug_rank0(f"Parameters without weight decay: {no_decay_param_names}")
-                param_groups.append({
-                    "params": no_decay_parameters,
-                    "weight_decay": 0.0
-                })
-
         optimizer_type = optimizer_type.lower()
         # The foreach mode organizes all parameters into a list and performs the update logic via batch traversal.
         # The fused mode fuses the multi-step computations of parameter updates into a single kernel for one-time execution.
         # They are mutually exclusive.
         foreach = not fused
+        muon_params = None
+        adamw_params = None
+
+        if optimizer_type == "muon":
+            # Split Muon and AdamW parameters
+            muon_params, adamw_params = OptimizerFactory._split_muon_and_adamw_params(model)
+            logger.info_rank0(f"Using Muon optimizer with {len(muon_params)} Muon params and {len(adamw_params)} AdamW params.")
+            param_groups=[]
+
+        # Build parameter groups for single optimizer, automatically split parameters that need/don't need decay
+        # when no custom parameter groups are provided
+        else:
+            if param_groups is None:
+                decay_param_names = OptimizerFactory._get_parameter_names(
+                    model, no_decay_modules, no_decay_params
+                )
+                # Build parameter group for parameters that need weight decay
+                param_groups = [
+                    {
+                        "params": [
+                            p for n, p in model.named_parameters()
+                            if n in decay_param_names and p.requires_grad
+                        ],
+                        "weight_decay": weight_decay,
+                    }
+                ]
+                # Collect parameters that do not need weight decay
+                no_decay_parameters, no_decay_param_names = [], []
+                for n, p in model.named_parameters():
+                    if n not in decay_param_names and p.requires_grad:
+                        no_decay_param_names.append(n)
+                        no_decay_parameters.append(p)
+                # Build parameter group for parameters that do not need weight decay
+                if no_decay_parameters:
+                    logger.debug_rank0(f"Parameters without weight decay: {no_decay_param_names}")
+                    param_groups.append({
+                        "params": no_decay_parameters,
+                        "weight_decay": 0.0
+                    })
+
         # Call unified method to instantiate single optimizer
         optimizer = OptimizerFactory._create_optimizer_instance(
             optimizer_type=optimizer_type,
@@ -174,7 +226,9 @@ class OptimizerFactory:
             eps=adam_epsilon,
             weight_decay=weight_decay,
             fused=fused,
-            foreach=foreach
+            foreach=foreach,
+            muon_params=muon_params,
+            adamw_params=adamw_params
         )
 
         logger.info_rank0(f"Created single optimizer {optimizer_type} | lr={lr}, weight_decay={weight_decay}")
@@ -190,7 +244,9 @@ class OptimizerFactory:
             eps: float,
             weight_decay: float,
             fused: bool = False,
-            foreach: bool = False
+            foreach: bool = False,
+            muon_params: Optional[List[nn.Parameter]] = None,
+            adamw_params: Optional[List[nn.Parameter]] = None,
     ) -> Optimizer:
         """
         Unified optimizer instantiation entry point, add branches here for newly extended optimizers
@@ -205,9 +261,20 @@ class OptimizerFactory:
                 fused=fused,
                 foreach=foreach
             )
+        elif optimizer_type == "muon":
+            # Validate required parameters for Muon
+            if muon_params is None or adamw_params is None:
+                raise ValueError("muon_params and adamw_params must be provided for Muon optimizer.")
+            return Muon(
+                lr=lr,
+                wd=weight_decay,
+                muon_params=muon_params,
+                adamw_params=adamw_params,
+                adamw_betas=betas,
+                adamw_eps=eps,
+            )
         else:
-            raise ValueError(f"Unsupported optimizer type: {optimizer_type}, supported types: [adamw]")
-
+            raise ValueError(f"Unsupported optimizer type: {optimizer_type}, supported types: [adamw, muon]")
 
     @staticmethod
     def _get_parameter_names(model, forbidden_layer_types, forbidden_param_names):
@@ -342,15 +409,28 @@ class OptimizerFactory:
             # Multiple optimizers do not support the foreach/fused modes in NPU.
             foreach = False if torch.npu.is_available() else (not fused)
             fused_ = False if torch.npu.is_available() else fused
+            muon_params = None
+            adamw_params = None
+            param_groups = groups
+
+            if optimizer_type == "muon":
+                # Extract all parameters from weight decay groups, then split into Muon/AdamW parameters
+                all_params = [p for g in groups for p in g.get("params", [])]
+                muon_params, adamw_params = OptimizerFactory._split_muon_and_adamw_params(model, all_params)
+                logger.info_rank0(f"EP+FSDP2 Muon sub-optimizer: {len(muon_params)} Muon params, {len(adamw_params)} AdamW params.")
+                param_groups = []
+
             return OptimizerFactory._create_optimizer_instance(
                 optimizer_type=optimizer_type,
-                param_groups=groups,
+                param_groups=param_groups,
                 lr=lr,
                 betas=betas,
                 eps=eps,
                 weight_decay=weight_decay,
                 fused=fused_,
-                foreach=foreach
+                foreach=foreach,
+                muon_params=muon_params,
+                adamw_params=adamw_params
             )
 
         # Build EP/non-EP optimizer dictionary

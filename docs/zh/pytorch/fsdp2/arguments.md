@@ -529,9 +529,9 @@
     </tr>
     <tr>
       <td>optimizer</td>
-      <td>Literal[&quot;adamw&quot;]</td>
+      <td>Literal["adamw", "muon"]</td>
       <td>adamw</td>
-      <td>优化器，目前仅支持AdamW优化器。</td>
+      <td>优化器，目前支持AdamW/Muon优化器。</td>
     </tr>
     <tr>
       <td>lr</td>

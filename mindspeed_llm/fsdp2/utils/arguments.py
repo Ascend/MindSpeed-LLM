@@ -454,7 +454,7 @@ class TrainingArguments:
         metadata={"help": "The output directory where the model predictions and checkpoints will be written."}
     )
     # --- Optimization ---
-    optimizer: Literal["adamw"] = field(
+    optimizer: Literal["adamw", "muon"] = field(
         default="adamw",
         metadata={"help": "Optimizer. Default to adamw."},
     )
