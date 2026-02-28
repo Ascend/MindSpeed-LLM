@@ -248,31 +248,36 @@ def cleanup_old_checkpoints(training_args):
 
     # Only rank 0 performs filesystem operations
     if torch.distributed.get_rank() == 0:
-        output_dir = training_args.output_dir
+        # Checkpoints are saved under output_dir/checkpoints/
+        checkpoint_dir = os.path.join(training_args.output_dir, "checkpoints")
+        if not os.path.isdir(checkpoint_dir):
+            return
+
         checkpoints = []
 
-        # Collect all checkpoint directories
-        for item in os.listdir(output_dir):
-            if item.startswith("checkpoint-"):
-                checkpoint_path = os.path.join(output_dir, item)
+        # Collect all checkpoint directories matching "global_step_*" pattern
+        for item in os.listdir(checkpoint_dir):
+            if item.startswith("global_step_"):
+                checkpoint_path = os.path.join(checkpoint_dir, item)
                 if os.path.isdir(checkpoint_path):
                     try:
-                        step = int(item.split("-")[1])
+                        # Extract step number from "global_step_XXX"
+                        step = int(item.split("_")[-1])
                         checkpoints.append((step, checkpoint_path))
                     except (IndexError, ValueError) as e:
                         raise ValueError(f"Invalid checkpoint directory name: {item}") from e
 
-        # Sort checkpoints by step
+        # Sort checkpoints by step number in ascending order
         checkpoints.sort(key=lambda x: x[0])
 
-        # Remove oldest checkpoints if exceeding limit
+        # Remove oldest checkpoints if exceeding the save limit
         if len(checkpoints) > save_total_limit:
             for _, checkpoint_path in checkpoints[:-save_total_limit]:
                 logger.info_rank0(f"Removing old checkpoint: {checkpoint_path}")
                 import shutil
                 shutil.rmtree(checkpoint_path)
 
-    # Synchronize all ranks
+    # Synchronize all ranks after cleanup
     torch.distributed.barrier()
 
 

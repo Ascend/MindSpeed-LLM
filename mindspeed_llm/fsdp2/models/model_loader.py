@@ -16,13 +16,12 @@ logger = get_logger(__name__)
 
 
 # ==============================================================================
-# Context Managers (from VeOmni module_utils.py)
+# Context Managers
 # ==============================================================================
 @contextmanager
 def init_empty_weights():
     """
     A context manager under which models are initialized with all parameters on the meta device.
-    Adapted from VeOmni/accelerate.
     """
     old_register_parameter = nn.Module.register_parameter
 
@@ -160,12 +159,11 @@ class ModelLoader:
 
 
 # ==============================================================================
-# Weight Loader Class (Adapted from VeOmni load_model_weights)
+# Weight Loader Class
 # ==============================================================================
 class WeightLoader:
     """
     Load weights into FSDP-wrapped model.
-    Adapted from VeOmni's load_model_weights function.
     """
     
     @staticmethod
@@ -201,13 +199,13 @@ class WeightLoader:
     @torch.no_grad()
     def _load_pretrained(model: nn.Module, weights_path: str, device: str) -> None:
         """
-        Load pretrained weights - adapted from VeOmni's load_model_weights.
+        Load pretrained weights.
         """
         from torch.distributed.tensor import distribute_tensor
         
         logger.info_rank0(f"> Loading pretrained weights from {weights_path}...")
         
-        # Step 1: Save buffers before to_empty (VeOmni pattern)
+        # Step 1: Save buffers before to_empty
         buffer_dict = {name: buffer.clone() for name, buffer in model.named_buffers()}
         parameter_names_to_load = {name for name, _ in model.named_parameters()}
         
@@ -291,7 +289,7 @@ class WeightLoader:
         dtensor_factory
     ) -> None:
         """
-        Assign parameter to model - adapted from VeOmni's _dispatch_parameter.
+        Assign parameter to model.
         """
         module, local_name = _find_submodule(model, name)
         orig_tensor = dict(module.named_parameters(recurse=False))[local_name].data
@@ -316,7 +314,7 @@ class WeightLoader:
         dtensor_factory
     ) -> None:
         """
-        Assign buffer to model - adapted from VeOmni's _dispatch_buffer.
+        Assign buffer to model.
         """
         module, local_name = _find_submodule(model, name)
         orig_buffer = dict(module.named_buffers(recurse=False))[local_name]
@@ -335,7 +333,7 @@ class WeightLoader:
     @staticmethod
     def _init_parameter(model: nn.Module, name: str) -> None:
         """
-        Initialize missing parameter - adapted from VeOmni's _init_parameter.
+        Initialize missing parameter.
         """
         pieces = name.split(".")
         init_func = None
@@ -359,7 +357,7 @@ class WeightLoader:
         dtensor_factory
     ) -> None:
         """
-        Post-process after weight loading - adapted from VeOmni's post_process_after_weight_loading.
+        Post-process after weight loading.
         """
         # Restore buffers
         for name, buffer in buffer_dict.items():
