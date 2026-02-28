@@ -116,7 +116,7 @@
     PP=4 # 模型权重转换的pp大小，在本例中是4
     ```
 
-    脚本内的相关参数说明:
+    脚本内的其他参数说明:
 
     - `DATA_PATH`：数据集路径。请注意实际数据预处理生成文件末尾会增加`_text_document`，该参数填写到数据集的文件前缀即可。例如实际的数据集相对路径是`./finetune_dataset/alpaca/alpaca_text_document.bin`等，那么只需要填`./finetune_dataset/alpaca/alpaca_text_document`即可。
     - `CKPT_LOAD_DIR`: 权重加载路径。预训练时可以选择随机初始化模型权重，此时该参数不用配置，同时需要注释掉预训练脚本中的`--load ${CKPT_LOAD_DIR} \`代码行。

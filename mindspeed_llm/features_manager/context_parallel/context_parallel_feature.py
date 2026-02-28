@@ -18,7 +18,7 @@ class ContextParallelFeature(MindspeedContextParallelFeature):
         # ring context parallel
         group.add_argument('--cp-window-size', type=int, default=1)
         group.add_argument('--attention-mask-type', type=str, default='causal',
-                           choices=['causal', 'general'], help='context parallel attention mask type')
+                           choices=['causal', 'general'], help='attention mask type')
         group.add_argument('--use-cp-send-recv-overlap', action='store_true',
                            help='use this flag to enable cp send-recv-overlap.')
         group.add_argument("--use-fused-ring-attention-update", action='store_true',
