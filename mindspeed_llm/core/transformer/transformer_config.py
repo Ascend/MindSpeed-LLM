@@ -18,6 +18,7 @@ def transformer_config_post_init_wrapper(fn):
         _ori_var_seq = None
         _ori_add_bias_linear = None
         _ori_gated_linear_unit = None
+        _ori_moe_router_score_function = None
         
         if (
             self.moe_router_topk == 1
@@ -41,7 +42,11 @@ def transformer_config_post_init_wrapper(fn):
         ):
             _ori_gated_linear_unit = getattr(self, 'gated_linear_unit', False)
             self.gated_linear_unit = True
-            
+
+        if self.moe_router_enable_expert_bias and self.moe_router_score_function != "sigmoid":
+            _ori_moe_router_score_function = self.moe_router_score_function
+            self.moe_router_score_function = "sigmoid"
+
         fn(self)
         
         if _ori_gated_linear_unit is not None:
@@ -54,6 +59,9 @@ def transformer_config_post_init_wrapper(fn):
             self.add_bias_linear = _ori_add_bias_linear
         if _ori_moe_router_pre_softmax is not None:
             self.moe_router_pre_softmax = _ori_moe_router_pre_softmax
+
+        if _ori_moe_router_score_function is not None:
+            self.moe_router_score_function = _ori_moe_router_score_function
 
         self.apply_rope_fusion = ori_apply_rope_fusion
         del ori_apply_rope_fusion

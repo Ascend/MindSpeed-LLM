@@ -523,7 +523,13 @@ def topk_router_routing(self, logits: torch.Tensor):
             logits_ = torch.softmax(logits, dim=-1, dtype=torch.float32)
         else:
             logits_ = torch.softmax(logits, dim=-1, dtype=torch.float32).type_as(logits)
-        scores, indices = torch.topk(logits_, k=self.topk, dim=1)
+        
+        if self.expert_bias is not None:
+            logits_for_routing = logits_ + self.expert_bias
+            _, indices = torch.topk(logits_for_routing, k=self.topk, dim=1)
+            scores = torch.gather(logits_, dim=1, index=indices).type_as(logits_)
+        else:
+            scores, indices = torch.topk(logits_, k=self.topk, dim=1)
         if args.norm_topk_prob:
             scores = scores / scores.sum(dim=-1, keepdim=True)
         if self.config.moe_router_topk_scaling_factor is not None:

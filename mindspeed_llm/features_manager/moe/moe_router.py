@@ -39,7 +39,6 @@ class MoERouter(MindSpeedFeature):
     def validate_args(self, args):
         self._validate_moe_args(args)
         self._validate_group_limited_greedy(args)
-        self._validate_aux_loss_free(args)
 
     def post_validate_args(self, args):
         if self.origin_spec:
@@ -73,13 +72,6 @@ class MoERouter(MindSpeedFeature):
                 raise AssertionError(
                     'The topk group ({}) should be less than n-group(EP)({}).'.format(args.moe_router_group_topk,
                                                                                       args.expert_model_parallel_size))
-
-    def _validate_aux_loss_free(self, args):
-        if args.moe_router_enable_expert_bias and args.moe_router_score_function != "sigmoid":
-            raise ValueError(
-                "Expert bias for aux-loss-free routing only supports sigmoid score function."
-                "Please set --moe-router-score-function sigmoid for sigmoid score function."
-            )
 
     def register_patches(self, patch_manager, args):
         from mindspeed_llm.core.transformer.moe.router import (topk_router_routing, topk_router_init_wrapper, topk_router_gating_func)

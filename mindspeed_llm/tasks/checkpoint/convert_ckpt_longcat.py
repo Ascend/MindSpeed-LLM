@@ -126,7 +126,7 @@ class LongCatHf2MgConvert(Hf2MgConvert):
 
         if hasattr(self.load_model, "router_bias"):
             mlp_router_bias = hf_weight.pop(hf_weight_key["layers_mlp_router_bias"])
-            mlp_router_bias = mlp_router_bias[:self.load_model.num_experts]
+            mlp_router_bias = mlp_router_bias[:experts_num]
 
         experts_linear_fc1_list = []
         experts_linear_fc2_list = []

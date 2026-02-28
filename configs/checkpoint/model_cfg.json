@@ -901,7 +901,9 @@
         "qkv_type": "pack_mla",
         "transformerlayer_type": "longcat",
         "multi_latent_attention": true,
-        "qk_layernorm": true
+        "qk_layernorm": true,
+        "router_bias": true,
+        "torch_dtype": "bfloat16"
       },
       "config_hf_key_mapping": {
         "num_layers": "num_layers",
@@ -928,6 +930,7 @@
         "layers_self_attention0_q_layernorm": "model.layers[layer_idx].self_attn.0.q_a_layernorm",
         "layers_self_attention0_kv_layernorm": "model.layers[layer_idx].self_attn.0.kv_a_layernorm",
         "layers_self_attention0_pre_mlp_layernorm": "model.layers[layer_idx].post_attention_layernorm.0",
+        "layers_mlp_router_bias": "model.layers[layer_idx].mlp.router.e_score_correction_bias",
         "layers_mlp_router": "model.layers[layer_idx].mlp.router.classifier",
         "layers_mlp_experts_gate_proj": "model.layers[layer_idx].mlp.experts[expert_idx].gate_proj",
         "layers_mlp_experts_up_proj": "model.layers[layer_idx].mlp.experts[expert_idx].up_proj",

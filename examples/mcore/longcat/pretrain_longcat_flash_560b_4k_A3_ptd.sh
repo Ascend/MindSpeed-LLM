@@ -1,16 +1,17 @@
 #!/bin/bash
-export HCCL_CONNECT_TIMEOUT=1800
-export NPU_ASD_ENABLE=0
+export HCCL_CONNECT_TIMEOUT=6000
+export HCCL_EXEC_TIMEOUT=5400
+export HCCL_IF_BASE_PORT=48890
 export CUDA_DEVICE_MAX_CONNECTIONS=1
-export CPU_AFFINITY_CONF=1
+export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
+export NPU_ASD_ENABLE=0
 export TASK_QUEUE_ENABLE=2
-export PYTORCH_NPU_ALLOC_CONF="expandable_segments:True"
-export STREAMS_PER_DEVICE=32
+export CPU_AFFINITY_CONF=1
 
-NPUS_PER_NODE=8
+NPUS_PER_NODE=16
 MASTER_ADDR=localhost
 MASTER_PORT=6066
-NNODES=1
+NNODES=8
 NODE_RANK=0
 WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
@@ -20,15 +21,14 @@ CKPT_SAVE_DIR="your model save ckpt path"
 DATA_PATH="your data path"
 TOKENIZER_PATH="your tokenizer path"
 
-TP=1
-PP=1
-EP=8
-CP=8
-CP_ALGO=ulysses_cp_algo
+TP=16
+PP=4
+EP=32
+CP=1
 
 MBS=1
 GBS=16
-SEQ_LENGTH=131072
+SEQ_LENGTH=4096
 TRAIN_ITERS=2000
 ROUTER_BALANCING_TYPE='softmax_topk'
 
@@ -41,18 +41,18 @@ DISTRIBUTED_ARGS="
 "
 
 MOE_ARGS="
-    --num-experts 256 \
-    --num-zero-experts 128 \
+    --num-experts 512 \
+    --num-zero-experts 256 \
     --moe-router-topk 12 \
     --moe-router-dtype fp32 \
     --moe-router-load-balancing-type ${ROUTER_BALANCING_TYPE} \
     --moe-router-topk-scaling-factor 6.0 \
 	--moe-ffn-hidden-size 2048 \
-    --moe-grouped-gemm \
     --moe-permutation-async-comm \
     --moe-token-dispatcher-type alltoall \
     --moe-aux-loss-coeff 0.001 \
-    --fix-router
+    --moe-grouped-gemm \
+    --moe-router-enable-expert-bias \
 "
 
 
@@ -76,6 +76,8 @@ OPTIMIZE_ARGS="
     --use-fused-swiglu \
     --no-masked-softmax-fusion \
     --use-distributed-optimizer \
+    --gemm-gradient-accumulation-fusion \
+    --swap-optimizer \
 "
 
 TRAIN_ARGS="
@@ -106,9 +108,6 @@ MODEL_PARALLEL_ARGS="
     --pipeline-model-parallel-size ${PP} \
     --expert-model-parallel-size ${EP} \
     --expert-tensor-parallel-size 1 \
-    --context-parallel-algo ${CP_ALGO} \
-    --context-parallel-size ${CP} \
-    --sequence-parallel \
 "
 
 GPT_ARGS="
@@ -117,7 +116,7 @@ GPT_ARGS="
     --qk-layernorm \
     --tokenizer-name-or-path ${TOKENIZER_PATH} \
     --max-position-embeddings ${SEQ_LENGTH} \
-    --num-layers 1 \
+    --num-layers 28 \
     --hidden-size 6144 \
     --ffn-hidden-size 12288 \
     --num-attention-heads 64 \
@@ -134,20 +133,7 @@ GPT_ARGS="
     --attention-softmax-in-fp32 \
     --no-gradient-accumulation-fusion \
     --no-bias-dropout-fusion \
-    --transformer-impl transformer_engine \
-    --reset-attention-mask \
-    --sub-seq-length 16384 \
-    --recompute-granularity full \
-    --recompute-method uniform \
-    --recompute-num-layers 1 \
-    --swap-optimizer \
-    --swap-attention
 "
-
-# FP8_ARGS="
-#     --fp8-format e4m3 \
-#     --fp8-recipe mxfp8 \
-# "
 
 DATA_ARGS="
     --data-path $DATA_PATH \
@@ -163,17 +149,6 @@ OUTPUT_ARGS="
     --no-load-rng
 "
 
-PROFILE_ARGS="
-    --profile \
-    --profile-step-start 5 \
-    --profile-step-end 6 \
-    --profile-ranks 0 \
-    --profile-level level1  \
-    --profile-with-cpu  \
-    --profile-record-shapes  \
-    --profile-save-path ./longcat_128k_sub16k_bf16_ulysses_profiling \
-"
-
 torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     $GPT_ARGS \
     $DATA_ARGS \
@@ -183,7 +158,8 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     $OPTIMIZE_ARGS \
     $TRAIN_ARGS \
     $MODEL_PARALLEL_ARGS \
-    $PROFILE_ARGS \
+    --load ${CKPT_LOAD_DIR} \
+    --save ${CKPT_SAVE_DIR} \
     --distributed-backend nccl \
     --transformer-impl local \
-    | tee logs/pretrain_mcore_longcat_ptd_128K.log
+    | tee logs/pretrain_mcore_longcat_ptd.log

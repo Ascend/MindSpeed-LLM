@@ -10,5 +10,6 @@ python convert_ckpt_v2.py \
    --target-expert-parallel-size 32 \
    --expert-tensor-parallel-size 1 \
    --moe-grouped-gemm \
+   --save-layer-by-layer \
    --load-dir ./model_from_hf/longcat-flash-chat-hf/ \
    --save-dir ./model_weights/longcat-flash-chat-mcore/ \

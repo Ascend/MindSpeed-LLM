@@ -1,17 +1,13 @@
 #!/bin/bash
-export HCCL_CONNECT_TIMEOUT=6000
-export HCCL_EXEC_TIMEOUT=5400
-export HCCL_IF_BASE_PORT=48890
+export HCCL_CONNECT_TIMEOUT=1800
 export CUDA_DEVICE_MAX_CONNECTIONS=1
-export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
+export PYTORCH_NPU_ALLOC_CONF="expandable_segments:True"
 export NPU_ASD_ENABLE=0
-export TASK_QUEUE_ENABLE=2
-export CPU_AFFINITY_CONF=1
 
-NPUS_PER_NODE=16
+NPUS_PER_NODE=8
 MASTER_ADDR=localhost
 MASTER_PORT=6066
-NNODES=8
+NNODES=1
 NODE_RANK=0
 WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
@@ -21,14 +17,14 @@ CKPT_SAVE_DIR="your model save ckpt path"
 DATA_PATH="your data path"
 TOKENIZER_PATH="your tokenizer path"
 
-TP=16
-PP=4
-EP=32
+TP=1
+PP=1
+EP=8
 CP=1
 
 MBS=1
 GBS=16
-SEQ_LENGTH=4096
+SEQ_LENGTH=8192
 TRAIN_ITERS=2000
 ROUTER_BALANCING_TYPE='softmax_topk'
 
@@ -41,19 +37,20 @@ DISTRIBUTED_ARGS="
 "
 
 MOE_ARGS="
-    --num-experts 512 \
-    --num-zero-experts 256 \
+    --num-experts 256 \
+    --num-zero-experts 128 \
     --moe-router-topk 12 \
     --moe-router-dtype fp32 \
     --moe-router-load-balancing-type ${ROUTER_BALANCING_TYPE} \
     --moe-router-topk-scaling-factor 6.0 \
 	--moe-ffn-hidden-size 2048 \
+    --moe-grouped-gemm \
+    --moe-router-enable-expert-bias \
     --moe-permutation-async-comm \
     --moe-token-dispatcher-type alltoall \
     --moe-aux-loss-coeff 0.001 \
-    --moe-grouped-gemm \
+    --fix-router
 "
-
 
 MLA_ARGS="
     --multi-latent-attention \
@@ -75,8 +72,6 @@ OPTIMIZE_ARGS="
     --use-fused-swiglu \
     --no-masked-softmax-fusion \
     --use-distributed-optimizer \
-    --gemm-gradient-accumulation-fusion \
-    --swap-optimizer \
 "
 
 TRAIN_ARGS="
@@ -115,7 +110,7 @@ GPT_ARGS="
     --qk-layernorm \
     --tokenizer-name-or-path ${TOKENIZER_PATH} \
     --max-position-embeddings ${SEQ_LENGTH} \
-    --num-layers 28 \
+    --num-layers 1 \
     --hidden-size 6144 \
     --ffn-hidden-size 12288 \
     --num-attention-heads 64 \
@@ -131,8 +126,14 @@ GPT_ARGS="
     --swiglu \
     --attention-softmax-in-fp32 \
     --no-gradient-accumulation-fusion \
-    --no-bias-dropout-fusion \
+    --transformer-impl transformer_engine \
+    --no-bias-dropout-fusion
 "
+
+# FP8_ARGS="
+#     --fp8-format e4m3 \
+#     --fp8-recipe mxfp8 \
+# "
 
 DATA_ARGS="
     --data-path $DATA_PATH \
@@ -148,6 +149,17 @@ OUTPUT_ARGS="
     --no-load-rng
 "
 
+PROFILE_ARGS="
+    --profile \
+    --profile-step-start 5 \
+    --profile-step-end 6 \
+    --profile-ranks 0 \
+    --profile-level level1  \
+    --profile-with-cpu  \
+    --profile-record-shapes  \
+    --profile-save-path ./longcat_8k_bf16_profiling \
+"
+
 torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     $GPT_ARGS \
     $DATA_ARGS \
@@ -157,8 +169,7 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     $OPTIMIZE_ARGS \
     $TRAIN_ARGS \
     $MODEL_PARALLEL_ARGS \
-    --load ${CKPT_LOAD_DIR} \
-    --save ${CKPT_SAVE_DIR} \
+    $PROFILE_ARGS \
     --distributed-backend nccl \
     --transformer-impl local \
-    | tee logs/pretrain_mcore_longcat_ptd.log
+    | tee logs/pretrain_mcore_longcat_ptd_8k.log
