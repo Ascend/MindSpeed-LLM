@@ -22,6 +22,7 @@ from collections import Counter
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 
 from megatron.training import print_rank_0, get_args
 from megatron.core import parallel_state, mpu
@@ -214,8 +215,7 @@ class DecoderPackedMTFDataset(torch.utils.data.Dataset):
                     position_ids = torch.arange(self.args.seq_length, dtype=torch.long, device=data.device)
 
             if actual_seq_len is None:
-                seq_length_tensor = torch.tensor([self.args.seq_length])
-                actual_seq_len = torch.cat([eod_index + 1, seq_length_tensor])
+                actual_seq_len = eod_index + 1
 
 
             mtp_res = None
@@ -231,13 +231,14 @@ class DecoderPackedMTFDataset(torch.utils.data.Dataset):
                             next_actual_seq_len.append(j - i)
                     mtp_res.append(next_actual_seq_len)
                 mtp_res = torch.tensor(mtp_res)
-
+            pad_length = seq_length - len(actual_seq_len)
+            padded_actual_seq_len = F.pad(actual_seq_len, (0, pad_length), value=-1)
             return {
                 "input_ids": self._cut_token(item['input_ids'], np.int64),
                 "attention_mask": self._cut_token(item["attention_mask"], np.int64),
                 "labels": self._cut_token(item["labels"], np.int64),
                 "position_ids": self._cut_token(position_ids.numpy(), np.int64),
-                "actual_seq_len": actual_seq_len if mtp_res is None else mtp_res
+                "actual_seq_len": padded_actual_seq_len if mtp_res is None else mtp_res
             }
         elif self.args.cut_max_seqlen:
             return {

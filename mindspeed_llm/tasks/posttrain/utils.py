@@ -272,3 +272,12 @@ def compute_log_probs(
             )
 
     return all_log_probs, valid_length, per_token_log_probs
+
+
+def compute_actual_seq_len_form_list(actual_seq_len_list):
+    args = get_args()
+    actual_seq_len = []
+    for row_idx, row in enumerate(actual_seq_len_list):
+        actual_seq_len.append(row[row != -1] + args.seq_length * row_idx)
+    actual_seq_len = torch.cat(actual_seq_len, dim=0)
+    return actual_seq_len.view(-1)

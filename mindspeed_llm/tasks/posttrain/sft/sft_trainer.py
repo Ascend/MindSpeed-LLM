@@ -22,6 +22,7 @@ from mindspeed_llm.training.utils import  set_mtp_batch_list
 from mindspeed_llm.core.transformer.multi_token_prediction import generate_mtp_batch_list_on_this_tp_rank
 from mindspeed.core.context_parallel.get_batch_utils import set_actual_seq_len, get_ring_degree
 from mindspeed.core.context_parallel.utils import pad_data
+from mindspeed_llm.tasks.posttrain.utils import compute_actual_seq_len_form_list
 
 IGNORE_INDEX = -100
 
@@ -61,7 +62,11 @@ class SFTTrainer(BaseTrainer):
                         'attention_mask': None,
                         'position_ids': position_ids
                     }
-                    actual_seq_len = data_b['actual_seq_len'].view(-1)
+                    if args.micro_batch_size > 1:
+                        actual_seq_len = compute_actual_seq_len_form_list(data_b['actual_seq_len'])
+                    else:
+                        actual_seq_len = data_b['actual_seq_len']
+                        actual_seq_len = actual_seq_len[actual_seq_len != -1].view(-1)
                     if args.attention_mask_type == 'causal' \
                             and args.context_parallel_size > 1 \
                             and args.context_parallel_algo == 'megatron_cp_algo':
@@ -114,7 +119,11 @@ class SFTTrainer(BaseTrainer):
                     'attention_mask': None,
                     'position_ids': position_ids
                 }
-                actual_seq_len = data_b['actual_seq_len'].view(-1)
+                if args.micro_batch_size > 1:
+                    actual_seq_len = compute_actual_seq_len_form_list(data_b['actual_seq_len'])
+                else:
+                    actual_seq_len = data_b['actual_seq_len']
+                    actual_seq_len = actual_seq_len[actual_seq_len != -1].view(-1)
                 if args.attention_mask_type == 'causal' \
                         and args.context_parallel_size > 1 \
                         and args.context_parallel_algo == 'megatron_cp_algo':
