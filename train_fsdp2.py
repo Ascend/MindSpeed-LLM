@@ -23,6 +23,7 @@ from dataclasses import dataclass, field, fields
 import torch
 import torch_npu
 from torch_npu.contrib import transfer_to_npu
+from transformers import AutoConfig, AutoModelForCausalLM
 
 from mindspeed_llm.fsdp2.models.model_factory import ModelFactory
 from mindspeed_llm.fsdp2.optim.optimizer import OptimizerFactory
@@ -37,6 +38,7 @@ from mindspeed_llm.fsdp2.utils.arguments import (
    ModelArguments, DataArguments, ParallelArguments, TrainingArguments, fsdp2_parse_args
 )
 from mindspeed_llm.fsdp2.utils.global_vars import set_args
+from mindspeed_llm.fsdp2.utils.train_monitor import TrainMonitor
 
 from mindspeed.fsdp.utils.device import set_accelerator_compatible
 from mindspeed.fsdp.utils.random import set_seed
@@ -118,12 +120,10 @@ class MindSpeedAutoTrainer:
       self.tokenizer = self._build_tokenizer()
       self.template = get_template_and_fix_tokenizer(self.tokenizer, self.data_args)
       self.data_manager = self._build_data_manager(self.tokenizer, self.template)
-
-
       self.optimizer = self._build_optimizer(self.model)
       self.lr_scheduler = self._build_scheduler(self.optimizer)
-
       self.checkpoint_manager = self._build_checkpointer()
+      self.train_monitor = self._build_monitor()
 
       # 4. Dependency Injection
       self.trainer = Trainer(
@@ -134,8 +134,10 @@ class MindSpeedAutoTrainer:
          args=self.training_args,
          parallel_args = self.parallel_args,
          ckpt_manager=self.checkpoint_manager,
-         tokenizer=self.tokenizer
+         monitor=self.train_monitor,
+         tokenizer=self.tokenizer,
       )
+
    @staticmethod
    def _initialize(seed: int):
       """
@@ -274,6 +276,14 @@ class MindSpeedAutoTrainer:
          tokenizer=tokenizer,
          template=template
       )
+
+   def _build_monitor(self):
+      logger.info_rank0("> Building Monitor...")
+      hf_config = AutoConfig.from_pretrained(
+         self.model_args.model_name_or_path,
+         trust_remote_code=True
+      )
+      return TrainMonitor(self.training_args, hf_config)
 
    def _build_checkpointer(self):
       logger.info_rank0("> Building Checkpointer...")

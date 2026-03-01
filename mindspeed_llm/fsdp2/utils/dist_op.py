@@ -1,11 +1,11 @@
 import torch
 import torch.distributed as dist
-from typing import Union, Tuple, List
+from typing import Union, Tuple, List, Literal
 
 def all_reduce(
     inputs: Union[float, torch.Tensor, Tuple, List], 
-    group: dist.ProcessGroup = None, 
-    average: bool = True
+    op: Literal["mean", "sum", "max", "min"] = "mean",
+    group: dist.ProcessGroup = None
 ) -> Union[float, Tuple[float, ...]]:
     """
     Performs an All-Reduce operation on input scalars or tensors (averaging by default).
@@ -37,6 +37,13 @@ def all_reduce(
             t = torch.tensor(item, device=device, dtype=torch.float32)
         packed_tensors.append(t)
 
+    reduce_ops = {
+        "mean": dist.ReduceOp.SUM,
+        "sum": dist.ReduceOp.SUM,
+        "max": dist.ReduceOp.MAX,
+        "min": dist.ReduceOp.MIN,
+    }
+
     # 3. Execute All-Reduce
     # If no group is specified, default to the global world group
     if group is None:
@@ -46,9 +53,14 @@ def all_reduce(
 
     # For efficiency, we could stack tensors for a single communication call and then unbind.
     # However, assuming inputs are few (usually just loss and grad_norm), we loop for code clarity.
+    
+    # Validate op parameter before using it
+    if op not in reduce_ops:
+        raise ValueError(f"Invalid op value: '{op}'. Must be one of: {list(reduce_ops.keys())}")
+    
     for t in packed_tensors:
-        dist.all_reduce(t, op=dist.ReduceOp.SUM, group=group)
-        if average:
+        dist.all_reduce(t, op=reduce_ops[op], group=group)
+        if op == "mean":
             t /= group_size
 
     # 4. Convert back to Python scalars

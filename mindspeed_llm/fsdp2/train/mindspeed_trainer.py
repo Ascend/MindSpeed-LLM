@@ -4,19 +4,21 @@ import torch.distributed as dist
 import torch.nn.functional as F
 import time
 import contextlib
-from typing import Optional, Tuple, Dict, Any, Union
+from typing import Optional, Tuple, Dict, Any, Union, List
 
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 
 from mindspeed_llm.fsdp2.distributed.parallel_state import ParallelState
-from mindspeed_llm.fsdp2.utils.dist_op import all_reduce
-from mindspeed_llm.fsdp2.data.data_factory import DataManager
 from mindspeed_llm.fsdp2.distributed.clip_grad_norm import clip_grad_norm
-from mindspeed_llm.fsdp2.utils.logging import get_logger
-from mindspeed_llm.fsdp2.checkpoint.utils import empty_cache, dcp_to_torch_state_dict, cleanup_old_checkpoints
-from mindspeed_llm.fsdp2.utils.profiler import ProfilerConfig, ProfilerManager
+from mindspeed_llm.fsdp2.data.data_factory import DataManager
 from mindspeed_llm.fsdp2.data.processor.processor_utils import IGNORE_INDEX
 from mindspeed_llm.fsdp2.features.chunkloss import chunk_loss, calculate_lm_loss
+from mindspeed_llm.fsdp2.checkpoint.utils import empty_cache, dcp_to_torch_state_dict, cleanup_old_checkpoints
+from mindspeed_llm.fsdp2.utils.dist_op import all_reduce
+from mindspeed_llm.fsdp2.utils.logging import get_logger
+from mindspeed_llm.fsdp2.utils.train_monitor import TrainMonitor
+from mindspeed_llm.fsdp2.utils.profiler import ProfilerConfig, ProfilerManager
+
 
 logger = get_logger(__name__)
 
@@ -35,7 +37,8 @@ class Trainer:
         args,  # TrainingArguments
         parallel_args,
         ckpt_manager,
-        tokenizer=None, 
+        monitor: TrainMonitor,
+        tokenizer=None,
     ):
         self.model = model
         self.optimizer = optimizer
@@ -44,14 +47,16 @@ class Trainer:
         self.args = args
         self.parallel_args = parallel_args,
         self.ckpt_manager = ckpt_manager
+        self.train_monitor = monitor
         self.tokenizer = tokenizer 
 
         # Training state
+        self.epoch = 0
         self.global_step = 0
-        self.epoch = 0.0
+        self._last_logged_step = 0
         self._total_loss_scalar = 0.0
-        self._logging_loss_scalar = 0.0
-        self._globalstep_last_logged = 0
+        self._last_logged_loss_scalar = 0.0
+        self.batch_seqlens = []
         
         # Timing state
         self._step_start_time = None
@@ -120,7 +125,7 @@ class Trainer:
             if extra_state:
                 # Restore training step counters
                 self.global_step = state["extra_state"]["global_step"]
-                self._globalstep_last_logged = state['extra_state']['_globalstep_last_logged']
+                self._last_logged_step = state['extra_state']['_globalstep_last_logged']
 
                 # Calculate completed epochs and steps within current epoch based on global step
                 epochs_trained = int(self.global_step // total_updates_per_epoch)
@@ -187,7 +192,7 @@ class Trainer:
                 num_batches = args.gradient_accumulation_steps if update_step != (total_updates - 1) else remainder
 
                 # [Helper] Fetch N samples from the iterator and calculate valid token count
-                batch_samples, num_items_in_batch = self.get_batch_samples_func()(ps, epoch_iterator, num_batches)
+                batch_samples, batch_seqlens, num_items_in_batch = self.get_batch_samples_func()(ps, epoch_iterator, num_batches)
                 # Initialize accumulated loss for the current step
                 current_step_loss = 0.0
 
@@ -246,10 +251,21 @@ class Trainer:
                 )
 
                 self._total_loss_scalar += reduced_loss
-
+                self.batch_seqlens.extend(batch_seqlens)
+                
                 # 4. Logging
                 if self.global_step % args.logging_steps == 0:
-                    self._log_metrics(grad_norm=reduced_grad_norm, batch_size=global_batch_size)
+                    _, record_info = self.train_monitor.step(
+                        self.epoch, self.lr_scheduler, global_batch_size,
+                        reduced_grad_norm, self.batch_seqlens,
+                        self._step_start_time, total_steps, self.global_step,
+                        self._last_logged_step, self._total_loss_scalar,
+                        self._last_logged_loss_scalar)
+                    # update record
+                    self._step_start_time = record_info['time']
+                    self._last_logged_loss_scalar = record_info['logged_loss']
+                    self._last_logged_step = record_info['logged_step']
+                    self.batch_seqlens.clear()
 
                 # 5. Saving
                 if args.save_steps > 0 and self.global_step % args.save_steps == 0:
@@ -263,8 +279,9 @@ class Trainer:
                             "optimizer": self.optimizer,
                             "extra_state": {
                                 "global_step": self.global_step,
-                                "_globalstep_last_logged": self._globalstep_last_logged,
+                                "_last_logged_step": self._last_logged_step,
                                 "lr_scheduler": self.lr_scheduler.state_dict(),
+                                "train_metric": self.train_monitor.state_dict(),
                                 "torch_rng_state": torch.get_rng_state(),
                             },
                         }
@@ -289,8 +306,9 @@ class Trainer:
                         "optimizer": self.optimizer,
                         "extra_state": {
                             "global_step": self.global_step,
-                            "_globalstep_last_logged": self._globalstep_last_logged,
+                            "_last_logged_step": self._last_logged_step,
                             "lr_scheduler": self.lr_scheduler.state_dict(),
+                            "train_metric": self.train_monitor.state_dict(),
                             "torch_rng_state": torch.get_rng_state(),
                         },
                     }
@@ -453,11 +471,11 @@ class Trainer:
 
 
 
-    def _get_batch_samples_ulysses(self,parallel_state, epoch_iterator, num_batches):
+    def _get_batch_samples_ulysses(self, parallel_state, epoch_iterator, num_batches):
 
         cp_size = parallel_state.get_group_size("cp")
         cp_rank = parallel_state.get_rank("cp")
-        batch, num_items_in_batch = self._get_batch_samples(parallel_state, epoch_iterator, num_batches)
+        batch, batch_seqlens, num_items_in_batch = self._get_batch_samples(parallel_state, epoch_iterator, num_batches)
 
         for sample in batch:
 
@@ -494,11 +512,31 @@ class Trainer:
                         val_sliced = val_sliced.contiguous()
                     sample[key] = val_sliced.npu(non_blocking=True)
 
-        return batch, num_items_in_batch
+        return batch, batch_seqlens, num_items_in_batch
 
     def _get_batch_samples(self, parallel_state, epoch_iterator, num_batches):
-        """Fetch num_batches samples from the iterator at once."""
+        """
+        Fetch num_batches samples from the iterator at once.
+        
+        Args:
+            parallel_state: Parallel state object (unused, kept for interface consistency)
+            epoch_iterator: Data iterator for the current epoch
+            num_batches: Number of batches to fetch
+        
+        Returns:
+            tuple: Three values with distinct purposes:
+            
+            batch_samples (List[Dict[str, torch.Tensor]]):
+                Raw input data for model forward pass. Example: [{"input_ids": tensor1, "labels": tensor1_labels, ...}, ...]
+            
+            batch_seqlens (List[int]):
+                Sequence length of each sample across all fetched batches. Example: [128, 256, 64, 192]
+            
+            num_items_in_batch (int):
+                Total valid tokens across all fetched batches (distributed aggregation). Example: 640
+        """
         batch_samples = []
+        batch_seqlens = []
         for _ in range(num_batches):
             try:
                 data = next(epoch_iterator)
@@ -509,13 +547,20 @@ class Trainer:
                 if "position_ids" in data:
                     data["position_ids"] = data["position_ids"].npu(non_blocking=True)
                 batch_samples.append(data)
-
+                
+                # Calculate sequence lengths for each sample in the current batch
+                sample_seqlens = []
+                if "attention_mask" in data:
+                    sample_seqlens = data["attention_mask"].sum(-1).tolist()
+                elif "labels" in data:
+                    sample_seqlens = (data["labels"].ne(-100)).sum(-1).tolist()
+                batch_seqlens.extend(sample_seqlens)
             except StopIteration:
                 break
 
-        # Calculate valid tokens for the gathered batches
+        # Calculate total valid tokens across all fetched batches (distributed aggregation)
         num_items_in_batch = self._get_num_items_in_batch(batch_samples)
-        return batch_samples, num_items_in_batch
+        return batch_samples, batch_seqlens, num_items_in_batch
 
     def _get_num_items_in_batch(self, batch_samples):
         """
@@ -553,64 +598,6 @@ class Trainer:
                 num_items_in_batch = num_items_in_batch // pc
 
         return num_items_in_batch
-
-    def _log_metrics(self, grad_norm=None, batch_size=0):
-        """
-        Logs training metrics:
-        1. Calculate average loss since last log.
-        2. Calculate throughput (elapsed time).
-        3. Log current Grad Norm.
-        """
-        # Calculate step difference
-        step_diff = self.global_step - self._globalstep_last_logged
-        if step_diff == 0: return
-
-        # 1. Calculate average interval loss
-        # (Total Loss - Total Loss at last log) / steps elapsed
-        avg_loss = (self._total_loss_scalar - self._logging_loss_scalar) / step_diff
-        
-        # 2. Update logging cursor
-        self._logging_loss_scalar = self._total_loss_scalar
-        self._globalstep_last_logged = self.global_step
-
-        # 3. Calculate timing and throughput
-        current_time = time.time()
-        if self._step_start_time is None:
-            elapsed_time_seconds = 0.0
-        else:
-            elapsed_time_seconds = current_time - self._step_start_time
-        
-        # Reset start time for next interval
-        self._step_start_time = current_time
-
-        # Avoid division by zero
-        elapsed_time_per_iteration_ms = (elapsed_time_seconds / step_diff) * 1000
-        throughput = (batch_size / (elapsed_time_seconds / step_diff)) if elapsed_time_seconds > 0 else 0.0
-
-        # 4. Assemble metrics
-        metrics = {
-            "loss": avg_loss,
-            "lr": self.lr_scheduler.get_last_lr()[0],
-            "epoch": self.epoch,
-            "global_step": self.global_step
-        }
-        
-        if grad_norm is not None:
-            metrics["grad_norm"] = grad_norm
-
-        # 5. Log (Rank 0 only)
-        # Note: consumed samples is estimated
-        consumed_samples = self.global_step * batch_size
-        logger.info_rank0(
-            f"iteration: {self.global_step} | "
-            f"consumed samples: {consumed_samples} | "
-            f"elapsed time per iteration (ms): {elapsed_time_per_iteration_ms:.1f} | "
-            f"throughput(samples/s): {throughput:.1f} | "
-            f"learning rate: {metrics['lr']:.6E} | "
-            f"global batch size: {batch_size:4d} | "
-            f"lm loss: {avg_loss:.4f} | "
-            f"grad norm: {grad_norm:.4f}"
-        )
 
     def _get_fsdp_root(self):
         """

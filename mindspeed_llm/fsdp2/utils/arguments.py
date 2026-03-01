@@ -536,7 +536,14 @@ class TrainingArguments:
         default=1,
         metadata={"help": "Log every X updates steps."}
     )
-
+    log_throughput: bool = field(
+        default=False,
+        metadata={"help": "Whether to enable real-time logging of key throughput metrics, including tokens per second (tokens/s) and model FLOPs utilization (MFU) to quantify training/inference efficiency."},
+    )
+    log_cpu_memory: bool = field(
+        default=False,
+        metadata={"help": "Whether to enable logging of memory utilization statistics for CPU devices."},
+    )
     stage: Literal["pt", "sft"] = field(
         default="sft",
         metadata={"help": "Which stage will be performed in training."},
