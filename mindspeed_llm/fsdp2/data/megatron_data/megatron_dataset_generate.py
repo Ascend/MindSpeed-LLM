@@ -267,7 +267,8 @@ def core_gpt_dataset_config_from_args(model_args, data_args, training_args):
 
 
 def get_global_batch_size(training_args):
-    world_size = dist.get_world_size() if dist.is_initialized() else 1
+    ps = ParallelState()
+    world_size = ps.get_group_size("dp_fsdp") if dist.is_initialized() else 1
     global_batch_size = training_args.per_device_train_batch_size * training_args.gradient_accumulation_steps * world_size
     return global_batch_size
 

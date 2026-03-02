@@ -15,6 +15,31 @@ MODEL_CP_MAPPING = {
           ("transformers.loss.loss_utils.fixed_cross_entropy",
            "mindspeed_llm.fsdp2.distributed.context_parallel.ulysses_cp_function.fixed_cross_entropy_with_cp"),
         ],
+    "qwen3_moe":
+        [ ("transformers.models.qwen3_moe.modeling_qwen3_moe.eager_attention_forward",
+          "mindspeed_llm.fsdp2.distributed.context_parallel.ulysses_cp_function.flash_attention_forward_fa_gqk"),
+         ("transformers.loss.loss_utils.fixed_cross_entropy",
+          "mindspeed_llm.fsdp2.distributed.context_parallel.ulysses_cp_function.fixed_cross_entropy_with_cp")],
+    "qwen2":
+        [("transformers.models.qwen2.modeling_qwen2.eager_attention_forward",
+          "mindspeed_llm.fsdp2.distributed.context_parallel.ulysses_cp_function.flash_attention_forward_fa_gqk"),
+         ("transformers.loss.loss_utils.fixed_cross_entropy",
+          "mindspeed_llm.fsdp2.distributed.context_parallel.ulysses_cp_function.fixed_cross_entropy_with_cp"
+          )
+         ],    
+    "deepseek_v3":
+        [("transformers.models.deepseek_v3.modeling_deepseek_v3.eager_attention_forward",
+          "mindspeed_llm.fsdp2.distributed.context_parallel.ulysses_cp_function.flash_attention_forward_fa_gqk"),
+         ("transformers.loss.loss_utils.fixed_cross_entropy",
+          "mindspeed_llm.fsdp2.distributed.context_parallel.ulysses_cp_function.fixed_cross_entropy_with_cp"
+          )
+         ],   
+    "glm_moe_dsa":
+        [("transformers.models.glm_moe_dsa.modeling_glm_moe_dsa.eager_attention_forward",
+          "mindspeed_llm.fsdp2.distributed.context_parallel.ulysses_cp_function.flash_attention_forward_fa_gqk"),
+         ("transformers.loss.loss_utils.fixed_cross_entropy",
+          "mindspeed_llm.fsdp2.distributed.context_parallel.ulysses_cp_function.fixed_cross_entropy_with_cp")
+         ]
 
     }
 

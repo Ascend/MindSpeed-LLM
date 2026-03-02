@@ -219,8 +219,8 @@ class MegatronDataManager(DataManager):
                 total_samples=len(dataset),
                 consumed_samples=0,
                 micro_batch_size=training_args.per_device_train_batch_size,
-                data_parallel_rank=ps.get_fsdp_rank(),
-                data_parallel_size=ps.get_fsdp_group_size())
+                data_parallel_rank=ps.get_rank("dp_fsdp"),
+                data_parallel_size=ps.get_group_size("dp_fsdp"))
         else:
             raise Exception('{} dataloader type is not supported.'.format(
                     data_args.dataloader_type))

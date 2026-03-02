@@ -7,11 +7,15 @@ from typing import Optional, Dict, Tuple, Set
 import torch
 import torch.nn as nn
 from transformers import AutoConfig, AutoModelForCausalLM
-from transformers.modeling_utils import no_init_weights
+try:
+    from transformers.modeling_utils import no_init_weights
+except ImportError:
+    # adapt  for transformers 5.x.x
+    from transformers.initialization import no_init_weights
 
 from mindspeed_llm.fsdp2.utils.logging import get_logger
 from mindspeed_llm.fsdp2.utils.device import get_device_type
-
+from mindspeed_llm.fsdp2.utils.global_vars import get_args
 logger = get_logger(__name__)
 
 
@@ -81,7 +85,10 @@ class ModelLoader:
         logger.info_rank0(f"> Loading config from {self.model_path}...")
         self.hf_config = AutoConfig.from_pretrained(
             self.model_path,
-            trust_remote_code=self.trust_remote_code
+            trust_remote_code=self.trust_remote_code,
+            # Context parallelism requires uniformly applying a patch to the attention component,
+            # which is unified here into the `eager` implementation part
+            attn_implementation="eager" if get_args().cp_size >1 else None,
         )
         return self.hf_config
     

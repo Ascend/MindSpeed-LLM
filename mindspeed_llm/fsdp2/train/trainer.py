@@ -420,7 +420,7 @@ class Trainer:
 
         cp_size = parallel_state.get_group_size("cp")
         cp_rank = parallel_state.get_rank("cp")
-        batch, num_items_in_batch = self._get_batch_samples(parallel_state, epoch_iterator, num_batches)
+        batch, batch_seqlens, num_items_in_batch = self._get_batch_samples(parallel_state, epoch_iterator, num_batches)
 
         for sample in batch:
 
@@ -594,13 +594,25 @@ class Trainer:
         args = self.args
 
         shift_labels = labels
-        shift_labels = shift_labels.view(-1)
+        shift_labels = shift_labels.reshape(-1)
         logits = logits.view(-1, logits.shape[-1])
 
-        if args.calculate_per_token_loss:
-            loss = F.cross_entropy(logits, shift_labels, reduction='none', ignore_index=ignore_index)
+        ps = ParallelState()
+
+        if ps.get_group_size("cp") >1 :
+            loss = F.cross_entropy(logits, shift_labels,reduction='sum',ignore_index=ignore_index)
+
+            num_items_in_batch = (labels.ne(ignore_index)).sum()
+            dist.all_reduce(num_items_in_batch, op=dist.ReduceOp.SUM, group=ps.get_group("cp"))
+            dist.all_reduce(loss, op=dist.ReduceOp.SUM, group=ps.get_group("cp"))
+
+            loss = loss / num_items_in_batch.item()
         else:
-            loss = F.cross_entropy(logits, shift_labels, ignore_index=ignore_index)
+
+            if args.calculate_per_token_loss:
+                loss = F.cross_entropy(logits, shift_labels, reduction='none', ignore_index=ignore_index)
+            else:
+                loss = F.cross_entropy(logits, shift_labels, ignore_index=ignore_index)
 
         return loss
 

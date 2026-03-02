@@ -97,3 +97,52 @@ def flash_attention_forward_fa(
 
     return attn_output, None
 
+
+
+def flash_attention_forward_fa_gqk(
+    module: torch.nn.Module,
+    query: torch.Tensor,
+    key: torch.Tensor,
+    value: torch.Tensor,
+    attention_mask: Optional[torch.Tensor],
+    dropout: float = 0.0,
+    scaling: Optional[float] = None,
+    is_causal: Optional[bool] = None,
+    **kwargs,
+)-> tuple[torch.Tensor, None]:
+    ps = ParallelState()
+
+
+    num_groups = int(module.config.num_attention_heads / module.config.num_key_value_heads)
+    if num_groups > 1:
+        key = torch.repeat_interleave(key, dim=1, repeats=num_groups)
+        value = torch.repeat_interleave(value, dim=1, repeats=num_groups)
+    
+    if ps.context_parallel_size > 1:
+        query = gather_seq_scatter_heads(query, seq_dim=2, head_dim=1,
+                                         gather_size=query.shape[2] * ps.context_parallel_size)
+        key = gather_seq_scatter_heads(key, seq_dim=2, head_dim=1, gather_size=key.shape[2] * ps.context_parallel_size)
+        value = gather_seq_scatter_heads(value, seq_dim=2, head_dim=1,
+                                         gather_size=value.shape[2] * ps.context_parallel_size)
+    
+    input_layout = "BNSD"
+    
+    new_mask = torch.ones((2048, 2048), device=torch.npu.current_device(), dtype=torch.bool)
+    atten_mask = torch.triu(new_mask, diagonal=1)
+    attn_output = torch_npu.npu_fusion_attention(
+        query,
+        key,
+        value,
+        head_num=query.shape[1],
+        input_layout=input_layout,
+        atten_mask=atten_mask,
+        keep_prob=1 - dropout,
+        scale=scaling,
+        sparse_mode=2
+    )[0]
+    
+    if ps.context_parallel_size > 1:
+        attn_output = gather_heads_scatter_seq(attn_output, head_dim=1, seq_dim=2,
+                                               gather_size=module.config.num_attention_heads)
+    attn_output = attn_output.transpose(1, 2).contiguous()
+    return attn_output, None

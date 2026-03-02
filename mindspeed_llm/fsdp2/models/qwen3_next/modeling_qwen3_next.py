@@ -47,7 +47,12 @@ from transformers.models.qwen3_next.configuration_qwen3_next import Qwen3NextCon
 from transformers.processing_utils import Unpack
 from transformers.utils import TransformersKwargs, auto_docstring, can_return_tuple, logging
 from transformers.utils.deprecation import deprecate_kwarg
-from transformers.utils.generic import OutputRecorder, check_model_inputs
+try:
+    from transformers.utils.generic import OutputRecorder, check_model_inputs
+except ImportError:
+    # adapt for transformers 5.x
+    from transformers.utils.output_capturing import OutputRecorder, capture_outputs
+    check_model_inputs = capture_outputs
 from transformers.utils.import_utils import (
     is_causal_conv1d_available,
     is_flash_linear_attention_available,
