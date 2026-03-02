@@ -48,16 +48,18 @@ class Trainer:
         self.parallel_args = parallel_args,
         self.ckpt_manager = ckpt_manager
         self.train_monitor = monitor
-        self.tokenizer = tokenizer 
+        self.tokenizer = tokenizer
 
         # Training state
         self.epoch = 0
         self.global_step = 0
         self._last_logged_step = 0
         self._total_loss_scalar = 0.0
+        self._logging_loss_scalar = 0.0
+        self._global_step_last_logged = 0
         self._last_logged_loss_scalar = 0.0
         self.batch_seqlens = []
-        
+
         # Timing state
         self._step_start_time = None
 
@@ -79,6 +81,47 @@ class Trainer:
             current_rank=current_rank,
         )
         self.profiler_manager = ProfilerManager(prof_config)
+
+    @staticmethod
+    def _build_chunk_loss(labels, ignore_index=-100, chunk_size=1024):
+
+        # For supervised finetuning stages (SFT), labels must be shifted by one position, for pretraining, labels already include shift.
+
+        shift_labels = labels
+
+        # Create a mask to identify valid tokens
+        loss_mask = shift_labels != ignore_index
+
+        # Default: normalize loss by total number of valid tokens in the batch.
+        alpha = loss_mask.sum()  # scalar
+        reduction = "sum"
+
+        # Split shifted labels into chunks along the sequence dimension for memory-efficient processing.
+        chunk_labels = torch.split(shift_labels, chunk_size, dim=1)
+
+        # Prepare keyword arguments for each chunk to be passed to the chunked loss function.
+        loss_ctx_kwargs = [
+            {
+                "shift_labels": chunk_labels[i],
+                "ignore_index": ignore_index,
+                "reduction": reduction,
+                "alpha": alpha,
+            }
+            for i in range(len(chunk_labels))
+        ]
+
+        # Return a closure that computes the chunked language modeling loss using the prepared config.
+        def loss_ctx(hidden_states, head_weight, head_bias):
+            return chunk_loss(
+                hidden_states,
+                head_weight,
+                head_bias,
+                loss_forward=calculate_lm_loss,
+                loss_kwargs_chunks=loss_ctx_kwargs,
+                chunk_size=chunk_size
+            )
+
+        return loss_ctx, loss_mask
 
     def train(self, resume_from_checkpoint: Optional[str] = None):
         """
@@ -125,7 +168,8 @@ class Trainer:
             if extra_state:
                 # Restore training step counters
                 self.global_step = state["extra_state"]["global_step"]
-                self._last_logged_step = state['extra_state']['_globalstep_last_logged']
+                self._global_step_last_logged = state['extra_state']['_global_step_last_logged']
+                self._last_logged_step = state['extra_state']['_global_step_last_logged']
 
                 # Calculate completed epochs and steps within current epoch based on global step
                 epochs_trained = int(self.global_step // total_updates_per_epoch)
@@ -164,7 +208,7 @@ class Trainer:
             # --- Gradient Accumulation Loop ---
             # Handle the remainder batch at the end of an epoch
             remainder = steps_in_epoch % args.gradient_accumulation_steps
-            if remainder == 0: 
+            if remainder == 0:
                 remainder = args.gradient_accumulation_steps
 
             total_updates = total_updates_per_epoch
@@ -235,24 +279,23 @@ class Trainer:
 
                 self.global_step += 1
 
-                # PROFILING HOOK 
+                # PROFILING HOOK
                 if self.profiler_manager.profiler is not None:
                     self.profiler_manager.step()
-                # HOOK END 
-
+                # HOOK END
 
                 # 3. Distributed Aggregation of Loss and GradNorm
                 # Only perform this when global_step updates.
                 # current_step_loss is sum(micro_batches), conceptually it represents the loss of the mini-batch.
-                
+
                 reduced_loss, reduced_grad_norm = all_reduce(
-                    (current_step_loss, grad_norm), 
+                    (current_step_loss, grad_norm),
                     group=reduce_group
                 )
 
                 self._total_loss_scalar += reduced_loss
                 self.batch_seqlens.extend(batch_seqlens)
-                
+
                 # 4. Logging
                 if self.global_step % args.logging_steps == 0:
                     _, record_info = self.train_monitor.step(
@@ -279,6 +322,7 @@ class Trainer:
                             "optimizer": self.optimizer,
                             "extra_state": {
                                 "global_step": self.global_step,
+                                "_global_step_last_logged": self._global_step_last_logged,
                                 "_last_logged_step": self._last_logged_step,
                                 "lr_scheduler": self.lr_scheduler.state_dict(),
                                 "train_metric": self.train_monitor.state_dict(),
@@ -306,6 +350,7 @@ class Trainer:
                         "optimizer": self.optimizer,
                         "extra_state": {
                             "global_step": self.global_step,
+                            "_global_step_last_logged": self._global_step_last_logged,
                             "_last_logged_step": self._last_logged_step,
                             "lr_scheduler": self.lr_scheduler.state_dict(),
                             "train_metric": self.train_monitor.state_dict(),
@@ -350,10 +395,10 @@ class Trainer:
 
         # 4. Multi-device parallelism: Average loss across devices (if not using FSDP internal handling)
         if torch.cuda.device_count() > 1:
-             # Note: Standard FSDP usually handles loss averaging via the reduction of gradients or explicit loss reduction.
-             # If using DDP logic manually without DDP wrapper, this might be needed. 
-             # For FSDP2, loss is usually local until aggregation.
-             loss = loss.mean()
+            # Note: Standard FSDP usually handles loss averaging via the reduction of gradients or explicit loss reduction.
+            # If using DDP logic manually without DDP wrapper, this might be needed.
+            # For FSDP2, loss is usually local until aggregation.
+            loss = loss.mean()
 
         # 5. Backward pass
         loss.backward()
@@ -361,68 +406,144 @@ class Trainer:
         # 6. Return detached loss
         return loss.detach()
 
-    def _compute_language_model_pretrain_loss(self, logits, labels, ignore_index: int = -100, **kwargs) -> torch.Tensor:
-        args = self.args
-
-        shift_labels = labels
-        shift_labels = shift_labels.view(-1)
-        logits = logits.view(-1, logits.shape[-1])
-
-        if args.calculate_per_token_loss:
-            loss = F.cross_entropy(logits, shift_labels, reduction='none', ignore_index=ignore_index)
-        else:
-            loss = F.cross_entropy(logits, shift_labels, ignore_index=ignore_index)
-
-        return loss
-
     def get_batch_samples_func(self):
 
         if self.parallel_args[0].cp_size > 1:
             if self.parallel_args[0].cp_type == "ulysses":
                 return self._get_batch_samples_ulysses
+            else:
+                raise ValueError(f"Unsupported cp_type: '{self.parallel_args[0].cp_type}' when cp_size > 1.")
         else:
             return self._get_batch_samples
 
-    @staticmethod
-    def _build_chunk_loss(labels, ignore_index=-100, chunk_size=1024):
+    def _get_batch_samples_ulysses(self, parallel_state, epoch_iterator, num_batches):
 
-        # For supervised finetuning stages (SFT), labels must be shifted by one position, for pretraining, labels already include shift.
+        cp_size = parallel_state.get_group_size("cp")
+        cp_rank = parallel_state.get_rank("cp")
+        batch, num_items_in_batch = self._get_batch_samples(parallel_state, epoch_iterator, num_batches)
 
-        shift_labels = labels
+        for sample in batch:
 
-        # Create a mask to identify valid tokens
-        loss_mask = shift_labels != ignore_index
+            labels = torch.nn.functional.pad(sample['labels'], (0, 1), value=IGNORE_INDEX)
+            shift_labels = labels[..., 1:]
+            sample['shift_labels'] = shift_labels
+            if "position_ids" not in sample:
+                position_ids = torch.arange(0, shift_labels.shape[1], device=shift_labels.device).unsqueeze(0)
+                sample['position_ids'] = position_ids
 
-        # Default: normalize loss by total number of valid tokens in the batch.
-        alpha = loss_mask.sum()  # scalar
-        reduction = "sum"
+            for key, val in sample.items():
+                if val is not None:
+                    seq_dim = 1
+                    # 2. Calculate total sequence length
+                    seq_total_len = val.size(seq_dim)
 
-        # Split shifted labels into chunks along the sequence dimension for memory-efficient processing.
-        chunk_labels = torch.split(shift_labels, chunk_size, dim=1)
+                    # 3. Calculate the sequence length each rank is responsible for (handle indivisible cases)
+                    chunk_size = seq_total_len // cp_size
+                    remainder = seq_total_len % cp_size  # Remainder, the first 'remainder' ranks take 1 more token each
 
-        # Prepare keyword arguments for each chunk to be passed to the chunked loss function.
-        loss_ctx_kwargs = [
-            {
-                "shift_labels": chunk_labels[i],
-                "ignore_index": ignore_index,
-                "reduction": reduction,
-                "alpha": alpha,
-            }
-            for i in range(len(chunk_labels))
-        ]
+                    # 4. Calculate the start and end indices of the slice for current rank (core logic of Ring slicing)
+                    if cp_rank < remainder:
+                        # For the first 'remainder' ranks, each rank is responsible for (chunk_size + 1) tokens
+                        start_idx = cp_rank * (chunk_size + 1)
+                        end_idx = start_idx + (chunk_size + 1)
+                    else:
+                        # For the remaining ranks, each rank is responsible for 'chunk_size' tokens
+                        start_idx = remainder * (chunk_size + 1) + (cp_rank - remainder) * chunk_size
+                        end_idx = start_idx + chunk_size
+                    # 5. Perform slicing: retain only the sequence part responsible for current rank
+                    val_sliced = val.narrow(seq_dim, start_idx, end_idx - start_idx)
+                    # 6. Update the value in sample with the sliced tensor
+                    if key == 'shift_labels':
+                        val_sliced = val_sliced.contiguous()
+                    sample[key] = val_sliced.npu(non_blocking=True)
 
-        # Return a closure that computes the chunked language modeling loss using the prepared config.
-        def loss_ctx(hidden_states, head_weight, head_bias):
-            return chunk_loss(
-                hidden_states,
-                head_weight,
-                head_bias,
-                loss_forward=calculate_lm_loss,
-                loss_kwargs_chunks=loss_ctx_kwargs,
-                chunk_size=chunk_size
-            )
+        return batch, batch_seqlens, num_items_in_batch
 
-        return loss_ctx, loss_mask
+    def _get_batch_samples(self, parallel_state, epoch_iterator, num_batches):
+        """
+        Fetch num_batches samples from the iterator at once.
+
+        Args:
+            parallel_state: Parallel state object (unused, kept for interface consistency)
+            epoch_iterator: Data iterator for the current epoch
+            num_batches: Number of batches to fetch
+
+        Returns:
+            tuple: Three values with distinct purposes:
+
+            batch_samples (List[Dict[str, torch.Tensor]]):
+                Raw input data for model forward pass. Example: [{"input_ids": tensor1, "labels": tensor1_labels, ...}, ...]
+
+            batch_seqlens (List[int]):
+                Sequence length of each sample across all fetched batches. Example: [128, 256, 64, 192]
+
+            num_items_in_batch (int):
+                Total valid tokens across all fetched batches (distributed aggregation). Example: 640
+        """
+        batch_samples = []
+        batch_seqlens = []
+        for _ in range(num_batches):
+            try:
+                data = next(epoch_iterator)
+                data["input_ids"] = data["input_ids"].npu(non_blocking=True)
+                data["labels"] = data["labels"].npu(non_blocking=True)
+                if "attention_mask" in data:
+                    data["attention_mask"] = data["attention_mask"].npu(non_blocking=True)
+                if "position_ids" in data:
+                    data["position_ids"] = data["position_ids"].npu(non_blocking=True)
+                batch_samples.append(data)
+
+                # Calculate sequence lengths for each sample in the current batch
+                sample_seqlens = []
+                if "attention_mask" in data:
+                    sample_seqlens = data["attention_mask"].sum(-1).tolist()
+                elif "labels" in data:
+                    sample_seqlens = (data["labels"].ne(-100)).sum(-1).tolist()
+                batch_seqlens.extend(sample_seqlens)
+            except StopIteration:
+                break
+
+        # Calculate total valid tokens across all fetched batches (distributed aggregation)
+        num_items_in_batch = self._get_num_items_in_batch(batch_samples)
+        return batch_samples, batch_seqlens, num_items_in_batch
+
+    def _get_num_items_in_batch(self, batch_samples):
+        """
+        Calculate the number of valid tokens in a batch (i.e., labels != -100).
+        Aggregates this count across all ranks.
+        """
+        num_items_in_batch = None
+        device = torch.npu.current_device()
+        ps = ParallelState()
+
+        # Check if 'labels' exist in the data
+        count_num_items_in_batch = (
+                len(batch_samples) > 0
+                and "labels" in batch_samples[0]
+        )
+
+        if count_num_items_in_batch:
+            try:
+                # Local sum of valid tokens
+                num_items_in_batch = sum((batch["labels"].ne(-100)).sum().item() for batch in batch_samples)
+            except (TypeError, AttributeError):
+                pass
+
+        if num_items_in_batch is not None:
+            # Distributed Aggregation
+            if dist.is_initialized():
+                num_items_tensor = torch.tensor(num_items_in_batch, device=device, dtype=torch.int64)
+                # Note: Using all_reduce(SUM) is often more efficient than all_gather + sum
+                dist.all_reduce(num_items_tensor, op=dist.ReduceOp.SUM, group=ps.get_group("dp_fsdp"))
+                num_items_in_batch = num_items_tensor.item()
+
+            # Adjustment for non-data-parallel ranks (e.g., pipeline parallelism)
+            pc = getattr(self.args, "non_data_parallel_size", None)
+            if pc:
+                num_items_in_batch = num_items_in_batch // pc
+
+        return num_items_in_batch
+
 
     def _compute_loss(self, inputs, return_outputs=False, num_items_in_batch=None):
         """
@@ -469,135 +590,77 @@ class Trainer:
         # 5. Return loss (or tuple of loss + outputs)
         return (loss, outputs) if return_outputs else loss
 
+    def _compute_language_model_pretrain_loss(self, logits, labels, ignore_index: int = -100, **kwargs) -> torch.Tensor:
+        args = self.args
 
+        shift_labels = labels
+        shift_labels = shift_labels.view(-1)
+        logits = logits.view(-1, logits.shape[-1])
 
-    def _get_batch_samples_ulysses(self, parallel_state, epoch_iterator, num_batches):
+        if args.calculate_per_token_loss:
+            loss = F.cross_entropy(logits, shift_labels, reduction='none', ignore_index=ignore_index)
+        else:
+            loss = F.cross_entropy(logits, shift_labels, ignore_index=ignore_index)
 
-        cp_size = parallel_state.get_group_size("cp")
-        cp_rank = parallel_state.get_rank("cp")
-        batch, batch_seqlens, num_items_in_batch = self._get_batch_samples(parallel_state, epoch_iterator, num_batches)
+        return loss
 
-        for sample in batch:
-
-            labels = torch.nn.functional.pad(sample['labels'], (0, 1), value=IGNORE_INDEX)
-            shift_labels = labels[..., 1:]
-            sample['shift_labels'] = shift_labels
-            if "position_ids" not in sample:
-                position_ids = torch.arange(0, shift_labels.shape[1], device=shift_labels.device).unsqueeze(0)
-                sample['position_ids'] = position_ids
-
-            for key, val in sample.items():
-                if val is not None:
-                    seq_dim = 1
-                    # 2. Calculate total sequence length
-                    seq_total_len = val.size(seq_dim)
-
-                    # 3. Calculate the sequence length each rank is responsible for (handle indivisible cases)
-                    chunk_size = seq_total_len // cp_size
-                    remainder = seq_total_len % cp_size  # Remainder, the first 'remainder' ranks take 1 more token each
-
-                    # 4. Calculate the start and end indices of the slice for current rank (core logic of Ring slicing)
-                    if cp_rank < remainder:
-                        # For the first 'remainder' ranks, each rank is responsible for (chunk_size + 1) tokens
-                        start_idx = cp_rank * (chunk_size + 1)
-                        end_idx = start_idx + (chunk_size + 1)
-                    else:
-                        # For the remaining ranks, each rank is responsible for 'chunk_size' tokens
-                        start_idx = remainder * (chunk_size + 1) + (cp_rank - remainder) * chunk_size
-                        end_idx = start_idx + chunk_size
-                    # 5. Perform slicing: retain only the sequence part responsible for current rank
-                    val_sliced = val.narrow(seq_dim, start_idx, end_idx - start_idx)
-                    # 6. Update the value in sample with the sliced tensor
-                    if key == 'shift_labels':
-                        val_sliced = val_sliced.contiguous()
-                    sample[key] = val_sliced.npu(non_blocking=True)
-
-        return batch, batch_seqlens, num_items_in_batch
-
-    def _get_batch_samples(self, parallel_state, epoch_iterator, num_batches):
+    def _log_metrics(self, grad_norm=None, batch_size=0):
         """
-        Fetch num_batches samples from the iterator at once.
-        
-        Args:
-            parallel_state: Parallel state object (unused, kept for interface consistency)
-            epoch_iterator: Data iterator for the current epoch
-            num_batches: Number of batches to fetch
-        
-        Returns:
-            tuple: Three values with distinct purposes:
-            
-            batch_samples (List[Dict[str, torch.Tensor]]):
-                Raw input data for model forward pass. Example: [{"input_ids": tensor1, "labels": tensor1_labels, ...}, ...]
-            
-            batch_seqlens (List[int]):
-                Sequence length of each sample across all fetched batches. Example: [128, 256, 64, 192]
-            
-            num_items_in_batch (int):
-                Total valid tokens across all fetched batches (distributed aggregation). Example: 640
+        Logs training metrics:
+        1. Calculate average loss since last log.
+        2. Calculate throughput (elapsed time).
+        3. Log current Grad Norm.
         """
-        batch_samples = []
-        batch_seqlens = []
-        for _ in range(num_batches):
-            try:
-                data = next(epoch_iterator)
-                data["input_ids"] = data["input_ids"].npu(non_blocking=True)
-                data["labels"] = data["labels"].npu(non_blocking=True)
-                if "attention_mask" in data:
-                    data["attention_mask"] = data["attention_mask"].npu(non_blocking=True)
-                if "position_ids" in data:
-                    data["position_ids"] = data["position_ids"].npu(non_blocking=True)
-                batch_samples.append(data)
-                
-                # Calculate sequence lengths for each sample in the current batch
-                sample_seqlens = []
-                if "attention_mask" in data:
-                    sample_seqlens = data["attention_mask"].sum(-1).tolist()
-                elif "labels" in data:
-                    sample_seqlens = (data["labels"].ne(-100)).sum(-1).tolist()
-                batch_seqlens.extend(sample_seqlens)
-            except StopIteration:
-                break
+        # Calculate step difference
+        step_diff = self.global_step - self._global_step_last_logged
+        if step_diff == 0: return
 
-        # Calculate total valid tokens across all fetched batches (distributed aggregation)
-        num_items_in_batch = self._get_num_items_in_batch(batch_samples)
-        return batch_samples, batch_seqlens, num_items_in_batch
+        # 1. Calculate average interval loss
+        # (Total Loss - Total Loss at last log) / steps elapsed
+        avg_loss = (self._total_loss_scalar - self._logging_loss_scalar) / step_diff
 
-    def _get_num_items_in_batch(self, batch_samples):
-        """
-        Calculate the number of valid tokens in a batch (i.e., labels != -100).
-        Aggregates this count across all ranks.
-        """
-        num_items_in_batch = None
-        device = torch.npu.current_device()
-        ps = ParallelState()
+        # 2. Update logging cursor
+        self._logging_loss_scalar = self._total_loss_scalar
+        self._global_step_last_logged = self.global_step
 
-        # Check if 'labels' exist in the data
-        count_num_items_in_batch = (
-                len(batch_samples) > 0
-                and "labels" in batch_samples[0]
+        # 3. Calculate timing and throughput
+        current_time = time.time()
+        if self._step_start_time is None:
+            elapsed_time_seconds = 0.0
+        else:
+            elapsed_time_seconds = current_time - self._step_start_time
+
+        # Reset start time for next interval
+        self._step_start_time = current_time
+
+        # Avoid division by zero
+        elapsed_time_per_iteration_ms = (elapsed_time_seconds / step_diff) * 1000
+        throughput = (batch_size / (elapsed_time_seconds / step_diff)) if elapsed_time_seconds > 0 else 0.0
+
+        # 4. Assemble metrics
+        metrics = {
+            "loss": avg_loss,
+            "lr": self.lr_scheduler.get_last_lr()[0],
+            "epoch": self.epoch,
+            "global_step": self.global_step
+        }
+
+        if grad_norm is not None:
+            metrics["grad_norm"] = grad_norm
+
+        # 5. Log (Rank 0 only)
+        # Note: consumed samples is estimated
+        consumed_samples = self.global_step * batch_size
+        logger.info_rank0(
+            f"iteration: {self.global_step} | "
+            f"consumed samples: {consumed_samples} | "
+            f"elapsed time per iteration (ms): {elapsed_time_per_iteration_ms:.1f} | "
+            f"throughput(samples/s): {throughput:.1f} | "
+            f"learning rate: {metrics['lr']:.6E} | "
+            f"global batch size: {batch_size:4d} | "
+            f"lm loss: {avg_loss:.4f} | "
+            f"grad norm: {grad_norm:.4f}"
         )
-
-        if count_num_items_in_batch:
-            try:
-                # Local sum of valid tokens
-                num_items_in_batch = sum((batch["labels"].ne(-100)).sum().item() for batch in batch_samples)
-            except (TypeError, AttributeError):
-                pass
-
-        if num_items_in_batch is not None:
-            # Distributed Aggregation
-            if dist.is_initialized():
-                num_items_tensor = torch.tensor(num_items_in_batch, device=device, dtype=torch.int64)
-                # Note: Using all_reduce(SUM) is often more efficient than all_gather + sum
-                dist.all_reduce(num_items_tensor, op=dist.ReduceOp.SUM,group = ps.get_group("dp_fsdp"))
-                num_items_in_batch = num_items_tensor.item()
-
-            # Adjustment for non-data-parallel ranks (e.g., pipeline parallelism)
-            pc = getattr(self.args, "non_data_parallel_size", None)
-            if pc:
-                num_items_in_batch = num_items_in_batch // pc
-
-        return num_items_in_batch
 
     def _get_fsdp_root(self):
         """

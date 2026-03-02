@@ -9,20 +9,12 @@ from transformers.modeling_outputs import BaseModelOutputWithPast, CausalLMOutpu
 from transformers.utils import can_return_tuple
 
 from mindspeed.patch_utils import MindSpeedPatchesManager as pm
-from mindspeed_llm.fsdp2.distributed.fully_shard.fsdp2_sharding import FSDP2ShardingMixin
 from mindspeed_llm.fsdp2.models.common.fusions import apply_rotary_pos_emb, \
     fused_rmsnorm_forward
 from mindspeed_llm.fsdp2.models.common.modules import LMHead
 
 
-class Qwen3FSDP2Mixin(FSDP2ShardingMixin):
-    """
-    Mixin class for FSDP2 of the Qwen3-series
-    """
-    pass
-
-
-class Qwen3ForCausalLM(transformers.Qwen3PreTrainedModel, Qwen3FSDP2Mixin):
+class Qwen3ForCausalLM(transformers.Qwen3PreTrainedModel):
     _tied_weights_keys = ["lm_head.weight"]
     _tp_plan = {"lm_head": "colwise_rep"}
     _pp_plan = {"lm_head": (["hidden_states"], ["logits"])}

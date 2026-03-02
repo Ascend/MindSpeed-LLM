@@ -20,27 +20,14 @@ from mindspeed.ops.npu_moe_token_permute import npu_moe_token_permute
 from mindspeed.ops.npu_moe_token_unpermute import npu_moe_token_unpermute
 from mindspeed.patch_utils import MindSpeedPatchesManager as pm
 from mindspeed_llm.fsdp2.features.async_offload import async_save_on_cpu
-from mindspeed_llm.fsdp2.distributed.fully_shard.fsdp2_sharding import FSDP2ShardingMixin
 from mindspeed_llm.fsdp2.models.common.fusions import fused_rmsnorm_forward, apply_rotary_pos_emb
 from mindspeed_llm.fsdp2.models.common.modules import LMHead
-
-backend = os.environ.get("TRAINING_BACKEND", "mcore").lower()
-if backend == "mcore":
-    from megatron.training import get_args
-else:
-    from mindspeed_llm.fsdp2.utils.global_vars import get_args
+from mindspeed_llm.fsdp2.utils.global_vars import get_args
 
 offload_stream = torch.npu.Stream()
 
 
-class Qwen3MoEFSDP2Mixin(FSDP2ShardingMixin):
-    """
-    Mixin class for FSDP2 of the Qwen3-series
-    """
-    pass
-
-
-class Qwen3MoEForCausalLM(transformers.Qwen3MoePreTrainedModel, Qwen3MoEFSDP2Mixin):
+class Qwen3MoEForCausalLM(transformers.Qwen3MoePreTrainedModel):
     _tied_weights_keys = ["lm_head.weight"]
     _tp_plan = {"lm_head": "colwise_rep"}
     _pp_plan = {"lm_head": (["hidden_states"], ["logits"])}

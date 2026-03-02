@@ -10,19 +10,11 @@ from transformers.models.qwen3_next.modeling_qwen3_next import Qwen3NextDynamicC
 from transformers.processing_utils import Unpack
 from transformers.utils import can_return_tuple, TransformersKwargs
 
-from mindspeed_llm.fsdp2.distributed.fully_shard.fsdp2_sharding import FSDP2ShardingMixin
 from mindspeed_llm.fsdp2.models.common.modules import LMHead
 from mindspeed_llm.fsdp2.models.qwen3_next.modeling_qwen3_next import Qwen3NextModel
 
 
-class Qwen3NextFSDP2Mixin(FSDP2ShardingMixin):
-    """
-    Mixin class for FSDP2 of the Qwen3Next-series
-    """
-    pass
-
-
-class Qwen3NextForCausalLM(transformers.Qwen3NextPreTrainedModel, Qwen3NextFSDP2Mixin):
+class Qwen3NextForCausalLM(transformers.Qwen3NextPreTrainedModel):
     _tied_weights_keys = ["lm_head.weight"]
     _tp_plan = {"lm_head": "colwise_rep"}
     _pp_plan = {"lm_head": (["hidden_states"], ["logits"])}

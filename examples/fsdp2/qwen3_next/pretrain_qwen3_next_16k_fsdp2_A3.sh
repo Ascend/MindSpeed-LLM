@@ -24,4 +24,4 @@ DISTRIBUTED_ARGS="
     --master_port $MASTER_PORT
 "
 
-torchrun $DISTRIBUTED_ARGS  train_fsdp2.py examples/fsdp2/qwen3_next/pretrain_qwen3_next_16k_fsdp2.yaml | tee logs/train_fsdp2_qwen3_next_A3.log
+torchrun $DISTRIBUTED_ARGS  train_fsdp2.py examples/fsdp2/qwen3_next/pretrain_qwen3_next_16k_fsdp2_A3.yaml | tee logs/train_fsdp2_qwen3_next_A3.log

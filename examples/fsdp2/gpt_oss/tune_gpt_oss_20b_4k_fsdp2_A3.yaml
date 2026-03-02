@@ -14,7 +14,7 @@ data:
   preprocessing_num_workers: 1
 
 parallel:
-  fsdp_size: 8
+  fsdp_size: 16
   fsdp_modules:
     - model.layers.{*}
     - model.embed_tokens
@@ -23,7 +23,7 @@ parallel:
   ep_size: 4
   ep_modules:
     - model.layers.{*}.mlp.experts
-  ep_fsdp_size: 2
+  ep_fsdp_size: 4
   ep_fsdp_modules:
     - model.layers.{*}.mlp.experts
   ep_dispatcher: eager
@@ -42,16 +42,15 @@ training:
   dataloader_drop_last: True
   output_dir: ./output
   optimizer: adamw
-  lr: 1e-05
-  weight_decay: 0.01
+  lr: 1.25e-06
+  weight_decay: 0.0
   adam_beta1: 0.9
-  adam_beta2: 0.95
+  adam_beta2: 0.999
   adam_epsilon: 1e-08
   max_grad_norm: 1.0
   lr_scheduler_type: cosine
   warmup_ratio: 0.0
-  min_lr: 1e-06
-  num_train_epochs: 3.0
-  max_steps: -1
+  min_lr: 1.25e-07
+  max_steps: 2000
   save_steps: 500
   logging_steps: 1

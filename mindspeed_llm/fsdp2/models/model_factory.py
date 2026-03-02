@@ -20,21 +20,9 @@ from mindspeed_llm.fsdp2.models.model_loader import ModelLoader
 
 logger = get_logger(__name__)
 
-# ==============================================================================
-# [Mcore Imports] Dependencies for the Old Scheme
-# ==============================================================================
-try:
-    from mindspeed_llm.fsdp2.models.fsdp2_model import FSDP2Model
-    from mindspeed_llm.fsdp2.models.model_registry import ModelRegistry
-except ImportError:
-    # Graceful fallback if mcore dependencies are missing in a pure MindSpeed FSDP environment
-    pass
-
-
-
 
 # ==============================================================================
-# ModelFactory (New Scheme)
+# ModelFactory
 # ==============================================================================
 class ModelFactory:
     """
@@ -226,57 +214,6 @@ class ModelFactory:
 
 
 # ==============================================================================
-# McoreModelFactory (Old Scheme)
-# Formerly FSDP2ModelFactory
-# ==============================================================================
-class McoreModelFactory:
-    """
-    [Mcore] Factory responsible for resolving HuggingFace classes and creating
-    the FSDP2-ready FSDP2Model wrapper.
-    """
-
-    @staticmethod
-    def create(config: Any) -> 'FSDP2Model':
-        """
-        Static Factory Method.
-        Args:
-            config: Configuration object containing 'init_from_hf_path' and 'model_id'.
-        """
-        hf_path = config.init_from_hf_path
-        transformer_config = AutoConfig.from_pretrained(hf_path, trust_remote_code=True)
-
-        # 1. Strategy: Determine which HF class to use
-        model_cls = McoreModelFactory._resolve_model_class(config, transformer_config)
-        
-        # Apply model-specific patches (e.g., for NPU compatibility)
-        if hasattr(model_cls, 'register_patches'):
-            model_cls.register_patches(config)
-
-        # 2. Composition: Inject configuration and class into the Wrapper
-        model = FSDP2Model(
-            config=config,
-            transformer_config=transformer_config,
-            model_cls=model_cls
-        )
-
-        return model
-
-    @staticmethod
-    def _resolve_model_class(config: Any, transformer_config: PretrainedConfig) -> Type[Any]:
-        """
-        Resolves the specific model class from the registry based on 'model_id'.
-        """
-        # Explicit mapping via config (Lookup in Registry)
-        model_id = getattr(config, "model_id", None)
-        if model_id:
-            cls = ModelRegistry.get_model_class(model_id)
-            if cls:
-                return cls
-
-        raise ValueError(f"Could not resolve model class for model_id='{model_id}'")
-
-
-# ==============================================================================
 # [Facade] AutoModelFactory
 # Unified entry point used by AutoTrainer
 # ==============================================================================
@@ -290,17 +227,5 @@ class AutoModelFactory:
     def create(*args, **kwargs):
         """
         Factory method that forwards arguments to the specific implementation.
-        
-        Dispatch Logic:
-            - If TRAINING_BACKEND == 'mindspeed_fsdp': calls ModelFactory.create
-            - Otherwise: calls McoreModelFactory.create
         """
-        backend = os.environ.get("TRAINING_BACKEND", "mcore").lower()
-
-        if backend == "mindspeed_fsdp":
-            # MindSpeed FSDP implementation expects (model_args, parallel_args)
-            return ModelFactory.create(*args, **kwargs)
-
-        else:
-            # Mcore implementation expects a single 'config' object
-            return McoreModelFactory.create(*args, **kwargs)
+        return ModelFactory.create(*args, **kwargs)

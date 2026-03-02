@@ -2,23 +2,6 @@ import os
 import sys
 import types
 
-# ==============================================================================
-# [Mcore Imports] Dependencies for Megatron
-# To be removed when the mcore scheme is deprecated.
-# ==============================================================================
-try:
-   from mindspeed_llm.fsdp2.train.pretrain_trainer import FSDP2PretrainTrainer
-   from mindspeed_llm.fsdp2.train.sft_trainer import FSDP2SFTTrainer
-   from mindspeed_llm.fsdp2.models.model_factory import McoreModelFactory
-   from megatron.training import get_args as get_megatron_args, print_rank_0 as print_rank_0_mcore
-   from megatron.training.initialize import initialize_megatron
-except ImportError:
-   # Catch exception to prevent errors in MindSpeed FSDP environment where megatron might not be installed
-   pass
-
-# ==============================================================================
-# [MindSpeed FSDP Imports] Dependencies for MindSpeed FSDP
-# ==============================================================================
 from dataclasses import dataclass, field, fields
 import torch
 import torch_npu
@@ -29,7 +12,7 @@ from mindspeed_llm.fsdp2.models.model_factory import ModelFactory
 from mindspeed_llm.fsdp2.optim.optimizer import OptimizerFactory
 from mindspeed_llm.fsdp2.optim.scheduler import SchedulerFactory
 from mindspeed_llm.fsdp2.checkpoint.checkpoint_manager import CheckpointManager
-from mindspeed_llm.fsdp2.train.mindspeed_trainer import Trainer
+from mindspeed_llm.fsdp2.train.trainer import Trainer
 from mindspeed_llm.fsdp2.data.data_factory import DataFactory
 from mindspeed_llm.fsdp2.data.tokenizer import TokenizerFactory
 from mindspeed_llm.fsdp2.data.template import get_template_and_fix_tokenizer
@@ -60,44 +43,7 @@ class Arguments:
 
 
 # ==============================================================================
-# Mcore AutoTrainer (Old Scheme)
-# ==============================================================================
-class McoreAutoTrainer:
-   """
-   [Mcore] Act as the Composition Root for Dependency Injection.
-   Based on Megatron-LM arguments and initialization.
-   """
-
-   def __init__(self):
-      # 1. Centralize Megatron environment initialization here.
-      initialize_megatron()
-
-      # 2. Retrieve arguments for logic determination.
-      self.args = get_megatron_args()
-
-      # 3. Instantiate the specific Trainer.
-      self.trainer = self._build_trainer()
-
-   def train(self):
-      if self.trainer:
-         self.trainer.train()
-      else:
-         raise RuntimeError("Failed to initialize a valid trainer.")
-
-   def _build_trainer(self):
-      # Define the dependency
-      model_builder = McoreModelFactory.create
-
-      if self.args.stage == "sft":
-         print_rank_0_mcore(">>> [McoreAutoTrainer] Mode: Finetuning")
-         return FSDP2SFTTrainer(model_builder=model_builder)
-      else:
-         print_rank_0_mcore(">>> [McoreAutoTrainer] Mode: Pretraining")
-         return FSDP2PretrainTrainer(model_builder=model_builder)
-
-
-# ==============================================================================
-# AutoTrainer (New Scheme)
+# AutoTrainer
 # ==============================================================================
 class MindSpeedAutoTrainer:
    """
@@ -300,16 +246,9 @@ class AutoTrainer:
    """
    def __init__(self):
       # Strategy Dispatch: Prioritize environment variable TRAINING_BACKEND
-      # Default to 'mcore' (old scheme). 
-      # To run MindSpeed code, set: export TRAINING_BACKEND=mindspeed_fsdp
-      backend = os.environ.get("TRAINING_BACKEND", "mcore").lower()
-
-      if backend == "mindspeed_fsdp":
-         logger.info_rank0(f">>> [AutoTrainer] Initializing MindSpeed FSDP backend...")
-         self.trainer = MindSpeedAutoTrainer()
-      else:
-         logger.info_rank0(f">>> [AutoTrainer] Initializing mcore backend...")
-         self.trainer = McoreAutoTrainer()
+      # To run MindSpeed FSDP code, set: export TRAINING_BACKEND=mindspeed_fsdp
+      logger.info_rank0(f">>> [AutoTrainer] Initializing MindSpeed FSDP backend...")
+      self.trainer = MindSpeedAutoTrainer()
 
    def train(self):
       """Delegate to the implementation"""

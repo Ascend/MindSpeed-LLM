@@ -57,11 +57,7 @@ from mindspeed.core.fusions.grouped_matmul import Ops
 from mindspeed.ops.npu_moe_token_permute import npu_moe_token_permute
 from mindspeed.ops.npu_moe_token_unpermute import npu_moe_token_unpermute
 
-backend = os.environ.get("TRAINING_BACKEND", "mcore").lower()
-if backend == "mcore":
-    from megatron.training import get_args
-else:
-    from mindspeed_llm.fsdp2.utils.global_vars import get_args
+from mindspeed_llm.fsdp2.utils.global_vars import get_args
 
 if is_causal_conv1d_available():
     from causal_conv1d import causal_conv1d_fn, causal_conv1d_update

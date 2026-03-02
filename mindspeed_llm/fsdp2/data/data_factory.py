@@ -268,4 +268,12 @@ class DataFactory:
                 tokenizer=tokenizer,
                 template=template
             )
+        else:
+            raise ValueError(
+                f"Unsupported configuration combination: "
+                f"stage='{training_args.stage}', data_manager_type='{data_manager_type}'.\n"
+                f"Currently supported combinations are:\n"
+                f"  - stage='sft' with data_manager_type='lf' (Llamafactory style)\n"
+                f"  - stage='pt' with data_manager_type='mg' (Megatron style)"
+            )
         
