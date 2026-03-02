@@ -4,7 +4,7 @@
 
 ## 1. 环境安装
 
-环境安装请参考 [安装指导](../install_guide.md)
+环境安装请参考 [MindSpeed LLM安装指导](../../install_guide.md)
 
 ## 2 目录结构  
 

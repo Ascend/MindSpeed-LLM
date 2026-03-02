@@ -104,7 +104,7 @@ MindSpeed LLM支持Atlas 800T A2等昇腾训练硬件形态，软件版本配套
 
 ---
 
-MindSpeed LLM具体的安装步骤请参考[安装指导](./docs/zh/pytorch/install_guide.md)。
+具体的安装步骤请参考[MindSpeed LLM安装指导](./docs/zh/install_guide.md)。
 
 
 # 快速上手

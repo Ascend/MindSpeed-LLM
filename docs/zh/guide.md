@@ -233,7 +233,6 @@ docs/zh/pytorch
 ├── guide.md               # 文档导航
 ├── quick_start.md          # 快速入门指南
 ├── pytorch/                # PyTorch 训练框架相关文档
-│   ├── install_guide.md    # PyTorch 安装指南
 │   ├── develop/            # 开发相关文档（mcore 训练后端）
 │   ├── features/           # PyTorch 特性文档（mcore 训练后端）
 │   ├── fsdp2/              # PyTorch FSDP2 训练后端文档
@@ -246,11 +245,11 @@ docs/zh/pytorch
 │       ├── preference-alignment/ # 偏好对齐
 │       └── pretrain/       # 预训练
 └── mindspore/              # MindSpore 训练框架相关文档
-    ├── install_guide.md    # MindSpore 安装指南
     ├── readme.md           # MindSpore 文档说明
     ├── features/           # MindSpore 特性文档
     └── models/             # MindSpore 支持的模型
 ├── appendixes.md           # 附录文档
+├── install_guide.md        # MindSpeed LLM安装指南
 ```
 
 ### 核心文档导航
@@ -266,7 +265,7 @@ docs/zh/pytorch
   <tbody>
     <tr>
       <td rowspan="1">环境安装指导</td>
-      <td><a href="pytorch/install_guide.md">install_guide.md</a></td>
+      <td><a href="install_guide.md">install_guide.md</a></td>
       <td></td>
     </tr>
     <tr>

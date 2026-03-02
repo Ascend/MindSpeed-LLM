@@ -18,7 +18,7 @@
 
 ### 环境搭建
 
-基于不同的框架，环境搭建请参考[MindSpeed LLM安装指导-PyTorch框架](./pytorch/install_guide.md)和[MindSpeed LLM安装指导-MindSpore框架](./mindspore/install_guide.md)。
+基于不同的框架，环境搭建请参考[MindSpeed LLM安装指导](install_guide.md)。
 
 ### 获取开源模型权重
 
