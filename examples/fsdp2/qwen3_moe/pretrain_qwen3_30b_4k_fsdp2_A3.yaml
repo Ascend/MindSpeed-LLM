@@ -1,9 +1,9 @@
 model:
   model_id: qwen3_moe
-  model_name_or_path: ./Qwen3-30B-A3B/
+  model_name_or_path: ./model_weights/Qwen3-30B-A3B-mergeExperts/       #此处需填转换后保存的权重路径
   trust_remote_code: True
   train_from_scratch: False
-  tokenizer_name_or_path: ./Qwen3-30B-A3B/
+  tokenizer_name_or_path: ./model_weights/Qwen3-30B-A3B-mergeExperts/   #此处需填转换后保存的权重路径
   init_model_with_meta_device: True
 
 data:

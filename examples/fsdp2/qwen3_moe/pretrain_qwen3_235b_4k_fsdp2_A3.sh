@@ -22,4 +22,5 @@ DISTRIBUTED_ARGS="
     --master_port $MASTER_PORT
 "
 
+bash tests/tools/fsdp2/moe_hf_param_merge_experts.sh
 torchrun $DISTRIBUTED_ARGS  train_fsdp2.py examples/fsdp2/qwen3_moe/pretrain_qwen3_235b_4k_fsdp2_A3.yaml | tee logs/train_fsdp2_qwen3_235b_A3.log

@@ -1,6 +1,6 @@
 model:
   model_id: qwen3_moe
-  model_name_or_path: ./qwen3-235b/
+  model_name_or_path: ./model_weights/qwen3-235b-mergeExperts/       #此处需填转换后保存的权重路径
   trust_remote_code: True
   train_from_scratch: False
   init_model_with_meta_device: False

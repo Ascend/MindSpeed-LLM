@@ -18,6 +18,7 @@ DISTRIBUTED_ARGS="
 "
 
 mkdir -p ./logs
+bash tests/tools/fsdp2/moe_hf_param_merge_experts.sh
 torchrun $DISTRIBUTED_ARGS train_fsdp2.py \
      examples/fsdp2/qwen3_moe/pretrain_qwen3_30b_4k_fsdp2_A3.yaml \
      | tee logs/pretrain_qwen3_moe_30b_a3b_4K_fsdp2_${TIMESTAMP}.log
