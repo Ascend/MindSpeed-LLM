@@ -186,12 +186,43 @@ class BaseDatasetHandler(object):
         total_bytes_processed = 0
         logger.info("Time to startup:%s", startup_end - startup_start)
 
+        data_obfuscation = getattr(self.args, 'data_obfuscation', False)
+        if data_obfuscation:
+            logger.info("Data Obfuscation Initialization.")
+            from ai_asset_obfuscate import DataAssetObfuscation
+
+            # Read vocab_size from config.json
+            config_file = os.path.join(self.args.tokenizer_name_or_path, "config.json")
+            full_vocab_size = self.tokenizer.vocab_size  # Default to the vocabulary size in tokenizer
+
+            if os.path.exists(config_file):
+                try:
+                    with open(config_file, 'r', encoding='utf-8') as f:
+                        model_config = json.load(f)
+                        full_vocab_size = model_config.get("vocab_size", full_vocab_size)
+                        logger.info("Use vocab_size in config.json to confuse: %s", full_vocab_size)
+                except Exception as e:
+                    raise ValueError(f"Failed to read config.json, will use the tokenizer's default vocab_size.") from e
+            else:
+                logger.info(f"{config_file} not found, will use the tokenizer's default vocab_size.")
+
+            data_obf = DataAssetObfuscation(full_vocab_size)
+            data_obf.set_seed_content(self.args.obf_seed_content)
+            # Map -100 to itself to prevent dictionary lookup errors
+            data_obf.obf_dict[-100] = -100
+
         skip_num = 0
         for i, doc in enumerate(self.tokenized_dataset.iter(batch_size=iteration_batch_size), start=1):
             # In post-training stage, we need to drop the data exceeded set sequence-length
             skip_indices = set()
             for key in self.args.json_keys:
-                batch = [sentences for sentences in doc[key] if len(sentences) > 0]
+                if data_obfuscation and key in ("input_ids", "labels"):
+                    # Perform data obfuscation
+                    batch = self._obfuscate_batch_data(data_obf, doc[key])
+                    # Write the obfuscated new data to doc[key]
+                    doc[key] = batch
+                else:
+                    batch = [sentences for sentences in doc[key] if len(sentences) > 0]
 
                 if len(batch) == 0:
                     continue
@@ -227,6 +258,21 @@ class BaseDatasetHandler(object):
         logger.info("Skip %s sample exceeded seq-length(%s)", skip_num / len(self.args.json_keys), self.args.seq_length)
         for key in self.args.json_keys:
             builders[key].finalize(output_idx_files[key])
+
+    def _obfuscate_batch_data(self, data_obf, batch_data):
+        """Obfuscates the passed-in batch data."""
+        obf_batch = []
+        for sentences in batch_data:
+            if not sentences:
+                continue
+
+            obf_sentences = [
+                [data_obf.token_obf(token) if token >= 0 else token for token in sentence]
+                for sentence in sentences
+            ]
+            obf_batch.append(obf_sentences)
+
+        return obf_batch
 
     def serialize_to_disk(self, iteration_batch_size=50):
         """save idx and bin to disk"""

@@ -155,6 +155,10 @@ def add_data_args(parser):
                        help="Whether or not to enable thinking mode for reasoning models.")
     group.add_argument("--pad-to-multiple-of", type=int, default=1,
                        help="Pad each of the data to the multiple of...")
+    group.add_argument("--data-obfuscation", action='store_true',
+                       help="Whether to enable data obfuscation.")
+    group.add_argument("--obf-seed-content", type=str, default=None,
+                       help="Data obfuscation seed content.")
 
 
 def add_tokenizer_args(parser):
@@ -263,6 +267,51 @@ def validate_args(args):
 
     if not args.pack and args.neat_pack:
         raise ValueError("Require set `--pack` when `--neat-pack` is set.")
+
+    support_obfuscation_model = {
+        "qwen3-32b": {
+            "model_type": "qwen3",
+            "hidden_size": 5120,
+            "num_hidden_layers": 64
+        }
+    }
+
+    if getattr(args, 'data_obfuscation', False):
+        if not args.obf_seed_content or len(args.obf_seed_content) != 32:
+            current_len = len(args.obf_seed_content) if args.obf_seed_content else 0
+            raise ValueError(f"When data obfuscation is enabled, the length of --obf-seed-content must be 32. Current length: {current_len}.")
+
+        if args.tokenizer_name_or_path and os.path.exists(args.tokenizer_name_or_path):
+            config_file = os.path.join(args.tokenizer_name_or_path, "config.json")
+            if not os.path.exists(config_file):
+                raise FileNotFoundError(f"Configuration file not found: {config_file}. Cannot verify the model type.")
+
+            try:
+                with open(config_file, 'r', encoding='utf-8') as f:
+                    model_config = json.load(f)
+
+                # Extract core architectural parameters of the model
+                model_type = model_config.get("model_type", "")
+                hidden_size = model_config.get("hidden_size", 0)
+                num_hidden_layers = model_config.get("num_hidden_layers", 0)
+
+                # Verify whether the model supports data obfuscation
+                is_supported = any(
+                    model_type == specs["model_type"] and
+                    hidden_size == specs["hidden_size"] and
+                    num_hidden_layers == specs["num_hidden_layers"]
+                    for specs in support_obfuscation_model.values()
+                )
+
+                if not is_supported:
+                    supported_model_names = list(support_obfuscation_model.keys())
+                    raise ValueError(f"Data obfuscation only supports {supported_model_names}.")
+
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Failed to parse the configuration file. Please check the format of {config_file}.") from e
+        else:
+            raise ValueError(
+                "When data obfuscation is enabled, valid --tokenizer-name-or-path is not provided. Cannot verify the model type.")
 
 
 def cut_range_to_subs(n, gap):
