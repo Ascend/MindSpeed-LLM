@@ -206,7 +206,8 @@ def _add_cp_args(parser):
     group.add_argument('--context-parallel-size', type=int, default=1,
                        help='Degree of context parallelism.')
     group.add_argument('--context-parallel-algo', type=str, default='ulysses_cp_algo',
-                       choices=['ulysses_cp_algo', 'megatron_cp_algo', 'hybrid_cp_algo', 'mamba_cp_algo'], help='context parallel algorithm')
+                       choices=['kvallgather_cp_algo', 'ulysses_cp_algo', 'megatron_cp_algo', 'hybrid_cp_algo', 
+                       'mamba_cp_algo'], help='context parallel algorithm')
     group.add_argument('--ulysses-degree-in-cp', type=int, default=None)
     group.add_argument('--attention-mask-type', type=str, default='causal',
                        choices=['causal', 'general'], help='context parallel attention mask type')

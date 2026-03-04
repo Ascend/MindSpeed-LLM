@@ -39,14 +39,18 @@ class ContextParallelFeature(MindspeedContextParallelFeature):
 
         # kvallgather_cp_algo
         if args.context_parallel_size > 1 and args.context_parallel_algo == 'kvallgather_cp_algo':
-            if not args.use_fused_lightning_indexer:
-                raise AssertionError("kvallgather_cp_algo only supports fused_lightning_indexer")
-            if not args.use_fused_lightning_indexer_loss:
-                raise AssertionError("kvallgather_cp_algo only supports fused_lightning_indexer_loss")
-            if not args.use_sparse_flash_attn:
-                raise AssertionError("kvallgather_cp_algo only supports sparse_flash_attn")
             if args.reset_attention_mask:
                 raise AssertionError("kvallgather_cp_algo does not support reset_attention_mask")
+
+            if args.attention_mask_type != "causal":
+                raise AssertionError("kvallgather_cp_algo only supports causal attention mask type")
+                
+            if not getattr(args, 'reset_attention_mask', False):
+                if hasattr(args, 'seq_length') and args.seq_length % (2 * args.context_parallel_size) != 0:
+                    raise AssertionError("sequence length must be divisible by 2 * context_parallel_size in kvallgather_cp_algo with SBHD format")
+            else:
+                if hasattr(args, 'seq_length') and args.seq_length % args.context_parallel_size != 0:
+                    raise AssertionError("sequence length must be divisible by context_parallel_size in kvallgather_cp_algo with THD format")
 
 
     def register_patches(self, patch_manager, args):
@@ -70,10 +74,16 @@ class ContextParallelFeature(MindspeedContextParallelFeature):
                                          attention_init_wrapper)
             patch_manager.register_patch('megatron.core.transformer.dot_product_attention.DotProductAttention',
                                          CPDotProductAttention)
-            patch_manager.register_patch('megatron.core.extensions.transformer_engine.TEDotProductAttention',
-                                         CPDotProductAttention)
             if getattr(args, 'context_parallel_algo', 'megatron_cp_algo') == 'kvallgather_cp_algo':
                 from mindspeed_llm.core.transformer.custom_dot_product_attention import CustomDotProductAttention
                 patch_manager.register_patch(
                     'megatron.core.transformer.dot_product_attention.DotProductAttention.forward',
                     CustomDotProductAttention.forward)
+            
+            if args.transformer_impl == 'transformer_engine':
+                from mindspeed_llm.te.pytorch.attention.dot_product_attention.te_cp_dot_product_attention import TECPDotProductAttention
+                patch_manager.register_patch('megatron.core.extensions.transformer_engine.TEDotProductAttention',
+                                            TECPDotProductAttention)
+            else:
+                patch_manager.register_patch('megatron.core.extensions.transformer_engine.TEDotProductAttention',
+                                         CPDotProductAttention)
