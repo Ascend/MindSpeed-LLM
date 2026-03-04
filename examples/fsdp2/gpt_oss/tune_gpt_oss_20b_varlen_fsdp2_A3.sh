@@ -17,5 +17,5 @@ DISTRIBUTED_ARGS="
 "
 mkdir -p ./logs
 torchrun $DISTRIBUTED_ARGS train_fsdp2.py \
-     examples/fsdp2/gpt_oss/tune_gpt_oss_20b_4k_fsdp2_A3.yaml \
+     examples/fsdp2/gpt_oss/tune_gpt_oss_20b_varlen_fsdp2_A3.yaml \
      | tee logs/tune_gpt_oss_20b_4k_${TIMESTAMP}.log

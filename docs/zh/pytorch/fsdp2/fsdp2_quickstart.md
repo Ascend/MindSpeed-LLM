@@ -13,8 +13,8 @@
 ```bash
 MindSpeed-LLM/
 ├── examples/fsdp2/gpt_oss/
-│   ├── tune_gpt_oss_20b_4k_fsdp2_A3.yaml        # 微调配置
-│   └── tune_gpt_oss_20b_4k_fsdp2_A3.sh # 启动脚本
+│   ├── tune_gpt_oss_20b_varlen_fsdp2_A3.yaml        # 微调配置
+│   └── tune_gpt_oss_20b_varlen_fsdp2_A3.sh # 启动脚本
 ├── configs/fsdp2/data/dataset_info.json           # 数据集注册表
 └── train_fsdp2.py                                 # FSDP2 训练入口
 ```
@@ -67,7 +67,7 @@ model:
 
 ## 4. 分布式训练启动脚本说明
 
-`examples/fsdp2/gpt_oss/tune_gpt_oss_20b_a3b_4K_fsdp2_mindspeed.sh`  
+`examples/fsdp2/gpt_oss/tune_gpt_oss_20b_varlen_fsdp2_A3.sh`  
 
 ```bash
 source examples/fsdp2/env_config.sh                 # 加载NPU环境变量配置
@@ -88,7 +88,7 @@ torchrun \
   # 主节点地址
   --master_port $MASTER_PORT \
   # 主节点端口
-  train_fsdp2.py examples/fsdp2/gpt_oss/tune_gpt_oss_20b_4k_fsdp2_A3.yaml  
+  train_fsdp2.py examples/fsdp2/gpt_oss/tune_gpt_oss_20b_varlen_fsdp2_A3.yaml  
   # 启动训练入口
 ```
 
@@ -97,7 +97,7 @@ torchrun \
 在仓库根目录执行：
 
 ```bash
-bash examples/fsdp2/gpt_oss/tune_gpt_oss_20b_4k_fsdp2_A3.sh
+bash examples/fsdp2/gpt_oss/tune_gpt_oss_20b_varlen_fsdp2_A3.sh
 ```
 
 即可成功拉起训练任务。

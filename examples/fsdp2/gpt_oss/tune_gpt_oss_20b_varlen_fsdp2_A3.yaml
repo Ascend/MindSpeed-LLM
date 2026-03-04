@@ -8,7 +8,7 @@ model:
 data:
   dataset: alpaca_full
   template: gpt
-  cutoff_len: 2048
+  cutoff_len: 4096
   max_samples: 100000
   overwrite_cache: True
   preprocessing_num_workers: 1
