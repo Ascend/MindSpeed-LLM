@@ -50,16 +50,21 @@ class UnknownModelFlopsEstimator(BaseFlopsEstimator):
     Fallback estimator for unsupported model types.
     Returns 0.0 and logs a warning.
     """
+    # Class variable to track if warning has been printed
+    _warning_printed = False
+    
     def calculate_achieved_flops(
         self, 
         tokens_sum: int, 
         batch_seqlens: List[int], 
         delta_time: float
     ) -> float:
-        logger.warn_rank0(
-            f"Model type '{self.config.model_type}' is not supported for MFU calculation. "
-            f"Supported models are registered in flops_factory.py."
-        )
+        if not UnknownModelFlopsEstimator._warning_printed:
+            logger.warn_rank0(
+                f"Model type '{self.config.model_type}' is not supported for MFU calculation. "
+                f"Supported models are registered in flops_factory.py."
+            )
+            UnknownModelFlopsEstimator._warning_printed = True
         return 0.0
 
 # --------------------------

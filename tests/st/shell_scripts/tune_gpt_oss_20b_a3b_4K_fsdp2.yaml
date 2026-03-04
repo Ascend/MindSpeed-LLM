@@ -57,3 +57,5 @@ training:
   save_steps: 0
   save_epochs: 0
   logging_steps: 1
+  log_throughput: True
+  log_cpu_memory: True
