@@ -130,7 +130,7 @@
     </tr>
     <tr>
       <td>quant_format</td>
-      <td>Literal[&quot;E4M3&quot;, &quot;E5M2&quot;, &quot;HIF8&quot;]</td>
+      <td>Literal[&quot;E4M3&quot;, &quot;HYBRID&quot;, &quot;HIF8&quot;]</td>
       <td>None</td>
       <td>量化数据格式。</td>
     </tr>
@@ -157,6 +157,18 @@
       <td>List[str]</td>
       <td>["quantize.linear.mx"]</td>
       <td>使用的量化转换器列表。</td>
+    </tr>
+    <tr>
+      <td>gemm_gradient_accumulation_fusion</td>
+      <td>bool</td>
+      <td>False</td>
+      <td>是否启用GEMM梯度累积融合</td>
+    </tr>
+    <tr>
+      <td>quant_gmm</td>
+      <td>bool</td>
+      <td>False</td>
+      <td>是否启用量化Grouped GEMM</td>
     </tr>
   </tbody>
 </table>

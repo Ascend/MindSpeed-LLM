@@ -173,7 +173,9 @@ class ModelFactory:
             block_size=model_args.quant_block_size,
             quant_apply_modules=model_args.quant_apply_modules,
             quant_ignored_modules=model_args.quant_ignored_modules,
-            converters=model_args.converters
+            converters=model_args.converters,
+            quant_gmm=model_args.quant_gmm,
+            gemm_gradient_accumulation_fusion=model_args.gemm_gradient_accumulation_fusion
         )
 
         # --- 6. Assemble Config ---

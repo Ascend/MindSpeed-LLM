@@ -1,4 +1,5 @@
 # Copyright (c) 2025, HUAWEI CORPORATION.  All rights reserved.
+# Copyright 2025 The Qwen team, Alibaba Group and the HuggingFace Inc. team. All rights reserved.
 import os
 from typing import Optional, Union
 
@@ -19,6 +20,7 @@ from mindspeed.core.fusions.grouped_matmul import Ops
 from mindspeed.ops.npu_moe_token_permute import npu_moe_token_permute
 from mindspeed.ops.npu_moe_token_unpermute import npu_moe_token_unpermute
 from mindspeed.patch_utils import MindSpeedPatchesManager as pm
+from mindspeed.ops.gmm_mxfp8 import npu_quant_group_gemm
 from mindspeed_llm.fsdp2.features.async_offload import async_save_on_cpu
 from mindspeed_llm.fsdp2.models.common.fusions import fused_rmsnorm_forward, apply_rotary_pos_emb
 from mindspeed_llm.fsdp2.models.common.modules import LMHead
@@ -176,10 +178,29 @@ class Qwen3MoeExperts(nn.Module):
         # permute
         permuted_hidden_states, row_ids_map = npu_moe_token_permute(hidden_states, selected_experts.to(torch.int32))
         tokens_per_expert = torch.histc(selected_experts, bins=self.num_experts, min=0, max=self.num_experts)
-
-        fc1_output = Ops.gmm(permuted_hidden_states, gate_up_proj, tokens_per_expert, trans_b=False)
-        fc1_activation = torch_npu.npu_swiglu(fc1_output, dim=-1)
-        fc2_out = Ops.gmm(fc1_activation, down_proj, tokens_per_expert, trans_b=False)
+        args = get_args()
+        if getattr(args, 'quant_gmm'):
+            fc1_output = npu_quant_group_gemm(x=permuted_hidden_states,
+                                              weight=gate_up_proj,
+                                              bias=None,
+                                              tokens_per_expert=tokens_per_expert,
+                                              weight_param=self.gate_up_proj,
+                                              quant_format=args.quant_format,
+                                              gemm_gradient_accumulation_fusion=args.gemm_gradient_accumulation_fusion
+                                              )
+            fc1_activation = torch_npu.npu_swiglu(fc1_output, dim=-1)
+            fc2_out = npu_quant_group_gemm(x=fc1_activation,
+                                           weight=down_proj,
+                                           bias=None,
+                                           tokens_per_expert=tokens_per_expert,
+                                           weight_param=self.down_proj,
+                                           quant_format=args.quant_format,
+                                           gemm_gradient_accumulation_fusion=args.gemm_gradient_accumulation_fusion,
+                                           )
+        else:
+            fc1_output = Ops.gmm(permuted_hidden_states, gate_up_proj, tokens_per_expert, trans_b=False)
+            fc1_activation = torch_npu.npu_swiglu(fc1_output, dim=-1)
+            fc2_out = Ops.gmm(fc1_activation, down_proj, tokens_per_expert, trans_b=False)
 
         # unpermute
         output = npu_moe_token_unpermute(fc2_out, row_ids_map, probs=routing_weights)

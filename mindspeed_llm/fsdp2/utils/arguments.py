@@ -115,9 +115,9 @@ class ModelArguments:
         default=None,
         metadata={"help": "Quantization strategy"},
     )
-    quant_format: Literal["E4M3", "E5M2", "HIF8"] = field(
+    quant_format: Literal["E4M3", "HYBRID", "HIF8"] = field(
         default=None,
-        metadata={"help": "FP8 format: 'E4M3', 'E5M2', or 'HIF8'."},
+        metadata={"help": "FP8 format: 'E4M3', 'HYBRID', or 'HIF8'."},
     )
     quant_block_size: int = field(
         default=32,
@@ -142,6 +142,19 @@ class ModelArguments:
                 "It's a list of strings where each string represents a specific quantization implementation."
                 "Default uses 'quantize.linear.mx' for mxfp8 quantization."},
     )
+    gemm_gradient_accumulation_fusion: bool = field(
+        default=False,
+        metadata={"help":
+                      "Enable or disable GEMM (General Matrix Multiply) gradient accumulation fusion optimization. "
+                      "When enabled, accumulates gradients from multiple mini-batches into a single GEMM operation "
+                      "to improve training efficiency and reduce memory access overhead. "},
+    )
+    quant_gmm: bool = field(
+        default=False,
+        metadata={"help":
+                      "Whether to enable grouped matrix multiplication quantization."},
+    )
+
 
     def __post_init__(self):
         if self.model_name_or_path is None:

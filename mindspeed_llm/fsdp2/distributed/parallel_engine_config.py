@@ -50,6 +50,8 @@ class QuantizeConfig:
     quant_apply_modules: List[str] = None
     quant_ignored_modules: List[str] = None
     converters: List[str] = None
+    quant_gmm: bool = False
+    gemm_gradient_accumulation_fusion: bool = False
     extra_args: Dict[str, Any] = field(default_factory=dict)  # for future extensibility
 
 
@@ -147,5 +149,4 @@ class ParallelEngineConfig:
 
     def validate_quantization_config(self):
         self.quantization_plan = QuantizeConfig() if self.quantization_plan is None else self.quantization_plan
-
 
