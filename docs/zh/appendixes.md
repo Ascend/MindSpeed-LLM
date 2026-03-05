@@ -24,7 +24,6 @@
 - 📈 **性能优化**：参考[MindSpeed Profiling](./pytorch/features/profiling.md)分析瓶颈
 - 💡 **定制需求**：通过`model_cfg.json`扩展自定义模型
 
-
 ## 线性度
 
 基于 `GPT3-175B` 稠密大模型，从128颗 NPU 扩展到 7968颗 NPU 进行 MFU 与线性度实验，下图是实验数据：

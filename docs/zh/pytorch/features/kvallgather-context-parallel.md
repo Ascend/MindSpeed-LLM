@@ -4,7 +4,7 @@
 
 针对 sparse flash attention、lightning indexer，lightning indexer loss ,在计算前对已切分的key和value执行allgather通信操作获得完整的key和value。
 
-详细介绍请参考[**kvallgather_cp_algo**](https://gitcode.com/ascend/MindSpeed/blob/master/docs/features/kvallgather-context-parallel.md)。
+详细介绍请参考[**kvallgather_cp_algo**](https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/kvallgather-context-parallel.md)。
 
 ## 使用方法
 

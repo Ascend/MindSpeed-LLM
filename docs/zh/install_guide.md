@@ -29,7 +29,7 @@
 
 ### 安装驱动固件
 
-下载[驱动固件](hiascend.com/hardware/firmware-drivers/community)，请根据系统和硬件产品型号选择对应版本的社区版本或商用版本的驱动与固件。
+下载[驱动固件](https://hiascend.com/hardware/firmware-drivers/community)，请根据系统和硬件产品型号选择对应版本的社区版本或商用版本的驱动与固件。
 参考如下命令安装：
 
 ```shell

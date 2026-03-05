@@ -109,8 +109,8 @@
     PP=4 # 模型权重转换的pp大小，在本例中是4
     ```
 
-    以上通用配置完成后，要开启pack模式训练，需要在[Qwen3-8B预训练脚本](../../../../examples/mcore/qwen3/pretrain_qwen3_8b_4K_ptd.sh)基础上，加上`--reset-attention-mask`参数，该参数开启时，会按照EOD计算句子的分隔位置，生成actual_seq_len，传入FA算子中相当于锯齿状的mask计算效果。该参数的使能效果如下图所示：
-    ![reset-position-ids图示0](../../../../sources/images/pretrain/reset-position-ids.png)
+    以上通用配置完成后，要开启pack模式训练，需要在[Qwen3-8B预训练脚本](../../../../../examples/mcore/qwen3/pretrain_qwen3_8b_4K_ptd.sh)基础上，加上`--reset-attention-mask`参数，该参数开启时，会按照EOD计算句子的分隔位置，生成actual_seq_len，传入FA算子中相当于锯齿状的mask计算效果。该参数的使能效果如下图所示：
+    ![reset-position-ids图示0](../../figures/pretrain/reset-position-ids.png)
 
     另外，使用`--attention-mask-type`需要注意：默认是causal，支持causal和general格式。
     1. `--attention-mask-type`是general，attention-mask会从数据获取生成。
@@ -134,9 +134,9 @@
         --tokenizer-model ${TOKENIZER_MODEL} \
         ```
     
-    >    [!NOTE]
-    >    - 提供的路径需要加双引号。
-    >    - 多机训练中请确保每台机器上的模型路径和数据集路径等无误，如果没有设置数据共享，需要在训练启动脚本中增加`no-shared-storage`参数。设置此参数之后将会根据布式参数判断非主节点是否需要load数据，并检查相应缓存和生成数据。
+    > [!NOTE]
+    > - 提供的路径需要加双引号。
+    > - 多机训练中请确保每台机器上的模型路径和数据集路径等无误，如果没有设置数据共享，需要在训练启动脚本中增加`no-shared-storage`参数。设置此参数之后将会根据布式参数判断非主节点是否需要load数据，并检查相应缓存和生成数据。
 
 4. 启动预训练  
     预训练脚本配置完毕后，可运行脚本启动预训练（多机场景中需要在多个终端上同时启动脚本）：
@@ -148,6 +148,7 @@
 ## 使用约束
 
 数据预处理阶段的`append-eod`参数需要和预训练阶段的`reset-attention-mask`参数搭配一起使用：
+
 1. 如果只开`append-eod`的话，文档末尾添加了 `<EOD>`，FA计算缺失了文档的长度信息，计算FA的时候按照跨文档计算，模型仍学习的是跨文档的信息。
 2. 如果只开`reset-attention-mask`，FA计算虽然统计了文档的长度信息，但由于数据缺失`<EOD>`分割，导致统计的文档还是按照跨文档计算，模型仍学习的是跨文档的信息。
 3. 如果数据预处理开启`append-eod`且预训练开启`reset-attention-mask`，FA计算可以统计每个有`<EOD>`分割的文档长度，FA计算是对每个文档进行独立计算，模型学习到的是非跨文档信息。

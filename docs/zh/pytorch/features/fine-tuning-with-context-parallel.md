@@ -31,6 +31,7 @@
 【--attention-mask-type】
 
 设置`--attention-mask-type`类型：默认是causal，支持causal和general格式。
+
 1. `--attention-mask-type`是general，attention-mask会从数据获取生成。
 2. `--attention-mask-type`是causal，attention-mask会在FA前生成压缩固定长度(2048)的mask，性能和显存会比方案1更好，推荐使用。
 
@@ -38,9 +39,9 @@
 
 通过传入指定参数，选择不同的cp算法，具体包含如下几种：
 
-1. [**megatron_cp_algo**](https://gitcode.com/ascend/MindSpeed/blob/master/docs/features/ring-attention-context-parallel.md)
-2. [**ulysses_cp_algo**](https://gitcode.com/ascend/MindSpeed/blob/master/docs/features/ulysses-context-parallel.md)
-3. [**hybrid_cp_algo**](https://gitcode.com/ascend/MindSpeed/blob/master/docs/features/hybrid-context-parallel.md)
+1. [**megatron_cp_algo**](https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/ring-attention-context-parallel.md)
+2. [**ulysses_cp_algo**](https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/ulysses-context-parallel.md)
+3. [**hybrid_cp_algo**](https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/hybrid-context-parallel.md)
 
 ```shell
     --seq-length 131072

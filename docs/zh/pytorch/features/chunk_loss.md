@@ -45,7 +45,7 @@ class LMHead(nn.Linear):
 **第2步**在模型的forward函数里添加loss_ctx入参，并在forward实现里添加使能判断
 
 参考fsdp2 Qwen3ForCausalLM实现，[参考链接](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/mindspeed_llm/fsdp2/models/qwen3/qwen3.py)
-此外，具体模型需要注意loss计算方式，如有新的loss计算方式，应在 build_loss_ctx 里适配修改，[修改位置在FSDP2Model的build_loss_ctx方法](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/mindspeed_llm/fsdp2/models/fsdp2_model.py)
+此外，具体模型需要注意loss计算方式，如有新的loss计算方式，应在 _build_chunk_loss 里适配修改，[修改位置在Trainer的_build_chunk_loss方法](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/mindspeed_llm/fsdp2/train/trainer.py#L86)
 
 **第3步**在启动脚本中添加使能参数
 
