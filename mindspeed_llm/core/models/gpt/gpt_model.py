@@ -30,7 +30,7 @@ from mindspeed_llm.training.utils import (set_actual_seq_len_list, _CAN_RECORD_R
                            check_model_inputs)
 from mindspeed_llm.training.utils import set_actual_seq_len_list
 from mindspeed.core.context_parallel.get_batch_utils import get_actual_seq_len
-from mindspeed.utils import compute_qkv_index, get_position_ids
+from mindspeed.core.transformer.flash_attention.reset_attention_mask.adaptor import compute_qkv_index, get_position_ids
 from mindspeed_llm.core.models.common.chunk_loss import chunk_loss, calculate_lm_loss
 
 
@@ -349,6 +349,7 @@ def gpt_forward_wrapper(fn):
         actual_seq_len = get_actual_seq_len()
 
         packed_seq_params = PackedSeqParams(
+            qkv_format='thd',
             cu_seqlens_q=actual_seq_len,
             cu_seqlens_kv=actual_seq_len
         )

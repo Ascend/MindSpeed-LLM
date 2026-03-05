@@ -15,13 +15,6 @@ class ResetAttentionMaskFeature(MindSpeedFeature):
         group.add_argument('--fix-sub-seq-length', type=int, default=-1,
                             help='[only for test] set sub-seq-length, when it > 0, the subseqlen of the seqlens is fixed')
 
-    def validate_args(self, args):
-        if args.context_parallel_size > 1 and hasattr(args, 'reset_attention_mask') and args.reset_attention_mask:
-            if args.attention_mask_type == 'causal' and args.context_parallel_algo != 'megatron_cp_algo':
-                raise AssertionError('accelerated eod reset mode only support ring attention')
-            if args.attention_mask_type == 'causal' and not getattr(args, 'variable_seq_lengths', None):
-                raise AssertionError('accelerated eod reset mode needs variable_seq_lengths.')
-
     def register_patches(self, patch_manager, args):
         if getattr(args, self.feature_name, None):
             from mindspeed.core.transformer.flash_attention.reset_attention_mask.utils import (
@@ -59,9 +52,17 @@ class ResetAttentionMaskFeature(MindSpeedFeature):
                 from mindspeed.core.context_parallel.adaptor import MindSpeedCPDotProductAttention
                 patch_manager.register_patch('megatron.core.transformer.dot_product_attention.DotProductAttention',
                                              MindSpeedCPDotProductAttention)
-                patch_manager.register_patch('megatron.core.extensions.transformer_engine.TEDotProductAttention',
-                                             MindSpeedCPDotProductAttention)
-
+                if args.transformer_impl == 'transformer_engine':
+                    if args.context_parallel_algo == "kvallgather_cp_algo":
+                        from mindspeed.te.pytorch.attention.dot_product_attention.dot_product_attention import \
+                            MindSpeedTEDotProductAttention
+                        patch_manager.register_patch(
+                            'megatron.core.extensions.transformer_engine.TEDotProductAttention',
+                            MindSpeedTEDotProductAttention)
+                    else:
+                        patch_manager.register_patch(
+                            'megatron.core.extensions.transformer_engine.TEDotProductAttention',
+                            MindSpeedCPDotProductAttention)
                 from mindspeed.core.context_parallel.adaptor import attention_init_wrapper
                 patch_manager.register_patch('megatron.core.transformer.attention.Attention.__init__',
                                              attention_init_wrapper)

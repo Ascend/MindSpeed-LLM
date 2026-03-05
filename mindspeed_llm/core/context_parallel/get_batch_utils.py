@@ -36,6 +36,7 @@ def get_batch_on_this_cp_rank(batch):
         set_attention_mask(batch['attention_mask'].squeeze())
 
     cp_expanded_by_2d_tp = args.tp_y > 1
+
     if args.context_parallel_algo == 'megatron_cp_algo':
         if args.attention_mask_type == 'general':
             batch = _get_batch_on_this_cp_rank_in_megatron_cp_general(batch)
