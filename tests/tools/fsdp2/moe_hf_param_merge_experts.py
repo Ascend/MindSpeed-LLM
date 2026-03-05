@@ -187,7 +187,6 @@ def main():
 
     logging.info("Copying config files...")
     file_copy(src_dir=src_dir, file_name='config.json', dst_dir=dst_dir)
-    file_copy(src_dir=src_dir, file_name='configuration.json', dst_dir=dst_dir)
     file_copy(src_dir=src_dir, file_name='generation_config.json', dst_dir=dst_dir)
     file_copy(src_dir=src_dir, file_name='merges.txt', dst_dir=dst_dir)
     file_copy(src_dir=src_dir, file_name='README.md', dst_dir=dst_dir)
