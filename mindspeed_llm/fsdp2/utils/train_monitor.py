@@ -176,6 +176,7 @@ class TrainMonitor:
         memory_metrics = TrainMonitor._compute_memory_metrics()
         
         # 3.4 FLOPS & MFU Metrics (computational efficiency)
+        batch_seqlens = TrainMonitor._flatten_seqlens(batch_seqlens)
         flops_mfu_metrics = self._compute_flops_mfu_metrics(
             batch_seqlens, elapsed_time
         )
@@ -409,3 +410,24 @@ class TrainMonitor:
             "logged_loss": 0.0,
             "time": time.time()
         }
+
+    @staticmethod
+    def _flatten_seqlens(batch_seqlens):
+        """
+        Flatten and filter batch_seqlens to handle neat-pack mode.
+        neat-pack produces nested lists with -inf padding, e.g.:
+        [[512, 256, -inf, -inf], [1024, -inf, -inf, -inf]]
+        Normal mode produces flat int lists, e.g.:
+        [1024, 512, 768]
+        """
+        flat = []
+        for item in batch_seqlens:
+            if isinstance(item, (list, tuple)):
+                for val in item:
+                    # Filter -inf and other non-positive padding values.
+                    if isinstance(val, (int, float)) and val > 0 and val != float('-inf'):
+                        flat.append(int(val))
+            else:
+                if isinstance(item, (int, float)) and item > 0 and item != float('-inf'):
+                    flat.append(int(item))
+        return flat
