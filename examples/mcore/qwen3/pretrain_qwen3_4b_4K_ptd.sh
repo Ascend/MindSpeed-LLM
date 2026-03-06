@@ -92,6 +92,7 @@ GPT_ARGS="
     --disable-bias-linear \
     --position-embedding-type rope \
     --normalization RMSNorm \
+    --norm-epsilon 1e-6 \
     --swiglu \
     --attention-softmax-in-fp32 \
     --no-gradient-accumulation-fusion \

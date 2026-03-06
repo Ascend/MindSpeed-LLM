@@ -95,6 +95,7 @@ GPT_ARGS="
     --attention-softmax-in-fp32 \
     --no-gradient-accumulation-fusion \
     --group-query-attention \
+    --norm-epsilon 1e-6 \
     --num-query-groups 8
 "
 
