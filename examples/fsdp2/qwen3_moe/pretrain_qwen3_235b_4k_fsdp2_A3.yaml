@@ -3,7 +3,7 @@ model:
   model_name_or_path: ./model_weights/qwen3-235b-mergeExperts/       #此处需填转换后保存的权重路径
   trust_remote_code: True
   train_from_scratch: False
-  init_model_with_meta_device: False
+  init_model_with_meta_device: True
 
 data:
   dataset:
@@ -39,7 +39,7 @@ training:
   stage: pt
   per_device_train_batch_size: 5
   gradient_accumulation_steps: 1
-  dataloader_num_workers : 4
+  dataloader_num_workers : 1
   seed: 42
   dataloader_drop_last: True
   output_dir: ./output
