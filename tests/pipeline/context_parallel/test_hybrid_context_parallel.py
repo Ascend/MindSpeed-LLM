@@ -8,6 +8,7 @@ sys.argv = [
     sys.argv[0],
     '--context-parallel-algo', 'hybrid_cp_algo',
     '--context-parallel-size', '2',
+    '--transformer-impl', 'local',
 ]
 # To activate mindspeed_llm.patches.__init__
 from mindspeed_llm import megatron_adaptor
