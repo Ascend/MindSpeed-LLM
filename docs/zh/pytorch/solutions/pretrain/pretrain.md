@@ -15,7 +15,7 @@
 
 > [!NOTE]
 >
-> - 数据预处理时如果需要使用数据集pack模式，请参考[多样本pack模式预训练](./pretrain_eod.md)。
+> - 数据预处理时如果需要使用数据集Pack模式，请参考[多样本Pack模式预训练](./pretrain_eod.md)。
 > - 预训练时可以不加载初始权重，此时模型权重采用随机初始化。如果需要加载权重，则需提前进行权重转换，具体请参考[权重转换v1](../checkpoint/checkpoint_convert.md)或[权重转换v2](../checkpoint/checkpoint_convert_v2.md)。
 
 本章节以Qwen3-8B模型为例，介绍了预训练启动方法。大模型分布式预训练主要包含以下流程：
@@ -34,11 +34,11 @@
 2. 预训练数据预处理  
     首先，准备好原始数据集，常见的预训练数据集有：
     - [Alpaca数据集](https://huggingface.co/datasets/tatsu-lab/alpaca)
-    - [Enwiki数据集](https://huggingface.co/datasets/lsb/enwiki20230101)
+    - [EnWiki数据集](https://huggingface.co/datasets/lsb/enwiki20230101)
     - [C4数据集](https://huggingface.co/datasets/allenai/c4)
     - [ChineseWebText](https://huggingface.co/datasets/CASIA-LM/ChineseWebText)
 
-    然后，以[Enwiki数据集](https://huggingface.co/datasets/lsb/enwiki20230101)为例执行数据预处理，详细的脚本配置可参考[Qwen3预训练数据处理脚本](../../../../../examples/mcore/qwen3/data_convert_qwen3_pretrain.sh)，需要修改脚本中的以下路径：
+    然后，以[EnWiki数据集](https://huggingface.co/datasets/lsb/enwiki20230101)为例执行数据预处理，详细的脚本配置可参考[Qwen3预训练数据处理脚本](../../../../../examples/mcore/qwen3/data_convert_qwen3_pretrain.sh)，需要修改脚本中的以下路径：
 
     ```bash
     source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路径
@@ -118,7 +118,7 @@
 
     脚本内的其他参数说明:
 
-    - `DATA_PATH`：数据集路径。请注意实际数据预处理生成文件末尾会增加`_text_document`，该参数填写到数据集的文件前缀即可。例如实际的数据集相对路径是`./finetune_dataset/alpaca/alpaca_text_document.bin`等，那么只需要填`./finetune_dataset/alpaca/alpaca_text_document`即可。
+    - `DATA_PATH`：数据集路径。请注意实际数据预处理生成文件末尾会增加`_text_document`，该参数填写到数据集的文件前缀即可。例如实际的数据集相对路径是`./finetune_dataset/alpaca/alpaca_text_document.bin`等，那么只需填`./finetune_dataset/alpaca/alpaca_text_document`即可。
     - `CKPT_LOAD_DIR`: 权重加载路径。预训练时可以选择随机初始化模型权重，此时该参数不用配置，同时需要注释掉预训练脚本中的`--load ${CKPT_LOAD_DIR} \`代码行。
     - `tokenizer-type`：参数值为PretrainedFromHF时， 词表路径仅需要填到模型文件夹即可，不需要到tokenizer.model文件；参数值不为PretrainedFromHF时，例如Qwen3Tokenizer，需要指定到tokenizer.model文件。示例如下：
 
@@ -145,4 +145,4 @@
 
 ## 使用约束
 
-如需存储日志到脚本文件中，请在运行路径目录下创建`logs`文件夹
+如需存储日志到脚本文件中，请在运行路径目录下创建`logs`文件夹。

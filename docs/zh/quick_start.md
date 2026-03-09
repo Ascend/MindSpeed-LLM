@@ -93,8 +93,7 @@
 
 ### 权重转换
 
-昇腾MindSpeed LLM要求模型权重采用Megatron-Mcore格式，在这里我们将原始HuggingFace权重格式转换为Megatron-Mcore格式。
-详见[hf2mg权重转换](./pytorch/solutions/checkpoint/checkpoint_convert.md#21-huggingface权重转换到megatron-mcore格式)
+昇腾MindSpeed LLM要求模型权重采用Megatron-Mcore格式，在这里我们将原始HuggingFace权重格式转换为Megatron-Mcore格式，详见[hf2mg权重转换](./pytorch/solutions/checkpoint/checkpoint_convert.md#21-huggingface权重转换到megatron-mcore格式)。
 
 使用官方提供的转换脚本，获取对应切分的mg权重。
 
@@ -153,8 +152,8 @@
 > [!NOTE]  
 >
 > - 对于Qwen2.5-7B模型，此处推荐的切分配置是tp1pp4，对应上述配置。
-> - MindSpore框架尚不支持QLoRA权重量化转换，【--qlora-nf4】参数仅可置为False。
-> - MindSpore框架默认在Device侧进行权重转换，在模型较大时存在OOM风险，因此建议用户手动修改`convert_ckpt.py`，在包导入时加> 入如下代码设置CPU侧执行权重转换：
+> - MindSpore框架尚不支持QLoRA权重量化转换，`--qlora-nf4`参数仅可配置为False。
+> - MindSpore框架默认在Device侧进行权重转换，在模型较大时存在OOM风险，因此建议用户手动修改`convert_ckpt.py`，在包导入时加入如下代码设置CPU侧执行权重转换：
 >
 >     ```python
 >     import mindspore as ms
@@ -167,9 +166,9 @@
 
 ### 预训练数据集处理
 
-通过对各种格式的数据做提前预处理，避免原始数据的反复处理加载，将所有的数据都统一存储到.bin和.idx两个文件中，详见[预训练数据处理](./pytorch/solutions/pretrain/pretrain_dataset.md)
+通过对各种格式的数据做提前预处理，避免原始数据的反复处理加载，将所有的数据都统一存储到.bin和.idx两个文件中，详见[预训练数据处理](./pytorch/solutions/pretrain/pretrain_dataset.md)。
 
-常用的预训练数据集包括alpaca、enwiki、c4等，[预训练数据处理](./pytorch/solutions/pretrain/pretrain_dataset.md)中提供了数据集下载地址。
+常用的预训练数据集包括Alpaca、EnWiki、C4等，[预训练数据处理](./pytorch/solutions/pretrain/pretrain_dataset.md)中提供了数据集下载地址。
 
 如下以Alpaca数据集为例，进行预训练数据集示例。
 
@@ -219,7 +218,7 @@
     |`--output-prefix`|转换后输出的数据集文件的文件名前缀 | ✅ |
     |`--workers`|多进程数据集处理| ✅ |
 
-4. 执行预训数据处理脚本。
+4. 执行预训练数据处理脚本。
 
     ```shell
     bash examples/mcore/qwen25/data_convert_qwen25_pretrain.sh
@@ -235,7 +234,7 @@
     vi examples/mcore/qwen25/pretrain_qwen25_7b_32k_ptd.sh
     ```
 
-2. 修改并报错预训练参数配置，配置示例如下：
+2. 修改并保存预训练参数配置，配置示例如下：
 
     ```bash
     NPUS_PER_NODE=8           # 使用单节点的8卡NPU
@@ -248,12 +247,12 @@
     # 根据实际情况配置权重保存、权重加载、词表、数据集路径，多机中所有节点都要有如下数据
     CKPT_LOAD_DIR="./model_weights/qwen2.5_mcore/"  # 权重加载路径，填入权重转换时保存的权重路径
     CKPT_SAVE_DIR="./ckpt/qwen25-7b"                # 训练完成后的权重保存路径
-    DATA_PATH="./dataset/alpaca_text_document"      # 数据集路径，填入数据预处理时保存的数据路径，注意需要添加后缀,如使用alpaca数据集预处理会生成alpaca_text_document.bin和.idx，则在数据集路径后再加上alpaca_text_document
+    DATA_PATH="./dataset/alpaca_text_document"      # 数据集路径，填入数据预处理时保存的数据路径，注意需要添加后缀，如使用Alpaca数据集预处理会生成alpaca_text_document.bin和.idx，则在数据集路径后再加上alpaca_text_document
     TOKENIZER_PATH="./model_from_hf/qwen2.5-7b-hf/" # 词表路径，填入下载的开源权重词表路径
 
     TP=1                # 权重转换设置--target-tensor-parallel-size 1，修改为1
     PP=4                # 权重转换设置--target-pipeline-parallel-size 4，修改为4，与权重转换时一致
-    SEQ_LEN=4096        # 修改seq_length为4096 
+    SEQ_LEN=4096        # 修改seq_length为4096
     MBS=1               # 设置micro-batch-size为1
     GBS=64              # 设置global-batch-size为64
     ```
@@ -289,7 +288,7 @@
     |`--num-query-groups 4`|配合GQA使用，设置groups为4|
     |`--position-embedding-type rope`|位置编码采用RoPE方案|
     |`--untie-embeddings-and-output-weights`|根据原模型要求将output层和embedding层的权重解耦|
-    |`--bf16`|昇腾芯片对BF16精度支持良好，可显著提升训练速度|
+    |`--bf16`|昇腾芯片对bf16精度支持良好，可显著提升训练速度|
 
 > [!NOTE]
 >

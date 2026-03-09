@@ -14,7 +14,7 @@
 
 ## 使用说明
 
-本章节介绍如何基于预训练语言模型，使用单样本格式数据完成指令微调任务，其他数据格式请参考[多样本pack微调](./multi_sample_pack_finetune.md)和[多轮对话微调](./multi-turn_conversation.md)。该使用方法是基于Qwen3-8B模型和单台`Atlas 900 A2 POD`（1x8集群）进行全参数微调。大模型微调主要包含以下流程：  
+本章节介绍如何基于预训练语言模型，使用单样本格式数据完成指令微调任务，其他数据格式请参考[多样本Pack微调](./multi_sample_pack_finetune.md)和[多轮对话微调](./multi-turn_conversation.md)。该使用方法是基于Qwen3-8B模型和单台`Atlas 900 A2 PoD`（1x8集群）进行全参数微调。大模型微调主要包含以下流程：  
 
 **图 1**  单样本微调流程图  
 ![微调流程图](../../figures/instruction_finetune/process_of_instruction_tuning.png)
@@ -29,7 +29,7 @@
 
 2. 模型和数据集准备  
     - 模型准备  
-        模型权重下载请参考[Dense模型](../../models/dense_model.md)、[MOE模型](../../models/moe_model.md)和[SSM模型](../../models/ssm_model.md)文档中对应模型的下载链接。以[Qwen3-8B](https://huggingface.co/Qwen/Qwen3-8B/tree/main)模型为例，完整的模型文件夹应该包括以下内容：
+        模型权重下载请参考[Dense模型](../../models/dense_model.md)、[MoE模型](../../models/moe_model.md)和[SSM模型](../../models/ssm_model.md)文档中对应模型的下载链接。以[Qwen3-8B](https://huggingface.co/Qwen/Qwen3-8B/tree/main)模型为例，完整的模型文件夹应该包括以下内容：
 
         ```shell
         .
@@ -49,7 +49,7 @@
         ```
 
     - 数据集准备  
-        数据集准备请参考[Alpaca风格数据集](datasets/alpaca_dataset.md)、[ShareGPT风格数据集](datasets/sharegpt_dataset.md)和[Pairwise风格数据集](datasets/pairwise_dataset.md)的相关内容，目前已支持`.parquet`, `.csv`, `.json`, `.jsonl`, `.txt`, `.arrow`的格式的数据文件。
+        数据集准备请参考[Alpaca风格数据集](datasets/alpaca_dataset.md)、[ShareGPT风格数据集](datasets/sharegpt_dataset.md)和[Pairwise风格数据集](datasets/pairwise_dataset.md)的相关内容，目前已支持`.parquet`、`.csv`、 `.json`、`.jsonl`、`.txt`以及`.arrow`格式的数据文件。
 
 3. 模型权重转换  
     请参考[权重转换v1](../checkpoint/checkpoint_convert.md)和[权重转换v2](../checkpoint/checkpoint_convert_v2.md)，即将模型原始的HF权重转换成Megatron权重，以Qwen3-8B模型在TP1PP4切分为例，详细配置请参考[Qwen3-8B权重转换脚本](../../../../../examples/mcore/qwen3/ckpt_convert_qwen3_hf2mcore.sh)。
@@ -71,7 +71,7 @@
     ```
 
 4. 数据预处理  
-    因为不同数据集使用的处理方法不同，请先确认好预处理的数据格式，详细使用说明跳转到以下文档：
+    因为不同数据集使用的处理方法不同，请先确认好预处理的数据格式，详细使用说明请参考以下文档：
 
     - [Alpaca微调数据使用文档](datasets/alpaca_dataset.md)
     - [ShareGPT微调数据使用文档](datasets/sharegpt_dataset.md) 
@@ -90,12 +90,12 @@
 
     数据预处理相关参数说明：
 
-    - `handler-name`：指定数据集的处理类，常用的有`AlpacaStyleInstructionHandler`，`SharegptStyleInstructionHandler`，`AlpacaStylePairwiseHandler`等。
+    - `handler-name`：指定数据集的处理类，常用的有`AlpacaStyleInstructionHandler`、`SharegptStyleInstructionHandler`、`AlpacaStylePairwiseHandler`等。
     - `tokenizer-type`：指定处理数据的tokenizer，常用`PretrainedFromHF`。
     - `workers`：处理数据集的并行数。
     - `log-interval`：处理进度更新的间隔步数。
-    - `enable-thinking`：快慢思考模板开关，可设定为`[true,false,none]`，默认值是`none`。开启后，会在数据集的模型回复中添加`<think>`和`</think>`，并参与到loss计算，所有数据被当成慢思考数据；当关闭后，空的CoT标志将被添加到数据集的用户输入中，不参与loss计算，所有数据被当成快思考数据；设置为`none`时适合原始数据集是混合快慢思考数据的场景。**目前只支持Qwen3系列模型**。
-    - `prompt-type`：用于指定模型模板，能够让base模型微调后能具备更好的对话能力。`prompt-type`的可选项可以在[`templates`](../../../../../configs/finetune/templates.json)文件内查看。
+    - `enable-thinking`：快慢思考模板开关，可设定为`[true,false,none]`，默认值是`none`。开启后，会在数据集的模型回复中添加`<think>`和`</think>`，并参与到loss计算，所有数据被当成慢思考数据；当关闭后，空的CoT标志将被添加到数据集的用户输入中，不参与loss计算，所有数据被当成快思考数据；设置为`none`时适合原始数据集是混合快慢思考数据的场景。**目前仅支持Qwen3系列模型**。
+    - `prompt-type`：用于指定模型模板，能够让base模型微调后能具备更好的对话能力。`prompt-type`的可选项可以在[`templates.json`](../../../../../configs/finetune/templates.json)文件内查看。
 
     相关参数设置完毕后，运行数据预处理脚本：
 
@@ -144,7 +144,7 @@
 
     微调脚本相关参数说明：
 
-    - `DATA_PATH`：数据集路径。请注意实际数据预处理生成文件末尾会增加`_input_ids_document`等后缀，该参数填写到数据集的前缀即可。例如实际的数据集相对路径是`./finetune_dataset/alpaca/alpaca_packed_input_ids_document.bin`等，那么只需要填`./finetune_dataset/alpaca/alpaca`即可。
+    - `DATA_PATH`：数据集路径。请注意实际数据预处理生成文件末尾会增加`_input_ids_document`等后缀，该参数填写到数据集的前缀即可。例如实际的数据集相对路径为`./finetune_dataset/alpaca/alpaca_packed_input_ids_document.bin`，那么只需填写`./finetune_dataset/alpaca/alpaca`即可。
     - `is-instruction-dataset`：用于指定微调过程中采用指令微调数据集，以确保模型依据特定指令数据进行微调。
     - `no-pad-to-seq-lengths`：在不同的mini-batch间支持以动态的序列长度进行微调，默认padding到8的整数倍，可以通过`pad-to-multiple-of`参数来指定修改padding到几的倍数。假设微调时指定`--seq-length`序列长度为1024，开启`--no-pad-to-seq-lengths`后，序列长度会padding到大于等于真实数据长度且为8的整数倍的值。
 

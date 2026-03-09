@@ -69,7 +69,7 @@ source /usr/local/Ascend/nnal/atb/set_env.sh --cxx_abi=0 # 修改为实际安装
 可参考如下安装命令：
 
 ```shell
-# 安装torch和torch_npu 构建参考 https://gitcode.com/ascend/pytorch/releases
+# 安装torch和torch_npu构建参考 https://gitcode.com/ascend/pytorch/releases
 pip3 install torch-2.7.1-cp310-cp310-manylinux_2_28_aarch64.whl 
 pip3 install torch_npu-2.7.1rc1-cp310-cp310-manylinux_2_28_aarch64.whl
 ```
@@ -101,7 +101,7 @@ pip3 install torch_npu-2.7.1rc1-cp310-cp310-manylinux_2_28_aarch64.whl
 
     ```shell
     git clone https://gitcode.com/ascend/MindSpeed-LLM.git 
-    git clone https://github.com/NVIDIA/Megatron-LM.git  # megatron从github下载，请确保网络能访问
+    git clone https://github.com/NVIDIA/Megatron-LM.git  # 从github下载Megatron-LM，请确保网络能访问
     cd Megatron-LM
     git checkout core_v0.12.1
     cp -r megatron ../MindSpeed-LLM/
@@ -138,7 +138,7 @@ pip3 install torch_npu-2.7.1rc1-cp310-cp310-manylinux_2_28_aarch64.whl
    
     ```shell
     cd MindSpeed-Core-MS
-    pip3 install -r requirements.txt # 安装第三方依赖库
+    pip3 install -r requirements.txt # 安装第三方依赖
     source auto_convert.sh llm # 拉取训练所需组件库
     source tests/scripts/set_path.sh # 设置环境变量
     ```

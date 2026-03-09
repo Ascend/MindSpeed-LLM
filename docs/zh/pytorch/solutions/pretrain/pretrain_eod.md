@@ -1,4 +1,4 @@
-# 大模型分布式预训练pack模式
+# 大模型分布式预训练Pack模式
 
 ## 使用场景
 
@@ -60,7 +60,7 @@
         ```
 
     - `n-subs`：数据预处理并行加速参数。当需要预处理的数据集比较大时，可以通过并行处理进行加速，方法为设置参数`--n-subs`，通过该参数设置并行处理数量。在数据预处理过程会将原始数据集切分为`n-subs`个子集，对子集进行并行处理，然后合并，从而实现加速。建议预处理数据集超过GB级别时加上该参数。
-    - `append-eod`：该参数的作用是将文档结束标记`EOD`显示地添加到每条数据的末尾，防止模型学习无意义的关联。该参数使能后的效果如下：  
+    - `append-eod`：该参数的作用是将文档结束标记`EOD`显式地添加到每条数据的末尾，防止模型学习无意义的关联。该参数使能后的效果如下：  
     ![append-eod示意图](../../figures/pretrain/append-eod.png)
 
     最后，相关参数设置完毕后，运行数据预处理脚本：
@@ -109,20 +109,20 @@
     PP=4 # 模型权重转换的pp大小，在本例中是4
     ```
 
-    以上通用配置完成后，要开启pack模式训练，需要在[Qwen3-8B预训练脚本](../../../../../examples/mcore/qwen3/pretrain_qwen3_8b_4K_ptd.sh)基础上，加上`--reset-attention-mask`参数，该参数开启时，会按照EOD计算句子的分隔位置，生成actual_seq_len，传入FA算子中相当于锯齿状的mask计算效果。该参数的使能效果如下图所示：
+    以上通用配置完成后，要开启Pack模式训练，需要在[Qwen3-8B预训练脚本](../../../../../examples/mcore/qwen3/pretrain_qwen3_8b_4K_ptd.sh)基础上，加上`--reset-attention-mask`参数。该参数开启时，会按照EOD计算句子的分隔位置，生成actual_seq_len，传入FA算子中相当于锯齿状的mask计算效果。该参数的使能效果如下图所示：
     ![reset-position-ids图示0](../../figures/pretrain/reset-position-ids.png)
 
     另外，使用`--attention-mask-type`需要注意：默认是causal，支持causal和general格式。
     1. `--attention-mask-type`是general，attention-mask会从数据获取生成。
     2. `--attention-mask-type`是causal，attention-mask会在FA前生成压缩固定长度(2048)的mask，性能和显存会比方案1更好，推荐使用。
 
-    可选功能：`--reset-position-ids`参数，在开启EOD功能之后，每条数据由不同的样本拼接而成，因此其位置 ID 并不连续。该参数用于将数据的position-ids按照eod结尾生成ids，而非连续的ids。模型将在每个EOD之后，将对position-ids从0开始重新编号，从而隔离不同句子间的位置计算，作用于attention中query和key的位置编码。
+    可选功能：`--reset-position-ids`参数，在开启EOD功能之后，每条数据由不同的样本拼接而成，因此其位置ID并不连续。该参数用于将数据的position-ids按照EOD结尾生成ids，而非连续的ids。模型将在每个EOD之后，将对position-ids从0开始重新编号，从而隔离不同句子间的位置计算，作用于attention中query和key的位置编码。
 
     脚本内的其他相关参数说明:
 
-    - `DATA_PATH`：数据集路径。请注意实际数据预处理生成文件末尾会增加`_text_document`，该参数填写到数据集的文件前缀即可。例如实际的数据集相对路径是`./finetune_dataset/alpaca/alpaca_text_document.bin`等，那么只需要填`./finetune_dataset/alpaca/alpaca_text_document`即可。
+    - `DATA_PATH`：数据集路径。请注意实际数据预处理生成文件末尾会增加`_text_document`，该参数填写到数据集的文件前缀即可。例如实际的数据集相对路径是`./finetune_dataset/alpaca/alpaca_text_document.bin`等，那么只需填写`./finetune_dataset/alpaca/alpaca_text_document`即可。
     - `CKPT_LOAD_DIR`: 权重加载路径。预训练时可以选择随机初始化模型权重，此时该参数不用配置，同时需要注释掉预训练脚本中的`--load ${CKPT_LOAD_DIR} \`代码行。
-    - `tokenizer-type`：参数值为PretrainedFromHF时， 词表路径仅需要填到模型文件夹即可，不需要到tokenizer.model文件；参数值不为PretrainedFromHF时，例如Qwen3Tokenizer，需要指定到tokenizer.model文件。示例如下
+    - `tokenizer-type`：参数值为PretrainedFromHF时， 词表路径仅需要填到模型文件夹即可，不需要到tokenizer.model文件；参数值不为PretrainedFromHF时，例如Qwen3Tokenizer，需要指定到tokenizer.model文件。示例如下：
 
         ```bash 
         # tokenizer-type为PretrainedFromHF
@@ -149,6 +149,6 @@
 
 数据预处理阶段的`append-eod`参数需要和预训练阶段的`reset-attention-mask`参数搭配一起使用：
 
-1. 如果只开`append-eod`的话，文档末尾添加了 `<EOD>`，FA计算缺失了文档的长度信息，计算FA的时候按照跨文档计算，模型仍学习的是跨文档的信息。
-2. 如果只开`reset-attention-mask`，FA计算虽然统计了文档的长度信息，但由于数据缺失`<EOD>`分割，导致统计的文档还是按照跨文档计算，模型仍学习的是跨文档的信息。
-3. 如果数据预处理开启`append-eod`且预训练开启`reset-attention-mask`，FA计算可以统计每个有`<EOD>`分割的文档长度，FA计算是对每个文档进行独立计算，模型学习到的是非跨文档信息。
+- 如果只开`append-eod`的话，文档末尾添加了 `<EOD>`，FA计算缺失了文档的长度信息，计算FA的时候按照跨文档计算，模型仍学习的是跨文档的信息。
+- 如果只开`reset-attention-mask`，FA计算虽然统计了文档的长度信息，但由于数据缺失`<EOD>`分割，导致统计的文档还是按照跨文档计算，模型仍学习的是跨文档的信息。
+- 如果数据预处理开启`append-eod`且预训练开启`reset-attention-mask`，FA计算可以统计每个有`<EOD>`分割的文档长度，FA计算是对每个文档进行独立计算，模型学习到的是非跨文档信息。
