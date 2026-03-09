@@ -1,0 +1,338 @@
+{
+    "test_deepseek2_hf2mcore_tp1pp4ep8": [
+        {
+            "param": {
+                "model-type":"GPT",
+                "load-model-type":"hf",
+                "save-model-type":"mg",
+                "target-tensor-parallel-size": "1",
+                "target-pipeline-parallel-size": "4",
+                "target-expert-parallel-size": "8",
+                "num-layers-per-virtual-pipeline-stage": "1",
+                "load-dir":"/data/ci/models/deepseek-v2/hf/deepseek2_hf",
+                "save-dir":"/data/ci/cache/deepseek2_tp1pp4ep8",
+                "use-mcore-models": null,
+                "moe-grouped-gemm": null,
+                "model-type-hf": "deepseek2",
+                "params-dtype": "bf16",
+                "tokenizer-model":"/data/ci/deepseek2/hf/deepseek2_hf",
+                "spec":"mindspeed_llm.tasks.models.spec.deepseek_spec layer_spec",
+                "moe-tp-extend-ep": null
+            }
+        },
+        {
+            "Base_MD5" : [
+                "de578d218a4bd316",
+                "a88377f679a039d8",
+                "a201a14c5d402571",
+                "3806439c9c28b225",
+                "e3845c9f87e530c4",
+                "a2430d3057d82ce2",
+                "72d9a317b7b1ca58",
+                "ba3464aa54294f0e",
+                "f90cac799b9352a4",
+                "2816c17313cdc86f",
+                "74cdb99dadd646a9",
+                "7a1e3e33b0742c5c",
+                "913d85f5b823b677",
+                "e6fa9683491d2870",
+                "91c705efcef853f6",
+                "e9954e3b9dcee567",
+                "344491da9560403d",
+                "3d96e6d4c2c7ae69",
+                "5c4abdda385e228a",
+                "abc06eaab2fb338c",
+                "351deb86d31ded19",
+                "b13ada1d9931496b",
+                "b0a29f37b76e380b",
+                "62c74f0a203e864e",
+                "cf118c244abeef4e",
+                "4ef963b43cccc8f7",
+                "c2d5d8962a842c40",
+                "c0a5f4c069b9206d",
+                "17b3c47518cc6bff",
+                "170a7f832c490b16",
+                "bc7a8089f1c9c6f9",
+                "be46905f16ee7381"
+            ]
+        }
+    ],
+    "test_deepseek2_mcore2hf_tp1pp4ep8": [
+        {
+            "param": {
+                "model-type":"GPT",
+                "load-model-type":"mg",
+                "save-model-type": "hf",
+                "target-tensor-parallel-size": "1",
+                "target-pipeline-parallel-size": "1",
+                "target-expert-parallel-size": "1",
+                "save-dir":"/data/ci/models/deepseek-v2/hf/deepseek2_hf",
+                "load-dir":"/data/ci/cache/deepseek2_tp1pp4ep8",
+                "use-mcore-models": null,
+                "moe-grouped-gemm": null,
+                "model-type-hf": "deepseek2",
+                "params-dtype": "bf16",
+                "spec":"mindspeed_llm.tasks.models.spec.deepseek_spec layer_spec"
+            }
+        },
+        {
+            "Base_MD5" : [
+            "211bf849fb2695a2106baf36d1a708a1"
+            ]
+        }
+
+    ],
+
+    "test_qwen25_hf2mcore_tp4pp2dpp": [
+        {
+            "param": {
+                "model-type":"GPT",
+                "load-model-type":"hf",
+                "save-model-type":"mg",
+                "target-tensor-parallel-size": "4",
+                "target-pipeline-parallel-size": "2",
+                "load-dir":"/data/ci/models/qwen25/hf/Qwen2.5-7B",
+                "save-dir":"/data/ci/cache/Qwen2.5-mg",
+                "tokenizer-model":"/data/ci/Qwen2.5-7B",
+                "use-mcore-models": null,
+                "add-qkv-bias": null,
+                "num-layer-list": "1,3",
+                "model-type-hf": "llama2",
+                "params-dtype": "bf16"
+            }
+        },
+        {
+            "Base_MD5" : [
+            "e61a97df0c5b6985",
+            "d537534859e89a90",
+            "3096d1dc4a10a283",
+            "92619cd1165dd6e2",
+            "539ec7a838259e05",
+            "269da91cb31d69d7",
+            "600926a2014d001a",
+            "824b43c2a0466738"
+            ]
+        }
+    ],
+
+    "test_qwen25_mcore2hf_tp4pp2dpp": [
+        {
+            "param": {
+                "model-type":"GPT",
+                "load-model-type":"mg",
+                "save-model-type":"hf",
+                "target-tensor-parallel-size": "1",
+                "target-pipeline-parallel-size": "1",
+                "load-dir":"/data/ci/cache/Qwen2.5-mg",
+                "save-dir":"/data/ci/models/qwen25/hf/Qwen2.5-7B",
+                "use-mcore-models": null,
+                "add-qkv-bias": null,
+                "num-layer-list": "1,3",
+                "model-type-hf": "llama2",
+                "params-dtype": "bf16"
+            }
+
+        },
+        {
+            "Base_MD5" : [
+                "35245aa6b01ed29c52673c700a23ef6c"
+            ]
+        }
+    ],
+
+    "test_llama3_noop_layer_hf2mg": [
+        {
+            "param": {
+                "model-type":"GPT",
+                "model-type-hf": "llama2",
+                "use-mcore-models": null,
+                "load-model-type":"hf",
+                "save-model-type": "mg",
+                "target-tensor-parallel-size": "2",
+                "target-pipeline-parallel-size": "2",
+                "save-dir":"/data/ci/cache/llama-3-8b-hf-nooplayer-tp2pp2vpp2-mcore-test/",
+                "load-dir":"/data/ci/models/llama3/hf/llama-3-8b-hf-layer14/",
+                "num-layers-per-virtual-pipeline-stage": "2",
+                "noop-layers": "1,15",
+                "params-dtype": "bf16",
+                "tokenizer-model": "/data/ci/models/llama3/hf/llama-3-8b-hf/tokenizer.json"
+            }
+        },
+        {
+            "Base_MD5": [
+                "eb9923b8ef7af1bc",
+                "d3ac74205cd9f40e",
+                "ed8d973adc18d4b7",
+                "67179d05a7a420eb"
+            ]
+        }
+    ],
+
+    "test_llama2_merge_lora2mg": [
+        {
+            "param": {
+                "model-type":"GPT",
+                "model-type-hf": "llama2",
+                "use-mcore-models": null,
+                "load-model-type":"mg",
+                "save-model-type": "mg",
+                "target-tensor-parallel-size": "2",
+                "target-pipeline-parallel-size": "4",
+                "save-dir":"/data/ci/cache/llama2_merge_lora_mcore/",
+                "load-dir":"/data/ci/models/llama2/mg/Llama2_mcore_l4tp4pp2/",
+                "lora-load":"/data/ci/models/llama2/mg/llama2_l4_tp4pp2_lora/",
+                "lora-r":"16",
+                "lora-alpha":"32",
+                "lora-target-modules":"linear_qkv linear_proj linear_fc1 linear_fc2"
+            }
+        },
+        {
+            "Base_MD5": [
+                "56c4dd1a2dae585a",
+                "6a14b4a381f2e826",
+                "c7c42a938810a9cb",
+                "e4971bfde561bd0c",
+                "cd3229971bc01484",
+                "80be876df5f174f7",
+                "cccc9b855d424bac",
+                "4143f71dd4521bb3"
+            ]
+        }
+    ],
+
+    "test_deepseek2_lite_hf2mcore_tp1pp1ep8": [
+        {
+            "param": {
+                "model-type":"GPT",
+                "load-model-type":"hf",
+                "save-model-type":"mg",
+                "target-tensor-parallel-size": "1",
+                "target-pipeline-parallel-size": "1",
+                "target-expert-parallel-size": "8",
+                "load-dir":"/data/ci/models/deepseek2-lite/hf/deepseek2_lite_hf",
+                "save-dir":"/data/ci/cache/deepseek2_lite_mg",
+                "use-mcore-models": null,
+                "model-type-hf": "deepseek2-lite",
+                "params-dtype": "bf16",
+                "tokenizer-model":"/data/ci/models/deepseek2-lite/hf/deepseek2_lite_hf",
+                "spec":"mindspeed_llm.tasks.models.spec.deepseek_spec layer_spec"
+            }
+        },
+        {
+            "Base_MD5" : [
+                "089a6c6a10258752",
+                "a6a42d28f6fbecdc",
+                "639cf785b3b10323",
+                "635c601383b6145a",
+                "3c5b5c51d7cc864b",
+                "d232d7075a66db1a",
+                "bba9ca83880629de",
+                "14f2b8924221603b"
+            ]
+        }
+    ],
+
+    "test_deepseek2_lite_mcore2hf_tp1pp1ep8": [
+        {
+            "param": {
+                "model-type":"GPT",
+                "load-model-type":"mg",
+                "save-model-type": "hf",
+                "target-tensor-parallel-size": "1",
+                "target-pipeline-parallel-size": "1",
+                "target-expert-parallel-size": "1",
+                "save-dir":"/data/ci/models/deepseek2-lite/hf/deepseek2_lite_hf",
+                "load-dir":"/data/ci/models/deepseek2-lite/mg/deepseek2_lite_mg_v2/",
+                "use-mcore-models": null,
+                "model-type-hf": "deepseek2-lite",
+                "params-dtype": "bf16",
+                "spec":"mindspeed_llm.tasks.models.spec.deepseek_spec layer_spec"
+            }
+        },
+        {
+            "Base_MD5" : [
+                "bd11d97a5fabd2aec2ea486d7872ee67"
+            ]
+        }
+    ],
+
+    "test_llama2_lora2mcore_tp1pp1":[
+        {
+            "param":{
+                "model-type":"GPT",
+                "load-model-type":"mg",
+                "save-model-type":"mg",
+                "load-dir":"/data/ci/models/llama2/mg/llama-7b-lora-mcore-tp1pp1/",
+                "save-dir":"/data/ci/cache/llama2-7b-lora2mcore-test/",
+                "lora-r":"16",
+                "lora-alpha":"32",
+                "lora-target-modules":"linear_qkv linear_proj linear_fc1 linear_fc2",
+                "target-tensor-parallel-size": "1",
+                "target-pipeline-parallel-size": "1",
+                "use-mcore-models": null,
+                "model-type-hf": "llama2"
+            }
+        },
+        {
+            "Base_MD5" : [
+                "1680a1c3238fd75d"
+            ]
+        }
+    ],
+
+    "test_qwen2_moe_hf2mcore_tp1pp2ep2": [
+        {
+            "param": {
+                "model-type":"GPT",
+                "load-model-type":"hf",
+                "save-model-type":"mg",
+                "target-tensor-parallel-size": "1",
+                "target-pipeline-parallel-size": "2",
+                "target-expert-parallel-size": "2",
+                "load-dir":"/data/ci/models/qwen2-moe/hf/qwen2_moe_hf",
+                "save-dir":"/data/ci/cache/qwen2_moe_l2_t1p2e2",
+                "tokenizer-model":"/data/ci/models/qwen2-moe/hf/qwen2_moe_hf",
+                "use-mcore-models": null,
+                "moe-grouped-gemm": null,
+                "add-qkv-bias": null,
+                "model-type-hf": "qwen2-moe",
+                "spec":"mindspeed_llm.tasks.models.spec.qwen2_moe_spec layer_spec",
+                "params-dtype": "bf16"
+            }
+        },
+        {
+            "Base_MD5" : [
+                "88e76a8f4d2c63e6",
+                "41de1be72cf9cfd5",
+                "feeef39e58a9dd33",
+                "43049110377b3298"
+            ]
+        }
+    ],
+
+    "test_qwen2_moe_mcore2hf_tp1pp2ep2": [
+        {
+            "param": {
+                "model-type":"GPT",
+                "load-model-type":"mg",
+                "save-model-type": "hf",
+                "target-tensor-parallel-size": "1",
+                "target-pipeline-parallel-size": "1",
+                "target-expert-parallel-size": "1",
+                "save-dir":"/data/ci/models/qwen2-moe/hf/qwen2_moe_hf",
+                "load-dir":"/data/ci/cache/qwen2_moe_l2_t1p2e2",
+                "spec":"mindspeed_llm.tasks.models.spec.qwen2_moe_spec layer_spec",
+                "use-mcore-models": null,
+                "moe-grouped-gemm": null,
+                "add-qkv-bias": null,
+                "model-type-hf": "qwen2-moe",
+                "params-dtype": "bf16"
+            }
+        },
+        {
+            "Base_MD5" : [
+                "356e7f848a42aec7a8907b030e5a1159"
+            ]
+        }
+    ]
+}

@@ -1,0 +1,215 @@
+{
+
+    "test_alpaca_dataset": [
+        {
+            "params": {
+                "input": "/data/ci/datasets/tune_dataset/train-00000-of-00001-a09b74b3ef9c3b56.parquet",
+                "tokenizer-type": "PretrainedFromHF",
+                "handler-name": "AlpacaStyleInstructionHandler",
+                "output-prefix": "/data/ci/cache/tune_dataset/alpaca/alpaca",
+                "overwrite-cache": null,
+                "tokenizer-name-or-path": "/data/ci/models/qwen-7b/hf/qwen-7b/",
+                "workers": 4,
+                "log-interval": 1000,
+                "prompt-type": "qwen"
+            }
+        }
+    ],
+    "test_alpaca_history_dataset": [
+        {
+            "params": {
+                "input": "/data/ci/datasets/tune_dataset/oaast_sft.json",
+                "tokenizer-type": "PretrainedFromHF",
+                "handler-name": "AlpacaStyleInstructionHandler",
+                "output-prefix": "/data/ci/cache/tune_dataset/alpaca_his/alpaca_his",
+                "tokenizer-name-or-path": "/data/ci/models/qwen-7b/hf/qwen-7b/",
+                "overwrite-cache": null,
+                "workers": 4,
+                "log-interval": 1000,
+                "prompt-type": "qwen",
+                "map-keys": "{\"history\":\"history\"}"
+            }
+        },
+        {
+            "params": {
+                "input": "/data/ci/datasets/tune_dataset/oaast_sft.json",
+                "tokenizer-type": "PretrainedFromHF",
+                "handler-name": "AlpacaStyleInstructionHandler",
+                "output-prefix": "/data/ci/cache/tune_dataset/alpaca_his/alpaca_his_seq1024",
+                "tokenizer-name-or-path": "/data/ci/models/qwen-7b/hf/qwen-7b/",
+                "overwrite-cache": null,
+                "workers": 4,
+                "log-interval": 1000,
+                "seq-length" : 1024,
+                "prompt-type": "qwen",
+                "map-keys": "{\"history\":\"history\"}"
+            }
+        }
+
+    ],
+    "test_sharegpt_dataset": [
+        {
+            "params": {
+                "input": "/data/ci/datasets/tune_dataset/sharegpt_formatted_data-evol-gpt4.jsonl",
+                "tokenizer-type": "PretrainedFromHF",
+                "handler-name": "SharegptStyleInstructionHandler",
+                "output-prefix": "/data/ci/cache/tune_dataset/sharegpt/sharegpt",
+                "tokenizer-name-or-path": "/data/ci/models/qwen-7b/hf/qwen-7b/",
+                "workers": 4,
+                "overwrite-cache": null,
+                "log-interval": 1000,
+                "prompt-type": "qwen",
+                "map-keys": "{\"system\":\"system_prompt\"}"
+            }
+        }
+    ],
+    "test_openai_dataset": [
+        {
+            "params": {
+                "input": "/data/ci/datasets/tune_dataset/sss.json",
+                "tokenizer-type": "PretrainedFromHF",
+                "handler-name": "SharegptStyleInstructionHandler",
+                "output-prefix": "/data/ci/cache/tune_dataset/openai/sss",
+                "tokenizer-name-or-path": "/data/ci/models/qwen-7b/hf/qwen-7b/",
+                "overwrite-cache": null,
+                "workers": 4,
+                "log-interval": 1000,
+                "prompt-type": "qwen",
+                "map-keys": "{\"messages\":\"messages\", \"tags\": {\"role_tag\": \"role\", \"content_tag\": \"content\", \"user_tag\": \"user\", \"assistant_tag\": \"assistant\", \"system_tag\": \"system\"}}"
+            }
+        }
+    ],
+
+    "instruction_dataset": [
+        {
+            "params" : {
+                "input-dataset": "/data/ci/datasets/origin/train-00000-of-00001-a09b74b3ef9c3b56.parquet",
+                "test-out-part": "/data/ci/cache/process_dataset/test_ins_subs/",
+                "base-out-part": "/data/ci/datasets/processed/base_ins_subs/",
+                "test-out-merge": "/data/ci/cache/process_dataset/test_ins_merge/",
+                "base-out-merge": "/data/ci/datasets/processed/base_ins_merge/"
+            }
+        }
+    ],
+    "test_instruction_datasets_part1": [
+        {
+            "params": {
+                "input": "/data/ci/datasets/origin/0001-alpaca.parquet",
+                "tokenizer-type": "PretrainedFromHF",
+                "handler-name": "GeneralInstructionHandler",
+                "output-prefix": "/data/ci/cache/process_dataset/test_ins_subs/part1", 
+                "tokenizer-name-or-path": "/data/ci/models/llama2/hf/llama-2-7b-hf",
+                "cache-dir": "/data/ci/cache/process_dataset/tmp/",
+                "workers": 4,
+                "log-interval": 1000,
+                "append-eod": null
+            }
+        }
+    ],
+    "test_instruction_datasets_part2": [
+        {
+            "params": {
+                "input": "/data/ci/datasets/origin/0002-alpaca.parquet",
+                "tokenizer-type": "PretrainedFromHF",
+                "handler-name": "GeneralInstructionHandler",
+                "output-prefix": "/data/ci/cache/process_dataset/test_ins_subs/part2",
+                "tokenizer-name-or-path": "/data/ci/models/llama2/hf/llama-2-7b-hf",
+                "cache-dir": "/data/ci/cache/process_dataset/tmp/",
+                "workers": 4,
+                "log-interval": 1000,
+                "append-eod": null
+            }
+        }
+    ],
+    "test_merge_instrction_datasets": [
+        {
+            "params": {
+                "input": "/data/ci/cache/process_dataset/test_ins_subs/",
+                "output-prefix": "/data/ci/cache/process_dataset/test_ins_merge/merge",
+                "merge-group-keys": ["packed_attention_mask_document", "packed_input_ids_document", "packed_labels_document"]
+            }
+        }
+    ],
+    "handler_dir": [
+        {
+            "params" : {
+                "test-out-handler": "/data/ci/cache/process_dataset/test_instruction_handler/",
+                "base-out-handler": "/data/ci/datasets/processed/base_instruction_handler/"
+            }
+        }
+    ],
+    "alpaca_style_instruction_handler": [
+        {
+            "params": {
+                "input": "/data/ci/datasets/origin/0001-alpaca.parquet",
+                "tokenizer-type": "PretrainedFromHF",
+                "handler-name": "AlpacaStyleInstructionHandler",
+                "output-prefix": "/data/ci/cache/process_dataset/test_instruction_handler/alpaca_style",
+                "tokenizer-name-or-path": "/data/ci/models/llama2/hf/llama-2-7b-hf",
+                "cache-dir": "/data/ci/cache/process_dataset/tmp/",
+                "workers": 4,
+                "log-interval": 1000,
+                "overwrite-cache": null,
+                "prompt-type" : "llama2"
+            }
+        }
+    ],
+    "alpaca_style_pack_instruction_handler": [
+        {
+            "params": {
+                "input": "/data/ci/datasets/origin/0001-alpaca.parquet",
+                "tokenizer-type": "PretrainedFromHF",
+                "handler-name": "AlpacaStyleInstructionHandler",
+                "output-prefix": "/data/ci/cache/process_dataset/test_instruction_handler/alpaca_style_pack",
+                "tokenizer-name-or-path": "/data/ci/models/ling_v2/hf/ling-mini-base-2.0",
+                "cache-dir": "/data/ci/cache/process_dataset/tmp/",
+                "workers": 4,
+                "log-interval": 1000,
+                "overwrite-cache": null,
+                "prompt-type" : "bailing_mini",
+                "append-eod": null,
+                "pack": null,
+                "seq-length": 4096
+            }
+        }
+    ],
+    "sharegpt_style_instruction_handler": [
+        {
+            "params": {
+                "input": "/data/ci/datasets/origin/sharegpt_formatted_data-evol-gpt4.jsonl",
+                "tokenizer-type": "PretrainedFromHF",
+                "handler-name": "SharegptStyleInstructionHandler",
+                "output-prefix": "/data/ci/cache/process_dataset/test_instruction_handler/sharegpt_style",
+                "tokenizer-name-or-path": "/data/ci/models/llama2/hf/llama-2-7b-hf",
+                "cache-dir": "/data/ci/cache/process_dataset/tmp/",
+                "workers": 4,
+                "log-interval": 1000,
+                "prompt-type" : "llama2"
+            }
+        }
+    ],
+    "template_dir": [
+        {
+            "params" : {
+                "test-out-template": "/data/ci/cache/process_dataset/test_template/",
+                "base-out-template": "/data/ci/datasets/processed/base_template/"
+            }
+        }
+    ],
+    "reasoning_template": [
+        {
+            "params": {
+                "input": "/data/ci/datasets/origin/train-00000-of-00001-a09b74b3ef9c3b56.parquet",
+                "tokenizer-type": "PretrainedFromHF",
+                "handler-name": "AlpacaStyleInstructionHandler",
+                "output-prefix": "/data/ci/cache/process_dataset/test_template/qwen3_reasoning_template",
+                "tokenizer-name-or-path": "/data/ci/models/qwen3_next/hf/Qwen3-Next-80B-A3B-hf",
+                "cache-dir": "/data/ci/cache/process_dataset/tmp/",
+                "workers": 4,
+                "log-interval": 1000,
+                "prompt-type": "qwen3",
+                "enable-thinking": "true"
+            }
+        }
+    ]
+}

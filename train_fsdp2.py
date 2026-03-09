@@ -254,10 +254,12 @@ class AutoTrainer:
       """Delegate to the implementation"""
       self.trainer.train()
 
-
+def main():
+   trainer = AutoTrainer()
+   trainer.train()
 # ==============================================================================
 # [Entry Point]
 # ==============================================================================
 if __name__ == "__main__":
-   trainer = AutoTrainer()
-   trainer.train()
+    main()
+    

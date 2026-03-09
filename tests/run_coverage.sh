@@ -12,7 +12,7 @@ UT_DIR="empty"
 ST_DIR="empty"
 
 # 创建日志目录
-GENERATE_LOG_DIR="$UT_DIR/logs"
+GENERATE_LOG_DIR="COVERAGE/logs"
 mkdir -p "$GENERATE_LOG_DIR"
 touch "$GENERATE_LOG_DIR/exec_error.log"
 echo "core0.12.1 Execution Results" > $GENERATE_LOG_DIR/exec_error.log
@@ -28,14 +28,14 @@ BRANCH_TEST=$1
 
 if [ ${BRANCH_TEST} = "all" ]; then
     PIPELINE_DIR="$BASE_DIR/tests/pipeline"
-    UT_DIR="$BASE_DIR/tests/coverage"
+    UT_DIR="$BASE_DIR/tests/ut"
     ST_DIR="$BASE_DIR/tests/st/shell_scripts"
 elif  [ ${BRANCH_TEST} = "ST" ]; then
     ST_DIR="$BASE_DIR/tests/st/shell_scripts"
 elif  [ ${BRANCH_TEST} = "PIPELINE" ]; then
     PIPELINE_DIR="$BASE_DIR/tests/pipeline"
 elif  [ ${BRANCH_TEST} = "UT" ]; then
-    UT_DIR="$BASE_DIR/tests/coverage"
+    UT_DIR="$BASE_DIR/tests/ut"
 fi
 
 # 带参2只用于ut，非必要
@@ -73,33 +73,29 @@ add_coverage() {
     sed -i "3a\import coverage" pretrain_gpt.py
     sed -i '4a\cov = coverage.Coverage(data_suffix=f"usecase-{time.time_ns()}_{random.randint(0, 100)}")' pretrain_gpt.py
     sed -i "5a\cov.start()" pretrain_gpt.py
-
     sed -i "/    main()/a\    cov.stop()" pretrain_gpt.py
     sed -i "/    cov.stop()/a\    cov.save()" pretrain_gpt.py
+
+    sed -i "1a\import random" train_fsdp2.py
+    sed -i "2a\import time" train_fsdp2.py
+    sed -i "3a\import coverage" train_fsdp2.py
+    sed -i '4a\cov = coverage.Coverage(data_suffix=f"usecase-{time.time_ns()}_{random.randint(0, 100)}")' train_fsdp2.py
+    sed -i "5a\cov.start()" train_fsdp2.py
+    sed -i "/    main()/a\    cov.stop()" train_fsdp2.py
+    sed -i "/    cov.stop()/a\    cov.save()" train_fsdp2.py
 
     sed -i "1a\import random" pretrain_mamba.py
     sed -i "2a\import time" pretrain_mamba.py
     sed -i "3a\import coverage" pretrain_mamba.py
     sed -i '4a\cov = coverage.Coverage(data_suffix=f"usecase-{time.time_ns()}_{random.randint(0, 100)}")' pretrain_mamba.py
     sed -i "5a\cov.start()" pretrain_mamba.py
-
     sed -i "/    main()/a\    cov.stop()" pretrain_mamba.py
     sed -i "/    cov.stop()/a\    cov.save()" pretrain_mamba.py
-
-    sed -i "1a\import random" mindspeed_llm/tasks/checkpoint/convert_ckpt_mamba2.py
-    sed -i "2a\import time" mindspeed_llm/tasks/checkpoint/convert_ckpt_mamba2.py
-    sed -i "3a\import coverage" mindspeed_llm/tasks/checkpoint/convert_ckpt_mamba2.py
-    sed -i '4a\cov = coverage.Coverage(data_suffix=f"usecase-{time.time_ns()}_{random.randint(0, 100)}")' mindspeed_llm/tasks/checkpoint/convert_ckpt_mamba2.py
-
-    sed -i "/    run()/i\    cov.start()" mindspeed_llm/tasks/checkpoint/convert_ckpt_mamba2.py
-    sed -i "/    run()/a\    cov.stop()" mindspeed_llm/tasks/checkpoint/convert_ckpt_mamba2.py
-    sed -i "/    cov.stop()/a\    cov.save()" mindspeed_llm/tasks/checkpoint/convert_ckpt_mamba2.py
 
     sed -i "1a\import random" mindspeed_llm/tasks/checkpoint/convert_param.py
     sed -i "2a\import time" mindspeed_llm/tasks/checkpoint/convert_param.py
     sed -i "3a\import coverage" mindspeed_llm/tasks/checkpoint/convert_param.py
     sed -i '4a\cov = coverage.Coverage(data_suffix=f"usecase-{time.time_ns()}_{random.randint(0, 100)}")' mindspeed_llm/tasks/checkpoint/convert_param.py
-
     sed -i "/    main()/i\    cov.start()" mindspeed_llm/tasks/checkpoint/convert_param.py
     sed -i "/    main()/a\    cov.stop()" mindspeed_llm/tasks/checkpoint/convert_param.py
     sed -i "/    cov.stop()/a\    cov.save()" mindspeed_llm/tasks/checkpoint/convert_param.py
@@ -108,7 +104,6 @@ add_coverage() {
     sed -i "2a\import time" convert_ckpt.py
     sed -i "3a\import coverage" convert_ckpt.py
     sed -i '4a\cov = coverage.Coverage(data_suffix=f"usecase-{time.time_ns()}_{random.randint(0, 100)}")' convert_ckpt.py
-
     sed -i "/    main()/i\    cov.start()" convert_ckpt.py
     sed -i "/    main()/a\    cov.stop()" convert_ckpt.py
     sed -i "/    cov.stop()/a\    cov.save()" convert_ckpt.py
@@ -117,7 +112,6 @@ add_coverage() {
     sed -i "2a\import time" convert_ckpt_v2.py
     sed -i "3a\import coverage" convert_ckpt_v2.py
     sed -i '4a\cov = coverage.Coverage(data_suffix=f"usecase-{time.time_ns()}_{random.randint(0, 100)}")' convert_ckpt_v2.py
-
     sed -i "/    main()/i\    cov.start()" convert_ckpt_v2.py
     sed -i "/    main()/a\    cov.stop()" convert_ckpt_v2.py
     sed -i "/    cov.stop()/a\    cov.save()" convert_ckpt_v2.py
@@ -126,7 +120,6 @@ add_coverage() {
     sed -i "2a\import time" evaluation.py
     sed -i "3a\import coverage" evaluation.py
     sed -i '4a\cov = coverage.Coverage(data_suffix=f"usecase-{time.time_ns()}_{random.randint(0, 100)}")' evaluation.py
-
     sed -i "/def main():/a\    cov.start()" evaluation.py
     sed -i "/            logger.info(f'NeedleBench_eval Running Time: {time.time() - a}')/a\    cov.stop()" evaluation.py
     sed -i "/    cov.stop()/a\    cov.save()" evaluation.py
@@ -135,7 +128,6 @@ add_coverage() {
     sed -i "2a\import time" inference.py
     sed -i "3a\import coverage" inference.py
     sed -i '4a\cov = coverage.Coverage(data_suffix=f"usecase-{time.time_ns()}_{random.randint(0, 100)}")' inference.py
-
     sed -i "/def main():/a\    cov.start()" inference.py
     sed -i "/    task_factory(args, model)/a\    cov.stop()" inference.py
     sed -i "/    cov.stop()/a\    cov.save()" inference.py
@@ -145,7 +137,6 @@ add_coverage() {
     sed -i "3a\import coverage" posttrain_gpt.py
     sed -i '4a\cov = coverage.Coverage(data_suffix=f"usecase-{time.time_ns()}_{random.randint(0, 100)}")' posttrain_gpt.py
     sed -i "5a\cov.start()" posttrain_gpt.py
-
     sed -i "/    launch()/a\    cov.stop()" posttrain_gpt.py
     sed -i "/    cov.stop()/a\    cov.save()" posttrain_gpt.py
 
@@ -153,7 +144,6 @@ add_coverage() {
     sed -i "2a\import time" preprocess_data.py
     sed -i "3a\import coverage" preprocess_data.py
     sed -i '4a\cov = coverage.Coverage(data_suffix=f"usecase-{time.time_ns()}_{random.randint(0, 100)}")' preprocess_data.py
-
     sed -i "/def main():/a\    cov.start()" preprocess_data.py
     sed -i "/                os.remove(idx_file.replace('.idx', '.bin'))/a\    cov.stop()" preprocess_data.py
     sed -i "/    cov.stop()/a\    cov.save()" preprocess_data.py
@@ -165,16 +155,22 @@ remove_coverage() {
     sed -i "2d" pretrain_gpt.py
     sed -i "2d" pretrain_gpt.py
     sed -i "2d" pretrain_gpt.py
-
     sed -i "/    cov.stop()/d" pretrain_gpt.py
     sed -i "/    cov.save()/d" pretrain_gpt.py
 
-    sed -i "2d" pretrain_mamba.py
-    sed -i "2d" pretrain_mamba.py
-    sed -i "2d" pretrain_mamba.py
-    sed -i "2d" pretrain_mamba.py
-    sed -i "2d" pretrain_mamba.py
+    sed -i "2d" train_fsdp2.py
+    sed -i "2d" train_fsdp2.py
+    sed -i "2d" train_fsdp2.py
+    sed -i "2d" train_fsdp2.py
+    sed -i "2d" train_fsdp2.py
+    sed -i "/    cov.stop()/d" train_fsdp2.py
+    sed -i "/    cov.save()/d" train_fsdp2.py
 
+    sed -i "2d" pretrain_mamba.py
+    sed -i "2d" pretrain_mamba.py
+    sed -i "2d" pretrain_mamba.py
+    sed -i "2d" pretrain_mamba.py
+    sed -i "2d" pretrain_mamba.py
     sed -i "/    cov.stop()/d" pretrain_mamba.py
     sed -i "/    cov.save()/d" pretrain_mamba.py
 
@@ -182,7 +178,6 @@ remove_coverage() {
     sed -i "2d" convert_ckpt.py
     sed -i "2d" convert_ckpt.py
     sed -i "2d" convert_ckpt.py
-
     sed -i "/    cov.start()/d" convert_ckpt.py
     sed -i "/    cov.stop()/d" convert_ckpt.py
     sed -i "/    cov.save()/d" convert_ckpt.py
@@ -191,25 +186,14 @@ remove_coverage() {
     sed -i "2d" convert_ckpt_v2.py
     sed -i "2d" convert_ckpt_v2.py
     sed -i "2d" convert_ckpt_v2.py
-
     sed -i "/    cov.start()/d" convert_ckpt_v2.py
     sed -i "/    cov.stop()/d" convert_ckpt_v2.py
     sed -i "/    cov.save()/d" convert_ckpt_v2.py
 
-    sed -i "2d" mindspeed_llm/tasks/checkpoint/convert_ckpt_mamba2.py
-    sed -i "2d" mindspeed_llm/tasks/checkpoint/convert_ckpt_mamba2.py
-    sed -i "2d" mindspeed_llm/tasks/checkpoint/convert_ckpt_mamba2.py
-    sed -i "2d" mindspeed_llm/tasks/checkpoint/convert_ckpt_mamba2.py
-
-    sed -i "/    cov.start()/d" mindspeed_llm/tasks/checkpoint/convert_ckpt_mamba2.py
-    sed -i "/    cov.stop()/d" mindspeed_llm/tasks/checkpoint/convert_ckpt_mamba2.py
-    sed -i "/    cov.save()/d" mindspeed_llm/tasks/checkpoint/convert_ckpt_mamba2.py
-
     sed -i "2d" mindspeed_llm/tasks/checkpoint/convert_param.py
     sed -i "2d" mindspeed_llm/tasks/checkpoint/convert_param.py
     sed -i "2d" mindspeed_llm/tasks/checkpoint/convert_param.py
     sed -i "2d" mindspeed_llm/tasks/checkpoint/convert_param.py
-
     sed -i "/    cov.start()/d" mindspeed_llm/tasks/checkpoint/convert_param.py
     sed -i "/    cov.stop()/d" mindspeed_llm/tasks/checkpoint/convert_param.py
     sed -i "/    cov.save()/d" mindspeed_llm/tasks/checkpoint/convert_param.py
@@ -219,7 +203,6 @@ remove_coverage() {
     sed -i "2d" evaluation.py
     sed -i "2d" evaluation.py
     sed -i "2d" evaluation.py
-
     sed -i "/    cov.start()/d" evaluation.py
     sed -i "/    cov.stop()/d" evaluation.py
     sed -i "/    cov.save()/d" evaluation.py
@@ -228,7 +211,6 @@ remove_coverage() {
     sed -i "2d" inference.py
     sed -i "2d" inference.py
     sed -i "2d" inference.py
-
     sed -i "/    cov.start()/d" inference.py
     sed -i "/    cov.stop()/d" inference.py
     sed -i "/    cov.save()/d" inference.py
@@ -238,7 +220,6 @@ remove_coverage() {
     sed -i "2d" posttrain_gpt.py
     sed -i "2d" posttrain_gpt.py
     sed -i "2d" posttrain_gpt.py
-
     sed -i "/    cov.stop()/d" posttrain_gpt.py
     sed -i "/    cov.save()/d" posttrain_gpt.py
 
@@ -246,7 +227,6 @@ remove_coverage() {
     sed -i "2d" preprocess_data.py
     sed -i "2d" preprocess_data.py
     sed -i "2d" preprocess_data.py
-
     sed -i "/    cov.start()/d" preprocess_data.py
     sed -i "/    cov.stop()/d" preprocess_data.py
     sed -i "/    cov.save()/d" preprocess_data.py
@@ -254,29 +234,19 @@ remove_coverage() {
 
 add_coverage
 
-# run the coverage for python files in the pipeline
-find "$PIPELINE_DIR" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
-    if [ -d "$dir" ]; then
-        find "$dir" -type f -name "*.py" | while read -r file; do
-            coverage run -p --source=$SOURCE_DIR $file
-        done
-    fi
-done
-
 # run the coverage for python files in the unit tests
 find "$UT_DIR" -mindepth 0 -maxdepth 1 -type d | while read -r dir; do
     if [ -d "$dir" ]; then
         find "$dir" -type f -name "*.py" | while read -r file; do
-            echo "running ${file}"
+            echo "Running [UT] ${file}"
             filename=$(basename "$file")
             extension="${filename##*.}"
             name="${filename%.$extension}"
-            pytest -xs $file | tee "$GENERATE_LOG_DIR/$name.log" 2>&1
+            pytest -xs $file | tee "$GENERATE_LOG_DIR/ut/$name.log" 2>&1
             PYTEST_EXITCODE=${PIPESTATUS[0]}
             if [ $PYTEST_EXITCODE -ne 0 ]; then
-                echo "$file has failed, check it!" >> "$GENERATE_LOG_DIR/exec_error.log"
+                echo "[UT] $file has failed, check it!" >> "$GENERATE_LOG_DIR/exec_error.log"
             fi
-            coverage run -p --source=$SOURCE_DIR $file
         done
     fi
 done
@@ -284,15 +254,35 @@ done
 # run the coverage for shell scripts in the st
 for test_case in "$ST_DIR"/*.sh; do
     file_name=$(basename "${test_case}")
-    echo "Running $file_name..."
+    echo "Running [ST] $file_name..."
     bash $test_case
+    if [ $? -ne 0 ]; then
+        echo "[ST] $test_case has failed, check it!" >> "$GENERATE_LOG_DIR/exec_error.log"
+    fi
+done
+
+# run the coverage for python files in the pipeline
+find "$PIPELINE_DIR/ut" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
+    if [ -d "$dir" ]; then
+        find "$dir" -type f -name "*.py" | while read -r file; do
+            echo "Running [PIPELINE_UT] ${file}"
+            coverage run -p --source=$SOURCE_DIR $file
+            if [ $? -ne 0 ]; then
+                echo "[PIPELINE_UT] $file has failed, check it!" >> "$GENERATE_LOG_DIR/exec_error.log"
+            fi
+        done
+    fi
 done
 
 # run the coverage for shell scripts in the pipeline
-find "$PIPELINE_DIR" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
+find "$PIPELINE_DIR/st" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
     if [ -d "$dir" ]; then
         find "$dir" -type f -name "*.sh" | while read -r file; do
+            echo "Running [PIPELINE_ST] ${file}"
             bash $file
+            if [ $? -ne 0 ]; then
+                echo "[PIPELINE_ST] $file has failed, check it!" >> "$GENERATE_LOG_DIR/exec_error.log"
+            fi
         done
     fi
 done
