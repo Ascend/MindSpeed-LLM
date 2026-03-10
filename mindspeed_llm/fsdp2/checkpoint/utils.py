@@ -229,15 +229,19 @@ def save_state_dict(
 # --------------------------
 # Checkpoint Cleanup Utilities
 # --------------------------
-def cleanup_old_checkpoints(training_args):
+def cleanup_old_checkpoints(training_args, shared_file_system: bool = True):
     """
     Remove old checkpoints based on save_total_limit.
 
-    This function is typically executed after saving a new checkpoint
-    to limit disk usage.
+    Checkpoints are sorted by modification time (oldest first).
+    For shared storage, only rank 0 performs deletion.
+    For non-shared storage, each node's local_rank 0 deletes its own local copy.
+
+    All ranks must call this function together.
 
     Args:
         training_args: Training arguments containing output_dir and save_total_limit
+        shared_file_system (bool): Whether nodes share the same filesystem.
     """
     if not hasattr(training_args, "save_total_limit"):
         return
@@ -246,79 +250,36 @@ def cleanup_old_checkpoints(training_args):
     if save_total_limit is None or save_total_limit <= 0:
         return
 
-    # Only rank 0 performs filesystem operations
-    if torch.distributed.get_rank() == 0:
-        # Checkpoints are saved under output_dir/checkpoints/
+    rank = torch.distributed.get_rank()
+    local_rank = int(os.environ.get("LOCAL_RANK", 0))
+
+    should_delete = (rank == 0) if shared_file_system else (local_rank == 0)
+
+    if should_delete:
         checkpoint_dir = os.path.join(training_args.output_dir, "checkpoints")
-        if not os.path.isdir(checkpoint_dir):
-            return
-
-        checkpoints = []
-
-        # Collect all checkpoint directories matching "global_step_*" pattern
-        for item in os.listdir(checkpoint_dir):
-            if item.startswith("global_step_"):
+        if os.path.isdir(checkpoint_dir):
+            checkpoints = []
+            for item in os.listdir(checkpoint_dir):
                 checkpoint_path = os.path.join(checkpoint_dir, item)
                 if os.path.isdir(checkpoint_path):
+                    mtime = os.path.getmtime(checkpoint_path)
+                    checkpoints.append((mtime, checkpoint_path))
+
+            # Sort by modification time, oldest first
+            checkpoints.sort(key=lambda x: x[0])
+
+            if len(checkpoints) > save_total_limit:
+                for _, checkpoint_path in checkpoints[:-save_total_limit]:
                     try:
-                        # Extract step number from "global_step_XXX"
-                        step = int(item.split("_")[-1])
-                        checkpoints.append((step, checkpoint_path))
-                    except (IndexError, ValueError) as e:
-                        raise ValueError(f"Invalid checkpoint directory name: {item}") from e
-
-        # Sort checkpoints by step number in ascending order
-        checkpoints.sort(key=lambda x: x[0])
-
-        # Remove oldest checkpoints if exceeding the save limit
-        if len(checkpoints) > save_total_limit:
-            for _, checkpoint_path in checkpoints[:-save_total_limit]:
-                logger.info_rank0(f"Removing old checkpoint: {checkpoint_path}")
-                import shutil
-                shutil.rmtree(checkpoint_path)
-
+                        if os.path.isdir(checkpoint_path):
+                            if rank == 0:
+                                logger.info_rank0(f"Removing old checkpoint: {checkpoint_path}")
+                            import shutil
+                            shutil.rmtree(checkpoint_path)
+                    except FileNotFoundError:
+                        pass
     # Synchronize all ranks after cleanup
     torch.distributed.barrier()
-
-
-# --------------------------
-# DCP Conversion Utilities
-# --------------------------
-def dcp_to_torch_state_dict(
-    save_checkpoint_path: Union[str, os.PathLike]
-) -> STATE_DICT_TYPE:
-    """
-    Convert a DCP checkpoint directory into a torch state_dict.
-
-    This utility is mainly used for:
-    - Debugging
-    - Model format conversion
-    - Offline weight inspection
-
-    Args:
-        save_checkpoint_path (str or PathLike): DCP checkpoint directory
-
-    Returns:
-        STATE_DICT_TYPE: Torch-style model state_dict
-
-    Warning:
-        To avoid OOM, this function should be executed on a single rank.
-    """
-    state_dict: STATE_DICT_TYPE = {}
-
-    # Load state_dict using an empty planner (no sharding / redistribution)
-    _load_state_dict(
-        state_dict,
-        storage_reader=FileSystemReader(save_checkpoint_path),
-        planner=_EmptyStateDictLoadPlanner(),
-        no_dist=True,
-    )
-
-    # Handle flattened state_dict format
-    if "state" in state_dict:
-        state_dict = state_dict["state"]
-
-    return state_dict["model"]
 
 
 # --------------------------

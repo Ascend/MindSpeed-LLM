@@ -1,4 +1,5 @@
 import os
+import gc
 import torch
 import torch.distributed as dist
 import torch.nn.functional as F
@@ -7,13 +8,14 @@ import contextlib
 from typing import Optional, Tuple, Dict, Any, Union, List
 
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
+from torch.distributed.checkpoint.state_dict import get_model_state_dict, StateDictOptions
 
 from mindspeed_llm.fsdp2.distributed.parallel_state import ParallelState
 from mindspeed_llm.fsdp2.distributed.clip_grad_norm import clip_grad_norm
 from mindspeed_llm.fsdp2.data.data_factory import DataManager
 from mindspeed_llm.fsdp2.data.processor.processor_utils import IGNORE_INDEX
 from mindspeed_llm.fsdp2.features.chunkloss import chunk_loss, calculate_lm_loss
-from mindspeed_llm.fsdp2.checkpoint.utils import empty_cache, dcp_to_torch_state_dict, cleanup_old_checkpoints
+from mindspeed_llm.fsdp2.checkpoint.utils import empty_cache, cleanup_old_checkpoints
 from mindspeed_llm.fsdp2.utils.dist_op import all_reduce
 from mindspeed_llm.fsdp2.utils.logging import get_logger
 from mindspeed_llm.fsdp2.utils.train_monitor import TrainMonitor
@@ -36,6 +38,7 @@ class Trainer:
         data_manager: DataManager,
         args,  # TrainingArguments
         parallel_args,
+        data_args,
         ckpt_manager,
         monitor: TrainMonitor,
         tokenizer=None,
@@ -45,7 +48,8 @@ class Trainer:
         self.lr_scheduler = lr_scheduler
         self.train_dataloader = data_manager.create_train_dataloader()
         self.args = args
-        self.parallel_args = parallel_args,
+        self.parallel_args = parallel_args
+        self.data_args = data_args
         self.ckpt_manager = ckpt_manager
         self.train_monitor = monitor
         self.tokenizer = tokenizer
@@ -332,14 +336,15 @@ class Trainer:
                         self.ckpt_manager.save(path=save_checkpoint_path, state=state, save_only_model=args.save_only_model, global_steps=self.global_step)
                         dist.barrier()
                         logger.info_rank0(f"Distributed checkpoint saved at {save_checkpoint_path} successfully!")
-                        cleanup_old_checkpoints(args)
+                        cleanup_old_checkpoints(args, self.data_args.data_shared_file_system)
 
                 if self.global_step >= total_steps:
                     break
             # Reset counter after completing an epoch
             steps_trained_in_current_epoch = 0
             # Save checkpoint at specified epoch intervals
-            if args.save_epochs and (epoch + 1) % args.save_epochs == 0:
+            already_saved = (args.save_steps > 0 and self.global_step % args.save_steps == 0)
+            if args.save_epochs and (epoch + 1) % args.save_epochs == 0 and not already_saved:
                 if not args.output_dir:
                     logger.info_rank0("output_dir is not set, skipping checkpoint saving")
                 else:
@@ -360,18 +365,31 @@ class Trainer:
                     self.ckpt_manager.save(path=save_checkpoint_path, state=state, save_only_model=args.save_only_model, global_steps=self.global_step)
                     dist.barrier()
                     logger.info_rank0(f"Distributed checkpoint saved at {save_checkpoint_path} successfully!")
-                    cleanup_old_checkpoints(args)
+                    cleanup_old_checkpoints(args, self.data_args.data_shared_file_system)
 
             if self.global_step >= total_steps: break
         # Stop profiler
         if self.profiler_manager.profiler is not None:
             self.profiler_manager.stop()
-        # save model in HF format
-        if dist.get_rank() == 0 and args.save_hf_weights and save_checkpoint_path is not None:
-            model_state_dict = dcp_to_torch_state_dict(save_checkpoint_path)  # convert sharded weights to HF weights
-            model_configs = [self.model.model.config, self.tokenizer]
-            self.ckpt_manager.save_model_weights(args.output_dir, model_state_dict, model_configs=model_configs)
-            logger.info_rank0(f"Huggingface checkpoint saved at {args.output_dir} successfully!")
+
+        # Save model in HF format — all ranks participate in gather, rank 0 writes
+        if args.save_hf_weights and save_checkpoint_path is not None:
+            options = StateDictOptions(full_state_dict=True, cpu_offload=True)
+            model_state_dict = get_model_state_dict(self.model, options=options)
+
+            if dist.get_rank() == 0:
+                model_configs = [self.model.model.config, self.tokenizer]
+                self.ckpt_manager.save_model_weights(
+                    args.output_dir, model_state_dict, model_configs=model_configs
+                )
+                logger.info_rank0(f"Huggingface checkpoint saved at {args.output_dir} successfully!")
+
+            del model_state_dict
+            gc.collect()
+            empty_cache()
+            dist.barrier()
+
+        # Save training args — rank 0 only
         if dist.get_rank() == 0 and args.output_dir:
             self.ckpt_manager.save_args(args, args.output_dir)
             logger.info_rank0(f"Training arguments saved at {args.output_dir} successfully!")
@@ -408,11 +426,11 @@ class Trainer:
 
     def get_batch_samples_func(self):
 
-        if self.parallel_args[0].cp_size > 1:
-            if self.parallel_args[0].cp_type == "ulysses":
+        if self.parallel_args.cp_size > 1:
+            if self.parallel_args.cp_type == "ulysses":
                 return self._get_batch_samples_ulysses
             else:
-                raise ValueError(f"Unsupported cp_type: '{self.parallel_args[0].cp_type}' when cp_size > 1.")
+                raise ValueError(f"Unsupported cp_type: '{self.parallel_args.cp_type}' when cp_size > 1.")
         else:
             return self._get_batch_samples
 
