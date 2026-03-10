@@ -1,6 +1,28 @@
-# configure NPU environment
+# Setting
+# source ascend-toolkit 环境变量
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
+
+# source atb库 环境变量
 source /usr/local/Ascend/nnal/atb/set_env.sh
+
+# 安装加速库
+git clone -b master https://gitcode.com/ascend/MindSpeed.git
+cd MindSpeed
+
+# checkout commit from MindSpeed master
+git checkout master
+pip install -r requirements.txt
+pip3 install -e .
+cd ..
+
+git clone -b master https://gitcode.com/ascend/MindSpeed-LLM.git
+cd MindSpeed-LLM
+chmod 777 -R ./
+
+pip install -r requirements.txt
+
+# megatron core_v0.12.1
+cp -rf /home/master_branch/Megatron-LM/megatron ./
 
 # step 1: define dir
 BASE_DIR=$(dirname "$(readlink -f "$0")")
