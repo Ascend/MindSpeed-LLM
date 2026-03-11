@@ -450,6 +450,8 @@ class Trainer:
                 sample['position_ids'] = position_ids
 
             for key, val in sample.items():
+                if key == 'attention_mask':
+                    continue
                 if val is not None:
                     seq_dim = 1
                     # 2. Calculate total sequence length

@@ -3,7 +3,7 @@ from typing import Optional
 import torch
 import torch_npu
 from torch import nn
-from torch.nn import functional as F
+
 
 from mindspeed_llm.fsdp2.distributed.context_parallel.utils import gather_heads_scatter_seq, \
     gather_seq_scatter_heads
@@ -99,7 +99,7 @@ def flash_attention_forward_fa(
 
 
 
-def flash_attention_forward_fa_gqk(
+def flash_attention_forward_fa_gqa(
     module: torch.nn.Module,
     query: torch.Tensor,
     key: torch.Tensor,
@@ -109,7 +109,7 @@ def flash_attention_forward_fa_gqk(
     scaling: Optional[float] = None,
     is_causal: Optional[bool] = None,
     **kwargs,
-)-> tuple[torch.Tensor, None]:
+) -> tuple[torch.Tensor, None]:
     ps = ParallelState()
 
 
