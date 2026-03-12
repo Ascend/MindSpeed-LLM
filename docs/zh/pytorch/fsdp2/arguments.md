@@ -191,7 +191,7 @@
       <td>template</td>
       <td>Optional[str]</td>
       <td>None</td>
-      <td>构建prompt的模板名称。</td>
+      <td>构建prompt的模板名称，None表示从tokenizer中解析template。新增template类型需在<code>mindspeed_llm/fsdp2/data/template.py</code>文件中注册，目前支持gpt和qwen3。</td>
     </tr>
     <tr>
       <td>dataset</td>

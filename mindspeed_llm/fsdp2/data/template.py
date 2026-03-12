@@ -533,3 +533,9 @@ register_template(
     efficient_eos=True,
     template_class=ReasoningTemplate,
 )
+
+
+register_template(
+    name="empty",
+    format_assistant=StringFormatter(slots=["{{content}}"]),
+)
