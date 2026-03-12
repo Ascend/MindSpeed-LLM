@@ -32,6 +32,7 @@ from mindspeed_llm.training.utils import set_actual_seq_len_list
 from mindspeed.core.context_parallel.get_batch_utils import get_actual_seq_len
 from mindspeed.core.transformer.flash_attention.reset_attention_mask.adaptor import compute_qkv_index, get_position_ids
 from mindspeed_llm.core.models.common.chunk_loss import chunk_loss, calculate_lm_loss
+from mindspeed_llm.training.utils import recompute_valid_actual_seq_len
 
 
 class GPTModel(MegatronCoreGPTModel):
@@ -347,6 +348,7 @@ def gpt_forward_wrapper(fn):
     def wrapper(*args, **kwargs):
         _args = get_args()
         actual_seq_len = get_actual_seq_len()
+        actual_seq_len = recompute_valid_actual_seq_len(actual_seq_len, _args.micro_batch_size)
 
         packed_seq_params = PackedSeqParams(
             qkv_format='thd',

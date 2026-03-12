@@ -87,7 +87,7 @@ def get_batch_wrapper(get_batch_fn):
             actual_seq_len_list = get_actual_seq_len().tolist()
             
             if len(actual_seq_len_list) > get_actual_seq_len_threshold():
-                actual_seq_len_list = recompute_valid_actual_seq_len(actual_seq_len_list, global_args.micro_batch_size)
+                actual_seq_len_list = recompute_valid_actual_seq_len(actual_seq_len_list, global_args.micro_batch_size).tolist()
             span_lens = get_splits()
         set_actual_seq_len(np.array(actual_seq_len_list))
         span_idx = (span_idx+1) % span_num

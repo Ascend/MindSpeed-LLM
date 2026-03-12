@@ -172,7 +172,7 @@ def recompute_valid_actual_seq_len(actual_seq_len, micro_batch_size):
     if len(indices) < micro_batch_size:
         return actual_seq_len
     first_continuous = indices[micro_batch_size - 1].item()
-    return torch.cat([s[:first_continuous + 1], s[-1:]]).tolist()
+    return torch.cat([s[:first_continuous + 1], s[-1:]])
 
 
 def compute_actual_seq_len(origin_seq):
