@@ -208,8 +208,6 @@ class BaseDatasetHandler(object):
 
             data_obf = DataAssetObfuscation(full_vocab_size)
             data_obf.set_seed_content(self.args.obf_seed_content)
-            # Map -100 to itself to prevent dictionary lookup errors
-            data_obf.obf_dict[-100] = -100
 
         skip_num = 0
         for i, doc in enumerate(self.tokenized_dataset.iter(batch_size=iteration_batch_size), start=1):
