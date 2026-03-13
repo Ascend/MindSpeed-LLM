@@ -68,3 +68,34 @@ class TestCheckpointV2(object):
         assert weight_compare_hash(save_dir, base_hash, "bin")
         shutil.rmtree(load_dir)
         shutil.rmtree(save_dir)
+
+    def test_longcat_flash_560b_hf2mcore_tp2pp2ep2etp1(self):
+        '''
+        Author: guihaowen666
+        Date: 2026-03-12
+        Description：This case is used for monitoring the hf2mcore weight conversion process of the longcat-flash-chat model.
+        Remarks: Checkpoint "/data/ci/models/longcat-flash-560b/hf/longcat-flash-560b-generated" is generated and converted by pretraining
+        '''
+        os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
+        exit_code = run_cmd(["python3", CKPT_PYPATH] + self.test_config_cmd['test_longcat_flash_560b_hf2mcore_tp2pp2ep2etp1'])
+        assert exit_code == 0
+        base_hash = self.test_config['test_longcat_flash_560b_hf2mcore_tp2pp2ep2etp1'][1]
+        save_dir = self.test_config['test_longcat_flash_560b_hf2mcore_tp2pp2ep2etp1'][0]['save-dir']
+        assert weight_compare_hash(save_dir, base_hash, "pt")
+
+    def test_longcat_flash_560b_mcore2hf_tp2pp2ep2etp1(self):
+        '''
+        Author: guihaowen666
+        Date: 2026-03-12
+        Description：This case is used for monitoring the mcore2hf weight conversion process of the longcat-flash-chat model.
+        Remarks: None
+        '''
+        os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
+        exit_code = run_cmd(["python3", CKPT_PYPATH] + self.test_config_cmd['test_longcat_flash_560b_mcore2hf_tp2pp2ep2etp1'])
+        assert exit_code == 0
+        base_hash = self.test_config['test_longcat_flash_560b_mcore2hf_tp2pp2ep2etp1'][1]
+        load_dir = self.test_config['test_longcat_flash_560b_mcore2hf_tp2pp2ep2etp1'][0]['load-dir']
+        save_dir = self.test_config['test_longcat_flash_560b_mcore2hf_tp2pp2ep2etp1'][0]['save-dir']
+        assert weight_compare_hash(save_dir, base_hash, "safetensors")
+        shutil.rmtree(load_dir)
+        shutil.rmtree(save_dir)

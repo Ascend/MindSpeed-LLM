@@ -102,6 +102,50 @@
                 "36818903d171c4eeca0c4e2c93fbd110"
             ]
         }
+    ],
+    
+    "test_longcat_flash_560b_hf2mcore_tp2pp2ep2etp1": [
+        {
+            "param": {
+                "load-model-type":"hf",
+                "save-model-type":"mg",
+                "model-type-hf": "longcat",
+                "target-tensor-parallel-size": "2",
+                "target-pipeline-parallel-size": "1",
+                "target-expert-parallel-size": "2",
+                "expert-tensor-parallel-size": "1",
+                "load-dir":"/data/ci/models/longcat-flash-560b/hf/longcat-flash-560b-generated",
+                "save-dir":"/data/ci/cache/longcat-flash-560b-tp2pp1ep2etp1/",
+                "moe-grouped-gemm": null
+            }
+        },
+        {
+            "Base_MD5" : [
+                "8423e023b8629d4b",
+                "b470bbc76de3e97d"
+            ]
+        }
+    ],
+    "test_longcat_flash_560b_mcore2hf_tp2pp2ep2etp1": [
+        {
+            "param": {
+                "load-model-type":"mg",
+                "save-model-type":"hf",
+                "model-type-hf": "longcat",
+                "target-tensor-parallel-size": "1",
+                "target-pipeline-parallel-size": "1",
+                "target-expert-parallel-size": "1",
+                "expert-tensor-parallel-size": "1",
+                "load-dir":"/data/ci/cache/longcat-flash-560b-tp2pp1ep2etp1/",
+                "save-dir":"/data/ci/cache/longcat-flash-560b-mg2hf",
+                "moe-grouped-gemm": null
+            }
+        },
+        {
+            "Base_MD5" : [
+                "d2ac464f16d0783914d7ba9329ad055c"
+            ]
+        }
     ]
 
 }

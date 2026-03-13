@@ -190,4 +190,37 @@
         <td>/</td>
         <td>/</td>
     </tr>
+    </tr>
+        </tr>
+        <tr>
+        <td>test_longcat_flash_560b_hf2mcore_tp2pp2ep2etp1</td>
+        <td>/data/ci/models/longcat-flash-560b/hf/longcat-flash-560b-generated/</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/data/ci/cache/longcat-flash-560b-tp2pp1ep2etp1/</td>
+    </tr>
+    </tr>
+        </tr>
+        <tr>
+        <td>test_longcat_flash_560b_mcore2hf_tp2pp2ep2etp1</td>
+        <td>/</td>
+        <td>/data/ci/cache/longcat-flash-560b-tp2pp1ep2etp1/</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/data/ci/cache/longcat-flash-560b-mg2hf/</td>
+    </tr>
+    </tr>
+        </tr>
+        <tr>
+        <td>longcat_flash_560b_tp2pp1ep2etp1</td>
+        <td>/data/ci/models/longcat-flash-560b/hf/longcat-flash-chat/</td>
+        <td>/data/ci/models/longcat-flash-560b/mg/longcat-flash-560b-tp2pp1ep2etp1/</td>
+        <td>/</td>
+        <td>/data/ci/datasets/processed/longcat-flash-dataset/alpaca_text_document/</td>
+        <td>/</td>
+        <td>/</td>
+    </tr>
 </table>
