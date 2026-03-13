@@ -57,6 +57,8 @@ training:
   max_steps: 2000
   save_steps: 500
   logging_steps: 1
+
+optimization:
   chunk_loss_size: 1024
   use_triton_gdn: True
   use_fused_rmsnorm: True

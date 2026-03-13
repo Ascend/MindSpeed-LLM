@@ -38,6 +38,7 @@ class Trainer:
         data_manager: DataManager,
         args,  # TrainingArguments
         parallel_args,
+        optimization_args,
         data_args,
         ckpt_manager,
         monitor: TrainMonitor,
@@ -49,6 +50,7 @@ class Trainer:
         self.train_dataloader = data_manager.create_train_dataloader()
         self.args = args
         self.parallel_args = parallel_args
+        self.optimization_args = optimization_args
         self.data_args = data_args
         self.ckpt_manager = ckpt_manager
         self.train_monitor = monitor
@@ -580,8 +582,8 @@ class Trainer:
         if args.stage == 'pt':
             inputs['labels'] = None
 
-        if args.chunk_loss_size and args.stage == 'pt':
-            loss_ctx, loss_mask = self._build_chunk_loss(labels, chunk_size=args.chunk_loss_size)
+        if self.optimization_args.chunk_loss_size and args.stage == 'pt':
+            loss_ctx, loss_mask = self._build_chunk_loss(labels, chunk_size=self.optimization_args.chunk_loss_size)
             kwargs['loss_ctx'] = loss_ctx
             kwargs['loss_mask'] = loss_mask
         # Merge inputs without modifying the original dictionary in-place

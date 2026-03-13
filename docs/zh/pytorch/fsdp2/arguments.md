@@ -666,12 +666,6 @@
       <td>计算交叉熵损失时，是否根据全局批次中的非填充token数量进行缩放。</td>
     </tr>
     <tr>
-      <td>chunk_loss_size</td>
-      <td>int</td>
-      <td>None</td>
-      <td>每次计算loss时使用的序列长度，分段进行loss计算可以节省显存。</td>
-    </tr>
-    <tr>
       <td>dataloader_num_workers</td>
       <td>int</td>
       <td>0</td>
@@ -708,12 +702,6 @@
       <td>每张卡的训练batch size大小。</td>
     </tr>
     <tr>
-      <td>gdn_chunk_size</td>
-      <td>int</td>
-      <td>64</td>
-      <td>Gated DeltaNet网络计算时矩阵的分块的数量。</td>
-    </tr>
-    <tr>
       <td>save_only_model</td>
       <td>bool</td>
       <td>False</td>
@@ -736,53 +724,6 @@
       <td>bool</td>
       <td>True</td>
       <td>训练完成后，是否保存HuggingFace格式的权重。</td>
-    </tr>
-  </tbody>
-</table>
-
-## 融合算子
-
-包含融合算子使能相关参数。
-
-<table>
-  <thead>
-    <tr>
-      <th>参数名</th>
-      <th>类型</th>
-      <th>默认值</th>
-      <th>详细说明</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>use_fused_rmsnorm</td>
-      <td>bool</td>
-      <td>False</td>
-      <td>是否使能融合rmsnorm算子。</td>
-    </tr>
-    <tr>
-      <td>moe_grouped_gemm</td>
-      <td>bool</td>
-      <td>False</td>
-      <td>是否使能融合gmm算子。</td>
-    </tr>
-    <tr>
-      <td>use_fused_rotary_pos_emb</td>
-      <td>bool</td>
-      <td>False</td>
-      <td>是否使能融合RoPE算子。</td>
-    </tr>
-    <tr>
-      <td>use_flash_attn</td>
-      <td>bool</td>
-      <td>False</td>
-      <td>是否使能FA算子。</td>
-    </tr>
-    <tr>
-      <td>use_triton_gdn</td>
-      <td>bool</td>
-      <td>False</td>
-      <td>是否使能triton融合算子加速Gated DeltaNet网络计算。</td>
     </tr>
   </tbody>
 </table>
@@ -875,6 +816,101 @@
     </tr>
   </tbody>
 </table>
+
+## 推理参数（InferenceArguments）
+
+包含推理相关参数。
+
+<table>
+<thead>
+<tr>
+<th>参数名</th>
+<th>类型</th>
+<th>默认值</th>
+<th>详细说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>infer_backend</td>
+<td>Literal["huggingface"]</td>
+<td>"huggingface"</td>
+<td>指定使用的推理引擎后端。目前仅支持 huggingface。</td>
+</tr>
+<tr>
+<td>max_new_tokens</td>
+<td>int</td>
+<td>512</td>
+<td>生成文本的最大 token 数量（该限制仅针对生成的回复，不包含输入 prompt 自身的 token 数）。</td>
+</tr>
+<tr>
+<td>do_sample</td>
+<td>bool</td>
+<td>False</td>
+<td>是否使用随机采样进行生成。如果设置为 False，则默认使用贪婪解码（Greedy Decoding）。在 FSDP 多卡推理中，为防止采样导致的多卡输出不一致死锁，通常建议保持默认的 False。</td>
+</tr>
+</tbody>
+</table>
+
+## 优化特性参数（OptimizationArguments）
+
+包含融合算子使能、显存优化特性、性能优化特性相关参数。
+
+<table>
+  <thead>
+    <tr>
+      <th>参数名</th>
+      <th>类型</th>
+      <th>默认值</th>
+      <th>详细说明</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>use_fused_rmsnorm</td>
+      <td>bool</td>
+      <td>False</td>
+      <td>是否使能融合rmsnorm算子。</td>
+    </tr>
+    <tr>
+      <td>moe_grouped_gemm</td>
+      <td>bool</td>
+      <td>False</td>
+      <td>是否使能融合gmm算子。</td>
+    </tr>
+    <tr>
+      <td>use_fused_rotary_pos_emb</td>
+      <td>bool</td>
+      <td>False</td>
+      <td>是否使能融合RoPE算子。</td>
+    </tr>
+    <tr>
+      <td>use_flash_attn</td>
+      <td>bool</td>
+      <td>False</td>
+      <td>是否使能FA算子。</td>
+    </tr>
+    <tr>
+      <td>use_triton_gdn</td>
+      <td>bool</td>
+      <td>False</td>
+      <td>是否使能triton融合算子加速Gated DeltaNet网络计算。</td>
+    </tr>
+    <tr>
+    <td>chunk_loss_size</td>
+    <td>int</td>
+    <td>None</td>
+    <td>每次计算loss时使用的序列长度，分段进行loss计算可以节省显存。</td>
+    </tr>
+    <tr>
+    <td>gdn_chunk_size</td>
+    <td>int</td>
+    <td>64</td>
+    <td>Gated DeltaNet网络计算时矩阵的分块的数量。</td>
+  </tr>
+  </tbody>
+</table>
+
 
 # megatron参数对照
 

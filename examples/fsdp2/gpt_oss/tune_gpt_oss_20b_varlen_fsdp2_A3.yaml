@@ -54,6 +54,8 @@ training:
   max_steps: 2000
   save_steps: 500
   logging_steps: 1
+
+optimization:
   use_fused_rmsnorm: True
   moe_grouped_gemm: True
   use_fused_rotary_pos_emb: True

@@ -56,6 +56,8 @@ training:
   save_steps: 500
   save_epochs: 1
   logging_steps: 1
+
+optimization:
   use_fused_rmsnorm: True
   use_fused_rotary_pos_emb: True
   use_flash_attn: True

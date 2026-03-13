@@ -18,7 +18,7 @@ from mindspeed_llm.fsdp2.data.tokenizer import TokenizerFactory
 from mindspeed_llm.fsdp2.data.template import get_template_and_fix_tokenizer
 from mindspeed_llm.fsdp2.utils.logging import setup_global_logging, get_logger
 from mindspeed_llm.fsdp2.utils.arguments import (
-   ModelArguments, DataArguments, ParallelArguments, TrainingArguments, fsdp2_parse_args
+   ModelArguments, DataArguments, ParallelArguments, TrainingArguments, OptimizationArguments, fsdp2_parse_args
 )
 from mindspeed_llm.fsdp2.utils.global_vars import set_args
 from mindspeed_llm.fsdp2.utils.train_monitor import TrainMonitor
@@ -40,6 +40,7 @@ class Arguments:
    data: DataArguments = field(default_factory=DataArguments)
    parallel: ParallelArguments = field(default_factory=ParallelArguments)
    training: TrainingArguments = field(default_factory=TrainingArguments)
+   optimization: OptimizationArguments = field(default_factory=OptimizationArguments)
 
 
 # ==============================================================================
@@ -79,6 +80,7 @@ class MindSpeedAutoTrainer:
          data_manager=self.data_manager,
          args=self.training_args,
          parallel_args=self.parallel_args,
+         optimization_args=self.optimization_args,
          data_args=self.data_args,
          ckpt_manager=self.checkpoint_manager,
          monitor=self.train_monitor,
@@ -144,9 +146,10 @@ class MindSpeedAutoTrainer:
       self.data_args = root_args.data
       self.parallel_args = root_args.parallel
       self.training_args = root_args.training
+      self.optimization_args = root_args.optimization
 
       self.args = types.SimpleNamespace(**{
-         k: v for ns in [root_args.model, root_args.data, root_args.parallel, root_args.training]
+         k: v for ns in [root_args.model, root_args.data, root_args.parallel, root_args.training, root_args.optimization]
          for k, v in ns.__dict__.items()
       })
 

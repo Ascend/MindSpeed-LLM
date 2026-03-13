@@ -566,10 +566,6 @@ class TrainingArguments:
         default=False,
         metadata={"help": "Scale cross entropy loss by the number of non-padded tokens in the global batch, versus the default behavior of assuming all tokens are non-padded"}
     )
-    chunk_loss_size : int = field(
-        default=None,
-        metadata={"help": "Chunk loss size: set to > 0 to enable chunk loss calculation"}
-    )
     dataloader_num_workers: int = field(
         default=0,
         metadata={
@@ -605,30 +601,6 @@ class TrainingArguments:
     )
     per_device_train_batch_size: int = field(
         default=8, metadata={"help": "Batch size per device accelerator core/CPU for training."}
-    )
-    use_fused_rmsnorm: bool = field(
-        default=False,
-        metadata={"help": "Use fused rmsnorm."}
-    )
-    moe_grouped_gemm: bool = field(
-        default=False,
-        metadata={"help": "When there are multiple experts per rank, launch multiple local GEMM kernels in multiple streams to improve the utilization and performance with GroupedLinear in TransformerEngine."}
-    )
-    use_fused_rotary_pos_emb: bool = field(
-        default=False,
-        metadata={"help": "Use fused rotary-pos-emb."}
-    )
-    use_flash_attn: bool = field(
-        default=False,
-        metadata={"help": "use FlashAttention implementation of attention."}
-    )
-    use_triton_gdn: bool = field(
-        default=False,
-        metadata={"help": "Use triton kernel accelerate training."}
-    )
-    gdn_chunk_size:int = field(
-        default=64,
-        metadata={"help": "Matrix blocking size of Gated DeltaNet."}
     )
     save_only_model: bool = field(
         default=False, metadata={"help": "When checkpointing, whether to only save the model, or also the optimizer, scheduler & rng state."}
@@ -699,6 +671,67 @@ class TrainingArguments:
                 raise ValueError("`profile_step_start` must be >= 0")
             if self.profile_step_end != -1 and self.profile_step_end <= self.profile_step_start:
                 raise ValueError("`profile_step_end` must be > profile_step_start or -1")
+
+
+@dataclass
+class InferenceArguments:
+    """
+    Inference hyperparameters: corresponding to requirements of the inference engine and generation config
+    """
+    
+    # --- Generation Config ---
+    infer_backend: Literal["huggingface"] = field(
+        default="huggingface",
+        metadata={"help": "The inference engine backend to use."}
+    )
+    max_new_tokens: int = field(
+        default=512,
+        metadata={"help": "The maximum numbers of tokens to generate, ignoring the number of tokens in the prompt."}
+    )
+    do_sample: bool = field(
+        default=False,
+        metadata={"help": "Whether or not to use sampling; use greedy decoding otherwise."}
+    )
+
+    def __post_init__(self):
+        if self.max_new_tokens <= 0:
+            raise ValueError("`max_new_tokens` must be strictly positive (> 0).")
+            
+
+@dataclass
+class OptimizationArguments:
+    """
+    Inference hyperparameters: corresponding to requirements of the inference engine and generation config
+    """
+
+    use_fused_rmsnorm: bool = field(
+        default=False,
+        metadata={"help": "Use fused rmsnorm."}
+    )
+    moe_grouped_gemm: bool = field(
+        default=False,
+        metadata={"help": "When there are multiple experts per rank, launch multiple local GEMM kernels in multiple streams to improve the utilization and performance with GroupedLinear in TransformerEngine."}
+    )
+    use_fused_rotary_pos_emb: bool = field(
+        default=False,
+        metadata={"help": "Use fused rotary-pos-emb."}
+    )
+    use_flash_attn: bool = field(
+        default=False,
+        metadata={"help": "use FlashAttention implementation of attention."}
+    )
+    use_triton_gdn: bool = field(
+        default=False,
+        metadata={"help": "Use triton kernel accelerate training."}
+    )
+    gdn_chunk_size:int = field(
+        default=64,
+        metadata={"help": "Matrix blocking size of Gated DeltaNet."}
+    )
+    chunk_loss_size : int = field(
+        default=None,
+        metadata={"help": "Chunk loss size: set to > 0 to enable chunk loss calculation"}
+    )
 
 
 def _string_to_bool(value: Union[bool, str]) -> bool:
