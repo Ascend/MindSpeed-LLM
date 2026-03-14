@@ -3,6 +3,7 @@
 # 设定环境变量 用于部分代码段重构
 export PYTHONPATH=$PYTHONPATH:${PWD}
 export TEST_MODEL=true
+export START_COVERAGE=true
 
 # define the base directory
 BASE_DIR=$(dirname $(dirname "$(readlink -f "$0")"))
@@ -12,10 +13,16 @@ UT_DIR="empty"
 ST_DIR="empty"
 
 # 创建日志目录
-GENERATE_LOG_DIR="COVERAGE/logs"
+COVERAGE_DIR="COVERAGE"
+rm -rf "$COVERAGE_DIR"
+mkdir -p "$COVERAGE_DIR"
+GENERATE_LOG_DIR="$COVERAGE_DIR/logs"
 mkdir -p "$GENERATE_LOG_DIR"
 touch "$GENERATE_LOG_DIR/exec_error.log"
 echo "core0.12.1 Execution Results" > $GENERATE_LOG_DIR/exec_error.log
+
+REPORT_DIR="$COVERAGE_DIR/report"
+mkdir -p "$REPORT_DIR"
 
 
 # 带参1用于区分运行场景
@@ -52,8 +59,7 @@ echo "ST_DIR is ${ST_DIR}"
 
 # remove the existing coverage files
 rm -f .coverage
-rm -f .coverage.*
-rm -rf htmlcov
+rm -f .coverage*
 
 # create the coverage configuration file
 cat > ".coveragerc" << EOF
@@ -67,186 +73,19 @@ show_missing = True
 skip_covered = False
 EOF
 
-add_coverage() {
-    sed -i "1a\import random" pretrain_gpt.py
-    sed -i "2a\import time" pretrain_gpt.py
-    sed -i "3a\import coverage" pretrain_gpt.py
-    sed -i '4a\cov = coverage.Coverage(data_suffix=f"usecase-{time.time_ns()}_{random.randint(0, 100)}")' pretrain_gpt.py
-    sed -i "5a\cov.start()" pretrain_gpt.py
-    sed -i "/    main()/a\    cov.stop()" pretrain_gpt.py
-    sed -i "/    cov.stop()/a\    cov.save()" pretrain_gpt.py
-
-    sed -i "1a\import random" train_fsdp2.py
-    sed -i "2a\import time" train_fsdp2.py
-    sed -i "3a\import coverage" train_fsdp2.py
-    sed -i '4a\cov = coverage.Coverage(data_suffix=f"usecase-{time.time_ns()}_{random.randint(0, 100)}")' train_fsdp2.py
-    sed -i "5a\cov.start()" train_fsdp2.py
-    sed -i "/    main()/a\    cov.stop()" train_fsdp2.py
-    sed -i "/    cov.stop()/a\    cov.save()" train_fsdp2.py
-
-    sed -i "1a\import random" pretrain_mamba.py
-    sed -i "2a\import time" pretrain_mamba.py
-    sed -i "3a\import coverage" pretrain_mamba.py
-    sed -i '4a\cov = coverage.Coverage(data_suffix=f"usecase-{time.time_ns()}_{random.randint(0, 100)}")' pretrain_mamba.py
-    sed -i "5a\cov.start()" pretrain_mamba.py
-    sed -i "/    main()/a\    cov.stop()" pretrain_mamba.py
-    sed -i "/    cov.stop()/a\    cov.save()" pretrain_mamba.py
-
-    sed -i "1a\import random" mindspeed_llm/tasks/checkpoint/convert_param.py
-    sed -i "2a\import time" mindspeed_llm/tasks/checkpoint/convert_param.py
-    sed -i "3a\import coverage" mindspeed_llm/tasks/checkpoint/convert_param.py
-    sed -i '4a\cov = coverage.Coverage(data_suffix=f"usecase-{time.time_ns()}_{random.randint(0, 100)}")' mindspeed_llm/tasks/checkpoint/convert_param.py
-    sed -i "/    main()/i\    cov.start()" mindspeed_llm/tasks/checkpoint/convert_param.py
-    sed -i "/    main()/a\    cov.stop()" mindspeed_llm/tasks/checkpoint/convert_param.py
-    sed -i "/    cov.stop()/a\    cov.save()" mindspeed_llm/tasks/checkpoint/convert_param.py
-
-    sed -i "1a\import random" convert_ckpt.py
-    sed -i "2a\import time" convert_ckpt.py
-    sed -i "3a\import coverage" convert_ckpt.py
-    sed -i '4a\cov = coverage.Coverage(data_suffix=f"usecase-{time.time_ns()}_{random.randint(0, 100)}")' convert_ckpt.py
-    sed -i "/    main()/i\    cov.start()" convert_ckpt.py
-    sed -i "/    main()/a\    cov.stop()" convert_ckpt.py
-    sed -i "/    cov.stop()/a\    cov.save()" convert_ckpt.py
-
-    sed -i "1a\import random" convert_ckpt_v2.py
-    sed -i "2a\import time" convert_ckpt_v2.py
-    sed -i "3a\import coverage" convert_ckpt_v2.py
-    sed -i '4a\cov = coverage.Coverage(data_suffix=f"usecase-{time.time_ns()}_{random.randint(0, 100)}")' convert_ckpt_v2.py
-    sed -i "/    main()/i\    cov.start()" convert_ckpt_v2.py
-    sed -i "/    main()/a\    cov.stop()" convert_ckpt_v2.py
-    sed -i "/    cov.stop()/a\    cov.save()" convert_ckpt_v2.py
-
-    sed -i "1a\import random" evaluation.py
-    sed -i "2a\import time" evaluation.py
-    sed -i "3a\import coverage" evaluation.py
-    sed -i '4a\cov = coverage.Coverage(data_suffix=f"usecase-{time.time_ns()}_{random.randint(0, 100)}")' evaluation.py
-    sed -i "/def main():/a\    cov.start()" evaluation.py
-    sed -i "/            logger.info(f'NeedleBench_eval Running Time: {time.time() - a}')/a\    cov.stop()" evaluation.py
-    sed -i "/    cov.stop()/a\    cov.save()" evaluation.py
-
-    sed -i "1a\import random" inference.py
-    sed -i "2a\import time" inference.py
-    sed -i "3a\import coverage" inference.py
-    sed -i '4a\cov = coverage.Coverage(data_suffix=f"usecase-{time.time_ns()}_{random.randint(0, 100)}")' inference.py
-    sed -i "/def main():/a\    cov.start()" inference.py
-    sed -i "/    task_factory(args, model)/a\    cov.stop()" inference.py
-    sed -i "/    cov.stop()/a\    cov.save()" inference.py
-
-    sed -i "1a\import random" posttrain_gpt.py
-    sed -i "2a\import time" posttrain_gpt.py
-    sed -i "3a\import coverage" posttrain_gpt.py
-    sed -i '4a\cov = coverage.Coverage(data_suffix=f"usecase-{time.time_ns()}_{random.randint(0, 100)}")' posttrain_gpt.py
-    sed -i "5a\cov.start()" posttrain_gpt.py
-    sed -i "/    launch()/a\    cov.stop()" posttrain_gpt.py
-    sed -i "/    cov.stop()/a\    cov.save()" posttrain_gpt.py
-
-    sed -i "1a\import random" preprocess_data.py
-    sed -i "2a\import time" preprocess_data.py
-    sed -i "3a\import coverage" preprocess_data.py
-    sed -i '4a\cov = coverage.Coverage(data_suffix=f"usecase-{time.time_ns()}_{random.randint(0, 100)}")' preprocess_data.py
-    sed -i "/def main():/a\    cov.start()" preprocess_data.py
-    sed -i "/                os.remove(idx_file.replace('.idx', '.bin'))/a\    cov.stop()" preprocess_data.py
-    sed -i "/    cov.stop()/a\    cov.save()" preprocess_data.py
-}
-
-remove_coverage() {
-    sed -i "2d" pretrain_gpt.py
-    sed -i "2d" pretrain_gpt.py
-    sed -i "2d" pretrain_gpt.py
-    sed -i "2d" pretrain_gpt.py
-    sed -i "2d" pretrain_gpt.py
-    sed -i "/    cov.stop()/d" pretrain_gpt.py
-    sed -i "/    cov.save()/d" pretrain_gpt.py
-
-    sed -i "2d" train_fsdp2.py
-    sed -i "2d" train_fsdp2.py
-    sed -i "2d" train_fsdp2.py
-    sed -i "2d" train_fsdp2.py
-    sed -i "2d" train_fsdp2.py
-    sed -i "/    cov.stop()/d" train_fsdp2.py
-    sed -i "/    cov.save()/d" train_fsdp2.py
-
-    sed -i "2d" pretrain_mamba.py
-    sed -i "2d" pretrain_mamba.py
-    sed -i "2d" pretrain_mamba.py
-    sed -i "2d" pretrain_mamba.py
-    sed -i "2d" pretrain_mamba.py
-    sed -i "/    cov.stop()/d" pretrain_mamba.py
-    sed -i "/    cov.save()/d" pretrain_mamba.py
-
-    sed -i "2d" convert_ckpt.py
-    sed -i "2d" convert_ckpt.py
-    sed -i "2d" convert_ckpt.py
-    sed -i "2d" convert_ckpt.py
-    sed -i "/    cov.start()/d" convert_ckpt.py
-    sed -i "/    cov.stop()/d" convert_ckpt.py
-    sed -i "/    cov.save()/d" convert_ckpt.py
-
-    sed -i "2d" convert_ckpt_v2.py
-    sed -i "2d" convert_ckpt_v2.py
-    sed -i "2d" convert_ckpt_v2.py
-    sed -i "2d" convert_ckpt_v2.py
-    sed -i "/    cov.start()/d" convert_ckpt_v2.py
-    sed -i "/    cov.stop()/d" convert_ckpt_v2.py
-    sed -i "/    cov.save()/d" convert_ckpt_v2.py
-
-    sed -i "2d" mindspeed_llm/tasks/checkpoint/convert_param.py
-    sed -i "2d" mindspeed_llm/tasks/checkpoint/convert_param.py
-    sed -i "2d" mindspeed_llm/tasks/checkpoint/convert_param.py
-    sed -i "2d" mindspeed_llm/tasks/checkpoint/convert_param.py
-    sed -i "/    cov.start()/d" mindspeed_llm/tasks/checkpoint/convert_param.py
-    sed -i "/    cov.stop()/d" mindspeed_llm/tasks/checkpoint/convert_param.py
-    sed -i "/    cov.save()/d" mindspeed_llm/tasks/checkpoint/convert_param.py
-
-
-    sed -i "2d" evaluation.py
-    sed -i "2d" evaluation.py
-    sed -i "2d" evaluation.py
-    sed -i "2d" evaluation.py
-    sed -i "/    cov.start()/d" evaluation.py
-    sed -i "/    cov.stop()/d" evaluation.py
-    sed -i "/    cov.save()/d" evaluation.py
-
-    sed -i "2d" inference.py
-    sed -i "2d" inference.py
-    sed -i "2d" inference.py
-    sed -i "2d" inference.py
-    sed -i "/    cov.start()/d" inference.py
-    sed -i "/    cov.stop()/d" inference.py
-    sed -i "/    cov.save()/d" inference.py
-
-    sed -i "2d" posttrain_gpt.py
-    sed -i "2d" posttrain_gpt.py
-    sed -i "2d" posttrain_gpt.py
-    sed -i "2d" posttrain_gpt.py
-    sed -i "2d" posttrain_gpt.py
-    sed -i "/    cov.stop()/d" posttrain_gpt.py
-    sed -i "/    cov.save()/d" posttrain_gpt.py
-
-    sed -i "2d" preprocess_data.py
-    sed -i "2d" preprocess_data.py
-    sed -i "2d" preprocess_data.py
-    sed -i "2d" preprocess_data.py
-    sed -i "/    cov.start()/d" preprocess_data.py
-    sed -i "/    cov.stop()/d" preprocess_data.py
-    sed -i "/    cov.save()/d" preprocess_data.py
-}
-
-add_coverage
-
 # run the coverage for python files in the unit tests
-find "$UT_DIR" -mindepth 0 -maxdepth 1 -type d | while read -r dir; do
+find "$UT_DIR" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
     if [ -d "$dir" ]; then
         find "$dir" -type f -name "*.py" | while read -r file; do
             echo "Running [UT] ${file}"
             filename=$(basename "$file")
             extension="${filename##*.}"
             name="${filename%.$extension}"
-            pytest -xs $file | tee "$GENERATE_LOG_DIR/ut/$name.log" 2>&1
-            PYTEST_EXITCODE=${PIPESTATUS[0]}
-            if [ $PYTEST_EXITCODE -ne 0 ]; then
+            pytest -s $file | tee "$GENERATE_LOG_DIR/[UT]$name.log" 2>&1
+            if [ $? -ne 0 ]; then
                 echo "[UT] $file has failed, check it!" >> "$GENERATE_LOG_DIR/exec_error.log"
             fi
+            coverage run -p --source=$SOURCE_DIR $file
         done
     fi
 done
@@ -255,7 +94,9 @@ done
 for test_case in "$ST_DIR"/*.sh; do
     file_name=$(basename "${test_case}")
     echo "Running [ST] $file_name..."
-    bash $test_case
+    extension="${file_name##*.}"
+    name="${file_name%.$extension}"
+    bash $test_case | tee "$GENERATE_LOG_DIR/[ST]$name.log" 2>&1
     if [ $? -ne 0 ]; then
         echo "[ST] $test_case has failed, check it!" >> "$GENERATE_LOG_DIR/exec_error.log"
     fi
@@ -266,10 +107,15 @@ find "$PIPELINE_DIR/ut" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
     if [ -d "$dir" ]; then
         find "$dir" -type f -name "*.py" | while read -r file; do
             echo "Running [PIPELINE_UT] ${file}"
-            coverage run -p --source=$SOURCE_DIR $file
-            if [ $? -ne 0 ]; then
+            filename=$(basename "$file")
+            extension="${filename##*.}"
+            name="${filename%.$extension}"
+            pytest -s $file | tee "$GENERATE_LOG_DIR/[PIPELINE_UT]$name.log" 2>&1
+            PYTEST_EXITCODE=${PIPESTATUS[0]}
+            if [ $PYTEST_EXITCODE -ne 0 ]; then
                 echo "[PIPELINE_UT] $file has failed, check it!" >> "$GENERATE_LOG_DIR/exec_error.log"
             fi
+            coverage run -p --source=$SOURCE_DIR $file
         done
     fi
 done
@@ -279,7 +125,10 @@ find "$PIPELINE_DIR/st" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
     if [ -d "$dir" ]; then
         find "$dir" -type f -name "*.sh" | while read -r file; do
             echo "Running [PIPELINE_ST] ${file}"
-            bash $file
+            filename=$(basename "$file")
+            extension="${filename##*.}"
+            name="${filename%.$extension}"
+            bash $file | tee "$GENERATE_LOG_DIR/[PIPELINE_ST]$name.log" 2>&1
             if [ $? -ne 0 ]; then
                 echo "[PIPELINE_ST] $file has failed, check it!" >> "$GENERATE_LOG_DIR/exec_error.log"
             fi
@@ -287,22 +136,21 @@ find "$PIPELINE_DIR/st" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
     fi
 done
 
-remove_coverage
-
 # generate the coverage report
 coverage combine
-coverage html
-coverage xml
+coverage html -d "$REPORT_DIR/htmlcov"
+coverage xml -o "$REPORT_DIR/coverage.xml"
+coverage json -o "$REPORT_DIR/coverage.json"
 
 # 压缩目录
 echo "Compressing directory '$TARGET_DIR'..."
-tar -czf htmlcov.tgz ${PWD}/htmlcov
+tar -czf $REPORT_DIR/htmlcov.tgz $REPORT_DIR/htmlcov
 
 # 检查压缩是否成功
 if [ $? -eq 0 ]; then
     # 删除原目录
-    echo "Removing original directory ${PWD}/htmlcov ..."
-    rm -rf ${PWD}/htmlcov
+    echo "Removing original directory $REPORT_DIR/htmlcov ..."
+    rm -rf $REPORT_DIR/htmlcov
 else
     echo "Compression failed."
 fi

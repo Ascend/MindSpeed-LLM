@@ -26,6 +26,7 @@ from mindspeed_llm.fsdp2.utils.train_monitor import TrainMonitor
 from mindspeed.fsdp.utils.device import set_accelerator_compatible
 from mindspeed.fsdp.utils.random import set_seed
 from mindspeed.fsdp.utils.torch_patch import apply_hccl_premul_sum_patch
+from mindspeed_llm.training.utils import auto_coverage
 
 
 logger = get_logger(__name__)
@@ -258,6 +259,8 @@ class AutoTrainer:
       """Delegate to the implementation"""
       self.trainer.train()
 
+
+@auto_coverage
 def main():
    trainer = AutoTrainer()
    trainer.train()

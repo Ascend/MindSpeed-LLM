@@ -41,6 +41,7 @@ from megatron.core.datasets.indexed_dataset import (
 )
 from mindspeed_llm.training.tokenizer import build_tokenizer
 from mindspeed_llm.tasks.preprocess.data_handler import build_dataset, get_dataset_handler
+from mindspeed_llm.training.utils import auto_coverage
 
 
 logging.basicConfig(level=logging.INFO)
@@ -363,6 +364,7 @@ def merge_datasets(args):
         builder.finalize(get_idx_path(f'{args.output_prefix}_{key}'))
 
 
+@auto_coverage
 def main():
     args = get_args()
     validate_args(args)

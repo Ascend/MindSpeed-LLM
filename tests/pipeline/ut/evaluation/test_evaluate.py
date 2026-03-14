@@ -96,7 +96,7 @@ class TestEvaluate(DistributedTest):
 
     @pytest.mark.parametrize("params", test_config["test_qwen2_mcore_needlebench_evaluate"])
     def test_qwen2_mcore_needlebench_evaluate(self, build_args, params):
-
+        os.environ["TEST_MODEL"] = 'true'
         os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
         os.environ["CLOSE_MATMUL_K_SHIFT"] = "1"
         if dist.get_rank() == 0:

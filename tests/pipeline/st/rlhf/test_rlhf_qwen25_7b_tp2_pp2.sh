@@ -4,8 +4,8 @@ export CUDA_DEVICE_MAX_CONNECTIONS=1
 export HCCL_DETERMINISTIC=True
 
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
-export PYTHONPATH=$SCRIPT_DIR/../../..:$PYTHONPATH
-PROJECT_PATH=$SCRIPT_DIR/../../..
+export PYTHONPATH=$SCRIPT_DIR/../../../..:$PYTHONPATH
+PROJECT_PATH=$SCRIPT_DIR/../../../..
 
-python "$PROJECT_PATH"/rlhf_gpt.py --config-dir="$PROJECT_PATH"/tests/pipeline/rlhf/configs --config-name=test_grpo_qwen25_7b
+python "$PROJECT_PATH"/rlhf_gpt.py --config-dir="$PROJECT_PATH"/tests/pipeline/st/rlhf/configs --config-name=test_grpo_qwen25_7b
 

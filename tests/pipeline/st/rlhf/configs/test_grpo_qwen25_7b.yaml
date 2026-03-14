@@ -3,6 +3,7 @@ defaults:
       - qwen25_7b
 
 megatron_training:
+  transformer_impl: local
   use_ascend_coc: True
   coc_fused_kernel: True
   coc_parallel_num: 2

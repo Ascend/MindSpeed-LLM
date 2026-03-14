@@ -6,6 +6,7 @@ from mindspeed_llm.tasks.checkpoint.convert_hf2mg import Hf2MgConvert
 from mindspeed_llm.tasks.checkpoint.convert_mg2hf import Mg2HfConvert
 from mindspeed_llm.tasks.checkpoint.convert_ckpt_mamba2 import MambaConverter
 from mindspeed_llm.tasks.checkpoint.convert_ckpt_longcat import LongCatConverter
+from mindspeed_llm.training.utils import auto_coverage
 
 
 def get_args():
@@ -71,6 +72,7 @@ def get_args():
     return args
 
 
+@auto_coverage
 def main():
     args = get_args()
     logger.info(f"Arguments: {args}")

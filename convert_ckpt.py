@@ -8,6 +8,7 @@ import logging as logger
 import torch.multiprocessing as mp
 from mindspeed_llm import megatron_adaptor
 import pretrain_gpt
+from mindspeed_llm.training.utils import auto_coverage
 
 MODULE_ROOT = "mindspeed_llm.tasks.checkpoint"
 
@@ -33,6 +34,7 @@ def load_plugin(plugin_type, name):
     return plugin
 
 
+@auto_coverage
 def main():
 
     logger.warning("This version of weight conversion tool is approaching end-of-life. "

@@ -15,7 +15,7 @@ def load_module_by_path(module_name, file_path):
     return module
 
 
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../.."))
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../.."))
 target_module_path = os.path.join(project_root, "mindspeed_llm", "core", "high_availability", "elastic_training_common.py")
 common_module = load_module_by_path("mindspeed_llm.core.high_availability.elastic_training_common", target_module_path)
 

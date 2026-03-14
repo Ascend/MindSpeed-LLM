@@ -35,7 +35,7 @@ from megatron.core.models.gpt.gpt_layer_specs import (
     get_gpt_layer_with_transformer_engine_spec,
     get_gpt_mtp_block_spec,
 )
-from mindspeed_llm.training.utils import  set_mtp_batch_list, get_mtp_batch_list
+from mindspeed_llm.training.utils import set_mtp_batch_list, get_mtp_batch_list, auto_coverage
 from mindspeed_llm.core.transformer.multi_token_prediction import generate_mtp_batch_list_on_this_tp_rank
 
 
@@ -294,6 +294,7 @@ def train_valid_test_datasets_provider(train_val_test_num_samples):
     return train_ds, valid_ds, test_ds
 
 
+@auto_coverage
 def main():
     # Temporary for transition to core datasets
     train_valid_test_datasets_provider.is_distributed = True

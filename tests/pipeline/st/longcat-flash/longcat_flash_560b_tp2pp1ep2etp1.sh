@@ -167,5 +167,4 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     $MODEL_PARALLEL_ARGS \
     --distributed-backend nccl \
     --transformer-impl local \
-    --load $CKPT_LOAD_DIR \
-    | tee logs/pretrain_mcore_longcat_ptd_8k.log
+    --load $CKPT_LOAD_DIR

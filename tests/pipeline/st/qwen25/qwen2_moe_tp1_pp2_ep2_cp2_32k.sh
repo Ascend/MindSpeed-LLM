@@ -83,6 +83,7 @@ TRAIN_ARGS="
     --bf16 \
     --train-iters ${TRAIN_ITERS} \
     --seq-length ${SEQ_LENGTH} \
+    --transformer-impl local \
     --no-shared-storage
 "
 

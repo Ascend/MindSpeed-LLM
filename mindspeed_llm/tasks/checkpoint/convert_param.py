@@ -20,6 +20,7 @@ import stat
 import time
 
 import torch
+from mindspeed_llm.training.utils import auto_coverage
 
 
 def get_json_from_file(json_file):
@@ -782,6 +783,7 @@ class ConvertMg2Hf(ConvertBase):
             print(f"missing model keys : {hf_model_missing_param_keys}")
 
 
+@auto_coverage
 def main():
     parser = argparse.ArgumentParser(description="Megatron and HuggingFace format ckpt conversion Arguments",
                                      allow_abbrev=False, conflict_handler='resolve')

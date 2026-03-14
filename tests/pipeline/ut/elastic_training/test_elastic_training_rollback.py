@@ -25,7 +25,7 @@ class TestRollbackCallback(unittest.TestCase):
     @patch('torch.distributed.get_rank')
     @patch('torch.npu.set_device')
     @patch('mindio_ttp.framework_ttp.ttp_decorator.get_device')
-    @patch('torch.distributed.barrier')
+    @patch('mindspeed_llm.core.high_availability.elastic_training_rollback.torch.distributed.barrier')
     def test_rollback_callback(self, *mocks):
         (mock_barrier, mock_get_device, mock_set_device, mock_get_rank,
          mock_get_args, mock_gather_model_params, mock_feature_rollback,

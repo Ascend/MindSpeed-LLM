@@ -96,21 +96,21 @@
                 "tokenizer-model":"/data/ci/Qwen2.5-7B",
                 "use-mcore-models": null,
                 "add-qkv-bias": null,
-                "num-layer-list": "1,3",
+                "num-layer-list": "7,21",
                 "model-type-hf": "llama2",
                 "params-dtype": "bf16"
             }
         },
         {
             "Base_MD5" : [
-            "e61a97df0c5b6985",
-            "d537534859e89a90",
-            "3096d1dc4a10a283",
-            "92619cd1165dd6e2",
-            "539ec7a838259e05",
-            "269da91cb31d69d7",
-            "600926a2014d001a",
-            "824b43c2a0466738"
+                "58479271f6f17efb",
+                "a82f59248f5272b6",
+                "4a024064a94d46e8",
+                "fde7b936f918e365",
+                "8c6337efc2c12f7a",
+                "631cc66f7e1a9309",
+                "0464157347684ca4",
+                "44104a8be772b9c3"
             ]
         }
     ],
@@ -127,7 +127,7 @@
                 "save-dir":"/data/ci/models/qwen25/hf/Qwen2.5-7B",
                 "use-mcore-models": null,
                 "add-qkv-bias": null,
-                "num-layer-list": "1,3",
+                "num-layer-list": "7,21",
                 "model-type-hf": "llama2",
                 "params-dtype": "bf16"
             }
@@ -135,7 +135,10 @@
         },
         {
             "Base_MD5" : [
-                "35245aa6b01ed29c52673c700a23ef6c"
+                "f5fa86e4275769e0371bb2967c2ba254",
+                "be5fbdeb33b0400aeb0b1411d2588c7c",
+                "c0ebe2c72eccd2c06b970e23cc1c8401",
+                "b2de284c39d190ee28676b9c43b38cdb"
             ]
         }
     ],
