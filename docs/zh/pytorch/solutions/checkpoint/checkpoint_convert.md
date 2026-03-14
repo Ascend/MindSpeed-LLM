@@ -42,7 +42,7 @@
 
 从Huggingface等网站下载开源模型权重
 
-预训练权重链接在 [稠密模型](../../models/dense_model.md)和[MoE模型](../../models/moe_model.md) 章节列表的`参数`列链接中可以获取；更多社区资源可以在`模型`列链接中获取，如`Chat/Instruct`权重等。
+训练权重链接在 [模型支持列表](../../models/supported_models.md) 章节列表的`下载链接`列链接中获取。
 
 权重可以基于网页直接下载，也可以基于命令行下载，保存到MindSpeed-LLM/model_from_hf目录，比如：
 

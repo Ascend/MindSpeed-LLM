@@ -1,8 +1,21 @@
-# MindSpeed-LLM 预置稠密大模型
+# PyTorch框架模型支持列表
 
-## 模型列表
+MindSpeed LLM PyTorch后端根据模型架构特点分为稠密模型、稀疏模型和状态空间模型三大类别，详情请查看以下支持列表。
 
-认证`【Pass】`表示经过昇腾官方版本测试的模型。`【Test】`表示模型处于内部测试阶段，未完成充分的性能测试和验收，在实际使用中可能存在未被发现的问题，待后续充分验证后会发布正式版本。相关使用问题可反馈至[MindSpeed-LLM/issues](https://gitcode.com/ascend/MindSpeed-LLM/issues)。
+> 表格字段说明：
+> - **模型**：模型名称
+> - **下载链接**：模型权重下载地址，点击可直接访问Hugging Face等模型仓库
+> - **脚本位置**：模型在本项目中的训练脚本路径，可用于快速定位和使用模型。[脚本环境变量说明](../features/environment_variable.md)
+> - **序列长度**：支持的最大文本序列长度
+> - **训练后端**：支持Legacy、Mcore、FSDP2三种实现方式的模型。Legacy为历史实现方式，Mcore为当前推荐的Megatron主流实现方式，FSDP2为PyTorch官方推荐的分布式训练实现方式。
+> - **集群规模**：模型训练时推荐使用的集群规模配置，格式为"节点数×卡数"
+> - **支持版本**：最终支持的维护版本，空白表示从上线起到当前master分支均在维护
+> - **贡献方**：模型贡献来源
+> - **认证**：`【Pass】`已通过官方测试；`【Test】`内部测试中。如有问题请反馈至[issues](https://gitcode.com/ascend/MindSpeed-LLM/issues)
+
+## 稠密模型
+
+稠密模型（Dense Model）是传统的深度学习模型结构，其神经元之间的连接是密集的，每一层的大多数或所有神经元都与下一层的所有神经元相连。这种模型很简单，训练相对直接，但参数量较大，计算成本较高。
 
 <table>
   <thead>
@@ -10,15 +23,13 @@
       <th>模型</th>
       <th>下载链接</th>
       <th>脚本位置</th>
-      <th>序列</th>
-      <th>实现</th>
-      <th>集群</th>
+      <th>序列长度</th>
+      <th>训练后端</th>
+      <th>集群规模</th>
       <th>支持版本</th>
       <th>贡献方</th>
       <th>认证</th>
     </tr>
-  </thead>
-  <tbody>
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/collections/BAAI/aquila-6698657124de09d10cd7a83f">Aquila</a></td>
       <td><a href="https://huggingface.co/BAAI/Aquila-7B/tree/main">7B</a></td>
@@ -683,7 +694,7 @@
       <td>【Pass】</td>
     </tr>
     <tr>
-      <td rowspan="6"> <a href="https://huggingface.co/collections/Qwen/qwen3-67dd247413f0e2e4f653967f">Qwen3</a> </td>
+      <td rowspan="7"> <a href="https://huggingface.co/collections/Qwen/qwen3-67dd247413f0e2e4f653967f">Qwen3</a> </td>
       <td><a href="https://huggingface.co/Qwen/Qwen3-0.6B-Base">0.6B</a></td>
       <td rowspan="6"><a href="../../../../examples/mcore/qwen3">qwen3</a></td>
       <td> 4K </td>
@@ -737,6 +748,16 @@
       <td> </td>
       <td>【Ascend】</td>
       <td>【Pass】</td>
+    </tr>
+    <tr>
+      <td><a href="https://huggingface.co/Qwen/Qwen3-32B">32B</a></td>
+      <td><a href="../../../../examples/fsdp2/qwen3">qwen3</a></td>
+      <td> 4K </td>
+      <th> FSDP2 </th>
+      <td> 1x16 </td>
+      <td> </td>
+      <td>【Ascend】</td>
+      <td>【Test】</td>
     </tr>
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/collections/Qwen/qwq-674762b79b75eac01735070a">QwQ</a></td>
@@ -885,17 +906,6 @@
       <td>【Pass】</td>
     </tr>
     <tr>
-      <td rowspan="1"><a href="https://huggingface.co/xai-org/grok-1/tree/main">grok-1</a></td>
-      <td><a href="https://huggingface.co/xai-org/grok-1/tree/main">40B</a></td>
-      <td><a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.0.0/examples/mcore/grok1">grok-1</a></td>
-      <td> 8K </td>
-      <th>Mcore</th>
-      <td>4x8</td>
-      <td><a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.0.0/">2.0.0</a></td>
-      <td>【GTS】</td>
-      <td>【Pass】</td>
-    </tr>
-    <tr>
       <td rowspan="1"><a href="https://github.com/OpenBMB/MiniCPM">MiniCPM</a></td>
       <td> <a href="https://huggingface.co/openbmb/MiniCPM-2B-sft-bf16/tree/main">2B</a> </td>
       <td rowspan="1"><a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/examples/mcore/minicpm">minicpm</a></td>
@@ -1029,38 +1039,407 @@
   </tbody>
 </table>
 
-## 社区BUG列表
 
-1. Baichuan-13B: 在任务执行过程中如果出现报错：AttributeError: 'BaichuanTokenizer’ object has no attribute 'sp_model'，请执行下面命令解决这个问题：
+## 稀疏模型
 
-    ```shell
-    pip3 install transformers==4.32.0 --force
-    ```
+稀疏模型（Sparse Model）采用了稀疏连接的神经元结构，只有少数神经元之间存在连接。典型的稀疏模型如混合专家模型（Mixture of Experts, MoE），包含多个专家网络，每次训练只激活部分专家。这种设计可以显著减少参数量和计算复杂度，提高训练效率，特别适合处理大规模数据集和复杂任务。但稀疏模型训练也存在缺点，易出现专家负载不均衡导致训练不稳定。
 
-2. GPT: GPT词表文件与常规模型不同：
+<table>
+  <thead>
+    <tr>
+      <th>模型</th>
+      <th>下载链接</th>
+      <th>脚本位置</th>
+      <th>序列长度</th>
+      <th>训练后端</th>
+      <th>集群规模</th>
+      <th>支持版本</th>
+      <th>贡献方</th>
+      <th>认证</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td rowspan="4"> <a href="https://huggingface.co/collections/Qwen/qwen3-67dd247413f0e2e4f653967f">Qwen3</a> </td>
+      <td rowspan="2"><a href="https://huggingface.co/Qwen/Qwen3-30B-A3B-Base">30B-A3B</a></td>
+      <td><a href="../../../../examples/mcore/qwen3_moe">qwen3_moe</a></td>
+      <td> 4K </td>
+      <th> Mcore </th>
+      <td> 2x8 </td>
+      <td>  </td>
+      <td>【Ascend】</td>
+      <td>【Pass】</td>
+    </tr>
+    <tr>
+      <td><a href="../../../../examples/fsdp2/qwen3_moe">qwen3_moe</a></td>
+      <td> 4K </td>
+      <th> FSDP2 </th>
+      <td> 1x16 </td>
+      <td>  </td>
+      <td>【Ascend】</td>
+      <td>【Test】</td>
+    </tr>
+    <tr>
+      <td rowspan="2"><a href="https://huggingface.co/Qwen/Qwen3-235B-A22B">235B-A22B</a></td>
+      <td><a href="../../../../examples/mcore/qwen3_moe">qwen3_moe</a></td>
+      <td> 4K </td>
+      <th> Mcore </th>
+      <td> 16x16 </td>
+      <td>  </td>
+      <td>【Ascend】</td>
+      <td>【Pass】</td>
+    </tr>
+    <tr>
+      <td><a href="../../../../examples/fsdp2/qwen3_moe">qwen3_moe</a></td>
+      <td> 4K </td>
+      <th> FSDP2 </th>
+      <td> 16x16 </td>
+      <td>  </td>
+      <td>【Ascend】</td>
+      <td>【Test】</td>
+    </tr>
+    <tr>
+      <td rowspan="2"><a href="https://huggingface.co/collections/Qwen/qwen3-next">Qwen3-Next</a></td>
+      <td rowspan="2"><a href="https://huggingface.co/Qwen/Qwen3-Next-80B-A3B-Instruct">80B-A3B</a></td>
+      <td><a href="../../../../examples/mcore/qwen3_next">qwen3_next</a></td>
+      <td> 16K </td>
+      <th> Mcore </th>
+      <td> 4x16 </td>
+      <td>  </td>
+      <td>【Ascend】</td>
+      <td>【Pass】</td>
+    </tr>
+    <tr>
+      <td><a href="../../../../examples/fsdp2/qwen3_next">qwen3_next</a></td>
+      <td> 16K </td>
+      <th> FSDP2 </th>
+      <td> 4x16 </td>
+      <td>  </td>
+      <td>【Ascend】</td>
+      <td>【Test】</td>
+    </tr>
+    <tr>
+      <td rowspan="1"><a href="https://huggingface.co/Qwen/Qwen3-Coder-Next/tree/main">Qwen3-Coder-Next</a></td>
+      <td><a href="https://huggingface.co/Qwen/Qwen3-Coder-Next/tree/main">80B-A3B</a></td>
+      <td><a href="../../../../examples/mcore/qwen3_coder_next">qwen3_coder_next</a></td>
+      <td> 16K </td>
+      <th>Mcore</th>
+      <td>4x16</td>
+      <td rowspan="1"> <a href="../../../../examples/mcore/qwen3_coder_next"></a> </td>
+      <td>【Ascend】</td>
+      <td>【Test】</td>
+    </tr>
+    <tr>
+      <td rowspan="1"><a href="https://huggingface.co/Qwen">Qwen2</a></td>
+      <td><a href="https://huggingface.co/Qwen/Qwen2-57B-A14B/tree/main">57B-A14B</a></td>
+      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.2.0/examples/mcore/qwen2_moe">qwen2_moe</a></td>
+      <td> 4K</td>
+      <th>Mcore</th>
+      <td>8x8</td>
+      <td rowspan="1"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
+      <td>【GTS】</td>
+      <td>【Pass】</td>
+    </tr>
+    <tr>
+      <td rowspan="1"><a href="https://huggingface.co/xai-org/grok-1/tree/main">Grok-1</a></td>
+      <td><a href="https://huggingface.co/xai-org/grok-1/tree/main">40B</a></td>
+      <td><a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.0.0/examples/mcore/grok1">grok-1</a></td>
+      <td> 8K </td>
+      <th>Mcore</th>
+      <td>4x8</td>
+      <td><a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.0.0/">2.0.0</a></td>
+      <td>【GTS】</td>
+      <td>【Pass】</td>
+    </tr>
+    <tr>
+      <td rowspan="3"><a href="https://huggingface.co/mistralai">Mixtral</a></td>
+      <td><a href="https://huggingface.co/mistralai/Mixtral-8x7B-v0.1/tree/main">8x7B</a></td>
+      <td rowspan="3"><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.2.0/examples/mcore/mixtral">mixtral</a></td>
+      <td> 32K</td>
+      <th>Mcore</th>
+      <td>8x8</td>
+      <td rowspan="3"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
+      <td>【Ascend】</td>
+      <td>【Pass】</td>
+    </tr>
+    <tr>
+      <td rowspan="2"><a href="https://huggingface.co/mistralai/Mixtral-8x22B-v0.1/tree/main">8x22B</a></td>
+      <td> 32K</td>
+      <th>Mcore</th>
+      <td>8x8</td>
+      <td>【NAIE】</td>
+      <td>【Pass】</td>
+    </tr>
+    <tr>
+      <td> 64K</td>
+      <th>Mcore</th>
+      <td>8x8</td>
+      <td>【NAIE】</td>
+      <td>【Test】</td>
+    </tr>
+    <tr>
+      <td rowspan="1"><a href="https://huggingface.co/deepseek-ai/DeepSeek-V2">DeepSeek-V2</a></td>
+      <td><a href="https://huggingface.co/deepseek-ai/DeepSeek-V2/tree/main">236B</a></td>
+      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.2.0/examples/mcore/deepseek2">deepseek2</a></td>
+      <td> 8K </td>
+      <th>Mcore</th>
+      <td> 20x8 </td>
+      <td rowspan="1"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
+      <td>【Ascend】</td>
+      <td>【Pass】</td>
+    </tr>
+        <tr>
+      <td rowspan="1"><a href="https://huggingface.co/deepseek-ai/DeepSeek-Coder-V2-Base">DeepSeek-V2-coder</a></td>
+      <td><a href="https://huggingface.co/deepseek-ai/DeepSeek-Coder-V2-Base/tree/main">236B</a></td>
+      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.2.0/examples/mcore/deepseek2_coder">deepseek2_coder</a></td>
+      <td> 8K </td>
+      <th>Mcore</th>
+      <td> 20x8 </td>
+      <td rowspan="1"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
+      <td>【Ascend】</td>
+      <td>【Test】</td>
+    </tr>
+    <tr>
+      <td rowspan="1"><a href="https://huggingface.co/deepseek-ai/DeepSeek-V2-Lite">DeepSeek-V2-Lite</a></td>
+      <td><a href="https://huggingface.co/deepseek-ai/DeepSeek-V2-Lite/tree/main">16B</a></td>
+      <td><a href="../../../../examples/mcore/deepseek2_lite">deepseek2_lite</a></td>
+      <td> 8K </td>
+      <th>Mcore</th>
+      <td> 1x8 </td>
+      <td>  </td>
+      <td>【Ascend】</td>
+      <td>【Pass】</td>
+    </tr>
+    <tr>
+      <td rowspan="1"><a href="https://huggingface.co/deepseek-ai/DeepSeek-V2.5">DeepSeek-V2.5</a></td>
+      <td><a href="https://huggingface.co/deepseek-ai/DeepSeek-V2.5/tree/main">236B</a></td>
+      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.2.0/examples/mcore/deepseek25">deepseek25</a></td>
+      <td> 8K </td>
+      <th>Mcore</th>
+      <td> 20x8 </td>
+      <td rowspan="1"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
+      <td>【NAIE】</td>
+      <td>【Test】</td>
+    </tr>
+    <tr>
+      <td rowspan="1"><a href="https://huggingface.co/deepseek-ai/DeepSeek-V3">DeepSeek-V3</a></td>
+      <td><a href="https://huggingface.co/deepseek-ai/DeepSeek-V3/tree/main">671B</a></td>
+      <td><a href="../../../../examples/mcore/deepseek3">deepseek3</a></td>
+      <td> 4K </td>
+      <th>Mcore</th>
+      <td> 64x8 </td>
+      <td>  </td>
+      <td>【Ascend】</td>
+      <td>【Pass】</td>
+    </tr>
+      <tr>
+      <td rowspan="1"><a href="https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp">DeepSeek-V3.2</a></td>
+      <td><a href="https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp/tree/main">671B</a></td>
+      <td><a href="../../../../examples/mcore/deepseek32">deepseek3.2</a></td>
+      <td> 4K </td>
+      <th>Mcore</th>
+      <td> 32x16 </td>
+      <td>  </td>
+      <td>【Ascend】</td>
+      <td>【Test】</td>
+    </tr>
+    <tr>
+      <td rowspan="1"><a href="https://github.com/OpenBMB/MiniCPM">MiniCPM</a></td>
+      <td> <a href="https://huggingface.co/openbmb/MiniCPM-MoE-8x2B/tree/main">8x2B</a> </td>
+      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.2.0/examples/mcore/minicpm">minicpm</a></td>
+      <td> 4K </td>
+      <th>Mcore</th>
+      <td> 1x8 </td>
+      <td rowspan="1"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
+      <td>【NAIE】</td>
+      <td>【Test】</td>
+    </tr>
+    <tr>
+      <td rowspan="1"><a href="https://huggingface.co/inclusionAI/Ling-mini-2.0">Ling-mini-2.0</a></td>
+      <td> <a href="https://huggingface.co/inclusionAI/Ling-mini-2.0/tree/main">16B</a> </td>
+      <td rowspan="2"><a href="../../../../examples/mcore/ling_v2">ling_v2</a></td>
+      <td> 4K </td>
+      <th>Mcore</th>
+      <td> 1x8 </td>
+      <td rowspan="1"></td>
+      <td>【Ascend】</td>
+      <td>【Test】</td>
+    </tr>
+    <tr>
+      <td rowspan="1"><a href="https://huggingface.co/inclusionAI/Ring-1T">Ring</a></td>
+      <td> <a href="https://huggingface.co/inclusionAI/Ring-1T/tree/main">1T</a> </td>
+      <td> 32K </td>
+      <th>Mcore</th>
+      <td> 32x8 </td>
+      <td rowspan="1"></td>
+      <td>【Ascend】</td>
+      <td>【Test】</td>
+    </tr>
+    <tr>
+      <td rowspan="1"><a href="https://huggingface.co/microsoft">Phi3.5</a></td>
+      <td> <a href="https://huggingface.co/microsoft/Phi-3.5-MoE-instruct">MoE-instruct</a> </td>
+      <td><a href="../../../../examples/mcore/phi35">phi35</a></td>
+      <td> 4K </td>
+      <th> Mcore </th>
+      <td> 2x8 </td>
+      <td>  </td>
+      <td>【GTS】</td>
+      <td>【Test】</td>
+    </tr>
+    <tr>
+      <td rowspan="1"><a href="https://huggingface.co/tencent">Hunyuan</a></td>
+      <td> <a href="https://huggingface.co/tencent/Tencent-Hunyuan-Large">389B</a> </td>
+      <td><a href="../../../../examples/mcore/hunyuanLarge">hunyuanLarge</a></td>
+      <td> 8K </td>
+      <th> Mcore </th>
+      <td> 8x8 </td>
+      <td>  </td>
+      <td>【Ascend】</td>
+      <td>【Pass】</td>
+    </tr>
+    <tr>
+      <td>GPT4</td>
+      <td>MoE-175B</td>
+      <td rowspan="1"><a href="../../../../examples/mcore/gpt4">gpt4</a></td>
+      <td> 128K </td>
+      <th> Mcore </th>
+      <td> 8x8 </td>
+      <td>  </td>
+      <td>【Ascend】</td>
+      <td>【Pass】</td>
+    </tr>
+    <tr>
+      <td rowspan="1"><a href="https://huggingface.co/zai-org">GLM4.5</a></td>
+      <td> <a href="https://huggingface.co/zai-org/GLM-4.5-Air/tree/main">MoE-106B</a> </td>
+      <td><a href="../../../../examples/mcore/glm45-moe">glm45-moe</a></td>
+      <td> 4K </td>
+      <th> Mcore </th>
+      <td> 8x8 </td>
+      <td>  </td>
+      <td>【Ascend】</td>
+      <td>【Test】</td>
+    </tr>
+    <tr>
+      <td rowspan="1"><a href="https://huggingface.co/THUDM">GLM5</a></td>
+      <td><a href="https://huggingface.co/THUDM/GLM-5">MoE-744B</a></td>
+      <td><a href="../../../../examples/mcore/glm5">glm5</a></td>
+      <td> 4K </td>
+      <th> Mcore </th>
+      <td> 32x16 </td>
+      <td>  </td>
+      <td>【Ascend】</td>
+      <td>【Test】</td>
+    </tr>
+    <tr>
+      <td rowspan="1"><a href="https://huggingface.co/stepfun-ai">Step3.5-Flash</a></td>
+      <td><a href="https://huggingface.co/stepfun-ai/Step-3.5-Flash">MoE-196B</a></td>
+      <td><a href="../../../../examples/fsdp2/step35">step35</a></td>
+      <td> 4K </td>
+      <th> FSDP2 </th>
+      <td> 12x16 </td>
+      <td>  </td>
+      <td>【Ascend】</td>
+      <td>【Test】</td>
+    </tr>
+    <tr>
+      <td rowspan="1"><a href="https://huggingface.co/meituan-longcat">LongCat</a></td>
+      <td><a href="https://huggingface.co/meituan-longcat/LongCat-Flash-Chat">MoE-560B</a></td>
+      <td><a href="../../../../examples/mcore/longcat">longcat</a></td>
+      <td> 4K </td>
+      <th> Mcore </th>
+      <td> 8x16 </td>
+      <td>  </td>
+      <td>【Ascend】</td>
+      <td>【Test】</td>
+    </tr>
+    <tr>
+      <td rowspan="1"><a href="https://huggingface.co/openai">GPT-OSS</a></td>
+      <td><a href="https://modelscope.cn/models/unsloth/gpt-oss-20b-BF16/">MoE-20B</a></td>
+      <td><a href="../../../../examples/fsdp2/gpt_oss">gpt_oss</a></td>
+      <td> 4K </td>
+      <th> FSDP2 </th>
+      <td> 1x16 </td>
+      <td>  </td>
+      <td>【Ascend】</td>
+      <td>【Test】</td>
+    </tr>
+  </tbody>
+</table>
 
-    ```shell
-    mkdir vocab_file 
-    cd vocab_file
-    wget https://s3.amazonaws.com/models.huggingface.co/bert/gpt2-vocab.json
-    wget https://s3.amazonaws.com/models.huggingface.co/bert/gpt2-merges.txt
-    cd ..
+> [!NOTE]
+GPT模型词表文件与常规模型不同，需按以下步骤配置：
+> ```shell
+> mkdir vocab_file 
+> cd vocab_file
+> wget https://s3.amazonaws.com/models.huggingface.co/bert/gpt2-vocab.json
+> wget https://s3.amazonaws.com/models.huggingface.co/bert/gpt2-merges.txt
+> cd ..
+> 
+> # 处理成训练数据
+> python ./preprocess_data.py \
+>     --input ./dataset/ \
+>     --output-prefix ./dataset/gpt_text_sentence \
+>     --tokenizer-type GPT2BPETokenizer \
+>     --vocab-file ./vocab_file/gpt2-vocab.json \
+>     --merge-file ./vocab_file/gpt2-merges.txt \
+>     --append-eod \
+>     --workers 4 \
+>     --log-interval 1000
+> 
+> # 请根据真实存放路径配置预训练脚本以下参数
+> VOCAB_FILE="./vocab_file/gpt2-vocab.json"   # 词表
+> MERGE_FILE="./vocab_file/gpt2-merges.txt"   # BPE 合并表
+> DATA_PATH="./dataset/gpt_text_sentence"     # 数据路径
+> ```
 
-    # 处理成训练数据
-    python ./preprocess_data.py \
-        --input ./dataset/ \
-        --output-prefix ./dataset/gpt_text_sentence \
-        --tokenizer-type GPT2BPETokenizer \
-        --vocab-file ./vocab_file/gpt2-vocab.json \
-        --merge-file ./vocab_file/gpt2-merges.txt \
-        --append-eod \
-        --workers 4 \
-        --log-interval 1000
+## 状态空间模型
 
-    # 请根据真实存放路径配置预训练脚本以下参数
-    VOCAB_FILE="./vocab_file/gpt2-vocab.json"   # 词表
-    MERGE_FILE="./vocab_file/gpt2-merges.txt"   # BPE 合并表
-    DATA_PATH="./dataset/gpt_text_sentence"     # 数据路径
-    ```
+状态空间模型（State Space Model, SSM）是一类基于状态空间表示的序列模型，能够高效地建模长序列数据。与传统的Transformer模型相比，SSM在处理长序列时具有更好的计算效率和内存效率。
 
-3. Bloom-176B: config.json中同字段对应的key值与其他模型不一致，将文件中的n_embed改为hidden_size， 将num_attention_heads修改为n_head
+<table>
+  <thead>
+    <tr>
+      <th>模型</th>
+      <th>下载链接</th>
+      <th>脚本位置</th>
+      <th>序列长度</th>
+      <th>训练后端</th>
+      <th>集群规模</th>
+      <th>贡献方</th>
+      <th>认证</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td rowspan="2">Mamba2</td>
+      <td><a href="https://huggingface.co/state-spaces/mamba2-2.7b/tree/main">2.7B</a></td>
+      <td rowspan="2"><a href="../../../../examples/mcore/mamba2">mamba2</a></td>
+      <td>4K</td>
+      <th>Mcore</th>
+      <td> 1x8</td>
+      <td>【Ascend】</td>
+      <td>【Test】</td>
+    </tr>
+    <tr>
+      <td><a href="https://huggingface.co/nvidia/mamba2-8b-3t-4k/tree/main">8B</a></td>
+      <td>4K</td>
+      <th>Mcore</th>
+      <td> 1x8</td>
+      <td>【Ascend】</td>
+      <td>【Test】</td>
+    </tr>      
+    <tr>
+      <td rowspan="2">Mamba2Hybrid</td>
+      <td><a href="https://huggingface.co/nvidia/mamba2-hybrid-8b-3t-4k/tree/main">8B</a></td>
+       <td><a href="../../../../examples/mcore/mamba2">mamba2</a></td>
+      <td> 4K</td>
+      <th>Mcore</th>
+      <td>1x8</td>
+      <td>【Ascend】</td>
+      <td>【Test】</td>
+    </tr>   
+  </tbody>
+</table>
+
+> [!NOTE]
+> 该开源模型未提供词表文件。内部测试使用的词表文件 `mamba2_2.7b_from_8b.model` 为自定义设计，建议用户自行构建词表，训练效果不作保证。

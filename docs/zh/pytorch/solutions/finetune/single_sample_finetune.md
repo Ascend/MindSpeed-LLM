@@ -29,7 +29,7 @@
 
 2. 模型和数据集准备  
     - 模型准备  
-        模型权重下载请参考[Dense模型](../../models/dense_model.md)、[MoE模型](../../models/moe_model.md)和[SSM模型](../../models/ssm_model.md)文档中对应模型的下载链接。以[Qwen3-8B](https://huggingface.co/Qwen/Qwen3-8B/tree/main)模型为例，完整的模型文件夹应该包括以下内容：
+        模型权重下载请参考[模型支持列表](../../models/supported_models.md)文档中对应模型的下载链接。以[Qwen3-8B](https://huggingface.co/Qwen/Qwen3-8B/tree/main)模型为例，完整的模型文件夹应该包括以下内容：
 
         ```shell
         .

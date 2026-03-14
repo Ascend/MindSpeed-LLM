@@ -58,31 +58,31 @@ MindSpeed LLM系列TC及SIG会议安排请查看[Ascend会议中心](https://mee
 
 # 最新消息
 ---
-- [Feb. 12, 2026]: 🚀 [**GLM5** 模型支持](./examples/mcore/glm5)【Prototype】
-- [Feb. 11, 2026]: 🚀 [**Step-3.5-Flash** 模型支持](./examples/fsdp2/step35)【Prototype】
-- [Feb. 10, 2026]: 🚀 [FSDP2训练后端上线，支持**Qwen3-Next** 模型](./examples/fsdp2/qwen3_next/)【Prototype】
-- [Feb. 04, 2026]: 🚀 [**Qwen3-Coder-Next** 模型支持mcore后端](./examples/mcore/qwen3_coder_next/)【Prototype】
-- [Jan. 28, 2026]: 🌴 [社区版镜像配套2.3.0分支上线](https://gitcode.com/Ascend/MindSpeed-LLM/blob/2.3.0/docs/pytorch/install_guide.md)【Prototype】
-- [Jan. 23, 2026]: 🌴 [社区版镜像配套2.2.0分支上线](https://gitcode.com/Ascend/MindSpeed-LLM/blob/2.2.0/docs/pytorch/install_guide.md)【Prototype】
+- [Mar. 10, 2026]: 🚀 MindSpeed LLM 模型下架[夕阳计划第二期](https://gitcode.com/Ascend/MindSpeed-LLM/issues/1224) 启动，感谢每一份曾经的贡献
+- [Feb. 12, 2026]: 🚀 [**GLM5** 模型支持](./examples/mcore/glm5) 【Prototype】
+- [Feb. 11, 2026]: 🚀 [**Step-3.5-Flash** 模型支持](./examples/fsdp2/step35) 【Prototype】
+- [Feb. 10, 2026]: 🚀 [FSDP2训练后端上线，支持**Qwen3-Next** 模型](./examples/fsdp2/qwen3_next/) 【Prototype】
+- [Feb. 04, 2026]: 🚀 [**Qwen3-Coder-Next** 模型支持mcore后端](./examples/mcore/qwen3_coder_next/) 【Prototype】
+- [Jan. 28, 2026]: 🌴 [社区版镜像配套2.3.0分支上线](https://gitcode.com/Ascend/MindSpeed-LLM/blob/2.3.0/docs/pytorch/install_guide.md) 【Prototype】
+- [Jan. 23, 2026]: 🌴 [社区版镜像配套2.2.0分支上线](https://gitcode.com/Ascend/MindSpeed-LLM/blob/2.2.0/docs/pytorch/install_guide.md) 【Prototype】
 - [Jan. 16, 2026]: 🌴 MindSpeed LLM发布[v2.3.0分支](https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.3.0)，支持core_v0.12.1版本
 - [Dec. 24, 2025]: 🚀 **GPT-OSS** 模型支持 【Prototype】
 - [Dec. 11, 2025]: 🚀 **Qwen3-Next** 模型训练支持triton融合加速GDN模块计算 【Prototype】
-- [Nov. 25, 2025]: 🚀 [数据/权重在线加载训练](./docs/zh/pytorch/solutions/pretrain/train_from_hf.md)【Prototype】
+- [Nov. 25, 2025]: 🚀 [数据/权重在线加载训练](./docs/zh/pytorch/solutions/pretrain/train_from_hf.md) 【Prototype】
 - [Nov. 14, 2025]: 🚀 **magistral** 模型支持 【Prototype】
 - [Oct. 30, 2025]: 🚀 MindSpeed LLM 模型下架[夕阳计划](https://gitcode.com/Ascend/MindSpeed-LLM/issues/943) 启动，感谢每一份曾经的贡献
 - [Oct. 28, 2025]: 🌴 MindSpeed LLM发布[v2.2.0分支](https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.2.0)，支持core_v0.12.1版本
-- [Oct. 16, 2025]: 🚀 Qwen3-30B支持DPO训练
+- [Oct. 16, 2025]: 🚀 **Qwen3-30B**支持DPO训练
 - [Oct. 14, 2025]: 🚀 **DeepSeek-V3**预训练已支持基于 **[MindSpore AI框架](./docs/zh/mindspore/readme.md)** 运行
 - [Oct. 22, 2025]: 🚀 **Ling mini v2** 模型支持, 暂不支持mtp
 - [Sep. 16, 2025]: 🚀 **Qwen3-Next** 模型支持
 - [Aug. 23, 2025]: 🚀 大参数模型[权重转换v2](./docs/zh/pytorch/solutions/checkpoint/checkpoint_convert_v2.md)优化版本上线
 - [Jul. 28, 2025]: 🚀 **glm4.5-moe** 系列模型同步首发支持
 - [Jul. 25, 2025]: 🌴 MindSpeed LLM发布[v2.1.0分支](https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.1.0)，支持core_r0.8.0版本
-- [Jul. 10, 2025]: 🚀 **[DeepSeek-R1](https://gitcode.com/Ascend/MindSpeed-RL/blob/master/docs/solutions/r1_zero_deepseek_671b.md)**  系列功能逐步上线
+- [Jul. 10, 2025]: 🚀 **[DeepSeek-R1](https://gitcode.com/Ascend/MindSpeed-RL/blob/master/docs/solutions/r1_zero_deepseek_671b.md)** 系列功能逐步上线
 - [May. 19, 2025]: 🚀 **Qwen3** 系列模型同步首发支持
-- [Mar. 27, 2025]: 🚀 **[DeepSeek-R1-ZERO Qwen-7B](https://gitcode.com/ascend/MindSpeed-RL/blob/master/docs/solutions/r1_zero_qwen25_7b.md)**  **[DeepSeek-R1-ZERO Qwen-32B](https://gitcode.com/ascend/MindSpeed-RL/blob/master/docs/solutions/r1_zero_qwen25_32b.md)**
-
-- [Mar. 26, 2025]: 🚀  **[DeepSeek-V3-671B模型全家桶](./examples/mcore/deepseek3/)** 上线
+- [Mar. 27, 2025]: 🚀 **[DeepSeek-R1-ZERO Qwen-7B](https://gitcode.com/ascend/MindSpeed-RL/blob/master/docs/solutions/r1_zero_qwen25_7b.md)** **[DeepSeek-R1-ZERO Qwen-32B](https://gitcode.com/ascend/MindSpeed-RL/blob/master/docs/solutions/r1_zero_qwen25_32b.md)**
+- [Mar. 26, 2025]: 🚀 **[DeepSeek-V3-671B模型全家桶](./examples/mcore/deepseek3/)** 上线
 
 注意：【Prototype】表示特性未经过充分验证，若使用存在问题请至[issue](https://gitcode.com/Ascend/MindSpeed-LLM/issues)反馈。
 
@@ -113,31 +113,13 @@ MindSpeed LLM支持Atlas 800T A2等昇腾训练硬件形态，软件版本配套
 
 MindSpeed LLM将以Qwen2.5-7B模型为例，指导开发者完成Qwen2.5-7B大语言模型的预训练任务，具体的操作请参考[快速入门](./docs/zh/quick_start.md)。
 
-# 预置模型
+# 支持模型
 
 ---
 
-MindSpeed LLM目前已内置支持百余个业界常用LLM大模型的预训练与微调，预置模型清单详见下表。
-
-<table><thead>
-  <tr>
-    <th>模型类别</th>
-    <th>模型列表</th>
-  </tr></thead>
-<tbody>
-  <tr>
-    <td rowspan="1">稠密模型</td>
-    <td><a href="docs/zh/pytorch/models/dense_model.md">Dense</a></td>
-  </tr>
-  <tr>
-    <td rowspan="1">MOE模型</td>
-    <td><a href="docs/zh/pytorch/models/moe_model.md">MOE</a></td>
-  </tr>
-  <tr>
-    <td rowspan="1">SSM模型</td>
-    <td><a href="./docs/zh/pytorch/models/ssm_model.md">SSM</a></td>
-  </tr>  
-</tbody></table>
+MindSpeed LLM目前已内置支持百余个业界常用LLM大模型的预训练与微调，支持模型清单可查看：
+- [Pytorch框架模型支持列表](./docs/zh/pytorch/models/supported_models.md)
+- [MindSpore框架模型支持列表](./docs/zh/mindspore/models/supported_models.md)
 
 # 目录结构
 
@@ -164,8 +146,8 @@ MindSpeed-LLM/
  ├── evaluation.py             # 模型评估工具
  ├── setup.py                  # 安装配置文件
  ├── README.md                 # 项目说明文档
-```
 
+ ```
 
 # 训练方案与特性
 

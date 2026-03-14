@@ -274,17 +274,9 @@ docs/zh/pytorch
       <td>基于pytorch/mindspore后端的入门指导，从环境安装到预训练拉起</td>
     </tr>
     <tr>
-      <td rowspan="3">仓库支持模型清单</td>
-      <td><a href="pytorch/models/dense_model.md">dense_models</a></td>
-      <td>稠密模型清单</td>
-    </tr>
-    <tr>
-      <td><a href="pytorch/models/moe_model.md">MOE_models</a></td>
-      <td>MOE模型清单</td>
-    </tr>
-    <tr>
-      <td><a href="pytorch/models/ssm_model.md">SSM_models</a></td>
-      <td>SSM模型清单</td>
+      <td rowspan="1">仓库支持模型清单</td>
+      <td><a href="pytorch/models/supported_models.md">supported_models</a></td>
+      <td>PyTorch框架模型支持列表</td>
     </tr>
     <tr>
       <td rowspan="1">特性清单</td>
