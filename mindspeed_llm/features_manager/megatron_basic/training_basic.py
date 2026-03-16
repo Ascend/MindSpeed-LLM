@@ -21,11 +21,12 @@ class TrainingBasicFeature(MindSpeedFeature):
             args.shape_order = 'TND'
             print_rank0_by_args(args, f"When reset_attention_mask is enabled, shape_order should be TND.")
 
+        args.create_attention_mask_in_dataloader = False
         reset_data = args.reset_attention_mask
         alibi_without_flash_attn = args.position_embedding_type == 'alibi' and not args.use_flash_attn
         if (args.attention_mask_type == 'general' and not reset_data) or alibi_without_flash_attn or args.tokenizer_padding_side == "left":
             args.create_attention_mask_in_dataloader = True
-        if args.attention_mask_type == 'causal':
+        if reset_data and args.attention_mask_type == 'causal':
             args.create_attention_mask_in_dataloader = False
         print_rank0_by_args(args, f"[INFO] Setting args.create_attention_mask_in_dataloader to {args.create_attention_mask_in_dataloader} "
                     f"since (attention_mask_type={args.attention_mask_type} and reset_data={reset_data}) or alibi_without_flash_attn={alibi_without_flash_attn} or "
