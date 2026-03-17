@@ -4,8 +4,6 @@ labels: ["feat","fix", "docs", "style","refactor","adaptor","chore","test","back
 assignees: 'username'
 ---
 
-# Pull Request 模板
-----
 
 ## What this PR does / why we need it?
 
