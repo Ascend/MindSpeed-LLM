@@ -232,9 +232,46 @@ class SegmentedColumnParallelLinear(ColumnParallelLinear):
 
 
 def checkpoint_forward_wrapper(fn):
+    """
+    Fixes TypeError caused by Megatron CheckpointFunction not supporting list[Tensor] inputs.
+
+    Background:
+    In hybrid_cp_algo + attention_mask_type=general mode, attention_mask is converted to 
+    list[Tensor], triggering CheckpointFunction native limitation.
+
+    Solution:
+    Flatten the list into independent Tensors during forward to bypass the check; restore 
+    the structure via closure during recomputation to ensure logical consistency.
+    """
     def wrapper(ctx, run_function, distribute_saved_activations, *args):
         ctx.actual_seq_len_list = get_actual_seq_len_list()
-        return fn(ctx, run_function, distribute_saved_activations, *args)
+
+        flat_args = []
+        arg_structure = []
+        
+        for arg in args:
+            if isinstance(arg, (list, tuple)) and len(arg) > 0 and torch.is_tensor(arg[0]):
+                arg_structure.append(("seq", len(arg), type(arg)))
+                flat_args.extend(arg)
+            else:
+                arg_structure.append(("item", 1, None))
+                flat_args.append(arg)
+        
+        ctx.custom_arg_structure = arg_structure
+
+        def wrapped_run_func(*rebuilt_flat_args):
+            original_args = []
+            idx = 0
+            for stype, length, seq_type in ctx.custom_arg_structure:
+                if stype == "seq":
+                    seq = rebuilt_flat_args[idx : idx + length]
+                    original_args.append(seq_type(seq))
+                else:
+                    original_args.append(rebuilt_flat_args[idx])
+                idx += length
+            return run_function(*original_args)
+
+        return fn(ctx, wrapped_run_func, distribute_saved_activations, *flat_args)
 
     return wrapper
 
