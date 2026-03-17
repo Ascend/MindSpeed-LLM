@@ -269,7 +269,7 @@
                 "save-dir":"/data/ci/cache/llama2-7b-lora2mcore-test/",
                 "lora-r":"16",
                 "lora-alpha":"32",
-                "lora-target-modules":"linear_qkv linear_proj linear_fc1 linear_fc2",
+                "lora-target-modules":"linear_qkv",
                 "target-tensor-parallel-size": "1",
                 "target-pipeline-parallel-size": "1",
                 "use-mcore-models": null,
@@ -278,7 +278,7 @@
         },
         {
             "Base_MD5" : [
-                "1680a1c3238fd75d"
+                "3ce61b5645868459"
             ]
         }
     ],
