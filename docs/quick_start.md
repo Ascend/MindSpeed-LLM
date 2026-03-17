@@ -289,7 +289,7 @@ bash examples/mindspore/qwen25/ckpt_convert_qwen25_hf2mcore.sh
 ```shell
 source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路径
 
-python convert_ckpt.py \
+python mindspeed_llm/mindspore/convert_ckpt.py \
        --use-mcore-models \
        --model-type GPT \
        --load-model-type hf \
@@ -301,24 +301,26 @@ python convert_ckpt.py \
        --save-dir ./model_weights/qwen2.5_mcore/ \
        --tokenizer-model ./model_from_hf/qwen2.5-7b-hf/tokenizer.json \
        --model-type-hf llama2 \
-       --params-dtype bf16
+       --params-dtype bf16 \
+       --ai-framework mindspore
 ```
 
 参数解析
 
-| 参数                                  | 说明                                                         | 必填 |
-|-------------------------------------|------------------------------------------------------------|---|
-| `--model-type GPT`                  | 指定模型类型为GPT系列                                               | ✅ |
-| `--use-mcore-models`                | 转换为Megatron-Mcore格式                        | ✅ |
-| `--target-tensor-parallel-size 1`   | 张量并行度设置（建议配置1）                                             | ✅ |
-| `--target-pipeline-parallel-size 4` | 流水线并行度设置（建议保持4）                                            | ✅ |
-| `--tokenizer-model`                 | 指定分词器路径                                                    | ✅ |
-| `--load-model-type`                 | 加载权重的类别（可以是hf、mg）                                          | ✅ |
-| `--save-model-type`                 | 存储权重的类别（可以是hf、mg）                                          | ✅ |
-| `--load-dir`                 | 权重文件加载路径                                          | ✅ |
-| `--save-dir`                 | 权重文件保存路径                                          | ✅ |
-| `--model-type-hf`                 | huggingface模型类别，默认为llama2                                  |   |
-| `--params-dtype`                 | 指定权重转换后的权重精度模式，默认为fp16，如果源文件格式为bf16，则需要设置为bf16 | ✅  |
+| 参数                                  | 说明                                                            | 必填 |
+|-------------------------------------|---------------------------------------------------------------|---|
+| `--model-type GPT`                  | 指定模型类型为GPT系列                                                  | ✅ |
+| `--use-mcore-models`                | 转换为Megatron-Mcore格式                                           | ✅ |
+| `--target-tensor-parallel-size 1`   | 张量并行度设置（建议配置1）                                                | ✅ |
+| `--target-pipeline-parallel-size 4` | 流水线并行度设置（建议保持4）                                               | ✅ |
+| `--tokenizer-model`                 | 指定分词器路径                                                       | ✅ |
+| `--load-model-type`                 | 加载权重的类别（可以是hf、mg）                                             | ✅ |
+| `--save-model-type`                 | 存储权重的类别（可以是hf、mg）                                             | ✅ |
+| `--load-dir`                 | 权重文件加载路径                                                      | ✅ |
+| `--save-dir`                 | 权重文件保存路径                                                      | ✅ |
+| `--model-type-hf`                 | huggingface模型类别，默认为llama2                                     |   |
+| `--params-dtype`                 | 指定权重转换后的权重精度模式，默认为fp16，如果源文件格式为bf16，则需要设置为bf16                | ✅  |
+| `--ai-framework`                 | 指定使用的后端，支持“pytorch”和“mindspore”，默认为“pytorch”，需要设置为“mindspore” | ✅  |
 
 **注意**
 - 对该qwen2.5-7b模型，此处推荐的切分配置是tp1pp4，对应上述配置。
@@ -417,7 +419,7 @@ GBS=64              # 设置global-batch-size为64
 
 ```shell
 source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路径
-source /usr/local/Ascend/nnal/atb/set_env.sh cxx_abi=0 # 修改为实际安装的nnal包路径
+source /usr/local/Ascend/nnal/atb/set_env.sh --cxx_abi=0 # 修改为实际安装的nnal包路径
 
 # 启动预训练脚本
 bash examples/mindspore/qwen25/pretrain_qwen25_7b_32k_ms.sh

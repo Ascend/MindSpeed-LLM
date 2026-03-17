@@ -20,7 +20,7 @@ MindSpeed-LLM + MindSpore后端的依赖配套如下表，安装步骤参考[基
   </tr>
   <tr>
     <td>昇腾NPU驱动</td>
-    <td rowspan="2">在研版本</td>
+    <td rowspan="2">8.5.0</td>
   <tr>
     <td>昇腾NPU固件</td>
   </tr>
