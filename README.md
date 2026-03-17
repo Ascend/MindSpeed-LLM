@@ -91,13 +91,7 @@ MindSpeed LLM系列TC及SIG会议安排请查看[Ascend会议中心](https://mee
 
 ---
 
-MindSpeed LLM支持Atlas 800T A2等昇腾训练硬件形态，软件版本配套表如下：
-
-| MindSpeed LLM版本 | MindSpeed版本      | Megatron版本 | PyTorch版本  | torch_npu版本 | CANN版本 | Python版本            |
-| ---------------- | ------------------ | ------------ | -----------  | ------------- | -------- | --------------------- |
-| master（在研版本）| master（在研版本）  | core_v0.12.1  | 2.7.1       | 在研版本       | 在研版本  | Python3.10            |
-| 2.3.0（商用）    | 2.3.0_core_r0.12.1 | core_v0.12.1  | 2.7.1       | 7.3.0         | 8.5.0  | Python3.10            |
-| 2.2.0（商用）    | 2.2.0_core_r0.12.1 | core_v0.12.1  | 2.7.1       | 7.2.0         | 8.3.RC1  | Python3.10            |
+详见[版本说明](docs/zh/release_notes.md)。
 
 
 # 安装
