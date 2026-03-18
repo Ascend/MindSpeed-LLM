@@ -377,7 +377,7 @@ class Trainer:
         # Save model in HF format — all ranks participate in gather, rank 0 writes
         if args.save_hf_weights and save_checkpoint_path is not None:
             options = StateDictOptions(full_state_dict=True, cpu_offload=True)
-            model_state_dict = get_model_state_dict(self.model, options=options)
+            model_state_dict = get_model_state_dict(self.model.model, options=options)
 
             if dist.get_rank() == 0:
                 model_configs = [self.model.model.config, self.tokenizer]
