@@ -1,7 +1,7 @@
 ## DeepSeek-V3 指南
 ### 1. 准备工作
 
-参考[MindSpeed LLM安装指导](../../../docs/zh/install_guide.md)，完成环境安装和[预训练数据处理](../../../docs/zh/pytorch/solutions/pretrain/pretrain_dataset.md)。
+参考[MindSpeed LLM安装指导](../../../docs/zh/install_guide.md)，完成环境安装和[预训练数据处理](../../../docs/zh/pytorch/tools/data_process_pretrain.md)。
 
 
 ### 2. 权重转换

@@ -27,7 +27,7 @@ INFO:root:Done!
 
 # 3 数据预处理
 
-当前MindSpore后端已完全支持MindSpeed-LLM的多种任务场景下的数据预处理，数据预处理指南参见[数据预处理](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/docs/zh/pytorch/solutions/pretrain/pretrain_dataset.md)。
+当前MindSpore后端已完全支持MindSpeed-LLM的多种任务场景下的数据预处理，数据预处理指南参见[数据预处理](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/docs/zh/pytorch/tools/data_process_pretrain.md)。
 
 ## 3.1 预训练数据处理
 

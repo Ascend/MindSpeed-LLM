@@ -26,7 +26,7 @@
 
 ### 数据预处理
 
-目前Seq1F1B支持多样本Pack模式的预训练和微调场景，数据处理阶段需要进行如下修改，具体细节参考[大模型分布式预训练pack模式说明文档](../../pytorch/solutions/pretrain/pretrain_eod.md)和[多样本Pack模式微调说明文档](../../pytorch/solutions/finetune/multi_sample_pack_finetune.md)：
+目前Seq1F1B支持多样本Pack模式的预训练和微调场景，数据处理阶段需要进行如下修改，具体细节参考[大模型分布式预训练pack模式说明文档](../../pytorch/training/pretrain/mcore/pretrain_eod.md)和[多样本Pack模式微调说明文档](../../pytorch/training/finetune/mcore/multi_sample_pack_finetune.md)：
 
 - 多样本Pack模式预训练场景：数据预处理阶段额外添加`--append-eod`参数开启pack模式数据预处理，在每个输入序列的末尾添加一个特殊的标记来表示输入序列的结束。
 
@@ -48,7 +48,7 @@
 
 - 使用Seq1F1B时，建议使用`gradient-accumulation-fusion`特性，即不添加`--no-gradient-accumulation-fusion`参数。由于序列切分会导致算子下发次数增加$s$倍，因此在使用Seq1F1B时，融合算子的性能提升将更加显著。
 
-- 在显存紧缺的场景中，建议Seq1F1B搭配重计算特性。可参考以下参数配置开启重计算，更多重计算特性说明及配置可参考[重计算相关文档](../../pytorch/features/recompute_relative.md)。
+- 在显存紧缺的场景中，建议Seq1F1B搭配重计算特性。可参考以下参数配置开启重计算，更多重计算特性说明及配置可参考[重计算相关文档](../../pytorch/features/mcore/recompute_relative.md)。
 
 ```python
     --recompute-granularity full \

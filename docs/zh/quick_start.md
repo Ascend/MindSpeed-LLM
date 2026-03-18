@@ -93,7 +93,7 @@
 
 ### 权重转换
 
-昇腾MindSpeed LLM要求模型权重采用Megatron-Mcore格式，在这里我们将原始HuggingFace权重格式转换为Megatron-Mcore格式，详见[hf2mg权重转换](./pytorch/solutions/checkpoint/checkpoint_convert.md#21-huggingface权重转换到megatron-mcore格式)。
+昇腾MindSpeed LLM要求模型权重采用Megatron-Mcore格式，在这里我们将原始HuggingFace权重格式转换为Megatron-Mcore格式，详见[hf2mg权重转换](./pytorch/tools/checkpoint_convert_hf_mcore.md#21-huggingface权重转换到megatron-mcore格式)。
 
 使用官方提供的转换脚本，获取对应切分的mg权重。
 
@@ -166,9 +166,9 @@
 
 ### 预训练数据集处理
 
-通过对各种格式的数据做提前预处理，避免原始数据的反复处理加载，将所有的数据都统一存储到.bin和.idx两个文件中，详见[预训练数据处理](./pytorch/solutions/pretrain/pretrain_dataset.md)。
+通过对各种格式的数据做提前预处理，避免原始数据的反复处理加载，将所有的数据都统一存储到.bin和.idx两个文件中，详见[预训练数据处理](./pytorch/tools/data_process_pretrain.md)。
 
-常用的预训练数据集包括Alpaca、EnWiki、C4等，[预训练数据处理](./pytorch/solutions/pretrain/pretrain_dataset.md)中提供了数据集下载地址。
+常用的预训练数据集包括Alpaca、EnWiki、C4等，[预训练数据处理](./pytorch/tools/data_process_pretrain.md)中提供了数据集下载地址。
 
 如下以Alpaca数据集为例，进行预训练数据集示例。
 
