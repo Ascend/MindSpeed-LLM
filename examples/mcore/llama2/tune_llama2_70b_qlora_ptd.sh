@@ -30,6 +30,8 @@ DISTRIBUTED_ARGS="
 
 
 TRAINING_ARGS="
+    --manual-gc \
+    --manual-gc-interval 30 \
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \
     --sequence-parallel \
