@@ -148,7 +148,9 @@ MindSpeed-LLM/
 
 ---
 
-MindSpeed LLM将以Qwen2.5-7B模型为例，指导开发者完成Qwen2.5-7B大语言模型的预训练任务，具体的操作请参考[快速入门](./docs/zh/quick_start.md)。
+指导开发者快速启动大语言模型的预训练和微调任务，具体的操作请参考：
+- [快速入门（基于PyTorch框架）](./docs/zh/pytorch/training/quick_start.md)
+- [快速入门（基于MindSpore框架）](./docs/zh/mindspore/quick_start.md)
 
 # 支持模型
 
