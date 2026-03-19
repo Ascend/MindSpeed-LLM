@@ -138,12 +138,6 @@ def get_query_key_value_tensors(
     if rotary_pos_emb is not None:
         rotary_q_pos_emb, rotary_k_pos_emb = rotary_pos_emb
 
-        if hasattr(args, "rope_scaling_type") and args.rope_scaling_type == "yarn":
-            s, b, n, d = q_pos_emb.shape
-            q_pos_emb = q_pos_emb.view(s, b, n, d // 2, 2).transpose(4, 3).reshape(s, b, n, d)
-            s, b, n, d = k_pos_emb.shape
-            k_pos_emb = k_pos_emb.view(s, b, n, d // 2, 2).transpose(4, 3).reshape(s, b, n, d)
-
         # seq1f1b sets cu_seqlens to None
         q_pos_emb = apply_rotary_pos_emb(q_pos_emb, rotary_q_pos_emb, config=self.config, cu_seqlens=None)
         k_pos_emb = apply_rotary_pos_emb(k_pos_emb, rotary_k_pos_emb, config=self.config, cu_seqlens=None)

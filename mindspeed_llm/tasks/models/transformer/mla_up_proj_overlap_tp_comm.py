@@ -136,12 +136,6 @@ def mla_up_projection_overlap_tp_comm(q_compressed, kv_compressed, k_pos_emb, ro
         if rotary_pos_emb is not None:
             rotary_q_pos_emb, rotary_k_pos_emb = rotary_pos_emb, rotary_pos_emb
 
-            if hasattr(args, "rope_scaling_type") and args.rope_scaling_type == "yarn":
-                b, h, s, d = q_pos_emb.shape
-                q_pos_emb = q_pos_emb.view(b, h, s, d // 2, 2).transpose(4, 3).reshape(b, h, s, d)
-                b, h, s, d = k_pos_emb.shape
-                k_pos_emb = k_pos_emb.view(b, h, s, d // 2, 2).transpose(4, 3).reshape(b, h, s, d)
-
             if packed_seq_params is not None:
                 cu_seqlens_q = packed_seq_params
                 cu_seqlens_kv = packed_seq_params

@@ -410,12 +410,6 @@ class CustomMLASelfAttention(SelfAttention):
                 if rotary_pos_emb is not None:
                     rotary_q_pos_emb, rotary_k_pos_emb = rotary_pos_emb
 
-                    if not args.enable_dsa_indexer and hasattr(args, "rope_scaling_type") and args.rope_scaling_type in ("yarn", "plm"):
-                        s, b, n, d = q_pos_emb.shape
-                        q_pos_emb = q_pos_emb.view(s, b, n, d // 2, 2).transpose(4, 3).reshape(s, b, n, d)
-                        s, b, n, d = k_pos_emb.shape
-                        k_pos_emb = k_pos_emb.view(s, b, n, d // 2, 2).transpose(4, 3).reshape(s, b, n, d)
-
                     if packed_seq_params is not None:
                         cu_seqlens_q = packed_seq_params
                         cu_seqlens_kv = packed_seq_params
@@ -604,12 +598,6 @@ class CustomMLASelfAttention(SelfAttention):
 
             if rotary_pos_emb is not None:
                 rotary_q_pos_emb, rotary_k_pos_emb = rotary_pos_emb
-
-                if not args.enable_dsa_indexer and hasattr(args, "rope_scaling_type") and args.rope_scaling_type in ("yarn", "plm"):
-                    s, b, n, d = q_pos_emb.shape
-                    q_pos_emb = q_pos_emb.view(s, b, n, d // 2, 2).transpose(4, 3).reshape(s, b, n, d)
-                    s, b, n, d = k_pos_emb.shape
-                    k_pos_emb = k_pos_emb.view(s, b, n, d // 2, 2).transpose(4, 3).reshape(s, b, n, d)
 
                 if packed_seq_params is not None:
                     cu_seqlens_q = packed_seq_params.cu_seqlens_q if hasattr(packed_seq_params, 'cu_seqlens_q') else packed_seq_params
