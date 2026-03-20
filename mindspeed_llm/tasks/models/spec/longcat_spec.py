@@ -1,9 +1,11 @@
 from megatron.core.fusions.fused_bias_dropout import get_bias_dropout_add
+from megatron.core.extensions.transformer_engine import TEColumnParallelLinear, TERowParallelLinear
 from megatron.core.tensor_parallel.layers import ColumnParallelLinear, RowParallelLinear
 from megatron.core.transformer.attention import SelfAttention, SelfAttentionSubmodules
 from megatron.core.transformer.dot_product_attention import DotProductAttention
 from megatron.core.transformer.enums import AttnMaskType
 from megatron.core.transformer.identity_op import IdentityOp
+from megatron.core.transformer.mlp import MLP, MLPSubmodules
 from megatron.core.transformer.spec_utils import ModuleSpec
 from megatron.core.models.gpt.gpt_layer_specs import _get_mlp_module_spec
 from megatron.training import get_args
@@ -24,6 +26,19 @@ num_experts, moe_grouped_gemm, qk_layernorm, mla_mm_split, enable_dsa_indexer = 
 
 use_te = args.transformer_impl == "transformer_engine"
 
+
+def _get_longcat_aux_mlp_spec(enable_te: bool) -> ModuleSpec:
+    linear_fc1 = TEColumnParallelLinear if enable_te else ColumnParallelLinear
+    linear_fc2 = TERowParallelLinear if enable_te else RowParallelLinear
+    return ModuleSpec(
+        module=MLP,
+        submodules=MLPSubmodules(
+            linear_fc1=linear_fc1,
+            linear_fc2=linear_fc2,
+        ),
+    )
+
+
 layer_spec = ModuleSpec(
     module=LongCatFlashTransformerLayer,
     submodules=LongCatFlashTransformerLayerSubmodules(
@@ -40,7 +55,7 @@ layer_spec = ModuleSpec(
         mlp=_get_mlp_module_spec(
             use_te=use_te, num_experts=num_experts, moe_grouped_gemm=moe_grouped_gemm
         ),
-        mlps_0=_get_mlp_module_spec(use_te=False),
+        mlps_0=_get_longcat_aux_mlp_spec(enable_te=use_te),
         mlps_bda_0=get_bias_dropout_add,
 
         input_layernorm_1=PTNorm,
@@ -53,7 +68,7 @@ layer_spec = ModuleSpec(
         ),
         self_attn_bda_1=get_bias_dropout_add,
         pre_mlp_layernorm_1=PTNorm,
-        mlps_1=_get_mlp_module_spec(use_te=False),
+        mlps_1=_get_longcat_aux_mlp_spec(enable_te=use_te),
         mlps_bda_1=get_bias_dropout_add,
     ),
 )
