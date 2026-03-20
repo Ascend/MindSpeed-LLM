@@ -1,6 +1,6 @@
 model:
   model_id: gpt_oss
-  model_name_or_path: /data/ci/models/gpt_oss_20b/
+  model_name_or_path: /data/ci/models/gpt_oss_20b/hf/gpt-oss-20b/
   trust_remote_code: False
   train_from_scratch: False
 

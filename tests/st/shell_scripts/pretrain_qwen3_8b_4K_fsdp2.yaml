@@ -1,5 +1,5 @@
 model:
-  model_name_or_path: /data/ci/models/qwen3_8b
+  model_name_or_path: /data/ci/models/Qwen3-8B/hf/Qwen3-8B
   trust_remote_code: False
   train_from_scratch: False
   init_model_with_meta_device: True

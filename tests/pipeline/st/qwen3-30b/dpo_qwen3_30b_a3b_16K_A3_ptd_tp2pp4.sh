@@ -13,10 +13,10 @@ NODE_RANK=0
 WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
 # please fill these path configurations
-CKPT_LOAD_DIR="/data/ci/models/Qwen3-30B-A3B-Instruct-2507"
+CKPT_LOAD_DIR="/data/ci/models/Qwen3-30B-A3B/hf/Qwen3-30B-A3B"
 CKPT_SAVE_DIR="your model save ckpt path"
 DATA_PATH="/data/ci/datasets/origin/pairwise_dataset/output/orca_rlhf/orca_rlhf"
-TOKENIZER_PATH="/data/ci/models/Qwen3-30B-A3B-Instruct-2507"
+TOKENIZER_PATH="/data/ci/models/Qwen3-30B-A3B/hf/Qwen3-30B-A3B"
 
 PP=4
 TP=2

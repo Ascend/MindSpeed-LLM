@@ -2,7 +2,8 @@
 
 所有测试用例仅支持Megatron-Mcore模型结构。
 
-### 门禁看护列表
+### CI门禁看护列表
+CI门禁用例看护仓库重点模型和基本特性，覆盖冒烟测试场景，PR合入前都须通过全量CI门禁用例测试。
 <table>
     <tr>
         <th>Tests</th>
@@ -178,7 +179,8 @@
 
 </table>
 
-### Pipeline 二级流水看护列表
+### Pipeline看护列表
+Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里拉起运行，次日输出测试报告。
 <table>
     <tr>
         <th>Model</th>
@@ -572,12 +574,92 @@
 </table>
 
 ### DT覆盖率看护
-在NPU机器运行 `run_coverage.sh` 脚本，运行目录将生成 `htmlcov` 文件夹，将该文件夹复制到本地电脑，在浏览器中打开 `htmlcov/index.html` 文件，可以看到覆盖率信息。
 
-脚本中 `branch` 的值改为 `True` ，可以测试分支覆盖率。
+#### 覆盖率分析脚本
+执行`tests/run_coverage.sh`脚本时，可添加UT, ST, PIPELINE, all等运行参数
+```
+cd MindSpeed-LLM
+bash tests/run_coverage.sh UT       # 分析UT用例覆盖率
+bash tests/run_coverage.sh ST       # 分析ST用例覆盖率
+bash tests/run_coverage.sh PIPELINE # 分析PIPELINE用例覆盖率
+bash tests/run_coverage.sh all      # 分析UT,ST,PIPELINE所有用例覆盖率
+```
+
+设置脚本中的`branch` 的值为 `False`时只分析行覆盖率，将`branch` 的值改为 `True` 则可以测试分支覆盖率。
+
+#### 覆盖率报告
+
+在NPU机器运行 `run_coverage.sh` 脚本后，项目目录下将生成 `COVERAGE` 文件夹，其中 `COVERAGE/logs`文件夹保存了详细的用例执行情况，`COVERAGE/report`文件夹保存了仓库用例覆盖率报告。
+
+`COVERAGE/report/htmlcov.tgz`包含了仓库所有文件的详细覆盖率信息，将该文件复制到本地电脑进行解压，然后在浏览器中打开 `htmlcov/index.html` 文件即可进行查看。
+
+### 开发流程
+
+#### 1.权重和数据集配置
+用例所需使用的权重、Tokenizer、数据集文件，请按照以下要求存放在蓝区服务器的/data目录下，并按照要求在[蓝区资源清单](resource_record.md)中进行登记，否则不予上库！
+
+注意：
+- /data/ci目录下只保存用例相关的文件，不要引入其他无关文件
+- 为了节省蓝区空间并提高运行效率，请尽量复用原有权重数据，如需上传权重数据，请将权重层数设置为最小
+- 模型名称需与huggingface保持一致，严禁省略或自定义
+
+数据路径和命名规则：
+- hf权重和词表路径：/data/ci/models/模型名称/hf/权重或词表文件
+- mg权重路径：/data/ci/models/模型名称/mg/模型名称_切分方式
+- 原数据集：/data/ci/datasets/origin/数据集名称
+- 处理后的数据集：/data/ci/datasets/processed/数据集名称
+- 评估数据集：/data/ci/datasets/eva_dataset/数据集名称
+- 缓存文件夹：/data/ci/cache/缓存文件，用例执行结束前请调用shutil.rmtree(dir_path)删除缓存文件
+
+#### 2.本地验证
+用例编写后，先确保用例在本地运行无误，然后用蓝区备用服务器生成基线，用例和基线一同上仓
+
+#### 3.用例登记
+
+- 测试用例信息登记
+为了方便后续对用例进行维护，需要对用例的作者、上仓日期、简要描述以及其他信息进行标注
+
+ST用例需在运行脚本开始时标注以下信息
+```
+#=============================================
+# Author: xxx
+# Date: xxxx-xx-xx
+# Description：Model or feature covered by the testcase
+# Remarks: Instructions for the checkpoint, datasets and tokenizer or other more information
+#=============================================
+
+```
+UT用例在用例执行函数内标注以下信息
+
+```
+def test_featureA():
+    '''
+    Author: xxx
+    Date: xxxx-xx-xx
+    Description：Model or feature covered by the testcase
+    Remarks: Instructions for the checkpoint, datasets and tokenizer or other more information
+    '''
+    ......
+```
+- 用例看护特性列表登记
+在`/tests/README.md`文件中登记测试用例所看护的模型，特性信息
+
+- 蓝区资源登记
+在`/tests/resource_record.md`文件中登记用例使用的权重、词表、数据集信息
+
+
+#### 4.用例上仓
+
+特性须与看护用例一同上仓，只有业务代码而无看护用例的PR不予合入！
 
 
 ### 开发规则
+
+测试用例全部放置在`tests`目录下，具体层级如下：
+- `tests/st/`目录下维护CI门禁会拉起的ST用例
+- `tests/ut/`目录下维护CI门禁会拉起的UT用例
+- `tests/pipeline/st`目录下维护每日PIPELINE流水线会拉起的ST用例
+- `tests/pipeline/ut`目录下维护每日PIPELINE流水线会拉起的UT用例
 
 #### ST
 
@@ -602,16 +684,3 @@
 
 ④ 在贡献时候需要考虑最终校验的具体指标，精度(Acc.)、性能(Throu.)、显存(Mem.)，在对应指标空白处填上 `Y`，如无校验的保留空白即可。
 
-
-
-#### Pipeline
-
-①贡献脚本用例放置于`pipeline/`的对应模型文件夹下，如`baichuan2-13B`,文件命名规则为 {模型名}_{切分策略} 或者 {模型名}_{特性名称}， 如 `baichuan2_13B_tp8_pp1_ptd.sh`，请贡献者严格对齐；
-
-② 注意脚本用例中不需要单独重定向log，日志收集工作已在 `pipe_run.sh` 中进行统一管理；
-
-③ 标杆数据请放置于 `pipeline/baseline` 文件夹下，**命名保证完全与 shell 脚本对齐**，否则自动化脚本执行将扫描不到；
-
-④ 获取标杆数据：通过门禁任务执行获得首次数据，并将结果保存至本地 log 或者 txt 文件中，后通过本地执行 `tests/st/st_utils/common.py` 中的 `transfer_logs_as_json` 函数进行提取，最后再连同用例脚本上仓即可；
-
-⑤ 在贡献时候需要考虑最终校验的具体指标，精度(Acc.)、性能(Throu.)、显存(Mem.)，在对应指标空白处填上 `Y`，如无校验的保留空白即可。
