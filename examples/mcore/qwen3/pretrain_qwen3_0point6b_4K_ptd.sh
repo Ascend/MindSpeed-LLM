@@ -1,6 +1,8 @@
 #!/bin/bash
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
+export TASK_QUEUE_ENABLE=2
+export CPU_AFFINITY_CONF=2
 
 NPUS_PER_NODE=8
 MASTER_ADDR=localhost
