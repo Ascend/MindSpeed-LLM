@@ -1,6 +1,8 @@
 #!/bin/bash
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
+export CPU_AFFINITY_CONF=2
+export TASK_QUEUE_ENABLE=2
 
 NPUS_PER_NODE=16
 MASTER_ADDR=localhost
@@ -122,6 +124,8 @@ GPT_ARGS="
     --norm-epsilon 1e-6 \
     --no-load-optim \
     --no-load-rng \
+    --manual-gc \
+    --manual-gc-interval 30 \
     --bf16
 "
 
