@@ -555,8 +555,16 @@ class LoraParallelGroupedMLP(GroupedMLP):
             if hasattr(self.weight1, "quant_state"):
                 self.weight1.quant_state.shape = (self.config.hidden_size, w1.shape[-1] * 2)
                 self.weight2.quant_state.shape = (w2.shape[0] * 2, self.config.hidden_size)
+        args = get_args()
         if hasattr(self.weight1, "quant_state"):
-            w1, w2 = self.weight1, self.weight2
+            if args.moe_alltoall_overlap_comm:
+                w1, w2 = self.weight1, self.weight2
+            else:
+                w1 = bnb.functional.dequantize_4bit(self.weight1.data, self.weight1.quant_state).to(
+                    permuted_local_hidden_states.dtype)
+                w2 = bnb.functional.dequantize_4bit(self.weight2.data, self.weight2.quant_state).to(
+                    permuted_local_hidden_states.dtype)
+
 
         args = get_args()
         # alltoall-overlap-comm
