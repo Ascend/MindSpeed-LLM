@@ -99,3 +99,34 @@ class TestCheckpointV2(object):
         assert weight_compare_hash(save_dir, base_hash, "safetensors")
         shutil.rmtree(load_dir)
         shutil.rmtree(save_dir)
+
+    def test_seed_oss_36b_hf2mcore_tp2pp2(self):
+        '''
+        Author: guihaowen666
+        Date: 2026-03-21
+        Description：This case is used for monitoring the hf2mcore weight conversion process of the seed-oss model.
+        Remarks: None
+        '''
+        os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
+        exit_code = run_cmd(["python3", CKPT_PYPATH] + self.test_config_cmd['test_seed_oss_36b_hf2mcore_tp2pp2'])
+        assert exit_code == 0
+        base_hash = self.test_config['test_seed_oss_36b_hf2mcore_tp2pp2'][1]
+        save_dir = self.test_config['test_seed_oss_36b_hf2mcore_tp2pp2'][0]['save-dir']
+        assert weight_compare_hash(save_dir, base_hash, "pt")
+
+    def test_seed_oss_36b_mcore2hf_tp2pp2(self):
+        '''
+        Author: guihaowen666
+        Date: 2026-03-21
+        Description：This case is used for monitoring the mcore2hf weight conversion process of the seed-oss model.
+        Remarks: None
+        '''
+        os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
+        exit_code = run_cmd(["python3", CKPT_PYPATH] + self.test_config_cmd['test_seed_oss_36b_mcore2hf_tp2pp2'])
+        assert exit_code == 0
+        base_hash = self.test_config['test_seed_oss_36b_mcore2hf_tp2pp2'][1]
+        load_dir = self.test_config['test_seed_oss_36b_mcore2hf_tp2pp2'][0]['load-dir']
+        save_dir = self.test_config['test_seed_oss_36b_mcore2hf_tp2pp2'][0]['save-dir']
+        assert weight_compare_hash(save_dir, base_hash, "safetensors")
+        shutil.rmtree(load_dir)
+        shutil.rmtree(save_dir)

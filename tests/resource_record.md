@@ -34,10 +34,10 @@
         <td>完整权重</td>
     </tr>
     <tr>
-        <td>GLM-5</td>
-        <td>/data/ci/models/GLM-5/hf/GLM-5-generated</td>
-        <td>待补充</td>
-        <td></td>
+        <td>Seed-OSS-36B-Instruct</td>
+        <td>/data/ci/models/Seed-OSS-36B-Instruct/hf/Seed-OSS-36B-Instruct</td>
+        <td>modelscope</td>
+        <td>完整权重，num-layers=4</td>
     </tr>
     <tr>
         <td>LongCat-Flash</td>
@@ -50,6 +50,18 @@
         <td>/data/ci/models/deepseek32/hf/deepseek-v32-generated</td>
         <td>预训练生成</td>
         <td>num-layers=4, noop-layers=3, first-k-dense-replace=0, num-experts=8, moe-router-topk=2, moe-router-num-groups=4,  moe-router-group-topk=1</td>
+    </tr>
+    <tr>
+        <td>GLM-5</td>
+        <td>待补充</td>
+        <td>待补充</td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>Kimi-Linear-48B</td>
+        <td>待补充</td>
+        <td>待补充</td>
+        <td></td>
     </tr>
 
 </table>    
@@ -218,7 +230,7 @@
         <td>/</td>
         <td>/data/ci/cache/llama-3-8b-tp1pp8</td>
     </tr>
-        <tr>
+    <tr>
         <td>test_rlhf_qwen25_7b_tp2_pp2</td>
         <td>/data/ci/models/qwen25/hf/Qwen2.5-7B</td>
         <td>/data/ci/models/qwen25/mg/qwen2.5_mcore_tp2_pp2_layers28</td>
@@ -227,8 +239,7 @@
         <td>/</td>
         <td>/</td>
     </tr>
-        </tr>
-        <tr>
+    <tr>
         <td>pretrain_qwen3_8b_4k_fsdp2</td>
         <td>/data/ci/models/Qwen3-8B/hf/Qwen3-8B</td>
         <td>/</td>
@@ -237,8 +248,7 @@
         <td>/</td>
         <td>/</td>
     </tr>
-        </tr>
-        <tr>
+    <tr>
         <td>tune_gpt_oss_20b_a3b_4k_fsdp2</td>
         <td>/data/ci/models/gpt_oss_20b/hf/gpt-oss-20b/</td>
         <td>/</td>
@@ -247,9 +257,7 @@
         <td>/</td>
         <td>/</td>
     </tr>
-    </tr>
-        </tr>
-        <tr>
+    <tr>
         <td>test_longcat_flash_560b_hf2mcore_tp2pp2ep2etp1</td>
         <td>/data/ci/models/longcat-flash-560b/hf/longcat-flash-560b-generated/</td>
         <td>/</td>
@@ -258,9 +266,7 @@
         <td>/</td>
         <td>/data/ci/cache/longcat-flash-560b-tp2pp1ep2etp1/</td>
     </tr>
-    </tr>
-        </tr>
-        <tr>
+    <tr>
         <td>test_longcat_flash_560b_mcore2hf_tp2pp2ep2etp1</td>
         <td>/</td>
         <td>/data/ci/cache/longcat-flash-560b-tp2pp1ep2etp1/</td>
@@ -269,14 +275,39 @@
         <td>/</td>
         <td>/data/ci/cache/longcat-flash-560b-mg2hf/</td>
     </tr>
-    </tr>
-        </tr>
-        <tr>
+    <tr>
         <td>longcat_flash_560b_tp2pp1ep2etp1</td>
         <td>/data/ci/models/longcat-flash-560b/hf/longcat-flash-chat/</td>
         <td>/data/ci/models/longcat-flash-560b/mg/longcat-flash-560b-tp2pp1ep2etp1/</td>
         <td>/</td>
         <td>/data/ci/datasets/processed/longcat-flash-dataset/alpaca_text_document/</td>
+        <td>/</td>
+        <td>/</td>
+    </tr>
+    <tr>
+        <td>test_seed_oss_36b_hf2mcore_tp2pp2</td>
+        <td>/data/ci/models/Seed-OSS-36B-Instruct/hf/Seed-OSS-36B-Instruct/</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/data/ci/cache/Seed-OSS-36B-tp2pp2/</td>
+    </tr>
+    <tr>
+        <td>test_seed_oss_36b_hf2mcore_tp2pp2</td>
+        <td>/</td>
+        <td>/data/ci/cache/Seed-OSS-36B-tp2pp2/</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/data/ci/cache/Seed-OSS-36B-tp2pp2-mg2hf/</td>
+    </tr>
+    <tr>
+        <td>seed_oss_36b_tp2pp2</td>
+        <td>/data/ci/models/Seed-OSS-36B-Instruct/hf/Seed-OSS-36B-Instruct/</td>
+        <td>/data/ci/models/Seed-OSS-36B-Instruct/mg/Seed-OSS-36B-tp2pp2/</td>
+        <td>/</td>
+        <td>/data/ci/datasets/processed/seed-oss/alpaca_text_document</td>
         <td>/</td>
         <td>/</td>
     </tr>

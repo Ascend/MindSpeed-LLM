@@ -146,6 +146,48 @@
                 "d2ac464f16d0783914d7ba9329ad055c"
             ]
         }
+    ],
+    "test_seed_oss_36b_hf2mcore_tp2pp2": [
+        {
+            "param": {
+                "load-model-type": "hf",
+                "save-model-type": "mg",
+                "target-tensor-parallel-size": "2",
+                "target-pipeline-parallel-size": "2",
+                "add-qkv-bias": null,
+                "load-dir": "/data/ci/models/Seed-OSS-36B-Instruct/hf/Seed-OSS-36B-Instruct",
+                "save-dir": "/data/ci/cache/Seed-OSS-36B-tp2pp2",
+                "model-type-hf": "seed-oss"
+            }
+        },
+        {
+            "Base_MD5" : [
+                "dbf43e0fc8b4c398",
+                "02bf754d960a3295",
+                "db3042a8f6bbd083",
+                "d9c99af852b01ac6"
+            ]
+        }
+    ],
+    "test_seed_oss_36b_mcore2hf_tp2pp2": [
+        {
+            "param": {
+                "load-model-type":"mg",
+                "save-model-type":"hf",
+                "model-type-hf": "seed-oss",
+                "add-qkv-bias": null,
+                "load-dir":"/data/ci/cache/Seed-OSS-36B-tp2pp2",
+                "save-dir":"/data/ci/cache/Seed-OSS-36B-tp2pp2-mg2hf",
+                "hf-cfg-dir": "/data/ci/models/Seed-OSS-36B-Instruct/hf/Seed-OSS-36B-Instruct"
+            }
+        },
+        {
+            "Base_MD5" : [
+                "7025125d2a47460c5bfd1c8e9533e557",
+                "e71e4816e17ecec59a6bb908a0e26ae5",
+                "6bd06d11f6adaee19528ea51ac2dcbfe",
+                "5690ffbd3bb7a5400c086d91f2a408f1"
+            ]
+        }
     ]
-
 }
