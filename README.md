@@ -77,7 +77,7 @@ MindSpeed LLM系列TC及SIG会议安排请查看[Ascend会议中心](https://mee
 - [Oct. 22, 2025]: 🚀 **Ling mini v2** 模型支持, 暂不支持mtp
 - [Sep. 16, 2025]: 🚀 **Qwen3-Next** 模型支持
 - [Aug. 23, 2025]: 🚀 大参数模型[权重转换v2](./docs/zh/pytorch/tools/checkpoint_convert_hf_mcore_large_params.md)优化版本上线
-- [Jul. 28, 2025]: 🚀 **glm4.5-moe** 系列模型同步首发支持
+- [Jul. 28, 2025]: 🚀 **GLM-4.5-Air** 系列模型同步首发支持
 - [Jul. 25, 2025]: 🌴 MindSpeed LLM发布[v2.1.0分支](https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.1.0)，支持core_r0.8.0版本
 - [Jul. 10, 2025]: 🚀 **[DeepSeek-R1](https://gitcode.com/Ascend/MindSpeed-RL/blob/master/docs/solutions/r1_zero_deepseek_671b.md)** 系列功能逐步上线
 - [May. 19, 2025]: 🚀 **Qwen3** 系列模型同步首发支持
