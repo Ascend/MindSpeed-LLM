@@ -70,6 +70,11 @@ def get_args():
                         help='use bitsandbytes nf4 to quantize model.')
     parser.add_argument('--save-layer-by-layer', action='store_true', default=False,
                         help='Enable layer-by-layer saving to avoid OOM when the product of TP and EP is high')
+    parser.add_argument('--lora-load', type=str, default=None, help='Directory containing the lora model checkpoint.')
+    parser.add_argument('--lora-r', type=int, default=None, help='Lora r.')
+    parser.add_argument('--lora-alpha', type=int, default=None, help='Lora alpha.')
+    parser.add_argument('--lora-target-modules', nargs='+', type=str, default=[], help='Lora target modules.')
+    parser.add_argument('--save-lora-to-hf', action='store_true', help='only save lora ckpt to hf.')
     args, _ = parser.parse_known_args()
     return args
 

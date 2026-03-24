@@ -56,12 +56,10 @@ class Hf2MgConvert(Convert):
                 f"You specified num_layers = {self.num_layers}, "
                 f"but the actual model has num_layers = {self.load_model.num_layers}."
             )
-            
+
+        self.first_k_dense_replace = args.first_k_dense_replace
         if self.first_k_dense_replace is None:
-            self.first_k_dense_replace = getattr(self.load_model, 'first_k_dense_replace', 0)
-            if not getattr(self.load_model, 'num_experts', None):
-                self.first_k_dense_replace = self.num_layers
-                self.load_model.first_k_dense_replace = self.num_layers
+            self.first_k_dense_replace = self.get_first_k_dense_replace()
 
         # model arguments
         if self.noop_layers is None:
@@ -728,22 +726,18 @@ class Hf2MgConvert(Convert):
                         mg_weight[ep_rank][tp_rank][qkv_bias_key] = qkv_bias_lst[tp_rank].clone()
 
     def get_first_k_dense_replace(self):
-        if not getattr(self, 'first_k_dense_replace', 0):
-            num_experts = (getattr(self.load_model, 'num_experts', None) or
-                           getattr(self.load_model, 'num_local_experts', None))
-            if not num_experts:
-                return self.num_layers
-            else:
-                return 0
+        first_k_dense_replace = getattr(self.load_model, 'first_k_dense_replace', 0)
+        if first_k_dense_replace in (-1, 0, None):
+            return 0
         else:
-            return self.first_k_dense_replace
+            return first_k_dense_replace
 
     def set_model_layer_mlp(self, hf_layer_idx, local_layer_idx, hf_weight, mg_weight, mtp_layer_flag=False):
         """MLP layer process"""
 
         hf_weight_key = self.load_model.get_weight(layer_idx=hf_layer_idx)
         first_k_dense_replace = self.get_first_k_dense_replace()
-        if hf_layer_idx >= first_k_dense_replace:
+        if getattr(self.load_model, 'num_experts', None) and hf_layer_idx >= first_k_dense_replace:
             # moe layer & mtp layer
             mlp_router_weight = hf_weight.pop(hf_weight_key["layers_mlp_router"])
             mlp_router_weight = mlp_router_weight[:self.load_model.num_experts, :]

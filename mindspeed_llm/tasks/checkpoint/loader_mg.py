@@ -8,6 +8,7 @@ import types
 import logging as logger
 import torch
 from .models import get_megatron_model
+from .models import get_huggingface_model
 
 logger.basicConfig(format="")
 logger.getLogger().setLevel(logger.INFO)
@@ -459,8 +460,9 @@ def _load_checkpoint(model_provider, queue, args):
     if args.use_mcore_models and args.load_from_legacy:
         args.use_mcore_models = False
 
+    args_hf = get_huggingface_model(args).get_args()
     model_mg = get_megatron_model(model_provider, args_cmd=args)
-    model_mg.initialize_megatron_args(queue=queue, loader_megatron=True)
+    model_mg.initialize_megatron_args(args_hf, queue=queue, loader_megatron=True)
 
     model_mg.set_tensor_model_parallel_world_size(model_mg.args.tensor_model_parallel_size)
     model_mg.set_expert_model_parallel_world_size(model_mg.args.expert_model_parallel_size)

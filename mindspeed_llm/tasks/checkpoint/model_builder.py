@@ -96,8 +96,6 @@ class HuggingFaceModel(Model):
                 continue
             if key_hf in hf_args:
                 setattr(self, key_target, hf_args[key_hf])
-            else:
-                setattr(self, key_hf, hf_args[key_hf])
 
         for key_target, value in config_value.items():
             setattr(self, key_target, value)

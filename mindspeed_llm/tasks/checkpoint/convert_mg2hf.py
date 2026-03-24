@@ -51,6 +51,13 @@ class Mg2HfConvert(Convert):
         self.iter_path = self.get_iter_path(args.load_dir)
         self.save_dir = args.save_dir
         self.hf_cfg_dir = args.hf_cfg_dir
+        self.lora_r = args.lora_r
+        self.lora_alpha = args.lora_alpha
+        self.lora_target_modules = args.lora_target_modules
+        self.save_lora_to_hf = args.save_lora_to_hf
+        self.lora_model_path = args.lora_load
+        if self.lora_model_path is not None:
+            self.lora_iter_path = self.get_iter_path(self.lora_model_path)
 
         if not os.path.exists(self.save_dir):
             os.makedirs(self.save_dir)
@@ -792,6 +799,44 @@ class Mg2HfConvert(Convert):
         else:
             logger.warning("[warning]: this attn_qkv_type is not supported. please check!")
 
+    def set_model_layer_attn_lora(self, hf_dict, mg_models, hf_layer_idx, local_layer_idx):
+        """attn_lora"""
+
+        def _generate_attn_layers_key(local_idx):
+            prefix = f"decoder.layers.{local_idx}"
+            qkv_key_lora_A = f"{prefix}.self_attention.linear_qkv.lora_A.default.weight"
+            qkv_key_lora_B = f"{prefix}.self_attention.linear_qkv.lora_B.default.weight"
+            proj_key_lora_A = f"{prefix}.self_attention.linear_proj.lora_A.default.weight"
+            proj_key_lora_B = f"{prefix}.self_attention.linear_proj.lora_B.default.weight"
+
+            return qkv_key_lora_A, qkv_key_lora_B, proj_key_lora_A, proj_key_lora_B
+
+        qkv_key_lora_A, qkv_key_lora_B, proj_key_lora_A, proj_key_lora_B = _generate_attn_layers_key(local_layer_idx)
+        hf_name_prefix = "base_model.model"
+        linear_proj_A_list = []
+        linear_qkv_B_list = []
+
+        for tp_rank in self.tp_rank_list:
+            cur_linear_proj_A = mg_models[(tp_rank, self.ep_rank_list[0])].pop(proj_key_lora_A)
+            cur_linear_qkv_B = mg_models[(tp_rank, self.ep_rank_list[0])].pop(qkv_key_lora_B)
+            linear_proj_A_list.append(cur_linear_proj_A.clone())
+            linear_qkv_B_list.append(cur_linear_qkv_B.clone())
+
+        qkv_A_proj = mg_models[(self.ep_rank_list[0], self.ep_rank_list[0])].pop(qkv_key_lora_A)
+        qkv_B_proj = torch.cat(linear_qkv_B_list, dim=0)
+        q_a_proj_B = qkv_B_proj[:self.load_model.q_lora_rank, :].clone()
+        kv_a_proj_with_mqa_B = qkv_B_proj[self.load_model.q_lora_rank:, :].clone()
+        o_proj_A = torch.cat(linear_proj_A_list, dim=1)
+        o_proj_B = mg_models[(self.ep_rank_list[0], self.ep_rank_list[0])].pop(proj_key_lora_B)
+
+        hf_dict[f"{hf_name_prefix}.model.layers.{hf_layer_idx}.self_attn.q_a_proj.lora_A.weight"] = qkv_A_proj.clone()
+        hf_dict[f"{hf_name_prefix}.model.layers.{hf_layer_idx}.self_attn.q_a_proj.lora_B.weight"] = q_a_proj_B.clone()
+        hf_dict[f"{hf_name_prefix}.model.layers.{hf_layer_idx}.self_attn.kv_a_proj_with_mqa.lora_A.weight"] = qkv_A_proj.clone()
+        hf_dict[f"{hf_name_prefix}.model.layers.{hf_layer_idx}.self_attn.kv_a_proj_with_mqa.lora_B.weight"] = kv_a_proj_with_mqa_B.clone()
+        hf_dict[f"{hf_name_prefix}.model.layers.{hf_layer_idx}.self_attn.o_proj.lora_A.weight"] = o_proj_A.clone()
+        hf_dict[f"{hf_name_prefix}.model.layers.{hf_layer_idx}.self_attn.o_proj.lora_B.weight"] = o_proj_B.clone()
+
+
     def linear_fc1_get_for_etp(self, mg_weight, fc1_key, tp_rank, ep_rank):
         cur_linear_fc1 = mg_weight[(tp_rank, ep_rank)].pop(fc1_key)
         cur_gate, cur_up = torch.chunk(cur_linear_fc1, 2, dim=0)
@@ -1057,6 +1102,64 @@ class Mg2HfConvert(Convert):
                 hf_weight[hf_weight_key["layers_mlp_up_proj"]] = up_weights.clone()
             hf_weight[hf_weight_key["layers_mlp_linear_fc2"]] = down_weights.clone()
 
+    def set_model_layer_mlp_lora(self, hf_dict, mg_models, hf_layer_idx, local_layer_idx, mtp_flag=False):
+        """ dense_lora + moe_lora """
+        hf_name_prefix = "base_model.model"
+
+        if hf_layer_idx < self.first_k_dense_replace:
+            # dense
+            linear_fc1_key_A = f"decoder.layers.{local_layer_idx}.mlp.linear_fc1.lora_A.default.weight"
+            linear_fc1_key_B = f"decoder.layers.{local_layer_idx}.mlp.linear_fc1.lora_B.default.weight"
+            linear_fc2_key_A = f"decoder.layers.{local_layer_idx}.mlp.linear_fc2.lora_A.default.weight"
+            linear_fc2_key_B = f"decoder.layers.{local_layer_idx}.mlp.linear_fc2.lora_B.default.weight"
+
+            linear_fc1_A_weight = mg_models[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(linear_fc1_key_A)
+            gate_B_weights, up_B_weights = self.linear_fc1_gather_from_tp(mg_models, linear_fc1_key_B)
+            down_A_weights = self.linear_fc2_gather_from_tp(mg_models, linear_fc2_key_A)
+            down_B_weights = mg_models[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(linear_fc2_key_B)
+
+            hf_dict[f"{hf_name_prefix}.model.layers.{hf_layer_idx}.mlp.gate_proj.lora_A.weight"] = linear_fc1_A_weight.clone()
+            hf_dict[f"{hf_name_prefix}.model.layers.{hf_layer_idx}.mlp.up_proj.lora_A.weight"] = linear_fc1_A_weight.clone()
+            hf_dict[f"{hf_name_prefix}.model.layers.{hf_layer_idx}.mlp.gate_proj.lora_B.weight"] = gate_B_weights.clone()
+            hf_dict[f"{hf_name_prefix}.model.layers.{hf_layer_idx}.mlp.up_proj.lora_B.weight"] = up_B_weights.clone()
+            hf_dict[f"{hf_name_prefix}.model.layers.{hf_layer_idx}.mlp.down_proj.lora_A.weight"] = down_A_weights.clone()
+            hf_dict[f"{hf_name_prefix}.model.layers.{hf_layer_idx}.mlp.down_proj.lora_B.weight"] = down_B_weights.clone()
+        else:
+            # moe_gemm
+            local_expert_nums = self.load_model.num_experts // self.expert_model_parallel_size
+            hf_local_gate_key_A = "base_model.model.model.layers.{}.mlp.experts.{}.gate_proj.lora_A.weight"
+            hf_local_gate_key_B = "base_model.model.model.layers.{}.mlp.experts.{}.gate_proj.lora_B.weight"
+            hf_local_up_key_A = "base_model.model.model.layers.{}.mlp.experts.{}.up_proj.lora_A.weight"
+            hf_local_up_key_B = "base_model.model.model.layers.{}.mlp.experts.{}.up_proj.lora_B.weight"
+            hf_local_down_key_A = "base_model.model.model.layers.{}.mlp.experts.{}.down_proj.lora_A.weight"
+            hf_local_down_key_B = "base_model.model.model.layers.{}.mlp.experts.{}.down_proj.lora_B.weight"
+
+            if self.moe_grouped_gemm:
+                raise ValueError("moe_grouped_gemm and save_lora_to_hf can not exist together")
+            else:
+                local_prefix = f"decoder.layers.{local_layer_idx}.mlp.experts.local_experts"
+
+                for ep_rank in self.ep_rank_list:
+                    for local_idx in range(local_expert_nums):
+                        expert_idx = ep_rank * local_expert_nums + local_idx
+                        local_fc1_key_A = f"{local_prefix}.{local_idx}.linear_fc1.lora_A.default.weight"
+                        local_fc1_key_B = f"{local_prefix}.{local_idx}.linear_fc1.lora_B.default.weight"
+                        local_fc2_key_A = f"{local_prefix}.{local_idx}.linear_fc2.lora_A.default.weight"
+                        local_fc2_key_B = f"{local_prefix}.{local_idx}.linear_fc2.lora_B.default.weight"
+
+                        fc1_weight_A = mg_models[(self.tp_rank_list[0], ep_rank)].pop(local_fc1_key_A)
+                        local_gate_B, local_up_B = self.linear_fc1_gather_from_tp(mg_models, local_fc1_key_B,
+                                                                                  ep_rank=ep_rank)
+                        local_down_A = self.linear_fc2_gather_from_tp(mg_models, local_fc2_key_A, ep_rank=ep_rank)
+                        fc2_weight_B = mg_models[(self.tp_rank_list[0], ep_rank)].pop(local_fc2_key_B)
+
+                        hf_dict[hf_local_gate_key_A.format(hf_layer_idx, expert_idx)] = fc1_weight_A.contiguous().clone()
+                        hf_dict[hf_local_gate_key_B.format(hf_layer_idx, expert_idx)] = local_gate_B.contiguous().clone()
+                        hf_dict[hf_local_up_key_A.format(hf_layer_idx, expert_idx)] = fc1_weight_A.contiguous().clone()
+                        hf_dict[hf_local_up_key_B.format(hf_layer_idx, expert_idx)] = local_up_B.contiguous().clone()
+                        hf_dict[hf_local_down_key_A.format(hf_layer_idx, expert_idx)] = local_down_A.contiguous().clone()
+                        hf_dict[hf_local_down_key_B.format(hf_layer_idx, expert_idx)] = fc2_weight_B.contiguous().clone()
+
 
     def set_mtp_layer(self, hf_weight, mg_weight, hf_layer_idx, mtp_local_idx=0):
         """all mtp"""
@@ -1122,24 +1225,28 @@ class Mg2HfConvert(Convert):
 
         for _, layer in enumerate(layer_list):
             logger.info(f"Converting the weights of layer {layer}")
+            _, local_idx = self.layeridx_pprank[layer]
 
-            if pp_rank == 0 and layer == 0:
-                self.set_model_preprocess(hf_weight_dict, mg_weights)
-            local_idx = self.layeridx_pprank[layer][1]
-
-            self.set_model_layer_norm(hf_weight_dict, mg_weights, layer, local_idx)
-            self.set_model_layer_attn(hf_weight_dict, mg_weights, layer, local_idx)
-            self.set_model_layer_mlp(hf_weight_dict, mg_weights, layer, local_idx)
+            if self.save_lora_to_hf:
+                self.set_model_layer_attn_lora(hf_weight_dict, mg_weights, layer, local_idx)
+                self.set_model_layer_mlp_lora(hf_weight_dict, mg_weights, layer, local_idx)
+            else:
+                if pp_rank == 0 and layer == 0:
+                    self.set_model_preprocess(hf_weight_dict, mg_weights)
+                self.set_model_layer_norm(hf_weight_dict, mg_weights, layer, local_idx)
+                self.set_model_layer_attn(hf_weight_dict, mg_weights, layer, local_idx)
+                self.set_model_layer_mlp(hf_weight_dict, mg_weights, layer, local_idx)
 
             if layer != self.last_save_hf_layer:
                 self.save_safetensors(hf_weight_dict, layer + 1)
                 hf_weight_dict = defaultdict()
 
         if pp_rank == self.pipeline_model_parallel_size - 1:
-            self.set_model_postprocess(hf_weight_dict, mg_weights)
+            if not self.save_lora_to_hf:
+                self.set_model_postprocess(hf_weight_dict, mg_weights)
             self.save_safetensors(hf_weight_dict, self.last_save_hf_layer + 1)
             hf_weight_dict = defaultdict()
-            if self.mtp_num_layers:
+            if self.mtp_num_layers and not self.save_lora_to_hf:
                 for mtp_idx in range(self.mtp_num_layers):
                     hf_layer_number = mtp_idx if self.load_model.qkv_type == "mix" else self.num_real_layers + mtp_idx
                     logger.info(f"Converting the weights of mtp layer {hf_layer_number}")
@@ -1155,14 +1262,17 @@ class Mg2HfConvert(Convert):
 
         for _, layer in enumerate(layer_list):
             logger.info(f"Converting the weights of layer {layer}")
+            *_, local_idx = self.layeridx_vpprank[layer]
 
-            if pp_rank == 0 and vpp_rank == 0 and layer == 0:
-                self.set_model_preprocess(hf_weight_dict, mg_weight)
-            local_idx = self.layeridx_vpprank[layer][2]
-
-            self.set_model_layer_norm(hf_weight_dict, mg_weight, layer, local_idx)
-            self.set_model_layer_attn(hf_weight_dict, mg_weight, layer, local_idx)
-            self.set_model_layer_mlp(hf_weight_dict, mg_weight, layer, local_idx)
+            if self.save_lora_to_hf:
+                self.set_model_layer_attn_lora(hf_weight_dict, mg_weight, layer, local_idx)
+                self.set_model_layer_mlp_lora(hf_weight_dict, mg_weight, layer, local_idx)
+            else:
+                if pp_rank == 0 and vpp_rank == 0 and layer == 0:
+                    self.set_model_preprocess(hf_weight_dict, mg_weight)
+                self.set_model_layer_norm(hf_weight_dict, mg_weight, layer, local_idx)
+                self.set_model_layer_attn(hf_weight_dict, mg_weight, layer, local_idx)
+                self.set_model_layer_mlp(hf_weight_dict, mg_weight, layer, local_idx)
 
             if layer != self.last_save_hf_layer:
                 self.save_safetensors(hf_weight_dict, layer + 1)
@@ -1174,10 +1284,11 @@ class Mg2HfConvert(Convert):
         norm_flag = self.schedules_method != "dualpipev" and pp_rank == self.pipeline_model_parallel_size - 1 and vpp_rank == self.vpp_size - 1
 
         if dualpipe_flag or norm_flag:
-            self.set_model_postprocess(hf_weight_dict, mg_weight)
+            if not self.save_lora_to_hf:
+                self.set_model_postprocess(hf_weight_dict, mg_weight)
             self.save_safetensors(hf_weight_dict, self.last_save_hf_layer + 1)
             hf_weight_dict = defaultdict()
-            if self.mtp_num_layers:
+            if self.mtp_num_layers and not self.save_lora_to_hf:
                 for mtp_idx in range(self.mtp_num_layers):
                     hf_layer_number = mtp_idx if self.load_model.qkv_type == "mix" else self.num_real_layers + mtp_idx
                     logger.info(f"Converting the weights of mtp layer {hf_layer_number}")
@@ -1205,6 +1316,111 @@ class Mg2HfConvert(Convert):
         else:
             raise ValueError("Currently if expert-tensor-parallel-size is set to 1, then target-tensor-parallel-size must be divisible by target-expert-parallel-size or target-expert-parallel-size must be divisible by target-tensor-parallel-size")
 
+    def write_adapter_config(self):
+        json_path = os.path.join(self.save_dir, 'adapter_config.json')
+        adapter_config = {
+            "auto_mapping": None,
+            "base_model_name_or_path": None,
+            "bias": "none",
+            "fan_in_fan_out": False,
+            "inference_mode": True,
+            "init_lora_weights": True,
+            "layers_pattern": None,
+            "layers_to_transform": None,
+            "lora_alpha": self.lora_alpha,
+            "lora_dropout": 0.0,
+            "modules_to_save": [],
+            "peft_type": "LORA",
+            "r": self.lora_r,
+            "revision": None,
+            "target_modules": self.lora_target_modules,
+            "task_type": "CAUSAL_LM"
+        }
+        with open(json_path, 'w') as f:
+            json.dump(adapter_config, f)
+
+    def _merge_lora(self, model_dict, merge_type):
+        """
+        unified: Base and LoRA checkpoint in same file
+        independent: Base and LoRA checkpoint in separate files
+        """
+        lora_layer_base_names = list(set([k.split(".lora")[0] for k in model_dict.keys() if ".lora" in k]))
+        unused_keys = [k for k in model_dict if ".lora" in k and k.endswith("_extra_state")]
+
+        if self.moe_grouped_gemm:
+            gemm_base_names = list(set([k.split("_lora_")[0] for k in model_dict.keys() if "_lora_" in k]))
+            unused_keys = [k for k in model_dict if "_lora_" in k]
+            for _, base in enumerate(gemm_base_names):
+                lora_a = f"{base}_lora_a"
+                lora_b = f"{base}_lora_b"
+
+                local_expert_nums = self.load_model.num_experts // self.expert_model_parallel_size
+
+                if "weight1" in base:
+                    w1 = model_dict[base].view(local_expert_nums, self.load_model.hidden_size, -1)
+                    w1_a = model_dict[lora_a].view(local_expert_nums, -1, self.lora_r)
+                    w1_b = model_dict[lora_b].view(local_expert_nums, self.lora_r, -1)
+
+                    for i in tqdm.tqdm(range(local_expert_nums)):
+                        w1[i] = w1[i].npu() + (self.lora_alpha / self.lora_r) * torch.matmul(
+                            w1_a[i].float().npu(), w1_b[i].float().npu()
+                        ).to(w1[i].dtype)
+
+                    model_dict[base] = w1.view(self.load_model.hidden_size, -1)
+
+                if "weight2" in base:
+                    w2 = model_dict[base].view(local_expert_nums, -1, self.load_model.hidden_size)
+                    w2_a = model_dict[lora_a].view(local_expert_nums, -1, self.lora_r)
+                    w2_b = model_dict[lora_b].view(local_expert_nums, self.lora_r, -1)
+
+                    for i in tqdm.tqdm(range(local_expert_nums)):
+                        w2[i] = w2[i].npu() + (self.lora_alpha / self.lora_r) * torch.matmul(
+                            w2_a[i].float().npu(), w2_b[i].float().npu()
+                        ).to(w2[i].dtype)
+
+                    model_dict[base] = w2.view(-1, self.load_model.hidden_size)
+
+        for i in tqdm.tqdm(range(len(lora_layer_base_names))):
+            name = lora_layer_base_names[i]
+            if merge_type == "unified":
+                base = f"{name}.base_layer.weight"
+                base_new = base.replace(".base_layer", "")
+            elif merge_type == "independent":
+                base = f"{name}.weight"
+                base_new = f"{name}.weight"
+
+            possible_a_keys = [
+                f"{name}.lora_A.default.weight",
+                f"{name}.lora_a.default.weight",
+            ]
+            possible_b_keys = [
+                f"{name}.lora_B.default.weight",
+                f"{name}.lora_b.default.weight",
+            ]
+
+            lora_a = next((k for k in possible_a_keys if k in model_dict), None)
+            lora_b = next((k for k in possible_b_keys if k in model_dict), None)
+
+            if lora_a is None or lora_b is None:
+                raise ValueError(f"[WARN] Missing LoRA keys for layer: {name}")
+
+            # weight = base + matmul(B, A)
+            model_dict[base_new] = model_dict[base].npu() + (self.lora_alpha / self.lora_r) * torch.matmul(
+                model_dict[lora_b].float().npu(), model_dict[lora_a].float().npu()
+            ).to(model_dict[base].dtype)
+            model_dict[base_new] = model_dict[base_new].cpu()
+
+            # delete A, B, base, _extra_state
+            unused_keys.extend([lora_a, lora_b])
+            if merge_type == "unified":
+                unused_keys.append(base)
+
+        for name in list(model_dict.keys()):
+            if ".base_layer" in name:
+                unused_keys.append(name)
+        unused_keys = list(set(unused_keys))
+        for k in unused_keys:
+            del model_dict[k]
 
     def run(self):
         if self.expert_tensor_parallel_size == 1:
@@ -1224,6 +1440,16 @@ class Mg2HfConvert(Convert):
                     model_path = self.get_pt_path_by_tpppep_rank(self.iter_path, tp_rank, pp_rank, ep_rank)
                     ckpt_file = load_data(model_path)
                     mg_weight = ckpt_file['model']
+
+                    if not self.save_lora_to_hf:
+                        if self.lora_r is not None and self.lora_model_path is None:
+                            self._merge_lora(mg_weight, merge_type="unified")
+                        elif self.lora_model_path is not None:
+                            lora_path = self.get_pt_path_by_tpppep_rank(self.lora_iter_path, tp_rank, pp_rank, ep_rank)
+                            lora_model = load_data(lora_path)['model']
+                            mg_weight = {**lora_model, **mg_weight}
+                            self._merge_lora(mg_weight, merge_type="independent")
+
                     mg_weights[(tp_rank, ep_rank)] = mg_weight
                 self.read_pp_rank_weights(pp_rank, mg_weights)
             else:
@@ -1233,6 +1459,16 @@ class Mg2HfConvert(Convert):
                             continue
                         pt_path = self.get_pt_path_by_tpppep_rank(self.iter_path, tp_rank, pp_rank, ep_rank)
                         mg_weight = load_data(pt_path)[f'model{vpp_rank}']
+
+                        if not self.save_lora_to_hf:
+                            if self.lora_r is not None and self.lora_model_path is None:
+                                self._merge_lora(mg_weight, merge_type="unified")
+                            elif self.lora_model_path is not None:
+                                lora_path = self.get_pt_path_by_tpppep_rank(self.lora_iter_path, tp_rank, pp_rank, ep_rank)
+                                lora_model = load_data(lora_path)[f'model{vpp_rank}']
+                                mg_weight = {**lora_model, **mg_weight}
+                                self._merge_lora(mg_weight, merge_type="independent")
+
                         mg_weights[(tp_rank, ep_rank)] = mg_weight
 
                     self.read_vpp_rank_weights(pp_rank, vpp_rank, mg_weights)
@@ -1240,4 +1476,9 @@ class Mg2HfConvert(Convert):
         model_index_file_path = os.path.join(self.save_dir, "model.safetensors.index.json")
         with open(model_index_file_path, 'w', encoding='utf-8') as json_file:
             json.dump({"metadata": {"total_size": TENSOR_SIZE}, "weight_map": self.model_index}, json_file, indent=4)
+
+        if self.save_lora_to_hf:
+            self.write_adapter_config()
+            logger.info("Successfully convert lora to hf!")
+
         logger.info("Done!")
