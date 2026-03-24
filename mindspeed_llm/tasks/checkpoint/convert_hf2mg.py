@@ -38,6 +38,7 @@ class Hf2MgConvert(Convert):
         self.save_dir = self.mg_path_process(args.save_dir)
 
         self.save_layer_by_layer = args.save_layer_by_layer
+        self.qlora_nf4 = getattr(args, 'qlora_nf4', False)
         # Safety guard: Enable layer-by-layer saving to avoid OOM when the product of TP and EP is high.
         # You can adjust this threshold value to control when this feature is applied.
         if self.tensor_model_parallel_size * self.expert_model_parallel_size >= LAYER_BY_LAYER_SAVING_THRESHOLD:
@@ -118,7 +119,8 @@ class Hf2MgConvert(Convert):
                 raise ValueError('sum of layer_list should be equal to num_layers')
             if self.noop_layers is not None:
                 raise ValueError('num_layer_list and noop_layers cannot be configured at the same time')
-
+        if self.qlora_nf4:
+            raise ValueError('Checkpoint converting is currently not supported for qlora-nf4')
         if self.load_model.qkv_type == "mix" and self.tensor_model_parallel_size > 1:
             raise ValueError('mix qkv-type and tp cannot be configured at the same time')
 
