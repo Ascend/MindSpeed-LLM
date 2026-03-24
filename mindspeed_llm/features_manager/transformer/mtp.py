@@ -10,8 +10,6 @@ class MultiTokenPredictionFeature(MindSpeedFeature):
 
         group.add_argument('--mtp-mem-efficient-logits', action='store_true', default=False,
                             help='Optimize ce_loss memory when use mtp block.')
-        group.add_argument('--mtp-after-norm', action='store_true', default=False,
-                            help='Optimize ce_loss memory when use mtp block.')
 
     def register_patches(self, patch_manager, args):
         import megatron
@@ -56,10 +54,6 @@ class MultiTokenPredictionFeature(MindSpeedFeature):
             args.mtp_num_layers = None
 
     def validate_args(self, args):
-        LING_MINI_HIDDEN_SIZE = 2048
-        if hasattr(args, 'spec') and args.spec == ["mindspeed_llm.tasks.models.spec.bailing_spec","layer_spec"]:
-            if args.mtp_num_layers is not None and args.mtp_num_layers >= 1 and args.hidden_size == LING_MINI_HIDDEN_SIZE:
-                raise AssertionError('ling-mini-2.0 is not supported with mtp_num_layers.')
 
         if self.origin_mtp_num_layers and args.context_parallel_size > 1 and args.reset_attention_mask:
             raise AssertionError('Multi-Token Prediction(MTP) is not supported with Context Parallelism(CP) in pack scene.')

@@ -246,9 +246,6 @@ class GPTModel(MegatronCoreGPTModel):
             **(extra_block_kwargs or {}),
         )
 
-        if args.mtp_after_norm and self.final_layernorm is not None:
-            hidden_states = self.final_layernorm(hidden_states)
-
         # logits and loss
         output_weight = None
         if self.share_embeddings_and_output_weights:
@@ -271,7 +268,7 @@ class GPTModel(MegatronCoreGPTModel):
                 **(extra_block_kwargs or {}),
             )
 
-        if not args.mtp_after_norm and self.final_layernorm is not None:
+        if self.final_layernorm is not None:
             hidden_states = self.final_layernorm(hidden_states)
 
         if not self.post_process:

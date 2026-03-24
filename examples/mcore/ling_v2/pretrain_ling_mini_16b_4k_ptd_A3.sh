@@ -67,7 +67,7 @@ MOE_ARGS="
 "
 
 GPT_ARGS="
-    --mtp-after-norm \
+    --mtp-num-layers 1 \
     --use-mcore-models \
     --spec mindspeed_llm.tasks.models.spec.bailing_spec layer_spec \
     --hidden-size 2048 \
