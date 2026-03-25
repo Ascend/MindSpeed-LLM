@@ -163,4 +163,5 @@ torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     --load ${CKPT_LOAD_DIR} \
     --save ${CKPT_SAVE_DIR} \
     --distributed-backend nccl \
+    --transformer-impl local \
     | tee logs/dpo_qwen3_30b_a3b_16k_ptd.log
