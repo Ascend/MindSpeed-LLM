@@ -107,6 +107,7 @@ pip3 install torch_npu-2.7.1rc1-cp310-cp310-manylinux_2_28_aarch64.whl
     cp -r megatron ../MindSpeed-LLM/
     cd ../MindSpeed-LLM
     git checkout master
+    mkdir logs
 
     pip3 install -r requirements.txt  # 安装其余依赖库
     ```
