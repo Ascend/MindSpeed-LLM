@@ -76,7 +76,8 @@ class FeatureAdaptor:
         """
         Execute adaptations.
         """
-        
+
+        MindSpeedFeaturesManager.remove_patches()
         args = FeatureAdaptor.get_mindspeed_llm_args()
         FeatureAdaptor.delete_lock_file()
         
@@ -88,5 +89,24 @@ class FeatureAdaptor:
         # accelerate package will check TE on sys.modules, so we need remove this patch
         if 'transformer_engine' in sys.modules:
             del sys.modules["transformer_engine"]
-    
+
+
+def repatch(config):
+    LOG.info("repatch mindspeedllm features")
+    MindSpeedFeaturesManager.remove_patches()
+    args = FeatureAdaptor.get_mindspeed_llm_args()
+    for k, v in config.items():
+        setattr(args, k, v)
+    FeatureAdaptor.delete_lock_file()
+
+    # apply mindspeed base patches
+    MindSpeedFeaturesManager.apply_features_pre_patches(args)
+    # apply megatron patches
+    MindSpeedFeaturesManager.apply_features_patches(args)
+
+    # accelerate package will check TE on sys.modules, so we need remove this patch
+    if 'transformer_engine' in sys.modules:
+        del sys.modules["transformer_engine"]
+
+
 FeatureAdaptor.execute()
