@@ -20,7 +20,7 @@ DATA_PATH="your data path"
 TOKENIZER_PATH="your tokenizer path"
 CKPT_LOAD_DIR="your model ckpt path"
 
-TP=1
+TP=2
 PP=8
 EP=64
 CP=1
@@ -28,7 +28,7 @@ CP_TYPE='ulysses_cp_algo'
 NUM_LAYERS=80
 SEQ_LEN=4096
 MBS=1
-GBS=1024
+GBS=2048
 
 DISTRIBUTED_ARGS="
     --nproc_per_node $NPUS_PER_NODE \
@@ -63,6 +63,7 @@ MOE_ARGS="
     --num-experts 256 \
     --moe-router-topk 8 \
     --moe-ffn-hidden-size 2048 \
+    --moe-shared-expert-intermediate-size 2048 \
     --moe-router-load-balancing-type seq_aux_loss \
     --moe-router-num-groups 1 \
     --moe-router-group-topk 1 \
@@ -84,6 +85,10 @@ MTP_ARGS="
 
 DSA_ARGS="
     --enable-dsa-indexer \
+    --indexer-loss-coeff 1.0 \
+    --use-sparse-flash-attn \
+    --index-topk 256 \
+    --init-norm-weight-in-fp32 \
 "
 
 
@@ -93,6 +98,7 @@ OTHERS_ARGS="
     --recompute-num-layers 1 \
     --noop-layers 78,79 \
 "
+
 
 PIPELINE_ARGS="
     --moe-fb-overlap \
@@ -119,7 +125,6 @@ GPT_ARGS="
     --use-distributed-optimizer \
     --swap-optimizer \
     --use-flash-attn \
-    --use-sparse-flash-attn \
     --use-mcore-models \
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \
@@ -132,8 +137,6 @@ GPT_ARGS="
     --hidden-size 6144 \
     --ffn-hidden-size 12288 \
     --num-attention-heads 64 \
-    --index-topk 2048 \
-    --indexer-loss-coeff 1.0 \
     --tokenizer-type PretrainedFromHF  \
     --tokenizer-name-or-path ${TOKENIZER_PATH} \
     --seq-length ${SEQ_LEN} \
@@ -173,7 +176,6 @@ GPT_ARGS="
     --no-load-rng \
     --bf16 \
     --distributed-timeout-minutes 120 \
-    --init-norm-weight-in-fp32 \
     --no-shared-storage \
 "
 
@@ -209,4 +211,3 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     --save $CKPT_SAVE_DIR \
     --load $CKPT_LOAD_DIR \
     --distributed-backend nccl | tee logs/pretrain_glm5_744b_4k_A3_ptd.log
-

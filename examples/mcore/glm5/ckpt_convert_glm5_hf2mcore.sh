@@ -5,7 +5,7 @@ python convert_ckpt_v2.py \
     --load-model-type hf \
     --save-model-type mg \
     --num-layers-per-virtual-pipeline-stage 2 \
-    --target-tensor-parallel-size 1 \
+    --target-tensor-parallel-size 2 \
     --target-pipeline-parallel-size 8 \
     --target-expert-parallel-size 64 \
     --expert-tensor-parallel-size 1 \
