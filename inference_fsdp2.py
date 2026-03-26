@@ -2,9 +2,8 @@ import os
 import types
 from dataclasses import dataclass, field
 import torch
-import torch_npu
 
-from mindspeed.fsdp.utils.device import set_accelerator_compatible
+from transformers.utils import is_torch_npu_available
 from mindspeed.fsdp.utils.torch_patch import apply_hccl_premul_sum_patch
 from mindspeed_llm.fsdp2.models.model_factory import ModelFactory
 from mindspeed_llm.fsdp2.data.tokenizer import TokenizerFactory
@@ -14,6 +13,7 @@ from mindspeed_llm.fsdp2.utils.arguments import (
 )
 from mindspeed_llm.fsdp2.utils.logging import setup_global_logging, get_logger
 from mindspeed_llm.fsdp2.utils.global_vars import set_args
+from mindspeed_llm.fsdp2.utils.device import set_accelerator_compatible
 
 
 logger = get_logger(__name__)
@@ -77,16 +77,22 @@ class AutoInferencer:
     @staticmethod
     def _initialize():
         """Initialize underlying hardware and distributed environment."""
-        set_accelerator_compatible(torch.npu)
-        apply_hccl_premul_sum_patch()
+        if is_torch_npu_available():
+            fallback = torch.npu
+            dist_backend = "hccl"
+            apply_hccl_premul_sum_patch()
+        elif torch.cuda.is_available():
+            fallback = torch.cuda
+            dist_backend = "nccl"
+        set_accelerator_compatible(fallback)
 
         local_rank = int(os.environ.get("LOCAL_RANK", 0))
         torch.accelerator.set_device_index(local_rank)
-        torch.npu.set_device(local_rank)
+        torch.accelerator.set_device(local_rank)
 
         if not torch.distributed.is_initialized():
             # Fix backend to hccl in MindSpeed/NPU environments
-            torch.distributed.init_process_group(backend="hccl")
+            torch.distributed.init_process_group(backend=dist_backend)
             
         logger.info_rank0(f"> Distributed environment initialized. World size: {torch.distributed.get_world_size()}")
 

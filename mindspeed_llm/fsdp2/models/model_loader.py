@@ -14,7 +14,6 @@ except ImportError:
     from transformers.initialization import no_init_weights
 
 from mindspeed_llm.fsdp2.utils.logging import get_logger
-from mindspeed_llm.fsdp2.utils.device import get_device_type
 from mindspeed_llm.fsdp2.utils.global_vars import get_args
 logger = get_logger(__name__)
 
@@ -181,7 +180,7 @@ class WeightLoader:
     ) -> None:
         """Load or initialize weights after FSDP wrapping."""
         if device is None:
-            device = get_device_type()
+            device = torch.accelerator.current_accelerator().type
         
         if weights_path is None:
             WeightLoader._init_random(model, device)

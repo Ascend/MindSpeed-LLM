@@ -63,57 +63,11 @@ def get_dtype_size(dtype: "torch.dtype") -> int:
     return _SIZE[dtype]
 
 
-# --------------------------
-# Device Utilities
-# --------------------------
-def get_torch_device() -> Any:
-    """
-    Get the torch device namespace based on current hardware.
-
-    For example:
-    - CUDA device returns torch.cuda
-    - NPU device returns torch.npu
-
-    Returns:
-        torch module namespace
-    """
-    device_name = get_device_type()
-
-    try:
-        return getattr(torch, device_name)
-    except AttributeError:
-        # Fallback to CUDA namespace if device attribute is missing
-        logger.warn_rank0(
-            f"Device namespace '{device_name}' not found in torch, try to load 'torch.cuda'."
-        )
-        return torch.cuda
-
-
-def get_device_type() -> str:
-    """
-    Detect current device type.
-
-    Priority order:
-    CUDA > NPU > CPU
-
-    Returns:
-        str: Device type string
-    """
-    if torch.cuda.is_available():
-        device = "cuda"
-    elif torch.npu.is_available():
-        device = "npu"
-    else:
-        device = "cpu"
-
-    return device
-
-
 def synchronize() -> None:
     """
     Synchronize the current device stream.
     """
-    get_torch_device().synchronize()
+    torch.accelerator.synchronize()
 
 
 def empty_cache() -> None:
@@ -121,7 +75,7 @@ def empty_cache() -> None:
     Explicitly release cached device memory and trigger garbage collection.
     """
     gc.collect()
-    get_torch_device().empty_cache()
+    torch.accelerator.empty_cache()
 
 
 # --------------------------
@@ -388,7 +342,7 @@ def build_ep_fqn2spec_info(
 
     # Construct a logical 2D mesh: rows = EP ranks, cols = E-FSDP ranks
     ep_fsdp_mesh = DeviceMesh(
-        device_type="npu",
+        device_type=torch.accelerator.current_accelerator().type,
         mesh=torch.arange(ep_size * efsdp_size).view(ep_size, efsdp_size),
         mesh_dim_names=("ep", "ep_fsdp"),
     )

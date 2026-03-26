@@ -23,7 +23,10 @@ import os
 from typing import Callable, Optional, Union
 
 import torch
-import torch_npu
+try:
+    import torch_npu
+except ImportError:
+    pass
 from torch import nn
 from torch.nn import functional as F
 
@@ -499,7 +502,7 @@ def flash_attention_forward(
         pre_tokens = sliding_window
 
     # When sparse_mode is 2 or 4, a compressed mask of [2048, 2048] should be passed.
-    new_mask = torch.ones((2048, 2048), device=torch.npu.current_device(), dtype=torch.bool)
+    new_mask = torch.ones((2048, 2048), device=torch.accelerator.current_device(), dtype=torch.bool)
     atten_mask = torch.triu(new_mask, diagonal=1)
 
     attn_output = torch_npu.npu_fusion_attention_v2(

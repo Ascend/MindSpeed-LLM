@@ -10,7 +10,6 @@ from torch.utils._foreach_utils import (
 from typing import List, Tuple, Optional, Iterable
 from mindspeed_llm.fsdp2.distributed.parallel_state import ParallelState
 import logging
-from mindspeed_llm.fsdp2.utils.device import get_device_type
 
 logger = logging.getLogger(__name__)
 
@@ -140,13 +139,13 @@ def _local_pth_sum(params: List[torch.nn.Parameter], p: float) -> torch.Tensor:
     grads = [p.grad for p in params if p.grad is not None]
     if not grads:
         # At this point, 0.0 on the current device needs to be returned; otherwise, an error may occur in the subsequent all_reduce operation.
-        return torch.tensor(0.0, device=torch.npu.current_device(), dtype=torch.float32)
+        return torch.tensor(0.0, device=torch.accelerator.current_device(), dtype=torch.float32)
         
     grads_local = [
         g.to_local().detach().to(torch.float32) if isinstance(g, DTensor) else g.detach().to(torch.float32)
         for g in grads
     ]
-    default_device = grads_local[0].device if len(grads_local) > 0 else torch.device(get_device_type())
+    default_device = grads_local[0].device if len(grads_local) > 0 else torch.device(torch.accelerator.current_accelerator().type)
     res = torch.tensor(0.0, device=default_device, dtype=torch.float32)
     with torch.no_grad():
         grouped_grads_local = _group_tensors_by_device_and_dtype([grads_local])
@@ -178,7 +177,7 @@ def _local_max(params: List[torch.nn.Parameter]) -> torch.Tensor:
         gn = torch.max(torch.abs(g_local.detach().to(torch.float32)))
         mx = torch.maximum(mx, gn)
     if mx is None:
-        dev = torch.device("npu")
+        dev = torch.device(torch.accelerator.current_accelerator().type)
         mx = torch.tensor(0.0, device=dev, dtype=torch.float32)
     return mx
 

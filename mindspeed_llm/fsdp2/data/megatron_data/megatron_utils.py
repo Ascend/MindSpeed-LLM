@@ -1,3 +1,5 @@
+# Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
+
 import os
 from enum import Enum
 from typing import List, Optional, Tuple, Iterable, Any, Optional
@@ -133,7 +135,7 @@ def is_shared_path(path: str, retry: int = 3, wait: float = 0.5) -> bool:
         visible_tensor = torch.tensor(
             [visible_count],
             dtype=torch.int,
-            device="npu"
+            device=torch.accelerator.current_accelerator().type
         )
         torch.distributed.all_reduce(visible_tensor, op=torch.distributed.ReduceOp.MAX)
         total_visible = visible_tensor.item()
@@ -150,7 +152,7 @@ def is_shared_path(path: str, retry: int = 3, wait: float = 0.5) -> bool:
         else:
             shared = None
 
-        shared = torch.tensor([1 if shared else 0], dtype=torch.int, device="npu")
+        shared = torch.tensor([1 if shared else 0], dtype=torch.int, device=torch.accelerator.current_accelerator().type)
         torch.distributed.broadcast(shared, src=0)
 
         torch.distributed.barrier()

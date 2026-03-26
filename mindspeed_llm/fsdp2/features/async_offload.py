@@ -1,5 +1,8 @@
 import torch
-import torch_npu
+try:
+    import torch_npu
+except ImportError:
+    pass
 from torch.autograd.graph import saved_tensors_hooks
 
 

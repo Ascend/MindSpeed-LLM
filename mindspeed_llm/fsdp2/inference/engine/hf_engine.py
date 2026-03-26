@@ -5,7 +5,6 @@ from typing import Any, Callable
 from collections.abc import AsyncGenerator
 
 import torch
-import torch_npu
 from transformers import TextIteratorStreamer
 
 from mindspeed_llm.fsdp2.utils.logging import get_logger
@@ -41,7 +40,7 @@ class HuggingfaceEngine(BaseEngine):
     def _get_target_device() -> torch.device:
         """Fetch the correct local NPU device based on environment variables."""
         local_rank = int(os.environ.get("LOCAL_RANK", 0))
-        return torch.device(f"npu:{local_rank}")
+        return torch.device(torch.accelerator.current_accelerator().type, local_rank)
 
     @staticmethod
     def _process_args(
@@ -90,7 +89,7 @@ class HuggingfaceEngine(BaseEngine):
     ) -> list["Response"]:
         
         target_device = HuggingfaceEngine._get_target_device()
-        torch.npu.set_device(target_device)
+        torch.accelerator.set_device(target_device)
 
         gen_kwargs, prompt_length = HuggingfaceEngine._process_args(
             model, tokenizer, args, messages, **input_kwargs
@@ -132,7 +131,7 @@ class HuggingfaceEngine(BaseEngine):
         gen_kwargs["streamer"] = streamer
 
         def generate():
-            torch.npu.set_device(target_device)
+            torch.accelerator.set_device(target_device)
             with torch.device(target_device):
                 model.generate(**gen_kwargs)
 

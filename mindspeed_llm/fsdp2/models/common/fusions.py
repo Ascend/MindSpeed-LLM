@@ -1,5 +1,8 @@
 import torch
-import torch_npu
+try:
+    import torch_npu
+except ImportError:
+    pass
 
 
 def fused_rmsnorm_forward(self, x):

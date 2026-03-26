@@ -172,7 +172,7 @@ class ParallelState(metaclass=Singleton):
             raise AssertionError(f"Mesh groups {mesh_shape}({reduce(lambda a, b: a * b, mesh_shape)}) "
                                  f"!= world size({torch.distributed.get_world_size()})")
 
-        device_mesh = init_device_mesh(device_type='npu', mesh_shape=mesh_shape, mesh_dim_names=mesh_dim_names)
+        device_mesh = init_device_mesh(device_type=torch.accelerator.current_accelerator().type, mesh_shape=mesh_shape, mesh_dim_names=mesh_dim_names)
 
         for mesh_name in mesh_dim_names:
             self.device_mesh_map[mesh_name] = device_mesh

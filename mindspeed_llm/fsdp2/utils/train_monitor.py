@@ -9,13 +9,11 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import psutil
 import torch
-import torch_npu
 import torch.distributed as dist
 from transformers import PretrainedConfig
 
 from mindspeed_llm.fsdp2.utils.flops.flops_factory import FlopsCounter
 from mindspeed_llm.fsdp2.utils.dist_op import all_reduce
-from mindspeed_llm.fsdp2.utils.device import get_torch_device
 from mindspeed_llm.fsdp2.utils.logging import get_logger
 
 
@@ -261,7 +259,7 @@ class TrainMonitor:
         Compute merged NPU + CPU memory metrics (single responsibility)
         """
         # Get NPU memory stats (max allocated/reserved during current step)
-        device = get_torch_device()
+        device = torch.accelerator
         allocated_memory = device.max_memory_allocated()
         reserved_memory = device.max_memory_reserved()
         num_alloc_retries = device.memory_stats().get("num_alloc_retries", 0)

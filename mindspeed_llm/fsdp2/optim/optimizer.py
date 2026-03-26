@@ -13,6 +13,7 @@ from torch.distributed.checkpoint.state_dict import (
 from torch.distributed.checkpoint.stateful import Stateful
 from torch.optim import AdamW
 from torch.optim.optimizer import Optimizer
+from transformers.utils import is_torch_npu_available
 from mindspeed_llm.fsdp2.optim.muon import Muon
 from mindspeed_llm.fsdp2.utils.logging import get_logger
 
@@ -407,8 +408,8 @@ class OptimizerFactory:
         # Internal function to build optimizer
         def _build_optimizer(groups: Sequence[Dict[str, Any]]) -> Optimizer:
             # Multiple optimizers do not support the foreach/fused modes in NPU.
-            foreach = False if torch.npu.is_available() else (not fused)
-            fused_ = False if torch.npu.is_available() else fused
+            foreach = False if is_torch_npu_available() else (not fused)
+            fused_ = False if is_torch_npu_available() else fused
             muon_params = None
             adamw_params = None
             param_groups = groups

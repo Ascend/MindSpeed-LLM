@@ -25,7 +25,6 @@ from typing import Any, Callable, Optional, Union
 
 import torch
 import torch.nn.functional as F
-import torch_npu
 from torch import nn
 from torch.distributed.tensor import DTensor
 
@@ -59,8 +58,14 @@ from transformers.utils.import_utils import (
 )
 
 from mindspeed.core.fusions.grouped_matmul import Ops
-from mindspeed.ops.npu_moe_token_permute import npu_moe_token_permute
-from mindspeed.ops.npu_moe_token_unpermute import npu_moe_token_unpermute
+
+try:
+    import torch_npu
+    from mindspeed.ops.npu_moe_token_permute import npu_moe_token_permute
+    from mindspeed.ops.npu_moe_token_unpermute import npu_moe_token_unpermute
+except ImportError:
+    pass
+
 
 from mindspeed_llm.fsdp2.utils.global_vars import get_args
 
@@ -1243,7 +1248,7 @@ def get_attention_mask_in_transformers():
 
     _GLOBAL_ATTN_MASK = torch.triu(
         torch.ones((2048, 2048),
-                   device="npu", dtype=torch.bool), diagonal=1)
+                   device=torch.accelerator.current_accelerator().type, dtype=torch.bool), diagonal=1)
 
 
     return _GLOBAL_ATTN_MASK

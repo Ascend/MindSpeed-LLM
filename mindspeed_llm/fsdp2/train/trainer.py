@@ -477,7 +477,8 @@ class Trainer:
                     # 6. Update the value in sample with the sliced tensor
                     if key == 'shift_labels':
                         val_sliced = val_sliced.contiguous()
-                    sample[key] = val_sliced.npu(non_blocking=True)
+                    device = torch.accelerator.current_device()
+                    sample[key] = val_sliced.to(device, non_blocking=True)
 
         return batch, batch_seqlens, num_items_in_batch
 
@@ -506,13 +507,14 @@ class Trainer:
         batch_seqlens = []
         for _ in range(num_batches):
             try:
+                device = torch.accelerator.current_device()
                 data = next(epoch_iterator)
-                data["input_ids"] = data["input_ids"].npu(non_blocking=True)
-                data["labels"] = data["labels"].npu(non_blocking=True)
+                data["input_ids"] = data["input_ids"].to(device, non_blocking=True)
+                data["labels"] = data["labels"].to(device, non_blocking=True)
                 if "attention_mask" in data:
-                    data["attention_mask"] = data["attention_mask"].npu(non_blocking=True)
+                    data["attention_mask"] = data["attention_mask"].to(device, non_blocking=True)
                 if "position_ids" in data:
-                    data["position_ids"] = data["position_ids"].npu(non_blocking=True)
+                    data["position_ids"] = data["position_ids"].to(device, non_blocking=True)
                 batch_samples.append(data)
 
                 # Calculate sequence lengths for each sample in the current batch
@@ -535,7 +537,7 @@ class Trainer:
         Aggregates this count across all ranks.
         """
         num_items_in_batch = None
-        device = torch.npu.current_device()
+        device = torch.accelerator.current_device()
         ps = ParallelState()
 
         # Check if 'labels' exist in the data
@@ -572,13 +574,13 @@ class Trainer:
         Computes the loss for the batch.
         """
         args = self.args
-        device = torch.npu.current_device()
+        device = torch.accelerator.current_device()
         # 1. Inject num_items_in_batch into inputs if present (for token-weighted loss)
         kwargs = {}
         if num_items_in_batch is not None:
             kwargs["num_items_in_batch"] = num_items_in_batch
 
-        labels = inputs['labels'].npu(device, non_blocking=True)
+        labels = inputs['labels'].to(device, non_blocking=True)
         if args.stage == 'pt':
             inputs['labels'] = None
 

@@ -21,7 +21,10 @@
 from typing import Optional
 
 import torch
-import torch_npu
+try:
+    import torch_npu
+except ImportError:
+    pass
 from transformers.masking_utils import (and_masks, prepare_padding_mask, _ignore_causal_mask_sdpa,
                                         _ignore_bidirectional_mask_sdpa, padding_mask_function,
                                         _non_vmap_expansion_sdpa, TransformGetItemToIndex, _vmap_expansion_sdpa

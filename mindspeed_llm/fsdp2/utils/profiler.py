@@ -6,7 +6,12 @@ from typing import Optional, List
 from dataclasses import dataclass
 
 import torch
-import torch_npu.profiler as npu_profiler
+
+try:
+    import torch_npu.profiler as npu_profiler
+except ImportError:
+    pass
+
 from mindspeed_llm.fsdp2.utils.logging import get_logger
 
 logger = get_logger(__name__)

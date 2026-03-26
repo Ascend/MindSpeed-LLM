@@ -82,7 +82,7 @@ def alltoall_dispatch(ep_group, hidden_states, top_k_index, indices, split_sizes
     input_split, output_splits = split_sizes
 
     hidden_states, unpermute_indices1 = permute(hidden_states, top_k_index)
-    torch.npu.current_stream().synchronize()
+    torch.accelerator.current_stream().synchronize()
     hidden_states = all_to_all(ep_group, hidden_states, output_splits.numpy(), input_split.numpy())
     hidden_states, unpermute_indices2 = permute(hidden_states, global_indices)
 

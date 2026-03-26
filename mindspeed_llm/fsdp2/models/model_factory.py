@@ -46,11 +46,10 @@ class ModelFactory:
         """
         # 1. Setup Device
         # Ensure NPU is being used
-        if torch.npu.is_available():
-            # Respect LOCAL_RANK if set, otherwise default to 0
+        if torch.accelerator.is_available():
             local_rank = int(os.environ.get("LOCAL_RANK", 0))
-            target_device = torch.device(f"npu:{local_rank}")
-            torch.npu.set_device(target_device)
+            target_device = torch.device(torch.accelerator.current_accelerator().type, local_rank)
+            torch.accelerator.set_device(target_device)
         else:
             target_device = torch.device("cpu")
 

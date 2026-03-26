@@ -5,7 +5,6 @@ from typing import Optional, Union
 
 import torch
 import torch.nn.functional as F
-import torch_npu
 import transformers
 from torch import nn
 from torch.distributed.tensor import DTensor
@@ -17,16 +16,19 @@ from transformers.models.qwen3_moe.modeling_qwen3_moe import load_balancing_loss
 from transformers.utils import can_return_tuple
 
 from mindspeed.core.fusions.grouped_matmul import Ops
-from mindspeed.ops.npu_moe_token_permute import npu_moe_token_permute
-from mindspeed.ops.npu_moe_token_unpermute import npu_moe_token_unpermute
 from mindspeed.patch_utils import MindSpeedPatchesManager as pm
-from mindspeed.ops.gmm_mxfp8 import npu_quant_group_gemm
 from mindspeed_llm.fsdp2.features.async_offload import async_save_on_cpu
 from mindspeed_llm.fsdp2.models.common.fusions import fused_rmsnorm_forward, apply_rotary_pos_emb
 from mindspeed_llm.fsdp2.models.common.modules import LMHead
 from mindspeed_llm.fsdp2.utils.global_vars import get_args
 
-offload_stream = torch.npu.Stream()
+try:
+    import torch_npu
+    from mindspeed.ops.npu_moe_token_permute import npu_moe_token_permute
+    from mindspeed.ops.npu_moe_token_unpermute import npu_moe_token_unpermute
+    from mindspeed.ops.gmm_mxfp8 import npu_quant_group_gemm
+except ImportError:
+    pass
 
 
 class Qwen3MoEForCausalLM(transformers.Qwen3MoePreTrainedModel):
@@ -291,6 +293,8 @@ def qwen3_moe_model_forward(
 
     # create position embeddings to be shared across the decoder layers
     position_embeddings = self.rotary_emb(hidden_states, position_ids)
+
+    offload_stream = torch.npu.Stream()
 
     for layer_id, decoder_layer in enumerate(self.layers[: self.config.num_hidden_layers]):
         if self.training:

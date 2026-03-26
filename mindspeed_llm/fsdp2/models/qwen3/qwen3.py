@@ -1,8 +1,12 @@
 # Copyright (c) 2025, HUAWEI CORPORATION.  All rights reserved.
+# Copyright 2025 The Qwen team, Alibaba Group and the HuggingFace Inc. team. All rights reserved.
 from typing import Optional, Union
 
 import torch
-import torch_npu
+try:
+    import torch_npu
+except ImportError:
+    pass
 import transformers
 from transformers.cache_utils import Cache
 from transformers.modeling_outputs import BaseModelOutputWithPast, CausalLMOutputWithPast

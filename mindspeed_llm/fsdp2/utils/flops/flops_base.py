@@ -3,10 +3,10 @@ Base module for FLOPS/MFU calculation: abstract interface, fallback estimator, u
 """
 from abc import ABC, abstractmethod
 from typing import List
+import torch
 
 from transformers import PretrainedConfig
 
-from mindspeed_llm.fsdp2.utils.device import get_device_name
 from mindspeed_llm.fsdp2.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -111,7 +111,7 @@ def get_device_flops(unit: str = "T") -> float:
         ("B200", 2250e12),
     ]
 
-    device_name = get_device_name()
+    device_name = torch.accelerator.get_device_name()
     flops = float("inf")
     for key, val in DEVICE_FLOPS_MAP:
         if key in device_name:

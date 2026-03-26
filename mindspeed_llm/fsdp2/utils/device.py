@@ -1,32 +1,27 @@
-from typing import Any
+import sys
+import types
 import torch
 
 
-IS_CUDA_AVAILABLE = torch.cuda.is_available()
-IS_NPU_AVAILABLE = torch.npu.is_available()
+def accelerator_getattr(module, fallback_module):
+    def __getattr__(name):
+        if hasattr(fallback_module, name):
+            attr = getattr(fallback_module, name)
+            setattr(module, name, attr)
+            return attr
+        else:
+            raise AttributeError(f'module {module} and {fallback_module} has no attribute {name}.')
+
+    return __getattr__
 
 
-def get_device_type() -> str:
-    """Get device type based on current machine, currently only support CPU, CUDA, NPU."""
-    if IS_CUDA_AVAILABLE:
-        device = "cuda"
-    elif IS_NPU_AVAILABLE:
-        device = "npu"
-    else:
-        device = "cpu"
+def set_accelerator_compatible(fallback_module):
+    accelerator_module = types.ModuleType('torch.accelerator')
+    for attr in dir(torch.accelerator):
+        if attr.startswith('__'):
+            continue
+        setattr(accelerator_module, attr, getattr(fallback_module, attr, getattr(torch.accelerator, attr)))
 
-    return device
-
-def get_torch_device() -> Any:
-    """Get torch attribute based on device type, e.g. torch.cuda or torch.npu"""
-    device_name = get_device_type()
-
-    try:
-        return getattr(torch, device_name)
-    except AttributeError:
-        logger.warning(f"Device namespace '{device_name}' not found in torch, try to load 'torch.cuda'.")
-        return torch.cuda
-
-def get_device_name() -> str:
-    """Get real device name"""
-    return get_torch_device().get_device_name()
+    accelerator_module.__getattr__ = accelerator_getattr(accelerator_module, fallback_module)
+    torch.accelerator = accelerator_module
+    sys.modules['torch.accelerator'] = accelerator_module

@@ -26,7 +26,7 @@ def all_reduce(
     # 2. Prepare Tensors: Ensure all data is on the NPU
     packed_tensors = []
     # Get the current NPU device to prevent tensors from defaulting to CPU
-    device = torch.device(f"npu:{torch.npu.current_device()}")
+    device = torch.device(torch.accelerator.current_accelerator().type, torch.accelerator.current_device())
     
     for item in inputs:
         if isinstance(item, torch.Tensor):
