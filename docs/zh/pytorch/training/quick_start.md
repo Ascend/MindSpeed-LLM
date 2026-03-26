@@ -31,18 +31,18 @@
     cd ./model_from_hf/qwen3_hf
 
     # wget获取权重文件
-    wget https://huggingface.co/Qwen/Qwen3-8B/blob/main/config.json
-    wget https://huggingface.co/Qwen/Qwen3-8B/blob/main/generation_config.json
-    wget https://huggingface.co/Qwen/Qwen3-8B/blob/main/merges.txt
-    wget https://huggingface.co/Qwen/Qwen3-8B/blob/main/model-00001-of-00005.safetensors
-    wget https://huggingface.co/Qwen/Qwen3-8B/blob/main/model-00002-of-00005.safetensors
-    wget https://huggingface.co/Qwen/Qwen3-8B/blob/main/model-00003-of-00005.safetensors
-    wget https://huggingface.co/Qwen/Qwen3-8B/blob/main/model-00004-of-00005.safetensors
-    wget https://huggingface.co/Qwen/Qwen3-8B/blob/main/model-00005-of-00005.safetensors
-    wget https://huggingface.co/Qwen/Qwen3-8B/blob/main/model.safetensors.index.json
-    wget https://huggingface.co/Qwen/Qwen3-8B/blob/main/tokenizer.json
-    wget https://huggingface.co/Qwen/Qwen3-8B/blob/main/tokenizer_config.json
-    wget https://huggingface.co/Qwen/Qwen3-8B/blob/main/vocab.json
+    wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/config.json
+    wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/generation_config.json
+    wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/merges.txt
+    wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/model-00001-of-00005.safetensors
+    wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/model-00002-of-00005.safetensors
+    wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/model-00003-of-00005.safetensors
+    wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/model-00004-of-00005.safetensors
+    wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/model-00005-of-00005.safetensors
+    wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/model.safetensors.index.json
+    wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/tokenizer.json
+    wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/tokenizer_config.json
+    wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/vocab.json
     ```
 
 2. 通过sha256sum验证模型权重文件完整性。  

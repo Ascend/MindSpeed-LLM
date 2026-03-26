@@ -31,13 +31,13 @@
     cd ./model_from_hf/qwen3_hf
 
     # wget获取权重文件
-    wget https://huggingface.co/Qwen/Qwen3-0.6B/blob/main/config.json
-    wget https://huggingface.co/Qwen/Qwen3-0.6B/blob/main/generation_config.json
-    wget https://huggingface.co/Qwen/Qwen3-0.6B/blob/main/merges.txt
-    wget https://huggingface.co/Qwen/Qwen3-0.6B/blob/main/model.safetensors
-    wget https://huggingface.co/Qwen/Qwen3-0.6B/blob/main/tokenizer.json
-    wget https://huggingface.co/Qwen/Qwen3-0.6B/blob/main/tokenizer_config.json
-    wget https://huggingface.co/Qwen/Qwen3-0.6B/blob/main/vocab.json
+    wget https://huggingface.co/Qwen/Qwen3-0.6B/resolve/main/config.json
+    wget https://huggingface.co/Qwen/Qwen3-0.6B/resolve/main/generation_config.json
+    wget https://huggingface.co/Qwen/Qwen3-0.6B/resolve/main/merges.txt
+    wget https://huggingface.co/Qwen/Qwen3-0.6B/resolve/main/model.safetensors
+    wget https://huggingface.co/Qwen/Qwen3-0.6B/resolve/main/tokenizer.json
+    wget https://huggingface.co/Qwen/Qwen3-0.6B/resolve/main/tokenizer_config.json
+    wget https://huggingface.co/Qwen/Qwen3-0.6B/resolve/main/vocab.json
     ```
 
 2. 通过sha256sum验证模型权重文件完整性。  
