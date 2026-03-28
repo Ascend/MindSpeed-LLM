@@ -46,8 +46,9 @@ from mindspeed.utils import ( set_position_ids,
                              _get_batch_on_this_cp_rank_in_megatron_cp,
                              _get_batch_on_this_cp_rank_in_hybrid_cp_general,
                              _get_batch_on_this_cp_rank_in_hybrid_cp,
-                             broadcast_dynamic, _broadcast, get_ring_degree)
+                             broadcast_dynamic, _broadcast)
 from mindspeed.core.tensor_parallel_y_union_cp import TensorParallelYUnionCP
+from mindspeed.core.transformer.flash_attention.reset_attention_mask.adaptor import get_ring_degree
 from mindspeed.model.transformer import set_attention_mask
 from mindspeed.utils import _get_batch_on_this_tp_y_cp_rank_in_megatron_cp
 from mindspeed_llm.tasks.dataset.shared_memory_manager import SharedMemoryManager
@@ -591,7 +592,7 @@ def get_batch_on_this_tp_rank(data_iterator):
               and args.context_parallel_size > 1 \
               and args.context_parallel_algo == 'megatron_cp_algo':
                 actual_seq_len = pad_data(actual_seq_len, batch, args.context_parallel_size, args.tensor_model_parallel_size)
-                actual_seq_len /= get_ring_degree()
+                actual_seq_len //= get_ring_degree()
             set_actual_seq_len(actual_seq_len)
 
     else:
