@@ -13,7 +13,7 @@ six
 protobuf
 peft==0.7.1
 tiktoken
-ray==2.10.0
+ray==2.54.0
 codetiming
 bitsandbytes-npu-beta==0.45.3
 word2number
