@@ -1,5 +1,6 @@
 # Copyright 2024 AI21 Labs Ltd. and the HuggingFace Inc. team
 # Copyright (c) 2025, HUAWEI CORPORATION.  All rights reserved.
+# Copyright 2023 Mistral AI and the HuggingFace Inc. team. All rights reserved.
 
 from typing import Optional, Union
 

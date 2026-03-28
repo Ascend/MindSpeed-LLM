@@ -1,3 +1,5 @@
+# Copyright 2025 the LlamaFactory team.
+
 import os
 import contextlib
 import json

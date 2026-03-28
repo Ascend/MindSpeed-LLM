@@ -1,3 +1,5 @@
+# Copyright (c) 2023 Alibaba PAI and Nvidia Megatron-LM Team.
+
 from megatron.core.fusions.fused_bias_dropout import get_bias_dropout_add
 from megatron.core.tensor_parallel.layers import ColumnParallelLinear, RowParallelLinear
 from megatron.core.transformer.attention import SelfAttention, SelfAttentionSubmodules

@@ -1,3 +1,5 @@
+# Copyright 2024-2026 OpenAccess AI Collective and the LlamaFactory team.
+
 from dataclasses import dataclass
 from typing import Any, Literal
 
