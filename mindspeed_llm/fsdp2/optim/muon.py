@@ -1,3 +1,5 @@
+# Copyright 2025 Moonshot AI and the LlamaFactory team.
+
 import math
 import torch
 

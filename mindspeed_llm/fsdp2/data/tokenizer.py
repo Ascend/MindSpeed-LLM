@@ -1,3 +1,5 @@
+# Copyright 2025 the LlamaFactory team.
+
 import logging
 from types import MethodType
 from typing import Any

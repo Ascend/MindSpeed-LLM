@@ -1,3 +1,5 @@
+# Copyright 2025 the LlamaFactory team.
+
 import bisect
 from abc import ABC, abstractmethod
 from dataclasses import dataclass

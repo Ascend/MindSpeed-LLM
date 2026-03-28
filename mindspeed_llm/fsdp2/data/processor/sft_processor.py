@@ -1,3 +1,5 @@
+# Copyright 2025 the LlamaFactory team.
+
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any, Optional
