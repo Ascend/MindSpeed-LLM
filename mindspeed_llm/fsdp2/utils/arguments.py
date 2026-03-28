@@ -25,7 +25,7 @@ class ModelArguments:
     model_name_or_path: str = field(
         metadata={"help": "Path to pretrained model or model identifier from huggingface.co/models"}
     )
-    model_id: Optional[Literal["gpt_oss", "qwen3", "qwen3_moe", "qwen3_next", "step35"]] = field(
+    model_id: Optional[Literal["gpt_oss", "qwen3", "qwen3_moe", "qwen3_next", "step35", "mamba3"]] = field(
         default=None,
         metadata={"help": "Model type. New model needs to be registered in the class ModelRegistry of mindspeed_llm/fsdp2/models/model_registry.py"}
     )
