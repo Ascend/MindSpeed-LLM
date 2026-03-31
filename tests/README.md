@@ -193,7 +193,7 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <th>Mem.</th>
     </tr>
     <tr>
-        <td rowspan="28">ST</td>
+        <td rowspan="29">ST</td>
         <td rowspan="1">baichuan2-13B</td>
         <td>baichuan2_13b, no-gradient-accumulation-fusion</td>
         <td><a href="pipeline\st\baichuan2-13B\baichuan2_13b_tp8_pp1_mcore.sh">baichuan2_13b_tp8_pp1_mcore.sh</a></td>
@@ -408,6 +408,14 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td>Y</td>
     </tr>
     <tr>
+        <td rowspan="1">posttrain</td>
+        <td>layerwise_disaggregated_training</td>
+        <td><a href="pipeline/st/layerwise_disaggregated_training/tune_qwen25_7b_tp1pp4_layerwise_disaggregated.sh">tune_qwen25_7b_tp1pp4_layerwise_disaggregated.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
         <td rowspan="20">UT</td>
         <td rowspan="3">checkpoint</td>
         <td>test_checkpoint_param</td>
@@ -555,7 +563,6 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td></td>
         <td></td>
     </tr>
-
 </table>
 
 ### DT覆盖率看护

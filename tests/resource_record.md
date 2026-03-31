@@ -311,4 +311,13 @@
         <td>/</td>
         <td>/</td>
     </tr>
+    <tr>
+        <td>tune_qwen25_7b_tp1pp4_layerwise_disaggregated</td>
+        <td>/data/ci/models/qwen25/hf/Qwen2.5-7B-Instruct/</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/data/ci/datasets/tune_dataset/alpaca/alpaca</td>
+        <td>/</td>
+        <td>/data/ci/cache/save_dir</td>
+    </tr>
 </table>
