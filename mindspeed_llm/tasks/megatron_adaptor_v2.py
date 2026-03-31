@@ -1,9 +1,11 @@
+import os
 import sys
 import shutil
 import argparse
 from logging import getLogger
 from pathlib import Path
 from multiprocessing import Lock
+os.environ["USE_TF"] = "FALSE"
 
 import torch
 from torch.utils.cpp_extension import _get_build_directory
