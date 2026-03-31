@@ -91,7 +91,7 @@ pip3 install torch_npu-2.7.1rc1-cp310-cp310-manylinux_2_28_aarch64.whl
     ```shell
     git clone https://gitcode.com/ascend/MindSpeed.git
     cd MindSpeed
-    git checkout master  # checkout commit from MindSpeed master
+    git checkout 26.0.0_core_r0.12.1  # checkout commit from MindSpeed 26.0.0_core_r0.12.1
     pip3 install -r requirements.txt 
     pip3 install -e .
     cd ..
@@ -106,7 +106,7 @@ pip3 install torch_npu-2.7.1rc1-cp310-cp310-manylinux_2_28_aarch64.whl
     git checkout core_v0.12.1
     cp -r megatron ../MindSpeed-LLM/
     cd ../MindSpeed-LLM
-    git checkout master
+    git checkout 26.0.0
     mkdir logs
 
     pip3 install -r requirements.txt  # 安装其余依赖库
