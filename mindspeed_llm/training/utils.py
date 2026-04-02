@@ -1077,3 +1077,37 @@ def auto_coverage(func):
             cov.save()
     
     return wrapper
+
+
+def check_pipeline_config(num_layers, pp, vpp_stage, noop_layers):
+    noop_set = set(int(x) for x in noop_layers.split(","))
+    all_layers = list(range(num_layers))
+
+    layers_per_pp_group = num_layers // pp 
+
+    for pp_idx in range(pp):
+
+        pp_start = pp_idx * layers_per_pp_group
+        pp_end = pp_start + layers_per_pp_group
+        pp_layers = all_layers[pp_start:pp_end]
+
+        if all(layer in noop_set for layer in pp_layers):
+            raise ValueError(
+                f"Interception Error: PP Stage {pp_idx} contains layers {pp_layers} that are all noop_layers!\n"
+                f"Please re-adjust the PP or noop_layers indices."
+            )
+
+        if vpp_stage:
+            vpp_size = layers_per_pp_group // vpp_stage
+            for vpp_idx in range(vpp_size):
+                v_start = vpp_idx * vpp_stage
+                v_end = v_start + vpp_stage
+
+                vpp_layers = pp_layers[v_start:v_end]
+
+                if all(layer in noop_set for layer in vpp_layers):
+                    raise ValueError(
+                        f"Interception Error: VPP Stage {vpp_idx} in PP Stage {pp_idx} consists entirely of empty layers!\n"
+                        f"Corresponding logical layer indices: {vpp_layers}\n"
+                        f"Please modify noop_layers or vpp_stage."
+                    )

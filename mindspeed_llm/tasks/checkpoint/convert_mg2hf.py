@@ -76,7 +76,7 @@ class Mg2HfConvert(Convert):
         self.pp_rank_list = list(range(self.load_model.pipeline_model_parallel_size))
 
         # model arguments
-        self.noop_layers = args.noop_layers
+        self.noop_layers = ",".join(map(str, args.noop_layers)) if isinstance(args.noop_layers, set) else args.noop_layers
         num_noop_layers = 0 if self.noop_layers is None else len(list(map(int, self.noop_layers.split(","))))
         self.num_real_layers = self.load_model.num_layers - num_noop_layers
 

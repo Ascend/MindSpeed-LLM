@@ -27,8 +27,8 @@ class Hf2MgConvert(Convert):
             args.load_model_type = 'hf'
             args.save_model_type = 'mg'
             if args.noop_layers:
-                args.noop_layers = ",".join(str(x) for x in args.noop_layers)
-                args.num_layers = args.num_layers - len(args.noop_layers.split(","))
+                self.noop_layers = ",".join(str(x) for x in args.noop_layers)
+                self.num_layers = args.num_layers - len(self.noop_layers.split(","))
             args.load_dir = args.load
             args.save_dir = args.mg_save_dir
         self.load_model = HuggingFaceModel(args)
@@ -65,7 +65,7 @@ class Hf2MgConvert(Convert):
         if self.noop_layers is None:
             self.num_layers = self.num_layers
         else:
-            self.num_layers = self.num_layers + len(eval(self.noop_layers))
+            self.num_layers = self.num_layers + len([x for x in self.noop_layers.split(",") if x])
 
         if self.schedules_method == 'dualpipev':
             self.vpp_size = 2
