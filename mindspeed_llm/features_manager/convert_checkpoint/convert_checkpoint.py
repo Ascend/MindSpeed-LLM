@@ -34,6 +34,8 @@ class CheckpointFeature(MindSpeedFeature):
                         help='Directory to load huggingface config files')
         group.add_argument('--save-layer-by-layer', action='store_true', default=False,
                             help='Enable layer-by-layer saving to avoid OOM when the product of TP and EP is high')
+        group.add_argument('--save-lora-to-hf', action='store_true',
+                            help='only save lora ckpt to hf.')
         
 
     def register_patches(self, patch_manager, args):
