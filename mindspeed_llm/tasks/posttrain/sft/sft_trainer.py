@@ -18,7 +18,7 @@ except ImportError:
     pass
 from mindspeed_llm.training.utils import get_tune_attention_mask, get_finetune_data_on_this_tp_rank
 from mindspeed_llm.tasks.posttrain.base import BaseTrainer
-from mindspeed_llm.training.utils import  set_mtp_batch_list
+from mindspeed_llm.training.utils import set_mtp_batch_list
 from mindspeed_llm.core.transformer.multi_token_prediction import generate_mtp_batch_list_on_this_tp_rank
 from mindspeed.core.context_parallel.get_batch_utils import set_actual_seq_len, get_ring_degree
 from mindspeed.core.context_parallel.utils import pad_data

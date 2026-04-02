@@ -6,6 +6,7 @@ from typing import List
 
 from mindspeed_llm.fsdp2.utils.flops.flops_base import BaseFlopsEstimator
 
+
 # --------------------------
 # Qwen3MoeFlopsEstimator
 # --------------------------
@@ -69,6 +70,7 @@ class Qwen3MoeFlopsEstimator(BaseFlopsEstimator):
         flops_all_token = dense_N_flops + attn_qkv_flops
         flops_achieved = flops_all_token * (1.0 / delta_time) / 1e12
         return flops_achieved
+
 
 # --------------------------
 # Qwen3DenseFlopsEstimator

@@ -20,6 +20,8 @@ from mindspeed.core.context_parallel.utils import pad_data
 
 
 IGNORE_INDEX = -100
+
+
 class DPOTrainer(BaseTrainer):
     """
     A trainer class for Direct Preference Optimization (DPO).

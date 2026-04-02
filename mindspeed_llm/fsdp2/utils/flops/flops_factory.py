@@ -12,6 +12,7 @@ from .qwen3_flops import Qwen3MoeFlopsEstimator, Qwen3DenseFlopsEstimator
 
 logger = get_logger(__name__)
 
+
 # --------------------------
 # FlopsFactory
 # --------------------------
@@ -43,6 +44,7 @@ class FlopsFactory:
 # --------------------------
 FlopsFactory.register_model("qwen3_moe")(Qwen3MoeFlopsEstimator)
 FlopsFactory.register_model("qwen3")(Qwen3DenseFlopsEstimator)
+
 
 # --------------------------
 # Public entry: FlopsCounter

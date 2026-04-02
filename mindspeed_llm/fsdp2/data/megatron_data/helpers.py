@@ -4,7 +4,6 @@ import numpy
 
 # Implicit imports for backwards compatibility
 # Explicit imports for readability
-from mindspeed_llm.fsdp2.data.megatron_data.helpers_cpp import *
 from mindspeed_llm.fsdp2.data.megatron_data.helpers_cpp import build_sample_idx_int32, build_sample_idx_int64
 
 
@@ -50,7 +49,8 @@ def build_sample_idx(
             drop_last_partial_sequence,
             1 if add_extra_token_to_sequence else 0,
         )
-        assert sample_idx.min() >= 0 and sample_idx.max() <= sample_idx_max
+        if not(sample_idx.min() >= 0 and sample_idx.max() <= sample_idx_max):
+            raise ValueError("Sample index out of range")
     else:
         sample_idx = build_sample_idx_int64(
             sizes,

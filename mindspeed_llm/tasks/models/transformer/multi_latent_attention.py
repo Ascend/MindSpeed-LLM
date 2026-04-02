@@ -12,7 +12,7 @@ from mindspeed.core.context_parallel.ulysses_context_parallel.ulysses_context_pa
 from mindspeed.core.parallel_state import get_context_parallel_group_for_hybrid_ulysses
 from mindspeed.core.tensor_parallel.random import CheckpointWithoutOutput
 from mindspeed.core.transformer.transformer_block import _get_layer_offset
-from mindspeed.utils import  set_position_ids, get_position_ids
+from mindspeed.utils import set_position_ids, get_position_ids
 from mindspeed.core.context_parallel.get_batch_utils import get_actual_seq_len, set_actual_seq_len
 from mindspeed.core.transformer.moe.moe_feature.fb_overlap.modules.attention import launch_async_all2all_hook, launch_async_all2all
 from mindspeed.core.transformer.moe.moe_feature.fb_overlap.modules.utils import TensorSwapManager
@@ -41,6 +41,7 @@ from mindspeed_llm.core.models.common.embeddings.rotary_pos_embedding import app
 from einops import rearrange
 
 logger = logging.getLogger(__name__)
+
 
 @dataclass
 class CustomMLASelfAttentionSubmodules(SelfAttentionSubmodules):
@@ -491,16 +492,16 @@ class CustomMLASelfAttention(SelfAttention):
                     packed_seq_params=packed_seq_params,
                 )
             if args.enable_dsa_indexer and self.training and torch.is_grad_enabled():
-                if args.context_parallel_size > 1 and args.context_parallel_algo=='ulysses_cp_algo':
-                    query = gather_from_sequence_parallel_region(query,group=mpu.get_context_parallel_group())
-                    key = gather_from_sequence_parallel_region(key,group=mpu.get_context_parallel_group())
+                if args.context_parallel_size > 1 and args.context_parallel_algo == 'ulysses_cp_algo':
+                    query = gather_from_sequence_parallel_region(query, group=mpu.get_context_parallel_group())
+                    key = gather_from_sequence_parallel_region(key, group=mpu.get_context_parallel_group())
                 # NOTE: mla-fa-divide-qk is not supported currently
                 main_attn_dist = get_attn_scores(query.detach(),
                                                  key.detach(),
                                                  attention_mask,
                                                  self.num_attention_heads_per_partition //
                                                  self.num_query_groups_per_partition,
-                                                 self.core_attention.local_attn.scale if args.context_parallel_size > 1 and args.context_parallel_algo=='ulysses_cp_algo' else self.core_attention.scale, 
+                                                 self.core_attention.local_attn.scale if args.context_parallel_size > 1 and args.context_parallel_algo == 'ulysses_cp_algo' else self.core_attention.scale,
                                                  )
                 loss = compute_dsa_indexer_loss(
                     main_attn_dist,
@@ -712,9 +713,9 @@ class CustomMLASelfAttention(SelfAttention):
             
             # DSA indexer loss calculation
             if args.enable_dsa_indexer and self.training and torch.is_grad_enabled():
-                if args.context_parallel_size > 1 and args.context_parallel_algo=='ulysses_cp_algo':
-                    query = gather_from_sequence_parallel_region(query,group=mpu.get_context_parallel_group())
-                    key = gather_from_sequence_parallel_region(key,group=mpu.get_context_parallel_group())
+                if args.context_parallel_size > 1 and args.context_parallel_algo == 'ulysses_cp_algo':
+                    query = gather_from_sequence_parallel_region(query, group=mpu.get_context_parallel_group())
+                    key = gather_from_sequence_parallel_region(key, group=mpu.get_context_parallel_group())
 
                 if args.use_fused_lightning_indexer_loss:
                     if args.tensor_model_parallel_size > 1:
@@ -941,6 +942,7 @@ class CustomMLASelfAttention(SelfAttention):
         hidden_states = tensor_parallel.checkpoint(custom_forward, False, *checkpoint_inputs)
 
         return hidden_states
+
 
 def recompute_mla(mla_checkpoint_manager):
     """

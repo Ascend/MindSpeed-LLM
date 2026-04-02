@@ -71,6 +71,7 @@ def _patch_third_party_libraries():
     MindSporeAdaptation.register_patch('transformers.modeling_utils.PreTrainedModel.get_parameter_or_buffer',
                                         get_parameter_or_buffer)
 
+
 def _patch_model_and_embedding():
     from mindspeed.mindspore.core.models.common.embeddings.rotary_pos_embedding import local_rotate_half
     MindSporeAdaptation.register_patch('megatron.core.models.common.embeddings._rotate_half', local_rotate_half)
@@ -111,6 +112,7 @@ def _patch_tensor_parallel_and_pipeline():
 
     from ..mindspore.core.tensor_parallel.data import broadcast_data
     MindSporeAdaptation.register_patch('megatron.core.tensor_parallel.data.broadcast_data', broadcast_data)
+
 
 def _patch_moe_and_communication(args):
     from mindspeed.mindspore.core.transformer.moe.comm_utils import async_all_to_all

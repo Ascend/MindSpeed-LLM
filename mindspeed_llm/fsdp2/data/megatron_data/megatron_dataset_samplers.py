@@ -18,6 +18,7 @@ import numpy as np
 from torch.utils.data import Dataset
 from mindspeed_llm.fsdp2.utils.global_vars import get_args
 
+
 class MegatronPretrainingSampler:
 
     def __init__(self, total_samples, consumed_samples, micro_batch_size,
@@ -32,16 +33,17 @@ class MegatronPretrainingSampler:
         self.drop_last = drop_last
 
         # Sanity checks.
-        assert self.total_samples > 0, \
-            'no sample to consume: {}'.format(self.total_samples)
-        assert self.consumed_samples < self.total_samples, \
-            'no samples left to consume: {}, {}'.format(self.consumed_samples,
-                                                        self.total_samples)
-        assert self.micro_batch_size > 0
-        assert data_parallel_size > 0
-        assert self.data_parallel_rank < data_parallel_size, \
-            'data_parallel_rank should be smaller than data size: {}, ' \
-            '{}'.format(self.data_parallel_rank, data_parallel_size)
+        if self.total_samples <= 0:
+            raise ValueError(f"No samples to consume: {self.total_samples}")
+        if self.consumed_samples >= self.total_samples:
+            raise ValueError(f"No samples left to consume: {self.consumed_samples}, {self.total_samples}")
+        if self.micro_batch_size <= 0:
+            raise ValueError(f"Micro batch size must be > 0, current: {self.micro_batch_size}")
+        if data_parallel_size <= 0:
+            raise ValueError(f"Data parallel size must be > 0, current: {data_parallel_size}")
+        if self.data_parallel_rank >= data_parallel_size:
+            raise ValueError(
+                f"Data parallel rank should be smaller than data size: {self.data_parallel_rank}, {data_parallel_size}")
 
     def __len__(self):
         return self.total_samples
@@ -107,13 +109,15 @@ class MegatronPretrainingRandomSampler:
             self.total_samples % self.micro_batch_times_data_parallel_size
 
         # Sanity checks.
-        assert self.total_samples > 0, \
-            'no sample to consume: {}'.format(self.total_samples)
-        assert self.micro_batch_size > 0
-        assert data_parallel_size > 0
-        assert self.data_parallel_rank < data_parallel_size, \
-            'data_parallel_rank should be smaller than data size: {}, ' \
-            '{}'.format(self.data_parallel_rank, data_parallel_size)
+        if self.total_samples <= 0:
+            raise ValueError(f"no sample to consume: {self.total_samples}")
+        if self.micro_batch_size <= 0:
+            raise ValueError(f"micro_batch_size must be > 0, current: {self.micro_batch_size}")
+        if data_parallel_size <= 0:
+            raise ValueError(f"data_parallel_size must be > 0, current: {data_parallel_size}")
+        if self.data_parallel_rank >= data_parallel_size:
+            raise ValueError(
+                f"data_parallel_rank should be smaller than data size: {self.data_parallel_rank}, {data_parallel_size}")
 
     def __len__(self):
         return self.total_samples
@@ -122,7 +126,12 @@ class MegatronPretrainingRandomSampler:
         active_total_samples = self.total_samples - self.last_batch_size
         self.epoch = self.consumed_samples // active_total_samples
         current_epoch_samples = self.consumed_samples % active_total_samples
-        assert current_epoch_samples % self.micro_batch_times_data_parallel_size == 0
+        if current_epoch_samples % self.micro_batch_times_data_parallel_size != 0:
+            raise ValueError(
+                f"current_epoch_samples ({current_epoch_samples}) must be divisible by "
+                f"micro_batch_times_data_parallel_size ({self.micro_batch_times_data_parallel_size}). "
+                f"Remainder: {current_epoch_samples % self.micro_batch_times_data_parallel_size}"
+            )
 
         if isinstance(self.dataset, RandomSeedDataset):
             self.dataset.set_epoch(self.epoch)

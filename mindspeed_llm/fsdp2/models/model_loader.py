@@ -87,7 +87,7 @@ class ModelLoader:
             trust_remote_code=self.trust_remote_code,
             # Context parallelism requires uniformly applying a patch to the attention component,
             # which is unified here into the `eager` implementation part
-            attn_implementation="eager" if get_args().cp_size >1 else None,
+            attn_implementation="eager" if get_args().cp_size > 1 else None,
         )
         return self.hf_config
     

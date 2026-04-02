@@ -81,51 +81,51 @@ def self_attention_init(
         attn_mask_type=AttnMaskType.padding,
         cp_comm_type: str = None):
 
-        args = get_args()
-        super(SelfAttention, self).__init__(
-        config=config,
-        submodules=submodules,
-        layer_number=layer_number,
-        attn_mask_type=attn_mask_type,
-        attention_type="self",
-        cp_comm_type=cp_comm_type,
+    args = get_args()
+    super(SelfAttention, self).__init__(
+    config=config,
+    submodules=submodules,
+    layer_number=layer_number,
+    attn_mask_type=attn_mask_type,
+    attention_type="self",
+    cp_comm_type=cp_comm_type,
+    )
+
+    if not args.no_enable_linear_qkv:
+        self.linear_qkv = build_module(
+                    submodules.linear_qkv,
+                    self.config.hidden_size,
+                    self.query_projection_size + 2 * self.kv_projection_size,
+                    config=self.config,
+                    init_method=self.config.init_method,
+                    gather_output=False,
+                    bias=self.config.add_bias_linear or self.config.add_qkv_bias,
+                    skip_bias_add=False,
+                    is_expert=False,
+                    tp_comm_buffer_name='qkv',
+                )
+    else:
+        self.linear_qkv = None
+
+    if submodules.q_layernorm is not None:
+        self.q_layernorm = build_module(
+            submodules.q_layernorm,
+            hidden_size=self.hidden_size_per_attention_head,
+            config=self.config,
+            eps=self.config.layernorm_epsilon,
         )
-      
-        if not args.no_enable_linear_qkv:
-            self.linear_qkv = build_module(
-                        submodules.linear_qkv,
-                        self.config.hidden_size,
-                        self.query_projection_size + 2 * self.kv_projection_size,
-                        config=self.config,
-                        init_method=self.config.init_method,
-                        gather_output=False,
-                        bias=self.config.add_bias_linear or self.config.add_qkv_bias,
-                        skip_bias_add=False,
-                        is_expert=False,
-                        tp_comm_buffer_name='qkv',
-                    )
-        else:
-            self.linear_qkv = None
+    else:
+        self.q_layernorm = None
 
-        if submodules.q_layernorm is not None:
-            self.q_layernorm = build_module(
-                submodules.q_layernorm,
-                hidden_size=self.hidden_size_per_attention_head,
-                config=self.config,
-                eps=self.config.layernorm_epsilon,
-            )
-        else:
-            self.q_layernorm = None
-
-        if submodules.k_layernorm is not None:
-            self.k_layernorm = build_module(
-                submodules.k_layernorm,
-                hidden_size=self.hidden_size_per_attention_head,
-                config=self.config,
-                eps=self.config.layernorm_epsilon,
-            )
-        else:
-            self.k_layernorm = None
+    if submodules.k_layernorm is not None:
+        self.k_layernorm = build_module(
+            submodules.k_layernorm,
+            hidden_size=self.hidden_size_per_attention_head,
+            config=self.config,
+            eps=self.config.layernorm_epsilon,
+        )
+    else:
+        self.k_layernorm = None
 
 
 def attention_forward(

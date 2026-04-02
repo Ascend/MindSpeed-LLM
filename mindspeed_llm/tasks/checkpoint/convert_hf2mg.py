@@ -16,6 +16,7 @@ logger.getLogger().setLevel(logger.INFO)
 GLOBAL_OUTPUT_WEIGHTS = None
 LAYER_BY_LAYER_SAVING_THRESHOLD = 256
 
+
 class Hf2MgConvert(Convert):
 
     def __init__(self, args, from_train=False):
@@ -1009,7 +1010,7 @@ class Hf2MgConvert(Convert):
                                 if os.path.exists(save_file_name):
                                     model_dict = torch.load(save_file_name, map_location="cpu", weights_only=False)
                                 else:
-                                    model_dict = {"args" : args, "checkpoint_version" : 3.0, "iteration" : 1, "model" : {}}
+                                    model_dict = {"args": args, "checkpoint_version": 3.0, "iteration": 1, "model": {}}
 
                                 model_dict["model"].update(mg_weight[ep_rank][tp_rank])
                                 logger.info(f"Saving to {save_file_name}")
@@ -1049,7 +1050,7 @@ class Hf2MgConvert(Convert):
                             save_file_name = os.path.join(parallel_save_path, "model_optim_rng.pt")
                             logger.info(f"Saving to {save_file_name}")
 
-                            model_dict = {"args" : args, "checkpoint_version" : 3.0, "iteration" : 1}
+                            model_dict = {"args": args, "checkpoint_version": 3.0, "iteration": 1}
                             model_dict["model"] = mg_weight[ep_rank][tp_rank]
                             torch.save(model_dict, save_file_name, pickle_protocol=4, _use_new_zipfile_serialization=True)
         else:
@@ -1109,7 +1110,7 @@ class Hf2MgConvert(Convert):
                                     if os.path.exists(save_file_name):
                                         model_dict = torch.load(save_file_name, map_location="cpu", weights_only=False)
                                     else:
-                                        model_dict = {"args" : args, "checkpoint_version" : 3.0, "iteration" : 1}
+                                        model_dict = {"args": args, "checkpoint_version": 3.0, "iteration": 1}
 
                                     model_key = f"model{vpp_rank}"
                                     if model_key not in model_dict:
@@ -1154,7 +1155,7 @@ class Hf2MgConvert(Convert):
                             os.makedirs(parallel_save_path, exist_ok=True)
                             save_file_name = os.path.join(parallel_save_path, "model_optim_rng.pt")
                             logger.info(f"Saving to {save_file_name}")
-                            model_dict = {"args" : args, "checkpoint_version" : 3.0, "iteration" : 1}
+                            model_dict = {"args": args, "checkpoint_version": 3.0, "iteration": 1}
 
                             for vpp_rank in range(self.vpp_size):
                                 model_key = f"model{vpp_rank}"

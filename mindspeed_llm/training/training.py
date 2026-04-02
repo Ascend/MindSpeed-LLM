@@ -974,7 +974,7 @@ def training_log(loss_dict, total_loss_dict, learning_rate, decoupled_learning_r
         if wandb_writer:
             wandb_writer.log({'batch-size': batch_size}, iteration)
         for key in loss_dict:
-            writer.add_scalar(key , loss_dict[key], iteration)
+            writer.add_scalar(key, loss_dict[key], iteration)
             writer.add_scalar(key + ' vs samples', loss_dict[key],
                               args.consumed_train_samples)
             if wandb_writer:

@@ -14,7 +14,7 @@ class CheckpointFeature(MindSpeedFeature):
 
         group.add_argument('--model-type-hf', type=str, default=None,
                             choices=['qwen3', 'qwen3-moe', 'deepseek3', 'glm45-moe', 'bailing_mini', 'qwen3-next', 'seed-oss',
-                                 'baichuan','baichuan2', 'llama2', 'mixtral', 'chatglm3', 'gemma', 'gemma2',
+                                 'baichuan', 'baichuan2', 'llama2', 'mixtral', 'chatglm3', 'gemma', 'gemma2',
                                  'bloom', 'bloom_3b', 'qwen', 'internlm2', 'deepseek2', 'minicpm', 'minicpm3', 'minicpm-moe',
                                  'deepseek2-lite', 'qwen2-moe', 'phi3.5', 'phi3.5-moe', 'hunyuan', 'glm4', 'magistral', 'deepseek32', 'mamba2', 'plm', 'longcat', 'glm5'],
                             help='model type of huggingface')
@@ -84,7 +84,7 @@ class CheckpointFeature(MindSpeedFeature):
         if has_valid_lora_target and args.enable_mg2hf_convert:
             raise AssertionError('Lora and QLora are not supported with enable_mg2hf_convert')
 
-        if args.enable_hf2mg_convert and  args.enable_mg2hf_convert and not args.hf_cfg_dir:
+        if args.enable_hf2mg_convert and args.enable_mg2hf_convert and not args.hf_cfg_dir:
             args.hf_cfg_dir = args.load
 
         if args.enable_hf2mg_convert and not args.model_type_hf:

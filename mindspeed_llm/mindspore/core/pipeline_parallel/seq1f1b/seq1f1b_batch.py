@@ -48,9 +48,9 @@ def get_span_info(micro_batch_idx, span_idx_in_micro, span_start, span_end, actu
     nz2 = np.flatnonzero(result2 == int(seq_seg_len))
     idx_end = nz2[0] if nz2.size > 0 else -1
 
-    actual_seq_qlen = [0] + result[idx_start:idx_end+1]
+    actual_seq_qlen = [0] + result[idx_start:idx_end + 1]
     actual_seq_kvlen = [x + split_offset for x in actual_seq_qlen]
-    actual_seq_kvlen[0] = actual_seq_len_list[idx_start-1] if idx_start > 0 else 0
+    actual_seq_kvlen[0] = actual_seq_len_list[idx_start - 1] if idx_start > 0 else 0
 
     span_info = SpanInfo(
         span_idx=span_idx_in_micro,
@@ -81,7 +81,7 @@ def get_batch_wrapper(get_batch_fn):
             args = args[1:]
         nonlocal global_data, actual_seq_len_list, batch_idx, span_idx, span_lens
         span_num = global_args.seq1f1b_splits
-        if span_idx == -1 or span_idx+1 == span_num:
+        if span_idx == -1 or span_idx + 1 == span_num:
             batch_idx = (batch_idx + 1) % global_args.global_batch_size
             global_data = get_batch_fn(*args)
             actual_seq_len_list = get_actual_seq_len().tolist()
@@ -90,7 +90,7 @@ def get_batch_wrapper(get_batch_fn):
                 actual_seq_len_list = recompute_valid_actual_seq_len(actual_seq_len_list, global_args.micro_batch_size).tolist()
             span_lens = get_splits()
         set_actual_seq_len(np.array(actual_seq_len_list))
-        span_idx = (span_idx+1) % span_num
+        span_idx = (span_idx + 1) % span_num
         if sft_stage:
             tokens, labels, loss_mask, attention_mask, position_ids = global_data
         else:

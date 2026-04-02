@@ -28,7 +28,7 @@ class PretrainDatasetProcessor(DatasetProcessor):
             block_size = self.data_args.cutoff_len
             total_length = (total_length // block_size) * block_size
             result = {
-                k: [t[i : i + block_size] for i in range(0, total_length, block_size)]
+                k: [t[i:i + block_size] for i in range(0, total_length, block_size)]
                 for k, t in concatenated_examples.items()
             }
             if getattr(self.tokenizer, "add_bos_token", False):

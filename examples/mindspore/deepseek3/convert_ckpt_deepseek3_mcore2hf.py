@@ -193,8 +193,8 @@ class MgCkptConvert(object):
                 with open(latest_iter_file, "r") as f:
                     try:
                         iteration = int(f.read().strip())
-                    except ValueError:
-                        raise ValueError(f"{latest_iter_file} not find")
+                    except ValueError as e:
+                        raise ValueError(f"{latest_iter_file} not find") from e
             else:
                 raise FileNotFoundError(f"can not find {latest_iter_file}")
 
@@ -806,7 +806,6 @@ class MgCkptConvert(object):
             lora_a = f"{name}.lora_A.default.weight"
             lora_b = f"{name}.lora_B.default.weight"
 
-            # weight = base + matmul(B, A)
             model_dict[base_new] = model_dict[base].npu() + (self.lora_alpha / self.lora_r) * torch.matmul(
                 model_dict[lora_b].float().npu(), model_dict[lora_a].float().npu()
             ).to(model_dict[base].dtype)

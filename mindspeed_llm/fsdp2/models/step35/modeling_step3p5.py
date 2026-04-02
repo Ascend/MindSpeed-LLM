@@ -40,6 +40,7 @@ logger = logging.get_logger(__name__)
 
 __all__ = ["Step3p5Model", "Step3p5ForCausalLM"]
 
+
 class Step3p5RotaryEmbedding(nn.Module):
 
     def __init__(self, config: Step3p5Config, device=None, layer_idx=None):
@@ -179,6 +180,7 @@ def eager_attention_forward(
     attn_output = attn_output.transpose(1, 2).contiguous()
 
     return attn_output, attn_weights
+
 
 @dataclass
 class Step3p5CausalLMOutputWithPast(ModelOutput):
@@ -664,6 +666,7 @@ class Step3p5Model(Step3p5PreTrainedModel, GenerationMixin):
     base_model_prefix = "model"
     _tied_weights_keys = ["lm_head.weight"]
     config: Step3p5Config
+
     def __init__(self, config: Step3p5Config):
         super().__init__(config)
         self.padding_idx = config.pad_token_id

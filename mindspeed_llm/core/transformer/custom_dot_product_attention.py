@@ -394,7 +394,7 @@ class CustomDotProductAttentionImpl:
                                 f"FlashAttention received unexpectedly long 'actual_seq_len' (length={len(actual_seq_len)}, threshold={ACTUAL_SEQ_LEN_THRESHOLD}). "
                                 f"This may cause the FA operator to terminate abnormally."
                             )
-                    output, softmax_max, softmax_sum, *_  = torch_npu.npu_fusion_attention(
+                    output, softmax_max, softmax_sum, *_ = torch_npu.npu_fusion_attention(
                         query, key, value, n_head, args.shape_order,
                         pse=pse,
                         padding_mask=None,

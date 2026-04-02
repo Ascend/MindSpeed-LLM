@@ -300,6 +300,7 @@ class DataArguments:
             "help": ("Single pass vs multiple pass data loader")
         },
     )
+
     def __post_init__(self):
         def split_arg(arg):
             if isinstance(arg, str):
@@ -383,7 +384,7 @@ class ParallelArguments:
         metadata={"help": "Use context parallel algo."},
     )
     fsdp_modules: List[str] = field(
-        default_factory=lambda:['model.layers.{*}', 'model.embed_tokens', 'lm_head'],
+        default_factory=lambda: ['model.layers.{*}', 'model.embed_tokens', 'lm_head'],
         metadata={"help": "Model structure of layers with Fully Sharded Data Parallel."},
     )
     ignored_modules: List[str] = field(
@@ -399,19 +400,19 @@ class ParallelArguments:
         metadata={"help": "Custom shard placement function for main FSDP module"}
     )
     tp_colwise: List[str] = field(
-        default_factory=lambda:['*.q_proj', '*.k_proj', '*.v_proj', '*.gate_proj', '*.up_proj'],
+        default_factory=lambda: ['*.q_proj', '*.k_proj', '*.v_proj', '*.gate_proj', '*.up_proj'],
         metadata={"help": "Model structure of layers with Tensor Parallel(Cols splitting)."},
     )
     tp_rowwise: List[str] = field(
-        default_factory=lambda:['*.o_proj', '*.down_proj'],
+        default_factory=lambda: ['*.o_proj', '*.down_proj'],
         metadata={"help": "Model structure of layers with Tensor Parallel(Rows splitting)."},
     )
     ep_modules: List[str] = field(
-        default_factory=lambda:['model.layers.{*}.mlp.experts'],
+        default_factory=lambda: ['model.layers.{*}.mlp.experts'],
         metadata={"help": "Model structure of layers with Expert Parallel."},
     )
     ep_fsdp_modules: List[str] = field(
-        default_factory=lambda:['model.layers.{*}.mlp.experts'],
+        default_factory=lambda: ['model.layers.{*}.mlp.experts'],
         metadata={"help": "Model structure of layers with FSDP inside Expert Parallel groups."},
     )
     ep_dispatcher: Literal["eager", "fused", "mc2"] = field(
@@ -424,7 +425,7 @@ class ParallelArguments:
         },
     )
     recompute_modules: List[str] = field(
-        default_factory=lambda:['model.layers.{*}'],
+        default_factory=lambda: ['model.layers.{*}'],
         metadata={"help": "Model structure of layers with Gradient Checkpointing (Activation Recomputation)."},
     )
     param_dtype: Literal["bf16", "fp16", "fp32"] = field(
@@ -663,6 +664,7 @@ class TrainingArguments:
         default="./profile",
         metadata={"help": "Directory to save profiling traces (TensorBoard format)."}
     )
+
     def __post_init__(self):  # Path parameter validation
         if self.output_dir is None:
             raise ValueError("`output_dir` must be specified.")
@@ -724,11 +726,11 @@ class OptimizationArguments:
         default=False,
         metadata={"help": "Use triton kernel accelerate training."}
     )
-    gdn_chunk_size:int = field(
+    gdn_chunk_size: int = field(
         default=64,
         metadata={"help": "Matrix blocking size of Gated DeltaNet."}
     )
-    chunk_loss_size : int = field(
+    chunk_loss_size: int = field(
         default=None,
         metadata={"help": "Chunk loss size: set to > 0 to enable chunk loss calculation"}
     )

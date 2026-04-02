@@ -66,16 +66,14 @@ class BlendedMegatronDatasetBuilder(object):
                         continue
                     weights_are_none = self.config.blend_per_split[split.value][1] is None
                 if size_is_none:
-                    assert (
-                        weights_are_none
-                    ), f"size_is_none => weights_are_none fails for {split.name} split"
+                    if not weights_are_none:
+                        raise ValueError(f"size_is_none => weights_are_none fails for {split.name} split")
 
         if torch.distributed.is_initialized():
             gb_rank = torch.distributed.get_rank()
             if gb_rank == 0:
-                assert (
-                    self.is_built_on_rank()
-                ), "is_built_on_rank must return True when global rank = 0"
+                if not self.is_built_on_rank():
+                    raise ValueError("is_built_on_rank must return True when global rank = 0")
 
     def build(self) -> List[Optional[TopLevelDataset]]:
         """Build all dataset splits according to the provided blend(s)
@@ -148,7 +146,9 @@ class BlendedMegatronDatasetBuilder(object):
                         )
                         continue
                     # Check blend size
-                    assert dataset.size is None or dataset.size == dataset.dataset_index.shape[0]
+                    if not(dataset.size is None or dataset.size == dataset.dataset_index.shape[0]):
+                        raise ValueError(f"Dataset size check failed: dataset.size must be None or equal to dataset.dataset_index.shape[0]"
+                                         f"Current: dataset.size = {dataset.size}, shape[0] = {dataset.dataset_index.shape[0]}")
                     # Check blend access of mid-level datasets
                     dataset_indices, dataset_sizes = numpy.unique(
                         dataset.dataset_index, return_counts=True
@@ -197,7 +197,7 @@ class BlendedMegatronDatasetBuilder(object):
             split = self.config.split_matrix # 划分数据集区间
 
             # Blend consists of a single prefix
-            if len(prefixes) == 1 and weights is None: #只有单个数据集的情况
+            if len(prefixes) == 1 and weights is None:
                 return self._build_megatron_dataset_splits(prefixes[0], split, self.sizes)
 
             # Build the mid-level datasets
@@ -557,7 +557,8 @@ def _get_size_per_split_per_dataset(
     Returns:
         List[List[int]]: The number of samples to request per MegatronDataset per split
     """
-    assert numpy.isclose(sum(normalized_weights), 1.0)
+    if not numpy.isclose(sum(normalized_weights), 1.0):
+        raise ValueError(f"Sum of normalized weights does not equal 1.0")
 
     # Use margin as buffer to ensure we satiate the request
     sizes_per_dataset = [

@@ -12,7 +12,7 @@ import acl
 from mindspeed_llm.training.utils import (get_sharedmem_mgr, BASE_SHM_NAME, compute_actual_seq_len,
                                           set_mtp_position_ids, regenerate_position_ids)
 from mindspeed.core.context_parallel.utils import pad_data
-from mindspeed.core.context_parallel.get_batch_utils import  set_actual_seq_len
+from mindspeed.core.context_parallel.get_batch_utils import set_actual_seq_len
 from mindspeed.utils import broadcast_dynamic, get_ring_degree
 
 try:
@@ -121,7 +121,7 @@ def get_batch_on_this_tp_rank(data_iterator):
             _broadcast(batch['labels'])
             _broadcast(batch['loss_mask'])
             _broadcast(batch['attention_mask'])
-            if args.reset_attention_mask  or args.mtp_num_layers or args.schedules_method == 'dualpipev':
+            if args.reset_attention_mask or args.mtp_num_layers or args.schedules_method == 'dualpipev':
                 _broadcast(batch['position_ids'])
         elif args.reset_attention_mask:
             _broadcast(batch['position_ids'])

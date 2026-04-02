@@ -185,8 +185,8 @@ class MgCkptConvert(object):
                 with open(latest_iter_file, "r") as f:
                     try:
                         iteration = int(f.read().strip())
-                    except ValueError:
-                        raise ValueError(f"{latest_iter_file} not find")
+                    except ValueError as e:
+                        raise ValueError(f"{latest_iter_file} not find") from e
             else:
                 raise FileNotFoundError(f"can not find {latest_iter_file}")
 
@@ -798,7 +798,7 @@ class MgCkptConvert(object):
 
                 if "weight1" in base:
                     w1 = model_dict[base].view(local_expert_nums, self.hidden_size, -1)
-                    w1_a = model_dict[lora_a].view(local_expert_nums, -1 ,self.lora_r)
+                    w1_a = model_dict[lora_a].view(local_expert_nums, -1, self.lora_r)
                     w1_b = model_dict[lora_b].view(local_expert_nums, self.lora_r, -1)
 
                     for i in tqdm.tqdm(range(local_expert_nums)):
@@ -810,7 +810,7 @@ class MgCkptConvert(object):
 
                 if "weight2" in base:
                     w2 = model_dict[base].view(local_expert_nums, -1, self.hidden_size)
-                    w2_a = model_dict[lora_a].view(local_expert_nums, -1 ,self.lora_r)
+                    w2_a = model_dict[lora_a].view(local_expert_nums, -1, self.lora_r)
                     w2_b = model_dict[lora_b].view(local_expert_nums, self.lora_r, -1)
 
                     for i in tqdm.tqdm(range(local_expert_nums)):
@@ -844,7 +844,6 @@ class MgCkptConvert(object):
             if lora_a is None or lora_b is None:
                 raise ValueError(f"[WARN] Missing LoRA keys for layer: {name}")
 
-            # weight = base + matmul(B, A)
             model_dict[base_new] = model_dict[base].npu() + (self.lora_alpha / self.lora_r) * torch.matmul(
                 model_dict[lora_b].float().npu(), model_dict[lora_a].float().npu()
             ).to(model_dict[base].dtype)

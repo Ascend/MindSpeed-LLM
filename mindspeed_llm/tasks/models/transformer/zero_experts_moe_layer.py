@@ -88,7 +88,7 @@ def zero_experts_moe_forward(self, hidden_states: torch.Tensor):
         )
         zero_expert_output = dispatched_input * (permuted_probs.unsqueeze(-1)).to(hidden_states.dtype)
         mlp_bias = None
-        return  self.zero_expert_token_dispatcher.token_unpermutation(zero_expert_output, mlp_bias)
+        return self.zero_expert_token_dispatcher.token_unpermutation(zero_expert_output, mlp_bias)
     
 
     # process MoE

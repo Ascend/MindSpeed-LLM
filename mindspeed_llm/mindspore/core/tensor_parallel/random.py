@@ -12,6 +12,7 @@ from megatron.core.tensor_parallel.random import (
     _set_cuda_rng_state
 )
 
+
 @contextlib.contextmanager
 def fork(self, name=_MODEL_PARALLEL_RNG_TRACKER_NAME):
     """Fork the cuda rng state, perform operations, and exit with

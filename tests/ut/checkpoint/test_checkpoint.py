@@ -30,6 +30,7 @@ BASE_DIR = Path(__file__).absolute().parents[3]
 CKPT_PYPATH = os.path.join(BASE_DIR, "convert_ckpt.py")
 CKPTV2_PYPATH = os.path.join(BASE_DIR, "convert_ckpt_v2.py")
 
+
 class TestCheckpoint(object):
     test_config = create_testconfig(Path(__file__).with_suffix(".json"))
     test_config_cmd = create_testconfig(Path(__file__).with_suffix(".json"), cmd=True)

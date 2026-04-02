@@ -14,6 +14,7 @@ from megatron.core.datasets.megatron_tokenizer import MegatronTokenizer
 
 logging.basicConfig(level=logging.INFO)
 
+
 def _vocab_size_with_padding(orig_vocab_size, args, logging_enabled=True):
     """Pad vocab size so it is divisible by model parallel size and
     still having GPU friendly size."""
@@ -28,6 +29,7 @@ def _vocab_size_with_padding(orig_vocab_size, args, logging_enabled=True):
         )
 
     return after
+
 
 def reload_tekken(path: str):
     """
@@ -98,7 +100,7 @@ def reload_tekken(path: str):
     _id_to_token = {v: k for k, v in _token_to_id.items()}
 
     vocab_size = len(_token_to_id)
-    res={
+    res = {
         'id_to_token': _id_to_token,
         'token_to_id': _token_to_id,
         'unk_id': _unk_id,
@@ -108,6 +110,7 @@ def reload_tekken(path: str):
         'vocab_size': vocab_size
     }
     return res
+
 
 def create_magistral_tokenizer(args, path: str, padding_side='right'):
     """
@@ -153,7 +156,7 @@ def create_magistral_tokenizer(args, path: str, padding_side='right'):
             self.tokenizer = MistralTokenizer.from_file(tokenizer_path)
 
             # Load custom vocabulary and metadata from the JSON file
-            self.tokenizer_info=reload_tekken(tokenizer_path)
+            self.tokenizer_info = reload_tekken(tokenizer_path)
 
             # Extract and store token-to-ID and ID-to-token mappings
             self._id_to_token = self.tokenizer_info['id_to_token']

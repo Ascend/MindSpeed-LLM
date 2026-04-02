@@ -15,6 +15,7 @@ from .convert_mg2hf import Mg2HfConvert, load_data, TENSOR_SIZE
 logger.basicConfig(format="")
 logger.getLogger().setLevel(logger.INFO)
 
+
 class LongCatHf2MgConvert(Hf2MgConvert):
 
     def __init__(self, args):
@@ -311,7 +312,7 @@ class LongCatHf2MgConvert(Hf2MgConvert):
                             if os.path.exists(save_file_name):
                                 model_dict = torch.load(save_file_name, map_location="cpu", weights_only=False)
                             else:
-                                model_dict = {"args" : args, "checkpoint_version" : 3.0, "iteration" : 1, "model" : {}}
+                                model_dict = {"args": args, "checkpoint_version": 3.0, "iteration": 1, "model": {}}
 
                             model_dict["model"].update(mg_weight[ep_rank][tp_rank])
                             logger.info(f"Saving to {save_file_name}")
@@ -351,12 +352,13 @@ class LongCatHf2MgConvert(Hf2MgConvert):
                         save_file_name = os.path.join(parallel_save_path, "model_optim_rng.pt")
                         logger.info(f"Saving to {save_file_name}")
 
-                        model_dict = {"args" : args, "checkpoint_version" : 3.0, "iteration" : 1}
+                        model_dict = {"args": args, "checkpoint_version": 3.0, "iteration": 1}
                         model_dict["model"] = mg_weight[ep_rank][tp_rank]
                         torch.save(model_dict, save_file_name, pickle_protocol=4, _use_new_zipfile_serialization=True)
     
 
         logger.info("Done!")
+
 
 class LongCatMg2HfConvert(Mg2HfConvert):
     def __init__(self, args):
@@ -377,7 +379,7 @@ class LongCatMg2HfConvert(Mg2HfConvert):
         hf_weight[hf_weight_key[f"layers_input_layernorm{suffix}"]] = input_norm.clone()
         hf_weight[hf_weight_key[f"layers_self_attention{suffix}_pre_mlp_layernorm"]] = pre_mlp_norm.clone()
 
-    def set_longcat_layer_attn(self, hf_weight, mg_weight, hf_layer_idx, local_layer_idx,  suffix=""):
+    def set_longcat_layer_attn(self, hf_weight, mg_weight, hf_layer_idx, local_layer_idx, suffix=""):
         """attn"""
 
         hf_weight_key = self.save_model.get_weight(layer_idx=hf_layer_idx)

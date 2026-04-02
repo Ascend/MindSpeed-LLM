@@ -78,7 +78,7 @@ except Exception:
     print('Can not find env : ASCEND_TOOLKIT_HOME or ATB_HOME_PATH, ops setup failed')
 
 setuptools.setup(
-    package_data={'mindspeed_llm':['mindspeed_llm/data/Makefile']},
+    package_data={'mindspeed_llm': ['mindspeed_llm/data/Makefile']},
     name=__package_name__,
     # Versions should comply with PEP440.
     version=__version__,

@@ -435,7 +435,7 @@ def _build_index_mappings(
     shuffle_idx_filename = _filename + '_decoder_packed_idx.npy'
 
     # Build the indexed mapping if not exist.
-    if torch.distributed.get_rank() % torch.cuda.device_count() == 0 or args.stage in ["ray_ppo", "ray_online_dpo",                                                                                "ray_grpo"]:
+    if torch.distributed.get_rank() % torch.cuda.device_count() == 0 or args.stage in ["ray_ppo", "ray_online_dpo", "ray_grpo"]:
         if not os.path.isfile(shuffle_idx_filename):
 
             print_rank_0(' > WARNING: could not find index map files, building '

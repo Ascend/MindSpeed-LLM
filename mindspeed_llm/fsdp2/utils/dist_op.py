@@ -2,6 +2,7 @@ import torch
 import torch.distributed as dist
 from typing import Union, Tuple, List, Literal
 
+
 def all_reduce(
     inputs: Union[float, torch.Tensor, Tuple, List], 
     op: Literal["mean", "sum", "max", "min"] = "mean",

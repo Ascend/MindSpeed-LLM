@@ -78,11 +78,11 @@ class LongCatFlashTransformerLayer(TransformerLayer):
         )
         self.mlp = build_module(
             submodules.mlp,
-            config = self.config
+            config=self.config
         )
         self.mlps_0 = build_module(
             submodules.mlps_0,
-            config = self.config
+            config=self.config
         )
         self.mlps_bda_0 = build_module(submodules.mlps_bda_0)
 
@@ -109,7 +109,7 @@ class LongCatFlashTransformerLayer(TransformerLayer):
         )
         self.mlps_1 = build_module(
             submodules.mlps_1,
-            config = self.config
+            config=self.config
         )
         self.mlps_bda_1 = build_module(submodules.mlps_bda_1)
 

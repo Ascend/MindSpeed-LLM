@@ -12,6 +12,7 @@ from ..template import Template
 
 IGNORE_INDEX = -100
 
+
 @dataclass
 class DatasetProcessor(ABC):
     r"""A class for data processors."""

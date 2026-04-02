@@ -34,6 +34,7 @@ from mindspeed_llm.fsdp2.utils.coverage import auto_coverage
 
 logger = get_logger(__name__)
 
+
 # ==============================================================================
 # [Arguments Definition] Arguments Class for MindSpeed FSDP Scheme
 # ==============================================================================
@@ -249,6 +250,7 @@ class MindSpeedAutoTrainer:
     def _build_checkpointer(self):
         logger.info_rank0("> Building Checkpointer...")
         return CheckpointManager
+
 
 # ==============================================================================
 # [Facade] Unified AutoTrainer

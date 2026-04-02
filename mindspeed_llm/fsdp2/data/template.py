@@ -422,19 +422,19 @@ def parse_template(tokenizer: "PreTrainedTokenizer") -> "Template":
     prefix = tokenizer.decode(tokenizer.encode(""))
 
     messages = [{"role": "system", "content": "{{content}}"}]
-    system_slot = tokenizer.apply_chat_template(messages, add_generation_prompt=False, tokenize=False)[len(prefix) :]
+    system_slot = tokenizer.apply_chat_template(messages, add_generation_prompt=False, tokenize=False)[len(prefix):]
 
     messages = [{"role": "system", "content": ""}, {"role": "user", "content": "{{content}}"}]
     user_slot_empty_system = tokenizer.apply_chat_template(messages, add_generation_prompt=True, tokenize=False)
-    user_slot_empty_system = user_slot_empty_system[len(prefix) :]
+    user_slot_empty_system = user_slot_empty_system[len(prefix):]
 
     messages = [{"role": "user", "content": "{{content}}"}]
     user_slot = tokenizer.apply_chat_template(messages, add_generation_prompt=True, tokenize=False)
-    user_slot = user_slot[len(prefix) :]
+    user_slot = user_slot[len(prefix):]
 
     messages = [{"role": "user", "content": "{{content}}"}, {"role": "assistant", "content": "{{content}}"}]
     assistant_slot = tokenizer.apply_chat_template(messages, add_generation_prompt=False, tokenize=False)
-    assistant_slot = assistant_slot[len(prefix) + len(user_slot) :]
+    assistant_slot = assistant_slot[len(prefix) + len(user_slot):]
     template_class = ReasoningTemplate if "<think>" in assistant_slot else Template
 
     # remove thought tags
@@ -443,7 +443,7 @@ def parse_template(tokenizer: "PreTrainedTokenizer") -> "Template":
     if len(user_slot) > len(user_slot_empty_system):
         default_system = find_diff(user_slot_empty_system, user_slot)
         sole_system = system_slot.replace("{{content}}", default_system, 1)
-        user_slot = user_slot[len(sole_system) :]
+        user_slot = user_slot[len(sole_system):]
     else:  
         # if defaut_system is empty, user_slot_empty_system will be longer than user_slot
         default_system = ""
@@ -464,6 +464,7 @@ def parse_template(tokenizer: "PreTrainedTokenizer") -> "Template":
         replace_jinja_template=False,
         enable_thinking=True,
     )
+
 
 def get_template_and_fix_tokenizer(tokenizer: "PreTrainedTokenizer", data_args: "DataArguments") -> "Template":
     r"""Get chat template and fixes the tokenizer."""

@@ -24,6 +24,7 @@ from mindspeed_llm.fsdp2.utils.profiler import ProfilerConfig, ProfilerManager
 
 logger = get_logger(__name__)
 
+
 class Trainer:
     """
     Orchestrates the training loop, coordinating Model, Optimizer, Scheduler, Data, and IO.
@@ -369,7 +370,8 @@ class Trainer:
                     logger.info_rank0(f"Distributed checkpoint saved at {save_checkpoint_path} successfully!")
                     cleanup_old_checkpoints(args, self.data_args.data_shared_file_system)
 
-            if self.global_step >= total_steps: break
+            if self.global_step >= total_steps:
+                break
         # Stop profiler
         if self.profiler_manager.profiler is not None:
             self.profiler_manager.stop()
@@ -623,8 +625,8 @@ class Trainer:
 
         ps = ParallelState()
 
-        if ps.get_group_size("cp") >1 :
-            loss = F.cross_entropy(logits, shift_labels,reduction='sum',ignore_index=ignore_index)
+        if ps.get_group_size("cp") > 1:
+            loss = F.cross_entropy(logits, shift_labels, reduction='sum', ignore_index=ignore_index)
 
             num_items_in_batch = (labels.ne(ignore_index)).sum()
             dist.all_reduce(num_items_in_batch, op=dist.ReduceOp.SUM, group=ps.get_group("cp"))
@@ -649,7 +651,8 @@ class Trainer:
         """
         # Calculate step difference
         step_diff = self.global_step - self._global_step_last_logged
-        if step_diff == 0: return
+        if step_diff == 0:
+            return
 
         # 1. Calculate average interval loss
         # (Total Loss - Total Loss at last log) / steps elapsed
@@ -704,11 +707,13 @@ class Trainer:
         Handles different wrapping depths.
         """
         # Direct check
-        if isinstance(self.model, FSDP): return self.model
+        if isinstance(self.model, FSDP):
+            return self.model
         
         # Check one level deep (standard DDP/Wrapper)
         if hasattr(self.model, "module"):
-            if isinstance(self.model.module, FSDP): return self.model.module
+            if isinstance(self.model.module, FSDP):
+                return self.model.module
             
             # Check two levels deep (complex wrapping)
             if hasattr(self.model.module, "model") and isinstance(self.model.module.model, FSDP):

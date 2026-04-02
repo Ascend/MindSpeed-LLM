@@ -58,11 +58,11 @@ def build_tokenizer(args):
             args.padded_vocab_size = _vocab_size_with_padding(tokenizer.vocab_size,
                                                               args)
     elif args.tokenizer_type == 'MagistralTokenizer':
-        if hasattr(args,'tokenizer_padding_side'):
+        if hasattr(args, 'tokenizer_padding_side'):
             magistral_tokenizer = create_magistral_tokenizer(args, args.tokenizer_model, args.tokenizer_padding_side)
         else:
             magistral_tokenizer = create_magistral_tokenizer(args, args.tokenizer_model)
-        tokenizer=TokenizerAdaptor(magistral_tokenizer)
+        tokenizer = TokenizerAdaptor(magistral_tokenizer)
         tokenizer.tokenizer.batch_decode = MagistralTokenizer_batch_decode
         if hasattr(args, "prompt_type") and args.prompt_type is not None:
             fix_model_tokenizer(tokenizer.tokenizer, args.prompt_type.strip(), args.prompt_type_path.strip(),
@@ -251,14 +251,15 @@ def GPTSentencePieceTokenizer_batch_decode(input_token, skip_special_tokens):
             result.append(id_to_word[token_id])
     return "".join(result)
 
+
 def MagistralTokenizer_batch_decode(input_token, skip_special_tokens):
-    args=get_args()
-    if hasattr(args,'tokenizer_padding_side'):
+    args = get_args()
+    if hasattr(args, 'tokenizer_padding_side'):
         magistral_tokenizer = create_magistral_tokenizer(args, args.tokenizer_model, args.tokenizer_padding_side)
     else:
         magistral_tokenizer = create_magistral_tokenizer(args, args.tokenizer_name_or_path)
     tokenizer = TokenizerAdaptor(magistral_tokenizer)
-    result=[]
+    result = []
     input_token = input_token if isinstance(input_token, list) else input_token.tolist()
 
     for token in input_token:

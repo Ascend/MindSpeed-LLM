@@ -282,9 +282,8 @@ class RerunStateMachine:
                 self.current_iteration += 1  # Increment self.current_iteration for reporting.
                 return True
             if self.data_iterator_checkpoints is not None:
-                assert len(self.data_iterator_checkpoints) == len(
-                    data_iterators
-                ), "data iterator has different length than checkpointed data iterator"
+                if len(self.data_iterator_checkpoints) != len(data_iterators):
+                    raise ValueError("data iterator has different length than checkpointed data iterator")
                 for i, d in enumerate(data_iterators):
                     d.load_state_dict(self.data_iterator_checkpoints[i])
                 self.data_iterator_checkpoints = None
@@ -511,9 +510,8 @@ class RerunStateMachine:
         if comparison_func is None:
             comparison_func = _compare_floats
 
-        assert (
-            self.state != RerunState.NOT_RUNNING_YET
-        ), "validate_result should not be called outside of the forward-backward pass"
+        if self.state == RerunState.NOT_RUNNING_YET:
+            raise ValueError("validate_result should not be called outside of the forward-backward pass")
 
         validation_call: Call = self._get_validation_call_info()
 
@@ -529,7 +527,8 @@ class RerunStateMachine:
                 self.saved_results[validation_call] = result
             elif self.state == RerunState.RERUNNING_IN_PLACE:
                 initial_result = self.saved_results.get(validation_call)
-                assert initial_result is not None, "Result from initial run missing"
+                if initial_result is None:
+                    raise ValueError("Result from initial run missing")
                 diff = comparison_func(initial_result, result)
                 caller: Caller = Caller(
                     filename=validation_call.caller.filename,
@@ -838,9 +837,8 @@ s
             data_iterators = data_iterator
         data_iterators = [d for d in data_iterators if d is not None]
         for d in data_iterators:
-            assert isinstance(
-                d, RerunDataIterator
-            ), "data iterator is not wrapped with RerunDataIterator"
+            if not isinstance(d, RerunDataIterator):
+                raise TypeError("data iterator is not wrapped with RerunDataIterator")
         return data_iterators
 
     def _get_validation_call_info(self) -> Call:
@@ -1005,7 +1003,8 @@ class RerunDataIterator:
         if self.replaying:
             # we should not read past the saved batches if execution is deterministic,
             # as the number of calls to get_batch() should remain the same across reruns
-            assert len(self.saved_microbatches) > self.replay_pos, "No more batches to replay"
+            if len(self.saved_microbatches) <= self.replay_pos:
+                raise ValueError("No more batches to replay")
             n = self.saved_microbatches[self.replay_pos]
             self.replay_pos += 1
             return n
@@ -1142,9 +1141,8 @@ class RerunErrorInjector:
         error_injection_rate: int = 0,
         error_injection_type: RerunDiagnostic = RerunDiagnostic.TRANSIENT_ERROR,
     ) -> None:
-        assert isinstance(
-            error_injection_type, RerunDiagnostic
-        ), "Injected result type must be a valid RerunDiagnostic"
+        if not isinstance(error_injection_type, RerunDiagnostic):
+            raise TypeError("Injected result type must be a valid RerunDiagnostic")
         self.error_injection_rate: int = error_injection_rate
         self.error_injection_type: RerunDiagnostic = error_injection_type
         self.should_inject_errors: bool = error_injection_rate > 0
@@ -1256,7 +1254,8 @@ def _set_rerun_state_machine(rerun_state_machine) -> None:
     """Internal function to set the singleton instance of the rerun machine."""
 
     global _GLOBAL_RERUN_STATE_MACHINE
-    assert _GLOBAL_RERUN_STATE_MACHINE is None, 'Rerun state machine is already initialized'
+    if _GLOBAL_RERUN_STATE_MACHINE is not None:
+        raise ValueError('Rerun state machine is already initialized')
     _GLOBAL_RERUN_STATE_MACHINE = rerun_state_machine
 
 

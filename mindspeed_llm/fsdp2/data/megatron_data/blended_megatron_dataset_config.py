@@ -69,28 +69,25 @@ class BlendedMegatronDatasetConfig:
     def __post_init__(self) -> None:
         """Do asserts and set fields post init"""
         if self.blend_per_split is not None and any(self.blend_per_split):
-            assert self.blend is None, "blend and blend_per_split are incompatible"
-            assert self.split is None, "split and blend_per_split are incompatible"
-            assert len(self.blend_per_split) == len(
-                Split
-            ), f"blend_per_split must contain {len(Split)} blends"
+            if self.blend is not None:
+                raise ValueError("blend and blend_per_split are incompatible")
+            if self.split is not None:
+                raise ValueError("split and blend_per_split are incompatible")
+            if len(self.blend_per_split) != len(Split):
+                raise ValueError(f"blend_per_split must contain {len(Split)} blends")
             for split in Split:
                 if self.blend_per_split[split.value] is None:
                     logger.info_rank0(
                         f"blend not provided for {split.name} split"
                     )
                 else:
-                    assert self.blend_per_split[split.value][1] is None or len(
-                        self.blend_per_split[split.value][0]
-                    ) == len(
-                        self.blend_per_split[split.value][1]
-                    ), "blend per split prefixes and weights must be equal in number"
+                    if not (self.blend_per_split[split.value][1] is None or
+                            len(self.blend_per_split[split.value][0]) == len(self.blend_per_split[split.value][1])):
+                        raise ValueError("blend per split prefixes and weights must be equal in number")
         else:
             if self.blend is not None:
-                assert self.blend[1] is None or len(self.blend[0]) == len(
-                    self.blend[1]
-                ), "blend prefixes and weights must be equal in number"
-                assert self.split is not None, "split must be provided when blend is not None"
+                if not(self.blend[1] is None or len(self.blend[0]) == len(self.blend[1])):
+                    raise ValueError("blend prefixes and weights must be equal in number")
             else:
                 self.mock = True
                 logger.info_rank0(
@@ -117,8 +114,10 @@ def parse_and_normalize_split(split: str) -> List[float]:
     split = list(map(float, re.findall(r"[.0-9]+", split)))
     split = split + [0.0 for _ in range(len(Split) - len(split))]
 
-    assert len(split) == len(Split)
-    assert all(map(lambda _: _ >= 0.0, split))
+    if len(split) != len(Split):
+        raise ValueError("Length of split list does not equal length of Split list")
+    if not all(map(lambda _: _ >= 0.0, split)):
+        raise ValueError(f"All elements in split must be >= 0.0.")
 
     split = normalize(split)
 

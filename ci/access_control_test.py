@@ -14,6 +14,7 @@ def is_examples(file):
 def is_poc(file):
     return file.startswith("tests/poc")
 
+
 def is_0day(file):
     return file.startswith("tests/0day")
 

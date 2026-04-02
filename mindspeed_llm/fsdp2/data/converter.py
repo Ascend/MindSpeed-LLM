@@ -329,6 +329,7 @@ DATASET_CONVERTERS = {
     "openai": OpenAIDatasetConverter,
 }
 
+
 def register_dataset_converter(name: str, dataset_converter: type["DatasetConverter"]) -> None:
     r"""Register a new dataset converter."""
     if name in DATASET_CONVERTERS:

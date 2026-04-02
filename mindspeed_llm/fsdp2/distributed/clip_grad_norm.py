@@ -13,6 +13,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 def clip_grad_norm(
     model, max_norm: float, norm_type: float = 2.0, error_if_nonfinite: bool = False, foreach: bool | None = None
 ) -> torch.Tensor:
@@ -36,6 +37,7 @@ def clip_grad_norm(
     if isinstance(grad_norm, DTensor):
         grad_norm = grad_norm.full_tensor()
     return grad_norm
+
 
 @torch.no_grad()
 def fsdp2_clip_grad_norm(
@@ -80,6 +82,7 @@ def fsdp2_clip_grad_norm(
     torch.nn.utils.clip_grads_with_norm_(parameters, max_norm, total_norm, foreach)
 
     return total_norm
+
 
 @torch.no_grad()
 def ep_fsdp2_clip_grad_norm(
@@ -133,6 +136,7 @@ def ep_fsdp2_clip_grad_norm(
     torch.nn.utils.clip_grads_with_norm_(non_ep_params, max_norm, total_norm, foreach=False)
 
     return total_norm
+
 
 # compute local sum of param gard norm
 def _local_pth_sum(params: List[torch.nn.Parameter], p: float) -> torch.Tensor:

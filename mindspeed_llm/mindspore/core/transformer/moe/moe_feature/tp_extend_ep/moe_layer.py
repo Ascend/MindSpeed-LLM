@@ -4,6 +4,7 @@
 import torch
 from mindspeed.core.transformer.moe.moe_feature import tensor_parallel
 
+
 def all2allseq_tp_extend_ep_moe_layer_impl_forward(self, hidden_states: torch.Tensor):
     if (
         self.training

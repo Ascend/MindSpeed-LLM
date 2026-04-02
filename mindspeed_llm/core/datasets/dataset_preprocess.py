@@ -2,9 +2,9 @@ import os
 import sys
 import time
 import json
+import subprocess
 import torch
 import glob
-import os, sys, time, subprocess
 from megatron.training.utils import print_rank_0
 from mindspeed_llm.tasks.preprocess.data_handler import _get_data_format
 

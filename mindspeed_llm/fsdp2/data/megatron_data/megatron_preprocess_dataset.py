@@ -317,7 +317,7 @@ def main():
         merge_datasets(args)
         return
 
-    tokenizer =  _AutoTokenizer(
+    tokenizer = _AutoTokenizer(
         args.model_name_or_path,
         vocab_extra_ids=0,
         model_max_length=args.seq_length,

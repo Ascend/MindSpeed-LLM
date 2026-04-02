@@ -19,12 +19,13 @@ ttp_logger = getLogger(__name__)
 
 
 def rollback_callback(step: int, train_args, params: str):
-    """
-    Main callback function for training rollback operations.
+    """Main callback function for training rollback operations.
+
     Args:
         step: Current training step to roll back to
         train_args: Training arguments containing model, optimizer, scheduler information
         params: Rollback strategy parameters
+
     This function performs a comprehensive rollback of the training state, including:
     1. Restoring original data parallel size and number of microbatches
     2. Handling checkpoint loading if applicable
@@ -35,7 +36,7 @@ def rollback_callback(step: int, train_args, params: str):
     7. Clearing memory checkpoint flags
     8. Destroying repair groups
     9. Repairing training logs
-   10. Rebuilding global variables
+    10. Rebuilding global variables
     11. Setting the appropriate device
     12. Logging rollback success
     """

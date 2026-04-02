@@ -365,6 +365,7 @@ class DSAIndexer(MegatronModule):
             attention_mask = None
         return attention_mask
 
+
 class DSAIndexerLossAutoScaler(torch.autograd.Function):
     """An AutoScaler that triggers the backward pass and scales the grad for DSA indexer loss."""
 
@@ -559,6 +560,7 @@ class DSAIndexerLossLoggingHelper:
             wandb_writer.log({f"{name}": loss}, iteration)
 
         DSAIndexerLossLoggingHelper.clean_loss_in_tracker()
+
 
 def compute_dsa_indexer_loss(
         main_attn_dist,
@@ -814,6 +816,7 @@ class LILossTrain(torch.autograd.Function):
         res_list = [None] * 12
         return None, None, d_query_index, d_key_index, d_weights, *res_list
 
+
 def gather_and_permute_cp_shard(
         t: torch.Tensor,
         cp_group: torch.distributed.ProcessGroup
@@ -831,6 +834,7 @@ def gather_and_permute_cp_shard(
 
     # [cp*2, s//2, ...] -> [cp*s, ...]
     return t_ag.view(-1, *t.shape[1:])
+
 
 def fused_lightning_indexer_kvallgather(
         q: Tensor,
@@ -866,7 +870,7 @@ def fused_lightning_indexer_kvallgather(
     for i, chunk_id in enumerate(local_seq_chunk_ids):
         indices[i], scores[i] = torch_npu.npu_lightning_indexer(
             q[i],
-            k_ag[:, 0 : chunk_id * chunk, ...],
+            k_ag[:, 0:chunk_id * chunk, ...],
             weights[i],
             layout_query="BSND",
             layout_key="BSND",
@@ -878,6 +882,7 @@ def fused_lightning_indexer_kvallgather(
     topk_scores = torch.cat(scores, dim=1).squeeze(2)
 
     return topk_indices, topk_scores
+
 
 def fused_sparse_lightning_indexer_kl_loss_kvallgather(
         query,
@@ -931,16 +936,16 @@ def fused_sparse_lightning_indexer_kl_loss_kvallgather(
     for i, chunk_id in enumerate(local_seq_chunk_ids):
         loss[i] = LILossTrain.apply(
             query[i],
-            key_ag[:, 0 : chunk_id * chunk, ...],
+            key_ag[:, 0:chunk_id * chunk, ...],
             query_index[i],
-            key_index_ag[:, 0 : chunk_id * chunk, ...],
+            key_index_ag[:, 0:chunk_id * chunk, ...],
             weights[i],
             topk_indices[i],
             softmax_max[i],
             softmax_sum[i],
             scale_value,
             query_rope[i],
-            key_rope_ag[:, 0 : chunk_id * chunk, ...],
+            key_rope_ag[:, 0:chunk_id * chunk, ...],
             None,
             None,
             layout,

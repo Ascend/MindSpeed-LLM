@@ -73,6 +73,7 @@ def model_update_npu_tensor_to_safe(models):
                 if bucket.grad_data is not None:
                     update_tensor_to_safe(bucket.grad_data)
 
+
 def unset_gather_handle(train_args):
     for model in train_args[ha_constant.MODEL_INDEX]:
         for bucket_group in model.bucket_groups:

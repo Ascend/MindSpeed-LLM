@@ -32,85 +32,85 @@ def do_kvallgather_context_parallel(core_attention,
         extra_param
         ):
 
-        qkv_format = extra_param.get('qkv_format')
-        cu_seqlens_q = extra_param.get('cu_seqlens_q')
-        cu_seqlens_kv = extra_param.get('cu_seqlens_kv')
-        max_seqlen_q = extra_param.get('max_seqlen_q')
-        max_seqlen_kv = extra_param.get('max_seqlen_kv')
-        hidden_size_per_attention_head_k = extra_param.get('hidden_size_per_attention_head_k')
-        hidden_size_per_attention_head_v = extra_param.get('hidden_size_per_attention_head_v')
-        num_gqa_groups_per_partition = extra_param.get('num_gqa_groups_per_partition')
+    qkv_format = extra_param.get('qkv_format')
+    cu_seqlens_q = extra_param.get('cu_seqlens_q')
+    cu_seqlens_kv = extra_param.get('cu_seqlens_kv')
+    max_seqlen_q = extra_param.get('max_seqlen_q')
+    max_seqlen_kv = extra_param.get('max_seqlen_kv')
+    hidden_size_per_attention_head_k = extra_param.get('hidden_size_per_attention_head_k')
+    hidden_size_per_attention_head_v = extra_param.get('hidden_size_per_attention_head_v')
+    num_gqa_groups_per_partition = extra_param.get('num_gqa_groups_per_partition')
 
-        # checks for q/k/v shapes
-        if query_layer.dtype != key_layer.dtype and query_layer.dtype != value_layer.dtype:
-            raise AssertionError(
-                "Queries, keys and values must have the same data type!"
-            )
-        if key_layer.shape[:-1] != value_layer.shape[:-1]:
-            raise AssertionError(
-                "Keys and values must have the same batch size, sequence length and number of heads!"
-            )
-        num_attention_heads = query_layer.shape[-2]
-        num_gqa_groups = key_layer.shape[-2]
-        if query_layer.shape[-1] != key_layer.shape[-1]:
-            raise AssertionError(
-                "Queries and keys must have the same head dimension!"
-            )
-        head_dim_qk, head_dim_v = query_layer.shape[-1], value_layer.shape[-1]
-        if head_dim_qk != hidden_size_per_attention_head_k:
-            raise AssertionError(
-                f"Keys have head_dim = {head_dim_qk}, but expected head_dim = {hidden_size_per_attention_head_k}!"
-            )
-        if  head_dim_v != hidden_size_per_attention_head_v:
-            raise AssertionError(
-               f"Values have head_dim = {head_dim_v}, but expected head_dim = {hidden_size_per_attention_head_v}!"
-            )
-        if  num_gqa_groups != num_gqa_groups_per_partition:
-            raise AssertionError(
-               "Keys and values must have num_gqa_group ="
-               f" {num_gqa_groups_per_partition} heads! Found {num_gqa_groups}."
-            )
-
-        # checks for qkv_format
-        if qkv_format not in ["sbhd","thd"]:
-            raise AssertionError(
-               "KV allgather CP DotProductAttention only supports qkv_format = {'sbhd', 'thd'}!"
-            )
-
-        if qkv_format == "thd":
-            if cu_seqlens_q is None and cu_seqlens_kv is None:
-                raise AssertionError(
-                 "cu_seqlens_q and cu_seqlens_kv can not be None when qkv_format = thd!"
-                )
-            if  cu_seqlens_q.shape != cu_seqlens_kv.shape \
-                and len(cu_seqlens_q.shape) != 1 \
-                and len(cu_seqlens_kv.shape) != 1:
-                raise AssertionError(
-                 "cu_seqlens_q and cu_seqlens_kv must both have shape [batch_size + 1]!"
-                )    
-
-        # Build unified input parameters
-        core_attention_kwargs = {}
-        core_attention_kwargs['cp_group'] = extra_param.get('cp_group')
-        core_attention_kwargs['cp_global_ranks'] = extra_param.get('cp_global_ranks')
-        core_attention_kwargs['cp_stream'] =extra_param.get('cp_stream')
-        core_attention_kwargs['max_seqlen_q'] = max_seqlen_q
-        core_attention_kwargs['max_seqlen_kv'] = max_seqlen_kv
-
-        # Call core_attention's forward method
-        output = core_attention(
-            query_layer,
-            key_layer,
-            value_layer,
-            attention_mask,
-            qkv_format,
-            cu_seqlens_q,
-            cu_seqlens_kv,
-            attn_mask_type.name,
-            **core_attention_kwargs
+    # checks for q/k/v shapes
+    if query_layer.dtype != key_layer.dtype and query_layer.dtype != value_layer.dtype:
+        raise AssertionError(
+            "Queries, keys and values must have the same data type!"
         )
-    
-        return output
+    if key_layer.shape[:-1] != value_layer.shape[:-1]:
+        raise AssertionError(
+            "Keys and values must have the same batch size, sequence length and number of heads!"
+        )
+    num_attention_heads = query_layer.shape[-2]
+    num_gqa_groups = key_layer.shape[-2]
+    if query_layer.shape[-1] != key_layer.shape[-1]:
+        raise AssertionError(
+            "Queries and keys must have the same head dimension!"
+        )
+    head_dim_qk, head_dim_v = query_layer.shape[-1], value_layer.shape[-1]
+    if head_dim_qk != hidden_size_per_attention_head_k:
+        raise AssertionError(
+            f"Keys have head_dim = {head_dim_qk}, but expected head_dim = {hidden_size_per_attention_head_k}!"
+        )
+    if head_dim_v != hidden_size_per_attention_head_v:
+        raise AssertionError(
+           f"Values have head_dim = {head_dim_v}, but expected head_dim = {hidden_size_per_attention_head_v}!"
+        )
+    if num_gqa_groups != num_gqa_groups_per_partition:
+        raise AssertionError(
+           "Keys and values must have num_gqa_group ="
+           f" {num_gqa_groups_per_partition} heads! Found {num_gqa_groups}."
+        )
+
+    # checks for qkv_format
+    if qkv_format not in ["sbhd", "thd"]:
+        raise AssertionError(
+           "KV allgather CP DotProductAttention only supports qkv_format = {'sbhd', 'thd'}!"
+        )
+
+    if qkv_format == "thd":
+        if cu_seqlens_q is None and cu_seqlens_kv is None:
+            raise AssertionError(
+             "cu_seqlens_q and cu_seqlens_kv can not be None when qkv_format = thd!"
+            )
+        if cu_seqlens_q.shape != cu_seqlens_kv.shape \
+            and len(cu_seqlens_q.shape) != 1 \
+            and len(cu_seqlens_kv.shape) != 1:
+            raise AssertionError(
+             "cu_seqlens_q and cu_seqlens_kv must both have shape [batch_size + 1]!"
+            )
+
+    # Build unified input parameters
+    core_attention_kwargs = {}
+    core_attention_kwargs['cp_group'] = extra_param.get('cp_group')
+    core_attention_kwargs['cp_global_ranks'] = extra_param.get('cp_global_ranks')
+    core_attention_kwargs['cp_stream'] = extra_param.get('cp_stream')
+    core_attention_kwargs['max_seqlen_q'] = max_seqlen_q
+    core_attention_kwargs['max_seqlen_kv'] = max_seqlen_kv
+
+    # Call core_attention's forward method
+    output = core_attention(
+        query_layer,
+        key_layer,
+        value_layer,
+        attention_mask,
+        qkv_format,
+        cu_seqlens_q,
+        cu_seqlens_kv,
+        attn_mask_type.name,
+        **core_attention_kwargs
+    )
+
+    return output
 
 
 class TECPDotProductAttention(torch.nn.Module):
@@ -138,7 +138,7 @@ class TECPDotProductAttention(torch.nn.Module):
             elif args.shape_order == 'TND':
                 self.qkv_format = 'THD'
 
-            num_gqa_groups= config.num_query_groups
+            num_gqa_groups = config.num_query_groups
             self.num_attention_heads = config.num_attention_heads
             self.attn_mask_type = attn_mask_type
 

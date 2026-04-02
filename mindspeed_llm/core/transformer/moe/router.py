@@ -651,6 +651,7 @@ def global_aux_loss_topk_router_forward(self, input: torch.Tensor):
 
     return scores, routing_map, logits.detach()
 
+
 def global_load_balancing_loss_func(router_logits, attention_mask, config):
     """
     Computes auxiliary load balancing loss as in Switch Transformer - implemented in Pytorch.

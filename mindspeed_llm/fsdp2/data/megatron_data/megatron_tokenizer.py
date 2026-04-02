@@ -7,6 +7,7 @@ from typing import Any
 import numpy
 from transformers import AutoTokenizer
 
+
 class MegatronTokenizer(ABC):
     """Abstract class for tokenizer
 

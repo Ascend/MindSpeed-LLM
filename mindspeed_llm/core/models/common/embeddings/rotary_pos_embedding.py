@@ -66,6 +66,7 @@ def apply_yarn_scaling(freqs: torch.Tensor):
 
     return inv_freq
 
+
 def apply_plm_scaling(freqs: torch.Tensor):
     args = get_args()
 
@@ -74,6 +75,7 @@ def apply_plm_scaling(freqs: torch.Tensor):
     inv_freq = 1.0 / rotary_ratio
 
     return inv_freq
+
 
 def rotary_embedding_init_wrapper(fn):
     @wraps(fn)

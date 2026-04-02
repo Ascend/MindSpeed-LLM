@@ -64,7 +64,7 @@ class GPTModel(MegatronCoreGPTModel):
         post_layer_norm = kwargs.pop('post_layer_norm', True)
 
         if global_args.use_global_aux_loss:
-            _CAN_RECORD_REGISTRY[str(self.__class__)] = { "router_logits": TopKRouter}
+            _CAN_RECORD_REGISTRY[str(self.__class__)] = {"router_logits": TopKRouter}
 
         self.transformer_layer_spec: ModuleSpec = transformer_layer_spec
         self.vocab_size = vocab_size

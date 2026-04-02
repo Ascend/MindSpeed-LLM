@@ -11,6 +11,7 @@ from mindspeed_llm.fsdp2.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
+
 # --------------------------
 # BaseFlopsEstimator
 # --------------------------
@@ -42,6 +43,7 @@ class BaseFlopsEstimator(ABC):
         """
         pass
 
+
 # --------------------------
 # UnknownModelFlopsEstimator
 # --------------------------
@@ -67,6 +69,7 @@ class UnknownModelFlopsEstimator(BaseFlopsEstimator):
             UnknownModelFlopsEstimator._warning_printed = True
         return 0.0
 
+
 # --------------------------
 # Common utilities
 # --------------------------
@@ -88,6 +91,7 @@ def unit_convert(number: float, level: str) -> float:
     target_idx = units.index(level)
     conversion_factor = 1000 ** target_idx  # 1000^0=1 (B), 1000^1=1000 (K), 1000^2=1000000 (M)...
     return number / conversion_factor
+
 
 def get_device_flops(unit: str = "T") -> float:
     """

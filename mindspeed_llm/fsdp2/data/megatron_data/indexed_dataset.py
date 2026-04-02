@@ -255,10 +255,12 @@ class _IndexReader(object):
 
         with open(idx_path, "rb") as stream:
             header = stream.read(9)
-            assert header == _INDEX_HEADER, f"bad header, cannot read: {idx_path}"
+            if header != _INDEX_HEADER:
+                raise ValueError(f"bad header, cannot read: {idx_path}")
 
             version = struct.unpack("<Q", stream.read(8))[0]
-            assert version == 1, f"bad version, cannot read: {idx_path}"
+            if version != 1:
+                raise ValueError(f"bad version, cannot read: {idx_path}")
 
             code = struct.unpack("<B", stream.read(1))[0]
             self.dtype = DType.dtype_from_code(code)
@@ -318,9 +320,12 @@ class _IndexReader(object):
             t_end = time.time()
             logger.info_rank0(f"\t> time elapsed: {t_end - t_beg:4f} seconds")
 
-        assert self.sequence_lengths.shape[0] == len(self)
-        assert self.sequence_lengths.shape[0] == self.sequence_count
-        assert self.sequence_lengths.shape[0] == self.document_indices[-1]
+        if self.sequence_lengths.shape[0] != len(self):
+            raise ValueError("sequence_lengths.shape[0] do not match len(self)")
+        if self.sequence_lengths.shape[0] != self.sequence_count:
+            raise ValueError("sequence_lengths.shape[0] do not match sequence_count")
+        if self.sequence_lengths.shape[0] != self.document_indices[-1]:
+            raise ValueError("sequence_lengths.shape[0] do not match document_indices[-1]")
 
         logger.info_rank0(f"> total number of sequences: {len(self)}")
         logger.info_rank0(f"> total number of documents: {self.document_indices.shape[0] - 1}")
@@ -725,7 +730,8 @@ class IndexedDatasetBuilder(object):
         """
         # Concatenate index
         index = _IndexReader(get_idx_path(path_prefix), multimodal=self.multimodal)
-        assert index.dtype == self.dtype
+        if index.dtype != self.dtype:
+            raise ValueError("Index dtype does not match")
 
         offset = len(self.sequence_lengths)
         self.sequence_lengths.extend(index.sequence_lengths)

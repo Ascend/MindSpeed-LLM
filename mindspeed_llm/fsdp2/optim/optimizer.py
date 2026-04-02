@@ -185,7 +185,7 @@ class OptimizerFactory:
             # Split Muon and AdamW parameters
             muon_params, adamw_params = OptimizerFactory._split_muon_and_adamw_params(model)
             logger.info_rank0(f"Using Muon optimizer with {len(muon_params)} Muon params and {len(adamw_params)} AdamW params.")
-            param_groups=[]
+            param_groups = []
 
         # Build parameter groups for single optimizer, automatically split parameters that need/don't need decay
         # when no custom parameter groups are provided

@@ -73,7 +73,7 @@ def generate_tokens_probs_and_return_on_first_stage(
         raise ValueError("Length of prompt + tokens_to_generate longer than allowed")
 
     if max_sequence_length * batch_size > args.max_tokens_to_oom:
-        raise ValueError("Too many tokens.  " + str(max_sequence_length*batch_size) + " is greater than " + str(args.max_tokens_to_oom))
+        raise ValueError("Too many tokens.  " + str(max_sequence_length * batch_size) + " is greater than " + str(args.max_tokens_to_oom))
 
     # forward step.
     inference_context = StaticInferenceContext(batch_size, max_sequence_length)

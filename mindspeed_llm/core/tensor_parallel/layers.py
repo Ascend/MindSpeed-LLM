@@ -264,7 +264,7 @@ def checkpoint_forward_wrapper(fn):
             idx = 0
             for stype, length, seq_type in ctx.custom_arg_structure:
                 if stype == "seq":
-                    seq = rebuilt_flat_args[idx : idx + length]
+                    seq = rebuilt_flat_args[idx:idx + length]
                     original_args.append(seq_type(seq))
                 else:
                     original_args.append(rebuilt_flat_args[idx])

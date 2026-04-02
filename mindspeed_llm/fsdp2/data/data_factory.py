@@ -38,11 +38,11 @@ class DataManager(ABC):
         tokenizer: "PreTrainedTokenizer",
         template: "Template"
     ):
-        self.model_args=model_args
-        self.data_args=data_args
-        self.training_args=training_args
-        self.parallel_args=parallel_args
-        self.stage=stage
+        self.model_args = model_args
+        self.data_args = data_args
+        self.training_args = training_args
+        self.parallel_args = parallel_args
+        self.stage = stage
 
         self.template = template
         self.tokenizer = tokenizer
@@ -93,8 +93,8 @@ class LFDataManager(DataManager):
 
 
     def create_train_dataloader(self) -> DataLoader:
-        dataloader=self._build_dataloader(
-            dataset=self.dataset_module["train_dataset"], 
+        dataloader = self._build_dataloader(
+            dataset=self.dataset_module["train_dataset"],
             batch_size=self.training_args.per_device_train_batch_size,
             sampler_fn=self._get_train_sampler,
             is_training=True)
@@ -103,8 +103,8 @@ class LFDataManager(DataManager):
 
 
     def create_eval_dataloader(self) -> DataLoader:
-        dataloader=self._build_dataloader(
-            dataset=self.dataset_module["eval_dataset"], 
+        dataloader = self._build_dataloader(
+            dataset=self.dataset_module["eval_dataset"],
             batch_size=self.training_args.per_device_train_batch_size,
             sampler_fn=self._get_eval_sampler,
             is_training=False)
@@ -191,7 +191,7 @@ class MegatronDataManager(DataManager):
 
 
     def create_train_dataloader(self) -> DataLoader:
-        dataloader=self._build_dataloader(
+        dataloader = self._build_dataloader(
             dataset=self.train_dataset,
             data_args=self.data_args,
             training_args=self.training_args)
@@ -200,7 +200,7 @@ class MegatronDataManager(DataManager):
 
 
     def create_eval_dataloader(self) -> DataLoader:
-        dataloader=self._build_dataloader(
+        dataloader = self._build_dataloader(
             dataset=self.eval_dataset,
             data_args=self.data_args,
             training_args=self.training_args)

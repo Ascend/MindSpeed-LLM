@@ -128,7 +128,7 @@ def get_dataset_module(dataset: Union["Dataset", "DatasetDict"]) -> "DatasetModu
             eval_dataset = {}
             for key in dataset.keys():
                 if key.startswith("validation_"):
-                    eval_dataset[key[len("validation_") :]] = dataset[key]
+                    eval_dataset[key[len("validation_"):]] = dataset[key]
 
             if len(eval_dataset):
                 dataset_module["eval_dataset"] = eval_dataset
@@ -316,7 +316,8 @@ def _load_single_dataset(
             expand_indexes = np.random.choice(len(dataset), target_num)
             indexes = np.concatenate((indexes, expand_indexes), axis=0)
 
-        assert len(indexes) == dataset_attr.num_samples, "Sample num mismatched."
+        if len(indexes) != dataset_attr.num_samples:
+            raise ValueError(f"Sample num mismatched: {len(indexes)}, expected {dataset_attr.num_samples}")
         dataset = dataset.select(indexes)
         logger.info_rank0(f"Sampled {dataset_attr.num_samples} examples from dataset {dataset_attr}.")
 
@@ -368,6 +369,7 @@ def _get_dataset_processor(
             if data_args.neat_packing:
                 # hack datasets to have int32 attention mask
                 from datasets.arrow_writer import OptimizedTypedSequence, TypedSequence
+
                 def __init__(self, data, **kwargs):
                     return TypedSequence.__init__(
                         self,
@@ -460,13 +462,13 @@ def main_process_first(local=True, desc="work"):
             if not is_main_process:
                 # tell all replicas to wait
                 print(f"waiting for the {main_process_desc} to perform {desc}")
-                dist.barrier(group = ps.get_group('dp_fsdp'))
+                dist.barrier(group=ps.get_group('dp_fsdp'))
             yield
         finally:
             if is_main_process:
                 # the wait is over
                 print(f"{main_process_desc} completed {desc}, releasing all replicas")
-                dist.barrier(group = ps.get_group('dp_fsdp'))
+                dist.barrier(group=ps.get_group('dp_fsdp'))
     else:
         yield
 

@@ -10,6 +10,7 @@ from mindspeed_llm.tasks.checkpoint.convert_mg2hf import Mg2HfConvert
 ms.set_context(device_target='CPU', pynative_synchronize=True)
 torch.configs.set_pyboost(False)
 
+
 def get_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--load-model-type', type=str, nargs='?',

@@ -41,8 +41,8 @@ from megatron.core.parallel_state import is_pipeline_last_stage
 from tqdm import tqdm
 
 from mindspeed.core.context_parallel.utils import pad_data
-from mindspeed.core.context_parallel.get_batch_utils import  set_actual_seq_len
-from mindspeed.utils import ( set_position_ids,
+from mindspeed.core.context_parallel.get_batch_utils import set_actual_seq_len
+from mindspeed.utils import (set_position_ids,
                              _get_batch_on_this_cp_rank_in_megatron_cp,
                              _get_batch_on_this_cp_rank_in_hybrid_cp_general,
                              _get_batch_on_this_cp_rank_in_hybrid_cp,
@@ -268,6 +268,7 @@ def get_batch_on_this_cp_rank_wrapper(fn):
         return batch
 
     return wrapper
+
 
 def print_args_wrapper(fn):
     """
@@ -579,7 +580,7 @@ def get_batch_on_this_tp_rank(data_iterator):
             _broadcast(batch['labels'])
             _broadcast(batch['loss_mask'])
             _broadcast(batch['attention_mask'])
-            if args.reset_attention_mask  or args.mtp_num_layers or args.schedules_method == 'dualpipev':
+            if args.reset_attention_mask or args.mtp_num_layers or args.schedules_method == 'dualpipev':
                 _broadcast(batch['position_ids'])
         elif args.reset_attention_mask:
             _broadcast(batch['position_ids'])
@@ -852,6 +853,7 @@ def is_shared_path(path: str, retry: int = 3, wait: float = 0.5) -> bool:
         if rank == 0:
             logger.info(f"[is_shared_path] Exception during shared path check: {e}")
         raise
+
 
 def check_model_inputs(func):
     """

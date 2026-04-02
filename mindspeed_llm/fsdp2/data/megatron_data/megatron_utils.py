@@ -82,7 +82,8 @@ def get_blend_from_list(
 
         is_none = map(lambda _: _ is None, weight_per_dataset)
         if any(is_none):
-            assert all(is_none)
+            if not all(is_none):
+                raise ValueError("All elements in 'is_none' must be True")
             weight_per_dataset = None
             raw_prefix_per_dataset = blend
 

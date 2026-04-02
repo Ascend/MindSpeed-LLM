@@ -78,7 +78,7 @@ def ascend_gmm_preprocess(self, routing_map: torch.Tensor) -> torch.Tensor:
             num_local_tokens_per_expert, group=self.ep_group
         ).reshape(ep_size, self.num_experts)
         self.num_global_tokens_per_local_expert = num_global_tokens_per_expert[
-            :, self.local_expert_indices[0] : self.local_expert_indices[-1] + 1
+            :, self.local_expert_indices[0]:self.local_expert_indices[-1] + 1
         ]
         self.output_splits = (
             self.num_global_tokens_per_local_expert.sum(axis=-1)

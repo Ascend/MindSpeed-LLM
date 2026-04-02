@@ -42,7 +42,7 @@ class FinetuneFeature(MindSpeedFeature):
         if getattr(args, 'no_pad_to_seq_lengths', False):
             args.variable_seq_lengths = True
         # use ring attention will pad samples, need to use --variable-seq-lengths to avoid PP issues
-        if int(getattr(args, 'context_parallel_size', 1)) > 1 and  getattr(args, 'reset_attention_mask', None) \
-            and getattr(args, 'attention_mask_type', None)=='causal' and getattr(args, 'context_parallel_algo', None) == 'megatron_cp_algo':
+        if int(getattr(args, 'context_parallel_size', 1)) > 1 and getattr(args, 'reset_attention_mask', None) \
+            and getattr(args, 'attention_mask_type', None) == 'causal' and getattr(args, 'context_parallel_algo', None) == 'megatron_cp_algo':
             args.variable_seq_lengths = True
 

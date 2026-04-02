@@ -572,7 +572,7 @@ class LoraParallelGroupedMLP(GroupedMLP):
             group_list = torch.cumsum(tokens_per_expert, dim=0)
             return lora_parallel_grouped_mlp_with_comp_and_comm_overlap_all2all_seq(permuted_local_hidden_states,
                                                                                     w1_a, w1_b,
-                                                                                    w2_a,w2_b,
+                                                                                    w2_a, w2_b,
                                                                                     (w1, w2,
                                                                                     self.weight1_lora_a,
                                                                                     self.weight1_lora_b,

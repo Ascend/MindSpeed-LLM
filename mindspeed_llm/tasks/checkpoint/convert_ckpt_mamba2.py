@@ -49,7 +49,7 @@ class MambaConverter:
             self.args.load_dir = self.args.load
             self.args.save_dir = self.args.mg_save_dir
 
-        elif  convert == 'mg2hf':
+        elif convert == 'mg2hf':
             self.args.target_tensor_parallel_size = self.args.tensor_model_parallel_size
             self.args.target_pipeline_parallel_size = self.args.pipeline_model_parallel_size
             self.args.load_model_type = 'mg'

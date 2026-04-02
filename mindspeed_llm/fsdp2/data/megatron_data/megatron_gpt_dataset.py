@@ -64,11 +64,14 @@ class GPTDatasetConfig(BlendedMegatronDatasetConfig):
         """Do asserts and set fields post init"""
         super().__post_init__()
 
-        assert self.tokenizer is not None
-
-        assert self.reset_position_ids is not None
-        assert self.reset_attention_mask is not None
-        assert self.eod_mask_loss is not None
+        if self.tokenizer is None:
+            raise ValueError("tokenizer must not be None")
+        if self.reset_position_ids is None:
+            raise ValueError("reset_position_ids must not be None")
+        if self.reset_attention_mask is None:
+            raise ValueError("reset_attention_mask must not be None")
+        if self.eod_mask_loss is None:
+            raise ValueError("eod_mask_loss must not be None")
 
 
 class GPTDataset(MegatronDataset):
@@ -285,9 +288,8 @@ class GPTDataset(MegatronDataset):
                 sample_parts.append(
                     self.dataset.get(self.document_index[i], offset=offset, length=length)
                 )
-        assert len(document_ids) == len(
-            sample_parts
-        ), f"len(document_ids) ({len(document_ids)}) != len(sample_parts) ({len(sample_parts)})"
+        if len(document_ids) != len(sample_parts):
+            raise ValueError(f"len(document_ids) ({len(document_ids)}) != len(sample_parts) ({len(sample_parts)})")
 
 
         length = sum(map(len, sample_parts))
@@ -567,7 +569,7 @@ def _build_document_index(
         numpy.ndarray: The document index
     """
     if not separate_final_epoch or num_epochs == 1:
-        document_index = numpy.mgrid[0:num_epochs, 0 : len(documents)][1]
+        document_index = numpy.mgrid[0:num_epochs, 0:len(documents)][1]
         document_index[:] = documents
         document_index = document_index.reshape(-1)
         document_index = document_index.astype(numpy.int32)
@@ -674,10 +676,10 @@ def _get_ltor_masks_and_position_ids(
             i = eod_index[j]
             # Mask attention loss.
             if reset_attention_mask and attention_mask is not None:
-                attention_mask[0, (i + 1) :, : (i + 1)] = 0
+                attention_mask[0, (i + 1):, :(i + 1)] = 0
             # Reset positions.
             if reset_position_ids:
-                position_ids[(i + 1) :] -= i + 1 - prev_index
+                position_ids[(i + 1):] -= i + 1 - prev_index
                 prev_index = i + 1
 
     if attention_mask is not None:
@@ -739,7 +741,7 @@ class MockGPTLowLevelDataset:
         """
         if length is None:
             length = self.sequence_lengths[idx] - offset
-        return self[idx][offset : offset + length]
+        return self[idx][offset:offset + length]
 
 
 class MockGPTDataset(GPTDataset):
@@ -769,7 +771,9 @@ class MockGPTDataset(GPTDataset):
         index_split: Split,
         config: GPTDatasetConfig,
     ) -> None:
-        assert config.mock
+        if not config.mock:
+            raise ValueError(f"Expected config.mock to be True, but got: {config.mock}")
+
 
         super().__init__(dataset, dataset_path, indices, num_samples, index_split, config)
 

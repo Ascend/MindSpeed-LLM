@@ -210,7 +210,7 @@ def build_dp_cp_replica_group(dp_cp_ranks: list, cur_rank):
         raise ValueError(f"size of dp_cp_ranks {len(dp_cp_ranks)} should be a multiple of replica"
                          f" num {tft_replica_group.REPLICA_NUM}")
     replica_group_size = len(dp_cp_ranks) // tft_replica_group.REPLICA_NUM
-    replica_lists = [dp_cp_ranks[i*replica_group_size:(i+1) * replica_group_size]
+    replica_lists = [dp_cp_ranks[i * replica_group_size:(i + 1) * replica_group_size]
                      for i in range(0, tft_replica_group.REPLICA_NUM)]
     for replica_list in replica_lists:
         if cur_rank in replica_list:

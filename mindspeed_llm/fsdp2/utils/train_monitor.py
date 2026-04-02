@@ -304,7 +304,7 @@ class TrainMonitor:
         return {
             "flops_achieved(T)": flops_achieved,
             "flops_promised(T)": flops_promised,
-            "mfu": mfu*100
+            "mfu": mfu * 100
         }
 
     def _compute_throughput_metrics(self, batch_seqlens: List[int], elapsed_time: float, batch_size: int) -> Dict[str, float]:

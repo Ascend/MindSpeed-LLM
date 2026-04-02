@@ -268,8 +268,9 @@ class CkptConvert(object):
 
                 for vpp_rank in range(self.vpp_size):
                     for pp_rank in range(self.pp_size):
-                        self.vpprank_layer_idxs[pp_rank][vpp_rank] = [num_layer_list_.pop(0) for _ in
-                                                                      range(layers_each_vpp[pp_rank][vpp_rank])]
+                        layer_count = layers_each_vpp[pp_rank][vpp_rank]
+                        layer_indexes = [num_layer_list_.pop(0) for _ in range(layer_count)]
+                        self.vpprank_layer_idxs[pp_rank][vpp_rank] = layer_indexes
         else:
             noop_layers_list = None if not self.noop_layers else np.array(
                 sorted(list(map(int, self.noop_layers.split(",")))))

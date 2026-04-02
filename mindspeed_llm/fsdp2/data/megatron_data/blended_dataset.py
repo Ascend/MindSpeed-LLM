@@ -46,14 +46,21 @@ class BlendedDataset(torch.utils.data.Dataset):
         size: Optional[int],
         config: BlendedMegatronDatasetConfig,
     ) -> None:
-        assert len(datasets) == len(weights)
-        assert len(datasets) < 32767
-        assert all(map(lambda _: type(_) == type(datasets[0]), datasets))
-        assert all(map(lambda _: _.index_split == datasets[0].index_split, datasets))
-        assert all(map(lambda _: _ > 0, weights))
-        assert all(map(lambda _: type(_) == type(weights[0]), weights))
+        if len(datasets) != len(weights):
+            raise ValueError(f"datasets({len(datasets)}) and weights({len(weights)}) must have the same length")
+        if len(datasets) >= 32767:
+            raise ValueError(f"Length({len(datasets)}) of datasets must not exceed 32768")
+        if not all(map(lambda _: isinstance(_, type(datasets[0])), datasets)):
+            raise ValueError("All dataset must be the same type")
+        if not all(map(lambda _: _.index_split == datasets[0].index_split, datasets)):
+            raise ValueError("All dataset must be the same index_split")
+        if not all(map(lambda _: _ > 0, weights)):
+            raise ValueError("All weights must be > 0")
+        if not all(map(lambda _: isinstance(_, type(weights[0])), weights)):
+            raise ValueError("All weights must be the same type")
         if size is None and isinstance(weights[0], float):
-            assert all(map(lambda _: _ == int(_), weights))
+            if not all(map(lambda _: _ == int(_), weights)):
+                raise ValueError("All elements in weights must be integers")
 
         # Alert user to unnecessary blending
         if len(datasets) == 1:

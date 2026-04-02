@@ -139,6 +139,7 @@ def elastic_training_get_forward_backward_func_wrapper(fn):
 
     return wrapper
 
+
 def global_aux_loss_forward_step(
     forward_step_func,
     data_iterator,
@@ -208,7 +209,7 @@ def global_aux_loss_forward_step(
             if args.use_global_aux_loss:
                 router_logits = globals().get('router_logits', None)
                 aux_loss = global_load_balancing_loss_func(router_logits, attention_mask=None, config=args)
-                output_tensor += args.moe_aux_loss_coeff*aux_loss
+                output_tensor += args.moe_aux_loss_coeff * aux_loss
 
         else:
             data = loss_func(output_tensor, non_loss_data=True)
