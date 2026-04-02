@@ -187,7 +187,7 @@ class GPTDataset(MegatronDataset):
             not self.masks_and_position_ids_are_cacheable
             or not self.masks_and_position_ids_are_cached
         ):
-            attention_mask, loss_mask, position_ids = _get_ltor_masks_and_position_ids(
+            attention_mask, loss_mask, position_ids, actual_seq_len = _get_ltor_masks_and_position_ids(
                 tokens,
                 self.config.tokenizer.eod,
                 self.config.reset_position_ids,
@@ -199,11 +199,13 @@ class GPTDataset(MegatronDataset):
                 self.cached_attention_mask = attention_mask
                 self.cached_loss_mask = loss_mask
                 self.cached_position_ids = position_ids
+                self.cache_actual_seq_len = actual_seq_len
                 self.masks_and_position_ids_are_cached = True
         else:
             attention_mask = self.cached_attention_mask
             loss_mask = self.cached_loss_mask
             position_ids = self.cached_position_ids
+            actual_seq_len = self.cache_actual_seq_len
 
         # For padded sequences, mask the loss
         loss_mask[labels == self._pad_token_id] = 0.0
@@ -216,20 +218,27 @@ class GPTDataset(MegatronDataset):
         if idx is None:
             loss_mask = torch.zeros_like(loss_mask)
         if self.config.create_attention_mask:
-            return {
-                "input_ids": tokens,
-                "labels": labels,
-                "attention_mask": attention_mask,
-                "loss_mask": loss_mask,
-                "position_ids": position_ids,
-            }
+            batch = {
+                    "input_ids": tokens,
+                    "labels": labels,
+                    "attention_mask": attention_mask,
+                    "loss_mask": loss_mask,
+                    "position_ids": position_ids,
+                }
+            if actual_seq_len is not None:
+                batch.update({"actual_seq_len": actual_seq_len})
+            return batch
+
         else:
-            return {
+            batch = {
                 "input_ids": tokens,
                 "labels": labels,
                 "loss_mask": loss_mask,
                 "position_ids": position_ids,
             }
+            if actual_seq_len is not None:
+                batch.update({"actual_seq_len": actual_seq_len})
+            return batch
 
     def _query_document_sample_shuffle_indices(
         self, idx: int
@@ -657,6 +666,7 @@ def _get_ltor_masks_and_position_ids(
 
     # Position ids.
     position_ids = torch.arange(seq_length, dtype=torch.long, device=data.device)
+    actual_seq_len = None
     # We need to clone as the ids will be modifed based on batch index.
     if reset_position_ids:
         position_ids = position_ids.clone()
@@ -684,7 +694,15 @@ def _get_ltor_masks_and_position_ids(
         # Convert attention mask to binary:
         attention_mask = attention_mask < 0.5
 
-    return attention_mask, loss_mask, position_ids
+
+    if reset_attention_mask:
+        seq_length_tensor = torch.tensor([seq_length])
+        if eod_index.numel() > 0 and eod_index[-1] == seq_length_tensor - 1:
+            actual_seq_len = eod_index + 1
+        else:
+            actual_seq_len = torch.cat([eod_index + 1, seq_length_tensor]) if eod_index.numel() > 0 else seq_length_tensor
+
+    return attention_mask, loss_mask, position_ids, actual_seq_len
 
 
 class MockGPTLowLevelDataset:

@@ -300,6 +300,14 @@ class DataArguments:
             "help": ("Single pass vs multiple pass data loader")
         },
     )
+    reset_attention_mask: Optional[bool] = field(
+        default=False,
+        metadata={"help": "If set, do reset attention masks in dataloader and generate actual_seq_len."}
+    )
+    append_eod: Optional[bool] = field(
+        default=False,
+        metadata={"help": "Append eod token when process data"}
+    )
     def __post_init__(self):
         def split_arg(arg):
             if isinstance(arg, str):
@@ -339,6 +347,12 @@ class DataArguments:
 
         if self.neat_packing:
             self.packing = True
+        if self.reset_attention_mask and not self.append_eod:
+            raise ValueError(
+                "reset_attention_mask requires append_eod to be True. "
+                "Please set append_eod=True when using reset_attention_mask."
+            )
+
 
         if self.packing:
             self.cutoff_len -= 1  # avoid pad_to_multiple_of, needs improve

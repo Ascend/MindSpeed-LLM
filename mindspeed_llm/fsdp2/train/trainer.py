@@ -515,6 +515,8 @@ class Trainer:
                     data["attention_mask"] = data["attention_mask"].to(device, non_blocking=True)
                 if "position_ids" in data:
                     data["position_ids"] = data["position_ids"].to(device, non_blocking=True)
+                if "actual_seq_len" in data:
+                    data["actual_seq_len"] = data["actual_seq_len"].view(-1)
                 batch_samples.append(data)
 
                 # Calculate sequence lengths for each sample in the current batch

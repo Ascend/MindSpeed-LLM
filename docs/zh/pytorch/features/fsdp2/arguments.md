@@ -373,6 +373,18 @@
       <td>single</td>
       <td>数据加载器类型，<code>single</code>表示顺序读取。</td>
     </tr>
+    <tr>
+      <td>reset_attention_mask</td>
+      <td>Optional[bool]</td>
+      <td>False</td>
+      <td>预训练的pack场景，开启后会根据eod位置生成actual_seq_len，传入模型中进行训练，开启reset_attention_mask需要开启append_eod。</td>
+    </tr>
+    <tr>
+      <td>append_eod</td>
+      <td>Optional[bool]</td>
+      <td>False</td>
+      <td>预训练数据处理，在文档的结尾添加EOD标志。</td>
+    </tr>
   </tbody>
 </table>
 

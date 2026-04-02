@@ -99,7 +99,7 @@ def convert_datasets(model_args, data_args, shared: bool, ):
                 cmd += ["--tokenizer-model", str(data_args.tokenizer_model)]
             if getattr(model_args, "model_name_or_path", False):
                 cmd += ["--model-name-or-path", str(model_args.model_name_or_path)]
-            if getattr(model_args, "append_eod", False):
+            if getattr(data_args, "append_eod", False):
                 cmd.append("--append-eod")
             if getattr(data_args, "enable_thinking", None) is not None:
                 cmd += ["--enable-thinking", str(data_args.enable_thinking)]
@@ -260,7 +260,7 @@ def core_gpt_dataset_config_from_args(model_args, data_args, training_args):
         mmap_bin_files=True,
         tokenizer=tokenizer,
         reset_position_ids=False,
-        reset_attention_mask=False,
+        reset_attention_mask=data_args.reset_attention_mask,
         eod_mask_loss=False,
         create_attention_mask=data_args.create_attention_mask_in_dataloader,
     )

@@ -27,6 +27,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 from torch.distributed.tensor import DTensor
+from einops import rearrange
 
 from transformers.activations import ACT2FN
 from transformers.cache_utils import Cache
@@ -370,6 +371,14 @@ def flash_attention_forward(
     if attention_mask is not None and attention_mask.dtype != torch.bool:
         # Convert to boolean type, making sdpa to force call FlashAttentionScore to improve performance.
         attention_mask = torch.logical_not(attention_mask.bool()).to(query.device)
+    
+    cu_seqlens = None
+    if "actual_seq_len" in kwargs:
+        cu_seqlens = kwargs.get("actual_seq_len", None).tolist()
+    seq_len = query.shape[2]
+    if cu_seqlens is not None:
+        input_layout = "TND"
+        query, key, value = [rearrange(x, 'b h s d -> (b s) h d') for x in [query, key, value]]
 
     attn_output = torch_npu.npu_fusion_attention(
         query,
@@ -379,10 +388,17 @@ def flash_attention_forward(
         input_layout=input_layout,
         atten_mask=attention_mask,
         keep_prob=1 - dropout,
+        actual_seq_qlen=cu_seqlens,
+        actual_seq_kvlen=cu_seqlens,
         scale=scaling,
         sparse_mode=2
     )[0]
-    attn_output = attn_output.transpose(1, 2).contiguous()
+
+    if input_layout == "BNSD":
+        attn_output = attn_output.transpose(1, 2).contiguous()
+    elif input_layout == "TND":
+        attn_output = rearrange(attn_output, '(b s) h d -> b s h d', s=seq_len)
+
     return attn_output, None
 
 
@@ -738,6 +754,7 @@ class Qwen3NextGatedDeltaNet(nn.Module):
         cache_params: Optional[Qwen3NextDynamicCache] = None,
         cache_position: Optional[torch.LongTensor] = None,
         attention_mask: Optional[torch.Tensor] = None,
+        **kwargs,
     ):
         hidden_states = apply_mask_to_padding_states(hidden_states, attention_mask)
 
@@ -812,6 +829,15 @@ class Qwen3NextGatedDeltaNet(nn.Module):
 
         if not use_precomputed_states:
 
+            cu_seqlens = None
+            input_layout = "BSND"
+            if "actual_seq_len" in kwargs:
+                cu_seqlens = kwargs.get("actual_seq_len", None)
+            if cu_seqlens is not None:
+                cu_seqlens = F.pad(cu_seqlens, pad=(1, 0), value=0)
+                input_layout = "TND"
+                query, key, value = [rearrange(x, 'b s h d -> 1 (b s) h d') for x in [query, key, value]]
+
 
             core_attn_out, last_recurrent_state = self.chunk_gated_delta_rule(
                 query,
@@ -822,8 +848,11 @@ class Qwen3NextGatedDeltaNet(nn.Module):
                 initial_state=None,
                 output_final_state=cache_params is not None,
                 use_qk_l2norm_in_kernel=True,
-                chunk_size=self.gdn_chunk_size
+                chunk_size=self.gdn_chunk_size,
+                cu_seqlens=cu_seqlens,
             )
+            if input_layout == "TND":
+                core_attn_out = rearrange(core_attn_out, '1 (b s) h d -> b s h d', s=seq_len)
 
         else:
             core_attn_out, last_recurrent_state = self.recurrent_gated_delta_rule(
@@ -1103,6 +1132,7 @@ class Qwen3NextDecoderLayer(GradientCheckpointingLayer):
                 cache_params=past_key_values,
                 cache_position=cache_position,
                 attention_mask=attention_mask,
+                **kwargs,
             )
         elif self.layer_type == "full_attention":
             # Self Attention
