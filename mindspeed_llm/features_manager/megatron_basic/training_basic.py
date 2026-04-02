@@ -33,6 +33,14 @@ class TrainingBasicFeature(MindSpeedFeature):
         if not args.reset_attention_mask and args.neat_pack:
             raise ValueError("Require set `--reset-attention-mask` when `--neat-pack` is set.")
 
+        # Ensure no PP/VPP stage contains only empty layers during LoRA fine-tuning
+        has_valid_lora_target = hasattr(args, 'lora_target_modules') and args.lora_target_modules
+        if has_valid_lora_target and args.noop_layers:
+            from mindspeed_llm.training.utils import check_pipeline_config
+            check_pipeline_config(num_layers=args.num_layers, pp=args.pipeline_model_parallel_size,
+                                vpp_stage=getattr(args, "num_layers_per_virtual_pipeline_stage", None),
+                                noop_layers=args.noop_layers)
+
         # Bypass megatron validation when pp == 2 and vpp is enabled.
         self.origin_num_layers_per_virtual_pipeline_stage = None
         self.origin_noverlap_p2p_comm = None
