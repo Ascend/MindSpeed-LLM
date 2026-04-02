@@ -104,7 +104,7 @@
     ```
 
 5. 配置单机或多机微调脚本  
-    详细的参数配置请参考[Qwen3-8b微调脚本](../../../../../../examples/mcore/qwen3/tune_qwen3_8b_4K_full_ptd.sh)。脚本中的环境变量配置见[环境变量说明](../../../features/mcore/environment_variable.md)。
+    详细的参数配置请参考[Qwen3-8B微调脚本](../../../../../../examples/mcore/qwen3/tune_qwen3_8b_4K_full_ptd.sh)。脚本中的环境变量配置见[环境变量说明](../../../features/mcore/environment_variable.md)。
 
     环境变量确认无误后，需要在脚本中修改节点相关配置，单机和多机配置如下：
 
@@ -126,8 +126,8 @@
         NPUS_PER_NODE=8  # 每个节点的卡数
         MASTER_ADDR="your master node IP"  # 都需要修改为主节点的IP地址（不能为localhost）
         MASTER_PORT=6000
-        NNODES=2  # 集群里的节点数，以实际情况填写,
-        NODE_RANK="current node id"  # 当前节点的RANK，多个节点不能重复，主节点为0, 其他节点可以是1,2..
+        NNODES=2  # 集群里的节点数，以实际情况填写
+        NODE_RANK="current node id"  # 当前节点的RANK，多个节点不能重复，主节点为0, 其他节点可以是1、2...
         WORLD_SIZE=$(($NPUS_PER_NODE * $NNODES))
         ```
 
