@@ -89,6 +89,7 @@ from mindspeed_llm.features_manager.arguments.deprecated_args import DeprecatedA
 from mindspeed_llm.features_manager.convert_checkpoint.convert_checkpoint import CheckpointFeature
 from mindspeed_llm.features_manager.memory.chunk_loss import ChunkLossFeature
 from mindspeed_llm.features_manager.layerwise_disaggregated_training.u_shaped_split_feature import UShapedSplitFeature
+from mindspeed_llm.features_manager.qat.qat_quant_engine import QATQuantEngineFeature
 
 FEATURES_LIST = [
     # MindSpeed Legacy Features
@@ -314,6 +315,12 @@ def add_layerwise_diaggregated_training_feature(feature_list: List[MindSpeedFeat
     ])
 
 
+def add_qat_features(features_list: List[MindSpeedFeature]):
+    features_list.extend([
+        QATQuantEngineFeature(),
+    ])
+
+
 def create_features_list():
     features_list = []
     add_megatron_basic_features(features_list)
@@ -339,6 +346,7 @@ def create_features_list():
     add_finetune_feature(features_list)
     add_ai_framework_feature(features_list)
     add_layerwise_diaggregated_training_feature(features_list)
+    add_qat_features(features_list)
 
     return features_list
 

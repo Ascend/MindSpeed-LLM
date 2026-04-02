@@ -392,6 +392,14 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td>Y</td>
     </tr>
     <tr>
+        <td rowspan="1">qwen3-30b</td>
+        <td>qwen3-30b w4a16-mxfp4</td>
+        <td><a href="pipeline\st\qwen3-30b\tune_qwen3_30b_a3b_4K_full_ptd_tp4_pp2_ep1.sh">tune_qwen3_30b_a3b_4K_full_ptd_tp4_pp2_ep1.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
         <td rowspan="1">rlhf</td>
         <td>rlhf GRPO</td>
         <td><a href="pipeline\st\rlhf\test_rlhf_qwen25_7b_tp2_pp2.sh">test_rlhf_qwen25_7b_tp2_pp2.sh</a></td>

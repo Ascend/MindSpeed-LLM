@@ -142,6 +142,15 @@
         <td>/data/ci/cache/qwen3-30b-pp4tp2layer4</td>
     </tr>
     <tr>
+        <td>tune_qwen3_30b_a3b_4K_full_ptd_tp4_pp2_ep1.sh</td>
+        <td>/data/ci/models/Qwen3-30B-A3B/hf/Qwen3-30B-A3B</td>
+        <td>/data/ci/models/Qwen3-30B-A3B/mg/qwen3-30b-layer4</td>
+        <td>/data/ci/datasets/origin/alpaca/train-00000-of-00001-a09b74b3ef9c3b56.parquet</td>
+        <td>data/ci/datasets/processed/qwen3_30b_convert_alpaca</td>
+        <td>/</td>
+        <td>/</td>
+    </tr>
+    <tr>
         <td>test_mamba2_hf2mcore_tp1pp2</td>
         <td>/data/ci/models/mamba2/hf/mamba2-2.7b-hf</td>
         <td>/</td>
