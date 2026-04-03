@@ -230,7 +230,7 @@ torchrun $DISTRIBUTED_ARGS ./tests/tools/sft_inference/evaluate_for_sft.py \
        --seed 42 \
        --load ${CHECKPOINT} \
        --exit-on-missing-checkpoint \
-       # 添加SFT评估相关参数 \
+       # 添加SFT评估相关参数
        --eval-data-path ${EVAL_DATA_PATH} \
        --eval-batch-size 10 \
        --eval-shuffle \

@@ -48,7 +48,7 @@
 
 ```shell
 #!/bin/bash
-mkdir ./model_from_hf/llama-2-7b-hf/
+mkdir -p ./model_from_hf/llama-2-7b-hf/
 cd ./model_from_hf/llama-2-7b-hf/
 wget https://huggingface.co/daryl149/llama-2-7b-hf/resolve/main/config.json
 wget https://huggingface.co/daryl149/llama-2-7b-hf/resolve/main/generation_config.json

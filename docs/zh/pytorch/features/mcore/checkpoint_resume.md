@@ -21,7 +21,7 @@
 | `--no-load-rng`               | ❌ 不可设置，否则不会恢复随机状态              |
 
 > [!NOTE]
->  若设置了 `--finetune` 或 `--no-load-optim`， `--no-load-rng`，系统将不恢复优化器状态和随机状态，导致无法真正“续训”。
+>  若设置了 `--finetune`、`--no-load-optim` 或 `--no-load-rng`，系统将不恢复优化器状态和随机状态，导致无法真正“续训”。
 
 ---
 

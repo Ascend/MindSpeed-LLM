@@ -67,7 +67,7 @@
         --load-dir ./model_weights/qwen3_mcore/ \
         --save-dir-edge ./model_weights/qwen3_vpp_edge/ \
         --save-dir-cloud ./model_weights/qwen3_vpp_cloud/ \
-        --merge-stages 0,2 \
+        --merge-stages 0,1 \
         --middle-stages 1
     ```
 

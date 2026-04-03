@@ -197,7 +197,7 @@ python examples/mcore/deepseek3/convert_ckpt_deepseek3_mcore2hf.py \
     --source-tensor-parallel-size 1 \
     --source-pipeline-parallel-size 4 \
     --source-expert-parallel-size 8 \
-    --load-dir ./model_weights/deepseek3-lora \   
+    --load-dir ./model_weights/deepseek3-lora \
     --save-dir ./model_from_hf/deepseek3-hf \
     --num-layers 61 \
     --first-k-dense-replace 3 \
@@ -283,7 +283,7 @@ python examples/mcore/deepseek3/convert_ckpt_deepseek3_mcore2hf.py \
 
 合并脚本同`2.1 LoRA 权重包含 base 权重`
 
-### 3.2 LoRA 权重与 base 权重分开加载
+### 3.2 QLoRA 权重与 base 权重分开加载
 
 如果需要将 base 权重和独立的 QLoRA 权重合并转为huggingface格式，可以分别指定两个路径进行加载：
 

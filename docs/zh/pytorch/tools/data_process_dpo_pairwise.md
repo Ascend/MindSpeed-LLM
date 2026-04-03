@@ -27,6 +27,7 @@ pairwise配对数据集样本示例：
 `Pairwise` 数据集下载可以基于网页直接下载，也可以基于命令行下载，比如：
 
 ```shell
+mkdir -p dataset
 cd dataset/
 wget https://huggingface.co/datasets/Intel/orca_dpo_pairs/resolve/main/orca_rlhf.jsonl
 cd ..

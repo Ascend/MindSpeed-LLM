@@ -37,7 +37,7 @@ python ./preprocess_data.py \
 
 初始化attn_mask为压缩下三角矩阵（2048*2048）；
 
-<img alt="casual_mask.png" src="../../figures/variable_length_flash_attention/casual_mask.png" width="261"/>
+<img alt="causal_mask.png" src="../../figures/variable_length_flash_attention/causal_mask.png" width="261"/>
 
 多个文档被视为同一序列，互相间的self attention没有掩盖，所有token均参与计算。
 

@@ -25,7 +25,7 @@
 最简单的使用方式如下：
 
 ```bash
-python mindspeed_llm/fsdp2/checkpoint/merge_dcp_to_hf.py \   
+python mindspeed_llm/fsdp2/checkpoint/merge_dcp_to_hf.py \
         --load-dir <DCP权重路径>
 ```
 

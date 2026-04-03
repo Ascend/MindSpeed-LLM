@@ -59,10 +59,8 @@ MindSpeed-LLM 已支持的大模型评估数据统计如下：
 | Qwen2.5-Math-7B      | MMLU-STEM  | 67.8%    | [67.8%](https://github.com/QwenLM/Qwen2.5-Math/tree/main/)             | Qwen2.5-Math-72B |MMLU-STEM| 83.7%    | [82.8%](https://github.com/QwenLM/Qwen2.5-Math/tree/main/)                         |
 | MiniCPM3-4B          | MMLU       | 63.7%     | [64.6%](https://huggingface.co/openbmb/MiniCPM3-4B)                   | Phi-3.5-mini-instruct | MMLU | 64.39% | [64.34%](https://huggingface.co/microsoft/Phi-3.5-mini-instruct)                                                                  |
 | Phi-3.5-MoE-instruct | MMLU       | 78.5%     | [78.9%](https://huggingface.co/microsoft/Phi-3.5-MoE-instruct)        | DeepSeek-Math-7B  |MMLU-STEM| 56.5%   | [56.5%](https://github.com/deepseek-ai/DeepSeek-Math)                              |
-| DeepSeek-V2.5        | MMLU       | 79.3%     | [80.6%](https://huggingface.co/deepseek-ai/DeepSeek-V2.5)    +
-
-         | DeepSeek-V2-236B | MMLU   | 78.1%     | [78.5%](https://huggingface.co/deepseek-ai/DeepSeek-V2)                            |
-| LLaMA3.3-70B-Instruct | MMLU       | 82.7%     | --                                                                   | QwQ-32B          | MMLU   | 81.19%    | --                                                                                 |
+| DeepSeek-V2.5        | MMLU       | 79.3%     | [80.6%](https://huggingface.co/deepseek-ai/DeepSeek-V2.5)             | DeepSeek-V2-236B | MMLU   | 78.1%     | [78.5%](https://huggingface.co/deepseek-ai/DeepSeek-V2)                            |
+| LLaMA3.3-70B-Instruct | MMLU       | 82.7%     | --                                                                    | QwQ-32B          | MMLU   | 81.19%    | --                                                                                 |
 
 ## 评估指导手册
 

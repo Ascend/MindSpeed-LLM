@@ -127,7 +127,7 @@ class GptOssMLP(nn.Module):
 
 ```python
 # 1. 导入自定义类
-from mindspeed_llm.fsdp2.models.custom_model.custom_model import CustomModelForCausalLM
+from mindspeed_llm.fsdp2.models.custom_model.modeling_custom_model import CustomModelForCausalLM
 
 class ModelRegistry:
     # ...

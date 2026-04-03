@@ -6,7 +6,7 @@ Mamba为解决transformer模型序列长度2次方复杂度提出，成为长序
 
 ## 问题
 
-在Mamba的SSM递归运算步骤中存在时间依赖关系，传统CP必须等上一CP rank运算完毕将结果传递到下一CP rank方可执行下一步运算，引入空闲等待，设计了一种并行Mamba-CP方案使得所有rank可以并发执行状态传递计算，相对传统CP性能大幅提升；
+Mamba的SSM递归运算步骤存在时间依赖关系。传统CP必须等上一CP rank运算完毕，将结果传递到下一CP rank方可执行下一步运算，引入空闲等待。故设计了一种并行Mamba-CP方案使得所有rank可以并发执行状态传递计算，相对传统CP性能大幅提升。
 
 传统CP见Mamba-2 paper Figure 5
 
