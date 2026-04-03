@@ -140,7 +140,7 @@ localhost.localdomain_3687609_20260129150104894_ascend_pt
 ## 可视化性能分析
 
 以MindStudio Insight工具为例，对采集到的profiling进行分析，请参考[MindStudio Insight工具部署文档](https://gitcode.com/Ascend/msinsight#%E7%8E%AF%E5%A2%83%E9%83%A8%E7%BD%B2)进行工具部署，然后将生成的profiling文件导入到工具中，进行性能的拆解分析。  
-在这里我们简单介绍MindStudio Insight工具主要使用的几个界面:
+在这里我们简单介绍MindStudio Insight工具主要使用的几个界面：
 
 - **时间线（Timeline）**
 

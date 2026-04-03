@@ -40,10 +40,10 @@
 
 **表 1**  MindSpeed LLM软件版本配套表
 
-| MindSpeed LLM版本 | MindSpeed版本      | Megatron版本 | PyTorch版本  | torch_npu版本 | CANN版本 | Python版本            | MindSpeed-Core-MS版本 |
+| MindSpeed LLM版本 | MindSpeed Core代码分支名称 | Megatron版本 | PyTorch版本  | torch_npu版本 | CANN版本 | Python版本            | MindSpeed-Core-MS版本 |
 | ---------------- | ------------------ | ------------ | -----------  | ------------- | -------- | --------------------- | ------------------- |
 | master（在研版本）| master（在研版本）  | core_v0.12.1  | 2.7.1       | 在研版本       | 在研版本  | Python3.10            | master              |
-| 26.0.0（商用）   | 26.0.0             | core_v0.12.1  | 2.7.1       | 26.0.0        | 9.0.0  | Python3.10            | r0.5.0                 |
+| 26.0.0（商用）   | 26.0.0_core_r0.12.1 | core_v0.12.1  | 2.7.1       | 26.0.0        | 9.0.0  | Python3.10            | r0.5.0                 |
 | 2.3.0（商用）    | 2.3.0_core_r0.12.1 | core_v0.12.1  | 2.7.1       | 7.3.0         | 8.5.0  | Python3.10            | r0.5.0                 |
 | 2.2.0（商用）    | 2.2.0_core_r0.12.1 | core_v0.12.1  | 2.7.1       | 7.2.0         | 8.3.RC1  | Python3.10            | r0.4.0               |
 
@@ -54,6 +54,7 @@
 
 |MindSpeed LLM版本|CANN版本|Ascend Extension for PyTorch版本|MindSpeed-Core-MS版本|
 |--|--|--|--|
+|26.0.0|CANN 8.5.0<br>CANN 8.3.RC1<br>CANN 8.2.RC1<br>CANN 8.1.RC1<br>CANN 8.0.0<br>|26.0.0|r0.5.0|
 |2.3.0|CANN 8.5.0<br>CANN 8.3.RC1<br>CANN 8.2.RC1<br>CANN 8.1.RC1<br>CANN 8.0.0<br>|7.3.0|r0.5.0|
 |2.2.0|CANN 8.3.RC1<br>CANN 8.2.RC1<br>CANN 8.1.RC1<br>CANN 8.0.0<br>CANN 8.0.RC3<br>CANN 8.0.RC2|7.2.0|r0.4.0|
 
@@ -111,7 +112,8 @@
 |文档名称|内容简介|更新说明|
 |--|--|--|
 |《[MindSpeed LLM安装指导](./install_guide.md)》|指导如何在NPU上基于PyTorch和MindSpore框架完成MindSpeed LLM的安装，内容涵盖硬件与操作系统兼容性说明、驱动固件及CANN基础软件安装，以及两种框架下的完整安装流程，帮助用户快速搭建大语言模型分布式训练环境。|-|
-|《[MindSpeed LLM快速入门](./quick_start.md)》|以Qwen2.5-7B为例，指导初次接触MindSpeed LLM的开发者完成NPU上的预训练任务，帮助用户快速上手大模型分布式训练。|-|
+|《[MindSpeed LLM快速入门（基于PyTorch）](./pytorch/training/quick_start.md)》|以Qwen3-8B为例，指导初次接触MindSpeed LLM的开发者完成NPU上的预训练和微调任务，帮助用户快速上手大模型分布式训练。|-|
+ |《[MindSpeed LLM快速入门（基于MindSpore）](./mindspore/quick_start.md)》|以Qwen3-0.6B为例，指导初次接触MindSpeed LLM的开发者完成NPU上的预训练和微调任务，帮助用户快速上手大模型分布式训练。|-|
 
 ## 病毒扫描及漏洞修补列表
 
@@ -119,9 +121,9 @@
 
 |防病毒软件名称|防病毒软件版本|病毒库版本|扫描时间|扫描结果|
 |---|---|---|---|---|
-|QiAnXin|8.0.5.5260|2026-01-03 08:00:00.0|2025-12-06|无病毒，无恶意|
-|Kaspersky|12.0.0.6672|2026-01-05 10:03:00.0|2025-12-06|无病毒，无恶意|
-|Bitdefender|7.5.1.200224|7.100087|2025-12-06|无病毒，无恶意|
+|QiAnXin|8.0.5.5260|2026-04-01 08:00:00.0|2026-04-02|无病毒，无恶意|
+|Kaspersky|12.0.0.6672|2026-04-02 10:05:00.0|2026-04-02|无病毒，无恶意|
+|Bitdefender|7.5.1.200224|7.100588|2026-04-02|无病毒，无恶意|
 
 ### 漏洞修补列表
 

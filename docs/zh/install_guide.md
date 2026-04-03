@@ -116,7 +116,7 @@ pip3 install torch_npu-2.7.1rc1-cp310-cp310-manylinux_2_28_aarch64.whl
 
 ### 安装MindSpore框架 
 
-参考[MindSpore](https://gitcode.com/mindspore/mindspore#%E5%AE%89%E8%A3%85)完成MindSpore的安装。
+参考[MindSpore官方安装指导](https://www.mindspore.cn/install)，根据系统类型、CANN版本及Python版本获取相应的安装命令以安装indSpore 2.9.0，安装前请确保网络畅通。
 
 ### 安装MindSpeed LLM
 
