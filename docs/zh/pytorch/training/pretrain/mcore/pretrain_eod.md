@@ -131,7 +131,7 @@
 
         # tokenizer-type不为PretrainedFromHF
         TOKENIZER_MODEL="./model_from_hf/Qwen3-8B/tokenizer.model"
-        --tokenizer-model ${TOKENIZER_MODEL} \
+        --tokenizer-model ${TOKENIZER_MODEL}
         ```
     
     > [!NOTE]

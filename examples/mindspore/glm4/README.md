@@ -46,7 +46,7 @@ MindSpeed-LLM MindSpore后端的安装步骤参考[MindSpeed LLM安装指导](..
    提供脚本将huggingface开源权重转换为mcore权重，用于训练、推理、评估等任务。使用方法如下，请根据实际需要的TP/PP等切分策略和权重路径修改权重转换脚本：
     ```sh
     cd MindSpeed-LLM
-    bash example/mindspore/glm4/ckpt_convert_glm4_hf2mcore.sh
+    bash examples/mindspore/glm4/ckpt_convert_glm4_hf2mcore.sh
     ```
    运行脚本后，预期会看到类似以下的日志输出，表示权重转换成功：
     ```log
@@ -126,7 +126,7 @@ bash examples/mindspore/glm4/generate_glm4_9b_ms.sh
 ### 评估
 评估使用方法如下
 ```sh
-# 以7b模型为例
+# 以9b模型为例
 cd MindSpeed-LLM
 bash examples/mindspore/glm4/evaluate_glm4_9b_ms.sh
 ```

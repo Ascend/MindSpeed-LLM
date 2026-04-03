@@ -52,7 +52,7 @@ bash examples/mcore/llama2/evaluate_llama2_7b_full_mmlu_ptd.sh
 
 【--prompt-type】
 
-模型对话模板，选择模型对应的对话模板进行评估
+模型对话模板，用于选择模型对应的对话模板进行评估
 
 【--hf-chat-template】
 

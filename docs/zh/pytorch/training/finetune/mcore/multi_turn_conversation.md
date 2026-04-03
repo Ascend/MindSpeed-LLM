@@ -32,7 +32,7 @@ Yes, I do remember. You came to buy flowers for your sister's birthday, and you 
 
 ### 多轮对话数据处理
 
-对使用带有`history`字段的 Alpaca 数据集，并运行如下[脚本](../../../../../../examples/mcore/gemma2/data_convert_gemma2_instruction.sh)：
+使用带有`history`字段的 Alpaca 数据集运行如下[脚本](../../../../../../examples/mcore/gemma2/data_convert_gemma2_instruction.sh)：
 
 ```shell
 # 请根据 examples/README.md 下 “数据集准备及处理” 章节下载 Alpaca 数据集

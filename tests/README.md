@@ -46,7 +46,7 @@ CI门禁用例看护仓库重点模型和基本特性，覆盖冒烟测试场景
     </tr>
     <tr>
         <td>cp_hybrid，gqa</td>
-        <td><a href="st\shell_scripts\chatglm3_gqa_cp4.sh">chatglm3_gqa_cp4.sh</a></td>
+        <td><a href="st/shell_scripts/chatglm3_gqa_cp4.sh">chatglm3_gqa_cp4.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>

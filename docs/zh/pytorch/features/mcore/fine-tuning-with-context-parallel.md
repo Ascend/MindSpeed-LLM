@@ -22,7 +22,7 @@
 
 【--reset-attention-mask】
 
-每条数据由不同的样本拼接而成，因此其attention mask不再是单纯的下三角形状。该参数开启时，会按照EOD计算句子的分隔位置，生成actual-seq-len，传入FA算子中相当于锯齿状的mask计算效果，FA进行TND格式计算。
+每条数据由不同的样本拼接而成，因此其attention mask不再是单纯的下三角形状。该参数开启时，会按照EOD计算句子的分隔位置并生成actual-seq-len。传入FA算子中产生锯齿状的mask计算效果，FA随后进行TND格式计算。
 
 【--context-parallel-size】
 

@@ -34,7 +34,7 @@
 
 效果：整个训练流程中，边侧仅向云侧发送激活值（前向传播阶段）和梯度（反向传播阶段），原始样本无需上云。
 
-注：U-Shape切分情况下，每个样本在边侧需要完成四步处理：模型首层前向（ForwardStart，FS）、模型尾层前向（ForwardEnd，FE）、模型尾层反向（BackwardStart，BE）和模型首层反向（BackwardEnd，BE）。
+注：U-Shape切分情况下，每个样本在边侧需要完成四步处理：模型首层前向（ForwardStart，FS）、模型尾层前向（ForwardEnd，FE）、模型尾层反向（BackwardStart，BS）和模型首层反向（BackwardEnd，BE）。
 
 ### 跨域协同训练性能优化
 

@@ -1,6 +1,6 @@
 ## 模型脚本声明
 
-目前tests/minspore/0day/qwen3下的模型仅支持0day首发下基本功能跑通，处于内部测试阶段，未完成充分的性能测试和验收。在实际使用中可能存在未被发现的问题，待后续充分验证后会发布正式版本。
+目前tests/mindspore/0day/qwen3下的模型仅支持0day首发下基本功能跑通，处于内部测试阶段，未完成充分的性能测试和验收。在实际使用中可能存在未被发现的问题，待后续充分验证后会发布正式版本。
 
 ## 权重转换
 ### 使用说明
@@ -119,7 +119,7 @@ tokenizer的路径，指向tokenizer所在的目录
 
 
 ## 代码适配
-执行以下命令拉去MindSpore-Core-MS代码仓：
+执行以下命令拉取MindSpore-Core-MS代码仓：
 ```commandline
 git clone -b feature-0.2 https://gitcode.com/ascend/MindSpeed-Core-MS.git
 ```
@@ -161,7 +161,7 @@ TOKENIZER_MODEL="./model_from_hf/qwen3/tokenizer"  # 词表路径，填入下载
 ```commandline
 GPUS_PER_NODE=8
 MASTER_PORT=6000
-MASTER_ADDR=locahost # 主节点IP
+MASTER_ADDR=localhost # 主节点IP
 NNODES=1
 NODE_RANK=0  
 MASTER_PORT=9110
