@@ -171,7 +171,7 @@ CKPT_LOAD_DIR="/path/to/huggingface_model/Qwen3-8B"
 
 ## 使用约束
 
-- 当前支持的 HuggingFace 模型类型：`qwen3, qwen3-moe, deepseek3, glm45-moe, bailing_mini, qwen3-next, seed-oss, deepseek32, magistral, deepseek2-lite`。
+- 当前支持的 HuggingFace 模型类型：`qwen3, qwen3-moe, deepseek3, glm45-air, bailing_mini, qwen3-next, seed-oss, deepseek32, magistral, deepseek2-lite`。
 
 - 当前数据集自动转换功能仅支持以下原始数据格式：`parquet, arrow, csv, json, jsonl, txt`, 暂不支持其他的格式。
 

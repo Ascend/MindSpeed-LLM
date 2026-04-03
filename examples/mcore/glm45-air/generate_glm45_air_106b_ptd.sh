@@ -87,4 +87,4 @@ torchrun ${DISTRIBUTED_ARGS} inference.py \
          --load ${CHECKPOINT}  \
          --distributed-backend nccl \
          --transformer-impl local \
-         | tee logs/generate_glm45_moe_106b_mcore.log
+         | tee logs/generate_glm45_air_106b_mcore.log

@@ -82,7 +82,7 @@ ARCH_ALIAS_MAP = {
     # HF architecture  ->  model-type-hf
     "bailingmoev2": "bailing_mini",
     "phi3": "phi3.5",
-    "glm4moe": "glm45-moe" 
+    "glm4moe": "glm45-air"
 }
 
 

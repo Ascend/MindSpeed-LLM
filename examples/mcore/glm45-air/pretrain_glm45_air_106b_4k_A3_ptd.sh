@@ -52,13 +52,11 @@ GPT_ARGS="
     --recompute-method uniform \
     --recompute-granularity full \
     --recompute-num-layers 1 \
-    --fix-router \
     --noop-layers 1,47 \
     --sequence-parallel \
     --use-mcore-models \
     --use-flash-attn \
     --mtp-num-layers 1 \
-    --post-norm \
     --kv-channels 128 \
     --use-fused-rmsnorm \
     --use-fused-swiglu \
@@ -80,6 +78,7 @@ GPT_ARGS="
     --add-qkv-bias \
     --position-embedding-type rope \
     --rotary-percent 0.5 \
+    --rotary-base 1000000 \
     --no-rope-fusion \
     --normalization RMSNorm \
     --swiglu \
@@ -132,4 +131,4 @@ torchrun ${DISTRIBUTED_ARGS} pretrain_gpt.py \
     --save ${CKPT_SAVE_DIR} \
     --distributed-backend nccl \
     --transformer-impl local \
-    | tee logs/pretrain_glm45_moe_106b_4k_mcore_A3.log
+    | tee logs/pretrain_glm45_air_106b_4k_mcore_A3.log

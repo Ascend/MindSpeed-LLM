@@ -2,7 +2,7 @@ import os
 from argparse import ArgumentParser
 from mindspeed.features_manager.feature import MindSpeedFeature
 
-MODEL_TYPE_HF_CHOICES = ['qwen3', 'qwen3-moe', 'deepseek3', 'glm45-moe', 'bailing_mini', 'qwen3-next', 'seed-oss', 'deepseek32', 'magistral', 'deepseek2-lite', 'phi3.5', 'mamba2']
+MODEL_TYPE_HF_CHOICES = ['qwen3', 'qwen3-moe', 'deepseek3', 'glm45-air', 'bailing_mini', 'qwen3-next', 'seed-oss', 'deepseek32', 'magistral', 'deepseek2-lite', 'phi3.5', 'mamba2']
 
 
 class CheckpointFeature(MindSpeedFeature):
@@ -13,7 +13,7 @@ class CheckpointFeature(MindSpeedFeature):
         group = parser.add_argument_group(title=self.feature_name)
 
         group.add_argument('--model-type-hf', type=str, default=None,
-                            choices=['qwen3', 'qwen3-moe', 'deepseek3', 'glm45-moe', 'bailing_mini', 'qwen3-next', 'seed-oss',
+                            choices=['qwen3', 'qwen3-moe', 'deepseek3', 'glm45-air', 'glm45', 'bailing_mini', 'qwen3-next', 'seed-oss',
                                  'baichuan','baichuan2', 'llama2', 'mixtral', 'chatglm3', 'gemma', 'gemma2',
                                  'bloom', 'bloom_3b', 'qwen', 'internlm2', 'deepseek2', 'minicpm', 'minicpm3', 'minicpm-moe',
                                  'deepseek2-lite', 'qwen2-moe', 'phi3.5', 'phi3.5-moe', 'hunyuan', 'glm4', 'magistral', 'deepseek32', 'mamba2', 'plm', 'longcat', 'glm5'],

@@ -4,7 +4,7 @@ export CUDA_DEVICE_MAX_CONNECTIONS=1
 
 # 权重格式转换
 python convert_ckpt_v2.py \
-    --model-type-hf glm45-moe \
+    --model-type-hf glm45-air \
     --load-model-type mg \
     --save-model-type hf \
     --load-dir ./model_weights/glm45_air_mcore \

@@ -83,7 +83,7 @@ LoRA微调需要在全参微调脚本基础上，在TUNE_ARGS中增加LoRA参数
 
 - `lora-r：LoRA rank`，表示低秩矩阵的维度。较低的 rank 值模型在训练时会使用更少的参数更新，从而减少计算量和内存消耗。然而，过低的 rank 可能限制模型的表达能力。
 - `lora-alpha`：控制 LoRA 权重对原始权重的影响比例, 数值越高则影响越大。一般保持 `α/r` 为 2。
-- `lora-fusion`： 是否启用[CCLoRA](../../features/mcore/cc_lora.md)算法，该算法通过计算通信掩盖提高性能。
+- `lora-fusion`： 是否启用[CCLoRA](../../features/mcore/cc_lora.md)算法，该算法通过计算通信掩盖提高性能。当前GLM-4.5模型不支持开启该参数。
 - `lora-target-modules`：选择需要添加 LoRA 的模块。当前可选模块： `linear_qkv`, `linear_proj`, `linear_fc1`, `linear_fc2`
 
 上述参数配置完成后运行LoRA微调脚本：
@@ -170,17 +170,13 @@ bash examples/mcore/qwen3/evaluate_qwen3_8b_lora_ptd.sh
 ```shell
 source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路径
 
-python convert_ckpt.py
-    --use-mcore-models \
-    --model-type GPT \
+python convert_ckpt_v2.py \
     --load-model-type mg \
     --save-model-type hf \
-    --target-tensor-parallel-size 1 \          # 转为HF权重时切分需要设置为1
-    --target-pipeline-parallel-size 1 \        # 转为HF权重时切分需要设置为1
-    --spec mindspeed_llm.tasks.models.spec.qwen3_spec layer_spec \
-    --load-dir ./model_weights/qwen3_mcore/ \  # Megatron权重保存路径
-    --lora-load ./ckpt/qwen3_lora \            # LoRA微调完成后的权重保存路径
-    --save-dir ./model_from_hf/qwen3_hf/       # 转换后的HF权重路径，若填写原始HF模型路径，新权重将存储于./model_from_hf/qwen3_hf/mg2hg/
+    --load-dir ./model_weights/qwen3_mcore/ \   # Megatron权重保存路径
+    --lora-load ./ckpt/qwen3_lora \             # LoRA微调完成后的权重保存路径
+    --save-dir ./model_weights/qwen3_mcore2hf/  # 转换后的HF权重路径
+    --hf-cfg-dir ./model_from_hf/qwen3_hf/      # 原始HF权重路径，将配置文件复制到权重转换生成的HuggingFace权重目录
     --lora-r 16 \
     --lora-alpha 32 \
     --lora-target-modules linear_qkv linear_proj linear_fc1 linear_fc2 \
@@ -196,25 +192,6 @@ bash examples/mcore/qwen3/ckpt_convert_qwen3_mcore2hf_lora.sh
 注意：
 
 - LoRA参数的值应与微调时的参数设置保持一致，以确保转换后的模型具有相同的性能表现和兼容性。
-- 当前权重转换V2版本不支持LoRA参数，且V1和V2不支持混用，若要使用LoRA权重与Base权重的合并与转换功能，第1步的模型权重转换也需要使用V1版本。
+- 当前LoRA微调不支持开启 `--mtp-num-layers` 参数。
 - 由于调用peft库合并LoRA权重后，权重数据类型为float16，但是部分模型如qwen系列模型，默认数据类型为bfloat16，合并后的权重转回HF格式会有精度损失问题。可以将原始HF模型的config.json中的数据类型改为float16暂时规避。
 
-Qwen3-8B对应的V1权重转换脚本示例：
-
-```shell
-source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路径
-
-python convert_ckpt.py
-    --use-mcore-models \
-    --model-type GPT \
-    --load-model-type hf \
-    --save-model-type mg \
-    --target-tensor-parallel-size 1 \
-    --target-pipeline-parallel-size 2 \
-    --spec mindspeed_llm.tasks.models.spec.qwen3_spec layer_spec \
-    --load-dir ./model_from_hf/qwen3_hf/ \                       # HF权重路径
-    --save-dir ./model_weights/qwen3_mcore/ \                    # Megatron权重保存路径
-    --tokenizer-model ./model_from_hf/qwen3_hf/tokenizer.json \  # HF权重分词器模型文件路径
-    --model-type-hf qwen3 \
-    --params-dtype bf16
-```

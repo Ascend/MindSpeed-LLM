@@ -165,7 +165,7 @@ TUNE_ARGS="
 
 CKPT_ARGS="
     --enable-hf2mg-convert \
-    --model-type-hf glm45-moe
+    --model-type-hf glm45-air
 "
 
 torchrun ${DISTRIBUTED_ARGS} posttrain_gpt.py \

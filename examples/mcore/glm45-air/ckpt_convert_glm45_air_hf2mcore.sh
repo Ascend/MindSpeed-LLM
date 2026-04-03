@@ -4,13 +4,13 @@ export CUDA_DEVICE_MAX_CONNECTIONS=1
 
 # 权重格式转换
 python convert_ckpt_v2.py \
-   --model-type-hf glm45-moe \
+   --model-type-hf glm45-air \
    --load-model-type hf \
    --save-model-type mg \
    --target-tensor-parallel-size 8 \
    --target-pipeline-parallel-size 1 \
    --target-expert-parallel-size 1 \
    --first-k-dense-replace 1 \
-   --load-dir ./model_from_hf/GLM-4.5-moe-106B \
+   --load-dir ./model_from_hf/GLM-4.5-Air-106B \
    --save-dir ./model_weights/ \
 
