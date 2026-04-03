@@ -82,6 +82,16 @@ except Exception as e:
     pass
 
 
+def _enable_npu_datadump_step_end():
+    args = get_args()
+    if not getattr(args, "npu_datadump", False):
+        return
+
+    from mindspeed.functional.npu_datadump.npu_datadump import MSTT_DEBUGGER
+    MSTT_DEBUGGER.stop()
+    MSTT_DEBUGGER.step()
+
+
 def update_save_checkpoint_chmod(save_path, permission=0o640):
     args = get_args()
     if args.enable_high_availability:
@@ -664,6 +674,7 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
                        optimizer,
                        opt_param_scheduler,
                        config)
+        _enable_npu_datadump_step_end()
         
         # Enable forward pre-hooks after first set of forward and backward passes.
         # When running in fp16, skip all NaN iterations until steady-state loss scaling value

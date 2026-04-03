@@ -27,6 +27,7 @@ from mindspeed.features_manager import (
     RecomputeNormFeature,
     RecomputeActivationFeature,
     NPUDeterministicFeature,
+    NPUDataDumpFeature,
     EnableRecomputeLayersPerPPRank,
     RecomputeMethodFeature,
     SmartSwapFeature,
@@ -264,6 +265,7 @@ def add_functional_features(features_list: List[MindSpeedFeature]):
     features_list.extend([
         ProfilingFeature(),
         NPUDeterministicFeature(),
+        NPUDataDumpFeature(),
         ProfilerDefaultFeature()
     ])
 
