@@ -107,4 +107,5 @@ torchrun ${DISTRIBUTED_ARGS[@]} posttrain_gpt.py \
     --finetune \
     --log-throughput \
     --transformer-impl local \
+    --ckpt-format torch \
     --distributed-backend nccl

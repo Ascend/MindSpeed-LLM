@@ -85,7 +85,8 @@ GPT_ARGS="
     --no-load-optim \
     --no-load-rng \
     --no-shared-storage \
-    --bf16
+    --bf16 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

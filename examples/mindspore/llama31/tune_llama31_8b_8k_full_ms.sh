@@ -90,6 +90,7 @@ GPT_ARGS="
     --bf16 \
     --vocab-size 128256 \
     --npu-deterministic \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

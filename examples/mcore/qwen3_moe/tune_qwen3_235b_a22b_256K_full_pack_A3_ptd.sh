@@ -137,7 +137,8 @@ GPT_ARGS="
     --swiglu \
     --attention-softmax-in-fp32 \
     --group-query-attention \
-    --num-query-groups 4
+    --num-query-groups 4 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

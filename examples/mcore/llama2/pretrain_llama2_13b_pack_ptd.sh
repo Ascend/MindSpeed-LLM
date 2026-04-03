@@ -75,7 +75,8 @@ GPT_ARGS="
     --use-fused-swiglu \
     --use-fused-rotary-pos-emb \
     --use-distributed-optimizer \
-    --bf16
+    --bf16 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

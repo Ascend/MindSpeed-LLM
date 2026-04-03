@@ -137,6 +137,7 @@ GPT_ARGS="
     --bf16 \
     --distributed-timeout-minutes 120 \
     --transformer-impl local \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

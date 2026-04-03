@@ -93,6 +93,7 @@ GPT_ARGS="
     --attention-softmax-in-fp32 \
     --vocab-size 131072 \
     --rotary-base 10000 \
+    --ckpt-format torch
 "
 
 CKPT_ARGS="

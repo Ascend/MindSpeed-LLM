@@ -86,7 +86,8 @@ GPT_ARGS="
     --no-load-optim \
     --no-load-rng \
     --vocab-size 256000 \
-    --bf16
+    --bf16 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

@@ -78,6 +78,7 @@ GPT_ARGS="
     --exit-on-missing-checkpoint \
     --seed 42 \
     --bf16 \
+    --ckpt-format torch
 "
 
 torchrun ${DISTRIBUTED_ARGS} inference.py \

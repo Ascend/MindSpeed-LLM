@@ -97,7 +97,8 @@ GPT_ARGS="
     --attention-softmax-in-fp32 \
     --group-query-attention \
     --num-query-groups 8 \
-    --norm-epsilon 1e-6
+    --norm-epsilon 1e-6 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

@@ -108,6 +108,7 @@ GPT_ARGS="
     --no-shared-storage \
     --no-load-optim \
     --no-load-rng \
+    --ckpt-format torch
 "
 
 TRAIN_ARGS="

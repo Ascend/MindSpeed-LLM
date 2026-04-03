@@ -77,6 +77,7 @@ GPT_ARGS="
     --lr-warmup-fraction 0.01 \
     --bf16 \
     --num-layers-per-virtual-pipeline-stage 5 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

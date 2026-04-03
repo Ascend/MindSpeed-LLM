@@ -169,6 +169,7 @@ GPT_ARGS="
     --bf16 \
     --fix-router \
     --distributed-timeout-minutes 120 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

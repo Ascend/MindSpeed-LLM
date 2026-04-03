@@ -123,6 +123,7 @@ GPT_ARGS="
     --max-new-tokens 256 \
     --bf16 \
     --transformer-impl local \
+    --ckpt-format torch
 "
 
 

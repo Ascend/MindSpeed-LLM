@@ -69,4 +69,5 @@ torchrun ${DISTRIBUTED_ARGS} evaluation.py   \
        --bf16 \
        --seed 42 \
        --transformer-impl local \
+       --ckpt-format torch \
        | tee logs/evaluate_glm4_9b_0414_mcore_${TASK}.log

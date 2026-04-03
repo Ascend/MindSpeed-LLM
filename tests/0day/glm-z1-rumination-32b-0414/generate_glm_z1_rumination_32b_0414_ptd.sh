@@ -62,4 +62,5 @@ torchrun ${DISTRIBUTED_ARGS} inference.py \
        --seed 42 \
        --bf16 \
        --transformer-impl local \
+       --ckpt-format torch \
        | tee logs/generate_glm_z1_rumination_32b_0414.log

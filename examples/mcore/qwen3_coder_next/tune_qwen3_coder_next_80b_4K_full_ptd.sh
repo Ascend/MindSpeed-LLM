@@ -144,6 +144,7 @@ GPT_ARGS="
     --use-triton-gdn \
     --loss-compute-mode default \
     --loss-chunk-size 1024 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

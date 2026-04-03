@@ -83,7 +83,8 @@ GPT_ARGS="
     --recompute-granularity full \
     --recompute-method block \
     --recompute-num-layers 22 \
-    --bf16
+    --bf16 \
+    --ckpt-format torch
 "
 
 SFT_ARGS="

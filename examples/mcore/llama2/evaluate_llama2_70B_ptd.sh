@@ -50,4 +50,5 @@ torchrun $DISTRIBUTED_ARGS evaluation.py \
        --no-masked-softmax-fusion \
        --make-vocab-size-divisible-by 1 \
        --transformer-impl local \
+       --ckpt-format torch \
        --seed 42 | tee logs/eval_llama2_70b_mcore_${TASK}.log

@@ -88,7 +88,7 @@ GPT_ARGS="
     --is-instruction-dataset \
     --finetune \
     --stage sft \
-
+    --ckpt-format torch
 "
 
 DATA_ARGS="

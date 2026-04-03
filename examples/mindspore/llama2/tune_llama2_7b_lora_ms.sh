@@ -86,6 +86,7 @@ TRAINING_ARGS="
     --vocab-size 32000 \
     --log-throughput \
     --bf16 \
+    --ckpt-format torch
 "
 
 FINETUNE_ARGS="

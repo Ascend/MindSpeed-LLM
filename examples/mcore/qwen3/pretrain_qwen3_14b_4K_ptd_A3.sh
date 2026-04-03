@@ -98,7 +98,8 @@ GPT_ARGS="
     --num-query-groups 8 \
     --no-load-optim \
     --no-load-rng \
-    --sequence-parallel
+    --sequence-parallel \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

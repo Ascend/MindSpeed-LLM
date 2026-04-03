@@ -65,4 +65,5 @@ torchrun $DISTRIBUTED_ARGS inference.py \
        --long-factor ${LONG_FACTOR} \
        --short-factor ${SHORT_FACTOR} \
        --transformer-impl local \
+       --ckpt-format torch \
        | tee logs/generate_mcore_phi35_mini.log

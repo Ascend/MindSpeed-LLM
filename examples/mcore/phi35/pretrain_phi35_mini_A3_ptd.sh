@@ -79,6 +79,7 @@ GPT_ARGS="
     --padded-vocab-size 32064 \
     --untie-embeddings-and-output-weights \
     --seed 42 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

@@ -135,6 +135,7 @@ GPT_ARGS="
     --no-load-optim \
     --no-load-rng \
     --bf16 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

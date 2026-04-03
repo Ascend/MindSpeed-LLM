@@ -68,4 +68,5 @@ torchrun $DISTRIBUTED_ARGS evaluation.py   \
        --make-vocab-size-divisible-by 1 \
        --bf16  \
        --transformer-impl local \
+       --ckpt-format torch \
        --seed 42 | tee logs/evaluation_gemma2_27b_mcore_${TASK}.log

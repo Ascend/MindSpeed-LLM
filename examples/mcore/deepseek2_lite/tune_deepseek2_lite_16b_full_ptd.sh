@@ -134,6 +134,7 @@ GPT_ARGS="
     --no-load-rng \
     --bf16 \
     --reuse-fp32-param \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

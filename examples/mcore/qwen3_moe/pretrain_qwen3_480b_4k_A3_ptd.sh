@@ -137,6 +137,7 @@ GPT_ARGS="
     --num-query-groups 8 \
     --manual-gc \
     --manual-gc-interval 10 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

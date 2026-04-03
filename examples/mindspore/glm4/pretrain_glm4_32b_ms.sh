@@ -83,7 +83,8 @@ GPT_ARGS="
     --no-check-for-nan-in-loss-and-grad \
     --recompute-granularity full \
     --recompute-method block \
-    --recompute-num-layers 8
+    --recompute-num-layers 8 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

@@ -99,7 +99,8 @@ GPT_ARGS="
     --no-load-optim \
     --no-load-rng \
     --bf16 \
-    --reuse-fp32-param
+    --reuse-fp32-param \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

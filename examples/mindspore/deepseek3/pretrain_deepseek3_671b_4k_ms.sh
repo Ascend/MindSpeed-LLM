@@ -163,6 +163,7 @@ GPT_ARGS="
     --coc-fused-kernel \
     --distributed-timeout-minutes 120 \
     --transformer-impl local \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

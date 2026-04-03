@@ -65,4 +65,5 @@ torchrun $DISTRIBUTED_ARGS inference.py \
        --load ${CHECKPOINT} \
        --exit-on-missing-checkpoint \
        --transformer-impl local \
+       --ckpt-format torch \
        | tee logs/generate_mcore_qwen3_4b.log

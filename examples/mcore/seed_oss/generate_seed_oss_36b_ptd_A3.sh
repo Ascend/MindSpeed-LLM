@@ -64,4 +64,5 @@ torchrun $DISTRIBUTED_ARGS inference.py \
        --exit-on-missing-checkpoint \
        --bf16 \
        --transformer-impl local \
+       --ckpt-format torch \
        | tee logs/generate_seed_oss_36b.log

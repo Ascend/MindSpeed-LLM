@@ -63,4 +63,5 @@ torchrun $DISTRIBUTED_ARGS inference.py \
        --exit-on-missing-checkpoint \
        --bf16 \
        --transformer-impl local \
+       --ckpt-format torch \
        | tee logs/generate_magistral_small_24b.log

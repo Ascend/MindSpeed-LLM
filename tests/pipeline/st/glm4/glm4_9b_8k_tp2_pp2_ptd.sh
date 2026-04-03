@@ -83,7 +83,8 @@ GPT_ARGS="
     --no-save-rng \
     --no-gradient-accumulation-fusion \
     --no-bias-swiglu-fusion \
-    --bf16
+    --bf16 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

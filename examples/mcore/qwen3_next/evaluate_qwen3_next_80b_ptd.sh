@@ -103,6 +103,7 @@ GPT_ARGS="
         --no-load-optim \
         --seed 42 \
         --bf16 \
+    --ckpt-format torch
 "
 
 torchrun $DISTRIBUTED_ARGS evaluation.py \

@@ -130,7 +130,8 @@ GPT_ARGS="
     --attention-softmax-in-fp32 \
     --no-shared-storage \
     --gemm-gradient-accumulation-fusion \
-    --no-bias-swiglu-fusion
+    --no-bias-swiglu-fusion \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

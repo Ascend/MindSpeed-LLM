@@ -137,7 +137,8 @@ GPT_ARGS="
     --num-query-groups 8 \
     --manual-gc \
     --manual-gc-interval 10 \
-    --no-shared-storage 
+    --no-shared-storage  \
+    --ckpt-format torch
 "
 
 TUNE_ARGS="

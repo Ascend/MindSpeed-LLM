@@ -76,6 +76,7 @@ GPT_ARGS="
     --log-throughput \
     --use-ascend-coc \
     --coc-fused-kernel \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

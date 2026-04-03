@@ -46,4 +46,5 @@ torchrun $DISTRIBUTED_ARGS inference.py \
        --exit-on-missing-checkpoint \
        --make-vocab-size-divisible-by 1 \
        --transformer-impl local \
+       --ckpt-format torch \
        | tee logs/generate_llama2_70b_mcore.log

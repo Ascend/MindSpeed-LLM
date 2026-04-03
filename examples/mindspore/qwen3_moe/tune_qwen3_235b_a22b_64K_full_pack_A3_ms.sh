@@ -145,6 +145,7 @@ GPT_ARGS="
     --group-query-attention \
     --num-query-groups 4 \
     --transformer-impl local \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

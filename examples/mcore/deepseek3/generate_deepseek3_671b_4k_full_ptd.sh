@@ -117,7 +117,8 @@ GPT_ARGS="
     --no-gradient-accumulation-fusion \
     --norm-epsilon 1e-6 \
     --max-new-tokens 128 \
-    --bf16
+    --bf16 \
+    --ckpt-format torch
 "
 
 torchrun $DISTRIBUTED_ARGS inference.py \

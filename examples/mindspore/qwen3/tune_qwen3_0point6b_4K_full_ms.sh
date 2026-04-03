@@ -84,6 +84,7 @@ GPT_ARGS="
     --no-load-rng \
     --lr 1.25e-6 \
     --transformer-impl local \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

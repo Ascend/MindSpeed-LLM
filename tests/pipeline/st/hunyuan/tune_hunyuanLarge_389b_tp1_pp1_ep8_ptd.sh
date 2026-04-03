@@ -114,6 +114,7 @@ GPT_ARGS="
     --num-query-groups 8 \
     --qk-layernorm \
     --spec mindspeed_llm.tasks.models.spec.hunyuan_spec layer_spec \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

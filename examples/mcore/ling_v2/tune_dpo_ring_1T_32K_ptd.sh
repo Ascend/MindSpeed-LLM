@@ -124,6 +124,7 @@ GPT_ARGS="
     --gemm-gradient-accumulation-fusion \
     --no-load-optim \
     --no-load-rng \
+    --ckpt-format torch
 "
 
 TRAIN_ARGS="

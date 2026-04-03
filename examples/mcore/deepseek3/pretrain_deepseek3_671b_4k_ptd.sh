@@ -166,7 +166,8 @@ GPT_ARGS="
     --bf16 \
     --use-ascend-coc \
     --coc-fused-kernel \
-    --distributed-timeout-minutes 120
+    --distributed-timeout-minutes 120 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

@@ -125,7 +125,8 @@ GPT_ARGS="
     --bf16 \
     --train-iters ${TRAIN_ITERS} \
     --seq-length ${SEQ_LENGTH} \
-    --no-shared-storage
+    --no-shared-storage \
+    --ckpt-format torch
 "
 
 torchrun $DISTRIBUTED_ARGS inference.py \

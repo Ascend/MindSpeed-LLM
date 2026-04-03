@@ -81,6 +81,7 @@ GPT_ARGS="
     --lr 1.25e-6 \
     --sequence-parallel \
     --transformer-impl local \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

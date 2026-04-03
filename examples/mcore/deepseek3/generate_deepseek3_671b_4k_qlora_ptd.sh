@@ -121,6 +121,7 @@ GPT_ARGS="
     --lora-fusion \
     --lora-target-modules linear_qkv linear_proj linear_fc1 linear_fc2 \
     --qlora \
+    --ckpt-format torch
 "
 
 torchrun $DISTRIBUTED_ARGS inference.py \

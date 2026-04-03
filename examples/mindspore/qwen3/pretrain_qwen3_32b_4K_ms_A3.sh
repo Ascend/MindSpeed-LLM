@@ -101,6 +101,7 @@ GPT_ARGS="
     --use-ascend-coc \
     --coc-fused-kernel \
     --transformer-impl local \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

@@ -89,6 +89,7 @@ GPT_ARGS="
     --bf16 \
     --seed 42 \
     --vocab-size 128256 \
+    --ckpt-format torch
 "
 
 FINETUNE_ARGS="

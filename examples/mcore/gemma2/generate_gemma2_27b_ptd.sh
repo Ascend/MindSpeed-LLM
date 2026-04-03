@@ -65,4 +65,5 @@ torchrun $DISTRIBUTED_ARGS inference.py \
        --bf16 \
        --seed 42 \
        --transformer-impl local \
+       --ckpt-format torch \
        | tee logs/generate_gemma2_27b_mcore.log

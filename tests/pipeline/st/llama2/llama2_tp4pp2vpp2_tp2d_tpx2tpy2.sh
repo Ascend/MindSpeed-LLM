@@ -77,6 +77,7 @@ GPT_ARGS="
     --overlap-grad-reduce \
     --bf16 \
     --log-throughput \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

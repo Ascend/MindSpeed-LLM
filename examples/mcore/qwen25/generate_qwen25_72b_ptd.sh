@@ -61,5 +61,6 @@ torchrun $DISTRIBUTED_ARGS inference.py \
        --padded-vocab-size 152064 \
        --bf16 \
        --transformer-impl local \
+       --ckpt-format torch \
        --seed 42 | tee logs/generate_mcore_qwen25_72b.log
 

@@ -89,7 +89,8 @@ GPT_ARGS="
     --no-gradient-accumulation-fusion \
     --no-masked-softmax-fusion \
     --attention-softmax-in-fp32 \
-    --bf16
+    --bf16 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

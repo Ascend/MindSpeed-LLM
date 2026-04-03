@@ -135,6 +135,7 @@ GPT_ARGS="
     --norm-epsilon 1e-6 \
     --manual-gc \
     --manual-gc-interval 50 \
+    --ckpt-format torch
 "
 
 CKPT_ARGS="

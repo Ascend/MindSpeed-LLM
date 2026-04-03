@@ -124,6 +124,7 @@ GPT_ARGS="
     --bf16 \
     --broadcast \
     --distributed-timeout-minutes 120 \
+    --ckpt-format torch
 "
 
 torchrun $DISTRIBUTED_ARGS evaluation.py \

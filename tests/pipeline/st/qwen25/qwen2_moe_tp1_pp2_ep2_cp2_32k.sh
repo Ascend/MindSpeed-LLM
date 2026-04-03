@@ -84,7 +84,8 @@ TRAIN_ARGS="
     --train-iters ${TRAIN_ITERS} \
     --seq-length ${SEQ_LENGTH} \
     --transformer-impl local \
-    --no-shared-storage
+    --no-shared-storage \
+    --ckpt-format torch
 "
 
 MODEL_PARALLEL_ARGS="

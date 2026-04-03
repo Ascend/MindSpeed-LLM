@@ -73,7 +73,8 @@ GPT_ARGS="
     --use-fused-rotary-pos-emb \
     --overlap-grad-reduce \
     --bf16 \
-    --disable-gloo-group
+    --disable-gloo-group \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

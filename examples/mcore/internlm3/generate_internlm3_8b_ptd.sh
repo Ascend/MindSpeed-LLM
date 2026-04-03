@@ -53,4 +53,5 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS inference.py \
        --use-mcore-models \
        --dynamic-factor 6.0 \
        --transformer-impl local \
+       --ckpt-format torch \
        | tee logs/generate_internlm3_8b.log

@@ -94,6 +94,7 @@ GPT_ARGS="
     --num-layers-per-virtual-pipeline-stage 2 \
     --reset-attention-mask \
     --no-shared-storage \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

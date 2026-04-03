@@ -83,7 +83,8 @@ GPT_ARGS="
     --fp16 \
     --overlap-grad-reduce \
     --overlap-param-gather \
-    --log-throughput
+    --log-throughput \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

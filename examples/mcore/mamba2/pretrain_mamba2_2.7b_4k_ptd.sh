@@ -92,7 +92,8 @@ MAMBA_ARGS="
     --norm-epsilon 1e-6 \
     --no-load-optim \
     --no-load-rng \
-    --bf16
+    --bf16 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

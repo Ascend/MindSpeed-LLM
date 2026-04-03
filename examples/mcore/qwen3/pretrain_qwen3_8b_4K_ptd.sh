@@ -98,7 +98,8 @@ GPT_ARGS="
     --no-gradient-accumulation-fusion \
     --group-query-attention \
     --num-query-groups 8 \
-    --norm-epsilon 1e-6
+    --norm-epsilon 1e-6 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

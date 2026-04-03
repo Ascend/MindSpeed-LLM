@@ -121,6 +121,7 @@ GPT_ARGS="
     --no-gradient-accumulation-fusion \
     --group-query-attention \
     --num-query-groups 4 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

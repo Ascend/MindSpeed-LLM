@@ -154,7 +154,8 @@ GPT_ARGS="
     --no-load-optim \
     --no-load-rng \
     --bf16 \
-    --distributed-timeout-minutes 120
+    --distributed-timeout-minutes 120 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="
@@ -171,12 +172,12 @@ OUTPUT_ARGS="
     --no-save-rng
 "
 
-python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py
-    $FP8
-    $GPT_ARGS
-    $DATA_ARGS
-    $OUTPUT_ARGS
-    $MLA_ARGS
-    $ROPE_ARGS
-    $MOE_ARGS
+python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
+    $FP8 \
+    $GPT_ARGS \
+    $DATA_ARGS \
+    $OUTPUT_ARGS \
+    $MLA_ARGS \
+    $ROPE_ARGS \
+    $MOE_ARGS \
     --distributed-backend nccl | tee logs/A5_dsk3_8k_tp1pp1ep8_fp8_256experts_profiling.log

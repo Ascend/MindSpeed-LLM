@@ -124,4 +124,5 @@ torchrun ${DISTRIBUTED_ARGS[@]} $basepath/pretrain_gpt.py \
   ${DATA_ARGS[@]} \
   ${OUTPUT_ARGS[@]} \
   --transformer-impl local \
+  --ckpt-format torch \
   --distributed-backend nccl

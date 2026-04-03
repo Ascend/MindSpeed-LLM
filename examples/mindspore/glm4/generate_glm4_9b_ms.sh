@@ -63,4 +63,5 @@ msrun ${DISTRIBUTED_ARGS} inference.py \
        --seed 42 \
        --bf16 \
        --ai-framework mindspore \
+       --ckpt-format torch \
        | tee logs/generate_glm4_9b_mcore.log

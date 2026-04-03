@@ -46,6 +46,7 @@ MOE_ARGS="
     --topk-softmax-in-fp32 \
     --moe-router-pre-softmax \
     
+    --ckpt-format torch
 "
 
 torchrun $DISTRIBUTED_ARGS inference.py \

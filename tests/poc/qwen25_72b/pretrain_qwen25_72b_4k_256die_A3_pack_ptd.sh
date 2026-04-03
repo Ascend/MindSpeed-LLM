@@ -76,7 +76,8 @@ MODEL_ARGS="
     --no-gradient-accumulation-fusion \
     --reset-attention-mask \
     --overlap-grad-reduce \
-    --overlap-param-gather
+    --overlap-param-gather \
+    --ckpt-format torch
 "
 
 TRAIN_ARGS="

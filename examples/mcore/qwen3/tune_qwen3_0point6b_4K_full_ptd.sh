@@ -80,6 +80,7 @@ GPT_ARGS="
     --no-load-optim \
     --no-load-rng \
     --lr 1.25e-6 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

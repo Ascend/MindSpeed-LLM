@@ -127,7 +127,8 @@ GPT_ARGS="
     --attention-softmax-in-fp32 \
     --no-gradient-accumulation-fusion \
     --transformer-impl transformer_engine \
-    --no-bias-dropout-fusion
+    --no-bias-dropout-fusion \
+    --ckpt-format torch
 "
 
 # FP8_ARGS="

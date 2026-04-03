@@ -88,7 +88,8 @@ GPT_ARGS="
     --use-fused-rmsnorm \
     --use-ascend-coc \
     --coc-fused-kernel \
-    --no-shared-storage
+    --no-shared-storage \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

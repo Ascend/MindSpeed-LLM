@@ -68,4 +68,5 @@ msrun ${DISTRIBUTED_ARGS} evaluation.py   \
        --bf16 \
        --seed 42 \
        --ai-framework mindspore \
+       --ckpt-format torch \
        | tee logs/evaluate_glm4_9b_mcore_${TASK}.log

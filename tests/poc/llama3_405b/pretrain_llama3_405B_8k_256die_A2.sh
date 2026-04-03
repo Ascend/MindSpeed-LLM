@@ -92,6 +92,7 @@ GPT_ARGS="
     --num-query-groups 16 \
     --lr-warmup-fraction 0.01 \
     --bf16 \
+    --ckpt-format torch
 "
 
 RECOMPUTE_ARGS="

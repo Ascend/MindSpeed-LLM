@@ -90,7 +90,8 @@ GPT_ARGS="
     --exit-on-missing-checkpoint \
     --use-ascend-coc \
     --coc-fused-kernel \
-    --no-shared-storage
+    --no-shared-storage \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

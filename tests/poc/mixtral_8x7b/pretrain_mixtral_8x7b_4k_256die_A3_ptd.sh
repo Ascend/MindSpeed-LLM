@@ -75,7 +75,8 @@ MODEL_ARGS="
     --overlap-param-gather \
     --make-vocab-size-divisible-by 1 \
     --sequence-parallel \
-    --use-distributed-optimizer
+    --use-distributed-optimizer \
+    --ckpt-format torch
 "
 
 TRAIN_ARGS="

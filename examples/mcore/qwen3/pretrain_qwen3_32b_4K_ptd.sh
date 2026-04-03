@@ -97,7 +97,8 @@ GPT_ARGS="
     --no-gradient-accumulation-fusion \
     --group-query-attention \
     --num-query-groups 8 \
-    --reset-attention-mask
+    --reset-attention-mask \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

@@ -92,7 +92,8 @@ GPT_ARGS="
     --use-ascend-coc \
     --coc-fused-kernel \
     --recompute-activation-function \
-    --num-layers-per-virtual-pipeline-stage 4
+    --num-layers-per-virtual-pipeline-stage 4 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

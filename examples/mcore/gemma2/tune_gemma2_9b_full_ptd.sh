@@ -87,7 +87,8 @@ GPT_ARGS="
     --no-pad-to-seq-lengths \
     --tokenizer-not-use-fast \
     --prompt-type gemma \
-    --rotary-base 10000
+    --rotary-base 10000 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

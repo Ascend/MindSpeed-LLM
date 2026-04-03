@@ -75,4 +75,5 @@ torchrun $DISTRIBUTED_ARGS evaluation.py \
         --seed 42 \
         --bf16 \
         --transformer-impl local \
+        --ckpt-format torch \
         | tee logs/evaluate_qwen3_32b_ptd.log

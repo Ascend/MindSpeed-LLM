@@ -112,6 +112,7 @@ TRAIN_ARGS="
     --train-iters 15 \
     --finetune \
     --log-throughput \
+    --ckpt-format torch
 "
 
 MODEL_PARALLEL_ARGS="

@@ -68,4 +68,5 @@ msrun $DISTRIBUTED_ARGS evaluation.py \
        --no-load-rng \
        --no-load-optim \
        --ai-framework mindspore \
+       --ckpt-format torch \
        | tee logs/evaluation_qwen25_7b_${TASK}.log

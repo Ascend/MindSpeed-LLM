@@ -91,7 +91,8 @@ GPT_ARGS="
     --no-load-rng \
     --seed 42 \
     --bf16 \
-    --no-check-for-nan-in-loss-and-grad
+    --no-check-for-nan-in-loss-and-grad \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

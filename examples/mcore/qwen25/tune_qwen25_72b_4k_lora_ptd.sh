@@ -96,7 +96,8 @@ GPT_ARGS="
     --use-distributed-optimizer \
     --overlap-grad-reduce \
     --use-ascend-mc2 \
-    --no-shuffle
+    --no-shuffle \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

@@ -133,6 +133,7 @@ GPT_ARGS="
     --attention-softmax-in-fp32 \
     --no-gradient-accumulation-fusion \
     --no-bias-dropout-fusion \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

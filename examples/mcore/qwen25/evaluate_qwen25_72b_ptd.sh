@@ -70,4 +70,5 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS evaluation.py   \
        --use-fused-rmsnorm \
        --bf16 \
        --transformer-impl local \
+       --ckpt-format torch \
        --seed 42 | tee logs/evaluation_mcore_qwen25_72b_${TASK}.log

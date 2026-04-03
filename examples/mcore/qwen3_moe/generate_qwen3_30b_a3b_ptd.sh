@@ -38,7 +38,8 @@ MOE_ARGS="
     --moe-layer-freq -1 \
     --first-k-dense-replace -1 \
     --moe-token-dispatcher-type allgather \
-    --moe-aux-loss-coeff 0.001
+    --moe-aux-loss-coeff 0.001 \
+    --ckpt-format torch
 "
 
 torchrun $DISTRIBUTED_ARGS inference.py \

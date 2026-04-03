@@ -100,6 +100,7 @@ GPT_ARGS="
     --no-load-rng \
     --sequence-parallel \
     --transformer-impl local \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

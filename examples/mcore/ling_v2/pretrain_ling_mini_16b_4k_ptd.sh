@@ -106,6 +106,7 @@ GPT_ARGS="
     --seq-length ${SEQ_LEN} \
     --no-load-optim \
     --no-load-rng \
+    --ckpt-format torch
 "
 
 TRAIN_ARGS="

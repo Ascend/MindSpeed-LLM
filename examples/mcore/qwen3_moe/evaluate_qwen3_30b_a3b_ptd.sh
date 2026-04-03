@@ -41,7 +41,8 @@ MOE_ARGS="
     --first-k-dense-replace -1 \
     --moe-permutation-async-comm \
     --moe-token-dispatcher-type allgather \
-    --moe-aux-loss-coeff 0.001
+    --moe-aux-loss-coeff 0.001 \
+    --ckpt-format torch
 "
 
 torchrun $DISTRIBUTED_ARGS evaluation.py \

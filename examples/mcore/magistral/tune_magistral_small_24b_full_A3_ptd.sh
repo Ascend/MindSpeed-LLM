@@ -85,7 +85,8 @@ GPT_ARGS="
     --adam-beta2 0.999 \
     --initial-loss-scale 4096 \
     --bf16 \
-    --no-shared-storage
+    --no-shared-storage \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

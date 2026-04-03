@@ -61,4 +61,5 @@ msrun $DISTRIBUTED_ARGS inference.py \
        --attention-softmax-in-fp32 \
        --seed 42 \
        --ai-framework mindspore \
+       --ckpt-format torch \
        | tee logs/generate_qwen25_32b.log

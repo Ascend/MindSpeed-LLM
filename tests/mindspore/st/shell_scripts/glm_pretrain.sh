@@ -88,7 +88,8 @@ GPT_ARGS="
     --no-gradient-accumulation-fusion \
     --no-bias-swiglu-fusion \
     --bf16 \
-    --finetune
+    --finetune \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

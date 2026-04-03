@@ -90,6 +90,7 @@ GPT_ARGS="
     --no-masked-softmax-fusion \
     --attention-softmax-in-fp32 \
     --bf16 \
+    --ckpt-format torch
 "
 
 TRAIN_ARGS="

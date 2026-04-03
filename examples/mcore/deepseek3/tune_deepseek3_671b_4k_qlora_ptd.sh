@@ -136,7 +136,8 @@ GPT_ARGS="
     --no-load-rng \
     --bf16 \
     --distributed-timeout-minutes 120 \
-    --exit-on-missing-checkpoint 
+    --exit-on-missing-checkpoint  \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

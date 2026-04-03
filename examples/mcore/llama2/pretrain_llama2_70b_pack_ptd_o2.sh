@@ -78,6 +78,7 @@ GPT_ARGS="
     --num-query-groups 8 \
     --lr-warmup-fraction 0.01 \
     --bf16 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

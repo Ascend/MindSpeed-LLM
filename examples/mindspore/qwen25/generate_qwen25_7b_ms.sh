@@ -64,4 +64,5 @@ msrun $DISTRIBUTED_ARGS inference.py \
        --load ${CHECKPOINT} \
        --exit-on-missing-checkpoint \
        --ai-framework mindspore \
+       --ckpt-format torch \
        | tee logs/generate_qwen25_7b.log

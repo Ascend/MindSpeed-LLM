@@ -103,6 +103,7 @@ GPT_ARGS="
     --group-query-attention \
     --num-query-groups 8 \
     --kv-channels 128 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

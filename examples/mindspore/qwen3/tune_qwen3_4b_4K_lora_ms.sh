@@ -92,6 +92,7 @@ GPT_ARGS="
     --group-query-attention \
     --num-query-groups 8 \
     --transformer-impl local \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

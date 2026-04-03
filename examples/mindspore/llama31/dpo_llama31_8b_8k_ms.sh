@@ -77,7 +77,8 @@ GPT_ARGS="
     --initial-loss-scale 4096 \
     --no-gradient-accumulation-fusion \
     --finetune \
-    --bf16
+    --bf16 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

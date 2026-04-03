@@ -100,7 +100,8 @@ GPT_ARGS="
     --expert-model-parallel-size ${EP} \
     --lr-warmup-fraction 0.01 \
     --use-fused-ring-attention-update \
-    --bf16
+    --bf16 \
+    --ckpt-format torch
 "
 
 MEMORY_ARGS="

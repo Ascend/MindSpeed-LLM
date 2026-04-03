@@ -84,6 +84,7 @@ GPT_ARGS="
     --prompt-type llama2 \
     --npu-deterministic \
     --log-throughput \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

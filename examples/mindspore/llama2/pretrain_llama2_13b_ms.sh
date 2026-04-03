@@ -73,7 +73,8 @@ GPT_ARGS="
     --no-load-rng \
     --use-fused-swiglu \
     --use-fused-rotary-pos-emb \
-    --bf16
+    --bf16 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

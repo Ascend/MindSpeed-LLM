@@ -90,6 +90,7 @@ GPT_ARGS="
     --group-query-attention \
     --num-query-groups 4 \
     --bf16 \
+    --ckpt-format torch
 "
 
 torchrun $DISTRIBUTED_ARGS inference.py \

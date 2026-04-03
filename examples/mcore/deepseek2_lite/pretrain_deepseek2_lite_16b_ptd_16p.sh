@@ -126,7 +126,8 @@ GPT_ARGS="
     --no-load-rng \
     --manual-gc \
     --manual-gc-interval 30 \
-    --bf16
+    --bf16 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

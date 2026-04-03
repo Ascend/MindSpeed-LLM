@@ -96,6 +96,7 @@ GPT_ARGS="
     --no-load-rng \
     --bf16 \
     --transformer-impl local \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

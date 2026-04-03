@@ -64,5 +64,6 @@ torchrun $DISTRIBUTED_ARGS inference.py \
        --vocab-size 256000 \
        --bf16 \
        --seed 42 \
+       --ckpt-format torch \
        | tee logs/chat_gemma2_9b_ptd.log
 

@@ -77,7 +77,8 @@ GPT_ARGS="
     --use-distributed-optimizer \
     --overlap-grad-reduce \
     --overlap-param-gather \
-    --bf16
+    --bf16 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

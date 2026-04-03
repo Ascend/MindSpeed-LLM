@@ -83,7 +83,8 @@ TRAINING_ARGS="
     --tokenizer-not-use-fast \
     --attention-dropout 0.0 \
     --seed 42 \
-    --exit-on-missing-checkpoint
+    --exit-on-missing-checkpoint \
+    --ckpt-format torch
 "
 
 FINETUNE_ARGS="

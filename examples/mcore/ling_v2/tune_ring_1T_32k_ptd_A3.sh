@@ -118,6 +118,7 @@ GPT_ARGS="
     --moe-tp-extend-ep \
     --no-load-optim \
     --no-load-rng \
+    --ckpt-format torch
 "
 
 TRAIN_ARGS="

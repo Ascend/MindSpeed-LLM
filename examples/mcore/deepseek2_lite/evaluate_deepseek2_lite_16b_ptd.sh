@@ -93,4 +93,5 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS evaluation.py \
     --rope-scaling-type yarn \
     --distributed-backend nccl \
     --transformer-impl local \
+    --ckpt-format torch \
     | tee ./logs/evaluation_deepseek2_lite_ptd_8p_${TASK}.log

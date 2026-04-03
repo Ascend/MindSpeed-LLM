@@ -114,7 +114,8 @@ MAMBA_ARGS="
     --no-load-rng \
     --bf16 \
     --finetune \
-    --log-throughput
+    --log-throughput \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

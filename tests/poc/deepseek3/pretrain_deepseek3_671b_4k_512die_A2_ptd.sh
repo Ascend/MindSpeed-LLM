@@ -170,7 +170,8 @@ GPT_ARGS="
     --coc-fused-kernel \
     --moe-zerc \
     --enable-share-memory \
-    --distributed-timeout-minutes 120
+    --distributed-timeout-minutes 120 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

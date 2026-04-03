@@ -95,5 +95,6 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS inference.py \
     --rope-scaling-type yarn \
     --distributed-backend nccl \
     --transformer-impl local \
+    --ckpt-format torch \
     | tee logs/generate_deepseek2_lite.log
 

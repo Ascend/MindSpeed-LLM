@@ -98,6 +98,7 @@ GPT_ARGS="
     --micro-batch-size 1 \
     --max-new-tokens 256 \
     --shape-order BNSD \
+    --ckpt-format torch
 "
 
 torchrun $DISTRIBUTED_ARGS inference.py \

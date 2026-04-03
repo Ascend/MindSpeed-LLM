@@ -87,7 +87,8 @@ GPT_ARGS="
     --initial-loss-scale 4096 \
     --bf16 \
     --no-shared-storage \
-    --no-shuffle
+    --no-shuffle \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

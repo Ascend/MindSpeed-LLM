@@ -73,7 +73,8 @@ GPT_ARGS="
     --use-fused-swiglu \
     --use-fused-rotary-pos-emb \
     --overlap-grad-reduce \
-    --bf16
+    --bf16 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

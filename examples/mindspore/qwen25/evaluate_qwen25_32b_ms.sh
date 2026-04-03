@@ -65,4 +65,5 @@ msrun $DISTRIBUTED_ARGS evaluation.py \
        --seed 42 \
        --no-chat-template \
        --ai-framework mindspore \
+       --ckpt-format torch \
        | tee logs/eval_mcore_qwen25_32b_${TASK}.log

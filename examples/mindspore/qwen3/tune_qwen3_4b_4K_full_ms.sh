@@ -81,6 +81,7 @@ GPT_ARGS="
     --seed 42 \
     --bf16 \
     --transformer-impl local \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

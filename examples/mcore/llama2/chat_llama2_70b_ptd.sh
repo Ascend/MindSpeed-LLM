@@ -51,4 +51,5 @@ torchrun $DISTRIBUTED_ARGS inference.py \
        --no-gradient-accumulation-fusion \
        --exit-on-missing-checkpoint \
        --make-vocab-size-divisible-by 1 \
+       --ckpt-format torch \
        | tee logs/chat_llama2_70b_mcore.log

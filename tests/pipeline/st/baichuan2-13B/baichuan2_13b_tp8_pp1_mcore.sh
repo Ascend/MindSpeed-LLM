@@ -74,7 +74,8 @@ GPT_ARGS="
     --adam-eps 1.0e-8 \
     --no-load-optim \
     --no-load-rng \
-    --bf16
+    --bf16 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

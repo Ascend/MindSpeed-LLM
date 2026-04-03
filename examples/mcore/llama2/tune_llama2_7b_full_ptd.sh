@@ -74,6 +74,7 @@ GPT_ARGS="
     --stage sft \
     --is-instruction-dataset \
     --bf16 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

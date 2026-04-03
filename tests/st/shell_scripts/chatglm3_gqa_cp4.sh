@@ -94,6 +94,7 @@ GPT_ARGS="
     --use-cp-send-recv-overlap \
     --overlap-grad-reduce \
     --overlap-param-gather \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

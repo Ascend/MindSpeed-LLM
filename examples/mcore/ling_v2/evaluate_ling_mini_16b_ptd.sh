@@ -108,6 +108,7 @@ GPT_ARGS="
     --micro-batch-size 1 \
     --max-new-tokens 4 \
     --shape-order BNSD \
+    --ckpt-format torch
 "
 
 torchrun $DISTRIBUTED_ARGS evaluation.py \
