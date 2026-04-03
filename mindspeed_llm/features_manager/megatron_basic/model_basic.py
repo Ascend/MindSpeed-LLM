@@ -14,7 +14,7 @@ class ModelBasicFeature(MindSpeedFeature):
         from mindspeed_llm.training.tokenizer import build_tokenizer
         from megatron.core.models.gpt.gpt_layer_specs import get_gpt_layer_local_spec
         from mindspeed_llm.core.models.gpt.gpt_model import GPTModel
-        from mindspeed_llm.training.utils import get_device_wrapper
+        from mindspeed_llm.training.utils import get_device_wrapper, temporal_async_caller_schedule_async_call
         from mindspeed_llm.core.models.gpt.gpt_layer_specs import get_gpt_layer_local_spec_wrapper
         from mindspeed_llm.core import vocab_parallel_embedding_forward, vocab_embedding_init_func, checkpoint_forward_wrapper, \
             checkpoint_backward_wrapper
@@ -37,3 +37,5 @@ class ModelBasicFeature(MindSpeedFeature):
                            get_gpt_layer_local_spec_wrapper)
         pm.register_patch('megatron.training.dist_signal_handler.get_device',
                            get_device_wrapper)
+        pm.register_patch('megatron.core.dist_checkpointing.strategies.async_utils.TemporalAsyncCaller.schedule_async_call',
+                           temporal_async_caller_schedule_async_call)

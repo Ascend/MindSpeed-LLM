@@ -51,6 +51,11 @@ class CheckpointFeature(MindSpeedFeature):
         if hasattr(args, 'load_model_type'):
             return
 
+        if getattr(args, 'ckpt_format', None) == 'torch_dist' and getattr(args, 'enable_hf2mg_convert', False):
+            raise AssertionError(
+                '--ckpt-format torch_dist cannot be used together with --enable-hf2mg-convert'
+            )
+
         has_valid_lora_target = hasattr(args, 'lora_target_modules') and args.lora_target_modules
 
         def has_safetensor_weights(dir_path) -> bool:

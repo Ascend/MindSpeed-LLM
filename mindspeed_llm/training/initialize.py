@@ -25,6 +25,7 @@ from megatron.training import get_args, print_rank_0
 from megatron.training.arguments import validate_args
 from megatron.training.yaml_arguments import validate_yaml
 from megatron.training.checkpointing import load_args_from_checkpoint
+from megatron.training.async_utils import init_persistent_async_worker
 from megatron.training.global_vars import set_global_variables
 from megatron.training.initialize import (
     _initialize_distributed, _set_random_seed,
@@ -85,6 +86,9 @@ def initialize_megatron(
         ensure_valid(args.load is not None,
                      "--use-checkpoints-args requires --load argument")
         load_args_from_checkpoint(args)
+
+    if args.async_save and args.use_persistent_ckpt_worker:
+        init_persistent_async_worker()
 
     if args.yaml_cfg is not None:
         args = validate_yaml(args, args_defaults)

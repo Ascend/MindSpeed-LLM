@@ -40,6 +40,8 @@ from megatron.core import mpu, parallel_state
 from megatron.core.utils import get_model_config
 from megatron.core.enums import ModelType
 from megatron.training.checkpointing import save_checkpoint
+from megatron.training import async_utils as async_utils_mod
+from megatron.training.async_utils import maybe_finalize_async_save
 from megatron.training.initialize import initialize_megatron
 from megatron.training.initialize import write_args_to_tensorboard
 from megatron.training.arguments import core_transformer_config_from_args
@@ -533,7 +535,13 @@ def pretrain(train_valid_test_dataset_provider,
                                    test_data_iterator, model,
                                    iteration, process_non_loss_data_func, config,
                                    verbose=True, write_to_tensorboard=not args.skip_train)
+    # this is to make sure all async saves are finished before the training ends
+    maybe_finalize_async_save(blocking=True, terminate=True)
 
+    # - blocking=True: wait for all in-progress async saves to finish; if False, only finalize
+    #   already-completed requests and do not wait for ongoing saves.
+    # - terminate=True: shut down the async queue after finalization (no new tasks), used for
+    #   full cleanup at the end of training.
     one_logger and one_logger.log_metrics({
         'app_finish_time': one_logger_utils.get_timestamp_in_ms()
     })
@@ -647,6 +655,7 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
         pre_hook_enabled = False
 
     while iteration < args.train_iters:
+        maybe_finalize_async_save(blocking=False)
 
         # Update number of microbatches first without consistency check to decide if a
         # checkpoint should be saved. If the number of microbatches is different
@@ -771,7 +780,8 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
                                          opt_param_scheduler,
                                          num_floating_point_operations_so_far,
                                          checkpointing_context=None)
-                update_save_checkpoint_chmod(config.save)
+                if not args.async_save:
+                    update_save_checkpoint_chmod(config.save)
                 print_datetime('exiting program after receiving SIGTERM.')
                 exit = True
                 break
@@ -790,7 +800,8 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
                         _convert_weights_mg2hf(args, iteration)
                 else:
                     logging.warning("checkpoint not found, cannot convert mg2hf")
-            update_save_checkpoint_chmod(config.save)
+            if not args.async_save:
+                update_save_checkpoint_chmod(config.save)
             saved_checkpoint = True
 
         # Exiting based on duration
@@ -808,7 +819,8 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
                                              opt_param_scheduler,
                                              num_floating_point_operations_so_far,
                                              checkpointing_context=None)
-                    update_save_checkpoint_chmod(config.save)
+                    if not args.async_save:
+                        update_save_checkpoint_chmod(config.save)
                 print_datetime('exiting program after {} minutes'.format(train_time))
                 exit = True
                 break
@@ -820,7 +832,8 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
                                          opt_param_scheduler,
                                          num_floating_point_operations_so_far,
                                          checkpointing_context=None)
-                update_save_checkpoint_chmod(config.save)
+                if not args.async_save:
+                    update_save_checkpoint_chmod(config.save)
             torch.distributed.barrier()
             print_datetime('exiting program at iteration {}'.format(iteration))
             exit = True
@@ -841,6 +854,10 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
         prof.stop()
 
     one_logger_utils.track_e2e_metrics()
+
+    maybe_finalize_async_save(blocking=True, terminate=True)
+    if args.save and args.async_save:
+        update_save_checkpoint_chmod(config.save)
 
     # Flush TensorBoard and WandB writers.
     writer = get_tensorboard_writer()

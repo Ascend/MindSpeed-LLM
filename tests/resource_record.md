@@ -329,4 +329,13 @@
         <td>/</td>
         <td>/data/ci/cache/save_dir</td>
     </tr>
+    <tr>
+        <td>qwen3-30b-layer2-dist</td>
+        <td>/data/ci/models/Qwen3-30B-A3B/hf/Qwen3-30B-A3B/</td>
+        <td>/data/ci/models/Qwen3-30B-A3B/mg/qwen3-30b-layer2-dist/</td>
+        <td>/data/ci/datasets/origin/alpaca/train-00000-of-00001-a09b74b3ef9c3b56.parquet</td>
+        <td>/data/ci/datasets/processed/qwen3_30b_dist/alpaca_text_document</td>
+        <td>/</td>
+        <td>/data/ci/cache/qwen3-30b-layer2-dist</td>
+    </tr>
 </table>

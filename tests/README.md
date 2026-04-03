@@ -384,9 +384,16 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td>Y</td>
     </tr>
     <tr>
-        <td rowspan="1">qwen3-30b</td>
+        <td rowspan="2">qwen3-30b</td>
         <td>qwen3-30b DPO, distributed_optimizer, recompute, DPO</td>
         <td><a href="pipeline\st\qwen3-30b\dpo_qwen3_30b_a3b_16K_A3_ptd_tp2pp4.sh">dpo_qwen3_30b_a3b_16K_A3_ptd_tp2pp4.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+        <tr>
+        <td>qwen3-30b layer2, async-save</td>
+        <td><a href="pipeline\st\qwen3-30b\qwen3-30b-layer2-dist.sh">qwen3-30b-layer2-dist.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>

@@ -47,9 +47,7 @@ def parse_args_decorator(parse_args):
 
 
 def process_args_v2(parser):
-
     MindSpeedFeaturesManager.register_features_args(parser)
-
     return parser
 
 
@@ -109,8 +107,6 @@ def _add_dummy_args_v2(args):
     args.attention_mask_on_cpu = False
     args.output_layer_slice_num = 1
     args.use_fused_mlp = False
-    args.ckpt_format = 'torch'
-    args.use_dist_ckpt = False
 
 
 def validate_args_v2_decorator(megatron_validate_args):

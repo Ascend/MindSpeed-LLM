@@ -18,9 +18,11 @@ import os
 import json
 import re
 import time
+import gc
 import stat
 import random
 import warnings
+from contextlib import contextmanager
 from functools import wraps
 from logging import getLogger
 from typing import Optional, Union, List
@@ -33,6 +35,7 @@ import torch
 import torch_npu
 import socket
 from torch import distributed as dist
+from torch import multiprocessing as mp
 import numpy as np
 import megatron
 from megatron.training import get_args
@@ -66,6 +69,41 @@ except Exception:
 
 
 logger = getLogger(__name__)
+
+
+@contextmanager
+def _disable_gc():
+    gc_enabled = gc.isenabled()
+    try:
+        if gc_enabled:
+            gc.disable()
+        yield
+    finally:
+        if gc_enabled:
+            gc.enable()
+
+
+@_disable_gc()
+def temporal_async_caller_schedule_async_call(self, async_req):
+    if async_req.async_fn is None:
+        return
+
+    async_fn_args = list(async_req.async_fn_args)
+    if async_req.preload_fn:
+        async_fn_args[1] = async_req.preload_fn()
+
+    rank = torch.distributed.get_rank()
+    start_sync = time.time()
+    torch.cuda.synchronize()
+    end_sync = time.time()
+
+    ctx = mp.get_context('spawn')
+    self.start_time = time.time()
+    self.process = ctx.Process(
+        target=async_req.async_fn, args=async_fn_args, kwargs=async_req.async_fn_kwargs
+    )
+    self.process.start()
+    init_time = time.time()
 
 _CAN_RECORD_REGISTRY = {}
 WRITE_FILE_DEFAULT_FLAGS = os.O_WRONLY | os.O_CREAT
@@ -1083,7 +1121,7 @@ def check_pipeline_config(num_layers, pp, vpp_stage, noop_layers):
     noop_set = set(int(x) for x in noop_layers.split(","))
     all_layers = list(range(num_layers))
 
-    layers_per_pp_group = num_layers // pp 
+    layers_per_pp_group = num_layers // pp
 
     for pp_idx in range(pp):
 
