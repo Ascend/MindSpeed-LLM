@@ -14,7 +14,7 @@ WORLD_SIZE=4
 CKPT_LOAD_DIR="/data/ci/cache/qwen2.5_7b_tp1pp4_vpp_edge/"
 CKPT_SAVE_DIR="/data/ci/cache/save_dir/edge/"
 DATA_PATH="/data/ci/datasets/tune_dataset/alpaca/alpaca"
-TOKENIZER_PATH="/data/ci/models/qwen25/hf/Qwen2.5-7B-Instruct/"
+TOKENIZER_PATH="/data/ci/models/qwen25/hf/Qwen2.5-7B/"
 
 
 TP=1

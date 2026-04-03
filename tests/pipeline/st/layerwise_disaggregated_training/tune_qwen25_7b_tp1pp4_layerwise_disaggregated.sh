@@ -41,8 +41,8 @@ trap cleanup INT TERM EXIT
 
 # Configuration parameters
 # Model conversion configuration
-HF_MODEL_DIR="/data/ci/models/qwen25/hf/Qwen2.5-7B-Instruct/"
-TOKENIZER_PATH="/data/ci/models/qwen25/hf/Qwen2.5-7B-Instruct/tokenizer.json"
+HF_MODEL_DIR="/data/ci/models/qwen25/hf/Qwen2.5-7B/"
+TOKENIZER_PATH="/data/ci/models/qwen25/hf/Qwen2.5-7B/tokenizer.json"
 MG_SAVE_DIR="/data/ci/cache/qwen2.5_7b_tp1pp5/"
 VPP_EDGE_SAVE_DIR="/data/ci/cache/qwen2.5_7b_tp1pp4_vpp_edge/"
 VPP_CLOUD_SAVE_DIR="/data/ci/cache/qwen2.5_7b_tp1pp4_vpp_cloud/"
