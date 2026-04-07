@@ -30,6 +30,9 @@ class TransformerEngineBasicFeature(MindSpeedFeature):
                                     '"performance": Enables high-performance optimizations. '
                                     '"compatible": Default. Ensures compatibility with native TE behavior.',
                            dest='te_gmm_mode')
+        group.add_argument("--fp8-reuse-quantized-weight", action="store_true",
+                           default=False, help="Reuse quantized FP8 weight tensors within one optimizer step.",
+        )
 
     def validate_args(self, args):
         if args.fp8 and args.transformer_impl == 'local':
@@ -49,6 +52,8 @@ class TransformerEngineBasicFeature(MindSpeedFeature):
                 warnings.warn(
                     f"gmm fp8 only supports tensorwise, mxfp8, and delayed recipe, but {args.fp8_recipe} provided, "
                     f"using bf16 gmm instead.")
+        if getattr(args, "fp8_reuse_quantized_weight", False) and not args.fp8:
+            raise ValueError("fp8_reuse_quantized_weight is only valid when FP8 training is enabled")
 
     def pre_register_patches(self, pm, args):
         pm.register_patch('transformer_engine.pytorch.tensor.QuantizedTensor', torch.nn.Module, create_dummy=True)
@@ -123,6 +128,9 @@ class TransformerEngineBasicFeature(MindSpeedFeature):
                     pm.register_patch(
                         'megatron.core.transformer.multi_token_prediction.MultiTokenPredictionLayer.forward',
                         dualpipev_fb_overlap_mtp_layer_forward_te_without_overlap)
+            if getattr(args, "fp8_reuse_quantized_weight", False):
+                from mindspeed.features_manager.megatron_basic.transformer_engine_basic import init_weight_quantization_reuse
+                init_weight_quantization_reuse(pm, args)
         else:
             from mindspeed.te.pytorch.attention.dot_product_attention.dot_product_attention import \
                 MindSpeedTEDotProductAttention

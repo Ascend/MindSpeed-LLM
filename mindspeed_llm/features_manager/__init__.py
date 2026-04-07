@@ -24,6 +24,7 @@ from mindspeed.features_manager import (
     VirtualOptimizerFeature,
     HcclBufferAdaptiveFeature,
     HcclBufferSetFeature,
+    HcclOpModeSetFeature,
     RecomputeNormFeature,
     RecomputeActivationFeature,
     NPUDeterministicFeature,
@@ -250,6 +251,7 @@ def add_hccl_buffer_features(features_list: List[MindSpeedFeature]):
     features_list.extend([
         HcclBufferSetFeature(),
         HcclBufferAdaptiveFeature(),
+        HcclOpModeSetFeature(),
     ])
 
 
