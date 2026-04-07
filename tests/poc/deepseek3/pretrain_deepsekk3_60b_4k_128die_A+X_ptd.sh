@@ -3,7 +3,6 @@
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
 export HCCL_CONNECT_TIMEOUT=3600
-export STREAMS_PER_DEVICE=32
 
 NPUS_PER_NODE=16
 MASTER_ADDR=localhost #主节点IP
@@ -17,10 +16,10 @@ DATA_PATH="your data path"
 TOKENIZER_PATH="your tokenizer path"
 CKPT_LOAD_DIR="your model ckpt path"
 
-TP=2
+TP=8
 PP=2
 VPP=2
-EP=32
+EP=8
 CP=1
 CP_TYPE=ulysses_cp_algo
 NUM_LAYERS=8
@@ -133,7 +132,6 @@ GPT_ARGS="
     --norm-epsilon 1e-6 \
     --manual-gc \
     --manual-gc-interval 50 \
-    --ckpt-format torch
 "
 
 CKPT_ARGS="
@@ -185,5 +183,4 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     $MOE_ARGS \
     $MTP_ARGS \
     --distributed-backend nccl \
-    --transformer-impl local \
-    | tee logs/pretrain_deepseek3_60b_4k_A3_ptd.log
+    | tee logs/pretrain_deepseek3_60b_4k_A+X_ptd.log
