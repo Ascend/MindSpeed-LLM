@@ -71,6 +71,11 @@ source = $SOURCE_DIR
 [report]
 show_missing = True
 skip_covered = False
+
+exclude_lines =
+    pragma: no cover
+    ^\s*import\s
+    ^\s*from\s
 EOF
 
 # run the coverage for python files in the unit tests

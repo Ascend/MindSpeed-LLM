@@ -80,7 +80,7 @@ find "$PIPELINE_ST_DIR" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
                 echo "$BASE_DIR/test_tools/test_ci_st.py"
                 pytest -x $BASE_DIR/test_tools/test_ci_st.py \
                     --baseline-json $PIPELINE_ST_BASELINE_DIR/$name.json \
-                    --generate-log $GENERATE_LOG_DIR/$name.log \
+                    --generate-log $GENERATE_LOG_DIR/[PIPELINE_ST]$name.log \
                     --generate-json $GENERATE_LOG_DIR/$name.json
                 PYTEST_EXITCODE=$?
                 if [ $PYTEST_EXITCODE -ne 0 ]; then
@@ -125,7 +125,7 @@ find "$ST_DIR" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
                 echo "$BASE_DIR/test_tools/test_ci_st.py"
                 pytest -x $BASE_DIR/test_tools/test_ci_st.py \
                     --baseline-json $ST_BASELINE_DIR/$name.json \
-                    --generate-log $GENERATE_LOG_DIR/$name.log \
+                    --generate-log $GENERATE_LOG_DIR/[ST]$name.log \
                     --generate-json $GENERATE_LOG_DIR/$name.json
                 PYTEST_EXITCODE=$?
                 if [ $PYTEST_EXITCODE -ne 0 ]; then
@@ -161,7 +161,7 @@ coverage html -d "$COVERAGE_DIR/htmlcov"
 coverage xml -o "$COVERAGE_DIR/coverage.xml"
 coverage json -o "$COVERAGE_DIR/coverage.json"
 coverage_percent=$(coverage report --format=total)
-echo "======================Coverage Results================================" >> $GENERATE_LOG_DIR/exec_error.log
+echo "==========================================Coverage Results=====================================================" >> $GENERATE_LOG_DIR/exec_error.log
 echo "Pipeline Coverage Percentage is $coverage_percent%" >> $GENERATE_LOG_DIR/exec_error.log
 echo "For detailed information, please refer to ./coverage/html/index.html" >> $GENERATE_LOG_DIR/exec_error.log
 
