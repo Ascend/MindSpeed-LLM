@@ -527,6 +527,6 @@ def _load_checkpoint(model_provider, queue, args):
 def load_checkpoint(model_provider, queue, args):
     try:
         _load_checkpoint(model_provider, queue, args)
-    except:
+    except Exception:
         queue.put("exit")
         raise

@@ -284,7 +284,7 @@ class BBHEval(DatasetEval):
                 shifted_logits.view(-1, shifted_logits.size(-1)), shifted_labels.view(-1)
             ).view(shifted_labels.size())
 
-            avg_loss = loss_values.sum(-1).cpu().numpy() / token_ids.size(1)
+            avg_loss = loss_values.sum(-1).cpu().numpy() / max(token_ids.size(1), 1)
             loss_records.append(avg_loss)
 
         return options[loss_records.index(min(loss_records))]
