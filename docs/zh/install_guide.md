@@ -29,7 +29,7 @@
 
 ### 安装驱动固件
 
-下载[驱动固件](https://hiascend.com/hardware/firmware-drivers/community)，请根据系统和硬件产品型号选择对应版本的社区版本或商用版本的驱动与固件。
+下载[固件与驱动](https://hiascend.com/hardware/firmware-drivers/community)，请根据系统和硬件产品型号选择对应版本的社区版本或商用版本的固件与驱动。
 参考如下命令安装：
 
 ```shell
@@ -116,7 +116,8 @@ pip3 install torch_npu-2.7.1rc1-cp310-cp310-manylinux_2_28_aarch64.whl
 
 ### 安装MindSpore框架 
 
-参考[MindSpore官方安装指导](https://www.mindspore.cn/install)，根据系统类型、CANN版本及Python版本获取相应的安装命令以安装indSpore 2.9.0，安装前请确保网络畅通。
+参考[MindSpore官方安装指导](https://www.mindspore.cn/install)，根据系统类型、CANN版本及Python版本获取相应的安装命令以安装MindSpore 2.9.0，安装前请确保网络畅通。
+
 ### 安装MindSpeed LLM
 
 请参考如下操作完成MindSpeed LLM及相关依赖的安装。
@@ -139,6 +140,6 @@ pip3 install torch_npu-2.7.1rc1-cp310-cp310-manylinux_2_28_aarch64.whl
     ```shell
     cd MindSpeed-Core-MS
     pip3 install -r requirements.txt # 安装第三方依赖
-    source auto_convert.sh llm # 拉取训练所需组件库
+    source auto_convert.sh llm       # 拉取训练所需组件库
     source tests/scripts/set_path.sh # 设置环境变量
     ```

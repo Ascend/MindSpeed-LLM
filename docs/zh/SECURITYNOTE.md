@@ -10,14 +10,14 @@
 
 ## 运行用户建议
 
-出于安全性及权限最小化角度考虑，不建议使用root等管理员类型账户使用MindSpeed-LLM。
+出于安全性及权限最小化角度考虑，不建议使用root等管理员类型账户使用MindSpeed LLM。
 
 ## 文件权限控制
 
 1. 建议用户在主机（包括宿主机）及容器中设置运行系统umask值为0027及以上，保障新增文件夹默认最高权限为750，新增文件默认最高权限为640。
-2. 建议用户对个人数据、商业资产、源文件、训练过程中保存的各类文件等敏感内容做好权限管控。涉及场景如MindSpeed-LLM安装目录权限管控、多用户使用共享数据集权限管控，管控权限可参考表1进行设置。
-3. MindSpeed-LLM在数据预处理中会生成训练数据，在训练过程中会生成权重文件，文件权限默认640，用户可根据实际需求对生成文件权限进行进阶管控。
-4. 在以非Root用户进行训练时，您的`CKPT_SAVE_DIR`路径可能权限设置较为严格，导致无法访问该目录。您可以在脚本中添加`chmod -R 660 $CKPT_SAVE_DIR`来修改该目录的访问权限，从而确保可以正常读取和写入模型权重文件。
+2. 建议用户对个人数据、商业资产、源文件、训练过程中保存的各类文件等敏感内容做好权限管控。涉及场景如MindSpeed LLM安装目录权限管控、多用户使用共享数据集权限管控，管控权限可参考表1进行设置。
+3. MindSpeed LLM在数据预处理中会生成训练数据，在训练过程中会生成权重文件，文件权限默认640，用户可根据实际需求对生成文件权限进行进阶管控。
+4. 在以非root用户进行训练时，您的`CKPT_SAVE_DIR`路径可能权限设置较为严格，导致无法访问该目录。您可以在脚本中添加`chmod -R 660 $CKPT_SAVE_DIR`来修改该目录的访问权限，从而确保可以正常读取和写入模型权重文件。
 
 **表1 文件（夹）各场景权限管控推荐最大值**
 
@@ -43,7 +43,7 @@
 
 ## 数据安全声明
 
-1. MindSpeed-LLM会在megatron中的checkpointing模块中保存模型文件，其中部分模型文件使用了风险模块pickle，可能存在数据风险。
+1. MindSpeed LLM会在megatron中的checkpointing模块中保存模型文件，其中部分模型文件使用了风险模块pickle，可能存在数据风险。
 2. 程序运行过程中，会通过nltk.download从用户指定的路径中加载语料库，需要保证网络安全，确保下载的语料包来源可信。
 
 ## 运行安全声明
@@ -68,19 +68,19 @@
 
 ## 公开接口声明
 
-MindSpeed-LLM 暂时未发布wheel包，无正式对外公开接口，所有功能均通过shell脚本调用。5个入口脚本分别为[pretrain_gpt.py](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/pretrain_gpt.py), [inference.py](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/inference.py), [evaluation.py](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/evaluation.py), [preprocess_data.py](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/preprocess_data.py) 和 [convert_ckpt.py](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/convert_ckpt.py)。
+MindSpeed LLM暂时未发布wheel包，无正式对外公开接口，所有功能均通过shell脚本调用。5个入口脚本分别为[pretrain_gpt.py](https://gitcode.com/ascend/MindSpeed-LLM/blob/26.0.0/pretrain_gpt.py)、[inference.py](https://gitcode.com/ascend/MindSpeed-LLM/blob/26.0.0/inference.py)、[evaluation.py](https://gitcode.com/ascend/MindSpeed-LLM/blob/26.0.0/evaluation.py)、[preprocess_data.py](https://gitcode.com/ascend/MindSpeed-LLM/blob/26.0.0/preprocess_data.py)和[convert_ckpt.py](https://gitcode.com/ascend/MindSpeed-LLM/blob/26.0.0/convert_ckpt.py)。
 
 ## 通信安全加固
 
-[通信安全加固说明](https://gitcode.com/ascend/pytorch/blob/master/SECURITYNOTE.md#%E9%80%9A%E4%BF%A1%E5%AE%89%E5%85%A8%E5%8A%A0%E5%9B%BA)
+[通信安全加固说明](https://gitcode.com/Ascend/pytorch/blob/v2.7.1-26.0.0/docs/zh/SECURITYNOTE.md#%E9%80%9A%E4%BF%A1%E5%AE%89%E5%85%A8%E5%8A%A0%E5%9B%BA)
 
 ## 通信矩阵
 
-[通信矩阵说明](https://gitcode.com/ascend/pytorch/blob/master/SECURITYNOTE.md#%E9%80%9A%E4%BF%A1%E7%9F%A9%E9%98%B5%E4%BF%A1%E6%81%AF)
+[通信矩阵说明](https://gitcode.com/Ascend/pytorch/blob/v2.7.1-26.0.0/docs/zh/SECURITYNOTE.md#%E9%80%9A%E4%BF%A1%E7%9F%A9%E9%98%B5)
 
 ### 特殊场景
 
 | 场景                                                                                                                                                                                  | 使用方法                                         | 端口 | 可能的风险       |
 |-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------| ------------------------------------------------ | ---------- | ---------- |
-| 使用MindSpeed LLM进行训练任务时，在Megatron后端场景下每次初始化模型并行组时，默认新增 (3 * NPU 数量) 个随机端口。开启多个分布式优化器时，再额外增加 (分布式优化器数量 * NPU 数量) 个随机端口。同时，需要配置1个master-port端口（该端口与torch_npu的master-port端口一致）。| MindSpeed LLM调用Megatron原生函数mpu.initialize_model_parallel来初始化模型并行组，并通过使用PyTorch分布式训练相关的API来启动任意任务。 | [1024,65520]内 | 网络配置错误可能引发端口冲突或连接问题，影响训练效率。     |
+| 使用MindSpeed LLM进行训练任务时，在Megatron后端场景下每次初始化模型并行组时，默认新增 (3 \* NPU 数量) 个随机端口。开启多个分布式优化器时，再额外增加 (分布式优化器数量 \* NPU 数量) 个随机端口。同时，需要配置1个master-port端口（该端口与torch_npu的master-port端口一致）。| MindSpeed LLM调用Megatron原生函数mpu.initialize_model_parallel来初始化模型并行组，并通过使用PyTorch分布式训练相关的API来启动任意任务。 | [1024,65520]内 | 网络配置错误可能引发端口冲突或连接问题，影响训练效率。     |
 | 用户通过nltk.download下载语料库。                                                                                                                                                              | 用户在代码内部使用nltk.download来实现语料库的下载。 | 随机端口 | 文件来源若不可信，在文件加载时可能存在反序列化漏洞，导致文件被篡改。 |
