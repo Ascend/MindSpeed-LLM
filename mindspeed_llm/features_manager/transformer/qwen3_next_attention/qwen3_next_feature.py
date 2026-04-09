@@ -37,6 +37,12 @@ class Qwen3NextFeature(MindSpeedFeature):
         if args.use_global_aux_loss:
             if int(args.pipeline_model_parallel_size) > 1:
                 raise AssertionError('use-global-aux-loss is not support for pipeline-model-parallel-size > 1, please use FSDP2')
+            if args.moe_alltoall_overlap_comm:
+                raise AssertionError('`--use-global-aux-loss` is not support for `--moe-alltoall-overlap-comm`')
+            if args.moe_allgather_overlap_comm:
+                raise AssertionError('`--use-global-aux-loss` is not support for `--moe-allgather-overlap-comm`')
+            if args.moe_fb_overlap:
+                raise AssertionError('`--use-global-aux-loss` is not support for `--moe-fb-overlap`')
 
             patch_manager.register_patch('megatron.core.transformer.moe.router.TopKRouter.forward',
                                          global_aux_loss_topk_router_forward)
