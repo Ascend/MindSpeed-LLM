@@ -746,6 +746,10 @@ class OptimizationArguments:
         default=None,
         metadata={"help": "Chunk loss size: set to > 0 to enable chunk loss calculation"}
     )
+    use_triton_rmsnormgated: bool = field(
+        default=False,
+        metadata={"help": "Use triton rmsnorm."}
+    )
 
 
 def _string_to_bool(value: Union[bool, str]) -> bool:

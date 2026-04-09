@@ -11,6 +11,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch import Tensor
 
+from mindspeed_llm.fsdp2.utils.global_vars import get_args
+
 
 def rms_norm_ref(x, weight, bias, z=None, eps=1e-6, group_size=None, norm_before_gate=True, upcast=True):
     dtype = x.dtype
@@ -37,7 +39,7 @@ def rms_norm_ref(x, weight, bias, z=None, eps=1e-6, group_size=None, norm_before
 
 
 class RMSNorm(torch.nn.Module):
-    def __init__(self, hidden_size, eps=1e-5, group_size=None, norm_before_gate=True, device=None, dtype=None, use_triton=False):
+    def __init__(self, hidden_size, eps=1e-5, group_size=None, norm_before_gate=True, device=None, dtype=None):
         """If group_size is not None, we do GroupNorm with each group having group_size elements.
         group_size=None is equivalent to group_size=hidden_size (i.e. there's only 1 group).
         """
@@ -48,7 +50,6 @@ class RMSNorm(torch.nn.Module):
         self.register_parameter("bias", None)
         self.group_size = group_size
         self.norm_before_gate = norm_before_gate
-        self.use_triton = use_triton
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -62,7 +63,7 @@ class RMSNorm(torch.nn.Module):
 
 
 class Mamba3(nn.Module):
-    def init(
+    def __init__(
     self,
     d_model,
     d_state=128,
@@ -87,11 +88,10 @@ class Mamba3(nn.Module):
     n_layer=None, # Absorb kwarg for general module
     device=None,
     dtype=None,
-    use_triton=False,
     **kwargs,
     ):
         factory_kwargs = {"device": device, "dtype": dtype}
-        super().init()
+        super().__init__()
         self.d_model = d_model
         self.d_state = d_state
         self.expand = expand
@@ -108,8 +108,6 @@ class Mamba3(nn.Module):
         self.dt_max = dt_max
         self.dt_min = dt_min
         self.dt_init_floor = dt_init_floor
-
-        self.use_triton = use_triton
 
         self.d_inner = int(self.expand * self.d_model)
         if self.d_inner % self.headdim != 0:
@@ -141,7 +139,7 @@ class Mamba3(nn.Module):
         )
         _dt = torch.clamp(_dt, min=dt_init_floor)
         _dt_bias = _dt + torch.log(-torch.expm1(-_dt))
-        self.dt_bias = nn.Parameter(_dt_bias, device=device, requires_grad=True)
+        self.dt_bias = nn.Parameter(_dt_bias.to(device=device), requires_grad=True)
         self.dt_bias._no_weight_decay = True
 
         # B and C biases
@@ -149,7 +147,10 @@ class Mamba3(nn.Module):
         self.C_bias = nn.Parameter(1 + torch.zeros((self.nheads, self.mimo_rank, self.d_state), dtype=torch.float32, device=device), requires_grad=True)
 
         # RMS Norm for B and C
-        if self.use_triton:
+        args = get_args()
+        self.use_triton_rmsnormgated = args.use_triton_rmsnormgated
+        if self.use_triton_rmsnormgated:
+            from mindspeed_llm.ops.triton.layernorm_gated import RMSNorm as RMSNormGated
             if RMSNormGated is None:
                 raise ValueError("RMSNormGated cannot be None")
             self.B_norm = RMSNormGated(self.d_state, eps=1e-5, **factory_kwargs)
@@ -173,7 +174,7 @@ class Mamba3(nn.Module):
         self.D._no_weight_decay = True
 
         if self.is_outproj_norm:
-            if self.use_triton:
+            if self.use_triton_rmsnormgated:
                 self.norm = RMSNormGated(
                     self.d_inner,
                     eps=1e-5,

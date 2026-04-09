@@ -9,7 +9,7 @@ model:
 data:
   dataset: 
     file_name: "/home/dataset/train-00000-of-00042-d964455e17e96d5a.parquet"
-  template: qwen
+  template: qwen3
   cutoff_len: 2048
   max_samples: 100000
   overwrite_cache: True
@@ -61,3 +61,6 @@ training:
   max_steps: -1
   save_steps: 500
   logging_steps: 1
+
+optimization:
+  use_triton_rmsnormgated: True

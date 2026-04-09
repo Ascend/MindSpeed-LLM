@@ -46,10 +46,9 @@ class Mamba2Config(PretrainedConfig):
 
 
 class Mamba3Config(Mamba2Config):
-    def __init__(
-        self,
-        **kwargs,
-    ):
+    model_type = "mamba3"
+
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.d_model = self.hidden_size
         self.n_layer = self.num_hidden_layers
@@ -60,7 +59,7 @@ class Mamba3Config(Mamba2Config):
 
 class MambaRMSNormGated(torch.nn.Module):
     def init(self, hidden_size, eps=1e-6):
-        super().init()
+        super().__init__()
         self.weight = nn.Parameter(torch.ones(hidden_size))
         self.variance_epsilon = eps
 
@@ -77,11 +76,11 @@ class MambaRMSNormGated(torch.nn.Module):
 
 
 class Mamba3RMSNorm(nn.Module):
-    def init(self, hidden_size, eps=1e-6):
+    def __init__(self, hidden_size, eps=1e-6):
         """
         Mamba3RMSNorm is equivalent to T5LayerNorm and LlamaRMSNorm
         """
-        super().init()
+        super().__init__()
         self.weight = nn.Parameter(torch.ones(hidden_size))
         self.variance_epsilon = eps
 
@@ -94,11 +93,11 @@ class Mamba3RMSNorm(nn.Module):
 
 
 class Mamba3Block(nn.Module):
-    def init(self, config: Mamba3Config, layer_idx: int):
-        super().init()
-
+    def __init__(self, config: Mamba3Config, layer_idx: int):
+        super().__init__()
+        self.layer_idx = layer_idx
         self.mamba = Mamba3(
-            d_model=config.hidden_size, is_mimo=False
+            d_model=config.hidden_size, is_mimo=config.is_mimo
         )
 
     def forward(self, hidden_states, inference_params=None):
