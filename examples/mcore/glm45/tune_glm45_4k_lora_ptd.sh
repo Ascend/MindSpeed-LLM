@@ -126,7 +126,9 @@ GPT_ARGS="
 
 DATA_ARGS="
     --data-path ${DATA_PATH} \
-    --split 100,0,0
+    --split 100,0,0 \
+    --workers 4 \
+    --handler-name AlpacaStyleInstructionHandler
 "
 
 OUTPUT_ARGS="
@@ -143,11 +145,15 @@ TUNE_ARGS="
     --finetune \
     --stage sft \
     --is-instruction-dataset \
-    --reset-position-ids \
     --prompt-type glm4_moe \
     --lora-r 16 \
     --lora-alpha 32 \
     --lora-target-modules linear_qkv linear_proj linear_fc1 linear_fc2
+"
+
+CKPT_ARGS="
+    --enable-hf2mg-convert \
+    --model-type-hf glm45
 "
 
 torchrun ${DISTRIBUTED_ARGS} posttrain_gpt.py \
@@ -159,8 +165,10 @@ torchrun ${DISTRIBUTED_ARGS} posttrain_gpt.py \
     $DATA_ARGS \
     $OUTPUT_ARGS \
     $TUNE_ARGS \
+    $CKPT_ARGS \
     --load ${CKPT_LOAD_DIR} \
     --save ${CKPT_SAVE_DIR} \
     --distributed-backend nccl \
     --transformer-impl local \
+    --ckpt-format torch \
     | tee logs/tune_glm45_4k_lora_ptd.log

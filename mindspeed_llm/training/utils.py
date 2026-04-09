@@ -119,8 +119,7 @@ _ACTUAL_COUNT = 0
 ARCH_ALIAS_MAP = {
     # HF architecture  ->  model-type-hf
     "bailingmoev2": "bailing_mini",
-    "phi3": "phi3.5",
-    "glm4moe": "glm45-air"
+    "phi3": "phi3.5"
 }
 
 
@@ -1076,6 +1075,10 @@ def infer_model_type_from_hf_config(
 
     arch_raw = architectures[0]
     arch_norm = _normalize_name(arch_raw)
+
+    if arch_norm == "glm4moe":
+        moe_map = {1: "glm45-air", 3: "glm45"}
+        return moe_map.get(config.get("first_k_dense_replace"), "glm45")
 
     if arch_norm in ARCH_ALIAS_MAP:
         return ARCH_ALIAS_MAP[arch_norm]

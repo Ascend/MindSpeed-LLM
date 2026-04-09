@@ -2,7 +2,7 @@ import os
 from argparse import ArgumentParser
 from mindspeed.features_manager.feature import MindSpeedFeature
 
-MODEL_TYPE_HF_CHOICES = ['qwen3', 'qwen3-moe', 'deepseek3', 'glm45-air', 'bailing_mini', 'qwen3-next', 'seed-oss', 'deepseek32', 'magistral', 'deepseek2-lite', 'phi3.5', 'mamba2']
+MODEL_TYPE_HF_CHOICES = ['qwen3', 'qwen3-moe', 'deepseek3', 'glm45-air', 'glm45', 'bailing_mini', 'qwen3-next', 'seed-oss', 'deepseek32', 'magistral', 'deepseek2-lite', 'phi3.5', 'mamba2']
 
 
 class CheckpointFeature(MindSpeedFeature):
