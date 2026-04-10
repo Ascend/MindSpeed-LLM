@@ -17,12 +17,44 @@ import triton.runtime.driver as driver
 
 
 def get_npu_properties():
-    """Get NPU device properties, including number of cores"""
+    """
+    Get NPU device properties including number of cores.
+
+    Returns:
+        Device properties object containing NPU hardware information.
+
+    Note:
+        This function queries the active NPU device for its properties,
+        which is used for optimizing Triton kernel launch parameters.
+    """
     device = torch.npu.current_device()
     return driver.active.utils.get_device_properties(device)
 
 
 def rms_norm_ref(x, weight, bias, z=None, eps=1e-6, group_size=None, norm_before_gate=True, upcast=True):
+    """
+    Reference implementation of RMS normalization with optional gating.
+
+    This function provides a reference implementation for RMS (Root Mean Square)
+    normalization that can be used for testing and validation.
+
+    Args:
+        x (torch.Tensor): Input tensor.
+        weight (torch.Tensor): Weight tensor for scaling.
+        bias (torch.Tensor, optional): Bias tensor for shifting.
+        z (torch.Tensor, optional): Gate tensor for SiLU gating.
+        eps (float, optional): Epsilon for numerical stability. Defaults to 1e-6.
+        group_size (int, optional): Group size for grouped normalization.
+        norm_before_gate (bool, optional): Apply norm before gating. Defaults to True.
+        upcast (bool, optional): Upcast to float32 for computation. Defaults to True.
+
+    Returns:
+        torch.Tensor: Normalized output tensor.
+
+    Note:
+        When z is provided, the output is gated using SiLU activation.
+        Group normalization divides the feature dimension into groups for normalization.
+    """
     dtype = x.dtype
     N = x.shape[-1]
     weight = weight.float()

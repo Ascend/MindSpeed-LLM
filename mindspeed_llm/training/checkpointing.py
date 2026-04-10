@@ -57,6 +57,23 @@ logger = getLogger(__name__)
 
 
 def _load_base_checkpoint_wrapper(fn):
+    """
+    Wrapper for loading base checkpoint with LoRA support.
+
+    This decorator wraps the base checkpoint loading function to add support for
+    LoRA checkpoint loading and merging.
+
+    Args:
+        fn: The original _load_base_checkpoint function.
+
+    Returns:
+        Callable: Wrapped function that handles LoRA checkpoint loading.
+
+    The wrapper handles:
+        - Reference model loading for LoRA training
+        - LoRA weight key modification
+        - Merging base model and LoRA adapter weights
+    """
     @wraps(fn)
     def wrapper(*args, **kwargs):
         args_ = get_args()
@@ -83,6 +100,22 @@ def _load_base_checkpoint_wrapper(fn):
 
 
 def load_checkpoint_wrapper(fn):
+    """
+    Wrapper for loading checkpoint with loose loading support.
+
+    This decorator wraps the checkpoint loading function to support loose loading
+    where missing keys are allowed.
+
+    Args:
+        fn: The original load_checkpoint function.
+
+    Returns:
+        Callable: Wrapped function that supports loose checkpoint loading.
+
+    Note:
+        Loose loading is useful when loading a pretrained model for fine-tuning
+        with a different architecture or when some weights are not needed.
+    """
     @wraps(fn)
     def wrapper(ddp_model, optimizer, opt_param_scheduler, strict=True, *args, **kwargs):
         if load_checkpoint_loosely():

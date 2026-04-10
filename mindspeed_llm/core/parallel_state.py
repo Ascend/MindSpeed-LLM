@@ -33,6 +33,33 @@ _PIPELINE_MODEL_PARALLEL_NODE_INFO = None
 
 
 def initialize_model_parallel_decorator(initialize_model_parallel):
+    """
+    Decorator for initializing model parallelism with expert parallel support.
+
+    This decorator wraps the model parallel initialization function to add support
+    for expert parallelism and additional communication groups.
+
+    Args:
+        initialize_model_parallel: The original initialization function.
+
+    Returns:
+        Callable: Wrapped initialization function with expert parallel support.
+
+    The decorator adds:
+        - Expert parallel groups for MoE models
+        - Tensor and expert parallel groups
+        - Data parallel modulo expert groups
+        - Context parallel groups for long sequence training
+
+    Parallel dimensions:
+        - TP: Tensor parallelism (intra-layer model parallelism)
+        - PP: Pipeline parallelism (inter-layer model parallelism)
+        - CP: Context parallelism (sequence parallelism)
+        - EP: Expert parallelism (for MoE models)
+        - DP: Data parallelism
+
+    Constraint: DP * CP must be divisible by EP
+    """
     @wraps(initialize_model_parallel)
     def wrapper(
             tensor_model_parallel_size: int = 1,

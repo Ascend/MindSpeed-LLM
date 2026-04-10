@@ -45,6 +45,16 @@ logger = getLogger(__name__)
 
 
 def _compile_dependencies():
+    """
+    Compile dataset index builder dependencies on the first rank of each node.
+
+    This function compiles the C++/CUDA helpers for dataset indexing on one GPU
+    per node to avoid redundant compilation across all ranks.
+
+    Note:
+        Only the first rank on each node (rank % device_count == 0) performs
+        the compilation to save time in multi-GPU setups.
+    """
     device_count = torch.cuda.device_count()
     if device_count == 0:
         raise ZeroDivisionError

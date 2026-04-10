@@ -23,6 +23,24 @@ from mindspeed_llm.core.transformer.custom_layers.transformer_engine import PTNo
 
 
 def get_gpt_layer_local_spec_wrapper(fn):
+    """
+    Wrapper for getting GPT layer local specification with custom normalization.
+
+    This decorator wraps the layer specification function to customize normalization
+    layers and support various attention mechanisms.
+
+    Args:
+        fn: The original function to get GPT layer local spec.
+
+    Returns:
+        Callable: Wrapped function that returns layer spec with PTNorm.
+
+    The wrapper customizes:
+        - input_layernorm: Uses PTNorm for Ascend optimization
+        - pre_mlp_layernorm: Uses PTNorm for Ascend optimization
+        - q_layernorm: Optional Q normalization for attention
+        - k_layernorm: Optional K normalization for attention
+    """
     @wraps(fn)
     def wrapper(
         num_experts: int = None,
@@ -58,7 +76,22 @@ def get_gpt_layer_local_spec_wrapper(fn):
 
 def build_layers_wrapper(fn, column_forward, row_forward):
     """
-    For MOE + Ascend MC2, we replace linear_fc1 and linear_fc2 with vanilla column_forward and row_forward in megatron.
+    Wrapper for building layers with MC2 optimization for MoE models.
+
+    For MoE models with Ascend MC2 optimization, this wrapper replaces the forward
+    methods of expert linear layers with optimized implementations.
+
+    Args:
+        fn: The original build_layers function.
+        column_forward: Optimized forward method for column-parallel linear layers.
+        row_forward: Optimized forward method for row-parallel linear layers.
+
+    Returns:
+        Callable: Wrapped function that builds layers with MC2 optimization.
+
+    Note:
+        This optimization is only applied when use_ascend_mc2 is enabled.
+        It replaces linear_fc1 and linear_fc2 in MoE experts with optimized versions.
     """
 
     @wraps(fn)

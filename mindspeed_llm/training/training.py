@@ -85,6 +85,15 @@ except Exception as e:
 
 
 def _enable_npu_datadump_step_end():
+    """
+    Enable NPU data dump at the end of a training step.
+
+    This function stops and steps the MSTT debugger for NPU data dumping
+    if the npu_datadump flag is enabled.
+
+    Note:
+        This is used for debugging and profiling NPU operations.
+    """
     args = get_args()
     if not getattr(args, "npu_datadump", False):
         return
@@ -95,6 +104,20 @@ def _enable_npu_datadump_step_end():
 
 
 def update_save_checkpoint_chmod(save_path, permission=0o640):
+    """
+    Update file permissions for saved checkpoint files.
+
+    This function modifies the file permissions of saved checkpoints for security
+    when high availability mode is disabled.
+
+    Args:
+        save_path (str): Path to the saved checkpoint file.
+        permission (int, optional): File permission mode. Defaults to 0o640.
+
+    Note:
+        Permission updates are skipped when high availability is enabled
+        to avoid conflicts with HA mechanisms.
+    """
     args = get_args()
     if args.enable_high_availability:
         return

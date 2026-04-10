@@ -23,7 +23,7 @@ from mindspeed.te.pytorch.attention.dot_product_attention.context_parallel impor
 from mindspeed_llm.core.context_parallel.adaptor import CPDotProductAttention
 
 
-def do_kvallgather_context_parallel(core_attention, 
+def do_kvallgather_context_parallel(core_attention,
         query_layer: torch.Tensor,
         key_layer: torch.Tensor,
         value_layer: torch.Tensor,
@@ -31,6 +31,31 @@ def do_kvallgather_context_parallel(core_attention,
         attn_mask_type: Optional[str],
         extra_param
         ):
+    """
+    Perform context parallel attention using KV AllGather strategy.
+
+    This function implements context parallelism for attention computation by
+    gathering KV pairs across context parallel ranks using AllGather.
+
+    Args:
+        core_attention: The core attention module.
+        query_layer (torch.Tensor): Query tensor.
+        key_layer (torch.Tensor): Key tensor.
+        value_layer (torch.Tensor): Value tensor.
+        attention_mask: Attention mask tensor or tuple of masks.
+        attn_mask_type (Optional[str]): Type of attention mask.
+        extra_param: Additional parameters including qkv_format, sequence lengths, etc.
+
+    Returns:
+        torch.Tensor: Output tensor after attention computation.
+
+    Raises:
+        AssertionError: If Q/K/V shapes or formats are invalid.
+
+    Supported qkv formats:
+        - 'sbhd': Sequence-Batch-Head-Dimension layout
+        - 'thd': Token-Head-Dimension layout (packed sequences)
+    """
 
         qkv_format = extra_param.get('qkv_format')
         cu_seqlens_q = extra_param.get('cu_seqlens_q')

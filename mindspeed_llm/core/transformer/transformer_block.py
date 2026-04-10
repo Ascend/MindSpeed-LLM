@@ -46,6 +46,28 @@ from mindspeed.model.transformer import should_recompute_norm
 
 
 def get_num_layers_to_build(config: TransformerConfig) -> int:
+    """
+    Calculate the number of layers to build for the current pipeline stage.
+
+    This function determines how many Transformer layers should be constructed
+    on the current rank based on the pipeline parallel configuration.
+
+    Args:
+        config (TransformerConfig): Transformer configuration containing layer info.
+
+    Returns:
+        int: Number of layers to build on this rank.
+
+    The calculation considers:
+        1. Pipeline parallelism: Total layers divided by pipeline stages
+        2. Virtual pipeline parallelism: Further division by virtual stages
+        3. Custom layer distribution: Using num_layer_list if specified
+
+    Examples:
+        - 8 layers, 2 PP stages: Each stage builds 4 layers
+        - 8 layers, 2 PP stages, 4 VP: Each chunk builds 1 layer
+        - Custom: [3, 5] for 2 stages means stage 0 builds 3, stage 1 builds 5
+    """
     num_layers_per_pipeline_rank = (
             config.num_layers // parallel_state.get_pipeline_model_parallel_world_size()
     )
@@ -83,6 +105,22 @@ def get_num_layers_to_build(config: TransformerConfig) -> int:
 
 
 def get_layer_offset_wrapper(fn):
+    """
+    Wrapper for getting layer offset with custom layer distribution support.
+
+    This decorator wraps the layer offset function to support custom layer
+    distribution across pipeline stages.
+
+    Args:
+        fn: The original get_layer_offset function.
+
+    Returns:
+        Callable: Wrapped function that returns custom or default layer offset.
+
+    Note:
+        When num_layer_list is specified, each pipeline stage can have a different
+        number of layers, requiring custom offset calculation.
+    """
     @wraps(fn)
     def wrapper(config):
         if config.num_layer_list:
@@ -93,6 +131,22 @@ def get_layer_offset_wrapper(fn):
 
 
 def transformer_block_init_wrapper(fn):
+    """
+    Wrapper for TransformerBlock initialization with additional features.
+
+    This decorator wraps the TransformerBlock __init__ to add support for:
+    - Input embedding normalization
+    - Custom layer configurations
+
+    Args:
+        fn: The original TransformerBlock __init__ method.
+
+    Returns:
+        Callable: Wrapped initialization function.
+
+    The wrapper adds:
+        - input_embeds_norm: Whether to normalize input embeddings
+    """
     @wraps(fn)
     def wrapper(self, *args, **kwargs):
         fn(self, *args, **kwargs)

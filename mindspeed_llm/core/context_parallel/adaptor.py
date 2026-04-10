@@ -11,12 +11,45 @@ from mindspeed_llm.core.context_parallel.dot_product_attention import CPDotProdu
 
 
 class CPDotProductAttention(CPDotProductAttentionImpl, MegatronDotProductAttention):
+    """
+    Dot product attention with context parallelism support.
+
+    This class inherits from both CPDotProductAttentionImpl and MegatronDotProductAttention,
+    combining context parallel capabilities with Megatron's dot product attention implementation.
+
+    Attributes:
+        Inherits all attributes from parent classes.
+    """
 
     def __init__(self, *args, **kwargs):
+        """
+        Initialize context parallel dot product attention.
+
+        Args:
+            *args: Positional arguments passed to parent class.
+            **kwargs: Keyword arguments passed to parent class.
+        """
         CPDotProductAttentionImpl.__init__(self, *args, **kwargs)
 
 
 def attention_init_wrapper(fn):
+    """
+    Wrapper function for attention initialization with context parallel support.
+
+    This decorator wraps the attention initialization function to add support for
+    Ulysses context parallelism and hybrid context parallelism algorithms.
+
+    Args:
+        fn: The original attention initialization function to be wrapped.
+
+    Returns:
+        Callable: Wrapped function that initializes attention with context parallel support.
+
+    The wrapper supports:
+        - Ulysses context parallel algorithm (ulysses_cp_algo)
+        - Hybrid context parallel algorithm (hybrid_cp_algo)
+        - 2D tensor parallel combined with context parallel
+    """
     @wraps(fn)
     def wrapper(
         self,

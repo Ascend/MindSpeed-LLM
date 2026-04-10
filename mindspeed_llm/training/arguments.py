@@ -27,6 +27,22 @@ TEMPLATES_DIR = os.path.join(cur_file_dir.parent.parent, "configs/finetune/templ
 
 
 def extra_args_provider_decorator(extra_args_provider):
+    """
+    Decorator for extra arguments provider to add MindSpeed-LLM specific arguments.
+
+    This decorator wraps the extra arguments provider function to inject
+    MindSpeed-LLM feature arguments into the argument parser.
+
+    Args:
+        extra_args_provider: The original extra arguments provider function.
+
+    Returns:
+        Callable: Wrapped function that adds MindSpeed-LLM arguments.
+
+    The wrapper:
+        1. Calls the original provider if it exists
+        2. Adds MindSpeed-LLM v2 arguments via process_args_v2
+    """
     @wraps(extra_args_provider)
     def wrapper(parser):
         if extra_args_provider is not None:
@@ -38,6 +54,18 @@ def extra_args_provider_decorator(extra_args_provider):
 
 
 def parse_args_decorator(parse_args):
+    """
+    Decorator for parse_args to inject MindSpeed-LLM argument processing.
+
+    This decorator wraps the argument parsing function to ensure MindSpeed-LLM
+    specific arguments are properly processed.
+
+    Args:
+        parse_args: The original parse_args function.
+
+    Returns:
+        Callable: Wrapped function that processes MindSpeed-LLM arguments.
+    """
     @wraps(parse_args)
     def wrapper(extra_args_provider=None, ignore_unknown_args=False):
         decorated_provider = extra_args_provider_decorator(extra_args_provider)
@@ -47,6 +75,18 @@ def parse_args_decorator(parse_args):
 
 
 def process_args_v2(parser):
+    """
+    Process and register MindSpeed-LLM v2 feature arguments.
+
+    This function registers all MindSpeed-LLM specific feature arguments
+    using the MindSpeedFeaturesManager.
+
+    Args:
+        parser: Argument parser to add arguments to.
+
+    Returns:
+        argparse.ArgumentParser: Parser with MindSpeed-LLM arguments added.
+    """
     MindSpeedFeaturesManager.register_features_args(parser)
     return parser
 
@@ -66,6 +106,23 @@ def get_layer_offset(pp_size, num_layer_list):
 
 
 def core_transformer_config_from_args_wrapper(fn):
+    """
+    Wrapper for creating TransformerConfig from arguments with MindSpeed-LLM extensions.
+
+    This decorator wraps the config creation function to add MindSpeed-LLM specific
+    configurations including MoE settings and custom layer distribution.
+
+    Args:
+        fn: The original config creation function.
+
+    Returns:
+        Callable: Wrapped function that creates config with MindSpeed-LLM extensions.
+
+    The wrapper adds:
+        - batch_p2p_comm optimization for PP2VPP
+        - MoE expert capacity factor settings
+        - Custom layer distribution via num_layer_list
+    """
     @wraps(fn)
     def wrapper(args, config_class=None):
         config = fn(args, config_class)
@@ -98,7 +155,17 @@ def core_transformer_config_from_args_wrapper(fn):
 
 def _add_dummy_args_v2(args):
     """
-    For arguments in feature_list which is currently unsupported in mindspeed-llm.
+    Add dummy arguments for features currently unsupported in MindSpeed-LLM.
+
+    This function initializes unsupported feature arguments to False or default values
+    to maintain compatibility with the broader codebase.
+
+    Args:
+        args: Arguments namespace to add dummy arguments to.
+
+    Note:
+        These arguments exist in the feature list but are not yet supported
+        in MindSpeed-LLM implementation.
     """
     args.unaligned_linear = False
     args.embed_layernorm = False
@@ -110,7 +177,26 @@ def _add_dummy_args_v2(args):
 
 
 def validate_args_v2_decorator(megatron_validate_args):
-    """A decorator for megatron arguments validation function."""
+    """
+    Decorator for Megatron arguments validation with MindSpeed-LLM extensions.
+
+    This decorator wraps the Megatron validation function to add MindSpeed-LLM
+    specific argument validation and feature management.
+
+    Args:
+        megatron_validate_args: The original Megatron validation function.
+
+    Returns:
+        Callable: Wrapped validation function with MindSpeed-LLM validation.
+
+    The validation process:
+        1. Pre-validate MindSpeed-LLM feature arguments
+        2. Call Megatron validation
+        3. Post-validate MindSpeed-LLM feature arguments
+        4. Add dummy arguments for unsupported features
+        5. Validate all MindSpeed-LLM arguments
+        6. Print MindSpeed-LLM arguments
+    """
 
     @wraps(megatron_validate_args)
     def wrapper(args, defaults=None):

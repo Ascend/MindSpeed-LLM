@@ -8,6 +8,25 @@ from megatron.core.distributed.param_and_grad_buffer import (shard_buffer, dist_
 
 
 def start_grad_sync_wrapper(fn):
+    """
+    Wrapper for starting gradient synchronization with distributed optimizer support.
+
+    This decorator wraps the gradient synchronization function to handle:
+    - Distributed optimizer mode
+    - Elastic training with dynamic scaling
+    - Gradient scaling factor management
+
+    Args:
+        fn: The original gradient synchronization function.
+
+    Returns:
+        Callable: Wrapped function that handles gradient sync with additional features.
+
+    The wrapper manages:
+        1. Distributed optimizer communication groups
+        2. Gradient scaling factors for elastic training
+        3. Proper cleanup of temporary configurations
+    """
     @wraps(fn)
     def wrapper(self, *args, **kwargs):
         self.ddp_config.use_distributed_optimizer, use_distributed_optimizer_tmp = False, self.ddp_config.use_distributed_optimizer
@@ -38,7 +57,18 @@ def start_grad_sync_wrapper(fn):
 
 def recover_gradient_scaling_factors(self, gradient_scaling_factors):
     """
-    Restore the modified parameter 'gradient_scaling_factor'.
+    Restore the modified gradient scaling factors to their original values.
+
+    This function is used in elastic training to restore gradient scaling factors
+    after they have been temporarily modified for scale-in operations.
+
+    Args:
+        self: The ParamAndGradBuffer instance.
+        gradient_scaling_factors (list): List of original gradient scaling factors
+            to restore for each bucket.
+
+    Note:
+        This function only performs restoration when in scale-in running state.
     """
     from mindspeed_llm.core.high_availability import elastic_training_common
     if not elastic_training_common.zit_scale_in_running_state():

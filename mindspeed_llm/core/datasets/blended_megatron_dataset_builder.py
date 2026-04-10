@@ -24,6 +24,27 @@ DistributedDataset = Union[
 
 
 def need_to_build_dataset():
+    """
+    Determine whether the current rank needs to build the dataset.
+
+    In distributed training, not all ranks need to build the dataset to avoid
+    redundant I/O and storage. This function determines which ranks should
+    perform the dataset construction based on the storage configuration.
+
+    Returns:
+        bool: True if the current rank should build the dataset, False otherwise.
+
+    The decision logic:
+        - If shared storage is enabled: only rank 0 builds the dataset
+        - If shared storage is disabled:
+            - If TP size > GPUs per node: only TP rank 0 builds
+            - Otherwise: TP rank 0 on each node builds
+
+    This optimization reduces:
+        - Disk I/O overhead
+        - Memory usage for dataset caching
+        - Build time in multi-node training
+    """
     args = get_args()
     share_save = not args.no_shared_storage
     rank = torch.distributed.get_rank()

@@ -73,6 +73,19 @@ logger = getLogger(__name__)
 
 @contextmanager
 def _disable_gc():
+    """
+    Context manager to temporarily disable garbage collection.
+
+    This context manager disables Python's garbage collector within its scope
+    and restores the previous state upon exit.
+
+    Yields:
+        None
+
+    Use cases:
+        - Performance-critical sections where GC overhead is undesirable
+        - Preventing GC interference during async operations
+    """
     gc_enabled = gc.isenabled()
     try:
         if gc_enabled:
@@ -85,6 +98,23 @@ def _disable_gc():
 
 @_disable_gc()
 def temporal_async_caller_schedule_async_call(self, async_req):
+    """
+    Schedule an asynchronous call with garbage collection disabled.
+
+    This function executes an asynchronous operation while ensuring garbage
+    collection is disabled to prevent interference.
+
+    Args:
+        self: The async caller instance.
+        async_req: The asynchronous request containing the function and arguments.
+
+    Returns:
+        The result of the async function call, or None if no async function is provided.
+
+    Note:
+        GC is disabled during execution to avoid memory management overhead
+        during critical async operations.
+    """
     if async_req.async_fn is None:
         return
 
