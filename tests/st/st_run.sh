@@ -1,6 +1,8 @@
 # step 1: define dir
 BASE_DIR=$(dirname "$(readlink -f "$0")")
 export PYTHONPATH=$BASE_DIR:$PYTHONPATH
+# 避免ip bind报错
+export HCCL_HOST_SOCKET_PORT_RANGE=auto
 
 SHELL_SCRIPTS_DIR="$BASE_DIR/shell_scripts"
 BASELINE_DIR="$BASE_DIR/baseline_results"

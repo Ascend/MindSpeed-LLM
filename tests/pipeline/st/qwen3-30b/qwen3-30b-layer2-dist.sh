@@ -159,5 +159,4 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     --save ${CKPT_SAVE_DIR} \
     --transformer-impl local \
     --async-save \
-    --ckpt-format torch_dist \
-    | tee logs/npu_qwen30_layer2_15iter.log
+    --ckpt-format torch_dist

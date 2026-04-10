@@ -32,7 +32,7 @@ PIPELINE_UT_DIR="$PIPELINE_DIR/ut"
 
 UT_DIR="$BASE_DIR/ut"
 ST_DIR="$BASE_DIR/st"
-ST_BASELINE_DIR="$PIPELINE_DIR/st/baseline_results"
+ST_BASELINE_DIR="$BASE_DIR/st/baseline_results"
 
 #mkdir cache to store product and will be removed after test
 mkdir -p "$GENERATE_LOG_DIR"
