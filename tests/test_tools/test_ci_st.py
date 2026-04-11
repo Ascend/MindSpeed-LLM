@@ -1,3 +1,4 @@
+import os
 import warnings
 import pytest
 from mindspeed_llm import megatron_adaptor
@@ -75,7 +76,9 @@ class TestCIST:
         }
 
         comparison_selection = {**comparison_base}
-        if "time info" in self.expected:
+
+        # Do not check time performance when collecting coverage data
+        if "time info" in self.expected and os.environ.get('START_COVERAGE', '').lower() != 'true':
             comparison_selection = {**comparison_selection, **comparison_time}
 
         if "grad norm" in self.expected:

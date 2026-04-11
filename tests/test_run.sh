@@ -20,6 +20,7 @@ pip install -r requirements.txt
 cp -rf /home/master_branch/Megatron-LM/megatron ./
 
 # define dirs
+export TEST_MODEL=true
 BASE_DIR=$(dirname "$(readlink -f "$0")")
 CURRENT_TIME=$(date "+%Y-%m-%d")
 GENERATE_LOG_BASE_DIR="/$(echo "$BASE_DIR" | cut -d'/' -f2)/pipeline_log_v2"
@@ -38,18 +39,17 @@ ST_BASELINE_DIR="$BASE_DIR/st/baseline_results"
 mkdir -p "$GENERATE_LOG_DIR"
 touch "$GENERATE_LOG_DIR/exec_error.log"
 chmod a+w "$GENERATE_LOG_DIR/exec_error.log"
-echo "core0.12.0 Execution Results" > $GENERATE_LOG_DIR/exec_error.log
 
-export TEST_MODEL=true
-export START_COVERAGE=true
 
-COVERAGE_DIR="$GENERATE_LOG_DIR/coverage"
-SOURCE_DIR=$(realpath "$BASE_DIR/../mindspeed_llm")
-mkdir -p "$COVERAGE_DIR"
+# coverage config
+coverage_config() { 
+    COVERAGE_DIR="$GENERATE_LOG_DIR/coverage"
+    SOURCE_DIR=$(realpath "$BASE_DIR/../mindspeed_llm")
+    mkdir -p "$COVERAGE_DIR"
 
-rm -f .coverage
-rm -f .coverage*
-cat > ".coveragerc" << EOF
+    rm -f .coverage
+    rm -f .coverage*
+    cat > ".coveragerc" << EOF
 [run]
 branch = False
 parallel = False
@@ -64,7 +64,24 @@ exclude_lines =
     ^\s*import\s
     ^\s*from\s
 EOF
+}
 
+# run coverage task only on Tuesday/Thursday/Saturday
+WEEK_DAY=$(date +%u)
+if [[ $WEEK_DAY == 2 || $WEEK_DAY == 4 || $WEEK_DAY == 6 ]]; then
+    echo "Testcase Execution Results With Coverage" > $GENERATE_LOG_DIR/exec_error.log
+    export START_COVERAGE=true
+else
+    echo "Testcase Execution Results Without Coverage" > $GENERATE_LOG_DIR/exec_error.log
+    export START_COVERAGE=false
+fi
+if [[ $START_COVERAGE == true ]]; then
+    echo "setting coverage config"
+    coverage_config
+fi
+
+
+echo "===========================================Test Results=====================================================" >> $GENERATE_LOG_DIR/exec_error.log
 # run pipeline st testcase
 find "$PIPELINE_ST_DIR" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
     if [ -d "$dir" ]; then
@@ -156,14 +173,21 @@ find "$UT_DIR" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
 done
 
 # generate the coverage report
-coverage combine
-coverage html -d "$COVERAGE_DIR/htmlcov"
-coverage xml -o "$COVERAGE_DIR/coverage.xml"
-coverage json -o "$COVERAGE_DIR/coverage.json"
-coverage_percent=$(coverage report --format=total)
-echo "==========================================Coverage Results=====================================================" >> $GENERATE_LOG_DIR/exec_error.log
-echo "Pipeline Coverage Percentage is $coverage_percent%" >> $GENERATE_LOG_DIR/exec_error.log
-echo "For detailed information, please refer to ./coverage/html/index.html" >> $GENERATE_LOG_DIR/exec_error.log
+if [[ $START_COVERAGE == true ]]; then
+    coverage combine
+    coverage html -d "$COVERAGE_DIR/htmlcov"
+    coverage xml -o "$COVERAGE_DIR/coverage.xml"
+    coverage json -o "$COVERAGE_DIR/coverage.json"
+    coverage_output=$(coverage report --format=total 2>&1)
+    exit_code=$?
+    echo "==========================================Coverage Results=====================================================" >> $GENERATE_LOG_DIR/exec_error.log
+    if [ $exit_code -ne 0 ]; then
+        echo "Coverage report failed!: $coverage_output">> $GENERATE_LOG_DIR/exec_error.log
+    else
+        echo "Pipeline Coverage Percentage is $coverage_output%" >> $GENERATE_LOG_DIR/exec_error.log
+        echo "For detailed information, please refer to ./coverage/html/index.html" >> $GENERATE_LOG_DIR/exec_error.log
+    fi
+fi
 
 rm -rf /data/ci/cache/*
 echo "=================tar error log=================="
