@@ -4,7 +4,7 @@ MindSpeed LLM支持在微调任务上使用LoRA进行低参数训练，使用方
 
 本教程旨在为用户提供模型LoRA微调迁移开发指导。接下来以Qwen3-8B模型和单台`Atlas 900 A2 POD`（1x8集群）为例，逐步说明如何进行LoRA微调脚本开发。
 
-在按照如下步骤操作前，需要先参考[MindSpeed LLM安装指导](../../../install_guide.md)完成环境安装，并准备好模型权重和微调数据集。模型权重下载请参考[模型支持列表](../../models/supported_models.md)文档中对应模型的下载链接。数据集下载请参考[Alpaca风格数据集](../../tools/data_process_sft_alpaca_style.md)和[ShareGPT风格数据集](../../tools/data_process_sft_sharegpt_style.md)。
+在按照如下步骤操作前，需要先参考[MindSpeed LLM安装指导](../../training/install_guide.md)完成环境安装，并准备好模型权重和微调数据集。模型权重下载请参考[模型支持列表](../../models/supported_models.md)文档中对应模型的下载链接。数据集下载请参考[Alpaca风格数据集](../../tools/data_process_sft_alpaca_style.md)和[ShareGPT风格数据集](../../tools/data_process_sft_sharegpt_style.md)。
 
 ## 1、模型权重转换
 
@@ -194,4 +194,3 @@ bash examples/mcore/qwen3/ckpt_convert_qwen3_mcore2hf_lora.sh
 - LoRA参数的值应与微调时的参数设置保持一致，以确保转换后的模型具有相同的性能表现和兼容性。
 - 当前LoRA微调不支持开启 `--mtp-num-layers` 参数。
 - 由于调用peft库合并LoRA权重后，权重数据类型为float16，但是部分模型如qwen系列模型，默认数据类型为bfloat16，合并后的权重转回HF格式会有精度损失问题。可以将原始HF模型的config.json中的数据类型改为float16暂时规避。
-

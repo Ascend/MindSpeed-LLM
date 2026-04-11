@@ -85,4 +85,4 @@ bash examples/mcore/llama3/data_convert_llama3_pairwise.sh
 ./pairwise_dataset/orca_rlhf_llama3_packed_rejected_labels_document.idx
 ```
 
-进行DPO训练任务时，数据集路径输入 `./pairwise_dataset/orca_rlhf_llama3` 即可，同时须设置`--is-pairwise-dataset`参数
+进行DPO训练任务时，数据集路径输入 `./pairwise_dataset/orca_rlhf_llama3` 即可，同时须设置`--is-pairwise-dataset`参数。

@@ -24,7 +24,7 @@
 ![预训练流程图](../../../figures/pretrain/process_of_pretraining.png)
 
 1. 环境搭建  
-    启动预训练前请参考[MindSpeed LLM安装指导](../../../../install_guide.md)完成环境安装，并确保已完成昇腾NPU套件相关的环境变量配置，如下所示：
+    启动预训练前请参考[MindSpeed LLM安装指导](../../install_guide.md)完成环境安装，并确保已完成昇腾NPU套件相关的环境变量配置，如下所示：
 
     ```shell
     source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路径

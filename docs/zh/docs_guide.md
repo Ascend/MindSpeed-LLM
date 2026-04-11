@@ -19,10 +19,8 @@ docs/zh/
 ├── introduction.md         # 项目介绍
 ├── project_guide.md        # 项目导读
 ├── docs_guide.md           # 文档导读
-├── install_guide.md        # 安装指南
 ├── appendixes.md           # 附录文档
 ├── pytorch/                # PyTorch 训练框架相关文档
-│   ├── quick_start.md      # 快速入门指南
 │   ├── develop/            # 开发指南
 │   │   ├── mcore/          # Mcore 开发指南
 │   │   │   └── lora_finetune_adaptation.md # LoRA微调迁移开发
@@ -31,13 +29,15 @@ docs/zh/
 │   ├── features/           # 特性文档
 │   │   ├── mcore/          # Mcore 特性文档
 │   │   └── fsdp2/          # FSDP2 特性文档
-│   │       ├── arguments.md           # FSDP2 参数说明
+│   │       ├── arguments.md            # FSDP2 参数说明
 │   │       └── fsdp2_basic_features.md # FSDP2 特性说明
 │   ├── figures/            # 图片资源
 │   ├── models/             # PyTorch 框架支持的模型
 │   │   └── supported_models.md
 │   ├── training/           # 训练解决方案文档
-│   │   ├── evaluation/     # 模型评估
+│   │   ├── install_guide.md  # 安装指南
+│   │   ├── quick_start.md    # 快速入门指南
+│   │   ├── evaluation/       # 模型评估
 │   │   │   ├── evaluation_guide.md
 │   │   │   ├── models_evaluation.md
 │   │   │   └── evaluation_datasets/  # 评估数据集
@@ -66,6 +66,7 @@ docs/zh/
 └── mindspore/              # MindSpore 训练框架相关文档
     ├── readme.md           # MindSpore 文档说明
     ├── quick_start.md      # 快速入门指南
+    ├── install_guide.md    # 安装指南
     ├── features/           # MindSpore 特性文档
     └── models/             # MindSpore 框架支持的模型
 ```
@@ -78,8 +79,9 @@ docs/zh/
 
 | 内容 | 说明 |
 |------|------|
-| [install_guide](install_guide.md) | 环境安装指导 |
+| [install_guide_pytorch](./pytorch/training/install_guide.md) | 基于PyTorch框架环境安装指导 |
 | [quick_start_pytorch](./pytorch/training/quick_start.md) | Mcore后端的快速上手指导，基于PyTorch框架从环境安装到模型预训练和微调 |
+| [install_guide_mindspore](./mindspore/install_guide.md) | 基于MindSpore框架环境安装指导 |
 | [quick_start_mindspore](./mindspore/quick_start.md) | Mcore后端的快速上手指导，基于MindSpore框架从环境安装到模型预训练和微调 |
 | [finetune_fsdp2](pytorch/training/finetune/fsdp2/finetune_fsdp2.md) | FSDP2后端的快速上手指导，从环境安装到模型训练 |
 | [supported_models](pytorch/models/supported_models.md) | 模型支持列表 |

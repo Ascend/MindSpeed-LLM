@@ -1,7 +1,7 @@
 # MindSpeed LLM 
 
 - [简介](introduction.md)
-- [软件安装](install_guide.md)
+- [软件安装](./pytorch/training/install_guide.md)
 - [分布式预训练]()
   - [大模型分布式预训练](./pytorch/training/pretrain/mcore/pretrain.md)
   - [大模型Pack模式分布式预训练](./pytorch/training/pretrain/mcore/pretrain_eod.md)

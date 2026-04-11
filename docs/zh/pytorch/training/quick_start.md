@@ -19,7 +19,7 @@
 
 ### 环境搭建
 
-基于PyTorch框架，环境搭建请参考[MindSpeed LLM安装指导](../../install_guide.md)。
+基于PyTorch框架，环境搭建请参考[MindSpeed LLM安装指导](install_guide.md)。
 
 ### 获取开源模型权重
 
@@ -186,6 +186,7 @@
     ```
 
     预训练数据集处理结果如下：
+
     ```shell
     ./dataset/alpaca_text_document.bin
     ./dataset/alpaca_text_document.idx
@@ -258,9 +259,9 @@
     |`--bf16`|昇腾芯片对bf16精度支持良好，可显著提升训练速度|
 
 > [!NOTE]
+> 
 > - 多机训练需在多个终端同时启动预训练脚本（每个终端的预训练脚本只有NODE_RANK参数不同，其他参数均相同）。
 > - 如果使用多机训练，且没有设置数据共享，需要在训练启动脚本中增加`--no-shared-storage`参数，设置此参数之后将会根据分布式参数判断非主节点是否需要load数据，并检查相应缓存和生成数据。
-
 
 ## 启动微调
 
@@ -403,5 +404,3 @@
     |`--use-distributed-optimizer`|启用分布式优化器。|
     |`--use-flash-attn`|启用Flash Attention。|
     |`--bf16`|昇腾芯片对bf16精度支持良好，可显著提升训练速度。|
-
-

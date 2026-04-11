@@ -136,7 +136,10 @@ MindSpeed-LLM/
 
 ---
 
-详细的安装步骤和环境配置请参考[MindSpeed LLM安装指导](./docs/zh/install_guide.md)。
+详细的安装步骤和环境配置请参考：
+
+- [MindSpeed LLM安装指导（基于PyTorch框架）](./docs/zh/pytorch/training/install_guide.md)
+- [MindSpeed LLM安装指导（基于MindSpore框架）](./docs/zh/mindspore/install_guide.md)
 
 # 快速上手
 

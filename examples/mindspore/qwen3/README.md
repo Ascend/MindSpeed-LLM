@@ -1,6 +1,6 @@
 # 1 环境配置
 
-MindSpeed-LLM MindSpore后端的安装步骤参考：[MindSpeed LLM安装指导](../../../docs/zh/install_guide.md)。
+MindSpeed-LLM MindSpore后端的安装步骤参考：[MindSpeed LLM安装指导](../../../docs/zh/mindspore/install_guide.md)。
 
 # 2 权重转换
 
@@ -9,16 +9,17 @@ MindSpeed-LLM MindSpore后端的安装步骤参考：[MindSpeed LLM安装指导]
 从[huggingface(以Qwen3-0.6B为例)](https://huggingface.co/Qwen/Qwen3-0.6B/tree/main)下载模型权重和其它配置文件，若需要在开源权重上继续预训练、微调、推理，也请下载网络模型文件。
 
 ## 2.2 权重转换
+
 提供脚本将huggingface开源权重转换为mcore权重，用于训练、推理、评估等任务。使用方法如下，请根据实际需要的TP/PP等切分策略和权重路径修改权重转换脚本：
 
-```
+```shell
 cd MindSpeed-LLM
 bash examples/mindspore/qwen3/ckpt_convert_qwen3_hf2mcore.sh
 ```
 
 运行脚本后，预期会看到类似以下的日志输出，表示权重转换成功：
 
-```
+```shell
 successfully saved checkpoint from iteration 1 to ./model_weights/qwen3_mcore/
 INFO:root:Done!
 ```
@@ -35,13 +36,13 @@ INFO:root:Done!
 
 配置好数据输入/输出路径、tokenizer模型路径即可启动：
 
-```
+```shell
 bash examples/mindspore/qwen3/data_convert_qwen3_pretrain.sh
 ```
 
 预训练数据集处理结果如下：
 
-```
+```shell
 ./dataset/alpaca_text_document.bin
 ./dataset/alpaca_text_document.idx
 ```
@@ -52,13 +53,13 @@ bash examples/mindspore/qwen3/data_convert_qwen3_pretrain.sh
 
 配置好数据输入/输出路径、tokenizer模型路径即可启动：
 
-```
+```shell
 bash examples/mindspore/qwen3/data_convert_qwen3_instruction.sh
 ```
 
 微调数据集处理结果如下：
 
-```
+```shell
 ./finetune_dataset/alpaca_packed_attention_mask_document.bin
 ./finetune_dataset/alpaca_packed_attention_mask_document.idx
 ./finetune_dataset/alpaca_packed_input_ids_document.bin
@@ -73,7 +74,7 @@ bash examples/mindspore/qwen3/data_convert_qwen3_instruction.sh
 
 在`pretrain_qwen3_0point6b_4K_ms.sh`脚本中修改相关参数，并执行脚本
 
-```
+```shell
 cd MindSpeed-LLM
 bash examples/mindspore/qwen3/pretrain_qwen3_0point6b_4K_ms.sh
 ```
@@ -94,7 +95,7 @@ bash examples/mindspore/qwen3/pretrain_qwen3_0point6b_4K_ms.sh
 
 在`tune_qwen3_0point6b_4K_full_ms.sh`脚本中修改相关参数，并执行脚本
 
-```
+```shell
 cd MindSpeed-LLM
 bash examples/mindspore/qwen3/tune_qwen3_0point6b_4K_full_ms.sh
 ```
