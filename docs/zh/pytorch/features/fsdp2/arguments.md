@@ -22,7 +22,7 @@
     </tr>
     <tr>
       <td>model_id</td>
-      <td>Optional[Literal[&quot;gpt_oss&quot;, &quot;qwen3&quot;, &quot;qwen3_moe&quot;]]</td>
+      <td>Optional[Literal[&quot;gpt_oss&quot;, &quot;qwen3&quot;, &quot;qwen3_moe&quot;, &quot;qwen3_next&quot;, &quot;step35&quot;, &quot;mamba3&quot;]]</td>
       <td>None</td>
       <td>模型类型标识，未配置时执行原生transformer模型前向，配置时执行仓库自定义模型前向。新增模型类型需在<code>mindspeed_llm/fsdp2/models/model_registry.py</code>的<code>ModelRegistry</code>类中注册。</td>
     </tr>
@@ -919,7 +919,13 @@
     <td>int</td>
     <td>64</td>
     <td>Gated DeltaNet网络计算时矩阵的分块的数量。</td>
-  </tr>
+    </tr>
+    <tr>
+    <td>use_triton_rmsnormgated</td>
+    <td>bool</td>
+    <td>False</td>
+    <td>是否使能triton融合算子加速RMSNorm_gated计算。</td>
+    </tr>
   </tbody>
 </table>
 

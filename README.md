@@ -57,6 +57,8 @@ MindSpeed LLM系列TC及SIG会议安排请查看[Ascend会议中心](https://mee
 
 ---
 
+- [Mar. 28, 2026]: 🚀 [**Mamba3-block** demo模型支持](./examples/fsdp2/mamba3/) 【Prototype】
+- [Mar. 27, 2026]: 🌴 MindSpeed LLM发布[v26.0.0分支](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.0.0)，支持core_v0.12.1版本
 - [Mar. 10, 2026]: 🚀 MindSpeed LLM 模型下架[夕阳计划第二期](https://gitcode.com/Ascend/MindSpeed-LLM/issues/1224) 启动，感谢每一份曾经的贡献
 - [Feb. 12, 2026]: 🚀 [**GLM5** 模型支持](./examples/mcore/glm5) 【Prototype】
 - [Feb. 11, 2026]: 🚀 [**Step-3.5-Flash** 模型支持](./examples/fsdp2/step35) 【Prototype】
