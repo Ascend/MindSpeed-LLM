@@ -54,10 +54,10 @@
 
 | 阶段| 操作 | 次数 | 案例计算结果 |
 | --- | --- | --- | --- |
-| warmup 		| FS 			| PP+1 | 4 |
-| steady state 1	| FEBS 		| floor((PP-1)*2/3 - 1/2 + 2) | 2 |
-| steady state 2	| FS-FE-BS-BE 	| mbn - floor((PP-1)*2/3 - 1/2 + 2) | 2 |
-| cooldown		| BE 			| floor((PP-1)*2/3 - 1/2 + 2) | 2|
+| warmup | FS | PP+1 | 4 |
+| steady state 1| FEBS |floor((PP-1)*2/3 - 1/2 + 2) | 2 |
+| steady state 2| FS-FE-BS-BE | mbn - floor((PP-1)*2/3 - 1/2 + 2) | 2 |
+| cooldown| BE|floor((PP-1)*2/3 - 1/2 + 2)| 2|
 
 效果：以上流水编排方案可保证稳态运行阶段（steady state）不引入额外空泡。当边云通信时延小于 tf（边侧单个microbatch的前向计算时间）时，稳态运行阶段无额外空泡（warmup/cooldown阶段有少量额外空泡）。
 

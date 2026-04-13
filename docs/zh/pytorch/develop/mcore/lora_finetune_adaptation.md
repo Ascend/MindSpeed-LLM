@@ -4,7 +4,7 @@ MindSpeed LLM支持在微调任务上使用LoRA进行低参数训练，使用方
 
 本教程旨在为用户提供模型LoRA微调迁移开发指导。接下来以Qwen3-8B模型和单台`Atlas 900 A2 POD`（1x8集群）为例，逐步说明如何进行LoRA微调脚本开发。
 
-在按照如下步骤操作前，需要先参考[MindSpeed LLM安装指导](../../../install_guide.md)完成环境安装，并准备好模型权重和微调数据集。模型权重下载请参考[模型支持列表](../../models/supported_models.md)文档中对应模型的下载链接。数据集下载请参考[Alpaca风格数据集](../../tools/data_process_sft_alpaca_style.md)和[ShareGPT风格数据集](../../tools/data_process_sft_sharegpt_style.md)。
+在按照如下步骤操作前，需要先参考[MindSpeed LLM安装指导](../../training/install_guide.md)完成环境安装，并准备好模型权重和微调数据集。模型权重下载请参考[模型支持列表](../../models/supported_models.md)文档中对应模型的下载链接。数据集下载请参考[Alpaca风格数据集](../../tools/data_process_sft_alpaca_style.md)和[ShareGPT风格数据集](../../tools/data_process_sft_sharegpt_style.md)。
 
 ## 1、模型权重转换
 

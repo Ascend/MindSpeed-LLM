@@ -4,7 +4,7 @@
 
 由于边云协同分布式训练特性当前仅支持Qwen2.5/Qwen3系列模型，因此本文档以Qwen3-32B模型为例（PP=2，总隐藏层数64层）介绍使能方法，具体步骤如下：
 
-1. 参考[MindSpeed LLM安装指导](../../../../install_guide.md)，完成环境安装。
+1. 参考[MindSpeed LLM安装指导](../../install_guide.md)，完成环境安装。
 
     请在训练开始前配置好昇腾NPU套件相关的环境变量，如下所示：
 
@@ -36,7 +36,7 @@
 
 3. 进行权重转换，将HF权重转换为Megatron-Mcore格式。
 
-    边云协同分布式训练采用U-shape切分，模型首尾层权重需要分别存储。详细配置请参考[Qwen3权重转换脚本](../../../../../examples/mcore/qwen3/ckpt_convert_qwen3_hf2mcore.sh)。
+    边云协同分布式训练采用U-shape切分，模型首尾层权重需要分别存储。详细配置请参考[Qwen3权重转换脚本](../../../../../../examples/mcore/qwen3/ckpt_convert_qwen3_hf2mcore.sh)。
 
     以Qwen3-32B模型在TP8PP2切分为例，需要修改相关路径参数和模型切分配置：
 
@@ -83,7 +83,7 @@
 
 5. 进行数据预处理。
 
-    以Alpaca数据集为例执行数据预处理，详细配置请参考[Qwen3数据预处理脚本](../../../../../examples/mcore/qwen3/data_convert_qwen3_instruction.sh)：
+    以Alpaca数据集为例执行数据预处理，详细配置请参考[Qwen3数据预处理脚本](../../../../../../examples/mcore/qwen3/data_convert_qwen3_instruction.sh)：
 
     ```shell
     --input ./dataset/train-00000-of-00001-a09b74b3ef9c3b56.parquet # 原始数据集路径
@@ -99,7 +99,7 @@
 
 6. 启动微调训练。
 
-    配置模型微调脚本，详细配置请参考[Qwen3-32b微调脚本](../../../../../examples/mcore/qwen3/tune_qwen3_32b_4K_full_ptd.sh)，需要修改相关路径参数和模型切分配置：
+    配置模型微调脚本，详细配置请参考[Qwen3-32b微调脚本](../../../../../../examples/mcore/qwen3/tune_qwen3_32b_4K_full_ptd.sh)，需要修改相关路径参数和模型切分配置：
 
     ```shell
     CKPT_LOAD_DIR="./model_weights/qwen3_vpp_edge/"  # 边侧权重加载路径

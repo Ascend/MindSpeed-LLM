@@ -1,6 +1,7 @@
 # 蓝区资源清单
 
 ## 蓝区重点模型权重列表
+
 为了方便开发者贡献测试用例，蓝区服务器上已配置了部分重点模型，路径和配置信息如下表所示
 <table>
     <tr>
@@ -67,6 +68,7 @@
 </table>    
 
 ## 测试用例占用蓝区资源登记
+
 为了方便蓝区服务器对磁盘文件的统一管理，用户补充测试用例时请对测试用例所使用的权重、词表和数据集文件进行登记
 <table>
     <tr>
@@ -222,6 +224,7 @@
         <td>/</td>
         <td>/data/ci/cache/process_dataset/tmp</td>
     </tr>
+    <tr>
         <td>tune_llama3_8b_lora_tp1pp8.sh</td>
         <td>/data/ci/models/llama3/hf/llama-3-8b-hf/</td>
         <td>/data/ci/cache/llama-3-8b-tp1pp8</td>

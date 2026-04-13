@@ -19,7 +19,7 @@
 
 ### 环境搭建
 
-基于MindSpore框架，环境搭建请参考[MindSpeed LLM安装指导](../install_guide.md)。
+基于MindSpore框架，环境搭建请参考[MindSpeed LLM安装指导](install_guide.md)。
 
 ### 获取开源模型权重
 
@@ -117,6 +117,7 @@
     ```
 
 > [!NOTE]
+>
 > - 对于Qwen3-0.6B模型，此处推荐的切分配置是tp1pp1，对应上述配置。
 > - MindSpore框架默认在Device侧进行权重转换，在模型较大时存在OOM风险，因此建议用户手动修改`convert_ckpt.py`，在包导入时加入如下代码设置CPU侧执行权重转换：
 >
@@ -199,6 +200,7 @@
     ```
 
     预训练数据集处理结果如下：
+
     ```shell
     ./dataset/alpaca_text_document.bin
     ./dataset/alpaca_text_document.idx
@@ -272,6 +274,7 @@
     |`--ai-framework`|指定使用的训练框架|
 
 > [!NOTE]
+>
 > - 多机训练需在多个终端同时启动预训练脚本（每个终端的预训练脚本只有NODE_RANK参数不同，其他参数均相同）。
 > - 如果使用多机训练，且没有设置数据共享，需要在训练启动脚本中增加`--no-shared-storage`参数，设置此参数之后将会根据分布式参数判断非主节点是否需要load数据，并检查相应缓存和生成数据。
 > - MindSpore框架需在预训练脚本中指定`--ai-framework`参数为`mindspore`。
@@ -421,5 +424,3 @@
 
     > [!NOTE]  
     > MindSpore框架需在微调脚本中指定`--ai-framework`参数为`mindspore`。
-
-

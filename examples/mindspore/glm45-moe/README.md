@@ -1,4 +1,5 @@
-## Mindspore后端提供GLM4.5系列模型支持
+# Mindspore后端提供GLM4.5系列模型支持
+
 <table>
   <thead>
     <tr>
@@ -22,23 +23,23 @@
   </tbody>
 </table>
 
-## MindSpore后端跑通GLM4.5模型教程
+# MindSpore后端跑通GLM4.5模型教程
 
+## 环境配置
 
-### 环境配置
+MindSpeed-LLM MindSpore后端的安装步骤参考[MindSpeed LLM安装指导](../../../docs/zh/mindspore/install_guide.md)。
 
-MindSpeed-LLM MindSpore后端的安装步骤参考[MindSpeed LLM安装指导](../../../docs/zh/install_guide.md)。
+## 训练
 
-
-### 训练
-
-#### 预训练
+### 预训练
 
 预训练使用方法如下
-```sh
+
+```bash
 cd MindSpeed-LLM
 bash examples/mindspore/glm45-moe/pretrain_glm45_moe_106b_4k_A3_ms.sh
 ```
+
 用户需要根据实际情况修改脚本中的以下变量
 
   |变量名  | 含义                                |
@@ -49,4 +50,3 @@ bash examples/mindspore/glm45-moe/pretrain_glm45_moe_106b_4k_A3_ms.sh
   | DATA_PATH | 数据预处理后的数据路径                       |
   | TOKENIZER_PATH | GLM4.5 tokenizer目录                |
   | CKPT_LOAD_DIR | 权重转换保存的权重路径，用于初始权重加载，如无初始权重则随机初始化 |
-
