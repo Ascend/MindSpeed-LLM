@@ -15,13 +15,16 @@ class ModelRegistry:
     from mindspeed_llm.fsdp2.models.qwen3.qwen3_moe import Qwen3MoEForCausalLM
     from mindspeed_llm.fsdp2.models.qwen3_next.qwen3_next import Qwen3NextForCausalLM
     from mindspeed_llm.fsdp2.models.mamba3.modeling_mamba3 import Mamba3ForCausalLM
+    from mindspeed_llm.fsdp2.models.minimax_m27.modeling_minimax_m2 import MiniMaxM2ForCausalLM
+
     _REGISTRY: Dict[str, Type[Any]] = {
         "gpt_oss": GptOssForCausalLM,
         "step35": Step3p5ForCausalLM,
         "qwen3": Qwen3ForCausalLM,
         "qwen3_moe": Qwen3MoEForCausalLM,
         "qwen3_next": Qwen3NextForCausalLM,
-        "mamba3": Mamba3ForCausalLM
+        "mamba3": Mamba3ForCausalLM,
+        "minimax_m27": MiniMaxM2ForCausalLM
     }
 
     @classmethod
