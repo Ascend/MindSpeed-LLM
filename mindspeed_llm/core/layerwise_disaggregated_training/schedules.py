@@ -1,5 +1,6 @@
 # coding=utf-8
 # Copyright (c) 2025, HUAWEI CORPORATION.  All rights reserved.
+# Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
 
 import contextlib
 from typing import Iterator, List, Union
@@ -43,6 +44,12 @@ from mindspeed_llm.core.layerwise_disaggregated_training.parallel_state import (
     get_pipeline_model_parallel_group_alternate,
     get_pipeline_model_parallel_group_last_to_first,
     get_pipeline_model_parallel_group_first_to_last,
+    is_vtp_enabled,
+    get_vtp_size_list,
+    get_vtp_my_stage_idx,
+    get_vtp_stage_ranks,
+    get_vtp_intra_stage_group,
+    is_vtp_stage_rank0,
 )
 from mindspeed_llm.core.layerwise_disaggregated_training import p2p_communication
 from mindspeed_llm.core.transformer.multi_token_prediction import (
@@ -426,6 +433,91 @@ def send_backward(
         )
 
 
+# VTP schedule wrappers
+def _vtp_send_forward_wrapper(output_tensors, tensor_shapes, config, group, is_end_stage=False):
+    """VTP-aware forward send: uses rank0 async P2P. Returns isend work handles."""
+    if not isinstance(output_tensors, list):
+        output_tensors = [output_tensors]
+    handles = []
+    for output_tensor, tensor_shape in zip(output_tensors, tensor_shapes):
+        if tensor_shape is None:
+            continue
+        h = p2p_communication._vtp_send_forward(output_tensor, config, group)
+        if h is not None:
+            handles.append(h)
+    return handles
+
+
+def _vtp_recv_forward_wrapper(tensor_shapes, config, group, async_op=False, is_end_stage=False):
+    """VTP-aware forward recv: uses rank0 irecv + deferred broadcast.
+
+    When async_op=True, returns (input_tensors, reqs_list) for overlap with compute.
+    When async_op=False, blocks until recv + broadcast complete.
+    """
+    input_tensors = []
+    reqs_list = []
+    for tensor_shape in tensor_shapes:
+        if tensor_shape is None:
+            input_tensors.append(None)
+        else:
+            if async_op:
+                tensor, reqs = p2p_communication._vtp_recv_forward(
+                    tensor_shape, config, group, async_op=True
+                )
+                input_tensors.append(tensor)
+                reqs_list.append(reqs)
+            else:
+                tensor = p2p_communication._vtp_recv_forward(
+                    tensor_shape, config, group, async_op=False
+                )
+                input_tensors.append(tensor)
+    if async_op:
+        return input_tensors, reqs_list
+    return input_tensors
+
+
+def _vtp_send_backward_wrapper(input_tensor_grads, tensor_shapes, config, group, is_end_stage=False):
+    """VTP-aware backward send: uses rank0 async P2P. Returns isend work handles."""
+    if not isinstance(input_tensor_grads, list):
+        input_tensor_grads = [input_tensor_grads]
+    handles = []
+    for input_tensor_grad, tensor_shape in zip(input_tensor_grads, tensor_shapes):
+        if tensor_shape is None:
+            continue
+        h = p2p_communication._vtp_send_backward(input_tensor_grad, config, group)
+        if h is not None:
+            handles.append(h)
+    return handles
+
+
+def _vtp_recv_backward_wrapper(tensor_shapes, config, group, async_op=False, is_end_stage=False):
+    """VTP-aware backward recv: uses rank0 irecv + deferred broadcast.
+
+    When async_op=True, returns (output_tensor_grads, reqs_list) for overlap.
+    When async_op=False, blocks until recv + broadcast complete.
+    """
+    output_tensor_grads = []
+    reqs_list = []
+    for tensor_shape in tensor_shapes:
+        if tensor_shape is None:
+            output_tensor_grads.append(None)
+        else:
+            if async_op:
+                tensor, reqs = p2p_communication._vtp_recv_backward(
+                    tensor_shape, config, group, async_op=True
+                )
+                output_tensor_grads.append(tensor)
+                reqs_list.append(reqs)
+            else:
+                tensor = p2p_communication._vtp_recv_backward(
+                    tensor_shape, config, group, async_op=False
+                )
+                output_tensor_grads.append(tensor)
+    if async_op:
+        return output_tensor_grads, reqs_list
+    return output_tensor_grads
+
+
 # add: layerwise_disaggregated_training
 def get_batch(data_iterator, config):
     """Generate a batch."""
@@ -542,8 +634,16 @@ def get_batch(data_iterator, config):
 def get_all_batches(mbn, data_iterator, config):
     def _broadcast(item):
         if item is not None:
-            torch.distributed.broadcast(item, parallel_state.get_pipeline_model_parallel_first_rank(),
-            group=parallel_state.get_pipeline_model_parallel_group())
+            # PP broadcast: only rank0 of each stage participates
+            if is_vtp_stage_rank0():
+                torch.distributed.broadcast(item, parallel_state.get_pipeline_model_parallel_first_rank(),
+                group=parallel_state.get_pipeline_model_parallel_group())
+            # Intra-stage broadcast: rank0 sends to other ranks in the stage
+            vtp_intra_group = get_vtp_intra_stage_group()
+            if vtp_intra_group is not None:
+                stage_ranks = get_vtp_stage_ranks()
+                my_stage = get_vtp_my_stage_idx()
+                torch.distributed.broadcast(item, stage_ranks[my_stage][0], group=vtp_intra_group)
     
     all_batches = [[], []]
     recv_forward_tensor_shapes = []
@@ -812,6 +912,26 @@ def forward_backward_pipelining_without_interleaving(
     group_last_to_first = get_pipeline_model_parallel_group_last_to_first()
     group_first_to_last = get_pipeline_model_parallel_group_first_to_last()
 
+    # VTP: detect asymmetric boundaries (including U-shape wraparound)
+    vtp_active = is_vtp_enabled()
+    vtp_need_asymmetric_fwd = False
+    vtp_need_asymmetric_bwd = False
+    vtp_send_forward_group = None
+    vtp_recv_forward_group = None
+    vtp_send_backward_group = None
+    vtp_recv_backward_group = None
+
+    if vtp_active:
+        vtp_size_list = get_vtp_size_list()
+        my_stage = get_vtp_my_stage_idx()
+        pp_size = parallel_state.get_pipeline_model_parallel_world_size()
+
+        # Check forward/backward asymmetric boundaries with wraparound
+        next_stage = (my_stage + 1) % pp_size
+        prev_stage = (my_stage - 1) % pp_size
+        vtp_need_asymmetric_fwd = vtp_size_list[my_stage] != vtp_size_list[next_stage]
+        vtp_need_asymmetric_bwd = vtp_size_list[my_stage] != vtp_size_list[prev_stage]
+
     if parallel_state.get_pipeline_model_parallel_rank() % 2 == 0:
         receive_forward_stream = receive_backward_stream = stream_ping
         send_forward_stream = send_backward_stream = stream_pang
@@ -837,6 +957,13 @@ def forward_backward_pipelining_without_interleaving(
             send_forward_stream = stream_last_to_first
             send_forward_group = group_last_to_first
 
+    # VTP reuses the standard PP groups (already rank0-only after VTP init)
+    if vtp_need_asymmetric_fwd or vtp_need_asymmetric_bwd:
+        vtp_send_forward_group = send_forward_group
+        vtp_recv_forward_group = receive_forward_group
+        vtp_send_backward_group = send_backward_group
+        vtp_recv_backward_group = receive_backward_group
+
     if not isinstance(receive_forward_group, list):
         receive_forward_group = [receive_forward_group]
     if not isinstance(receive_backward_group, list):
@@ -846,7 +973,17 @@ def forward_backward_pipelining_without_interleaving(
     if not isinstance(send_backward_group, list):
         send_backward_group = [send_backward_group]
 
+    # VTP async send handles: isend work objects collected from VTP wrappers.
+    # Drained inside wait_helper() so sends overlap with next recv + compute.
+    _vtp_pending_sends = []
+
+    def _drain_vtp_sends():
+        for h in _vtp_pending_sends:
+            h.wait()
+        _vtp_pending_sends.clear()
+
     def wait_helper(reqs_list):
+        _drain_vtp_sends()
         is_wait = False
         recv_prev = False
         for reqs in reqs_list:
@@ -869,9 +1006,21 @@ def forward_backward_pipelining_without_interleaving(
     ):
         with torch.cuda.stream(send_forward_stream):
             send_forward_stream.wait_stream(default_stream)
-            send_forward(
-                output_tensor, send_tensor_shapes, config, is_end_stage, **kwargs
-            )
+            if vtp_need_asymmetric_fwd:
+                # LDT: first stage + end_stage = end of U-shape forward, no send
+                if (parallel_state.is_pipeline_first_stage(ignore_virtual=True)
+                        and is_end_stage):
+                    return
+                handles = _vtp_send_forward_wrapper(
+                    output_tensor, send_tensor_shapes, config,
+                    group=vtp_send_forward_group,
+                    is_end_stage=is_end_stage,
+                )
+                _vtp_pending_sends.extend(handles)
+            else:
+                send_forward(
+                    output_tensor, send_tensor_shapes, config, is_end_stage, **kwargs
+                )
             if output_tensor is not None:
                 if isinstance(output_tensor, list):
                     for output_tensor_i in output_tensor:
@@ -884,12 +1033,46 @@ def forward_backward_pipelining_without_interleaving(
         recv_tensor_shapes, config, is_end_stage=False, **kwargs
     ):
         with torch.cuda.stream(receive_forward_stream):
-            input_tensor, reqs_list = recv_forward_with_reqs(
-                recv_tensor_shapes, config, is_end_stage, **kwargs
-            )
-            for input_tensor_i in input_tensor:
-                if input_tensor_i is not None:
-                    input_tensor_i.record_stream(default_stream)
+            if vtp_need_asymmetric_bwd:
+                # First stage doesn't recv in normal forward (only in wraparound)
+                if (parallel_state.is_pipeline_first_stage(ignore_virtual=True)
+                        and not is_end_stage):
+                    default_stream.wait_stream(receive_forward_stream)
+                    if kwargs.get("wait_on_reqs", True):
+                        return [None]
+                    return [None], []
+                # VTP async path: irecv (non-blocking) + deferred broadcast
+                vtp_group = vtp_recv_forward_group
+                wait_on_reqs = kwargs.get("wait_on_reqs", True)
+
+                if wait_on_reqs:
+                    # Synchronous: recv + broadcast, then sync
+                    input_tensor = _vtp_recv_forward_wrapper(
+                        recv_tensor_shapes, config, group=vtp_group,
+                        async_op=False, is_end_stage=is_end_stage,
+                    )
+                    for input_tensor_i in input_tensor:
+                        if input_tensor_i is not None:
+                            input_tensor_i.record_stream(default_stream)
+                    default_stream.wait_stream(receive_forward_stream)
+                    return input_tensor
+                else:
+                    # Async: irecv returns immediately, broadcast deferred to wait_helper
+                    input_tensor, reqs_list = _vtp_recv_forward_wrapper(
+                        recv_tensor_shapes, config, group=vtp_group,
+                        async_op=True, is_end_stage=is_end_stage,
+                    )
+                    for input_tensor_i in input_tensor:
+                        if input_tensor_i is not None:
+                            input_tensor_i.record_stream(default_stream)
+                    return input_tensor, reqs_list
+            else:
+                input_tensor, reqs_list = recv_forward_with_reqs(
+                    recv_tensor_shapes, config, is_end_stage, **kwargs
+                )
+                for input_tensor_i in input_tensor:
+                    if input_tensor_i is not None:
+                        input_tensor_i.record_stream(default_stream)
         if "wait_on_reqs" in kwargs.keys():
             if kwargs["wait_on_reqs"] is True:
                 default_stream.wait_stream(receive_forward_stream)
@@ -904,9 +1087,21 @@ def forward_backward_pipelining_without_interleaving(
     ):
         with torch.cuda.stream(send_backward_stream):
             send_backward_stream.wait_stream(default_stream)
-            send_backward(
-                input_tensor_grad, recv_tensor_shapes, config, is_end_stage, **kwargs
-            )
+            if vtp_need_asymmetric_bwd:
+                # First stage doesn't send backward in normal backward
+                if (parallel_state.is_pipeline_first_stage(ignore_virtual=True)
+                        and not is_end_stage):
+                    return
+                handles = _vtp_send_backward_wrapper(
+                    input_tensor_grad, recv_tensor_shapes, config,
+                    group=vtp_send_backward_group,
+                    is_end_stage=is_end_stage,
+                )
+                _vtp_pending_sends.extend(handles)
+            else:
+                send_backward(
+                    input_tensor_grad, recv_tensor_shapes, config, is_end_stage, **kwargs
+                )
             if input_tensor_grad is not None:
                 if isinstance(input_tensor_grad, list):
                     for input_tensor_grad_i in input_tensor_grad:
@@ -919,12 +1114,42 @@ def forward_backward_pipelining_without_interleaving(
         recv_tensor_shapes, config, is_end_stage=False, **kwargs
     ):
         with torch.cuda.stream(receive_backward_stream):
-            output_tensor_grad, reqs_list = recv_backward_with_reqs(
-                recv_tensor_shapes, config, is_end_stage, **kwargs
-            )
-            for output_tensor_grad_i in output_tensor_grad:
-                if output_tensor_grad_i is not None:
-                    output_tensor_grad_i.record_stream(default_stream)
+            if vtp_need_asymmetric_fwd:
+                # LDT: first stage + end_stage = no backward recv
+                if (parallel_state.is_pipeline_first_stage(ignore_virtual=True)
+                        and is_end_stage):
+                    default_stream.wait_stream(receive_backward_stream)
+                    return [None], []
+                # VTP async path for backward recv
+                vtp_group = vtp_recv_backward_group
+                wait_on_reqs = kwargs.get("wait_on_reqs", True)
+
+                if wait_on_reqs:
+                    output_tensor_grad = _vtp_recv_backward_wrapper(
+                        recv_tensor_shapes, config, group=vtp_group,
+                        async_op=False, is_end_stage=is_end_stage,
+                    )
+                    for output_tensor_grad_i in output_tensor_grad:
+                        if output_tensor_grad_i is not None:
+                            output_tensor_grad_i.record_stream(default_stream)
+                    default_stream.wait_stream(receive_backward_stream)
+                    return output_tensor_grad, []
+                else:
+                    output_tensor_grad, reqs_list = _vtp_recv_backward_wrapper(
+                        recv_tensor_shapes, config, group=vtp_group,
+                        async_op=True, is_end_stage=is_end_stage,
+                    )
+                    for output_tensor_grad_i in output_tensor_grad:
+                        if output_tensor_grad_i is not None:
+                            output_tensor_grad_i.record_stream(default_stream)
+                    return output_tensor_grad, reqs_list
+            else:
+                output_tensor_grad, reqs_list = recv_backward_with_reqs(
+                    recv_tensor_shapes, config, is_end_stage, **kwargs
+                )
+                for output_tensor_grad_i in output_tensor_grad:
+                    if output_tensor_grad_i is not None:
+                        output_tensor_grad_i.record_stream(default_stream)
         default_stream.wait_stream(receive_backward_stream)
         return output_tensor_grad, reqs_list
 
@@ -1480,6 +1705,9 @@ def forward_backward_pipelining_without_interleaving(
 
     if config.timers is not None:
         config.timers("forward-backward").stop()
+
+    # Drain any remaining VTP async sends before returning.
+    _drain_vtp_sends()
 
     if hasattr(config, "enable_cuda_graph") and config.enable_cuda_graph:
         create_cudagraphs()

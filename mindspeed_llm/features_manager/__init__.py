@@ -91,6 +91,7 @@ from mindspeed_llm.features_manager.arguments.deprecated_args import DeprecatedA
 from mindspeed_llm.features_manager.convert_checkpoint.convert_checkpoint import CheckpointFeature
 from mindspeed_llm.features_manager.memory.chunk_loss import ChunkLossFeature
 from mindspeed_llm.features_manager.layerwise_disaggregated_training.u_shaped_split_feature import UShapedSplitFeature
+from mindspeed_llm.features_manager.layerwise_disaggregated_training.vtp_feature import VTPFeature
 from mindspeed_llm.features_manager.qat.qat_quant_engine import QATQuantEngineFeature
 
 FEATURES_LIST = [
@@ -315,7 +316,8 @@ def add_ai_framework_feature(features_list: List[MindSpeedFeature]):
 
 def add_layerwise_diaggregated_training_feature(feature_list: List[MindSpeedFeature]):
     feature_list.extend([
-        UShapedSplitFeature()
+        UShapedSplitFeature(),
+        VTPFeature(),
     ])
 
 

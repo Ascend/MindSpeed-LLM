@@ -1,5 +1,6 @@
 # coding=utf-8
 # Copyright (c) 2025, HUAWEI CORPORATION.  All rights reserved.
+# Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
 
 from typing import List, Optional, Tuple, Union
 
@@ -16,6 +17,13 @@ from megatron.core.pipeline_parallel.p2p_communication import (
     _batched_p2p_ops,
     _communicate_shapes,
     _p2p_ops,
+)
+from mindspeed_llm.core.layerwise_disaggregated_training.parallel_state import (
+    is_vtp_stage_rank0,
+    get_vtp_size_list,
+    get_vtp_stage_ranks,
+    get_vtp_intra_stage_group,
+    get_vtp_my_stage_idx,
 )
 
 # Types
@@ -418,3 +426,135 @@ def send_backward(
         )
         if config.timers is not None:
             config.timers("backward-send").stop()
+
+
+def _vtp_send_forward(tensor, config, group):
+    """VTP forward send: rank0 async-sends to next stage's rank0.
+
+    Wraparound (last→first) is handled by get_pipeline_model_parallel_next_rank()
+    since VTP sets _PIPELINE_GLOBAL_RANKS = rank0_list.
+
+    Returns the isend work handle (or None for non-rank0 ranks).
+    """
+    if is_vtp_stage_rank0():
+        dst_rank = get_pipeline_model_parallel_next_rank()
+        return torch.distributed.isend(tensor, dst=dst_rank, group=group)
+    return None
+
+
+class _VTPRecvWork:
+    """Wraps irecv work + deferred broadcast into a single waitable object.
+    When wait() is called:
+        1. rank0 waits for irecv to complete
+        2. All ranks participate in broadcast to distribute data within the stage
+    """
+
+    def __init__(self, irecv_work, tensor, broadcast_src, intra_group, dst_size):
+        self._irecv_work = irecv_work
+        self._tensor = tensor
+        self._broadcast_src = broadcast_src
+        self._intra_group = intra_group
+        self._dst_size = dst_size
+
+    def wait(self):
+        if self._irecv_work is not None:
+            self._irecv_work.wait()
+        if self._dst_size > 1 and self._intra_group is not None:
+            torch.distributed.broadcast(
+                self._tensor,
+                src=self._broadcast_src,
+                group=self._intra_group,
+            )
+
+
+def _vtp_recv_forward(tensor_shape, config, group, async_op=False):
+    """VTP forward recv: rank0 receives from prev stage's rank0, then broadcasts.
+    Wraparound (first←last) is handled by get_pipeline_model_parallel_prev_rank().
+    """
+    stage_idx = get_vtp_my_stage_idx()
+    stage_ranks = get_vtp_stage_ranks()
+    vtp_size_list = get_vtp_size_list()
+    dst_size = vtp_size_list[stage_idx]
+    intra_group = get_vtp_intra_stage_group()
+    src_rank = get_pipeline_model_parallel_prev_rank()
+    broadcast_src = stage_ranks[stage_idx][0]
+
+    tensor = torch.empty(
+        tensor_shape,
+        requires_grad=True,
+        device=torch.cuda.current_device(),
+        dtype=config.pipeline_dtype,
+    )
+
+    if async_op:
+        irecv_work = None
+        if is_vtp_stage_rank0():
+            irecv_work = torch.distributed.irecv(tensor, src=src_rank, group=group)
+        
+        vtp_work = _VTPRecvWork(
+            irecv_work, tensor, broadcast_src, intra_group, dst_size
+        )
+
+        return tensor, {"recv_prev": vtp_work}
+    else:
+        if is_vtp_stage_rank0():
+            work = torch.distributed.irecv(tensor, src=src_rank, group=group)
+            work.wait()
+        
+        if dst_size > 1 and intra_group is not None:
+            torch.distributed.broadcast(
+                tensor, src=broadcast_src, group=intra_group
+            )
+
+        return tensor
+
+
+def _vtp_send_backward(tensor, config, group):
+    """VTP backward send: rank0 async-sends gradient to prev stage's rank0.
+
+    Wraparound (first→last) is handled by get_pipeline_model_parallel_prev_rank().
+
+    Returns the isend work handle (or None for non-rank0 ranks).
+    """
+    if is_vtp_stage_rank0():
+        dst_rank = get_pipeline_model_parallel_prev_rank()
+        return torch.distributed.isend(tensor, dst=dst_rank, group=group)
+    return None
+
+
+def _vtp_recv_backward(tensor_shape, config, group, async_op=False):
+    """VTP backward recv: rank0 receives gradient from next stage's rank0, then broadcasts.
+    Wraparound (last←first) is handled by get_pipeline_model_parallel_next_rank().
+    """
+    stage_idx = get_vtp_my_stage_idx()
+    stage_ranks = get_vtp_stage_ranks()
+    vtp_size_list = get_vtp_size_list()
+    dst_size = vtp_size_list[stage_idx]
+    intra_group = get_vtp_intra_stage_group()
+    src_rank = get_pipeline_model_parallel_next_rank()
+    broadcast_src = stage_ranks[stage_idx][0]
+
+    tensor = torch.empty(
+        tensor_shape,
+        requires_grad=True,
+        device=torch.cuda.current_device(),
+        dtype=config.pipeline_dtype,
+    )
+
+    if async_op:
+        irecv_work = None
+        if is_vtp_stage_rank0():
+            irecv_work = torch.distributed.irecv(tensor, src=src_rank, group=group)
+        vtp_work = _VTPRecvWork(
+            irecv_work, tensor, broadcast_src, intra_group, dst_size
+        )
+        return tensor, {"recv_next": vtp_work}
+    else:
+        if is_vtp_stage_rank0():
+            work = torch.distributed.irecv(tensor, src=src_rank, group=group)
+            work.wait()
+        if dst_size > 1 and intra_group is not None:
+            torch.distributed.broadcast(
+                tensor, src=broadcast_src, group=intra_group
+            )
+        return tensor

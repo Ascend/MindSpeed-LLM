@@ -73,7 +73,6 @@ from megatron.training.training import (
 )
 from megatron.training.utils import (
     check_adlr_autoresume_termination,
-    reduce_max_stat_across_model_parallel_group,
     is_last_rank,
     print_rank_0,
     print_rank_last,
@@ -83,6 +82,9 @@ from megatron.core.distributed import DistributedDataParallel as DDP
 from megatron.core.distributed import finalize_model_grads
 from megatron.core.utils import get_model_config
 
+from mindspeed_llm.core.layerwise_disaggregated_training.utils import (
+    vtp_reduce_max_stat_across_model_parallel_group as reduce_max_stat_across_model_parallel_group,
+)
 from mindspeed_llm.training.arguments import get_layer_offset
 from mindspeed_llm.tasks.posttrain.sft.sft_trainer import SFTTrainer
 from mindspeed_llm.tasks.models.transformer.dsa_indexer import (
@@ -103,6 +105,7 @@ from mindspeed_llm.training.utils import (
 )
 from mindspeed_llm.training.checkpointing import _convert_weights_mg2hf
 from mindspeed_llm.training.initialize import set_jit_fusion_options
+from mindspeed_llm.tasks.posttrain.ldt_sft.utils import train_valid_test_datasets_provider_ldt
 
 _TRAIN_START_TIME = time.time()
 
@@ -276,6 +279,9 @@ def build_train_args(*input_args):
     if not mpu.is_pipeline_first_stage(ignore_virtual=True):
         train_data_iterator, valid_data_iterator, test_data_iterator = None, None, None
 
+        from mindspeed_llm.core.layerwise_disaggregated_training.parallel_state import (
+            is_vtp_enabled,
+        )
         for i in range(len(model)):
             # Collective communication 1： refer mindspeed_llm/tasks/preprocess/decoder_packed_mtf_dataset.py:line 466
             # During the creation of the dataset for the head and tail layers, an allreduce
@@ -283,7 +289,11 @@ def build_train_args(*input_args):
             torch.distributed.barrier()
             counts = torch.cuda.LongTensor([1])
             torch.distributed.all_reduce(counts, group=parallel_state.get_data_parallel_group())
-            torch.distributed.all_reduce(counts, group=parallel_state.get_pipeline_model_parallel_group())
+            # VTP: skip PP allreduce — edge rank0 is a placeholder in all per-intra
+            # PP chains but only holds the intra=0 chain; matching skip on first-stage
+            # side in decoder_packed_mtf_dataset.py.
+            if not is_vtp_enabled():
+                torch.distributed.all_reduce(counts, group=parallel_state.get_pipeline_model_parallel_group())
             torch.distributed.all_reduce(counts, group=parallel_state.get_context_parallel_group())
 
             # Collective communication 2： refer megatron/training/training.py: line 2430
@@ -348,6 +358,8 @@ class LDTSFTTrainer(SFTTrainer):
 
     def initialize(self):
         """Sets up necessary configurations and logging."""
+        self.train_valid_test_datasets_provider = train_valid_test_datasets_provider_ldt
+
         self.train_valid_test_datasets_provider.is_distributed = True
         self.log_initialization()
 

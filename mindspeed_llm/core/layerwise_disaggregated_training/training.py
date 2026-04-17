@@ -39,23 +39,23 @@ from megatron.core.enums import ModelType
 from megatron.core.rerun_state_machine import (
     get_rerun_state_machine,
 )
-
 from megatron.core.pipeline_parallel import get_forward_backward_func
 from megatron.core.num_microbatches_calculator import (
     get_num_microbatches,
 )
-
 from megatron.training.utils import (
-    logical_and_across_model_parallel_group,
-    reduce_max_stat_across_model_parallel_group,
     unwrap_model,
 )
 from megatron.training.global_vars import (
     get_args,
     get_timers,
 )
-
 from megatron.training.training import cuda_graph_capture, cuda_graph_set_manual_hooks
+
+from mindspeed_llm.core.layerwise_disaggregated_training.utils import (
+    vtp_logical_and_across_model_parallel_group as logical_and_across_model_parallel_group,
+    vtp_reduce_max_stat_across_model_parallel_group as reduce_max_stat_across_model_parallel_group,
+)
 
 stimer = StragglerDetector()
 
