@@ -85,7 +85,9 @@ TRAIN_ARGS="
     --bf16 \
     --train-iters ${TRAIN_ITERS} \
     --seq-length ${SEQ_LENGTH} \
-    --no-shared-storage
+    --no-shared-storage \
+    --manual-gc \
+    --manual-gc-interval 15 \
 "
 
 MODEL_PARALLEL_ARGS="
