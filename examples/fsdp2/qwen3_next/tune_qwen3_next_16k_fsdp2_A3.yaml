@@ -1,4 +1,4 @@
- model:
+model:
   model_id: qwen3_next
   model_name_or_path: ./qwen3-next/
   trust_remote_code: False
@@ -8,7 +8,7 @@
 data:
   dataset: alpaca_full
   template: qwen3
-  cutoff_len: 2048
+  cutoff_len: 16384
   max_samples: 100000
   overwrite_cache: True
   preprocessing_num_workers: 1
