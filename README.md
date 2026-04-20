@@ -86,6 +86,12 @@ MindSpeed LLM系列TC及SIG会议安排请查看[Ascend会议中心](https://mee
 
 注意：【Prototype】表示特性未经过充分验证，若使用存在问题请至[issue](https://gitcode.com/Ascend/MindSpeed-LLM/issues)反馈。
 
+- [MindSpeed LLM率先支持MiniMax M2.7训练复现，加速模型迭代完成复杂任务](https://mp.weixin.qq.com/s/FWcQLu8InQvLh6YBd5Sq2w)
+- [告别繁琐预处理！MindSpeed LLM推出Train_from_HF功能，实现加载即训练](https://mp.weixin.qq.com/s/kMUVWyCYLGKgceHzYXjigg)
+- [极速响应！MindSpeed LLM无缝适配Step-3.5-Flash，解锁大规模MoE模型落地新可能](https://mp.weixin.qq.com/s/g7f_mpDgnvsc22P6XGxbmg)
+- [MindSpeed LLM全新升级——支持FSDP训练后端，Qwen3-Next-Coder模型天级适配](https://mp.weixin.qq.com/s/Ihfc54P66bcO0r2j_mMX8A)
+- [基于昇腾快速上手Qwen3-Coder-Next模型，手把手指南来了！](https://mp.weixin.qq.com/s/yo0RlfU9gIY20NKyYQp4QA)
+
 # 目录结构
 
 ---
