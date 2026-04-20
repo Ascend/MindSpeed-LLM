@@ -2,7 +2,7 @@
 
 ## 使用方法
 
-由于边云协同分布式训练特性当前仅支持Qwen2.5/Qwen3系列模型，因此本文档以Qwen3-32B模型为例（PP=2，总隐藏层数64层）介绍使能方法，具体步骤如下：
+由于边云协同分布式训练特性当前仅支持Qwen2.5/Qwen3系列模型，因此本文档以Qwen3-32B模型为例（PP=3，总隐藏层数64层）介绍使能方法，具体步骤如下：
 
 1. 参考[MindSpeed LLM安装指导](../../install_guide.md)，完成环境安装。
 
@@ -38,11 +38,11 @@
 
     边云协同分布式训练采用U-shape切分，模型首尾层权重需要分别存储。详细配置请参考[Qwen3权重转换脚本](../../../../../../examples/mcore/qwen3/ckpt_convert_qwen3_hf2mcore.sh)。
 
-    以Qwen3-32B模型在TP8PP2切分为例，需要修改相关路径参数和模型切分配置：
+    以Qwen3-32B模型在TP8PP3切分为例，需要修改相关路径参数和模型切分配置：
 
     ```shell
     --target-tensor-parallel-size 8          # TP切分大小
-    --target-pipeline-parallel-size 2        # PP切分大小
+    --target-pipeline-parallel-size 3        # PP切分大小
     --num-layer-list 16,32,16               # U-shape切分：首层16层、隐藏层32层、尾层16层
     --load-dir ./model_from_hf/qwen3_hf/     # 原始HF模型权重路径
     --save-dir ./model_weights/qwen3_mcore/  # Megatron权重保存路径
@@ -50,7 +50,7 @@
 
     参数说明：
 
-    - `--num-layer-list`：配置非均匀PP切分，传参为各级流水的隐藏层数`L0,...,LPP`，其中L0和LPP表示首尾隐藏层数。以PP=2为例，传参`16,32,16`表示首层16层、中间层32层、尾层16层。
+    - `--num-layer-list`：配置非均匀PP切分，传参为各级流水的隐藏层数`L0,...,LPP`，其中L0和LPP表示首尾隐藏层数。以PP=3为例，传参`16,32,16`表示首层16层、中间层32层、尾层16层。
 
     确认路径无误后运行权重转换脚本：
 
@@ -67,7 +67,7 @@
         --load-dir ./model_weights/qwen3_mcore/ \
         --save-dir-edge ./model_weights/qwen3_vpp_edge/ \
         --save-dir-cloud ./model_weights/qwen3_vpp_cloud/ \
-        --merge-stages 0,1 \
+        --merge-stages 0,2 \
         --middle-stages 1
     ```
 
@@ -102,13 +102,19 @@
     配置模型微调脚本，详细配置请参考[Qwen3-32b微调脚本](../../../../../../examples/mcore/qwen3/tune_qwen3_32b_4K_full_ptd.sh)，需要修改相关路径参数和模型切分配置：
 
     ```shell
-    CKPT_LOAD_DIR="./model_weights/qwen3_vpp_edge/"  # 边侧权重加载路径
-    CKPT_LOAD_CLOUD_DIR="./model_weights/qwen3_vpp_cloud/"  # 云侧权重加载路径
-    CKPT_SAVE_DIR="./ckpt/qwen3_finetune/"          # 微调完成后的权重保存路径
-    DATA_PATH="./finetune_dataset/alpaca"           # 数据集路径
-    TOKENIZER_PATH="./model_from_hf/qwen3_hf"       # 词表路径
-    TP=8                                             # TP切分大小
-    PP=2                                             # PP切分大小
+    # 边侧参数
+    CKPT_LOAD_DIR="./model_weights/qwen3_vpp_edge/"   # 边侧权重加载路径
+    DATA_PATH="./finetune_dataset/alpaca"             # 数据集路径
+    
+    # 云测参数
+    CKPT_LOAD_DIR="./model_weights/qwen3_vpp_cloud/"  # 云侧权重加载路径
+    DATA_PATH=""                                      # 数据集路径云测写空
+    
+    # 其他参数
+    CKPT_SAVE_DIR="./ckpt/qwen3_finetune/"            # 微调完成后的权重保存路径
+    TOKENIZER_PATH="./model_from_hf/qwen3_hf"         # 词表路径
+    TP=8                                              # TP切分大小
+    PP=3                                              # PP切分大小
     ```
 
     在训练脚本中增加以下参数开启边云协同分布式训练特性：
