@@ -142,12 +142,12 @@ class STTest:
         self.test_dir = os.path.join(self.base_dir, 'tests')
 
         self.st_dir = "st"
-        self.st_shell = os.path.join(
-            self.test_dir, self.st_dir, "st_run.sh"
+        self.pytest_suit = os.path.join(
+            self.test_dir, self.st_dir, "test_st.py"
         )
 
     def run_st(self):
-        rectify_case = f"bash {self.st_shell}"
+        rectify_case = f"python -m pytest {self.pytest_suit} -v -x"
         rectify_code = acquire_exitcode(rectify_case)
         if rectify_code != 0:
             print("rectify case failed, check it.")
