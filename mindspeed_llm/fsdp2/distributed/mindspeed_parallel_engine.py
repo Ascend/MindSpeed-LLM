@@ -26,11 +26,11 @@ class MindSpeedParallelEngine(torch.nn.Module):
         self.weights_path = weights_path
 
         self.parallel_state = init_parallel_state(self.config)
+        self.apply_quantization_modules()
         self.apply_tp_modules()
         self.apply_ep_modules()
         self.apply_cp_modules()
         self.apply_recompute_modules()
-        self.apply_quantization_modules()
         self.apply_fsdp_modules()
 
         # For meta device: load weights after fsdp wrapping
@@ -75,15 +75,25 @@ class MindSpeedParallelEngine(torch.nn.Module):
 
     def apply_quantization_modules(self):
         """Apply quantization based on quantization_format + quantization_recipe."""
-        if not self.config.quantization_plan.quant_recipe:
+        if not self.config.quantization_plan.recipe_name:
             return
         try:
+            if self.config.recompute:
+                self.config.quantization_plan.fsdp_low_precision_all_gather_mode = "all"
+
             from mindspeed.fsdp.quantization.converter.model_converter import build_model_converter
 
             model_converters = build_model_converter(self.config.quantization_plan)
             model_converters.convert(self.model)
         except Exception as e:
-            raise RuntimeError(f"Failed to convert quantization plan ") from e
+            raise RuntimeError(f"Failed to convert quantization plan") from e
+
+    def apply_optimizer_hook(self, optimizer: torch.optim.Optimizer):
+        if not self.config.quantization_plan.recipe_name:
+            return
+        from mindspeed.fsdp.quantization.core.cache import hook_optimizer_step
+
+        hook_optimizer_step(self.model, optimizer)
 
     def forward(self, *args, **kwargs):
         return self.model(*args, **kwargs)

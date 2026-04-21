@@ -180,33 +180,27 @@ class Qwen3MoeExperts(nn.Module):
         # permute
         permuted_hidden_states, row_ids_map = npu_moe_token_permute(hidden_states, selected_experts.to(torch.int32))
         tokens_per_expert = torch.histc(selected_experts, bins=self.num_experts, min=0, max=self.num_experts)
-        args = get_args()
-        if getattr(args, 'quant_gmm'):
-            fc1_output = npu_quant_group_gemm(x=permuted_hidden_states,
-                                              weight=gate_up_proj,
-                                              bias=None,
-                                              tokens_per_expert=tokens_per_expert,
-                                              weight_param=self.gate_up_proj,
-                                              quant_format=args.quant_format,
-                                              gemm_gradient_accumulation_fusion=args.gemm_gradient_accumulation_fusion
-                                              )
-            fc1_activation = torch_npu.npu_swiglu(fc1_output, dim=-1)
-            fc2_out = npu_quant_group_gemm(x=fc1_activation,
-                                           weight=down_proj,
-                                           bias=None,
-                                           tokens_per_expert=tokens_per_expert,
-                                           weight_param=self.down_proj,
-                                           quant_format=args.quant_format,
-                                           gemm_gradient_accumulation_fusion=args.gemm_gradient_accumulation_fusion,
-                                           )
-        else:
-            fc1_output = Ops.gmm(permuted_hidden_states, gate_up_proj, tokens_per_expert, trans_b=False)
-            fc1_activation = torch_npu.npu_swiglu(fc1_output, dim=-1)
-            fc2_out = Ops.gmm(fc1_activation, down_proj, tokens_per_expert, trans_b=False)
+
+        fc1_output = Ops.gmm(permuted_hidden_states, gate_up_proj, tokens_per_expert, trans_b=False)
+        fc1_activation = torch_npu.npu_swiglu(fc1_output, dim=-1)
+        fc2_out = Ops.gmm(fc1_activation, down_proj, tokens_per_expert, trans_b=False)
 
         # unpermute
         output = npu_moe_token_unpermute(fc2_out, row_ids_map, probs=routing_weights)
         return output
+
+    def ep_forward(self, hidden_states, tokens_per_expert):
+        gate_up_proj = self.gate_up_proj.to_local().to(torch.bfloat16)
+        down_proj = self.down_proj.to_local().to(torch.bfloat16)
+        gate_up_proj = gate_up_proj.view(self.num_local_experts, self.hidden_dim, -1)
+        down_proj = down_proj.view(self.num_local_experts, -1, self.hidden_dim)
+
+        fc1_output = Ops.gmm(hidden_states, gate_up_proj, tokens_per_expert, trans_b=False)
+
+        fc1_activation = torch_npu.npu_swiglu(fc1_output, dim=-1)
+
+        fc2_out = Ops.gmm(fc1_activation, down_proj, tokens_per_expert, trans_b=False)
+        return fc2_out
 
     def _view_experts_weight(self):
         gate_up_proj = self.gate_up_proj.to_local() if isinstance(self.gate_up_proj, DTensor) else self.gate_up_proj
@@ -243,9 +237,16 @@ class Qwen3MoeSparseFusedMoeBlock(nn.Module):
         # we cast back to the input dtype
         routing_weights = routing_weights.to(hidden_states.dtype)
 
-        final_hidden_states = self.experts(
-            hidden_states, routing_weights=routing_weights, selected_experts=selected_experts
-        )
+        args = get_args()
+        if getattr(args, 'ep_size') > 1:
+            final_hidden_states = self.experts(
+                hidden_states, selected_experts, routing_weights
+            )
+        else:
+
+            final_hidden_states = self.experts(
+                hidden_states, routing_weights=routing_weights, selected_experts=selected_experts
+            )
 
         final_hidden_states = final_hidden_states.reshape(batch_size, sequence_length, hidden_dim)
         return final_hidden_states, router_logits

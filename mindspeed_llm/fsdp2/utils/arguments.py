@@ -111,17 +111,9 @@ class ModelArguments:
         default=None,
         metadata={"help": "Auth token to log in with Modelers Hub."},
     )
-    quant_recipe: Literal["mxfp8"] = field(
+    quant_recipe_name: Literal["mxfp8"] = field(
         default=None,
-        metadata={"help": "Quantization strategy"},
-    )
-    quant_format: Literal["E4M3", "HYBRID", "HIF8"] = field(
-        default=None,
-        metadata={"help": "FP8 format: 'E4M3', 'HYBRID', or 'HIF8'."},
-    )
-    quant_block_size: int = field(
-        default=32,
-        metadata={"help": "Block size for MXFP8 quantization, default 32."},
+        metadata={"help": "Quantization recipe name"},
     )
     quant_apply_modules: List[str] = field(
         default_factory=lambda: ['model.layers.{*}'],
@@ -131,10 +123,10 @@ class ModelArguments:
                 "Example: 'model.layers.{*}'applies quantization to all transformer layers."},
     )
     quant_ignored_modules: List[str] = field(
-        default_factory=lambda: ['lm_head'],
+        default_factory=lambda: ['*lm_head', '*gate'],
         metadata={"help": "List of module patterns to exclude from MXFP8 quantization. "},
     )
-    converters: List[str] = field(
+    quant_converters: List[str] = field(
         default_factory=lambda: ["quantize.linear.mx"],
         metadata={
             "help":
@@ -142,19 +134,15 @@ class ModelArguments:
                 "It's a list of strings where each string represents a specific quantization implementation."
                 "Default uses 'quantize.linear.mx' for mxfp8 quantization."},
     )
-    gemm_gradient_accumulation_fusion: bool = field(
-        default=False,
-        metadata={"help":
-                      "Enable or disable GEMM (General Matrix Multiply) gradient accumulation fusion optimization. "
-                      "When enabled, accumulates gradients from multiple mini-batches into a single GEMM operation "
-                      "to improve training efficiency and reduce memory access overhead. "},
+    # FSDP low precision settings
+    enable_fsdp_low_precision_all_gather: bool = field(
+        default=True,
+        metadata={"help": "Enable FSDP low precision activation gradients for memory efficiency."}
     )
-    quant_gmm: bool = field(
-        default=False,
-        metadata={"help":
-                      "Whether to enable grouped matrix multiplication quantization."},
+    fsdp_low_precision_all_gather_mode: Literal["on-demand", "all"] = field(
+        default="on-demand",
+        metadata={"help": "FSDP low precision all gather mode. 'on-demand' for on-demand all gather fwd or bwd weights, 'all' for all gather both fwd and bwd weights."}
     )
-
 
     def __post_init__(self):
         if self.model_name_or_path is None:
@@ -411,6 +399,10 @@ class ParallelArguments:
     shard_placement_fn: Optional[str] = field(
         default=None,
         metadata={"help": "Custom shard placement function for main FSDP module"}
+    )
+    efsdp_shard_placement_fn: Optional[str] = field(
+        default='shard_by_dim_1',
+        metadata={"help": "Custom shard placement function for main ep-FSDP module"}
     )
     tp_colwise: List[str] = field(
         default_factory=lambda:['*.q_proj', '*.k_proj', '*.v_proj', '*.gate_proj', '*.up_proj'],

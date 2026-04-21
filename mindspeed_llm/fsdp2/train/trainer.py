@@ -243,6 +243,7 @@ class Trainer:
 
                 # [Helper] Fetch N samples from the iterator and calculate valid token count
                 batch_samples, batch_seqlens, num_items_in_batch = self.get_batch_samples_func()(ps, epoch_iterator, num_batches)
+                self.current_gradient_accumulation_steps = len(batch_samples)
                 # Initialize accumulated loss for the current step
                 current_step_loss = 0.0
 
@@ -409,7 +410,7 @@ class Trainer:
 
         # 2. Forward pass
         loss = self._compute_loss(inputs, return_outputs=False, num_items_in_batch=num_items_in_batch)
-
+        loss = loss / self.current_gradient_accumulation_steps
         # 3. Clean up inputs to save memory
         del inputs
 

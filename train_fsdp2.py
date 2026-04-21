@@ -75,6 +75,7 @@ class MindSpeedAutoTrainer:
         self.lr_scheduler = self._build_scheduler(self.optimizer)
         self.checkpoint_manager = self._build_checkpointer()
         self.train_monitor = self._build_monitor()
+        self.model.apply_optimizer_hook(self.optimizer) # hook optimizer step for clearing quantization cache
 
         # 4. Dependency Injection
         self.trainer = Trainer(
@@ -94,7 +95,7 @@ class MindSpeedAutoTrainer:
     @staticmethod
     def _initialize(seed: int):
         """
-        Static initialization method: Receives external seed and local_rank, 
+        Static initialization method: Receives external seed and local_rank,
         avoiding dependency on hardcoding or self.
         """
         if is_torch_npu_available():
@@ -109,7 +110,7 @@ class MindSpeedAutoTrainer:
         setup_global_logging(level="INFO")
 
         # --- 1. Handle Local Rank (Device Index) ---
-        # Logic: Prioritize environment variables (injected by torchrun/accelerate), 
+        # Logic: Prioritize environment variables (injected by torchrun/accelerate),
         # then fallback to arguments, and finally default to 0.
         env_local_rank = int(os.environ.get("LOCAL_RANK", -1))
 
@@ -165,7 +166,7 @@ class MindSpeedAutoTrainer:
         })
 
         set_args(self.args)
-        
+
 
     def _print_parsed_args(self):
         arg_modules = [
@@ -212,10 +213,10 @@ class MindSpeedAutoTrainer:
             max_steps = self.training_args.max_steps
         else:
             # If in Epoch mode, estimate or provide a large number temporarily.
-            # While FSDP2Trainer calculates total_steps more accurately, 
+            # While FSDP2Trainer calculates total_steps more accurately,
             # we rely on args.max_steps or a default large value here for factory construction.
-            max_steps = 100000 
-        
+            max_steps = 100000
+
         return SchedulerFactory.create(
             optimizer=optimizer,
             train_steps=max_steps,

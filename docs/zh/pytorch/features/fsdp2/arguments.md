@@ -123,22 +123,10 @@
       <td>Modelers Hub的认证令牌，适用于从Modelers下载/上传模型的场景。</td>
     </tr>
     <tr>
-      <td>quant_recipe</td>
+      <td>quant_recipe_name</td>
       <td>Literal[&quot;mxfp8&quot;]</td>
       <td>None</td>
       <td>量化策略。</td>
-    </tr>
-    <tr>
-      <td>quant_format</td>
-      <td>Literal[&quot;E4M3&quot;, &quot;HYBRID&quot;, &quot;HIF8&quot;]</td>
-      <td>None</td>
-      <td>量化数据格式。</td>
-    </tr>
-    <tr>
-      <td>quant_block_size</td>
-      <td>int</td>
-      <td>32</td>
-      <td>量化的块大小。</td>
     </tr>
     <tr>
       <td>quant_apply_modules</td>
@@ -149,26 +137,26 @@
     <tr>
       <td>quant_ignored_modules</td>
       <td>List[str]</td>
-      <td>['lm_head']</td>
+      <td>['*lm_head', '*gate']</td>
       <td>不应用量化的子模块列表。</td>
     </tr>
     <tr>
-      <td>converters</td>
+      <td>quant_converters</td>
       <td>List[str]</td>
       <td>["quantize.linear.mx"]</td>
       <td>使用的量化转换器列表。</td>
     </tr>
     <tr>
-      <td>gemm_gradient_accumulation_fusion</td>
+      <td>enable_fsdp_low_precision_all_gather</td>
       <td>bool</td>
-      <td>False</td>
-      <td>是否启用GEMM梯度累积融合</td>
+      <td>True</td>
+      <td>是否启用低精度通信</td>
     </tr>
     <tr>
-      <td>quant_gmm</td>
-      <td>bool</td>
-      <td>False</td>
-      <td>是否启用量化Grouped GEMM</td>
+      <td>fsdp_low_precision_all_gather_mode</td>
+      <td>Literal["on-demand", "all"]</td>
+      <td>on-demand</td>
+      <td>FSDP低精度all-gather，按需聚合前向或反向权重</td>
     </tr>
   </tbody>
 </table>
@@ -467,6 +455,12 @@
       <td>Optional[str]</td>
       <td>None</td>
       <td>FSDP主模块的自定义分片放置函数，用于自定义参数分片的分配逻辑。</td>
+    </tr>
+    <tr>
+      <td>efsdp_shard_placement_fn</td>
+      <td>Optional[str]</td>
+      <td>shard_by_dim_1</td>
+      <td>专家并行组内的FSDP模块分片逻辑。</td>
     </tr>
     <tr>
       <td>tp_colwise</td>

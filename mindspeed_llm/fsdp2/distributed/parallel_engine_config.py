@@ -44,15 +44,26 @@ class EPPlanConfig:
 
 @dataclass
 class QuantizeConfig:
-    quant_format: Optional[str] = None
-    quant_recipe: Optional[str] = None
-    block_size: int = 32
-    quant_apply_modules: List[str] = None
-    quant_ignored_modules: List[str] = None
-    converters: List[str] = None
-    quant_gmm: bool = False
-    gemm_gradient_accumulation_fusion: bool = False
-    extra_args: Dict[str, Any] = field(default_factory=dict)  # for future extensibility
+    recipe_name: str = None
+    apply_modules: list[str] = field(default_factory=list)
+    ignored_modules: list[str] = field(default_factory=list)
+    quant_converters: list[str] = field(default_factory=list)
+    extra_args: dict[str, Any] = field(default_factory=dict)  # for future extensibility
+    enable_fsdp_low_precision_all_gather: bool = True
+    fsdp_low_precision_all_gather_mode: Literal["on-demand", "all"] = "on-demand"
+
+    @property
+    def recipe(self):
+        if hasattr(self, '_recipe'):
+            return self._recipe
+
+        from mindspeed.fsdp.quantization.config import QuantRecipe
+
+        self._recipe = QuantRecipe.from_recipe_name(self.recipe_name)
+        return self._recipe
+
+    def get_key_dtype(self, key: str) -> torch.dtype:
+        return self.recipe().get_key_dtype(key)
 
 
 @dataclass
