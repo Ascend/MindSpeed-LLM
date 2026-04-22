@@ -134,7 +134,12 @@ def update_save_checkpoint_chmod(save_path, permission=0o640):
                     logging.warning(f"failed to change permission: {file_path}: {ee}")
 
     print(f"finish permission set for files in {save_path}")
+    
+"""
 
+模型构造包装函数
+
+"""
 
 def model_provider_func_wrapper(model_provider_func):
     @wraps(model_provider_func)
