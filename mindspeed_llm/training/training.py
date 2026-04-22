@@ -575,7 +575,12 @@ def pretrain(train_valid_test_dataset_provider,
         'app_finish_time': one_logger_utils.get_timestamp_in_ms()
     })
     one_logger_utils.finish()
+                 
+"""
 
+主体训练循环部分主要修改这个部分
+
+"""
 
 def train(forward_step_func, model, optimizer, opt_param_scheduler,
           train_data_iterator, valid_data_iterator,
