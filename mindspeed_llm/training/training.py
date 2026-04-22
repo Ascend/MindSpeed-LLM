@@ -652,7 +652,7 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
     # 训练循环的标志位
     exit = False
 
-              
+    # 控制Python关于GC回收的部分（自定义什么时候需要垃圾回收）
     if args.manual_gc:
         # Disable the default garbage collector and perform the collection manually.
         # This is to align the timing of garbage collection across ranks.
@@ -661,6 +661,7 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
         gc.disable()
         gc.collect()
 
+              
     total_flops = 0.0
     num_microbatches = get_num_microbatches()
     eval_duration = 0.0
@@ -702,13 +703,27 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
         pre_hook_enabled = False
 
     while iteration < args.train_iters:
+        # 检查点异步保存
+        # 注意megatron-lm中的设计后台保存相对于的检查点
         maybe_finalize_async_save(blocking=False)
 
         # Update number of microbatches first without consistency check to decide if a
         # checkpoint should be saved. If the number of microbatches is different
         # from the previous iteration, save a checkpoint. Then run consistency check
         # to make sure training configuration is still valid.
+        """
+        更新当前的微批次大小
+        在最初进行模型预训练的时候需要全局批次大小爬坡
+        $$Global\ Batch\ Size = Microbatch\ Size \times Gradient\ Accumulation\ Steps \times Data\ Parallel\ Size$$
+        唯一的方法，就是增加 Gradient Accumulation Steps（也就是源码里的 num_microbatches）
+        这部分就是模型
+        """
         update_num_microbatches(args.consumed_train_samples, consistency_check=False)
+
+        """
+        由于需要全局批次大小爬坡梯度累计必须是单调递增的
+        """
+        
         if get_num_microbatches() != num_microbatches and iteration != 0:
             if get_num_microbatches() <= num_microbatches:
                 raise RuntimeError(
