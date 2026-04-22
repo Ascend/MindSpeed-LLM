@@ -599,6 +599,10 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
     write_args_to_tensorboard()
 
     # Turn on training mode which enables dropout.
+    """
+    在这部分把模型对应的block块冻结
+    只让需要的部分处于可训练的状态
+    """
     for model_module in model:
         model_module.train()
 
