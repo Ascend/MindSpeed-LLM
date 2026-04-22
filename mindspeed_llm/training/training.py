@@ -419,7 +419,13 @@ def build_train_args(*input_args):
     test_data_iterator_list = [test_data_iterator]
     return train_args, test_data_iterator_list
 
+"""
 
+这部分开始获取args中的参数数据
+
+但是这部分不涉及训练只是获取数据
+
+"""
 def pretrain(train_valid_test_dataset_provider,
              model_provider,
              model_type,
