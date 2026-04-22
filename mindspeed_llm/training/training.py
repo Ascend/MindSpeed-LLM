@@ -645,10 +645,14 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
 
     timers('interval-time', log_level=0).start(barrier=True)
     print_datetime('before the start of training step')
+    # 日志是否还需要报告内存信息
     report_memory_flag = True
+    # forward pre-hook机制开启的标志位
     pre_hook_enabled = False
+    # 训练循环的标志位
     exit = False
 
+              
     if args.manual_gc:
         # Disable the default garbage collector and perform the collection manually.
         # This is to align the timing of garbage collection across ranks.
