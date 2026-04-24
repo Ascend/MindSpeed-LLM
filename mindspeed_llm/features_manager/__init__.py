@@ -93,7 +93,8 @@ from mindspeed_llm.features_manager.memory.chunk_loss import ChunkLossFeature
 from mindspeed_llm.features_manager.layerwise_disaggregated_training.u_shaped_split_feature import UShapedSplitFeature
 from mindspeed_llm.features_manager.layerwise_disaggregated_training.vtp_feature import VTPFeature
 from mindspeed_llm.features_manager.qat.qat_quant_engine import QATQuantEngineFeature
-from mindspeed_llm.features_manager.optimizer.muon import MuonFeature
+from mindspeed_llm.features_manager.transformer.mhc_feature import MHCFeature
+from mindspeed_llm.features_manager.transformer.multi_latent_attention.g2_feature import G2Feature
 
 FEATURES_LIST = [
     # MindSpeed Legacy Features
@@ -143,6 +144,7 @@ def add_llm_features(features_list: List[MindSpeedFeature]):
         MambaModel(),
         LanguageModelEmbeddingFeature(),
         CheckpointFeature(),
+        MHCFeature(),
     ])
 
 
@@ -204,7 +206,8 @@ def add_transformer_features(features_list: List[MindSpeedFeature]):
         AlibiFeature(),
         # LLM feature
         ResetAttentionMaskFeature(),
-        FusionAttentionV2Feature()
+        FusionAttentionV2Feature(),
+        G2Feature(),
     ])
 
 
@@ -262,7 +265,6 @@ def add_optimizer_features(features_list: List[MindSpeedFeature]):
         FusedEmaAdamwFeature(),
         VirtualOptimizerFeature(),
         LowPrecisionOptimizerFeature(),
-        MuonFeature()
     ])
 
 
@@ -318,8 +320,7 @@ def add_ai_framework_feature(features_list: List[MindSpeedFeature]):
 
 def add_layerwise_diaggregated_training_feature(feature_list: List[MindSpeedFeature]):
     feature_list.extend([
-        UShapedSplitFeature(),
-        VTPFeature(),
+        UShapedSplitFeature()
     ])
 
 

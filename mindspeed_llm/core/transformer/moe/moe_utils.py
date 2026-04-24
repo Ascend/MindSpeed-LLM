@@ -17,6 +17,7 @@ from functools import wraps
 from typing import Optional
 
 import torch
+import torch.nn.functional as F  
 from megatron.core import parallel_state
 from megatron.core.transformer.moe.moe_utils import get_capacity
 from megatron.training import get_args
@@ -92,6 +93,128 @@ def group_limited_topk(
     return probs, top_indices
 
 
+def topk_softmax_with_capacity_and_hash(
+        logits: torch.Tensor,
+        topk: int,
+        capacity_factor: Optional[float] = None,
+        pad_to_capacity: bool = False,
+        drop_policy: str = "probs",
+        use_pre_softmax: bool = False,
+        num_groups: Optional[int] = None,
+        group_topk: Optional[int] = None,
+        scaling_factor: Optional[float] = None,
+        deterministic_mode: bool = False,
+        score_function: str = "softmax",
+        expert_bias: Optional[torch.Tensor] = None,
+        token_hash: bool = False,
+        tid2eid: Optional[torch.Tensor] = None,
+        input_ids: Optional[torch.Tensor] = None,
+):
+    """
+    patch hash operator in megatron topk_softmax_with_capacity
+    """
+    assert logits.dim() == 2, f"Expected 2D logits [num_tokens, num_experts], got {logits.dim()}."
+    num_tokens, num_experts = logits.shape
+
+    def compute_topk(scores, topk, num_groups=None, group_topk=None):
+        if group_topk:
+            return group_limited_topk(
+                scores=scores,
+                topk=topk,
+                num_tokens=num_tokens,
+                num_experts=num_experts,
+                num_groups=num_groups,
+                group_topk=group_topk,
+            )
+        else:
+            return torch.topk(scores, k=topk, dim=1)
+    if score_function == "softmax":
+        if use_pre_softmax:
+            scores = torch.softmax(logits, dim=-1, dtype=torch.float32).type_as(logits)
+            probs, top_indices = compute_topk(scores, topk, num_groups, group_topk)
+        else:
+            scores, top_indices = compute_topk(logits, topk, num_groups, group_topk)
+            probs = torch.softmax(scores, dim=-1, dtype=torch.float32).type_as(logits)
+    elif score_function == "sigmoid":
+        scores = torch.sigmoid(logits.float()).type_as(logits)
+        if expert_bias is not None:
+            scores_for_routing = scores + expert_bias
+            _, top_indices = compute_topk(scores_for_routing, topk, num_groups, group_topk)
+            scores = torch.gather(scores, dim=1, index=top_indices).type_as(logits)
+        else:
+            scores, top_indices = compute_topk(scores, topk, num_groups, group_topk)
+        probs = scores / (scores.sum(dim=-1, keepdim=True) + 1e-20) if topk > 1 else scores
+    elif score_function == "sqrtsoftplus":
+        scores = F.softplus(logits.float()).sqrt().type_as(logits)
+        if expert_bias is not None:
+            scores_for_routing = scores + expert_bias
+            _, top_indices = compute_topk(scores_for_routing, topk, num_groups, group_topk)
+            scores = torch.gather(scores, dim=1, index=top_indices).type_as(logits)
+        # hash
+        elif token_hash and tid2eid is not None and expert_bias is None:
+            input_ids = input_ids.flatten()
+            # support tp
+            tp_size = parallel_state.get_tensor_model_parallel_world_size()
+            tp_rank = parallel_state.get_tensor_model_parallel_rank()
+            input_ids = input_ids.chunk(tp_size)[tp_rank]
+            top_indices = tid2eid[input_ids]  # [b * s / sp_size, top_k]
+            # print(f"[debug] top_indices shape is: {top_indices.shape}")
+            # print(f"[debug] top_indices is {top_indices}")
+
+            scores = torch.gather(scores, dim=1, index=top_indices).type_as(scores)
+            probs = scores / (scores.sum(dim=-1, keepdim=True) + 1e-20) if topk > 1 else scores
+
+            if scaling_factor:
+                probs = probs * scaling_factor
+            topk_masked_gates = torch.zeros_like(logits).scatter(1, top_indices, probs)
+            topk_map = torch.zeros_like(logits).int().scatter(1, top_indices, 1).bool()
+            tokens_per_expert = topk_map.sum(dim=0)
+            return topk_masked_gates, topk_map, tokens_per_expert
+        else:
+            scores, top_indices = compute_topk(scores, topk, num_groups, group_topk)
+        probs = scores / (scores.sum(dim=-1, keepdim=True) + 1e-20) if topk > 1 else scores
+    else:
+        raise ValueError(f"Invalid score_function: {score_function}")
+
+    if scaling_factor:
+        probs = probs * scaling_factor
+
+    # TODO Try using element-wise operations instead of scatter?
+    topk_masked_gates = torch.zeros_like(logits).scatter(1, top_indices, probs)
+    topk_map = torch.zeros_like(logits).int().scatter(1, top_indices, 1).bool()
+    tokens_per_expert = topk_map.sum(dim=0)
+
+    if capacity_factor is None:
+        # TopK without capacity
+        return topk_masked_gates, topk_map, tokens_per_expert
+    else:
+        # TopK with capacity
+        expert_capacity = get_capacity(
+            num_tokens=num_tokens * topk, num_experts=num_experts, capacity_factor=capacity_factor
+        )
+
+        # Maskout exceeded tokens
+        if drop_policy == "probs":
+            _, capacity_indices = torch.topk(
+                topk_masked_gates, k=expert_capacity, dim=0, sorted=False
+            )
+            capacity_mask = torch.zeros_like(logits).scatter(0, capacity_indices, 1).bool()
+        elif drop_policy == "position":
+            _, capacity_indices = torch.topk(topk_map.int(), k=expert_capacity, dim=0, sorted=False)
+            capacity_mask = torch.zeros_like(logits).scatter(0, capacity_indices, 1).bool()
+        else:
+            raise ValueError(f"Invalid drop_policy: {drop_policy}")
+
+        if pad_to_capacity:
+            final_map = capacity_mask
+            final_probs = topk_masked_gates * final_map
+        else:
+            # Get exceed mask and maskout exceeded probs and indices
+            final_map = torch.logical_and(topk_map, capacity_mask)
+            final_probs = topk_masked_gates * final_map
+        return final_probs, final_map, tokens_per_expert
+
+
 def topk_softmax_with_capacity(
     logits: torch.Tensor,
     topk: int,
@@ -105,6 +228,9 @@ def topk_softmax_with_capacity(
     deterministic_mode: bool = False,
     score_function: str = "softmax",
     expert_bias: Optional[torch.Tensor] = None,
+    token_hash: bool = False,
+    tid2eid: Optional[torch.Tensor] = None,
+    input_ids: Optional[torch.Tensor] = None,
 ):
     """Apply capacity and padding to the top-k selection.
     Args:
@@ -122,7 +248,7 @@ def topk_softmax_with_capacity(
         group_topk (int): Number of selected groups for each token.
         scaling_factor (float): Scaling factor of routing score in top-k selection.
         deterministic_mode (bool): Deprecated.
-        score_function (str): The score function to use. Can be either "softmax" or "sigmoid".
+        score_function (str): The score function to use. Can be either "softmax" or "sigmoid" or "sqrtsoftplus".
         expert_bias (torch.Tensor): The bias added to logits for expert routing.
 
     Returns:
@@ -168,6 +294,35 @@ def topk_softmax_with_capacity(
             scores_for_routing = scores + expert_bias
             _, top_indices = compute_topk(scores_for_routing, topk, num_groups, group_topk)
             scores = torch.gather(scores, dim=1, index=top_indices).type_as(logits)
+        else:
+            scores, top_indices = compute_topk(scores, topk, num_groups, group_topk)
+        probs = scores / (scores.sum(dim=-1, keepdim=True) + 1e-20) if topk > 1 else scores
+    elif score_function == "sqrtsoftplus":
+        scores = F.softplus(logits.float()).sqrt().type_as(logits)
+        if expert_bias is not None:
+            scores_for_routing = scores + expert_bias
+            _, top_indices = compute_topk(scores_for_routing, topk, num_groups, group_topk)
+            scores = torch.gather(scores, dim=1, index=top_indices).type_as(logits)
+        # hash
+        elif token_hash and tid2eid is not None and expert_bias is None:
+            input_ids = input_ids.flatten()
+            # support tp
+            tp_size = parallel_state.get_tensor_model_parallel_world_size()
+            tp_rank = parallel_state.get_tensor_model_parallel_rank()
+            input_ids = input_ids.chunk(tp_size)[tp_rank]
+            top_indices = tid2eid[input_ids]  # [b * s / sp_size, top_k]
+            # print(f"[debug] top_indices shape is: {top_indices.shape}")
+            # print(f"[debug] top_indices is {top_indices}")
+
+            scores = torch.gather(scores, dim=1, index=top_indices).type_as(scores)
+            probs = scores / (scores.sum(dim=-1, keepdim=True) + 1e-20) if topk > 1 else scores
+
+            if scaling_factor:
+                probs = probs * scaling_factor
+            topk_masked_gates = torch.zeros_like(logits).scatter(1, top_indices, probs)
+            topk_map = torch.zeros_like(logits).int().scatter(1, top_indices, 1).bool()
+            tokens_per_expert = topk_map.sum(dim=0)
+            return topk_masked_gates, topk_map, tokens_per_expert
         else:
             scores, top_indices = compute_topk(scores, topk, num_groups, group_topk)
         probs = scores / (scores.sum(dim=-1, keepdim=True) + 1e-20) if topk > 1 else scores

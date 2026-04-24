@@ -30,10 +30,18 @@ from scipy.linalg import hadamard
 
 from mindspeed_llm.core.tensor_parallel.layers import LinearNoTP
 from mindspeed_llm.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb_bshd_in_complex
+from mindspeed_llm.core.context_parallel.kvallgather_context_parallel import gather_from_sp_cp, permute_cp_shard
 from mindspeed.te.pytorch.attention.dot_product_attention.kvallgather_context_parallel import (
     get_distributed_world_size,
     get_seq_chunk_ids_for_reordering_before_attn,
 )
+from mindspeed_llm.tasks.models.transformer.geneva2.compressor import Compressor, get_compressor_spec
+from mindspeed_llm.tasks.models.transformer.geneva2.deepseek_utils import rotate_activation, apply_rotary_emb
+
+try:
+    import mindspeed.ops.npu_lightning_indexer as mindspeed_li
+except:
+    pass
 
 
 @dataclass
@@ -42,17 +50,19 @@ class DSAIndexerSubmodules:
     wk: Union[ModuleSpec, type] = None
     weights_proj: Union[ModuleSpec, type] = None
     k_norm: Union[ModuleSpec, type] = None
+    compressor: Union[ModuleSpec, type] = None
 
 
-def get_dsa_indexer_spec(enable_dsa_indexer):
+def get_dsa_indexer_spec(enable_dsa_indexer, compressor=None):
     """Helper function to get module spec for dsa_indexer"""
     if enable_dsa_indexer:
         return ModuleSpec(module=DSAIndexer,
                           submodules=DSAIndexerSubmodules(
-                                wq_b=LinearNoTP,
-                                wk=LinearNoTP,
-                                weights_proj=LinearNoTP,
-                                ))
+                              wq_b=LinearNoTP,
+                              wk=LinearNoTP,
+                              weights_proj=LinearNoTP,
+                              compressor=get_compressor_spec() if compressor else IdentityOp,
+                          ))
     else:
         return IdentityOp
 
@@ -69,27 +79,6 @@ def norm2fp32_fp16module_init_wrapper(fn):
                     param.bias.data = param.bias.data.to(torch.float32)
 
     return wrapper
-
-
-def hadamard_transform_ref(x, scale=1.0):
-    """
-    Eager implementation of the Hadamard transform
-
-    Args:
-        x:(torch.Tensor): input tensor
-    """
-
-    x_shape = x.shape
-    dim = x.shape[-1]
-    x = x.reshape(-1, dim)
-    log_dim = math.ceil(math.log2(dim))
-    dim_padded = 2 ** log_dim
-    if dim != dim_padded:
-        x = F.pad(x, (0, dim_padded - dim))
-    out = F.linear(x, torch.tensor(hadamard(dim_padded, dtype=float), dtype=x.dtype, device=x.device))
-    out = out * scale
-
-    return out[..., :dim].reshape(*x_shape)
 
 
 def bf16_index(
@@ -122,23 +111,6 @@ def bf16_index(
     reduce_out = torch.sum(weight_out, dim=1)
 
     return reduce_out
-
-
-def rotate_activation(x: torch.Tensor) -> torch.Tensor:
-    """
-    Applies a scaled Hadamard transform to the input tensor, commonly used for rotating activations
-
-    Args:
-        x (torch.Tensor): Input tensor of shape [..., hidden_size], must be of dtype torch.bfloat16.
-    """
-
-    try:
-        from fast_hadamard_transform import hadamard_transform
-    except ImportError:
-        hadamard_transform = hadamard_transform_ref
-
-    hidden_size = x.size(-1)
-    return hadamard_transform(x, scale=hidden_size ** -0.5)
 
 
 class LayerNorm(torch.nn.Module):
@@ -179,6 +151,8 @@ class DSAIndexer(MegatronModule):
         self.rope_head_dim: int = args.qk_pos_emb_head_dim
         self.index_topk: int = args.index_topk
         self.q_lora_rank: int = args.q_lora_rank
+        self.kv_compress: bool = args.kv_compress
+        self.use_fused_lightning_indexer: bool = args.use_fused_lightning_indexer
 
         self.softmax_scale = self.head_dim ** -0.5
         self.scale_fmt = args.scale_fmt
@@ -191,15 +165,26 @@ class DSAIndexer(MegatronModule):
             init_method=self.config.init_method,
             bias=False,
         )
-        self.wk = build_module(
-            submodules.wk,
-            self.dim,
-            self.head_dim,
-            config=self.config,
-            init_method=self.config.init_method,
-            bias=False,
-        )
-        self.k_norm = LayerNorm(self.head_dim)
+        if not self.kv_compress:
+            self.wk = build_module(
+                submodules.wk,
+                self.dim,
+                self.head_dim,
+                config=self.config,
+                init_method=self.config.init_method,
+                bias=False,
+            )
+            self.k_norm = LayerNorm(self.head_dim)
+        else:
+            self.compress_ratio = args.compress_ratios[layer_number - 1]
+            self.kv_compressor = build_module(
+                submodules.compressor,
+                config=self.config,
+                compress_ratio=self.compress_ratio,
+                head_dim=self.head_dim,
+                rotate=True
+            )
+
         self.weights_proj = build_module(
             submodules.weights_proj,
             self.dim,
@@ -222,6 +207,7 @@ class DSAIndexer(MegatronModule):
                 freqs_cis: torch.Tensor,
                 mask=None,
                 packed_seq_params=None,
+                offset = None,
                 ):
         """
         Forward pass of the dsa_indexer module.
@@ -235,13 +221,22 @@ class DSAIndexer(MegatronModule):
             mask (torch.Tensor, optional): Attention mask.
             packed_seq_params (PackedSeqParams, optional): Parameters for packed sequence processing.
         """
-        q, k, weights, x = self.forward_with_index(x, qr, freqs_cis)
-
-        topk_indices, topk_score = self.forward_with_scores(
-            x, q, k, weights, mask, packed_seq_params, start_pos, self.index_topk)
-
-        s, b, _ = x.size()
-        attention_mask = self.generate_sparse_mask(topk_indices, mask, (b, s, s), x.dtype, x.device)
+        if not self.kv_compress:
+            q, k, weights, x = self.forward_with_index(x, qr, freqs_cis)
+            topk_indices, topk_score = self.forward_with_scores(
+                x, q, k, weights, mask, packed_seq_params, start_pos, self.index_topk)
+            s1, b, _ = x.size()
+            s2 = s1
+            attention_mask = self.generate_sparse_mask(topk_indices, mask, (b, s1, s2), x.dtype, x.device)
+        else:
+            q, k, weights, x = self.forward_with_index_compress(x, qr, start_pos, freqs_cis)
+            q, k, weights = self.all_gather_qk_weight(q, k, weights)
+            topk_indices, topk_score = self.forward_with_scores_compress(
+                x, q, k, weights, mask, packed_seq_params, start_pos, self.index_topk, offset, self.compress_ratio)
+            topk_indices, topk_score = self.post_process_index(topk_indices, topk_score)
+            b, s1, _ = topk_indices.size()
+            s2 = k.size(0)
+            attention_mask = self.generate_sparse_mask_compress(topk_indices, mask, (b, s1, s2), x.dtype, x.device, offset)
         return topk_score, topk_indices, attention_mask
 
     def forward_with_index(self, x: Tensor, qr: Tensor, freqs_cis: Tensor):
@@ -297,7 +292,7 @@ class DSAIndexer(MegatronModule):
         weights = weights * self.n_heads ** -0.5
         weights = weights * self.softmax_scale
         return q, k, weights, x
-
+    
     @staticmethod
     def forward_with_scores(x, q, k, weights, mask, packed_seq_params, start_pos, index_topk):
         args = get_args()
@@ -325,11 +320,12 @@ class DSAIndexer(MegatronModule):
                     layout_key='BSND',
                     )
         else:
-            s, b, _ = x.size()
-            end_pos = start_pos + s
+            s1, b, _ = x.size()
+            s2 = k.size(0)
+            end_pos = start_pos + s2
             index_score = bf16_index(q.contiguous(), weights.unsqueeze(-1), k.contiguous())
             if mask is None:
-                mask = torch.where(torch.triu(torch.ones((b, s, s),
+                mask = torch.where(torch.triu(torch.ones((b, s1, s2),
                                                          dtype=x.dtype,
                                                          device=x.device),
                                               diagonal=1) == 1, float('-inf'), 0.0)
@@ -338,11 +334,93 @@ class DSAIndexer(MegatronModule):
             # Select top-k most relevant tokens for each query position
             topk_score, topk_indices = index_score.topk(min(index_topk, end_pos), dim=-1)
             # Post-process topk_indices to enforce causal masking constraints
-            query_positions = torch.arange(s, device=topk_indices.device).unsqueeze(0).unsqueeze(-1)
+            query_positions = torch.arange(s1, device=topk_indices.device).unsqueeze(0).unsqueeze(-1)
             valid_positions = topk_indices <= query_positions
             topk_indices = torch.where(valid_positions, topk_indices, torch.full_like(topk_indices, -1))
 
         return topk_indices, topk_score
+
+    def get_compress_idxs_on_this_rank(s_total, device, tp_shard=True):
+        cp_size = parallel_state.get_context_parallel_world_size()
+        tp_size = parallel_state.get_tensor_model_parallel_world_size()
+        tp_rank = parallel_state.get_tensor_model_parallel_rank()
+        compress_idxs = torch.arange(1, s_total + 1, device=device)
+        if cp_size > 1:
+            compress_idxs = permute_cp_shard(compress_idxs, reorder=False)
+        if tp_size > 1 and tp_shard:
+            s = s_total // cp_size // tp_size
+            compress_idxs = compress_idxs[s * tp_rank: s * (tp_rank + 1)]
+        return compress_idxs.unsqueeze(1)
+            
+    @staticmethod
+    def forward_with_scores_compress(x, q, k, weights, mask, packed_seq_params, start_pos, index_topk, offset, compress_ratio=4):
+        args = get_args()
+        if args.use_fused_lightning_indexer:
+            topk_idxs, topk_score = fused_lightning_indexer_with_compress(
+                q,
+                k,
+                weights,
+                index_topk,
+                actual_seq_qlen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_q,
+                actual_seq_klen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_kv,
+                layout_query='BSND',
+                layout_key='BSND',
+                compress_ratio=compress_ratio
+                )
+            topk_idxs = torch.where(topk_idxs == -1, topk_idxs, topk_idxs + offset) if offset != 0 else topk_idxs
+        else:
+            s1, s2 = x.size(0), k.size(0)
+            s_total = s2 * compress_ratio
+            end_pos = start_pos + s_total
+            device = x.device
+            compress_idxs = DSAIndexer.get_compress_idxs_on_this_rank(s_total, device) // compress_ratio
+            index_score = bf16_index(q.contiguous(), weights.unsqueeze(-1), k.contiguous()) 
+            mask = torch.arange(s2, device=device).repeat(s1, 1) >= compress_idxs # (s1, s2)
+            index_score = index_score + torch.where(mask, torch.finfo(q.dtype).min, 0)
+            topk_score, topk_idxs = index_score.topk(min(index_topk, end_pos // compress_ratio), dim=-1)
+            topk_idxs = topk_idxs.int()
+            mask = topk_idxs >= compress_idxs
+            topk_idxs = torch.where(mask, -1, topk_idxs + offset) if offset != 0 else torch.where(mask, -1, topk_idxs)
+        
+        return topk_idxs, topk_score
+
+    def forward_with_index_compress(self, x: Tensor, qr: Tensor, start_pos: int, freqs_cis: Tensor):
+        # Project low-rank query to full multi-head query
+        q = self.wq_b(qr)
+        q = rearrange(q, 's b (h d) -> s b h d', d=self.head_dim)
+
+        # Apply rotary positional embedding to the RoPE part of the query
+        q = q.transpose(0, 1)
+        q[..., -self.rope_head_dim:] = apply_rotary_emb(q[..., -self.rope_head_dim:], freqs_cis)
+        q = q.transpose(0, 1)
+        q = rotate_activation(q)
+        k = self.kv_compressor(x, start_pos, freqs_cis).unsqueeze(2)
+        # Apply structured rotation (e.g., scaled Hadamard transform) to both query and key
+        # This promotes mixing and can improve retrieval performance in sparse attention
+        weights = self.weights_proj(x)
+        weights = weights * self.n_heads ** -0.5
+        weights = weights * self.softmax_scale
+        return q, k, weights, x
+
+    def all_gather_qk_weight(self, q, k, weights):
+        k = gather_from_sp_cp(k)
+        if self.use_fused_lightning_indexer:
+            q = gather_from_sp_cp(q)
+            weights = gather_from_sp_cp(weights)
+        return q, k, weights
+
+    def post_process_index(self, topk_indices, topk_score):
+        if not self.use_fused_lightning_indexer:
+            topk_indices, topk_score = topk_indices.transpose(0, 1), topk_score.transpose(0, 1)  # BSH --> SBH
+            topk_indices, topk_score = self.all_gather_score(topk_indices, topk_score)
+            topk_indices, topk_score = topk_indices.transpose(0, 1), topk_score.transpose(0, 1)  # SBH --> BSH
+        return topk_indices, topk_score
+
+    def all_gather_score(self, topk_indices, topk_score):
+        topk_indices = gather_from_sequence_parallel_region(topk_indices, group=mpu.get_tensor_model_parallel_group())
+        topk_score = gather_from_sequence_parallel_region(topk_score, group=mpu.get_tensor_model_parallel_group())
+        return topk_indices, topk_score
+
 
     @staticmethod
     def generate_sparse_mask(topk_indices, mask, shape, dtype, device):
@@ -363,6 +441,23 @@ class DSAIndexer(MegatronModule):
                 args.sparse_mode = 0
         else:
             attention_mask = None
+        return attention_mask
+
+    @staticmethod
+    def generate_sparse_mask_compress(topk_indices, mask, shape, dtype, device, offset, compress_ratio=4):
+        args = get_args()
+        b, s1, s2 = shape
+        s_total = s2 * compress_ratio
+        if offset != 0:
+            topk_indices = torch.where(topk_indices == -1, topk_indices, topk_indices - offset)
+        attention_mask = torch.full(shape, float('-inf'), dtype=dtype, device=device).scatter_(-1, topk_indices, 0)
+        compress_idxs = DSAIndexer.get_compress_idxs_on_this_rank(s_total, device, False) // compress_ratio
+        mask = torch.arange(s2, device=device).repeat(s1, 1) >= compress_idxs
+        mask = torch.where(mask, float('-inf'), 0)
+        attention_mask += mask
+        if getattr(args, 'use_flash_attn', False):
+            attention_mask = torch.isinf(attention_mask) & (attention_mask < 0).unsqueeze(1)
+            args.sparse_mode = 0
         return attention_mask
 
 class DSAIndexerLossAutoScaler(torch.autograd.Function):
@@ -438,27 +533,34 @@ def forward_step_dsa_wrapper(fn):
             is_first_microbatch=False,
             current_microbatch=None,
             encoder_decoder_xattn=False,
-    ):
-        output_tensor, num_tokens = fn(
-            forward_step_func,
-            data_iterator,
-            model,
-            num_microbatches,
-            input_tensor,
-            forward_data_store,
-            config,
-            collect_non_loss_data=collect_non_loss_data,
-            checkpoint_activations_microbatch=checkpoint_activations_microbatch,
-            is_first_microbatch=is_first_microbatch,
-            current_microbatch=current_microbatch,
-            encoder_decoder_xattn=encoder_decoder_xattn,
-        )
-        if not isinstance(output_tensor, list):
+            extra_block_kwargs=None
+    ):  
+        global_args = get_args()
+        common_kwargs = {
+            'forward_step_func': forward_step_func,
+            'data_iterator': data_iterator,
+            'model': model,
+            'num_microbatches': num_microbatches,
+            'input_tensor': input_tensor,
+            'forward_data_store': forward_data_store,
+            'config': config,
+            'collect_non_loss_data': collect_non_loss_data,
+            'checkpoint_activations_microbatch': checkpoint_activations_microbatch,
+            'is_first_microbatch': is_first_microbatch,
+            'current_microbatch': current_microbatch,
+            'encoder_decoder_xattn': encoder_decoder_xattn,
+        }
+
+        if global_args.moe_fb_overlap:
+            common_kwargs['extra_block_kwargs'] = extra_block_kwargs
+
+        output_tensor, num_tokens = fn(**common_kwargs)
+
+        if not isinstance(output_tensor, (list, tuple)):
             output_tensor_device = output_tensor.device
         else:
             output_tensor_device = output_tensor[0].device
         # Set the loss scale for DSA indexer loss.
-        global_args = get_args()
         if global_args.enable_dsa_indexer:
             # Calculate the loss scale based on the grad_scale_func if available, else default to 1.
             loss_scale = (
@@ -566,6 +668,7 @@ def compute_dsa_indexer_loss(
         topk_indices,
         loss_scale,
         eps=1e-8,
+        cmp_ratio=1
 ):
     """Compute dsa indexer loss at sparse training stage
     Reference: https://github.com/deepseek-ai/DeepSeek-V3.2-Exp/blob/main/DeepSeek_V3_2.pdf
@@ -575,6 +678,13 @@ def compute_dsa_indexer_loss(
         topk_indices: Selected top-K indices for sparse phase
         loss_scale: Dsa indexer loss scale
     """
+    args = get_args()
+    if args.use_fused_lightning_indexer and cmp_ratio > 1:
+        index_score_up = index_score[:, :cmp_ratio-1, :]
+        index_score_down = index_score[:, cmp_ratio-1:, :]
+        zeros_up = torch.zeros_like(index_score_up, dtype=torch.float32)
+        index_score = torch.cat([zeros_up, index_score_down], dim=1)
+
     index_score = F.softmax(index_score, dim=-1, dtype=torch.float32)
     # considering only the selected token
     selected_main_attn_dist = torch.gather(main_attn_dist, dim=-1, index=topk_indices)
@@ -594,6 +704,7 @@ def get_attn_scores(
         attention_mask,
         num_attn_head_per_group,
         attn_scale,
+        allgather_q=True,
 ):
     """aggregate the main attention scores"""
     if num_attn_head_per_group > 1:
@@ -630,13 +741,13 @@ def get_attn_scores(
     attention_scores = matmul_result.view(*output_size)
 
     if attention_mask is not None:
-        attention_scores.masked_fill_(attention_mask, float('-inf'))
+        attention_scores.masked_fill_(attention_mask, torch.finfo(query.dtype).min)
     # Attention probabilities [b, np, sq, sk]
     attention_scores = F.softmax(
         attention_scores, dim=-1, dtype=torch.float32
     )
     attention_scores = attention_scores.sum(dim=1)
-    if parallel_state.get_tensor_model_parallel_world_size() > 1:
+    if parallel_state.get_tensor_model_parallel_world_size() > 1 and allgather_q == False:
         # attention scores are scattered to TP ranks in head dimension.
         torch.distributed.all_reduce(attention_scores.contiguous(),
                                      group=parallel_state.get_tensor_model_parallel_group())
@@ -667,6 +778,33 @@ def fused_lightning_indexer(q: Tensor,
         sparse_count=index_topk,
         sparse_mode=3,
         return_value=True,
+    )
+    topk_indices = topk_indices.squeeze(2)
+    topk_score = topk_score.squeeze(2)
+    return topk_indices, topk_score
+
+
+def fused_lightning_indexer_with_compress(q: Tensor,
+                                          k: Tensor,
+                                          weights: Tensor,
+                                          index_topk,
+                                          actual_seq_qlen=None,
+                                          actual_seq_klen=None,
+                                          layout_query='BSND',
+                                          layout_key='BSND',
+                                          compress_ratio=4
+                                          ):
+    q = rearrange(q, 's b h d -> b s h d').to(torch.bfloat16)
+    k = rearrange(k, 's b h d -> b s h d').to(torch.bfloat16)
+    weights = rearrange(weights, 's b d -> b s d').to(torch.bfloat16)
+
+    topk_indices, topk_score = mindspeed_li.npu_lightning_indexer(
+        q,
+        k,
+        weights,
+        sparse_count=index_topk,
+        sparse_mode=3,
+        cmp_ratio=compress_ratio
     )
     topk_indices = topk_indices.squeeze(2)
     topk_score = topk_score.squeeze(2)

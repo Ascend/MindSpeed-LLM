@@ -356,12 +356,7 @@ def build_train_args(*input_args):
 
         opt_param_scheduler = configure_lr_for_lu_lora_layers(model, opt_param_scheduler, args)
     else:
-        # If with MTP and dualpipev, change model_provider func.
-        if args.mtp_num_layers is not None and args.schedules_method == "dualpipev":
-            from mindspeed.core.pipeline_parallel.dualpipev.mtp_utils import model_provider_mtp
-            model_provider_func = model_provider_mtp
-        else:
-            model_provider_func = model_provider
+        model_provider_func = get_model_provider_func(args, model_provider)
         model, optimizer, opt_param_scheduler = setup_model_and_optimizer(
             model_provider_func, model_type)
     timers('model-and-optimizer-setup').stop()
@@ -418,6 +413,18 @@ def build_train_args(*input_args):
                   train_data_iterator, valid_data_iterator, process_non_loss_data_func, config]
     test_data_iterator_list = [test_data_iterator]
     return train_args, test_data_iterator_list
+
+
+def get_model_provider_func(args, model_provider):
+    # If with MTP and dualpipev, change model_provider func.
+    if args.spec and 'geneva2_spec' in args.spec[0]:
+        model_provider_func = model_provider
+    elif args.mtp_num_layers is not None and args.schedules_method == "dualpipev":
+        from mindspeed.core.pipeline_parallel.dualpipev.mtp_utils import model_provider_mtp
+        model_provider_func = model_provider_mtp
+    else:
+        model_provider_func = model_provider
+    return model_provider_func
 
 
 def pretrain(train_valid_test_dataset_provider,

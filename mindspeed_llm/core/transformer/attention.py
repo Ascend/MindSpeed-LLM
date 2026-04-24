@@ -91,21 +91,25 @@ def self_attention_init(
         cp_comm_type=cp_comm_type,
         )
       
-        if not args.no_enable_linear_qkv:
-            self.linear_qkv = build_module(
-                        submodules.linear_qkv,
-                        self.config.hidden_size,
-                        self.query_projection_size + 2 * self.kv_projection_size,
-                        config=self.config,
-                        init_method=self.config.init_method,
-                        gather_output=False,
-                        bias=self.config.add_bias_linear or self.config.add_qkv_bias,
-                        skip_bias_add=False,
-                        is_expert=False,
-                        tp_comm_buffer_name='qkv',
-                    )
+        if not args.use_g2_attention:
+            if not args.no_enable_linear_qkv:
+                self.linear_qkv = build_module(
+                            submodules.linear_qkv,
+                            self.config.hidden_size,
+                            self.query_projection_size + 2 * self.kv_projection_size,
+                            config=self.config,
+                            init_method=self.config.init_method,
+                            gather_output=False,
+                            bias=self.config.add_bias_linear or self.config.add_qkv_bias,
+                            skip_bias_add=False,
+                            is_expert=False,
+                            tp_comm_buffer_name='qkv',
+                        )
+            else:
+                self.linear_qkv = None
         else:
-            self.linear_qkv = None
+            self.linear_q = None
+            self.linear_kv = None
 
         if submodules.q_layernorm is not None:
             self.q_layernorm = build_module(
