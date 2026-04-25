@@ -35,8 +35,8 @@ from mindspeed.te.pytorch.attention.dot_product_attention.kvallgather_context_pa
     get_distributed_world_size,
     get_seq_chunk_ids_for_reordering_before_attn,
 )
-from mindspeed_llm.tasks.models.transformer.geneva2.compressor import Compressor, get_compressor_spec
-from mindspeed_llm.tasks.models.transformer.geneva2.deepseek_utils import rotate_activation, apply_rotary_emb
+from mindspeed_llm.tasks.models.transformer.deepseek4.compressor import Compressor, get_compressor_spec
+from mindspeed_llm.tasks.models.transformer.deepseek4.deepseek_utils import rotate_activation, apply_rotary_emb
 
 try:
     import mindspeed.ops.npu_lightning_indexer as mindspeed_li

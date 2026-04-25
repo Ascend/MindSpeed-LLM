@@ -30,7 +30,7 @@ from megatron.core.transformer.moe.experts import GroupedMLP, SequentialMLP
 from megatron.core.utils import make_viewless_tensor
 from megatron.training import get_args
 
-from mindspeed_llm.tasks.models.transformer.geneva2.mhc.mhc_recompute import MHCRecomputeInfo, RecomputeInputWrap, RecomputeOutputWrap
+from mindspeed_llm.tasks.models.transformer.deepseek4.mhc.mhc_recompute import MHCRecomputeInfo, RecomputeInputWrap, RecomputeOutputWrap
 
 
 @dataclass

@@ -1,8 +1,8 @@
 import torch
 import copy
 
-from mindspeed_llm.tasks.models.transformer.geneva2.rmsnorm_without_weight_triton_kernel import rmsnorm_without_weight
-from mindspeed_llm.tasks.models.transformer.geneva2.rmsnorm_without_weight_triton_kernel import rmsnorm_without_weight_backward
+from mindspeed_llm.tasks.models.transformer.deepseek4.rmsnorm_without_weight_triton_kernel import rmsnorm_without_weight
+from mindspeed_llm.tasks.models.transformer.deepseek4.rmsnorm_without_weight_triton_kernel import rmsnorm_without_weight_backward
 from mindspeed.lite.ops.triton.utils import autocast_custom_bwd, autocast_custom_fwd, input_guard
 
 class RMSNormWithoutWeightFunction(torch.autograd.Function):

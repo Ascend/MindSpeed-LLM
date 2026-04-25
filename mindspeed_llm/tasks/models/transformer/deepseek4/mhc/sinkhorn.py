@@ -1,8 +1,8 @@
 import torch
 import copy
 
-from mindspeed_llm.tasks.models.transformer.geneva2.mhc.sinkhorn_triton_kernel import hc_split_sinkhorn
-from mindspeed_llm.tasks.models.transformer.geneva2.mhc.sinkhorn_triton_kernel import hc_split_sinkhorn_backward
+from mindspeed_llm.tasks.models.transformer.deepseek4.mhc.sinkhorn_triton_kernel import hc_split_sinkhorn
+from mindspeed_llm.tasks.models.transformer.deepseek4.mhc.sinkhorn_triton_kernel import hc_split_sinkhorn_backward
 from mindspeed.lite.ops.triton.utils import autocast_custom_bwd, autocast_custom_fwd, input_guard
 
 class HcSplitSinkhornFunction(torch.autograd.Function):

@@ -1,11 +1,11 @@
-# Copyright (c) 2025, Huawei Technologies Co., Ltd. All rights reserved.
+# Copyright (c) 2026, Huawei Technologies Co., Ltd. All rights reserved.
 
 from dataclasses import dataclass
 from typing import Optional, Union
 
 import torch
 
-from mindspeed_llm.tasks.models.transformer.geneva2.mhc.pre_bmm import hc_pre_bmm_forward
+from mindspeed_llm.tasks.models.transformer.deepseek4.mhc.pre_bmm import hc_pre_bmm_forward
 
 from megatron.core.transformer import ModuleSpec, TransformerLayer, TransformerLayerSubmodules
 

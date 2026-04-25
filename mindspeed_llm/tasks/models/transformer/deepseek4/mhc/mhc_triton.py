@@ -1,11 +1,11 @@
 import torch
 import torch_npu
 
-from mindspeed_llm.tasks.models.transformer.geneva2.mhc.pre_only import hc_pre_only_fwd, hc_pre_only_bwd
-from mindspeed_llm.tasks.models.transformer.geneva2.mhc.pre_bmm import hc_pre_bmm_forward, hc_pre_bmm_backward
-from mindspeed_llm.tasks.models.transformer.geneva2.mhc.post_bmm1 import hc_post_bmm1_forward, hc_post_bmm1_backward
-from mindspeed_llm.tasks.models.transformer.geneva2.mhc.post_bmm2 import hc_post_bmm2_forward, hc_post_bmm2_backward
-from mindspeed_llm.tasks.models.transformer.geneva2.mhc.add import add_fwd
+from mindspeed_llm.tasks.models.transformer.deepseek4.mhc.pre_only import hc_pre_only_fwd, hc_pre_only_bwd
+from mindspeed_llm.tasks.models.transformer.deepseek4.mhc.pre_bmm import hc_pre_bmm_forward, hc_pre_bmm_backward
+from mindspeed_llm.tasks.models.transformer.deepseek4.mhc.post_bmm1 import hc_post_bmm1_forward, hc_post_bmm1_backward
+from mindspeed_llm.tasks.models.transformer.deepseek4.mhc.post_bmm2 import hc_post_bmm2_forward, hc_post_bmm2_backward
+from mindspeed_llm.tasks.models.transformer.deepseek4.mhc.add import add_fwd
 
 
 class MhcPreBmm(torch.autograd.Function):

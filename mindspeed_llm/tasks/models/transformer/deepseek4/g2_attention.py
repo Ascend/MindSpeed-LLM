@@ -1,4 +1,4 @@
-# Copyright (c) 2024, HUAWEI CORPORATION.  All rights reserved.
+# Copyright (c) 2026, HUAWEI CORPORATION.  All rights reserved.
 import logging
 import math
 from contextlib import nullcontext
@@ -37,14 +37,14 @@ from megatron.core.transformer.transformer_layer import get_transformer_layer_of
 from mindspeed_llm.core.fp8_utils import fp8_context_wrapper
 from mindspeed_llm.core.tensor_parallel.layers import LinearNoTP
 from mindspeed_llm.core.transformer.custom_layers.transformer_engine import PTNorm
-from mindspeed_llm.tasks.models.transformer.geneva2.compressor import get_compressor_spec
+from mindspeed_llm.tasks.models.transformer.deepseek4.compressor import get_compressor_spec
 from mindspeed_llm.tasks.models.transformer.dsa_indexer import get_dsa_indexer_spec, DSAIndexerLossAutoScaler, \
     compute_dsa_indexer_loss, get_attn_scores, DSAIndexerLossLoggingHelper
 from mindspeed_llm.core.context_parallel.kvallgather_context_parallel import gather_from_sp_cp, permute_cp_shard
 from mindspeed_llm.tasks.models.transformer.mla_dot_product_attention import MlaDotProductAttention
 from mindspeed_llm.tasks.models.transformer.mla_up_proj_overlap_tp_comm import mla_up_projection_overlap_tp_comm
-from mindspeed_llm.tasks.models.transformer.geneva2.g2_attention_kernel import SparseFlashAttentionTriton, G2CoreAttention
-from mindspeed_llm.tasks.models.transformer.geneva2.deepseek_utils import apply_rotary_emb
+from mindspeed_llm.tasks.models.transformer.deepseek4.g2_attention_kernel import SparseFlashAttentionTriton, G2CoreAttention
+from mindspeed_llm.tasks.models.transformer.deepseek4.deepseek_utils import apply_rotary_emb
 
 try:
     import mindspeed.ops.npu_sparse_lightning_indexer_grad_kl_loss as ms_slig
@@ -69,7 +69,7 @@ class CustomG2SelfAttentionSubmodules(SelfAttentionSubmodules):
 
 
 
-def get_geneva2_self_attn_submodules(qk_layernorm, mla_mm_split, enable_dsa_indexer, compressor):
+def get_deepseek4_self_attn_submodules(qk_layernorm, mla_mm_split, enable_dsa_indexer, compressor):
     args = get_args()
     if args.transformer_impl == "transformer_engine":
         ColumnLinear = TEColumnParallelLinear
@@ -91,7 +91,7 @@ def get_geneva2_self_attn_submodules(qk_layernorm, mla_mm_split, enable_dsa_inde
     )
 
 
-class Geneva2SelfAttention(MegatronModule):
+class DeepSeek4SelfAttention(MegatronModule):
     """Multi-headed attention from 'Attention Is All You Need' paper"""
 
     def __init__(
@@ -291,7 +291,7 @@ class Geneva2SelfAttention(MegatronModule):
         q, _ = self.linear_q_up_proj(q_compressed) # s,b,n_heads_local * self.head_dim
         
         if args.use_triton_rmsnorm_without_weight:
-            from mindspeed_llm.tasks.models.transformer.geneva2.rmsnorm_without_weight import rmsnorm_without_weight_triton
+            from mindspeed_llm.tasks.models.transformer.deepseek4.rmsnorm_without_weight import rmsnorm_without_weight_triton
             rsqrt = rmsnorm_without_weight_triton(q, self.config.layernorm_epsilon)
             q = q * rsqrt
             q = q.view(bsz, q_len, self.n_local_heads, -1) ## s,b,num_attention_heads/tp_size, self.head_dim
@@ -461,3 +461,27 @@ class Geneva2SelfAttention(MegatronModule):
                     matrix = permute_cp_shard(matrix, reorder=False)
                 return matrix.int()
         return _get_window_topk_idxs().unsqueeze(0).expand(bsz, -1, -1).int()
+
+
+class DeepSeek4MTPSelfAttention(DeepSeek4SelfAttention):
+    """Multi-headed attention from 'Attention Is All You Need' paper"""
+
+    def __init__(
+        self,
+        config: TransformerConfig,
+        submodules: CustomG2SelfAttentionSubmodules,
+        layer_number: int,
+        attn_mask_type=AttnMaskType.padding,
+        cp_comm_type=None,
+    ):
+
+        super().__init__(
+            config=config,
+            submodules=submodules,
+            layer_number=layer_number,
+            attn_mask_type=attn_mask_type,
+            cp_comm_type=cp_comm_type,
+        )
+
+        self.compress_ratio = 0
+        self.compressor = None

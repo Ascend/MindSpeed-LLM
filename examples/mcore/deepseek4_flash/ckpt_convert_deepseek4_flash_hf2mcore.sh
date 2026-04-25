@@ -4,9 +4,9 @@ source /usr/local/Ascend/ascend-toolkit/set_env.sh
 python convert_ckpt_v2.py \
   --load-model-type hf \
   --save-model-type mg \
-  --model-type-hf geneva2 \
-  --load-dir ./model_from_hf/deepseek4_hf/ \
-  --save-dir ./model_weights/deepseek4_mcore/ \
+  --model-type-hf deepseek4 \
+  --load-dir ./model_from_hf/deepseek4_flash_hf/ \
+  --save-dir ./model_weights/deepseek4_flash_mcore/ \
   --target-tensor-parallel-size 2 \
   --target-pipeline-parallel-size 4 \
   --target-expert-parallel-size 32 \

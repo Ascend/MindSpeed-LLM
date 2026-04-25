@@ -34,13 +34,13 @@ from megatron.core.models.gpt.gpt_layer_specs import (
     get_gpt_layer_with_transformer_engine_spec,
     get_gpt_mtp_block_spec,
 )
-from mindspeed_llm.core.models.geneva2.genava2_model import Geneva2Model
-from mindspeed_llm.tasks.models.transformer.geneva2.mhc.mhc import get_mhc_spec
+from mindspeed_llm.core.models.deepseek4.deepseek4_model import DeepSeek4Model
+from mindspeed_llm.tasks.models.transformer.deepseek4.mhc.mhc import get_mhc_spec
 from mindspeed_llm.training.utils import  set_mtp_batch_list, get_mtp_batch_list
 from mindspeed_llm.core.transformer.multi_token_prediction import generate_mtp_batch_list_on_this_tp_rank
 
 
-def model_provider(pre_process=True, post_process=True, use_dualpipe_mtp=False) -> Union[Geneva2Model, megatron.legacy.model.GPTModel]:
+def model_provider(pre_process=True, post_process=True, use_dualpipe_mtp=False) -> Union[DeepSeek4Model, megatron.legacy.model.GPTModel]:
     """Builds the model.
 
     If you set the use_mcore_models to True, it will return the mcore GPT model and if not the legacy GPT model.
@@ -51,7 +51,7 @@ def model_provider(pre_process=True, post_process=True, use_dualpipe_mtp=False) 
 
 
     Returns:
-        Union[Geneva2Model, megatron.legacy.model.Geneva2Model]: The returned model
+        Union[DeepSeek4Model, megatron.legacy.model.DeepSeek4Model]: The returned model
     """
     args = get_args()
     use_te = args.transformer_impl == "transformer_engine"
@@ -72,13 +72,16 @@ def model_provider(pre_process=True, post_process=True, use_dualpipe_mtp=False) 
             else:
                 transformer_layer_spec = get_gpt_layer_local_spec(args.num_experts, args.moe_grouped_gemm)
         mtp_block_spec = None
-        if args.mtp_num_layers is not None and use_dualpipe_mtp:
-            mtp_block_spec = get_gpt_mtp_block_spec(config, transformer_layer_spec, use_transformer_engine=use_te)
-            post_process = True
+        if args.mtp_num_layers is not None:
+            if args.mtp_spec is not None:
+                mtp_layer_spec = import_module(args.mtp_spec)
+            else:
+                mtp_layer_spec = transformer_layer_spec
+            mtp_block_spec = get_gpt_mtp_block_spec(config, mtp_layer_spec, use_transformer_engine=use_te)
 
         hc_head_spec = get_mhc_spec(args.enable_mhc)
 
-        model = Geneva2Model(
+        model = DeepSeek4Model(
             config=config,
             transformer_layer_spec=transformer_layer_spec,
             vocab_size=args.padded_vocab_size,
@@ -95,11 +98,8 @@ def model_provider(pre_process=True, post_process=True, use_dualpipe_mtp=False) 
             mtp_block_spec=mtp_block_spec,
             hc_head_spec=hc_head_spec
         )
-
-        print(f"===========model:{model}")
-
     else:
-        raise ValueError("Geneva2 model is only supported with Megatron Core!")
+        raise ValueError("DeepSeek4 model is only supported with Megatron Core!")
 
     return model
 
@@ -212,12 +212,12 @@ def loss_func(loss_mask: torch.Tensor, output_tensor: torch.Tensor):
     )
 
 
-def forward_step(data_iterator, model: Geneva2Model):
+def forward_step(data_iterator, model: DeepSeek4Model):
     """Forward training step.
 
     Args:
         data_iterator : Input data iterator
-        model (Geneva2Model): The GPT Model
+        model (DeepSeek4Model): The GPT Model
     """
     args = get_args()
     timers = get_timers()

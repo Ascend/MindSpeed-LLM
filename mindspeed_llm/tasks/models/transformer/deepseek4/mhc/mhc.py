@@ -40,9 +40,9 @@ from megatron.core.pipeline_parallel.schedules import (
 )
 
 from mindspeed_llm.core.tensor_parallel.layers import LinearNoTP
-from mindspeed_llm.tasks.models.transformer.geneva2.rmsnorm_without_weight import rmsnorm_without_weight_triton
-from mindspeed_llm.tasks.models.transformer.geneva2.mhc.sinkhorn import hc_split_sinkhorn_triton
-from mindspeed_llm.tasks.models.transformer.geneva2.mhc.mhc_triton import MHCPostTriton, MHCPreOnlyTriton, MhcPreBmm
+from mindspeed_llm.tasks.models.transformer.deepseek4.rmsnorm_without_weight import rmsnorm_without_weight_triton
+from mindspeed_llm.tasks.models.transformer.deepseek4.mhc.sinkhorn import hc_split_sinkhorn_triton
+from mindspeed_llm.tasks.models.transformer.deepseek4.mhc.mhc_triton import MHCPostTriton, MHCPreOnlyTriton, MhcPreBmm
 
 
 @dataclass

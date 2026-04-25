@@ -417,7 +417,7 @@ def build_train_args(*input_args):
 
 def get_model_provider_func(args, model_provider):
     # If with MTP and dualpipev, change model_provider func.
-    if args.spec and 'geneva2_spec' in args.spec[0]:
+    if args.spec and 'deepseek4_spec' in args.spec[0]:
         model_provider_func = model_provider
     elif args.mtp_num_layers is not None and args.schedules_method == "dualpipev":
         from mindspeed.core.pipeline_parallel.dualpipev.mtp_utils import model_provider_mtp

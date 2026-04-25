@@ -26,7 +26,7 @@ from megatron.training.utils import get_batch_on_this_cp_rank
 from mindspeed_llm.training.utils import get_mtp_batch_list
 from mindspeed.core.context_parallel.get_batch_utils import set_actual_seq_len, get_actual_seq_len, get_ring_degree
 from mindspeed.core.context_parallel.utils import pad_data
-from mindspeed_llm.tasks.models.transformer.geneva2.mhc.mhc import get_mhc_spec, hc_repeat
+from mindspeed_llm.tasks.models.transformer.deepseek4.mhc.mhc import get_mhc_spec, hc_repeat
 
 
 def mtp_reduce_loss_in_tracker():

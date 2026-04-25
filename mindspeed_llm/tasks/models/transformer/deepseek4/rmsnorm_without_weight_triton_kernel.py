@@ -1,5 +1,4 @@
-# Copyright (c) 2025, Huawei Technologies Co., Ltd.  All rights reserved.
-# Copyright (c) 2022-2025, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# Copyright (c) 2026, Huawei Technologies Co., Ltd.  All rights reserved.
 
 import torch
 import triton

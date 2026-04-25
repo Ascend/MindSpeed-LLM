@@ -22,8 +22,9 @@ TOKENIZER_PATH="your tokenizer path"
 CKPT_LOAD_DIR="your model ckpt path"
 
 TP=2
-PP=4
-EP=32
+PP=2
+VPP=11
+EP=64
 CP=1
 CP_TYPE='ulysses_cp_algo'
 NUM_LAYERS=44
@@ -67,7 +68,7 @@ MLA_ARGS="
     --mla-fa-without-pad \
 "
 
-G2_ARGS="
+CA_ARGS="
     --use-g2-attention \
     --o-groups 8 \
     --g2-window-size 128 \
@@ -76,7 +77,7 @@ G2_ARGS="
     --rope-factor 4 \
     --compress-rope-theta 40000.0 \
     --max-batch-size 4 \
-    --compress-ratios 1 1 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 \
+    --compress-ratios 0 0 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 \
     --use-g2-indexer-loss \
 "
 
@@ -100,7 +101,9 @@ MOE_ARGS="
     --moe-shared-expert-intermediate-size 2048 \
     --moe-router-dtype fp32 \
     --n-hash-layers 3 \
+    --fix-router \
     --moe-permute-fusion \
+    --moe-fb-overlap \
 "
 
 MTP_ARGS="
@@ -126,10 +129,12 @@ ROPE_ARGS="
     --rope-scaling-type yarn
 "
 
+
 GPT_ARGS="
     --noop-layers 43 \
     --transformer-impl local \
-    --spec mindspeed_llm.tasks.models.spec.geneva2_spec layer_spec \
+    --spec mindspeed_llm.tasks.models.spec.deepseek4_spec layer_spec \
+    --mtp-spec mindspeed_llm.tasks.models.spec.deepseek4_spec mtp_spec \
     --manual-gc \
     --manual-gc-interval 50 \
     --use-distributed-optimizer \
@@ -137,6 +142,7 @@ GPT_ARGS="
     --use-mcore-models \
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \
+    --num-layers-per-virtual-pipeline-stage ${VPP} \
     --expert-model-parallel-size ${EP} \
     --expert-tensor-parallel-size 1 \
     --sequence-parallel \
@@ -196,7 +202,6 @@ DATA_ARGS="
 
 OUTPUT_ARGS="
     --log-interval 1 \
-    --load ${CKPT_PATH} \
     --save-interval 2000 \
     --eval-interval 2000 \
     --eval-iters 0 \
@@ -204,16 +209,16 @@ OUTPUT_ARGS="
     --no-save-rng \
 "
 
-python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_geneva2.py \
+python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_deepseek4.py \
     $GPT_ARGS \
     $DATA_ARGS \
     $OUTPUT_ARGS \
     $MLA_ARGS \
     $ROPE_ARGS \
     $MOE_ARGS \
+    $MTP_ARGS \
     $DSA_ARGS \
-    $G2_ARGS \
+    $CA_ARGS \
     $MEM_ARGS \
-    --distributed-backend nccl 2>&1 | tee logs/pretrain_deepseek4_4k_A3_ptd.log
-
-
+    $PROF_ARGS \
+    --distributed-backend nccl 2>&1 | tee logs/pretrain_deepseek4_flash_4k_A3_ptd.log

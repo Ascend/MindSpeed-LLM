@@ -33,11 +33,11 @@ from mindspeed_llm.training.utils import set_actual_seq_len_list
 from mindspeed.core.context_parallel.get_batch_utils import get_actual_seq_len
 from mindspeed.utils import compute_qkv_index, get_position_ids
 from mindspeed_llm.core.models.common.chunk_loss import chunk_loss, calculate_lm_loss
-from mindspeed_llm.tasks.models.transformer.geneva2.mhc.mhc import MHC, hc_repeat
+from mindspeed_llm.tasks.models.transformer.deepseek4.mhc.mhc import MHC, hc_repeat
 from mindspeed_llm.core.models.common.embeddings.rotary_pos_embedding import apply_g2_rotary_embedding
 
 
-class Geneva2Model(MegatronCoreGPTModel):
+class DeepSeek4Model(MegatronCoreGPTModel):
     """
     patch megatron GPTModel
     """

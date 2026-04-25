@@ -13,7 +13,7 @@ from megatron.core.tensor_parallel.mappings import gather_from_sequence_parallel
 
 from mindspeed.core.fusions.fused_rms_norm import RMSNorm
 
-from mindspeed_llm.tasks.models.transformer.geneva2.deepseek_utils import apply_rotary_emb, rotate_activation
+from mindspeed_llm.tasks.models.transformer.deepseek4.deepseek_utils import apply_rotary_emb, rotate_activation
 from mindspeed_llm.core.tensor_parallel.layers import LinearNoTP
 from mindspeed_llm.core.context_parallel.kvallgather_context_parallel import gather_from_sp_cp, permute_cp_shard
 

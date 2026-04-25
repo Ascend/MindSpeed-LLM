@@ -28,11 +28,11 @@ class MHCFeature(MindSpeedFeature):
     def register_patches(self, patch_manager, args):
         if args.enable_mhc:
             # adapt mhc in PP stage
-            from mindspeed_llm.tasks.models.transformer.geneva2.mhc.mhc import get_tensor_shapes_in_mhc
+            from mindspeed_llm.tasks.models.transformer.deepseek4.mhc.mhc import get_tensor_shapes_in_mhc
             patch_manager.register_patch('megatron.core.pipeline_parallel.schedules.get_tensor_shapes', get_tensor_shapes_in_mhc)
             
             if getattr(args, "num_layers_per_virtual_pipeline_stage", False) and args.num_layers_per_virtual_pipeline_stage is not None:
-                from mindspeed_llm.tasks.models.transformer.geneva2.mhc.mhc import forward_backward_pipelining_with_interleaving_in_mhc
+                from mindspeed_llm.tasks.models.transformer.deepseek4.mhc.mhc import forward_backward_pipelining_with_interleaving_in_mhc
                 patch_manager.register_patch('megatron.core.pipeline_parallel.schedules.forward_backward_pipelining_with_interleaving', forward_backward_pipelining_with_interleaving_in_mhc)
 
     def validate_args(self, args):

@@ -36,7 +36,7 @@ def _is_mtp_ref(x: Any) -> bool:
     return isinstance(x, tuple) and len(x) == 2 and x[0] == "mtp" and isinstance(x[1], int)
 
 
-class Geneva2Hf2MgConvert(Hf2MgConvert):
+class DeepSeek4Hf2MgConvert(Hf2MgConvert):
 
     def __init__(self, args):
         super().__init__(args)
@@ -903,12 +903,12 @@ class Geneva2Hf2MgConvert(Hf2MgConvert):
         logger.info("Done!")
 
 
-class Geneva2Converter:
+class DeepSeek4Converter:
     def __init__(self, args):
         self.args = args
         self.args.save_layer_by_layer = True
 
     def run(self):
         if self.args.load_model_type == "hf":
-            convert = Geneva2Hf2MgConvert(self.args)
+            convert = DeepSeek4Hf2MgConvert(self.args)
         convert.run()

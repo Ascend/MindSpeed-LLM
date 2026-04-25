@@ -901,7 +901,7 @@
         "mtp_layers_shared_head_norm": "model.layers[layer_idx].shared_head.norm"
       }
     },
-    "geneva2": {
+    "deepseek4": {
       "__base__": "deepseek32",
       "config_set_value": {
         "qkv_type": "pack_mla",
@@ -912,7 +912,7 @@
         "first_k_dense_replace": 0,
         "n_hash_layers": 3,
         "save_layer_by_layer": true,
-        "compress_ratios": [1, 1, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4]
+        "compress_ratios": [0, 0, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4]
       },
       "config_hf_key_mapping": {
         "first_k_dense_replace": "None",
