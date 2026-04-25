@@ -32,7 +32,8 @@ class TransformerBlockFeature(MindSpeedFeature):
             raise AssertionError('--mc2 and coc can not be used together')
 
     def register_patches(self, patch_manager, args):
-        from mindspeed_llm.core.transformer.transformer_block import _transformer_block_build_layers, transformer_block_init_wrapper, transformer_block_forward
+        from mindspeed_llm.core.transformer.transformer_block import (_transformer_block_build_layers, transformer_block_init_wrapper,
+                                                                      transformer_block_forward)
         from mindspeed_llm.core.transformer.mlp import core_mlp_init_wrapper
 
         patch_manager.register_patch('megatron.core.transformer.transformer_block.TransformerBlock._build_layers',

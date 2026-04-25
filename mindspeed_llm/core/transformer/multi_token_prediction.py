@@ -26,6 +26,7 @@ from megatron.training.utils import get_batch_on_this_cp_rank
 from mindspeed_llm.training.utils import get_mtp_batch_list
 from mindspeed.core.context_parallel.get_batch_utils import set_actual_seq_len, get_actual_seq_len, get_ring_degree
 from mindspeed.core.context_parallel.utils import pad_data
+from mindspeed_llm.tasks.models.transformer.deepseek4.mhc.mhc import get_mhc_spec, hc_repeat
 
 
 def mtp_reduce_loss_in_tracker():
@@ -70,13 +71,23 @@ def mtp_layer_init_wrapper(fn):
             submodules,
             layer_number,
         )
+        self.transformer_layer = build_module(submodules.transformer_layer, config=self.config, is_mtp_layer=True)
+
         # fn move out of layer
         self.final_layernorm = None
 
         # set mtp_idx for tnd
         self.transformer_layer.mtp_idx = self.layer_number
         self.transformer_layer.self_attention.core_attention.mtp_idx = self.layer_number
-
+        args = get_args()
+        hc_head_spec = get_mhc_spec(args.enable_mhc)
+        self.hc_head_spec = hc_head_spec
+        self.hc_head = build_module(
+            self.hc_head_spec,
+            config=config,
+            mhc_position='head',
+            layer_number=-1
+        )
     return wrapper
 
 
@@ -92,7 +103,11 @@ def mtp_layer_forward(self,
         attention_bias: Tensor = None,
         inference_params: InferenceParams = None,
         packed_seq_params: PackedSeqParams = None,
-        sequence_len_offset: Tensor = None,):
+        sequence_len_offset: Tensor = None,
+        input_ids: Tensor = None,
+        pre_process: Tensor = None,
+        post_process: Tensor = None):
+    args = get_args()
     if context is not None:
         raise NotImplementedError(f"multi token prediction + cross attention is not yet supported.")
 
@@ -126,7 +141,10 @@ def mtp_layer_forward(self,
         # For sequence parallel, scatter after linear_fc and before transformer layer.
         if self.sequence_parallel:
             hidden_states = scatter_to_sequence_parallel_region(hidden_states)
+        if pre_process:
+            hidden_states = hc_repeat(hidden_states, args.enable_mhc, args.hc_mult)
         hidden_states, _ = self.transformer_layer(
+            input_ids=input_ids,
             hidden_states=hidden_states,
             attention_mask=attention_mask,
             context=context,
@@ -139,6 +157,8 @@ def mtp_layer_forward(self,
             packed_seq_params=packed_seq_params,
             sequence_len_offset=sequence_len_offset,
         )
+        if post_process:
+            hidden_states = self.hc_head(hidden_states, mhc_stage='head')
 
     return hidden_states
 
@@ -186,6 +206,8 @@ def mtp_block_forward(
     output_layer=None,
     output_weight: Optional[torch.Tensor] = None,
     compute_language_model_loss=None,
+    pre_process: Tensor = None,
+    post_process: Tensor = None
 ) -> Tensor:
     """
     Perform the forward pass through all of the MTP modules.
@@ -218,6 +240,7 @@ def mtp_block_forward(
         decoder_input = embedding(input_ids=input_ids, position_ids=position_ids)
         # norm, linear projection and transformer
         hidden_states = self.layers[layer_number](
+            input_ids=input_ids,
             decoder_input=decoder_input,
             hidden_states=hidden_states,
             attention_mask=attention_mask,
@@ -227,6 +250,8 @@ def mtp_block_forward(
             rotary_pos_sin=rotary_pos_sin,
             packed_seq_params=packed_seq_params,
             sequence_len_offset=sequence_len_offset,
+            pre_process=pre_process,
+            post_process=post_process,
             **(extra_block_kwargs or {}),
         )
         # Layer norm before shared head layer.

@@ -206,7 +206,7 @@ def _transformer_block_build_layers(self):
     )
 
     # mtp require seperate layernorms for main model and mtp modules, thus move finalnorm out of block
-    init_block_fn_flag = self.post_layer_norm and not args.mtp_num_layers
+    init_block_fn_flag = self.post_layer_norm and not args.mtp_num_layers and not args.enable_mhc
     if self.submodules.layer_norm and self.post_process and init_block_fn_flag:
         self.final_layernorm = build_module(
             self.submodules.layer_norm,
@@ -253,7 +253,9 @@ def transformer_block_forward(
     inference_context: Optional[BaseInferenceContext] = None,
     packed_seq_params: PackedSeqParams = None,
     sequence_len_offset: Tensor = None,
+    input_ids: Tensor = None,
 ):
+    args = get_args()
     # hidden_states (float): [s, b, h]
     # attention_mask (bool): [1, 1, s, s]
     inference_context = deprecate_inference_params(inference_context, inference_params)
@@ -315,27 +317,53 @@ def transformer_block_forward(
                 kwargs['use_inner_fp8_context'] = use_inner_fp8_context
 
             if global_args.share_kvstates:
-                hidden_states, key_value_states = self._checkpointed_forward(
-                    hidden_states=hidden_states,
-                    attention_mask=attention_mask,
-                    key_value_states=key_value_states,
-                    context=context,
-                    context_mask=context_mask,
-                    rotary_pos_emb=rotary_pos_emb,
-                    packed_seq_params=packed_seq_params,
-                    **kwargs
-                )
+                if args.n_hash_layers >= 1:
+                    hidden_states, key_value_states = self._checkpointed_forward(
+                        hidden_states=hidden_states,
+                        attention_mask=attention_mask,
+                        key_value_states=key_value_states,
+                        context=context,
+                        context_mask=context_mask,
+                        rotary_pos_emb=rotary_pos_emb,
+                        packed_seq_params=packed_seq_params,
+                        input_ids=input_ids,
+                        **kwargs
+                    )
+                else:
+                    hidden_states, key_value_states = self._checkpointed_forward(
+                        hidden_states=hidden_states,
+                        attention_mask=attention_mask,
+                        key_value_states=key_value_states,
+                        context=context,
+                        context_mask=context_mask,
+                        rotary_pos_emb=rotary_pos_emb,
+                        packed_seq_params=packed_seq_params,
+                        **kwargs
+                    )
             else:
-                hidden_states = self._checkpointed_forward(
-                    hidden_states=hidden_states,
-                    attention_mask=attention_mask,
-                    context=context,
-                    context_mask=context_mask,
-                    rotary_pos_emb=rotary_pos_emb,
-                    attention_bias=None,
-                    packed_seq_params=packed_seq_params,
-                    **kwargs
-                )
+                if args.n_hash_layers >= 1:
+                    hidden_states = self._checkpointed_forward(
+                        hidden_states=hidden_states,
+                        attention_mask=attention_mask,
+                        context=context,
+                        context_mask=context_mask,
+                        rotary_pos_emb=rotary_pos_emb,
+                        attention_bias=None,
+                        packed_seq_params=packed_seq_params,
+                        input_ids=input_ids,
+                        **kwargs
+                    )
+                else:
+                    hidden_states = self._checkpointed_forward(
+                        hidden_states=hidden_states,
+                        attention_mask=attention_mask,
+                        context=context,
+                        context_mask=context_mask,
+                        rotary_pos_emb=rotary_pos_emb,
+                        attention_bias=None,
+                        packed_seq_params=packed_seq_params,
+                        **kwargs
+                    )  
         else:
             for _, layer in enumerate(self.layers):
                 inner_fp8_context = (
@@ -345,29 +373,57 @@ def transformer_block_forward(
                 )
                 with self.offload_context, inner_fp8_context:
                     if global_args.share_kvstates:
-                        hidden_states, context, key_value_states = layer(
-                            hidden_states=hidden_states,
-                            attention_mask=attention_mask,
-                            key_value_states=key_value_states,
-                            context=context,
-                            context_mask=context_mask,
-                            rotary_pos_emb=rotary_pos_emb,
-                            rotary_pos_cos=rotary_pos_cos,
-                            rotary_pos_sin=rotary_pos_sin,
-                            inference_context=inference_context,
-                            packed_seq_params=packed_seq_params,
-                            sequence_len_offset=sequence_len_offset,
-                        )
+                        if args.n_hash_layers >= 1:
+                            hidden_states, context, key_value_states = layer(
+                                hidden_states=hidden_states,
+                                attention_mask=attention_mask,
+                                key_value_states=key_value_states,
+                                context=context,
+                                context_mask=context_mask,
+                                rotary_pos_emb=rotary_pos_emb,
+                                rotary_pos_cos=rotary_pos_cos,
+                                rotary_pos_sin=rotary_pos_sin,
+                                inference_context=inference_context,
+                                packed_seq_params=packed_seq_params,
+                                sequence_len_offset=sequence_len_offset,
+                                input_ids=input_ids,
+                            )
+                        else:
+                            hidden_states, context, key_value_states = layer(
+                                hidden_states=hidden_states,
+                                attention_mask=attention_mask,
+                                key_value_states=key_value_states,
+                                context=context,
+                                context_mask=context_mask,
+                                rotary_pos_emb=rotary_pos_emb,
+                                rotary_pos_cos=rotary_pos_cos,
+                                rotary_pos_sin=rotary_pos_sin,
+                                inference_context=inference_context,
+                                packed_seq_params=packed_seq_params,
+                                sequence_len_offset=sequence_len_offset,
+                            )                 
                     else:
-                        hidden_states, context = layer(
-                            hidden_states=hidden_states,
-                            attention_mask=attention_mask,
-                            context=context,
-                            context_mask=context_mask,
-                            rotary_pos_emb=rotary_pos_emb,
-                            inference_context=inference_context,
-                            packed_seq_params=packed_seq_params,
-                        )
+                        if args.n_hash_layers >= 1:
+                            hidden_states, context = layer(
+                                hidden_states=hidden_states,
+                                attention_mask=attention_mask,
+                                context=context,
+                                context_mask=context_mask,
+                                rotary_pos_emb=rotary_pos_emb,
+                                inference_context=inference_context,
+                                packed_seq_params=packed_seq_params,
+                                input_ids=input_ids,
+                            )
+                        else:
+                            hidden_states, context = layer(
+                                hidden_states=hidden_states,
+                                attention_mask=attention_mask,
+                                context=context,
+                                context_mask=context_mask,
+                                rotary_pos_emb=rotary_pos_emb,
+                                inference_context=inference_context,
+                                packed_seq_params=packed_seq_params,
+                            )
 
                 if (
                         torch.is_grad_enabled()
@@ -383,6 +439,105 @@ def transformer_block_forward(
     return hidden_states
 
 
+def _checkpointed_forward_patch_input_ids(
+        self,
+        hidden_states: Tensor,
+        attention_mask: Tensor,
+        context: Tensor,
+        context_mask: Tensor,
+        rotary_pos_emb: Tensor,
+        attention_bias: Tensor,
+        packed_seq_params: PackedSeqParams,
+        input_ids: torch.Tensor = None,
+    ):
+        """Forward method with activation checkpointing."""
+
+        def custom(start: int, end: int):
+            def custom_forward(
+                hidden_states, attention_mask, context, context_mask, rotary_pos_emb, input_ids = None,
+            ):
+                for index in range(start, end):
+                    layer = self._get_layer(index)
+                    hidden_states, context = layer(
+                        hidden_states=hidden_states,
+                        attention_mask=attention_mask,
+                        context=context,
+                        context_mask=context_mask,
+                        rotary_pos_emb=rotary_pos_emb,
+                        attention_bias=attention_bias,
+                        inference_context=None,
+                        packed_seq_params=packed_seq_params,
+                        input_ids=input_ids,
+                    )
+                return hidden_states, context
+
+            return custom_forward
+
+        def checkpoint_handler(forward_func, input_ids: torch.Tensor = None):
+            """Determines whether to use the `te_checkpoint` or `tensor_parallel.checkpoint`"""
+            if self.config.fp8:
+                return te_checkpoint(
+                    forward_func,
+                    self.config.distribute_saved_activations,
+                    tensor_parallel.random.get_cuda_rng_tracker,
+                    parallel_state.get_tensor_model_parallel_group(),
+                    hidden_states,
+                    attention_mask,
+                    context,
+                    context_mask,
+                    rotary_pos_emb,
+                    input_ids
+                )
+            else:
+                return tensor_parallel.checkpoint(
+                    forward_func,
+                    self.config.distribute_saved_activations,
+                    hidden_states,
+                    attention_mask,
+                    context,
+                    context_mask,
+                    rotary_pos_emb,
+                    input_ids
+                )
+
+        if self.config.recompute_method == 'uniform':
+            # Uniformly divide the total number of Transformer layers and checkpoint
+            # the input activation of each divided chunk.
+            # A method to further reduce memory usage reducing checkpoints.
+            layer_idx = 0
+            while layer_idx < self.num_layers_per_pipeline_rank:
+                hidden_states, context = checkpoint_handler(
+                    custom(layer_idx, layer_idx + self.config.recompute_num_layers), input_ids
+                )
+
+                layer_idx += self.config.recompute_num_layers
+
+        elif self.config.recompute_method == 'block':
+            # Checkpoint the input activation of only a set number of individual
+            # Transformer layers and skip the rest.
+            # A method fully use the device memory removing redundant re-computation.
+            recompute_skip_num_layers = 0
+            for layer_idx in range(self.num_layers_per_pipeline_rank):
+                # Skip recomputation when input grad computation is not needed.
+                # Need to have at least one input tensor with gradient computation
+                # for re-enterant autograd engine.
+                if self.config.fp8 and not hidden_states.requires_grad:
+                    recompute_skip_num_layers += 1
+                if (
+                    layer_idx >= recompute_skip_num_layers
+                    and layer_idx < self.config.recompute_num_layers + recompute_skip_num_layers
+                ):
+                    hidden_states, context = checkpoint_handler(custom(layer_idx, layer_idx + 1), input_ids)
+                else:
+                    hidden_states, context = custom(layer_idx, layer_idx + 1)(
+                        hidden_states, attention_mask, context, context_mask, rotary_pos_emb, input_ids
+                    )
+        else:
+            raise ValueError("Invalid activation recompute method.")
+
+        return hidden_states
+
+
 def _block_method_checkpointed_forward_func(
         self,
         hidden_states: Tensor,
@@ -391,6 +546,7 @@ def _block_method_checkpointed_forward_func(
         context_mask: Tensor,
         rotary_pos_emb: Tensor,
         packed_seq_params: PackedSeqParams,
+        input_ids: Tensor = None,
 ):
     """
         Forward method with activation checkpointing.
@@ -408,6 +564,7 @@ def _block_method_checkpointed_forward_func(
                 context_mask,
                 rotary_pos_emb,
                 packed_seq_params,
+                input_ids: torch.Tensor = None,
         ):
             for index in range(start, end):
                 layer = self._get_layer(index)
@@ -420,6 +577,7 @@ def _block_method_checkpointed_forward_func(
                     inference_params=None,
                     inference_context=None,
                     packed_seq_params=packed_seq_params,
+                    input_ids=input_ids,
                 )
             return hidden_states, context
 
@@ -454,6 +612,7 @@ def _block_method_checkpointed_forward_func(
                 context_mask,
                 rotary_pos_emb,
                 packed_seq_params,
+                input_ids,
             )
 
     return hidden_states

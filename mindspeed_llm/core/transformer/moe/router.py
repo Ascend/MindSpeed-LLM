@@ -30,6 +30,7 @@ from megatron.core.transformer.moe.moe_utils import topk_softmax_with_capacity
 from mindspeed.core.tensor_parallel.random import CheckpointWithoutOutput
 
 from mindspeed_llm.tasks.models.common.pai_megatron import pai_megatron_aux_loss
+from mindspeed_llm.core.transformer.moe.moe_utils import topk_softmax_with_capacity_and_hash
 
 
 def group_limited_greedy_topKgating(self, logits: torch.Tensor):
@@ -360,6 +361,19 @@ def sparsemixer_top2(self, scores, jitter_eps=0.01):
     )
 
 
+def topk_router_build_hash_module(self):
+    mg_args = get_args()
+
+    self.hash = self.layer_number <= mg_args.n_hash_layers
+    if self.hash:
+        # self.tid2eid   hash    [vocab_size, top_k]
+        self.tid2eid = torch.nn.Parameter(
+            torch.stack([torch.randperm(mg_args.moe_router_topk) for _ in range(mg_args.padded_vocab_size)]),
+            requires_grad=False
+        )
+        self.expert_bias = None
+
+
 def topk_router_init_wrapper(function):
     @wraps(function)
     def topk_router_init(self, *args, **kwargs):
@@ -393,8 +407,28 @@ def topk_router_init_wrapper(function):
             mg_args.expert_model_parallel_size)
         self.topk_group = mg_args.moe_router_group_topk
         self.norm_topk_prob = mg_args.norm_topk_prob
+        setattr(self.__class__, 'build_hash_module', topk_router_build_hash_module)
 
     return topk_router_init
+
+
+def topk_router_forward_patch(self, input: torch.Tensor, input_ids: torch.Tensor = None):
+        """
+        patch for TopKRouter forward
+
+        Args:
+            input (torch.Tensor): Input tensor.
+            input_ids (torch.Tensor): Input ids.
+        """
+        self._maintain_float32_expert_bias()
+
+        # Apply input jitter
+        input = self.apply_input_jitter(input)
+        logits = self.gating(input)
+
+        scores, routing_map = self.routing(logits, input_ids)
+
+        return scores, routing_map
 
 
 def apply_seq_aux_loss(self, activation, logits, topk_idx):
@@ -413,6 +447,11 @@ def apply_seq_aux_loss(self, activation, logits, topk_idx):
         scores = torch.softmax(logits, dim=-1)
     elif self.score_function == "sigmoid":
         scores = torch.sigmoid(logits)
+        if self.expert_bias is not None:
+            scores = scores + self.expert_bias
+        scores = scores / (scores.sum(dim=-1, keepdim=True) + 1e-20)
+    elif self.score_function == "sqrtsoftplus": 
+        scores = F.softplus(logits).sqrt()
         if self.expert_bias is not None:
             scores = scores + self.expert_bias
         scores = scores / (scores.sum(dim=-1, keepdim=True) + 1e-20)
@@ -482,7 +521,7 @@ def topk_router_gating_func(self, input: torch.Tensor):
     return logits
 
 
-def topk_router_routing(self, logits: torch.Tensor):
+def topk_router_routing(self, logits: torch.Tensor, input_ids: torch.Tensor = None):
     """Top-k routing function
 
     Args:
@@ -543,21 +582,40 @@ def topk_router_routing(self, logits: torch.Tensor):
     elif self.routing_type == "sparsemixer_topk":
         scores, routing_map = sparsemixer_top2(self, logits)
     elif self.routing_type == "none":
-        # A naive top-k routing without load balancing
-        scores, routing_map, _ = topk_softmax_with_capacity(
-            logits,
-            self.topk,
-            capacity_factor=self.config.moe_expert_capacity_factor,
-            pad_to_capacity=self.config.moe_pad_expert_input_to_capacity,
-            drop_policy=self.config.moe_token_drop_policy,
-            use_pre_softmax=self.config.moe_router_pre_softmax,
-            num_groups=self.config.moe_router_num_groups,
-            group_topk=self.config.moe_router_group_topk,
-            scaling_factor=self.config.moe_router_topk_scaling_factor,
-            deterministic_mode=self.config.deterministic_mode,
-            score_function=self.score_function,
-            expert_bias=self.expert_bias,
-        )
+        if args.n_hash_layers >= 1:
+            scores, routing_map, _ = topk_softmax_with_capacity_and_hash(
+                logits,
+                self.topk,
+                capacity_factor=self.config.moe_expert_capacity_factor,
+                pad_to_capacity=self.config.moe_pad_expert_input_to_capacity,
+                drop_policy=self.config.moe_token_drop_policy,
+                use_pre_softmax=self.config.moe_router_pre_softmax,
+                num_groups=self.config.moe_router_num_groups,
+                group_topk=self.config.moe_router_group_topk,
+                scaling_factor=self.config.moe_router_topk_scaling_factor,
+                deterministic_mode=self.config.deterministic_mode,
+                score_function=self.score_function,
+                expert_bias=self.expert_bias,
+                token_hash=self.hash if hasattr(self, "hash") else None,
+                tid2eid=self.tid2eid if hasattr(self, "tid2eid") else None,
+                input_ids=input_ids,
+            )
+        else:
+            # A naive top-k routing without load balancing
+            scores, routing_map, _ = topk_softmax_with_capacity(
+                logits,
+                self.topk,
+                capacity_factor=self.config.moe_expert_capacity_factor,
+                pad_to_capacity=self.config.moe_pad_expert_input_to_capacity,
+                drop_policy=self.config.moe_token_drop_policy,
+                use_pre_softmax=self.config.moe_router_pre_softmax,
+                num_groups=self.config.moe_router_num_groups,
+                group_topk=self.config.moe_router_group_topk,
+                scaling_factor=self.config.moe_router_topk_scaling_factor,
+                deterministic_mode=self.config.deterministic_mode,
+                score_function=self.score_function,
+                expert_bias=self.expert_bias,
+            )
         args = get_args()
         if self.training and args.seq_aux:
             scores = apply_seq_aux_loss(self,
@@ -729,3 +787,25 @@ def global_load_balancing_loss_func(router_logits, attention_mask, config):
     overall_loss = torch.sum(tokens_per_expert * router_prob_per_expert.unsqueeze(0))
 
     return overall_loss * num_experts
+
+# TODO remove it when megatron support sqrtsoftplus
+def transformer_config_post_init_wrapper(fn): 
+    @wraps(fn)  
+    def wrapper(self):  #
+        allowed_score_function = {"softmax", "sigmoid", "sqrtsoftplus"}
+        bypass_flag = (
+            getattr(self, "moe_router_enable_expert_bias", False)
+            and getattr(self, "moe_router_score_function", None) in allowed_score_function
+            and getattr(self, "moe_router_score_function", None) != "sigmoid"
+        )
+        if not bypass_flag:
+            return fn(self)  
+        old_score_fn = self.moe_router_score_function
+        try:
+            # bypass megatron's check
+            self.moe_router_score_function = "sigmoid"
+            return fn(self) 
+        finally:
+            # restore user's config
+            self.moe_router_score_function = old_score_fn
+    return wrapper  

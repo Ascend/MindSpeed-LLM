@@ -23,7 +23,12 @@ from transformers.modeling_rope_utils import ROPE_INIT_FUNCTIONS, dynamic_rope_u
 from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS, PreTrainedModel
 from transformers.utils import TransformersKwargs, auto_docstring, can_return_tuple
 from transformers.utils.deprecation import deprecate_kwarg
-from transformers.utils.generic import OutputRecorder, check_model_inputs
+try:
+    from transformers.utils.generic import OutputRecorder, check_model_inputs
+except ImportError:
+    # adapt for transformers 5.x
+    from transformers.utils.output_capturing import OutputRecorder, capture_outputs
+    check_model_inputs = capture_outputs
 from mindspeed.core.fusions.grouped_matmul import Ops
 from mindspeed.ops.npu_moe_token_permute import npu_moe_token_permute
 from mindspeed.ops.npu_moe_token_unpermute import npu_moe_token_unpermute

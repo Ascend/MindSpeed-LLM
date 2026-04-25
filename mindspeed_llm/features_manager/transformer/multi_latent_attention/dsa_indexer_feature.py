@@ -27,6 +27,26 @@ class DSAIndexerFeature(MindSpeedFeature):
         group.add_argument('--use-fused-lightning-indexer-loss', action='store_true', default=False,
                            help='Use fused fused operator in lightning indexer.')
 
+        # compress arguments
+        group.add_argument('--kv-compress', action='store_true', default=False,
+                           help='Apply compress to kv computations.')
+        group.add_argument('--compress-ratios', type=int, nargs='+', default=None,
+                           help='Compress ratios of layers.')
+        group.add_argument('--rope-head-dim', type=int, default=64,
+                           help='rope head dim.')
+        group.add_argument('--norm-eps', type=float, default=1e-6,
+                           help='norm-eps.')
+        group.add_argument('--max-batch-size', type=int, default=4,
+                           help='rope head dim.')
+        group.add_argument('--original-seq-len', type=int, default=65536,
+                           help='')
+        group.add_argument('--compress-rope-theta', type=float, default=40000.0,
+                           help='')
+        group.add_argument('--rope-theta', type=float, default=10000.0,
+                           help='')
+        group.add_argument('--rope-factor', type=float, default=4.0,
+                           help='')
+                           
     def validate_args(self, args):
         if args.enable_dsa_indexer:
             if not args.multi_latent_attention:
@@ -46,6 +66,9 @@ class DSAIndexerFeature(MindSpeedFeature):
             from mindspeed_llm.tasks.models.transformer.dsa_indexer import forward_step_dsa_wrapper
             patch_manager.register_patch('megatron.core.pipeline_parallel.schedules.forward_step',
                                          forward_step_dsa_wrapper)
+            if args.moe_fb_overlap:
+                patch_manager.register_patch('mindspeed.core.transformer.moe.moe_feature.fb_overlap.vpp_schedules.forward_step',
+                                            forward_step_dsa_wrapper)
 
         if args.init_norm_weight_in_fp32:
             from mindspeed_llm.tasks.models.transformer.dsa_indexer import norm2fp32_fp16module_init_wrapper

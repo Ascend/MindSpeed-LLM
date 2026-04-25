@@ -61,6 +61,11 @@ class MegatronBasicFeature(MindSpeedMegatronBasicFeature):
         pm.register_patch('megatron.core.distributed.param_and_grad_buffer._ParamAndGradBucketGroup.finish_grad_sync',
                            finish_grad_sync)
 
+        # fix param_and_grad_buffer when model having multi-bucket and MTP
+        from mindspeed_llm.core.distributed.param_and_grad_buffer import param_and_grad_buffer_init
+        pm.register_patch('megatron.core.distributed.param_and_grad_buffer._ParamAndGradBuffer.__init__',
+                           param_and_grad_buffer_init)
+
         # fix duplicate all-gather
         from mindspeed.core.optimizer.fix_duplicate_allgather import start_param_sync
         from mindspeed.core.optimizer.fix_duplicate_allgather import step_with_ready_grads_distrib_opti_wrapper
@@ -84,6 +89,9 @@ class MegatronBasicFeature(MindSpeedMegatronBasicFeature):
 
         from mindspeed_llm.core import TransformerLayer
         pm.register_patch('megatron.core.transformer.transformer_layer.TransformerLayer', TransformerLayer)
+
+        from mindspeed_llm.core.transformer.transformer_layer import CustomTransformerLayerSubmodules
+        pm.register_patch('megatron.core.transformer.transformer_layer.TransformerLayerSubmodules', CustomTransformerLayerSubmodules)
 
     def register_non_mcore_basic_patches(self, pm, args):
         # args parser patch

@@ -10,6 +10,9 @@ class MultiTokenPredictionFeature(MindSpeedFeature):
 
         group.add_argument('--mtp-mem-efficient-logits', action='store_true', default=False,
                             help='Optimize ce_loss memory when use mtp block.')
+        group.add_argument('--mtp-spec', type=str, default=None, nargs='*',
+                            help='Specify the <module_location function_name> pair '
+                                 'that returns a spec to customize transformer layer, depending on the use case.')
 
     def register_patches(self, patch_manager, args):
         import megatron
