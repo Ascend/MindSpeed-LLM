@@ -19,6 +19,7 @@
 
 - 原始样本不上云：PP并行支持模型U-shape切分，模型首尾层同时部署在边侧，云侧无需读取样本；
 - 跨域协同训练性能优化：通过流水编排优化和计算通信掩盖，实现边云跨域连接场景的高效训练。
+- 边云卡数不一致：支持 TP 不对等的p2p通信模式，实现边侧与云侧卡数不一致的训练；
 
 ### 方案原理
 
@@ -55,21 +56,40 @@
 | 阶段| 操作 | 次数 | 案例计算结果 |
 | --- | --- | --- | --- |
 | warmup | FS | PP+1 | 4 |
-| steady state 1  | FEBS | floor((PP-1)*2/3 - 1/2 + 2) | 2 |
-| steady state 2  | FS-FE-BS-BE | mbn - floor((PP-1)*2/3 - 1/2 + 2) | 2 |
+| steady state 1 | FEBS | floor((PP-1)*2/3 - 1/2 + 2) | 2 |
+| steady state 2 | FS-FE-BS-BE | mbn - floor((PP-1)*2/3 - 1/2 + 2) | 2 |
 | cooldown | BE | floor((PP-1)*2/3 - 1/2 + 2) | 2|
 
 效果：以上流水编排方案可保证稳态运行阶段（steady state）不引入额外空泡。当边云通信时延小于 tf（边侧单个microbatch的前向计算时间）时，稳态运行阶段无额外空泡（warmup/cooldown阶段有少量额外空泡）。
+
+### 非对称TP
+
+功能说明：针对边侧算力卡数量不足的情况，支持边侧TP小于云侧TP。
+
+非对称TP实现逻辑：在对称TP的P2P通信模式下，每张卡会与同一PP组上的相邻卡进行通信（以PP=2，TP=8为例，前向传播通信方式为0->8, 1->9, 2->10, ...）。不同于对称TP，非对称TP的P2P通信模式如下：
+
+- 步骤1：当前TP组内编号最小的卡将数据传输给下一个TP组内编号最小的卡；
+- 步骤2：下一TP组内编号最小的卡在接收到数据后，通过broadcast将数据共享给TP组内的全部卡。
+
+案例：PP=2，TP=8，对称TP
+
+![image](../../figures/ldt_sft/ldt_tp.png 'ldt_tp.png') 
+
+案例：PP=2，TP=4/TP=8，非对称TP
+
+![image](../../figures/ldt_sft/ldt_vtp.png 'ldt_vtp.png') 
+
+效果：由于在进行P2P通信之前，megatron现有逻辑会提前在TP组内完成AR通信，因此仅通过单卡进行通信即可将完整的数据传递给下一级PP，以上P2P通信方式可保证非对称TP下跨流水线层级通信的正确性。
 
 ## 使用方法
 
 详细操作指导详见：[使用说明](../../training/finetune/mcore/layerwise_disaggregated_training.md)
 
-| 重要参数                                  | 参数说明                                                            |
+| 重要参数 | 参数说明 |
 |---------------------------------------|-----------------------------------------------------------------|
-| --layerwise-disaggregated-training    | 开启边云协同分布式安全训练 |
-| --num-layer-list [str]    | 配置非均匀PP切分，传参为各级流水的隐藏层数`L0,...,LPP`，其中L0和LPP表示首尾隐藏层数，分别传参。 |
-| --num-virtual-stages-per-pipeline-rank [int]         | 配置虚拟Pipeline Stage数，必须配置为`2`。
+| --layerwise-disaggregated-training | 开启边云协同分布式安全训练 |
+| --num-layer-list [str] | 配置非均匀PP切分，传参为各级流水的隐藏层数`L0,...,LPP`，其中L0和LPP表示首尾隐藏层数，分别传参。 |
+| --num-virtual-stages-per-pipeline-rank [int] | 配置虚拟Pipeline Stage数，必须配置为`2`。
 
 ## 使用约束
 
@@ -77,9 +97,9 @@
 
 - 支持以下qwen2.5/qwen3系列的LLM模型：
 
-| 模型类型                                  | 具体模型                                                            |
+| 模型类型 | 具体模型 |
 |---------------------------------------|-----------------------------------------------------------------|
-| LLM    | qwen3-32B, qwen2.5-32B, qwen2.5-72B |
+| LLM | qwen3-32B, qwen2.5-32B, qwen2.5-72B |
 
 - 暂不支持MoE模型。
 
