@@ -41,6 +41,12 @@ from mindspeed_llm.tasks.posttrain.utils import load_checkpoint_loosely
 from mindspeed_llm.tasks.checkpoint.convert_hf2mg import Hf2MgConvert
 from mindspeed_llm.tasks.checkpoint.convert_mg2hf import Mg2HfConvert
 from mindspeed_llm.tasks.checkpoint.convert_ckpt_mamba2 import MambaConverter
+from mindspeed_llm.training.progressive_block_freeze import (
+    FREEZE_STATE_KEY,
+    get_state_dict as get_progressive_block_freeze_state_dict,
+    is_enabled as is_progressive_block_freeze_enabled,
+    load_state_dict as load_progressive_block_freeze_state_dict,
+)
 try:
     from modelopt.torch.opt.plugins import (
         save_modelopt_state,
@@ -80,6 +86,8 @@ def _load_base_checkpoint_wrapper(fn):
         if getattr(args_, 'is_load_refer', False):
             kwargs['checkpointing_context'] = args_.refer_model_iter
         state_dict, checkpoint_name, release, ckpt_type = fn(*args, **kwargs)
+        if state_dict is not None and is_progressive_block_freeze_enabled(args_):
+            load_progressive_block_freeze_state_dict(state_dict.get(FREEZE_STATE_KEY), args_)
         rank0 = kwargs.pop('rank0')
         if is_enable_lora() and state_dict is not None:
             words_to_match = {'weight': 'base_layer.weight', 'bias': 'base_layer.bias'}
@@ -293,6 +301,10 @@ def save_checkpoint_wrapper(fn):
 
             # Record accumulated FLOPs for resume and training statistics.
             state_dict['num_floating_point_operations_so_far'] = num_floating_point_operations_so_far
+            if is_progressive_block_freeze_enabled(args):
+                freeze_state = get_progressive_block_freeze_state_dict(args)
+                if freeze_state is not None:
+                    state_dict[FREEZE_STATE_KEY] = freeze_state
             if args.use_dist_ckpt:
                 # Distributed save: rank0 creates directory; other ranks write their shards.
                 if not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0:
@@ -484,4 +496,3 @@ def _convert_weights_mg2hf(args, iteration):
         logger.info(f"[Convert] Weight conversion completed, time elapsed: {time.time() - start:.2f}s")
     dist.barrier()
     return
-
