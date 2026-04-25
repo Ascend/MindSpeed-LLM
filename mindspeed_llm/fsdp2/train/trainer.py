@@ -432,6 +432,8 @@ class Trainer:
         if self.parallel_args.cp_size > 1:
             if self.parallel_args.cp_type == "ulysses":
                 return self._get_batch_samples_ulysses
+            elif self.parallel_args.cp_type == "ring":
+                return self._get_batch_samples_megatron
             else:
                 raise ValueError(f"Unsupported cp_type: '{self.parallel_args.cp_type}' when cp_size > 1.")
         else:
@@ -480,6 +482,55 @@ class Trainer:
                         val_sliced = val_sliced.contiguous()
                     device = torch.accelerator.current_device()
                     sample[key] = val_sliced.to(device, non_blocking=True)
+
+        return batch, batch_seqlens, num_items_in_batch
+
+    def _get_batch_samples_megatron(self, parallel_state, epoch_iterator, num_batches):
+
+        cp_size = parallel_state.get_group_size("cp")
+        cp_rank = parallel_state.get_rank("cp")
+        batch, batch_seqlens, num_items_in_batch = self._get_batch_samples(parallel_state, epoch_iterator, num_batches)
+
+        for sample in batch:
+            # ===================== Original logic: generate shift_labels =====================
+            labels = torch.nn.functional.pad(sample['labels'], (0, 1), value=IGNORE_INDEX)
+            shift_labels = labels[..., 1:]
+            sample['shift_labels'] = shift_labels
+            
+            # Original logic: generate position_ids
+            if "position_ids" not in sample:
+                position_ids = torch.arange(0, shift_labels.shape[1], device=shift_labels.device).unsqueeze(0)
+                sample['position_ids'] = position_ids
+
+            # ===================== Core modification: Replace with Ring CP load-balanced splitting =====================
+            for key, val in sample.items():
+                # Skip attention_mask
+                if key == 'attention_mask':
+                    continue
+                if val is not None:
+                    seq_dim = 1  # Fixed sequence dimension, consistent with reference code
+                    
+                    # ========== Core logic of Ring CP load-balanced splitting (fully aligned with reference code) ==========
+                    # 1. Reshape: [bs, seq_len, ...] -> [bs, 2*cp_size, seq_len/(2*cp_size), ...]
+                    val = val.view(
+                        *val.shape[0:seq_dim],
+                        2 * cp_size,
+                        val.shape[seq_dim] // (2 * cp_size),
+                        *val.shape[(seq_dim + 1):],
+                    )
+                    # 2. Generate ring symmetric indices (core of load balancing)
+                    index = torch.tensor([cp_rank, (2 * cp_size - cp_rank - 1)], device=val.device)
+                    # 3. Select tensor by indices
+                    val = val.index_select(seq_dim, index)
+                    # 4. Merge dimensions and restore shape
+                    val = val.view(*val.shape[0:seq_dim], -1, *val.shape[(seq_dim + 2):])
+                    # ====================================================================================================
+
+                    # ===================== Original logic: Contiguous + device migration =====================
+                    if key == 'shift_labels':
+                        val = val.contiguous()
+                    device = torch.accelerator.current_device()
+                    sample[key] = val.to(device, non_blocking=True)
 
         return batch, batch_seqlens, num_items_in_batch
 

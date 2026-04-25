@@ -379,13 +379,12 @@ class ParallelArguments:
         default=1,
         metadata={"help": "context parallel size."}
     )
-
-    cp_type: Literal["ulysses"] = field(
+    cp_type: Literal["ulysses", "ring"] = field(
         default="ulysses",
         metadata={"help": "Use context parallel algo."},
     )
     fsdp_modules: List[str] = field(
-        default_factory=lambda:['model.layers.{*}', 'model.embed_tokens', 'lm_head'],
+        default_factory=lambda: ['model.layers.{*}', 'model.embed_tokens', 'lm_head'],
         metadata={"help": "Model structure of layers with Fully Sharded Data Parallel."},
     )
     ignored_modules: List[str] = field(

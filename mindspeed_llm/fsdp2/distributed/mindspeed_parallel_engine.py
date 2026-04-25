@@ -8,7 +8,7 @@ from mindspeed.fsdp.distributed.tensor_parallel.tensor_parallel import tensor_pa
 from mindspeed.fsdp.memory.recompute.recompute import recompute_modules
 from mindspeed_llm.fsdp2.distributed.parallel_state import init_parallel_state
 from mindspeed_llm.fsdp2.distributed.parallel_engine_config import ParallelEngineConfig
-from mindspeed_llm.fsdp2.distributed.context_parallel.ulysses_cp_parallel import ulysses_parallelize_modules
+from mindspeed_llm.fsdp2.distributed.context_parallel.context_parallel_manager import apply_context_parallelize_modules
 from mindspeed_llm.fsdp2.distributed.expert_parallel.expert_parallel import expert_parallelize_modules
 from mindspeed_llm.fsdp2.distributed.expert_parallel.expert_fully_shard_parallel import expert_fully_shard_modules
 from mindspeed_llm.fsdp2.models.model_loader import WeightLoader
@@ -58,14 +58,16 @@ class MindSpeedParallelEngine(torch.nn.Module):
 
     def apply_cp_modules(self):
 
-        if self.config.context_parallel_size > 1:
-            if self.config.context_parallel_type == "ulysses":
-                if self.model.config.num_attention_heads % self.config.context_parallel_size != 0:
-                    raise ValueError(
-                        f"Number of model attention heads must be divisible by context parallel size. "
-                        f"Current num_attention_heads={self.model.config.num_attention_heads}, context_parallel_size={self.config.context_parallel_size}"
-                    )
-                ulysses_parallelize_modules(self.model, self.config.cp_plan)
+        VALID_CP_TYPES = ("ulysses", "ring")
+        cp_size = self.config.context_parallel_size
+        cp_type = self.config.context_parallel_type
+
+        if cp_size > 1:
+            if cp_type not in VALID_CP_TYPES:
+                raise ValueError(f"context_parallel_type must be one of {VALID_CP_TYPES}")
+            if cp_type == "ulysses" and self.model.config.num_attention_heads % cp_size != 0:
+                raise ValueError(f"num_attention_heads must be divisible by context_parallel_size (current: {cp_size})")
+            apply_context_parallelize_modules(self.model, self.config.cp_plan)
 
 
     def apply_recompute_modules(self):

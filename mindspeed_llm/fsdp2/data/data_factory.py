@@ -85,7 +85,7 @@ class LFDataManager(DataManager):
         self.data_collator = SFTDataCollatorWith4DAttentionMask(
             tokenizer=self.tokenizer,
             padding=True,
-            pad_to_multiple_of=parallel_args.cp_size if parallel_args.cp_size > 1 else 8,
+            pad_to_multiple_of=parallel_args.cp_size * 2 if parallel_args.cp_size > 1 else 8,
             label_pad_token_id=IGNORE_INDEX if data_args.ignore_pad_token_for_loss else self.tokenizer.pad_token_id,
             block_diag_attn=data_args.neat_packing,
             compute_dtype=torch.bfloat16

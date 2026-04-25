@@ -17,7 +17,7 @@ def setup_environment():
     """Set up environment and precompile operators"""
     # Set PYTHONPATH
     os.environ["PYTHONPATH"] = f"{BASE_DIR}:{os.environ.get('PYTHONPATH', '')}"
-    
+
     # Precompile operators to improve execution stability
     ops_to_load = [
         "GMMOpBuilder",
@@ -28,7 +28,7 @@ def setup_environment():
         "RotaryPositionEmbeddingOpBuilder",
         "GroupMatmulAddOpBuilder"
     ]
-    
+
     for op_name in ops_to_load:
         cmd = ["python", "-c", f"'import mindspeed; from mindspeed.op_builder import {op_name}; {op_name}().load()'"]
         try:
@@ -53,33 +53,38 @@ def test_st_script(script_name):
     """Dynamically generated test case, run each test script and compare results"""
     script_path = os.path.join(SHELL_SCRIPTS_DIR, script_name)
     file_name_prefix = os.path.splitext(script_name)[0]
-    
+
     print(f"Running test: {file_name_prefix}")
-    
+
     # Run test script
     exit_code, stdout, stderr = run_test_script(script_path)
-    
+
     # Check if script execution succeeded
-    assert exit_code == 0, f"Script {script_name} failed with exit code {exit_code}\nStderr: {stderr}"
-    
+    if exit_code != 0:
+        print(f"\n=== Script {script_name} failed ===")
+        print(f"Exit code: {exit_code}")
+        print(f"=== Stdout ===\n{stdout}")
+        print(f"=== Stderr ===\n{stderr}")
+        pytest.fail(f"Script {script_name} failed with exit code {exit_code}")
+
     # Create temporary files to store logs and generated JSON
     with tempfile.TemporaryDirectory() as temp_dir:
         log_path = os.path.join(temp_dir, f"{file_name_prefix}.log")
         json_path = os.path.join(temp_dir, f"{file_name_prefix}.json")
-        
+
         # Save log
         with open(log_path, "w") as f:
             f.write(stdout)
-        
+
         # Run comparison script
         baseline_json = os.path.join(BASELINE_DIR, f"{file_name_prefix}.json")
-        
+
         # Ensure baseline file exists
         assert os.path.exists(baseline_json), f"Baseline file not found: {baseline_json}"
-        
+
         # Run test_ci_st.py for comparison
         test_ci_script = os.path.join(BASE_DIR, "..", "test_tools", "test_ci_st.py")
-        
+
         compare_result = subprocess.run(
             [
                 "python", "-m", "pytest",
@@ -93,7 +98,11 @@ def test_st_script(script_name):
             capture_output=True,
             text=True
         )
-        
+
         # Check comparison result
-        assert compare_result.returncode == 0, f"Comparison failed for {file_name_prefix}\nStderr: {compare_result.stderr}"
+        if compare_result.returncode != 0:
+            print(f"\n=== Comparison failed for {file_name_prefix} ===")
+            print(f"=== Stdout ===\n{compare_result.stdout}")
+            print(f"=== Stderr ===\n{compare_result.stderr}")
+            pytest.fail(f"Comparison failed for {file_name_prefix}")
         print(f"Test {file_name_prefix} passed successfully!")

@@ -155,9 +155,8 @@ class ParallelEngineConfig:
         self.recompute_plan = [] if self.recompute_plan is None else self.recompute_plan
 
     def validate_cp_config(self):
-        if self.context_parallel_type not in ["ulysses"]:
-            raise Exception("context parallel type must be `ulysses`.")
+        if self.context_parallel_type not in ["ulysses", "ring"]:
+            raise Exception("context parallel type must be in `ulysses` or `ring`.")
 
     def validate_quantization_config(self):
         self.quantization_plan = QuantizeConfig() if self.quantization_plan is None else self.quantization_plan
-
