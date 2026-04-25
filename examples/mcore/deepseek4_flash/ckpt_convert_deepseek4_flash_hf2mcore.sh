@@ -12,4 +12,5 @@ python convert_ckpt_v2.py \
   --target-expert-parallel-size 32 \
   --ckpt-expert-tensor-parallel-size 1 \
   --noop-layers 43 \
+  --mtp-num-layers 1 \
   --moe-grouped-gemm

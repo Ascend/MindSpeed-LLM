@@ -215,6 +215,7 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_deepseek4.py \
     $DSA_ARGS \
     $CA_ARGS \
     $MEM_ARGS \
+    $MTP_ARGS \
     --distributed-backend nccl 2>&1 | tee logs/pretrain_deepseek4_flash_4k_A3_ptd.log
 
 
