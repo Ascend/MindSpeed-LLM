@@ -62,6 +62,7 @@ MLA_ARGS="
     --qk-pos-emb-head-dim 64 \
     --qk-head-dim 512 \
     --q-lora-rank 1024 \
+    --o-lora-rank 1024 \
     --kv-lora-rank 512 \
     --v-head-dim 128 \
     --qk-layernorm \

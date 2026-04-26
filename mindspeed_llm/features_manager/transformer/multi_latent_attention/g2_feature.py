@@ -27,6 +27,8 @@ class G2Feature(MindSpeedFeature):
         # 基础维度参数
         group.add_argument('--o-groups', type=int, default=8,
                         help='Number of output groups in G2 attention.')
+        group.add_argument('--o-lora-rank', type=int, default=1024,
+                        help='Number of output lora ranks in G2 attention.')
         group.add_argument('--g2-window-size', type=int, default=128,
                         help='Window size for G2 attention.')
 

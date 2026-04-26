@@ -78,6 +78,8 @@ def model_provider(pre_process=True, post_process=True, use_dualpipe_mtp=False) 
             else:
                 mtp_layer_spec = transformer_layer_spec
             mtp_block_spec = get_gpt_mtp_block_spec(config, mtp_layer_spec, use_transformer_engine=use_te)
+            if use_dualpipe_mtp:
+                post_process = True
 
         hc_head_spec = get_mhc_spec(args.enable_mhc)
 

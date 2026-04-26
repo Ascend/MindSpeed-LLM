@@ -111,7 +111,8 @@ class DeepSeek4SelfAttention(MegatronModule):
         self.head_dim = args.qk_head_dim
         self.rope_head_dim = args.rope_head_dim
         self.nope_head_dim = self.head_dim-self.rope_head_dim
-        self.lora_rank = args.q_lora_rank
+        self.q_lora_rank = args.q_lora_rank
+        self.o_lora_rank = args.o_lora_rank
         if args.g2_window_size:
             self.window_size = args.g2_window_size # 128
         world_size=parallel_state.get_tensor_model_parallel_world_size()
@@ -136,7 +137,7 @@ class DeepSeek4SelfAttention(MegatronModule):
         self.linear_q = build_module(
             submodules.linear_q,
             self.config.hidden_size,
-            self.lora_rank,
+            self.q_lora_rank,
             config=self.config,
             init_method=self.config.init_method,
             gather_output=False,
@@ -160,7 +161,7 @@ class DeepSeek4SelfAttention(MegatronModule):
 
         self.q_layernorm = build_module(
             submodules.q_layernorm,
-            hidden_size=self.lora_rank,
+            hidden_size=self.q_lora_rank,
             config=self.config,
             eps=self.config.layernorm_epsilon,
         )
@@ -173,7 +174,7 @@ class DeepSeek4SelfAttention(MegatronModule):
 
         self.linear_q_up_proj = build_module( # wq_b
             submodules.linear_q_up_proj,
-            self.lora_rank,
+            self.q_lora_rank,
             self.n_heads * self.head_dim, 
             config=self.config,
             init_method=self.config.init_method,
@@ -187,7 +188,7 @@ class DeepSeek4SelfAttention(MegatronModule):
         self.linear_o_down_proj = build_module(
             submodules.linear_o_down_proj,
             self.n_heads * self.head_dim // self.n_groups,
-            self.n_groups * self.lora_rank, 
+            self.n_groups * self.o_lora_rank, 
             config=self.config,
             init_method=self.config.init_method,
             gather_output=False,
@@ -199,7 +200,7 @@ class DeepSeek4SelfAttention(MegatronModule):
 
         self.linear_o_up_proj = build_module(
             submodules.linear_o_up_proj,
-            self.n_groups * self.lora_rank,
+            self.n_groups * self.o_lora_rank,
             self.dim,
             config=self.config,
             init_method=self.config.output_layer_init_method,
@@ -424,7 +425,7 @@ class DeepSeek4SelfAttention(MegatronModule):
         weight_woa = rearrange(
             self.linear_o_down_proj.weight, 
             '(g l) (d h)->g l (d h)', # outdim*indim
-            d=self.head_dim//self.n_groups, l=self.lora_rank, h=self.n_heads, g=self.n_local_groups)
+            d=self.head_dim//self.n_groups, l=self.o_lora_rank, h=self.n_heads, g=self.n_local_groups)
         o = torch.einsum("sbgd,gld->sbgl", o, weight_woa)
         core_attn_out, bias = self.linear_o_up_proj(o.flatten(2))
         return core_attn_out, bias
