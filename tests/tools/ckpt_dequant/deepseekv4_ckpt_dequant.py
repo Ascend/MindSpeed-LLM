@@ -19,7 +19,7 @@ CUR_DIR = os.path.dirname(__file__)
 ROOT_DIR = os.path.realpath(os.path.join(CUR_DIR, "../../../"))
 sys.path.append(ROOT_DIR)
 
-from .mx_quantize import quantize_mx, pack_uint4, unpack_uint4, f4_unpacked_to_f32, f32_to_f4_unpacked
+from tests.tools.ckpt_dequant.mx_quantize import quantize_mx, pack_uint4, unpack_uint4, f4_unpacked_to_f32, f32_to_f4_unpacked
 
 
 NUM_BITS_4 = 4
