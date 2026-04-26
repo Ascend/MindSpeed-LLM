@@ -6,7 +6,6 @@ from mindspeed.features_manager import (
     FusedEmaAdamwFeature,
     FusedMoEPermuteFeature,
     FusedSoftmaxFeature,
-    FusedSwigluFeature,
     GroupedMatmulFeature,
     MC2Feature,
     MoEAlltoAllOverLapFeature,
@@ -43,6 +42,7 @@ from mindspeed.features_manager import (
 from mindspeed.features_manager.feature import MindSpeedFeature
 from mindspeed.features_manager.features_manager import MindSpeedFeaturesManager
 
+from mindspeed_llm.features_manager.fusions.swiglu_limit_feature import SwigluLimitFeature
 from mindspeed_llm.features_manager.low_precision.low_precision_optimizer_feature import LowPrecisionOptimizerFeature
 from mindspeed_llm.features_manager.affinity.affinity import AffinityFeature
 from mindspeed_llm.features_manager.context_parallel.context_parallel_feature import ContextParallelFeature
@@ -165,7 +165,7 @@ def add_context_parallel_features(features_list: List[MindSpeedFeature]):
 
 def add_fusions_features(features_list: List[MindSpeedFeature]):
     features_list.extend([
-        FusedSwigluFeature(),
+        SwigluLimitFeature(),
         FusedSoftmaxFeature(),
         RotaryPositionEmbeddingFeature(),
         GroupedMatmulFeature(),
