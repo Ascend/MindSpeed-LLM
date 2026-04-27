@@ -21,7 +21,7 @@ DATA_PATH="your data path"
 TOKENIZER_PATH="your tokenizer path"
 CKPT_LOAD_DIR="your model ckpt path"
 
-TP=2
+TP=1
 PP=4
 EP=32
 CP=1

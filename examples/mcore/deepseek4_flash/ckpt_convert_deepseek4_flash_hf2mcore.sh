@@ -7,10 +7,9 @@ python convert_ckpt_v2.py \
   --model-type-hf deepseek4 \
   --load-dir ./model_from_hf/deepseek4_flash_hf/ \
   --save-dir ./model_weights/deepseek4_flash_mcore/ \
-  --target-tensor-parallel-size 2 \
+  --target-tensor-parallel-size 1 \
   --target-pipeline-parallel-size 4 \
   --target-expert-parallel-size 32 \
-  --ckpt-expert-tensor-parallel-size 1 \
   --noop-layers 43 \
   --mtp-num-layers 1 \
   --moe-grouped-gemm
