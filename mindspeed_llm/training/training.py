@@ -134,7 +134,12 @@ def update_save_checkpoint_chmod(save_path, permission=0o640):
                     logging.warning(f"failed to change permission: {file_path}: {ee}")
 
     print(f"finish permission set for files in {save_path}")
+    
+"""
 
+模型构造包装函数
+
+"""
 
 def model_provider_func_wrapper(model_provider_func):
     @wraps(model_provider_func)
@@ -414,19 +419,13 @@ def build_train_args(*input_args):
     test_data_iterator_list = [test_data_iterator]
     return train_args, test_data_iterator_list
 
+"""
 
-def get_model_provider_func(args, model_provider):
-    # If with MTP and dualpipev, change model_provider func.
-    if args.spec and 'deepseek4_spec' in args.spec[0]:
-        model_provider_func = model_provider
-    elif args.mtp_num_layers is not None and args.schedules_method == "dualpipev":
-        from mindspeed.core.pipeline_parallel.dualpipev.mtp_utils import model_provider_mtp
-        model_provider_func = model_provider_mtp
-    else:
-        model_provider_func = model_provider
-    return model_provider_func
+这部分开始获取args中的参数数据
 
+但是这部分不涉及训练只是获取数据
 
+"""
 def pretrain(train_valid_test_dataset_provider,
              model_provider,
              model_type,
@@ -576,7 +575,12 @@ def pretrain(train_valid_test_dataset_provider,
         'app_finish_time': one_logger_utils.get_timestamp_in_ms()
     })
     one_logger_utils.finish()
+                 
+"""
 
+主体训练循环部分主要修改这个部分
+
+"""
 
 def train(forward_step_func, model, optimizer, opt_param_scheduler,
           train_data_iterator, valid_data_iterator,
@@ -590,6 +594,10 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
     write_args_to_tensorboard()
 
     # Turn on training mode which enables dropout.
+    """
+    在这部分把模型对应的block块冻结
+    只让需要的部分处于可训练的状态
+    """
     for model_module in model:
         model_module.train()
 
@@ -632,10 +640,14 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
 
     timers('interval-time', log_level=0).start(barrier=True)
     print_datetime('before the start of training step')
+    # 日志是否还需要报告内存信息
     report_memory_flag = True
+    # forward pre-hook机制开启的标志位
     pre_hook_enabled = False
+    # 训练循环的标志位
     exit = False
 
+    # 控制Python关于GC回收的部分（自定义什么时候需要垃圾回收）
     if args.manual_gc:
         # Disable the default garbage collector and perform the collection manually.
         # This is to align the timing of garbage collection across ranks.
@@ -644,6 +656,7 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
         gc.disable()
         gc.collect()
 
+              
     total_flops = 0.0
     num_microbatches = get_num_microbatches()
     eval_duration = 0.0
@@ -685,13 +698,27 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
         pre_hook_enabled = False
 
     while iteration < args.train_iters:
+        # 检查点异步保存
+        # 注意megatron-lm中的设计后台保存相对于的检查点
         maybe_finalize_async_save(blocking=False)
 
         # Update number of microbatches first without consistency check to decide if a
         # checkpoint should be saved. If the number of microbatches is different
         # from the previous iteration, save a checkpoint. Then run consistency check
         # to make sure training configuration is still valid.
+        """
+        更新当前的微批次大小
+        在最初进行模型预训练的时候需要全局批次大小爬坡
+        $$Global\ Batch\ Size = Microbatch\ Size \times Gradient\ Accumulation\ Steps \times Data\ Parallel\ Size$$
+        唯一的方法，就是增加 Gradient Accumulation Steps（也就是源码里的 num_microbatches）
+        这部分就是模型
+        """
         update_num_microbatches(args.consumed_train_samples, consistency_check=False)
+
+        """
+        由于需要全局批次大小爬坡梯度累计必须是单调递增的
+        """
+        
         if get_num_microbatches() != num_microbatches and iteration != 0:
             if get_num_microbatches() <= num_microbatches:
                 raise RuntimeError(
