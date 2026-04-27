@@ -1,4 +1,4 @@
-# MindSpeed-LLM 多轮对话微调
+# MindSpeed LLM 多轮对话微调
 
 ## 特性介绍
 
@@ -58,7 +58,7 @@ python ./preprocess_data.py \
 
 ### 启动脚本
 
-MindSpeed-LLM微调数据集处理脚本命名风格及启动方法为：
+MindSpeed LLM微调数据集处理脚本命名风格及启动方法为：
 
 ```shell
 # Mcore
@@ -77,7 +77,7 @@ bash examples/mcore/gemma2/data_convert_gemma2_instruction.sh
 ./finetune_dataset/alpaca_packed_labels_document.idx
 ```
 
-微调时，数据集路径输入 `./finetune_dataset/alpaca` 即可
+微调时，数据集路径输入 `./finetune_dataset/alpaca` 即可。
 
 #### 填写相关路径
 

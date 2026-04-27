@@ -186,7 +186,7 @@ ModelScope 下载指南：<https://modelscope.cn/docs/models/download>
 
 场景限制：
 
-1、模型的层数必须能被PP切分数量整除，否则需要增加空层(--noop-layer)或者使用动态PP(--num-layer-list)
+1、模型的层数必须能被PP切分数量整除，否则需要增加空层(--noop-layers)或者使用动态PP(--num-layer-list)
 
 2、VPP(--num-layers-per-virtual-pipeline-stage)和动态PP划分(--num-layer-list)只能二选一
 

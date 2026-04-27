@@ -63,10 +63,10 @@
 
 使用官方提供的转换脚本，获取对应切分的mg权重。
 
-1. 编辑权重转换脚本。
+1. 进入MindSpeed LLM目录编辑权重转换脚本。
 
     ```shell
-    cd MindSpeed-LLM
+    cd ../..
     vi examples/mcore/qwen3/ckpt_convert_qwen3_hf2mcore.sh
     ```
 
@@ -129,7 +129,7 @@
 
 如下以Alpaca数据集为例，进行预训练数据集处理示例。
 
-1. 获取数据集元数据。
+1. 获取数据集原数据。
 
     ```shell
     mkdir dataset
@@ -244,7 +244,7 @@
     **图 1**  启动预训练  
     ![img_2.png](../../pytorch/figures/quick_start/running_log.png)
 
-    脚本中特性包含训练参数或优化特性，下表为部分参数解释。
+    脚本中包含训练参数或优化特性，下表为部分参数解释。
 
     **表 3**  训练脚本参数说明  
 
@@ -276,7 +276,7 @@
 
 如下以Alpaca数据集为例，进行数据预处理示例。
 
-1. 获取数据集元数据。
+1. 获取数据集原数据。
 
     ```shell
     mkdir dataset
@@ -389,7 +389,7 @@
     bash examples/mcore/qwen3/tune_qwen3_8b_4K_full_ptd.sh
     ```
 
-    脚本中特性包含微调参数或优化特性，下表为部分参数解释。
+    脚本中包含微调参数或优化特性，下表为部分参数解释。
 
     **表 5**  微调脚本参数说明  
 

@@ -105,12 +105,12 @@ docs/zh/
 | 分类 | 内容 | 说明 |
 |------|------|------|
 | 预训练 | [pretrain](pytorch/training/pretrain/mcore/pretrain.md) | 多样本预训练方法 |
-| | [pretrain_eod](pytorch/training/pretrain/mcore/pretrain_eod.md) | 多样本pack预训练方法 |
+| | [pretrain_eod](pytorch/training/pretrain/mcore/pretrain_eod.md) | 多样本Pack预训练方法 |
 | 微调 | [instruction_finetune](pytorch/training/finetune/mcore/instruction_finetune.md) | 模型全参微调方案 |
 | | [multi_sample_pack_finetune](pytorch/training/finetune/mcore/multi_sample_pack_finetune.md) | 多样本Pack微调方案 |
 | | [multi_turn_conversation](pytorch/training/finetune/mcore/multi_turn_conversation.md) | 多轮对话微调方案 |
-| | [lora_finetune](pytorch/training/finetune/mcore/lora_finetune.md) | 模型lora微调方案 |
-| | [qlora_finetune](pytorch/training/finetune/mcore/qlora_finetune.md) | 模型qlora微调方案 |
+| | [lora_finetune](pytorch/training/finetune/mcore/lora_finetune.md) | 模型loRA微调方案 |
+| | [qlora_finetune](pytorch/training/finetune/mcore/qlora_finetune.md) | 模型QLoRA微调方案 |
 | 推理 | [inference](pytorch/training/inference/inference.md) | 模型推理 |
 | | [chat](pytorch/training/inference/chat.md) | 对话 |
 | | [yarn](pytorch/features/mcore/yarn.md) | 使用yarn方案来扩展上下文长度，支持长序列推理 |
