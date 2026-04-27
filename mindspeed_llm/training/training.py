@@ -70,7 +70,12 @@ from mindspeed_llm.training.initialize import set_jit_fusion_options
 from mindspeed_llm.tasks.posttrain.lora.utils import is_enable_lora
 from mindspeed_llm.training.utils import get_actual_attn_ratio, clear_actual_attn_ratio, is_distributed_ckpt_complete
 from mindspeed_llm.training.checkpointing import _convert_weights_mg2hf
-
+from mindspeed_llm.training.progressive_block_freeze import (
+    apply_freeze as apply_progressive_block_freeze,
+    is_enabled as is_progressive_block_freeze_enabled,
+    maybe_advance as maybe_advance_progressive_block_freeze,
+    rebuild_ddp_optimizer_scheduler as rebuild_progressive_block_freeze_training_state,
+)
 
 # The earliest we can measure the start time.
 _TRAIN_START_TIME = time.time()
@@ -226,6 +231,9 @@ def model_provider_func_wrapper(model_provider_func):
                 list(megatron.training.utils.ALL_MODULE_WRAPPER_CLASSNAMES) + [PeftModel, LoraModel]
             )
 
+        if is_progressive_block_freeze_enabled(args):
+            apply_progressive_block_freeze(model, args)
+
         return model
 
     return wrapper
@@ -359,6 +367,9 @@ def build_train_args(*input_args):
         model_provider_func = get_model_provider_func(args, model_provider)
         model, optimizer, opt_param_scheduler = setup_model_and_optimizer(
             model_provider_func, model_type)
+    if is_progressive_block_freeze_enabled(args) and getattr(args, "progressive_block_freeze_loaded", False):
+        model, optimizer, opt_param_scheduler = rebuild_progressive_block_freeze_training_state(model)
+        args.progressive_block_freeze_loaded = False
     timers('model-and-optimizer-setup').stop()
     print_datetime('after model, optimizer, and learning rate '
                    'scheduler are built')
@@ -533,11 +544,13 @@ def pretrain(train_valid_test_dataset_provider,
                     train_data_iterator, valid_data_iterator,
                     process_non_loss_data_func, config)
             else:
-                iteration, num_floating_point_operations_so_far = train(
-                    forward_step_func,
-                    model, optimizer, opt_param_scheduler,
-                    train_data_iterator, valid_data_iterator,
-                    process_non_loss_data_func, config)
+                iteration, num_floating_point_operations_so_far = train(*train_args)
+                if is_progressive_block_freeze_enabled(args) and hasattr(args, "progressive_block_freeze_runtime_train_state"):
+                    runtime_state = args.progressive_block_freeze_runtime_train_state
+                    train_args[1], train_args[2], train_args[3], train_args[7] = runtime_state
+
+            test_data_iterator = test_data_iterator_list[0]
+            forward_step_func, model, optimizer, opt_param_scheduler, train_data_iterator, valid_data_iterator, process_non_loss_data_func, config = train_args
 
         print_datetime('after training is done')
 
@@ -578,6 +591,26 @@ def pretrain(train_valid_test_dataset_provider,
     one_logger_utils.finish()
 
 
+def _configure_training_state(model, optimizer, config, timers, args):
+    config.grad_scale_func = optimizer.scale_loss
+    config.timers = timers
+    config.no_sync_func = None
+    config.grad_sync_func = None
+    config.param_sync_func = None
+    if isinstance(model[0], DDP) and args.overlap_grad_reduce:
+        config.no_sync_func = [model_chunk.no_sync for model_chunk in model]
+        if len(model) == 1:
+            config.no_sync_func = config.no_sync_func[0]
+        if args.align_grad_reduce:
+            config.grad_sync_func = [model_chunk.start_grad_sync for model_chunk in model]
+            if len(model) == 1:
+                config.grad_sync_func = config.grad_sync_func[0]
+    if args.overlap_param_gather and args.align_param_gather:
+        config.param_sync_func = [model_chunk.start_param_sync for model_chunk in model]
+        if len(model) == 1:
+            config.param_sync_func = config.param_sync_func[0]
+
+
 def train(forward_step_func, model, optimizer, opt_param_scheduler,
           train_data_iterator, valid_data_iterator,
           process_non_loss_data_func, config):
@@ -609,25 +642,7 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
     num_floating_point_operations_so_far = 0
 
     # Setup some training config params
-    config.grad_scale_func = optimizer.scale_loss
-    config.timers = timers
-    if isinstance(model[0], DDP) and args.overlap_grad_reduce and config.no_sync_func is None:
-        if config.no_sync_func is not None:
-            raise ValueError(
-                'When overlap_grad_reduce is True, config.no_sync_func must be None; '
-                'a custom no_sync_func is not supported when overlapping grad-reduce'
-            )
-        config.no_sync_func = [model_chunk.no_sync for model_chunk in model]
-        if len(model) == 1:
-            config.no_sync_func = config.no_sync_func[0]
-        if args.align_grad_reduce:
-            config.grad_sync_func = [model_chunk.start_grad_sync for model_chunk in model]
-            if len(model) == 1:
-                config.grad_sync_func = config.grad_sync_func[0]
-    if args.overlap_param_gather and args.align_param_gather:
-        config.param_sync_func = [model_chunk.start_param_sync for model_chunk in model]
-        if len(model) == 1:
-            config.param_sync_func = config.param_sync_func[0]
+    _configure_training_state(model, optimizer, config, timers, args)
     config.finalize_model_grads_func = finalize_model_grads
 
     timers('interval-time', log_level=0).start(barrier=True)
@@ -761,6 +776,15 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
                                           iteration, loss_scale,
                                           report_memory_flag, skipped_iter,
                                           grad_norm, params_norm, num_zeros_in_grad)
+
+        if is_progressive_block_freeze_enabled(args):
+            switched, _ = maybe_advance_progressive_block_freeze(loss_dict, iteration, skipped_iter, args)
+            if switched:
+                model, optimizer, opt_param_scheduler = rebuild_progressive_block_freeze_training_state(model)
+                config = get_model_config(model[0])
+                _configure_training_state(model, optimizer, config, timers, args)
+                config.finalize_model_grads_func = finalize_model_grads
+                args.progressive_block_freeze_runtime_train_state = (model, optimizer, opt_param_scheduler, config)
 
         if args.enable_high_availability:
             args.num_floating_point_operations_so_far = num_floating_point_operations_so_far
