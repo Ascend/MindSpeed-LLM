@@ -20,8 +20,7 @@
 > 本节表格中“√”代表支持，“x”代表不支持。
 
 - 各硬件产品对应物理机部署场景支持的操作系统请参考[兼容性查询助手](https://www.hiascend.com/hardware/compatibility)。
-- 各硬件产品对应虚拟机部署场景支持的操作系统请参考《CANN 软件安装》的“[操作系统兼容性说明](https://www.hiascend.com/document/detail/zh/canncommercial/900/softwareinst/instg/instg_0101.html?Mode=VmIns&InstallType=local&OS=openEuler)”章节（商用版）或“[操作系统兼容性说明](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/900/softwareinst/instg/instg_0101.html?Mode=VmIns&InstallType=local&OS=openEuler)”章节（社区版）。
-- 各硬件产品对应容器部署场景支持的操作系统请参考《CANN 软件安装》的“[操作系统兼容性说明](https://www.hiascend.com/document/detail/zh/canncommercial/900/softwareinst/instg/instg_0101.html?Mode=DockerIns&InstallType=local&OS=openEuler)”章节（商用版）或“[操作系统兼容性说明](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/900/softwareinst/instg/instg_0101.html?Mode=DockerIns&InstallType=local&OS=openEuler)”章节（社区版）。
+- 各硬件产品对应虚拟机及容器部署场景支持的操作系统请参考《CANN 软件安装》的“[操作系统兼容性说明](https://www.hiascend.com/document/detail/zh/canncommercial/900/softwareinst/instg/instg_0101.html?OS=openEuler&InstallType=netyum)”章节（商用版）或“[操作系统兼容性说明](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/900/softwareinst/instg/instg_0101.html?OS=openEuler&InstallType=netyum)”章节（社区版）。
 
 ## 安装前准备
 
@@ -41,11 +40,11 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
 
 ### 安装CANN
 
-请参考[CANN 快速安装](https://www.hiascend.com/cann/download)安装CANN软件（包含Toolkit、ops和NNAL包），并配置环境变量。
+请参考《[CANN 快速安装](https://www.hiascend.com/cann/download)》安装CANN软件（包含Toolkit、ops和NNAL包），并配置环境变量。
 
 ```shell
 # 设置环境变量
-source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路径
+source /usr/local/Ascend/cann/set_env.sh     # 修改为实际安装的Toolkit包路径
 source /usr/local/Ascend/nnal/atb/set_env.sh # 修改为实际安装的nnal包路径
 ```
 
