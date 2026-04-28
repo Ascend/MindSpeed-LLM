@@ -1,12 +1,15 @@
 # Copyright (c) 2026, Huawei Technologies Co., Ltd. All rights reserved.
 import os
 import glob
+import json
 from contextlib import contextmanager
 from typing import Optional, Dict, Tuple, Set
 
 import torch
 import torch.nn as nn
+from torch.distributed.tensor import distribute_tensor
 from transformers import AutoConfig, AutoModelForCausalLM
+from safetensors import safe_open
 try:
     from transformers.modeling_utils import no_init_weights
 except ImportError:
@@ -206,9 +209,7 @@ class WeightLoader:
     def _load_pretrained(model: nn.Module, weights_path: str, device: str) -> None:
         """
         Load pretrained weights.
-        """
-        from torch.distributed.tensor import distribute_tensor
-        
+        """        
         logger.info_rank0(f"> Loading pretrained weights from {weights_path}...")
         
         # Step 1: Save buffers before to_empty
@@ -232,13 +233,14 @@ class WeightLoader:
                     buffer_dict[name] = tensor.clone()
                 elif name in parameter_names_to_load:
                     parameter_names_to_load.remove(name)
-                    WeightLoader._dispatch_parameter(model, name, tensor, distribute_tensor)
+                    WeightLoader._dispatch_parameter(model, name, tensor)
                 else:
                     logger.debug(f"> Unexpected key in state dict: {name}")
         
         # Step 4: Post-process (restore buffers, handle missing params)
         WeightLoader._post_process(model, buffer_dict, parameter_names_to_load, distribute_tensor)
-        
+        if torch.distributed.is_initialized():
+            torch.distributed.barrier()
         logger.info_rank0("> Pretrained weights loaded successfully")
     
     @staticmethod
@@ -247,7 +249,6 @@ class WeightLoader:
         # Check for safetensors index
         index_file = os.path.join(weights_path, "model.safetensors.index.json")
         if os.path.exists(index_file):
-            import json
             with open(index_file, 'r') as f:
                 index = json.load(f)
             files = set(index["weight_map"].values())
@@ -278,7 +279,6 @@ class WeightLoader:
     def _iterate_state_dict(filepath: str):
         """Iterate over state dict file, yielding (key, tensor) pairs."""
         if filepath.endswith(".safetensors"):
-            from safetensors import safe_open
             with safe_open(filepath, framework="pt", device="cpu") as f:
                 for key in f.keys():
                     yield key, f.get_tensor(key)
@@ -292,25 +292,57 @@ class WeightLoader:
         model: nn.Module,
         name: str,
         tensor: torch.Tensor,
-        dtensor_factory
     ) -> None:
         """
-        Assign parameter to model.
+        Copy a checkpoint tensor into the target parameter of a parallelized model.
         """
         module, local_name = _find_submodule(model, name)
-        orig_tensor = dict(module.named_parameters(recurse=False))[local_name].data
-        
-        # Convert tensor to match original dtype and device
-        tensor = tensor.to(orig_tensor)
-        
-        if hasattr(orig_tensor, "device_mesh"):
-            # DTensor parameter
-            device_mesh = orig_tensor.device_mesh
-            placements = orig_tensor.placements
-            dict(module.named_parameters(recurse=False))[local_name].data.copy_(dtensor_factory(tensor, device_mesh, placements))
-        else:
-            # Regular parameter
-            dict(module.named_parameters(recurse=False))[local_name].data.copy_(tensor)
+        orig_param = dict(module.named_parameters(recurse=False))[local_name]
+        orig_tensor = orig_param.data
+
+        if not hasattr(orig_tensor, "_local_tensor"):
+            # Plain tensor (e.g. replicated norm weights).
+            src = tensor.to(device=orig_tensor.device, dtype=orig_tensor.dtype, non_blocking=True)
+            orig_param.data.copy_(src, non_blocking=True)
+            return
+
+        # DTensor path: slice on CPU, then move the local shard to device.
+        mesh = orig_tensor.device_mesh
+        placements = orig_tensor.placements
+        local_target = orig_tensor._local_tensor
+
+        # Walk through each mesh dimension and narrow along the tensor dim
+        # specified by the Shard placement. Replicate / Partial are no-ops.
+        local_cpu = tensor
+        for mesh_dim, placement in enumerate(placements):
+            if not placement.is_shard():
+                continue
+
+            shard_dim = placement.dim
+            mesh_size = mesh.size(mesh_dim)
+            mesh_rank = mesh.get_local_rank(mesh_dim)
+            full_len = local_cpu.size(shard_dim)
+
+            if full_len % mesh_size == 0:
+                chunk_len = full_len // mesh_size
+                local_cpu = local_cpu.narrow(shard_dim, mesh_rank * chunk_len, chunk_len)
+            else:
+                # Match DTensor's chunk-based partitioning for uneven splits.
+                chunks = torch.chunk(local_cpu, mesh_size, dim=shard_dim)
+                if mesh_rank < len(chunks):
+                    local_cpu = chunks[mesh_rank]
+                else:
+                    empty_shape = list(local_cpu.shape)
+                    empty_shape[shard_dim] = 0
+                    local_cpu = local_cpu.new_empty(empty_shape)
+
+        local_cpu = local_cpu.contiguous().pin_memory()
+        local_dev = local_cpu.to(
+            device=local_target.device,
+            dtype=local_target.dtype,
+            non_blocking=True,
+        )
+        local_target.copy_(local_dev, non_blocking=True)
     
     @staticmethod
     def _dispatch_buffer(
