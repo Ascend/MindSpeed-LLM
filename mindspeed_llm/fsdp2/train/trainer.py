@@ -410,7 +410,8 @@ class Trainer:
 
         # 2. Forward pass
         loss = self._compute_loss(inputs, return_outputs=False, num_items_in_batch=num_items_in_batch)
-        loss = loss / self.current_gradient_accumulation_steps
+        if self.args.stage == 'pt':
+            loss = loss / self.current_gradient_accumulation_steps
         # 3. Clean up inputs to save memory
         del inputs
 
