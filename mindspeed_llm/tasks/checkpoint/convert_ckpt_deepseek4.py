@@ -430,7 +430,7 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
             if self.dualpipe:
                 required_keys |= {"norm.weight", "head.weight", "hc_head_base", "hc_head_fn", "hc_head_scale"}
         if pp_rank == self.pipeline_model_parallel_size - 1 and not self.dualpipe:
-            required_keys |= {"norm.weight", "head.weight", "hc_head_base", "hc_head_fn", "hc_head_scale"}
+            required_keys |= {"norm.weight", "head.weight", "hc_head_base", "hc_head_fn", "hc_head_scale", "embed.weight"}
 
         idx_path = os.path.join(self.hf_model_path, "model.safetensors.index.json")
         if os.path.exists(idx_path):
@@ -463,6 +463,13 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
                 all_weights.update(cur)
 
             missing = [k for k in required_keys if not self._has_key_relaxed(all_weights, k)]
+
+            def _is_mtp_ignore_key(k: str) -> bool:
+                return k.startswith("mtp.") and (
+                    k.endswith("emb.tok_emb.weight") or k.endswith("head.weight")
+                )
+            missing = [k for k in missing if not _is_mtp_ignore_key(k)]
+
             if missing:
                 raise KeyError(f"Missing required HF keys (first 40): {missing[:40]} (total={len(missing)})")
 
@@ -484,7 +491,7 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
 
     # ---------------- mapping: HF -> MG keys ----------------
     def set_model_preprocess(self, weights_dict: Dict[str, torch.Tensor], mg_model):
-        emb = weights_dict.pop("embed.weight")
+        emb = weights_dict["embed.weight"]
         emb_lst = _chunk_or_single(emb, self.tensor_model_parallel_size, dim=0)
         for ep_rank in range(self.ep_size):
             for tp_rank in range(self.tensor_model_parallel_size):
@@ -492,7 +499,7 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
 
     def set_model_postprocess(self, weights_dict: Dict[str, torch.Tensor], mg_model):
         final_norm = weights_dict.pop("norm.weight")
-        lm_head = weights_dict.pop("head.weight")
+        lm_head = weights_dict["head.weight"]
         hc_base = weights_dict.pop("hc_head_base")
         hc_fn = weights_dict.pop("hc_head_fn")
         hc_scale = weights_dict.pop("hc_head_scale")
@@ -515,7 +522,10 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
 
         eh_proj = torch.cat([e_proj, h_proj], dim=1).contiguous()
 
-        emb = weights_dict.pop(f"mtp.{hf_mtp_idx}.emb.tok_emb.weight")
+        if f"mtp.{hf_mtp_idx}.emb.tok_emb.weight" in weights_dict:
+            emb = weights_dict.pop(f"mtp.{hf_mtp_idx}.emb.tok_emb.weight")
+        else:
+            emb = weights_dict["embed.weight"]
 
         eh_lst = _chunk_or_single(eh_proj, self.tensor_model_parallel_size, dim=0)
         emb_lst = _chunk_or_single(emb, self.tensor_model_parallel_size, dim=0)
@@ -531,7 +541,10 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
 
     def set_mtp_postprocess(self, hf_mtp_idx: int, mtp_layer_idx: int, weights_dict: Dict[str, torch.Tensor], mg_model):
         mtp_norm = weights_dict.pop(f"mtp.{hf_mtp_idx}.norm.weight")
-        mtp_head = weights_dict.pop(f"mtp.{hf_mtp_idx}.head.weight")
+        if f"mtp.{hf_mtp_idx}.head.weight" in weights_dict:
+            mtp_head = weights_dict.pop(f"mtp.{hf_mtp_idx}.head.weight")
+        else:
+            mtp_head = weights_dict["head.weight"]
         hc_base = weights_dict.pop(f"mtp.{hf_mtp_idx}.hc_head_base")
         hc_fn = weights_dict.pop(f"mtp.{hf_mtp_idx}.hc_head_fn")
         hc_scale = weights_dict.pop(f"mtp.{hf_mtp_idx}.hc_head_scale")
