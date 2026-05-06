@@ -7,13 +7,15 @@
 
 # Global arguments for base image selection
 ARG OS=openeuler24.03
-ARG BASE_IMAGE_VERSION=9.0.0-beta.2
+ARG BASE_IMAGE_VERSION=8.5.2
 ARG NPU_TYPE=910b
+ARG PYTHON_VERSION=3.11
+ARG BASE_IMAGE=""
 
 # ------------------------------
 # Stage 1: Base Image
 # ------------------------------
-FROM swr.cn-south-1.myhuaweicloud.com/ascendhub/cann:${BASE_IMAGE_VERSION}-${NPU_TYPE}-${OS}-py3.11 AS base
+FROM ${BASE_IMAGE:-swr.cn-south-1.myhuaweicloud.com/ascendhub/cann:${BASE_IMAGE_VERSION}-${NPU_TYPE}-${OS}-py${PYTHON_VERSION}} AS base
 
 # Switch to root user
 USER root
@@ -23,10 +25,12 @@ ARG OS_FAMILY=openeuler
 # Set default shell to bash
 SHELL ["/bin/bash", "-c"]
 
-# Detect CPU architecture (aarch64)
+# Detect architecture (x86_64 or aarch64)
 RUN ARCH=$(uname -m) && \
     echo "Detected CPU architecture: ${ARCH}" && \
-    if [ "$ARCH" = "aarch64" ]; then \
+    if [ "$ARCH" = "x86_64" ]; then \
+        echo "Architecture type: x86"; \
+    elif [ "$ARCH" = "aarch64" ]; then \
         echo "Architecture type: ARM"; \
     else \
         echo "ERROR: Unsupported architecture: $ARCH"; \
@@ -68,6 +72,17 @@ RUN echo "Installing system dependencies..." && \
             make \
             cmake \
         && yum clean all; \
+    elif [ "$OS_FAMILY" = "ubuntu" ]; then \
+        apt-get install -y \
+            git \
+            iproute2 \
+            wget \
+            curl \
+            gcc \
+            g++ \
+            make \
+            cmake \
+        && apt-get clean; \
     else \
         echo "ERROR: Unsupported OS: $OS_FAMILY"; \
         exit 1; \
@@ -78,14 +93,20 @@ RUN echo "Installing system dependencies..." && \
 # ------------------------------
 FROM base AS builder
 
-ARG TORCH_VERSION=2.9.0
-ARG TORCH_NPU_VERSION=2.9.0
+ARG TORCH_VERSION=2.7.1
+ARG TORCH_NPU_VERSION=2.7.1
 
 WORKDIR /tmp
 
 # Install Miniconda (auto-detect architecture)
 RUN echo "=== Detecting system architecture ===" && \
-    MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-py311_26.1.1-1-Linux-aarch64.sh" && \
+    arch=$(uname -m) && \
+    echo "Current architecture: $arch" && \
+    if [ "$arch" = "x86_64" ]; then \
+        MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-py311_26.1.1-1-Linux-x86_64.sh"; \
+    elif [ "$arch" = "aarch64" ]; then \
+        MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-py311_26.1.1-1-Linux-aarch64.sh"; \
+    fi && \
     echo "Download URL: $MINICONDA_URL" && \
     wget --no-check-certificate "$MINICONDA_URL" -O miniconda.sh && \
     bash miniconda.sh -b -p /opt/conda && \
@@ -104,12 +125,29 @@ RUN pip config set global.index-url https://repo.huaweicloud.com/repository/pypi
     /opt/conda/bin/conda init bash
 
 # Install PyTorch and torch_npu (ONLINE INSTALL ONLY)
-RUN echo "Installing PyTorch for ARM/aarch64..." && \
-    echo "TORCH_VERSION $TORCH_VERSION " && \
-    pip install --no-cache-dir torch==${TORCH_VERSION} torchvision torchaudio && \
-    echo "Installing torch_npu for ARM/aarch64..." && \
-    pip install --no-cache-dir torch-npu==${TORCH_NPU_VERSION} && \
-    conda clean -ya
+RUN echo "Installing PyTorch and torch_npu from PyPI..." && \
+        ARCH=$(uname -m) && \
+        MAX_RETRIES=3 && \
+        for retry in $(seq 1 $MAX_RETRIES); do \
+            echo ">>> Attempt $retry of $MAX_RETRIES"; \
+            pip cache purge 2>/dev/null || true; \
+            rm -rf /root/.cache/pip; \
+            if [ "$ARCH" = "x86_64" ]; then \
+                echo "Installing PyTorch for x86_64..." && \
+                pip install --no-cache-dir torch==${TORCH_VERSION} torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu && break; \
+            elif [ "$ARCH" = "aarch64" ]; then \
+                echo "Installing PyTorch for aarch64..." && \
+                pip install --no-cache-dir torch==${TORCH_VERSION} torchvision torchaudio && break; \
+            fi; \
+        done && \
+        for retry in $(seq 1 $MAX_RETRIES); do \
+            echo ">>> Installing torch-npu, attempt $retry of $MAX_RETRIES"; \
+            pip cache purge 2>/dev/null || true; \
+            rm -rf /root/.cache/pip; \
+            pip install --no-cache-dir torch-npu==${TORCH_NPU_VERSION} && break; \
+        done;
+
+RUN conda clean -ya
 
 # ------------------------------
 # Stage 3: Final Runtime Image
@@ -117,7 +155,9 @@ RUN echo "Installing PyTorch for ARM/aarch64..." && \
 FROM builder AS final
 
 # Arguments for MindSpeed-LLM
-ARG MINDSPEED_LLM_VERSION=26.0.0
+ARG MINDSPEED_LLM_BRANCH=26.0.0
+ARG MINDSPEED_BRANCH=26.0.0_core_r0.12.1
+ARG MEGATRON_BRANCH=core_v0.12.1
 
 WORKDIR /workspace
 
@@ -127,7 +167,7 @@ RUN git config --global http.sslVerify false
 # Install MindSpeed
 RUN git clone https://gitcode.com/ascend/MindSpeed.git && \
     cd MindSpeed && \
-    git checkout ${MINDSPEED_LLM_VERSION}_core_r0.12.1 && \
+    git checkout ${MINDSPEED_BRANCH} && \
     pip3 install -r requirements.txt && \
     pip3 install -e .
 
@@ -135,10 +175,10 @@ RUN git clone https://gitcode.com/ascend/MindSpeed.git && \
 RUN git clone https://gitcode.com/ascend/MindSpeed-LLM.git && \
     git clone https://github.com/NVIDIA/Megatron-LM.git && \
     cd Megatron-LM && \
-    git checkout core_v0.12.1 && \
+    git checkout ${MEGATRON_BRANCH} && \
     cp -r megatron ../MindSpeed-LLM/ && \
     cd ../MindSpeed-LLM && \
-    git checkout ${MINDSPEED_LLM_VERSION} && \
+    git checkout ${MINDSPEED_LLM_BRANCH} && \
     mkdir logs && \
     pip3 install -r requirements.txt
 
