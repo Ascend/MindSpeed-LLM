@@ -77,10 +77,12 @@ class MoERouter(MindSpeedFeature):
                                                                                       args.expert_model_parallel_size))
 
     def _validate_aux_loss_free(self, args):
-        if args.moe_router_enable_expert_bias and (args.moe_router_score_function != "sigmoid" and args.moe_router_score_function != "sqrtsoftplus"):
+        SUPPORTED_SCORE_FUNCTIONS = {"sigmoid", "sqrtsoftplus", "softmax"}
+        if args.moe_router_enable_expert_bias and args.moe_router_score_function not in SUPPORTED_SCORE_FUNCTIONS:
             raise ValueError(
-                "Expert bias for aux-loss-free routing only supports sigmoid and sqrtsoftplus score function."
-                "Please set --moe-router-score-function sigmoid or sqrtsoftplus for score function."
+                f"Expert bias for aux-loss-free routing only supports {SUPPORTED_SCORE_FUNCTIONS}. "
+                f"Got: '{args.moe_router_score_function}'. "
+                f"Please set --moe-router-score-function to one of: sigmoid, sqrtsoftplus, softmax."
             )
 
 
@@ -94,7 +96,7 @@ class MoERouter(MindSpeedFeature):
         from mindspeed_llm.core.transformer.transformer_block import  _checkpointed_forward_patch_input_ids
 
         patch_manager.register_patch('megatron.core.transformer.transformer_config.TransformerConfig.__post_init__', 
-                                      transformer_config_post_init_wrapper(TransformerConfig.__post_init__))
+                                      transformer_config_post_init_wrapper)
         patch_manager.register_patch('megatron.core.transformer.moe.router.TopKRouter.__init__', 
                                       topk_router_init_wrapper)
         patch_manager.register_patch('megatron.core.transformer.moe.router.TopKRouter.routing', 

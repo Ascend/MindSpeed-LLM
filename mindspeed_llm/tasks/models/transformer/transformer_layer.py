@@ -188,3 +188,8 @@ class TransformerLayerSubmodulesWithPostNorm:
 
     # Mapping for sharded tensor keys to be applied in `sharded_state_dict` method
     sharded_state_dict_keys_map: Dict[str, str] = field(default_factory=dict)
+
+    # add mhc for deepseek4 spec
+    attn_mhc: Union[ModuleSpec, type] = IdentityOp
+    mlp_mhc: Union[ModuleSpec, type] = IdentityOp
+
