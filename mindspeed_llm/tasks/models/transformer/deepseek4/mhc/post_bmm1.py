@@ -299,7 +299,7 @@ def hc_post_bmm1_backward(h_out: torch.Tensor, H_post: torch.Tensor, grad_out: t
     BS = B * S
 
     GROUP = 2
-    BLOCK_C = C
+    BLOCK_C = 4096 if C > 4096 else C
 
     DIV_C = (C % BLOCK_C == 0)
 
