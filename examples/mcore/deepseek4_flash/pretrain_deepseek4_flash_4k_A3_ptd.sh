@@ -198,7 +198,8 @@ DATA_ARGS="
 
 OUTPUT_ARGS="
     --log-interval 1 \
-    --load ${CKPT_PATH} \
+    --save $CKPT_SAVE_DIR \
+    --load $CKPT_LOAD_DIR \
     --save-interval 2000 \
     --eval-interval 2000 \
     --eval-iters 0 \

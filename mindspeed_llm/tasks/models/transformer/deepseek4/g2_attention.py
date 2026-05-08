@@ -484,5 +484,6 @@ class DeepSeek4MTPSelfAttention(DeepSeek4SelfAttention):
             cp_comm_type=cp_comm_type,
         )
 
+        self.indexer = None
         self.compress_ratio = 0
         self.compressor = None
