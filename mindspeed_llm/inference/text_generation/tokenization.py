@@ -136,7 +136,7 @@ def _tokenize_prompts_and_batch(tokenizer, prompts, tokens_to_generate, max_gene
 
     # Tokenize all the prompts.
     if hasattr(args, "prompt_type") and args.prompt_type is not None:
-        template = get_model_template(args.prompt_type.strip(), args.prompt_type_path.strip(), args.enable_thinking)
+        template = get_model_template(args.prompt_type.strip(), args.prompt_type_path.strip(), args.enable_thinking, args.reasoning_effort, args.drop_thinking)
 
     if args.hf_chat_template:
         if not hasattr(tokenizer, "apply_chat_template"):

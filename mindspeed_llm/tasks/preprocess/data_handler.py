@@ -417,7 +417,7 @@ class LlamaFactoryInstructionHandler(BaseDatasetHandler):
         self.args.output_prefix = self.args.output_prefix + "_packed"
         self.ignored_label = -100
         self.is_multi_turn = True
-        self.llama_factory_template = get_model_template(args.prompt_type.strip(), args.prompt_type_path.strip(), args.enable_thinking)
+        self.llama_factory_template = get_model_template(args.prompt_type.strip(), args.prompt_type_path.strip(), args.enable_thinking, args.reasoning_effort, args.drop_thinking)
         self.cutoff_len = 100000 if args.seq_length is None else args.seq_length
 
     def _format_msg(self, sample):
@@ -573,6 +573,15 @@ class HunyuanInstructionHandler(BaseDatasetHandler):
         for key in self.args.json_keys:
             tokenized_full_prompt[key] = [tokenized_full_prompt[key]]
         return tokenized_full_prompt
+
+
+class OpenAIInstructionHandler(LlamaFactoryInstructionHandler):
+    """
+    Handle OpenAI-format chat datasets, including those with structured
+    tool calling fields (tool_calls, tool_call_id, reasoning_content).
+    """
+    def __init__(self, args, raw_datasets, tokenizer, splitter):
+        super().__init__(args, raw_datasets, tokenizer, splitter)
 
 
 class AlpacaStylePairwiseHandler(BaseDatasetHandler):
@@ -1112,6 +1121,7 @@ def build_dataset(args):
         if args.handler_name in [
             "AlpacaStyleInstructionHandler",
             "SharegptStyleInstructionHandler",
+            "OpenAIInstructionHandler",
             "AlpacaStylePairwiseHandler",
             "SharegptStylePairwiseHandler",
             "PPOAlpacaStyleInstructionHandler",

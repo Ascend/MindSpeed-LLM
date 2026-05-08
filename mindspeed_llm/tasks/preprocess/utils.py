@@ -76,7 +76,34 @@ def get_handler_dataset_attr(data_args, raw_datasets):
             for column_name, target_name in data_args.map_keys.items():
                 setattr(dataset_attr, column_name, target_name)
 
-    elif "SharegptStyle" or "hunyuan" in data_args.handler_name:
+    elif "OpenAI" in data_args.handler_name:
+        dataset_attr.formatting = "openai"
+        openai_defaults = {
+            "role_tag": "role",
+            "content_tag": "content",
+            "user_tag": "user",
+            "assistant_tag": "assistant",
+            "observation_tag": "tool",
+            "function_tag": "function_call",
+            "system_tag": "system",
+            "messages": "messages",
+            "tools": "tools",
+        }
+        for k, v in openai_defaults.items():
+            setattr(dataset_attr, k, v)
+
+        column_names = ["messages", "system", "tools"]
+        if data_args.map_keys is not None:
+            check_dataset_info_map(data_args, column_names, raw_datasets, None)
+            for column_name, target_name in data_args.map_keys.items():
+                if column_name == "tags":
+                    logger.warning(
+                        "OpenAIInstructionHandler does not support custom 'tags' in --map-keys"
+                    )
+                    continue
+                setattr(dataset_attr, column_name, target_name)
+
+    elif "SharegptStyle" in data_args.handler_name or "Hunyuan" in data_args.handler_name:
         dataset_attr.formatting = "sharegpt"
         tag_names = ["role_tag", "content_tag", "user_tag", "assistant_tag", "observation_tag", "function_tag", "system_tag"]
         column_names = ["messages", "tags", "system", "tools", "chosen", "rejected", "kto_tag"]
@@ -141,6 +168,8 @@ def get_dataset_list(data_args) -> List["InstructionDatasetAttr"]:
             column_names = ["system", "images"]
             if dataset_attr.formatting == "alpaca":
                 column_names.extend(["prompt", "query", "response", "history"])
+            elif dataset_attr.formatting == "openai":
+                column_names.extend(["messages", "tools"])
             else:
                 column_names.extend(["messages", "tools"])
 
@@ -473,6 +502,124 @@ def convert_hunyuan_to_intermediate(
     return outputs
 
 
+def convert_openai_to_intermediate(
+    sample: Dict[str, List[Any]], dataset_attr: "InstructionDatasetAttr"
+):
+    """
+    Convert OpenAI-format chat data (with structured tool_calls) into the
+    framework's intermediate format.
+
+    OpenAI format example:
+    {
+        "messages": [
+            {"role": "system", "content": "..."},
+            {"role": "user", "content": "..."},
+            {"role": "assistant", "content": "",
+             "reasoning_content": "...",
+             "tool_calls": [
+                {"id": "...", "type": "function",
+                 "function": {"name": "...", "arguments": "..."}}
+             ]},
+            {"role": "tool", "tool_call_id": "...", "content": "..."},
+            {"role": "assistant", "content": "..."}
+        ],
+        "tools": "[{...}]"
+    }
+    """
+    outputs = {"prompt": [], "response": [], "system": [], "tools": []}
+
+    # OpenAI uses standard role values directly. role_tag / content_tag etc.
+    # come from dataset_attr (defaults to sharegpt's {from, value}, but users
+    # can override via --map-keys for OpenAI's {role, content}).
+    tag_mapping = {
+        dataset_attr.user_tag: Role.USER.value,
+        dataset_attr.assistant_tag: Role.ASSISTANT.value,
+        dataset_attr.observation_tag: Role.OBSERVATION.value,
+        dataset_attr.function_tag: Role.FUNCTION.value,
+        dataset_attr.system_tag: Role.SYSTEM.value,
+    }
+
+    messages = sample[dataset_attr.messages]
+
+    # System message extraction: prefer the leading system message if present,
+    # otherwise fall back to the top-level `system` column (matches sharegpt
+    # converter behaviour).
+    if (
+        dataset_attr.system_tag
+        and len(messages) != 0
+        and messages[0][dataset_attr.role_tag] == dataset_attr.system_tag
+    ):
+        system = messages[0][dataset_attr.content_tag]
+        messages = messages[1:]
+    else:
+        system = sample[dataset_attr.system] if dataset_attr.system else ""
+
+    if len(messages) == 0:
+        return outputs
+
+    aligned_messages = []
+    for turn_idx, message in enumerate(messages):
+        role_value = message.get(dataset_attr.role_tag)
+        mapped_role = tag_mapping.get(role_value)
+        if mapped_role is None:
+            logger.warning(f"Unknown role tag {role_value!r} at turn {turn_idx}; skipping this example.")
+            return outputs
+
+        # Build the aligned message preserving all structured fields.
+        # content can be None for assistant messages that only carry tool_calls;
+        # normalize to "" so downstream templates don't have to special-case None.
+        content = message.get(dataset_attr.content_tag)
+        new_msg = {"role": mapped_role, "content": content if content is not None else ""}
+
+        # Pass through structured fields used by tool-calling-aware templates.
+        # Only attach when present — keeps simple chat samples clean.
+        for field in ("tool_calls", "tool_call_id", "reasoning_content"):
+            if field in message and message[field] is not None:
+                new_msg[field] = message[field]
+
+        aligned_messages.append(new_msg)
+
+    # Lightweight validation: catch obviously broken samples but don't enforce
+    # strict odd/even alternation. Tool-calling sequences legitimately violate
+    # alternation (e.g. parallel tool calls produce consecutive tool messages).
+    if aligned_messages[0]["role"] not in (Role.USER.value, Role.SYSTEM.value):
+        logger.warning(
+            f"First message must be user or system, got {aligned_messages[0]['role']!r}. "
+            f"Skipping this abnormal example."
+        )
+        return outputs
+
+    # SFT split: last message is response, the rest is prompt.
+    if aligned_messages[-1]["role"] != Role.ASSISTANT.value:
+        logger.warning(
+            f"Last message must be assistant for SFT, got {aligned_messages[-1]['role']!r}. "
+            f"Skipping this abnormal example."
+        )
+        return outputs
+
+    prompt = aligned_messages[:-1]
+    response = aligned_messages[-1:]
+
+    # tools field: if it's already a JSON string, pass through; if it's a list
+    # or dict (some datasets store it pre-parsed), serialize back to a string
+    # since downstream template expects a string.
+    tools = sample[dataset_attr.tools] if dataset_attr.tools else ""
+    if isinstance(tools, (list, dict)):
+        tools = json.dumps(tools, ensure_ascii=False)
+
+    outputs["prompt"] = prompt
+    outputs["response"] = response
+    outputs["system"].append(system or "")
+    outputs["tools"].append(tools)
+
+    # Pass through additional dataset keys, matching sharegpt converter.
+    for add_key in dataset_attr.dataset_additional_keys:
+        if add_key != "labels":
+            outputs[add_key] = sample[add_key]
+
+    return outputs
+
+
 def align_dataset(dataset, dataset_attr, data_args):
     """
     Aligned dataset:
@@ -500,6 +647,8 @@ def align_dataset(dataset, dataset_attr, data_args):
         convert_func = partial(convert_alpaca_to_intermediate, dataset_attr=dataset_attr)
     elif data_args.handler_name == "HunyuanInstructionHandler":
         convert_func = partial(convert_hunyuan_to_intermediate, dataset_attr=dataset_attr)
+    elif "OpenAI" in data_args.handler_name:
+        convert_func = partial(convert_openai_to_intermediate, dataset_attr=dataset_attr)
     else:
         convert_func = partial(convert_sharegpt_to_intermediate, dataset_attr=dataset_attr)
     

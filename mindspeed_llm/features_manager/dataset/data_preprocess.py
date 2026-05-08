@@ -67,3 +67,8 @@ class DatasetPreprocessFeature(MindSpeedFeature):
                             help='Number of subsets to cut for multiprocessing')
         group.add_argument('--merge-group-keys', nargs='+', default=None, const=None,
                             help='The `bin-idx` pair files with the same key in their filename will be merged.')
+        group.add_argument("--reasoning-effort", type=str, default=None,
+                            choices=[None, "max", "high"],
+                            help="Reasoning effort for V4-style models. 'max': insert maximum-effort instruction prefix into prompt.'high': reserved (currently no-op).")
+        group.add_argument("--drop-thinking", type=lambda x: {"true": True, "false": False}[x.lower()], default=True,
+                            help="If True, strip history reasoning_content during multi-turn training so only the last assistant turn's reasoning is a loss target. Set to False to preserve all turn reasoning.")

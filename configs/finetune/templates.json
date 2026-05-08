@@ -858,5 +858,18 @@
     "default_system": "You are ChatGPT, a large language model trained by OpenAI.",
     "efficient_eos": true,
     "template_class": "ReasoningTemplate"
+  },
+  {
+    "name": "deepseek4",
+    "stop_words": [
+      "<｜end▁of▁sentence｜>"
+    ],
+    "thought_words": [
+      "<think>",
+      "</think>"
+    ],
+    "efficient_eos": false,
+    "replace_eos": false,
+    "template_class": "DeepSeek4Template"
   }
 ]

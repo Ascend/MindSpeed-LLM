@@ -115,7 +115,7 @@ def add_data_args(parser):
     group.add_argument('--prompt-type', type=str, default=None,
                        choices=['default', 'empty', 'trl', 'chatglm2', 'chatglm3', 'chatglm3_system', 'glm4', 'glm4_moe', 'chatml', 'bailing_mini',
                                 'chatml_de', 'qwen', 'qwen_r1', "qwen_math_r1", 'llama3', 'llama2', 'mistral', 'mixtral', 'gemma', 'alpaca',
-                                'deepseek2', 'deepseek2-lite', 'cpm', 'baichuan2', 'deepseek3', 'intern2', 'hunyuan', 'qwen3', 'magistral', 'plm', 'qwen_lf', 'gpt_oss'],
+                                'deepseek2', 'deepseek2-lite', 'cpm', 'baichuan2', 'deepseek3', 'intern2', 'hunyuan', 'qwen3', 'magistral', 'plm', 'qwen_lf', 'gpt_oss', 'deepseek4'],
                        help='Which template to use for constructing prompts in training.'
                             'e.g., "qwen"')
     group.add_argument('--prompt-type-path', type=str, default=TEMPLATES_DIR,
@@ -160,6 +160,11 @@ def add_data_args(parser):
                        help="Whether to enable data obfuscation.")
     group.add_argument("--obf-seed-content", type=str, default=None,
                        help="Data obfuscation seed content.")
+    group.add_argument("--reasoning-effort", type=str, default=None,
+                       choices=[None, "max", "high"],
+                       help="Reasoning effort for V4-style models. 'max': insert maximum-effort instruction prefix into prompt.'high': reserved (currently no-op).")
+    group.add_argument("--drop-thinking", type=lambda x: {"true": True, "false": False}[x.lower()], default=True,
+                       help="If True, strip history reasoning_content during multi-turn training so only the last assistant turn's reasoning is a loss target. Set to False to preserve all turn reasoning.")
 
 
 def add_tokenizer_args(parser):
@@ -250,6 +255,7 @@ def validate_args(args):
         "LlamaFactoryInstructionHandler",
         "AlpacaStyleInstructionHandler",
         "SharegptStyleInstructionHandler",
+        "OpenAIInstructionHandler",
         "AlpacaStylePairwiseHandler",
         "SharegptStylePairwiseHandler",
         "PPOAlpacaStyleInstructionHandler",
@@ -313,6 +319,8 @@ def validate_args(args):
         else:
             raise ValueError(
                 "When data obfuscation is enabled, valid --tokenizer-name-or-path is not provided. Cannot verify the model type.")
+    if args.reasoning_effort and not args.enable_thinking:
+        raise ValueError(f"reasoning_effort={args.reasoning_effort!r} requires --enable-thinking True. Either remove --reasoning-effort or enable thinking.")
 
 
 def cut_range_to_subs(n, gap):

@@ -22,7 +22,7 @@ from copy import deepcopy
 from pathlib import Path
 from dataclasses import dataclass
 from enum import Enum, unique
-from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Tuple, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Sequence, Tuple, Union, Any, Set, ClassVar
 
 from .formatter import (EmptyFormatter, FunctionFormatter, StringFormatter, ToolFormatter,
                         FunctionFormatterForThink, ToolFormatterForThink)
@@ -108,6 +108,8 @@ class Template:
     replace_eos: bool
     force_system: bool
     enable_thinking: Optional[bool]
+    reasoning_effort: Optional[str]
+    drop_thinking: Optional[bool]
 
 
     def encode_oneturn(
@@ -498,6 +500,601 @@ class ReasoningTemplate(LFDefaultTemplate):
         return self._make_pairs(encoded_messages, cutoff_len, reserved_label_len)
 
 
+@dataclass
+class DeepSeek4Template(LFDefaultTemplate):
+    # ------------------------------------------------------------------
+    # V4 special tokens.
+    # ------------------------------------------------------------------
+    BOS_TOKEN: ClassVar[str] = "<｜begin▁of▁sentence｜>"
+    EOS_TOKEN: ClassVar[str] = "<｜end▁of▁sentence｜>"
+    USER_SP_TOKEN: ClassVar[str] = "<｜User｜>"
+    ASSISTANT_SP_TOKEN: ClassVar[str] = "<｜Assistant｜>"
+    LATEST_REMINDER_SP_TOKEN: ClassVar[str] = "<｜latest_reminder｜>"
+    THINKING_START: ClassVar[str] = "<think>"
+    THINKING_END: ClassVar[str] = "</think>"
+    DSML_TOKEN: ClassVar[str] = "｜DSML｜"
+ 
+    DS_TASK_SP_TOKENS: ClassVar[Dict[str, str]] = {
+        "action": "<｜action｜>",
+        "query": "<｜query｜>",
+        "authority": "<｜authority｜>",
+        "domain": "<｜domain｜>",
+        "title": "<｜title｜>",
+        "read_url": "<｜read_url｜>",
+    }
+    VALID_TASKS: ClassVar[Set[str]] = set(DS_TASK_SP_TOKENS.keys())
+    TOOL_CALLS_BLOCK_NAME: ClassVar[str] = "tool_calls"
+ 
+    # ------------------------------------------------------------------
+    # Text templates.
+    # ------------------------------------------------------------------
+    TOOLS_TEMPLATE: ClassVar[str] = (
+        "## Tools\n\n"
+        "You have access to a set of tools to help answer the user's question. "
+        "You can invoke tools by writing a \"<{dsml}tool_calls>\" block like the following:\n\n"
+        "<{dsml}tool_calls>\n"
+        "<{dsml}invoke name=\"$TOOL_NAME\">\n"
+        "<{dsml}parameter name=\"$PARAMETER_NAME\" string=\"true|false\">$PARAMETER_VALUE</{dsml}parameter>\n"
+        "...\n"
+        "</{dsml}invoke>\n"
+        "<{dsml}invoke name=\"$TOOL_NAME2\">\n"
+        "...\n"
+        "</{dsml}invoke>\n"
+        "</{dsml}tool_calls>\n\n"
+        "String parameters should be specified as is and set `string=\"true\"`. "
+        "For all other types (numbers, booleans, arrays, objects), pass the value in JSON format and set `string=\"false\"`.\n\n"
+        "If thinking_mode is enabled (triggered by {ts}), you MUST output your complete reasoning inside {ts}...{te} BEFORE any tool calls or final response.\n\n"
+        "Otherwise, output directly after {te} with tool calls or final response.\n\n"
+        "### Available Tool Schemas\n\n"
+        "{tool_schemas}\n\n"
+        "You MUST strictly follow the above defined tool name and parameter schemas to invoke tool calls.\n"
+    )
+ 
+    REASONING_EFFORT_MAX: ClassVar[str] = (
+        "Reasoning Effort: Absolute maximum with no shortcuts permitted.\n"
+        "You MUST be very thorough in your thinking and comprehensively decompose the problem to resolve the root cause, "
+        "rigorously stress-testing your logic against all potential paths, edge cases, and adversarial scenarios.\n"
+        "Explicitly write out your entire deliberation process, documenting every intermediate step, considered alternative, "
+        "and rejected hypothesis to ensure absolutely no assumption is left unchecked.\n\n"
+    )
+ 
+    RESPONSE_FORMAT_TEMPLATE: ClassVar[str] = (
+        "## Response Format:\n\nYou MUST strictly adhere to the following schema to reply:\n{schema}"
+    )
+
+    # ==================================================================
+    # Public API.
+    # ==================================================================
+    def encode_oneturn(
+        self,
+        tokenizer: "PreTrainedTokenizer",
+        messages: List[Dict[str, str]],
+        system: Optional[str] = None,
+        tools: Optional[str] = None,
+        cutoff_len: int = 1_000_000,
+        reserved_label_len: int = 1,
+    ) -> Tuple[List[int], List[int]]:
+        """Last-turn-only: returns (prompt_ids, response_ids)."""
+        v4_messages = self._normalize_to_v4_schema(messages, system, tools)
+        v4_messages = self._merge_tool_messages(v4_messages)
+        v4_messages = self._sort_tool_results_by_call_order(v4_messages)
+ 
+        # Drop history reasoning unless tools are present (mirrors the official
+        # encode_messages: tool-calling conversations need full reasoning context
+        # across turns).
+        effective_drop = (
+            self.drop_thinking
+            and self.enable_thinking
+            and not any(m.get("tools") for m in v4_messages)
+        )
+        if effective_drop:
+            v4_messages = self._drop_thinking_messages(v4_messages)
+ 
+        last_asst_idx = -1
+        for i, m in enumerate(v4_messages):
+            if m.get("role") == "assistant":
+                last_asst_idx = i
+ 
+        prompt_text = self.BOS_TOKEN
+        response_text = ""
+        for idx, _ in enumerate(v4_messages):
+            rendered = self._render_message(
+                idx, v4_messages,
+                thinking_mode="thinking" if self.enable_thinking else "chat",
+                drop_thinking=self.drop_thinking,
+                reasoning_effort=self.reasoning_effort if idx == 0 else None,
+            )
+            if last_asst_idx == -1 or idx < last_asst_idx:
+                prompt_text += rendered
+            elif idx == last_asst_idx:
+                response_text = rendered
+            else:
+                # Trailing content after the last assistant — fold into prompt.
+                prompt_text += rendered
+ 
+        return self._encode(prompt_text, tokenizer), self._encode(response_text, tokenizer)
+
+    def encode_multiturn(
+        self,
+        tokenizer: "PreTrainedTokenizer",
+        messages: List[Dict[str, str]],
+        system: Optional[str] = None,
+        tools: Optional[str] = None,
+        cutoff_len: int = 1_000_000,
+        reserved_label_len: int = 1,
+    ) -> Sequence[Tuple[List[int], List[int]]]:
+        """All-turn loss: returns [(source_ids, target_ids), ...] per assistant turn.
+        """
+        v4_messages = self._normalize_to_v4_schema(messages, system, tools)
+        v4_messages = self._merge_tool_messages(v4_messages)
+        v4_messages = self._sort_tool_results_by_call_order(v4_messages)
+    
+        effective_drop = (
+            self.drop_thinking
+            and self.enable_thinking
+            and not any(m.get("tools") for m in v4_messages)
+        )
+        if effective_drop:
+            v4_messages = self._drop_thinking_messages(v4_messages)
+        encoded_segments: List[List[int]] = []  # alternating source, target, ...
+        current_source_text = self.BOS_TOKEN
+ 
+        for idx, _ in enumerate(v4_messages):
+            rendered = self._render_message(
+                idx, v4_messages,
+                thinking_mode="thinking" if self.enable_thinking else "chat",
+                drop_thinking=effective_drop,
+                reasoning_effort=self.reasoning_effort if idx == 0 else None,
+            )
+            if v4_messages[idx].get("role") == "assistant":
+                if not current_source_text:
+                    raise ValueError(
+                        f"DeepSeek4Template.encode_multiturn: assistant at index "
+                        f"{idx} has no preceding source segment. messages must "
+                        f"alternate user/assistant after _merge_tool_messages."
+                    )
+                encoded_segments.append(self._encode(current_source_text, tokenizer))
+                encoded_segments.append(self._encode(rendered, tokenizer))
+                current_source_text = ""
+            else:
+                current_source_text += rendered
+ 
+        # Trailing source with no assistant target is dropped (incomplete sample).
+        return self._make_pairs(encoded_segments, cutoff_len, reserved_label_len)
+ 
+    def _encode(self, tokens, tokenizer: "PreTrainedTokenizer",):
+        return tokenizer.encode(tokens, add_special_tokens=False) if tokens else []
+ 
+    # ==================================================================
+    # Schema normalization (LlamaFactory inputs -> V4 native messages)
+    # ==================================================================
+    def _normalize_to_v4_schema(
+        self,
+        messages: List[Dict[str, Any]],
+        system: Optional[str],
+        tools: Optional[str],
+    ) -> List[Dict[str, Any]]:
+        """Translate (LlamaFactory-style messages, system_str, tools_str) into
+        V4-native messages.
+ 
+        How (system_str, tools_str) merge with `messages`:
+        - If messages already starts with system/developer: handler-supplied
+          system_str is prepended to its content; tools_str is attached only
+          if the message doesn't already have a tools field.
+        - Otherwise: a leading system message is synthesized from system_str
+          and tools_str.
+        - When both system_str and tools_str are empty: pass through unchanged.
+        """
+        messages = deepcopy(messages) if messages else []
+ 
+        # Parse and validate tools_str (OpenAI format only).
+        parsed_tools: Optional[List[Dict[str, Any]]] = None
+        if tools and isinstance(tools, str) and tools.strip():
+            try:
+                parsed = json.loads(tools)
+            except json.JSONDecodeError as e:
+                raise ValueError(
+                    f"Failed to parse tools JSON: {e!r}; tools_str={tools[:200]!r}"
+                ) from e
+            if isinstance(parsed, list) and parsed:
+                for i, t in enumerate(parsed):
+                    if not isinstance(t, dict) or "function" not in t:
+                        raise ValueError(
+                            f"DeepSeek4Template only accepts OpenAI-format tools "
+                            f"([{{'type': 'function', 'function': {{...}}}}, ...]). "
+                            f"Bad entry at index {i}: {t!r}"
+                        )
+                parsed_tools = parsed
+ 
+        system_text = system or ""
+        first_role = messages[0].get("role") if messages else None
+        first_is_system = first_role in ("system", "developer")
+        synthesize_leading = (system_text or parsed_tools) and not first_is_system
+        merge_into_first = (system_text or parsed_tools) and first_is_system
+ 
+        out: List[Dict[str, Any]] = []
+        if synthesize_leading:
+            sys_msg: Dict[str, Any] = {"role": "system", "content": system_text}
+            if parsed_tools:
+                sys_msg["tools"] = parsed_tools
+            out.append(sys_msg)
+        elif merge_into_first:
+            first = messages[0]
+            if system_text:
+                first["content"] = (
+                    system_text
+                    + ("\n\n" if first.get("content") else "")
+                    + (first.get("content") or "")
+                )
+            if parsed_tools:
+                first.setdefault("tools", parsed_tools)
+ 
+        for msg in messages:
+            role = msg.get("role")
+            if role == "user":
+                new_msg = {"role": "user", "content": msg.get("content", "")}
+                for k in ("task", "mask", "wo_eos", "content_blocks"):
+                    if k in msg:
+                        new_msg[k] = msg[k]
+                out.append(new_msg)
+ 
+            elif role == "assistant":
+                new_msg: Dict[str, Any] = {"role": "assistant"}
+                content = msg.get("content", "") or ""
+ 
+                # Explicit reasoning_content takes precedence over inline parsing.
+                if "reasoning_content" in msg:
+                    new_msg["reasoning_content"] = msg["reasoning_content"] or ""
+                    new_msg["content"] = content
+                else:
+                    m = re.compile(r"^\s*<think>\s*(.*?)\s*</think>\s*", re.DOTALL).match(content) if content else None
+                    if m:
+                        new_msg["reasoning_content"] = m.group(1)
+                        new_msg["content"] = content[m.end():]
+                    else:
+                        new_msg["content"] = content
+ 
+                if msg.get("tool_calls"):
+                    new_msg["tool_calls"] = msg["tool_calls"]
+                for k in ("task", "mask", "wo_eos"):
+                    if k in msg:
+                        new_msg[k] = msg[k]
+                out.append(new_msg)
+ 
+            elif role in ("tool", "function", "observation"):
+                # LlamaFactory uses observation/function; V4 uses tool.
+                # _merge_tool_messages folds these into the next user msg.
+                new_msg = {"role": "tool", "content": msg.get("content", "")}
+                if "tool_call_id" in msg:
+                    new_msg["tool_call_id"] = msg["tool_call_id"]
+                out.append(new_msg)
+ 
+            elif role == "system":
+                new_msg = {"role": "system", "content": msg.get("content", "")}
+                if msg.get("tools"):
+                    new_msg["tools"] = msg["tools"]
+                out.append(new_msg)
+ 
+            elif role in ("developer", "latest_reminder"):
+                out.append(deepcopy(msg))
+ 
+            else:
+                raise NotImplementedError(
+                    f"DeepSeek4Template: unsupported role {role!r}"
+                )
+ 
+        return out
+ 
+    # ==================================================================
+    # V4 message rendering.
+    # ==================================================================
+    @classmethod
+    def _render_message(
+        cls,
+        index: int,
+        messages: List[Dict[str, Any]],
+        thinking_mode: str,
+        drop_thinking: bool = True,
+        reasoning_effort: Optional[str] = None,
+    ) -> str:
+        """Render a single message into its V4-encoded text form.
+ 
+        thinking_mode: 'thinking' or 'chat'.
+        drop_thinking: whether earlier-turn reasoning_content was already
+            stripped (encode_oneturn=True; encode_multiturn=False).
+        reasoning_effort: only inserts the max-effort prefix when
+            (index == 0 and thinking_mode == 'thinking' and effort == 'max').
+        """
+        if not (0 <= index < len(messages)):
+            raise IndexError(f"index {index} out of range for messages of length {len(messages)}")
+        if thinking_mode not in ("chat", "thinking"):
+            raise ValueError(f"Invalid thinking_mode: {thinking_mode!r}")
+        if reasoning_effort not in (None, "max", "high"):
+            raise ValueError(f"Invalid reasoning_effort: {reasoning_effort!r}")
+ 
+        prompt = ""
+        msg = messages[index]
+ 
+        # Last user index, inlined (was _find_last_user_index helper).
+        last_user_idx = -1
+        for i in range(len(messages) - 1, -1, -1):
+            if messages[i].get("role") in ("user", "developer"):
+                last_user_idx = i
+                break
+ 
+        role = msg.get("role")
+        content = msg.get("content")
+        tools = msg.get("tools")
+        response_format = msg.get("response_format")
+        tool_calls = msg.get("tool_calls")
+        reasoning_content = msg.get("reasoning_content")
+        wo_eos = msg.get("wo_eos", False)
+ 
+        if tools:
+            tools = [t["function"] for t in tools]  # OpenAI -> function schemas
+        if tool_calls:
+            tool_calls = [
+                {"name": tc["function"]["name"], "arguments": tc["function"]["arguments"]}
+                for tc in tool_calls
+            ]
+ 
+        if index == 0 and thinking_mode == "thinking" and reasoning_effort == "max":
+            prompt += cls.REASONING_EFFORT_MAX
+ 
+        # ---- role-specific rendering ---------------------------------
+        if role == "system":
+            prompt += content or ""
+            if tools:
+                tool_schemas = "\n".join(cls._to_json(t) for t in tools)
+                prompt += "\n\n" + cls.TOOLS_TEMPLATE.format(
+                    tool_schemas=tool_schemas, dsml=cls.DSML_TOKEN,
+                    ts=cls.THINKING_START, te=cls.THINKING_END,
+                )
+            if response_format:
+                prompt += "\n\n" + cls.RESPONSE_FORMAT_TEMPLATE.format(
+                    schema=cls._to_json(response_format)
+                )
+ 
+        elif role == "developer":
+            if not content:
+                raise ValueError(f"Invalid developer message: {msg}")
+            content_dev = cls.USER_SP_TOKEN + content
+            if tools:
+                tool_schemas = "\n".join(cls._to_json(t) for t in tools)
+                content_dev += "\n\n" + cls.TOOLS_TEMPLATE.format(
+                    tool_schemas=tool_schemas, dsml=cls.DSML_TOKEN,
+                    ts=cls.THINKING_START, te=cls.THINKING_END,
+                )
+            if response_format:
+                content_dev += "\n\n" + cls.RESPONSE_FORMAT_TEMPLATE.format(
+                    schema=cls._to_json(response_format)
+                )
+            prompt += content_dev
+ 
+        elif role == "user":
+            prompt += cls.USER_SP_TOKEN
+            content_blocks = msg.get("content_blocks")
+            if content_blocks:
+                parts = []
+                for block in content_blocks:
+                    btype = block.get("type")
+                    if btype == "text":
+                        parts.append(block.get("text", ""))
+                    elif btype == "tool_result":
+                        tool_content = block.get("content", "")
+                        if isinstance(tool_content, list):
+                            text_parts = []
+                            for b in tool_content:
+                                if b.get("type") == "text":
+                                    text_parts.append(b.get("text", ""))
+                                else:
+                                    text_parts.append(f"[Unsupported {b.get('type')}]")
+                            tool_content = "\n\n".join(text_parts)
+                        parts.append(f"<tool_result>{tool_content}</tool_result>")
+                    else:
+                        parts.append(f"[Unsupported {btype}]")
+                prompt += "\n\n".join(parts)
+            else:
+                prompt += content or ""
+ 
+        elif role == "latest_reminder":
+            prompt += cls.LATEST_REMINDER_SP_TOKEN + (content or "")
+ 
+        elif role == "tool":
+            raise NotImplementedError(
+                "tool messages must be merged into user via _merge_tool_messages first"
+            )
+ 
+        elif role == "assistant":
+            thinking_part = ""
+            tc_content = ""
+ 
+            if tool_calls:
+                tc_list = [
+                    f'<{cls.DSML_TOKEN}invoke name="{tc.get("name")}">\n'
+                    f"{cls._encode_arguments_to_dsml(tc)}\n"
+                    f"</{cls.DSML_TOKEN}invoke>"
+                    for tc in tool_calls
+                ]
+                tc_content = (
+                    f"\n\n<{cls.DSML_TOKEN}{cls.TOOL_CALLS_BLOCK_NAME}>\n"
+                    + "\n".join(tc_list)
+                    + f"\n</{cls.DSML_TOKEN}{cls.TOOL_CALLS_BLOCK_NAME}>"
+                )
+ 
+            summary_content = content or ""
+            rc = reasoning_content or ""
+            prev_has_task = index - 1 >= 0 and messages[index - 1].get("task") is not None
+            if thinking_mode == "thinking" and not prev_has_task:
+                if not drop_thinking or index > last_user_idx:
+                    thinking_part = rc + cls.THINKING_END
+ 
+            assembled = thinking_part + summary_content + tc_content
+            prompt += assembled if wo_eos else assembled + cls.EOS_TOKEN
+ 
+        else:
+            raise NotImplementedError(f"Unknown role: {role}")
+ 
+        # ---- transition tokens for what follows -----------------------
+        if (
+            index + 1 < len(messages)
+            and messages[index + 1].get("role") not in ("assistant", "latest_reminder")
+        ):
+            return prompt
+ 
+        task = msg.get("task")
+        if task is not None:
+            if task not in cls.VALID_TASKS:
+                raise ValueError(
+                    f"Invalid task: {task!r}. Valid: {sorted(cls.VALID_TASKS)}"
+                )
+            task_token = cls.DS_TASK_SP_TOKENS[task]
+            if task != "action":
+                prompt += task_token
+            else:
+                prompt += cls.ASSISTANT_SP_TOKEN
+                prompt += cls.THINKING_END if thinking_mode != "thinking" else cls.THINKING_START
+                prompt += task_token
+ 
+        elif role in ("user", "developer"):
+            prompt += cls.ASSISTANT_SP_TOKEN
+            if not drop_thinking and thinking_mode == "thinking":
+                prompt += cls.THINKING_START
+            elif drop_thinking and thinking_mode == "thinking" and index >= last_user_idx:
+                prompt += cls.THINKING_START
+            else:
+                prompt += cls.THINKING_END
+ 
+        return prompt
+ 
+    @classmethod
+    def _encode_arguments_to_dsml(cls, tool_call: Dict[str, str]) -> str:
+        """Serialize a tool call's `arguments` (JSON string) into DSML parameter lines."""
+        try:
+            arguments = json.loads(tool_call["arguments"])
+        except Exception:
+            arguments = {"arguments": tool_call["arguments"]}
+ 
+        lines = []
+        for k, v in arguments.items():
+            is_str = "true" if isinstance(v, str) else "false"
+            value = v if isinstance(v, str) else cls._to_json(v)
+            lines.append(
+                f'<{cls.DSML_TOKEN}parameter name="{k}" string="{is_str}">{value}</{cls.DSML_TOKEN}parameter>'
+            )
+        return "\n".join(lines)
+ 
+    @staticmethod
+    def _merge_tool_messages(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """Fold role='tool' messages into the preceding user message as
+        <tool_result> blocks via content_blocks."""
+        merged: List[Dict[str, Any]] = []
+        for msg in messages:
+            msg = deepcopy(msg)
+            role = msg.get("role")
+            if role == "tool":
+                tool_block = {
+                    "type": "tool_result",
+                    "tool_use_id": msg.get("tool_call_id", ""),
+                    "content": msg.get("content", ""),
+                }
+                if (merged
+                        and merged[-1].get("role") == "user"
+                        and "content_blocks" in merged[-1]):
+                    merged[-1]["content_blocks"].append(tool_block)
+                else:
+                    merged.append({"role": "user", "content_blocks": [tool_block]})
+            elif role == "user":
+                text_block = {"type": "text", "text": msg.get("content", "")}
+                can_merge = (
+                    merged
+                    and merged[-1].get("role") == "user"
+                    and "content_blocks" in merged[-1]
+                    and merged[-1].get("task") is None
+                )
+                if can_merge:
+                    merged[-1]["content_blocks"].append(text_block)
+                else:
+                    new_msg = {
+                        "role": "user",
+                        "content": msg.get("content", ""),
+                        "content_blocks": [text_block],
+                    }
+                    for k in ("task", "wo_eos", "mask"):
+                        if k in msg:
+                            new_msg[k] = msg[k]
+                    merged.append(new_msg)
+            else:
+                merged.append(msg)
+        return merged
+ 
+    @staticmethod
+    def _sort_tool_results_by_call_order(
+        messages: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """Reorder tool_result blocks within a user message to match the order
+        of tool_calls in the preceding assistant message."""
+        last_order: Dict[str, int] = {}
+        for msg in messages:
+            role = msg.get("role")
+            if role == "assistant" and msg.get("tool_calls"):
+                last_order = {}
+                for idx, tc in enumerate(msg["tool_calls"]):
+                    tc_id = tc.get("id") or tc.get("function", {}).get("id", "")
+                    if tc_id:
+                        last_order[tc_id] = idx
+            elif role == "user" and msg.get("content_blocks"):
+                tool_blocks = [b for b in msg["content_blocks"] if b.get("type") == "tool_result"]
+                if len(tool_blocks) > 1 and last_order:
+                    sorted_blocks = sorted(
+                        tool_blocks,
+                        key=lambda b: last_order.get(b.get("tool_use_id", ""), 0),
+                    )
+                    j = 0
+                    new_blocks = []
+                    for block in msg["content_blocks"]:
+                        if block.get("type") == "tool_result":
+                            new_blocks.append(sorted_blocks[j])
+                            j += 1
+                        else:
+                            new_blocks.append(block)
+                    msg["content_blocks"] = new_blocks
+        return messages
+ 
+    @staticmethod
+    def _drop_thinking_messages(
+        messages: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """Strip reasoning_content from assistant messages occurring strictly
+        before the last user message."""
+        last_user_idx = -1
+        for i in range(len(messages) - 1, -1, -1):
+            if messages[i].get("role") in ("user", "developer"):
+                last_user_idx = i
+                break
+ 
+        keep_roles = {"user", "system", "tool", "latest_reminder", "direct_search_results"}
+        result = []
+        for idx, msg in enumerate(messages):
+            role = msg.get("role")
+            if role in keep_roles or idx >= last_user_idx:
+                result.append(msg)
+            elif role == "assistant":
+                msg = deepcopy(msg)
+                msg.pop("reasoning_content", None)
+                result.append(msg)
+            # developer and unknown roles before last_user_idx are dropped.
+        return result
+ 
+    @staticmethod
+    def _to_json(value: Any) -> str:
+        try:
+            return json.dumps(value, ensure_ascii=False)
+        except Exception:
+            return json.dumps(value, ensure_ascii=True)
+
+
+
 templates: Dict[str, Template] = {}
 
 
@@ -505,8 +1102,8 @@ def get_templates() -> Dict[str, Template]:
     return templates
 
 
-def get_model_template(name, prompt_type_path, enable_thinking):
-    name = register_custom_template(name, prompt_type_path, enable_thinking)
+def get_model_template(name, prompt_type_path, enable_thinking, reasoning_effort=None, drop_thinking=True):
+    name = register_custom_template(name, prompt_type_path, enable_thinking, reasoning_effort, drop_thinking)
     if name is None:
         template = templates["empty"]  # placeholder
     else:
@@ -521,8 +1118,10 @@ def fix_model_tokenizer(
     name: Optional[str] = None,
     prompt_type_path: Optional[str] = None,
     enable_thinking: Optional[bool] = False,
+    reasoning_effort: Optional[str] = None,
+    drop_thinking: Optional[bool] = True
 ):
-    template = get_model_template(name, prompt_type_path, enable_thinking)
+    template = get_model_template(name, prompt_type_path, enable_thinking, reasoning_effort, drop_thinking)
 
     stop_words = template.stop_words
     if template.replace_eos:
@@ -566,6 +1165,8 @@ def _register_template(
     force_system: bool = False,
     enable_thinking: Optional[bool] = True,
     template_class: type["Template"] = Template,
+    reasoning_effort: Optional[str] = None,
+    drop_thinking: Optional[bool] = True
 ) -> None:
     r"""
     Registers a chat template.
@@ -616,6 +1217,8 @@ def _register_template(
         replace_eos=replace_eos,
         force_system=force_system,
         enable_thinking=enable_thinking,
+        reasoning_effort=reasoning_effort,
+        drop_thinking=drop_thinking
     )
 
 
@@ -632,8 +1235,11 @@ def _add_or_replace_eos_token(tokenizer: "PreTrainedTokenizer", eos_token: str) 
         logger.warning("New tokens have been added, make sure `resize_vocab` is True.")
 
 
-def register_custom_template(name, json_file_path=TEMPLATES_DIR, enable_thinking=False) -> str:
+def register_custom_template(name, json_file_path=TEMPLATES_DIR, enable_thinking=False, reasoning_effort=None, drop_thinking=True) -> str:
     if name in templates:
+        if name == 'deepseek4' and reasoning_effort is not None:
+            templates[name].reasoning_effort = reasoning_effort
+            templates[name].drop_thinking = drop_thinking
         return name
     
     if not bool(re.match(r'(?:(?:/|\.{1,2}/|[^/\0]+/)(?:[^/\0]+/)*[^/\0]*|\.{1,2})', json_file_path)):
@@ -673,7 +1279,10 @@ def register_custom_template(name, json_file_path=TEMPLATES_DIR, enable_thinking
     format_separator = EmptyFormatter(**format_separator) if format_separator else None
     format_prefix = EmptyFormatter(**format_prefix) if format_prefix else None
     template_class = _get_template_class(template_class) if template_class else Template
-    if name in ['qwen3', 'bailing_mini']:
+    if name == 'deepseek4':
+        format_function = None
+        format_tools = None
+    elif name in ['qwen3', 'bailing_mini']:
         format_function = FunctionFormatterForThink(**format_function) if format_function else None
         format_tools = ToolFormatterForThink(**format_tools) if format_tools else None
     else:
@@ -697,7 +1306,9 @@ def register_custom_template(name, json_file_path=TEMPLATES_DIR, enable_thinking
         replace_eos=replace_eos,
         force_system=force_system,
         enable_thinking=enable_thinking,
-        template_class=template_class
+        template_class=template_class,
+        reasoning_effort=reasoning_effort,
+        drop_thinking=drop_thinking
     )
 
     return name
