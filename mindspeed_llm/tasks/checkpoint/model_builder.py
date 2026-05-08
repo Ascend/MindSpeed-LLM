@@ -90,6 +90,10 @@ class HuggingFaceModel(Model):
 
         config_key_mapping = self.model_cfg.get(self.model_type_hf).get('config_hf_key_mapping')
         config_value = self.model_cfg.get(self.model_type_hf).get('config_set_value')
+
+        for key, value in hf_args.items():
+            setattr(self, key, value)
+
         for key_target in config_key_mapping:
             key_hf = config_key_mapping[key_target]
             if key_hf == "None":

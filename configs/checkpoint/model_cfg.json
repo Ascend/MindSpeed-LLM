@@ -909,10 +909,7 @@
         "qk_layernorm": true,
         "router_bias": true,
         "enable_dsa_indexer": true,
-        "first_k_dense_replace": 0,
-        "n_hash_layers": 3,
-        "save_layer_by_layer": true,
-        "compress_ratios": [1, 1, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4, 128, 4]
+        "first_k_dense_replace": 0
       },
       "config_hf_key_mapping": {
         "first_k_dense_replace": "None",
@@ -926,7 +923,9 @@
         "qk_pos_emb_head_dim": "rope_head_dim",
         "num_layers": "num_hidden_layers",
         "hidden_size": "hidden_size",
-        "num_attention_heads": "num_attention_heads"
+        "num_attention_heads": "num_attention_heads",
+        "compress_ratios": "compress_ratios",
+        "n_hash_layers": "num_hash_layers"
       },
       "model_hf_key_mapping": {
         "embedding_word_embeddings": "embed.weight",

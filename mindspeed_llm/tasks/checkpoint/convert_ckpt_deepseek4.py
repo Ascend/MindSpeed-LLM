@@ -51,10 +51,8 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
         self.num_layers = self.load_model.num_layers
         self.num_experts = self.load_model.num_experts
         self.compress_ratios = self.load_model.compress_ratios
-        if len(self.compress_ratios) < self.num_layers:
-            self.compress_ratios = self.compress_ratios + [self.compress_ratios[-1]] * (self.num_layers - len(self.compress_ratios))
-        if len(self.compress_ratios) != self.num_layers:
-            raise ValueError("compress-ratios length must equal num-layers (after padding).")
+        if len(self.compress_ratios) != self.num_layers + self.load_model.num_nextn_predict_layers:
+            raise ValueError("compress-ratios length must equal num-layers add mtp-layers.")
 
         self.num_layer_list = getattr(args, "num_layer_list", None)
         self.noop_layers = getattr(args, "noop_layers", None)
@@ -178,7 +176,8 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
     def _compress_ratio(self, hf_layer_idx: int) -> int:
         if 0 <= hf_layer_idx < len(self.compress_ratios):
             return self.compress_ratios[hf_layer_idx]
-        return self.compress_ratios[-1]
+        else:
+            raise ValueError("compress-ratios length must equal num-layers add mtp-layers.")
 
     def _mg_layer_prefix(self, local_layer_idx: int, mtp_layer_flag: bool = False) -> str:
         return f"mtp.layers.{local_layer_idx}.transformer_layer" if mtp_layer_flag else f"decoder.layers.{local_layer_idx}"
@@ -216,7 +215,7 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
             f"layers.{i}.hc_ffn_scale",
         }
 
-        if cr != 1:
+        if cr != 0:
             keys |= {
                 f"layers.{i}.attn.compressor.ape",
                 f"layers.{i}.attn.compressor.norm.weight",
@@ -587,10 +586,17 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
         wq_a = weights_dict.pop(f"{hf_prefix}.attn.wq_a.weight")
         wq_b = weights_dict.pop(f"{hf_prefix}.attn.wq_b.weight")
 
+        if wkv.dtype != torch.bfloat16:
+            raise ValueError(
+                "Only bfloat16 (bf16) precision is currently supported. "
+                "fp4 and fp8 are not supported. "
+                "Please run `ckpt_dequant_deepseek4_fp8_to_bf16.sh` first."
+            )
+
         cr = self._compress_ratio(hf_layer_idx) if (not mtp_layer_flag) else 1
 
         comp = {}
-        if (not mtp_layer_flag) and cr != 1:
+        if (not mtp_layer_flag) and cr != 0:
             comp["ape"] = weights_dict.pop(f"{hf_prefix}.attn.compressor.ape")
             comp["norm"] = weights_dict.pop(f"{hf_prefix}.attn.compressor.norm.weight")
             comp["wgate"] = weights_dict.pop(f"{hf_prefix}.attn.compressor.wgate.weight")
@@ -615,7 +621,7 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
 
         comp_wgate_lst = comp_wkv_lst = None
         idx_wgate_lst = idx_wkv_lst = idx_wq_b_lst = idx_wp_lst = None
-        if (not mtp_layer_flag) and cr != 1:
+        if (not mtp_layer_flag) and cr != 0:
             comp_wgate_lst = [comp["wgate"]] * self.tensor_model_parallel_size
             comp_wkv_lst = [comp["wkv"]] * self.tensor_model_parallel_size
             if cr == 4:
@@ -638,7 +644,7 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
                 sd[f"{prefix}.linear_q.weight"] = wq_a_lst[tp_rank].clone()
                 sd[f"{prefix}.linear_q_up_proj.weight"] = wq_b_lst[tp_rank].clone()
 
-                if (not mtp_layer_flag) and cr != 1:
+                if (not mtp_layer_flag) and cr != 0:
                     sd[f"{prefix}.compressor.ape"] = comp["ape"].clone()
                     sd[f"{prefix}.compressor.norm.weight"] = comp["norm"].clone()
                     sd[f"{prefix}.compressor.wgate.weight"] = comp_wgate_lst[tp_rank].clone()
@@ -666,6 +672,7 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
         hf_prefix = f"mtp.{hf_layer_idx}" if mtp_layer_flag else f"layers.{hf_layer_idx}"
 
         router_w = weights_dict.pop(f"{hf_prefix}.ffn.gate.weight")
+        router_w = router_w[:self.num_experts, :]
         tid2eid = None
         router_bias = None
 
