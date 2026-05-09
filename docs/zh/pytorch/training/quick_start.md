@@ -389,6 +389,9 @@
     bash examples/mcore/qwen3/tune_qwen3_8b_4K_full_ptd.sh
     ```
 
+    **图 2**  启动微调  
+    ![tune_log.png](../../pytorch/figures/quick_start/tune_log.png)
+
     脚本中包含微调参数或优化特性，下表为部分参数解释。
 
     **表 5**  微调脚本参数说明  
