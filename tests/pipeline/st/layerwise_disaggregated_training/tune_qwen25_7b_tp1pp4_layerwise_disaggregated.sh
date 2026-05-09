@@ -199,7 +199,7 @@ run_model_conversion_2() {
 
 main() {
     # change work dir
-    basepath=$(cd `dirname $0`; cd ../../../; pwd)
+    basepath=$(cd `dirname $0`; cd ../../../../; pwd)
     cd $basepath
     log_info "Changed to working directory: $basepath"
 

@@ -105,6 +105,7 @@ CKPT_ARGS="
     --no-save-optim \
     --no-save-rng \
     --seed 1234 \
+    --ckpt-format torch
 "
 
 OUTPUT_ARGS="

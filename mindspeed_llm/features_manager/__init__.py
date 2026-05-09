@@ -320,7 +320,8 @@ def add_ai_framework_feature(features_list: List[MindSpeedFeature]):
 
 def add_layerwise_diaggregated_training_feature(feature_list: List[MindSpeedFeature]):
     feature_list.extend([
-        UShapedSplitFeature()
+        UShapedSplitFeature(),
+        VTPFeature()
     ])
 
 

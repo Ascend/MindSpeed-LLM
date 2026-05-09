@@ -43,13 +43,13 @@ trap cleanup INT TERM EXIT
 
 # Configuration parameters
 # Model conversion configuration
-HF_MODEL_DIR="/data/ci/models/qwen25/hf/Qwen2.5-7B-Instruct/"
-TOKENIZER_PATH="/data/ci/models/qwen25/hf/Qwen2.5-7B-Instruct/tokenizer.json"
+HF_MODEL_DIR="/data/ci/models/qwen25/hf/Qwen2.5-7B/"
+TOKENIZER_PATH="/data/ci/models/qwen25/hf/Qwen2.5-7B/tokenizer.json"
 MG_EDGE_SAVE_DIR="/data/ci/cache/qwen2.5_7b_tp1pp5/"
 MG_CLOUD_SAVE_DIR="/data/ci/cache/qwen2.5_7b_tp2pp5/"
 VTP_EDGE_SAVE_DIR="/data/ci/cache/qwen2.5_7b_tp1pp4_vtp_edge/"
 VTP_CLOUD_SAVE_DIR="/data/ci/cache/qwen2.5_7b_tp2pp4_vtp_cloud/"
-VTP_2_MG_SAVE_DIR="/data/ci/cache/qwen2.5_7b_tp1pp5_vpp_2_mg/""
+VTP_2_MG_SAVE_DIR="/data/ci/cache/qwen2.5_7b_tp1pp5_vpp_2_mg/"
 
 # Parallel training script configuration
 TRAIN_SCRIPTS=(

@@ -14,7 +14,7 @@ WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 CKPT_LOAD_DIR="/data/ci/cache/qwen2.5_7b_tp2pp4_vtp_cloud/"
 CKPT_SAVE_DIR="/data/ci/cache/save_dir/cloud/"
 DATA_PATH=""
-TOKENIZER_PATH="/data/ci/models/qwen25/hf/Qwen2.5-7B-Instruct/"
+TOKENIZER_PATH="/data/ci/models/qwen25/hf/Qwen2.5-7B/"
 
 
 TP=2
