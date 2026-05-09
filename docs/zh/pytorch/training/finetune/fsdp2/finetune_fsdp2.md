@@ -217,7 +217,7 @@ data:
 
 ```yaml
 data:
-  dataset: "your origin data path.example: /home/train-00000-of-a09b74b3ef9c3b56.parquet" #直接填写原始数据集路径
+  dataset: "your original data path, example: /home/train-00000-of-a09b74b3ef9c3b56.parquet" #直接填写原始数据集路径
   template: gpt                                     # 构建 prompt 的模板名称
   cutoff_len: 4096                                  # 分词后输入序列的截断长度，超过该长度的序列会被截断
   max_samples: 100000                               # 调试用，用于截断每个数据集的样本数量，与 streaming 互斥

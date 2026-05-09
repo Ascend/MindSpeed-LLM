@@ -1,17 +1,17 @@
 # 评估指导手册
 
-MindSpeed-LLM 支持大模型在公开基准数据集上进行准确率评估，当前支持的 Benchmark 如下：
-详细统计信息见[evaluation.md](./models_evaluation.md)
+MindSpeed LLM 支持大模型在公开基准数据集上进行准确率评估，当前支持的 Benchmark 
+ 详细统计信息可参考[evaluation.md](./models_evaluation.md)。
 
 ## 环境变量
 
-脚本中的环境变量配置见[环境变量说明](../../features/mcore/environment_variable.md)
+脚本中的环境变量配置可参考[环境变量说明](../../features/mcore/environment_variable.md)。
 
 ## 大模型分布式评估使用介绍
 
 ### 1. 基准评估
 
-MindSpeed-LLM 基准评估脚本命名风格及启动方法为：
+MindSpeed LLM 基准评估脚本命名风格及启动方法为：
 
 ```shell
 # 命名及启动：examples/mcore/model_name/evaluate_xxx.sh
@@ -21,7 +21,7 @@ bash examples/mcore/llama2/evaluate_llama2_7b_mmlu_ptd.sh
 ```shell
 # 修改模型参数路径和词表路径
 TOKENIZER_PATH="./model_from_hf/llama-2-7b-hf/"  #词表路径
-CHECKPOINT="./model_weights/llama-2-7b-mcore"  #权重路径
+CHECKPOINT="./model_weights/llama-2-7b-mcore"    #权重路径
 # 配置任务和数据集路径
 DATA_PATH="./mmlu/data/test/"
 TASK="mmlu"  # 支持 mmlu、ceval、agieval、bbh、boolq、human_eval
@@ -64,9 +64,9 @@ bash examples/mcore/llama2/evaluate_llama2_7b_full_mmlu_ptd.sh
 
 ### 3. LoRA权重评估
 
-使用lora权重的评估脚本命名风格及启动方法为：
+使用LoRA权重的评估脚本命名风格及启动方法为：
 
 ```shell
-# 需要加载lora权重启动评估脚本，命名风格及启动方法为：
+# 需要加载LoRA权重启动评估脚本，命名风格及启动方法为：
 bash examples/mcore/codellama/evaluate_codellama_34b_lora_ptd.sh
 ```

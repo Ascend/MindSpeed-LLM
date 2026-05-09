@@ -6,7 +6,7 @@
 
 ## 解决方案
 
-通过调用底层flash-attention算子的可变长模式，支持当前训练场景。
+通过调用底层FlashAttention算子的可变长模式，支持当前训练场景。
 
 ## 使用方式
 
@@ -27,7 +27,7 @@ python ./preprocess_data.py \
 
 ### 2. 训练参数设置
 
-在模型训练脚本中增加 `reset-attention-mask`
+在模型训练脚本中增加`--reset-attention-mask`参数。
 
 使能之后，会根据eod位置，生成变量actual_seq_len，标识多个文档（doc）拼接的实际长度。
 

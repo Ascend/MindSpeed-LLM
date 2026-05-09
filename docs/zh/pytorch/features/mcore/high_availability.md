@@ -23,7 +23,7 @@
 
 ### 原理说明
 
-megatron原生的分布式优化器数据流及工作原理如下图：
+Megatron原生的分布式优化器数据流及工作原理如下图：
 
 ![](../../figures/high_availability/grad_buffer_sharding.png)
 
@@ -42,9 +42,9 @@ megatron原生的分布式优化器数据流及工作原理如下图：
 
 ### 环境准备
 
-MindIO的功能以whl包的形式提供
+MindIO的功能以whl包的形式提供。
 
-mindio_ttp下载地址：[MindIO TTP 下载软件包-昇腾社区](https://www.hiascend.com/document/detail/zh/mindcluster/730/clustersched/dlug/mindiotft009.html)
+mindio_ttp下载地址：[MindIO TTP 下载软件包-昇腾社区](https://gitcode.com/Ascend/mind-cluster/blob/branch_v26.0.0/docs/zh/scheduling/fault_recovery_acceleration/02_installation_and_deployment.md#%E5%87%86%E5%A4%87%E8%BD%AF%E4%BB%B6%E5%8C%85)
 
 ### 启动脚本中添加启动参数
 
@@ -86,12 +86,12 @@ mindio_ttp下载地址：[MindIO TTP 下载软件包-昇腾社区](https://www.h
 
 4、当前缩容后不可再次缩容，扩容仅支持直接扩容回原有规模
 
-详见：[MindIO TTP 约束限制-昇腾社区](https://www.hiascend.com/document/detail/zh/mindcluster/730/clustersched/dlug/mindiotft005.html)
+详见：[MindIO TTP 约束限制-昇腾社区](https://gitcode.com/Ascend/mind-cluster/blob/branch_v26.0.0/docs/zh/scheduling/fault_recovery_acceleration/02_installation_and_deployment.md#%E7%BA%A6%E6%9D%9F%E9%99%90%E5%88%B6)
 
 ### CheckPoint保存与加载优化
 
 开启enable-high-availability时，若环境上安装了MindIO ACP SDK，则会使用mindio_acp的一级异步CheckPoint保存与加载优化
 
-安装指导：[安装MindIO ACP SDK-昇腾社区](https://www.hiascend.com/document/detail/zh/mindcluster/730/clustersched/dlug/mindioacp010.html)
+详见：[MindIO TTP 约束限制-昇腾社区](https://gitcode.com/Ascend/mind-cluster/blob/branch_v26.0.0/docs/zh/scheduling/fault_recovery_acceleration/02_installation_and_deployment.md#%E7%BA%A6%E6%9D%9F%E9%99%90%E5%88%B6)
 
-mindio_acp下载地址：[MindIO ACP 下载软件包-昇腾社区](https://www.hiascend.com/document/detail/zh/mindcluster/730/clustersched/dlug/mindioacp009.html)
+详见：[MindIO TTP 约束限制-昇腾社区](https://gitcode.com/Ascend/mind-cluster/blob/branch_v26.0.0/docs/zh/scheduling/fault_recovery_acceleration/02_installation_and_deployment.md#%E7%BA%A6%E6%9D%9F%E9%99%90%E5%88%B6)

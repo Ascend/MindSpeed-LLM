@@ -34,9 +34,9 @@
         ```shell
         .
         ├── README.md                      # 模型说明文档
-        ├── config.json                   # 模型结构配置文件
-        ├── generation_config.json       # 文本生成时的配置
-        ├── merges.txt                   # tokenizer的合并规则文件
+        ├── config.json                    # 模型结构配置文件
+        ├── generation_config.json         # 文本生成时的配置
+        ├── merges.txt                     # tokenizer的合并规则文件
         ├── model-00001-of-00005.safetensors  # 模型权重文件第1部分（共5部分）
         ├── model-00002-of-00005.safetensors  # 模型权重文件第2部分
         ├── model-00003-of-00005.safetensors  # 模型权重文件第3部分
@@ -44,8 +44,8 @@
         ├── model-00005-of-00005.safetensors  # 模型权重文件第5部分
         ├── model.safetensors.index.json      # 权重分片索引文件，指示各个权重参数对应的文件
         ├── tokenizer.json               # Hugging Face格式的tokenizer
-        ├── tokenizer_config.json       # tokenizer相关配置
-        └── vocab.json                  # 模型词表文件
+        ├── tokenizer_config.json        # tokenizer相关配置
+        └── vocab.json                   # 模型词表文件
         ```
 
     - 数据集准备  
@@ -57,10 +57,10 @@
     首先需要修改脚本中的以下参数配置：
 
     ```bash
-    --load-dir ./model_from_hf/qwen3_hf/ # HF权重路径
+    --load-dir ./model_from_hf/qwen3_hf/    # HF权重路径
     --save-dir ./model_weights/qwen3_mcore/ # Megatron权重保存路径
     --tokenizer-model ./model_from_hf/qwen3_hf/tokenizer.json # HF的tokenizer路径
-    --target-tensor-parallel-size 1 # TP切分大小
+    --target-tensor-parallel-size 1   # TP切分大小
     --target-pipeline-parallel-size 4 # PP切分大小
     ```
 
@@ -123,10 +123,10 @@
 
         ```bash
         # 根据分布式集群实际情况配置分布式参数
-        NPUS_PER_NODE=8  # 每个节点的卡数
+        NPUS_PER_NODE=8                    # 每个节点的卡数
         MASTER_ADDR="your master node IP"  # 都需要修改为主节点的IP地址（不能为localhost）
         MASTER_PORT=6000
-        NNODES=2  # 集群里的节点数，以实际情况填写
+        NNODES=2                     # 集群里的节点数，以实际情况填写
         NODE_RANK="current node id"  # 当前节点的RANK，多个节点不能重复，主节点为0, 其他节点可以是1、2...
         WORLD_SIZE=$(($NPUS_PER_NODE * $NNODES))
         ```
@@ -134,10 +134,10 @@
     然后需要在脚本中修改相关路径参数和模型切分配置：
 
     ```bash
-    CKPT_LOAD_DIR="your model ckpt path"  # 指向权重转换后保存的路径
+    CKPT_LOAD_DIR="your model ckpt path"      # 指向权重转换后保存的路径
     CKPT_SAVE_DIR="your model save ckpt path" # 指向用户指定的微调后权重保存路径
-    DATA_PATH="your data path" # 指定处理后的数据路径
-    TOKENIZER_PATH="your tokenizer path" # 指定模型的tokenizer路径
+    DATA_PATH="your data path"                # 指定处理后的数据路径
+    TOKENIZER_PATH="your tokenizer path"      # 指定模型的tokenizer路径
     TP=1 # 模型权重转换的tp大小，在本例中是1
     PP=4 # 模型权重转换的pp大小，在本例中是4
     ```
