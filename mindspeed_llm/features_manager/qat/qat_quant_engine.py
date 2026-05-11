@@ -13,8 +13,8 @@ class QATQuantEngineFeature(MindSpeedFeature):
 
     def register_args(self, parser):
         group = parser.add_argument_group(title=self.feature_name)
-        group.add_argument('--qat-scheme', type=str, default=None,
-                           help='Quantization method to use')
+        group.add_argument('--qat-scheme', type=str, default=None, choices=['w4a16-mxfp4', 'w4a16-mxfp4-moe-only'],
+                           help='Set the QAT quantization method')
 
     def register_patches(self, pm: MindSpeedPatchesManager, args):
         if getattr(args, 'qat_scheme', None) == "w4a16-mxfp4":
