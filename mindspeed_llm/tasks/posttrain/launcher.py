@@ -3,7 +3,7 @@ import logging
 
 from megatron.training import get_args
 from megatron.training.initialize import initialize_megatron
-from mindspeed_llm.tasks.posttrain.sft import SFTTrainer
+from mindspeed_llm.tasks.posttrain.sft import SFTTrainer, DeepSeek4SFTTrainer
 from mindspeed_llm.tasks.posttrain.dpo import DPOTrainer
 from mindspeed_llm.tasks.posttrain.ldt_sft.ldt_sft_trainer import LDTSFTTrainer
 
@@ -20,6 +20,8 @@ def get_trainer(stage):
     if stage == "sft":
         if getattr(get_args(), 'layerwise_disaggregated_training', None):
             return LDTSFTTrainer()
+        elif getattr(get_args(), 'prompt_type', None) == 'deepseek4':
+            return DeepSeek4SFTTrainer()
         else:
             return SFTTrainer()
     elif stage == "dpo":

@@ -3,4 +3,4 @@
 __all__ = ["SFTTrainer"]
 
 
-from .sft_trainer import SFTTrainer
+from .sft_trainer import SFTTrainer, DeepSeek4SFTTrainer
