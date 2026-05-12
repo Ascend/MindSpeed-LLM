@@ -65,7 +65,7 @@
         <td></td>
     </tr>
 
-</table>    
+</table>
 
 ## 测试用例占用蓝区资源登记
 
@@ -241,6 +241,15 @@
         <td>/data/ci/cache/llama3-8b-dataset/llama3_8b</td>
         <td>/</td>
         <td>/data/ci/cache/llama-3-8b-tp1pp8</td>
+    </tr>
+    <tr>
+        <td>tune_qwen3_8b_lora_tp2pp1.sh</td>
+        <td>/data/ci/models/Qwen3-8B/hf/Qwen3-8B</td>
+        <td>/data/ci/cache/qwen3-8b-layer1-lora-tp2pp1</td>
+        <td>/data/ci/datasets/origin/alpaca/train-00000-of-00001-a09b74b3ef9c3b56.parquet</td>
+        <td>/data/ci/cache/qwen3-8b-dataset/qwen3_8b</td>
+        <td>/</td>
+        <td>/data/ci/cache/qwen3-8b-layer1-lora-tp2pp1</td>
     </tr>
     <tr>
         <td>test_rlhf_qwen25_7b_tp2_pp2</td>

@@ -123,4 +123,3 @@ torchrun $DISTRIBUTED_ARGS $basepath/posttrain_gpt.py \
     --model-type-hf llama2 \
     --transformer-impl local \
     --mg-save-dir ${MG_CACHE_DIR} \
-

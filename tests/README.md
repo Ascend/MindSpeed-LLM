@@ -111,8 +111,8 @@ CI门禁用例看护仓库重点模型和基本特性，覆盖冒烟测试场景
         <td>Y</td>
     </tr>
     <tr>
-        <td>LoRA, lora-fusion, llama3-rope, no-pad-to-seq-lengths, enable-hf2mg-convert, auto_data_process</td>
-        <td><a href="st/shell_scripts/tune_llama3_8b_lora_tp1pp8.sh">tune_llama3_8b_lora_tp1pp8.sh</a></td>
+        <td>LoRA, lora-fusion, rope, no-pad-to-seq-lengths, enable-hf2mg-convert, auto_data_process</td>
+        <td><a href="st/shell_scripts/tune_qwen3_8b_lora_tp2pp1.sh">tune_qwen3_8b_lora_tp2pp1.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
@@ -191,7 +191,7 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <th>Mem.</th>
     </tr>
     <tr>
-        <td rowspan="31">ST</td>
+        <td rowspan="32">ST</td>
         <td rowspan="1">baichuan2-13B</td>
         <td>baichuan2_13b, no-gradient-accumulation-fusion</td>
         <td><a href="pipeline/st/baichuan2-13B/baichuan2_13b_tp8_pp1_mcore.sh">baichuan2_13b_tp8_pp1_mcore.sh</a></td>
@@ -342,9 +342,16 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td>Y</td>
     </tr>
     <tr>
-        <td rowspan="1">llama3</td>
+        <td rowspan="2">llama3</td>
         <td>llama3, VPP, GQA, recompute, manual_gc</td>
         <td><a href="pipeline/st/llama3/llama3_tp2_pp2_vpp1.sh">llama3_tp2_pp2_vpp1.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td>llama3, LoRA, lora-fusion, llama3-rope, no-pad-to-seq-lengths, enable-hf2mg-convert, auto_data_process</td>
+        <td><a href="pipeline/st/llama3/tune_llama3_8b_lora_tp1pp8.sh">tune_llama3_8b_lora_tp1pp8.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
