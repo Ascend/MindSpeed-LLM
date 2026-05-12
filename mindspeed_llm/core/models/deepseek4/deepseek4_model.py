@@ -26,14 +26,12 @@ from megatron.training import get_args
 from megatron.core.transformer.moe.router import TopKRouter
 from megatron.core.transformer.identity_op import IdentityOp
 
-from mindspeed_llm.core.tensor_parallel.layers import SegmentedColumnParallelLinear
-from mindspeed_llm.training.utils import (set_actual_seq_len_list, _CAN_RECORD_REGISTRY, 
-                           check_model_inputs)
-from mindspeed_llm.training.utils import set_actual_seq_len_list
 from mindspeed.core.context_parallel.get_batch_utils import get_actual_seq_len
 from mindspeed.utils import compute_qkv_index, get_position_ids
+from mindspeed_llm.core.tensor_parallel.layers import SegmentedColumnParallelLinear
+from mindspeed_llm.training.utils import set_actual_seq_len_list, _CAN_RECORD_REGISTRY, check_model_inputs
 from mindspeed_llm.core.models.common.chunk_loss import chunk_loss, calculate_lm_loss
-from mindspeed_llm.tasks.models.transformer.deepseek4.mhc.mhc import MHC, hc_repeat
+from mindspeed_llm.tasks.models.transformer.deepseek4.mhc.mhc import hc_repeat
 from mindspeed_llm.core.models.common.embeddings.rotary_pos_embedding import apply_g2_rotary_embedding
 
 
@@ -42,32 +40,33 @@ class DeepSeek4Model(MegatronCoreGPTModel):
     patch megatron GPTModel
     """
 
-    def __init__(self,
-                 config: TransformerConfig,
-                 transformer_layer_spec: ModuleSpec,
-                 vocab_size: int,
-                 max_sequence_length: int,
-                 pre_process: bool = True,
-                 post_process: bool = True,
-                 fp16_lm_cross_entropy: bool = False,
-                 parallel_output: bool = True,
-                 share_embeddings_and_output_weights: bool = False,
-                 position_embedding_type: Literal['learned_absolute', 'rope', 'g2', 'none'] = 'learned_absolute',
-                 rotary_percent: float = 1.0,
-                 rotary_base: int = 10000,
-                 seq_len_interpolation_factor: Optional[float] = None,
-                 mtp_block_spec: Optional[ModuleSpec] = None,
-                 hc_head_spec: Optional[ModuleSpec] = IdentityOp,
-                 *args,
-                 **kwargs,
-                 ) -> None:
-        super(LanguageModule, self).__init__(config=config)
+    def __init__(  # noqa
+        self,
+        config: TransformerConfig,
+        transformer_layer_spec: ModuleSpec,
+        vocab_size: int,
+        max_sequence_length: int,
+        *args,
+        pre_process: bool = True,
+        post_process: bool = True,
+        fp16_lm_cross_entropy: bool = False,
+        parallel_output: bool = True,
+        share_embeddings_and_output_weights: bool = False,
+        position_embedding_type: Literal['learned_absolute', 'rope', 'g2', 'none'] = 'learned_absolute',
+        rotary_percent: float = 1.0,
+        rotary_base: int = 10000,
+        seq_len_interpolation_factor: Optional[float] = None,
+        mtp_block_spec: Optional[ModuleSpec] = None,
+        hc_head_spec: Optional[ModuleSpec] = IdentityOp,
+        **kwargs,
+    ) -> None:
+        super(LanguageModule, self).__init__(config=config)  # pylint: disable=E1003
 
         global_args = get_args()
         post_layer_norm = kwargs.pop('post_layer_norm', True)
 
         if global_args.use_global_aux_loss:
-            _CAN_RECORD_REGISTRY[str(self.__class__)] = { "router_logits": TopKRouter}
+            _CAN_RECORD_REGISTRY[str(self.__class__)] = {"router_logits": TopKRouter}
 
         self.transformer_layer_spec: ModuleSpec = transformer_layer_spec
         self.vocab_size = vocab_size
@@ -104,6 +103,7 @@ class DeepSeek4Model(MegatronCoreGPTModel):
                 skip_weight_param_allocation=skip_embedding_allocation,
             )
         if skip_embedding_allocation:
+
             def remove_shared_embedding_check(self, incompatible_keys):
                 """
                 Remove embedding weight from unexpected keys.
@@ -146,26 +146,20 @@ class DeepSeek4Model(MegatronCoreGPTModel):
         if self.mtp_process or (self.post_process and global_args.enable_mhc):
             # move block main model final norm here when mtp enable
             self.final_layernorm = build_module(
-                    TENorm,
-                    config=self.config,
-                    hidden_size=self.config.hidden_size,
-                    eps=self.config.layernorm_epsilon,
-                )
+                TENorm,
+                config=self.config,
+                hidden_size=self.config.hidden_size,
+                eps=self.config.layernorm_epsilon,
+            )
         else:
             self.final_layernorm = None
 
         # hc_head
         if self.post_process:
-            self.hc_head = build_module(
-                self.hc_head_spec,
-                config=config,
-                mhc_position='head',
-                layer_number=-1
-            )
+            self.hc_head = build_module(self.hc_head_spec, config=config, mhc_position='head', layer_number=-1)
 
         # Output
         if self.post_process or self.mtp_process:
-
             if self.config.defer_embedding_wgrad_compute:
                 # The embedding activation buffer preserves a reference to the input activations
                 # of the final embedding projection layer GEMM. It will hold the activations for
@@ -189,8 +183,7 @@ class DeepSeek4Model(MegatronCoreGPTModel):
                     bias=False,
                     skip_bias_add=False,
                     gather_output=not self.parallel_output,
-                    skip_weight_param_allocation=self.pre_process
-                                                 and self.share_embeddings_and_output_weights,
+                    skip_weight_param_allocation=self.pre_process and self.share_embeddings_and_output_weights,
                     embedding_activation_buffer=self.embedding_activation_buffer,
                     grad_output_buffer=self.grad_output_buffer,
                 )
@@ -203,8 +196,7 @@ class DeepSeek4Model(MegatronCoreGPTModel):
                     bias=global_args.add_output_layer_bias,
                     skip_bias_add=False,
                     gather_output=not self.parallel_output,
-                    skip_weight_param_allocation=self.pre_process
-                    and self.share_embeddings_and_output_weights,
+                    skip_weight_param_allocation=self.pre_process and self.share_embeddings_and_output_weights,
                     embedding_activation_buffer=self.embedding_activation_buffer,
                     grad_output_buffer=self.grad_output_buffer,
                 )
@@ -213,20 +205,21 @@ class DeepSeek4Model(MegatronCoreGPTModel):
 
         if self.pre_process or self.post_process:
             self.setup_embeddings_and_output_layer()
-    
+
     @check_model_inputs
-    def forward(self,
-                input_ids: Tensor,
-                position_ids: Tensor,
-                attention_mask: Tensor,
-                decoder_input: Tensor = None,
-                labels: Tensor = None,
-                inference_params: InferenceParams = None,
-                inference_context: BaseInferenceContext = None,
-                packed_seq_params: PackedSeqParams = None,
-                extra_block_kwargs: dict = None,
-                loss_mask: Optional[Tensor] = None,
-                ) -> Tensor:
+    def forward(
+        self,
+        input_ids: Tensor,
+        position_ids: Tensor,
+        attention_mask: Tensor,
+        decoder_input: Tensor = None,
+        labels: Tensor = None,
+        inference_params: InferenceParams = None,
+        inference_context: BaseInferenceContext = None,
+        packed_seq_params: PackedSeqParams = None,
+        extra_block_kwargs: dict = None,
+        loss_mask: Optional[Tensor] = None,
+    ) -> Tensor:
         # If decoder_input is provided (not None), then input_ids and position_ids are ignored.
         # Otherwise, apply embedding layer on input_ids and position_ids to get decoder_input.
         args = get_args()
@@ -255,26 +248,26 @@ class DeepSeek4Model(MegatronCoreGPTModel):
             )
             rotary_pos_emb = self.rotary_pos_emb(rotary_seq_len)
         elif self.position_embedding_type == 'g2':
-            rope_theta = args.rope_theta # compress_ration=1
-            compress_rope_theta = args.compress_rope_theta # for compress_ratio>1
+            rope_theta = args.rope_theta  # compress_ration=1
+            compress_rope_theta = args.compress_rope_theta  # for compress_ratio>1
             rotary_pos_emb_comp = self.rotary_pos_emb(
-                args.rope_head_dim, 
-                args.rope_scaling_original_max_position_embeddings, 
+                args.rope_head_dim,
+                args.rope_scaling_original_max_position_embeddings,
                 args.original_seq_len,
-                compress_rope_theta, 
-                args.rope_factor, 
-                args.beta_fast, 
-                args.beta_slow
-                )
+                compress_rope_theta,
+                args.rope_factor,
+                args.beta_fast,
+                args.beta_slow,
+            )
             rotary_pos_emb_no_comp = self.rotary_pos_emb(
-                args.rope_head_dim, 
-                args.rope_scaling_original_max_position_embeddings, 
-                args.original_seq_len,
-                rope_theta, 
-                args.rope_factor, 
-                args.beta_fast, 
-                args.beta_slow
-                )
+                args.rope_head_dim,
+                args.rope_scaling_original_max_position_embeddings,
+                0,
+                rope_theta,
+                args.rope_factor,
+                args.beta_fast,
+                args.beta_slow,
+            )
             rotary_pos_emb = torch.stack((rotary_pos_emb_comp, rotary_pos_emb_no_comp))
         else:
             pass
@@ -315,8 +308,8 @@ class DeepSeek4Model(MegatronCoreGPTModel):
                 output_layer=self.output_layer,
                 output_weight=output_weight,
                 compute_language_model_loss=self.compute_language_model_loss,
-                pre_process = True,  # Now MTP only in the same PP stage
-                post_process = True, # Now MTP only in the same PP stage
+                pre_process=True,  # Now MTP only in the same PP stage
+                post_process=True,  # Now MTP only in the same PP stage
                 **(extra_block_kwargs or {}),
             )
 
@@ -331,7 +324,11 @@ class DeepSeek4Model(MegatronCoreGPTModel):
         if getattr(args, "task", False) and args.task[0] == 'needlebench':
             hidden_states = hidden_states[-100:]
 
-        if args.loss_compute_mode == "chunk" and args.tensor_model_parallel_size == 1 and args.context_parallel_size == 1:
+        if (
+            args.loss_compute_mode == "chunk"
+            and args.tensor_model_parallel_size == 1
+            and args.context_parallel_size == 1
+        ):
             labels = F.pad(labels, (0, 1), value=-100)
             shift_labels = labels
             # Create a mask to identify valid tokens (typically > -1 means non-special tokens)
@@ -356,7 +353,8 @@ class DeepSeek4Model(MegatronCoreGPTModel):
                 head_bias=None,
                 loss_forward=calculate_lm_loss,
                 loss_kwargs_chunks=loss_kwargs_chunks,
-                chunk_size=args.loss_chunk_size)
+                chunk_size=args.loss_chunk_size,
+            )
         else:
             logits, _ = self.output_layer(hidden_states, weight=output_weight)
 
@@ -386,8 +384,10 @@ class DeepSeek4Model(MegatronCoreGPTModel):
             Tensor: When dualpipe is enabled, return the weights from dual_chunk, otherwise follow the original logic.
         """
         if not self.pre_process and self.post_process and get_args().schedules_method == 'dualpipev':
-            from mindspeed.core.pipeline_parallel.dualpipev.dualpipev_schedules import \
-                get_shared_embedding_from_dual_chunk
+            from mindspeed.core.pipeline_parallel.dualpipev.dualpipev_schedules import (
+                get_shared_embedding_from_dual_chunk,
+            )
+
             return get_shared_embedding_from_dual_chunk()
         return super().shared_embedding_or_output_weight()
 
@@ -398,10 +398,7 @@ def gpt_forward_wrapper(fn):
         _args = get_args()
         actual_seq_len = get_actual_seq_len()
 
-        packed_seq_params = PackedSeqParams(
-            cu_seqlens_q=actual_seq_len,
-            cu_seqlens_kv=actual_seq_len
-        )
+        packed_seq_params = PackedSeqParams(cu_seqlens_q=actual_seq_len, cu_seqlens_kv=actual_seq_len)
 
         actual_seq_len_list = actual_seq_len.tolist()
         set_actual_seq_len_list(actual_seq_len_list)

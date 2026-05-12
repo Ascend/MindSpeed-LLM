@@ -75,8 +75,8 @@ CA_ARGS="
     --g2-window-size 128 \
     --rope-head-dim 64 \
     --original-seq-len 65536 \
-    --rope-factor 4 \
-    --compress-rope-theta 40000.0 \
+    --rope-factor 16 \
+    --compress-rope-theta 160000.0 \
     --max-batch-size 4 \
     --compress-ratios 0 0 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 \
     --use-g2-indexer-loss \

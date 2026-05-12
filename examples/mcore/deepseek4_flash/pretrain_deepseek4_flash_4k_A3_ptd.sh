@@ -74,8 +74,8 @@ CA_ARGS="
     --g2-window-size 128 \
     --rope-head-dim 64 \
     --original-seq-len 65536 \
-    --rope-factor 4 \
-    --compress-rope-theta 40000.0 \
+    --rope-factor 16 \
+    --compress-rope-theta 160000.0 \
     --max-batch-size 4 \
     --compress-ratios 0 0 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 \
     --use-g2-indexer-loss \
@@ -219,5 +219,3 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_deepseek4.py \
     $MEM_ARGS \
     $MTP_ARGS \
     --distributed-backend nccl 2>&1 | tee logs/pretrain_deepseek4_flash_4k_A3_ptd.log
-
-
