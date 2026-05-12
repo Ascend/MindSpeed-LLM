@@ -177,7 +177,8 @@ GPT_ARGS="
     --bf16 \
     --distributed-timeout-minutes 120 \
     --no-shared-storage \
-    --ckpt-format torch
+    --ckpt-format torch \
+    --fix-router
 "
 
 
