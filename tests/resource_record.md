@@ -359,4 +359,13 @@
         <td>/</td>
         <td>/</td>
     </tr>
+    <tr>
+        <td>tune_qwen3_8b_qlora_ptd.sh</td>
+        <td>/data/ci/models/Qwen3-8B/hf/Qwen3-8B</td>
+        <td>/data/ci/models/Qwen3-8B/mg/qwen3-8b-layer1-tp2pp1/</td>
+        <td>/data/ci/datasets/origin/alpaca/train-00000-of-00001-a09b74b3ef9c3b56.parquet</td>
+        <td>/data/ci/datasets/processed/finetune_dataset/alpaca</td>
+        <td>/</td>
+        <td>/</td>
+    </tr>
 </table>

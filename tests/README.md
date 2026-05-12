@@ -17,7 +17,7 @@ CI门禁用例看护仓库重点模型和基本特性，覆盖冒烟测试场景
         <th>Mem.</th>
     </tr>
     <tr>
-        <td rowspan="16">ST</td>
+        <td rowspan="17">ST</td>
         <td rowspan="12">Pretrain</td>
         <td>TP，PP，VPP，distributed_optimizer，o2_gradient，o2_optimizer，重计算，enable_recompute_layers_per_pp_rank，FA_TND，use_fused_rotary_pos_emb</td>
         <td><a href="st/shell_scripts/llama2_tp2_pp4_vpp2_ptd.sh">llama2_tp2_pp4_vpp2_ptd.sh</a></td>
@@ -105,7 +105,7 @@ CI门禁用例看护仓库重点模型和基本特性，覆盖冒烟测试场景
     <tr>
         <td rowspan="2">Finetune</td>
         <td>CCLoRA, QLoRA</td>
-        <td><a href="st/shell_scripts/tune_llama2_tp1_pp1_qlora_ptd.sh">tune_llama2_tp1_pp1_qlora_ptd.sh</a></td>
+        <td><a href="st/shell_scripts/tune_qwen3_8b_qlora_ptd.sh">tune_qwen3_8b_qlora_ptd.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
@@ -191,7 +191,7 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <th>Mem.</th>
     </tr>
     <tr>
-        <td rowspan="32">ST</td>
+        <td rowspan="33">ST</td>
         <td rowspan="1">baichuan2-13B</td>
         <td>baichuan2_13b, no-gradient-accumulation-fusion</td>
         <td><a href="pipeline/st/baichuan2-13B/baichuan2_13b_tp8_pp1_mcore.sh">baichuan2_13b_tp8_pp1_mcore.sh</a></td>
@@ -278,7 +278,7 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td>Y</td>
     </tr>
     <tr>
-        <td rowspan="9">llama2</td>
+        <td rowspan="10">llama2</td>
         <td>llama2, distributed_optimizer, overlap_grad_reduce, gloo</td>
         <td><a href="pipeline/st/llama2/llama2_tp1_pp8_patch_gloo_ptd.sh">llama2_tp1_pp8_patch_gloo_ptd.sh</a></td>
         <td>Y</td>
@@ -337,6 +337,13 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
     <tr>
         <td>llama2, CP, megatron_cp_algo, use-fused-ring-attention-update</td>
         <td><a href="pipeline/st/llama2/llama2_tp2_cp4_general_double_ring.sh">llama2_tp2_cp4_general_double_ring.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td>llama2, CCLoRA, QLoRA</td>
+        <td><a href="pipeline/st/llama2/tune_llama2_tp1_pp1_qlora_ptd.sh">tune_llama2_tp1_pp1_qlora_ptd.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
