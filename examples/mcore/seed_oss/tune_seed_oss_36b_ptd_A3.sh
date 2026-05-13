@@ -3,7 +3,7 @@ export HCCL_CONNECT_TIMEOUT=1800
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export NPU_ASD_ENABLE=0
 
-NPUS_PER_NODE=16  
+NPUS_PER_NODE=16
 MASTER_ADDR=localhost
 MASTER_PORT=6006
 NNODES=1
@@ -93,7 +93,8 @@ GPT_ARGS="
 
 DATA_ARGS="
     --data-path $DATA_PATH \
-    --split 100,0,0
+    --split 100,0,0 \
+    --handler-name AlpacaStyleInstructionHandler \
 "
 
 CKPT_ARGS="
@@ -102,6 +103,8 @@ CKPT_ARGS="
     --no-save-optim \
     --no-save-rng \
     --seed 1234 \
+    --enable-hf2mg-convert \
+    --model-type-hf seed-oss \
 "
 
 OUTPUT_ARGS="
