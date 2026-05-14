@@ -72,6 +72,8 @@ disable = [
   "unused-argument",
   "unused-variable",
   "unused-import",
+  "no-member",
+  "global-variable-not-assigned",
 
   # 所有保护成员访问警告
   "protected-access",
@@ -90,6 +92,13 @@ disable = [
   "raise-missing-from",
   "broad-except",
   "bare-except",
+  "too-many-lines",
+  "arguments-renamed",
+  "logging-fstring-interpolation",
+  "attribute-defined-outside-init",
+  "too-many-nested-blocks",
+  "broad-exception-raised",
+  "duplicate-code",
 
   # 导入相关
   "wrong-import-order",

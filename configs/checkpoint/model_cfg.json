@@ -901,7 +901,7 @@
         "mtp_layers_shared_head_norm": "model.layers[layer_idx].shared_head.norm"
       }
     },
-    "deepseek4": {
+    "deepseek4_base": {
       "__base__": "deepseek32",
       "config_set_value": {
         "qkv_type": "pack_mla",
@@ -997,6 +997,12 @@
         "mtp_layers_hnorm": "mtp.[layer_idx].hnorm.weight",
         "mtp_layers_eh_proj": "mtp.[layer_idx].eh_proj.weight",
         "mtp_layers_norm": "mtp.[layer_idx].norm.weight"
+      }
+    },
+    "deepseek4": {
+      "__base__": "deepseek4_base",
+      "config_set_value": {
+        "tie_mtp_embeddings_and_lmhead": "true"
       }
     },
     "magistral": {

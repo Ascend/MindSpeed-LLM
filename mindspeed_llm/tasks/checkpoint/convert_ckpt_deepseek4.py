@@ -12,10 +12,15 @@ import torch
 import safetensors.torch
 
 from .convert_hf2mg import Hf2MgConvert
-from .convert_mg2hf import Mg2HfConvert
+from .convert_mg2hf import Mg2HfConvert, load_data, TENSOR_SIZE
 
 logger.basicConfig(format="")
 logger.getLogger().setLevel(logger.INFO)
+
+GLOBAL_LM_HEAD_WEIGHTS = None
+GLOBAL_EMB_WEIGHTS = None
+
+hf_weight_dict = defaultdict()
 
 
 def _as_int_list(x: str) -> List[int]:
@@ -37,7 +42,6 @@ def _is_mtp_ref(x: Any) -> bool:
 
 
 class DeepSeek4Hf2MgConvert(Hf2MgConvert):
-
     def __init__(self, args):
         super().__init__(args)
 
@@ -45,7 +49,7 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
         self.iter_save_dir = self.save_dir
 
         self.tensor_model_parallel_size = self.tensor_model_parallel_size
-        
+
         self.ep_size = self.expert_model_parallel_size
         self.n_hash_layers = self.load_model.n_hash_layers
         self.num_layers = self.load_model.num_layers
@@ -58,15 +62,19 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
         self.noop_layers = getattr(args, "noop_layers", None)
 
         self.num_layers_per_virtual_pipeline_stage = getattr(args, "num_layers_per_virtual_pipeline_stage", None)
-        self.dualpipe = True if getattr(args, "schedules_method", None) == "dualpipev" else False
+        self.dualpipe = getattr(args, "schedules_method", None) == "dualpipev"
         if self.dualpipe:
             if self.num_layers_per_virtual_pipeline_stage is not None:
                 raise ValueError("dualpipev is not compatible with virtual pipeline parallel.")
             self.vpp_size = 2
-            self.num_layers_per_virtual_pipeline_stage = self.num_layers // self.pipeline_model_parallel_size // self.vpp_size
+            self.num_layers_per_virtual_pipeline_stage = (
+                self.num_layers // self.pipeline_model_parallel_size // self.vpp_size
+            )
         else:
             if self.num_layers_per_virtual_pipeline_stage is not None:
-                self.vpp_size = self.num_layers // self.pipeline_model_parallel_size // self.num_layers_per_virtual_pipeline_stage
+                self.vpp_size = (
+                    self.num_layers // self.pipeline_model_parallel_size // self.num_layers_per_virtual_pipeline_stage
+                )
 
         # moe flags
         self.moe_grouped_gemm = getattr(args, "moe_grouped_gemm", False)
@@ -81,16 +89,18 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
 
         if not os.path.exists(self.hf_model_path):
             raise FileNotFoundError(f"Model path does not exist: {self.hf_model_path}")
-        num_noop_layers = 0 if self.noop_layers is None else len([int(x) for x in str(self.noop_layers).split(",") if x.strip()])
+        num_noop_layers = (
+            0 if self.noop_layers is None else len([int(x) for x in str(self.noop_layers).split(",") if x.strip()])
+        )
         self.num_layers = self.num_layers + num_noop_layers
         self._valid_parameter()
 
         if self.num_layers_per_virtual_pipeline_stage is None:
             self.pprank_layer_idxs = defaultdict()
-            self.get_pprank_hf_layeridxs()
+            self._get_pprank_hf_layeridxs()
         else:
             self.vpprank_layer_idxs = defaultdict(dict)
-            self.get_vpprank_hf_layeridxs()
+            self._get_vpprank_hf_layeridxs()
 
     def __parameter_packaging(self):
         args = argparse.Namespace()
@@ -180,7 +190,9 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
             raise ValueError("compress-ratios length must equal num-layers add mtp-layers.")
 
     def _mg_layer_prefix(self, local_layer_idx: int, mtp_layer_flag: bool = False) -> str:
-        return f"mtp.layers.{local_layer_idx}.transformer_layer" if mtp_layer_flag else f"decoder.layers.{local_layer_idx}"
+        return (
+            f"mtp.layers.{local_layer_idx}.transformer_layer" if mtp_layer_flag else f"decoder.layers.{local_layer_idx}"
+        )
 
     def _split_mtp_layers(self, layer_list: List[LayerRef]) -> Tuple[List[int], List[int]]:
         normal: List[int] = []
@@ -231,8 +243,8 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
                     f"layers.{i}.attn.indexer.wq_b.weight",
                     f"layers.{i}.attn.indexer.weights_proj.weight",
                 }
-        hash = i < self.n_hash_layers
-        if hash:
+        hash_layer = i < self.n_hash_layers
+        if hash_layer:
             keys.add(f"layers.{i}.ffn.gate.tid2eid")
         else:
             keys.add(f"layers.{i}.ffn.gate.bias")
@@ -317,7 +329,9 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
             if self.num_layers % self.pipeline_model_parallel_size != 0:
                 raise ValueError("num-layers should be divisible by target-pipeline-parallel-size")
             if self.num_layers_per_virtual_pipeline_stage is not None:
-                if (self.num_layers % self.pipeline_model_parallel_size) % self.num_layers_per_virtual_pipeline_stage != 0:
+                if (
+                    self.num_layers % self.pipeline_model_parallel_size
+                ) % self.num_layers_per_virtual_pipeline_stage != 0:
                     raise ValueError("pp_stage layers should be divisible by vpp_stage")
         else:
             layer_list = _as_int_list(self.num_layer_list)
@@ -330,11 +344,10 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
             if self.noop_layers is not None:
                 raise ValueError("num-layer-list and noop-layers cannot be configured at the same time")
 
-
-    def get_pprank_hf_layeridxs(self) -> None:
+    def _get_pprank_hf_layeridxs(self) -> None:
         num_noop_layers = 0 if self.noop_layers is None else len(_as_int_list(self.noop_layers))
         num_real_layers = self.num_layers - num_noop_layers
-        layer_pool = [i for i in range(num_real_layers)]
+        layer_pool = list(range(num_real_layers))
 
         if self.num_layer_list is None:
             layers_each_pp = [self.num_layers // self.pipeline_model_parallel_size] * self.pipeline_model_parallel_size
@@ -350,18 +363,27 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
 
         # mtp appended to last pp stage (non-dualpipe)
         if self.mtp_num_layers > 0:
-            self.pprank_layer_idxs[self.pipeline_model_parallel_size - 1].extend([("mtp", i) for i in range(self.mtp_num_layers)])
+            self.pprank_layer_idxs[self.pipeline_model_parallel_size - 1].extend(
+                [("mtp", i) for i in range(self.mtp_num_layers)]
+            )
 
-    def get_vpprank_hf_layeridxs(self) -> None:
+    def _get_vpprank_hf_layeridxs(self) -> None:
         num_noop_layers = 0 if self.noop_layers is None else len(_as_int_list(self.noop_layers))
         num_real_layers = self.num_layers - num_noop_layers
-        layer_pool = [i for i in range(num_real_layers)]
+        layer_pool = list(range(num_real_layers))
 
-        layers_each_vpp = [[self.num_layers_per_virtual_pipeline_stage] * self.vpp_size for _ in range(self.pipeline_model_parallel_size)]
+        layers_each_vpp = [
+            [self.num_layers_per_virtual_pipeline_stage] * self.vpp_size
+            for _ in range(self.pipeline_model_parallel_size)
+        ]
         if self.noop_layers is not None:
             for layer in _as_int_list(self.noop_layers):
                 vpp_idx = layer // self.num_layers_per_virtual_pipeline_stage // self.pipeline_model_parallel_size
-                pp_idx = layer % (self.pipeline_model_parallel_size * self.num_layers_per_virtual_pipeline_stage) // self.num_layers_per_virtual_pipeline_stage
+                pp_idx = (
+                    layer
+                    % (self.pipeline_model_parallel_size * self.num_layers_per_virtual_pipeline_stage)
+                    // self.num_layers_per_virtual_pipeline_stage
+                )
                 layers_each_vpp[pp_idx][vpp_idx] -= 1
 
         for vpp_rank in range(self.vpp_size):
@@ -373,16 +395,18 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
         # mtp layers: dualpipe -> pp0 vpp_last; else -> last pp vpp_last
         if self.mtp_num_layers > 0:
             mtp_pp_rank = 0 if self.dualpipe else (self.pipeline_model_parallel_size - 1)
-            self.vpprank_layer_idxs[mtp_pp_rank][self.vpp_size - 1].extend([("mtp", i) for i in range(self.mtp_num_layers)])
+            self.vpprank_layer_idxs[mtp_pp_rank][self.vpp_size - 1].extend(
+                [("mtp", i) for i in range(self.mtp_num_layers)]
+            )
 
     def generate_pp_local_layer_idx(self):
         pp_local_layer_idx = defaultdict()
         for pp_rank in range(self.pipeline_model_parallel_size):
             if self.num_layer_list is not None:
                 layer_list = _as_int_list(self.num_layer_list)
-                pp_local_layer_idx[pp_rank] = [i for i in range(layer_list[pp_rank])]
+                pp_local_layer_idx[pp_rank] = list(range(layer_list[pp_rank]))
             else:
-                pp_local_layer_idx[pp_rank] = [i for i in range(self.num_layers // self.pipeline_model_parallel_size)]
+                pp_local_layer_idx[pp_rank] = list(range(self.num_layers // self.pipeline_model_parallel_size))
 
         if self.noop_layers is not None:
             noop_list = _as_int_list(self.noop_layers)
@@ -399,13 +423,17 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
         for pp_rank in range(self.pipeline_model_parallel_size):
             vpp_local_layer_idx[pp_rank] = defaultdict()
             for vpp_rank in range(self.vpp_size):
-                vpp_local_layer_idx[pp_rank][vpp_rank] = [i for i in range(self.num_layers_per_virtual_pipeline_stage)]
+                vpp_local_layer_idx[pp_rank][vpp_rank] = list(range(self.num_layers_per_virtual_pipeline_stage))
 
         if self.noop_layers is not None:
             noop_list = _as_int_list(self.noop_layers)
             num_layers_each_pp = self.num_layers // self.pipeline_model_parallel_size
             for nl in noop_list:
-                pp_idx = nl % (self.pipeline_model_parallel_size * self.num_layers_per_virtual_pipeline_stage) // self.num_layers_per_virtual_pipeline_stage
+                pp_idx = (
+                    nl
+                    % (self.pipeline_model_parallel_size * self.num_layers_per_virtual_pipeline_stage)
+                    // self.num_layers_per_virtual_pipeline_stage
+                )
                 vpp_idx = nl // self.num_layers_per_virtual_pipeline_stage // self.pipeline_model_parallel_size
                 local_noop_idx = nl % num_layers_each_pp % self.num_layers_per_virtual_pipeline_stage
                 if local_noop_idx in vpp_local_layer_idx[pp_idx][vpp_idx]:
@@ -429,7 +457,14 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
             if self.dualpipe:
                 required_keys |= {"norm.weight", "head.weight", "hc_head_base", "hc_head_fn", "hc_head_scale"}
         if pp_rank == self.pipeline_model_parallel_size - 1 and not self.dualpipe:
-            required_keys |= {"norm.weight", "head.weight", "hc_head_base", "hc_head_fn", "hc_head_scale", "embed.weight"}
+            required_keys |= {
+                "norm.weight",
+                "head.weight",
+                "hc_head_base",
+                "hc_head_fn",
+                "hc_head_scale",
+                "embed.weight",
+            }
 
         idx_path = os.path.join(self.hf_model_path, "model.safetensors.index.json")
         if os.path.exists(idx_path):
@@ -464,9 +499,8 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
             missing = [k for k in required_keys if not self._has_key_relaxed(all_weights, k)]
 
             def _is_mtp_ignore_key(k: str) -> bool:
-                return k.startswith("mtp.") and (
-                    k.endswith("emb.tok_emb.weight") or k.endswith("head.weight")
-                )
+                return k.startswith("mtp.") and (k.endswith("emb.tok_emb.weight") or k.endswith("head.weight"))
+
             missing = [k for k in missing if not _is_mtp_ignore_key(k)]
 
             if missing:
@@ -540,14 +574,9 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
 
     def set_mtp_postprocess(self, hf_mtp_idx: int, mtp_layer_idx: int, weights_dict: Dict[str, torch.Tensor], mg_model):
         mtp_norm = weights_dict.pop(f"mtp.{hf_mtp_idx}.norm.weight")
-        if f"mtp.{hf_mtp_idx}.head.weight" in weights_dict:
-            mtp_head = weights_dict.pop(f"mtp.{hf_mtp_idx}.head.weight")
-        else:
-            mtp_head = weights_dict["head.weight"]
         hc_base = weights_dict.pop(f"mtp.{hf_mtp_idx}.hc_head_base")
         hc_fn = weights_dict.pop(f"mtp.{hf_mtp_idx}.hc_head_fn")
         hc_scale = weights_dict.pop(f"mtp.{hf_mtp_idx}.hc_head_scale")
-        head_lst = _chunk_or_single(mtp_head, self.tensor_model_parallel_size, dim=0)
 
         for ep_rank in range(self.ep_size):
             for tp_rank in range(self.tensor_model_parallel_size):
@@ -558,9 +587,14 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
                 sd[f"mtp.layers.{mtp_layer_idx}.hc_head.hc_scale"] = hc_scale.clone()
 
     # ---------------- transformer layer mapping ----------------
-    def set_model_layer_norm_ex(self, hf_layer_idx: int, local_layer_idx: int,
-                               weights_dict: Dict[str, torch.Tensor], mg_model,
-                               mtp_layer_flag: bool = False):
+    def set_model_layer_norm_ex(
+        self,
+        hf_layer_idx: int,
+        local_layer_idx: int,
+        weights_dict: Dict[str, torch.Tensor],
+        mg_model,
+        mtp_layer_flag: bool = False,
+    ):
         hf_prefix = f"mtp.{hf_layer_idx}" if mtp_layer_flag else f"layers.{hf_layer_idx}"
         attn_norm = weights_dict.pop(f"{hf_prefix}.attn_norm.weight")
         ffn_norm = weights_dict.pop(f"{hf_prefix}.ffn_norm.weight")
@@ -571,9 +605,14 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
                 mg_model[ep_rank][tp_rank][f"{mg_prefix}.input_layernorm.weight"] = attn_norm.clone()
                 mg_model[ep_rank][tp_rank][f"{mg_prefix}.pre_mlp_layernorm.weight"] = ffn_norm.clone()
 
-    def set_model_layer_attn_ex(self, hf_layer_idx: int, local_layer_idx: int,
-                               weights_dict: Dict[str, torch.Tensor], mg_model,
-                               mtp_layer_flag: bool = False):
+    def set_model_layer_attn_ex(
+        self,
+        hf_layer_idx: int,
+        local_layer_idx: int,
+        weights_dict: Dict[str, torch.Tensor],
+        mg_model,
+        mtp_layer_flag: bool = False,
+    ):
         hf_prefix = f"mtp.{hf_layer_idx}" if mtp_layer_flag else f"layers.{hf_layer_idx}"
 
         attn_sink = weights_dict.pop(f"{hf_prefix}.attn.attn_sink")
@@ -658,10 +697,14 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
                         sd[f"{prefix}.indexer.wq_b.weight"] = idx_wq_b_lst[tp_rank].clone()
                         sd[f"{prefix}.indexer.weights_proj.weight"] = idx_wp_lst[tp_rank].clone()
 
-    def set_model_layer_mlp_ex(self, hf_layer_idx: int, local_layer_idx: int,
-                              weights_dict: Dict[str, torch.Tensor], mg_model,
-                              mtp_layer_flag: bool = False):
-
+    def set_model_layer_mlp_ex(
+        self,
+        hf_layer_idx: int,
+        local_layer_idx: int,
+        weights_dict: Dict[str, torch.Tensor],
+        mg_model,
+        mtp_layer_flag: bool = False,
+    ):
         def _interleave_gate_up(gate: torch.Tensor, up: torch.Tensor, parts: int) -> torch.Tensor:
             if parts <= 1:
                 return torch.cat([gate, up], dim=0).contiguous()
@@ -672,16 +715,15 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
         hf_prefix = f"mtp.{hf_layer_idx}" if mtp_layer_flag else f"layers.{hf_layer_idx}"
 
         router_w = weights_dict.pop(f"{hf_prefix}.ffn.gate.weight")
-        router_w = router_w[:self.num_experts, :]
+        router_w = router_w[: self.num_experts, :]
         tid2eid = None
         router_bias = None
 
         if mtp_layer_flag:
             router_bias = weights_dict.pop(f"{hf_prefix}.ffn.gate.bias")
         else:
-            cr = self._compress_ratio(hf_layer_idx)
-            hash = hf_layer_idx < self.n_hash_layers
-            if hash:
+            hash_layer = hf_layer_idx < self.n_hash_layers
+            if hash_layer:
                 tid2eid = weights_dict.pop(f"{hf_prefix}.ffn.gate.tid2eid")
             else:
                 router_bias = weights_dict.pop(f"{hf_prefix}.ffn.gate.bias")
@@ -695,9 +737,15 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
 
         mg_prefix = self._mg_layer_prefix(local_layer_idx, mtp_layer_flag)
 
-        sh_gate = self._pop_any(weights_dict, [f"{hf_prefix}.ffn.shared_experts.w1.weight", f"{hf_prefix}.ffn.shared_experts.w1"])
-        sh_up   = self._pop_any(weights_dict, [f"{hf_prefix}.ffn.shared_experts.w3.weight", f"{hf_prefix}.ffn.shared_experts.w3"])
-        sh_down = self._pop_any(weights_dict, [f"{hf_prefix}.ffn.shared_experts.w2.weight", f"{hf_prefix}.ffn.shared_experts.w2"])
+        sh_gate = self._pop_any(
+            weights_dict, [f"{hf_prefix}.ffn.shared_experts.w1.weight", f"{hf_prefix}.ffn.shared_experts.w1"]
+        )
+        sh_up = self._pop_any(
+            weights_dict, [f"{hf_prefix}.ffn.shared_experts.w3.weight", f"{hf_prefix}.ffn.shared_experts.w3"]
+        )
+        sh_down = self._pop_any(
+            weights_dict, [f"{hf_prefix}.ffn.shared_experts.w2.weight", f"{hf_prefix}.ffn.shared_experts.w2"]
+        )
 
         if self.tensor_model_parallel_size > 1:
             sh_gate_lst = torch.chunk(sh_gate, self.tensor_model_parallel_size, dim=0)
@@ -733,9 +781,18 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
         interleave_parts = self.expert_tp_size if not self.moe_tp_extend_ep else self.tensor_model_parallel_size
 
         for global_e in range(self.num_experts):
-            w1 = self._pop_any(weights_dict, [f"{hf_prefix}.ffn.experts.{global_e}.w1.weight", f"{hf_prefix}.ffn.experts.{global_e}.w1"])
-            w3 = self._pop_any(weights_dict, [f"{hf_prefix}.ffn.experts.{global_e}.w3.weight", f"{hf_prefix}.ffn.experts.{global_e}.w3"])
-            w2 = self._pop_any(weights_dict, [f"{hf_prefix}.ffn.experts.{global_e}.w2.weight", f"{hf_prefix}.ffn.experts.{global_e}.w2"])
+            w1 = self._pop_any(
+                weights_dict,
+                [f"{hf_prefix}.ffn.experts.{global_e}.w1.weight", f"{hf_prefix}.ffn.experts.{global_e}.w1"],
+            )
+            w3 = self._pop_any(
+                weights_dict,
+                [f"{hf_prefix}.ffn.experts.{global_e}.w3.weight", f"{hf_prefix}.ffn.experts.{global_e}.w3"],
+            )
+            w2 = self._pop_any(
+                weights_dict,
+                [f"{hf_prefix}.ffn.experts.{global_e}.w2.weight", f"{hf_prefix}.ffn.experts.{global_e}.w2"],
+            )
 
             fc1_weight = _interleave_gate_up(w1, w3, interleave_parts)
             experts_linear_fc1_list.append(fc1_weight.t().contiguous())
@@ -780,8 +837,12 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
                         for local_e, global_e in enumerate(range(start_e, end_e)):
                             fc1_full = experts_linear_fc1_list[global_e].t().contiguous()
                             fc2_full = experts_linear_fc2_list[global_e].t().contiguous()
-                            mg_model[ep_rank][tp_rank][f"{mg_prefix}.mlp.experts.local_experts.{local_e}.linear_fc1.weight"] = fc1_full.clone()
-                            mg_model[ep_rank][tp_rank][f"{mg_prefix}.mlp.experts.local_experts.{local_e}.linear_fc2.weight"] = fc2_full.clone()
+                            mg_model[ep_rank][tp_rank][
+                                f"{mg_prefix}.mlp.experts.local_experts.{local_e}.linear_fc1.weight"
+                            ] = fc1_full.clone()
+                            mg_model[ep_rank][tp_rank][
+                                f"{mg_prefix}.mlp.experts.local_experts.{local_e}.linear_fc2.weight"
+                            ] = fc2_full.clone()
             else:
                 num_local_experts = self.num_experts // self.ep_size
                 for ep_rank in range(self.ep_size):
@@ -795,8 +856,12 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
 
                         for tp_rank in range(self.tensor_model_parallel_size):
                             etp = self._expert_tp_rank(tp_rank)
-                            mg_model[ep_rank][tp_rank][f"{mg_prefix}.mlp.experts.local_experts.{local_e}.linear_fc1.weight"] = fc1_lst[etp].clone()
-                            mg_model[ep_rank][tp_rank][f"{mg_prefix}.mlp.experts.local_experts.{local_e}.linear_fc2.weight"] = fc2_lst[etp].clone()
+                            mg_model[ep_rank][tp_rank][
+                                f"{mg_prefix}.mlp.experts.local_experts.{local_e}.linear_fc1.weight"
+                            ] = fc1_lst[etp].clone()
+                            mg_model[ep_rank][tp_rank][
+                                f"{mg_prefix}.mlp.experts.local_experts.{local_e}.linear_fc2.weight"
+                            ] = fc2_lst[etp].clone()
 
     # ---------------- run ----------------
     def run(self):
@@ -815,13 +880,25 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
                 normal_layers, mtp_layers = self._split_mtp_layers(layer_list)
 
                 # MTP on last pp (non-dualpipe)
-                if self.mtp_num_layers > 0 and (not self.dualpipe) and (pp_rank == self.pipeline_model_parallel_size - 1):
+                if (
+                    self.mtp_num_layers > 0
+                    and (not self.dualpipe)
+                    and (pp_rank == self.pipeline_model_parallel_size - 1)
+                ):
                     for mtp_local_idx, hf_mtp_idx in enumerate(sorted(mtp_layers)):
-                        logger.info(f"[PP {pp_rank}] Converting MTP layer hf=mtp.{hf_mtp_idx} -> mtp.layers.{mtp_local_idx}")
+                        logger.info(
+                            f"[PP {pp_rank}] Converting MTP layer hf=mtp.{hf_mtp_idx} -> mtp.layers.{mtp_local_idx}"
+                        )
                         self.set_mtp_preprocess(hf_mtp_idx, mtp_local_idx, hf_pp_weights, mg_model)
-                        self.set_model_layer_norm_ex(hf_mtp_idx, mtp_local_idx, hf_pp_weights, mg_model, mtp_layer_flag=True)
-                        self.set_model_layer_attn_ex(hf_mtp_idx, mtp_local_idx, hf_pp_weights, mg_model, mtp_layer_flag=True)
-                        self.set_model_layer_mlp_ex(hf_mtp_idx, mtp_local_idx, hf_pp_weights, mg_model, mtp_layer_flag=True)
+                        self.set_model_layer_norm_ex(
+                            hf_mtp_idx, mtp_local_idx, hf_pp_weights, mg_model, mtp_layer_flag=True
+                        )
+                        self.set_model_layer_attn_ex(
+                            hf_mtp_idx, mtp_local_idx, hf_pp_weights, mg_model, mtp_layer_flag=True
+                        )
+                        self.set_model_layer_mlp_ex(
+                            hf_mtp_idx, mtp_local_idx, hf_pp_weights, mg_model, mtp_layer_flag=True
+                        )
                         self.set_mtp_postprocess(hf_mtp_idx, mtp_local_idx, hf_pp_weights, mg_model)
 
                 # normal transformer
@@ -830,12 +907,20 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
                 for hf_layer in normal_layers:
                     logger.info(f"[PP {pp_rank}] Converting layer {hf_layer}")
                     local_layer_idx = cur_pp_local_idx[local_idx]
-                    self.set_model_layer_norm_ex(hf_layer, local_layer_idx, hf_pp_weights, mg_model, mtp_layer_flag=False)
-                    self.set_model_layer_attn_ex(hf_layer, local_layer_idx, hf_pp_weights, mg_model, mtp_layer_flag=False)
-                    self.set_model_layer_mlp_ex(hf_layer, local_layer_idx, hf_pp_weights, mg_model, mtp_layer_flag=False)
+                    self.set_model_layer_norm_ex(
+                        hf_layer, local_layer_idx, hf_pp_weights, mg_model, mtp_layer_flag=False
+                    )
+                    self.set_model_layer_attn_ex(
+                        hf_layer, local_layer_idx, hf_pp_weights, mg_model, mtp_layer_flag=False
+                    )
+                    self.set_model_layer_mlp_ex(
+                        hf_layer, local_layer_idx, hf_pp_weights, mg_model, mtp_layer_flag=False
+                    )
                     local_idx += 1
 
-                if (pp_rank == self.pipeline_model_parallel_size - 1 and not self.dualpipe) or (pp_rank == 0 and self.dualpipe):
+                if (pp_rank == self.pipeline_model_parallel_size - 1 and not self.dualpipe) or (
+                    pp_rank == 0 and self.dualpipe
+                ):
                     self.set_model_postprocess(hf_pp_weights, mg_model)
 
                 # save
@@ -877,14 +962,26 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
                     # MTP placement rules
                     if self.mtp_num_layers > 0:
                         dualpipe_mtp_flag = self.dualpipe and (pp_rank == 0) and (vpp_rank == self.vpp_size - 1)
-                        normal_mtp_flag = (not self.dualpipe) and (pp_rank == self.pipeline_model_parallel_size - 1) and (vpp_rank == self.vpp_size - 1)
+                        normal_mtp_flag = (
+                            (not self.dualpipe)
+                            and (pp_rank == self.pipeline_model_parallel_size - 1)
+                            and (vpp_rank == self.vpp_size - 1)
+                        )
                         if dualpipe_mtp_flag or normal_mtp_flag:
                             for mtp_local_idx, hf_mtp_idx in enumerate(sorted(mtp_layers)):
-                                logger.info(f"[PP {pp_rank}][VPP {vpp_rank}] Converting MTP layer hf=mtp.{hf_mtp_idx} -> mtp.layers.{mtp_local_idx}")
+                                logger.info(
+                                    f"[PP {pp_rank}][VPP {vpp_rank}] Converting MTP layer hf=mtp.{hf_mtp_idx} -> mtp.layers.{mtp_local_idx}"
+                                )
                                 self.set_mtp_preprocess(hf_mtp_idx, mtp_local_idx, hf_pp_weights, mg_model[vpp_rank])
-                                self.set_model_layer_norm_ex(hf_mtp_idx, mtp_local_idx, hf_pp_weights, mg_model[vpp_rank], mtp_layer_flag=True)
-                                self.set_model_layer_attn_ex(hf_mtp_idx, mtp_local_idx, hf_pp_weights, mg_model[vpp_rank], mtp_layer_flag=True)
-                                self.set_model_layer_mlp_ex(hf_mtp_idx, mtp_local_idx, hf_pp_weights, mg_model[vpp_rank], mtp_layer_flag=True)
+                                self.set_model_layer_norm_ex(
+                                    hf_mtp_idx, mtp_local_idx, hf_pp_weights, mg_model[vpp_rank], mtp_layer_flag=True
+                                )
+                                self.set_model_layer_attn_ex(
+                                    hf_mtp_idx, mtp_local_idx, hf_pp_weights, mg_model[vpp_rank], mtp_layer_flag=True
+                                )
+                                self.set_model_layer_mlp_ex(
+                                    hf_mtp_idx, mtp_local_idx, hf_pp_weights, mg_model[vpp_rank], mtp_layer_flag=True
+                                )
                                 self.set_mtp_postprocess(hf_mtp_idx, mtp_local_idx, hf_pp_weights, mg_model[vpp_rank])
 
                     local_idx = 0
@@ -892,13 +989,23 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
                     for hf_layer in normal_layers:
                         logger.info(f"[PP {pp_rank}][VPP {vpp_rank}] Converting layer {hf_layer}")
                         local_layer_idx = cur_vpp_local_idx[local_idx]
-                        self.set_model_layer_norm_ex(hf_layer, local_layer_idx, hf_pp_weights, mg_model[vpp_rank], mtp_layer_flag=False)
-                        self.set_model_layer_attn_ex(hf_layer, local_layer_idx, hf_pp_weights, mg_model[vpp_rank], mtp_layer_flag=False)
-                        self.set_model_layer_mlp_ex(hf_layer, local_layer_idx, hf_pp_weights, mg_model[vpp_rank], mtp_layer_flag=False)
+                        self.set_model_layer_norm_ex(
+                            hf_layer, local_layer_idx, hf_pp_weights, mg_model[vpp_rank], mtp_layer_flag=False
+                        )
+                        self.set_model_layer_attn_ex(
+                            hf_layer, local_layer_idx, hf_pp_weights, mg_model[vpp_rank], mtp_layer_flag=False
+                        )
+                        self.set_model_layer_mlp_ex(
+                            hf_layer, local_layer_idx, hf_pp_weights, mg_model[vpp_rank], mtp_layer_flag=False
+                        )
                         local_idx += 1
 
                     # non-dualpipe postprocess: last pp & last vpp
-                    if (not self.dualpipe) and pp_rank == self.pipeline_model_parallel_size - 1 and vpp_rank == self.vpp_size - 1:
+                    if (
+                        (not self.dualpipe)
+                        and pp_rank == self.pipeline_model_parallel_size - 1
+                        and vpp_rank == self.vpp_size - 1
+                    ):
                         self.set_model_postprocess(hf_pp_weights, mg_model[vpp_rank])
 
                 # save
@@ -923,6 +1030,503 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
         logger.info("Done!")
 
 
+class DeepSeek4Mg2hfConvert(Mg2HfConvert):
+    def __init__(self, args):
+        super().__init__(args)
+        self.n_hash_layers = getattr(self.load_model, "n_hash_layers", 0)
+        self.compress_ratios = getattr(self.load_model, "compress_ratios")
+        self.expert_tensor_parallel_size = args.expert_tensor_parallel_size
+
+    def _compress_ratio(self, hf_layer_idx: int) -> int:
+        if 0 <= hf_layer_idx < len(self.compress_ratios):
+            return self.compress_ratios[hf_layer_idx]
+        raise ValueError("compress-ratios length must equal num-layers.")
+
+    def _mg_layer_prefix(self, local_layer_idx: int, mtp_layer_flag: bool = False) -> str:
+        return (
+            f"mtp.layers.{local_layer_idx}.transformer_layer" if mtp_layer_flag else f"decoder.layers.{local_layer_idx}"
+        )
+
+    def _hf_layer_prefix(self, hf_layer_idx: int, mtp_layer_flag: bool = False) -> str:
+        return f"mtp.{hf_layer_idx}" if mtp_layer_flag else f"layers.{hf_layer_idx}"
+
+    def set_model_preprocess(self, hf_weight, mg_weight):
+        """Convert embedding from Megatron to HuggingFace"""
+        global GLOBAL_EMB_WEIGHTS
+        emb_list = []
+        if self.expert_tensor_parallel_size == 1:
+            for tp_rank, ep_rank in self.attention_tp_ckpts_list:
+                cur_tp_emb = mg_weight[(tp_rank, ep_rank)].pop("embedding.word_embeddings.weight")
+                emb_list.append(cur_tp_emb.clone())
+        else:
+            for tp_rank in self.tp_rank_list:
+                cur_tp_emb = mg_weight[(tp_rank, self.ep_rank_list[0])].pop("embedding.word_embeddings.weight")
+                emb_list.append(cur_tp_emb.clone())
+
+        emb_weights = torch.cat(emb_list, dim=0)
+        hf_weight["embed.weight"] = emb_weights
+        GLOBAL_EMB_WEIGHTS = emb_weights
+
+    def set_model_postprocess(self, hf_weight, mg_weight):
+        """Convert final_norm, output_layer, and hc_head from Megatron to HuggingFace"""
+        global GLOBAL_LM_HEAD_WEIGHTS
+
+        final_norm = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop("final_layernorm.weight")
+        hf_weight["norm.weight"] = final_norm.clone()
+
+        if self.load_model.untie_embeddings_and_output_weights:
+            lm_head_list = []
+            if self.expert_tensor_parallel_size == 1:
+                for tp_rank, ep_rank in self.attention_tp_ckpts_list:
+                    cur_tp_head = mg_weight[(tp_rank, ep_rank)].pop("output_layer.weight")
+                    lm_head_list.append(cur_tp_head.clone())
+            else:
+                for tp_rank in self.tp_rank_list:
+                    cur_tp_head = mg_weight[(tp_rank, self.ep_rank_list[0])].pop("output_layer.weight")
+                    lm_head_list.append(cur_tp_head.clone())
+            lm_head_weights = torch.cat(lm_head_list, dim=0)
+            hf_weight["head.weight"] = lm_head_weights.clone()
+            GLOBAL_LM_HEAD_WEIGHTS = lm_head_weights.clone()
+
+        # hc_head parameters
+        hc_base = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop("hc_head.hc_base")
+        hc_fn = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop("hc_head.hc_fn.weight")
+        hc_scale = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop("hc_head.hc_scale")
+
+        hf_weight["hc_head_base"] = hc_base.clone()
+        hf_weight["hc_head_fn"] = hc_fn.clone()
+        hf_weight["hc_head_scale"] = hc_scale.clone()
+
+    def set_model_layer_norm(self, hf_weight, mg_weight, hf_layer_idx, local_layer_idx, mtp_layer_flag=False):
+        """Convert layer norms from Megatron to HuggingFace"""
+        mg_prefix = self._mg_layer_prefix(local_layer_idx, mtp_layer_flag)
+        hf_prefix = self._hf_layer_prefix(hf_layer_idx, mtp_layer_flag)
+
+        attn_norm = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(f"{mg_prefix}.input_layernorm.weight")
+        ffn_norm = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(f"{mg_prefix}.pre_mlp_layernorm.weight")
+
+        hf_weight[f"{hf_prefix}.attn_norm.weight"] = attn_norm.clone()
+        hf_weight[f"{hf_prefix}.ffn_norm.weight"] = ffn_norm.clone()
+
+    def set_model_layer_attn(self, hf_weight, mg_weight, hf_layer_idx, local_layer_idx, mtp_layer_flag=False):
+        """Convert attention weights from Megatron to HuggingFace for DeepSeek4"""
+        mg_prefix = self._mg_layer_prefix(local_layer_idx, mtp_layer_flag)
+        hf_prefix = self._hf_layer_prefix(hf_layer_idx, mtp_layer_flag)
+        attn_prefix = f"{mg_prefix}.self_attention"
+
+        # Attention sink
+        attn_sink_list = []
+        if self.expert_tensor_parallel_size == 1:
+            for tp_rank, ep_rank in self.attention_tp_ckpts_list:
+                cur_attn_sink = mg_weight[(tp_rank, ep_rank)].pop(f"{attn_prefix}.attn_sink")
+                attn_sink_list.append(cur_attn_sink.clone())
+        else:
+            for tp_rank in self.tp_rank_list:
+                cur_attn_sink = mg_weight[(tp_rank, self.ep_rank_list[0])].pop(f"{attn_prefix}.attn_sink")
+                attn_sink_list.append(cur_attn_sink.clone())
+        attn_sink = torch.cat(attn_sink_list, dim=0)
+        hf_weight[f"{hf_prefix}.attn.attn_sink"] = attn_sink.clone()
+
+        # KV norm and Q norm
+        kv_norm = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(f"{attn_prefix}.kv_layernorm.weight")
+        q_norm = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(f"{attn_prefix}.q_layernorm.weight")
+        hf_weight[f"{hf_prefix}.attn.kv_norm.weight"] = kv_norm.clone()
+        hf_weight[f"{hf_prefix}.attn.q_norm.weight"] = q_norm.clone()
+
+        # wo_a (linear_o_down_proj)
+        wo_a_list = []
+        if self.expert_tensor_parallel_size == 1:
+            for tp_rank, ep_rank in self.attention_tp_ckpts_list:
+                cur_wo_a = mg_weight[(tp_rank, ep_rank)].pop(f"{attn_prefix}.linear_o_down_proj.weight")
+                wo_a_list.append(cur_wo_a.clone())
+        else:
+            for tp_rank in self.tp_rank_list:
+                cur_wo_a = mg_weight[(tp_rank, self.ep_rank_list[0])].pop(f"{attn_prefix}.linear_o_down_proj.weight")
+                wo_a_list.append(cur_wo_a.clone())
+        wo_a = torch.cat(wo_a_list, dim=0)
+        hf_weight[f"{hf_prefix}.attn.wo_a.weight"] = wo_a.clone()
+
+        # wkv (linear_kv) - replicated across TP
+        wkv = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(f"{attn_prefix}.linear_kv.weight")
+        hf_weight[f"{hf_prefix}.attn.wkv.weight"] = wkv.clone()
+
+        # wo_b (linear_o_up_proj)
+        wo_b_list = []
+        if self.expert_tensor_parallel_size == 1:
+            for tp_rank, ep_rank in self.attention_tp_ckpts_list:
+                cur_wo_b = mg_weight[(tp_rank, ep_rank)].pop(f"{attn_prefix}.linear_o_up_proj.weight")
+                wo_b_list.append(cur_wo_b.clone())
+        else:
+            for tp_rank in self.tp_rank_list:
+                cur_wo_b = mg_weight[(tp_rank, self.ep_rank_list[0])].pop(f"{attn_prefix}.linear_o_up_proj.weight")
+                wo_b_list.append(cur_wo_b.clone())
+        wo_b = torch.cat(wo_b_list, dim=1)
+        hf_weight[f"{hf_prefix}.attn.wo_b.weight"] = wo_b.clone()
+
+        # wq_a (linear_q) - replicated across TP
+        wq_a = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(f"{attn_prefix}.linear_q.weight")
+        hf_weight[f"{hf_prefix}.attn.wq_a.weight"] = wq_a.clone()
+
+        # wq_b (linear_q_up_proj)
+        wq_b_list = []
+        if self.expert_tensor_parallel_size == 1:
+            for tp_rank, ep_rank in self.attention_tp_ckpts_list:
+                cur_wq_b = mg_weight[(tp_rank, ep_rank)].pop(f"{attn_prefix}.linear_q_up_proj.weight")
+                wq_b_list.append(cur_wq_b.clone())
+        else:
+            for tp_rank in self.tp_rank_list:
+                cur_wq_b = mg_weight[(tp_rank, self.ep_rank_list[0])].pop(f"{attn_prefix}.linear_q_up_proj.weight")
+                wq_b_list.append(cur_wq_b.clone())
+        wq_b = torch.cat(wq_b_list, dim=0)
+        hf_weight[f"{hf_prefix}.attn.wq_b.weight"] = wq_b.clone()
+
+        # Compressor weights (if compress_ratio != 0)
+        cr = self._compress_ratio(hf_layer_idx) if not mtp_layer_flag else 0
+        if (not mtp_layer_flag) and cr != 0:
+            comp_ape = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(f"{attn_prefix}.compressor.ape")
+            comp_norm = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(
+                f"{attn_prefix}.compressor.norm.weight"
+            )
+            comp_wgate = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(
+                f"{attn_prefix}.compressor.wgate.weight"
+            )
+            comp_wkv = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(
+                f"{attn_prefix}.compressor.wkv.weight"
+            )
+
+            hf_weight[f"{hf_prefix}.attn.compressor.ape"] = comp_ape.clone()
+            hf_weight[f"{hf_prefix}.attn.compressor.norm.weight"] = comp_norm.clone()
+            hf_weight[f"{hf_prefix}.attn.compressor.wgate.weight"] = comp_wgate.clone()
+            hf_weight[f"{hf_prefix}.attn.compressor.wkv.weight"] = comp_wkv.clone()
+
+            if cr == 4:
+                idx_ape = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(
+                    f"{attn_prefix}.indexer.kv_compressor.ape"
+                )
+                idx_norm = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(
+                    f"{attn_prefix}.indexer.kv_compressor.norm.weight"
+                )
+                idx_wgate = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(
+                    f"{attn_prefix}.indexer.kv_compressor.wgate.weight"
+                )
+                idx_wkv = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(
+                    f"{attn_prefix}.indexer.kv_compressor.wkv.weight"
+                )
+                idx_wq_b = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(
+                    f"{attn_prefix}.indexer.wq_b.weight"
+                )
+                idx_wp = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(
+                    f"{attn_prefix}.indexer.weights_proj.weight"
+                )
+
+                hf_weight[f"{hf_prefix}.attn.indexer.compressor.ape"] = idx_ape.clone()
+                hf_weight[f"{hf_prefix}.attn.indexer.compressor.norm.weight"] = idx_norm.clone()
+                hf_weight[f"{hf_prefix}.attn.indexer.compressor.wgate.weight"] = idx_wgate.clone()
+                hf_weight[f"{hf_prefix}.attn.indexer.compressor.wkv.weight"] = idx_wkv.clone()
+                hf_weight[f"{hf_prefix}.attn.indexer.wq_b.weight"] = idx_wq_b.clone()
+                hf_weight[f"{hf_prefix}.attn.indexer.weights_proj.weight"] = idx_wp.clone()
+
+    def set_model_layer_mlp(self, hf_weight, mg_weight, hf_layer_idx, local_layer_idx, mtp_layer_flag=False):
+        """Convert MLP/MoE weights from Megatron to HuggingFace for DeepSeek4"""
+        mg_prefix = self._mg_layer_prefix(local_layer_idx, mtp_layer_flag)
+        hf_prefix = self._hf_layer_prefix(hf_layer_idx, mtp_layer_flag)
+
+        # Router weight
+        router_w = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(f"{mg_prefix}.mlp.router.weight")
+        hf_weight[f"{hf_prefix}.ffn.gate.weight"] = router_w.clone()
+
+        # Router bias or tid2eid
+        if mtp_layer_flag:
+            router_bias = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(
+                f"{mg_prefix}.mlp.router.expert_bias"
+            )
+            hf_weight[f"{hf_prefix}.ffn.gate.bias"] = router_bias.clone()
+        else:
+            hash_layer = hf_layer_idx < self.n_hash_layers
+            if hash_layer:
+                tid2eid = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(f"{mg_prefix}.mlp.router.tid2eid")
+                hf_weight[f"{hf_prefix}.ffn.gate.tid2eid"] = tid2eid.clone()
+            else:
+                router_bias = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(
+                    f"{mg_prefix}.mlp.router.expert_bias"
+                )
+                hf_weight[f"{hf_prefix}.ffn.gate.bias"] = router_bias.clone()
+
+        # HC parameters
+        hc_attn_base = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(f"{mg_prefix}.attn_mhc.hc_base")
+        hc_attn_fn = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(f"{mg_prefix}.attn_mhc.hc_fn.weight")
+        hc_attn_scale = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(f"{mg_prefix}.attn_mhc.hc_scale")
+        hc_ffn_base = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(f"{mg_prefix}.mlp_mhc.hc_base")
+        hc_ffn_fn = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(f"{mg_prefix}.mlp_mhc.hc_fn.weight")
+        hc_ffn_scale = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(f"{mg_prefix}.mlp_mhc.hc_scale")
+
+        hf_weight[f"{hf_prefix}.hc_attn_base"] = hc_attn_base.clone()
+        hf_weight[f"{hf_prefix}.hc_attn_fn"] = hc_attn_fn.clone()
+        hf_weight[f"{hf_prefix}.hc_attn_scale"] = hc_attn_scale.clone()
+        hf_weight[f"{hf_prefix}.hc_ffn_base"] = hc_ffn_base.clone()
+        hf_weight[f"{hf_prefix}.hc_ffn_fn"] = hc_ffn_fn.clone()
+        hf_weight[f"{hf_prefix}.hc_ffn_scale"] = hc_ffn_scale.clone()
+
+        # Shared experts
+        shared_fc1_key = f"{mg_prefix}.mlp.shared_experts.linear_fc1.weight"
+        shared_fc2_key = f"{mg_prefix}.mlp.shared_experts.linear_fc2.weight"
+
+        if self.expert_tensor_parallel_size == 1:
+            shared_gate_weights, shared_up_weights = self.linear_fc1_gather_from_etp(mg_weight, shared_fc1_key)
+            shared_down_weights = self.linear_fc2_gather_from_etp(mg_weight, shared_fc2_key)
+        else:
+            shared_gate_weights, shared_up_weights = self.linear_fc1_gather_from_tp(mg_weight, shared_fc1_key)
+            shared_down_weights = self.linear_fc2_gather_from_tp(mg_weight, shared_fc2_key)
+
+        hf_weight[f"{hf_prefix}.ffn.shared_experts.w1.weight"] = shared_gate_weights.clone()
+        hf_weight[f"{hf_prefix}.ffn.shared_experts.w3.weight"] = shared_up_weights.clone()
+        hf_weight[f"{hf_prefix}.ffn.shared_experts.w2.weight"] = shared_down_weights.clone()
+
+        # Experts
+        num_local_experts = self.load_model.num_experts // self.expert_model_parallel_size
+
+        if self.moe_grouped_gemm:
+            experts_weight1_key = f"{mg_prefix}.mlp.experts.weight1"
+            experts_weight2_key = f"{mg_prefix}.mlp.experts.weight2"
+
+            if self.moe_tp_extend_ep:
+                # Gather from TP*EP
+                for ep_rank in self.ep_rank_list:
+                    for tp_rank in self.tp_rank_list:
+                        cur_w1 = mg_weight[(tp_rank, ep_rank)].pop(experts_weight1_key)
+                        cur_w2 = mg_weight[(tp_rank, ep_rank)].pop(experts_weight2_key)
+
+                        bucket_num = self.tensor_model_parallel_size * self.expert_model_parallel_size
+                        bucket_expert_num = self.load_model.num_experts // bucket_num
+
+                        cur_w1_3d = cur_w1.view(bucket_expert_num, self.load_model.hidden_size, -1)
+                        cur_w2_3d = cur_w2.view(bucket_expert_num, -1, self.load_model.hidden_size)
+
+                        global_expert_idx = ep_rank * self.tensor_model_parallel_size + tp_rank
+                        for idx in range(bucket_expert_num):
+                            expert_idx = global_expert_idx * bucket_expert_num + idx
+                            w1 = cur_w1_3d[idx].t().contiguous()
+                            w2 = cur_w2_3d[idx].t().contiguous()
+                            gate, up = torch.chunk(w1, 2, dim=0)
+
+                            hf_weight[f"{hf_prefix}.ffn.experts.{expert_idx}.w1.weight"] = gate.clone()
+                            hf_weight[f"{hf_prefix}.ffn.experts.{expert_idx}.w3.weight"] = up.clone()
+                            hf_weight[f"{hf_prefix}.ffn.experts.{expert_idx}.w2.weight"] = w2.clone()
+            else:
+                # Gather from EP only
+                for tp_rank, ep_rank in self.moe_ep_ckpts_list:
+                    cur_w1 = mg_weight[(tp_rank, ep_rank)].pop(experts_weight1_key)
+                    cur_w2 = mg_weight[(tp_rank, ep_rank)].pop(experts_weight2_key)
+
+                    cur_w1_3d = cur_w1.view(num_local_experts, self.load_model.hidden_size, -1)
+                    cur_w2_3d = cur_w2.view(num_local_experts, -1, self.load_model.hidden_size)
+
+                    for local_idx in range(num_local_experts):
+                        expert_idx = ep_rank * num_local_experts + local_idx
+                        w1 = cur_w1_3d[local_idx].t().contiguous()
+                        w2 = cur_w2_3d[local_idx].t().contiguous()
+                        gate, up = torch.chunk(w1, 2, dim=0)
+
+                        hf_weight[f"{hf_prefix}.ffn.experts.{expert_idx}.w1.weight"] = gate.clone()
+                        hf_weight[f"{hf_prefix}.ffn.experts.{expert_idx}.w3.weight"] = up.clone()
+                        hf_weight[f"{hf_prefix}.ffn.experts.{expert_idx}.w2.weight"] = w2.clone()
+        else:
+            # Non-grouped GEMM
+            for ep_rank in self.ep_rank_list:
+                for local_idx in range(num_local_experts):
+                    expert_idx = ep_rank * num_local_experts + local_idx
+                    local_fc1_key = f"{mg_prefix}.mlp.experts.local_experts.{local_idx}.linear_fc1.weight"
+                    local_fc2_key = f"{mg_prefix}.mlp.experts.local_experts.{local_idx}.linear_fc2.weight"
+
+                    if self.expert_tensor_parallel_size == 1:
+                        gate, up = self.linear_fc1_get_for_etp(
+                            mg_weight, local_fc1_key, tp_rank=self.tp_rank_list[0], ep_rank=ep_rank
+                        )
+                        down = self.linear_fc2_get_for_etp(
+                            mg_weight, local_fc2_key, tp_rank=self.tp_rank_list[0], ep_rank=ep_rank
+                        )
+                    else:
+                        gate, up = self.linear_fc1_gather_from_tp(mg_weight, local_fc1_key, ep_rank=ep_rank)
+                        down = self.linear_fc2_gather_from_tp(mg_weight, local_fc2_key, ep_rank=ep_rank)
+
+                    hf_weight[f"{hf_prefix}.ffn.experts.{expert_idx}.w1.weight"] = gate.clone()
+                    hf_weight[f"{hf_prefix}.ffn.experts.{expert_idx}.w3.weight"] = up.clone()
+                    hf_weight[f"{hf_prefix}.ffn.experts.{expert_idx}.w2.weight"] = down.clone()
+
+    def set_mtp_layer(self, hf_weight, mg_weight, hf_layer_idx, mtp_local_idx=0):
+        """Convert MTP layer from Megatron to HuggingFace for DeepSeek4"""
+        global GLOBAL_EMB_WEIGHTS
+        global GLOBAL_LM_HEAD_WEIGHTS
+
+        # MTP preprocess: enorm, hnorm, eh_proj
+        enorm = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(f"mtp.layers.{mtp_local_idx}.enorm.weight")
+        hnorm = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(f"mtp.layers.{mtp_local_idx}.hnorm.weight")
+
+        eh_proj_list = []
+        if self.expert_tensor_parallel_size == 1:
+            for tp_rank, ep_rank in self.attention_tp_ckpts_list:
+                cur_eh_proj = mg_weight[(tp_rank, ep_rank)].pop(f"mtp.layers.{mtp_local_idx}.eh_proj.weight")
+                eh_proj_list.append(cur_eh_proj.clone())
+        else:
+            for tp_rank in self.tp_rank_list:
+                cur_eh_proj = mg_weight[(tp_rank, self.ep_rank_list[0])].pop(
+                    f"mtp.layers.{mtp_local_idx}.eh_proj.weight"
+                )
+                eh_proj_list.append(cur_eh_proj.clone())
+
+        eh_proj_weights = torch.cat(eh_proj_list, dim=0)
+        e_proj, h_proj = torch.chunk(eh_proj_weights, 2, dim=1)
+
+        hf_weight[f"mtp.{hf_layer_idx}.enorm.weight"] = enorm.clone()
+        hf_weight[f"mtp.{hf_layer_idx}.hnorm.weight"] = hnorm.clone()
+        hf_weight[f"mtp.{hf_layer_idx}.e_proj.weight"] = e_proj.contiguous().clone()
+        hf_weight[f"mtp.{hf_layer_idx}.h_proj.weight"] = h_proj.contiguous().clone()
+
+        # Embedding (optional, only if PP > 1)
+        if not hasattr(self.load_model, "tie_mtp_embeddings_and_lmhead"):
+            hf_weight[f"mtp.{hf_layer_idx}.emb.tok_emb.weight"] = GLOBAL_EMB_WEIGHTS.clone()
+
+        # MTP postprocess: norm, head, hc_head
+        mtp_norm = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(
+            f"mtp.final_layernorms.{mtp_local_idx}.weight"
+        )
+        hf_weight[f"mtp.{hf_layer_idx}.norm.weight"] = mtp_norm.clone()
+
+        # Head (use global)
+        if not hasattr(self.load_model, "tie_mtp_embeddings_and_lmhead"):
+            hf_weight[f"mtp.{hf_layer_idx}.head.weight"] = GLOBAL_LM_HEAD_WEIGHTS.clone()
+
+        # HC head
+        mg_prefix = f"mtp.layers.{mtp_local_idx}"
+        hc_base = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(f"{mg_prefix}.hc_head.hc_base")
+        hc_fn = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(f"{mg_prefix}.hc_head.hc_fn.weight")
+        hc_scale = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(f"{mg_prefix}.hc_head.hc_scale")
+
+        hf_weight[f"mtp.{hf_layer_idx}.hc_head_base"] = hc_base.clone()
+        hf_weight[f"mtp.{hf_layer_idx}.hc_head_fn"] = hc_fn.clone()
+        hf_weight[f"mtp.{hf_layer_idx}.hc_head_scale"] = hc_scale.clone()
+
+        # Transformer layer
+        self.set_model_layer_norm(hf_weight, mg_weight, hf_layer_idx, mtp_local_idx, mtp_layer_flag=True)
+        self.set_model_layer_attn(hf_weight, mg_weight, hf_layer_idx, mtp_local_idx, mtp_layer_flag=True)
+        self.set_model_layer_mlp(hf_weight, mg_weight, hf_layer_idx, mtp_local_idx, mtp_layer_flag=True)
+
+    def read_pp_rank_weights(self, pp_rank, mg_weights):
+        """get pp_rank weights"""
+        layer_list = self.pprank_layer_idxs[pp_rank]
+        global hf_weight_dict
+
+        for _, layer in enumerate(layer_list):
+            logger.info(f"Converting the weights of layer {layer}")
+            _, local_idx = self.layeridx_pprank[layer]
+
+            if pp_rank == 0 and layer == 0:
+                self.set_model_preprocess(hf_weight_dict, mg_weights)
+            self.set_model_layer_norm(hf_weight_dict, mg_weights, layer, local_idx)
+            self.set_model_layer_attn(hf_weight_dict, mg_weights, layer, local_idx)
+            self.set_model_layer_mlp(hf_weight_dict, mg_weights, layer, local_idx)
+
+            if layer != self.last_save_hf_layer:
+                self.save_safetensors(hf_weight_dict, layer + 1)
+                hf_weight_dict = defaultdict()
+
+        if pp_rank == self.pipeline_model_parallel_size - 1:
+            self.set_model_postprocess(hf_weight_dict, mg_weights)
+            self.save_safetensors(hf_weight_dict, self.last_save_hf_layer + 1)
+            hf_weight_dict = defaultdict()
+            if self.mtp_num_layers:
+                for mtp_idx in range(self.mtp_num_layers):
+                    hf_layer_number = mtp_idx
+                    logger.info(f"Converting the weights of mtp layer {hf_layer_number}")
+                    self.set_mtp_layer(hf_weight_dict, mg_weights, hf_layer_number, mtp_idx)
+                    hf_layer_number = self.num_real_layers + mtp_idx
+                    self.save_safetensors(hf_weight_dict, hf_layer_number + 1)
+                    hf_weight_dict = defaultdict()
+
+    def read_vpp_rank_weights(self, pp_rank, vpp_rank, mg_weight):
+        """get vpp_rank weights"""
+        layer_list = self.vpprank_layer_idxs[pp_rank][vpp_rank]
+        global hf_weight_dict
+
+        for _, layer in enumerate(layer_list):
+            logger.info(f"Converting the weights of layer {layer}")
+            *_, local_idx = self.layeridx_vpprank[layer]
+
+            if pp_rank == 0 and vpp_rank == 0 and layer == 0:
+                self.set_model_preprocess(hf_weight_dict, mg_weight)
+            self.set_model_layer_norm(hf_weight_dict, mg_weight, layer, local_idx)
+            self.set_model_layer_attn(hf_weight_dict, mg_weight, layer, local_idx)
+            self.set_model_layer_mlp(hf_weight_dict, mg_weight, layer, local_idx)
+
+            if layer != self.last_save_hf_layer:
+                self.save_safetensors(hf_weight_dict, layer + 1)
+                hf_weight_dict = defaultdict()
+
+        # dualpipe: post weight(norm+lm_head) and mtp layer in pp0vpp-1
+        dualpipe_flag = self.schedules_method == "dualpipev" and pp_rank == 0 and vpp_rank == self.vpp_size - 1
+        # no dualpipe: post weight and mtp layer in pp-1vpp-1
+        norm_flag = (
+            self.schedules_method != "dualpipev"
+            and pp_rank == self.pipeline_model_parallel_size - 1
+            and vpp_rank == self.vpp_size - 1
+        )
+
+        if dualpipe_flag or norm_flag:
+            self.set_model_postprocess(hf_weight_dict, mg_weight)
+            self.save_safetensors(hf_weight_dict, self.last_save_hf_layer + 1)
+            hf_weight_dict = defaultdict()
+            if self.mtp_num_layers:
+                for mtp_idx in range(self.mtp_num_layers):
+                    hf_layer_number = mtp_idx
+                    logger.info(f"Converting the weights of mtp layer {hf_layer_number}")
+                    self.set_mtp_layer(hf_weight_dict, mg_weight, hf_layer_number, mtp_idx)
+                    hf_layer_number = self.num_real_layers + mtp_idx
+                    self.save_safetensors(hf_weight_dict, hf_layer_number + 1)
+                    hf_weight_dict = defaultdict()
+
+    def run(self):
+        if self.expert_tensor_parallel_size == 1:
+            self.etp_valid_ckpts_list = []
+            self.attention_tp_ckpts_list = []
+            self.moe_ep_ckpts_list = []
+            self.get_etp_valid_ckpts_list()
+
+        for pp_rank in self.pp_rank_list:
+            mg_weights = defaultdict()
+            if self.num_layers_per_virtual_pipeline_stage is None:
+                for tp_rank, ep_rank in product(self.tp_rank_list, self.ep_rank_list):
+                    # if expert-tensor-parallel-size is set to 1, the weight files no longer satisfies the TP EP product format
+                    # then it is necessary to avoid reading non-existent files
+                    if self.expert_tensor_parallel_size == 1 and (tp_rank, ep_rank) not in self.etp_valid_ckpts_list:
+                        continue
+                    model_path = self.get_pt_path_by_tpppep_rank(self.iter_path, tp_rank, pp_rank, ep_rank)
+                    ckpt_file = load_data(model_path)
+                    mg_weight = ckpt_file['model']
+
+                    mg_weights[(tp_rank, ep_rank)] = mg_weight
+                self.read_pp_rank_weights(pp_rank, mg_weights)
+            else:
+                for vpp_rank in range(self.vpp_size):
+                    for tp_rank, ep_rank in product(self.tp_rank_list, self.ep_rank_list):
+                        if (
+                            self.expert_tensor_parallel_size == 1
+                            and (tp_rank, ep_rank) not in self.etp_valid_ckpts_list
+                        ):
+                            continue
+                        pt_path = self.get_pt_path_by_tpppep_rank(self.iter_path, tp_rank, pp_rank, ep_rank)
+                        mg_weight = load_data(pt_path)[f'model{vpp_rank}']
+
+                        mg_weights[(tp_rank, ep_rank)] = mg_weight
+
+                    self.read_vpp_rank_weights(pp_rank, vpp_rank, mg_weights)
+
+        model_index_file_path = os.path.join(self.save_dir, "model.safetensors.index.json")
+        with open(model_index_file_path, 'w', encoding='utf-8') as json_file:
+            json.dump({"metadata": {"total_size": TENSOR_SIZE}, "weight_map": self.model_index}, json_file, indent=4)
+
+        logger.info("Done!")
+
+
 class DeepSeek4Converter:
     def __init__(self, args):
         self.args = args
@@ -931,4 +1535,8 @@ class DeepSeek4Converter:
     def run(self):
         if self.args.load_model_type == "hf":
             convert = DeepSeek4Hf2MgConvert(self.args)
+        elif self.args.load_model_type == "mg":
+            convert = DeepSeek4Mg2hfConvert(self.args)
+        else:
+            raise Exception("This conversion scheme is not supported")
         convert.run()
