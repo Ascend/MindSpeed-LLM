@@ -11,4 +11,3 @@ python convert_ckpt_v2.py \
     --moe-tp-extend-ep \
     --load-dir ./model_weights/ring_1T-mcore/ \
     --save-dir ./model_from_hf/ring_1T_v2-hf/mg2hf/ \
-    --spec mindspeed_llm.tasks.models.spec.bailing_spec layer_spec \

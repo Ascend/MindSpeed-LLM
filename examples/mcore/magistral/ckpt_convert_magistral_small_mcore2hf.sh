@@ -6,7 +6,6 @@ python convert_ckpt_v2.py \
     --model-type-hf magistral \
     --load-model-type mg \
     --save-model-type hf \
-    --params-dtype bf16 \
     --target-tensor-parallel-size 1 \
     --target-pipeline-parallel-size 1 \
     --hf-cfg-dir ./origin_hf_cfg \
