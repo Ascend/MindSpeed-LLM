@@ -45,7 +45,7 @@
     wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/vocab.json
     ```
 
-2. 通过sha256sum验证模型权重文件完整性。  
+2. 通过sha256sum验证模型权重文件完整性。
 
     ```shell
     # 利用sha256sum计算sha256数值
@@ -113,7 +113,8 @@
     INFO:root:Done!
     ```
 
-> [!NOTE]  
+> [!NOTE]
+>
 > 对于Qwen3-8B模型，此处推荐的切分配置是tp1pp2，对应上述配置。
 
 ## 启动预训练
@@ -220,9 +221,9 @@
 
     TP=1                # 权重转换设置--target-tensor-parallel-size 1，修改为1
     PP=2                # 权重转换设置--target-pipeline-parallel-size 2，修改为2，与权重转换时一致
-    SEQ_LEN=4096        # 设置seq_length为4096
+    SEQ_LENGTH=4096     # 设置seq_length为4096
     MBS=1               # 设置micro-batch-size为1
-    GBS=64              # 设置global-batch-size为64   
+    GBS=64              # 设置global-batch-size为64
     TRAIN_ITERS=2000    # 设置训练迭代步数
     ```
 
@@ -241,15 +242,16 @@
     bash examples/mcore/qwen3/pretrain_qwen3_8b_4K_ptd.sh
     ```
 
-    **图 1**  启动预训练  
+    **图 1**  启动预训练
+
     ![img_2.png](../../pytorch/figures/quick_start/running_log.png)
 
     脚本中包含训练参数或优化特性，下表为部分参数解释。
 
-    **表 3**  训练脚本参数说明  
+    **表 3**  训练脚本参数说明
 
     |参数名|说明|
-    |----|----| 
+    |----|----|
     |`--use-mcore-models`|使用Mcore分支运行模型|
     |`--disable-bias-linear`|去掉linear的偏移值，与Qwen原模型一致|
     |`--group-query-attention`|开启GQA注意力处理机制|
@@ -332,7 +334,7 @@
     ```
 
     微调数据集处理结果如下：
-    
+
     ```shell
     ./finetune_dataset/alpaca_packed_attention_mask_document.bin
     ./finetune_dataset/alpaca_packed_attention_mask_document.idx
@@ -358,8 +360,8 @@
     NPUS_PER_NODE=8  # 单节点的卡数
     MASTER_ADDR=localhost
     MASTER_PORT=6000
-    NNODES=1  
-    NODE_RANK=0  
+    NNODES=1
+    NODE_RANK=0
     WORLD_SIZE=$(($NPUS_PER_NODE * $NNODES))
     ```
 
@@ -391,10 +393,10 @@
 
     脚本中包含微调参数或优化特性，下表为部分参数解释。
 
-    **表 5**  微调脚本参数说明  
+    **表 5**  微调脚本参数说明
 
     |参数名|说明|
-    |----|----| 
+    |----|----|
     |`--finetune`|启动模型的微调模式。|
     |`--stage`|训练方法。|
     |`--is-instruction-dataset`|用于指定微调过程中采用指令微调数据集，以确保模型依据特定指令数据进行微调。|
