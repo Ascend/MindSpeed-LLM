@@ -17,6 +17,7 @@
 |<term>Atlas 训练系列产品</term>|x|
 
 > [!NOTE]
+>
 > 本节表格中“√”代表支持，“x”代表不支持。
 
 - 各硬件产品对应物理机部署场景支持的操作系统请参考[兼容性查询助手](https://www.hiascend.com/hardware/compatibility)。
@@ -27,8 +28,8 @@
 请参见《版本说明》中的“[相关产品版本配套说明](../../release_notes_llm.md#相关产品版本配套说明)”章节，下载安装对应的软件版本。
 
 > [!NOTICE]
-> 安装运行程序建议使用非root用户，且建议对安装程序的目录文件做好权限管控：文件夹权限设置为750，文件权限设置为640。可以通过设置umask控制安装后文件的权限，如设置umask为0027。
-> 更多安全相关内容请参见《[安全声明](../../SECURITYNOTE.md)》中各组件关于“文件权限控制”的说明。
+>
+> 安装运行程序建议使用非root用户，且建议对安装程序的目录文件做好权限管控：文件夹权限设置为750，文件权限设置为640。可以通过设置umask控制安装后文件的权限，如设置umask为0027。更多安全相关内容请参见《[安全声明](../../SECURITYNOTE.md)》中各组件关于“文件权限控制”的说明。
 
 下载[固件与驱动](https://hiascend.com/hardware/firmware-drivers/community)，请根据系统和硬件产品型号选择对应版本的社区版本或商用版本的固件与驱动。
 参考如下命令安装：
@@ -48,7 +49,7 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
 >
 > - 使用镜像前，请先确认机器型号。最新镜像仅支持aarch64架构，可通过uname -a命令确认当前环境是否符合要求。
 > - 配套镜像已预装配套的CANN 9.0.0软件及Ascend Extension for PyTorch 26.0.0插件，您可根据需要选用。
-> - 若您当前环境与提供的镜像不兼容，请选择[方式二：本地安装](#方式二本地安装)。
+> - 若您当前环境与提供的镜像不兼容，请选择[方式二：源码安装](#方式二源码安装)。
 
 1. 拉取镜像
 
@@ -74,16 +75,60 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
 
    当前容器默认初始化NPU驱动和CANN环境信息，如需要安装新的，请自行替换或手动source，详见容器的~/.bashrc。
 
+   - 示例一：基本运行
+
+      ```bash
+      docker run -it --rm \
+          mindspeed-llm:26.0.0-a3-openeuler24.03-py3.11-aarch64 bash
+      ```
+
+   - 示例二：使用 NPU 设备运行（示例：设备 /dev/davinci1）
+
+      ```bash
+      # 根据实际情况修改 ascend-toolkit 路径
+      # 假设 NPU 设备安装在 /dev/davinci1 上，并且 NPU 驱动程序安装在 /usr/local/Ascend 上
+      docker run -it --rm \
+         --device=/dev/davinci1 \
+         --device=/dev/davinci_manager \
+         --device=/dev/devmm_svm \
+         --device=/dev/hisi_hdc \
+         -v /usr/local/dcmi:/usr/local/dcmi \
+         -v /usr/local/bin/npu-smi:/usr/local/bin/npu-smi \
+         -v /usr/local/Ascend/driver/lib64/:/usr/local/Ascend/driver/lib64/ \
+         -v /usr/local/Ascend/driver/version.info:/usr/local/Ascend/driver/version.info \
+         -v /etc/ascend_install.info:/etc/ascend_install.info \
+         mindspeed-llm:26.0.0-a3-openeuler24.03-py3.11-aarch64 bash
+      ```
+
+   - 示例三：挂载数据目录运行（示例：设备 /dev/davinci1）
+
+      ```bash
+      # 根据实际情况修改 ascend-toolkit 路径
+      docker run -it --rm \
+         --device=/dev/davinci1 \
+         --device=/dev/davinci_manager \
+         --device=/dev/devmm_svm \
+         --device=/dev/hisi_hdc \
+         -v /usr/local/dcmi:/usr/local/dcmi \
+         -v /usr/local/bin/npu-smi:/usr/local/bin/npu-smi \
+         -v /usr/local/Ascend/driver/lib64/:/usr/local/Ascend/driver/lib64/ \
+         -v /usr/local/Ascend/driver/version.info:/usr/local/Ascend/driver/version.info \
+         -v /etc/ascend_install.info:/etc/ascend_install.info \
+         -v /path/to/data:/data \
+         -v /path/to/weights:/weights \
+         mindspeed-llm:26.0.0-a3-openeuler24.03-py3.11-aarch64 bash
+      ```
+
 3. 加载容器并确认环境状态
 
    ```bash
    # 加载容器
    docker exec -it 容器名 bash
-   # 确认NPU是否可以正常使用，否则返回3.检查配置
+   # 确认NPU是否可以正常使用
    npu-smi info
    ```
 
-### 方式二：本地安装
+### 方式二：源码安装
 
 1. 安装CANN
 
