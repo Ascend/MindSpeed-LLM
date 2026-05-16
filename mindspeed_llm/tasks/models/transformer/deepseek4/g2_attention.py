@@ -264,8 +264,7 @@ class DeepSeek4SelfAttention(MegatronModule):
         rotary_pos_sin=None,
         sequence_len_offset=None,
     ):
-        rotary_pos_emb = rotary_pos_emb[0] if self.compress_ratio > 1 else rotary_pos_emb[1]
-        self.freqs_cis = rotary_pos_emb.to(hidden_states.device)
+        self.freqs_cis = rotary_pos_emb[0] if self.compress_ratio > 1 else rotary_pos_emb[1]
         # Do patch for repeating KV so that GQA+Ulysses is better supported.
         args = get_args()
         tp_size = parallel_state.get_tensor_model_parallel_world_size()

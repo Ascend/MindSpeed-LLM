@@ -27,6 +27,7 @@ def apply_rotary_emb(x: torch.Tensor, freqs_cis: torch.Tensor, inverse: bool = F
     x_rotated = torch.view_as_real(x_complex * freqs_cis).flatten(-2)
     return x_rotated.to(original_dtype)
 
+
 @lru_cache(2)
 def precompute_freqs_cis(dim, seqlen, original_seq_len, base, factor, beta_fast, beta_slow) -> torch.Tensor:
     """
@@ -47,10 +48,10 @@ def precompute_freqs_cis(dim, seqlen, original_seq_len, base, factor, beta_fast,
         high = math.ceil(find_correction_dim(high_rot, dim, base, max_seq_len))
         return max(low, 0), min(high, dim - 1)
 
-    def linear_ramp_factor(min, max, dim):
-        if min == max:
-            max += 0.001
-        linear_func = (torch.arange(dim, dtype=torch.float32) - min) / (max - min)
+    def linear_ramp_factor(min_val, max_val, dim):
+        if min_val == max_val:
+            max_val += 0.001
+        linear_func = (torch.arange(dim, dtype=torch.float32) - min_val) / (max_val - min_val)
         ramp_func = torch.clamp(linear_func, 0, 1)
         return ramp_func
 
@@ -78,13 +79,18 @@ def hadamard_transform_ref(x, scale=1.0):
     dim = x.shape[-1]
     x = x.reshape(-1, dim)
     log_dim = math.ceil(math.log2(dim))
-    dim_padded = 2 ** log_dim
+    dim_padded = 2**log_dim
     if dim != dim_padded:
         x = torch.nn.functional.pad(x, (0, dim_padded - dim))
-    out = torch.nn.functional.linear(x, torch.tensor(hadamard(dim_padded, dtype=float), dtype=x.dtype, device=x.device))
+    out = torch.nn.functional.linear(x, get_hadamard_tensor(dim_padded, x.dtype, x.device))
     out = out * scale
 
     return out[..., :dim].reshape(*x_shape)
+
+
+@lru_cache(5)
+def get_hadamard_tensor(dim_padded, dtype, device):
+    return torch.tensor(hadamard(dim_padded, dtype=float), dtype=dtype, device=device)
 
 
 def rotate_activation(x: torch.Tensor) -> torch.Tensor:
@@ -101,4 +107,4 @@ def rotate_activation(x: torch.Tensor) -> torch.Tensor:
         hadamard_transform = hadamard_transform_ref
 
     hidden_size = x.size(-1)
-    return hadamard_transform(x, scale=hidden_size ** -0.5)
+    return hadamard_transform(x, scale=hidden_size**-0.5)

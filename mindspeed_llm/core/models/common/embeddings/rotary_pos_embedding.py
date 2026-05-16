@@ -29,9 +29,7 @@ def apply_llama3_scaling(freqs: torch.Tensor):
         elif wavelen > low_freq_wavelen:
             new_freqs.append(freq / args.rope_scaling_factor)
         else:
-            smooth = (original_length / wavelen - args.low_freq_factor) / (
-                args.high_freq_factor - args.low_freq_factor
-            )
+            smooth = (original_length / wavelen - args.low_freq_factor) / (args.high_freq_factor - args.low_freq_factor)
             new_freqs.append((1 - smooth) * freq / args.rope_scaling_factor + smooth * freq)
     return torch.tensor(new_freqs, dtype=freqs.dtype, device=freqs.device)
 
@@ -39,7 +37,7 @@ def apply_llama3_scaling(freqs: torch.Tensor):
 def apply_yarn_scaling(freqs: torch.Tensor):
     args = get_args()
 
-    #If it is an MLA model, follow the original DeepSeekV3 logic; otherwise, use the logic for Qwen3 below.
+    # If it is an MLA model, follow the original DeepSeekV3 logic; otherwise, use the logic for Qwen3 below.
     if args.multi_latent_attention:
         scaling_factor = args.rope_scaling_factor
         dim = args.qk_pos_emb_head_dim
@@ -66,6 +64,7 @@ def apply_yarn_scaling(freqs: torch.Tensor):
 
     return inv_freq
 
+
 def apply_plm_scaling(freqs: torch.Tensor):
     args = get_args()
 
@@ -74,6 +73,7 @@ def apply_plm_scaling(freqs: torch.Tensor):
     inv_freq = 1.0 / rotary_ratio
 
     return inv_freq
+
 
 def rotary_embedding_init_wrapper(fn):
     @wraps(fn)
@@ -86,61 +86,63 @@ def rotary_embedding_init_wrapper(fn):
             head_dim = getattr(_args, "kv_channels", None) or _args.hidden_size // _args.num_attention_heads
             kwargs['kv_channels'] = int(head_dim * _args.partial_rotary_factor)
         if _args.dynamic_factor and _args.dynamic_factor > 1:
-            seq_len = _args.seq_length if _args.seq_length is not None and _args.seq_length > _args.max_position_embeddings else _args.max_position_embeddings
-            kwargs["rotary_base"] = _args.rotary_base * ((_args.dynamic_factor * seq_len / _args.max_position_embeddings) - (_args.dynamic_factor - 1)) ** (self.dim / (self.dim - 2))
-        
+            seq_len = (
+                _args.seq_length
+                if _args.seq_length is not None and _args.seq_length > _args.max_position_embeddings
+                else _args.max_position_embeddings
+            )
+            kwargs["rotary_base"] = _args.rotary_base * (
+                (_args.dynamic_factor * seq_len / _args.max_position_embeddings) - (_args.dynamic_factor - 1)
+            ) ** (self.dim / (self.dim - 2))
+
         fn(self, *args, **kwargs)
-        
+
         if hasattr(_args, "rope_scaling_type") and _args.rope_scaling_type == "llama3":
             self.inv_freq = apply_llama3_scaling(self.inv_freq)
         elif hasattr(_args, "rope_scaling_type") and _args.rope_scaling_type == "yarn":
             self.inv_freq = apply_yarn_scaling(self.inv_freq)
         elif hasattr(_args, "rope_scaling_type") and _args.rope_scaling_type == "plm":
             self.inv_freq = apply_plm_scaling(self.inv_freq)
+
     return wrapper
 
 
 def rotary_embedding_forward(self, max_seq_len: int, offset: int = 0, packed_seq: bool = False):
     """Forward pass of RoPE embedding.
 
-        Args:
-            max_seq_len (int): Maximum size of sequence
-            offset (int, optional): RoPE offset. Defaults to 0.
-            packed_seq (bool, optional): Whether to use packed sequence. Defaults to False.
+    Args:
+        max_seq_len (int): Maximum size of sequence
+        offset (int, optional): RoPE offset. Defaults to 0.
+        packed_seq (bool, optional): Whether to use packed sequence. Defaults to False.
 
-        Returns:
-            Tensor: Embeddings after applying RoPE.
+    Returns:
+        Tensor: Embeddings after applying RoPE.
     """
     args = get_args()
     if self.inv_freq.device.type == 'cpu':
         # move `inv_freq` to GPU once at the first micro-batch forward pass
         self.inv_freq = self.inv_freq.to(device=torch.cuda.current_device())
 
-
-    seq = (
-            torch.arange(max_seq_len, device=self.inv_freq.device, dtype=self.inv_freq.dtype)
-            + offset
-        )
+    seq = torch.arange(max_seq_len, device=self.inv_freq.device, dtype=self.inv_freq.dtype) + offset
 
     if self.seq_len_interpolation_factor is not None:
         seq *= 1 / self.seq_len_interpolation_factor
 
     if hasattr(args, "rope_scaling_type") and args.rope_scaling_type == "longrope":
         if args.seq_length > args.rope_scaling_original_max_position_embeddings:
-            ext_factors = torch.tensor(args.long_factor, dtype=torch.float32,
-                                       device=self.inv_freq.device)
+            ext_factors = torch.tensor(args.long_factor, dtype=torch.float32, device=self.inv_freq.device)
         else:
-            ext_factors = torch.tensor(args.short_factor, dtype=torch.float32,
-                                       device=self.inv_freq.device)
+            ext_factors = torch.tensor(args.short_factor, dtype=torch.float32, device=self.inv_freq.device)
         if args.longrope_freqs_type == "outer":
-            self.inv_freq_shape = torch.arange(0, self.dim, 2, dtype=torch.int64,
-                                           device=torch.cuda.current_device()).float() / self.dim
-            self.inv_freq = 1.0 / (ext_factors * args.rotary_base ** self.inv_freq_shape)
+            self.inv_freq_shape = (
+                torch.arange(0, self.dim, 2, dtype=torch.int64, device=torch.cuda.current_device()).float() / self.dim
+            )
+            self.inv_freq = 1.0 / (ext_factors * args.rotary_base**self.inv_freq_shape)
             freqs = torch.outer(seq, self.inv_freq)
         else:
             freqs = torch.mul(
                 torch.outer(seq, 1.0 / ext_factors).to(device=self.inv_freq.device),
-                self.inv_freq.to(device=self.inv_freq.device).to(self.inv_freq.dtype)
+                self.inv_freq.to(device=self.inv_freq.device).to(self.inv_freq.dtype),
             )
     else:
         freqs = torch.outer(seq, self.inv_freq)
@@ -155,9 +157,7 @@ def rotary_embedding_forward(self, max_seq_len: int, offset: int = 0, packed_seq
         if not self.rotary_interleaved:
             emb = torch.cat((freqs, freqs), dim=-1)
         else:
-            emb = torch.stack((freqs.view(-1, 1), freqs.view(-1, 1)), dim=-1).view(
-                freqs.shape[0], -1
-            )
+            emb = torch.stack((freqs.view(-1, 1), freqs.view(-1, 1)), dim=-1).view(freqs.shape[0], -1)
     # emb [seq_length, .., dim]
     emb = emb[:, None, None, :]
 
@@ -167,7 +167,7 @@ def rotary_embedding_forward(self, max_seq_len: int, offset: int = 0, packed_seq
     else:
         tp_y_cp_sz = cp
     if tp_y_cp_sz > 1 and not packed_seq:
-        # slice rotary_pos_emb along sequence dimension and select the parition of the current CP rank
+        # slice rotary_pos_emb along sequence dimension and select the partition of the current CP rank
         emb = get_pos_emb_on_this_cp_rank(emb, 0)
     return emb
 
@@ -176,7 +176,7 @@ def _process_partial_rope(freqs, t):
     """
     Do partial rope embedding for ChatGLM3.
     """
-    sq, b, np, hn = t.size(0), t.size(1), t.size(2), t.size(3)
+    sq, _, np, _ = t.size(0), t.size(1), t.size(2), t.size(3)
     rot_dim = freqs.shape[-2] * 2
     t, t_pass = t[..., :rot_dim], t[..., rot_dim:]
     freqs = freqs[:sq].to(t.dtype)
@@ -243,8 +243,11 @@ def apply_rotary_pos_emb_bshd(
             _mscale = args.long_mscale if scale > 1 else args.short_mscale
         else:
             scale = args.max_position_embeddings / args.rope_scaling_original_max_position_embeddings
-            _mscale = 1.0 if scale <= 1.0 else math.sqrt(
-                1 + math.log(scale) / math.log(args.rope_scaling_original_max_position_embeddings))
+            _mscale = (
+                1.0
+                if scale <= 1.0
+                else math.sqrt(1 + math.log(scale) / math.log(args.rope_scaling_original_max_position_embeddings))
+            )
 
     rot_dim = freqs.shape[-1]
     t, t_pass = t[..., :rot_dim], t[..., rot_dim:]
@@ -255,19 +258,23 @@ def apply_rotary_pos_emb_bshd(
 
     cos_ = (torch.cos(freqs) * _mscale).to(t.dtype)
     sin_ = (torch.sin(freqs) * _mscale).to(t.dtype)
-    
+
     if args.use_fused_rotary_pos_emb:
         mode = 1 if rotary_interleaved else 0
         t = npu_rotary_position_embedding(t.contiguous(), cos_, sin_, mode).to(t.dtype)
     else:
         t = (t * cos_) + (_rotate_half(t, rotary_interleaved) * sin_)
-    
+
     return torch.cat((t, t_pass), dim=-1)
 
 
 def apply_rotary_pos_emb_thd(
-        t: Tensor, cu_seqlens: Tensor, freqs: Tensor, rotary_interleaved: bool = False,
-        multi_latent_attention: bool = False, mscale: float = 1.0
+    t: Tensor,
+    cu_seqlens: Tensor,
+    freqs: Tensor,
+    rotary_interleaved: bool = False,
+    multi_latent_attention: bool = False,
+    mscale: float = 1.0,
 ) -> Tensor:
     """A baseline implementation of applying RoPE for `thd` format.
 
@@ -295,12 +302,7 @@ def apply_rotary_pos_emb_thd(
     return apply_rotary_pos_emb_bshd(t, freqs, rotary_interleaved, multi_latent_attention, mscale)
 
 
-def apply_rotary_pos_emb_bshd_in_complex(
-    t: Tensor,
-    freqs: Tensor,
-    rotary_interleaved: bool = False
-) -> Tensor:
-    args = get_args()
+def apply_rotary_pos_emb_bshd_in_complex(t: Tensor, freqs: Tensor, rotary_interleaved: bool = False) -> Tensor:
     if rotary_interleaved:
         s, b, n, d = t.shape
         t = t.view(s, b, n, 2, d // 2).transpose(4, 3)
@@ -312,7 +314,7 @@ def apply_rotary_pos_emb_bshd_in_complex(
     y = torch.view_as_real(x * freqs_cis).flatten(3)
     if rotary_interleaved:
         y = torch.cat([y[..., 0::2], y[..., 1::2]], dim=-1)
-    
+
     return y.to(t.dtype)
 
 
@@ -333,22 +335,27 @@ def apply_g2_rotary_embedding(dim, seqlen, original_seq_len, base, factor, beta_
     def find_correction_range(low_rot, high_rot, dim, base, max_seq_len):
         low = math.floor(find_correction_dim(low_rot, dim, base, max_seq_len))
         high = math.ceil(find_correction_dim(high_rot, dim, base, max_seq_len))
-        return max(low, 0), min(high, dim-1)
+        return max(low, 0), min(high, dim - 1)
 
-    def linear_ramp_factor(min, max, dim):
-        if min == max:
-            max += 0.001
-        linear_func = (torch.arange(dim, dtype=torch.float32) - min) / (max - min)
+    def linear_ramp_factor(min_val, max_val, dim):
+        if min_val == max_val:
+            max_val += 0.001
+        linear_func = (torch.arange(dim, dtype=torch.float32, device=torch.npu.current_device()) - min_val) / (
+            max_val - min_val
+        )
         ramp_func = torch.clamp(linear_func, 0, 1)
         return ramp_func
 
-    freqs = 1.0 / (base ** (torch.arange(0, dim, 2, dtype=torch.float32) / dim)) # RoPE编码的频率,i越接近0的越大(->1),i越接近dim/2的越小(->0);  base^(-2i/dim) (2i是0-dim的偶数序列)
-    if original_seq_len > 0: # bing 第一处不同 V3.2是seqlen > args.original_seq_len
+    freqs = 1.0 / (
+        base ** (torch.arange(0, dim, 2, dtype=torch.float32, device=torch.npu.current_device()) / dim)
+    )  # RoPE编码的频率,i越接近0的越大(->1),i越接近dim/2的越小(->0);  base^(-2i/dim) (2i是0-dim的偶数序列)
+    if original_seq_len > 0:  # bing 第一处不同 V3.2是seqlen > args.original_seq_len
         low, high = find_correction_range(beta_fast, beta_slow, dim, base, original_seq_len)
         smooth = 1 - linear_ramp_factor(low, high, dim // 2)
         freqs = freqs / factor * (1 - smooth) + freqs * smooth
 
-    t = torch.arange(seqlen)
+    t = torch.arange(seqlen, device=torch.npu.current_device())
     freqs = torch.outer(t, freqs)
     freqs_cis = torch.polar(torch.ones_like(freqs), freqs)
+
     return freqs_cis
