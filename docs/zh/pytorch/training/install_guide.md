@@ -16,7 +16,8 @@
 |<term>Atlas 推理系列产品</term>|x|
 |<term>Atlas 训练系列产品</term>|x|
 
-> [!NOTE]  
+> [!NOTE]
+>
 > 本节表格中“√”代表支持，“x”代表不支持。
 
 - 各硬件产品对应物理机部署场景支持的操作系统请参考[兼容性查询助手](https://www.hiascend.com/hardware/compatibility)。
@@ -25,6 +26,10 @@
 ## 安装前准备
 
 请参见《版本说明》中的“[相关产品版本配套说明](../../release_notes_llm.md#相关产品版本配套说明)”章节，下载安装对应的软件版本。
+
+> [!NOTICE]
+>
+> 安装运行程序建议使用非root用户，且建议对安装程序的目录文件做好权限管控：文件夹权限设置为750，文件权限设置为640。可以通过设置umask控制安装后文件的权限，如设置umask为0027。更多安全相关内容请参见《[安全声明](../../SECURITYNOTE.md)》中各组件关于“文件权限控制”的说明。
 
 ### 安装驱动固件
 
@@ -40,26 +45,25 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
 
 ### 安装CANN
 
-请参考《[CANN 快速安装](https://www.hiascend.com/cann/download)》安装CANN软件（包含Toolkit、ops和NNAL包），并配置环境变量。
+安装配套版本的NPU驱动固件、CANN软件（Toolkit、ops和NNAL）并配置CANN环境变量，具体请参考《[CANN 软件安装](https://www.hiascend.com/document/detail/zh/canncommercial/900/softwareinst/instg/instg_0000.html)》（商用版）或《[CANN 软件安装](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/900/softwareinst/instg/instg_0000.html)》（社区版）。
+
+CANN软件提供进程级环境变量设置脚本，训练或推理场景下使用NPU执行业务代码前需要调用该脚本，否则业务代码将无法执行。
 
 ```shell
-# 设置环境变量
-source /usr/local/Ascend/cann/set_env.sh     # 修改为实际安装的Toolkit包路径
-source /usr/local/Ascend/nnal/atb/set_env.sh # 修改为实际安装的nnal包路径
+source /usr/local/Ascend/cann/set_env.sh
+source /usr/local/Ascend/nnal/atb/set_env.sh
 ```
 
-> [!NOTICE]
-> 建议使用非root用户安装运行torch\_npu，且建议对安装程序的目录文件做好权限管控：文件夹权限设置为750，文件权限设置为640。可以通过设置umask控制安装后文件的权限，如设置umask为0027。
-> 更多安全相关内容请参见《[安全声明](../../SECURITYNOTE.md)》中各组件关于“文件权限控制”的说明。
+以上命令以root用户安装后的默认路径为例，请用户根据set_env.sh的实际路径进行替换。
 
 ### 安装PyTorch以及torch_npu
 
-请参考《Ascend Extension for PyTorch 软件安装指南》中的“[安装PyTorch框架](https://www.hiascend.com/document/detail/zh/Pytorch/2600/configandinstg/instg/docs/zh/installation_guide/installation_via_binary_package.md)”章节，获取配套版本的PyTorch以及torch_npu软件包。
+请参考《Ascend Extension for PyTorch 软件安装指南》中的“[安装PyTorch](https://www.hiascend.com/document/detail/zh/Pytorch/2600/configandinstg/instg/docs/zh/installation_guide/installation_via_binary_package.md)”章节，获取配套版本的PyTorch以及torch_npu软件包。
 可参考如下安装命令：
 
 ```shell
 # 安装torch和torch_npu构建参考 https://gitcode.com/ascend/pytorch/releases
-pip3 install torch-2.7.1-cp310-cp310-manylinux_2_28_aarch64.whl 
+pip3 install torch-2.7.1-cp310-cp310-manylinux_2_28_aarch64.whl
 pip3 install torch_npu-2.7.1rc1-cp310-cp310-manylinux_2_28_aarch64.whl
 ```
 
@@ -71,8 +75,8 @@ pip3 install torch_npu-2.7.1rc1-cp310-cp310-manylinux_2_28_aarch64.whl
 
     ```shell
     # 请根据实际路径进行替换
-    source /usr/local/Ascend/cann/set_env.sh 
-    source /usr/local/Ascend/nnal/atb/set_env.sh 
+    source /usr/local/Ascend/cann/set_env.sh
+    source /usr/local/Ascend/nnal/atb/set_env.sh
     ```
 
 2. 安装MindSpeed加速库。
@@ -81,7 +85,7 @@ pip3 install torch_npu-2.7.1rc1-cp310-cp310-manylinux_2_28_aarch64.whl
     git clone https://gitcode.com/ascend/MindSpeed.git
     cd MindSpeed
     git checkout master  # 切换至MindSpeed的master分支
-    pip3 install -r requirements.txt 
+    pip3 install -r requirements.txt
     pip3 install -e .
     cd ..
     ```
@@ -89,7 +93,7 @@ pip3 install torch_npu-2.7.1rc1-cp310-cp310-manylinux_2_28_aarch64.whl
 3. 准备MindSpeed LLM及Megatron-LM源码。
 
     ```shell
-    git clone https://gitcode.com/ascend/MindSpeed-LLM.git 
+    git clone https://gitcode.com/ascend/MindSpeed-LLM.git
     git clone https://github.com/NVIDIA/Megatron-LM.git  # 从github下载Megatron-LM，请确保网络能访问
     cd Megatron-LM
     git checkout core_v0.12.1
