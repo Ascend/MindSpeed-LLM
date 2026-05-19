@@ -154,3 +154,7 @@ cython_debug/
 /logs/
 /model_from_hf/
 /model_weights/
+
+# codearts
+.arts
+.codeartsdoer
