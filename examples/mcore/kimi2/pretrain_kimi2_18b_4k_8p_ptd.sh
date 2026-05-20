@@ -1,5 +1,5 @@
 export CUDA_DEVICE_MAX_CONNECTIONS=1
-export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
+export PYTORCH_NPU_ALLOC_CONF="expandable_segments:True"
 
 NPUS_PER_NODE=8
 MASTER_ADDR=localhost
@@ -8,6 +8,7 @@ NNODES=1
 NODE_RANK=0
 WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
+# please fill these path configurations
 CKPT_SAVE_DIR="your model save ckpt path"
 DATA_PATH="your data path"
 TOKENIZER_PATH="your tokenizer path"
@@ -51,6 +52,7 @@ MOE_ARGS="
     --first-k-dense-replace 1 \
     --moe-layer-freq 1 \
     --n-shared-experts 1 \
+    --moe-ffn-hidden-size 2048 \
     --num-experts 384 \
     --moe-router-topk 8 \
     --moe-router-load-balancing-type none \
@@ -62,7 +64,6 @@ MOE_ARGS="
     --moe-router-score-function sigmoid \
     --moe-router-enable-expert-bias \
     --moe-router-dtype fp32 \
-    --moe-tp-extend-ep \
 "
 
 ROPE_ARGS="
@@ -97,7 +98,7 @@ GPT_ARGS="
     --ffn-hidden-size 18432 \
     --num-attention-heads 64 \
     --tokenizer-type PretrainedFromHF  \
-    --tokenizer-name-or-path ${TOKENIZER_MODEL} \
+    --tokenizer-name-or-path ${TOKENIZER_PATH} \
     --seq-length ${SEQ_LEN} \
     --max-position-embeddings 131072 \
     --micro-batch-size ${MBS} \
@@ -138,6 +139,7 @@ GPT_ARGS="
     --no-save-optim \
     --bf16 \
     --distributed-timeout-minutes 120 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="
