@@ -1,10 +1,16 @@
+export TASK_QUEUE_ENABLE=1
+export CPU_AFFINITY_CONF=1
+export HCCL_ALGO="alltoall=level0:NA;level1:pipeline"
+
+export TORCH_HCCL_ZERO_COPY=1
+
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export PYTORCH_NPU_ALLOC_CONF="expandable_segments:True"
 
-NPUS_PER_NODE=8
+NPUS_PER_NODE=16
 MASTER_ADDR=localhost
 MASTER_PORT=6000
-NNODES=1
+NNODES=4
 NODE_RANK=0
 WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
@@ -16,13 +22,13 @@ CKPT_LOAD_DIR="your model ckpt path"
 
 TP=2
 PP=1
-EP=4
+EP=32
 CP=1
 CP_TYPE='ulysses_cp_algo'
-NUM_LAYERS=2
+NUM_LAYERS=7
 SEQ_LEN=4096
 MBS=1
-GBS=16
+GBS=512
 
 DISTRIBUTED_ARGS="
     --nproc_per_node $NPUS_PER_NODE \
@@ -44,16 +50,17 @@ MLA_ARGS="
 "
 
 MOE_ARGS="
+    --moe-permute-fusion \
     --moe-grouped-gemm \
     --moe-token-dispatcher-type alltoall \
     --use-fused-moe-token-permute-and-unpermute \
     --moe-permutation-async-comm \
     --moe-alltoall-overlap-comm \
-    --first-k-dense-replace 1 \
+    --first-k-dense-replace 0 \
     --moe-layer-freq 1 \
     --n-shared-experts 1 \
     --moe-ffn-hidden-size 2048 \
-    --num-experts 384 \
+    --num-experts 64 \
     --moe-router-topk 8 \
     --moe-router-load-balancing-type none \
     --moe-router-num-groups 1 \
@@ -79,9 +86,6 @@ ROPE_ARGS="
 GPT_ARGS="
     --spec mindspeed_llm.tasks.models.spec.deepseek_spec layer_spec \
     --gemm-gradient-accumulation-fusion \
-    --recompute-granularity full \
-    --recompute-method uniform \
-    --recompute-num-layers 1 \
     --no-shared-storage \
     --use-distributed-optimizer \
     --reuse-fp32-param \
@@ -105,13 +109,15 @@ GPT_ARGS="
     --global-batch-size ${GBS} \
     --make-vocab-size-divisible-by 1 \
     --lr 1.0e-5 \
-    --train-iters 2000 \
+    --train-iters 500 \
     --lr-decay-style cosine \
     --untie-embeddings-and-output-weights \
     --use-fused-rotary-pos-emb \
     --use-rotary-position-embeddings \
     --use-fused-swiglu \
     --use-fused-rmsnorm \
+    --overlap-grad-reduce \
+    --overlap-param-gather \
     --disable-bias-linear \
     --attention-dropout 0.0 \
     --init-method-std 0.02 \
@@ -139,7 +145,7 @@ GPT_ARGS="
     --no-save-optim \
     --bf16 \
     --distributed-timeout-minutes 120 \
-    --ckpt-format torch
+    --fix-router \
 "
 
 DATA_ARGS="
@@ -154,6 +160,7 @@ OUTPUT_ARGS="
     --eval-iters 0 \
     --no-save-optim \
     --no-save-rng \
+    --log-throughput \
 "
 
 torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
@@ -167,4 +174,4 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     --save $CKPT_SAVE_DIR \
     --load $CKPT_LOAD_DIR \
     --transformer-impl local \
-    | tee logs/pretrain_kimi2_18b_4k_ptd.log
+    | tee logs/pretrain_kimi2_22b_4k_A3_ptd.log
