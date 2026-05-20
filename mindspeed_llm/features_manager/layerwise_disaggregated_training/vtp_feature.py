@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright (c) 2025, HUAWEI CORPORATION.  All rights reserved.
+# Copyright (c) 2025, HUAWEI CORPORATION. All rights reserved.
 from argparse import Namespace
 from mindspeed.features_manager.feature import MindSpeedFeature
 from mindspeed.patch_utils import MindSpeedPatchesManager
@@ -15,7 +15,7 @@ class VTPFeature(MindSpeedFeature):
     """
 
     def __init__(self):
-        super(VTPFeature, self).__init__(feature_name="virtual-tp", optimization_level=0)
+        super().__init__(feature_name="virtual-tp", optimization_level=0)
 
     def pre_validate_args(self, args: Namespace):
         """Inflate world_size if LDT enabled and world_size not divisible by TP*PP*CP.
@@ -53,15 +53,7 @@ class VTPFeature(MindSpeedFeature):
         ldt = getattr(args, 'layerwise_disaggregated_training', False)
         if not ldt:
             return
-        from mindspeed_llm.core.layerwise_disaggregated_training.utils import vtp_get_grad_norm_fp32, \
-            vtp_timer_barrier_wrapper, vtp_reduce_max_stat_across_model_parallel_group, \
-            vtp_logical_and_across_model_parallel_group, vtp_all_gather_into_tensor_wrapper
 
-        patch_manager.register_patch('megatron.core.optimizer.clip_grads.get_grad_norm_fp32',
-            vtp_get_grad_norm_fp32)
-        patch_manager.register_patch('torch.distributed.barrier', vtp_timer_barrier_wrapper)
+        from mindspeed_llm.core.layerwise_disaggregated_training.utils import vtp_all_gather_into_tensor_wrapper
+
         patch_manager.register_patch('torch.distributed.all_gather_into_tensor', vtp_all_gather_into_tensor_wrapper)
-        patch_manager.register_patch('megatron.training.utils.reduce_max_stat_across_model_parallel_group',
-            vtp_reduce_max_stat_across_model_parallel_group)
-        patch_manager.register_patch('megatron.training.utils.logical_and_across_model_parallel_group',
-            vtp_logical_and_across_model_parallel_group)

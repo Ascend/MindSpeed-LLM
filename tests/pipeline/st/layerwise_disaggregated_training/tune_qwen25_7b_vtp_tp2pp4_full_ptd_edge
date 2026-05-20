@@ -8,14 +8,13 @@ MASTER_ADDR=localhost
 MASTER_PORT=16034
 NNODES=4
 NODE_RANK=0
-WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES)) 
+WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
 # please fill these path configurations
 CKPT_LOAD_DIR="/data/ci/cache/qwen2.5_7b_tp1pp4_vtp_edge/"
 CKPT_SAVE_DIR="/data/ci/cache/save_dir/edge/"
 DATA_PATH="/data/ci/datasets/tune_dataset/alpaca"
 TOKENIZER_PATH="/data/ci/models/qwen25/hf/Qwen2.5-7B/"
-
 
 TP=2
 PP=4
@@ -95,7 +94,7 @@ GPT_ARGS="
 DATA_ARGS="
     --data-path $DATA_PATH \
     --split 100,0,0 \
-    --no-shuffle 
+    --no-shuffle
 "
 
 CKPT_ARGS="

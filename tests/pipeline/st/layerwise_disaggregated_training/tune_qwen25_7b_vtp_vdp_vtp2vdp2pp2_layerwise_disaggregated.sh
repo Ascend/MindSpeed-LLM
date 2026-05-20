@@ -44,18 +44,17 @@ trap cleanup INT TERM EXIT
 # Model conversion configuration
 HF_MODEL_DIR="/data/ci/models/qwen25/hf/Qwen2.5-7B/"
 TOKENIZER_PATH="/data/ci/models/qwen25/hf/Qwen2.5-7B/tokenizer.json"
-MG_EDGE_SAVE_DIR="/data/ci/cache/qwen2.5_7b_tp1pp5/"
-MG_CLOUD_SAVE_DIR="/data/ci/cache/qwen2.5_7b_tp2pp5/"
-VTP_EDGE_SAVE_DIR="/data/ci/cache/qwen2.5_7b_tp1pp4_vtp_edge/"
-VTP_CLOUD_SAVE_DIR="/data/ci/cache/qwen2.5_7b_tp2pp4_vtp_cloud/"
-VTP_2_MG_SAVE_DIR="/data/ci/cache/qwen2.5_7b_tp1pp5_vtp_2_mg/"
+MG_EDGE_SAVE_DIR="/data/ci/cache/qwen2.5_7b_tp1pp3/"
+MG_CLOUD_SAVE_DIR="/data/ci/cache/qwen2.5_7b_tp2pp3/"
+VTP_EDGE_SAVE_DIR="/data/ci/cache/qwen2.5_7b_tp1pp2_vtp_edge/"
+VTP_CLOUD_SAVE_DIR="/data/ci/cache/qwen2.5_7b_tp2pp2_vtp_cloud/"
+VTP_2_MG_SAVE_DIR="/data/ci/cache/qwen2.5_7b_tp1pp3_vpp_2_mg/"
 
 # Parallel training script configuration
 TRAIN_SCRIPTS=(
-    "./tests/pipeline/st/layerwise_disaggregated_training/tune_qwen25_7b_vtp_tp2pp4_full_ptd_edge"
-    "./tests/pipeline/st/layerwise_disaggregated_training/tune_qwen25_7b_vtp_tp2pp4_full_ptd_cloud_1"
-    "./tests/pipeline/st/layerwise_disaggregated_training/tune_qwen25_7b_vtp_tp2pp4_full_ptd_cloud_2"
-    "./tests/pipeline/st/layerwise_disaggregated_training/tune_qwen25_7b_vtp_tp2pp4_full_ptd_cloud_3"
+    "./tests/pipeline/st/layerwise_disaggregated_training/tune_qwen25_7b_vtp2vdp2pp2_full_ptd_edge"
+    "./tests/pipeline/st/layerwise_disaggregated_training/tune_qwen25_7b_vtp2vdp2pp2_full_ptd_cloud_1"
+    "./tests/pipeline/st/layerwise_disaggregated_training/tune_qwen25_7b_vtp2vdp2pp2_full_ptd_cloud_2"
 )
 
 check_environment() {
@@ -99,8 +98,8 @@ run_model_conversion() {
        --load-model-type hf \
        --save-model-type mg \
        --target-tensor-parallel-size 1 \
-       --target-pipeline-parallel-size 5 \
-       --num-layer-list "2,8,8,8,2" \
+       --target-pipeline-parallel-size 3 \
+       --num-layer-list "2,24,2" \
        --add-qkv-bias \
        --load-dir "$HF_MODEL_DIR" \
        --save-dir "$MG_EDGE_SAVE_DIR" \
@@ -120,8 +119,8 @@ run_model_conversion() {
        --load-model-type hf \
        --save-model-type mg \
        --target-tensor-parallel-size 2 \
-       --target-pipeline-parallel-size 5 \
-       --num-layer-list "2,8,8,8,2" \
+       --target-pipeline-parallel-size 3 \
+       --num-layer-list "2,24,2" \
        --add-qkv-bias \
        --load-dir "$HF_MODEL_DIR" \
        --save-dir "$MG_CLOUD_SAVE_DIR" \
@@ -141,8 +140,8 @@ run_model_conversion() {
        --load-dir-cloud "$MG_CLOUD_SAVE_DIR" \
        --save-dir-edge "$VTP_EDGE_SAVE_DIR" \
        --save-dir-cloud "$VTP_CLOUD_SAVE_DIR" \
-       --merge-stages 0,4 \
-       --middle-stages 1,2,3
+       --merge-stages 0,2 \
+       --middle-stages 1
 
     if [ $? -ne 0 ]; then
         log_error "Step 2: Megatron -> VPP Edge model conversion failed"
@@ -212,7 +211,7 @@ run_model_conversion_2() {
        --load-dir-cloud "$VTP_CLOUD_SAVE_DIR" \
        --save-dir "$VTP_2_MG_SAVE_DIR" \
        --split-rank 0 \
-       --middle-ranks 1,2,3
+       --middle-ranks 1
 
     if [ $? -ne 0 ]; then
         log_error "Step 1: VPP Edge -> Megatron model conversion failed"

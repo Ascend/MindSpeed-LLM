@@ -3,7 +3,7 @@
 # Author: Xuguoliang
 # Date: 2026-03-17
 # Description: ST for feature layerwise disaggregated training
-# Remarks: 
+# Remarks:
 #=============================================
 
 set -u
@@ -23,7 +23,6 @@ log_info()  { echo -e "${GREEN}[INFO]${NC} $(date '+%H:%M:%S') - $1"; }
 log_warn()  { echo -e "${YELLOW}[WARN]${NC} $(date '+%H:%M:%S') - $1"; }
 log_error()  { echo -e "${RED}[ERROR]${NC} $(date '+%H:%M:%S') - $1"; }
 log_step()  { echo -e "${BLUE}[STEP]${NC} $(date '+%H:%M:%S') - $1"; }
-
 
 cleanup() {
     log_info "Received termination signal, starting cleanup of background processes"
@@ -80,7 +79,7 @@ check_environment() {
 
 run_model_conversion() {
     log_step "Starting model conversion process..."
-    
+
     # Creating directories
     mkdir -p "$MG_SAVE_DIR"
     mkdir -p "$VPP_EDGE_SAVE_DIR"
@@ -102,7 +101,7 @@ run_model_conversion() {
        --tokenizer-model "$TOKENIZER_PATH" \
        --model-type-hf llama2 \
        --params-dtype bf16
-    
+
     if [ $? -ne 0 ]; then
         log_error "Step 1: HF -> Megatron model conversion failed"
         return 1
@@ -116,7 +115,7 @@ run_model_conversion() {
        --save-dir-cloud "$VPP_CLOUD_SAVE_DIR" \
        --merge-stages 0,4 \
        --middle-stages 1,2,3
-    
+
     if [ $? -ne 0 ]; then
         log_error "Step 2: Megatron -> VPP Edge model conversion failed"
         return 1
@@ -137,7 +136,7 @@ run_parallel_tasks() {
 
     local count=${#TRAIN_SCRIPTS[@]}
     log_info "Found $count parallel training tasks"
-    
+
     for i in "${!TRAIN_SCRIPTS[@]}"; do
         local script="${TRAIN_SCRIPTS[$i]}"
         local pid
@@ -174,7 +173,7 @@ run_parallel_tasks() {
 
 run_model_conversion_2() {
     log_step "Starting model conversion process..."
-    
+
     # Creating directories
     mkdir -p "$VPP_2_MG_SAVE_DIR"
 
@@ -186,7 +185,7 @@ run_model_conversion_2() {
        --save-dir "$VPP_2_MG_SAVE_DIR" \
        --split-rank 0 \
        --middle-ranks 1,2,3
-    
+
     if [ $? -ne 0 ]; then
         log_error "Step 1: VPP Edge -> Megatron model conversion failed"
         return 1
@@ -216,7 +215,7 @@ main() {
     fi
 
     if ! run_parallel_tasks; then
-        log_error "Parallel training tasks failed, task terminated"        
+        log_error "Parallel training tasks failed, task terminated"
         EXIT_CODE=1
         return
     fi

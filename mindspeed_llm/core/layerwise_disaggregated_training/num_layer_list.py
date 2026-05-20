@@ -1,5 +1,6 @@
 # coding=utf-8
-# Copyright (c) 2025, HUAWEI CORPORATION.  All rights reserved.
+# Copyright (c) 2025, HUAWEI CORPORATION. All rights reserved.
+# Copyright (c) 2024; NVIDIA CORPORATION. All rights reserved.
 
 from typing import Union
 
@@ -21,7 +22,6 @@ try:
     from megatron.core.extensions.transformer_engine import (
         TENorm,
         get_cpu_offload_context,
-        te_checkpoint,
     )
 
     HAVE_TE = True
@@ -30,11 +30,13 @@ except ImportError:
     HAVE_TE = False
     get_cpu_offload_context = None
 
-    try:
-        import apex  # pylint: disable=unused-import
+    import importlib
+
+    if importlib.util.find_spec("apex") is not None:
         LayerNormImpl = FusedLayerNorm
-    except ImportError:
-        from megatron.core.transformer.torch_norm import WrappedTorchNorm
+    else:
+        from megatron.core.transformer.torch_norm import WrappedTorchNorm  # pylint: disable=ungrouped-imports
+
         LayerNormImpl = WrappedTorchNorm
 
 
@@ -66,19 +68,15 @@ def _get_block_submodules(
             return spec.submodules
         elif issubclass(spec.module, BaseTransformerLayer):
             num_layers = get_num_layers_to_build(config)
-            return TransformerBlockSubmodules(
-                layer_specs=[spec] * num_layers, layer_norm=LayerNormImpl
-            )
+            return TransformerBlockSubmodules(layer_specs=[spec] * num_layers, layer_norm=LayerNormImpl)
         else:
-            raise Exception(f"specialize for {spec.module.__name__}.")
+            raise TypeError(f"specialize for {spec.module.__name__}.")
     else:
-        raise Exception(f"specialize for {type(spec).__name__}.")
+        raise TypeError(f"specialize for {type(spec).__name__}.")
 
 
 def get_num_layers_to_build(config: TransformerConfig) -> int:
-    num_layers_per_pipeline_rank = (
-        config.num_layers // parallel_state.get_pipeline_model_parallel_world_size()
-    )
+    num_layers_per_pipeline_rank = config.num_layers // parallel_state.get_pipeline_model_parallel_world_size()
 
     if parallel_state.get_virtual_pipeline_model_parallel_world_size() is not None:
         # Interleaved pipeline parallelism:

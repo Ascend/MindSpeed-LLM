@@ -1,5 +1,6 @@
 # coding=utf-8
-# Copyright (c) 2025, HUAWEI CORPORATION.  All rights reserved.
+# Copyright (c) 2025, HUAWEI CORPORATION. All rights reserved.
+# Copyright (c) 2020, NVIDIA CORPORATION. All rights reserved.
 
 import os
 import random
@@ -11,16 +12,20 @@ import torch
 from megatron.training import print_rank_0, get_args
 from megatron.core import parallel_state
 from megatron.legacy.data.dataset_utils import get_train_valid_test_split_
-from megatron.training import get_args, print_rank_0
 from megatron.core.datasets.blended_megatron_dataset_builder import BlendedMegatronDatasetBuilder
 from megatron.core.datasets.gpt_dataset import MockGPTDataset, GPTDataset
 
 from mindspeed_llm.training.tokenizer import build_tokenizer
 from mindspeed_llm.tasks.utils.error_utils import check_equal
 from mindspeed_llm.tasks.preprocess.mtf_dataset import MTFDataset, get_packed_indexed_dataset
-from mindspeed_llm.tasks.preprocess.decoder_packed_mtf_dataset import DecoderPackedMTFDataset, _build_shuffle_idx, _build_sequential_idx
+from mindspeed_llm.tasks.preprocess.decoder_packed_mtf_dataset import (
+    DecoderPackedMTFDataset,
+    _build_shuffle_idx,
+    _build_sequential_idx,
+)
 from mindspeed_llm.tasks.posttrain.utils import core_gpt_dataset_config_from_args, is_dataset_built_on_rank
 from mindspeed_llm.core.layerwise_disaggregated_training.parallel_state import is_vtp_enabled
+from mindspeed_llm.core.layerwise_disaggregated_training.utils import get_vdp_manager
 
 
 def train_valid_test_datasets_provider_ldt(train_val_test_num_samples):
@@ -45,13 +50,11 @@ def train_valid_test_datasets_provider_ldt(train_val_test_num_samples):
             splits_string=args.split,
             train_valid_test_num_samples=train_val_test_num_samples,
             seq_length=args.seq_length,
-            seed=args.seed)
+            seed=args.seed,
+        )
     else:
         train_ds, valid_ds, test_ds = BlendedMegatronDatasetBuilder(
-            dataset_type,
-            train_val_test_num_samples,
-            is_dataset_built_on_rank,
-            config
+            dataset_type, train_val_test_num_samples, is_dataset_built_on_rank, config
         ).build()
 
     print_rank_0("> finished creating GPT datasets ...")
@@ -110,9 +113,12 @@ def _build_train_valid_test_datasets(
 
     def print_split_stats(name, index):
         print_rank_0('    {}:'.format(name))
-        print_rank_0('     document indices in [{}, {}) total of {} '
-                     'documents'.format(splits[index], splits[index + 1],
-                                        splits[index + 1] - splits[index]))
+        print_rank_0(
+            '     document indices in [{}, {}) total of {} documents'.format(
+                splits[index], splits[index + 1], splits[index + 1] - splits[index]
+            )
+        )
+
     print_split_stats('train', 0)
     print_split_stats('validation', 1)
     print_split_stats('test', 2)
@@ -120,8 +126,7 @@ def _build_train_valid_test_datasets(
     def build_dataset(index, name):
         dataset = None
         if splits[index + 1] > splits[index]:
-            documents = np.arange(start=splits[index], stop=splits[index + 1],
-                                  step=1, dtype=np.int32)
+            documents = np.arange(start=splits[index], stop=splits[index + 1], step=1, dtype=np.int32)
             dataset = LDTDecoderPackedMTFDataset(
                 name=name,
                 data_prefix=data_prefix,
@@ -130,7 +135,7 @@ def _build_train_valid_test_datasets(
                 pad_token=pad_token,
                 eos_token=eos_token,
                 num_samples=train_valid_test_num_samples[index],
-                seed=seed
+                seed=seed,
             )
         return dataset
 
@@ -144,7 +149,7 @@ def _build_train_valid_test_datasets(
 class LDTDecoderPackedMTFDataset(DecoderPackedMTFDataset):
     def __init__(self, name, data_prefix, documents, seq_length, pad_token, eos_token, num_samples, seed):
         super(DecoderPackedMTFDataset, self).__init__()
-        
+
         # Manually initialize attributes as done in parent class
         self.args = get_args()
         self.mtf_dataset = MTFDataset(name=name, data_prefix=data_prefix, documents=documents)
@@ -153,29 +158,23 @@ class LDTDecoderPackedMTFDataset(DecoderPackedMTFDataset):
         self.seq_length = seq_length
         self.eos_token = eos_token
         # Use our custom _build_index_mappings implementation
-        self.shuffle_index = _build_index_mappings(name=name,
-                                                   data_prefix=data_prefix,
-                                                   start_index=documents[0],
-                                                   nb_documents=len(documents),
-                                                   mtf_dataset=self.mtf_dataset,
-                                                   num_samples=num_samples,
-                                                   seq_length=seq_length,
-                                                   seed=seed,
-                                                   shuffle=not self.args.no_shuffle)
+        self.shuffle_index = _build_index_mappings(
+            name=name,
+            data_prefix=data_prefix,
+            start_index=documents[0],
+            nb_documents=len(documents),
+            mtf_dataset=self.mtf_dataset,
+            num_samples=num_samples,
+            seq_length=seq_length,
+            seed=seed,
+            shuffle=not self.args.no_shuffle,
+        )
         self.cur_batch_index = []
         self.iteration = 1
 
 
 def _build_index_mappings(
-        name,
-        data_prefix,
-        start_index,
-        nb_documents,
-        mtf_dataset,
-        num_samples: int,
-        seq_length: int,
-        seed,
-        shuffle=True
+    name, data_prefix, start_index, nb_documents, mtf_dataset, num_samples: int, seq_length: int, seed, shuffle=True
 ):
     """
     - `shuffle_index` is [num_epoch * len(self.mtf)]
@@ -197,11 +196,13 @@ def _build_index_mappings(
     shuffle_idx_filename = _filename + '_decoder_packed_idx.npy'
 
     # Build the indexed mapping if not exist.
-    if torch.distributed.get_rank() % torch.cuda.device_count() == 0 or args.stage in ["ray_ppo", "ray_online_dpo", "ray_grpo"]:
+    if torch.distributed.get_rank() % torch.cuda.device_count() == 0 or args.stage in [
+        "ray_ppo",
+        "ray_online_dpo",
+        "ray_grpo",
+    ]:
         if not os.path.isfile(shuffle_idx_filename):
-
-            print_rank_0(' > WARNING: could not find index map files, building '
-                         'the indices on rank 0 ...')
+            print_rank_0(' > WARNING: could not find index map files, building the indices on rank 0 ...')
 
             # iteratively add the entire dataset for every epoch and see if it's enough given current packing strategy
             start_time = time.time()
@@ -209,8 +210,9 @@ def _build_index_mappings(
             shuffle_idx = []
             while len(shuffle_idx) < num_samples:
                 if shuffle:
-                    new_document_ids = _build_shuffle_idx(nb_documents=nb_documents, start_index=start_index,
-                                                          np_rng=np_rng)
+                    new_document_ids = _build_shuffle_idx(
+                        nb_documents=nb_documents, start_index=start_index, np_rng=np_rng
+                    )
                 else:
                     new_document_ids = _build_sequential_idx(nb_documents=nb_documents, start_index=start_index)
                 shuffle_idx.extend(new_document_ids.tolist())
@@ -220,8 +222,11 @@ def _build_index_mappings(
                 random.shuffle(shuffle_idx)
 
             np.save(shuffle_idx_filename, shuffle_idx, allow_pickle=True)
-            print_rank_0(' > elasped time to build and save shuffle-idx and sample-idx mapping'
-                         ' (seconds): {:4f}'.format(time.time() - start_time))
+            print_rank_0(
+                ' > elasped time to build and save shuffle-idx and sample-idx mapping (seconds): {:4f}'.format(
+                    time.time() - start_time
+                )
+            )
 
     # This should be a barrier but nccl barrier assumes
     # device_index=rank which is not the case for model
@@ -229,25 +234,46 @@ def _build_index_mappings(
     torch.distributed.barrier()
     counts = torch.cuda.LongTensor([1])
 
+    vdp_manager = get_vdp_manager()
+
     if is_vtp_enabled():
         torch.distributed.all_reduce(counts, group=parallel_state.get_data_parallel_group())
         torch.distributed.all_reduce(counts, group=parallel_state.get_context_parallel_group())
-        item = (torch.distributed.get_world_size() //
-                torch.distributed.get_world_size(group=parallel_state.get_tensor_model_parallel_group()))
+        item = torch.distributed.get_world_size() // torch.distributed.get_world_size(
+            group=parallel_state.get_tensor_model_parallel_group()
+        )
+    elif vdp_manager:
+        groups = [
+            parallel_state.get_data_parallel_group(),
+            parallel_state.get_pipeline_model_parallel_group(),
+            parallel_state.get_context_parallel_group(),
+        ]
+
+        vdp_manager.safe_multi_allreduce(counts, groups)
+        item = (
+            (
+                (
+                    torch.distributed.get_world_size()
+                    + (args.data_parallel_size - 1) * args.context_parallel_size * args.tensor_model_parallel_size
+                )
+                // torch.distributed.get_world_size(group=parallel_state.get_tensor_model_parallel_group())
+            )
+            - (args.data_parallel_size - 1) * args.context_parallel_size
+        ) * args.data_parallel_size - (args.data_parallel_size - 1)
+        check_equal(counts[0].item(), item)
     else:
         torch.distributed.all_reduce(counts, group=parallel_state.get_data_parallel_group())
         torch.distributed.all_reduce(counts, group=parallel_state.get_pipeline_model_parallel_group())
         torch.distributed.all_reduce(counts, group=parallel_state.get_context_parallel_group())
-        item = (torch.distributed.get_world_size() //
-                torch.distributed.get_world_size(group=parallel_state.get_tensor_model_parallel_group()))
+        item = torch.distributed.get_world_size() // torch.distributed.get_world_size(
+            group=parallel_state.get_tensor_model_parallel_group()
+        )
         check_equal(counts[0].item(), item)
 
     # Load mappings.
     start_time = time.time()
-    print_rank_0(' > loading shuffle-idx mapping from {}'.format(
-        shuffle_idx_filename))
+    print_rank_0(' > loading shuffle-idx mapping from {}'.format(shuffle_idx_filename))
     shuffle_idx = np.load(shuffle_idx_filename, allow_pickle=True, mmap_mode='r+')
-    print_rank_0('    loaded indexed file in {:3.3f} seconds'.format(
-        time.time() - start_time))
+    print_rank_0('    loaded indexed file in {:3.3f} seconds'.format(time.time() - start_time))
 
     return shuffle_idx

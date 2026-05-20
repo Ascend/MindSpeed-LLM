@@ -16,7 +16,6 @@ CKPT_SAVE_DIR="/data/ci/cache/save_dir/edge/"
 DATA_PATH="/data/ci/datasets/tune_dataset/alpaca/alpaca"
 TOKENIZER_PATH="/data/ci/models/qwen25/hf/Qwen2.5-7B/"
 
-
 TP=1
 PP=4
 SEQ_LEN=32768
@@ -95,7 +94,7 @@ GPT_ARGS="
 DATA_ARGS="
     --data-path $DATA_PATH \
     --split 100,0,0 \
-    --no-shuffle 
+    --no-shuffle
 "
 
 CKPT_ARGS="

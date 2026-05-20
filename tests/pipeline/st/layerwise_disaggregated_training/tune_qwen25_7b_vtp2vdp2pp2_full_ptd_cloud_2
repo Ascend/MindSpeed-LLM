@@ -1,24 +1,24 @@
 #!/bin/bash
 
-export ASCEND_RT_VISIBLE_DEVICES=1,2
+export ASCEND_RT_VISIBLE_DEVICES=6,7
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 
 NPUS_PER_NODE=2
 MASTER_ADDR=localhost
-MASTER_PORT=16034
-NNODES=4
-NODE_RANK=1
-WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
+MASTER_PORT=6000
+NNODES=3
+NODE_RANK=2
+WORLD_SIZE=5
 
 # please fill these path configurations
-CKPT_LOAD_DIR="/data/ci/cache/qwen2.5_7b_tp2pp4_vtp_cloud/"
+CKPT_LOAD_DIR="/data/ci/cache/qwen2.5_7b_tp2pp2_vtp_cloud/"
 CKPT_SAVE_DIR="/data/ci/cache/save_dir/cloud/"
 DATA_PATH=""
 TOKENIZER_PATH="/data/ci/models/qwen25/hf/Qwen2.5-7B/"
 
 TP=2
-PP=4
-SEQ_LEN=32768
+PP=2
+SEQ_LEN=4096
 MBS=1
 GBS=8
 
@@ -40,8 +40,9 @@ TUNE_ARGS="
 "
 
 GPT_ARGS="
+    --use-distributed-optimizer \
     --layerwise-disaggregated-training \
-    --num-layer-list 2,8,8,8,2 \
+    --num-layer-list 2,24,2 \
     --num-virtual-stages-per-pipeline-rank 2 \
     --use-mcore-models \
     --tensor-model-parallel-size ${TP} \
@@ -93,8 +94,7 @@ GPT_ARGS="
 
 DATA_ARGS="
     --data-path $DATA_PATH \
-    --split 100,0,0 \
-    --no-shuffle
+    --split 100,0,0
 "
 
 CKPT_ARGS="
@@ -124,3 +124,5 @@ torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     --save ${CKPT_SAVE_DIR} \
     --distributed-backend nccl \
     --transformer-impl local \
+    --distributed-timeout-minutes 1\
+    | tee logs/tune_mcore_qwen25_7b_full.log

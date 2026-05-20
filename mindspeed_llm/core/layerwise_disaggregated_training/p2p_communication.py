@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright (c) 2025, HUAWEI CORPORATION.  All rights reserved.
+# Copyright (c) 2025, HUAWEI CORPORATION. All rights reserved.
 # Copyright (c) 2022, NVIDIA CORPORATION. All rights reserved.
 
 from typing import List, Optional, Tuple, Union
@@ -12,6 +12,7 @@ from megatron.core.parallel_state import (
     get_pipeline_model_parallel_group,
     get_pipeline_model_parallel_next_rank,
     get_pipeline_model_parallel_prev_rank,
+    get_tensor_model_parallel_group,
 )
 from megatron.core.pipeline_parallel.p2p_communication import (
     _batched_p2p_ops,
@@ -22,7 +23,6 @@ from mindspeed_llm.core.layerwise_disaggregated_training.parallel_state import (
     is_vtp_stage_rank0,
     get_vtp_size_list,
     get_vtp_stage_ranks,
-    get_vtp_intra_stage_group,
     get_vtp_my_stage_idx,
 )
 
@@ -141,19 +141,29 @@ def _communicate(
     # tensor parallelism, and hence a rank in the encoder is going to feed
     # several different decoder ranks. We therefore have to receive or send tensors
     # from several groups. For convenience, I wrap everything into lists.
-    
+
     # add: layerwise_disaggregated_training
     # get pp group from kwargs
-    if "group" in kwargs.keys():
+    if "group" in kwargs:
         if kwargs["group"] is not None:
             pp_group = kwargs["group"]
         else:
             pp_group = get_pipeline_model_parallel_group()
     else:
         pp_group = get_pipeline_model_parallel_group()
-    
-    next_rank = get_pipeline_model_parallel_next_rank()
-    prev_rank = get_pipeline_model_parallel_prev_rank()
+
+    # add: layerwise_disaggregated_training
+    # vitural dp scenario, get nr and pr from kwargs
+    if "next_rank" in kwargs and kwargs["next_rank"] is not None:
+        next_rank = kwargs["next_rank"]
+    else:
+        next_rank = get_pipeline_model_parallel_next_rank()
+
+    if "prev_rank" in kwargs and kwargs["prev_rank"] is not None:
+        prev_rank = kwargs["prev_rank"]
+    else:
+        prev_rank = get_pipeline_model_parallel_prev_rank()
+
     if not isinstance(pp_group, list):
         pp_group = [pp_group]
     if not isinstance(next_rank, list):
@@ -205,7 +215,7 @@ def _communicate(
     # The lists below have a size > 1 only when ETP ≠ DTP,
     # meaning this synchronization is required when ETP ≠ DTP.
     need_etp_dtp_sync = len(tensor_recv_prev_list) > 1 or len(tensor_recv_next_list) > 1
-    
+
     if need_batch_sync or need_etp_dtp_sync:
         # To protect against race condition when using batch_isend_irecv().
         # User should assert that we have a modern enough PyTorch to not need this
@@ -215,7 +225,8 @@ def _communicate(
         """This basically handles all the cases that we expect to see. Either the list None,
         or it's a singleton (the usual cases, since most ranks only belong to one pipeline group),
         or everything returned is None, or everything returned is not None, and it has to be summed
-        together."""
+        together.
+        """
         if len(x) == 0:
             return None
         if len(x) == 1:
@@ -272,10 +283,7 @@ def recv_forward_with_reqs(
         - Timers are used to track communication performance if configured.
     """
 
-    if (
-        core.parallel_state.is_pipeline_first_stage(ignore_virtual=True)
-        and not is_end_stage
-    ):
+    if core.parallel_state.is_pipeline_first_stage(ignore_virtual=True) and not is_end_stage:
         input_tensor = None
         reqs = None
     else:
@@ -334,10 +342,7 @@ def recv_backward_with_reqs(
     """
     output_tensor_grad = None
     reqs = None
-    if (
-        not config.layerwise_disaggregated_training
-        and core.parallel_state.is_pipeline_last_stage(ignore_virtual=True)
-    ):
+    if not config.layerwise_disaggregated_training and core.parallel_state.is_pipeline_last_stage(ignore_virtual=True):
         pass
     elif (
         config.layerwise_disaggregated_training
@@ -372,10 +377,7 @@ def send_forward(
 
     See _communicate for argument details.
     """
-    if (
-        not config.layerwise_disaggregated_training
-        and core.parallel_state.is_pipeline_last_stage(ignore_virtual=True)
-    ):
+    if not config.layerwise_disaggregated_training and core.parallel_state.is_pipeline_last_stage(ignore_virtual=True):
         pass
     elif (
         config.layerwise_disaggregated_training
@@ -409,10 +411,7 @@ def send_backward(
 
     See _communicate for argument details.
     """
-    if (
-        not core.parallel_state.is_pipeline_first_stage(ignore_virtual=True)
-        or is_end_stage
-    ):
+    if not core.parallel_state.is_pipeline_first_stage(ignore_virtual=True) or is_end_stage:
         if config.timers is not None:
             config.timers("backward-send", log_level=2).start()
         _communicate(
@@ -428,7 +427,7 @@ def send_backward(
             config.timers("backward-send").stop()
 
 
-def _vtp_send_forward(tensor, config, group):
+def _vtp_send_forward(tensor, config, group=None, **kwargs):
     """VTP forward send: rank0 async-sends to next stage's rank0.
 
     Wraparound (last→first) is handled by get_pipeline_model_parallel_next_rank()
@@ -437,8 +436,45 @@ def _vtp_send_forward(tensor, config, group):
     Returns the isend work handle (or None for non-rank0 ranks).
     """
     if is_vtp_stage_rank0():
-        dst_rank = get_pipeline_model_parallel_next_rank()
-        return torch.distributed.isend(tensor, dst=dst_rank, group=group)
+        if group is not None:
+            if isinstance(group, list):
+                pp_group = group
+            else:
+                pp_group = [group]
+        else:
+            # get pp group from kwargs
+            if "group" in kwargs:
+                if kwargs["group"] is not None:
+                    pp_group = kwargs["group"]
+                else:
+                    pp_group = get_pipeline_model_parallel_group()
+            else:
+                pp_group = get_pipeline_model_parallel_group()
+
+        # vitural dp scenario, get nr and pr from kwargs
+        if "next_rank" in kwargs and kwargs["next_rank"] is not None:
+            next_rank = kwargs["next_rank"]
+        else:
+            next_rank = get_pipeline_model_parallel_next_rank()
+
+        if "prev_rank" in kwargs and kwargs["prev_rank"] is not None:
+            prev_rank = kwargs["prev_rank"]
+        else:
+            prev_rank = get_pipeline_model_parallel_prev_rank()
+
+        if not isinstance(pp_group, list):
+            pp_group = [pp_group]
+        if not isinstance(next_rank, list):
+            next_rank = [next_rank]
+        if not isinstance(prev_rank, list):
+            prev_rank = [prev_rank]
+
+        handles = []
+        for g, dr in zip(pp_group, next_rank):
+            h = torch.distributed.isend(tensor, dst=dr, group=g)
+            handles.append(h)
+        return handles
+
     return None
 
 
@@ -458,7 +494,11 @@ class _VTPRecvWork:
 
     def wait(self):
         if self._irecv_work is not None:
-            self._irecv_work.wait()
+            # Handle both single work and list of works
+            works = self._irecv_work if isinstance(self._irecv_work, list) else [self._irecv_work]
+            for work in works:
+                if work is not None:
+                    work.wait()
         if self._dst_size > 1 and self._intra_group is not None:
             torch.distributed.broadcast(
                 self._tensor,
@@ -467,17 +507,49 @@ class _VTPRecvWork:
             )
 
 
-def _vtp_recv_forward(tensor_shape, config, group, async_op=False):
+def _vtp_recv_forward(tensor_shape, config, group=None, async_op=False, **kwargs):
     """VTP forward recv: rank0 receives from prev stage's rank0, then broadcasts.
+
     Wraparound (first←last) is handled by get_pipeline_model_parallel_prev_rank().
     """
     stage_idx = get_vtp_my_stage_idx()
     stage_ranks = get_vtp_stage_ranks()
     vtp_size_list = get_vtp_size_list()
     dst_size = vtp_size_list[stage_idx]
-    intra_group = get_vtp_intra_stage_group()
-    src_rank = get_pipeline_model_parallel_prev_rank()
+    intra_group = get_tensor_model_parallel_group()
     broadcast_src = stage_ranks[stage_idx][0]
+
+    if group is not None:
+        if isinstance(group, list):
+            pp_group = group
+        else:
+            pp_group = [group]
+    else:
+        if "group" in kwargs:
+            if kwargs["group"] is not None:
+                pp_group = kwargs["group"]
+            else:
+                pp_group = get_pipeline_model_parallel_group()
+        else:
+            pp_group = get_pipeline_model_parallel_group()
+
+    # vitural dp scenario, get nr and pr from kwargs
+    if "next_rank" in kwargs and kwargs["next_rank"] is not None:
+        next_rank = kwargs["next_rank"]
+    else:
+        next_rank = get_pipeline_model_parallel_next_rank()
+
+    if "prev_rank" in kwargs and kwargs["prev_rank"] is not None:
+        prev_rank = kwargs["prev_rank"]
+    else:
+        prev_rank = get_pipeline_model_parallel_prev_rank()
+
+    if not isinstance(pp_group, list):
+        pp_group = [pp_group]
+    if not isinstance(next_rank, list):
+        next_rank = [next_rank]
+    if not isinstance(prev_rank, list):
+        prev_rank = [prev_rank]
 
     tensor = torch.empty(
         tensor_shape,
@@ -487,29 +559,27 @@ def _vtp_recv_forward(tensor_shape, config, group, async_op=False):
     )
 
     if async_op:
-        irecv_work = None
+        irecv_works = []
         if is_vtp_stage_rank0():
-            irecv_work = torch.distributed.irecv(tensor, src=src_rank, group=group)
-        
-        vtp_work = _VTPRecvWork(
-            irecv_work, tensor, broadcast_src, intra_group, dst_size
-        )
+            for g, sr in zip(pp_group, prev_rank):
+                work = torch.distributed.irecv(tensor, src=sr, group=g)
+                irecv_works.append(work)
+
+        vtp_work = _VTPRecvWork(irecv_works, tensor, broadcast_src, intra_group, dst_size)
 
         return tensor, {"recv_prev": vtp_work}
     else:
         if is_vtp_stage_rank0():
-            work = torch.distributed.irecv(tensor, src=src_rank, group=group)
-            work.wait()
-        
-        if dst_size > 1 and intra_group is not None:
-            torch.distributed.broadcast(
-                tensor, src=broadcast_src, group=intra_group
-            )
+            for g, sr in zip(pp_group, prev_rank):
+                work = torch.distributed.irecv(tensor, src=sr, group=g)
+                work.wait()
 
+        if dst_size > 1 and intra_group is not None:
+            torch.distributed.broadcast(tensor, src=broadcast_src, group=intra_group)
         return tensor
 
 
-def _vtp_send_backward(tensor, config, group):
+def _vtp_send_backward(tensor, config, group=None, **kwargs):
     """VTP backward send: rank0 async-sends gradient to prev stage's rank0.
 
     Wraparound (first→last) is handled by get_pipeline_model_parallel_prev_rank().
@@ -517,12 +587,48 @@ def _vtp_send_backward(tensor, config, group):
     Returns the isend work handle (or None for non-rank0 ranks).
     """
     if is_vtp_stage_rank0():
-        dst_rank = get_pipeline_model_parallel_prev_rank()
-        return torch.distributed.isend(tensor, dst=dst_rank, group=group)
+        if group is not None:
+            if isinstance(group, list):
+                pp_group = group
+            else:
+                pp_group = [group]
+        else:
+            if "group" in kwargs:
+                if kwargs["group"] is not None:
+                    pp_group = kwargs["group"]
+                else:
+                    pp_group = get_pipeline_model_parallel_group()
+            else:
+                pp_group = get_pipeline_model_parallel_group()
+
+        # vitural dp scenario, get nr and pr from kwargs
+        if "next_rank" in kwargs and kwargs["next_rank"] is not None:
+            next_rank = kwargs["next_rank"]
+        else:
+            next_rank = get_pipeline_model_parallel_next_rank()
+
+        if "prev_rank" in kwargs and kwargs["prev_rank"] is not None:
+            prev_rank = kwargs["prev_rank"]
+        else:
+            prev_rank = get_pipeline_model_parallel_prev_rank()
+
+        if not isinstance(pp_group, list):
+            pp_group = [pp_group]
+        if not isinstance(next_rank, list):
+            next_rank = [next_rank]
+        if not isinstance(prev_rank, list):
+            prev_rank = [prev_rank]
+
+        handles = []
+        for g, dr in zip(pp_group, prev_rank):
+            h = torch.distributed.isend(tensor, dst=dr, group=g)
+            handles.append(h)
+        return handles
+
     return None
 
 
-def _vtp_recv_backward(tensor_shape, config, group, async_op=False):
+def _vtp_recv_backward(tensor_shape, config, group=None, async_op=False, **kwargs):
     """VTP backward recv: rank0 receives gradient from next stage's rank0, then broadcasts.
     Wraparound (last←first) is handled by get_pipeline_model_parallel_next_rank().
     """
@@ -530,9 +636,40 @@ def _vtp_recv_backward(tensor_shape, config, group, async_op=False):
     stage_ranks = get_vtp_stage_ranks()
     vtp_size_list = get_vtp_size_list()
     dst_size = vtp_size_list[stage_idx]
-    intra_group = get_vtp_intra_stage_group()
-    src_rank = get_pipeline_model_parallel_next_rank()
+    intra_group = get_tensor_model_parallel_group()
     broadcast_src = stage_ranks[stage_idx][0]
+
+    if group is not None:
+        if isinstance(group, list):
+            pp_group = group
+        else:
+            pp_group = [group]
+    else:
+        if "group" in kwargs:
+            if kwargs["group"] is not None:
+                pp_group = kwargs["group"]
+            else:
+                pp_group = get_pipeline_model_parallel_group()
+        else:
+            pp_group = get_pipeline_model_parallel_group()
+
+    # vitural dp scenario, get nr and pr from kwargs
+    if "next_rank" in kwargs and kwargs["next_rank"] is not None:
+        next_rank = kwargs["next_rank"]
+    else:
+        next_rank = get_pipeline_model_parallel_next_rank()
+
+    if "prev_rank" in kwargs and kwargs["prev_rank"] is not None:
+        prev_rank = kwargs["prev_rank"]
+    else:
+        prev_rank = get_pipeline_model_parallel_prev_rank()
+
+    if not isinstance(pp_group, list):
+        pp_group = [pp_group]
+    if not isinstance(next_rank, list):
+        next_rank = [next_rank]
+    if not isinstance(prev_rank, list):
+        prev_rank = [prev_rank]
 
     tensor = torch.empty(
         tensor_shape,
@@ -542,19 +679,20 @@ def _vtp_recv_backward(tensor_shape, config, group, async_op=False):
     )
 
     if async_op:
-        irecv_work = None
+        irecv_works = []
         if is_vtp_stage_rank0():
-            irecv_work = torch.distributed.irecv(tensor, src=src_rank, group=group)
-        vtp_work = _VTPRecvWork(
-            irecv_work, tensor, broadcast_src, intra_group, dst_size
-        )
+            for g, sr in zip(pp_group, next_rank):
+                work = torch.distributed.irecv(tensor, src=sr, group=g)
+                irecv_works.append(work)
+        vtp_work = _VTPRecvWork(irecv_works, tensor, broadcast_src, intra_group, dst_size)
+
         return tensor, {"recv_next": vtp_work}
     else:
         if is_vtp_stage_rank0():
-            work = torch.distributed.irecv(tensor, src=src_rank, group=group)
-            work.wait()
+            for g, sr in zip(pp_group, next_rank):
+                work = torch.distributed.irecv(tensor, src=sr, group=g)
+                work.wait()
+
         if dst_size > 1 and intra_group is not None:
-            torch.distributed.broadcast(
-                tensor, src=broadcast_src, group=intra_group
-            )
+            torch.distributed.broadcast(tensor, src=broadcast_src, group=intra_group)
         return tensor

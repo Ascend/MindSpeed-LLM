@@ -44,18 +44,16 @@ trap cleanup INT TERM EXIT
 # Model conversion configuration
 HF_MODEL_DIR="/data/ci/models/qwen25/hf/Qwen2.5-7B/"
 TOKENIZER_PATH="/data/ci/models/qwen25/hf/Qwen2.5-7B/tokenizer.json"
-MG_EDGE_SAVE_DIR="/data/ci/cache/qwen2.5_7b_tp1pp5/"
-MG_CLOUD_SAVE_DIR="/data/ci/cache/qwen2.5_7b_tp2pp5/"
-VTP_EDGE_SAVE_DIR="/data/ci/cache/qwen2.5_7b_tp1pp4_vtp_edge/"
-VTP_CLOUD_SAVE_DIR="/data/ci/cache/qwen2.5_7b_tp2pp4_vtp_cloud/"
-VTP_2_MG_SAVE_DIR="/data/ci/cache/qwen2.5_7b_tp1pp5_vtp_2_mg/"
+MG_SAVE_DIR="/data/ci/cache/qwen2.5_7b_tp2pp3/"
+VPP_EDGE_SAVE_DIR="/data/ci/cache/qwen2.5_7b_tp2pp2_vpp_edge/"
+VPP_CLOUD_SAVE_DIR="/data/ci/cache/qwen2.5_7b_tp2pp2_vpp_cloud/"
+VPP_2_MG_SAVE_DIR="/data/ci/cache/qwen2.5_7b_tp2pp2_vpp_2_mg/"
 
 # Parallel training script configuration
 TRAIN_SCRIPTS=(
-    "./tests/pipeline/st/layerwise_disaggregated_training/tune_qwen25_7b_vtp_tp2pp4_full_ptd_edge"
-    "./tests/pipeline/st/layerwise_disaggregated_training/tune_qwen25_7b_vtp_tp2pp4_full_ptd_cloud_1"
-    "./tests/pipeline/st/layerwise_disaggregated_training/tune_qwen25_7b_vtp_tp2pp4_full_ptd_cloud_2"
-    "./tests/pipeline/st/layerwise_disaggregated_training/tune_qwen25_7b_vtp_tp2pp4_full_ptd_cloud_3"
+    "./tests/pipeline/st/layerwise_disaggregated_training/tune_qwen25_7b_tp2vdp2pp2_full_ptd_edge"
+    "./tests/pipeline/st/layerwise_disaggregated_training/tune_qwen25_7b_tp2vdp2pp2_full_ptd_cloud_1"
+    "./tests/pipeline/st/layerwise_disaggregated_training/tune_qwen25_7b_tp2vdp2pp2_full_ptd_cloud_2"
 )
 
 check_environment() {
@@ -86,63 +84,40 @@ run_model_conversion() {
     log_step "Starting model conversion process..."
 
     # Creating directories
-    mkdir -p "$MG_EDGE_SAVE_DIR"
-    mkdir -p "$MG_CLOUD_SAVE_DIR"
-    mkdir -p "$VTP_EDGE_SAVE_DIR"
-    mkdir -p "$VTP_CLOUD_SAVE_DIR"
+    mkdir -p "$MG_SAVE_DIR"
+    mkdir -p "$VPP_EDGE_SAVE_DIR"
+    mkdir -p "$VPP_CLOUD_SAVE_DIR"
 
     # --- Step 1: HF -> Megatron ---
-    log_step "Executing Step 1: HF -> Megatron TP=1"
-    python convert_ckpt.py \
-       --use-mcore-models \
-       --model-type GPT \
-       --load-model-type hf \
-       --save-model-type mg \
-       --target-tensor-parallel-size 1 \
-       --target-pipeline-parallel-size 5 \
-       --num-layer-list "2,8,8,8,2" \
-       --add-qkv-bias \
-       --load-dir "$HF_MODEL_DIR" \
-       --save-dir "$MG_EDGE_SAVE_DIR" \
-       --tokenizer-model "$TOKENIZER_PATH" \
-       --model-type-hf llama2 \
-       --params-dtype bf16
-
-    if [ $? -ne 0 ]; then
-        log_error "Step 1: HF -> Megatron TP=1 model conversion failed"
-        return 1
-    fi
-
-    log_step "Executing Step 1: HF -> Megatron TP=2"
+    log_step "Executing Step 1: HF -> Megatron"
     python convert_ckpt.py \
        --use-mcore-models \
        --model-type GPT \
        --load-model-type hf \
        --save-model-type mg \
        --target-tensor-parallel-size 2 \
-       --target-pipeline-parallel-size 5 \
-       --num-layer-list "2,8,8,8,2" \
+       --target-pipeline-parallel-size 3 \
+       --num-layer-list "2,24,2" \
        --add-qkv-bias \
        --load-dir "$HF_MODEL_DIR" \
-       --save-dir "$MG_CLOUD_SAVE_DIR" \
+       --save-dir "$MG_SAVE_DIR" \
        --tokenizer-model "$TOKENIZER_PATH" \
        --model-type-hf llama2 \
        --params-dtype bf16
 
     if [ $? -ne 0 ]; then
-        log_error "Step 1: HF -> Megatron TP=2 model conversion failed"
+        log_error "Step 1: HF -> Megatron model conversion failed"
         return 1
     fi
 
     # --- Step 2: Megatron -> VPP Edge ---
     log_step "Executing Step 2: Megatron -> VPP Edge"
     python mindspeed_llm/tasks/posttrain/ldt_sft/convert_ckpt_pp_vpp.py merge \
-       --load-dir-edge "$MG_EDGE_SAVE_DIR" \
-       --load-dir-cloud "$MG_CLOUD_SAVE_DIR" \
-       --save-dir-edge "$VTP_EDGE_SAVE_DIR" \
-       --save-dir-cloud "$VTP_CLOUD_SAVE_DIR" \
-       --merge-stages 0,4 \
-       --middle-stages 1,2,3
+       --load-dir "$MG_SAVE_DIR" \
+       --save-dir-edge "$VPP_EDGE_SAVE_DIR" \
+       --save-dir-cloud "$VPP_CLOUD_SAVE_DIR" \
+       --merge-stages 0,2 \
+       --middle-stages 1
 
     if [ $? -ne 0 ]; then
         log_error "Step 2: Megatron -> VPP Edge model conversion failed"
@@ -203,16 +178,16 @@ run_model_conversion_2() {
     log_step "Starting model conversion process..."
 
     # Creating directories
-    mkdir -p "$VTP_2_MG_SAVE_DIR"
+    mkdir -p "$VPP_2_MG_SAVE_DIR"
 
     # --- Step 1: VPP Edge -> Megatron ---
     log_step "Executing Step 1: VPP Edge -> Megatron"
     python mindspeed_llm/tasks/posttrain/ldt_sft/convert_ckpt_pp_vpp.py split \
-       --load-dir-edge "$VTP_EDGE_SAVE_DIR" \
-       --load-dir-cloud "$VTP_CLOUD_SAVE_DIR" \
-       --save-dir "$VTP_2_MG_SAVE_DIR" \
+       --load-dir-edge "$VPP_EDGE_SAVE_DIR" \
+       --load-dir-cloud "$VPP_CLOUD_SAVE_DIR" \
+       --save-dir "$VPP_2_MG_SAVE_DIR" \
        --split-rank 0 \
-       --middle-ranks 1,2,3
+       --middle-ranks 1
 
     if [ $? -ne 0 ]; then
         log_error "Step 1: VPP Edge -> Megatron model conversion failed"
@@ -256,11 +231,10 @@ main() {
 
     # clean cache dir
     log_step "Starting cleanup of cache directories..."
-    rm -rf "$MG_EDGE_SAVE_DIR"
-    rm -rf "$MG_CLOUD_SAVE_DIR"
-    rm -rf "$VTP_EDGE_SAVE_DIR"
-    rm -rf "$VTP_CLOUD_SAVE_DIR"
-    rm -rf "$VTP_2_MG_SAVE_DIR"
+    rm -rf "$MG_SAVE_DIR"
+    rm -rf "$VPP_EDGE_SAVE_DIR"
+    rm -rf "$VPP_CLOUD_SAVE_DIR"
+    rm -rf "$VPP_2_MG_SAVE_DIR"
     rm -rf /data/ci/cache/save_dir
     log_info "Cache directory cleanup completed"
 

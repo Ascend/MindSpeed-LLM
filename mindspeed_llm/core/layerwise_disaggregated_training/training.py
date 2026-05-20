@@ -1,20 +1,14 @@
 # coding=utf-8
 # Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
-# Copyright (c) 2024, HUAWEI CORPORATION.  All rights reserved.
+# Copyright (c) 2024, HUAWEI CORPORATION. All rights reserved.
 
 import time
 import dataclasses
 import gc
 import logging
 
-from megatron.training.log_handler import CustomHandler
-
-# Make default logging level INFO, but filter out all log messages not from MCore.
-logging.basicConfig(handlers=[CustomHandler()], level=logging.INFO)
-# The earliest we can measure the start time.
-_TRAIN_START_TIME = time.time()
 import torch
-
+from megatron.training.log_handler import CustomHandler
 from megatron.core import mpu, tensor_parallel
 from megatron.core.utils import (
     get_model_config,
@@ -44,6 +38,8 @@ from megatron.core.num_microbatches_calculator import (
     get_num_microbatches,
 )
 from megatron.training.utils import (
+    logical_and_across_model_parallel_group,
+    reduce_max_stat_across_model_parallel_group,
     unwrap_model,
 )
 from megatron.training.global_vars import (
@@ -52,27 +48,24 @@ from megatron.training.global_vars import (
 )
 from megatron.training.training import cuda_graph_capture, cuda_graph_set_manual_hooks
 
-from mindspeed_llm.core.layerwise_disaggregated_training.utils import (
-    vtp_logical_and_across_model_parallel_group as logical_and_across_model_parallel_group,
-    vtp_reduce_max_stat_across_model_parallel_group as reduce_max_stat_across_model_parallel_group,
-)
+from mindspeed_llm.core.layerwise_disaggregated_training.parallel_state import is_vdp_enable
+
+# Make default logging level INFO, but filter out all log messages not from MCore.
+logging.basicConfig(handlers=[CustomHandler()], level=logging.INFO)
+# The earliest we can measure the start time.
+_TRAIN_START_TIME = time.time()
 
 stimer = StragglerDetector()
 
 
-def get_model(
-    model_provider_func, model_type=ModelType.encoder_or_decoder, wrap_with_ddp=True
-):
+def get_model(model_provider_func, model_type=ModelType.encoder_or_decoder, wrap_with_ddp=True):
     """Build the model."""
     args = get_args()
     args.model_type = model_type
 
     # Build model.
     def build_model():
-        if (
-            mpu.get_pipeline_model_parallel_world_size() > 1
-            and args.virtual_pipeline_model_parallel_size is not None
-        ):
+        if mpu.get_pipeline_model_parallel_world_size() > 1 and args.virtual_pipeline_model_parallel_size is not None:
             if model_type == ModelType.encoder_and_decoder:
                 if args.encoder_pipeline_model_parallel_size != 0:
                     raise ValueError("Interleaved schedule not supported for model with encoder on separate PP rank")
@@ -83,8 +76,8 @@ def get_model(
                 pre_process = mpu.is_pipeline_first_stage()
                 post_process = mpu.is_pipeline_last_stage()
 
-                # add: layerwise_disaggregated_training. 
-                #U-shaped split scenario, the first and last layers both deploy on pp rank 0
+                # add: layerwise_disaggregated_training.
+                # U-shaped split scenario: the first and last layers both deploy on pp rank 0
                 if getattr(args, "layerwise_disaggregated_training", None):
                     rank = mpu.get_pipeline_model_parallel_rank()
                     if rank == 0 and i == args.virtual_pipeline_model_parallel_size - 1:
@@ -97,9 +90,7 @@ def get_model(
                         pre_process = False
                         post_process = False
 
-                this_model = model_provider_func(
-                    pre_process=pre_process, post_process=post_process
-                )
+                this_model = model_provider_func(pre_process=pre_process, post_process=post_process)
                 this_model.model_type = model_type
                 model.append(this_model)
         else:
@@ -112,10 +103,8 @@ def get_model(
                     rank = mpu.get_pipeline_model_parallel_rank()
                     first_decoder_rank = args.encoder_pipeline_model_parallel_size
                     world_size = mpu.get_pipeline_model_parallel_world_size()
-                    pre_process = rank == 0 or rank == first_decoder_rank
-                    post_process = (rank == (first_decoder_rank - 1)) or (
-                        rank == (world_size - 1)
-                    )
+                    pre_process = rank in (0, first_decoder_rank)
+                    post_process = rank in (first_decoder_rank - 1, world_size - 1)
                     add_encoder = mpu.is_inside_encoder(rank)
                     add_decoder = mpu.is_inside_decoder(rank)
                 model = model_provider_func(
@@ -125,9 +114,7 @@ def get_model(
                     add_decoder=add_decoder,
                 )
             else:
-                model = model_provider_func(
-                    pre_process=pre_process, post_process=post_process
-                )
+                model = model_provider_func(pre_process=pre_process, post_process=post_process)
             model.model_type = model_type
         return model
 
@@ -146,34 +133,22 @@ def get_model(
     # are set for all params so the optimizer can use them.
     for model_module in model:
         for param in model_module.parameters():
-            tensor_parallel.set_defaults_if_not_set_tensor_model_parallel_attributes(
-                param
-            )
+            tensor_parallel.set_defaults_if_not_set_tensor_model_parallel_attributes(param)
 
     # Print number of parameters.
-    num_parameters = sum(
-        [
-            sum([p.nelement() for p in model_module.parameters()])
-            for model_module in model
-        ]
-    )
+    num_parameters = sum(sum(p.nelement() for p in model_module.parameters()) for model_module in model)
     if mpu.get_data_parallel_rank() == 0:
         logging.info(
-            " > number of parameters on (tensor, pipeline) "
-            "model parallel rank ({}, {}): {}".format(
-                mpu.get_tensor_model_parallel_rank(),
-                mpu.get_pipeline_model_parallel_rank(),
-                num_parameters,
-            )
+            " > number of parameters on (tensor, pipeline) model parallel rank (%s, %s): %s",
+            mpu.get_tensor_model_parallel_rank(),
+            mpu.get_pipeline_model_parallel_rank(),
+            num_parameters,
         )
 
     # GPU allocation.
     # For FSDP2, we don't allocate GPU memory here. We allocate GPU memory
     # in the fully_shard function of FSDP2 instead.
-    if (
-        not (args.use_torch_fsdp2 and args.use_cpu_initialization)
-        and not args.init_model_with_meta_device
-    ):
+    if not (args.use_torch_fsdp2 and args.use_cpu_initialization) and not args.init_model_with_meta_device:
         for model_module in model:
             model_module.cuda(torch.cuda.current_device())
 
@@ -216,9 +191,7 @@ def get_model(
             kwargs["bucket_size"] = num_parameters // args.ddp_num_buckets
         else:
             kwargs["bucket_size"] = args.ddp_bucket_size
-        kwargs["pad_buckets_for_high_nccl_busbw"] = (
-            args.ddp_pad_buckets_for_high_nccl_busbw
-        )
+        kwargs["pad_buckets_for_high_nccl_busbw"] = args.ddp_pad_buckets_for_high_nccl_busbw
         kwargs["average_in_collective"] = args.ddp_average_in_collective
         if args.use_custom_fsdp and args.use_precision_aware_optimizer:
             kwargs["preserve_fp32_weights"] = False
@@ -234,8 +207,7 @@ def get_model(
             if ddp_config.bucket_size is None:
                 ddp_config.bucket_size = max(
                     40000000,
-                    1000000
-                    * mpu.get_data_parallel_world_size(with_context_parallel=True),
+                    1000000 * mpu.get_data_parallel_world_size(with_context_parallel=True),
                 )
             # Set bucket_size to infinity if overlap_grad_reduce is False.
             if not ddp_config.overlap_grad_reduce:
@@ -248,8 +220,7 @@ def get_model(
                 module=model_chunk,
                 # Turn off bucketing for model_chunk 2 onwards, since communication for these
                 # model chunks is overlapped with compute anyway.
-                disable_bucketing=(model_chunk_idx > 0)
-                or args.overlap_param_gather_with_optimizer_step,
+                disable_bucketing=(model_chunk_idx > 0) or args.overlap_param_gather_with_optimizer_step,
             )
             for (model_chunk_idx, model_chunk) in enumerate(model)
         ]
@@ -262,9 +233,7 @@ def get_model(
     return model
 
 
-def train_step(
-    forward_step_func, data_iterator, model, optimizer, opt_param_scheduler, config
-):
+def train_step(forward_step_func, data_iterator, model, optimizer, opt_param_scheduler, config):
     """Single training step."""
     args = get_args()
     timers = get_timers()
@@ -289,12 +258,18 @@ def train_step(
             model_chunk.zero_grad_buffer()
         optimizer.zero_grad()
 
+        # layerwise_disaggregated_training modify
+        # rank 0 clean grad buffer
+        if is_vdp_enable():
+            for _, param in model[0].named_parameters():
+                if param.grad is not None and mpu.is_pipeline_first_stage(ignore_virtual=True):
+                    param.main_grad = torch.zeros_like(param.main_grad)
+
         # Forward pass.
-        # add: layerwise_disaggregated_training. 
+        # layerwise_disaggregated_training modify
         if getattr(args, "layerwise_disaggregated_training", None):
-            forward_backward_func = get_forward_backward_func(
-                args.layerwise_disaggregated_training
-            )
+            # pylint: disable=too-many-function-args
+            forward_backward_func = get_forward_backward_func(args.layerwise_disaggregated_training)
         else:
             forward_backward_func = get_forward_backward_func()
 
@@ -308,9 +283,7 @@ def train_step(
             decoder_seq_length=args.decoder_seq_length,
             forward_only=False,
         )
-    should_checkpoint, should_exit, exit_code = (
-        rerun_state_machine.should_checkpoint_and_exit()
-    )
+    should_checkpoint, should_exit, exit_code = rerun_state_machine.should_checkpoint_and_exit()
     if should_exit:
         return {}, True, should_checkpoint, should_exit, exit_code, None, None
 
@@ -324,7 +297,6 @@ def train_step(
         unwrapped_model.cancel_gradients_last_layer(args.curr_iteration)
 
     # Update parameters.
-
     timers("optimizer", log_level=1).start(barrier=args.barrier_with_L1_time)
     update_successful, grad_norm, num_zeros_in_grad = optimizer.step()
     timers("optimizer").stop()
@@ -336,9 +308,7 @@ def train_step(
     # so we must gather across mp ranks
     grad_norm = reduce_max_stat_across_model_parallel_group(grad_norm)
     if args.log_num_zeros_in_grad:
-        num_zeros_in_grad = reduce_max_stat_across_model_parallel_group(
-            num_zeros_in_grad
-        )
+        num_zeros_in_grad = reduce_max_stat_across_model_parallel_group(num_zeros_in_grad)
 
     # Vision momentum.
     if args.vision_pretraining and args.vision_pretraining_type == "dino":
@@ -347,9 +317,7 @@ def train_step(
 
     # Update learning rate.
     if update_successful:
-        increment = (
-            get_num_microbatches() * args.micro_batch_size * args.data_parallel_size
-        )
+        increment = get_num_microbatches() * args.micro_batch_size * args.data_parallel_size
         opt_param_scheduler.step(increment=increment)
         skipped_iter = 0
     else:
@@ -364,7 +332,7 @@ def train_step(
         if args.use_distributed_optimizer and args.overlap_param_gather:
             cuda_graph_set_manual_hooks(model)
 
-    # add: layerwise_disaggregated_training. 
+    # add: layerwise_disaggregated_training.
     # U-shaped split scenario, the last layers deploy on pp first stage.
     should_calculate_loss = False
     if not config.layerwise_disaggregated_training:
@@ -381,7 +349,7 @@ def train_step(
                 val = x[key]
                 # there is one dict per microbatch. in new reporting, we average
                 # over the total number of tokens across the global batch.
-                if isinstance(val, tuple) or isinstance(val, list):
+                if isinstance(val, (tuple, list)):
                     numerator += val[0]
                     denominator += val[1]
                 else:

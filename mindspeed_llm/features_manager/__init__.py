@@ -37,7 +37,7 @@ from mindspeed.features_manager import (
     ProfilerDefaultFeature,
     OptimizeP2PCommFeature,
     FusionAttentionV2Feature,
-    MoEAlltoAllMC2Feature
+    MoEAlltoAllMC2Feature,
 )
 from mindspeed.features_manager.feature import MindSpeedFeature
 from mindspeed.features_manager.features_manager import MindSpeedFeaturesManager
@@ -79,7 +79,9 @@ from mindspeed_llm.features_manager.functional.profiling import ProfilingFeature
 from mindspeed_llm.features_manager.tokenizer.build_tokenizer import BuildTokenizerFeature
 from mindspeed_llm.features_manager.transformer.flash_attention.fusion_attention_feature import FusionAttentionFeature
 from mindspeed_llm.features_manager.transformer.flash_attention.alibi_feature import AlibiFeature
-from mindspeed_llm.features_manager.transformer.flash_attention.reset_attention_mask_feature import ResetAttentionMaskFeature
+from mindspeed_llm.features_manager.transformer.flash_attention.reset_attention_mask_feature import (
+    ResetAttentionMaskFeature,
+)
 from mindspeed_llm.features_manager.transformer.mtp import MultiTokenPredictionFeature
 from mindspeed_llm.features_manager.transformer.multi_latent_attention.mla_feature import MLAFeature
 from mindspeed_llm.features_manager.transformer.qwen3_next_attention.qwen3_next_feature import Qwen3NextFeature
@@ -93,12 +95,13 @@ from mindspeed_llm.features_manager.memory.chunk_loss import ChunkLossFeature
 from mindspeed_llm.features_manager.layerwise_disaggregated_training.u_shaped_split_feature import UShapedSplitFeature
 from mindspeed_llm.features_manager.layerwise_disaggregated_training.vtp_feature import VTPFeature
 from mindspeed_llm.features_manager.qat.qat_quant_engine import QATQuantEngineFeature
+from mindspeed_llm.features_manager.layerwise_disaggregated_training.vdp_feature import VirtualDPFeature
+
 from mindspeed_llm.features_manager.transformer.mhc_feature import MHCFeature
 from mindspeed_llm.features_manager.transformer.multi_latent_attention.g2_feature import G2Feature
 
 FEATURES_LIST = [
     # MindSpeed Legacy Features
-
     # MindSpeed Mcore Features
     UnalignedLinearFeature(),
     # MindSpeed-LLM Mcore Features
@@ -113,222 +116,234 @@ FEATURES_LIST = [
     CoCFeature(),
     HighAvailabilityFeature(),
     MultiTokenPredictionFeature(),
-
     # MindSpeed-LLM Legacy Features
 ]
 
 
 def add_megatron_basic_features(features_list: List[MindSpeedFeature]):
-    features_list.extend([
-        RequirementsBasicFeature(),
-        MegatronBasicFeature(),
-        TransformerEngineBasicFeature(),
-        Qwen3NextFeature(),
-        ChunkLossFeature(),
-    ])
+    features_list.extend(
+        [
+            RequirementsBasicFeature(),
+            MegatronBasicFeature(),
+            TransformerEngineBasicFeature(),
+            Qwen3NextFeature(),
+            ChunkLossFeature(),
+        ]
+    )
 
 
 def add_llm_features(features_list: List[MindSpeedFeature]):
-    features_list.extend([
-        ModelBasicFeature(),
-        TrainingBasicFeature(),
-        DatasetFeature(),
-        DatasetPreprocessFeature(),
-        ModuleFeature(),
-        NumLayerListFeature(),
-        DPOFeature(),
-        InferenceFeature(),
-        EvaluationFeature(),
-        DeprecatedArgsFeature(),
-        DSAIndexerFeature(),
-        MambaModel(),
-        LanguageModelEmbeddingFeature(),
-        CheckpointFeature(),
-        MHCFeature(),
-    ])
+    features_list.extend(
+        [
+            ModelBasicFeature(),
+            TrainingBasicFeature(),
+            DatasetFeature(),
+            DatasetPreprocessFeature(),
+            ModuleFeature(),
+            NumLayerListFeature(),
+            DPOFeature(),
+            InferenceFeature(),
+            EvaluationFeature(),
+            DeprecatedArgsFeature(),
+            DSAIndexerFeature(),
+            MambaModel(),
+            LanguageModelEmbeddingFeature(),
+            CheckpointFeature(),
+            MHCFeature(),
+        ]
+    )
 
 
 def add_affinity_features(features_list: List[MindSpeedFeature]):
-    features_list.extend([
-        AffinityFeature(),
-    ])
+    features_list.extend(
+        [
+            AffinityFeature(),
+        ]
+    )
 
 
 def add_context_parallel_features(features_list: List[MindSpeedFeature]):
-    features_list.extend([
-        ContextParallelFeature(),
-        UlyssesContextParallelFeature(),
-        ContextParallelKvCacheFeature(),
-        MambaContextParallelFeature()
-    ])
+    features_list.extend(
+        [
+            ContextParallelFeature(),
+            UlyssesContextParallelFeature(),
+            ContextParallelKvCacheFeature(),
+            MambaContextParallelFeature(),
+        ]
+    )
 
 
 def add_fusions_features(features_list: List[MindSpeedFeature]):
-    features_list.extend([
-        SwigluLimitFeature(),
-        FusedSoftmaxFeature(),
-        RotaryPositionEmbeddingFeature(),
-        GroupedMatmulFeature(),
-        FusedMoEPermuteFeature(),
-    ])
+    features_list.extend(
+        [
+            SwigluLimitFeature(),
+            FusedSoftmaxFeature(),
+            RotaryPositionEmbeddingFeature(),
+            GroupedMatmulFeature(),
+            FusedMoEPermuteFeature(),
+        ]
+    )
 
 
 def add_tensor_parallel_features(features_list: List[MindSpeedFeature]):
-    features_list.extend([
-        CoCFeature(),
-        MC2Feature(),
-        TP2dFeature()
-    ])
+    features_list.extend([CoCFeature(), MC2Feature(), TP2dFeature()])
 
 
 def add_pipeline_parallel_features(features_list: List[MindSpeedFeature]):
-    features_list.extend([
-        RiPipeSchedulesBubbleFeature(),
-        RiPipeSchedulesAdvanceFeature(),
-        NoopLayersFeature(),
-        OptimizeP2PCommFeature(),
-        OptimizeSendRecvCommFeature(),
-        UnalignedPipelineFeature(),
-        DualpipeVFeature(),
-    ])
+    features_list.extend(
+        [
+            RiPipeSchedulesBubbleFeature(),
+            RiPipeSchedulesAdvanceFeature(),
+            NoopLayersFeature(),
+            OptimizeP2PCommFeature(),
+            OptimizeSendRecvCommFeature(),
+            UnalignedPipelineFeature(),
+            DualpipeVFeature(),
+        ]
+    )
 
 
 def add_transformer_features(features_list: List[MindSpeedFeature]):
-    features_list.extend([
-        FusionAttentionFeature(),
-        # LLM feature
-        MLAFeature(),
-        # LLM feature
-        MultiTokenPredictionFeature(),
-        # LLM feature
-        TransformerBlockFeature(),
-        # LLM feature
-        AlibiFeature(),
-        # LLM feature
-        ResetAttentionMaskFeature(),
-        FusionAttentionV2Feature(),
-        G2Feature(),
-    ])
+    features_list.extend(
+        [
+            FusionAttentionFeature(),
+            # LLM feature
+            MLAFeature(),
+            # LLM feature
+            MultiTokenPredictionFeature(),
+            # LLM feature
+            TransformerBlockFeature(),
+            # LLM feature
+            AlibiFeature(),
+            # LLM feature
+            ResetAttentionMaskFeature(),
+            FusionAttentionV2Feature(),
+            G2Feature(),
+        ]
+    )
 
 
 def add_tokenizer_features(features_list: List[MindSpeedFeature]):
-    features_list.extend([
-        BuildTokenizerFeature()
-    ])
+    features_list.extend([BuildTokenizerFeature()])
 
 
-def add_distributed_features(features_list: List[MindSpeedFeature]): 
-    features_list.extend([ 
-        TorchFullyShardedDataParallelFeature() 
-    ])
+def add_distributed_features(features_list: List[MindSpeedFeature]):
+    features_list.extend([TorchFullyShardedDataParallelFeature()])
 
 
 def add_reuse_param_features(features_list: List[MindSpeedFeature]):
-    features_list.extend([
-        ReuseFP32Param()
-    ])
+    features_list.extend([ReuseFP32Param()])
 
 
 def add_swap_manage_features(features_list: List[MindSpeedFeature]):
-    features_list.extend([
-        SmartSwapFeature(),
-        SwapAttentionFeature()
-    ])
+    features_list.extend([SmartSwapFeature(), SwapAttentionFeature()])
 
 
 def add_moe_features(features_list: List[MindSpeedFeature]):
-    features_list.extend([
-        MoEGmmFeature(),
-        MoEAlltoAllMC2Feature(),
-        # LLM feature
-        MoERouter(),
-        MoETpExtendEpFeature(),
-        # LLM feature
-        MoESharedExpertsFeature(),
-        MoEAllGatherOverLapFeature(),
-        MoEFwdBwdOverlapFeature(),
-        MoEAlltoAllOverLapFeature(),
-        MoEZeroMemoryFeature(),
-    ])
+    features_list.extend(
+        [
+            MoEGmmFeature(),
+            MoEAlltoAllMC2Feature(),
+            # LLM feature
+            MoERouter(),
+            MoETpExtendEpFeature(),
+            # LLM feature
+            MoESharedExpertsFeature(),
+            MoEAllGatherOverLapFeature(),
+            MoEFwdBwdOverlapFeature(),
+            MoEAlltoAllOverLapFeature(),
+            MoEZeroMemoryFeature(),
+        ]
+    )
 
 
 def add_hccl_buffer_features(features_list: List[MindSpeedFeature]):
-    features_list.extend([
-        HcclBufferSetFeature(),
-        HcclBufferAdaptiveFeature(),
-        HcclOpModeSetFeature(),
-    ])
+    features_list.extend(
+        [
+            HcclBufferSetFeature(),
+            HcclBufferAdaptiveFeature(),
+            HcclOpModeSetFeature(),
+        ]
+    )
 
 
 def add_optimizer_features(features_list: List[MindSpeedFeature]):
-    features_list.extend([
-        FusedEmaAdamwFeature(),
-        VirtualOptimizerFeature(),
-        LowPrecisionOptimizerFeature(),
-    ])
+    features_list.extend(
+        [
+            FusedEmaAdamwFeature(),
+            VirtualOptimizerFeature(),
+            LowPrecisionOptimizerFeature(),
+        ]
+    )
 
 
 def add_functional_features(features_list: List[MindSpeedFeature]):
-    features_list.extend([
-        ProfilingFeature(),
-        NPUDeterministicFeature(),
-        NPUDataDumpFeature(),
-        ProfilerDefaultFeature()
-    ])
+    features_list.extend(
+        [ProfilingFeature(), NPUDeterministicFeature(), NPUDataDumpFeature(), ProfilerDefaultFeature()]
+    )
 
 
 def add_recompute_features(features_list: List[MindSpeedFeature]):
-    features_list.extend([
-        RecomputeActivationFeature(),
-        RecomputeNormFeature(),
-        EnableRecomputeLayersPerPPRank(),
-        RecomputeMethodFeature()
-    ])
+    features_list.extend(
+        [
+            RecomputeActivationFeature(),
+            RecomputeNormFeature(),
+            EnableRecomputeLayersPerPPRank(),
+            RecomputeMethodFeature(),
+        ]
+    )
 
 
 def add_swap_optimizer_feature(features_list: List[MindSpeedFeature]):
-    features_list.extend([
-        SwapOptimizerFeature(),
-    ])
+    features_list.extend(
+        [
+            SwapOptimizerFeature(),
+        ]
+    )
 
 
 def add_disable_gloo_group_feature(features_list: List[MindSpeedFeature]):
-    features_list.extend([
-        DisableGlooGroupFeature()
-    ])
+    features_list.extend([DisableGlooGroupFeature()])
 
 
 def add_high_availability_feature(features_list: List[MindSpeedFeature]):
-    features_list.extend([
-        HighAvailabilityFeature()
-    ])
+    features_list.extend([HighAvailabilityFeature()])
 
 
 def add_finetune_feature(features_list: List[MindSpeedFeature]):
-    features_list.extend([
-        FinetuneFeature(),
-        LoraFeature(),
-        LuLoraFeature(),
-    ])
+    features_list.extend(
+        [
+            FinetuneFeature(),
+            LoraFeature(),
+            LuLoraFeature(),
+        ]
+    )
 
 
 def add_ai_framework_feature(features_list: List[MindSpeedFeature]):
-    features_list.extend([
-        MindSporePatchFeature(),
-    ])
+    features_list.extend(
+        [
+            MindSporePatchFeature(),
+        ]
+    )
 
 
 def add_layerwise_diaggregated_training_feature(feature_list: List[MindSpeedFeature]):
-    feature_list.extend([
-        UShapedSplitFeature(),
-        VTPFeature()
-    ])
+    feature_list.extend(
+        [
+            UShapedSplitFeature(),
+            VTPFeature(),
+            VirtualDPFeature(),
+        ]
+    )
 
 
 def add_qat_features(features_list: List[MindSpeedFeature]):
-    features_list.extend([
-        QATQuantEngineFeature(),
-    ])
+    features_list.extend(
+        [
+            QATQuantEngineFeature(),
+        ]
+    )
 
 
 def create_features_list():
