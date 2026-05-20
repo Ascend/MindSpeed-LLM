@@ -47,7 +47,7 @@
 - 步骤2：将两级逻辑流水合并，若两级流水的任务队列出现冲突，则优化任务执行顺序。
 
 案例：PP=3，mbn = 4
-![image](../../figures/ldt_sft/pipeline_chart.png 'pipeline_chart.png') 
+![image](../../figures/ldt_sft/pipeline_chart.png 'pipeline_chart.png')
 
 其中上图为步骤1生成的两级逻辑流水、下图为步骤2合并后的最终流水方案。步骤2合并边侧两级流水时出现了任务冲突，优化阶段时按FS-FE-BS-BE的执行顺序重排。优化的依据是此执行顺序可以增大可容忍边云通信时延：以样本3的前向传播通信为例，其通信时间可以由样本5的前向计算时间掩盖，提升了可容忍通信时延，从而在拉远收敛场景下减小算效损失。
 
@@ -73,13 +73,34 @@
 
 案例：PP=2，TP=8，对称TP
 
-![image](../../figures/ldt_sft/ldt_tp.png 'ldt_tp.png') 
+![image](../../figures/ldt_sft/ldt_tp.png 'ldt_tp.png')
 
 案例：PP=2，TP=4/TP=8，非对称TP
 
-![image](../../figures/ldt_sft/ldt_vtp.png 'ldt_vtp.png') 
+![image](../../figures/ldt_sft/ldt_vtp.png 'ldt_vtp.png')
 
 效果：由于在进行P2P通信之前，megatron现有逻辑会提前在TP组内完成AR通信，因此仅通过单卡进行通信即可将完整的数据传递给下一级PP，以上P2P通信方式可保证非对称TP下跨流水线层级通信的正确性。
+
+### 非对称DP
+
+功能说明：针对边侧节点数量不足的情况，支持边侧DP小于云侧DP。
+非对称DP实现逻辑：在对称DP场景下，通过卡分复用的方式，不同DP域的节点或卡处理各自DP域的数据。不同于对称DP，非对称DP场景下，边侧通过时分复用的方式处理多个DP域的数据，并分别与云侧进行通信。
+
+案例：PP=3, TP=8, DP=2，对称DP
+
+![image](../../figures/ldt_sft/ldt_dp.png 'ldt_dp.png')
+
+案例：PP=3, TP=8, DP=1/DP=2，非对称DP
+
+![image](../../figures/ldt_sft/ldt_vdp.png 'ldt_vdp.png')
+
+针对通讯组初始化的处理，复用现有Megatron生成rank组的逻辑，首先基于对称DP场景将边云分开进行rank组生成；再将边侧的rank组进行重计算合并；云侧的rank组整体偏移边侧卡数。
+
+![image](../../figures/ldt_sft/ldt_vdp_gen_ranks.png 'ldt_vdp_gen_ranks.png')
+
+针对边侧梯度的处理，megatron现有逻辑在时分复用处理多个DP域的数据计算梯度时，默认会累加梯度，相当于边侧默认对梯度已经做了AR操作，只需要在最后对累加的总梯度求平均即可。
+
+效果：边侧通过时分复用的方式处理多个DP域的数据，并分别与云侧进行通信。数据处理和通信顺序统一按照PP组内（不同的PP组处理不同DP域的数据）Ranks的顺序进行，保证多DP域数据处理和通信的正确性。
 
 ## 使用方法
 
@@ -103,7 +124,10 @@
 
 - 暂不支持MoE模型。
 
-## 注意事项
+## 其他约束
 
 - 暂不支持LoRA
 - 暂不支持常规VPP并行：`--num-virtual-stages-per-pipeline-rank`传参必须为`2`，使能首尾层共部署。
+- 非对称TP场景，仅支持DP=1。
+- 非对称DP场景，仅支持边侧DP=1。
+- 非对称TP和非对称DP同时开启场景，仅支持TP为偶数，且边侧TP可以被云测TP整除。

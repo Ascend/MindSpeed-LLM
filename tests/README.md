@@ -191,7 +191,7 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <th>Mem.</th>
     </tr>
     <tr>
-        <td rowspan="33">ST</td>
+        <td rowspan="36">ST</td>
         <td rowspan="1">baichuan2-13B</td>
         <td>baichuan2_13b, no-gradient-accumulation-fusion</td>
         <td><a href="pipeline/st/baichuan2-13B/baichuan2_13b_tp8_pp1_mcore.sh">baichuan2_13b_tp8_pp1_mcore.sh</a></td>
@@ -434,7 +434,7 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td>Y</td>
     </tr>
     <tr>
-        <td rowspan="1">posttrain</td>
+        <td rowspan="4">posttrain</td>
         <td>layerwise_disaggregated_training</td>
         <td><a href="pipeline/st/layerwise_disaggregated_training/tune_qwen25_7b_tp1pp4_layerwise_disaggregated.sh">tune_qwen25_7b_tp1pp4_layerwise_disaggregated.sh</a></td>
         <td>Y</td>
@@ -442,7 +442,28 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td>Y</td>
     </tr>
     <tr>
-        <td rowspan="20">UT</td>
+        <td>layerwise_disaggregated_training vtp</td>
+        <td><a href="pipeline/st/layerwise_disaggregated_training/tune_qwen25_7b_vtp_tp2pp4_layerwise_disaggregated.sh">tune_qwen25_7b_vtp_tp2pp4_layerwise_disaggregated.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td>layerwise_disaggregated_training vdp</td>
+        <td><a href="pipeline/st/layerwise_disaggregated_training/tune_qwen25_7b_vdp_tp2vdp2pp2_layerwise_disaggregated.sh">tune_qwen25_7b_vdp_tp2vdp2pp2_layerwise_disaggregated.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td>layerwise_disaggregated_training vtp and vdp</td>
+        <td><a href="pipeline/st/layerwise_disaggregated_training/tune_qwen25_7b_vtp_vdp_vtp2vdp2pp2_layerwise_disaggregated.sh">tune_qwen25_7b_vtp_vdp_vtp2vdp2pp2_layerwise_disaggregated.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td rowspan="28">UT</td>
         <td rowspan="3">checkpoint</td>
         <td>test_checkpoint_param</td>
         <td><a href="pipeline/ut/checkpoint/test_checkpoint_param.py">test_checkpoint_param.py</a></td>
@@ -585,6 +606,63 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
     <tr>
         <td>test_process_pretrain_data, merge_datasets, GPTSentencePieceTokenizer</td>
         <td><a href="pipeline/ut/process_data/test_process_pretrain_data.py">test_process_pretrain_data.py</a></td>
+        <td>Y</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td rowspan="8">posttrain</td>
+        <td>ldt_sft, test_convert_ckpt_pp_vpp, convert_ckpt, merge_ckpt</td>
+        <td><a href="pipeline/ut/posttrain/ldt_sft/test_convert_ckpt_pp_vpp.py">test_convert_ckpt_pp_vpp.py</a></td>
+        <td>Y</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>ldt_sft, test_core_utils</td>
+        <td><a href="pipeline/ut/posttrain/ldt_sft/test_core_utils.py">test_core_utils.py</a></td>
+        <td>Y</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>ldt_sft, test_distributed_data_parallel</td>
+        <td><a href="pipeline/ut/posttrain/ldt_sft/test_distributed_data_parallel.py">test_distributed_data_parallel.py</a></td>
+        <td>Y</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>ldt_sft, test_initialize</td>
+        <td><a href="pipeline/ut/posttrain/ldt_sft/test_initialize.py">test_initialize.py</a></td>
+        <td>Y</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>ldt_sft, test_ldt_sft_trainer</td>
+        <td><a href="pipeline/ut/posttrain/ldt_sft/test_ldt_sft_trainer.py">test_ldt_sft_trainer.py</a></td>
+        <td>Y</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>ldt_sft, test_parallel_state</td>
+        <td><a href="pipeline/ut/posttrain/ldt_sft/test_parallel_state.py">test_parallel_state.py</a></td>
+        <td>Y</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>ldt_sft, test_training</td>
+        <td><a href="pipeline/ut/posttrain/ldt_sft/test_training.py">test_training.py</a></td>
+        <td>Y</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>ldt_sft, test_utils</td>
+        <td><a href="pipeline/ut/posttrain/ldt_sft/test_utils.py">test_utils.py</a></td>
         <td>Y</td>
         <td></td>
         <td></td>
