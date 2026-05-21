@@ -20,7 +20,6 @@
 # limitations under the License.
 # Copyright (c) 2025, HUAWEI CORPORATION.  All rights reserved.
 
-import os
 from typing import Any, Callable, Optional, Union
 
 import torch
@@ -32,7 +31,6 @@ from einops import rearrange
 from transformers.activations import ACT2FN
 from transformers.cache_utils import Cache
 from transformers.generation import GenerationMixin
-from transformers.masking_utils import create_causal_mask
 from transformers.modeling_flash_attention_utils import FlashAttentionKwargs
 from transformers.modeling_layers import (
     GenericForQuestionAnswering,
@@ -47,11 +45,13 @@ from transformers.models.qwen3_next.configuration_qwen3_next import Qwen3NextCon
 from transformers.processing_utils import Unpack
 from transformers.utils import TransformersKwargs, auto_docstring, can_return_tuple, logging
 from transformers.utils.deprecation import deprecate_kwarg
+
 try:
     from transformers.utils.generic import OutputRecorder, check_model_inputs
 except ImportError:
     # adapt for transformers 5.x
     from transformers.utils.output_capturing import OutputRecorder, capture_outputs
+
     check_model_inputs = capture_outputs
 from transformers.utils.import_utils import (
     is_causal_conv1d_available,
@@ -62,8 +62,8 @@ from mindspeed.core.fusions.grouped_matmul import Ops
 
 try:
     import torch_npu
-    from mindspeed.ops.npu_moe_token_permute import npu_moe_token_permute
-    from mindspeed.ops.npu_moe_token_unpermute import npu_moe_token_unpermute
+    from mindspeed.ops.npu_moe_token_permute import npu_moe_token_permute  # pylint: disable=ungrouped-imports
+    from mindspeed.ops.npu_moe_token_unpermute import npu_moe_token_unpermute  # pylint: disable=ungrouped-imports
 except ImportError:
     pass
 
@@ -146,11 +146,11 @@ class Qwen3NextDynamicCache:
         return self.key_cache[layer_idx], self.value_cache[layer_idx]
 
     def update(
-            self,
-            key_states: torch.Tensor,
-            value_states: torch.Tensor,
-            layer_idx: int,
-            cache_kwargs: Optional[dict[str, Any]] = None,
+        self,
+        key_states: torch.Tensor,
+        value_states: torch.Tensor,
+        layer_idx: int,
+        cache_kwargs: Optional[dict[str, Any]] = None,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         if self.key_cache[layer_idx] is None:
             self.key_cache[layer_idx] = key_states
@@ -265,7 +265,7 @@ class Qwen3NextRMSNorm(nn.Module):
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
-    x2 = x[..., x.shape[-1] // 2:]
+    x2 = x[..., x.shape[-1] // 2 :]
     return torch.cat((-x2, x1), dim=-1)
 
 
@@ -302,7 +302,6 @@ def apply_rotary_pos_emb(q, k, cos, sin, position_ids=None, unsqueeze_dim=1):
 
     args = get_args()
     if args.use_fused_rotary_pos_emb:
-
         q_embed = torch_npu.npu_rotary_mul(q_rot, cos, sin).to(q.dtype)
         k_embed = torch_npu.npu_rotary_mul(k_rot, cos, sin).to(k.dtype)
         q_embed = torch.cat([q_embed, q_pass], dim=-1)
@@ -371,7 +370,7 @@ def flash_attention_forward(
     if attention_mask is not None and attention_mask.dtype != torch.bool:
         # Convert to boolean type, making sdpa to force call FlashAttentionScore to improve performance.
         attention_mask = torch.logical_not(attention_mask.bool()).to(query.device)
-    
+
     cu_seqlens = None
     if "actual_seq_len" in kwargs:
         cu_seqlens = kwargs.get("actual_seq_len", None).tolist()
@@ -391,7 +390,7 @@ def flash_attention_forward(
         actual_seq_qlen=cu_seqlens,
         actual_seq_kvlen=cu_seqlens,
         scale=scaling,
-        sparse_mode=2
+        sparse_mode=2,
     )[0]
 
     if input_layout == "BNSD":
@@ -411,7 +410,7 @@ class Qwen3NextAttention(nn.Module):
         self.layer_idx = layer_idx
         self.head_dim = getattr(config, "head_dim", config.hidden_size // config.num_attention_heads)
         self.num_key_value_groups = config.num_attention_heads // config.num_key_value_heads
-        self.scaling = self.head_dim ** -0.5
+        self.scaling = self.head_dim**-0.5
         self.attention_dropout = config.attention_dropout
         self.is_causal = True
         self.q_proj = nn.Linear(
@@ -427,9 +426,7 @@ class Qwen3NextAttention(nn.Module):
             config.num_attention_heads * self.head_dim, config.hidden_size, bias=config.attention_bias
         )
         self.q_norm = Qwen3NextRMSNorm(self.head_dim, eps=config.rms_norm_eps)  # unlike olmo, only on the head dim!
-        self.k_norm = Qwen3NextRMSNorm(
-            self.head_dim, eps=config.rms_norm_eps
-        )  # thus post q_norm does not need reshape
+        self.k_norm = Qwen3NextRMSNorm(self.head_dim, eps=config.rms_norm_eps)  # thus post q_norm does not need reshape
 
     @deprecate_kwarg("past_key_value", new_name="past_key_values", version="4.58")
     def forward(
@@ -704,8 +701,13 @@ class Qwen3NextGatedDeltaNet(nn.Module):
         args = get_args()
         self.gdn_chunk_size = args.gdn_chunk_size
 
-        if args.use_triton_gdn:
-            from mindspeed_llm.tasks.models.transformer.chunk_gated_delta_rule import chunk_gated_delta_rule
+        if args.use_flash_gdn:
+            from mindspeed_llm.tasks.models.transformer.flash_gated_delta_rule import flash_gated_delta_rule
+
+            self.chunk_gated_delta_rule = flash_gated_delta_rule
+        elif args.use_triton_gdn:
+            from mindspeed_llm.tasks.models.transformer.chunk_gated_delta_rule import chunk_gated_delta_rule  # pylint: disable=redefined-outer-name
+
             self.chunk_gated_delta_rule = chunk_gated_delta_rule
         else:
             self.chunk_gated_delta_rule = torch_chunk_gated_delta_rule
@@ -762,11 +764,10 @@ class Qwen3NextGatedDeltaNet(nn.Module):
         batch_size, seq_len, _ = hidden_states.shape
 
         use_precomputed_states = (
-            cache_params is not None
-            and cache_params.has_previous_state
-            and seq_len == 1
-            and cache_position is not None
+            cache_params is not None and cache_params.has_previous_state and seq_len == 1 and cache_position is not None
         )
+        conv_state = None
+        recurrent_state = None
 
         # getting projected states from cache if it exists
         if cache_params is not None:
@@ -828,7 +829,6 @@ class Qwen3NextGatedDeltaNet(nn.Module):
             key = key.repeat_interleave(self.num_v_heads // self.num_k_heads, dim=2)
 
         if not use_precomputed_states:
-
             cu_seqlens = None
             input_layout = "BSND"
             if "actual_seq_len" in kwargs:
@@ -837,7 +837,6 @@ class Qwen3NextGatedDeltaNet(nn.Module):
                 cu_seqlens = F.pad(cu_seqlens, pad=(1, 0), value=0)
                 input_layout = "TND"
                 query, key, value = [rearrange(x, 'b s h d -> 1 (b s) h d') for x in [query, key, value]]
-
 
             core_attn_out, last_recurrent_state = self.chunk_gated_delta_rule(
                 query,
@@ -927,8 +926,6 @@ class Qwen3NextSparseMoeBlock(nn.Module):
         # we cast back to the input dtype
         routing_weights = routing_weights.to(hidden_states.dtype)
 
-
-
         final_hidden_states = torch.zeros(
             (batch_size * sequence_length, hidden_dim), dtype=hidden_states.dtype, device=hidden_states.device
         )
@@ -970,10 +967,10 @@ class Qwen3NextMoeExperts(nn.Module):
         self.hidden_dim = config.hidden_size
         self.intermediate_size = config.moe_intermediate_size
         self.gate_up_proj = torch.nn.Parameter(
-            torch.empty(self.num_experts * self.hidden_dim, 2 * self.intermediate_size))
+            torch.empty(self.num_experts * self.hidden_dim, 2 * self.intermediate_size)
+        )
 
-        self.down_proj = torch.nn.Parameter(
-            torch.empty(self.num_experts * self.intermediate_size, self.hidden_dim))
+        self.down_proj = torch.nn.Parameter(torch.empty(self.num_experts * self.intermediate_size, self.hidden_dim))
         self.act_fn = ACT2FN[config.hidden_act]
 
     def forward(self, hidden_states, routing_weights=None, selected_experts=None):
@@ -1045,8 +1042,6 @@ class Qwen3NextSparseFusedMoeBlock(nn.Module):
             routing_weights /= routing_weights.sum(dim=-1, keepdim=True)
         routing_weights = routing_weights.to(hidden_states.dtype)
 
-
-
         final_hidden_states = self.experts(
             hidden_states, routing_weights=routing_weights, selected_experts=selected_experts
         )
@@ -1073,7 +1068,7 @@ class Qwen3NextDecoderLayer(GradientCheckpointingLayer):
             self.self_attn = Qwen3NextAttention(config, layer_idx)
 
         if (layer_idx not in config.mlp_only_layers) and (
-                config.num_experts > 0 and (layer_idx + 1) % config.decoder_sparse_step == 0
+            config.num_experts > 0 and (layer_idx + 1) % config.decoder_sparse_step == 0
         ):
             self.args = get_args()
             if self.args.moe_grouped_gemm:
@@ -1277,9 +1272,8 @@ def get_attention_mask_in_transformers():
         return _GLOBAL_ATTN_MASK
 
     _GLOBAL_ATTN_MASK = torch.triu(
-        torch.ones((2048, 2048),
-                   device=torch.accelerator.current_accelerator().type, dtype=torch.bool), diagonal=1)
-
+        torch.ones((2048, 2048), device=torch.accelerator.current_accelerator().type, dtype=torch.bool), diagonal=1
+    )
 
     return _GLOBAL_ATTN_MASK
 
@@ -1315,6 +1309,8 @@ def load_balancing_loss_func(
     """
     if gate_logits is None or not isinstance(gate_logits, tuple):
         return 0
+
+    concatenated_gate_logits = None
 
     if isinstance(gate_logits, tuple):
         compute_device = gate_logits[0].device
@@ -1421,7 +1417,8 @@ class Qwen3NextForCausalLM(Qwen3NextPreTrainedModel, GenerationMixin):
         >>> generate_ids = model.generate(inputs.input_ids, max_length=30)
         >>> tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
         "Hey, are you conscious? Can you talk to me?\nI'm not conscious, but I can talk to you."
-        ```"""
+        ```
+        """
 
         output_router_logits = (
             output_router_logits if output_router_logits is not None else self.config.output_router_logits

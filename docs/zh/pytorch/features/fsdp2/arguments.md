@@ -428,7 +428,7 @@
     </tr>
     <tr>
       <td>cp_type</td>
-      <td>Literal[&quot;ulysses&quot;,&quot;ring&quot;]</td>
+      <td>Literal[&quot;ulysses&quot,&quot;ring&quot;]</td>
       <td>ulysses</td>
       <td>长序列并行算法类型，目前仅支持ulysses和ring算法。</td>
     </tr>
@@ -901,6 +901,12 @@
       <td>bool</td>
       <td>False</td>
       <td>是否使能triton融合算子加速Gated DeltaNet网络计算。</td>
+    </tr>
+    <tr>
+      <td>use_flash_gdn</td>
+      <td>bool</td>
+      <td>False</td>
+      <td>是否使能ascendC融合算子加速Gated DeltaNet网络计算，此参数与use_triton_gdn最多开启一个。</td>
     </tr>
     <tr>
     <td>chunk_loss_size</td>

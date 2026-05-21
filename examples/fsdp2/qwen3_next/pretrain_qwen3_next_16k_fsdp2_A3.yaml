@@ -64,6 +64,7 @@ training:
 optimization:
   chunk_loss_size: 1024
   use_triton_gdn: True
+  use_flash_gdn: False
   use_fused_rmsnorm: True
   moe_grouped_gemm: True
   use_fused_rotary_pos_emb: True
