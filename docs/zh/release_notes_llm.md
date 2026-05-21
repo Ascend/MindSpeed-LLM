@@ -33,21 +33,23 @@
   </tbody>
 </table>
 
-> [!NOTE]  
+> [!NOTE]
+>
 > 有关MindSpeed LLM的版本维护，具体请参见[版本维护策略](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.0.0#%E7%89%88%E6%9C%AC%E7%BB%B4%E6%8A%A4%E7%AD%96%E7%95%A5)。
 
 ### 相关产品版本配套说明
 
 **表 1**  MindSpeed LLM软件版本配套表
 
-| MindSpeed LLM版本 | MindSpeed Core代码分支名称 | Megatron版本 | PyTorch版本 | Ascend Extension for PyTorch版本 | CANN版本 | Python版本            | 
-| ---------------- | ------------------ | ------------ | -----------  | ------------- | -------- | --------------------- | 
-| 26.0.0（商用）   | 26.0.0_core_r0.12.1  | core_v0.12.1  | 2.7.1       | 26.0.0        | 9.0.0  | Python3.10            | 
-| 2.3.0（商用）    | 2.3.0_core_r0.12.1 | core_v0.12.1  | 2.7.1       | 7.3.0         | 8.5.0  | Python3.10            | 
-| 2.2.0（商用）    | 2.2.0_core_r0.12.1 | core_v0.12.1  | 2.7.1       | 7.2.0         | 8.3.RC1  | Python3.10            | 
+| MindSpeed LLM版本 | MindSpeed Core代码分支名称 | Megatron版本 | PyTorch版本 | Ascend Extension for PyTorch版本 | CANN版本 | Python版本            |
+| ---------------- | ------------------ | ------------ | -----------  | ------------- | -------- | --------------------- |
+| 26.0.0（商用）   | 26.0.0_core_r0.12.1  | core_v0.12.1  | 2.7.1       | 26.0.0        | 9.0.0  | Python3.10            |
+| 2.3.0（商用）    | 2.3.0_core_r0.12.1 | core_v0.12.1  | 2.7.1       | 7.3.0         | 8.5.0  | Python3.10            |
+| 2.2.0（商用）    | 2.2.0_core_r0.12.1 | core_v0.12.1  | 2.7.1       | 7.2.0         | 8.3.RC1  | Python3.10            |
 
->[!NOTE]  
->用户可根据需要选择MindSpeed LLM代码分支下载源码并进行安装。
+>[!NOTE]
+>
+> 用户可根据需要选择MindSpeed LLM代码分支下载源码并进行安装。
 
 ## 版本兼容性说明
 
@@ -76,7 +78,7 @@
 
 |组件|描述|目的|
 |--|--|--|
-|MindSpeed LLM|模型下架|Dense模型下架清单：<br>LLaMA2-34B<br>LLaMA3-8B/70B<br>LLaMA3.1-8B/50B/70B/200B<br>LLaMA3.2-1B/3B<br>LLaMA3.3-70B-Instruct<br>ChatGLM3-6B<br>GLM4-9B<br>Baichuan2-7B/13B<br>InternLM2.5-1.8B/7B/20B<br>Qwen2.5-0.5B/1.5B/3B/7B/14B/32B<br>Qwen3-8B(Megatron FSDP2)<br><br>MoE模型下架清单：<br>Qwen3-30B(Megatron FSDP2)<br>GPT4-MoE-175B<br>Hunyuan-389B|
+|MindSpeed LLM|模型下架|Dense模型下架清单：<br>LLaMA2-34B<br>LLaMA3-8B/70B<br>LLaMA3.1-8B/50B/70B/200B/405B<br>LLaMA3.2-1B/3B<br>LLaMA3.3-70B-Instruct<br>ChatGLM3-6B<br>GLM4-9B<br>Baichuan2-7B/13B<br>InternLM2.5-1.8B/7B/20B<br>Qwen2.5-0.5B/1.5B/3B/7B/14B/32B<br>Qwen3-8B(Megatron FSDP2)<br><br>MoE模型下架清单：<br>Qwen3-30B(Megatron FSDP2)<br>GPT4-MoE-175B<br>Hunyuan-389B|
 
 ### 接口变更说明
 
