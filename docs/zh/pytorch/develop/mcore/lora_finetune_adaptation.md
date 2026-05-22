@@ -32,7 +32,7 @@ bash examples/mcore/qwen3/ckpt_convert_qwen3_hf2mcore.sh
 ```shell
 source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路径
 ......
---input ./dataset/train-00000-of-00001-a09b74b3ef9c3b56.parquet # 原始数据集路径 
+--input ./dataset/train-00000-of-00001-a09b74b3ef9c3b56.parquet # 原始数据集路径
 --tokenizer-name-or-path ./model_from_hf/qwen3_hf # HF的tokenizer路径
 --output-prefix ./finetune_dataset/alpaca  # 保存路径
 ......
@@ -180,7 +180,7 @@ python convert_ckpt.py
     --spec mindspeed_llm.tasks.models.spec.qwen3_spec layer_spec \
     --load-dir ./model_weights/qwen3_mcore/ \  # Megatron权重保存路径
     --lora-load ./ckpt/qwen3_lora \            # LoRA微调完成后的权重保存路径
-    --save-dir ./model_from_hf/qwen3_hf/       # 转换后的HF权重路径，若填写原始HF模型路径，新权重将存储于./model_from_hf/qwen3_hf/mg2hg/
+    --save-dir ./model_from_hf/qwen3_hf/ \     # 转换后的HF权重路径，若填写原始HF模型路径，新权重将存储于./model_from_hf/qwen3_hf/mg2hg/
     --lora-r 16 \
     --lora-alpha 32 \
     --lora-target-modules linear_qkv linear_proj linear_fc1 linear_fc2 \
