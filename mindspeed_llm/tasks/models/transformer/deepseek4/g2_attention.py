@@ -287,15 +287,8 @@ class DeepSeek4SelfAttention(MegatronModule):
         q, _ = self.linear_q_up_proj(q_compressed)  # s,b,n_heads_local * self.head_dim
 
         q = q.view(q_len, bsz, self.n_local_heads, -1)
-        if args.use_triton_rmsnorm_without_weight:
-            from mindspeed_llm.tasks.models.transformer.deepseek4.rmsnorm_without_weight import (
-                rmsnorm_without_weight_triton,
-            )
 
-            rsqrt = rmsnorm_without_weight_triton(q, self.config.layernorm_epsilon)
-            q = q * rsqrt
-        else:
-            q = q * torch.rsqrt(q.square().mean(-1, keepdim=True) + self.config.layernorm_epsilon)
+        q = q * torch.rsqrt(q.square().mean(-1, keepdim=True) + self.config.layernorm_epsilon)
 
         q = q.transpose(0, 1)
         global_freqs_cis = self.get_freqs_cis(start_pos, local_seq_len=q_len_local, get_global=True)
