@@ -224,6 +224,12 @@ def init_expert_related_parallel_group(args):
     # ep_tp_mp_pp
     init_expert_tensor_model_pipeline_parallel_group()
 
+    # tp_dp
+    init_tensor_and_data_parallel_group()
+
+    # tp_dp_cp
+    init_tensor_and_data_parallel_group_with_cp()
+
 
 def init_tensor_expert_parallel_group():
     # tp_ep for gitee MindSpeed or MindSpeed-LLM
@@ -307,6 +313,20 @@ def init_expert_tensor_model_pipeline_parallel_group():
             torch.distributed.reinit_process_group(mpu._EXPERT_TENSOR_MODEL_PIPELINE_PARALLEL_GROUP, rebuild_link=True)
         else:
             ttp_logger.warning("Tensor and expert parallel group is None")
+
+
+def init_tensor_and_data_parallel_group():
+    if mpu._TENSOR_AND_DATA_PARALLEL_GROUP is not None:
+        torch.distributed.reinit_process_group(mpu._TENSOR_AND_DATA_PARALLEL_GROUP, rebuild_link=True)
+    else:
+        ttp_logger.warning("Tensor and data parallel group is None")
+
+
+def init_tensor_and_data_parallel_group_with_cp():
+    if mpu._TENSOR_AND_DATA_PARALLEL_GROUP_WITH_CP is not None:
+        torch.distributed.reinit_process_group(mpu._TENSOR_AND_DATA_PARALLEL_GROUP_WITH_CP, rebuild_link=True)
+    else:
+        ttp_logger.warning("Tensor and data parallel group with cp is None")
 
 
 def arf_build_other_group(nccl_comm_cfgs, args):
