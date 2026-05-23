@@ -13,8 +13,12 @@ from megatron.core.parallel_state import create_group, RankGenerator
 from megatron.training import get_args, get_timers
 from mindio_ttp.framework_ttp.ttp_decorator import get_mindio_export_version
 
-from .tft_replica_group import destroy_sub_process_group, ttp_initialize_replica_dp_group, \
-    ttp_get_dp_cp_replica_group_gloo, ttp_get_dp_ep_replica_group_gloo
+from .tft_replica_group import (
+    destroy_sub_process_group,
+    ttp_initialize_replica_dp_group,
+    ttp_get_dp_cp_replica_group_gloo,
+    ttp_get_dp_ep_replica_group_gloo,
+)
 from .utils import ha_constant
 
 ttp_logger = getLogger(__name__)
@@ -26,7 +30,7 @@ PRETRAINED_CHECKPOINT = None
 
 def arf_rebuild_process_group_callback(fault_ranks: list, train_args, ctx):
     t1 = time.time()
-    models, optimizer = train_args[ha_constant.MODEL_INDEX], train_args[ha_constant.OPTIM_INDEX]
+    _, optimizer = train_args[ha_constant.MODEL_INDEX], train_args[ha_constant.OPTIM_INDEX]
     args = get_args()
     timeout = timedelta(minutes=args.distributed_timeout_minutes)
     nccl_comm_cfgs = {}
@@ -67,16 +71,22 @@ def arf_rebuild_process_group_callback(fault_ranks: list, train_args, ctx):
     init_pipeline_parallel_group()
     ttp_logger.info(f"1.8 rank:{args.rank} rebuild pipeline parallel group done")
 
-    # 1.9 tp_ep/ep/dp_ep
+    # 1.9 tp_ep/tp_cp/ep/dp_ep
     init_expert_related_parallel_group(args)
     ttp_logger.info(f"1.9 rank:{args.rank} rebuild expert related parallel group done")
 
     # 1.10 replica
     order = 'tp-cp-ep-dp-pp' if not args.use_tp_pp_dp_mapping else 'tp-cp-ep-pp-dp'
-    ttp_initialize_replica_dp_group(args.pipeline_model_parallel_size, args.tensor_model_parallel_size,
-                                    args.context_parallel_size, args.expert_model_parallel_size,
-                                    args.expert_tensor_parallel_size,
-                                    args.world_size, order=order, is_first=False)
+    ttp_initialize_replica_dp_group(
+        args.pipeline_model_parallel_size,
+        args.tensor_model_parallel_size,
+        args.context_parallel_size,
+        args.expert_model_parallel_size,
+        args.expert_tensor_parallel_size,
+        args.world_size,
+        order=order,
+        is_first=False,
+    )
 
     # build other group for gitee MindSpeed or MindSpeed-LLM
     if get_mindio_export_version() in ["MindSpeed", "MindSpeed-LLM"]:
@@ -119,8 +129,11 @@ def init_data_parallel_group(timeout):
 
     if rank in ranks:
         group_gloo = create_group(
-            ranks, timeout=timeout, backend="gloo", group_desc='DATA_PARALLEL_GROUP_GLOO',
-            use_local_synchronization=True
+            ranks,
+            timeout=timeout,
+            backend="gloo",
+            group_desc='DATA_PARALLEL_GROUP_GLOO',
+            use_local_synchronization=True,
         )
         destroy_sub_process_group(mpu._DATA_PARALLEL_GROUP_GLOO)
         mpu._DATA_PARALLEL_GROUP_GLOO = group_gloo
@@ -137,8 +150,11 @@ def init_data_parallel_with_cp_group(timeout):
 
     if rank in ranks_with_cp:
         group_with_cp_gloo = create_group(
-            ranks_with_cp, timeout=timeout, backend="gloo", group_desc='DATA_PARALLEL_GROUP_WITH_CP_GLOO',
-            use_local_synchronization=True
+            ranks_with_cp,
+            timeout=timeout,
+            backend="gloo",
+            group_desc='DATA_PARALLEL_GROUP_WITH_CP_GLOO',
+            use_local_synchronization=True,
         )
         destroy_sub_process_group(mpu._DATA_PARALLEL_GROUP_WITH_CP_GLOO)
         mpu._DATA_PARALLEL_GROUP_WITH_CP_GLOO = group_with_cp_gloo
@@ -193,6 +209,9 @@ def init_expert_related_parallel_group(args):
     # tp_ep
     init_tensor_expert_parallel_group()
 
+    # tp_cp
+    init_tensor_and_context_parallel_group()
+
     # ep
     init_expert_parallel_group()
 
@@ -215,6 +234,15 @@ def init_tensor_expert_parallel_group():
             ttp_logger.warning("Tensor and expert parallel group is None")
 
 
+def init_tensor_and_context_parallel_group():
+    # tp_cp for gitee MindSpeed or MindSpeed-LLM
+    if get_mindio_export_version() in ["MindSpeed", "MindSpeed-LLM"]:
+        if mpu._TENSOR_AND_CONTEXT_PARALLEL_GROUP is not None:
+            torch.distributed.reinit_process_group(mpu._TENSOR_AND_CONTEXT_PARALLEL_GROUP, rebuild_link=True)
+        else:
+            ttp_logger.warning("Tensor and context parallel group is None")
+
+
 def init_expert_parallel_group():
     # ep for gitee MindSpeed or MindSpeed-LLM
     if get_mindio_export_version() in ["MindSpeed", "MindSpeed-LLM"]:
@@ -233,20 +261,24 @@ def init_data_expert_parallel_group(args):
     expert_model_parallel_size = args.expert_model_parallel_size
     expert_tensor_parallel_size = args.expert_tensor_parallel_size
     order = 'tp-cp-ep-dp-pp' if not args.use_tp_pp_dp_mapping else 'tp-cp-ep-pp-dp'
-    decoder_model_size = (
-            tensor_model_parallel_size * pipeline_model_parallel_size * context_parallel_size
-    )
+    decoder_model_size = tensor_model_parallel_size * pipeline_model_parallel_size * context_parallel_size
     if expert_tensor_parallel_size is None:
         expert_tensor_parallel_size = tensor_model_parallel_size
     data_parallel_size: int = world_size // decoder_model_size
     decoder_world_size = decoder_model_size * data_parallel_size
     expert_tensor_model_pipeline_parallel_size = (
-            expert_tensor_parallel_size * expert_model_parallel_size * pipeline_model_parallel_size
+        expert_tensor_parallel_size * expert_model_parallel_size * pipeline_model_parallel_size
     )
     expert_data_parallel_size = decoder_world_size // expert_tensor_model_pipeline_parallel_size
-    expert_decoder_rank_generator = RankGenerator(tp=expert_tensor_parallel_size, ep=expert_model_parallel_size,
-                                                  dp=expert_data_parallel_size, pp=pipeline_model_parallel_size,
-                                                  cp=1, order=order, rank_offset=0)
+    expert_decoder_rank_generator = RankGenerator(
+        tp=expert_tensor_parallel_size,
+        ep=expert_model_parallel_size,
+        dp=expert_data_parallel_size,
+        pp=pipeline_model_parallel_size,
+        cp=1,
+        order=order,
+        rank_offset=0,
+    )
 
     if mpu._EXPERT_DATA_PARALLEL_GROUP is not None:
         torch.distributed.reinit_process_group(mpu._EXPERT_DATA_PARALLEL_GROUP, rebuild_link=True)
@@ -256,8 +288,7 @@ def init_data_expert_parallel_group(args):
     if get_mindio_export_version() in ["MindSpeed", "MindSpeed-LLM"]:
         for ranks in expert_decoder_rank_generator.get_ranks('dp'):
             if rank in ranks:
-                group_gloo = create_group(
-                    ranks, backend="gloo", group_desc='EXPERT_DATA_PARALLEL_GROUP_GLOO')
+                group_gloo = create_group(ranks, backend="gloo", group_desc='EXPERT_DATA_PARALLEL_GROUP_GLOO')
                 destroy_sub_process_group(mpu._EXPERT_DATA_PARALLEL_GROUP_GLOO)
                 mpu._EXPERT_DATA_PARALLEL_GROUP_GLOO = group_gloo
 
@@ -281,13 +312,15 @@ def init_expert_tensor_model_pipeline_parallel_group():
 def arf_build_other_group(nccl_comm_cfgs, args):
     # rebuild groups in MindSpeed-LLM
     from mindspeed.core import parallel_state as mindspeed_mpu
+
     if hasattr(mindspeed_mpu, 'initialize_context_parallel_group_for_send_recv_overlap'):
         ttp_logger.info(f'rank {args.rank} initialize context parallel group for send recv overlap')
         destroy_sub_process_group(mindspeed_mpu._CONTEXT_PARALLEL_GROUP_FOR_SEND_RECV_OVERLAP)
         mindspeed_mpu.initialize_context_parallel_group_for_send_recv_overlap(
             args.tensor_model_parallel_size,
             args.pipeline_model_parallel_size,
-            args.context_parallel_size, nccl_comm_cfgs
+            args.context_parallel_size,
+            nccl_comm_cfgs,
         )
 
     if hasattr(mindspeed_mpu, 'initialize_context_parallel_group_for_hybrid_cp'):
@@ -297,7 +330,8 @@ def arf_build_other_group(nccl_comm_cfgs, args):
         mindspeed_mpu.initialize_context_parallel_group_for_hybrid_cp(
             args.tensor_model_parallel_size,
             args.pipeline_model_parallel_size,
-            args.context_parallel_size, nccl_comm_cfgs
+            args.context_parallel_size,
+            nccl_comm_cfgs,
         )
 
     if hasattr(mindspeed_mpu, 'initialize_context_parallel_group_for_double_ring'):
@@ -307,7 +341,8 @@ def arf_build_other_group(nccl_comm_cfgs, args):
         mindspeed_mpu.initialize_context_parallel_group_for_double_ring(
             args.tensor_model_parallel_size,
             args.pipeline_model_parallel_size,
-            args.context_parallel_size, nccl_comm_cfgs
+            args.context_parallel_size,
+            nccl_comm_cfgs,
         )
 
     if mindspeed_mpu._PIPELINE_MODEL_PARALLEL_GROUP_FOR_NEW_STREAM is not None:
@@ -315,8 +350,9 @@ def arf_build_other_group(nccl_comm_cfgs, args):
         destroy_sub_process_group(mindspeed_mpu._PIPELINE_MODEL_PARALLEL_GROUP_FOR_NEW_STREAM)
         initialize_context_parallel_group_for_hybrid_cp(args, nccl_comm_cfgs)
 
-    if (getattr(args, 'use_nd_matmul', False) or args.tp_2d) and hasattr(mindspeed_mpu,
-                                                                         'initialize_ndmm_parallel_group'):
+    if (getattr(args, 'use_nd_matmul', False) or args.tp_2d) and hasattr(
+        mindspeed_mpu, 'initialize_ndmm_parallel_group'
+    ):
         ttp_logger.info(f'rank {args.rank} initialize ndmm parallel group')
         destroy_sub_process_group(mindspeed_mpu._TENSOR_MODEL_PARALLEL_GROUP_FOR_ND1_DIM1)
         destroy_sub_process_group(mindspeed_mpu._TENSOR_MODEL_PARALLEL_GROUP_FOR_ND1_DIM2)
@@ -339,6 +375,7 @@ def arf_build_other_group(nccl_comm_cfgs, args):
 
 def rebuild_groups_in_mindspeed(args, nccl_comm_cfgs):
     from mindspeed.core import parallel_state as mindspeed_mpu
+
     # initialize groups only in MindSpeed
     if hasattr(mindspeed_mpu, 'initialize_ndmm_parallel_group'):
         ttp_logger.info(f'rank {args.rank} initialize ndmm parallel group')
@@ -347,10 +384,7 @@ def rebuild_groups_in_mindspeed(args, nccl_comm_cfgs):
         destroy_sub_process_group(mindspeed_mpu._TENSOR_MODEL_PARALLEL_GROUP_FOR_ND2_DIM1)
         destroy_sub_process_group(mindspeed_mpu._TENSOR_MODEL_PARALLEL_GROUP_FOR_ND2_DIM2)
         mindspeed_mpu.initialize_ndmm_parallel_group(
-            nccl_comm_cfgs,
-            args.tensor_model_parallel_size,
-            args.nd1_dim1_size,
-            args.nd2_dim1_size
+            nccl_comm_cfgs, args.tensor_model_parallel_size, args.nd1_dim1_size, args.nd2_dim1_size
         )
 
     if hasattr(mindspeed_mpu, 'initialize_pipeline_new_stream_group'):
@@ -368,6 +402,7 @@ def rebuild_groups_in_mindspeed(args, nccl_comm_cfgs):
 def initialize_context_parallel_group_for_hybrid_cp(args, nccl_comm_cfgs):
     from mindspeed.core import parallel_state as mindspeed_mpu
     import megatron
+
     rank = torch.distributed.get_rank()
     world_size: int = torch.distributed.get_world_size()
     num_pipeline_model_parallel_groups: int = world_size // args.pipeline_model_parallel_size
