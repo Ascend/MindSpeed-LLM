@@ -5,14 +5,13 @@ import torch.distributed as dist
 import torch.nn.functional as F
 import time
 import contextlib
-from typing import Optional, Tuple, Dict, Any, Union, List
+from typing import Optional, Dict, Any
 
 from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 from torch.distributed.checkpoint.state_dict import get_model_state_dict, StateDictOptions
 
 from mindspeed_llm.fsdp2.distributed.parallel_state import ParallelState
 from mindspeed_llm.fsdp2.distributed.clip_grad_norm import clip_grad_norm
-from mindspeed_llm.fsdp2.data.data_factory import DataManager
 from mindspeed_llm.fsdp2.data.processor.processor_utils import IGNORE_INDEX
 from mindspeed_llm.fsdp2.features.chunkloss import chunk_loss, calculate_lm_loss
 from mindspeed_llm.fsdp2.checkpoint.utils import empty_cache, cleanup_old_checkpoints
@@ -23,6 +22,7 @@ from mindspeed_llm.fsdp2.utils.profiler import ProfilerConfig, ProfilerManager
 
 
 logger = get_logger(__name__)
+
 
 class Trainer:
     """
@@ -35,7 +35,7 @@ class Trainer:
         model: torch.nn.Module,
         optimizer: torch.optim.Optimizer,
         lr_scheduler: torch.optim.lr_scheduler.LRScheduler,
-        data_manager: DataManager,
+        train_dataloader,
         args,  # TrainingArguments
         parallel_args,
         optimization_args,
@@ -47,7 +47,7 @@ class Trainer:
         self.model = model
         self.optimizer = optimizer
         self.lr_scheduler = lr_scheduler
-        self.train_dataloader = data_manager.create_train_dataloader()
+        self.train_dataloader = train_dataloader
         self.args = args
         self.parallel_args = parallel_args
         self.optimization_args = optimization_args
@@ -90,7 +90,6 @@ class Trainer:
 
     @staticmethod
     def _build_chunk_loss(labels, ignore_index=-100, chunk_size=1024):
-
         # For supervised finetuning stages (SFT), labels must be shifted by one position, for pretraining, labels already include shift.
 
         shift_labels = labels
@@ -124,7 +123,7 @@ class Trainer:
                 head_bias,
                 loss_forward=calculate_lm_loss,
                 loss_kwargs_chunks=loss_ctx_kwargs,
-                chunk_size=chunk_size
+                chunk_size=chunk_size,
             )
 
         return loss_ctx, loss_mask
@@ -154,7 +153,9 @@ class Trainer:
         steps_trained_in_current_epoch = 0
         save_checkpoint_path = None
         # Calculate global batch size safely
-        global_batch_size = args.per_device_train_batch_size * args.gradient_accumulation_steps * ps.get_group_size('dp_fsdp')
+        global_batch_size = (
+            args.per_device_train_batch_size * args.gradient_accumulation_steps * ps.get_group_size('dp_fsdp')
+        )
 
         logger.info_rank0("***** Running training (FSDP2) *****")
         logger.info_rank0(f"  Num examples = {len(train_dataloader.dataset)}")
@@ -242,20 +243,26 @@ class Trainer:
                 num_batches = args.gradient_accumulation_steps if update_step != (total_updates - 1) else remainder
 
                 # [Helper] Fetch N samples from the iterator and calculate valid token count
-                batch_samples, batch_seqlens, num_items_in_batch = self.get_batch_samples_func()(ps, epoch_iterator, num_batches)
+                batch_samples, batch_seqlens, num_items_in_batch = self.get_batch_samples_func()(
+                    ps, epoch_iterator, num_batches
+                )
                 self.current_gradient_accumulation_steps = len(batch_samples)
                 # Initialize accumulated loss for the current step
                 current_step_loss = 0.0
 
                 # --- Micro-Batch Loop ---
                 for i, inputs in enumerate(batch_samples):
-                    do_sync_step = (i == len(batch_samples) - 1)
+                    do_sync_step = i == len(batch_samples) - 1
 
                     # FSDP Communication Optimization
                     # Only synchronize gradients on the last micro-batch
                     fsdp_root = self._get_fsdp_root()
-                    
-                    sync_context = fsdp_root.no_sync() if (not do_sync_step and hasattr(fsdp_root, "no_sync")) else contextlib.nullcontext()
+
+                    sync_context = (
+                        fsdp_root.no_sync()
+                        if (not do_sync_step and hasattr(fsdp_root, "no_sync"))
+                        else contextlib.nullcontext()
+                    )
 
                     with sync_context:
                         # Forward & Backward
@@ -269,12 +276,9 @@ class Trainer:
 
                 # --- Optimizer Step (Executed only after accumulation) ---
                 # At this point, the micro-batch loop is finished, gradients are accumulated
-                
+
                 # 1. Clip Gradients and get Norm
-                grad_norm = clip_grad_norm(
-                    self.model,
-                    args.max_grad_norm
-                )
+                grad_norm = clip_grad_norm(self.model, args.max_grad_norm)
                 # Compatibility: Ensure grad_norm is a float
                 if isinstance(grad_norm, torch.Tensor):
                     grad_norm = grad_norm.item()
@@ -295,10 +299,7 @@ class Trainer:
                 # Only perform this when global_step updates.
                 # current_step_loss is sum(micro_batches), conceptually it represents the loss of the mini-batch.
 
-                reduced_loss, reduced_grad_norm = all_reduce(
-                    (current_step_loss, grad_norm),
-                    group=reduce_group
-                )
+                reduced_loss, reduced_grad_norm = all_reduce((current_step_loss, grad_norm), group=reduce_group)
 
                 self._total_loss_scalar += reduced_loss
                 self.batch_seqlens.extend(batch_seqlens)
@@ -306,11 +307,18 @@ class Trainer:
                 # 4. Logging
                 if self.global_step % args.logging_steps == 0:
                     _, record_info = self.train_monitor.step(
-                        self.epoch, self.lr_scheduler, global_batch_size,
-                        reduced_grad_norm, self.batch_seqlens,
-                        self._step_start_time, total_steps, self.global_step,
-                        self._last_logged_step, self._total_loss_scalar,
-                        self._last_logged_loss_scalar)
+                        self.epoch,
+                        self.lr_scheduler,
+                        global_batch_size,
+                        reduced_grad_norm,
+                        self.batch_seqlens,
+                        self._step_start_time,
+                        total_steps,
+                        self.global_step,
+                        self._last_logged_step,
+                        self._total_loss_scalar,
+                        self._last_logged_loss_scalar,
+                    )
                     # update record
                     self._step_start_time = record_info['time']
                     self._last_logged_loss_scalar = record_info['logged_loss']
@@ -323,7 +331,9 @@ class Trainer:
                         logger.info_rank0("output_dir is not set, skipping checkpoint saving")
                     else:
                         empty_cache()
-                        save_checkpoint_path = os.path.join(args.output_dir, "checkpoints", f"global_step_{self.global_step}")
+                        save_checkpoint_path = os.path.join(
+                            args.output_dir, "checkpoints", f"global_step_{self.global_step}"
+                        )
                         state = {
                             "model": self.model,
                             "optimizer": self.optimizer,
@@ -336,7 +346,12 @@ class Trainer:
                                 "torch_rng_state": torch.get_rng_state(),
                             },
                         }
-                        self.ckpt_manager.save(path=save_checkpoint_path, state=state, save_only_model=args.save_only_model, global_steps=self.global_step)
+                        self.ckpt_manager.save(
+                            path=save_checkpoint_path,
+                            state=state,
+                            save_only_model=args.save_only_model,
+                            global_steps=self.global_step,
+                        )
                         dist.barrier()
                         logger.info_rank0(f"Distributed checkpoint saved at {save_checkpoint_path} successfully!")
                         cleanup_old_checkpoints(args, self.data_args.data_shared_file_system)
@@ -346,13 +361,15 @@ class Trainer:
             # Reset counter after completing an epoch
             steps_trained_in_current_epoch = 0
             # Save checkpoint at specified epoch intervals
-            already_saved = (args.save_steps > 0 and self.global_step % args.save_steps == 0)
+            already_saved = args.save_steps > 0 and self.global_step % args.save_steps == 0
             if args.save_epochs and (epoch + 1) % args.save_epochs == 0 and not already_saved:
                 if not args.output_dir:
                     logger.info_rank0("output_dir is not set, skipping checkpoint saving")
                 else:
                     empty_cache()
-                    save_checkpoint_path = os.path.join(args.output_dir, "checkpoints", f"global_step_{self.global_step}")
+                    save_checkpoint_path = os.path.join(
+                        args.output_dir, "checkpoints", f"global_step_{self.global_step}"
+                    )
                     state = {
                         "model": self.model,
                         "optimizer": self.optimizer,
@@ -365,12 +382,18 @@ class Trainer:
                             "torch_rng_state": torch.get_rng_state(),
                         },
                     }
-                    self.ckpt_manager.save(path=save_checkpoint_path, state=state, save_only_model=args.save_only_model, global_steps=self.global_step)
+                    self.ckpt_manager.save(
+                        path=save_checkpoint_path,
+                        state=state,
+                        save_only_model=args.save_only_model,
+                        global_steps=self.global_step,
+                    )
                     dist.barrier()
                     logger.info_rank0(f"Distributed checkpoint saved at {save_checkpoint_path} successfully!")
                     cleanup_old_checkpoints(args, self.data_args.data_shared_file_system)
 
-            if self.global_step >= total_steps: break
+            if self.global_step >= total_steps:
+                break
         # Stop profiler
         if self.profiler_manager.profiler is not None:
             self.profiler_manager.stop()
@@ -382,9 +405,7 @@ class Trainer:
 
             if dist.get_rank() == 0:
                 model_configs = [self.model.model.config, self.tokenizer]
-                self.ckpt_manager.save_model_weights(
-                    args.output_dir, model_state_dict, model_configs=model_configs
-                )
+                self.ckpt_manager.save_model_weights(args.output_dir, model_state_dict, model_configs=model_configs)
                 logger.info_rank0(f"Huggingface checkpoint saved at {args.output_dir} successfully!")
 
             del model_state_dict
@@ -429,7 +450,6 @@ class Trainer:
         return loss.detach()
 
     def get_batch_samples_func(self):
-
         if self.parallel_args.cp_size > 1:
             if self.parallel_args.cp_type == "ulysses":
                 return self._get_batch_samples_ulysses
@@ -441,13 +461,11 @@ class Trainer:
             return self._get_batch_samples
 
     def _get_batch_samples_ulysses(self, parallel_state, epoch_iterator, num_batches):
-
         cp_size = parallel_state.get_group_size("cp")
         cp_rank = parallel_state.get_rank("cp")
         batch, batch_seqlens, num_items_in_batch = self._get_batch_samples(parallel_state, epoch_iterator, num_batches)
 
         for sample in batch:
-
             labels = torch.nn.functional.pad(sample['labels'], (0, 1), value=IGNORE_INDEX)
             shift_labels = labels[..., 1:]
             sample['shift_labels'] = shift_labels
@@ -487,7 +505,6 @@ class Trainer:
         return batch, batch_seqlens, num_items_in_batch
 
     def _get_batch_samples_megatron(self, parallel_state, epoch_iterator, num_batches):
-
         cp_size = parallel_state.get_group_size("cp")
         cp_rank = parallel_state.get_rank("cp")
         batch, batch_seqlens, num_items_in_batch = self._get_batch_samples(parallel_state, epoch_iterator, num_batches)
@@ -497,7 +514,7 @@ class Trainer:
             labels = torch.nn.functional.pad(sample['labels'], (0, 1), value=IGNORE_INDEX)
             shift_labels = labels[..., 1:]
             sample['shift_labels'] = shift_labels
-            
+
             # Original logic: generate position_ids
             if "position_ids" not in sample:
                 position_ids = torch.arange(0, shift_labels.shape[1], device=shift_labels.device).unsqueeze(0)
@@ -510,21 +527,21 @@ class Trainer:
                     continue
                 if val is not None:
                     seq_dim = 1  # Fixed sequence dimension, consistent with reference code
-                    
+
                     # ========== Core logic of Ring CP load-balanced splitting (fully aligned with reference code) ==========
                     # 1. Reshape: [bs, seq_len, ...] -> [bs, 2*cp_size, seq_len/(2*cp_size), ...]
                     val = val.view(
                         *val.shape[0:seq_dim],
                         2 * cp_size,
                         val.shape[seq_dim] // (2 * cp_size),
-                        *val.shape[(seq_dim + 1):],
+                        *val.shape[(seq_dim + 1) :],
                     )
                     # 2. Generate ring symmetric indices (core of load balancing)
                     index = torch.tensor([cp_rank, (2 * cp_size - cp_rank - 1)], device=val.device)
                     # 3. Select tensor by indices
                     val = val.index_select(seq_dim, index)
                     # 4. Merge dimensions and restore shape
-                    val = val.view(*val.shape[0:seq_dim], -1, *val.shape[(seq_dim + 2):])
+                    val = val.view(*val.shape[0:seq_dim], -1, *val.shape[(seq_dim + 2) :])
                     # ====================================================================================================
 
                     # ===================== Original logic: Contiguous + device migration =====================
@@ -596,10 +613,7 @@ class Trainer:
         ps = ParallelState()
 
         # Check if 'labels' exist in the data
-        count_num_items_in_batch = (
-                len(batch_samples) > 0
-                and "labels" in batch_samples[0]
-        )
+        count_num_items_in_batch = len(batch_samples) > 0 and "labels" in batch_samples[0]
 
         if count_num_items_in_batch:
             try:
@@ -622,7 +636,6 @@ class Trainer:
                 num_items_in_batch = num_items_in_batch // pc
 
         return num_items_in_batch
-
 
     def _compute_loss(self, inputs, return_outputs=False, num_items_in_batch=None):
         """
@@ -678,8 +691,8 @@ class Trainer:
 
         ps = ParallelState()
 
-        if ps.get_group_size("cp") >1 :
-            loss = F.cross_entropy(logits, shift_labels,reduction='sum',ignore_index=ignore_index)
+        if ps.get_group_size("cp") > 1:
+            loss = F.cross_entropy(logits, shift_labels, reduction='sum', ignore_index=ignore_index)
 
             num_items_in_batch = (labels.ne(ignore_index)).sum()
             dist.all_reduce(num_items_in_batch, op=dist.ReduceOp.SUM, group=ps.get_group("cp"))
@@ -687,7 +700,6 @@ class Trainer:
 
             loss = loss / num_items_in_batch.item()
         else:
-
             if args.calculate_per_token_loss:
                 loss = F.cross_entropy(logits, shift_labels, reduction='none', ignore_index=ignore_index)
             else:
@@ -704,7 +716,8 @@ class Trainer:
         """
         # Calculate step difference
         step_diff = self.global_step - self._global_step_last_logged
-        if step_diff == 0: return
+        if step_diff == 0:
+            return
 
         # 1. Calculate average interval loss
         # (Total Loss - Total Loss at last log) / steps elapsed
@@ -733,7 +746,7 @@ class Trainer:
             "loss": avg_loss,
             "lr": self.lr_scheduler.get_last_lr()[0],
             "epoch": self.epoch,
-            "global_step": self.global_step
+            "global_step": self.global_step,
         }
 
         if grad_norm is not None:
@@ -759,15 +772,17 @@ class Trainer:
         Handles different wrapping depths.
         """
         # Direct check
-        if isinstance(self.model, FSDP): return self.model
-        
+        if isinstance(self.model, FSDP):
+            return self.model
+
         # Check one level deep (standard DDP/Wrapper)
         if hasattr(self.model, "module"):
-            if isinstance(self.model.module, FSDP): return self.model.module
-            
+            if isinstance(self.model.module, FSDP):
+                return self.model.module
+
             # Check two levels deep (complex wrapping)
             if hasattr(self.model.module, "model") and isinstance(self.model.module.model, FSDP):
                 return self.model.module.model
-        
+
         # Fallback to the model itself (context manager might fail if not FSDP, hence the check in caller)
         return self.model
