@@ -74,12 +74,12 @@
 
 ## 权重转换
 
-1. 权重下载 
+1. 权重下载
 
     从 [huggingface](https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash-Base) 下载权重和配置文件
 
 2. 权重转换
-   
+
     开源DeepSeekV4-Flash权重为FP8 mixed数据格式，训练前需要对原始权重做反量化后获得bf16格式的权重，反量化方法请参考下述脚本
 
     ```sh
@@ -87,7 +87,7 @@
     bash examples/mcore/deepseek4_flash/ckpt_dequant_deepseek4_fp8_to_bf16.sh
 
     ```
-    
+
     MindSpeed LLM提供[脚本](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/examples/mcore/deepseek4_flash)将已经huggingface开源权重转换为mcore权重，用于训练、推理、评估等任务。
     使用方法如下，请根据实际需要的TP/PP等切分策略和权重路径修改权重转换脚本
 
@@ -106,14 +106,14 @@ MindSpeed LLM提供[脚本](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master
 cd MindSpeed-LLM
 bash examples/mcore/deepseek4_flash/data_convert_deepseek4_pretrain.sh
 ```
-  
+
 | 参数名  | 含义                |
 |--------|-----------------|
 | --input | 数据集路径  |
 | --tokenizer-name-or-path | 模型tokenizer目录    |
 | --output-prefix | 数据集处理完的输出路径及前缀名  |
-  
-## 训练
+
+## 预训练
 
 MindSpeed LLM提供[脚本](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/examples/mcore/deepseek4_flash) 进行模型训练
 
@@ -132,3 +132,23 @@ bash examples/mcore/deepseek4_flash/pretrain_deepseek4_flash_4k_A3_ptd.sh
   | DATA_PATH | 数据预处理后的数据路径  |
   | TOKENIZER_PATH | tokenizer目录  |
   | CKPT_LOAD_DIR | 权重转换保存的权重路径，为初始加载的权重，如无初始权重则随机初始化  |
+
+## 全参微调
+
+MindSpeed LLM提供[脚本](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/examples/mcore/deepseek4_flash) 进行模型训练
+
+```sh
+cd MindSpeed-LLM
+bash examples/mcore/deepseek4_flash/tune_deepseek4_flash_4k_A3_ptd.sh
+```
+
+用户需要根据实际情况修改脚本中以下变量
+
+  | 变量名  | 含义                |
+  |--------|-----------------|
+  | MASTER_ADDR | 多机情况下主节点IP  |
+  | NODE_RANK | 多机下，各机对应节点序号    |
+  | CKPT_SAVE_DIR | 训练中权重保存路径  |
+  | DATA_PATH | 数据预处理后的数据路径  |
+  | TOKENIZER_PATH | tokenizer目录  |
+  | CKPT_LOAD_DIR | 权重转换保存的权重路径，为初始加载的权重 |
