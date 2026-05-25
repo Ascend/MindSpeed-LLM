@@ -97,15 +97,21 @@ def get_handler_dataset_attr(data_args, raw_datasets):
             check_dataset_info_map(data_args, column_names, raw_datasets, None)
             for column_name, target_name in data_args.map_keys.items():
                 if column_name == "tags":
-                    logger.warning(
-                        "OpenAIInstructionHandler does not support custom 'tags' in --map-keys"
-                    )
+                    logger.warning("OpenAIInstructionHandler does not support custom 'tags' in --map-keys")
                     continue
                 setattr(dataset_attr, column_name, target_name)
 
     elif "SharegptStyle" in data_args.handler_name or "Hunyuan" in data_args.handler_name:
         dataset_attr.formatting = "sharegpt"
-        tag_names = ["role_tag", "content_tag", "user_tag", "assistant_tag", "observation_tag", "function_tag", "system_tag"]
+        tag_names = [
+            "role_tag",
+            "content_tag",
+            "user_tag",
+            "assistant_tag",
+            "observation_tag",
+            "function_tag",
+            "system_tag",
+        ]
         column_names = ["messages", "tags", "system", "tools", "chosen", "rejected", "kto_tag"]
 
         if data_args.map_keys is not None:
@@ -131,7 +137,7 @@ def get_dataset_list(data_args) -> List["InstructionDatasetAttr"]:
         dataset_names = []
 
     try:
-        with open(os.path.join(data_args.dataset_dir, DATA_CONFIG), "r") as f:
+        with open(os.path.join(data_args.dataset_dir, DATA_CONFIG), "r", encoding='utf-8') as f:
             dataset_info = json.load(f)
     except Exception as err:
         if len(dataset_names) != 0:
@@ -140,10 +146,8 @@ def get_dataset_list(data_args) -> List["InstructionDatasetAttr"]:
             ) from err
         dataset_info = None
 
-    if dataset_info is not None:
-        raise ValueError(
-                "Cannot load {}.".format(os.path.join(data_args.dataset_dir, DATA_CONFIG))
-        )
+    if dataset_info is None:
+        raise ValueError("Cannot load {}.".format(os.path.join(data_args.dataset_dir, DATA_CONFIG)))
 
     # Multiple Dataset Interleaving Probability
     if data_args.interleave_probs is not None:
@@ -210,18 +214,18 @@ def convert_alpaca_to_intermediate(sample: Dict[str, List[Any]], dataset_attr: "
      }
     ---->>>>
     {
-        'prompt': [{'role': 'user', 'content': '回答的非常好'}, 
-                {'role': 'assistant', 'content': '感谢你的认可！还有什么需要我帮助的吗？'}, 
-                {'role': 'user', 'content': '我还想知道中国古代的五代十国时期和欧洲的中世纪有什么异同点？'}], 
-        'response': [{'role': 'assistant', 'content': '中国的五代十国时期和欧洲的中世纪大体上是同时期的历史时期，但它们有许多重要的异同点。'}], 
-        'system': [''], 
+        'prompt': [{'role': 'user', 'content': '回答的非常好'},
+                {'role': 'assistant', 'content': '感谢你的认可！还有什么需要我帮助的吗？'},
+                {'role': 'user', 'content': '我还想知道中国古代的五代十国时期和欧洲的中世纪有什么异同点？'}],
+        'response': [{'role': 'assistant', 'content': '中国的五代十国时期和欧洲的中世纪大体上是同时期的历史时期，但它们有许多重要的异同点。'}],
+        'system': [''],
         'tools': ['']
     }
     """
     outputs = {"prompt": [], "response": [], "system": [], "tools": []}
     prompt = []
-    
-    if dataset_attr.history and (isinstance(sample[dataset_attr.history], list) or isinstance(sample[dataset_attr.history], dict)):
+
+    if dataset_attr.history and (isinstance(sample.get(dataset_attr.history), (list, dict))):
         for old_prompt, old_response in sample[dataset_attr.history]:
             prompt.append({"role": Role.USER.value, "content": old_prompt})
             prompt.append({"role": Role.ASSISTANT.value, "content": old_response})
@@ -250,20 +254,9 @@ def convert_alpaca_to_intermediate(sample: Dict[str, List[Any]], dataset_attr: "
             response = []
     else:
         if dataset_attr.response and isinstance(sample[dataset_attr.response], list):
-            response = [
-                {
-                    "role": Role.ASSISTANT.value,
-                    "content": content
-                }
-                for content in sample[dataset_attr.response]
-            ]
+            response = [{"role": Role.ASSISTANT.value, "content": content} for content in sample[dataset_attr.response]]
         elif dataset_attr.response and isinstance(sample[dataset_attr.response], str):
-            response = [
-                {
-                    "role": Role.ASSISTANT.value, 
-                    "content": sample[dataset_attr.response]
-                }
-            ]
+            response = [{"role": Role.ASSISTANT.value, "content": sample[dataset_attr.response]}]
         else:
             response = []
 
@@ -279,8 +272,7 @@ def convert_alpaca_to_intermediate(sample: Dict[str, List[Any]], dataset_attr: "
     return outputs
 
 
-def convert_sharegpt_to_intermediate(
-    sample: Dict[str, List[Any]], dataset_attr: "InstructionDatasetAttr"):
+def convert_sharegpt_to_intermediate(sample: Dict[str, List[Any]], dataset_attr: "InstructionDatasetAttr"):
     """
     convert sharegpt or openAI sharegpt to intermediate format
     sharegpt:
@@ -312,22 +304,22 @@ def convert_sharegpt_to_intermediate(
     ---->>>>
 
     {
-        'prompt': [{'role': 'user', 'content': ''}, 
-                {'role': 'assistant', 'content': ''}, 
-                {'role': 'user', 'content': ''}], 
-        'response': [{'role': 'assistant', 'content': ''}], 
-        'system': [''], 
+        'prompt': [{'role': 'user', 'content': ''},
+                {'role': 'assistant', 'content': ''},
+                {'role': 'user', 'content': ''}],
+        'response': [{'role': 'assistant', 'content': ''}],
+        'system': [''],
         'tools': ['']
     }
     """
     outputs = {"prompt": [], "response": [], "system": [], "tools": []}
 
     tag_mapping = {
-        dataset_attr.user_tag: Role.USER.value,               # "human" : "user"
-        dataset_attr.assistant_tag: Role.ASSISTANT.value,     # "gpt" : "assistant"
-        dataset_attr.observation_tag: Role.OBSERVATION.value, # "observation" : "observation"
-        dataset_attr.function_tag: Role.FUNCTION.value,       # "function_call" : "function"
-        dataset_attr.system_tag: Role.SYSTEM.value,           # "system" : "system"
+        dataset_attr.user_tag: Role.USER.value,  # "human" : "user"
+        dataset_attr.assistant_tag: Role.ASSISTANT.value,  # "gpt" : "assistant"
+        dataset_attr.observation_tag: Role.OBSERVATION.value,  # "observation" : "observation"
+        dataset_attr.function_tag: Role.FUNCTION.value,  # "function_call" : "function"
+        dataset_attr.system_tag: Role.SYSTEM.value,  # "system" : "system"
     }
 
     # "human" and "observation" must appear in odd-numbered positions
@@ -350,7 +342,7 @@ def convert_sharegpt_to_intermediate(
     broken_data = False
     for turn_idx, message in enumerate(messages):
         if message[dataset_attr.role_tag] not in accept_tags[turn_idx % 2]:
-            logger.warning("Invalid role tag in {}.".format(messages))
+            logger.warning("Invalid role tag in %s.", messages)
             broken_data = True
 
         content_value = message.get(dataset_attr.content_tag)
@@ -362,35 +354,36 @@ def convert_sharegpt_to_intermediate(
         else:
             logger.warning(f"Missing content tag in message at turn {turn_idx}: {message}")
 
+    prompt, response = [], []
     if (not dataset_attr.ranking and len(aligned_messages) % 2 != 0) or (
         dataset_attr.ranking and len(aligned_messages) % 2 == 0
     ):
-        logger.warning("Invalid message count in {}.".format(messages))
+        logger.warning("Invalid message count in %s.", messages)
         broken_data = True
 
     elif (
-            dataset_attr.ranking
-            and isinstance(sample[dataset_attr.chosen], dict)
-            and isinstance(sample[dataset_attr.rejected], dict)
+        dataset_attr.ranking
+        and isinstance(sample[dataset_attr.chosen], dict)
+        and isinstance(sample[dataset_attr.rejected], dict)
     ):  # pairwise example
         chosen = sample[dataset_attr.chosen]
         rejected = sample[dataset_attr.rejected]
         if (
-                chosen[dataset_attr.role_tag] not in accept_tags[-1]
-                or rejected[dataset_attr.role_tag] not in accept_tags[-1]
+            chosen[dataset_attr.role_tag] not in accept_tags[-1]
+            or rejected[dataset_attr.role_tag] not in accept_tags[-1]
         ):
-            logger.warning("Invalid role tag in {}.".format([chosen, rejected]))
+            logger.warning("Invalid role tag in [%s, %s].", chosen, rejected)
             broken_data = True
 
         prompt = aligned_messages
         response = [
             {
                 "role": tag_mapping.get(chosen.get(dataset_attr.role_tag, "gpt"), "assistant"),
-                "content": chosen[dataset_attr.content_tag]
+                "content": chosen[dataset_attr.content_tag],
             },
             {
                 "role": tag_mapping.get(rejected.get(dataset_attr.role_tag, "gpt"), "assistant"),
-                "content": rejected[dataset_attr.content_tag]
+                "content": rejected[dataset_attr.content_tag],
             },
         ]
 
@@ -413,9 +406,7 @@ def convert_sharegpt_to_intermediate(
     return outputs
 
 
-def convert_hunyuan_to_intermediate(
-    sample: Dict[str, List[Any]], dataset_attr: "InstructionDatasetAttr"):
-
+def convert_hunyuan_to_intermediate(sample: Dict[str, List[Any]], dataset_attr: "InstructionDatasetAttr"):
     outputs = {"prompt": [], "response": [], "system": [], "tools": []}
 
     tag_mapping = {
@@ -428,7 +419,7 @@ def convert_hunyuan_to_intermediate(
 
     # "human" and "observation" must appear in odd-numbered positions
     # "gpt" and "function" must appear in even-numbered positions.
-    sys_tags = (dataset_attr.system_tag)
+    sys_tags = dataset_attr.system_tag
     odd_tags = (dataset_attr.user_tag, dataset_attr.observation_tag)
     even_tags = (dataset_attr.assistant_tag, dataset_attr.function_tag)
     accept_tags = (sys_tags, odd_tags, even_tags)
@@ -442,7 +433,7 @@ def convert_hunyuan_to_intermediate(
     broken_data = False
     for turn_idx, message in enumerate(messages):
         if message[dataset_attr.role_tag] not in accept_tags[turn_idx % 3]:
-            logger.warning("Invalid role tag in {}.".format(messages))
+            logger.warning("Invalid role tag in %s.", messages)
             broken_data = True
 
         content_value = message.get(dataset_attr.content_tag)
@@ -454,36 +445,37 @@ def convert_hunyuan_to_intermediate(
         else:
             logger.warning(f"Missing content tag in message at turn {turn_idx}: {message}")
 
+    prompt, response = [], []
     is_message_count_divisible_by_3 = len(aligned_messages) % 3 == 0
     if (not dataset_attr.ranking and not is_message_count_divisible_by_3) or (
         dataset_attr.ranking and is_message_count_divisible_by_3
     ):
-        logger.warning("Invalid message count in {}.".format(messages))
+        logger.warning("Invalid message count in %s.", messages)
         broken_data = True
 
     elif (
-            dataset_attr.ranking
-            and isinstance(sample[dataset_attr.chosen], dict)
-            and isinstance(sample[dataset_attr.rejected], dict)
+        dataset_attr.ranking
+        and isinstance(sample[dataset_attr.chosen], dict)
+        and isinstance(sample[dataset_attr.rejected], dict)
     ):
         chosen = sample[dataset_attr.chosen]
         rejected = sample[dataset_attr.rejected]
         if (
-                chosen[dataset_attr.role_tag] not in accept_tags[-1]
-                or rejected[dataset_attr.role_tag] not in accept_tags[-1]
+            chosen[dataset_attr.role_tag] not in accept_tags[-1]
+            or rejected[dataset_attr.role_tag] not in accept_tags[-1]
         ):
-            logger.warning("Invalid role tag in {}.".format([chosen, rejected]))
+            logger.warning("Invalid role tag in [%s, %s].", chosen, rejected)
             broken_data = True
 
         prompt = aligned_messages
         response = [
             {
                 "role": tag_mapping.get(chosen.get(dataset_attr.role_tag, "gpt"), "assistant"),
-                "content": chosen[dataset_attr.content_tag]
+                "content": chosen[dataset_attr.content_tag],
             },
             {
                 "role": tag_mapping.get(rejected.get(dataset_attr.role_tag, "gpt"), "assistant"),
-                "content": rejected[dataset_attr.content_tag]
+                "content": rejected[dataset_attr.content_tag],
             },
         ]
 
@@ -502,9 +494,7 @@ def convert_hunyuan_to_intermediate(
     return outputs
 
 
-def convert_openai_to_intermediate(
-    sample: Dict[str, List[Any]], dataset_attr: "InstructionDatasetAttr"
-):
+def convert_openai_to_intermediate(sample: Dict[str, List[Any]], dataset_attr: "InstructionDatasetAttr"):
     """
     Convert OpenAI-format chat data (with structured tool_calls) into the
     framework's intermediate format.
@@ -544,11 +534,7 @@ def convert_openai_to_intermediate(
     # System message extraction: prefer the leading system message if present,
     # otherwise fall back to the top-level `system` column (matches sharegpt
     # converter behaviour).
-    if (
-        dataset_attr.system_tag
-        and len(messages) != 0
-        and messages[0][dataset_attr.role_tag] == dataset_attr.system_tag
-    ):
+    if dataset_attr.system_tag and len(messages) != 0 and messages[0][dataset_attr.role_tag] == dataset_attr.system_tag:
         system = messages[0][dataset_attr.content_tag]
         messages = messages[1:]
     else:
@@ -651,7 +637,7 @@ def align_dataset(dataset, dataset_attr, data_args):
         convert_func = partial(convert_openai_to_intermediate, dataset_attr=dataset_attr)
     else:
         convert_func = partial(convert_sharegpt_to_intermediate, dataset_attr=dataset_attr)
-    
+
     column_names = [k for k in next(iter(dataset)) if k not in dataset_attr.dataset_additional_keys]
 
     kwargs = dict(
@@ -693,7 +679,7 @@ def merge_dataset(all_datasets, data_args):
 
 def load_single_dataset(dataset_attr, data_args):
     """loading single dataset by script/local file"""
-    logger.info("Loading dataset {}...".format(dataset_attr))
+    logger.info("Loading dataset %s...", dataset_attr)
     data_path, data_name, data_dir, data_files = None, None, None, None
 
     if dataset_attr.load_from == "script":
