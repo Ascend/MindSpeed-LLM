@@ -395,4 +395,13 @@
         <td>/</td>
         <td>/data/ci/cache/save_dir</td>
     </tr>
+    <tr>
+        <td>qwen3_8b_tp2_pp2_vpp2_noop_layer</td>
+        <td>/data/ci/models/Qwen3-8B/hf/Qwen3-8B/</td>
+        <td>/data/ci/models/Qwen3-8B/mg/qwen3_8b_L8_np07/</td>
+        <td>/</td>
+        <td>/data/ci/datasets/processed/qwen3-8b/alpaca_text_documen</td>
+        <td>/</td>
+        <td>/</td>
+    </tr>
 </table>
