@@ -1,3 +1,5 @@
+# pylint: disable=C0302,E0213,C0412
+
 from dataclasses import dataclass
 from typing import Tuple, Union
 
@@ -549,8 +551,10 @@ def forward_step_dsa_wrapper(fn):
             'checkpoint_activations_microbatch': checkpoint_activations_microbatch,
             'is_first_microbatch': is_first_microbatch,
             'current_microbatch': current_microbatch,
-            'encoder_decoder_xattn': encoder_decoder_xattn,
         }
+
+        if encoder_decoder_xattn:
+            common_kwargs['encoder_decoder_xattn'] = encoder_decoder_xattn
 
         if global_args.moe_fb_overlap:
             common_kwargs['extra_block_kwargs'] = extra_block_kwargs

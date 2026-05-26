@@ -2,6 +2,9 @@
 We can't use assert in our code for codecheck, so create this auxiliary function to wrap
 the assert case in ut for ci.
 """
+
+# pylint: disable=W1203,W1514,W1510,R0801,R1727
+
 import os
 import hashlib
 import logging
@@ -12,16 +15,10 @@ import sys
 from concurrent.futures import ProcessPoolExecutor
 import subprocess
 import torch
-import torch_npu
 import xxhash
+import fnmatch
 
 import pytest
-
-import megatron.core.parallel_state as mpu
-from megatron.core.parallel_state import initialize_model_parallel
-from mindspeed.core.parallel_state import initialize_model_parallel_wrapper
-from mindspeed.core.context_parallel.model_parallel_utils import initialize_model_parallel_cp_wrapper
-from mindspeed_llm.core.parallel_state import initialize_model_parallel_decorator
 
 
 def judge_expression(expression):
@@ -39,7 +36,7 @@ def hash_tensor_in_chunks(tensor, chunk_size=1024 * 1024):
         tensor_flat = tensor_flat.to(torch.float32)
 
     for i in range(0, numel, chunk_size):
-        chunk = tensor_flat[i:i + chunk_size]
+        chunk = tensor_flat[i : i + chunk_size]
         if not chunk.is_contiguous():
             chunk = chunk.contiguous()
         hasher.update(chunk.cpu().numpy().tobytes())
@@ -54,10 +51,7 @@ def calculate_hash_for_model(data, chunk_size=1024 * 1024):
     non_tensor_data = {k: v for k, v in data.items() if not torch.is_tensor(v)}
 
     if tensor_data:
-        tensor_hashes = [
-            hash_tensor_in_chunks(value, chunk_size)
-            for key, value in sorted(tensor_data.items())
-        ]
+        tensor_hashes = [hash_tensor_in_chunks(value, chunk_size) for key, value in sorted(tensor_data.items())]
         for key, tensor_hash in zip(sorted(tensor_data.keys()), tensor_hashes):
             final_hasher.update(key.encode('utf-8'))
             final_hasher.update(tensor_hash)
@@ -89,7 +83,7 @@ def compare_state_dicts(state_dict1, state_dict2):
 
         if isinstance(value1, torch.Tensor) and isinstance(value2, torch.Tensor):
             if not torch.equal(value1, value2):
-                print(f"Difference found in key: {key}")
+                print(f"Difference found in key: {key}, {value1}, {value2}, {value1.shape}, {value2.shape}")
                 return False
         elif isinstance(value1, dict) and isinstance(value2, dict):
             if not compare_state_dicts(value1, value2):
@@ -157,7 +151,7 @@ def weight_compare_hash(model_dir, base_hash, suffix="pt"):
     return True
 
 
-def weight_compare(dir_1, dir_2, suffix="pt", use_md5=False):
+def weight_compare(dir_1, dir_2, suffix="pt", use_md5=False, allow_missing_key=()):
     models_path = glob.glob(os.path.join(dir_1, '**', f'*.{suffix}'), recursive=True)
     if not models_path:
         print(f"Can't find any weight files in {dir_1}.")
@@ -166,10 +160,18 @@ def weight_compare(dir_1, dir_2, suffix="pt", use_md5=False):
         path_1 = os.path.normpath(path_1)
         path_2 = path_1.replace(os.path.normpath(dir_1), os.path.normpath(dir_2))
         if use_md5:
-            are_equal = (get_md5sum(path_1) == get_md5sum(path_2))
+            are_equal = get_md5sum(path_1) == get_md5sum(path_2)
         else:
             state_dict1 = torch.load(path_1, weights_only=False)
             state_dict2 = torch.load(path_2, weights_only=False)
+            for key in allow_missing_key:
+                if '*' in key:
+                    model1 = state_dict1.get('model', {})
+                    for k in list(model1.keys()):
+                        if fnmatch.fnmatch(k, key):
+                            model1.pop(k)
+                else:
+                    state_dict1.pop(key, None)
             are_equal = compare_state_dicts(state_dict1, state_dict2)
         if not are_equal:
             return False
@@ -179,27 +181,27 @@ def weight_compare(dir_1, dir_2, suffix="pt", use_md5=False):
 
 def weight_compare_optim(dir_1, dir_2, suffix="pt", use_md5=False):
     models_path = glob.glob(os.path.join(dir_1, '**', f'*.{suffix}'), recursive=True)
-    
+
     if not models_path:
         raise FileNotFoundError(f"{dir_1} is not a file or not exists !")
-    
+
     for path_1 in models_path:
         path_1 = os.path.normpath(path_1)
         path_2 = path_1.replace(os.path.normpath(dir_1), os.path.normpath(dir_2))
 
         file_name = os.path.basename(path_1)
         if file_name == 'distrib_optim.pt':
-            use_md5 = True  
+            use_md5 = True
         elif file_name == 'model_optim_rng.pt':
-            use_md5 = False  
+            use_md5 = False
 
         if use_md5:
-            are_equal = (get_md5sum(path_1) == get_md5sum(path_2))
+            are_equal = get_md5sum(path_1) == get_md5sum(path_2)
         else:
             state_dict1 = torch.load(path_1, weights_only=False)
             state_dict2 = torch.load(path_2, weights_only=False)
             are_equal = compare_state_dicts(state_dict1, state_dict2)
-        
+
         if not are_equal:
             return False
 
@@ -220,7 +222,6 @@ def get_md5sum(fpath):
 
 
 def delete_distrib_optim_files(folder_path):
-
     for root, dirs, files in os.walk(folder_path):
         for file in files:
             if file == "distrib_optim.pt":
@@ -229,10 +230,10 @@ def delete_distrib_optim_files(folder_path):
                     os.remove(file_path)
                     logging.info(f"Deleted: {file_path}")
                 except Exception as e:
-                    logging.exception(f"Failed to delete {file_path}: {e}")  
-                    raise 
+                    logging.exception(f"Failed to delete {file_path}: {e}")
+                    raise
 
-                
+
 @pytest.fixture
 def build_args(request, monkeypatch):
     params = request.getfixturevalue("params")
@@ -250,7 +251,7 @@ def build_args(request, monkeypatch):
 def create_testconfig(path: str, cmd: bool = False):
     with open(path) as f:
         raw_data = json.load(f)
-    
+
     res = {k: [tuple(s.values()) if len(s) > 1 else tuple(s.values())[0] for s in v] for k, v in raw_data.items()}
 
     if not cmd:
@@ -283,7 +284,7 @@ class ListHandler(logging.Handler):
         super().__init__()
         self.log_capture = []
         self.pattern = pattern
-    
+
     def emit(self, record):
         log_entry = self.format(record)
         if re.search(self.pattern, log_entry, re.DOTALL):
@@ -292,7 +293,7 @@ class ListHandler(logging.Handler):
 
 def setup_logger(pattern):
     # Set the logger and the handler.
-    # Different tasks will not form interference, feel relieved to use. 
+    # Different tasks will not form interference, feel relieved to use.
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
 

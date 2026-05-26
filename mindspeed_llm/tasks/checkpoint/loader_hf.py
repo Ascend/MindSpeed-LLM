@@ -17,8 +17,8 @@ import os
 import sys
 import types
 import logging as logger
+from mindspeed_llm.tasks.utils import version_utils
 import torch
-import transformers
 from .models import get_megatron_model
 from .models import get_huggingface_model
 
@@ -29,50 +29,48 @@ logger.getLogger().setLevel(logger.INFO)
 def add_arguments(parser):
     group = parser.add_argument_group(title='Llama-2 HF loader.')
 
-    group.add_argument('--true-vocab-size', type=int, default=None,
-                       help='original size of vocab, if specified will trim padding from embedding table.')
-    group.add_argument('--vocab-file', type=str, default=None,
-                       help='Path to the vocab file. If specified will use this to get vocab size and '
-                            'trim padding from the embedding table.')
-    group.add_argument('--tokenizer-model', required=True,
-                       help='Sentencepiece tokenizer model.')
-    group.add_argument('--megatron-path', type=str, default=None,
-                       help='Base directory of deepspeed repository')
-    group.add_argument("--w-pack", type=bool,
-                       help='True is w_pack weight for llm',
-                       default=False)
-    parser.add_argument('--add-qkv-bias', action='store_true',
-                        help='Add bias for attention qkv',
-                        default=False)
-    parser.add_argument('--add-dense-bias', action='store_true',
-                        help='Add bias for attention dense',
-                        default=False)
-    parser.add_argument('--params-dtype', type=str,
-                        help='Set weight dtype',
-                        default='fp16')
-    group.add_argument('--make-vocab-size-divisible-by', type=int, default=1,
-                       help='Pad the vocab size to be divisible by this value.'
-                            'This is added for computational efficiency reasons.')
-    group.add_argument('--use-mcore-models', action='store_true',
-                       help='Use the implementation from megatron core')
-    group.add_argument('--post-norm', action='store_true',
-                       help='post norm after attention or mlp.', default=False)
-    group.add_argument('--moe-grouped-gemm', action='store_true',
-                       help='Usr moe grouped gemm.')
-    group.add_argument("--moe-tp-extend-ep", action='store_true',
-                       help="use tp group to extend experts parallelism instead of sharding weight tensor of experts in tp group")
-    group.add_argument('--spec', type=str, default=None, nargs='*',
-                        help='Specify the <module_location function_name> pair '
-                             'that returns a spec to customize transformer layer, depending on the use case.')
+    group.add_argument(
+        '--true-vocab-size',
+        type=int,
+        default=None,
+        help='original size of vocab, if specified will trim padding from embedding table.',
+    )
+    group.add_argument(
+        '--vocab-file',
+        type=str,
+        default=None,
+        help='Path to the vocab file. If specified will use this to get vocab size and '
+        'trim padding from the embedding table.',
+    )
+    group.add_argument('--tokenizer-model', required=True, help='Sentencepiece tokenizer model.')
+    group.add_argument('--megatron-path', type=str, default=None, help='Base directory of deepspeed repository')
+    group.add_argument("--w-pack", type=bool, help='True is w_pack weight for llm', default=False)
+    parser.add_argument('--add-qkv-bias', action='store_true', help='Add bias for attention qkv', default=False)
+    parser.add_argument('--add-dense-bias', action='store_true', help='Add bias for attention dense', default=False)
+    parser.add_argument('--params-dtype', type=str, help='Set weight dtype', default='fp16')
+    group.add_argument(
+        '--make-vocab-size-divisible-by',
+        type=int,
+        default=1,
+        help='Pad the vocab size to be divisible by this value.This is added for computational efficiency reasons.',
+    )
+    group.add_argument('--use-mcore-models', action='store_true', help='Use the implementation from megatron core')
+    group.add_argument('--post-norm', action='store_true', help='post norm after attention or mlp.', default=False)
+    group.add_argument('--moe-grouped-gemm', action='store_true', help='Usr moe grouped gemm.')
+    group.add_argument(
+        "--moe-tp-extend-ep",
+        action='store_true',
+        help="use tp group to extend experts parallelism instead of sharding weight tensor of experts in tp group",
+    )
+    group.add_argument(
+        '--spec',
+        type=str,
+        default=None,
+        nargs='*',
+        help='Specify the <module_location function_name> pair '
+        'that returns a spec to customize transformer layer, depending on the use case.',
+    )
     group.add_argument("--noop-layers", type=str, default=None, help='Specity the noop layers.')
-
-
-def verify_transformers_version():
-    version_idents = transformers.__version__.split('.')
-    major_version = int(version_idents[0])
-    minor_version = int(version_idents[1])
-    if major_version < 4 or minor_version < 31:
-        raise ValueError("the version transformers should greater or equal 4.31")
 
 
 def build_metadata(args, margs):
@@ -116,14 +114,14 @@ def build_metadata(args, margs):
     md.multi_latent_attention = getattr(margs, "multi_latent_attention", False)
     md.cla_share_factor = getattr(margs, "cla_share_factor", 1)
     md.q_lora_rank = getattr(margs, "q_lora_rank", None)
-    
+
     if md.multi_latent_attention:
         md.qk_pos_emb_head_dim = getattr(margs, "qk_pos_emb_head_dim", None)
         md.qk_head_dim = getattr(margs, "qk_head_dim", None)
         md.q_lora_rank = getattr(margs, "q_lora_rank", None)
         md.kv_lora_rank = getattr(margs, "kv_lora_rank", None)
         md.v_head_dim = getattr(margs, "v_head_dim", None)
-    
+
     if hasattr(margs, 'normalization'):
         md.norm_has_bias = margs.normalization == "LayerNorm"
 
@@ -132,9 +130,7 @@ def build_metadata(args, margs):
 
 def get_message_preprocess(model, md):
     # Send embeddings.
-    message = {
-        "word embeddings": model.get_embedding_word_embeddings_weight()
-    }
+    message = {"word embeddings": model.get_embedding_word_embeddings_weight()}
 
     # bloom
     if model.has_embedding_word_embeddings_norm_module():
@@ -155,7 +151,9 @@ def get_message_layer_norm(message, model, layer_idx, md, args=None):
     message["input norm weight"] = model.get_layers_input_layernorm_weight(layer_idx=layer_idx)
 
     if args.post_norm:
-        message["post norm weight"] = model.get_layers_self_attention_post_attention_layernorm_weight(layer_idx=layer_idx)
+        message["post norm weight"] = model.get_layers_self_attention_post_attention_layernorm_weight(
+            layer_idx=layer_idx
+        )
         message["pre mlp norm weight"] = model.get_layers_self_attention_pre_mlp_layernorm_weight(layer_idx=layer_idx)
         message["post mlp norm weight"] = model.get_layers_self_attention_post_mlp_layernorm_weight(layer_idx=layer_idx)
     else:
@@ -210,7 +208,7 @@ def _get_message_layer_mlp(message, model, layer_idx, md=None, tp_size=1, is_moe
     mlp_l0_weight = []
     mlp_l0_bias = []
     mlp_l1_weight = []
- 
+
     if is_moe_mlp:
         mlp_l0_weight.append(model.get_layers_mlp_experts_linear_fc1_weight(layer_idx=layer_idx, **kwargs))
         mlp_l1_weight.append(model.get_layers_mlp_experts_linear_fc2_weight(layer_idx=layer_idx, **kwargs))
@@ -311,9 +309,7 @@ def get_message_output_layer(model, md):
     # Send final norm from tp_rank 0.
     message = None
     if md.output_layer:
-        message = {
-            "weight": model.get_output_layer_weight()
-        }
+        message = {"weight": model.get_output_layer_weight()}
         if md.add_output_layer_bias:
             message["bias"] = model.get_output_layer_bias()
 
@@ -330,13 +326,10 @@ def to_detach(message):
 
 def _load_checkpoint(model_provider, queue, args):
     # Llama-2 requires HF transformers >=4.31.0.
-    verify_transformers_version()
+    version_utils.verify_transformers_version(min_version=(4, 31))
 
     # Search in directory above this.
-    sys.path.append(os.path.abspath(
-        os.path.join(os.path.dirname(__file__),
-                     os.path.pardir,
-                     os.path.pardir)))
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir)))
     if args.megatron_path is not None:
         sys.path.insert(0, args.megatron_path)
 
@@ -368,7 +361,7 @@ def _load_checkpoint(model_provider, queue, args):
     model_mg.update_module(model_hf)
 
     def queue_put(name, msg):
-        logger.info(f"sending {name}")
+        logger.info("sending %s", name)
         msg["name"] = name
         queue.put(msg)
 

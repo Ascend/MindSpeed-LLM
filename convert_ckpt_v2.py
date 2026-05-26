@@ -31,6 +31,7 @@ def get_args():
         choices=[
             'qwen3',
             'qwen3-moe',
+            'deepseek2',
             'deepseek3',
             'deepseek4',
             'glm45-air',
