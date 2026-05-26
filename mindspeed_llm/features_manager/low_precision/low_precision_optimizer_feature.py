@@ -76,6 +76,13 @@ class LowPrecisionOptimizerFeature(MindSpeedFeature):
                 "gradient_accumulation_fusion. Please disable "
                 "--no-gradient-accumulation-fusion or turn off --quant-grads."
             )
+        if getattr(args, 'swap_optimizer', False) and (
+            getattr(args, 'quant_grads', False) or getattr(args, 'quant_states', False)
+        ):
+            raise AssertionError(
+                "--quant-states/--quant-grads are incompatible with --swap-optimizer."
+                "To use --quant-states/--quant-grads, please turn off --swap-optimizer."
+            )
 
     def register_patches(self, patch_manager, args):
         quant_enabled = self._normalize_flags(args)
