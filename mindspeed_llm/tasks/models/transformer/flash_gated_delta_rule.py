@@ -73,7 +73,7 @@ def flash_chunk_gated_delta_rule_fwd(
         chunk_indices = None
 
     w, u = torch.ops.npu.npu_recompute_w_u_fwd(
-        k, v, beta, A, chunk_size, g=g, gK=None, cu_seqlens=cu_seqlens1, chunk_indices=chunk_indices
+        k, v, beta, A, chunk_size, g=g, gk=None, cu_seqlens=cu_seqlens1, chunk_indices=chunk_indices
     )
 
     h, v_new, final_state = torch.ops.npu.npu_chunk_gated_delta_rule_fwd_h(
@@ -127,7 +127,7 @@ def flash_chunk_gated_delta_rule_bwd(
         chunk_indices = None
 
     w, u = torch.ops.npu.npu_recompute_w_u_fwd(
-        k, v, beta, A, chunk_size, g=g, gK=None, cu_seqlens=cu_seqlens1, chunk_indices=chunk_indices
+        k, v, beta, A, chunk_size, g=g, gk=None, cu_seqlens=cu_seqlens1, chunk_indices=chunk_indices
     )
 
     h, v_new, final_state = torch.ops.npu.npu_chunk_gated_delta_rule_fwd_h(

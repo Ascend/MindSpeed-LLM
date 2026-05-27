@@ -474,7 +474,7 @@ class Trainer:
                 sample['position_ids'] = position_ids
 
             for key, val in sample.items():
-                if key == 'attention_mask':
+                if key in ('attention_mask', 'actual_seq_len'):
                     continue
                 if val is not None:
                     seq_dim = 1

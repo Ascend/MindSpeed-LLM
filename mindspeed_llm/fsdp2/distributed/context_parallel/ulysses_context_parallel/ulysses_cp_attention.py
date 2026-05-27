@@ -2,23 +2,26 @@ from typing import Optional, Tuple
 
 import torch
 import torch_npu
+from einops import rearrange
 from torch import nn
 
-from mindspeed_llm.fsdp2.distributed.context_parallel.ulysses_context_parallel.utils import gather_heads_scatter_seq, \
-    gather_seq_scatter_heads
+from mindspeed_llm.fsdp2.distributed.context_parallel.ulysses_context_parallel.utils import (
+    gather_heads_scatter_seq,
+    gather_seq_scatter_heads,
+)
 from mindspeed_llm.fsdp2.distributed.parallel_state import ParallelState
 
 
 def _ulysses_context_parallel_attention(
-        module: nn.Module,
-        query: torch.Tensor,
-        key: torch.Tensor,
-        value: torch.Tensor,
-        attention_mask: Optional[torch.Tensor] = None,
-        dropout: float = 0.0,
-        scaling: Optional[float] = None,
-        is_causal: Optional[bool] = None,
-        **kwargs,
+    module: nn.Module,
+    query: torch.Tensor,
+    key: torch.Tensor,
+    value: torch.Tensor,
+    attention_mask: Optional[torch.Tensor] = None,
+    dropout: float = 0.0,
+    scaling: Optional[float] = None,
+    is_causal: Optional[bool] = None,
+    **kwargs,
 ) -> Tuple[torch.Tensor, None]:
     """
     Flash Attention forward function :
@@ -43,9 +46,21 @@ def _ulysses_context_parallel_attention(
         key = gather_seq_scatter_heads(key, seq_dim=2, head_dim=1, gather_size=gather_size)
         value = gather_seq_scatter_heads(value, seq_dim=2, head_dim=1, gather_size=gather_size)
 
-    # ===================== Common Logic: Build Attention Mask =====================
-    new_mask = torch.ones((2048, 2048), device=torch.npu.current_device(), dtype=torch.bool)
-    atten_mask = torch.triu(new_mask, diagonal=1)
+    # ===================== cu_seqlens Handling =====================
+    cu_seqlens = None
+    if "actual_seq_len" in kwargs:
+        cu_seqlens = kwargs.get("actual_seq_len", None).tolist()
+
+    seq_len = query.shape[2]
+    input_layout = "BNSD"
+
+    if cu_seqlens is not None:
+        input_layout = "TND"
+        query, key, value = [rearrange(x, 'b h s d -> (b s) h d') for x in [query, key, value]]
+        atten_mask = attention_mask
+    else:
+        new_mask = torch.ones((2048, 2048), device=torch.npu.current_device(), dtype=torch.bool)
+        atten_mask = torch.triu(new_mask, diagonal=1)
 
     # ===================== Core Branch: Version Selection via module.sinks =====================
     # Robust check: Verify sinks exists, is not None, and is a valid Tensor
@@ -68,7 +83,10 @@ def _ulysses_context_parallel_attention(
 
         # Call v2 version attention (depends on sinks parameter)
         attn_output = torch_npu.npu_fusion_attention_v2(
-            query, key, value, query.shape[1],
+            query,
+            key,
+            value,
+            query.shape[1],
             shape_order,
             pse=None,
             sparse_mode=sparse_mode,
@@ -80,9 +98,6 @@ def _ulysses_context_parallel_attention(
             keep_prob=1 - dropout,
         )[0]
     else:  # No sinks -> use standard version
-        input_layout = "BNSD"
-        sparse_mode = 2
-
         # Call standard version attention (no sinks parameter)
         attn_output = torch_npu.npu_fusion_attention(
             query,
@@ -92,17 +107,20 @@ def _ulysses_context_parallel_attention(
             input_layout=input_layout,
             atten_mask=atten_mask,
             keep_prob=1 - dropout,
+            actual_seq_qlen=cu_seqlens,
+            actual_seq_kvlen=cu_seqlens,
             scale=scaling,
-            sparse_mode=sparse_mode
+            sparse_mode=2,
         )[0]
+
+    # ===================== TND -> BNSD =====================
+    if input_layout == "TND":
+        attn_output = rearrange(attn_output, '(b s) h d -> b h s d', s=seq_len)
 
     # ===================== Common Logic: Context Parallel Output Processing =====================
     if ps.context_parallel_size > 1:
         attn_output = gather_heads_scatter_seq(
-            attn_output,
-            head_dim=1,
-            seq_dim=2,
-            gather_size=module.config.num_attention_heads
+            attn_output, head_dim=1, seq_dim=2, gather_size=module.config.num_attention_heads
         )
 
     # ===================== Common Logic: Dimension Adjustment =====================

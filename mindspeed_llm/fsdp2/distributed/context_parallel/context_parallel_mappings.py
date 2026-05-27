@@ -1,5 +1,3 @@
-from typing import Tuple, Dict, List
-
 """
 Global Common Mapping Templates
 ===============================
@@ -26,25 +24,27 @@ Available templates:
   dsa_attention      - Replaces attention for DSA models
 """
 
+from typing import Tuple, Dict, List
+
 COMMON_CP_MAPPINGS: Dict[str, Tuple[str, str] | List[Tuple[str, str]]] = {
     "fixed_cross_entropy": (
         "transformers.loss.loss_utils.fixed_cross_entropy",
-        "mindspeed_llm.fsdp2.distributed.context_parallel.context_parallel_functions.fixed_cross_entropy_with_cp"
+        "mindspeed_llm.fsdp2.distributed.context_parallel.context_parallel_functions.fixed_cross_entropy_with_cp",
     ),
     "cp_attention_unified": (
         "transformers.models.{model_id}.modeling_{model_id}.eager_attention_forward",
-        "mindspeed_llm.fsdp2.distributed.context_parallel.context_parallel_functions.context_parallel_attention_forward"
+        "mindspeed_llm.fsdp2.distributed.context_parallel.context_parallel_functions.context_parallel_attention_forward",
     ),
     "dsa_attention": [
         (
             "transformers.models.{model_id}.modeling_{model_id}.eager_attention_forward",
-            "mindspeed_llm.fsdp2.distributed.context_parallel.ulysses_context_parallel.dsa_attention.flash_attention_forward_fa_dsa"
+            "mindspeed_llm.fsdp2.distributed.context_parallel.ulysses_context_parallel.dsa_attention.flash_attention_forward_fa_dsa",
         ),
         (
             "transformers.masking_utils.sdpa_mask",
-            "mindspeed_llm.fsdp2.distributed.context_parallel.ulysses_context_parallel.dsa_attention.sdpa_mask"
-        )
-    ]
+            "mindspeed_llm.fsdp2.distributed.context_parallel.ulysses_context_parallel.dsa_attention.sdpa_mask",
+        ),
+    ],
 }
 
 """
@@ -78,10 +78,10 @@ MODEL_CP_CONFIG: Dict[str, Dict] = {
             "gpt_oss": [
                 (
                     "mindspeed_llm.fsdp2.models.gpt_oss.modeling_gpt_oss.flash_attention_forward",
-                    "mindspeed_llm.fsdp2.distributed.context_parallel.context_parallel_functions.context_parallel_attention_forward"
+                    "mindspeed_llm.fsdp2.distributed.context_parallel.context_parallel_functions.context_parallel_attention_forward",
                 )
             ]
-        }
+        },
     },
     "dsa": {
         "models": {"glm_moe_dsa"},
@@ -90,9 +90,25 @@ MODEL_CP_CONFIG: Dict[str, Dict] = {
             "glm_moe_dsa": [
                 (
                     "transformers.models.{model_id}.modeling_{model_id}.GlmMoeDsaAttention.forward",
-                    "mindspeed_llm.fsdp2.distributed.context_parallel.ulysses_context_parallel.dsa_attention.dsa_forward"
+                    "mindspeed_llm.fsdp2.distributed.context_parallel.ulysses_context_parallel.dsa_attention.dsa_forward",
                 )
             ]
-        }
-    }
+        },
+    },
+    "qwen3_next_gdn": {
+        "models": {"qwen3_next"},
+        "cp_to_att_template": {"fixed_cross_entropy"},
+        "model_specific": {
+            "qwen3_next": [
+                (
+                    "mindspeed_llm.fsdp2.models.qwen3_next.modeling_qwen3_next.Qwen3NextGatedDeltaNet.forward",
+                    "mindspeed_llm.fsdp2.distributed.context_parallel.gdn_context_parallel.gdn_forward_with_cp",
+                ),
+                (
+                    "mindspeed_llm.fsdp2.models.qwen3_next.modeling_qwen3_next.flash_attention_forward",
+                    "mindspeed_llm.fsdp2.distributed.context_parallel.context_parallel_functions.context_parallel_attention_forward",
+                ),
+            ]
+        },
+    },
 }

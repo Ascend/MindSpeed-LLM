@@ -702,6 +702,21 @@ def _make_choice_type_function(choices: List[Any]) -> Callable[[str], Any]:
     return lambda arg: str_to_choice.get(arg, arg)
 
 
+def _validate_cross_args(args):
+    """Validate constraints that span multiple argument dataclasses."""
+    if args.data.reset_attention_mask and args.training.per_device_train_batch_size > 1:
+        raise ValueError(
+            "When reset_attention_mask=True, per_device_train_batch_size must be 1, "
+            f"but got {args.training.per_device_train_batch_size}."
+        )
+
+    if args.model.model_id == "qwen3_next" and args.parallel.cp_size > 1 and args.parallel.cp_type != "ulysses":
+        raise ValueError(
+            f"qwen3_next only supports 'ulysses' context parallel type when cp_size > 1, "
+            f"but got cp_type='{args.parallel.cp_type}'."
+        )
+
+
 def fsdp2_parse_args(rootclass: TypeVar) -> TypeVar:
     """
     Parses the root argument class from CLI or YAML input.
@@ -730,7 +745,12 @@ def fsdp2_parse_args(rootclass: TypeVar) -> TypeVar:
     parse_result = _postprocess_json_fields(args, parser.dict_fields)
 
     # 7: Build dataclass instances
-    return _build_dataclass_instances(rootclass, parse_result)
+    result = _build_dataclass_instances(rootclass, parse_result)
+
+    # 8: Cross-dataclass validation
+    _validate_cross_args(result)
+
+    return result
 
 
 # =============================================================================

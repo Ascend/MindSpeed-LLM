@@ -529,7 +529,10 @@ def torch_chunk_gated_delta_rule(
     initial_state=None,
     output_final_state=False,
     use_qk_l2norm_in_kernel=False,
+    cu_seqlens=None,
 ):
+    if cu_seqlens is not None:
+        raise NotImplementedError("torch_chunk_gated_delta_rule does not support cu_seqlens")
     initial_dtype = query.dtype
     if use_qk_l2norm_in_kernel:
         query = l2norm(query, dim=-1, eps=1e-6)
