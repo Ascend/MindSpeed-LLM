@@ -401,6 +401,13 @@
         <td>/data/ci/models/Qwen3-8B/mg/qwen3_8b_L8_np07/</td>
         <td>/</td>
         <td>/data/ci/datasets/processed/qwen3-8b/alpaca_text_documen</td>
+    </tr>
+    <tr>
+        <td>deepseek4_flash_mcore_tp1_pp1_ep8</td>
+        <td>/data/ci/models/deepseek4-flash/hf/DeepSeek-V4-Flash/</td>
+        <td>/data/ci/models/deepseek4-flash/mg/deepseekv4-flash-tp1-pp1-ep8-16experts/</td>
+        <td>/data/ci/datasets/origin/train-00000-of-00001-a09b74b3ef9c3b56.parquet</td>
+        <td>/data/ci/cache/deepseek4-flash-dataset/deepsee4-flash</td>
         <td>/</td>
         <td>/</td>
     </tr>

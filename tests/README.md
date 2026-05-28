@@ -17,8 +17,8 @@ CI门禁用例看护仓库重点模型和基本特性，覆盖冒烟测试场景
         <th>Mem.</th>
     </tr>
     <tr>
-        <td rowspan="17">ST</td>
-        <td rowspan="12">Pretrain</td>
+        <td rowspan="18">ST</td>
+        <td rowspan="13">Pretrain</td>
         <td>TP，PP，VPP，distributed_optimizer，o2_gradient，o2_optimizer，重计算，enable_recompute_layers_per_pp_rank，FA_TND，use_fused_rotary_pos_emb</td>
         <td><a href="st/shell_scripts/llama2_tp2_pp4_vpp2_ptd.sh">llama2_tp2_pp4_vpp2_ptd.sh</a></td>
         <td>Y</td>
@@ -98,6 +98,13 @@ CI门禁用例看护仓库重点模型和基本特性，覆盖冒烟测试场景
     <tr>
         <td>triton, topk-softmax-in-fp32, moe-router-pre-softmax</td>
         <td><a href="st/shell_scripts/qwen3_next_80b_4K_A3_ptd.sh">qwen3_next_80b_4K_A3_ptd.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td>dsa_indexer, mhc, kv_compress, moe_fb_overlap, triton-sinkhorn, triton-mhc, triton-rmsnorm-without-weight, seq_aux, index_loss</td>
+        <td><a href="st/shell_scripts/deepseek4_flash_mcore_tp1_pp1_ep8.sh">deepseek4_flash_mcore_tp1_pp1_ep8.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
