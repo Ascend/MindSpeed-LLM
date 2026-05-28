@@ -420,4 +420,13 @@
         <td>/</td>
         <td>/</td>
     </tr>
+    <tr>
+        <td>pretrain_step_3p5_flash_4K_fsdp2</td>
+        <td>/data/ci/models/step3.5/hf/step3.5-flash/</td>
+        <td>/data/ci/models/step3.5/mg/step3.5-flash-layer4/</td>
+        <td>/</td>
+        <td>/data/ci/datasets/origin/train-00000-of-00001-a09b74b3ef9c3b56.parquet</td>
+        <td>/</td>
+        <td>/</td>
+    </tr>
 </table>

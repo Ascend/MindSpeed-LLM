@@ -198,7 +198,7 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <th>Mem.</th>
     </tr>
     <tr>
-        <td rowspan="38">ST</td>
+        <td rowspan="39">ST</td>
         <td rowspan="1">baichuan2-13B</td>
         <td>baichuan2_13b, no-gradient-accumulation-fusion</td>
         <td><a href="pipeline/st/baichuan2-13B/baichuan2_13b_tp8_pp1_mcore.sh">baichuan2_13b_tp8_pp1_mcore.sh</a></td>
@@ -241,6 +241,14 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td rowspan="1">gpt4</td>
         <td>gpt4, distributed_optimizer, overlap_grad_reduce, overlap_param_gather</td>
         <td><a href="pipeline/st/gpt4/gpt4_mcore_tp4_cp2_32k_moe_drop.sh">gpt4_mcore_tp4_cp2_32k_moe_drop.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td rowspan="1">step3.5-flash</td>
+        <td>fsdp2 pretrain</td>
+        <td><a href="pipeline/st/step35-flash/pretrain_step_3p5_flash_4K_fsdp2.sh">pretrain_step_3p5_flash_4K_fsdp2.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
