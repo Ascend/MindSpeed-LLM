@@ -404,4 +404,13 @@
         <td>/</td>
         <td>/</td>
     </tr>
+    <tr>
+        <td>pretrain_minimax_m2p7_4K_fsdp2</td>
+        <td>/data/ci/models/minimax-m2.7/hf/minimax-m2.7/</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/data/ci/datasets/origin/train-00000-of-00001-a09b74b3ef9c3b56.parquet</td>
+        <td>/</td>
+        <td>/</td>
+    </tr>
 </table>

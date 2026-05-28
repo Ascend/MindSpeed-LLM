@@ -191,7 +191,7 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <th>Mem.</th>
     </tr>
     <tr>
-        <td rowspan="37">ST</td>
+        <td rowspan="38">ST</td>
         <td rowspan="1">baichuan2-13B</td>
         <td>baichuan2_13b, no-gradient-accumulation-fusion</td>
         <td><a href="pipeline/st/baichuan2-13B/baichuan2_13b_tp8_pp1_mcore.sh">baichuan2_13b_tp8_pp1_mcore.sh</a></td>
@@ -465,6 +465,14 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
     <tr>
         <td>layerwise_disaggregated_training vtp and vdp</td>
         <td><a href="pipeline/st/layerwise_disaggregated_training/tune_qwen25_7b_vtp_vdp_vtp2vdp2pp2_layerwise_disaggregated.sh">tune_qwen25_7b_vtp_vdp_vtp2vdp2pp2_layerwise_disaggregated.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td rowspan="1">fsdp2 pretrain</td>
+        <td> minimax-m2.7 </td>
+        <td><a href="pipeline/st/minimax-m2.7/pretrain_minimax_m2p7_4K_fsdp2.sh">pretrain_minimax_m2p7_4K_fsdp2.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
