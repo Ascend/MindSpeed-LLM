@@ -13,8 +13,6 @@ GENERATE_JSON_DIR=/data/ci/run_jsons
 
 rm -rf $GENERATE_LOG_DIR/*
 rm -rf $GENERATE_JSON_DIR/*
-mkdir -p $GENERATE_JSON_DIR/
-mkdir -p $GENERATE_LOG_DIR/
 
 # 删缓存 预编译，提高用例执行稳定性
 rm -rf /root/.cache

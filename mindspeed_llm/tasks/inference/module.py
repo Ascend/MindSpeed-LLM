@@ -26,7 +26,6 @@ from torch.nn.parallel.distributed import DistributedDataParallel as torchDDP
 from megatron.core.models.gpt.gpt_model import GPTModel
 from megatron.training import get_args, global_vars
 from megatron.core import ModelParallelConfig
-from mindspeed_llm.tasks.utils import version_utils
 
 
 class MegatronModuleForCausalLMABC(torch.nn.Module, abc.ABC):
@@ -155,49 +154,6 @@ class MegatronModuleForCausalLMABC(torch.nn.Module, abc.ABC):
         self.truncate = kwargs.pop("truncate", False)
 
 
-def load_tokenizer(model_path):
-    if version_utils.transformers_version() < (5, 0):
-        from megatron.training import get_tokenizer
-
-        return get_tokenizer().tokenizer
-    else:
-        return load_tokenizer_compatible(model_path)
-
-
-def load_tokenizer_compatible(model_path):
-    from transformers import PreTrainedTokenizerFast
-    from tokenizers import Tokenizer
-    import json
-
-    with open(f"{model_path}/tokenizer_config.json", "r", encoding="utf-8") as f:
-        cfg = json.load(f)
-
-    kwargs = {}
-    for key in ("bos_token", "eos_token", "unk_token", "pad_token"):
-        value = cfg.get(key)
-        if isinstance(value, dict):
-            value = value.get("content", "")
-        kwargs[key] = value
-
-    for key in (
-        "add_bos_token",
-        "add_eos_token",
-        "model_max_length",
-        "clean_up_tokenization_spaces",
-        "legacy",
-        "sp_model_kwargs",
-    ):
-        if key in cfg:
-            kwargs[key] = cfg[key]
-
-    kwargs["add_bos_token"] = cfg.get("add_bos_token", False)
-    kwargs["add_eos_token"] = cfg.get("add_eos_token", False)
-
-    tok = Tokenizer.from_file(f"{model_path}/tokenizer.json")
-    tokenizer = PreTrainedTokenizerFast(tokenizer_object=tok, **kwargs)
-    return tokenizer
-
-
 class MegatronModuleForCausalLM(MegatronModuleForCausalLMABC):
     """
     Megatron specific extensions of torch Module with support
@@ -206,6 +162,7 @@ class MegatronModuleForCausalLM(MegatronModuleForCausalLMABC):
 
     def __init__(self, *args, **kwargs):
         super(MegatronModuleForCausalLM, self).__init__()
+        from megatron.training import get_tokenizer
         from megatron.inference.text_generation.generation import (
             generate_tokens_probs_and_return_on_first_stage,
             beam_search_and_return_on_first_stage,
@@ -227,8 +184,7 @@ class MegatronModuleForCausalLM(MegatronModuleForCausalLMABC):
         else:
             config.pipeline_dtype = torch.float32
         try:
-            self.tokenizer = load_tokenizer(args.tokenizer_name_or_path)
-
+            self.tokenizer = get_tokenizer().tokenizer
         except AssertionError:
             self.tokenizer = None
 

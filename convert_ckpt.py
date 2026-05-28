@@ -1,16 +1,11 @@
 # Copyright (c) 2024, HUAWEI CORPORATION.  All rights reserved.
-
-# pylint: disable=R0801
-
 import argparse
 import importlib
 import sys
-import traceback
 import logging as logger
 import torch.multiprocessing as mp
 import pretrain_gpt
 from mindspeed_llm.training.utils import auto_coverage
-from mindspeed_llm.tasks.utils import version_utils
 
 MODULE_ROOT = "mindspeed_llm.tasks.checkpoint"
 
@@ -23,18 +18,16 @@ def load_plugin(plugin_type, name):
     try:
         plugin = importlib.import_module(module_name)
     except ModuleNotFoundError:
-        logger.error("Failed to load '%s'. Original error:\n%s", module_name, traceback.format_exc())
         module_name = f"{MODULE_ROOT}.{name}"
         try:
             plugin = importlib.import_module(module_name)
         except ModuleNotFoundError:
-            logger.error("Failed to load '%s'. Original error:\n%s", module_name, traceback.format_exc())
             sys.exit(f"Unable to load {plugin_type} plugin {name}. Exiting.")
 
     if not hasattr(plugin, 'add_arguments'):
         sys.exit(f"{module_name} module is not a plugin. Exiting.")
 
-    logger.info("Loaded %s as the %s.", module_name, plugin_type)
+    logger.info(f"Loaded {module_name} as the {plugin_type}.")
     return plugin
 
 
@@ -45,7 +38,6 @@ def main():
         "It will be officially deprecated in the Q4 new release. "
         "Please look forward to the Weight Conversion V2 version!"
     )
-    version_utils.verify_transformers_version(max_version=(4, 57))
 
     parser = argparse.ArgumentParser(
         description="Megatron Checkpoint Utility Arguments", allow_abbrev=False, conflict_handler='resolve'
@@ -164,7 +156,7 @@ def main():
     logger.info("Waiting for saver to complete...")
     saver_proc.join()
     if saver_proc.exitcode is not None and saver_proc.exitcode != 0:
-        logger.error("saver process exited with error code %s", saver_proc.exitcode)
+        logger.error(f"saver process exited with error code {saver_proc.exitcode}")
         sys.exit(saver_proc.exitcode)
 
 

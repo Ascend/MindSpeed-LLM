@@ -17,8 +17,8 @@ import os
 import sys
 import types
 import logging as logger
-from mindspeed_llm.tasks.utils import version_utils
 import torch
+import transformers
 from .models import get_megatron_model
 from .models import get_huggingface_model
 
@@ -71,6 +71,14 @@ def add_arguments(parser):
         'that returns a spec to customize transformer layer, depending on the use case.',
     )
     group.add_argument("--noop-layers", type=str, default=None, help='Specity the noop layers.')
+
+
+def verify_transformers_version():
+    version_idents = transformers.__version__.split('.')
+    major_version = int(version_idents[0])
+    minor_version = int(version_idents[1])
+    if major_version < 4 or minor_version < 31:
+        raise ValueError("the version transformers should greater or equal 4.31")
 
 
 def build_metadata(args, margs):
@@ -326,7 +334,7 @@ def to_detach(message):
 
 def _load_checkpoint(model_provider, queue, args):
     # Llama-2 requires HF transformers >=4.31.0.
-    version_utils.verify_transformers_version(min_version=(4, 31))
+    verify_transformers_version()
 
     # Search in directory above this.
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir)))
@@ -361,7 +369,7 @@ def _load_checkpoint(model_provider, queue, args):
     model_mg.update_module(model_hf)
 
     def queue_put(name, msg):
-        logger.info("sending %s", name)
+        logger.info(f"sending {name}")
         msg["name"] = name
         queue.put(msg)
 

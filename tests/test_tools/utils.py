@@ -16,7 +16,6 @@ from concurrent.futures import ProcessPoolExecutor
 import subprocess
 import torch
 import xxhash
-import fnmatch
 
 import pytest
 
@@ -83,7 +82,7 @@ def compare_state_dicts(state_dict1, state_dict2):
 
         if isinstance(value1, torch.Tensor) and isinstance(value2, torch.Tensor):
             if not torch.equal(value1, value2):
-                print(f"Difference found in key: {key}, {value1}, {value2}, {value1.shape}, {value2.shape}")
+                print(f"Difference found in key: {key}")
                 return False
         elif isinstance(value1, dict) and isinstance(value2, dict):
             if not compare_state_dicts(value1, value2):
@@ -151,7 +150,7 @@ def weight_compare_hash(model_dir, base_hash, suffix="pt"):
     return True
 
 
-def weight_compare(dir_1, dir_2, suffix="pt", use_md5=False, allow_missing_key=()):
+def weight_compare(dir_1, dir_2, suffix="pt", use_md5=False):
     models_path = glob.glob(os.path.join(dir_1, '**', f'*.{suffix}'), recursive=True)
     if not models_path:
         print(f"Can't find any weight files in {dir_1}.")
@@ -164,14 +163,6 @@ def weight_compare(dir_1, dir_2, suffix="pt", use_md5=False, allow_missing_key=(
         else:
             state_dict1 = torch.load(path_1, weights_only=False)
             state_dict2 = torch.load(path_2, weights_only=False)
-            for key in allow_missing_key:
-                if '*' in key:
-                    model1 = state_dict1.get('model', {})
-                    for k in list(model1.keys()):
-                        if fnmatch.fnmatch(k, key):
-                            model1.pop(k)
-                else:
-                    state_dict1.pop(key, None)
             are_equal = compare_state_dicts(state_dict1, state_dict2)
         if not are_equal:
             return False

@@ -2,6 +2,7 @@
     "test_deepseek2_hf2mcore_tp1pp4ep8": [
         {
             "param": {
+                "model-type":"GPT",
                 "load-model-type":"hf",
                 "save-model-type":"mg",
                 "target-tensor-parallel-size": "1",
@@ -9,8 +10,12 @@
                 "target-expert-parallel-size": "8",
                 "load-dir":"/data/ci/models/deepseek-v2/hf/deepseek2_hf",
                 "save-dir":"/data/ci/cache/deepseek2_tp1pp4ep8",
+                "use-mcore-models": null,
                 "moe-grouped-gemm": null,
-                "model-type-hf": "deepseek2"
+                "model-type-hf": "deepseek2",
+                "params-dtype": "bf16",
+                "tokenizer-model":"/data/ci/deepseek2/hf/deepseek2_hf",
+                "spec":"mindspeed_llm.tasks.models.spec.deepseek_spec layer_spec"
             }
         }
     ],
@@ -18,28 +23,20 @@
     "test_deepseek2_mcore2hf_tp1pp4ep8": [
         {
             "param": {
+                "model-type":"GPT",
                 "load-model-type":"mg",
                 "save-model-type": "hf",
                 "target-tensor-parallel-size": "1",
                 "target-pipeline-parallel-size": "1",
                 "target-expert-parallel-size": "1",
-                "save-dir":"/data/ci/cache/deepseek2_mcore2hf_tp1pp4ep8",
+                "save-dir":"/data/ci/models/deepseek-v2/hf/deepseek2_hf",
                 "load-dir":"/data/ci/models/deepseek2/mg/deepseek2-l8-t1p4e8-gemm_new",
+                "use-mcore-models": null,
                 "moe-grouped-gemm": null,
-                "model-type-hf": "deepseek2"
+                "model-type-hf": "deepseek2",
+                "params-dtype": "bf16",
+                "spec":"mindspeed_llm.tasks.models.spec.deepseek_spec layer_spec"
             }
-        },
-        {
-            "Base_MD5" : [
-                "1ef5746a963567807c4ae8cbe3a41a6d",
-                "60954e6785413957795d97225e7f68e0",
-                "f745e721139f6983a2e670075a54f21f",
-                "18913d7ddd32a11115c5496a9fee477b",
-                "d96f48ce36f61ed873bc0cef6ebfc477",
-                "53cdecbfac8b8344843c44836f3f5508",
-                "79c0148764502c74fb9e57edb698651e",
-                "52c2778b5fd83d47fa97985befa4991b"
-            ]
         }
     ],
 

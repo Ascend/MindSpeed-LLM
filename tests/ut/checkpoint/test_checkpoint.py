@@ -42,22 +42,18 @@ class TestCheckpoint:
 
     def test_deepseek2_hf2mcore_tp1pp4ep8(self):
         os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
-        exit_code = run_cmd(["python3", CKPTV2_PYPATH] + self.test_config_cmd['test_deepseek2_hf2mcore_tp1pp4ep8'])
+        exit_code = run_cmd(["python3", CKPT_PYPATH] + self.test_config_cmd['test_deepseek2_hf2mcore_tp1pp4ep8'])
         assert exit_code == 0
         base_dir = '/data/ci/models/deepseek2/mg/deepseek2-mla_tp-l8-t1p4e8-gemm_new'
         save_dir = self.test_config['test_deepseek2_hf2mcore_tp1pp4ep8'][0]['save-dir']
-        assert weight_compare(
-            base_dir,
-            save_dir,
-            allow_missing_key=('rerun_state_machine', 'num_floating_point_operations_so_far', '*._extra_state'),
-        )
+        assert weight_compare(base_dir, save_dir)
         shutil.rmtree(save_dir)
 
     def test_deepseek2_mcore2hf_tp1pp4ep8(self):
         os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
-        exit_code = run_cmd(["python3", CKPTV2_PYPATH] + self.test_config_cmd['test_deepseek2_mcore2hf_tp1pp4ep8'])
+        exit_code = run_cmd(["python3", CKPT_PYPATH] + self.test_config_cmd['test_deepseek2_mcore2hf_tp1pp4ep8'])
         assert exit_code == 0
-        base_hash = self.test_config['test_deepseek2_mcore2hf_tp1pp4ep8'][1]
-        save_dir = self.test_config['test_deepseek2_mcore2hf_tp1pp4ep8'][0]['save-dir']
-        assert weight_compare_hash(save_dir, base_hash, "safetensors")
+        base_dir = '/data/ci/models/deepseek-v2/hf/deepseek2_mla-tp_hf_base'
+        save_dir = os.path.join(self.test_config['test_deepseek2_mcore2hf_tp1pp4ep8'][0]['save-dir'], 'mg2hf')
+        assert weight_compare(base_dir, save_dir, suffix="safetensors", use_md5=True)
         shutil.rmtree(save_dir)
