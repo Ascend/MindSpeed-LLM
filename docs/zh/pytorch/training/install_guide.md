@@ -53,73 +53,65 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
 > - 若您当前环境与提供的镜像不兼容，请选择[方式二：源码安装](#方式二源码安装)。
 > - master分支后续会更新新的镜像，如果需要自定义构建镜像请参见[镜像概述](../../../../docker/OVERVIEW.zh.md)。
 
-1. 拉取镜像
+1. 获取镜像
 
-   最新镜像均配套[MindSpeed LLM的26.0.0分支](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.0.0)，请按需[拉取镜像](https://www.hiascend.com/developer/ascendhub/detail/e26da9266559438b93354792f25b2f4a)。
+   最新镜像均配套[MindSpeed LLM的26.0.0分支](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.0.0)，请按需[获取镜像](https://www.hiascend.com/developer/ascendhub/detail/e26da9266559438b93354792f25b2f4a)。
 
    - <term>Atlas A2 训练系列产品</term>：26.0.0-910b-openeuler24.03-py3.11-aarch64
 
    - <term>Atlas A3 训练系列产品</term>：26.0.0-a3-openeuler24.03-py3.11-aarch64
 
    ```bash
-   # 确认是否成功拉取镜像
+   # 确认是否成功获取镜像
    docker image list
    ```
 
-2. 创建容器
+2. 启动容器
+
+   执行以下命令启动容器，该命令仅供参考，可根据需求自行修改，命令参数介绍如[表2](#table1)所示。
 
    ```bash
-   # 挂载镜像
-   docker run -dit --ipc=host --network host --name '容器名' --privileged -v /usr/local/Ascend/driver:/usr/local/Ascend/driver -v /usr/local/Ascend/firmware:/usr/local/Ascend/firmware -v /usr/local/sbin/:/usr/local/sbin/ -v /home/:/home/ -v /data/:/data 镜像名:标签 /bin/bash
+   docker run -it -d \
+      --ipc=host \
+      --network=host \
+      --pid=host \
+      --name mindspeed_llm \
+      --shm-size=512g \
+      --device=/dev/davinci0 \
+      --device=/dev/davinci_manager \
+      --device=/dev/devmm_svm \
+      --device=/dev/hisi_hdc \
+      -v /usr/local/Ascend/driver:/usr/local/Ascend/driver \
+      -v /usr/local/Ascend/firmware:/usr/local/Ascend/firmware \
+      -v /usr/local/bin/npu-smi:/usr/local/bin/npu-smi \
+      -v /usr/local/dcmi:/usr/local/dcmi \
+      -v /usr/local/Ascend/driver/version.info:/usr/local/Ascend/driver/version.info \
+      -v /etc/ascend_install.info:/etc/ascend_install.info \
+      -v /path-to-data:/data \
+      -v /path-to-weights:/weights \
+      mindspeed-llm:26.0.0-a3-openeuler24.03-py3.11-aarch64 \
+      /bin/bash
    ```
 
-   当前默认配置驱动和固件安装在/usr/local/Ascend，如有差异请修改指令路径。
+   > [!NOTE]
+   >
+   > - 当前默认配置驱动和固件安装在/usr/local/Ascend，如有差异请修改指令路径。
+   > - 当前容器默认初始化NPU驱动和CANN环境信息，如需要安装新的，请自行替换或手动source，详见容器的~/.bashrc。
+   > - “_mindspeed-llm:26.0.0-a3-openeuler24.03-py3.11-aarch64_”为镜像名称和标签，可根据实际情况修改。可在宿主机执行`docker images`命令查看当前机器上已有的镜像。
 
-   当前容器默认初始化NPU驱动和CANN环境信息，如需要安装新的，请自行替换或手动source，详见容器的~/.bashrc。
+   **表 2**  参数说明 <a id="table1"></a>
 
-   - 示例一：基本运行
-
-      ```bash
-      docker run -it --rm \
-          mindspeed-llm:26.0.0-a3-openeuler24.03-py3.11-aarch64 bash
-      ```
-
-   - 示例二：使用 NPU 设备运行（示例：设备 /dev/davinci1）
-
-      ```bash
-      # 根据实际情况修改 ascend-toolkit 路径
-      # 假设 NPU 设备安装在 /dev/davinci1 上，并且 NPU 驱动程序安装在 /usr/local/Ascend 上
-      docker run -it --rm \
-         --device=/dev/davinci1 \
-         --device=/dev/davinci_manager \
-         --device=/dev/devmm_svm \
-         --device=/dev/hisi_hdc \
-         -v /usr/local/dcmi:/usr/local/dcmi \
-         -v /usr/local/bin/npu-smi:/usr/local/bin/npu-smi \
-         -v /usr/local/Ascend/driver/lib64/:/usr/local/Ascend/driver/lib64/ \
-         -v /usr/local/Ascend/driver/version.info:/usr/local/Ascend/driver/version.info \
-         -v /etc/ascend_install.info:/etc/ascend_install.info \
-         mindspeed-llm:26.0.0-a3-openeuler24.03-py3.11-aarch64 bash
-      ```
-
-   - 示例三：挂载数据目录运行（示例：设备 /dev/davinci1）
-
-      ```bash
-      # 根据实际情况修改 ascend-toolkit 路径
-      docker run -it --rm \
-         --device=/dev/davinci1 \
-         --device=/dev/davinci_manager \
-         --device=/dev/devmm_svm \
-         --device=/dev/hisi_hdc \
-         -v /usr/local/dcmi:/usr/local/dcmi \
-         -v /usr/local/bin/npu-smi:/usr/local/bin/npu-smi \
-         -v /usr/local/Ascend/driver/lib64/:/usr/local/Ascend/driver/lib64/ \
-         -v /usr/local/Ascend/driver/version.info:/usr/local/Ascend/driver/version.info \
-         -v /etc/ascend_install.info:/etc/ascend_install.info \
-         -v /path/to/data:/data \
-         -v /path/to/weights:/weights \
-         mindspeed-llm:26.0.0-a3-openeuler24.03-py3.11-aarch64 bash
-      ```
+    |参数|说明|
+    |----|----|
+    |-it|表示启动一个交互式终端（-i）并将其连接到容器的标准输入输出 （-t），能够与容器内部进行交互，如运行命令行操作。|
+    |-d|表示容器将以后台模式运行，即容器在后台启动。使用该参数后不会阻塞当前终端的操作，可以在启动容器后继续进行其他操作。|
+    |--ipc|表示使用宿主机的IPC（进程间通信）命名空间。|
+    |--network|表示使用宿主机的网络栈。|
+    |--pid|表示使用宿主机的PID命名空间。使用该参数后容器内的进程可以查看宿主机上的所有进程ID。|
+    |--name|表示给容器指定一个名称。mindspeed_llm是容器的标识符，可以自行设置，且在当前系统中具有唯一性。如果不设置，Docker会自动分配一个随机名称。|
+    |--shm-size|表示指定容器的共享内存（/dev/shm）大小，用户可自行设置，512g为示例值。<br>该值不能超过宿主机剩余的物理内存总量，可使用`free -h`命令查看。|
+    |--device|表示将宿主机的设备映射到容器内。每个--device参数将宿主机设备（例如硬件加速卡或其他硬件设备）共享给容器，以便容器可以直接访问。<br>/dev/davinci_manager：davinci相关的管理设备。<br>/dev/hisi_hdc：hdc相关管理设备。<br>/dev/devmm_svm：内存管理相关设备。<br>/dev/davinci*X*：NPU设备，*X*是ID号，如：davinci0。<br>可根据`ll /dev/ \| grep davinci`命令查询device个数及名称，根据需要绑定设备，修改上面命令中的"--device=****"。|
+    |-v|表示将物理机的文件夹映射到容器内的相应目录，以下参数请根据实际路径修改。<br>/usr/local/Ascend/driver：该路径包含硬件驱动程序文件，驱动在宿主机上安装，将其映射到容器中，方可在容器中使用。<br>/usr/local/Ascend/firmware：该路径包含硬件固件程序文件，固件在宿主机上安装，将其映射到容器中，方可在容器中使用。<br>/usr/local/bin/npu-smi：该路径包含npu-smi等NPU状态查看命令，请根据实际路径修改。<br>/usr/local/dcmi：该路径用于挂载dcmi工具。<br>/usr/local/Ascend/driver/version.info：该路径包含驱动版本信息文件。<br>/etc/ascend_install.info：该路径包含安装版本信息文件。<br>/path-to-data：该路径为设定数据集挂载的路径，指向保存数据集的目录，使容器能访问数据集。<br>/path-to-weights：该路径为设定权重挂载的路径，指向保存权重的目录，使容器能访问权重。|
 
 3. 加载容器并确认环境状态
 
@@ -134,7 +126,18 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
 
 请参考如下操作获取对应源码及安装相关依赖，完成MindSpeed LLM的安装。
 
-1. 安装CANN
+1. （可选）创建虚拟环境
+
+   建议使用Python 3.10版本，具体可参见[版本说明](../../release_notes_llm.md)。若不希望影响全局Python环境，可使用venv、conda、uv等常用虚拟环境管理工具创建独立的虚拟环境。
+
+   以conda为例，可参考如下命令：
+
+   ```bash
+   conda create -n test python=3.10
+   conda activate test
+   ```
+
+2. 安装CANN
 
    安装配套版本的NPU驱动固件、CANN软件（Toolkit、ops和NNAL）并配置CANN环境变量，具体请参考《[CANN 软件安装](https://www.hiascend.com/document/detail/zh/canncommercial/900/softwareinst/instg/instg_0000.html)》（商用版）或《[CANN 软件安装](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/900/softwareinst/instg/instg_0000.html)》（社区版）。
 
@@ -147,7 +150,7 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
 
    以上命令以root用户安装后的默认路径为例，请用户根据set_env.sh的实际路径进行替换。
 
-2. 安装PyTorch以及torch_npu
+3. 安装PyTorch以及torch_npu
 
    请参考《Ascend Extension for PyTorch 软件安装指南》中的“[安装PyTorch](https://www.hiascend.com/document/detail/zh/Pytorch/2600/configandinstg/instg/docs/zh/installation_guide/installation_via_binary_package.md)”章节，获取配套版本的PyTorch以及torch_npu软件包。
 
@@ -159,7 +162,7 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
    pip3 install torch_npu-2.7.1rc1-cp310-cp310-manylinux_2_28_aarch64.whl
    ```
 
-3. 安装MindSpeed加速库
+4. 安装MindSpeed加速库
 
     ```shell
     git clone https://gitcode.com/ascend/MindSpeed.git
@@ -170,7 +173,7 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
     cd ..
     ```
 
-4. 准备MindSpeed LLM及Megatron-LM源码
+5. 准备MindSpeed LLM及Megatron-LM源码
 
     ```shell
     git clone https://gitcode.com/ascend/MindSpeed-LLM.git
