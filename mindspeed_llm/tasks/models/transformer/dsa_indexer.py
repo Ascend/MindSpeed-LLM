@@ -31,7 +31,7 @@ from mindspeed.te.pytorch.attention.dot_product_attention.kvallgather_context_pa
 try:
     import mindspeed.ops.npu_lightning_indexer as mindspeed_li
 except ImportError:
-    pass
+    mindspeed_li = None
 
 
 @dataclass
@@ -351,17 +351,30 @@ class DSAIndexer(MegatronModule):
     ):
         args = get_args()
         if args.use_fused_lightning_indexer:
-            topk_idxs, topk_score = fused_lightning_indexer_with_compress(
-                q,
-                k,
-                weights,
-                index_topk,
-                actual_seq_qlen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_q,
-                actual_seq_klen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_kv,
-                layout_query='BSND',
-                layout_key='BSND',
-                compress_ratio=compress_ratio,
-            )
+            if args.context_parallel_size > 1 and args.context_parallel_algo == 'kvallgather_cp_algo':
+                topk_idxs, topk_score = fused_lightning_indexer_with_compress_kvallgather(
+                    q,
+                    k,
+                    weights,
+                    index_topk,
+                    actual_seq_qlen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_q,
+                    actual_seq_klen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_kv,
+                    layout_query='BSND',
+                    layout_key='BSND',
+                    compress_ratio=compress_ratio,
+                )
+            else:
+                topk_idxs, topk_score = fused_lightning_indexer_with_compress(
+                    q,
+                    k,
+                    weights,
+                    index_topk,
+                    actual_seq_qlen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_q,
+                    actual_seq_klen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_kv,
+                    layout_query='BSND',
+                    layout_key='BSND',
+                    compress_ratio=compress_ratio,
+                )
             topk_idxs = torch.where(topk_idxs == -1, topk_idxs, topk_idxs + offset) if offset != 0 else topk_idxs
         else:
             s1, s2 = x.size(0), k.size(0)
@@ -402,6 +415,13 @@ class DSAIndexer(MegatronModule):
         if self.use_fused_lightning_indexer:
             q = gather_from_sp_cp(q)
             weights = gather_from_sp_cp(weights)
+        return q, k, weights
+
+    def all_gather_qk_weight_kvallgather(self, q, k, weights):
+        k = gather_from_sp_cp(k)
+        group = parallel_state.get_tensor_model_parallel_group()
+        q = gather_from_sequence_parallel_region(q, group=group)
+        weights = gather_from_sequence_parallel_region(weights, group=group)
         return q, k, weights
 
     def post_process_index(self, topk_indices, topk_score):
@@ -1169,3 +1189,193 @@ def fused_sparse_flash_attention_kvallgather(q, k, v, topk_indices, q_rope, k_ro
     out = rearrange(out, 'b s h d -> s b h d')
 
     return out, softmax_max_out, softmax_sum_out
+
+
+def fused_sparse_attn_shared_kv_kvallgather(
+    query,
+    ori_kv,
+    cmp_kv,
+    cmp_sparse_indices,
+    sinks,
+    softmax_scale,
+    cmp_ratio,
+):
+    from mindspeed.ops.npu_sparse_attn_shared_kv import npu_sparse_attn_shared_kv
+
+    cp_size = parallel_state.get_context_parallel_world_size()
+    cp_rank = parallel_state.get_context_parallel_rank()
+
+    chunk_size = query.shape[0] // 2
+    q_chunks = query.chunk(2, dim=0)  # [1024, 1, 64, 512] x 2
+
+    if cmp_sparse_indices is not None:
+        indices_chunks = cmp_sparse_indices.chunk(2, dim=1)  # [1, 1024, K] x 2
+    else:
+        indices_chunks = [None, None]
+
+    end_idx_0 = (cp_rank + 1) * chunk_size
+    end_idx_1 = (2 * cp_size - cp_rank) * chunk_size
+
+    k_chunks = [ori_kv[:end_idx_0, ...], ori_kv[:end_idx_1, ...]]
+
+    if cmp_kv is not None:
+        chunk_size_cmp = chunk_size // cmp_ratio
+
+        end_idx_0_cmp = (cp_rank + 1) * chunk_size_cmp
+        end_idx_1_cmp = (2 * cp_size - cp_rank) * chunk_size_cmp
+
+        cmp_k_chunks = [cmp_kv[:end_idx_0_cmp, ...], cmp_kv[:end_idx_1_cmp, ...]]
+    else:
+        cmp_k_chunks = [None, None]
+
+    outputs = []
+    for i in range(2):
+        out = npu_sparse_attn_shared_kv(
+            q_chunks[i], k_chunks[i], cmp_k_chunks[i], indices_chunks[i], sinks.float(), softmax_scale, cmp_ratio
+        )
+        outputs.append(out)
+
+    output = torch.cat(outputs, dim=0)
+
+    return output
+
+
+def fused_lightning_indexer_with_compress_kvallgather(
+    q,
+    k,
+    weights,
+    index_topk,
+    actual_seq_qlen=None,
+    actual_seq_klen=None,
+    layout_query='BSND',
+    layout_key='BSND',
+    compress_ratio=4,
+):
+    cp_size = parallel_state.get_context_parallel_world_size()
+    cp_rank = parallel_state.get_context_parallel_rank()
+
+    # Q shape: [S, B, N, D] splite dim=0
+    chunk_size_q = q.shape[0] // 2
+    q_chunks = q.chunk(2, dim=0)
+
+    # Weights [S, B, N] splite dim=0
+    if weights is not None:
+        weights_chunks = weights.chunk(2, dim=0)
+    else:
+        weights_chunks = [None, None]
+
+    chunk_size_k = chunk_size_q // compress_ratio
+
+    end_idx_0_k = (cp_rank + 1) * chunk_size_k
+    end_idx_1_k = (2 * cp_size - cp_rank) * chunk_size_k
+
+    k_chunks = [k[:end_idx_0_k, ...], k[:end_idx_1_k, ...]]
+
+    topk_idxs_list = []
+    topk_score_list = []
+
+    for i in range(2):
+        q_i = q_chunks[i].clone()
+        k_i = k_chunks[i].clone()
+        w_i = weights_chunks[i].clone()
+        # [S, B, ...] -> [B, S, ...]
+        q_bshd = q_i.transpose(0, 1).contiguous().to(torch.bfloat16)
+        k_bshd = k_i.transpose(0, 1).contiguous().to(torch.bfloat16)
+
+        if w_i is not None:
+            w_bsd = w_i.transpose(0, 1).contiguous().to(torch.bfloat16)
+        else:
+            w_bsd = None
+
+        idx, score = mindspeed_li.npu_lightning_indexer(
+            q_bshd, k_bshd, w_bsd, sparse_count=index_topk, sparse_mode=3, cmp_ratio=compress_ratio
+        )
+
+        # [B, S, 1, K] -> [B, S, K]
+        idx = idx.squeeze(2)
+        score = score.squeeze(2)
+
+        topk_idxs_list.append(idx)
+        topk_score_list.append(score)
+
+    topk_idxs_out = torch.cat(topk_idxs_list, dim=1)
+    topk_score_out = torch.cat(topk_score_list, dim=1)
+
+    return topk_idxs_out, topk_score_out
+
+
+def fused_ms_sparse_lightning_indexer_kl_loss_kvallgather(
+    total_query,
+    kv_compress,
+    query_index,
+    key_index,
+    weights,
+    compress_topk_idxs,
+    padding_mask=None,
+    prefix=None,
+    scale_value=1.0,
+    query_rope=None,
+    key_rope=None,
+    actual_seq_qlen=None,
+    actual_seq_klen=None,
+    layout='BSND',
+    cmp_ratio=4,
+):
+    import mindspeed.ops.npu_sparse_lightning_indexer_grad_kl_loss as ms_slig
+
+    cp_size = parallel_state.get_context_parallel_world_size()
+    cp_rank = parallel_state.get_context_parallel_rank()
+
+    # total_query, query_index: [S, B, N, D] -> dim=0 splite
+    # weights: [S, B, N] -> dim=0 splite
+    # compress_topk_idxs: [B, S, K] -> dim=1 splite
+    chunk_size_q = total_query.shape[0] // 2
+
+    q_chunks = total_query.chunk(2, dim=0)
+    q_idx_chunks = query_index.chunk(2, dim=0)
+
+    if weights is not None:
+        w_chunks = weights.chunk(2, dim=0)
+    else:
+        w_chunks = [None, None]
+
+    if compress_topk_idxs is not None:
+        topk_idx_chunks = compress_topk_idxs.chunk(2, dim=1)
+    else:
+        topk_idx_chunks = [None, None]
+
+    # kv_compress, key_index: [S_k, B, N, D]
+    chunk_size_k = chunk_size_q // cmp_ratio
+
+    end_idx_0_k = (cp_rank + 1) * chunk_size_k
+    end_idx_1_k = (2 * cp_size - cp_rank) * chunk_size_k
+
+    k_chunks = [kv_compress[:end_idx_0_k, ...], kv_compress[:end_idx_1_k, ...]]
+
+    k_idx_chunks = [key_index[:end_idx_0_k, ...], key_index[:end_idx_1_k, ...]]
+
+    total_loss = 0.0
+
+    for i in range(2):
+        loss_chunk = ms_slig.npu_sparse_lightning_indexer_grad_kl_loss(
+            q_chunks[i].contiguous(),
+            k_chunks[i].contiguous(),
+            q_idx_chunks[i].contiguous(),
+            k_idx_chunks[i].contiguous(),
+            w_chunks[i].contiguous() if w_chunks[i] is not None else None,
+            topk_idx_chunks[i].contiguous() if topk_idx_chunks[i] is not None else None,
+            padding_mask,
+            prefix,
+            scale_value=scale_value,
+            query_rope=query_rope,
+            key_rope=key_rope,
+            actual_seq_qlen=actual_seq_qlen,
+            actual_seq_klen=actual_seq_klen,
+            layout=layout,
+            cmp_ratio=cmp_ratio,
+        )
+        total_loss = total_loss + loss_chunk
+
+    final_loss = total_loss / 2.0
+
+    return final_loss

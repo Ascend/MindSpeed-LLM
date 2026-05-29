@@ -31,6 +31,8 @@ from mindspeed_llm.tasks.models.transformer.dsa_indexer import (
     compute_dsa_indexer_loss,
     get_attn_scores,
     DSAIndexerLossLoggingHelper,
+    fused_sparse_attn_shared_kv_kvallgather,
+    fused_ms_sparse_lightning_indexer_kl_loss_kvallgather,
 )
 from mindspeed_llm.core.context_parallel.kvallgather_context_parallel import gather_from_sp_cp, permute_cp_shard
 from mindspeed_llm.tasks.models.transformer.deepseek4.g2_attention_kernel import G2CoreAttention
@@ -234,9 +236,14 @@ class DeepSeek4SelfAttention(MegatronModule):
         if self.use_sparse_flash_attn:
             from mindspeed.ops.npu_sparse_attn_shared_kv import npu_sparse_attn_shared_kv
 
-            output = npu_sparse_attn_shared_kv(
-                query, ori_kv, cmp_kv, cmp_sparse_indices, sinks.float(), softmax_scale, cmp_ratio
-            )
+            if self.kv_allgather:
+                output = fused_sparse_attn_shared_kv_kvallgather(
+                    query, ori_kv, cmp_kv, cmp_sparse_indices, sinks, softmax_scale, cmp_ratio
+                )
+            else:
+                output = npu_sparse_attn_shared_kv(
+                    query, ori_kv, cmp_kv, cmp_sparse_indices, sinks.float(), softmax_scale, cmp_ratio
+                )
         else:
             _, bsz, _, _ = query.shape
             topk_idxs = self.get_window_topk_idxs(self.window_size, bsz, q_len_global, 0, self.kv_allgather).transpose(
@@ -317,7 +324,9 @@ class DeepSeek4SelfAttention(MegatronModule):
                     start_pos,
                     local_freqs_cis,
                 )
-                query_index, key_index, weights = self.indexer.all_gather_qk_weight(query_index, key_index, weights)
+                query_index, key_index, weights = self.indexer.all_gather_qk_weight_kvallgather(
+                    query_index, key_index, weights
+                )
                 # Fuse LILossTrain includes LIG
                 dsa_indexer_context = torch.no_grad() if args.use_fused_lightning_indexer_loss else nullcontext()
                 with dsa_indexer_context:
@@ -387,23 +396,42 @@ class DeepSeek4SelfAttention(MegatronModule):
             if len(kv_compress.shape) == 3:
                 kv_compress = kv_compress.unsqueeze(2)
             if args.use_fused_lightning_indexer_loss:
-                loss = ms_slig.npu_sparse_lightning_indexer_grad_kl_loss(
-                    total_query,
-                    kv_compress,
-                    query_index,
-                    key_index,
-                    weights,
-                    compress_topk_idxs,
-                    None,
-                    None,
-                    scale_value=self.softmax_scale,
-                    query_rope=None,
-                    key_rope=None,
-                    actual_seq_qlen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_q,
-                    actual_seq_klen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_kv,
-                    layout='BSND',
-                    cmp_ratio=self.compress_ratio,
-                )
+                if self.kv_allgather:
+                    loss = fused_ms_sparse_lightning_indexer_kl_loss_kvallgather(
+                        total_query,
+                        kv_compress,
+                        query_index,
+                        key_index,
+                        weights,
+                        compress_topk_idxs,
+                        None,
+                        None,
+                        scale_value=self.softmax_scale,
+                        query_rope=None,
+                        key_rope=None,
+                        actual_seq_qlen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_q,
+                        actual_seq_klen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_kv,
+                        layout='BSND',
+                        cmp_ratio=self.compress_ratio,
+                    )
+                else:
+                    loss = ms_slig.npu_sparse_lightning_indexer_grad_kl_loss(
+                        total_query,
+                        kv_compress,
+                        query_index,
+                        key_index,
+                        weights,
+                        compress_topk_idxs,
+                        None,
+                        None,
+                        scale_value=self.softmax_scale,
+                        query_rope=None,
+                        key_rope=None,
+                        actual_seq_qlen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_q,
+                        actual_seq_klen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_kv,
+                        layout='BSND',
+                        cmp_ratio=self.compress_ratio,
+                    )
                 loss *= args.indexer_loss_coeff
             else:
                 main_attn_dist = get_attn_scores(
