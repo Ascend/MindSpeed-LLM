@@ -12,7 +12,7 @@
     </tr>
     <tr>
       <th class="firstcol" valign="top" width="26.25%"><p>产品版本</p></th>
-      <td class="cellrowborder" valign="top" width="73.75%"><p>26.0.0</p></td>
+      <td class="cellrowborder" valign="top" width="73.75%"><p>26.1.0</p></td>
     </tr>
     <tr>
       <th class="firstcol" valign="top" width="26.25%"><p>版本类型</p></th>
@@ -24,7 +24,7 @@
     </tr>
     <tr>
       <th class="firstcol" valign="top" width="26.25%"><p>发布时间</p></th>
-      <td class="cellrowborder" valign="top" width="73.75%"><p>2026年4月</p></td>
+      <td class="cellrowborder" valign="top" width="73.75%"><p>2026年6月</p></td>
     </tr>
     <tr>
       <th class="firstcol" valign="top" width="26.25%"><p>维护周期</p></th>
@@ -44,9 +44,8 @@
 | MindSpeed LLM版本 | MindSpeed Core代码分支名称 | Megatron版本 | PyTorch版本  | Ascend Extension for PyTorch版本 | CANN版本 | Python版本     |
 | ---------------- | ------------------ | ------------ | -----------  | ------------- |--------------------- | ------------------- |
 | master（在研版本）| master（在研版本）  | core_v0.12.1  | 2.7.1       | 在研版本       | 在研版本  | Python3.10            |
+| 26.1.0（商用）   | 26.1.0_core_r0.12.1 | core_v0.12.1  | 2.7.1       | 26.1.0        | 9.1.0  | Python3.10            |
 | 26.0.0（商用）   | 26.0.0_core_r0.12.1 | core_v0.12.1  | 2.7.1       | 26.0.0        | 9.0.0  | Python3.10            |
-| 2.3.0（商用）    | 2.3.0_core_r0.12.1 | core_v0.12.1  | 2.7.1       | 7.3.0         | 8.5.0  | Python3.10            |
-| 2.2.0（商用）    | 2.2.0_core_r0.12.1 | core_v0.12.1  | 2.7.1       | 7.2.0         | 8.3.RC1  | Python3.10            |
 
 >[!NOTE]
 >
@@ -56,9 +55,8 @@
 
 |MindSpeed LLM版本|CANN版本|Ascend Extension for PyTorch版本|
 |--|--|--|
+|26.1.0|CANN 9.1.0<br>CANN 9.0.0<br>CANN 8.5.0<br>CANN 8.3.RC1<br>CANN 8.2.RC1<br>CANN 8.1.RC1|26.1.0|
 |26.0.0|CANN 9.0.0<br>CANN 8.5.0<br>CANN 8.3.RC1<br>CANN 8.2.RC1<br>CANN 8.1.RC1|26.0.0|
-|2.3.0|CANN 8.5.0<br>CANN 8.3.RC1<br>CANN 8.2.RC1<br>CANN 8.1.RC1<br>CANN 8.0.0<br>|7.3.0|
-|2.2.0|CANN 8.3.RC1<br>CANN 8.2.RC1<br>CANN 8.1.RC1<br>CANN 8.0.0<br>CANN 8.0.RC3<br>CANN 8.0.RC2|7.2.0|
 
 ## 版本使用注意事项
 
@@ -70,16 +68,12 @@
 
 |组件|描述|目的|
 |--|--|--|
-|MindSpeed LLM|新增FSDP2训练支持|支持Qwen3-30B/32B/235B、Qwen3-Next模型训练|
-|MindSpeed LLM|128K训练支持|支持GPT-OSS、DeepSeekV3.2模型超长序列训练|
-|MindSpeed LLM|工具效率提升|支持权重转换与训练合一、数据预处理与训练合一|
-|MindSpeed LLM|安全加固|支持文本大模型微调PMCC保护|
+|MindSpeed LLM|新增Mcore训练支持|支持Seed-OSS、GLM5模型训练|
+|MindSpeed LLM|工具效率提升|支持异步保存权重|
 
 ### 删除特性
 
-|组件|描述|目的|
-|--|--|--|
-|MindSpeed LLM|模型下架|Dense模型下架清单：<br>LLaMA2-34B<br>LLaMA3-8B/70B<br>LLaMA3.1-8B/50B/70B/200B/405B<br>LLaMA3.2-1B/3B<br>LLaMA3.3-70B-Instruct<br>ChatGLM3-6B<br>GLM4-9B<br>Baichuan2-7B/13B<br>InternLM2.5-1.8B/7B/20B<br>Qwen2.5-0.5B/1.5B/3B/7B/14B/32B<br>Qwen3-8B(Megatron FSDP2)<br><br>MoE模型下架清单：<br>Qwen3-30B(Megatron FSDP2)<br>GPT4-MoE-175B<br>Hunyuan-389B|
+无
 
 ### 接口变更说明
 
