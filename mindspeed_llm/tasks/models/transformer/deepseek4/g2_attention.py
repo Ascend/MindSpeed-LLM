@@ -8,6 +8,7 @@ from einops import rearrange
 
 import torch
 import torch.nn.functional as F
+import torch_npu
 
 
 from megatron.core.transformer.identity_op import IdentityOp
@@ -295,7 +296,12 @@ class DeepSeek4SelfAttention(MegatronModule):
 
         q = q.view(q_len, bsz, self.n_local_heads, -1)
 
-        q = q * torch.rsqrt(q.square().mean(-1, keepdim=True) + self.config.layernorm_epsilon)
+        if args.use_fused_rmsnorm:
+            nD = q.shape[-1]
+            norm_gamma = torch.ones(nD, device=q.device, dtype=torch.float32)
+            q = torch_npu.npu_rms_norm(q, gamma=norm_gamma, epsilon=self.config.layernorm_epsilon)[0]
+        else:
+            q = q * torch.rsqrt(q.square().mean(-1, keepdim=True) + self.config.layernorm_epsilon)
 
         q = q.transpose(0, 1)
         global_freqs_cis = self.get_freqs_cis(start_pos, local_seq_len=q_len_local, get_global=True)
@@ -386,7 +392,11 @@ class DeepSeek4SelfAttention(MegatronModule):
             and self.indexer is not None
             and torch.is_grad_enabled()
         ):
-            compress_topk_idxs = torch.where(compress_topk_idxs == -1, compress_topk_idxs, compress_topk_idxs - offset)
+            compress_topk_idxs = (
+                torch.where(compress_topk_idxs == -1, compress_topk_idxs, compress_topk_idxs - offset)
+                if offset != 0
+                else compress_topk_idxs
+            )
             if tp_size > 1:
                 total_query = gather_from_tensor_model_parallel_region(q.view(*q.shape[:2], -1))
                 total_query = total_query.view(*q.shape[:2], -1, q.shape[-1])
