@@ -96,7 +96,7 @@ from mindspeed_llm.features_manager.layerwise_disaggregated_training.u_shaped_sp
 from mindspeed_llm.features_manager.layerwise_disaggregated_training.vtp_feature import VTPFeature
 from mindspeed_llm.features_manager.qat.qat_quant_engine import QATQuantEngineFeature
 from mindspeed_llm.features_manager.layerwise_disaggregated_training.vdp_feature import VirtualDPFeature
-
+from mindspeed_llm.features_manager.optimizer.muon_optimizer_feature import MuonOptimizerFeature
 from mindspeed_llm.features_manager.transformer.mhc_feature import MHCFeature
 from mindspeed_llm.features_manager.transformer.multi_latent_attention.g2_feature import G2Feature
 
@@ -128,6 +128,7 @@ def add_megatron_basic_features(features_list: List[MindSpeedFeature]):
             TransformerEngineBasicFeature(),
             Qwen3NextFeature(),
             ChunkLossFeature(),
+            MuonOptimizerFeature(),
         ]
     )
 

@@ -90,7 +90,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
     <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/tensor-parallel.md">张量并行</a></td>
     <td>✅</td>
     <td>✅</td>
-    <td rowspan="29">【Ascend】</td>
+    <td rowspan="30">【Ascend】</td>
   </tr>
   <tr>
     <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/pipeline-parallel.md">流水线并行</a></td>
@@ -236,6 +236,12 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
     <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/hccl-replace-gloo.md">Ascend Gloo 存档落盘优化</a></td>
     <td>✅</td>
     <td>✅</td>
+  </tr>
+  <tr>
+    <td rowspan="1">优化器</td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/muon-optimizer.md">Muon优化器</a></td>
+    <td>✅</td>
+    <td>❌</td>
   </tr>
 </tbody></table>
 
