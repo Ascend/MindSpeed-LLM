@@ -151,11 +151,6 @@ LAYOUT_ARGS="
     --variable-seq-lengths
     "
 
-OVERLAP_ARGS="
-    # \
-    --moe-fb-overlap
-    "
-
 DATA_ARGS="
     --data-path $DATA_PATH \
     --split 100,0,0
@@ -177,7 +172,6 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
      $MOE_ARGS \
      $OUTPUT_ARGS \
      $OPTIMIZE_ARGS \
-     $OVERLAP_ARGS \
      $TRAIN_ARGS \
      $PRECISION_ARGS \
      $MODEL_PARALLEL_ARGS \
