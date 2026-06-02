@@ -749,17 +749,8 @@ class TestValidateArgsLdtExtended:
     # ============== 2.1 Early validation checks ==============
 
     @patch('mindspeed_llm.core.layerwise_disaggregated_training.initialize._get_vdp_size', return_value=1)
-    @patch.dict(
-        'sys.modules',
-        {
-            'nvidia_resiliency_ext': MagicMock(),
-            'nvidia_resiliency_ext.checkpointing': MagicMock(),
-            'nvidia_resiliency_ext.checkpointing.local': MagicMock(),
-            'nvidia_resiliency_ext.checkpointing.local.ckpt_managers': MagicMock(),
-            'nvidia_resiliency_ext.checkpointing.local.ckpt_managers.local_manager': MagicMock(),
-        },
-    )
-    def test_local_ckpt_type_passes(self, mock_vdp, mock_args):
+    @patch('importlib.util.find_spec', return_value=MagicMock())
+    def test_local_ckpt_type_passes(self, mock_find_spec, mock_vdp, mock_args):
         """non_persistent_ckpt_type='local' with mocked nvidia_resiliency_ext -> passes"""
         mock_args.non_persistent_ckpt_type = 'local'
         mock_args.non_persistent_local_ckpt_dir = '/ckpt'
@@ -1582,19 +1573,12 @@ class TestValidateArgsLdtExtended:
             _validate_args_ldt(mock_args)
 
     @patch('mindspeed_llm.core.layerwise_disaggregated_training.initialize._get_vdp_size', return_value=1)
-    @patch.dict(
-        'sys.modules',
-        {
-            'nvidia_resiliency_ext': MagicMock(),
-            'nvidia_resiliency_ext.checkpointing': MagicMock(),
-            'nvidia_resiliency_ext.checkpointing.local': MagicMock(),
-            'nvidia_resiliency_ext.checkpointing.local.ckpt_managers': MagicMock(),
-            'nvidia_resiliency_ext.checkpointing.local.ckpt_managers.local_manager': MagicMock(),
-        },
-    )
+    @patch('importlib.util.find_spec', return_value=MagicMock())
     @patch('mindspeed_llm.core.layerwise_disaggregated_training.initialize._print_args')
     @patch('mindspeed_llm.core.layerwise_disaggregated_training.initialize.is_torch_min_version', return_value=True)
-    def test_non_persistent_ckpt_type_local_no_dir(self, mock_torch_ver, mock_print, mock_vdp, mock_args):
+    def test_non_persistent_ckpt_type_local_no_dir(
+        self, mock_torch_ver, mock_print, mock_find_spec, mock_vdp, mock_args
+    ):
         """local ckpt without dir -> AssertionError"""
         mock_args.non_persistent_ckpt_type = 'local'
         mock_args.non_persistent_local_ckpt_dir = None

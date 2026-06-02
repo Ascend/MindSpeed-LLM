@@ -304,10 +304,11 @@ def _validate_args_ldt(args, defaults=None):
     if args.non_persistent_ckpt_type == 'local':
         import importlib
 
-        if (
-            importlib.util.find_spec("nvidia.checkpointing.local.checkpointing.local.ckpt_managers.local_manager")
-            is None
-        ):
+        try:
+            spec = importlib.util.find_spec("nvidia_resiliency_ext.checkpointing.local.ckpt_managers.local_manager")
+        except (ModuleNotFoundError, ValueError):
+            spec = None
+        if spec is None:
             raise RuntimeError('nvidia_resiliency_ext is required for local checkpointing')
 
     # validate model config args from heterogeneous config (if provided).
