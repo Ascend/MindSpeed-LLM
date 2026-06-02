@@ -1,4 +1,3 @@
-import os
 from typing import Type, Any, Dict, Optional
 
 
@@ -16,6 +15,7 @@ class ModelRegistry:
     from mindspeed_llm.fsdp2.models.qwen3_next.qwen3_next import Qwen3NextForCausalLM
     from mindspeed_llm.fsdp2.models.mamba3.modeling_mamba3 import Mamba3ForCausalLM
     from mindspeed_llm.fsdp2.models.minimax_m27.modeling_minimax_m2 import MiniMaxM2ForCausalLM
+    from mindspeed_llm.fsdp2.models.longcat_flash.modeling_longcat_flash import LongcatFlashNgramForCausalLM
 
     _REGISTRY: Dict[str, Type[Any]] = {
         "gpt_oss": GptOssForCausalLM,
@@ -24,7 +24,8 @@ class ModelRegistry:
         "qwen3_moe": Qwen3MoEForCausalLM,
         "qwen3_next": Qwen3NextForCausalLM,
         "mamba3": Mamba3ForCausalLM,
-        "minimax_m27": MiniMaxM2ForCausalLM
+        "minimax_m27": MiniMaxM2ForCausalLM,
+        "longcat_flash": LongcatFlashNgramForCausalLM,
     }
 
     @classmethod
