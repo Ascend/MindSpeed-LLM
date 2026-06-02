@@ -10,7 +10,7 @@ NNODES=1
 NODE_RANK=0
 WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
-basepath=$(cd `dirname $0`; cd ../../../; pwd)
+basepath=$(cd `dirname $0`; cd ../../../../; pwd)
 
 DATA_PATH="/data/ci/datasets/origin/train-00000-of-00001-a09b74b3ef9c3b56.parquet"
 TOKENIZER_MODEL="/data/ci/models/llama3/hf/llama-3-8b-hf/"

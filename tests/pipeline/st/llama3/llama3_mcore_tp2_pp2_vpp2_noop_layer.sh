@@ -8,7 +8,7 @@ NNODES=1
 NODE_RANK=0
 WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
-basepath=$(cd `dirname $0`; cd ../../../; pwd)
+basepath=$(cd `dirname $0`; cd ../../../../; pwd)
 
 DATA_PATH="/data/ci/datasets/processed/llama-3-8b-dataset/alpaca_text_document"
 TOKENIZER_MODEL="/data/ci/models/llama3/hf/llama-3-8b-hf/"
