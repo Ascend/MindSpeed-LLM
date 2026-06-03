@@ -15,35 +15,29 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
       <th>实验模型</th>
       <th>硬件信息</th>
       <th>集群规模</th>
-      <th>MFU</th>
+      <th>吞吐（tokens/s）</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td rowspan="3">LLAMA2</td>
-      <td><a href="../../../../examples/mcore/llama2/pretrain_llama2_7b_pack_ptd.sh">LLAMA2-7B</a></td>
-      <td>Atlas 900 A2 PODc</td>
-      <td>1x8</td>
-      <td>69.0%</td>
+      <td rowspan="2">Qwen3</td>
+      <td><a href="../../../../examples/mcore/qwen3/pretrain_qwen3_8b_4K_ptd_A3.sh">8B</a></td>
+      <td>Atlas 900 A3 SuperPoD</td>
+      <td>1x16</td>
+      <td>7617.002</td>
     </tr>
     <tr>
-      <td><a href="../../../../examples/mcore/llama2/pretrain_llama2_13b_pack_ptd.sh">LLAMA2-13B</a></td>
+      <td><a href="../../../../examples/mcore/qwen3_moe/pretrain_qwen3_30b_a3b_4K_ptd.sh">30B</a></td>
       <td>Atlas 900 A2 PODc</td>
-      <td>1x8</td>
-      <td>64.7%</td>
+      <td>2x8</td>
+      <td>2318.373</td>
     </tr>
     <tr>
-      <td><a href="../../../../examples/mcore/llama2/pretrain_llama2_70b_pack_ptd.sh">LLAMA2-70B</a></td>
-      <td>Atlas 900 A2 PODc</td>
-      <td>4x8</td>
-      <td>44.1%</td>
-    </tr>
-    <tr>
-      <td>Mixtral</td>
-      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/blob/2.2.0/examples/mcore/mixtral/pretrain_mixtral_8x7b_ptd.sh">Mixtral-8x7B</a></td>
-      <td>Atlas 900 A2 PODc</td>
-      <td>8x8</td>
-      <td>31.7%</td>
+      <td>DeepSeek-V3</td>
+      <td><a href="../../../../examples/mcore/deepseek3/pretrain_deepseek3_671b_4k_A3_ptd.sh">671B</a></td>
+      <td>Atlas 900 A3 SuperPoD</td>
+      <td>32x16</td>
+      <td>914.97</td>
     </tr>
   </tbody>
 </table>
@@ -256,47 +250,31 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
     <th>集群</th>
     <th>方案</th>
     <th>序列</th>
-    <th>性能</th>
-    <th>MFU</th>
+    <th>吞吐（tokens/s）</th>
   </tr>
   <tr>
-    <td rowspan="3">Llama2-7B</td>
-    <td rowspan="3">Atlas 900 A2 PODc</td>
-    <td rowspan="3">1x8</td>
+    <td rowspan="1">Qwen3-30B</td>
+    <td rowspan="1">Atlas 900 A3 SuperPoD</td>
+    <td rowspan="1">8x16</td>
     <td>全参</td>
-    <td><a href="../../../../examples/mcore/llama2/tune_llama2_7b_full_ptd.sh">dynamic</a></td>
-    <td>15.87 samples/s</td>
-    <td>-</td>
+    <td><a href="../../../../examples/mcore/qwen3_moe/tune_qwen3_30b_a3b_256K_full_pack_A3_ptd.sh">256K</a></td>
+    <td>3774.914</td>
   </tr>
   <tr>
+    <td rowspan="1">Qwen3-32B</td>
+    <td rowspan="1">Atlas 900 A3 SuperPoD</td>
+    <td rowspan="1">8x16</td>
     <td>全参</td>
-    <td><a href="../../../../examples/mcore/llama2/tune_llama2_7b_full_pack_16k.sh">16K</a></td>
-    <td>1.14 samples/s</td>
-    <td>37.4%</td>
+    <td><a href="../../../../examples/mcore/qwen3/tune_qwen3_32b_256K_full_pack_A3_ptd.sh">256K</a></td>
+    <td>1435.603</td>
   </tr>
   <tr>
-    <td>全参</td>
-    <td><a href="../../../../examples/mcore/llama2/tune_llama2_7b_full_pack_32k.sh">32K</a></td>
-    <td>0.51 samples/s</td>
-    <td>48.4%</td>
-  </tr>
-  <tr>
-    <td rowspan="1">Llama2-13B</td>
+    <td rowspan="1">DeepSeek-V3-671B</td>
     <td rowspan="1">Atlas 900 A2 PODc</td>
-    <td rowspan="1">1x8</td>
-    <td>全参</td>
-    <td><a href="https://gitcode.com/ascend/MindSpeed-LLM/blob/2.0.0/examples/legacy/llama2/tune_llama2_13b_full_ptd.sh">dynamic</a></td>
-    <td>50.4 samples/s</td>
-    <td>-</td>
-  </tr>
-  <tr>
-    <td>Llama2-70B</td>
-    <td>Atlas 900 A2 PODc</td>
-    <td>1x8</td>
+    <td rowspan="1">8x8</td>
     <td>LoRA</td>
-    <td><a href="https://gitcode.com/ascend/MindSpeed-LLM/blob/2.0.0/examples/legacy/llama2/tune_llama2_70b_lora_ptd.sh">dynamic</a></td>
-    <td>15.2 samples/s</td>
-    <td>-</td>
+    <td><a href="../../../../examples/mcore/deepseek3/tune_deepseek3_671b_4k_lora_ptd.sh">4K</a></td>
+    <td>978.914</td>
   </tr>
 </table>
 
