@@ -13,7 +13,6 @@ NNODES=8
 NODE_RANK=0
 WORLD_SIZE=$((NPUS_PER_NODE*$NNODES))
 
-time=$(date +%m%d_%H%M)
 
 CKPT_SAVE_DIR="your model save ckpt path"
 DATA_PATH="your data path"
@@ -121,7 +120,7 @@ MODEL_PARALLEL_ARGS="
 
 GPT_ARGS="
     --disable-gloo-group \
-    --hccl-op-mode "cp:6;ep:2;tp_ep_mp:2;dp:2;tp_cp:2;dp_cp:2;default_group:2" \
+    --hccl-op-mode cp:6;ep:2;tp_ep_mp:2;dp:2;tp_cp:2;dp_cp:2;default_group:2 \
     --use-mcore-models \
     --spec mindspeed_llm.tasks.models.spec.qwen3_spec layer_spec \
     --kv-channels 128 \

@@ -13,7 +13,7 @@ NNODES=1
 NODE_RANK=0
 WORLD_SIZE=$((NPUS_PER_NODE*$NNODES))
 
-time=$(date +%m%d_%H%M)
+
 
 CKPT_SAVE_DIR="your model save ckpt path"
 DATA_PATH="your data path"
