@@ -9,6 +9,11 @@
 - 准备开源模型权重：从HuggingFace下载Qwen3-8B原始模型
 - 启动训练任务：在昇腾NPU上进行模型预训练和微调
 
+> [!NOTE]
+>
+> MindSpeed LLM支持<term>Atlas A3训练系列产品</term>和<term>Atlas A2训练系列产品</term>，且要求单NPU的片上内存为64GB及以上，详见[模型支持列表](../models/supported_models.md)。
+> 当前Qwen3-8B的示例脚本中`NPUS_PER_NODE=8`表示需要8个NPU，如果实际情况低于此配置，可能遇到OOM问题。
+
 开发者入门基础：
 
 - 具备基础的PyTorch使用经验
