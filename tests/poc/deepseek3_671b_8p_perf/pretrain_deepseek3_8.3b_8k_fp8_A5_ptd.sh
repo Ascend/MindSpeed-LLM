@@ -1,12 +1,11 @@
 #!/bin/bash
 export CUDA_DEVICE_MAX_CONNECTIONS=1
-export CPU_AFFINITY_CONF=1
+export CPU_AFFINITY_CONF=1,npu0:192-215,npu1:216-239,npu2:0-23,npu3:24-47,npu4:48-71,npu5:72-95,npu6:240-263,npu7:264-287
 export TASK_QUEUE_ENABLE=2
-export PYTORCH_NPU_ALLOC_CONF="expandable_segments:True"
-export HCCL_CONNECT_TIMEOUT=300
+export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
+export HCCL_CONNECT_TIMEOUT=3600
 export STREAMS_PER_DEVICE=32
 
-rm -rf /root/ascend/*
 NPUS_PER_NODE=8
 MASTER_ADDR=localhost #主节点IP
 MASTER_PORT=6001
@@ -14,19 +13,12 @@ NNODES=1
 NODE_RANK=0
 WORLD_SIZE=$((NPUS_PER_NODE*$NNODES))
 
-CKPT_LOAD_DIR=""
-CKPT_SAVE_DIR=""
-DATA_PATH=""
-TOKENIZER_PATH=""
 
-rm -rf /root/.cache
-python -c "import mindspeed; from mindspeed.op_builder import GMMOpBuilder; GMMOpBuilder().load()" &
-python -c "import mindspeed; from mindspeed.op_builder import GMMV2OpBuilder; GMMV2OpBuilder().load()" &
-python -c "import mindspeed; from mindspeed.op_builder import MatmulAddOpBuilder; MatmulAddOpBuilder().load()" &
-python -c "import mindspeed; from mindspeed.op_builder import MoeTokenPermuteOpBuilder; MoeTokenPermuteOpBuilder().load()" &
-python -c "import mindspeed; from mindspeed.op_builder import MoeTokenUnpermuteOpBuilder; MoeTokenUnpermuteOpBuilder().load()" &
-python -c "import mindspeed; from mindspeed.op_builder import RotaryPositionEmbeddingOpBuilder; RotaryPositionEmbeddingOpBuilder().load()" &
-python -c "import mindspeed; from mindspeed.op_builder import GroupMatmulAddOpBuilder; GroupMatmulAddOpBuilder().load()"
+CKPT_SAVE_DIR="your model save ckpt path"
+DATA_PATH="your data path"
+TOKENIZER_PATH="your tokenizer path"
+CKPT_LOAD_DIR="your model ckpt path"
+
 
 TP=1
 PP=1
@@ -44,6 +36,12 @@ DISTRIBUTED_ARGS="
     --node_rank $NODE_RANK \
     --master_addr $MASTER_ADDR \
     --master_port $MASTER_PORT \
+"
+
+FP8="
+    --fp8-format e4m3 \
+    --fp8-recipe mxfp8 \
+    --transformer-impl transformer_engine
 "
 
 MLA_ARGS="
@@ -65,19 +63,26 @@ MOE_ARGS="
     --first-k-dense-replace 1 \
     --moe-layer-freq 1 \
     --moe-shared-expert-intermediate-size 2048 \
-    --num-experts 256 \
+    --num-experts 128 \
     --moe-router-topk 8 \
     --moe-ffn-hidden-size 2048 \
-    --moe-router-load-balancing-type none \
+    --moe-router-load-balancing-type seq_aux_loss \
     --moe-router-num-groups 8 \
     --moe-router-group-topk 4 \
     --moe-router-topk-scaling-factor 2.5 \
     --moe-aux-loss-coeff 0.0001 \
-    --seq-aux \
     --moe-router-score-function sigmoid \
     --moe-router-enable-expert-bias \
     --moe-router-dtype fp32 \
-    --fix-router
+    --fix-router \
+    --moe-fb-overlap \
+"
+
+
+MEM_ARGS="
+    --recompute-granularity full \
+    --recompute-method uniform \
+    --recompute-num-layers 1 \
 "
 
 ROPE_ARGS="
@@ -91,12 +96,12 @@ ROPE_ARGS="
 "
 
 GPT_ARGS="
+    --disable-gloo-group \
     --no-check-for-nan-in-loss-and-grad \
-    --transformer-impl local \
+    --transformer-impl transformer_engine \
     --spec mindspeed_llm.tasks.models.spec.deepseek_spec layer_spec \
     --manual-gc \
     --manual-gc-interval 50 \
-    --no-shared-storage \
     --use-distributed-optimizer \
     --use-flash-attn \
     --use-mcore-models \
@@ -137,7 +142,7 @@ GPT_ARGS="
     --attention-softmax-in-fp32 \
     --min-lr 1.0e-7 \
     --weight-decay 1e-2 \
-    --lr-warmup-iters 500 \
+    --lr-warmup-iters 0 \
     --clip-grad 1.0 \
     --adam-beta1 0.9 \
     --adam-beta2 0.999 \
@@ -149,8 +154,7 @@ GPT_ARGS="
     --no-load-optim \
     --no-load-rng \
     --bf16 \
-    --distributed-timeout-minutes 120 \
-    --ckpt-format torch
+    --distributed-timeout-minutes 120
 "
 
 DATA_ARGS="
@@ -167,11 +171,16 @@ OUTPUT_ARGS="
     --no-save-rng
 "
 
+mkdir -p logs
 python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
+    $FP8 \
     $GPT_ARGS \
     $DATA_ARGS \
     $OUTPUT_ARGS \
     $MLA_ARGS \
+    $MEM_ARGS \
     $ROPE_ARGS \
     $MOE_ARGS \
-    --distributed-backend nccl | tee logs/A5_dsk3_8k_tp1pp1ep8_bf16_256experts_profiling.log
+    --load  ${CKPT_LOAD_DIR} \
+    --save  ${CKPT_SAVE_DIR} \
+    --distributed-backend nccl | tee logs/deepseek3_8.3b_8k_fp8_A5_perf.log
