@@ -162,7 +162,18 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
    pip3 install torch_npu-2.7.1rc1-cp310-cp310-manylinux_2_28_aarch64.whl
    ```
 
-4. 安装MindSpeed加速库
+4. 安装Triton-Ascend
+
+   安装配套版本的Triton-Ascend，请参考《Triton-Ascend》中的"[通过pip安装Triton-Ascend](https://triton-ascend.readthedocs.io/zh-cn/latest/installation_guide.html#piptriton-ascend)"章节，获取配套版本的Triton-Ascend安装指令。
+
+   可参考如下安装命令：
+
+   ```shell
+   # 注意：triton-ascend 3.2.0 及以下 Triton-Ascend和Triton 不能同时存在。需要先卸载社区 Triton，再安装 Triton-Ascend。
+   pip install triton-ascend==3.2.1 --extra-index-url=https://triton-ascend.osinfra.cn/pypi/simple
+   ```
+
+5. 安装MindSpeed加速库
 
     ```shell
     git clone https://gitcode.com/ascend/MindSpeed.git
@@ -173,7 +184,7 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
     cd ..
     ```
 
-5. 准备MindSpeed LLM及Megatron-LM源码
+6. 准备MindSpeed LLM及Megatron-LM源码
 
     ```shell
     git clone https://gitcode.com/ascend/MindSpeed-LLM.git
