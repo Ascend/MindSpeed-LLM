@@ -117,6 +117,11 @@ ModelScope 下载指南：<https://modelscope.cn/docs/models/download>
       <td>❌</td>
     </tr>
     <tr>
+      <td>--hf-dir</td>
+      <td>可选参数，源huggingface权重配置文件目录。在mg2hf转换过程中，将必要配置文件拷贝至权重保存目录，生成开箱即用的hf格式权重。</td>
+      <td>❌</td>
+    </tr>
+    <tr>
       <td>--model-type-hf</td>
       <td>huggingface模型类别，默认为qwen3，对于已经支持的模型，脚本内已经配置好，使用者无需更改</td>
       <td>❌</td>
