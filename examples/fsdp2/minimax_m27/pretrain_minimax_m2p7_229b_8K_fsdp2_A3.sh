@@ -17,4 +17,4 @@ DISTRIBUTED_ARGS="
 "
 mkdir -p ./logs
 bash tests/tools/fsdp2/moe_hf_param_merge_experts.sh
-torchrun $DISTRIBUTED_ARGS train_fsdp2.py examples/fsdp2/minimax_m27/pretrain_minimax_m2p7_229b_4K_fsdp2_A3.yaml | tee logs/pretrain_minimax_m2p7_229b_4K_fsdp2_A3_${TIMESTAMP}.log
+torchrun $DISTRIBUTED_ARGS train_fsdp2.py examples/fsdp2/minimax_m27/pretrain_minimax_m2p7_229b_8K_fsdp2_A3.yaml | tee logs/pretrain_minimax_m2p7_229b_8K_fsdp2_A3_${TIMESTAMP}.log

@@ -4,6 +4,7 @@ from typing import Optional, Union
 import torch
 import torch_npu
 from torch import nn
+from einops import rearrange
 
 from transformers.processing_utils import Unpack
 from transformers.activations import ACT2FN
@@ -13,9 +14,6 @@ from transformers.integrations import use_kernel_forward_from_hub
 from transformers.masking_utils import create_causal_mask, create_sliding_window_causal_mask
 from transformers.modeling_flash_attention_utils import FlashAttentionKwargs
 from transformers.modeling_layers import (
-    GenericForQuestionAnswering,
-    GenericForSequenceClassification,
-    GenericForTokenClassification,
     GradientCheckpointingLayer,
 )
 from transformers.modeling_outputs import MoeCausalLMOutputWithPast, MoeModelOutputWithPast
@@ -23,17 +21,23 @@ from transformers.modeling_rope_utils import ROPE_INIT_FUNCTIONS, dynamic_rope_u
 from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS, PreTrainedModel
 from transformers.utils import TransformersKwargs, auto_docstring, can_return_tuple
 from transformers.utils.deprecation import deprecate_kwarg
+
 try:
     from transformers.utils.generic import OutputRecorder, check_model_inputs
 except ImportError:
     # adapt for transformers 5.x
     from transformers.utils.output_capturing import OutputRecorder, capture_outputs
+
     check_model_inputs = capture_outputs
 from mindspeed.core.fusions.grouped_matmul import Ops
 from mindspeed.ops.npu_moe_token_permute import npu_moe_token_permute
 from mindspeed.ops.npu_moe_token_unpermute import npu_moe_token_unpermute
 from mindspeed_llm.fsdp2.utils.global_vars import get_args
+from mindspeed_llm.fsdp2.models.common.modules import LMHead
 from .configuration_minimax_m2 import MiniMaxM2Config
+
+
+_GLOBAL_ATTN_MASK = None
 
 
 class MiniMaxM2MLP(nn.Module):
@@ -145,23 +149,17 @@ class MiniMaxM2FusedExperts(nn.Module):
         self.hidden_dim = config.hidden_size
         self.ffn_dim = config.intermediate_size
 
-        self.gate_up_proj = nn.Parameter(
-            torch.empty(self.num_experts * self.hidden_dim, 2 * self.ffn_dim)
-        )
-        self.down_proj = nn.Parameter(
-            torch.empty(self.num_experts * self.ffn_dim, self.hidden_dim)
-        )
+        self.gate_up_proj = nn.Parameter(torch.empty(self.num_experts * self.hidden_dim, 2 * self.ffn_dim))
+        self.down_proj = nn.Parameter(torch.empty(self.num_experts * self.ffn_dim, self.hidden_dim))
 
     def forward(self, hidden_states, top_k_index=None, top_k_weights=None):
         gate_up_proj = self.gate_up_proj.view(self.num_experts, self.hidden_dim, 2 * self.ffn_dim)
         down_proj = self.down_proj.view(self.num_experts, self.ffn_dim, self.hidden_dim)
 
-        permuted_hidden_states, row_ids_map = npu_moe_token_permute(
-            hidden_states, top_k_index.to(torch.int32)
+        permuted_hidden_states, row_ids_map = npu_moe_token_permute(hidden_states, top_k_index.to(torch.int32))
+        tokens_per_expert = torch.histc(top_k_index.float(), bins=self.num_experts, min=0, max=self.num_experts - 1).to(
+            torch.int64
         )
-        tokens_per_expert = torch.histc(
-            top_k_index.float(), bins=self.num_experts, min=0, max=self.num_experts - 1
-        ).to(torch.int64)
 
         fc1_output = Ops.gmm(permuted_hidden_states, gate_up_proj, tokens_per_expert, trans_b=False)
         fc1_activation = torch_npu.npu_swiglu(fc1_output, dim=-1)
@@ -179,13 +177,14 @@ class MiniMaxM2FusedExperts(nn.Module):
             hidden_states: [total_local_tokens, hidden_dim], dispatched tokens
             split_list:    [num_local_experts], token count per local expert
         """
+
         def as_local(t):
             t = t.to_local() if hasattr(t, 'to_local') else t
             # Cast to match hidden_states dtype — when ep_fsdp_size=1, FSDP2 is absent and weights may remain in float32 while activations are bf16.
             return t.to(hidden_states.dtype)
 
         gate_up_weights = as_local(self.gate_up_proj)  # (local_E * hidden_dim, 2 * ffn_dim)
-        down_weights = as_local(self.down_proj)         # (local_E * ffn_dim, hidden_dim)
+        down_weights = as_local(self.down_proj)  # (local_E * ffn_dim, hidden_dim)
 
         # Number of local experts after EP sharding, set by expert_parallelize_modules.
         num_local_experts = self.num_local_experts
@@ -272,7 +271,7 @@ def eager_attention_forward(
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
     x1 = x[..., : x.shape[-1] // 2]
-    x2 = x[..., x.shape[-1] // 2:]
+    x2 = x[..., x.shape[-1] // 2 :]
     return torch.cat((-x2, x1), dim=-1)
 
 
@@ -390,16 +389,12 @@ class MiniMaxM2Attention(nn.Module):
                 key_states,
                 value_states,
                 attention_mask,
-                scaling=self.scaling,
+                input_layout="BNSD" if not args.reset_attention_mask else "TND",
                 dropout=0.0 if not self.training else self.attention_dropout,
-                sliding_window=getattr(self.config, "sliding_window", None),
+                scaling=self.scaling,
                 **kwargs,
             )
         else:
-            attention_interface: Callable = eager_attention_forward
-            if self.config._attn_implementation != "eager":
-                attention_interface = ALL_ATTENTION_FUNCTIONS[self.config._attn_implementation]
-
             attn_output, attn_weights = attention_interface(
                 self,
                 query_states,
@@ -416,53 +411,76 @@ class MiniMaxM2Attention(nn.Module):
         return attn_output, attn_weights
 
 
-def flash_attention_forward(
-        module: nn.Module,
-        query: torch.Tensor,
-        key: torch.Tensor,
-        value: torch.Tensor,
-        attention_mask: Optional[torch.Tensor],
-        scaling: float,
-        dropout: float = 0.0,
-        sliding_window: Optional[int] = None,
-        **kwargs,
-) -> tuple[torch.Tensor, None]:
-    """
-    NPU FA path for MiniMaxM2Attention.
-    query/key/value are in BNSD layout: [batch, n_head, seq, head_dim].
-    """
-    pre_tokens = sliding_window if sliding_window else 1048576
-    next_tokens = 0
-    shape_order = "BNSD"
-    sparse_mode = 0
+def get_attention_mask_in_transformers():
+    global _GLOBAL_ATTN_MASK
+    if _GLOBAL_ATTN_MASK is not None:
+        return _GLOBAL_ATTN_MASK
 
-    n_head = query.shape[1]
-    sq = query.shape[2]
-    skv = key.shape[2]
-    device = query.device
-
-    # Build causal mask matching actual seq length — [Sq, Skv] is a supported shape.
-    atten_mask = torch.triu(
-        torch.ones((sq, skv), device=device, dtype=torch.bool),
-        diagonal=1,
+    _GLOBAL_ATTN_MASK = torch.triu(
+        torch.ones((2048, 2048), device=torch.accelerator.current_accelerator().type, dtype=torch.bool), diagonal=1
     )
 
+    return _GLOBAL_ATTN_MASK
+
+
+def flash_attention_forward(
+    module: torch.nn.Module,
+    query: torch.Tensor,
+    key: torch.Tensor,
+    value: torch.Tensor,
+    attention_mask: Optional[torch.Tensor],
+    input_layout: str,
+    dropout: float = 0.0,
+    scaling: Optional[float] = None,
+    is_causal: Optional[bool] = None,
+    **kwargs,
+) -> tuple[torch.Tensor, None]:
+    if attention_mask is not None and attention_mask.ndim == 4:
+        attention_mask = attention_mask[:, :, :, : key.shape[-2]]
+
+    if is_causal is None:
+        # The last condition is for encoder (decoder) models which specify this by passing their own `is_causal` flag
+        # This is mainly due to those models having mixed implementations for encoder, decoder, and encoder-decoder attns
+        is_causal = query.shape[2] > 1 and attention_mask is None and getattr(module, "is_causal", True)
+
+    # Shapes (e.g. query.shape[2]) are tensors during jit tracing, resulting in `is_causal` being a tensor.
+    # We convert it to a bool for the SDPA kernel that only accepts bools.
+    if torch.jit.is_tracing() and isinstance(is_causal, torch.Tensor):
+        is_causal = is_causal.item()
+
+    # When `is_causal = False` and the `attention_mask` is not of boolean type, the Ascend NPU's SDPA interface cannot utilize the FlashAttentionScore operator，
+    # and falls back to small-operator concatenation. To invoke the FlashAttentionScore, the attention_mask must be converted to boolean type.
+    # This adaptation ensures the `attention_mask` meets the requirement for using FlashAttentionScore.
+    if attention_mask is not None and attention_mask.dtype != torch.bool:
+        # Convert to boolean type, making sdpa to force call FlashAttentionScore to improve performance.
+        attention_mask = torch.logical_not(attention_mask.bool()).to(query.device)
+
+    cu_seqlens = None
+    if "actual_seq_len" in kwargs:
+        cu_seqlens = kwargs.get("actual_seq_len", None).tolist()
+    seq_len = query.shape[2]
+    if cu_seqlens is not None:
+        query, key, value = [rearrange(x, 'b h s d -> (b s) h d') for x in [query, key, value]]
+
     attn_output = torch_npu.npu_fusion_attention(
-        query, key, value,
-        n_head,
-        shape_order,
-        pse=None,
-        padding_mask=None,
-        atten_mask=atten_mask,
-        scale=scaling,
-        pre_tockens=pre_tokens,
-        next_tockens=next_tokens,
+        query,
+        key,
+        value,
+        head_num=query.shape[1],
+        input_layout=input_layout,
+        atten_mask=attention_mask,
         keep_prob=1 - dropout,
-        inner_precise=0,
-        sparse_mode=sparse_mode,
+        actual_seq_qlen=cu_seqlens,
+        actual_seq_kvlen=cu_seqlens,
+        scale=scaling,
+        sparse_mode=2,
     )[0]
 
-    attn_output = attn_output.transpose(1, 2).contiguous()
+    if input_layout == "BNSD":
+        attn_output = attn_output.transpose(1, 2).contiguous()
+    elif input_layout == "TND":
+        attn_output = rearrange(attn_output, '(b s) h d -> b s h d', s=seq_len)
+
     return attn_output, None
 
 
@@ -615,15 +633,21 @@ class MiniMaxM2Model(MiniMaxM2PreTrainedModel):
         if position_ids is None:
             position_ids = cache_position.unsqueeze(0)
 
-        mask_function = create_causal_mask if self.config.sliding_window is None else create_sliding_window_causal_mask
-        causal_mask = mask_function(
-            config=self.config,
-            input_embeds=inputs_embeds,
-            attention_mask=attention_mask,
-            cache_position=cache_position,
-            past_key_values=past_key_values,
-            position_ids=position_ids,
-        )
+        args = get_args()
+        if args.use_flash_attn:
+            causal_mask = get_attention_mask_in_transformers()
+        else:
+            mask_function = (
+                create_causal_mask if self.config.sliding_window is None else create_sliding_window_causal_mask
+            )
+            causal_mask = mask_function(
+                config=self.config,
+                input_embeds=inputs_embeds,
+                attention_mask=attention_mask,
+                cache_position=cache_position,
+                past_key_values=past_key_values,
+                position_ids=position_ids,
+            )
 
         hidden_states = inputs_embeds
 
@@ -678,9 +702,8 @@ def load_balancing_loss_func(
     if gate_logits is None or not isinstance(gate_logits, tuple):
         return 0
 
-    if isinstance(gate_logits, tuple):
-        compute_device = gate_logits[0].device
-        concatenated_gate_logits = torch.cat([layer_gate.to(compute_device) for layer_gate in gate_logits], dim=0)
+    compute_device = gate_logits[0].device
+    concatenated_gate_logits = torch.cat([layer_gate.to(compute_device) for layer_gate in gate_logits], dim=0)
 
     routing_weights = torch.nn.functional.softmax(concatenated_gate_logits, dim=-1)
 
@@ -738,7 +761,7 @@ class MiniMaxM2ForCausalLM(MiniMaxM2PreTrainedModel, GenerationMixin):
         super().__init__(config)
         self.model = MiniMaxM2Model(config)
         self.vocab_size = config.vocab_size
-        self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
+        self.lm_head = LMHead(config.hidden_size, config.vocab_size, bias=False)
         self.router_aux_loss_coef = config.router_aux_loss_coef
         self.num_experts = config.num_local_experts
         self.num_experts_per_tok = config.num_experts_per_tok
@@ -760,6 +783,7 @@ class MiniMaxM2ForCausalLM(MiniMaxM2PreTrainedModel, GenerationMixin):
         output_router_logits: Optional[bool] = None,
         cache_position: Optional[torch.LongTensor] = None,
         logits_to_keep: Union[int, torch.Tensor] = 0,
+        loss_ctx: Optional[callable] = None,
         **kwargs: Unpack[TransformersKwargs],
     ) -> MoeCausalLMOutputWithPast:
         r"""
@@ -783,7 +807,8 @@ class MiniMaxM2ForCausalLM(MiniMaxM2PreTrainedModel, GenerationMixin):
         >>> generate_ids = model.generate(inputs.input_ids, max_length=30)
         >>> tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
         "Hey, are you conscious? Can you talk to me?\nI'm not conscious, but I can talk to you."
-        ```"""
+        ```
+        """
 
         output_router_logits = (
             output_router_logits if output_router_logits is not None else self.config.output_router_logits
@@ -805,11 +830,15 @@ class MiniMaxM2ForCausalLM(MiniMaxM2PreTrainedModel, GenerationMixin):
         hidden_states = outputs.last_hidden_state
         # Only compute necessary logits, and do not upcast them to float if we are not computing the loss
         slice_indices = slice(-logits_to_keep, None) if isinstance(logits_to_keep, int) else logits_to_keep
-        logits = self.lm_head(hidden_states[:, slice_indices, :])
 
-        loss = None
-        if labels is not None:
-            loss = self.loss_function(logits, labels, self.vocab_size, **kwargs)
+        if loss_ctx:
+            logits, loss = self.lm_head(hidden_states[:, slice_indices, :], loss_ctx=loss_ctx)
+        else:
+            logits, loss = self.lm_head(hidden_states[:, slice_indices, :])
+
+            loss = None
+            if labels is not None:
+                loss = self.loss_function(logits=logits, labels=labels, vocab_size=self.config.vocab_size, **kwargs)
 
         aux_loss = None
         if output_router_logits:

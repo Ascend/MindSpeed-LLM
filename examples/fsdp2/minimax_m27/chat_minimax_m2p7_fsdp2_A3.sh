@@ -18,7 +18,7 @@ DISTRIBUTED_ARGS="
 
 mkdir -p ./logs
 bash tests/tools/fsdp2/moe_hf_param_merge_experts.sh
-torchrun $DISTRIBUTED_ARGS inference_fsdp2.py examples/fsdp2/minimax_m27/pretrain_minimax_m2p7_229b_4K_fsdp2_A3.yaml \
+torchrun $DISTRIBUTED_ARGS inference_fsdp2.py examples/fsdp2/minimax_m27/pretrain_minimax_m2p7_229b_8K_fsdp2_A3.yaml \
     --model.model_name_or_path /home/data/MiniMax-M2.7/ \
     --parallel.fsdp_size 32 \
     --parallel.ep_size 16 \
