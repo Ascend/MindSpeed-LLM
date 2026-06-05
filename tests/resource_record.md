@@ -429,4 +429,13 @@
         <td>/</td>
         <td>/</td>
     </tr>
+    <tr>
+        <td>qwen3_30b_tp4_cp2_ep2</td>
+        <td>/data/ci/models/Qwen3-30B-A3B/hf/Qwen3-30B-A3B/</td>
+        <td>/data/ci/models/Qwen3-30B-A3B/mg/qwen3-30b-layer1-tp4pp1ep2/</td>
+        <td>/</td>
+        <td>/data/ci/datasets/processed/qwen3_30b_dist/alpaca_text_document</td>
+        <td>/</td>
+        <td>/</td>
+    </tr>
 </table>

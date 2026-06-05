@@ -83,7 +83,7 @@ CI门禁用例看护仓库重点模型和基本特性，覆盖冒烟测试场景
     </tr>
     <tr>
         <td>EP，CP，num_experts，moe_router_topk，aux_loss，moe_allgather，group_query_attention，rotary_base</td>
-        <td><a href="st/shell_scripts/mixtral_mcore_tp4_cp2_ep2_ptd.sh">mixtral_mcore_tp4_cp2_ep2_ptd.sh</a></td>
+        <td><a href="st/shell_scripts/qwen3_30b_tp4_cp2_ep2.sh">qwen3_30b_tp4_cp2_ep2.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
@@ -198,7 +198,7 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <th>Mem.</th>
     </tr>
     <tr>
-        <td rowspan="39">ST</td>
+        <td rowspan="40">ST</td>
         <td rowspan="1">baichuan2-13B</td>
         <td>baichuan2_13b, no-gradient-accumulation-fusion</td>
         <td><a href="pipeline/st/baichuan2-13B/baichuan2_13b_tp8_pp1_mcore.sh">baichuan2_13b_tp8_pp1_mcore.sh</a></td>
@@ -488,6 +488,14 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td rowspan="1">fsdp2 pretrain</td>
         <td> minimax-m2.7 </td>
         <td><a href="pipeline/st/minimax-m2.7/pretrain_minimax_m2p7_4K_fsdp2.sh">pretrain_minimax_m2p7_4K_fsdp2.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td rowspan="1">mixtral</td>
+        <td> mixtral_8x7b, EP, CP, num_experts, moe_router_topk, aux_loss, moe_allgather, group_query_attention, rotary_base </td>
+        <td><a href="pipeline/st/mixtral/mixtral_mcore_tp4_cp2_ep2_ptd.sh">mixtral_mcore_tp4_cp2_ep2_ptd.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
