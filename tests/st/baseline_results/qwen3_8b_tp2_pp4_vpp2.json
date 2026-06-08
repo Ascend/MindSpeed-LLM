@@ -1,0 +1,100 @@
+{
+    "lm loss": [
+        12.01003,
+        12.01373,
+        11.8559,
+        11.52417,
+        11.39297,
+        10.95181,
+        10.89699,
+        10.79367,
+        10.64609,
+        10.53684,
+        10.39039,
+        10.29227,
+        10.26159,
+        10.1796
+    ],
+    "grad norm": [
+        53.905,
+        52.138,
+        51.295,
+        37.972,
+        36.781,
+        37.871,
+        33.709,
+        28.575,
+        28.297,
+        23.7,
+        23.411,
+        24.081,
+        23.038,
+        24.557
+    ],
+    "time info": [
+        16569.4,
+        958.8,
+        928.1,
+        900.0,
+        887.1,
+        891.6,
+        880.5,
+        881.0,
+        884.2,
+        880.1,
+        892.5,
+        886.6,
+        876.0,
+        873.6
+    ],
+    "memo info": [
+        {
+            "rank": 0,
+            "allocated memory": 3768.73388671875,
+            "max allocated memory": 5549.1572265625,
+            "format": "megatron"
+        },
+        {
+            "rank": 1,
+            "allocated memory": 3768.73388671875,
+            "max allocated memory": 5549.1572265625,
+            "format": "megatron"
+        },
+        {
+            "rank": 2,
+            "allocated memory": 1992.2333984375,
+            "max allocated memory": 2871.92431640625,
+            "format": "megatron"
+        },
+        {
+            "rank": 3,
+            "allocated memory": 1992.2333984375,
+            "max allocated memory": 2871.92431640625,
+            "format": "megatron"
+        },
+        {
+            "rank": 4,
+            "allocated memory": 1992.2333984375,
+            "max allocated memory": 2624.283203125,
+            "format": "megatron"
+        },
+        {
+            "rank": 5,
+            "allocated memory": 1992.2333984375,
+            "max allocated memory": 2624.283203125,
+            "format": "megatron"
+        },
+        {
+            "rank": 6,
+            "allocated memory": 3776.76025390625,
+            "max allocated memory": 5557.2685546875,
+            "format": "megatron"
+        },
+        {
+            "rank": 7,
+            "allocated memory": 3776.76025390625,
+            "max allocated memory": 5557.2685546875,
+            "format": "megatron"
+        }
+    ]
+}

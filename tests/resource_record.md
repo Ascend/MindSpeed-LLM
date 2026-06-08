@@ -438,4 +438,13 @@
         <td>/</td>
         <td>/</td>
     </tr>
+    <tr>
+        <td>qwen3_8b_tp2_pp4_vpp2</td>
+        <td>/data/ci/models/Qwen3-8B/hf/Qwen3-8B/</td>
+        <td>/data/ci/models/Qwen3-8B/mg/qwen3-8b-layer16-tp2pp4vpp2-generated/</td>
+        <td>/</td>
+        <td>/data/ci/datasets/processed/qwen3-8b/alpaca_text_document/</td>
+        <td>/</td>
+        <td>/</td>
+    </tr>
 </table>

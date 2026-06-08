@@ -20,7 +20,7 @@ CI门禁用例看护仓库重点模型和基本特性，覆盖冒烟测试场景
         <td rowspan="18">ST</td>
         <td rowspan="13">Pretrain</td>
         <td>TP，PP，VPP，distributed_optimizer，o2_gradient，o2_optimizer，重计算，enable_recompute_layers_per_pp_rank，FA_TND，use_fused_rotary_pos_emb</td>
-        <td><a href="st/shell_scripts/llama2_tp2_pp4_vpp2_ptd.sh">llama2_tp2_pp4_vpp2_ptd.sh</a></td>
+        <td><a href="st/shell_scripts/qwen3_8b_tp2_pp4_vpp2.sh">qwen3_8b_tp2_pp4_vpp2.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
@@ -293,7 +293,7 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td>Y</td>
     </tr>
     <tr>
-        <td rowspan="10">llama2</td>
+        <td rowspan="11">llama2</td>
         <td>llama2, distributed_optimizer, overlap_grad_reduce, gloo</td>
         <td><a href="pipeline/st/llama2/llama2_tp1_pp8_patch_gloo_ptd.sh">llama2_tp1_pp8_patch_gloo_ptd.sh</a></td>
         <td>Y</td>
@@ -359,6 +359,13 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
     <tr>
         <td>llama2, CCLoRA, QLoRA</td>
         <td><a href="pipeline/st/llama2/tune_llama2_tp1_pp1_qlora_ptd.sh">tune_llama2_tp1_pp1_qlora_ptd.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td>llama2, TP，PP，VPP，distributed_optimizer，o2_gradient，o2_optimizer，FA_TND</td>
+        <td><a href="pipeline/st/llama2/llama2_tp2_pp4_vpp2_ptd.sh">llama2_tp2_pp4_vpp2_ptd.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
