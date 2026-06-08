@@ -447,4 +447,13 @@
         <td>/</td>
         <td>/</td>
     </tr>
+    <tr>
+        <td>pretrain_qwen3_8b_4k_hybridcp_gqa</td>
+        <td>/data/ci/models/Qwen3-8B/hf/Qwen3-8B</td>
+        <td>/data/ci/models/Qwen3-8B/mg/qwen3-8b-layer1-tp2pp1</td>
+        <td>/</td>
+        <td>/data/ci/datasets/processed/chatglm3-dataset-alpaca/alpaca_text_document</td>
+        <td>/</td>
+        <td>/data/ci/cache/save_dir</td>
+    </tr>
 </table>
