@@ -27,7 +27,7 @@ CI门禁用例看护仓库重点模型和基本特性，覆盖冒烟测试场景
     </tr>
     <tr>
         <td>swap_attention，recompute_activation_function，enable_recompute_layers_per_pp_rank，reuse_fp32_param</td>
-        <td><a href="st/shell_scripts/llama2_tp2_pp4_vpp2_swap.sh">llama2_tp2_pp4_vpp2_swap.sh</a></td>
+        <td><a href="st/shell_scripts/qwen3_8b_tp2_pp4_vpp2_swap.sh">qwen3_8b_tp2_pp4_vpp2_swap.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
@@ -352,6 +352,13 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
     <tr>
         <td>llama2, CP, megatron_cp_algo, use-fused-ring-attention-update</td>
         <td><a href="pipeline/st/llama2/llama2_tp2_cp4_general_double_ring.sh">llama2_tp2_cp4_general_double_ring.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td>llama2, swap_attention，recompute_activation_function，enable_recompute_layers_per_pp_rank，reuse_fp32_param</td>
+        <td><a href="pipeline/st/llama2/llama2_tp2_pp4_vpp2_swap.sh">llama2_tp2_pp4_vpp2_swap.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>

@@ -1,7 +1,7 @@
 #!/bin/bash
 # A test case for swap attention and recompute activation function.
 # Noted that the performance of swap attention would be greatly impact
-# when h2d band-with is occupied, for example, file transferring and ckpt convertion.
+# when h2d band-with is occupied, for example, file transferring and ckpt conversion.
 
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True

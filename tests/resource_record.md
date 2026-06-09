@@ -456,4 +456,13 @@
         <td>/</td>
         <td>/data/ci/cache/save_dir</td>
     </tr>
+    <tr>
+        <td>qwen3_8b_tp2_pp4_vpp2_swap</td>
+        <td>/data/ci/models/Qwen3-8B/hf/Qwen3-8B</td>
+        <td>/data/ci/models/Qwen3-8B/mg/qwen3-8b-tp2pp2</td>
+        <td>/data/ci/datasets/origin/alpaca/train-00000-of-00001-a09b74b3ef9c3b56.parquet</td>
+        <td>/data/ci/datasets/processed/pretrain_dataset/alpaca_text_document</td>
+        <td>/</td>
+        <td>/</td>
+    </tr>
 </table>
