@@ -103,6 +103,8 @@ GPT_ARGS="
 "
 
 DATA_ARGS="
+    --handler-name GeneralPretrainHandler \
+    --worker 4 \
     --data-path $DATA_PATH \
     --split 100,0,0
 "
@@ -128,4 +130,6 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     --save ${CKPT_SAVE_DIR} \
     --distributed-backend nccl \
     --transformer-impl local \
+    --enable-hf2mg-convert \
+    --model-type-hf qwen3 \
     | tee logs/train_mcore_qwen3_8b.log

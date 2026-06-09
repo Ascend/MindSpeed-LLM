@@ -82,6 +82,10 @@ GPT_ARGS="
 "
 
 DATA_ARGS="
+    --handler-name AlpacaStyleInstructionHandler \
+    --enable-thinking true \
+    --prompt-type qwen3 \
+    --workers 4 \
     --data-path $DATA_PATH \
     --split 100,0,0
 "
@@ -110,4 +114,6 @@ torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     --load ${CKPT_LOAD_DIR} \
     --save ${CKPT_SAVE_DIR} \
     --transformer-impl local \
+    --enable-hf2mg-convert \
+    --model-type-hf qwen3 \
     | tee logs/tune_qwen3_8b_full.log

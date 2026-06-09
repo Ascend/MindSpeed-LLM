@@ -11,7 +11,8 @@
 
 > [!NOTE]
 >
-> MindSpeed LLM支持<term>Atlas A3训练系列产品</term>和<term>Atlas A2训练系列产品</term>，且要求单NPU的片上内存为64GB及以上，详见[模型支持列表](../models/supported_models.md)。
+> MindSpeed LLM支持<term>Atlas A3 训练系列产品</term>和<term>Atlas A2 训练系列产品</term>，且要求单NPU的片上内存为64GB及以上，详见[模型支持列表](../models/supported_models.md)。
+>
 > 当前Qwen3-8B的示例脚本中`NPUS_PER_NODE=8`表示需要8个NPU，如果实际情况低于此配置，可能遇到OOM问题。
 
 开发者入门基础：
@@ -22,13 +23,13 @@
 
 ## 环境准备
 
-### 环境搭建
+1. 环境搭建
 
-基于PyTorch框架，环境搭建请参考[MindSpeed LLM安装指导](install_guide.md)。
+    基于PyTorch框架，环境搭建请参考[MindSpeed LLM安装指导](install_guide.md)。
 
-### 获取开源模型权重
+2. 获取开源模型权重
 
-1. 通过HuggingFace获取模型权重文件。
+    通过HuggingFace获取模型权重文件。
 
     ```shell
     # 创建一个目录存储权重文件
@@ -48,94 +49,20 @@
     wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/tokenizer.json
     wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/tokenizer_config.json
     wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/vocab.json
-    ```
 
-2. 通过sha256sum验证模型权重文件完整性。
-
-    ```shell
     # 利用sha256sum计算sha256数值
     # 打开文件明细可获取sha256值，https://huggingface.co/Qwen/Qwen3-8B/blob/main/model-00001-of-00005.safetensors
-    sha256sum model-00001-of-00005.safetensors
-    sha256sum model-00002-of-00005.safetensors
-    sha256sum model-00003-of-00005.safetensors
-    sha256sum model-00004-of-00005.safetensors
-    sha256sum model-00005-of-00005.safetensors
-    ```
-
-### 权重转换
-
-昇腾MindSpeed LLM要求模型权重采用Megatron-Mcore格式，在这里我们将原始HuggingFace权重格式转换为Megatron-Mcore格式，详见[hf2mg权重转换](../../pytorch/tools/checkpoint_convert_hf_mcore.md#21-huggingface权重转换到megatron-mcore格式)。
-
-使用官方提供的转换脚本，获取对应切分的mg权重。
-
-1. 进入MindSpeed LLM目录编辑权重转换脚本。
-
-    ```shell
+    sha256sum ./model-00001-of-00005.safetensors
+    sha256sum ./model-00002-of-00005.safetensors
+    sha256sum ./model-00003-of-00005.safetensors
+    sha256sum ./model-00004-of-00005.safetensors
+    sha256sum ./model-00005-of-00005.safetensors
     cd ../..
-    vi examples/mcore/qwen3/ckpt_convert_qwen3_hf2mcore.sh
     ```
 
-2. 完成转换脚本的修改配置并保存。
-    如下为调整后的hf2mcore权重转换示例脚本。
+3. 获取数据集
 
-    ```bash
-    # 请按照实际环境修改set_env.sh路径
-    export CUDA_DEVICE_MAX_CONNECTIONS=1
-    source /usr/local/Ascend/cann/set_env.sh
-
-    python convert_ckpt_v2.py \
-    --load-model-type hf \
-    --save-model-type mg \
-    --target-tensor-parallel-size 1 \           # TP切分大小
-    --target-pipeline-parallel-size 2 \         # PP切分大小
-    --load-dir ./model_from_hf/qwen3_hf/ \      # HF权重路径
-    --save-dir ./model_weights/qwen3_mcore/ \   # Megatron权重保存路径
-    --model-type-hf qwen3
-    ```
-
-    **表 1**  权重转换参数解析
-
-    |参数|说明|必填|
-    |---|---|---|
-    |`--target-tensor-parallel-size`|张量并行度设置（建议配置1）| ✅ |
-    |`--target-pipeline-parallel-size`|流水线并行度设置（建议保持2）| ✅ |
-    |`--load-model-type`|加载权重的类别（可以是hf、mg）| ✅ |
-    |`--save-model-type`|存储权重的类别（可以是hf、mg）| ✅ |
-    |`--load-dir`|权重文件加载路径| ✅ |
-    |`--save-dir`|权重文件保存路径| ✅ |
-    |`--model-type-hf`|HuggingFace模型类别| ✅ |
-
-3. 执行权重转换脚本。
-
-    ```shell
-    bash examples/mcore/qwen3/ckpt_convert_qwen3_hf2mcore.sh
-    ```
-
-    运行脚本后，预期会看到类似以下的日志输出，表示权重转换成功：
-
-    ```shell
-    INFO:root:Saving to ./model_weights/qwen3_mcore/iter_0000001/mp_rank_00_001/model_optim_rng.pt
-    INFO:root:Done!
-    ```
-
-> [!NOTE]
->
-> 对于Qwen3-8B模型，此处推荐的切分配置是tp1pp2，对应上述配置。
-
-## 启动预训练
-
-在这一阶段，我们将基于下载的HuggingFace原数据，完成数据集预处理，并启动模型预训练，具体步骤如下：
-
-1. 数据预处理
-2. 启动预训练任务
-
-### 数据预处理
-
-通过对各种格式的数据做提前预处理，避免原始数据的反复处理加载，将所有的数据都统一存储到.bin和.idx两个文件中，详见[预训练数据处理](../../pytorch/tools/data_process_pretrain.md)。
-
-如下以Alpaca数据集为例，进行预训练数据集处理示例。
-
-1. 获取数据集原数据。
+    通过HuggingFace获取Alpaca数据集。
 
     ```shell
     mkdir dataset
@@ -147,62 +74,20 @@
     cd ..
     ```
 
-2. 编辑预训练数据处理脚本。
+4. 设置环境变量
 
     ```shell
-    vi examples/mcore/qwen3/data_convert_qwen3_pretrain.sh
-    ```
-
-3. 完成数据处理脚本的修改配置并保存。
-
-    如下为调整后的数据处理示例脚本。
-
-    ```bash
-    # 请按照实际环境修改set_env.sh路径
     source /usr/local/Ascend/cann/set_env.sh
-
-    python ./preprocess_data.py \
-      --input ./dataset/train-00000-of-00001-a09b74b3ef9c3b56.parquet \
-      --tokenizer-name-or-path ./model_from_hf/qwen3_hf/ \         # 注意此处路径是否一致
-      --tokenizer-type PretrainedFromHF \
-      --handler-name GeneralPretrainHandler \
-      --output-prefix ./dataset/alpaca \                           # 预训练数据集会生成alpaca_text_document.bin和.idx
-      --json-keys text \
-      --workers 4 \
-      --log-interval 1000
+    source /usr/local/Ascend/nnal/atb/set_env.sh
     ```
 
-    **表 2**  数据预处理参数解析
+    以上命令以root用户安装后的默认路径为例，请用户根据set_env.sh的实际路径进行替换。
 
-    |参数|说明|必填|
-    |---|---|---|
-    |`--input`|支持输入数据集目录或文件，目录则处理全部文件, 支持.parquet、.csv、.json、.jsonl、.txt、.arrow格式，同一目录要求数据格式保持一致| ✅ |
-    |`--tokenizer-type`|说明使用tokenizer类别，参数值为PretrainedFromHF时，词表路径填写模型目录即可| ✅ |
-    |`--tokenizer-name-or-path`|配合tokenizer-type，目标模型的tokenizer原数据文件夹，用于数据集的转换| ✅ |
-    |`--handler-name`|指定数据集的处理类| ✅ |
-    |`--output-prefix`|转换后输出的数据集文件的文件名前缀 | ✅ |
-    |`--workers`|多进程数据集处理| ✅ |
-    |`--log-interval`|处理进度更新的间隔步数| ✅ |
-    |`--json-keys`|从文件中提取的列名列表，默认为`text`，可以为`text`、`input`及`title`等多个输入，结合实际情况及数据集内容使用| ✅ |
+## 启动预训练
 
-4. 执行预训练数据处理脚本。
+在这一阶段，我们将修改预训练示例脚本，启动模型预训练，具体步骤如下：
 
-    ```shell
-    bash examples/mcore/qwen3/data_convert_qwen3_pretrain.sh
-    ```
-
-    预训练数据集处理结果如下：
-
-    ```shell
-    ./dataset/alpaca_text_document.bin
-    ./dataset/alpaca_text_document.idx
-    ```
-
-### 启动预训练任务
-
-完成了数据集处理和权重转换之后，可以开始启动预训练任务。
-
-1. 编辑示例脚本。
+1. 编辑预训练示例脚本。
 
     ```shell
     vi examples/mcore/qwen3/pretrain_qwen3_8b_4K_ptd.sh
@@ -219,29 +104,13 @@
     WORLD_SIZE=$(($NPUS_PER_NODE * $NNODES))
 
     # 根据实际情况配置权重保存、权重加载、词表、数据集路径，多机中所有节点都要有如下数据
-    CKPT_LOAD_DIR="./model_weights/qwen3_mcore/"   # 权重加载路径，填入权重转换时保存的权重路径
     CKPT_SAVE_DIR="./ckpt/qwen3-8b"                # 训练完成后的权重保存路径
-    DATA_PATH="./dataset/alpaca_text_document"     # 数据集路径，填入数据预处理时保存的数据路径，注意需要添加后缀，如使用Alpaca数据集预处理会生成alpaca_text_document.bin和.idx，则在数据集路径后再加上alpaca_text_document
+    DATA_PATH="./dataset/train-00000-of-00001-a09b74b3ef9c3b56.parquet"     # 数据集路径，填入下载的HuggingFace原数据的路径
     TOKENIZER_PATH="./model_from_hf/qwen3_hf/"     # 词表路径，填入下载的开源权重词表路径
-
-    TP=1                # 权重转换设置--target-tensor-parallel-size 1，修改为1
-    PP=2                # 权重转换设置--target-pipeline-parallel-size 2，修改为2，与权重转换时一致
-    SEQ_LENGTH=4096     # 设置seq_length为4096
-    MBS=1               # 设置micro-batch-size为1
-    GBS=64              # 设置global-batch-size为64
-    TRAIN_ITERS=2000    # 设置训练迭代步数
+    CKPT_LOAD_DIR="./model_from_hf/qwen3_hf/"      # 权重加载路径，填入下载的HuggingFace权重的路径
     ```
 
-3. 设置环境变量。
-
-    ```shell
-    source /usr/local/Ascend/cann/set_env.sh
-    source /usr/local/Ascend/nnal/atb/set_env.sh
-    ```
-
-    以上命令以root用户安装后的默认路径为例，请用户根据set_env.sh的实际路径进行替换。
-
-4. 执行预训练脚本。
+3. 执行预训练脚本。
 
     ```shell
     bash examples/mcore/qwen3/pretrain_qwen3_8b_4K_ptd.sh
@@ -253,7 +122,7 @@
 
     脚本中包含训练参数或优化特性，下表为部分参数解释。
 
-    **表 3**  训练脚本参数说明
+    **表 1**  训练脚本参数说明
 
     |参数名|说明|
     |----|----|
@@ -272,88 +141,9 @@
 
 ## 启动微调
 
-在这一阶段，我们将基于下载的HuggingFace原数据，完成数据集预处理，并启动模型微调，具体步骤如下：
+在这一阶段，我们将修改微调示例脚本，启动模型微调，具体步骤如下：
 
-1. 数据预处理
-2. 启动微调任务
-
-### 数据预处理
-
-通过对各种格式的数据做提前预处理，避免原始数据的反复处理加载，将所有的数据都统一存储到.bin和.idx两个文件中，详见[Alpaca微调数据使用文档](../../pytorch/tools/data_process_sft_alpaca_style.md)。
-
-如下以Alpaca数据集为例，进行数据预处理示例。
-
-1. 获取数据集原数据。
-
-    ```shell
-    mkdir dataset
-    cd dataset/
-    # HuggingFace 数据集链接
-    wget https://huggingface.co/datasets/tatsu-lab/alpaca/resolve/main/data/train-00000-of-00001-a09b74b3ef9c3b56.parquet
-    cd ..
-    ```
-
-2. 编辑数据预处理脚本。
-
-    ```shell
-    vi examples/mcore/qwen3/data_convert_qwen3_instruction.sh
-    ```
-
-3. 完成数据预处理脚本的修改配置并保存。
-
-    ```bash
-    # 请根据实际环境修改set_env.sh路径
-    source /usr/local/Ascend/cann/set_env.sh
-    mkdir ./finetune_dataset
-
-    python ./preprocess_data.py \
-    --input ./dataset/train-00000-of-00001-a09b74b3ef9c3b56.parquet \
-    --tokenizer-name-or-path ./model_from_hf/qwen3_hf/ \
-    --output-prefix ./finetune_dataset/alpaca \
-    --handler-name AlpacaStyleInstructionHandler \
-    --tokenizer-type PretrainedFromHF \
-    --workers 4 \
-    --log-interval 1000 \
-    --enable-thinking true \
-    --prompt-type qwen3
-    ```
-
-    **表 4**  数据预处理参数解析
-
-    |参数|说明|必填|
-    |---|---|---|
-    |`--input`|支持输入数据集目录或文件，目录则处理全部文件, 支持.parquet、.csv、.json、.jsonl、.txt、.arrow格式，同一目录要求数据格式保持一致| ✅ |
-    |`--tokenizer-type`|说明使用tokenizer类别，参数值为PretrainedFromHF时，词表路径填写模型目录即可| ✅ |
-    |`--tokenizer-name-or-path`|配合tokenizer-type，目标模型的tokenizer原数据文件夹，用于数据集的转换| ✅ |
-    |`--output-prefix`|转换后输出的数据集文件的文件名前缀 | ✅ |
-    |`--workers`|多进程数据集处理| ✅ |
-    |`--handler-name`|指定数据集的处理类| ✅ |
-    |`--log-interval`|处理进度更新的间隔步数| ✅ |
-    |`--enable-thinking`|快慢思考模板开关|  |
-    |`--prompt-type`|用于指定模型模板| ✅ |
-
-4. 执行数据处理脚本。
-
-    ```shell
-    bash examples/mcore/qwen3/data_convert_qwen3_instruction.sh
-    ```
-
-    微调数据集处理结果如下：
-
-    ```shell
-    ./finetune_dataset/alpaca_packed_attention_mask_document.bin
-    ./finetune_dataset/alpaca_packed_attention_mask_document.idx
-    ./finetune_dataset/alpaca_packed_input_ids_document.bin
-    ./finetune_dataset/alpaca_packed_input_ids_document.idx
-    ./finetune_dataset/alpaca_packed_labels_document.bin
-    ./finetune_dataset/alpaca_packed_labels_document.idx
-    ```
-
-### 启动微调任务
-
-完成了数据集处理和权重转换之后，可以开始启动微调任务。
-
-1. 编辑示例脚本。
+1. 编辑微调启动示例脚本。
 
     ```shell
     vi examples/mcore/qwen3/tune_qwen3_8b_4K_full_ptd.sh
@@ -368,29 +158,15 @@
     NNODES=1
     NODE_RANK=0
     WORLD_SIZE=$(($NPUS_PER_NODE * $NNODES))
-    ```
 
-    在脚本中修改相关路径参数和模型切分配置：
-
-    ```bash
-    CKPT_LOAD_DIR="./model_weights/qwen3_mcore/"  # 指向权重转换后保存的路径
+    # 根据实际情况配置权重保存、权重加载、词表、数据集路径，多机中所有节点都要有如下数据
+    CKPT_LOAD_DIR="./model_from_hf/qwen3_hf/"     # 指向下载的HuggingFace开源权重的位置
     CKPT_SAVE_DIR="./ckpt/qwen3-8b"               # 指向用户指定的微调后权重保存路径
-    DATA_PATH="./finetune_dataset/alpaca"         # 指定处理后的数据路径
+    DATA_PATH="./dataset/train-00000-of-00001-a09b74b3ef9c3b56.parquet"         # 指定获取的数据集原数据路径
     TOKENIZER_PATH="./model_from_hf/qwen3_hf/"    # 指定模型的tokenizer路径
-    TP=1                                          # 模型权重转换的tp大小，在本例中是1
-    PP=2                                          # 模型权重转换的pp大小，在本例中是2
     ```
 
-3. 设置环境变量。
-
-    ```shell
-    source /usr/local/Ascend/cann/set_env.sh
-    source /usr/local/Ascend/nnal/atb/set_env.sh
-    ```
-
-    以上命令以root用户安装后的默认路径为例，请用户根据set_env.sh的实际路径进行替换。
-
-4. 执行微调脚本。
+3. 执行微调脚本。
 
     ```shell
     bash examples/mcore/qwen3/tune_qwen3_8b_4K_full_ptd.sh
@@ -402,7 +178,7 @@
 
     脚本中包含微调参数或优化特性，下表为部分参数解释。
 
-    **表 5**  微调脚本参数说明
+    **表 2**  微调脚本参数说明
 
     |参数名|说明|
     |----|----|
