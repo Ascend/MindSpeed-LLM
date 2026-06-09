@@ -45,6 +45,7 @@ training:
   dataloader_num_workers : 1
   disable_shuffling: 1
   seed: 42
+  max_steps: 15
   dataloader_drop_last: True
   output_dir: ./output
   optimizer: adamw
