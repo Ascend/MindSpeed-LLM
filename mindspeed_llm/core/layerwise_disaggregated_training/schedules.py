@@ -851,6 +851,15 @@ def forward_backward_pipelining_without_interleaving(
 
     # Disable async grad reductions
     no_sync_func = config.no_sync_func
+    if isinstance(no_sync_func, list):
+
+        def multi_no_sync():
+            stack = contextlib.ExitStack()
+            for model_chunk_no_sync_func in config.no_sync_func:
+                stack.enter_context(model_chunk_no_sync_func())
+            return stack
+
+        no_sync_func = multi_no_sync
     if no_sync_func is None:
         no_sync_func = contextlib.nullcontext
     no_sync_context = None
@@ -875,6 +884,10 @@ def forward_backward_pipelining_without_interleaving(
 
     disable_grad_sync()
 
+    if config.grad_sync_func is not None and not isinstance(config.grad_sync_func, list):
+        config.grad_sync_func = [config.grad_sync_func for _ in model]
+
+    synchronized_model_chunks = set()
     # Compute number of warmup microbatches.
     num_warmup_microbatches = (
         parallel_state.get_pipeline_model_parallel_world_size() - parallel_state.get_pipeline_model_parallel_rank()
@@ -967,11 +980,18 @@ def forward_backward_pipelining_without_interleaving(
         my_stage = get_vtp_my_stage_idx()
         pp_size = parallel_state.get_pipeline_model_parallel_world_size()
 
-        # Check forward/backward asymmetric boundaries with wraparound
+        # Check forward/backward asymmetric boundaries with wraparound.
+        # Edge-cloud boundary (stage 0) always uses VTP communication regardless of
+        # whether stage sizes differ, ensuring rank0 P2P + broadcast pattern is used
+        # for all edge<->cloud communication even with uniform TP distribution.
         next_stage = (my_stage + 1) % pp_size
         prev_stage = (my_stage - 1) % pp_size
-        vtp_need_asymmetric_fwd = vtp_size_list[my_stage] != vtp_size_list[next_stage]
-        vtp_need_asymmetric_bwd = vtp_size_list[my_stage] != vtp_size_list[prev_stage]
+        vtp_need_asymmetric_fwd = (
+            vtp_size_list[my_stage] != vtp_size_list[next_stage] or my_stage == 0 or next_stage == 0
+        )
+        vtp_need_asymmetric_bwd = (
+            vtp_size_list[my_stage] != vtp_size_list[prev_stage] or my_stage == 0 or prev_stage == 0
+        )
 
     if parallel_state.get_pipeline_model_parallel_rank() % 2 == 0:
         receive_forward_stream = receive_backward_stream = stream_ping
@@ -1498,9 +1518,10 @@ def forward_backward_pipelining_without_interleaving(
                 if not forward_only:
                     output_tensor_grad_end = [None] * len(recv_tensor_shapes)
 
-                    if num_2f2b == 0 and cooldown_iter_num == 0 and last_iteration:
+                    if num_2f2b == 0 and cooldown_iter_num == 0 and last_iteration and group_i == len(group_iter) - 1:
                         if config.grad_sync_func is None or rank == 0:
                             enable_grad_sync()
+                            synchronized_model_chunks.add(1)
 
                     deallocate_output_tensor(output_tensor_end[0], config.deallocate_pipeline_outputs)
 
@@ -1709,6 +1730,10 @@ def forward_backward_pipelining_without_interleaving(
 
                     output_tensor_grad_end = [None] * len(recv_tensor_shapes)
 
+                    if last_iteration and group_i == len(group_iter) - 1:
+                        if config.grad_sync_func is None or rank == 0:
+                            enable_grad_sync()
+                            synchronized_model_chunks.add(1)
                     input_tensor_grad_end = backward_step(
                         input_tensor_end,
                         output_tensor_end,
@@ -1726,6 +1751,12 @@ def forward_backward_pipelining_without_interleaving(
                         prev_rank=pr,
                         is_end_stage=True,
                     )
+                    if (
+                        last_iteration
+                        and group_i == len(group_iter) - 1
+                        and (cooldown_iter_num > 0 or len(group_iter) > 1)
+                    ):
+                        disable_grad_sync()
 
         if not parallel_state.is_pipeline_first_stage(ignore_virtual=True):
             wait_helper(reqs_list)
@@ -1736,6 +1767,7 @@ def forward_backward_pipelining_without_interleaving(
             if cooldown_iter_num == 0 and last_iteration:
                 if config.grad_sync_func is None or rank == 0:
                     enable_grad_sync()
+                    synchronized_model_chunks.add(0)
 
             if not last_iteration:
                 recv_tensor_shapes = recv_forward_tensor_shapes.pop(0)
@@ -1783,9 +1815,10 @@ def forward_backward_pipelining_without_interleaving(
                 input_tensor = input_tensors[pp_group_name].pop(0)
                 output_tensor = output_tensors[pp_group_name].pop(0)
 
-                if cooldown_iter_num == 0 and last_iteration:
+                if cooldown_iter_num == 0 and last_iteration and group_i == len(group_iter) - 1:
                     if config.grad_sync_func is None or rank == 0:
                         enable_grad_sync()
+                        synchronized_model_chunks.add(0)
 
                 input_tensor_grad = backward_step(input_tensor, output_tensor, output_tensor_grad, model_type, config)
 
@@ -1802,8 +1835,10 @@ def forward_backward_pipelining_without_interleaving(
             last_iteration = i == (cooldown_iter_num - 1)
 
             if last_iteration:
-                if config.grad_sync_func is None or rank == 0:
-                    enable_grad_sync()
+                if not parallel_state.is_pipeline_first_stage(ignore_virtual=True) or len(group_iter) == 1:
+                    if config.grad_sync_func is None or rank == 0:
+                        enable_grad_sync()
+                        synchronized_model_chunks.add(0)
 
             if parallel_state.is_pipeline_first_stage(ignore_virtual=True):
                 recv_tensor_shapes = recv_backward_tensor_shapes.pop(0)
@@ -1851,6 +1886,11 @@ def forward_backward_pipelining_without_interleaving(
             else:
                 # Virtual DP scenario, send backward for each DP domain.
                 for group_i, sbg, nr, pr in zip(group_iter, send_backward_group, next_rank, prev_rank):
+                    if last_iteration and group_i == len(group_iter) - 1:
+                        if config.grad_sync_func is None or rank == 0:
+                            enable_grad_sync()
+                            synchronized_model_chunks.add(0)
+
                     input_tensor = input_tensors[pp_group_name].pop(0)
                     output_tensor = output_tensors[pp_group_name].pop(0)
 
@@ -1890,9 +1930,11 @@ def forward_backward_pipelining_without_interleaving(
         # Launch any remaining grad reductions.
         if no_sync_context is not None:
             enable_grad_sync()
-            if config.grad_sync_func is not None:
-                for this_model in model:
-                    config.grad_sync_func(this_model.parameters())
+        if config.grad_sync_func is not None:
+            for idx, this_model in enumerate(model):
+                if idx not in synchronized_model_chunks:
+                    config.grad_sync_func[idx](this_model.parameters())
+                    synchronized_model_chunks.add(idx)
 
     if config.finalize_model_grads_func is not None and not forward_only:
         # If defer_embedding_wgrad_compute is enabled we need to do the

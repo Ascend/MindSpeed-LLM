@@ -224,10 +224,6 @@ def _auto_detect_vtp_sizes(args):
 
     _EDGE_TP_SIZE = vtp_sizes[0]
 
-    # All stages same TP → no VTP needed
-    if len(set(vtp_sizes)) == 1:
-        return None
-
     return vtp_sizes
 
 
@@ -921,7 +917,7 @@ def initialize_model_parallel_wrapper(initialize_model_parallel):
             tensor_model_parallel_size, pipeline_model_parallel_size, context_parallel_size, vdp_size, vtp_sizes
         )
 
-        if vtp_sizes and len(set(vtp_sizes)) > 1:
+        if vtp_sizes:
             org_args = (
                 tensor_model_parallel_size,
                 pipeline_model_parallel_size,

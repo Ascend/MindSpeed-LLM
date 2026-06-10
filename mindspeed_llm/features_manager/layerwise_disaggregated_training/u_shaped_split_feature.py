@@ -39,6 +39,8 @@ class UShapedSplitFeature(MindSpeedFeature):
             from mindspeed_llm.core.layerwise_disaggregated_training.initialize import initialize_megatron
             from megatron.training.utils import print_rank_0
             from mindspeed_llm.core.layerwise_disaggregated_training.num_layer_list import _get_block_submodules
+            from mindspeed_llm.core.layerwise_disaggregated_training.recompute_common import should_recompute
+            from mindspeed_llm.core.layerwise_disaggregated_training.recompute_adaptor import granular_module_allocation
 
             patch_manager.register_patch("megatron.training.utils.print_rank_last", print_rank_0)
             patch_manager.register_patch(
@@ -63,3 +65,10 @@ class UShapedSplitFeature(MindSpeedFeature):
                 patch_manager.register_patch(
                     "megatron.core.transformer.transformer_block._get_block_submodules", _get_block_submodules
                 )
+            patch_manager.register_patch(
+                "mindspeed.core.memory.recompute.recompute_common.should_recompute", should_recompute
+            )
+            patch_manager.register_patch(
+                "mindspeed.core.memory.swap_attention.adaptor.AdaptiveRecomputeSwap.granular_module_allocation",
+                granular_module_allocation,
+            )

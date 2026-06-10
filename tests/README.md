@@ -515,7 +515,7 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td>Y</td>
     </tr>
     <tr>
-        <td rowspan="28">UT</td>
+        <td rowspan="30">UT</td>
         <td rowspan="3">checkpoint</td>
         <td>test_checkpoint_param</td>
         <td><a href="pipeline/ut/checkpoint/test_checkpoint_param.py">test_checkpoint_param.py</a></td>
@@ -663,7 +663,7 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td></td>
     </tr>
     <tr>
-        <td rowspan="8">posttrain</td>
+        <td rowspan="10">posttrain</td>
         <td>ldt_sft, test_convert_ckpt_pp_vpp, convert_ckpt, merge_ckpt</td>
         <td><a href="pipeline/ut/posttrain/ldt_sft/test_convert_ckpt_pp_vpp.py">test_convert_ckpt_pp_vpp.py</a></td>
         <td>Y</td>
@@ -715,6 +715,20 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
     <tr>
         <td>ldt_sft, test_utils</td>
         <td><a href="pipeline/ut/posttrain/ldt_sft/test_utils.py">test_utils.py</a></td>
+        <td>Y</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>ldt_sft, test_recompute_adaptor, granular_module_allocation</td>
+        <td><a href="pipeline/ut/posttrain/ldt_sft/test_recompute_adaptor.py">test_recompute_adaptor.py</a></td>
+        <td>Y</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>ldt_sft, test_recompute_common, should_recompute</td>
+        <td><a href="pipeline/ut/posttrain/ldt_sft/test_recompute_common.py">test_recompute_common.py</a></td>
         <td>Y</td>
         <td></td>
         <td></td>
