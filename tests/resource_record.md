@@ -207,11 +207,11 @@
         <td>/</td>
     </tr>
     <tr>
-        <td>dpo_llama2_tp1_pp1_cyclic_pairwise</td>
-        <td>/data/ci/models/llama2/hf/llama-2-7b-hf</td>
-        <td>/data/ci/models/llama2/mg/llama2-7b_2l_tp1pp1</td>
+        <td>dpo_qwen3_8b_tp2_pp1_cyclic_pairwise</td>
+        <td>/data/ci/models/Qwen3-8B/hf/Qwen3-8B</td>
+        <td>/data/ci/models/Qwen3-8B/mg/qwen3-8b-layer1-tp2pp1</td>
         <td>/</td>
-        <td>/data/ci/datasets/processed/orca/orca_rlhf</td>
+        <td>/data/ci/datasets/processed/qwen3-8b-dpo/orca_rlhf</td>
         <td>/</td>
         <td>/</td>
     </tr>

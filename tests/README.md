@@ -126,8 +126,8 @@ CI门禁用例看护仓库重点模型和基本特性，覆盖冒烟测试场景
     </tr>
     <tr>
         <td rowspan="1">DPO</td>
-        <td>is_pairwise_dataset, cyclic</td>
-        <td><a href="st/shell_scripts/dpo_llama2_tp1_pp1_cyclic_pairwise.sh">dpo_llama2_tp1_pp1_cyclic_pairwise.sh</a></td>
+        <td>is_pairwise_dataset, cyclic, TP, use_distributed_optimizer</td>
+        <td><a href="st/shell_scripts/dpo_qwen3_8b_tp2_pp1_cyclic_pairwise.sh">dpo_qwen3_8b_tp2_pp1_cyclic_pairwise.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
