@@ -7,6 +7,7 @@
 <a href="../../../docs/zh/pytorch/training/pretrain/mcore/pretrain.md">预训练指导文档</a>
 
 预训练过程脚本使用顺序为：
+
 ```shell
 a. data_convert_deepseek3_pretrain.sh
 
@@ -57,6 +58,7 @@ d. ckpt_convert_deepseek3_merge_lora2hf.sh （可选）
 
 - 支持将[huggingface权重](https://huggingface.co/deepseek-ai/DeepSeek-V3/tree/main)转换为分布式megatron mcore权重，用于微调、推理、评估等任务。要求原权重做反量化后获得bf16数据格式，反量化方法请参考MindIE官方提供的[代码](https://modelers.cn/models/MindIE/deepseekv3/blob/main/NPU_inference/fp8_cast_bf16.py)。
 - DeepSeek-V3模型目录下的<a href="../../mcore/deepseek3/ckpt_convert_deepseek3_hf2mcore.sh">ckpt_convert_deepseek3_hf2mcore.sh</a>脚本，设置与训练脚本相同配置，再执行转换：
+
 ```shell
 bash examples/mcore/deepseek3/ckpt_convert_deepseek3_hf2mcore.sh
 ```
@@ -74,6 +76,7 @@ bash examples/mcore/deepseek3/ckpt_convert_deepseek3_mcore2hf.sh
 
 - 支持将训练好的LoRA/QLoRA格式的权重转huggingface格式。
 - DeepSeek-V3模型目录下的<a href="../../mcore/deepseek3/ckpt_convert_deepseek3_merge_lora2hf.sh">ckpt_convert_deepseek3_merge_lora2hf.sh</a>脚本，设置与训练脚本相同配置，再执行转换：
+
 ```shell
 bash examples/mcore/deepseek3/ckpt_convert_deepseek3_merge_lora2hf.sh
 ```
@@ -160,7 +163,7 @@ MTP层权重默认存储在最后一个pp stage。
     </tr>
     <tr>
       <td>--mla-mm-split</td>
-      <td>在MLA中，将2个up-proj matmul操作拆分成4个。默认值为False。
+      <td>在MLA中，将2个up-proj matmul操作拆分成4个。默认值为False。<br>
 注意，QLoRA和LoRA权重转换不支持该参数。</td>
       <td>✅</td>
     </tr>
@@ -176,8 +179,7 @@ MTP层权重默认存储在最后一个pp stage。
     </tr>
     <tr>
       <td>--save-lora-to-hf</td>
-      <td>加入此参数将单独的不含base权重的LoRA权重转为huggingface格式，与--moe-grouped-gemm不兼容；
-
+      <td>加入此参数将单独的不含base权重的LoRA权重转为huggingface格式，与--moe-grouped-gemm不兼容；<br>
 在LoRA微调时,脚本中不能加入--moe-grouped-gemm参数，可以在微调脚本中加入--lora-ckpt-filter仅保存LoRA权重。</td>
       <td>✅</td>
     </tr>
@@ -192,7 +194,7 @@ MTP层权重默认存储在最后一个pp stage。
 
 示例：
 
-```
+```bash
 python examples/mcore/deepseek3/convert_ckpt_deepseek3_mcore2hf.py \
     --source-tensor-parallel-size 1 \
     --source-pipeline-parallel-size 4 \
@@ -219,7 +221,8 @@ python examples/mcore/deepseek3/convert_ckpt_deepseek3_mcore2hf.py \
 如果需要将 base 权重和独立的 LoRA 权重合并转为huggingface格式，可以分别指定两个路径进行加载：
 
 示例：
-```
+
+```bash
 python examples/mcore/deepseek3/convert_ckpt_deepseek3_mcore2hf.py \
     --source-tensor-parallel-size 1 \
     --source-pipeline-parallel-size 4 \
@@ -247,7 +250,7 @@ python examples/mcore/deepseek3/convert_ckpt_deepseek3_mcore2hf.py \
 
 如果需要将单独的LoRA权重转为huggingface格式：
 
-```
+```bash
 python examples/mcore/deepseek3/convert_ckpt_deepseek3_mcore2hf.py \
     --source-tensor-parallel-size 1 \
     --source-pipeline-parallel-size 4 \
@@ -288,7 +291,8 @@ python examples/mcore/deepseek3/convert_ckpt_deepseek3_mcore2hf.py \
 如果需要将 base 权重和独立的 QLoRA 权重合并转为huggingface格式，可以分别指定两个路径进行加载：
 
 示例：
-```
+
+```bash
 python examples/mcore/deepseek3/convert_ckpt_deepseek3_mcore2hf.py \
     --source-tensor-parallel-size 1 \
     --source-pipeline-parallel-size 4 \
