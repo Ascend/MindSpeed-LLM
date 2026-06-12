@@ -9,7 +9,7 @@ MindSpeed LLM 项目代码按照模块化设计原则进行组织，主要包含
 - **mindspeed_llm/**：核心代码目录，包含模型训练、特性管理、权重转换、在线推理和评估工具链等核心功能实现
 - **docs/**：项目文档目录，提供项目介绍、快速入门、安装指南和特性说明等
 - **configs/**：配置文件目录，提供权重转换、评估、微调、FSDP2和RLHF等相关配置
-- **examples/**：模型示例脚本，涵盖fsdp2、mcore、mindspore和rlhf等多种训练后端和场景
+- **examples/**：模型示例脚本，涵盖fsdp2、mcore和rlhf等多种训练后端和场景
 - **tests/**：测试用例目录，包含单元测试、系统测试和覆盖率测试等
 
 ### 代码目录结构
@@ -29,7 +29,6 @@ MindSpeed-LLM/
  ├── examples                  # 模型示例脚本
  │   ├── fsdp2/                # FSDP2后端示例
  │   ├── mcore/                # mcore后端示例
- │   ├── mindspore/            # MindSpore后端示例
  │   └── rlhf/                 # RLHF示例
  ├── mindspeed_llm             # 核心代码目录
  │   ├── __init__.py           # 核心模块包初始化
@@ -96,14 +95,6 @@ MindSpeed-LLM/
  │   ├── legacy/                # 遗留代码模块
  │   │   ├── data/              # 遗留数据处理
  │   │   └── __init__.py        # 遗留模块初始化
- │   ├── mindspore/             # MindSpore后端模块
- │   │   ├── core/              # MindSpore核心功能
- │   │   ├── tasks/             # MindSpore任务模块
- │   │   ├── training/          # MindSpore训练模块
- │   │   ├── convert_ckpt.py    # MindSpore权重转换
- │   │   ├── convert_ckpt_v2.py # MindSpore权重转换 v2
- │   │   ├── mindspore_adaptor_v2.py  # MindSpore适配器
- │   │   └── utils.py           # MindSpore工具函数
  │   ├── tasks/                 # 任务模块
  │   │   ├── checkpoint/        # 检查点任务
  │   │   ├── common/            # 通用任务
@@ -177,8 +168,6 @@ examples/
 │   ├── gpt_oss/          # GPT OSS 模型示例
 ├── mcore/                # mcore 训练后端
 │   ├── qwen3/            # Qwen3 模型示例，包含预训练、微调、评估等脚本
-├── mindspore/            # MindSpore 训练框架
-│   ├── qwen25/           # Qwen2.5 MindSpore 示例，包含预训练、微调、评估脚本
 └── rlhf/                 # RLHF 相关示例，包含数据预处理和训练脚本
 ```
 
@@ -186,7 +175,7 @@ examples/
 
 1. FSDP2 训练后端GPT OSS 模型示例
 
-    - 微调：运行 `examples/fsdp2/gpt_oss/tune_gpt_oss_20b_a3b_4K_fsdp2_mindspeed.sh` 脚本进行模型微调    
+    - 微调：运行 `examples/fsdp2/gpt_oss/tune_gpt_oss_20b_a3b_4K_fsdp2_mindspeed.sh` 脚本进行模型微调
     - 详细指南：参考 [finetune_fsdp2.md](pytorch/training/finetune/fsdp2/finetune_fsdp2.md) 获取完整使用说明
 
 2. mcore 训练后端 Qwen3 8B模型预训练示例
@@ -208,18 +197,13 @@ examples/
     - 在线推理：运行 `generate_qwen3_8b_ptd.sh` 脚本进行模型在线推理
     - 评估：运行 `evaluate_qwen3_8b.sh` 脚本进行模型评估
 
-5. MindSpore 训练框架Qwen2.5 预训练模型示例
-
-    - 数据处理：运行 `data_convert_qwen25_pretrain.sh` 脚本进行预训练数据处理
-    - 预训练：运行 `pretrain_qwen25_7b_32k_ms.sh` 脚本进行模型预训练
-
 所有示例脚本都提供了完整的命令行参数和配置示例，用户可以根据自己的需求进行修改和扩展。
 
 ## 总结
 
 MindSpeed LLM 项目提供了一个完整的大语言模型训练解决方案，具有以下核心特点：
 
-- **多框架支持**：同时支持 PyTorch（含 mcore 和 fsdp2 两种训练后端）和 MindSpore 训练框架
+- **多框架支持**：同时支持基于 PyTorch 的 mcore 和 fsdp2 两种训练后端
 - **模块化设计**：代码按照功能模块进行组织，便于维护和扩展
 - **丰富的模型支持**：涵盖 dense、MoE 、SSM 、Linear等多种模型架构，支持主流开源大模型
 - **完整的工具链**：提供从数据预处理、模型训练、评估到在线推理的全流程工具

@@ -304,7 +304,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
     <td>✅</td>
     <td>❌</td>
     <td>❌</td>
-    <td>【NAIE】</td>
+    <td>【Ascend】</td>
   </tr>
     <tr>
     <td><a href="../training/finetune/mcore/multi_turn_conversation.md">多轮对话微调</a></td>
@@ -339,7 +339,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
       <td><a href="mcore/cc_lora.md">CCLoRA</a></td>
     <td>❌</td>
     <td>❌</td>
-    <td>【NAIE】</td>
+    <td>【Ascend】</td>
   </tr>
   <tr>
     <td>长序列微调</td>

@@ -7,7 +7,6 @@
 MindSpeed LLM 文档按照不同的训练框架进行组织，主要包含以下核心目录：
 
 - **pytorch/**：基于 PyTorch 训练框架的文档，主要支持 Mcore和FSDP2 两种训练后端，包含安装指南、模型清单、特性说明、训练方案和工具链等
-- **mindspore/**：基于 MindSpore 训练框架的文档，仅支持Mcore训练后端，提供 MindSpore 框架下的使用指南和特性说明
 
 ### 文档目录结构
 
@@ -20,55 +19,50 @@ docs/zh/
 ├── project_guide.md        # 项目导读
 ├── docs_guide.md           # 文档导读
 ├── appendixes.md           # 附录文档
-├── pytorch/                # PyTorch 训练框架相关文档
-│   ├── develop/            # 开发指南
-│   │   ├── mcore/          # Mcore 开发指南
-│   │   │   └── lora_finetune_adaptation.md # LoRA微调迁移开发
-│   │   └── fsdp2/          # FSDP2 开发指南
-│   │       └── model_adaptation.md # FSDP2 模型适配
-│   ├── features/           # 特性文档
-│   │   ├── mcore/          # Mcore 特性文档
-│   │   └── fsdp2/          # FSDP2 特性文档
-│   │       ├── arguments.md            # FSDP2 参数说明
-│   │       └── fsdp2_basic_features.md # FSDP2 特性说明
-│   ├── figures/            # 图片资源
-│   ├── models/             # PyTorch 框架支持的模型
-│   │   └── supported_models.md
-│   ├── training/           # 训练解决方案文档
-│   │   ├── install_guide.md  # 安装指南
-│   │   ├── quick_start.md    # 快速入门指南
-│   │   ├── evaluation/       # 模型评估
-│   │   │   ├── evaluation_guide.md
-│   │   │   ├── models_evaluation.md
-│   │   │   └── evaluation_datasets/  # 评估数据集
-│   │   ├── finetune/       # 模型微调
-│   │   │   ├── mcore/      # Mcore 微调方案
-│   │   │   └── fsdp2/      # FSDP2 微调方案
-│   │   │       └── finetune_fsdp2.md
-│   │   ├── inference/      # 模型推理
-│   │   │   ├── inference.md
-│   │   │   └── chat.md
-│   │   └── pretrain/       # 模型预训练
-│   │       └── mcore/      # Mcore 预训练方案
-│   │           ├── pretrain.md
-│   │           ├── pretrain_eod.md
-│   │           └── train_from_hf.md
-│   └── tools/              # 工具文档
-│       ├── data_process_sft_alpaca_style.md   # Alpaca格式数据处理
-│       ├── data_process_sft_sharegpt_style.md # ShareGPT格式数据处理
-│       ├── data_process_dpo_pairwise.md       # Pairwise数据处理
-│       ├── data_process_pretrain.md           # 预训练数据处理
-│       ├── checkpoint_convert_hf_mcore.md     # 权重转换
-│       ├── checkpoint_convert_hf_mcore_large_params.md  # 权重转换V2
-│       ├── checkpoint_convert_hf_dcp.md       # HF-DCP权重转换
-│       ├── profiling.md                       # 性能分析
-│       └── deterministic_computation.md       # 确定性计算
-└── mindspore/              # MindSpore 训练框架相关文档
-    ├── readme.md           # MindSpore 文档说明
-    ├── quick_start.md      # 快速入门指南
-    ├── install_guide.md    # 安装指南
-    ├── features/           # MindSpore 特性文档
-    └── models/             # MindSpore 框架支持的模型
+├── FAQ.md           # 常见问题
+└── pytorch/                # PyTorch 训练框架相关文档
+    ├── develop/            # 开发指南
+    │   ├── mcore/          # Mcore 开发指南
+    │   │   └── lora_finetune_adaptation.md # LoRA微调迁移开发
+    │   └── fsdp2/          # FSDP2 开发指南
+    │       └── model_adaptation.md # FSDP2 模型适配
+    ├── features/           # 特性文档
+    │   ├── mcore/          # Mcore 特性文档
+    │   └── fsdp2/          # FSDP2 特性文档
+    │       ├── arguments.md            # FSDP2 参数说明
+    │       └── fsdp2_basic_features.md # FSDP2 特性说明
+    ├── figures/            # 图片资源
+    ├── models/             # PyTorch 框架支持的模型
+    │   └── supported_models.md
+    ├── training/           # 训练解决方案文档
+    │   ├── install_guide.md  # 安装指南
+    │   ├── quick_start.md    # 快速入门指南
+    │   ├── evaluation/       # 模型评估
+    │   │   ├── evaluation_guide.md
+    │   │   ├── models_evaluation.md
+    │   │   └── evaluation_datasets/  # 评估数据集
+    │   ├── finetune/       # 模型微调
+    │   │   ├── mcore/      # Mcore 微调方案
+    │   │   └── fsdp2/      # FSDP2 微调方案
+    │   │       └── finetune_fsdp2.md
+    │   ├── inference/      # 模型推理
+    │   │   ├── inference.md
+    │   │   └── chat.md
+    │   └── pretrain/       # 模型预训练
+    │       └── mcore/      # Mcore 预训练方案
+    │           ├── pretrain.md
+    │           ├── pretrain_eod.md
+    │           └── train_from_hf.md
+    └── tools/              # 工具文档
+        ├── data_process_sft_alpaca_style.md   # Alpaca格式数据处理
+        ├── data_process_sft_sharegpt_style.md # ShareGPT格式数据处理
+        ├── data_process_dpo_pairwise.md       # Pairwise数据处理
+        ├── data_process_pretrain.md           # 预训练数据处理
+        ├── checkpoint_convert_hf_mcore.md     # 权重转换
+        ├── checkpoint_convert_hf_mcore_large_params.md  # 权重转换V2
+        ├── checkpoint_convert_hf_dcp.md       # HF-DCP权重转换
+        ├── profiling.md                       # 性能分析
+        └── deterministic_computation.md       # 确定性计算
 ```
 
 ## 核心文档导航
@@ -81,8 +75,6 @@ docs/zh/
 |------|------|
 | [install_guide_pytorch](./pytorch/training/install_guide.md) | 基于PyTorch框架环境安装指导 |
 | [quick_start_pytorch](./pytorch/training/quick_start.md) | Mcore后端的快速上手指导，基于PyTorch框架从环境安装到模型预训练和微调 |
-| [install_guide_mindspore](./mindspore/install_guide.md) | 基于MindSpore框架环境安装指导 |
-| [quick_start_mindspore](./mindspore/quick_start.md) | Mcore后端的快速上手指导，基于MindSpore框架从环境安装到模型预训练和微调 |
 | [finetune_fsdp2](pytorch/training/finetune/fsdp2/finetune_fsdp2.md) | FSDP2后端的快速上手指导，从环境安装到模型训练 |
 | [supported_models](pytorch/models/supported_models.md) | 模型支持列表 |
 
