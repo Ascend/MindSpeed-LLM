@@ -14,7 +14,7 @@ class TestGranularModuleAllocation(unittest.TestCase):
     def _make_args(self, pp_size=2, vpp_layers=2, reduce_recompute=False):
         """Helper to create a mock args namespace."""
         args = MagicMock()
-        args.pp_size = pp_size
+        args.pipeline_model_parallel_size = pp_size
         args.num_layers_per_virtual_pipeline_stage = vpp_layers
         args.reduce_recompute_for_last_chunk = reduce_recompute
         return args
@@ -33,8 +33,8 @@ class TestGranularModuleAllocation(unittest.TestCase):
         group, interval, num_prefetch, noop = result
         self.assertEqual(interval, 0)
         self.assertEqual(num_prefetch, 1)
-        self.assertEqual(group[0], [['0'], [''], ['0'], ['']])  # swap_list
-        self.assertEqual(group[2], [['0'], [''], ['']])  # recompute_list
+        self.assertEqual(group[0], [['0'], ['']])  # swap_list
+        self.assertEqual(group[2], [['0'], ['']])  # recompute_list
 
     @patch('mindspeed_llm.core.layerwise_disaggregated_training.recompute_adaptor.get_args')
     @patch('mindspeed_llm.core.layerwise_disaggregated_training.recompute_adaptor.parallel_state')
@@ -48,8 +48,9 @@ class TestGranularModuleAllocation(unittest.TestCase):
         result = granular_module_allocation(self.mock_self, vpp_size=2, recompute_num_layers=1, cur_pp_noop_layers=[])
 
         group = result[0]
-        self.assertEqual(group[0], [['0', '1'], ['0', '1']])  # swap chunks: both get layer 0,1
-        self.assertEqual(group[2], [['0'], [''], ['']])  # recompute simple
+        # chunk 1 cleared by swap_list[1] = ['']
+        self.assertEqual(group[0], [['0', '1'], ['']])  # swap_list
+        self.assertEqual(group[2], [['0'], ['']])  # recompute simple
 
     @patch('mindspeed_llm.core.layerwise_disaggregated_training.recompute_adaptor.get_args')
     @patch('mindspeed_llm.core.layerwise_disaggregated_training.recompute_adaptor.parallel_state')
@@ -62,8 +63,8 @@ class TestGranularModuleAllocation(unittest.TestCase):
         result = granular_module_allocation(self.mock_self, vpp_size=2, recompute_num_layers=4, cur_pp_noop_layers=[])
 
         group = result[0]
-        # recompute_list: both chunks get '0' and '1'
-        self.assertEqual(group[2], [['0', '1'], ['0', '1']])
+        # recompute_list: both chunks get '0' and '1', then chunk 1 cleared
+        self.assertEqual(group[2], [['0', '1'], ['']])
 
     @patch('mindspeed_llm.core.layerwise_disaggregated_training.recompute_adaptor.get_args')
     @patch('mindspeed_llm.core.layerwise_disaggregated_training.recompute_adaptor.parallel_state')
@@ -151,15 +152,15 @@ class TestGranularModuleAllocation(unittest.TestCase):
     @patch('mindspeed_llm.core.layerwise_disaggregated_training.recompute_adaptor.get_args')
     @patch('mindspeed_llm.core.layerwise_disaggregated_training.recompute_adaptor.parallel_state')
     def test_vpp1_round_robin(self, mock_ps, mock_get_args):
-        """vpp_size=1 with num_prefetch=2: round-robin path."""
-        self.mock_self.num_prefetch = 2
+        """vpp_size=2 with num_prefetch=3 and recompute=3: round-robin, chunk 1 cleared."""
+        self.mock_self.num_prefetch = 3
         mock_get_args.return_value = self._make_args(pp_size=1)
         mock_ps.get_pipeline_model_parallel_rank.return_value = 0
         mock_ps.is_pipeline_last_stage.return_value = False
 
-        result = granular_module_allocation(self.mock_self, vpp_size=1, recompute_num_layers=2, cur_pp_noop_layers=[])
+        result = granular_module_allocation(self.mock_self, vpp_size=2, recompute_num_layers=3, cur_pp_noop_layers=[])
 
         group = result[0]
-        # chunk 0: ['0', '1'] (all layers in one chunk)
-        self.assertEqual(group[0], [['0', '1']])
-        self.assertEqual(group[2], [['0', '1']])
+        # round-robin: chunk 0 gets ['0','1'], chunk 1 gets ['0']; then chunk 1 cleared
+        self.assertEqual(group[0], [['0', '1'], ['']])
+        self.assertEqual(group[2], [['0', '1'], ['']])
