@@ -18,8 +18,6 @@
 
 MindSpeed LLM：基于昇腾生态的大语言模型分布式训练套件，旨在为华为 [昇腾芯片](https://www.hiascend.com/) 生态合作伙伴提供端到端的大语言模型训练方案，包含分布式预训练、分布式指令微调以及对应的开发工具链，如：数据预处理、权重转换、在线推理、基线评估等。
 
-**<small>注意 : 原仓名ModelLink更改为MindSpeed LLM，原包名modellink更改为mindspeed_llm </small>**
-
 # 最新消息
 
 ---
@@ -112,7 +110,7 @@ MindSpeed-LLM/
 
 ---
 
-详见[版本说明](docs/zh/release_notes_llm.md)。
+查看[版本说明](docs/zh/release_notes_llm.md)，了解MindSpeed LLM的最新发布版本以及历史版本，包含对应版本的软件配套表、版本兼容性说明、以及当前版本的更新说明。
 
 # 安装
 
