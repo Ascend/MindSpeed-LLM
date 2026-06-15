@@ -19,10 +19,11 @@
 # limitations under the License.
 # Copyright (c) 2025, HUAWEI CORPORATION.  All rights reserved.
 
-import os
 from typing import Callable, Optional, Union
 
+import math
 import torch
+
 try:
     import torch_npu
 except ImportError:
@@ -45,11 +46,13 @@ from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS, PreTrainedModel
 from transformers.processing_utils import Unpack
 from transformers.utils import TransformersKwargs, auto_docstring, can_return_tuple
 from transformers.utils.deprecation import deprecate_kwarg
+
 try:
     from transformers.utils.generic import OutputRecorder, check_model_inputs
 except ImportError:
     # adapt for transformers 5.x
     from transformers.utils.output_capturing import OutputRecorder, capture_outputs
+
     check_model_inputs = capture_outputs
 from transformers.models.gpt_oss.configuration_gpt_oss import GptOssConfig
 
@@ -95,10 +98,7 @@ class GmmFunction(torch.autograd.Function):
         ctx.group_list = group_list
 
         fwd_output = torch_npu.npu_grouped_matmul(
-            [x], [weight],
-            bias=None,
-            group_list=group_list,
-            split_item=2, group_type=0, group_list_type=1
+            [x], [weight], bias=None, group_list=group_list, split_item=2, group_type=0, group_list_type=1
         )[0]
         return fwd_output
 
@@ -109,17 +109,17 @@ class GmmFunction(torch.autograd.Function):
 
         weight_t = torch.transpose(weight, 1, 2)
         grad_input = torch_npu.npu_grouped_matmul(
-            [grad_output], [weight_t],
-            bias=None,
-            group_list=group_list,
-            split_item=2, group_type=0, group_list_type=1
+            [grad_output], [weight_t], bias=None, group_list=group_list, split_item=2, group_type=0, group_list_type=1
         )[0]
 
         grad_weight = torch_npu.npu_grouped_matmul(
-            [input_tensor.t()], [grad_output],
+            [input_tensor.t()],
+            [grad_output],
             bias=None,
             group_list=group_list,
-            split_item=3, group_type=2, group_list_type=1
+            split_item=3,
+            group_type=2,
+            group_list_type=1,
         )[0]
 
         return grad_input, grad_weight, None
@@ -151,22 +151,14 @@ class GptOssFusedExperts(nn.Module):
         hidden_states = hidden_states.view(-1, self.hidden_size)
 
         permuted_hidden_states, row_ids_map = torch_npu.npu_moe_token_permute(
-            hidden_states,
-            router_indices.to(torch.int32)
+            hidden_states, router_indices.to(torch.int32)
         )
 
         tokens_per_expert = torch.histc(
-            router_indices.float(),
-            bins=self.num_experts,
-            min=0,
-            max=self.num_experts - 1
+            router_indices.float(), bins=self.num_experts, min=0, max=self.num_experts - 1
         ).long()
 
-        intermediate_gemm = npu_group_gemm(
-            permuted_hidden_states,
-            self.gate_up_proj,
-            tokens_per_expert
-        )
+        intermediate_gemm = npu_group_gemm(permuted_hidden_states, self.gate_up_proj, tokens_per_expert)
 
         expanded_gate_up_bias = self.gate_up_proj_bias.repeat_interleave(tokens_per_expert, dim=0)
 
@@ -184,11 +176,7 @@ class GptOssFusedExperts(nn.Module):
 
         intermediate_activations = (up + 1.0) * glu
 
-        output_gemm = npu_group_gemm(
-            intermediate_activations,
-            self.down_proj,
-            tokens_per_expert
-        )
+        output_gemm = npu_group_gemm(intermediate_activations, self.down_proj, tokens_per_expert)
 
         expanded_down_bias = self.down_proj_bias.repeat_interleave(tokens_per_expert, dim=0)
         output = output_gemm + expanded_down_bias
@@ -198,14 +186,14 @@ class GptOssFusedExperts(nn.Module):
         return next_states.view(batch_size, -1, self.hidden_size)
 
     def ep_forward(self, hidden_states, split_list):
-    
         def as_local(t):
             return t.to_local() if hasattr(t, "to_local") else t
+
         gate_up_weights = as_local(self.gate_up_proj)
         down_weights = as_local(self.down_proj)
         gate_up_bias = as_local(self.gate_up_proj_bias)
         down_bias = as_local(self.down_proj_bias)
-    
+
         split_list_tensor = None
         if gate_up_bias is not None or down_bias is not None:
             if isinstance(split_list, list):
@@ -214,30 +202,30 @@ class GptOssFusedExperts(nn.Module):
                 split_list_tensor = split_list
 
         gate_up_out = fused_grouped_matmul(hidden_states, split_list, gate_up_weights)
-    
+
         # Add Bias
         if gate_up_bias is not None:
             expanded_bias = gate_up_bias.repeat_interleave(split_list_tensor, dim=0)
             gate_up_out = gate_up_out + expanded_bias
-    
+
         # --- Activation (SwiGLU) ---
         gate_up_view = gate_up_out.view(gate_up_out.shape[0], self.expert_dim, 2)
-    
+
         gate = gate_up_view[:, :, 0]
         up = gate_up_view[:, :, 1]
-    
+
         gate = gate.clamp(min=None, max=self.limit)
         up = up.clamp(min=-self.limit, max=self.limit)
         glu = gate * torch.sigmoid(gate * self.alpha)
         intermediate_activations = (up + 1.0) * glu
 
         output = fused_grouped_matmul(intermediate_activations, split_list, down_weights)
-    
+
         # Add Bias
         if down_bias is not None:
             expanded_down_bias = down_bias.repeat_interleave(split_list_tensor, dim=0)
             output = output + expanded_down_bias
-    
+
         return output
 
 
@@ -317,15 +305,14 @@ class GptOssExperts(nn.Module):
         return next_states
 
     def ep_forward(self, hidden_states, split_list):
-    
         def as_local(t):
             return t.to_local() if hasattr(t, "to_local") else t
-    
+
         gate_up_weights = as_local(self.gate_up_proj)
         down_weights = as_local(self.down_proj)
         gate_up_bias = as_local(self.gate_up_proj_bias)
         down_bias = as_local(self.down_proj_bias)
-    
+
         split_list_tensor = None
         if gate_up_bias is not None or down_bias is not None:
             if isinstance(split_list, list):
@@ -333,30 +320,30 @@ class GptOssExperts(nn.Module):
             else:
                 split_list_tensor = split_list
         gate_up_out = eager_grouped_matmul(hidden_states, split_list, gate_up_weights)
-    
+
         # Add Bias
         if gate_up_bias is not None:
             expanded_bias = gate_up_bias.repeat_interleave(split_list_tensor, dim=0)
             gate_up_out = gate_up_out + expanded_bias
-    
+
         # --- Activation (SwiGLU) ---
         gate_up_view = gate_up_out.view(gate_up_out.shape[0], self.expert_dim, 2)
-    
+
         gate = gate_up_view[:, :, 0]
         up = gate_up_view[:, :, 1]
-    
+
         gate = gate.clamp(min=None, max=self.limit)
         up = up.clamp(min=-self.limit, max=self.limit)
         glu = gate * torch.sigmoid(gate * self.alpha)
         intermediate_activations = (up + 1.0) * glu
 
         output = eager_grouped_matmul(intermediate_activations, split_list, down_weights)
-    
+
         # Add Bias
         if down_bias is not None:
             expanded_down_bias = down_bias.repeat_interleave(split_list_tensor, dim=0)
             output = output + expanded_down_bias
-    
+
         return output
 
 
@@ -410,11 +397,23 @@ class GptOssRotaryEmbedding(nn.Module):
             self.rope_type = config.rope_scaling.get("rope_type", config.rope_scaling.get("type"))
         else:
             self.rope_type = "default"
+
+        # In transformers 5.x, "linear" rope init requires "factor" in rope_scaling.
+        if self.rope_type == "default":
+            if not hasattr(config, 'rope_scaling') or config.rope_scaling is None:
+                config.rope_scaling = {
+                    "factor": 1.0,
+                    "original_max_position_embeddings": config.max_position_embeddings,
+                }
+            elif "factor" not in config.rope_scaling:
+                config.rope_scaling["factor"] = 1.0
+                config.rope_scaling.setdefault("original_max_position_embeddings", config.max_position_embeddings)
+
         self.max_seq_len_cached = config.max_position_embeddings
         self.original_max_seq_len = config.max_position_embeddings
 
         self.config = config
-        self.rope_init_fn = ROPE_INIT_FUNCTIONS[self.rope_type]
+        self.rope_init_fn = ROPE_INIT_FUNCTIONS.get(self.rope_type, ROPE_INIT_FUNCTIONS.get("linear"))
 
         inv_freq, self.attention_scaling = self.rope_init_fn(self.config, device)
         self.register_buffer("inv_freq", inv_freq, persistent=False)
@@ -423,6 +422,19 @@ class GptOssRotaryEmbedding(nn.Module):
     @torch.no_grad()
     @dynamic_rope_update  # power user: used with advanced RoPE types (e.g. dynamic rope)
     def forward(self, x, position_ids):
+        # 5.x from_pretrained: model created under torch.device("meta"), then to_empty()
+        # replaces ALL buffers with uninitialized tensors. Since inv_freq is persistent=False,
+        # it is NOT included in state_dict and cannot be restored by weight loading.
+        # Detect garbage and recompute on CPU to match 4.x values bit-exactly.
+        if self.inv_freq.numel() > 0 and self.inv_freq.device.type != "meta":
+            v0 = self.inv_freq[0].item()
+            if math.isnan(v0) or math.isinf(v0) or abs(v0) < 1e-15 or abs(v0) > 2.0:
+                with torch.device("cpu"):
+                    new_inv_freq, new_scaling = self.rope_init_fn(self.config, "cpu")
+                self.inv_freq.data = new_inv_freq.to(x.device)
+                self.attention_scaling = new_scaling
+                self.original_inv_freq = self.inv_freq
+
         inv_freq_expanded = self.inv_freq[None, :, None].float().expand(position_ids.shape[0], -1, 1).to(x.device)
         position_ids_expanded = position_ids[:, None, :].float()
 
@@ -454,9 +466,9 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
 
 
 def _apply_rotary_emb(
-        x: torch.Tensor,
-        cos: torch.Tensor,
-        sin: torch.Tensor,
+    x: torch.Tensor,
+    cos: torch.Tensor,
+    sin: torch.Tensor,
 ) -> torch.Tensor:
     first_half, second_half = torch.chunk(x, 2, dim=-1)
     first_ = first_half * cos - second_half * sin
@@ -479,21 +491,19 @@ def apply_rotary_pos_emb(q, k, cos, sin, position_ids=None, unsqueeze_dim=1):
 
 
 def flash_attention_forward(
-        module: nn.Module,
-        query: torch.Tensor,
-        key: torch.Tensor,
-        value: torch.Tensor,
-        attention_mask: Optional[torch.Tensor],
-        scaling: float,
-        dropout: float = 0.0,
-        sliding_window: int = None,
-        **kwargs,
+    module: nn.Module,
+    query: torch.Tensor,
+    key: torch.Tensor,
+    value: torch.Tensor,
+    attention_mask: Optional[torch.Tensor],
+    scaling: float,
+    dropout: float = 0.0,
+    sliding_window: int = None,
+    **kwargs,
 ):
-
     pre_tokens = 1048576
     next_tokens = 0
-    bsz, n_head, seq_length, head_dim = (
-        query.shape[0], query.shape[1], query.shape[2], query.shape[3])
+    n_head = query.shape[1]
 
     sparse_mode = 4
     shape_order = "BNSD"
@@ -506,7 +516,9 @@ def flash_attention_forward(
     atten_mask = torch.triu(new_mask, diagonal=1)
 
     attn_output = torch_npu.npu_fusion_attention_v2(
-        query, key, value,
+        query,
+        key,
+        value,
         n_head,
         shape_order,
         pse=None,
@@ -524,14 +536,14 @@ def flash_attention_forward(
 
 
 def eager_attention_forward(
-        module: nn.Module,
-        query: torch.Tensor,
-        key: torch.Tensor,
-        value: torch.Tensor,
-        attention_mask: Optional[torch.Tensor],
-        scaling: float,
-        dropout: float = 0.0,
-        **kwargs,
+    module: nn.Module,
+    query: torch.Tensor,
+    key: torch.Tensor,
+    value: torch.Tensor,
+    attention_mask: Optional[torch.Tensor],
+    scaling: float,
+    dropout: float = 0.0,
+    **kwargs,
 ):
     key_states = repeat_kv(key, module.num_key_value_groups)
     value_states = repeat_kv(value, module.num_key_value_groups)
@@ -565,7 +577,7 @@ class GptOssAttention(nn.Module):
         self.layer_idx = layer_idx
         self.head_dim = getattr(config, "head_dim", config.hidden_size // config.num_attention_heads)
         self.num_key_value_groups = config.num_attention_heads // config.num_key_value_heads
-        self.scaling = self.head_dim ** -0.5
+        self.scaling = self.head_dim**-0.5
         self.attention_dropout = config.attention_dropout
         self.is_causal = True
         self.q_proj = nn.Linear(
@@ -585,13 +597,13 @@ class GptOssAttention(nn.Module):
 
     @deprecate_kwarg("past_key_value", new_name="past_key_values", version="4.58")
     def forward(
-            self,
-            hidden_states: torch.Tensor,
-            position_embeddings: tuple[torch.Tensor, torch.Tensor],
-            attention_mask: Optional[torch.Tensor],
-            past_key_values: Optional[Cache] = None,
-            cache_position: Optional[torch.LongTensor] = None,
-            **kwargs: Unpack[TransformersKwargs],
+        self,
+        hidden_states: torch.Tensor,
+        position_embeddings: tuple[torch.Tensor, torch.Tensor],
+        attention_mask: Optional[torch.Tensor],
+        past_key_values: Optional[Cache] = None,
+        cache_position: Optional[torch.LongTensor] = None,
+        **kwargs: Unpack[TransformersKwargs],
     ) -> tuple[torch.Tensor, torch.Tensor]:
         input_shape = hidden_states.shape[:-1]
         hidden_shape = (*input_shape, -1, self.head_dim)
@@ -655,15 +667,15 @@ class GptOssDecoderLayer(GradientCheckpointingLayer):
 
     @deprecate_kwarg("past_key_value", new_name="past_key_values", version="4.58")
     def forward(
-            self,
-            hidden_states: torch.Tensor,
-            attention_mask: Optional[torch.Tensor] = None,
-            position_ids: Optional[torch.LongTensor] = None,
-            past_key_values: Optional[Cache] = None,
-            use_cache: Optional[bool] = False,
-            cache_position: Optional[torch.LongTensor] = None,
-            position_embeddings: Optional[tuple[torch.Tensor, torch.Tensor]] = None,  # necessary, but kept here for BC
-            **kwargs: Unpack[TransformersKwargs],
+        self,
+        hidden_states: torch.Tensor,
+        attention_mask: Optional[torch.Tensor] = None,
+        position_ids: Optional[torch.LongTensor] = None,
+        past_key_values: Optional[Cache] = None,
+        use_cache: Optional[bool] = False,
+        cache_position: Optional[torch.LongTensor] = None,
+        position_embeddings: Optional[tuple[torch.Tensor, torch.Tensor]] = None,  # necessary, but kept here for BC
+        **kwargs: Unpack[TransformersKwargs],
     ) -> torch.Tensor:
         residual = hidden_states
         hidden_states = self.input_layernorm(hidden_states)
@@ -712,25 +724,32 @@ class GptOssPreTrainedModel(PreTrainedModel):
     def _init_weights(self, module):
         std = self.config.initializer_range
         if isinstance(module, nn.Linear):
-            module.weight.data.normal_(mean=0.0, std=std)
-            if module.bias is not None:
-                module.bias.data.zero_()
+            if not getattr(module.weight, "_is_hf_initialized", False):
+                module.weight.data.normal_(mean=0.0, std=std)
+                if module.bias is not None:
+                    module.bias.data.zero_()
         elif isinstance(module, nn.Parameter):
-            module.data.normal_(mean=0.0, std=std)
+            if not getattr(module, "_is_hf_initialized", False):
+                module.data.normal_(mean=0.0, std=std)
         elif isinstance(module, nn.Embedding):
-            module.weight.data.normal_(mean=0.0, std=std)
+            if not getattr(module.weight, "_is_hf_initialized", False):
+                module.weight.data.normal_(mean=0.0, std=std)
         elif isinstance(module, GptOssRMSNorm):
-            module.weight.data.fill_(1.0)
+            if not getattr(module.weight, "_is_hf_initialized", False):
+                module.weight.data.fill_(1.0)
         elif isinstance(module, GptOssExperts):
-            module.gate_up_proj.data.normal_(mean=0.0, std=std)
-            module.gate_up_proj_bias.data.zero_()
-            module.down_proj.data.normal_(mean=0.0, std=std)
-            module.down_proj_bias.data.zero_()
+            if not getattr(module.gate_up_proj, "_is_hf_initialized", False):
+                module.gate_up_proj.data.normal_(mean=0.0, std=std)
+                module.gate_up_proj_bias.data.zero_()
+                module.down_proj.data.normal_(mean=0.0, std=std)
+                module.down_proj_bias.data.zero_()
         elif isinstance(module, GptOssAttention):
-            module.sinks.data.normal_(mean=0.0, std=std)
+            if not getattr(module.sinks, "_is_hf_initialized", False):
+                module.sinks.data.normal_(mean=0.0, std=std)
         elif isinstance(module, GptOssTopKRouter):
-            module.weight.data.normal_(mean=0.0, std=std)
-            module.bias.data.normal_(mean=0.0, std=std)
+            if not getattr(module.weight, "_is_hf_initialized", False):
+                module.weight.data.normal_(mean=0.0, std=std)
+                module.bias.data.normal_(mean=0.0, std=std)
 
 
 @auto_docstring
@@ -739,7 +758,7 @@ class GptOssModel(GptOssPreTrainedModel):
 
     def __init__(self, config: GptOssConfig):
         super().__init__(config)
-        self.padding_idx = config.pad_token_id
+        self.padding_idx = getattr(config, 'pad_token_id', None)
         self.vocab_size = config.vocab_size
 
         self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size, self.padding_idx)
@@ -756,15 +775,15 @@ class GptOssModel(GptOssPreTrainedModel):
     @check_model_inputs
     @auto_docstring
     def forward(
-            self,
-            input_ids: Optional[torch.LongTensor] = None,
-            attention_mask: Optional[torch.Tensor] = None,
-            position_ids: Optional[torch.LongTensor] = None,
-            past_key_values: Optional[Cache] = None,
-            inputs_embeds: Optional[torch.FloatTensor] = None,
-            use_cache: Optional[bool] = None,
-            cache_position: Optional[torch.LongTensor] = None,
-            **kwargs: Unpack[TransformersKwargs],
+        self,
+        input_ids: Optional[torch.LongTensor] = None,
+        attention_mask: Optional[torch.Tensor] = None,
+        position_ids: Optional[torch.LongTensor] = None,
+        past_key_values: Optional[Cache] = None,
+        inputs_embeds: Optional[torch.FloatTensor] = None,
+        use_cache: Optional[bool] = None,
+        cache_position: Optional[torch.LongTensor] = None,
+        **kwargs: Unpack[TransformersKwargs],
     ) -> MoeModelOutputWithPast:
         if (input_ids is None) ^ (inputs_embeds is not None):
             raise ValueError("You must specify exactly one of input_ids or inputs_embeds")
@@ -819,10 +838,10 @@ class GptOssModel(GptOssPreTrainedModel):
 
 
 def load_balancing_loss_func(
-        gate_logits: Union[torch.Tensor, tuple[torch.Tensor], None],
-        num_experts: Optional[int] = None,
-        top_k=2,
-        attention_mask: Optional[torch.Tensor] = None,
+    gate_logits: Union[torch.Tensor, tuple[torch.Tensor], None],
+    num_experts: Optional[int] = None,
+    top_k=2,
+    attention_mask: Optional[torch.Tensor] = None,
 ) -> Union[torch.Tensor, int]:
     r"""
     Computes auxiliary load balancing loss as in Switch Transformer - implemented in Pytorch.
@@ -850,9 +869,8 @@ def load_balancing_loss_func(
     if gate_logits is None or not isinstance(gate_logits, tuple):
         return 0
 
-    if isinstance(gate_logits, tuple):
-        compute_device = gate_logits[0].device
-        concatenated_gate_logits = torch.cat([layer_gate.to(compute_device) for layer_gate in gate_logits], dim=0)
+    compute_device = gate_logits[0].device
+    concatenated_gate_logits = torch.cat([layer_gate.to(compute_device) for layer_gate in gate_logits], dim=0)
 
     routing_weights = torch.nn.functional.softmax(concatenated_gate_logits, dim=-1)
 
@@ -921,18 +939,18 @@ class GptOssForCausalLM(GptOssPreTrainedModel, GenerationMixin):
     @can_return_tuple
     @auto_docstring
     def forward(
-            self,
-            input_ids: Optional[torch.LongTensor] = None,
-            attention_mask: Optional[torch.Tensor] = None,
-            position_ids: Optional[torch.LongTensor] = None,
-            past_key_values: Optional[Cache] = None,
-            inputs_embeds: Optional[torch.FloatTensor] = None,
-            labels: Optional[torch.LongTensor] = None,
-            use_cache: Optional[bool] = None,
-            output_router_logits: Optional[bool] = None,
-            cache_position: Optional[torch.LongTensor] = None,
-            logits_to_keep: Union[int, torch.Tensor] = 0,
-            **kwargs: Unpack[TransformersKwargs],
+        self,
+        input_ids: Optional[torch.LongTensor] = None,
+        attention_mask: Optional[torch.Tensor] = None,
+        position_ids: Optional[torch.LongTensor] = None,
+        past_key_values: Optional[Cache] = None,
+        inputs_embeds: Optional[torch.FloatTensor] = None,
+        labels: Optional[torch.LongTensor] = None,
+        use_cache: Optional[bool] = None,
+        output_router_logits: Optional[bool] = None,
+        cache_position: Optional[torch.LongTensor] = None,
+        logits_to_keep: Union[int, torch.Tensor] = 0,
+        **kwargs: Unpack[TransformersKwargs],
     ) -> MoeCausalLMOutputWithPast:
         r"""
         labels (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):
@@ -955,7 +973,8 @@ class GptOssForCausalLM(GptOssPreTrainedModel, GenerationMixin):
         >>> generate_ids = model.generate(inputs.input_ids, max_length=30)
         >>> tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
         "Hey, are you conscious? Can you talk to me?\nI'm not conscious, but I can talk to you."
-        ```"""
+        ```
+        """
 
         output_router_logits = (
             output_router_logits if output_router_logits is not None else self.config.output_router_logits

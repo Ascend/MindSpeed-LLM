@@ -212,11 +212,23 @@ class Qwen3NextRotaryEmbedding(nn.Module):
             self.rope_type = config.rope_scaling.get("rope_type", config.rope_scaling.get("type"))
         else:
             self.rope_type = "default"
+
+        # In transformers 5.x, "linear" rope init requires "factor" in rope_scaling.
+        if self.rope_type == "default":
+            if not hasattr(config, 'rope_scaling') or config.rope_scaling is None:
+                config.rope_scaling = {
+                    "factor": 1.0,
+                    "original_max_position_embeddings": config.max_position_embeddings,
+                }
+            elif "factor" not in config.rope_scaling:
+                config.rope_scaling["factor"] = 1.0
+                config.rope_scaling.setdefault("original_max_position_embeddings", config.max_position_embeddings)
+
         self.max_seq_len_cached = config.max_position_embeddings
         self.original_max_seq_len = config.max_position_embeddings
 
         self.config = config
-        self.rope_init_fn = ROPE_INIT_FUNCTIONS[self.rope_type]
+        self.rope_init_fn = ROPE_INIT_FUNCTIONS.get(self.rope_type, ROPE_INIT_FUNCTIONS.get("linear"))
 
         inv_freq, self.attention_scaling = self.rope_init_fn(self.config, device)
         self.register_buffer("inv_freq", inv_freq, persistent=False)
@@ -1187,7 +1199,7 @@ class Qwen3NextPreTrainedModel(PreTrainedModel):
 class Qwen3NextModel(Qwen3NextPreTrainedModel):
     def __init__(self, config: Qwen3NextConfig):
         super().__init__(config)
-        self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size, config.pad_token_id)
+        self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size, getattr(config, 'pad_token_id', None))
         self.layers = nn.ModuleList(
             [Qwen3NextDecoderLayer(config, layer_idx) for layer_idx in range(config.num_hidden_layers)]
         )

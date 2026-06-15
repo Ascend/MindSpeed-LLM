@@ -12,6 +12,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+# pylint: disable=E0402,R0402,R1721,W0511,E1120
 from dataclasses import dataclass
 from typing import Callable, Optional, Tuple, Union
 
@@ -22,15 +23,12 @@ import torch.nn.functional as F
 from transformers.activations import ACT2FN
 from transformers.cache_utils import Cache, DynamicCache
 from transformers.generation import GenerationMixin
-from transformers.masking_utils import (create_causal_mask,
-                                        create_sliding_window_causal_mask)
+from transformers.masking_utils import create_causal_mask, create_sliding_window_causal_mask
 from transformers.modeling_flash_attention_utils import FlashAttentionKwargs
 from transformers.modeling_layers import GradientCheckpointingLayer
 from transformers.modeling_outputs import BaseModelOutputWithPast, ModelOutput
-from transformers.modeling_rope_utils import (ROPE_INIT_FUNCTIONS,
-                                              dynamic_rope_update)
-from transformers.modeling_utils import (ALL_ATTENTION_FUNCTIONS,
-                                         PreTrainedModel)
+from transformers.modeling_rope_utils import ROPE_INIT_FUNCTIONS, dynamic_rope_update
+from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS, PreTrainedModel
 from transformers.processing_utils import Unpack
 from transformers.utils import TransformersKwargs, can_return_tuple, logging
 
@@ -40,25 +38,35 @@ logger = logging.get_logger(__name__)
 
 __all__ = ["Step3p5Model", "Step3p5ForCausalLM"]
 
-class Step3p5RotaryEmbedding(nn.Module):
 
+class Step3p5RotaryEmbedding(nn.Module):
     def __init__(self, config: Step3p5Config, device=None, layer_idx=None):
         super().__init__()
         # BC: "rope_type" was originally "type"
         self.layer_idx = layer_idx
         if config.rope_parameters is not None:
-            self.rope_type = config.rope_parameters.get(
-                "rope_type", config.rope_parameters.get("type"))
+            self.rope_type = config.rope_parameters.get("rope_type", config.rope_parameters.get("type"))
         else:
             self.rope_type = "default"
+
+        # In transformers 5.x, "linear" rope init requires "factor" in rope_parameters.
+        # If the config only has "type" without "factor", inject factor=1.0 (no scaling).
+        if self.rope_type == "default":
+            if not hasattr(config, 'rope_scaling') or config.rope_scaling is None:
+                config.rope_scaling = {
+                    "factor": 1.0,
+                    "original_max_position_embeddings": config.max_position_embeddings,
+                }
+            elif "factor" not in config.rope_scaling:
+                config.rope_scaling["factor"] = 1.0
+                config.rope_scaling.setdefault("original_max_position_embeddings", config.max_position_embeddings)
+
         self.max_seq_len_cached = config.max_position_embeddings
         self.original_max_seq_len = config.max_position_embeddings
 
-        partial_rotary_factors = getattr(config, "partial_rotary_factors",
-                                         None)
+        partial_rotary_factors = getattr(config, "partial_rotary_factors", None)
         if partial_rotary_factors is not None:
-            config.partial_rotary_factor = partial_rotary_factors[
-                self.layer_idx]
+            config.partial_rotary_factor = partial_rotary_factors[self.layer_idx]
         else:
             config.partial_rotary_factor = 1.0
 
@@ -68,9 +76,8 @@ class Step3p5RotaryEmbedding(nn.Module):
             config.rope_theta = self.rope_theta[self.layer_idx]
 
         self.config = config
-        self.rope_init_fn = ROPE_INIT_FUNCTIONS[self.rope_type]
-        inv_freq, self.attention_scaling = self.rope_init_fn(
-            self.config, device)
+        self.rope_init_fn = ROPE_INIT_FUNCTIONS.get(self.rope_type, ROPE_INIT_FUNCTIONS.get("linear"))
+        inv_freq, self.attention_scaling = self.rope_init_fn(self.config, device)
 
         self.register_buffer("inv_freq", inv_freq, persistent=False)
         self.original_inv_freq = self.inv_freq
@@ -79,16 +86,12 @@ class Step3p5RotaryEmbedding(nn.Module):
     @torch.no_grad()
     @dynamic_rope_update  # power user: used with advanced RoPE types (e.g. dynamic rope)
     def forward(self, x, position_ids):
-        inv_freq_expanded = self.inv_freq[None, :, None].float().expand(
-            position_ids.shape[0], -1, 1).to(x.device)
+        inv_freq_expanded = self.inv_freq[None, :, None].float().expand(position_ids.shape[0], -1, 1).to(x.device)
         position_ids_expanded = position_ids[:, None, :].float().to(x.device)
 
-        device_type = x.device.type if isinstance(
-            x.device.type, str) and x.device.type != "mps" else "cpu"
-        with torch.autocast(device_type=device_type,
-                            enabled=False):  # Force float32
-            freqs = (inv_freq_expanded.float()
-                     @ position_ids_expanded.float()).transpose(1, 2)
+        device_type = x.device.type if isinstance(x.device.type, str) and x.device.type != "mps" else "cpu"
+        with torch.autocast(device_type=device_type, enabled=False):  # Force float32
+            freqs = (inv_freq_expanded.float() @ position_ids_expanded.float()).transpose(1, 2)
             emb = torch.cat((freqs, freqs), dim=-1)
             cos = emb.cos() * self.attention_scaling
             sin = emb.sin() * self.attention_scaling
@@ -98,8 +101,8 @@ class Step3p5RotaryEmbedding(nn.Module):
 
 def rotate_half(x):
     """Rotates half the hidden dims of the input."""
-    x1 = x[..., :x.shape[-1] // 2]
-    x2 = x[..., x.shape[-1] // 2:]
+    x1 = x[..., : x.shape[-1] // 2]
+    x2 = x[..., x.shape[-1] // 2 :]
     return torch.cat((-x2, x1), dim=-1)
 
 
@@ -145,12 +148,8 @@ def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
     batch, num_key_value_heads, slen, head_dim = hidden_states.shape
     if n_rep == 1:
         return hidden_states
-    hidden_states = hidden_states[:, :,
-                                  None, :, :].expand(batch,
-                                                     num_key_value_heads,
-                                                     n_rep, slen, head_dim)
-    return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen,
-                                 head_dim)
+    hidden_states = hidden_states[:, :, None, :, :].expand(batch, num_key_value_heads, n_rep, slen, head_dim)
+    return hidden_states.reshape(batch, num_key_value_heads * n_rep, slen, head_dim)
 
 
 # Adapted from transformers.models.llama.modeling_llama.eager_attention_forward -> llama4 doesn't cast attn weights to fp32
@@ -168,17 +167,16 @@ def eager_attention_forward(
     value_states = repeat_kv(value, module.num_key_value_groups)
     attn_weights = torch.matmul(query, key_states.transpose(2, 3)) * scaling
     if attention_mask is not None:
-        causal_mask = attention_mask[:, :, :, :key_states.shape[-2]]
+        causal_mask = attention_mask[:, :, :, : key_states.shape[-2]]
         attn_weights = attn_weights + causal_mask
 
     attn_weights = nn.functional.softmax(attn_weights, dim=-1)
-    attn_weights = nn.functional.dropout(attn_weights,
-                                         p=dropout,
-                                         training=module.training)
+    attn_weights = nn.functional.dropout(attn_weights, p=dropout, training=module.training)
     attn_output = torch.matmul(attn_weights, value_states)
     attn_output = attn_output.transpose(1, 2).contiguous()
 
     return attn_output, attn_weights
+
 
 @dataclass
 class Step3p5CausalLMOutputWithPast(ModelOutput):
@@ -203,21 +201,14 @@ class Step3p5CausalLMOutputWithPast(ModelOutput):
 
 
 class Step3p5MLP(nn.Module):
-
     def __init__(self, config, intermediate_size=None, swiglu_limit=None):
         super().__init__()
         self.config = config
         self.hidden_size = config.hidden_size
         self.intermediate_size = intermediate_size if intermediate_size is not None else config.intermediate_size
-        self.gate_proj = nn.Linear(self.hidden_size,
-                                   self.intermediate_size,
-                                   bias=False)
-        self.up_proj = nn.Linear(self.hidden_size,
-                                 self.intermediate_size,
-                                 bias=False)
-        self.down_proj = nn.Linear(self.intermediate_size,
-                                   self.hidden_size,
-                                   bias=False)
+        self.gate_proj = nn.Linear(self.hidden_size, self.intermediate_size, bias=False)
+        self.up_proj = nn.Linear(self.hidden_size, self.intermediate_size, bias=False)
+        self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=False)
         self.act_fn = ACT2FN["silu"]
         self.limit = swiglu_limit
 
@@ -231,39 +222,34 @@ class Step3p5MLP(nn.Module):
         return self.down_proj(gate * up)
 
 
-def sigmoid_routing_function(gating_output: torch.Tensor, topk: int,
-                             renormalize: bool):
+def sigmoid_routing_function(gating_output: torch.Tensor, topk: int, renormalize: bool):
     gating_output = gating_output.float()
     gate_prob = torch.sigmoid(gating_output)
     gate_prob = gate_prob / gate_prob.sum(dim=-1, keepdim=True)
     topk_prob, indices = torch.topk(gate_prob, k=topk, dim=1)
     expert_topk_weight = topk_prob
     if renormalize:
-        expert_topk_weight = expert_topk_weight / torch.sum(
-            expert_topk_weight, dim=-1, keepdim=True)
+        expert_topk_weight = expert_topk_weight / torch.sum(expert_topk_weight, dim=-1, keepdim=True)
     return expert_topk_weight, indices
 
 
-def softmax_routing_function(gating_output: torch.Tensor, top_k: int,
-                             renormalize: bool):
+def softmax_routing_function(gating_output: torch.Tensor, top_k: int, renormalize: bool):
     gating_output = gating_output.float()
     gate_prob = torch.softmax(gating_output, dim=-1)
     gate_prob = gate_prob / gate_prob.sum(dim=-1, keepdim=True)
     topk_prob, indices = torch.topk(gate_prob, k=top_k, dim=1)
     expert_topk_weight = topk_prob
     if renormalize:
-        expert_topk_weight = expert_topk_weight / torch.sum(
-            expert_topk_weight, dim=-1, keepdim=True)
+        expert_topk_weight = expert_topk_weight / torch.sum(expert_topk_weight, dim=-1, keepdim=True)
     return expert_topk_weight, indices.to(torch.int32)
 
 
 class Step3p5MoEMLP(nn.Module):
-
     def __init__(self, config, swiglu_limit=None):
         super().__init__()
         self.num_experts = config.moe_num_experts
         self.router = Step3p5Router(config, self.num_experts)
-        
+
         self.experts = Step3p5Experts(config, swiglu_limit=swiglu_limit)
 
     def forward(self, hidden_states):
@@ -273,7 +259,6 @@ class Step3p5MoEMLP(nn.Module):
 
 
 class Step3p5Router(nn.Module):
-
     def __init__(self, config, num_experts):
         super().__init__()
         self.top_k = config.moe_top_k
@@ -283,9 +268,7 @@ class Step3p5Router(nn.Module):
 
         self.use_moe_router_bias = config.use_moe_router_bias
         if self.use_moe_router_bias:
-            self.router_bias = nn.Parameter(torch.zeros(num_experts,
-                                                        dtype=torch.float32),
-                                            requires_grad=False)
+            self.router_bias = nn.Parameter(torch.zeros(num_experts, dtype=torch.float32), requires_grad=False)
             self.custom_routing_function = self.router_bias_func
         elif getattr(config, "moe_router_activation", None) == "sigmoid":
             self.custom_routing_function = sigmoid_routing_function
@@ -302,8 +285,7 @@ class Step3p5Router(nn.Module):
         topk_prob = torch.gather(gate_prob, 1, indices)
         expert_topk_weight = topk_prob
         if renormalize:
-            expert_topk_weight = expert_topk_weight / (
-                torch.sum(expert_topk_weight, dim=-1, keepdim=True) + 1e-20)
+            expert_topk_weight = expert_topk_weight / (torch.sum(expert_topk_weight, dim=-1, keepdim=True) + 1e-20)
         return expert_topk_weight, indices
 
     def forward(self, hidden_states):
@@ -311,19 +293,17 @@ class Step3p5Router(nn.Module):
         hidden_states = hidden_states.view(-1, hidden_dim)
 
         if self.need_fp32_gate:
-            router_logits = torch.matmul(hidden_states.to(torch.float32), 
-                                        self.gate.weight.t().to(torch.float32))
+            router_logits = torch.matmul(hidden_states.to(torch.float32), self.gate.weight.t().to(torch.float32))
         else:
             router_logits = self.gate(hidden_states)
-        
+
         if self.custom_routing_function:
             routing_weights, selected_experts = self.custom_routing_function(
-                router_logits, self.top_k, renormalize=True)
+                router_logits, self.top_k, renormalize=True
+            )
         else:
             routing_weights = F.softmax(router_logits, dim=1, dtype=torch.float)
-            routing_weights, selected_experts = torch.topk(routing_weights,
-                                                            self.top_k,
-                                                            dim=-1)
+            routing_weights, selected_experts = torch.topk(routing_weights, self.top_k, dim=-1)
 
         routing_weights = routing_weights * self.routed_scaling_factor
 
@@ -331,24 +311,21 @@ class Step3p5Router(nn.Module):
 
 
 class Step3p5Experts(nn.Module):
-
     def __init__(self, config, swiglu_limit=None):
         super().__init__()
         self.num_experts = config.moe_num_experts
         self.hidden_size = config.hidden_size
         self.moe_intermediate_size = config.moe_intermediate_size
         self.limit = swiglu_limit
-        
-        self.act_fn = ACT2FN["silu"] 
+
+        self.act_fn = ACT2FN["silu"]
 
         self.gate_up_proj = nn.Parameter(
             torch.empty(self.num_experts, self.hidden_size, self.moe_intermediate_size * 2)
         )
 
-        self.down_proj = nn.Parameter(
-            torch.empty(self.num_experts, self.moe_intermediate_size, self.hidden_size)
-        )
-        
+        self.down_proj = nn.Parameter(torch.empty(self.num_experts, self.moe_intermediate_size, self.hidden_size))
+
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -358,30 +335,28 @@ class Step3p5Experts(nn.Module):
 
     def get_expert_output(self, inputs: torch.Tensor, expert_id):
         gate_up_output = torch.matmul(inputs, self.gate_up_proj[expert_id])
-        
+
         gate, up = gate_up_output.chunk(2, dim=-1)
-        
+
         gate = self.act_fn(gate)
-        
+
         if self.limit is not None:
             gate = gate.clamp(min=None, max=self.limit)
             up = up.clamp(min=-self.limit, max=self.limit)
 
         intermediate = gate * up
         output = torch.matmul(intermediate, self.down_proj[expert_id])
-        
+
         return output
 
     def forward(self, hidden_states, router_indices, routing_weights):
         batch_size, sequence_length, hidden_dim = hidden_states.shape
 
         final_hidden_states = torch.zeros(
-            (batch_size * sequence_length, hidden_dim),
-            dtype=hidden_states.dtype,
-            device=hidden_states.device)
+            (batch_size * sequence_length, hidden_dim), dtype=hidden_states.dtype, device=hidden_states.device
+        )
 
-        expert_mask = torch.nn.functional.one_hot(
-            router_indices, num_classes=self.num_experts).permute(2, 1, 0)
+        expert_mask = torch.nn.functional.one_hot(router_indices, num_classes=self.num_experts).permute(2, 1, 0)
 
         for expert_idx in range(self.num_experts):
             idx, top_x = torch.where(expert_mask[expert_idx])
@@ -390,22 +365,19 @@ class Step3p5Experts(nn.Module):
                 continue
 
             current_state = hidden_states[None, top_x].reshape(-1, hidden_dim)
-            
+
             expert_output = self.get_expert_output(current_state, expert_idx)
-            
+
             weighted_output = expert_output * routing_weights[top_x, idx, None]
 
-            final_hidden_states.index_add_(
-                0, top_x, weighted_output.to(hidden_states.dtype))
+            final_hidden_states.index_add_(0, top_x, weighted_output.to(hidden_states.dtype))
 
-        final_hidden_states = final_hidden_states.reshape(
-            batch_size, sequence_length, hidden_dim)
-        
+        final_hidden_states = final_hidden_states.reshape(batch_size, sequence_length, hidden_dim)
+
         return final_hidden_states
 
 
 class Step3p5RMSNorm(nn.Module):
-
     def __init__(
         self,
         hidden_size: int,
@@ -425,7 +397,6 @@ class Step3p5RMSNorm(nn.Module):
 
 
 class Step3p5Attention(nn.Module):
-
     def __init__(self, config: Step3p5Config, layer_idx):
         super().__init__()
         self.config = config
@@ -435,30 +406,25 @@ class Step3p5Attention(nn.Module):
 
         layer_types = getattr(config, "layer_types", [])
         if layer_types:
-            enable_sliding_window = layer_types[
-                self.layer_idx] == "sliding_attention"
+            enable_sliding_window = layer_types[self.layer_idx] == "sliding_attention"
         else:
             enable_sliding_window = self.layer_idx % 2 == 0
-        
-        if hasattr(config, "yarn_only_types") and layer_types[
-                self.layer_idx] not in config.yarn_only_types:
+
+        if hasattr(config, "yarn_only_types") and layer_types[self.layer_idx] not in config.yarn_only_types:
             config.rope_parameters = None
         else:
             config.rope_parameters = getattr(config, "rope_scaling", None)
 
         self.sliding_window = config.sliding_window
         if enable_sliding_window:
-            self.num_attention_heads = config.attention_other_setting[
-                "num_attention_heads"]
-            self.num_key_value_heads = config.attention_other_setting[
-                "num_attention_groups"]
+            self.num_attention_heads = config.attention_other_setting["num_attention_heads"]
+            self.num_key_value_heads = config.attention_other_setting["num_attention_groups"]
 
         if self.sliding_window is not None and enable_sliding_window:
-            self.sliding_window = (self.sliding_window)
+            self.sliding_window = self.sliding_window
         else:
             self.sliding_window = None
-        self.head_dim = getattr(config, "head_dim",
-                        config.hidden_size // self.num_attention_heads)
+        self.head_dim = getattr(config, "head_dim", config.hidden_size // self.num_attention_heads)
         self.num_key_value_groups = self.num_attention_heads // self.num_key_value_heads
 
         self.rotary_emb = Step3p5RotaryEmbedding(config, layer_idx=layer_idx)
@@ -471,16 +437,12 @@ class Step3p5Attention(nn.Module):
         self.k_proj = nn.Linear(config.hidden_size, self.kv_size, bias=False)
         self.v_proj = nn.Linear(config.hidden_size, self.kv_size, bias=False)
         self.o_proj = nn.Linear(self.q_size, config.hidden_size, bias=False)
-        self.q_norm = Step3p5RMSNorm(self.head_dim,
-                                    eps=config.rms_norm_eps)
-        self.k_norm = Step3p5RMSNorm(self.head_dim,
-                                    eps=config.rms_norm_eps)
+        self.q_norm = Step3p5RMSNorm(self.head_dim, eps=config.rms_norm_eps)
+        self.k_norm = Step3p5RMSNorm(self.head_dim, eps=config.rms_norm_eps)
 
         self.use_head_wise_attn_gate = config.use_head_wise_attn_gate
         if self.use_head_wise_attn_gate:
-            self.g_proj = nn.Linear(config.hidden_size,
-                                    self.num_attention_heads,
-                                    bias=False)
+            self.g_proj = nn.Linear(config.hidden_size, self.num_attention_heads, bias=False)
 
         self.use_rope = True
         use_rope_layers = getattr(config, "use_rope_layers", None)
@@ -495,41 +457,30 @@ class Step3p5Attention(nn.Module):
         cache_position: Optional[torch.LongTensor] = None,
         position_ids: Optional[torch.LongTensor] = None,
         **kwargs: Unpack[FlashAttentionKwargs],
-    ) -> Tuple[torch.Tensor, Optional[torch.Tensor],
-               Optional[Tuple[torch.Tensor]]]:
+    ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[Tuple[torch.Tensor]]]:
         input_shape = hidden_states.shape[:-1]
         hidden_shape = (*input_shape, -1, self.head_dim)
 
-        query_states = self.q_norm(
-            self.q_proj(hidden_states).view(hidden_shape)).transpose(1, 2)
-        key_states = self.k_norm(
-            self.k_proj(hidden_states).view(hidden_shape)).transpose(1, 2)
-        value_states = self.v_proj(hidden_states).view(hidden_shape).transpose(
-            1, 2)
+        query_states = self.q_norm(self.q_proj(hidden_states).view(hidden_shape)).transpose(1, 2)
+        key_states = self.k_norm(self.k_proj(hidden_states).view(hidden_shape)).transpose(1, 2)
+        value_states = self.v_proj(hidden_states).view(hidden_shape).transpose(1, 2)
         if self.use_head_wise_attn_gate:
             gate_states = self.g_proj(hidden_states)
         cos, sin = self.rotary_emb(hidden_states, position_ids)
 
-        query_states, key_states = apply_rotary_pos_emb(
-            query_states, key_states, cos, sin)
+        query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin)
 
         if past_key_value is not None:
             # sin and cos are specific to RoPE models; position_ids needed for the static cache
-            cache_kwargs = {
-                "sin": sin,
-                "cos": cos,
-                "cache_position": cache_position
-            }
-            key_states, value_states = past_key_value.update(
-                key_states, value_states, self.layer_idx, cache_kwargs)
+            cache_kwargs = {"sin": sin, "cos": cos, "cache_position": cache_position}
+            key_states, value_states = past_key_value.update(key_states, value_states, self.layer_idx, cache_kwargs)
 
         attention_interface: Callable = eager_attention_forward
         # TODO: considering FP8；
         # RuntimeError: Expected attn_mask dtype to be bool or float or to match query dtype,
         # but got attn_mask.dtype: long int and  query.dtype: c10::BFloat16 instead.
         if self.config._attn_implementation != "eager":
-            attention_interface = ALL_ATTENTION_FUNCTIONS[
-                self.config._attn_implementation]
+            attention_interface = ALL_ATTENTION_FUNCTIONS[self.config._attn_implementation]
 
         attn_output, attn_weights = attention_interface(
             self,
@@ -544,9 +495,10 @@ class Step3p5Attention(nn.Module):
         )
         attn_output = attn_output.reshape(*input_shape, -1)
         if self.use_head_wise_attn_gate:
-            output = attn_output.view(
-                *attn_output.shape[:-1], self.num_attention_heads,
-                self.head_dim) * gate_states.unsqueeze(-1).sigmoid()
+            output = (
+                attn_output.view(*attn_output.shape[:-1], self.num_attention_heads, self.head_dim)
+                * gate_states.unsqueeze(-1).sigmoid()
+            )
             attn_output = output.view(*attn_output.shape)
         attn_output = self.o_proj(attn_output)
 
@@ -554,7 +506,6 @@ class Step3p5Attention(nn.Module):
 
 
 class Step3p5DecoderLayer(GradientCheckpointingLayer):
-
     def __init__(self, config, layer_idx):
         super().__init__()
         self.hidden_size = config.hidden_size
@@ -564,43 +515,39 @@ class Step3p5DecoderLayer(GradientCheckpointingLayer):
 
         moe_layers_enum = getattr(config, "moe_layers_enum", None)
         if moe_layers_enum is not None:
-            moe_layers_idx = [
-                int(i) for i in moe_layers_enum.strip().split(',')
-            ]
+            moe_layers_idx = [int(i) for i in moe_layers_enum.strip().split(',')]
         else:
             moe_layers_idx = [i for i in range(1, config.num_hidden_layers)]
         self.is_moe_layer = layer_idx in moe_layers_idx
         self.use_moe = False
 
-        if config.swiglu_limits_shared and config.swiglu_limits_shared[
-                layer_idx] is not None and config.swiglu_limits_shared[
-                    layer_idx] != 0:
+        if (
+            config.swiglu_limits_shared
+            and config.swiglu_limits_shared[layer_idx] is not None
+            and config.swiglu_limits_shared[layer_idx] != 0
+        ):
             swiglu_limit_shared = config.swiglu_limits_shared[layer_idx]
         else:
             swiglu_limit_shared = None
-        if config.swiglu_limits and config.swiglu_limits[
-                layer_idx] is not None and config.swiglu_limits[layer_idx] != 0:
+        if (
+            config.swiglu_limits
+            and config.swiglu_limits[layer_idx] is not None
+            and config.swiglu_limits[layer_idx] != 0
+        ):
             swiglu_limit = config.swiglu_limits[layer_idx]
         else:
             swiglu_limit = None
         if self.is_moe_layer:
             self.mlp = Step3p5MoEMLP(config, swiglu_limit=swiglu_limit)  #
             self.share_expert = Step3p5MLP(
-                config,
-                intermediate_size=config.share_expert_dim,
-                swiglu_limit=swiglu_limit_shared)
+                config, intermediate_size=config.share_expert_dim, swiglu_limit=swiglu_limit_shared
+            )
             self.use_moe = True
         else:
-            self.mlp = Step3p5MLP(config,
-                                 intermediate_size=config.intermediate_size,
-                                 swiglu_limit=swiglu_limit_shared)
+            self.mlp = Step3p5MLP(config, intermediate_size=config.intermediate_size, swiglu_limit=swiglu_limit_shared)
 
-        self.input_layernorm = Step3p5RMSNorm(
-            config.hidden_size,
-            eps=config.rms_norm_eps)
-        self.post_attention_layernorm = Step3p5RMSNorm(
-            config.hidden_size,
-            eps=config.rms_norm_eps)
+        self.input_layernorm = Step3p5RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
+        self.post_attention_layernorm = Step3p5RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
     def forward(
         self,
@@ -622,7 +569,7 @@ class Step3p5DecoderLayer(GradientCheckpointingLayer):
             **kwargs,
         )
         hidden_states = residual + hidden_states
-        
+
         # Fully Connected
         residual = hidden_states
         hidden_states = self.post_attention_layernorm(hidden_states)
@@ -647,11 +594,7 @@ class Step3p5PreTrainedModel(PreTrainedModel):
     config_class = Step3p5Config
     supports_gradient_checkpointing = True
     _skip_keys_device_placement = ["past_key_values"]
-    _keys_to_ignore_on_load_unexpected = [
-        r"model\.layers\.45\.*",
-        r"model\.layers\.46\.*",
-        r"model\.layers\.47\.*"
-    ]
+    _keys_to_ignore_on_load_unexpected = [r"model\.layers\.45\.*", r"model\.layers\.46\.*", r"model\.layers\.47\.*"]
     _supports_flash_attn = False
     _supports_sdpa = True
     _supports_flex_attn = True
@@ -664,17 +607,16 @@ class Step3p5Model(Step3p5PreTrainedModel, GenerationMixin):
     base_model_prefix = "model"
     _tied_weights_keys = ["lm_head.weight"]
     config: Step3p5Config
+
     def __init__(self, config: Step3p5Config):
         super().__init__(config)
-        self.padding_idx = config.pad_token_id
+        self.padding_idx = getattr(config, 'pad_token_id', None)
         self.vocab_size = config.vocab_size
 
-        self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size,
-                                         self.padding_idx)
-        self.layers = nn.ModuleList([
-            Step3p5DecoderLayer(config, layer_idx)
-            for layer_idx in range(config.num_hidden_layers)
-        ])
+        self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size, self.padding_idx)
+        self.layers = nn.ModuleList(
+            [Step3p5DecoderLayer(config, layer_idx) for layer_idx in range(config.num_hidden_layers)]
+        )
         self.norm = Step3p5RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.gradient_checkpointing = False
         self.has_sliding_layers = "sliding_attention" in self.config.layer_types
@@ -701,14 +643,13 @@ class Step3p5Model(Step3p5PreTrainedModel, GenerationMixin):
         **kwargs: Unpack[TransformersKwargs],
     ) -> Union[tuple, BaseModelOutputWithPast]:
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
-        output_hidden_states = (output_hidden_states
-                                if output_hidden_states is not None else
-                                self.config.output_hidden_states)
+        output_hidden_states = (
+            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
+        )
         use_cache = False
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
         if (input_ids is None) ^ (inputs_embeds is not None):
-            raise ValueError(
-                "You must specify exactly one of input_ids or inputs_embeds")
+            raise ValueError("You must specify exactly one of input_ids or inputs_embeds")
 
         if self.gradient_checkpointing and self.training and use_cache:
             logger.warning_once(
@@ -717,19 +658,16 @@ class Step3p5Model(Step3p5PreTrainedModel, GenerationMixin):
             use_cache = False
 
         if inputs_embeds is None:
-            inputs_embeds = self.embed_tokens(
-                input_ids.to(self.embed_tokens.weight.device))
+            inputs_embeds = self.embed_tokens(input_ids.to(self.embed_tokens.weight.device))
 
         if use_cache and past_key_values is None:
             past_key_values = DynamicCache()
 
         if cache_position is None:
-            past_seen_tokens = past_key_values.get_seq_length(
-            ) if past_key_values is not None else 0
-            cache_position = torch.arange(past_seen_tokens,
-                                          past_seen_tokens +
-                                          inputs_embeds.shape[1],
-                                          device=inputs_embeds.device)
+            past_seen_tokens = past_key_values.get_seq_length() if past_key_values is not None else 0
+            cache_position = torch.arange(
+                past_seen_tokens, past_seen_tokens + inputs_embeds.shape[1], device=inputs_embeds.device
+            )
 
         if position_ids is None:
             position_ids = cache_position.unsqueeze(0)
@@ -755,22 +693,19 @@ class Step3p5Model(Step3p5PreTrainedModel, GenerationMixin):
 
             # The sliding window alternating layers are not always activated depending on the config
             if self.has_sliding_layers:
-                causal_mask_mapping[
-                    "sliding_attention"] = create_sliding_window_causal_mask(
-                        **mask_kwargs)
+                causal_mask_mapping["sliding_attention"] = create_sliding_window_causal_mask(**mask_kwargs)
 
         # # create position embeddings to be shared across the decoder layers
         # decoder layers
         all_hidden_states = () if output_hidden_states else None
         all_self_attns = () if output_attentions else None
-        for decoder_layer in self.layers[:self.config.num_hidden_layers]:
+        for decoder_layer in self.layers[: self.config.num_hidden_layers]:
             if output_hidden_states:
-                all_hidden_states += (hidden_states, )
+                all_hidden_states += (hidden_states,)
 
             layer_outputs = decoder_layer(
                 hidden_states,
-                attention_mask=causal_mask_mapping[
-                    decoder_layer.attention_type],
+                attention_mask=causal_mask_mapping[decoder_layer.attention_type],
                 position_ids=position_ids,
                 past_key_value=past_key_values,
                 output_attentions=output_attentions,
@@ -799,9 +734,7 @@ class Step3p5ForCausalLM(Step3p5PreTrainedModel, GenerationMixin):
         super().__init__(config)
         self.model = Step3p5Model(config)
         self.vocab_size = config.vocab_size
-        self.lm_head = nn.Linear(config.hidden_size,
-                                 config.vocab_size,
-                                 bias=False)
+        self.lm_head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)
 
         self.post_init()
 
@@ -822,7 +755,7 @@ class Step3p5ForCausalLM(Step3p5PreTrainedModel, GenerationMixin):
 
     def get_decoder(self):
         return self.model.get_decoder()
-    
+
     def forward(
         self,
         input_ids: torch.LongTensor = None,
@@ -858,12 +791,13 @@ class Step3p5ForCausalLM(Step3p5PreTrainedModel, GenerationMixin):
         >>> generate_ids = model.generate(inputs.input_ids, max_length=30)
         >>> tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
         "Hey, are you conscious? Can you talk to me?\nI'm not conscious, but I can talk to you."
-        ```"""
+        ```
+        """
 
         output_attentions = output_attentions if output_attentions is not None else self.config.output_attentions
-        output_hidden_states = (output_hidden_states
-                                if output_hidden_states is not None else
-                                self.config.output_hidden_states)
+        output_hidden_states = (
+            output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
+        )
 
         outputs = self.model(
             input_ids=input_ids,
@@ -906,7 +840,6 @@ class Step3p5ForCausalLM(Step3p5PreTrainedModel, GenerationMixin):
         logits_to_keep=None,
         **kwargs,
     ):
-
         model_inputs = super().prepare_inputs_for_generation(
             input_ids,
             past_key_values=past_key_values,
@@ -926,6 +859,6 @@ class Step3p5ForCausalLM(Step3p5PreTrainedModel, GenerationMixin):
 
     def _fix_state_dict_key_on_load(self, key: str) -> tuple[str, bool]:
         if key.startswith("language_model."):
-            return key[len("language_model."):], True
+            return key[len("language_model.") :], True
 
         return key, False

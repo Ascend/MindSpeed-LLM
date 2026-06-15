@@ -14,13 +14,16 @@ from megatron.core.transformer.dot_product_attention import DotProductAttention
 from megatron.core.models.gpt.gpt_layer_specs import _get_mlp_module_spec
 from mindspeed_llm.core import PTNorm
 from mindspeed_llm.tasks.models.transformer.transformer_layer_hunyuan import HunyuanLargeTransformerLayer
-from mindspeed_llm.tasks.models.transformer.hunyuan_large_attention import HunyuanLargeAttention, HunyuanLargeAttentionSubmodules
- 
- 
+from mindspeed_llm.tasks.models.transformer.hunyuan_large_attention import (
+    HunyuanLargeAttention,
+    HunyuanLargeAttentionSubmodules,
+)
+
+
 args = get_args()
 num_experts, moe_grouped_gemm, qk_layernorm = args.num_experts, args.moe_grouped_gemm, args.qk_layernorm
- 
- 
+
+
 layer_spec = ModuleSpec(
     module=HunyuanLargeTransformerLayer,
     submodules=TransformerLayerSubmodules(

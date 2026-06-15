@@ -26,6 +26,7 @@ from torch.nn.parallel.distributed import DistributedDataParallel as torchDDP
 from megatron.core.models.gpt.gpt_model import GPTModel
 from megatron.training import get_args, global_vars
 from megatron.core import ModelParallelConfig
+from mindspeed_llm.tasks.utils import version_utils
 
 
 class MegatronModuleForCausalLMABC(torch.nn.Module, abc.ABC):
@@ -154,6 +155,66 @@ class MegatronModuleForCausalLMABC(torch.nn.Module, abc.ABC):
         self.truncate = kwargs.pop("truncate", False)
 
 
+def load_tokenizer(model_path):
+    if version_utils.transformers_version() < (5, 0) or os.path.exists(os.path.join(model_path, "config.json")):
+        from megatron.training import get_tokenizer
+
+        return get_tokenizer().tokenizer
+    else:
+        return load_tokenizer_compatible(model_path)
+
+
+def load_tokenizer_compatible(model_path):
+    from transformers import PreTrainedTokenizerFast, AddedToken
+    from tokenizers import Tokenizer
+    import json
+
+    with open(f"{model_path}/tokenizer_config.json", "r", encoding="utf-8") as f:
+        cfg = json.load(f)
+
+    kwargs = {}
+    for key in ("bos_token", "eos_token", "unk_token", "pad_token"):
+        value = cfg.get(key)
+        if isinstance(value, dict):
+            value = value.get("content", "")
+        kwargs[key] = value
+
+    for key in (
+        "add_bos_token",
+        "add_eos_token",
+        "model_max_length",
+        "clean_up_tokenization_spaces",
+        "legacy",
+        "sp_model_kwargs",
+        "padding_side",
+        "model_input_names",
+    ):
+        if key in cfg:
+            kwargs[key] = cfg[key]
+
+    # added_tokens_decoder requires converting dict entries to AddedToken objects,
+    # matching the format that PreTrainedTokenizerBase.from_pretrained produces
+    # before passing to __init__.
+    if "added_tokens_decoder" in cfg:
+        processed = {}
+        for idx, token in cfg["added_tokens_decoder"].items():
+            if isinstance(token, dict):
+                token = AddedToken(**token)
+            processed[int(idx)] = token
+        kwargs["added_tokens_decoder"] = processed
+
+    # If the config defines a special token but doesn't explicitly state
+    # whether to prepend/append it, infer from the token's presence.
+    # NOTE: only infer add_bos_token. add_eos_token is NOT inferred because
+    # appending eos to the input prompt shifts the generation output.
+    if "add_bos_token" not in kwargs and "bos_token" in kwargs and kwargs["bos_token"] is not None:
+        kwargs["add_bos_token"] = True
+
+    tok = Tokenizer.from_file(f"{model_path}/tokenizer.json")
+    tokenizer = PreTrainedTokenizerFast(tokenizer_object=tok, **kwargs)
+    return tokenizer
+
+
 class MegatronModuleForCausalLM(MegatronModuleForCausalLMABC):
     """
     Megatron specific extensions of torch Module with support
@@ -162,7 +223,6 @@ class MegatronModuleForCausalLM(MegatronModuleForCausalLMABC):
 
     def __init__(self, *args, **kwargs):
         super(MegatronModuleForCausalLM, self).__init__()
-        from megatron.training import get_tokenizer
         from megatron.inference.text_generation.generation import (
             generate_tokens_probs_and_return_on_first_stage,
             beam_search_and_return_on_first_stage,
@@ -184,7 +244,8 @@ class MegatronModuleForCausalLM(MegatronModuleForCausalLMABC):
         else:
             config.pipeline_dtype = torch.float32
         try:
-            self.tokenizer = get_tokenizer().tokenizer
+            self.tokenizer = load_tokenizer(args.tokenizer_name_or_path)
+
         except AssertionError:
             self.tokenizer = None
 

@@ -62,7 +62,7 @@
                 "model-type-hf": "mamba2",
                 "hidden-size": "2560",
                 "mamba-state-dim": "128",
-                "mamba2-head-dim": "64",
+                "mamba-head-dim": "64",
                 "mamba-num-groups": "1",
                 "load-dir":"/data/ci/models/mamba2/hf/mamba2-2.7b-hf",
                 "save-dir":"/data/ci/cache/mamba2_tp1pp2"
@@ -86,7 +86,7 @@
                 "save-dir":"/data/ci/cache/mamba2_2.7b_hf",
                 "hidden-size": "2560",
                 "mamba-state-dim": "128",
-                "mamba2-head-dim": "64",
+                "mamba-head-dim": "64",
                 "mamba-num-groups": "1",
                 "input-tp-rank": "1",
                 "input-pp-rank": "2",

@@ -44,6 +44,7 @@ class CheckpointFeature(MindSpeedFeature):
                 'baichuan',
                 'baichuan2',
                 'llama2',
+                'qwen25',
                 'mixtral',
                 'chatglm3',
                 'gemma',

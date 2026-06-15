@@ -1,3 +1,20 @@
+# Copyright 2025 The LLaMA-Factory Team. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# This file is based on LLaMA-Factory (https://github.com/hiyouga/LLaMA-Factory),
+# licensed under the Apache License, Version 2.0. Modifications have been made.
+
 import re
 from copy import deepcopy
 from dataclasses import dataclass
@@ -11,6 +28,7 @@ from .formatter import SLOTS, Formatter, EmptyFormatter, FunctionFormatter, Stri
 from ..utils.arguments import DataArguments
 
 from mindspeed_llm.fsdp2.utils.logging import get_logger
+
 logger = get_logger(__name__)
 
 
@@ -31,7 +49,6 @@ class Template:
     replace_jinja_template: bool
     enable_thinking: Optional[bool]
 
-
     @staticmethod
     def _add_or_replace_eos_token(tokenizer: "PreTrainedTokenizer", eos_token: str) -> None:
         r"""Add or replace eos token to the tokenizer."""
@@ -49,12 +66,10 @@ class Template:
         if num_added_tokens > 0:
             logger.info_rank0("New tokens have been added, make sure `resize_vocab` is True.")
 
-
     @staticmethod
     def _jinja_escape(content: str) -> str:
         r"""Escape single quotes in content."""
         return content.replace("'", r"\'")
-
 
     @staticmethod
     def _convert_slots_to_jinja(slots: "SLOTS", tokenizer: "PreTrainedTokenizer", placeholder: str = "content") -> str:
@@ -80,7 +95,6 @@ class Template:
 
         return " + ".join(slot_items)
 
-
     def encode_oneturn(
         self,
         tokenizer: "PreTrainedTokenizer",
@@ -97,7 +111,6 @@ class Template:
         response_ids = encoded_messages[-1]
         return prompt_ids, response_ids
 
-
     def encode_multiturn(
         self,
         tokenizer: "PreTrainedTokenizer",
@@ -109,11 +122,9 @@ class Template:
         encoded_messages = self._encode(tokenizer, messages, system, tools)
         return [(encoded_messages[i], encoded_messages[i + 1]) for i in range(0, len(encoded_messages), 2)]
 
-
     def extract_tool(self, content: str) -> Union[str, list["FunctionCall"]]:
         r"""Extract tool message."""
         return self.format_tools.extract(content)
-
 
     def get_stop_token_ids(self, tokenizer: "PreTrainedTokenizer") -> list[int]:
         r"""Return stop token ids."""
@@ -123,22 +134,18 @@ class Template:
 
         return list(stop_token_ids)
 
-
     def add_thought(self, content: str = "") -> str:
         r"""Add empty thought to assistant message."""
         return f"{self.thought_words[0]}{self.thought_words[1]}" + content
-
 
     def remove_thought(self, content: str) -> str:
         r"""Remove thought from assistant message."""
         pattern = re.compile(f"{re.escape(self.thought_words[0])}(.*?){re.escape(self.thought_words[1])}", re.DOTALL)
         return re.sub(pattern, "", content).lstrip("\n")
 
-
     def get_thought_word_ids(self, tokenizer: "PreTrainedTokenizer") -> list[int]:
         r"""Get the token ids of thought words."""
         return tokenizer.encode(self.add_thought(), add_special_tokens=False)
-
 
     def fix_special_tokens(self, tokenizer: "PreTrainedTokenizer") -> None:
         r"""Add eos token and pad token to the tokenizer."""
@@ -151,20 +158,17 @@ class Template:
             stop_words = stop_words[1:]
 
         if tokenizer.eos_token_id is None:
-            self._add_or_replace_eos_token(tokenizer, eos_token="<|endoftext|>")
+            self._add_or_replace_eos_token(tokenizer, eos_token="<|endoftext|>")  # nosec
 
         if tokenizer.pad_token_id is None:
             tokenizer.pad_token = tokenizer.eos_token
             logger.info_rank0(f"Add pad token: {tokenizer.pad_token}")
 
         if stop_words:
-            num_added_tokens = tokenizer.add_special_tokens(
-                dict(additional_special_tokens=stop_words), replace_additional_special_tokens=False
-            )
+            num_added_tokens = tokenizer.add_special_tokens(dict(additional_special_tokens=stop_words))
             logger.info_rank0("Add {} to stop words.".format(",".join(stop_words)))
             if num_added_tokens > 0:
                 logger.info_rank0("New tokens have been added, make sure `resize_vocab` is True.")
-
 
     def fix_jinja_template(self, tokenizer: "PreTrainedTokenizer") -> None:
         r"""Replace the jinja template in the tokenizer."""
@@ -173,7 +177,6 @@ class Template:
                 tokenizer.chat_template = self._get_jinja_template(tokenizer)
             except ValueError as e:
                 logger.info_rank0(f"Cannot add this chat template to tokenizer: {e}.")
-
 
     def _convert_elements_to_ids(self, tokenizer: "PreTrainedTokenizer", elements: "SLOTS") -> list[int]:
         r"""Convert elements to token ids."""
@@ -193,7 +196,6 @@ class Template:
                 raise ValueError(f"Input must be string, set[str] or dict[str, str], got {type(elem)}")
 
         return token_ids
-
 
     def _encode(
         self,
@@ -233,7 +235,6 @@ class Template:
 
         return encoded_messages
 
-
     def _get_jinja_template(self, tokenizer: "PreTrainedTokenizer") -> str:
         r"""Return the jinja template."""
         prefix = self._convert_slots_to_jinja(self.format_prefix.apply(), tokenizer)
@@ -267,7 +268,6 @@ class Template:
 class ReasoningTemplate(Template):
     r"""A template that add thought to assistant message."""
 
-
     @override
     def encode_oneturn(
         self,
@@ -299,7 +299,6 @@ class ReasoningTemplate(Template):
 
         return prompt_ids, response_ids
 
-
     @override
     def encode_multiturn(
         self,
@@ -309,7 +308,7 @@ class ReasoningTemplate(Template):
         tools: Optional[str] = None,
     ) -> list[tuple[list[int], list[int]]]:
         messages = deepcopy(messages)
-        if self.enable_thinking is False:  
+        if self.enable_thinking is False:
             # remove all cot
             for i in range(1, len(messages), 2):
                 messages[i]["content"] = self.remove_thought(messages[i]["content"])
@@ -319,12 +318,12 @@ class ReasoningTemplate(Template):
             if (
                 self.thought_words[0].strip() not in messages[i + 1]["content"]
                 and self.thought_words[1].strip() not in messages[i + 1]["content"]
-            ):  
+            ):
                 # add empty cot
-                if not self.enable_thinking:  
+                if not self.enable_thinking:
                     # do not compute loss
                     encoded_messages[i] += self.get_thought_word_ids(tokenizer)
-                else:  
+                else:
                     # do compute loss
                     encoded_messages[i + 1] = self.get_thought_word_ids(tokenizer) + encoded_messages[i + 1]
 
@@ -444,7 +443,7 @@ def parse_template(tokenizer: "PreTrainedTokenizer") -> "Template":
         default_system = find_diff(user_slot_empty_system, user_slot)
         sole_system = system_slot.replace("{{content}}", default_system, 1)
         user_slot = user_slot[len(sole_system) :]
-    else:  
+    else:
         # if defaut_system is empty, user_slot_empty_system will be longer than user_slot
         default_system = ""
 
@@ -464,6 +463,7 @@ def parse_template(tokenizer: "PreTrainedTokenizer") -> "Template":
         replace_jinja_template=False,
         enable_thinking=True,
     )
+
 
 def get_template_and_fix_tokenizer(tokenizer: "PreTrainedTokenizer", data_args: "DataArguments") -> "Template":
     r"""Get chat template and fixes the tokenizer."""

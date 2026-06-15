@@ -1,3 +1,20 @@
+# Copyright 2025 The HuggingFace Team. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# This file is based on HuggingFace Transformers (https://github.com/huggingface/transformers),
+# licensed under the Apache License, Version 2.0. Modifications have been made.
+
 from collections.abc import Callable
 from typing import Optional, Union
 
@@ -540,11 +557,23 @@ class MiniMaxM2RotaryEmbedding(nn.Module):
             self.rope_type = config.rope_scaling.get("rope_type", config.rope_scaling.get("type"))
         else:
             self.rope_type = "default"
+
+        # In transformers 5.x, "linear" rope init requires "factor" in rope_scaling.
+        if self.rope_type == "default":
+            if not hasattr(config, 'rope_scaling') or config.rope_scaling is None:
+                config.rope_scaling = {
+                    "factor": 1.0,
+                    "original_max_position_embeddings": config.max_position_embeddings,
+                }
+            elif "factor" not in config.rope_scaling:
+                config.rope_scaling["factor"] = 1.0
+                config.rope_scaling.setdefault("original_max_position_embeddings", config.max_position_embeddings)
+
         self.max_seq_len_cached = config.max_position_embeddings
         self.original_max_seq_len = config.max_position_embeddings
 
         self.config = config
-        self.rope_init_fn = ROPE_INIT_FUNCTIONS[self.rope_type]
+        self.rope_init_fn = ROPE_INIT_FUNCTIONS.get(self.rope_type, ROPE_INIT_FUNCTIONS.get("linear"))
 
         inv_freq, self.attention_scaling = self.rope_init_fn(self.config, device)
         self.register_buffer("inv_freq", inv_freq, persistent=False)
@@ -589,7 +618,7 @@ class MiniMaxM2PreTrainedModel(PreTrainedModel):
 class MiniMaxM2Model(MiniMaxM2PreTrainedModel):
     def __init__(self, config: MiniMaxM2Config):
         super().__init__(config)
-        self.padding_idx = config.pad_token_id
+        self.padding_idx = getattr(config, 'pad_token_id', None)
         self.vocab_size = config.vocab_size
 
         self.embed_tokens = nn.Embedding(config.vocab_size, config.hidden_size, self.padding_idx)

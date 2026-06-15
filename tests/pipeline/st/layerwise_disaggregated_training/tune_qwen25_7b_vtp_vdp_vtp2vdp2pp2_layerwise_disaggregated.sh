@@ -92,20 +92,15 @@ run_model_conversion() {
 
     # --- Step 1: HF -> Megatron ---
     log_step "Executing Step 1: HF -> Megatron TP=1"
-    python convert_ckpt.py \
-       --use-mcore-models \
-       --model-type GPT \
+    python convert_ckpt_v2.py \
        --load-model-type hf \
        --save-model-type mg \
        --target-tensor-parallel-size 1 \
        --target-pipeline-parallel-size 3 \
        --num-layer-list "2,24,2" \
-       --add-qkv-bias \
        --load-dir "$HF_MODEL_DIR" \
        --save-dir "$MG_EDGE_SAVE_DIR" \
-       --tokenizer-model "$TOKENIZER_PATH" \
-       --model-type-hf llama2 \
-       --params-dtype bf16
+       --model-type-hf llama2
 
     if [ $? -ne 0 ]; then
         log_error "Step 1: HF -> Megatron TP=1 model conversion failed"
@@ -113,20 +108,15 @@ run_model_conversion() {
     fi
 
     log_step "Executing Step 1: HF -> Megatron TP=2"
-    python convert_ckpt.py \
-       --use-mcore-models \
-       --model-type GPT \
+    python convert_ckpt_v2.py \
        --load-model-type hf \
        --save-model-type mg \
        --target-tensor-parallel-size 2 \
        --target-pipeline-parallel-size 3 \
        --num-layer-list "2,24,2" \
-       --add-qkv-bias \
        --load-dir "$HF_MODEL_DIR" \
        --save-dir "$MG_CLOUD_SAVE_DIR" \
-       --tokenizer-model "$TOKENIZER_PATH" \
-       --model-type-hf llama2 \
-       --params-dtype bf16
+       --model-type-hf llama2
 
     if [ $? -ne 0 ]; then
         log_error "Step 1: HF -> Megatron TP=2 model conversion failed"
