@@ -38,6 +38,7 @@ from mindspeed.features_manager import (
     OptimizeP2PCommFeature,
     FusionAttentionV2Feature,
     MoEAlltoAllMC2Feature,
+    PipelineModelParallelLayoutFeature,
 )
 from mindspeed.features_manager.feature import MindSpeedFeature
 from mindspeed.features_manager.features_manager import MindSpeedFeaturesManager
@@ -200,6 +201,7 @@ def add_pipeline_parallel_features(features_list: List[MindSpeedFeature]):
             OptimizeSendRecvCommFeature(),
             UnalignedPipelineFeature(),
             DualpipeVFeature(),
+            PipelineModelParallelLayoutFeature(),
         ]
     )
 
@@ -329,8 +331,8 @@ def add_ai_framework_feature(features_list: List[MindSpeedFeature]):
     )
 
 
-def add_layerwise_diaggregated_training_feature(feature_list: List[MindSpeedFeature]):
-    feature_list.extend(
+def add_layerwise_disaggregated_training_feature(features_list: List[MindSpeedFeature]):
+    features_list.extend(
         [
             UShapedSplitFeature(),
             VTPFeature(),
@@ -371,7 +373,7 @@ def create_features_list():
     add_high_availability_feature(features_list)
     add_finetune_feature(features_list)
     add_ai_framework_feature(features_list)
-    add_layerwise_diaggregated_training_feature(features_list)
+    add_layerwise_disaggregated_training_feature(features_list)
     add_qat_features(features_list)
 
     return features_list
