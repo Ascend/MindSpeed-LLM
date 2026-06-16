@@ -70,18 +70,20 @@ MindSpeed-LLM 评估操作指导手册请见链接：[evaluation_guide.md](./eva
 
 [mmlu评估介绍](./evaluation_datasets/mmlu_evaluation.md)
 
-[cmmlu评估介绍](./evaluation_datasets/cmmlu_evaluation.md)
+[ceval评估介绍](./evaluation_datasets/ceval_evaluation.md)
 
 [boolq评估介绍](./evaluation_datasets/boolq_evaluation.md)
 
-[ceval评估介绍](./evaluation_datasets/ceval_evaluation.md)
-
-[gsm8k评估介绍](./evaluation_datasets/gsm8k_evaluation.md)
-
 [bbh评估介绍](./evaluation_datasets/bbh_evaluation.md)
-
-[hellaswag评估介绍](./evaluation_datasets/hellaswag_evaluation.md)
 
 [agi评估介绍](./evaluation_datasets/agi_evaluation.md)
 
 [humanEval评估介绍](./evaluation_datasets/human_eval_evaluation.md)
+
+[cmmlu评估介绍](./evaluation_datasets/cmmlu_evaluation.md)
+
+[gsm8k评估介绍](./evaluation_datasets/gsm8k_evaluation.md)
+
+[hellaswag评估介绍](./evaluation_datasets/hellaswag_evaluation.md)
+
+[needlebench评估介绍](./evaluation_datasets/needlebench-evaluation.md)
