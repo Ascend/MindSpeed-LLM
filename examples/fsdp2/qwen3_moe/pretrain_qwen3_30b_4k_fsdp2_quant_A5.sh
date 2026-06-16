@@ -24,7 +24,6 @@ QUANT_ARGS="
     --parallel.ep_dispatcher eager \
 "
 mkdir -p ./logs
-bash tests/tools/fsdp2/moe_hf_param_merge_experts.sh
 torchrun $DISTRIBUTED_ARGS train_fsdp2.py \
      examples/fsdp2/qwen3_moe/pretrain_qwen3_30b_4k_fsdp2_A5.yaml \
      $QUANT_ARGS\

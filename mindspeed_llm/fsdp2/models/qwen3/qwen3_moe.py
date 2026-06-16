@@ -1,10 +1,15 @@
 # Copyright (c) 2025, HUAWEI CORPORATION.  All rights reserved.
 # Copyright 2025 The Qwen team, Alibaba Group and the HuggingFace Inc. team. All rights reserved.
-import os
 from typing import Optional, Union
+from importlib.metadata import version
 
 import torch
 import torch.nn.functional as F
+
+try:
+    import torch_npu
+except ImportError:
+    pass
 import transformers
 from torch import nn
 from torch.distributed.tensor import DTensor
@@ -17,18 +22,17 @@ from transformers.utils import can_return_tuple
 
 from mindspeed.core.fusions.grouped_matmul import Ops
 from mindspeed.patch_utils import MindSpeedPatchesManager as pm
+
+try:
+    from mindspeed.ops.npu_moe_token_permute import npu_moe_token_permute
+    from mindspeed.ops.npu_moe_token_unpermute import npu_moe_token_unpermute
+except ImportError:
+    pass
+
 from mindspeed_llm.fsdp2.features.async_offload import async_save_on_cpu
 from mindspeed_llm.fsdp2.models.common.fusions import fused_rmsnorm_forward, apply_rotary_pos_emb
 from mindspeed_llm.fsdp2.models.common.modules import LMHead
 from mindspeed_llm.fsdp2.utils.global_vars import get_args
-
-try:
-    import torch_npu
-    from mindspeed.ops.npu_moe_token_permute import npu_moe_token_permute
-    from mindspeed.ops.npu_moe_token_unpermute import npu_moe_token_unpermute
-    from mindspeed.ops.gmm_mxfp8 import npu_quant_group_gemm
-except ImportError:
-    pass
 
 
 class Qwen3MoEForCausalLM(transformers.Qwen3MoePreTrainedModel):
@@ -51,19 +55,20 @@ class Qwen3MoEForCausalLM(transformers.Qwen3MoePreTrainedModel):
 
     @can_return_tuple
     def forward(
-            self,
-            input_ids: Optional[torch.LongTensor] = None,
-            attention_mask: Optional[torch.Tensor] = None,
-            position_ids: Optional[torch.LongTensor] = None,
-            past_key_values: Optional[Cache] = None,
-            inputs_embeds: Optional[torch.FloatTensor] = None,
-            labels: Optional[torch.LongTensor] = None,
-            use_cache: Optional[bool] = None,
-            output_router_logits: Optional[bool] = None,
-            cache_position: Optional[torch.LongTensor] = None,
-            logits_to_keep: Union[int, torch.Tensor] = 0,
-            loss_ctx: Optional[callable] = None,
-            **kwargs) -> MoeCausalLMOutputWithPast:
+        self,
+        input_ids: Optional[torch.LongTensor] = None,
+        attention_mask: Optional[torch.Tensor] = None,
+        position_ids: Optional[torch.LongTensor] = None,
+        past_key_values: Optional[Cache] = None,
+        inputs_embeds: Optional[torch.FloatTensor] = None,
+        labels: Optional[torch.LongTensor] = None,
+        use_cache: Optional[bool] = None,
+        output_router_logits: Optional[bool] = None,
+        cache_position: Optional[torch.LongTensor] = None,
+        logits_to_keep: Union[int, torch.Tensor] = 0,
+        loss_ctx: Optional[callable] = None,
+        **kwargs,
+    ) -> MoeCausalLMOutputWithPast:
         r"""
         labels (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):
             Labels for computing the masked language modeling loss. Indices should either be in `[0, ...,
@@ -85,7 +90,8 @@ class Qwen3MoEForCausalLM(transformers.Qwen3MoePreTrainedModel):
         >>> generate_ids = model.generate(inputs.input_ids, max_length=30)
         >>> tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
         "Hey, are you conscious? Can you talk to me?\nI'm not conscious, but I can talk to you."
-        ```"""
+        ```
+        """
 
         output_router_logits = (
             output_router_logits if output_router_logits is not None else self.config.output_router_logits
@@ -126,8 +132,7 @@ class Qwen3MoEForCausalLM(transformers.Qwen3MoePreTrainedModel):
                 attention_mask,
             )
             if labels is not None:
-                loss += self.router_aux_loss_coef * aux_loss.to(
-                    loss.device)  # make sure to reside in the same device
+                loss += self.router_aux_loss_coef * aux_loss.to(loss.device)  # make sure to reside in the same device
 
         return MoeCausalLMOutputWithPast(
             loss=loss,
@@ -144,20 +149,24 @@ class Qwen3MoEForCausalLM(transformers.Qwen3MoePreTrainedModel):
         """patching the transformers model."""
         args = get_args()
         if getattr(args, "moe_grouped_gemm", False):
-            pm.register_patch("transformers.models.qwen3_moe.modeling_qwen3_moe.Qwen3MoeSparseMoeBlock",
-                              Qwen3MoeSparseFusedMoeBlock)
+            pm.register_patch(
+                "transformers.models.qwen3_moe.modeling_qwen3_moe.Qwen3MoeSparseMoeBlock", Qwen3MoeSparseFusedMoeBlock
+            )
 
         if getattr(args, "activation_offload", False):
-            pm.register_patch("transformers.models.qwen3_moe.modeling_qwen3_moe.Qwen3MoeModel.forward",
-                              qwen3_moe_model_forward)
+            pm.register_patch(
+                "transformers.models.qwen3_moe.modeling_qwen3_moe.Qwen3MoeModel.forward", qwen3_moe_model_forward
+            )
 
         if getattr(args, "use_fused_rmsnorm", False):
-            pm.register_patch("transformers.models.qwen3_moe.modeling_qwen3_moe.Qwen3MoeRMSNorm.forward",
-                              fused_rmsnorm_forward)
+            pm.register_patch(
+                "transformers.models.qwen3_moe.modeling_qwen3_moe.Qwen3MoeRMSNorm.forward", fused_rmsnorm_forward
+            )
 
         if getattr(args, "use_fused_rotary_pos_emb", False):
-            pm.register_patch("transformers.models.qwen3_moe.modeling_qwen3_moe.apply_rotary_pos_emb",
-                              apply_rotary_pos_emb)
+            pm.register_patch(
+                "transformers.models.qwen3_moe.modeling_qwen3_moe.apply_rotary_pos_emb", apply_rotary_pos_emb
+            )
 
         pm.apply_patches()
 
@@ -169,10 +178,10 @@ class Qwen3MoeExperts(nn.Module):
         self.hidden_dim = config.hidden_size
         self.intermediate_size = config.moe_intermediate_size
         self.gate_up_proj = torch.nn.Parameter(
-            torch.empty(self.num_experts * self.hidden_dim, 2 * self.intermediate_size))
+            torch.empty(self.num_experts * self.hidden_dim, 2 * self.intermediate_size)
+        )
 
-        self.down_proj = torch.nn.Parameter(
-            torch.empty(self.num_experts * self.intermediate_size, self.hidden_dim))
+        self.down_proj = torch.nn.Parameter(torch.empty(self.num_experts * self.intermediate_size, self.hidden_dim))
         self.act_fn = ACT2FN[config.hidden_act]
 
     def forward(self, hidden_states, routing_weights=None, selected_experts=None):
@@ -239,29 +248,28 @@ class Qwen3MoeSparseFusedMoeBlock(nn.Module):
 
         args = get_args()
         if getattr(args, 'ep_size') > 1:
-            final_hidden_states = self.experts(
-                hidden_states, selected_experts, routing_weights
-            )
+            final_hidden_states = self.experts(hidden_states, selected_experts, routing_weights)
         else:
-
             final_hidden_states = self.experts(
                 hidden_states, routing_weights=routing_weights, selected_experts=selected_experts
             )
 
         final_hidden_states = final_hidden_states.reshape(batch_size, sequence_length, hidden_dim)
-        return final_hidden_states, router_logits
+        if version("transformers") < "5.0.0":
+            return final_hidden_states, router_logits
+        return final_hidden_states
 
 
 def qwen3_moe_model_forward(
-        self,
-        input_ids: Optional[torch.LongTensor] = None,
-        attention_mask: Optional[torch.Tensor] = None,
-        position_ids: Optional[torch.LongTensor] = None,
-        past_key_values: Optional[Cache] = None,
-        inputs_embeds: Optional[torch.FloatTensor] = None,
-        use_cache: Optional[bool] = None,
-        cache_position: Optional[torch.LongTensor] = None,
-        **kwargs,
+    self,
+    input_ids: Optional[torch.LongTensor] = None,
+    attention_mask: Optional[torch.Tensor] = None,
+    position_ids: Optional[torch.LongTensor] = None,
+    past_key_values: Optional[Cache] = None,
+    inputs_embeds: Optional[torch.FloatTensor] = None,
+    use_cache: Optional[bool] = None,
+    cache_position: Optional[torch.LongTensor] = None,
+    **kwargs,
 ) -> MoeModelOutputWithPast:
     if (input_ids is None) ^ (inputs_embeds is not None):
         raise ValueError("You must specify exactly one of input_ids or inputs_embeds")
@@ -300,11 +308,11 @@ def qwen3_moe_model_forward(
     for layer_id, decoder_layer in enumerate(self.layers[: self.config.num_hidden_layers]):
         if self.training:
             with async_save_on_cpu(
-                    h2d_stream=offload_stream,
-                    d2h_stream=offload_stream,
-                    block_idx=int(layer_id),
-                    depth=len(self.layers),
-                    custom_check_fn=lambda x: x.data_ptr() == hidden_states.data_ptr()
+                h2d_stream=offload_stream,
+                d2h_stream=offload_stream,
+                block_idx=int(layer_id),
+                depth=len(self.layers),
+                custom_check_fn=lambda x: x.data_ptr() == hidden_states.data_ptr(),  # pylint: disable=W0640
             ):
                 hidden_states = decoder_layer(
                     hidden_states,

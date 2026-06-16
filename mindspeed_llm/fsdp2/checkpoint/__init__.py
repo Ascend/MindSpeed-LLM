@@ -12,3 +12,29 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+"""
+Checkpoint utilities for FSDP2.
+
+This module provides weight conversion utilities that leverage the
+transformers conversion_mapping API for transforming HuggingFace
+checkpoint weights into MindSpeed-LLM format.
+"""
+
+from mindspeed_llm.fsdp2.checkpoint.weight_conv_adapter import WeightConvAdapter
+from mindspeed_llm.fsdp2.checkpoint.conversion_mappings import (
+    FlattenExperts,
+    UnflattenExperts,
+    MappingRule,
+    MappingRuleRegistry,
+    apply_custom_mappings,
+)
+
+__all__ = [
+    'WeightConvAdapter',
+    'FlattenExperts',
+    'UnflattenExperts',
+    'MappingRule',
+    'MappingRuleRegistry',
+    'apply_custom_mappings',
+]

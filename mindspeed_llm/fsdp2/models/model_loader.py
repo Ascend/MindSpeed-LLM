@@ -5,11 +5,12 @@ import json
 from contextlib import contextmanager
 from typing import Optional, Dict, Tuple, Set
 
+from safetensors import safe_open
 import torch
-import torch.nn as nn
+from torch import nn
 from torch.distributed.tensor import distribute_tensor
 from transformers import AutoConfig, AutoModelForCausalLM
-from safetensors import safe_open
+
 try:
     from transformers.modeling_utils import no_init_weights
 except ImportError:
@@ -18,6 +19,8 @@ except ImportError:
 
 from mindspeed_llm.fsdp2.utils.logging import get_logger
 from mindspeed_llm.fsdp2.utils.global_vars import get_args
+from mindspeed_llm.fsdp2.checkpoint.weight_conv_adapter import WeightConvAdapter
+
 logger = get_logger(__name__)
 
 
@@ -42,6 +45,7 @@ def init_empty_weights():
                 if param.device == torch.device("meta")
                 else param_cls(module._parameters[name].to("meta"), **kwargs)
             )
+
     try:
         nn.Module.register_parameter = register_empty_parameter
         yield
@@ -73,7 +77,7 @@ def _find_submodule(module: nn.Module, name: str) -> Tuple[nn.Module, str]:
 # ==============================================================================
 class ModelLoader:
     """Load model on CPU or meta device."""
-    
+
     def __init__(self, model_args, init_device: str = "cpu"):
         self.model_args = model_args
         self.init_device = init_device
@@ -81,7 +85,7 @@ class ModelLoader:
         self.model_path = model_args.model_name_or_path
         self.train_from_scratch = getattr(model_args, 'train_from_scratch', False)
         self.hf_config = None
-    
+
     def load_config(self) -> AutoConfig:
         """Load HuggingFace model config."""
         logger.info_rank0(f"> Loading config from {self.model_path}...")
@@ -90,20 +94,20 @@ class ModelLoader:
             trust_remote_code=self.trust_remote_code,
             # Context parallelism requires uniformly applying a patch to the attention component,
             # which is unified here into the `eager` implementation part
-            attn_implementation="eager" if get_args().cp_size >1 else None,
+            attn_implementation="eager" if get_args().cp_size > 1 else None,
         )
         return self.hf_config
-    
+
     def create_model(self, model_cls=None) -> Tuple[nn.Module, Optional[str]]:
         """Create model based on init_device."""
         if self.hf_config is None:
             self.load_config()
-        
+
         if self.init_device == "meta":
             return self._create_on_meta(model_cls)
         else:
             return self._create_on_cpu(model_cls)
-    
+
     def _create_on_cpu(self, model_cls=None) -> Tuple[nn.Module, None]:
         """Create and load model on CPU."""
         if model_cls is not None:
@@ -113,14 +117,12 @@ class ModelLoader:
                 config=self.hf_config,
                 low_cpu_mem_usage=True,
                 device_map="cpu",
-                torch_dtype=torch.float32
+                torch_dtype=torch.float32,
             )
         elif self.train_from_scratch:
             logger.info_rank0("> Creating model with random weights on CPU...")
             model = AutoModelForCausalLM.from_config(
-                self.hf_config,
-                trust_remote_code=self.trust_remote_code,
-                torch_dtype=torch.float32
+                self.hf_config, trust_remote_code=self.trust_remote_code, torch_dtype=torch.float32
             )
         else:
             logger.info_rank0(f"> Loading pretrained model on CPU from {self.model_path}...")
@@ -130,11 +132,11 @@ class ModelLoader:
                 trust_remote_code=self.trust_remote_code,
                 torch_dtype=torch.float32,
                 low_cpu_mem_usage=True,
-                device_map="cpu"
+                device_map="cpu",
             )
-        
+
         return model, None
-    
+
     def _create_on_meta(self, model_cls=None) -> Tuple[nn.Module, Optional[str]]:
         """Create empty model on meta device."""
         weights_path = None if self.train_from_scratch else self.model_path
@@ -150,19 +152,15 @@ class ModelLoader:
             logger.info_rank0("> Creating empty model on meta device for random init...")
             with init_empty_weights():
                 model = AutoModelForCausalLM.from_config(
-                    self.hf_config,
-                    trust_remote_code=self.trust_remote_code,
-                    torch_dtype=torch.float32
+                    self.hf_config, trust_remote_code=self.trust_remote_code, torch_dtype=torch.float32
                 )
         else:
             logger.info_rank0(f"> Creating empty model on meta device (weights: {self.model_path})...")
             with init_empty_weights(), no_init_weights():
                 model = AutoModelForCausalLM.from_config(
-                    self.hf_config,
-                    trust_remote_code=self.trust_remote_code,
-                    torch_dtype=torch.float32
+                    self.hf_config, trust_remote_code=self.trust_remote_code, torch_dtype=torch.float32
                 )
-        
+
         logger.info_rank0(f"> Model created on meta device. Weights path: {weights_path}")
         return model, weights_path
 
@@ -173,108 +171,166 @@ class ModelLoader:
 class WeightLoader:
     """
     Load weights into FSDP-wrapped model.
+    Supports weight conversion via transformers conversion_mapping API.
     """
-    
+
     @staticmethod
     def load(
-        model: nn.Module, 
-        weights_path: Optional[str], 
-        device: Optional[str] = None
+        model: nn.Module,
+        weights_path: Optional[str],
+        device: Optional[str] = None,
+        hf_config: Optional[AutoConfig] = None,
     ) -> None:
         """Load or initialize weights after FSDP wrapping."""
         if device is None:
             device = torch.accelerator.current_accelerator().type
-        
+
         if weights_path is None:
             WeightLoader._init_random(model, device)
         else:
-            WeightLoader._load_pretrained(model, weights_path, device)
-    
+            WeightLoader._load_pretrained(model, weights_path, device, hf_config)
+
     @staticmethod
     def _init_random(model: nn.Module, device: str) -> None:
         """Initialize model with random weights."""
         logger.info_rank0(f"> Initializing random weights on {device}...")
-        
+
         model.to_empty(device=device)
         model = model.float()
         reset_hf_initialized_flag(model)
-        
+
         if hasattr(model, 'init_weights'):
             model.init_weights()
-            
+
         logger.info_rank0("> Random initialization done")
-    
+
     @staticmethod
     @torch.no_grad()
-    def _load_pretrained(model: nn.Module, weights_path: str, device: str) -> None:
+    def _load_pretrained(
+        model: nn.Module, weights_path: str, device: str, hf_config: Optional[AutoConfig] = None
+    ) -> None:
         """
-        Load pretrained weights.
-        """        
+        Load pretrained weights with dynamic weight conversion support.
+        Uses transformers conversion_mapping API for model-type-specific weight transformations.
+        """
+
         logger.info_rank0(f"> Loading pretrained weights from {weights_path}...")
-        
+
+        model_type = getattr(hf_config, 'model_type', None) if hf_config else None
+        adapter = WeightConvAdapter(model_type=model_type) if model_type else None
+
         # Step 1: Save buffers before to_empty
         buffer_dict = {name: buffer.clone() for name, buffer in model.named_buffers()}
         parameter_names_to_load = {name for name, _ in model.named_parameters()}
-        
+
         logger.info_rank0(f"> Saved {len(buffer_dict)} buffers, {len(parameter_names_to_load)} parameters to load")
-        
+
         # Step 2: Materialize model to device
         model.to_empty(device=device)
         model = model.float()
         logger.info_rank0(f"> Model materialized to {device}")
-        
+
         # Step 3: Load state dict and dispatch parameters
         state_dict_files = WeightLoader._get_state_dict_files(weights_path)
-        
+
+        pending_weights: Dict[str, torch.Tensor] = {}
+        collected_keys: Set[str] = set()
+        converted_groups: Dict[str, Dict[str, list]] = {}
+
         for state_dict_file in state_dict_files:
             for name, tensor in WeightLoader._iterate_state_dict(state_dict_file):
+                if adapter and adapter.has_conversions:
+                    renamed_key, source_pattern = adapter.rename_key(name)
+
+                    if source_pattern is not None:
+                        converter = adapter.match_converter(source_pattern)
+                        if converter:
+                            converted_groups.setdefault(renamed_key, {}).setdefault(source_pattern, []).append(
+                                (name, tensor)
+                            )
+                            collected_keys.add(name)
+                            continue
+
+                    name = renamed_key
+
                 if name in buffer_dict:
-                    # Update buffer in buffer_dict
                     buffer_dict[name] = tensor.clone()
                 elif name in parameter_names_to_load:
                     parameter_names_to_load.remove(name)
                     WeightLoader._dispatch_parameter(model, name, tensor)
                 else:
-                    logger.debug(f"> Unexpected key in state dict: {name}")
-        
+                    pending_weights[name] = tensor
+
+        # Dispatch pending weights from first pass
+        for name in list(pending_weights.keys()):
+            if name in buffer_dict:
+                buffer_dict[name] = pending_weights.pop(name).clone()
+            elif name in parameter_names_to_load:
+                parameter_names_to_load.remove(name)
+                WeightLoader._dispatch_parameter(model, name, pending_weights.pop(name))
+
+        # Dispatch converted weights (streaming via native WeightConverter.convert)
+        for target_name, collected in converted_groups.items():
+            source_pattern = next(iter(collected))
+            converter = adapter.match_converter(source_pattern)
+            if not converter:
+                continue
+
+            full_name = WeightLoader._find_model_param(parameter_names_to_load, target_name)
+            if not full_name:
+                logger.debug(f"> No model param matching converted target: {target_name}")
+                continue
+
+            parameter_names_to_load.discard(full_name)
+            original_keys = [item[0] for item in collected[source_pattern]]
+            tensors_only = {sp: [item[1] for item in items] for sp, items in collected.items()}
+            for name, tensor in WeightConvAdapter.dispatch_converted(converter, full_name, tensors_only, original_keys):
+                WeightLoader._dispatch_parameter(model, name, tensor)
+
+        # Log remaining unexpected keys
+        for name in pending_weights:
+            if name not in collected_keys:
+                logger.debug(f"> Unexpected key in state dict: {name}")
+        del pending_weights
+
         # Step 4: Post-process (restore buffers, handle missing params)
         WeightLoader._post_process(model, buffer_dict, parameter_names_to_load, distribute_tensor)
         if torch.distributed.is_initialized():
             torch.distributed.barrier()
         logger.info_rank0("> Pretrained weights loaded successfully")
-    
+
     @staticmethod
     def _get_state_dict_files(weights_path: str):
         """Get list of state dict files."""
         # Check for safetensors index
         index_file = os.path.join(weights_path, "model.safetensors.index.json")
         if os.path.exists(index_file):
-            with open(index_file, 'r') as f:
+            with open(index_file, 'r', encoding='utf-8') as f:
                 index = json.load(f)
             files = set(index["weight_map"].values())
             return [os.path.join(weights_path, f) for f in sorted(files)]
-        
+
         # Check for single safetensors file
         single_safetensor = os.path.join(weights_path, "model.safetensors")
         if os.path.exists(single_safetensor):
             return [single_safetensor]
-        
+
         # Check for multiple safetensors files
         safetensor_files = sorted(glob.glob(os.path.join(weights_path, "*.safetensors")))
         if safetensor_files:
             return safetensor_files
-        
+
         # Check for pytorch files
         pytorch_files = sorted(glob.glob(os.path.join(weights_path, "*.bin")))
         if pytorch_files:
             return pytorch_files
-        
+
         pytorch_files = sorted(glob.glob(os.path.join(weights_path, "*.pt")))
         if pytorch_files:
             return pytorch_files
-        
+
         raise FileNotFoundError(f"No weight files found in {weights_path}")
-    
+
     @staticmethod
     def _iterate_state_dict(filepath: str):
         """Iterate over state dict file, yielding (key, tensor) pairs."""
@@ -286,7 +342,17 @@ class WeightLoader:
             state_dict = torch.load(filepath, map_location="cpu", weights_only=True)
             for key, tensor in state_dict.items():
                 yield key, tensor
-    
+
+    @staticmethod
+    def _find_model_param(param_names: Set[str], target_name: str) -> Optional[str]:
+        """Find full model param name that ends with target_name."""
+        if target_name in param_names:
+            return target_name
+        for name in param_names:
+            if name.endswith(target_name):
+                return name
+        return None
+
     @staticmethod
     def _dispatch_parameter(
         model: nn.Module,
@@ -343,31 +409,26 @@ class WeightLoader:
             non_blocking=True,
         )
         local_target.copy_(local_dev, non_blocking=True)
-    
+
     @staticmethod
-    def _dispatch_buffer(
-        model: nn.Module,
-        name: str,
-        buffer: torch.Tensor,
-        dtensor_factory
-    ) -> None:
+    def _dispatch_buffer(model: nn.Module, name: str, buffer: torch.Tensor, dtensor_factory) -> None:
         """
         Assign buffer to model.
         """
         module, local_name = _find_submodule(model, name)
         orig_buffer = dict(module.named_buffers(recurse=False))[local_name]
-        
+
         if hasattr(orig_buffer, "device_mesh"):
             device_mesh = orig_buffer.device_mesh
             placements = orig_buffer.placements
-            module.register_buffer(local_name, dtensor_factory(
-                buffer.to(dtype=orig_buffer.dtype), 
-                device_mesh, 
-                placements
-            ))
+            module.register_buffer(
+                local_name, dtensor_factory(buffer.to(dtype=orig_buffer.dtype), device_mesh, placements)
+            )
         else:
-            dict(module.named_buffers(recurse=False))[local_name].copy_(buffer.to(device=orig_buffer.device, dtype=orig_buffer.dtype))
-    
+            dict(module.named_buffers(recurse=False))[local_name].copy_(
+                buffer.to(device=orig_buffer.device, dtype=orig_buffer.dtype)
+            )
+
     @staticmethod
     def _init_parameter(model: nn.Module, name: str) -> None:
         """
@@ -376,23 +437,20 @@ class WeightLoader:
         pieces = name.split(".")
         init_func = None
         module = model
-        
+
         for piece in pieces[:-1]:
             if hasattr(module, "_init_weights"):
                 init_func = getattr(module, "_init_weights", None)
             module = getattr(module, piece)
-        
+
         if init_func is not None:
             module.apply(init_func)
         else:
             logger.warning(f"> Cannot find _init_weights for {name}, skipping initialization")
-    
+
     @staticmethod
     def _post_process(
-        model: nn.Module,
-        buffer_dict: Dict[str, torch.Tensor],
-        parameter_names_left: Set[str],
-        dtensor_factory
+        model: nn.Module, buffer_dict: Dict[str, torch.Tensor], parameter_names_left: Set[str], dtensor_factory
     ) -> None:
         """
         Post-process after weight loading.
@@ -403,9 +461,9 @@ class WeightLoader:
                 WeightLoader._dispatch_buffer(model, name, buffer, dtensor_factory)
             except Exception as e:
                 logger.warning(f"> Failed to restore buffer {name}: {e}")
-        
+
         logger.info_rank0(f"> Restored {len(buffer_dict)} buffers")
-        
+
         # Initialize missing parameters
         if parameter_names_left:
             logger.info_rank0(f"> Missing {parameter_names_left} parameters, initializing them...")
@@ -414,7 +472,7 @@ class WeightLoader:
                     WeightLoader._init_parameter(model, name)
                 except Exception as e:
                     logger.warning(f"> Failed to initialize {name}: {e}")
-        
+
         # Tie embeddings if needed
         if getattr(model.config, "tie_word_embeddings", True):
             try:
@@ -424,7 +482,7 @@ class WeightLoader:
                     output_embeddings.register_parameter(
                         "weight",
                         input_embeddings.weight,
-                        )
+                    )
                     logger.info_rank0("> Tied input/output embeddings")
             except Exception as e:
                 logger.warning(f"> Failed to tie embeddings: {e}")
