@@ -1,4 +1,4 @@
-# MindSpeed LLM 文档导读
+# MindSpeed LLM 文档导航
 
 ---
 
@@ -15,45 +15,82 @@ MindSpeed LLM 文档目录层级介绍如下：
 ``` shell
 docs/zh/
 
-├── introduction.md         # 项目介绍
-├── project_guide.md        # 项目导读
-├── docs_guide.md           # 文档导读
-├── appendixes.md           # 附录文档
-├── FAQ.md           # 常见问题
-└── pytorch/                # PyTorch 训练框架相关文档
-    ├── develop/            # 开发指南
-    │   ├── mcore/          # Mcore 开发指南
+├── introduction.md           # 项目介绍
+├── project_guide.md          # 项目导读
+├── docs_guide.md             # 文档导航
+├── appendixes.md             # 附录文档
+├── release_notes_llm.md      # 版本发布说明
+├── replace_ascend_path_guide.md  # 昇腾路径替换指南
+├── FAQ.md                    # 常见问题
+└── pytorch/                  # PyTorch 训练框架相关文档
+    ├── develop/              # 开发指南
+    │   ├── mcore/            # Mcore 开发指南
     │   │   └── lora_finetune_adaptation.md # LoRA微调迁移开发
-    │   └── fsdp2/          # FSDP2 开发指南
-    │       └── model_adaptation.md # FSDP2 模型适配
-    ├── features/           # 特性文档
-    │   ├── mcore/          # Mcore 特性文档
-    │   └── fsdp2/          # FSDP2 特性文档
+    │   ├── fsdp2/            # FSDP2 开发指南
+    │   │   └── model_adaptation.md # FSDP2 模型适配
+    │   └── precision_issue.md    # 精度问题指南
+    ├── features/             # 特性文档
+    │   ├── mcore/            # Mcore 特性文档
+    │   │   ├── async_activation_offload.md       # 异步激活卸载
+    │   │   ├── async_save_torch_dist.md          # 异步保存
+    │   │   ├── cc_lora.md                        # CC-LoRA
+    │   │   ├── checkpoint_resume.md              # 断点续训
+    │   │   ├── chunk_loss.md                     # Chunk Loss
+    │   │   ├── communication-over-computation.md  # 通信计算重叠
+    │   │   ├── environment_variable.md            # 环境变量
+    │   │   ├── fine-tuning-with-context-parallel.md # 上下文并行微调
+    │   │   ├── high_availability.md               # 高可用
+    │   │   ├── kvallgather-context-parallel.md    # KV AllGather上下文并行
+    │   │   ├── layerwise_disaggregated_training.md # 逐层分离训练
+    │   │   ├── mamba_context_parallel.md          # Mamba上下文并行
+    │   │   ├── mc2.md                            # MC2通信
+    │   │   ├── multi-latent-attention.md          # 多潜在注意力
+    │   │   ├── o2.md                             # O2优化
+    │   │   ├── recompute_relative.md              # 重计算策略
+    │   │   ├── ring-attention-context-parallel.md # Ring Attention上下文并行
+    │   │   ├── tensor_parallel_2d.md              # 2D张量并行
+    │   │   ├── variable_length_flash_attention.md # 变长Flash Attention
+    │   │   ├── virtual_pipeline_parallel.md       # 虚拟流水线并行
+    │   │   └── yarn.md                           # YaRN上下文扩展
+    │   └── fsdp2/            # FSDP2 特性文档
     │       ├── arguments.md            # FSDP2 参数说明
-    │       └── fsdp2_basic_features.md # FSDP2 特性说明
-    ├── figures/            # 图片资源
-    ├── models/             # PyTorch 框架支持的模型
+    │       ├── fsdp2_basic_features.md # FSDP2 特性说明
+    │       └── quantization.md         # 量化特性
+    ├── figures/              # 图片资源
+    ├── models/               # PyTorch 框架支持的模型
     │   └── supported_models.md
-    ├── training/           # 训练解决方案文档
-    │   ├── install_guide.md  # 安装指南
-    │   ├── quick_start.md    # 快速入门指南
-    │   ├── evaluation/       # 模型评估
+    ├── training/             # 训练解决方案文档
+    │   ├── install_guide.md    # 安装指南
+    │   ├── quick_start.md      # 快速入门指南
+    │   ├── evaluation/         # 模型评估
     │   │   ├── evaluation_guide.md
     │   │   ├── models_evaluation.md
     │   │   └── evaluation_datasets/  # 评估数据集
-    │   ├── finetune/       # 模型微调
-    │   │   ├── mcore/      # Mcore 微调方案
-    │   │   └── fsdp2/      # FSDP2 微调方案
+    │   ├── finetune/         # 模型微调
+    │   │   ├── mcore/        # Mcore 微调方案
+    │   │   │   ├── instruction_finetune.md      # 全参微调
+    │   │   │   ├── lora_finetune.md             # LoRA微调
+    │   │   │   ├── lu_lora_finetune.md          # LU-LoRA微调
+    │   │   │   ├── qlora_finetune.md            # QLoRA微调
+    │   │   │   ├── multi_sample_pack_finetune.md # 多样本Pack微调
+    │   │   │   ├── single_sample_finetune.md    # 单样本微调
+    │   │   │   ├── multi_turn_conversation.md   # 多轮对话微调
+    │   │   │   ├── offline_dpo.md               # 离线DPO
+    │   │   │   ├── layerwise_disaggregated_training.md # 逐层分离训练微调
+    │   │   │   └── pmcc_obfuscation.md          # PMCC混淆
+    │   │   └── fsdp2/        # FSDP2 微调方案
     │   │       └── finetune_fsdp2.md
-    │   ├── inference/      # 模型推理
+    │   ├── inference/        # 模型推理
     │   │   ├── inference.md
     │   │   └── chat.md
-    │   └── pretrain/       # 模型预训练
-    │       └── mcore/      # Mcore 预训练方案
+    │   └── pretrain/         # 模型预训练
+    │       └── mcore/        # Mcore 预训练方案
     │           ├── pretrain.md
     │           ├── pretrain_eod.md
     │           └── train_from_hf.md
-    └── tools/              # 工具文档
+    ├── tuning/               # 调优文档
+    │   └── performance_tuning.md # 性能调优
+    └── tools/                # 工具文档
         ├── data_process_sft_alpaca_style.md   # Alpaca格式数据处理
         ├── data_process_sft_sharegpt_style.md # ShareGPT格式数据处理
         ├── data_process_dpo_pairwise.md       # Pairwise数据处理
@@ -67,7 +104,7 @@ docs/zh/
 
 ## 核心文档导航
 
-**快速跳转**：[入门指南](#入门指南) | [Mcore后端](#mcore后端) | [FSDP2后端](#fsdp2后端) | [工具链](#工具链)
+**快速跳转**：[入门指南](#入门指南) | [Mcore后端](#mcore后端) | [FSDP2后端](#fsdp2后端) | [工具链](#工具链) | [调优指南](#调优指南) | [其他](#其他)
 
 ### 入门指南
 
@@ -99,10 +136,15 @@ docs/zh/
 | 预训练 | [pretrain](pytorch/training/pretrain/mcore/pretrain.md) | 多样本预训练方法 |
 | | [pretrain_eod](pytorch/training/pretrain/mcore/pretrain_eod.md) | 多样本Pack预训练方法 |
 | 微调 | [instruction_finetune](pytorch/training/finetune/mcore/instruction_finetune.md) | 模型全参微调方案 |
+| | [single_sample_finetune](pytorch/training/finetune/mcore/single_sample_finetune.md) | 单样本微调方案 |
 | | [multi_sample_pack_finetune](pytorch/training/finetune/mcore/multi_sample_pack_finetune.md) | 多样本Pack微调方案 |
 | | [multi_turn_conversation](pytorch/training/finetune/mcore/multi_turn_conversation.md) | 多轮对话微调方案 |
 | | [lora_finetune](pytorch/training/finetune/mcore/lora_finetune.md) | 模型LoRA微调方案 |
+| | [lu_lora_finetune](pytorch/training/finetune/mcore/lu_lora_finetune.md) | 模型LU-LoRA微调方案 |
 | | [qlora_finetune](pytorch/training/finetune/mcore/qlora_finetune.md) | 模型QLoRA微调方案 |
+| | [offline_dpo](pytorch/training/finetune/mcore/offline_dpo.md) | 离线DPO对齐方案 |
+| | [layerwise_disaggregated_training](pytorch/training/finetune/mcore/layerwise_disaggregated_training.md) | 逐层分离训练微调方案 |
+| | [pmcc_obfuscation](pytorch/training/finetune/mcore/pmcc_obfuscation.md) | PMCC混淆方案 |
 | 推理 | [inference](pytorch/training/inference/inference.md) | 模型推理 |
 | | [chat](pytorch/training/inference/chat.md) | 对话 |
 | | [yarn](pytorch/features/mcore/yarn.md) | 使用yarn方案来扩展上下文长度，支持长序列推理 |
@@ -118,6 +160,7 @@ docs/zh/
 |------|------|
 | [fsdp2_basic_features](pytorch/features/fsdp2/fsdp2_basic_features.md) | FSDP2后端特性介绍 |
 | [arguments](pytorch/features/fsdp2/arguments.md) | FSDP2后端全量参数说明 |
+| [quantization](pytorch/features/fsdp2/quantization.md) | FSDP2后端量化特性 |
 
 **开发指南**
 
@@ -144,3 +187,22 @@ docs/zh/
 | [data_process_dpo_pairwise](pytorch/tools/data_process_dpo_pairwise.md) | 偏好对齐pairwise数据处理 |
 | [profiling](pytorch/tools/profiling.md) | 基于昇腾芯片采集profiling数据 |
 | [deterministic_computation](pytorch/tools/deterministic_computation.md) | 基于昇腾芯片开启确定性计算 |
+
+### 调优指南
+
+| 内容 | 说明 |
+|------|------|
+| [performance_tuning](pytorch/tuning/performance_tuning.md) | 性能调优指南 |
+
+### 精度定位
+
+| 内容 | 说明 |
+|------|------|
+| [precision_issue](pytorch/develop/precision_issue.md) | 精度问题排查指南 |
+
+### 其他
+
+| 内容 | 说明 |
+|------|------|
+| [release_notes_llm](./release_notes_llm.md) | 版本发布说明 |
+| [replace_ascend_path_guide](./replace_ascend_path_guide.md) | 昇腾路径替换指南 |

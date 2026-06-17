@@ -74,21 +74,26 @@ MindSpeed LLM 项目代码按照模块化设计原则进行组织，详细介绍
 MindSpeed-LLM/
  ├── ci                        # 门禁看护
  ├── configs                   # 配置文件目录
+ ├── docker                    # Docker构建配置
  ├── docs                      # 项目文档目录
  ├── examples                  # 模型示例脚本
  ├── mindspeed_llm             # 核心代码目录
+ ├── pre-commit                # pre-commit钩子配置
  ├── tests                     # 测试用例目录
  ├── convert_ckpt.py           # 权重转换工具
  ├── convert_ckpt_v2.py        # 权重转换工具 v2
+ ├── evaluation.py             # 模型评估工具
+ ├── inference.py              # 模型推理工具
+ ├── inference_fsdp2.py        # FSDP2推理工具
+ ├── posttrain_gpt.py          # 后训练流程
  ├── preprocess_data.py        # 数据预处理工具
+ ├── preprocess_prompt.py      # 提示词预处理工具
+ ├── pretrain_deepseek4.py     # DeepSeek4预训练流程
  ├── pretrain_gpt.py           # 预训练流程
  ├── pretrain_mamba.py         # 预训练mamba模型流程
- ├── posttrain_gpt.py          # 后训练流程
- ├── preprocess_prompt.py      # 提示词预处理工具
  ├── rlhf_gpt.py               # RLHF 训练流程
  ├── train_fsdp2.py            # FSDP2 训练流程
- ├── inference.py              # 模型推理工具
- ├── evaluation.py             # 模型评估工具
+ ├── requirements.txt          # Python依赖文件
  ├── setup.py                  # 安装配置文件
  ├── README.md                 # 项目说明文档
 ```
@@ -97,7 +102,7 @@ MindSpeed-LLM/
 
 ---
 
-[文档导读](./docs/zh/docs_guide.md)提供了 MindSpeed LLM 的完整使用指南，包含以下核心内容：
+[文档导航](./docs/zh/docs_guide.md)提供了 MindSpeed LLM 的完整文档使用指南，包含以下核心内容：
 
 - **环境安装指导**：MindSpeed LLM 的安装配置说明
 - **快速入门**：从环境安装到训练拉起的入门指导
