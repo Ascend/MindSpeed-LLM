@@ -144,6 +144,23 @@ find "$PIPELINE_DIR/st" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
     fi
 done
 
+# run the coverage for shell scripts in the pipeline
+find "$PIPELINE_DIR/legacy" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
+    if [ -d "$dir" ]; then
+        find "$dir" -type f -name "*.sh" | while read -r file; do
+            echo "Running [PIPELINE_LEGACY] ${file}"
+            filename=$(basename "$file")
+            extension="${filename##*.}"
+            name="${filename%.$extension}"
+            bash $file | tee "$GENERATE_LOG_DIR/[PIPELINE_LEGACY]$name.log" 2>&1
+            PYTEST_EXITCODE=${PIPESTATUS[0]}
+            if [ $PYTEST_EXITCODE -ne 0 ]; then
+                echo "[PIPELINE_LEGACY] $file has failed, check it!" >> "$GENERATE_LOG_DIR/exec_error.log"
+            fi
+        done
+    fi
+done
+
 # generate the coverage report
 coverage combine
 coverage html -d "$REPORT_DIR/htmlcov"

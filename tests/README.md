@@ -198,10 +198,10 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <th>Mem.</th>
     </tr>
     <tr>
-        <td rowspan="40">ST</td>
+        <td rowspan="25">LEGACY</td>
         <td rowspan="1">baichuan2-13B</td>
         <td>baichuan2_13b, no-gradient-accumulation-fusion</td>
-        <td><a href="pipeline/st/baichuan2-13B/baichuan2_13b_tp8_pp1_mcore.sh">baichuan2_13b_tp8_pp1_mcore.sh</a></td>
+        <td><a href="pipeline/legacy/baichuan2-13B/baichuan2_13b_tp8_pp1_mcore.sh">baichuan2_13b_tp8_pp1_mcore.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
@@ -209,22 +209,15 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
     <tr>
         <td rowspan="1">chatglm3-6B</td>
         <td>chatglm3-6B, use-glm-rope, overlap-grad-reduce, overlap-param-gather</td>
-        <td><a href="pipeline/st/chatglm3-6B/chatglm3_tp1_pp2_rope.sh">chatglm3_tp1_pp2_rope.sh</a></td>
+        <td><a href="pipeline/legacy/chatglm3-6B/chatglm3_tp1_pp2_rope.sh">chatglm3_tp1_pp2_rope.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
     </tr>
     <tr>
-        <td rowspan="2">deepseek</td>
-        <td>deepseekv3, dualpipev, mla-up-proj-tp-overlap, moe-fb-overlap</td>
-        <td><a href="pipeline/st/deepseek/deepseek_v3_mcore_tp2_pp2_ep2_dualpipev_fb.sh">deepseek_v3_mcore_tp2_pp2_ep2_dualpipev_fb.sh</a></td>
-        <td>Y</td>
-        <td>Y</td>
-        <td>Y</td>
-    </tr>
-    <tr>
+        <td rowspan="1">deepseek2</td>
         <td>deepseekv2, moe-grouped-gemm, moe-permutation-async-comm, first-k-dense-replace</td>
-        <td><a href="pipeline/st/deepseek/deepseek2_tp1_pp1_mcore_moe.sh">deepseek2_tp1_pp1_mcore_moe.sh</a></td>
+        <td><a href="pipeline/legacy/deepseek2/deepseek2_tp1_pp1_mcore_moe.sh">deepseek2_tp1_pp1_mcore_moe.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
@@ -232,7 +225,7 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
     <tr>
         <td rowspan="1">glm4</td>
         <td>glm4, overlap_grad_reduce, overlap_param_gather, distributed_optimizer, GQA, GLM-rope</td>
-        <td><a href="pipeline/st/glm4/glm4_9b_8k_tp2_pp2_ptd.sh">glm4_9b_8k_tp2_pp2_ptd.sh</a></td>
+        <td><a href="pipeline/legacy/glm4/glm4_9b_8k_tp2_pp2_ptd.sh">glm4_9b_8k_tp2_pp2_ptd.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
@@ -240,7 +233,162 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
     <tr>
         <td rowspan="1">gpt4</td>
         <td>gpt4, distributed_optimizer, overlap_grad_reduce, overlap_param_gather</td>
-        <td><a href="pipeline/st/gpt4/gpt4_mcore_tp4_cp2_32k_moe_drop.sh">gpt4_mcore_tp4_cp2_32k_moe_drop.sh</a></td>
+        <td><a href="pipeline/legacy/gpt4/gpt4_mcore_tp4_cp2_32k_moe_drop.sh">gpt4_mcore_tp4_cp2_32k_moe_drop.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td rowspan="1">grok1</td>
+        <td>grok1, distributed_optimizer, reuse_fp32_param</td>
+        <td><a href="pipeline/legacy/grok1/grok1_40b_tp4_ep2_ptd.sh">grok1_40b_tp4_ep2_ptd.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td rowspan="1">hunyuan</td>
+        <td>hunyuan, distributed_optimizer, share_kvstates</td>
+        <td><a href="pipeline/legacy/hunyuan/tune_hunyuanLarge_389b_tp1_pp1_ep8_ptd.sh">tune_hunyuanLarge_389b_tp1_pp1_ep8_ptd.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td rowspan="12">llama2</td>
+        <td>llama2, distributed_optimizer, overlap_grad_reduce, gloo</td>
+        <td><a href="pipeline/legacy/llama2/llama2_tp1_pp8_patch_gloo_ptd.sh">llama2_tp1_pp8_patch_gloo_ptd.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td>llama2, TP-2D, ring_cp, distributed_optimizer, overlap_grad_reduce</td>
+        <td><a href="pipeline/legacy/llama2/llama2_tp4cp2pp1_tp2d_tpx2tpy2_ringcp.sh">llama2_tp4cp2pp1_tp2d_tpx2tpy2_ringcp.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td>llama2, TP-2D, ulysses_cp, distributed_optimizer, overlap_grad_reduce</td>
+        <td><a href="pipeline/legacy/llama2/llama2_tp4cp2pp1_tp2d_tpx2tpy2_ulysses.sh">llama2_tp4cp2pp1_tp2d_tpx2tpy2_ulysses.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td>llama2, TP-2D, VPP, distributed_optimizer, overlap_grad_reduce</td>
+        <td><a href="pipeline/legacy/llama2/llama2_tp4pp2vpp2_tp2d_tpx2tpy2.sh">llama2_tp4pp2vpp2_tp2d_tpx2tpy2.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td>llama2, distributed_optimizer, overlap_grad_reduce, ascend_coc</td>
+        <td><a href="pipeline/legacy/llama2/llama2_tp8_pp1_coc_ptd.sh">llama2_tp8_pp1_coc_ptd.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td>llama2, LoRA, lora-fusion, SFT</td>
+        <td><a href="pipeline/legacy/llama2/tune_llama2_tp1_pp1_lora_ptd.sh">tune_llama2_tp1_pp1_lora_ptd.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td>llama2, LU-LoRA, lora-fusion, SFT</td>
+        <td><a href="pipeline/legacy/llama2/tune_llama2_tp1_pp1_lu_lora_ptd.sh">tune_llama2_tp1_pp1_lu_lora_ptd.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td>llama2, VPP, distributed_optimizer, overlap_grad_reduce, SFT</td>
+        <td><a href="pipeline/legacy/llama2/tune_llama2_tp2_pp4_vpp2_mcore_full.sh">tune_llama2_tp2_pp4_vpp2_mcore_full.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td>llama2, CP, megatron_cp_algo, use-fused-ring-attention-update</td>
+        <td><a href="pipeline/legacy/llama2/llama2_tp2_cp4_general_double_ring.sh">llama2_tp2_cp4_general_double_ring.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td>llama2, swap_attention，recompute_activation_function，enable_recompute_layers_per_pp_rank，reuse_fp32_param</td>
+        <td><a href="pipeline/legacy/llama2/llama2_tp2_pp4_vpp2_swap.sh">llama2_tp2_pp4_vpp2_swap.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td>llama2, CCLoRA, QLoRA</td>
+        <td><a href="pipeline/legacy/llama2/tune_llama2_tp1_pp1_qlora_ptd.sh">tune_llama2_tp1_pp1_qlora_ptd.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td>llama2, TP，PP，VPP，distributed_optimizer，o2_gradient，o2_optimizer，FA_TND</td>
+        <td><a href="pipeline/legacy/llama2/llama2_tp2_pp4_vpp2_ptd.sh">llama2_tp2_pp4_vpp2_ptd.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td rowspan="3">llama3</td>
+        <td>llama3, VPP, GQA, recompute, manual_gc</td>
+        <td><a href="pipeline/legacy/llama3/llama3_tp2_pp2_vpp1.sh">llama3_tp2_pp2_vpp1.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td>llama3, LoRA, lora-fusion, llama3-rope, no-pad-to-seq-lengths, enable-hf2mg-convert, auto_data_process</td>
+        <td><a href="pipeline/legacy/llama3/tune_llama3_8b_lora_tp1pp8.sh">tune_llama3_8b_lora_tp1pp8.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td>noop_layers， recompute_norm</td>
+        <td><a href="pipeline/legacy/llama3/llama3_mcore_tp2_pp2_vpp2_noop_layer.sh">llama3_mcore_tp2_pp2_vpp2_noop_layer.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td rowspan="1">mixtral</td>
+        <td> mixtral_8x7b, EP, CP, num_experts, moe_router_topk, aux_loss, moe_allgather, group_query_attention, rotary_base </td>
+        <td><a href="pipeline/legacy/mixtral/mixtral_mcore_tp4_cp2_ep2_ptd.sh">mixtral_mcore_tp4_cp2_ep2_ptd.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td rowspan="2">qwen25</td>
+        <td>qwen2-moe, distributed_optimizer, overlap_grad_reduce, overlap_param_gather, profile</td>
+        <td><a href="pipeline/legacy/qwen25/qwen2_moe_tp1_pp2_ep2_cp2_32k.sh">qwen2_moe_tp1_pp2_ep2_cp2_32k.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td>qwen25, distributed_optimizer, overlap_grad_reduce, SFT, neat_pack, padded_samples</td>
+        <td><a href="pipeline/legacy/qwen25/tune_qwen25_0point5b_tp1_pp1_pack.sh">tune_qwen25_0point5b_tp1_pp1_pack.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td rowspan="17">ST</td>
+        <td rowspan="1">deepseek3</td>
+        <td>deepseekv3, dualpipev, mla-up-proj-tp-overlap, moe-fb-overlap</td>
+        <td><a href="pipeline/st/deepseek3/deepseek_v3_mcore_tp2_pp2_ep2_dualpipev_fb.sh">deepseek_v3_mcore_tp2_pp2_ep2_dualpipev_fb.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
@@ -249,14 +397,6 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td rowspan="1">step3.5-flash</td>
         <td>fsdp2 pretrain</td>
         <td><a href="pipeline/st/step35-flash/pretrain_step_3p5_flash_4K_fsdp2.sh">pretrain_step_3p5_flash_4K_fsdp2.sh</a></td>
-        <td>Y</td>
-        <td>Y</td>
-        <td>Y</td>
-    </tr>
-    <tr>
-        <td rowspan="1">grok1</td>
-        <td>grok1, distributed_optimizer, reuse_fp32_param</td>
-        <td><a href="pipeline/st/grok1/grok1_40b_tp4_ep2_ptd.sh">grok1_40b_tp4_ep2_ptd.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
@@ -277,124 +417,9 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td>Y</td>
     </tr>
     <tr>
-        <td rowspan="1">hunyuan</td>
-        <td>hunyuan, distributed_optimizer, share_kvstates</td>
-        <td><a href="pipeline/st/hunyuan/tune_hunyuanLarge_389b_tp1_pp1_ep8_ptd.sh">tune_hunyuanLarge_389b_tp1_pp1_ep8_ptd.sh</a></td>
-        <td>Y</td>
-        <td>Y</td>
-        <td>Y</td>
-    </tr>
-    <tr>
         <td rowspan="1">interlm3</td>
         <td>internlm3, distributed_optimizer, fused_ring_attention_update</td>
         <td><a href="pipeline/st/interlm3/internlm3_8b_tp1_pp4_cp2_ptd.sh">internlm3_8b_tp1_pp4_cp2_ptd.sh</a></td>
-        <td>Y</td>
-        <td>Y</td>
-        <td>Y</td>
-    </tr>
-    <tr>
-        <td rowspan="11">llama2</td>
-        <td>llama2, distributed_optimizer, overlap_grad_reduce, gloo</td>
-        <td><a href="pipeline/st/llama2/llama2_tp1_pp8_patch_gloo_ptd.sh">llama2_tp1_pp8_patch_gloo_ptd.sh</a></td>
-        <td>Y</td>
-        <td>Y</td>
-        <td>Y</td>
-    </tr>
-    <tr>
-        <td>llama2, TP-2D, ring_cp, distributed_optimizer, overlap_grad_reduce</td>
-        <td><a href="pipeline/st/llama2/llama2_tp4cp2pp1_tp2d_tpx2tpy2_ringcp.sh">llama2_tp4cp2pp1_tp2d_tpx2tpy2_ringcp.sh</a></td>
-        <td>Y</td>
-        <td>Y</td>
-        <td>Y</td>
-    </tr>
-    <tr>
-        <td>llama2, TP-2D, ulysses_cp, distributed_optimizer, overlap_grad_reduce</td>
-        <td><a href="pipeline/st/llama2/llama2_tp4cp2pp1_tp2d_tpx2tpy2_ulysses.sh">llama2_tp4cp2pp1_tp2d_tpx2tpy2_ulysses.sh</a></td>
-        <td>Y</td>
-        <td>Y</td>
-        <td>Y</td>
-    </tr>
-    <tr>
-        <td>llama2, TP-2D, VPP, distributed_optimizer, overlap_grad_reduce</td>
-        <td><a href="pipeline/st/llama2/llama2_tp4pp2vpp2_tp2d_tpx2tpy2.sh">llama2_tp4pp2vpp2_tp2d_tpx2tpy2.sh</a></td>
-        <td>Y</td>
-        <td>Y</td>
-        <td>Y</td>
-    </tr>
-    <tr>
-        <td>llama2, distributed_optimizer, overlap_grad_reduce, ascend_coc</td>
-        <td><a href="pipeline/st/llama2/llama2_tp8_pp1_coc_ptd.sh">llama2_tp8_pp1_coc_ptd.sh</a></td>
-        <td>Y</td>
-        <td>Y</td>
-        <td>Y</td>
-    </tr>
-    <tr>
-        <td>llama2, LoRA, lora-fusion, SFT</td>
-        <td><a href="pipeline/st/llama2/tune_llama2_tp1_pp1_lora_ptd.sh">tune_llama2_tp1_pp1_lora_ptd.sh</a></td>
-        <td>Y</td>
-        <td>Y</td>
-        <td>Y</td>
-    </tr>
-    <tr>
-        <td>llama2, LU-LoRA, lora-fusion, SFT</td>
-        <td><a href="pipeline/st/llama2/tune_llama2_tp1_pp1_lu_lora_ptd.sh">tune_llama2_tp1_pp1_lu_lora_ptd.sh</a></td>
-        <td>Y</td>
-        <td>Y</td>
-        <td>Y</td>
-    </tr>
-    <tr>
-        <td>llama2, VPP, distributed_optimizer, overlap_grad_reduce, SFT</td>
-        <td><a href="pipeline/st/llama2/tune_llama2_tp2_pp4_vpp2_mcore_full.sh">tune_llama2_tp2_pp4_vpp2_mcore_full.sh</a></td>
-        <td>Y</td>
-        <td>Y</td>
-        <td>Y</td>
-    </tr>
-    <tr>
-        <td>llama2, CP, megatron_cp_algo, use-fused-ring-attention-update</td>
-        <td><a href="pipeline/st/llama2/llama2_tp2_cp4_general_double_ring.sh">llama2_tp2_cp4_general_double_ring.sh</a></td>
-        <td>Y</td>
-        <td>Y</td>
-        <td>Y</td>
-    </tr>
-    <tr>
-        <td>llama2, swap_attention，recompute_activation_function，enable_recompute_layers_per_pp_rank，reuse_fp32_param</td>
-        <td><a href="pipeline/st/llama2/llama2_tp2_pp4_vpp2_swap.sh">llama2_tp2_pp4_vpp2_swap.sh</a></td>
-        <td>Y</td>
-        <td>Y</td>
-        <td>Y</td>
-    </tr>
-    <tr>
-        <td>llama2, CCLoRA, QLoRA</td>
-        <td><a href="pipeline/st/llama2/tune_llama2_tp1_pp1_qlora_ptd.sh">tune_llama2_tp1_pp1_qlora_ptd.sh</a></td>
-        <td>Y</td>
-        <td>Y</td>
-        <td>Y</td>
-    </tr>
-    <tr>
-        <td>llama2, TP，PP，VPP，distributed_optimizer，o2_gradient，o2_optimizer，FA_TND</td>
-        <td><a href="pipeline/st/llama2/llama2_tp2_pp4_vpp2_ptd.sh">llama2_tp2_pp4_vpp2_ptd.sh</a></td>
-        <td>Y</td>
-        <td>Y</td>
-        <td>Y</td>
-    </tr>
-    <tr>
-        <td rowspan="3">llama3</td>
-        <td>llama3, VPP, GQA, recompute, manual_gc</td>
-        <td><a href="pipeline/st/llama3/llama3_tp2_pp2_vpp1.sh">llama3_tp2_pp2_vpp1.sh</a></td>
-        <td>Y</td>
-        <td>Y</td>
-        <td>Y</td>
-    </tr>
-    <tr>
-        <td>llama3, LoRA, lora-fusion, llama3-rope, no-pad-to-seq-lengths, enable-hf2mg-convert, auto_data_process</td>
-        <td><a href="pipeline/st/llama3/tune_llama3_8b_lora_tp1pp8.sh">tune_llama3_8b_lora_tp1pp8.sh</a></td>
-        <td>Y</td>
-        <td>Y</td>
-        <td>Y</td>
-    </tr>
-    <tr>
-        <td>noop_layers， recompute_norm</td>
-        <td><a href="pipeline/st/llama3/llama3_mcore_tp2_pp2_vpp2_noop_layer.sh">llama3_mcore_tp2_pp2_vpp2_noop_layer.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
@@ -419,21 +444,6 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td rowspan="1">phi35-moe</td>
         <td>phi35-moe, distributed_optimizer, overlap_grad_reduce, overlap_param_gather, longrope</td>
         <td><a href="pipeline/st/phi35-moe/phi35_moe_tp1_pp8_mcore.sh">phi35_moe_tp1_pp8_mcore.sh</a></td>
-        <td>Y</td>
-        <td>Y</td>
-        <td>Y</td>
-    </tr>
-    <tr>
-        <td rowspan="2">qwen25</td>
-        <td>qwen2-moe, distributed_optimizer, overlap_grad_reduce, overlap_param_gather, profile</td>
-        <td><a href="pipeline/st/qwen25/qwen2_moe_tp1_pp2_ep2_cp2_32k.sh">qwen2_moe_tp1_pp2_ep2_cp2_32k.sh</a></td>
-        <td>Y</td>
-        <td>Y</td>
-        <td>Y</td>
-    </tr>
-    <tr>
-        <td>qwen25, distributed_optimizer, overlap_grad_reduce, SFT, neat_pack, padded_samples</td>
-        <td><a href="pipeline/st/qwen25/tune_qwen25_0point5b_tp1_pp1_pack.sh">tune_qwen25_0point5b_tp1_pp1_pack.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
@@ -499,17 +509,9 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td>Y</td>
     </tr>
     <tr>
-        <td rowspan="1">fsdp2 pretrain</td>
-        <td> minimax-m2.7 </td>
+        <td rowspan="1">minimax-m2.7</td>
+        <td>minimax fsdp2 pretrain </td>
         <td><a href="pipeline/st/minimax-m2.7/pretrain_minimax_m2p7_4K_fsdp2.sh">pretrain_minimax_m2p7_4K_fsdp2.sh</a></td>
-        <td>Y</td>
-        <td>Y</td>
-        <td>Y</td>
-    </tr>
-    <tr>
-        <td rowspan="1">mixtral</td>
-        <td> mixtral_8x7b, EP, CP, num_experts, moe_router_topk, aux_loss, moe_allgather, group_query_attention, rotary_base </td>
-        <td><a href="pipeline/st/mixtral/mixtral_mcore_tp4_cp2_ep2_ptd.sh">mixtral_mcore_tp4_cp2_ep2_ptd.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
@@ -835,11 +837,11 @@ def test_featureA():
 
 ① 贡献脚本用例请放置于 `st/shell_scripts` 文件夹下，命名规则为 **{模型名}_{切分策略}** 或者 **{模型名}_{特性名称}**， 如 `llama2_tp2_pp4_vpp2_ptd.sh`，请贡献者严格对齐；
 
-② 注意脚本用例中不需要单独重定向log，日志收集工作已在 `st_run.sh` 中统一管理；
+② 注意脚本用例中不需要单独重定向log，日志收集工作已在 `test_st.py` 中统一管理；
 
 ③ 标杆数据请放置于 `st/baseline_results` 文件夹下，**命名保证完全与 shell 脚本对齐**，否则自动化脚本执行将扫描不到；
 
-④ 获取标杆数据：通过门禁任务执行获得首次数据，并将结果保存至本地 log 或者 txt 文件中，后通过本地执行 `st/st_utils/common.py` 中的 `transfer_logs_as_json` 函数进行提取，最后再连同用例脚本上仓即可；
+④ 获取标杆数据：通过门禁任务执行获得首次数据，并将结果保存至本地 log 或者 txt 文件中，后通过本地执行 `tests/test_tools/acquire_json.py` 中的 `transfer_logs_as_json` 函数进行提取，最后再连同用例脚本上仓即可；
 
 ⑤ 在贡献时候需要考虑最终校验的具体指标，精度(Acc.)、性能(Throu.)、显存(Mem.)，在对应指标空白处填上 `Y`，如无校验的保留空白即可。
 
