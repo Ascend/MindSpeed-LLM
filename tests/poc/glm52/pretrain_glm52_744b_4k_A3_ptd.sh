@@ -4,6 +4,7 @@ export CUDA_DEVICE_MAX_CONNECTIONS=1
 export CPU_AFFINITY_CONF=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
 export HCCL_CONNECT_TIMEOUT=3600
+export HCCL_EXEC_TIMEOUT=3600
 export TASK_QUEUE_ENABLE=2
 export STREAMS_PER_DEVICE=32
 export HCCL_IF_BASE_PORT=25809
@@ -67,7 +68,6 @@ MOE_ARGS="
     --moe-grouped-gemm \
     --moe-permutation-async-comm \
     --moe-token-dispatcher-type alltoall \
-    --moe-permute-fusion \
     --first-k-dense-replace 3 \
     --moe-layer-freq 1 \
     --num-experts 256 \
@@ -207,7 +207,6 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     $OUTPUT_ARGS \
     $ROPE_ARGS \
     $MLA_ARGS \
-    $MTP_ARGS \
     $MEM_ARGS \
     $MOE_ARGS \
     $DSA_ARGS \
