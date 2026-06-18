@@ -97,10 +97,10 @@
 
     ```bash
     NPUS_PER_NODE=8           # 使用单节点的8卡NPU
-    MASTER_ADDR=localhost     # 单机使用本节点ip，多机所有节点都配置为master_ip
+    MASTER_ADDR=localhost     # 单机使用本节点IP地址或者localhost，多机所有节点都配置为主节点IP地址
     MASTER_PORT=6000          # 本节点端口号为6000
     NNODES=1                  # 根据参与节点数量配置，单机为1，多机即多节点
-    NODE_RANK=0               # 单机RANK为0，多机为(0,NNODES-1)，不同节点不可重复，master_node rank为0，其ip为master_ip
+    NODE_RANK=0               # 单机RANK为0，多机为(0,NNODES-1)，不同节点不可重复，NODE_RANK为0的节点为主节点
     WORLD_SIZE=$(($NPUS_PER_NODE * $NNODES))
 
     # 根据实际情况配置权重保存、权重加载、词表、数据集路径，多机中所有节点都要有如下数据
@@ -136,7 +136,7 @@
 
 > [!NOTE]
 >
-> - 多机训练需在多个终端同时启动预训练脚本（每个终端的预训练脚本只有NODE_RANK参数不同，其他参数均相同）。
+> - 多机训练需在多个终端同时启动预训练脚本（每个终端的预训练脚本只有NODE_RANK参数不同，MASTER_ADDR均为主节点的IP地址，其他参数均相同）。
 > - 如果使用多机训练，且没有设置数据共享，需要在训练启动脚本中增加`--no-shared-storage`参数，设置此参数之后将会根据分布式参数判断非主节点是否需要load数据，并检查相应缓存和生成数据。
 
 ## 启动微调
