@@ -8,20 +8,23 @@ from typing import Union
 import torch
 import torch.nn.functional as F
 
-from mindspeed.core.context_parallel.ulysses_context_parallel.ulysses_context_parallel import UlyssesContextAttention
-from mindspeed.core.parallel_state import get_context_parallel_group_for_hybrid_ulysses
 from mindspeed.core.tensor_parallel.random import CheckpointWithoutOutput
 from mindspeed.core.transformer.transformer_block import _get_layer_offset
-from mindspeed.utils import  set_position_ids, get_position_ids
+from mindspeed.utils import set_position_ids, get_position_ids
 from mindspeed.core.context_parallel.get_batch_utils import get_actual_seq_len, set_actual_seq_len
-from mindspeed.core.transformer.moe.moe_feature.fb_overlap.modules.attention import launch_async_all2all_hook, launch_async_all2all
+from mindspeed.core.transformer.moe.moe_feature.fb_overlap.modules.attention import (
+    launch_async_all2all_hook,
+    launch_async_all2all,
+)
 from mindspeed.core.transformer.moe.moe_feature.fb_overlap.modules.utils import TensorSwapManager
 
 from megatron.core.transformer.identity_op import IdentityOp
 from megatron.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb
 from megatron.core.tensor_parallel import ColumnParallelLinear, RowParallelLinear
-from megatron.core.tensor_parallel.mappings import gather_from_sequence_parallel_region, \
-    gather_from_tensor_model_parallel_region
+from megatron.core.tensor_parallel.mappings import (
+    gather_from_sequence_parallel_region,
+    gather_from_tensor_model_parallel_region,
+)
 from megatron.core.transformer import TransformerConfig, ModuleSpec, build_module
 from megatron.core.transformer.attention import SelfAttention, SelfAttentionSubmodules
 from megatron.core.transformer.custom_layers.transformer_engine import TEColumnParallelLinear, TERowParallelLinear
@@ -32,19 +35,165 @@ from megatron.training import get_args
 from mindspeed_llm.core.fp8_utils import fp8_context_wrapper
 from mindspeed_llm.core.tensor_parallel.layers import LinearNoTP
 from mindspeed_llm.core.transformer.custom_layers.transformer_engine import PTNorm
-from mindspeed_llm.tasks.models.transformer.dsa_indexer import get_dsa_indexer_spec, DSAIndexerLossAutoScaler, \
-    compute_dsa_indexer_loss, get_attn_scores, DSAIndexerLossLoggingHelper, \
-    fused_sparse_lightning_indexer_kl_loss, fused_sparse_lightning_indexer_kl_loss_kvallgather
-from mindspeed_llm.tasks.models.transformer.mla_dot_product_attention import MlaDotProductAttention, MlaTEDotProductAttention
+from mindspeed_llm.tasks.models.transformer.dsa_indexer import (
+    get_dsa_indexer_spec,
+    DSAIndexerLossAutoScaler,
+    compute_dsa_indexer_loss,
+    get_attn_scores,
+    DSAIndexerLossLoggingHelper,
+    fused_sparse_lightning_indexer_kl_loss,
+    fused_sparse_lightning_indexer_kl_loss_kvallgather,
+)
+from mindspeed_llm.tasks.models.transformer.mla_dot_product_attention import (
+    MlaDotProductAttention,
+    MlaTEDotProductAttention,
+)
 from mindspeed_llm.tasks.models.transformer.mla_up_proj_overlap_tp_comm import mla_up_projection_overlap_tp_comm
-from mindspeed_llm.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb_bshd_in_complex 
-from einops import rearrange
+from mindspeed_llm.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb_bshd_in_complex
 
 logger = logging.getLogger(__name__)
+
+_GLOBAL_DSA_TOPK_INDICES = None
+
+
+def set_dsa_topk_indices(indices):
+    """Store topk_indices to global buffer for subsequent skip layers."""
+    global _GLOBAL_DSA_TOPK_INDICES
+    _GLOBAL_DSA_TOPK_INDICES = indices
+
+
+def get_dsa_topk_indices():
+    """Get cached topk_indices from global buffer.
+
+    Returns:
+        torch.Tensor or None: The cached topk_indices, or None if no
+        non-skip layer has computed indices yet.
+    """
+    global _GLOBAL_DSA_TOPK_INDICES
+    return _GLOBAL_DSA_TOPK_INDICES
+
+
+def _get_pipeline_layer_offset(args):
+    num_layers = args.num_layers
+    pipeline_rank = parallel_state.get_pipeline_model_parallel_rank()
+    pipeline_world_size = parallel_state.get_pipeline_model_parallel_world_size()
+
+    # ------------------------------------------------------------
+    # Custom contiguous PP split controlled by --num-layer-list.
+    #
+    # Example:
+    #   --num-layers 10
+    #   --pipeline-model-parallel-size 2
+    #   --num-layer-list 6,4
+    #
+    # Then:
+    #   pp0 offset = 0
+    #   pp1 offset = 6
+    # ------------------------------------------------------------
+    num_layer_list = getattr(args, "num_layer_list", None)
+
+    if num_layer_list is not None:
+        if isinstance(num_layer_list, str):
+            num_layer_list = [int(x) for x in num_layer_list.replace(";", ",").split(",") if x.strip()]
+        else:
+            num_layer_list = [int(x) for x in num_layer_list]
+
+        if len(num_layer_list) != pipeline_world_size:
+            raise ValueError(
+                f"num_layer_list length must equal pipeline model parallel world size: "
+                f"num_layer_list={num_layer_list}, "
+                f"pipeline_world_size={pipeline_world_size}"
+            )
+
+        if sum(num_layer_list) != num_layers:
+            raise ValueError(
+                f"sum(num_layer_list) must equal args.num_layers: "
+                f"num_layer_list={num_layer_list}, "
+                f"sum={sum(num_layer_list)}, "
+                f"num_layers={num_layers}"
+            )
+
+        if args.schedules_method == "dualpipev":
+            raise ValueError(
+                "--num-layer-list custom PP split is not supported with dualpipev "
+                "in this _get_layer_offset implementation."
+            )
+
+        if parallel_state.get_virtual_pipeline_model_parallel_world_size() is not None:
+            raise ValueError(
+                "--num-layer-list custom PP split is not supported with virtual pipeline "
+                "parallelism in this _get_layer_offset implementation."
+            )
+
+        return sum(num_layer_list[:pipeline_rank])
+
+    # ------------------------------------------------------------
+    # Original uniform PP logic.
+    # ------------------------------------------------------------
+    num_layers_per_pipeline_rank = num_layers // parallel_state.get_pipeline_model_parallel_world_size()
+
+    if args.schedules_method == "dualpipev":
+        num_layers_per_dualpipe_chunk = num_layers_per_pipeline_rank // 2
+        if args.dualpipev_first_chunk:
+            offset = pipeline_rank * num_layers_per_dualpipe_chunk
+        else:
+            offset = args.num_layers - (pipeline_rank + 1) * num_layers_per_dualpipe_chunk
+
+    elif parallel_state.get_virtual_pipeline_model_parallel_world_size() is not None:
+        vp_rank = parallel_state.get_virtual_pipeline_model_parallel_rank()
+        vp_size = parallel_state.get_virtual_pipeline_model_parallel_world_size()
+
+        total_num_layers = num_layers
+        num_layers_per_virtual_rank = num_layers_per_pipeline_rank // vp_size
+        total_virtual_chunks = total_num_layers // vp_size
+        offset = vp_rank * total_virtual_chunks + (pipeline_rank * num_layers_per_virtual_rank)
+
+    else:
+        # Each stage gets a contiguous set of layers.
+        if parallel_state.get_pipeline_model_parallel_world_size() > 1:
+            offset = pipeline_rank * num_layers_per_pipeline_rank
+        else:
+            offset = 0
+
+    return offset
+
+
+def resolve_dsa_indexer_build_config(args, layer_number):
+    """
+    Resolve DSAIndexer build config.
+
+    layer_number:
+        PP-local 1-based layer number.
+        decoder.layers.0 -> layer_number=1
+    """
+    pp_rank = parallel_state.get_pipeline_model_parallel_rank()
+
+    # _get_layer_offset(args) now supports --num-layer-list.
+    layer_offset = _get_pipeline_layer_offset(args)
+
+    local_layer_idx = layer_number - 1
+    global_layer_number = layer_offset + layer_number
+    global_layer_idx = global_layer_number - 1
+
+    index_topk_freq = getattr(args, "index_topk_freq", 1)
+    index_skip_topk_offset = getattr(args, "index_skip_topk_offset", 2)
+
+    skip_dsa_topk = max(global_layer_number - index_skip_topk_offset, 0) % index_topk_freq != 0
+
+    return {
+        "pp_rank": pp_rank,
+        "layer_offset": layer_offset,
+        "local_layer_idx": local_layer_idx,
+        "global_layer_number": global_layer_number,
+        "global_layer_idx": global_layer_idx,
+        "skip_dsa_topk": skip_dsa_topk,
+    }
+
 
 @dataclass
 class CustomMLASelfAttentionSubmodules(SelfAttentionSubmodules):
     """Submodules for the MLA self-attention layer with NPU."""
+
     linear_qkv: Union[ModuleSpec, type] = None
     core_attention: Union[ModuleSpec, type] = None
     linear_proj: Union[ModuleSpec, type] = None
@@ -140,19 +289,19 @@ class CustomMLASelfAttention(SelfAttention):
         self.mla_scale_q_lora = None
         if args.enable_mla_scale_q_lora:
             self.mla_scale_q_lora = (self.config.hidden_size / self.q_lora_rank) ** 0.5
-        
+
         self.mla_scale_kv_lora = None
         if args.enable_mla_scale_kv_lora:
             self.mla_scale_kv_lora = (self.config.hidden_size / self.kv_lora_rank) ** 0.5
 
         self.enable_mla_absorb = args.enable_mla_absorb
 
-        # NOTE:Current implementation only supports sparse attention mode 
-        # Future extensions may support other modes 
+        # NOTE:Current implementation only supports sparse attention mode
+        # Future extensions may support other modes
         if self.enable_mla_absorb and (not args.use_sparse_flash_attn) and (not args.mla_mm_split):
             logger.warning(
-                f"enable_mla_absorb currently only supports sparse attention and mm-split mode."
-                f"Please enable use_sparse_flash_attn and mla_mm_split. enable_mla_absorb will be disabled."
+                "enable_mla_absorb currently only supports sparse attention and mm-split mode."
+                "Please enable use_sparse_flash_attn and mla_mm_split. enable_mla_absorb will be disabled."
             )
             self.enable_mla_absorb = False
 
@@ -290,10 +439,24 @@ class CustomMLASelfAttention(SelfAttention):
             tp_comm_buffer_name="proj",
         )
 
-        self.dsa_indexer = build_module(submodules.dsa_indexer,
-                                        config=self.config,
-                                        layer_number=layer_number
-                                        )
+        self.dsa_indexer = IdentityOp()
+        if args.enable_dsa_indexer:
+            dsa_cfg = resolve_dsa_indexer_build_config(args, layer_number)
+            self._skip_dsa_topk = dsa_cfg["skip_dsa_topk"]
+
+            if self._skip_dsa_topk:
+                self.dsa_indexer = IdentityOp()
+            else:
+                self.dsa_indexer = build_module(
+                    submodules.dsa_indexer,
+                    config=self.config,
+                    # Pass global 1-based layer number.
+                    # DSAIndexer may use args.compress_ratios[layer_number - 1].
+                    layer_number=dsa_cfg["global_layer_number"],
+                )
+        else:
+            self._skip_dsa_topk = False
+            self.dsa_indexer = IdentityOp()
 
         # hook async A2A launcher inside mla forward when TP > 1.
         # a2a should be launched after TP communication finished to avoid bandwidth compete.
@@ -352,9 +515,9 @@ class CustomMLASelfAttention(SelfAttention):
                 dim=-1,
             )
             if self.mla_up_proj_tp_overlap:
-                query, key, value = mla_up_projection_overlap_tp_comm(q_compressed, kv_compressed, k_pos_emb,
-                                                                      rotary_pos_emb,
-                                                                      packed_seq_params, self)
+                query, key, value = mla_up_projection_overlap_tp_comm(
+                    q_compressed, kv_compressed, k_pos_emb, rotary_pos_emb, packed_seq_params, self
+                )
             else:
                 if self.q_layernorm is not None:
                     q_compressed = self.q_layernorm(q_compressed)
@@ -364,21 +527,15 @@ class CustomMLASelfAttention(SelfAttention):
                     if not self.mla_mm_split:
                         q, _ = self.linear_q_up_proj(q_compressed)
                         q = q.view(q_len, bsz, self.num_attention_heads_per_partition, -1)
-                        q_no_pe, q_pos_emb = torch.split(
-                            q, [self.qk_head_dim, self.qk_pos_emb_head_dim], dim=-1
-                        )
+                        q_no_pe, q_pos_emb = torch.split(q, [self.qk_head_dim, self.qk_pos_emb_head_dim], dim=-1)
                     else:
                         q_no_pe, _ = self.linear_qk_nope(q_compressed)
                         q_pos_emb, _ = self.linear_qk_rope(q_compressed)
-                        q_no_pe = q_no_pe.view(
-                            q_len, bsz, self.num_attention_heads_per_partition, -1
-                        )
+                        q_no_pe = q_no_pe.view(q_len, bsz, self.num_attention_heads_per_partition, -1)
                         q_pos_emb = q_pos_emb.view(q_len, bsz, self.num_attention_heads_per_partition, -1)
                 else:
                     q = q_compressed.view(q_len, bsz, self.num_attention_heads_per_partition, -1)
-                    q_no_pe, q_pos_emb = torch.split(
-                        q, [self.qk_head_dim, self.qk_pos_emb_head_dim], dim=-1
-                    )
+                    q_no_pe, q_pos_emb = torch.split(q, [self.qk_head_dim, self.qk_pos_emb_head_dim], dim=-1)
 
                 if self.config.sequence_parallel:
                     k_pos_emb = gather_from_sequence_parallel_region(k_pos_emb)
@@ -415,14 +572,25 @@ class CustomMLASelfAttention(SelfAttention):
                         cu_seqlens_kv = packed_seq_params
                     else:
                         cu_seqlens_q = cu_seqlens_kv = None
-                    if not args.enable_dsa_indexer:
-                        q_pos_emb = apply_rotary_pos_emb(q_pos_emb, rotary_q_pos_emb, config=self.config, cu_seqlens=cu_seqlens_q)
-                        k_pos_emb = apply_rotary_pos_emb(k_pos_emb, rotary_k_pos_emb, config=self.config, cu_seqlens=cu_seqlens_kv)
-                    else:
-                        q_pos_emb = apply_rotary_pos_emb_bshd_in_complex(q_pos_emb, rotary_q_pos_emb, rotary_interleaved=False)
-                        k_pos_emb = apply_rotary_pos_emb_bshd_in_complex(k_pos_emb, rotary_k_pos_emb, rotary_interleaved=False)
 
-                k_pos_emb = k_pos_emb.expand(k_pos_emb.shape[0], k_pos_emb.shape[1], q_no_pe.shape[2], k_pos_emb.shape[3])
+                    if args.enable_dsa_indexer and not args.apply_rope_no_in_complex:
+                        q_pos_emb = apply_rotary_pos_emb_bshd_in_complex(
+                            q_pos_emb, rotary_q_pos_emb, rotary_interleaved=False
+                        )
+                        k_pos_emb = apply_rotary_pos_emb_bshd_in_complex(
+                            k_pos_emb, rotary_k_pos_emb, rotary_interleaved=False
+                        )
+                    else:
+                        q_pos_emb = apply_rotary_pos_emb(
+                            q_pos_emb, rotary_q_pos_emb, config=self.config, cu_seqlens=cu_seqlens_q
+                        )
+                        k_pos_emb = apply_rotary_pos_emb(
+                            k_pos_emb, rotary_k_pos_emb, config=self.config, cu_seqlens=cu_seqlens_kv
+                        )
+
+                k_pos_emb = k_pos_emb.expand(
+                    k_pos_emb.shape[0], k_pos_emb.shape[1], q_no_pe.shape[2], k_pos_emb.shape[3]
+                )
                 if args.mla_fa_divide_qk:
                     query = [q_no_pe, q_pos_emb]
                     key = [k_no_pe, k_pos_emb]
@@ -430,11 +598,7 @@ class CustomMLASelfAttention(SelfAttention):
                     query = torch.cat([q_no_pe, q_pos_emb], dim=-1)
                     key = torch.cat([k_no_pe, k_pos_emb], dim=-1)
 
-                    if (
-                        self.use_flash_attn
-                        and self.q_head_dim != self.v_head_dim
-                        and not self.mla_fa_without_pad
-                    ):
+                    if self.use_flash_attn and self.q_head_dim != self.v_head_dim and not self.mla_fa_without_pad:
                         if self.shape_order == "BNSD":
                             value = F.pad(value, [0, self.q_head_dim - self.v_head_dim])
                         else:
@@ -448,7 +612,7 @@ class CustomMLASelfAttention(SelfAttention):
                         args.context_parallel_size > 1
                         and args.context_parallel_algo in ["ulysses_cp_algo", "hybrid_cp_algo"]
                         and args.kv_head_repeat_before_uly_alltoall
-                        )
+                    )
                     heads_per_gqa_group = self.num_attention_heads_per_partition // self.num_query_groups_per_partition
                     if should_kv_repeat_before_uly and heads_per_gqa_group > 1:
                         key = key.repeat_interleave(heads_per_gqa_group, dim=2)
@@ -456,6 +620,8 @@ class CustomMLASelfAttention(SelfAttention):
 
             # DSAIndexer module computation
             nonlocal attention_mask
+            topk_score = None
+            topk_indices = None
             if not isinstance(self.dsa_indexer, IdentityOp):
                 if self.sequence_parallel:
                     dsa_hidden_states = gather_from_sequence_parallel_region(hidden_states)
@@ -463,9 +629,34 @@ class CustomMLASelfAttention(SelfAttention):
                 else:
                     dsa_hidden_states, dsa_q_compressed = hidden_states, q_compressed
 
-                topk_score, topk_indices, attention_mask = self.dsa_indexer(dsa_hidden_states.detach(),
-                                                                            dsa_q_compressed.detach(),
-                                                                            0, rotary_pos_emb)
+                topk_score, topk_indices, attention_mask = self.dsa_indexer(
+                    dsa_hidden_states.detach(), dsa_q_compressed.detach(), 0, rotary_pos_emb
+                )
+
+                # Store computed indices in global buffer for subsequent skip layers.
+                set_dsa_topk_indices(topk_indices)
+            elif self._skip_dsa_topk:
+                # IndexCache: reuse indices from global buffer.
+                topk_indices = get_dsa_topk_indices()
+                if topk_indices is None:
+                    raise RuntimeError(
+                        f"CustomMLASelfAttention layer {self.layer_number}: "
+                        f"skip_dsa_topk=True but global buffer is empty. "
+                        f"A non-skip layer must run first."
+                    )
+                from mindspeed_llm.tasks.models.transformer.dsa_indexer import DSAIndexer
+
+                # Same reason as mla_naive_attention:
+                # cached topk_indices may be full-sequence under sequence parallel.
+                b, s, _ = topk_indices.shape
+
+                attention_mask = DSAIndexer.generate_sparse_mask(
+                    topk_indices,
+                    None,
+                    (b, s, s),
+                    hidden_states.dtype,
+                    hidden_states.device,
+                )
 
             # ==================================
             # core attention computation
@@ -490,18 +681,20 @@ class CustomMLASelfAttention(SelfAttention):
                     attention_bias=None,
                     packed_seq_params=packed_seq_params,
                 )
-            if args.enable_dsa_indexer and self.training and torch.is_grad_enabled():
-                if args.context_parallel_size > 1 and args.context_parallel_algo=='ulysses_cp_algo':
-                    query = gather_from_sequence_parallel_region(query,group=mpu.get_context_parallel_group())
-                    key = gather_from_sequence_parallel_region(key,group=mpu.get_context_parallel_group())
+            if args.enable_dsa_indexer and self.training and torch.is_grad_enabled() and topk_score is not None:
+                if args.context_parallel_size > 1 and args.context_parallel_algo == 'ulysses_cp_algo':
+                    query = gather_from_sequence_parallel_region(query, group=mpu.get_context_parallel_group())
+                    key = gather_from_sequence_parallel_region(key, group=mpu.get_context_parallel_group())
                 # NOTE: mla-fa-divide-qk is not supported currently
-                main_attn_dist = get_attn_scores(query.detach(),
-                                                 key.detach(),
-                                                 attention_mask,
-                                                 self.num_attention_heads_per_partition //
-                                                 self.num_query_groups_per_partition,
-                                                 self.core_attention.local_attn.scale if args.context_parallel_size > 1 and args.context_parallel_algo=='ulysses_cp_algo' else self.core_attention.scale, 
-                                                 )
+                main_attn_dist = get_attn_scores(
+                    query.detach(),
+                    key.detach(),
+                    attention_mask,
+                    self.num_attention_heads_per_partition // self.num_query_groups_per_partition,
+                    self.core_attention.local_attn.scale
+                    if args.context_parallel_size > 1 and args.context_parallel_algo == 'ulysses_cp_algo'
+                    else self.core_attention.scale,
+                )
                 loss = compute_dsa_indexer_loss(
                     main_attn_dist,
                     topk_score,
@@ -524,7 +717,9 @@ class CustomMLASelfAttention(SelfAttention):
             if self.use_flash_attn and not self.mla_fa_without_pad:
                 core_attn_out = core_attn_out.view(q_len, bsz, self.num_attention_heads_per_partition, -1)
                 core_attn_out = core_attn_out[:, :, :, : self.v_head_dim]
-                core_attn_out = core_attn_out.reshape(q_len, bsz, self.num_attention_heads_per_partition * self.v_head_dim)
+                core_attn_out = core_attn_out.reshape(
+                    q_len, bsz, self.num_attention_heads_per_partition * self.v_head_dim
+                )
 
             return core_attn_out
 
@@ -559,25 +754,19 @@ class CustomMLASelfAttention(SelfAttention):
                 if not self.mla_mm_split:
                     q, _ = self.linear_q_up_proj(q_compressed)
                     q = q.view(q_len, bsz, self.num_attention_heads_per_partition, -1)
-                    q_no_pe, q_pos_emb = torch.split(
-                        q, [self.qk_head_dim, self.qk_pos_emb_head_dim], dim=-1
-                    )
+                    q_no_pe, q_pos_emb = torch.split(q, [self.qk_head_dim, self.qk_pos_emb_head_dim], dim=-1)
                 else:
                     q_no_pe, _ = self.linear_qk_nope(q_compressed)
                     q_pos_emb, _ = self.linear_qk_rope(q_compressed)
-                    q_no_pe = q_no_pe.view(
-                        q_len, bsz, self.num_attention_heads_per_partition, -1
-                    )
+                    q_no_pe = q_no_pe.view(q_len, bsz, self.num_attention_heads_per_partition, -1)
                     q_pos_emb = q_pos_emb.view(q_len, bsz, self.num_attention_heads_per_partition, -1)
             else:
                 q = q_compressed.view(q_len, bsz, self.num_attention_heads_per_partition, -1)
-                q_no_pe, q_pos_emb = torch.split(
-                    q, [self.qk_head_dim, self.qk_pos_emb_head_dim], dim=-1
-                )
+                q_no_pe, q_pos_emb = torch.split(q, [self.qk_head_dim, self.qk_pos_emb_head_dim], dim=-1)
             # absorb W_UK into W_UQ (i.e. linear_qk_nope)
             # attn_score = (q * W_UQ) * ( k * W_UK)^T
             #            = (q * W_UQ * W_UK^T )* k^T
-            kv_nope_weight = self.linear_kv_nope.weight  
+            kv_nope_weight = self.linear_kv_nope.weight
             W_UK = kv_nope_weight.view(self.num_attention_heads_per_partition, self.qk_head_dim, -1)
             q_no_pe = torch.einsum('sbhq,hqr->sbhr', q_no_pe, W_UK)
 
@@ -600,16 +789,33 @@ class CustomMLASelfAttention(SelfAttention):
                 rotary_q_pos_emb, rotary_k_pos_emb = rotary_pos_emb
 
                 if packed_seq_params is not None:
-                    cu_seqlens_q = packed_seq_params.cu_seqlens_q if hasattr(packed_seq_params, 'cu_seqlens_q') else packed_seq_params
-                    cu_seqlens_kv = packed_seq_params.cu_seqlens_kv if hasattr(packed_seq_params, 'cu_seqlens_kv') else packed_seq_params
+                    cu_seqlens_q = (
+                        packed_seq_params.cu_seqlens_q
+                        if hasattr(packed_seq_params, 'cu_seqlens_q')
+                        else packed_seq_params
+                    )
+                    cu_seqlens_kv = (
+                        packed_seq_params.cu_seqlens_kv
+                        if hasattr(packed_seq_params, 'cu_seqlens_kv')
+                        else packed_seq_params
+                    )
                 else:
                     cu_seqlens_q = cu_seqlens_kv = None
-                if not args.enable_dsa_indexer:
-                    q_pos_emb = apply_rotary_pos_emb(q_pos_emb, rotary_q_pos_emb, config=self.config, cu_seqlens=cu_seqlens_q)
-                    k_pos_emb = apply_rotary_pos_emb(k_pos_emb, rotary_k_pos_emb, config=self.config, cu_seqlens=cu_seqlens_kv)
+
+                if args.enable_dsa_indexer and not args.apply_rope_no_in_complex:
+                    q_pos_emb = apply_rotary_pos_emb_bshd_in_complex(
+                        q_pos_emb, rotary_q_pos_emb, rotary_interleaved=False
+                    )
+                    k_pos_emb = apply_rotary_pos_emb_bshd_in_complex(
+                        k_pos_emb, rotary_k_pos_emb, rotary_interleaved=False
+                    )
                 else:
-                    q_pos_emb = apply_rotary_pos_emb_bshd_in_complex(q_pos_emb, rotary_q_pos_emb, rotary_interleaved=False)
-                    k_pos_emb = apply_rotary_pos_emb_bshd_in_complex(k_pos_emb, rotary_k_pos_emb, rotary_interleaved=False)
+                    q_pos_emb = apply_rotary_pos_emb(
+                        q_pos_emb, rotary_q_pos_emb, config=self.config, cu_seqlens=cu_seqlens_q
+                    )
+                    k_pos_emb = apply_rotary_pos_emb(
+                        k_pos_emb, rotary_k_pos_emb, config=self.config, cu_seqlens=cu_seqlens_kv
+                    )
 
             k_pos_emb = k_pos_emb.expand(k_pos_emb.shape[0], k_pos_emb.shape[1], q_no_pe.shape[2], k_pos_emb.shape[3])
             # For absorb mode, k_pos_emb needs to be squeezed to 1 head
@@ -630,10 +836,11 @@ class CustomMLASelfAttention(SelfAttention):
                 value = value.repeat_interleave(heads_per_gqa_group, dim=2)
                 k_pos_emb = k_pos_emb.repeat_interleave(heads_per_gqa_group, dim=2)
                 key = [k_no_pe, k_pos_emb]
-           
+
             # DSAIndexer module computation
             nonlocal attention_mask
             topk_indices = None
+            topk_score = None
             if not isinstance(self.dsa_indexer, IdentityOp):
                 if self.sequence_parallel:
                     dsa_hidden_states = gather_from_sequence_parallel_region(hidden_states)
@@ -644,18 +851,50 @@ class CustomMLASelfAttention(SelfAttention):
                 query_index, key_index, weights, dsa_hidden_states = self.dsa_indexer.forward_with_index(
                     dsa_hidden_states.detach(),
                     dsa_q_compressed.detach(),
-                    rotary_pos_emb, )
+                    rotary_pos_emb,
+                )
                 # Fuse LILossTrain includes LIG
                 dsa_indexer_context = torch.no_grad() if args.use_fused_lightning_indexer_loss else nullcontext()
                 with dsa_indexer_context:
                     topk_indices, topk_score = self.dsa_indexer.forward_with_scores(
-                        dsa_hidden_states, query_index, key_index, weights, attention_mask, packed_seq_params, 0,
-                        args.index_topk)
+                        dsa_hidden_states,
+                        query_index,
+                        key_index,
+                        weights,
+                        attention_mask,
+                        packed_seq_params,
+                        0,
+                        args.index_topk,
+                    )
 
                 s, b, _ = dsa_hidden_states.size()
-                attention_mask = self.dsa_indexer.generate_sparse_mask(topk_indices, attention_mask, (b, s, s),
-                                                                       dsa_hidden_states.dtype,
-                                                                       dsa_hidden_states.device)
+                attention_mask = self.dsa_indexer.generate_sparse_mask(
+                    topk_indices, attention_mask, (b, s, s), dsa_hidden_states.dtype, dsa_hidden_states.device
+                )
+
+                # Store computed indices in global buffer for subsequent skip layers.
+                set_dsa_topk_indices(topk_indices)
+            elif self._skip_dsa_topk:
+                # IndexCache: reuse indices from global buffer.
+                topk_indices = get_dsa_topk_indices()
+                if topk_indices is None:
+                    raise RuntimeError(
+                        f"CustomMLASelfAttention layer {self.layer_number}: "
+                        f"skip_dsa_topk=True but global buffer is empty. "
+                        f"A non-skip layer must run first."
+                    )
+                from mindspeed_llm.tasks.models.transformer.dsa_indexer import DSAIndexer
+
+                # Same reason as mla_naive_attention:
+                # cached topk_indices may be full-sequence under sequence parallel.
+                b, s, _ = topk_indices.shape
+                attention_mask = DSAIndexer.generate_sparse_mask(
+                    topk_indices,
+                    None,
+                    (b, s, s),
+                    hidden_states.dtype,
+                    hidden_states.device,
+                )
 
             # ==================================
             # core attention computation
@@ -709,19 +948,21 @@ class CustomMLASelfAttention(SelfAttention):
                         packed_seq_params=packed_seq_params,
                     )
             h = self.num_attention_heads_per_partition
-            
+
             # DSA indexer loss calculation
-            if args.enable_dsa_indexer and self.training and torch.is_grad_enabled():
-                if args.context_parallel_size > 1 and args.context_parallel_algo=='ulysses_cp_algo':
-                    query = gather_from_sequence_parallel_region(query,group=mpu.get_context_parallel_group())
-                    key = gather_from_sequence_parallel_region(key,group=mpu.get_context_parallel_group())
+            if args.enable_dsa_indexer and self.training and torch.is_grad_enabled() and topk_score is not None:
+                if args.context_parallel_size > 1 and args.context_parallel_algo == 'ulysses_cp_algo':
+                    query = gather_from_sequence_parallel_region(query, group=mpu.get_context_parallel_group())
+                    key = gather_from_sequence_parallel_region(key, group=mpu.get_context_parallel_group())
 
                 if args.use_fused_lightning_indexer_loss:
                     if args.tensor_model_parallel_size > 1:
                         total_query = gather_from_tensor_model_parallel_region(query[0].view(*query[0].shape[:2], -1))
                         total_query = total_query.view(*query[0].shape[:2], -1, query[0].shape[-1])
 
-                        total_query_rope = gather_from_tensor_model_parallel_region(query[1].view(*query[1].shape[:2], -1))
+                        total_query_rope = gather_from_tensor_model_parallel_region(
+                            query[1].view(*query[1].shape[:2], -1)
+                        )
                         total_query_rope = total_query_rope.view(*query[1].shape[:2], -1, query[1].shape[-1])
 
                         softmax_max = gather_from_tensor_model_parallel_region(softmax_max)
@@ -731,21 +972,23 @@ class CustomMLASelfAttention(SelfAttention):
                         total_query_rope = query[1]
                     if args.context_parallel_size > 1 and args.context_parallel_algo == 'kvallgather_cp_algo':
                         loss = fused_sparse_lightning_indexer_kl_loss_kvallgather(
-                                total_query,
-                                key[0],
-                                query_index,
-                                key_index,
-                                weights,
-                                topk_indices,
-                                softmax_max,
-                                softmax_sum,
-                                scale_value=self.core_attention.local_attn.scale if args.context_parallel_size > 1 and args.context_parallel_algo == 'ulysses_cp_algo' else self.core_attention.scale,
-                                query_rope=total_query_rope,
-                                key_rope=key[1],
-                                actual_seq_qlen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_q,
-                                actual_seq_klen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_kv,
-                                layout='BSND',
-                            )
+                            total_query,
+                            key[0],
+                            query_index,
+                            key_index,
+                            weights,
+                            topk_indices,
+                            softmax_max,
+                            softmax_sum,
+                            scale_value=self.core_attention.local_attn.scale
+                            if args.context_parallel_size > 1 and args.context_parallel_algo == 'ulysses_cp_algo'
+                            else self.core_attention.scale,
+                            query_rope=total_query_rope,
+                            key_rope=key[1],
+                            actual_seq_qlen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_q,
+                            actual_seq_klen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_kv,
+                            layout='BSND',
+                        )
                     else:
                         loss = fused_sparse_lightning_indexer_kl_loss(
                             total_query,
@@ -756,7 +999,9 @@ class CustomMLASelfAttention(SelfAttention):
                             topk_indices,
                             softmax_max,
                             softmax_sum,
-                            scale_value=self.core_attention.local_attn.scale if args.context_parallel_size > 1 and args.context_parallel_algo == 'ulysses_cp_algo' else self.core_attention.scale,
+                            scale_value=self.core_attention.local_attn.scale
+                            if args.context_parallel_size > 1 and args.context_parallel_algo == 'ulysses_cp_algo'
+                            else self.core_attention.scale,
                             query_rope=total_query_rope,
                             key_rope=key[1],
                             actual_seq_qlen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_q,
@@ -770,13 +1015,15 @@ class CustomMLASelfAttention(SelfAttention):
                     key = torch.cat([key[0], key[1]], dim=-1)
                     key = key.expand(-1, -1, h, -1) if key.shape[2] == 1 else key
 
-                    main_attn_dist = get_attn_scores(query.detach(),
-                                                     key.detach(),
-                                                     attention_mask,
-                                                     self.num_attention_heads_per_partition //
-                                                     self.num_query_groups_per_partition,
-                                                     self.core_attention.local_attn.scale if args.context_parallel_size > 1 and args.context_parallel_algo == 'ulysses_cp_algo' else self.core_attention.scale,
-                                                     )
+                    main_attn_dist = get_attn_scores(
+                        query.detach(),
+                        key.detach(),
+                        attention_mask,
+                        self.num_attention_heads_per_partition // self.num_query_groups_per_partition,
+                        self.core_attention.local_attn.scale
+                        if args.context_parallel_size > 1 and args.context_parallel_algo == 'ulysses_cp_algo'
+                        else self.core_attention.scale,
+                    )
                     loss = compute_dsa_indexer_loss(
                         main_attn_dist,
                         topk_score,
@@ -796,12 +1043,12 @@ class CustomMLASelfAttention(SelfAttention):
             # absorb W_UV into W_O (i.e. linear_proj)
             # attn_out = attn_weight * (v * W_UV) * W_O
             #          = (attn_weight * v * W_UV) * W_O
-            v_weight = self.linear_v.weight  
-            W_UV = v_weight.view(self.num_attention_heads_per_partition, self.v_head_dim, -1)  
-            W_UV_T = W_UV.permute(0, 2, 1).contiguous()  
-            core_attn_out = torch.einsum('sbhr,hrv->sbhv', core_attn_out, W_UV_T) 
-            core_attn_out = core_attn_out.view(q_len, bsz, h * self.v_head_dim) 
-        
+            v_weight = self.linear_v.weight
+            W_UV = v_weight.view(self.num_attention_heads_per_partition, self.v_head_dim, -1)
+            W_UV_T = W_UV.permute(0, 2, 1).contiguous()
+            core_attn_out = torch.einsum('sbhr,hrv->sbhv', core_attn_out, W_UV_T)
+            core_attn_out = core_attn_out.view(q_len, bsz, h * self.v_head_dim)
+
             if self.recompute_mla_up_proj_ckpt and core_attn_out.requires_grad:
                 self.recompute_mla_up_proj_ckpt.discard_output()
                 core_attn_out.register_hook(self.recompute_mla_up_proj_ckpt.recompute)
@@ -809,7 +1056,9 @@ class CustomMLASelfAttention(SelfAttention):
             if self.use_flash_attn and not self.mla_fa_without_pad:
                 core_attn_out = core_attn_out.view(q_len, bsz, self.num_attention_heads_per_partition, -1)
                 core_attn_out = core_attn_out[:, :, :, : self.v_head_dim]
-                core_attn_out = core_attn_out.reshape(q_len, bsz, self.num_attention_heads_per_partition * self.v_head_dim)
+                core_attn_out = core_attn_out.reshape(
+                    q_len, bsz, self.num_attention_heads_per_partition * self.v_head_dim
+                )
 
             return core_attn_out
 
@@ -818,12 +1067,9 @@ class CustomMLASelfAttention(SelfAttention):
         else:
             mla_attention = mla_naive_attention
 
-
         if args.mla_zero_memory:
             self.mla_checkpoint_manager = CheckpointWithoutOutput()
-            core_attn_out = self.mla_checkpoint_manager.checkpoint(mla_attention,
-                                                                        False,
-                                                                        hidden_states)
+            core_attn_out = self.mla_checkpoint_manager.checkpoint(mla_attention, False, hidden_states)
             if args.reset_attention_mask:
                 self.mla_checkpoint_manager.ctx.actual_len = get_actual_seq_len()
                 self.mla_checkpoint_manager.ctx.position_id = get_position_ids()
@@ -892,7 +1138,7 @@ class CustomMLASelfAttention(SelfAttention):
             else:
                 query = inputs[0]
                 input_idx = 1
-            
+
             if is_key_list:
                 k_no_pe = inputs[input_idx]
                 k_pos_emb = inputs[input_idx + 1]
@@ -901,7 +1147,7 @@ class CustomMLASelfAttention(SelfAttention):
             else:
                 key = inputs[input_idx]
                 input_idx += 1
-            
+
             value = inputs[input_idx]
             topk_indices = inputs[input_idx + 1]
             attention_mask = inputs[input_idx + 2]
@@ -937,19 +1183,23 @@ class CustomMLASelfAttention(SelfAttention):
         else:
             checkpoint_inputs.append(key)
         checkpoint_inputs.extend([value, topk_indices, attention_mask, rotary_pos_emb, attn_mask_type, return_softmax])
-        
+
         hidden_states = tensor_parallel.checkpoint(custom_forward, False, *checkpoint_inputs)
 
         return hidden_states
+
 
 def recompute_mla(mla_checkpoint_manager):
     """
     recompute_mla when reset_position_ids is enabled.
     """
+
     def hook_fn(grad):
         actual_seq_len = getattr(mla_checkpoint_manager.ctx, "actual_len", None)
         position_ids = getattr(mla_checkpoint_manager.ctx, "position_id", None)
         change_pos_id = False
+        old_position_id = None
+        old_actual_seq_len = None
         if position_ids is not None:
             change_pos_id = True
             old_position_id = get_position_ids()

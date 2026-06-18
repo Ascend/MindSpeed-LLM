@@ -21,6 +21,7 @@ from megatron.core.tensor_parallel.mappings import gather_from_sequence_parallel
 
 
 from mindspeed_llm.core.tensor_parallel.layers import LinearNoTP
+from megatron.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb
 from mindspeed_llm.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb_bshd_in_complex
 from mindspeed_llm.core.context_parallel.kvallgather_context_parallel import gather_from_sp_cp, permute_cp_shard
 from mindspeed_llm.tasks.models.transformer.deepseek4.compressor import get_compressor_spec
@@ -242,7 +243,10 @@ class DSAIndexer(MegatronModule):
 
         # Apply rotary positional embedding to the RoPE part of the query
         q_pe, q_nope = torch.split(q, [self.rope_head_dim, self.head_dim - self.rope_head_dim], dim=-1)
-        q_pe = apply_rotary_pos_emb_bshd_in_complex(q_pe, rotary_q_pos_emb, rotary_interleaved=True)
+        if not args.apply_rope_no_in_complex:
+            q_pe = apply_rotary_pos_emb_bshd_in_complex(q_pe, rotary_q_pos_emb, rotary_interleaved=True)
+        else:
+            q_pe = apply_rotary_pos_emb(q_pe, rotary_q_pos_emb, config=self.config)
         q = torch.cat([q_pe, q_nope], dim=-1)
 
         # Project and normalize keys
@@ -253,7 +257,10 @@ class DSAIndexer(MegatronModule):
         # Apply rotary positional embedding to the RoPE part of the key
         k_pe = k_pe.unsqueeze(2)
         s, b, n, d = k_pe.shape
-        k_pe = apply_rotary_pos_emb_bshd_in_complex(k_pe, rotary_k_pos_emb, rotary_interleaved=True).view(s, b, d)
+        if not args.apply_rope_no_in_complex:
+            k_pe = apply_rotary_pos_emb_bshd_in_complex(k_pe, rotary_k_pos_emb, rotary_interleaved=True).view(s, b, d)
+        else:
+            k_pe = apply_rotary_pos_emb(k_pe, rotary_k_pos_emb, config=self.config).view(s, b, d)
         k = torch.cat([k_pe, k_nope], dim=-1).unsqueeze(2)
 
         if args.context_parallel_size > 1 and args.context_parallel_algo == 'ulysses_cp_algo':
@@ -262,8 +269,10 @@ class DSAIndexer(MegatronModule):
             x = gather_from_sequence_parallel_region(x, group=mpu.get_context_parallel_group())
         # Apply structured rotation (e.g., scaled Hadamard transform) to both query and key
         # This promotes mixing and can improve retrieval performance in sparse attention
-        q = rotate_activation(q)
-        k = rotate_activation(k)
+
+        if not args.no_use_sparse_c8_indexer:
+            q = rotate_activation(q)
+            k = rotate_activation(k)
 
         # ---------------------------------------------------------
         # [Warning]: FP8 quantization path is currently disabled (bf16 only)

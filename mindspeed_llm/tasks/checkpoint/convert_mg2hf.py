@@ -488,6 +488,52 @@ class Mg2HfConvert(Convert):
         hf_weight[hf_weight_key["layers_input_layernorm"]] = input_norm.clone()
         hf_weight[hf_weight_key["layers_self_attention_pre_mlp_layernorm"]] = pre_mlp_norm.clone()
 
+    def _is_full_indexer_layer(self, hf_layer_idx, mtp_layer_flag=False):
+        """Return whether this HF layer should own full DSA indexer weights.
+
+        Args:
+            hf_layer_idx:
+                - normal transformer layer: HF global layer index, 0-based
+                - MTP layer: HF MTP layer index, usually self.load_model.num_layers + mtp_idx
+            mtp_layer_flag:
+                True when exporting MTP layer.
+
+        Notes:
+            MG -> HF should not blindly export indexer for shared/no-indexer layers.
+            MTP keeps its own indexer path and should not be removed.
+        """
+        if not getattr(self.load_model, "enable_dsa_indexer", False):
+            return False
+
+        if hf_layer_idx < 0:
+            return False
+
+        # MTP has its own keys:
+        #   mtp_layers_self_attention_indexer_*
+        # Keep MTP indexer enabled unless a more specific config says otherwise.
+        if mtp_layer_flag:
+            return True
+
+        # Normal transformer layer.
+        indexer_types = getattr(self.load_model, "indexer_types", None)
+        if indexer_types is not None:
+            return hf_layer_idx < len(indexer_types) and indexer_types[hf_layer_idx] == "full"
+
+        # Keep backward-compatible behavior: if indexer_types is absent, export
+        # indexer whenever the Megatron checkpoint actually contains the indexer keys.
+        #
+        # If your MG config also carries index_skip_topk_offset/index_topk_freq and you
+        # want stricter behavior, uncomment the rule below.
+        index_skip_topk_offset = getattr(self.load_model, "index_skip_topk_offset", None)
+        index_topk_freq = getattr(self.load_model, "index_topk_freq", None)
+        if index_skip_topk_offset is not None and index_topk_freq is not None:
+            if index_topk_freq <= 0:
+                raise ValueError(f"index_topk_freq must be positive, got {index_topk_freq}")
+
+            layer_number = hf_layer_idx + 1
+            return max(layer_number - index_skip_topk_offset, 0) % index_topk_freq == 0
+        return True
+
     def set_model_layer_attn(self, hf_weight, mg_weight, hf_layer_idx, local_layer_idx, mtp_layer_flag=False):
         """attn"""
         if self.load_model.qkv_type == "mix":
@@ -498,6 +544,7 @@ class Mg2HfConvert(Convert):
         hf_module_key = self.save_model.get_module(hf_layer_idx)
         mg_module_key = self.load_model.get_module(local_layer_idx)
 
+        hf_bias_key = None
         if hasattr(self.load_model, "add_qkv_bias") or hasattr(self.load_model, "enable_dsa_indexer"):
             hf_bias_key = self.save_model.get_bias(hf_layer_idx)
             mg_bias_key = self.load_model.get_bias(local_layer_idx)
@@ -738,27 +785,27 @@ class Mg2HfConvert(Convert):
             hf_weight[hf_weight_key["layers_self_attention_kv_layernorm"]] = kv_a_layernorm
             hf_weight[hf_weight_key["layers_self_attention_linear_kv_up_proj"]] = kv_b_proj
 
-            if getattr(self.load_model, "enable_dsa_indexer", None):
+            if getattr(self.load_model, "enable_dsa_indexer", None) and self._is_full_indexer_layer(
+                hf_layer_idx, mtp_layer_flag=mtp_layer_flag
+            ):
                 indexer_keys = _generate_attn_indexer_layers_key(mtp_layer_flag)
-                hf_weight[hf_weight_key["layers_self_attention_indexer_k_norm"]] = (
-                    mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(indexer_keys.indexer_k_norm_key).clone()
-                )
-                hf_weight[hf_bias_key["layers_self_attention_indexer_k_norm"]] = (  # pylint: disable=used-before-assignment
-                    mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])]
-                    .pop(indexer_keys.indexer_k_norm_bias_key)
-                    .clone()
-                )
-                hf_weight[hf_weight_key["layers_self_attention_indexer_weights_proj"]] = (
-                    mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])]
-                    .pop(indexer_keys.indexer_weights_proj_key)
-                    .clone()
-                )
-                hf_weight[hf_weight_key["layers_self_attention_indexer_wk"]] = (
-                    mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(indexer_keys.indexer_wk_key).clone()
-                )
-                hf_weight[hf_weight_key["layers_self_attention_indexer_wq_b"]] = (
-                    mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(indexer_keys.indexer_wq_b_key).clone()
-                )
+                indexer_weight = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])]
+                if indexer_keys.indexer_k_norm_key in indexer_weight:
+                    hf_weight[hf_weight_key["layers_self_attention_indexer_k_norm"]] = indexer_weight.pop(
+                        indexer_keys.indexer_k_norm_key
+                    ).clone()
+                    hf_weight[hf_bias_key["layers_self_attention_indexer_k_norm"]] = indexer_weight.pop(
+                        indexer_keys.indexer_k_norm_bias_key
+                    ).clone()
+                    hf_weight[hf_weight_key["layers_self_attention_indexer_weights_proj"]] = indexer_weight.pop(
+                        indexer_keys.indexer_weights_proj_key
+                    ).clone()
+                    hf_weight[hf_weight_key["layers_self_attention_indexer_wk"]] = indexer_weight.pop(
+                        indexer_keys.indexer_wk_key
+                    ).clone()
+                    hf_weight[hf_weight_key["layers_self_attention_indexer_wq_b"]] = indexer_weight.pop(
+                        indexer_keys.indexer_wq_b_key
+                    ).clone()
 
         elif self.load_model.qkv_type == 'unpack':
             linear_qkv_key, linear_proj_key, q_layernorm_key, k_layernorm_key = _generate_attn_layers_key(
