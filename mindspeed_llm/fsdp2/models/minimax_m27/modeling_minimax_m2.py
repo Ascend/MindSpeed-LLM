@@ -507,7 +507,7 @@ class MiniMaxM2DecoderLayer(GradientCheckpointingLayer):
         self.hidden_size = config.hidden_size
 
         self.self_attn = MiniMaxM2Attention(config, layer_idx)
-        self.block_sparse_moe = MiniMaxM2SparseMoeBlock(config)
+        self.mlp = MiniMaxM2SparseMoeBlock(config)
         self.input_layernorm = MiniMaxM2RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         self.post_attention_layernorm = MiniMaxM2RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
 
@@ -541,7 +541,7 @@ class MiniMaxM2DecoderLayer(GradientCheckpointingLayer):
         # Fully Connected
         residual = hidden_states
         hidden_states = self.post_attention_layernorm(hidden_states)
-        hidden_states, _ = self.block_sparse_moe(hidden_states)
+        hidden_states, _ = self.mlp(hidden_states)
         hidden_states = residual + hidden_states
 
         return hidden_states

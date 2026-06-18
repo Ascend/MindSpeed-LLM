@@ -1,3 +1,4 @@
+# Copyright 2025 the HuggingFace Team. All rights reserved.
 from transformers.configuration_utils import PretrainedConfig
 
 
@@ -81,7 +82,8 @@ class MiniMaxM2Config(PretrainedConfig):
 
     >>> # Accessing the model configuration
     >>> configuration = model.config
-    ```"""
+    ```
+    """
 
     model_type = "minimax_m2"
     keys_to_ignore_at_inference = ["past_key_values"]
@@ -90,10 +92,10 @@ class MiniMaxM2Config(PretrainedConfig):
         "layers.*.self_attn.k_proj": "colwise",
         "layers.*.self_attn.v_proj": "colwise",
         "layers.*.self_attn.o_proj": "rowwise",
-        "layers.*.block_sparse_moe.gate": "colwise_rep",
-        "layers.*.block_sparse_moe.experts.*.w1": "colwise",
-        "layers.*.block_sparse_moe.experts.*.w2": "rowwise",
-        "layers.*.block_sparse_moe.experts.*.w3": "colwise",
+        "layers.*.mlp.gate": "colwise_rep",
+        "layers.*.mlp.experts.*.w1": "colwise",
+        "layers.*.mlp.experts.*.w2": "rowwise",
+        "layers.*.mlp.experts.*.w3": "colwise",
     }
     base_model_pp_plan = {
         "embed_tokens": (["input_ids"], ["inputs_embeds"]),

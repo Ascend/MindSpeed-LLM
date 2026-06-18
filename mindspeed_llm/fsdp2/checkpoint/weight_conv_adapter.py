@@ -16,6 +16,8 @@ from mindspeed_llm.fsdp2.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
+_UNSUPPORTED_MODEL_TYPES = frozenset({})
+
 
 class WeightConvAdapter:
     """
@@ -30,6 +32,10 @@ class WeightConvAdapter:
         self.converters: list = []
 
         if not model_type:
+            return
+
+        if model_type in _UNSUPPORTED_MODEL_TYPES:
+            logger.info_rank0(f"> Online weight conversion not enabled for model_type={model_type}. Skipping.")
             return
 
         if version("transformers") < "5.0.0":
