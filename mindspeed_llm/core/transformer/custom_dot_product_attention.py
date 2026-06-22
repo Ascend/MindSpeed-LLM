@@ -8,7 +8,7 @@ from typing import List
 import torch
 import torch_npu
 from megatron.training import get_args
-from megatron.core import mpu, parallel_state
+from megatron.core import parallel_state
 from megatron.core.fusions.fused_softmax import FusedScaleMaskSoftmax
 from megatron.core.transformer.dot_product_attention import DotProductAttention
 from megatron.core.transformer.utils import attention_mask_func
@@ -36,14 +36,16 @@ class CustomDotProductAttentionImpl:
     This module assumes FlashAttention kernels are available and enforces the constraint.
     """
 
-    def __init__(self,
-                 config,
-                 layer_number,
-                 attn_mask_type,
-                 attention_type,
-                 attention_dropout: float = None,
-                 softmax_scale: float = None,
-                 cp_comm_type: str = None):
+    def __init__(
+        self,
+        config,
+        layer_number,
+        attn_mask_type,
+        attention_type,
+        attention_dropout: float = None,
+        softmax_scale: float = None,
+        cp_comm_type: str = None,
+    ):
         """
         Args:
             config: TransformerConfig-like object containing model hyperparameters.
@@ -57,15 +59,18 @@ class CustomDotProductAttentionImpl:
         # ---------------------------------------------------------------------
         # Preconditions: Only non-CP and FlashAttention are supported
         # ---------------------------------------------------------------------
-        super().__init__(config, layer_number, attn_mask_type, attention_type, attention_dropout, softmax_scale, cp_comm_type)
+        super().__init__(
+            config, layer_number, attn_mask_type, attention_type, attention_dropout, softmax_scale, cp_comm_type
+        )
         args = get_args()
 
         if getattr(config, 'context_parallel_size', 1) != 1:
             raise AssertionError("CustomDotProductAttention only supported by non-CP (context_parallel_size == 1)")
 
         if not bool(getattr(args, 'use_flash_attn', False)):
-            raise AssertionError("CustomDotProductAttention only supported by FlashAttention (args.use_flash_attn == True)")
-
+            raise AssertionError(
+                "CustomDotProductAttention only supported by FlashAttention (args.use_flash_attn == True)"
+            )
 
         # ---------------------------------------------------------------------
         # Basic attributes and tensor-parallel partition shapes
@@ -157,12 +162,15 @@ class CustomDotProductAttentionImpl:
         #   - When enabled, override scale used by softmax to 1/sqrt(query_pre_attn_scalar)
         # ---------------------------------------------------------------------
         if args.query_pre_attn_scalar:
-            self.norm_factor = args.query_pre_attn_scalar ** 0.5
+            self.norm_factor = args.query_pre_attn_scalar**0.5
             self.scale_mask_softmax.scale = 1.0
             self.softmax_scale = 1.0 / self.norm_factor
 
-        self.scale = 1.0 / math.sqrt(self.hidden_size_per_attention_head) \
-            if self.scale_mask_softmax.scale is None else self.softmax_scale
+        self.scale = (
+            1.0 / math.sqrt(self.hidden_size_per_attention_head)
+            if self.scale_mask_softmax.scale is None
+            else self.softmax_scale
+        )
 
     def forward(
         self,
@@ -217,7 +225,7 @@ class CustomDotProductAttentionImpl:
         if heads_per_gqa_group > 1 and should_kv_repeat_before_pfa:
             key = key.repeat_interleave(heads_per_gqa_group, dim=2)
             value = value.repeat_interleave(heads_per_gqa_group, dim=2)
-        seq_length, batch_size, n_head, head_dim = query.shape[0], query.shape[1], query.shape[2], query.shape[3]
+        seq_length, batch_size, n_head = query.shape[0], query.shape[1], query.shape[2]
 
         # ---------------------------------------------------------------------
         # 3) Variable-length (packed) sequence handling
@@ -255,7 +263,9 @@ class CustomDotProductAttentionImpl:
         if self.hidden_size_per_attention_head == 0:
             raise AssertionError("self.hidden_size_per_attention_head should not be ZERO.")
 
-        if (not hasattr(self, 'attention_mask')) or (self.attention_mask is None) or (self.attention_mask.shape[0] != seq_length):
+        current_mask = getattr(self, 'attention_mask', None)
+
+        if current_mask is None or current_mask.shape[0] != seq_length:
             if self.alibi is not None:
                 # Strict causal upper-triangular mask for ALiBi
                 self.attention_mask = torch.triu(torch.ones(seq_length, seq_length), 1).bool().npu()
@@ -298,8 +308,8 @@ class CustomDotProductAttentionImpl:
         # 8) Execute FlashAttention kernels on Ascend NPU (torch_npu)
         #    Two paths:
         #      a) KV cache enabled, only supports infernce mode:
-        #         - npu_incre_flash_attention for single-token decode (BSH, step by step)
-        #         - npu_prompt_flash_attention for prompt / extended decode
+        #         - npu_fused_infer_attention_score_v2 for single-token decode (BSH, step by step)
+        #         - npu_fused_infer_attention_score_v2 for prompt / extended decode
         #      b) No KV cache:
         #         - npu_fusion_attention (standard FA)
         #         - npu_fusion_attention_v2 (FA supports mla with seperate q and k)
@@ -310,28 +320,34 @@ class CustomDotProductAttentionImpl:
 
             if query.shape[1] == 1 and query.shape[1] != key.shape[1]:
                 # Incremental decode kernel: append a single step using cached K/V
-                output = torch_npu.npu_incre_flash_attention(
-                    query, key, value,
-                    num_heads=n_head,
+                res = torch_npu.npu_fused_infer_attention_score_v2(
+                    query,
+                    key,
+                    value,
+                    num_query_heads=n_head,
+                    num_key_value_heads=n_head,
                     input_layout="BSH",
                     pse_shift=pse,
-                    padding_mask=None,
-                    scale_value=self.scale
+                    softmax_scale=self.scale,
                 )
+                output = res[0]
             else:
                 # Prompt + decode kernel: extend using both prompt and cached segments
-                output = torch_npu.npu_prompt_flash_attention(
-                    query, key, value,
-                    num_heads=n_head,
+                res = torch_npu.npu_fused_infer_attention_score_v2(
+                    query,
+                    key,
+                    value,
+                    num_query_heads=n_head,
+                    num_key_value_heads=n_head,
                     input_layout="BSH",
                     pse_shift=pse,
                     sparse_mode=args.sparse_mode,
-                    padding_mask=None,
                     atten_mask=self.attention_mask,
-                    scale_value=self.scale,
+                    softmax_scale=self.scale,
                     pre_tokens=args.pre_tockens,
-                    next_tokens=args.next_tockens
+                    next_tokens=args.next_tockens,
                 )
+                output = res[0]
             output = output.transpose(0, 1)
         else:
             if args.use_sparse_flash_attn:
@@ -346,14 +362,8 @@ class CustomDotProductAttentionImpl:
                     cp_group = parallel_state.get_context_parallel_group()
 
                     output, softmax_max, softmax_sum, *_ = fused_sparse_flash_attention_kvallgather(
-                        query,
-                        key,
-                        value,
-                        topk_indices,
-                        query_rope,
-                        key_rope,
-                        self.scale,
-                        cp_group)
+                        query, key, value, topk_indices, query_rope, key_rope, self.scale, cp_group
+                    )
                 else:
                     if args.shape_order == 'SBH':
                         query = rearrange(query, 's b (h d1) -> b s h d1', h=n_head, d1=query.shape[2] // n_head)
@@ -368,9 +378,11 @@ class CustomDotProductAttentionImpl:
                     actual_seq_len = torch.tensor([query.shape[1]], dtype=torch.int32, device=query.device)
 
                     output, softmax_max, softmax_sum, *_ = torch_npu.npu_sparse_flash_attention(
-                        query, key, value,
+                        query,
+                        key,
+                        value,
                         sparse_indices=topk_indices.to(torch.int32),
-                        block_table=None,  # TODO: (B, S2/block_size)
+                        block_table=None,  # (B, S2/block_size)
                         actual_seq_lengths_query=actual_seq_len,
                         actual_seq_lengths_kv=actual_seq_len,
                         query_rope=query_rope,
@@ -394,8 +406,12 @@ class CustomDotProductAttentionImpl:
                                 f"FlashAttention received unexpectedly long 'actual_seq_len' (length={len(actual_seq_len)}, threshold={ACTUAL_SEQ_LEN_THRESHOLD}). "
                                 f"This may cause the FA operator to terminate abnormally."
                             )
-                    output, softmax_max, softmax_sum, *_  = torch_npu.npu_fusion_attention(
-                        query, key, value, n_head, args.shape_order,
+                    output, softmax_max, softmax_sum, *_ = torch_npu.npu_fusion_attention(
+                        query,
+                        key,
+                        value,
+                        n_head,
+                        args.shape_order,
                         pse=pse,
                         padding_mask=None,
                         atten_mask=self.attention_mask,
@@ -406,12 +422,16 @@ class CustomDotProductAttentionImpl:
                         next_tockens=args.next_tockens,
                         keep_prob=1 - self.attention_dropout.p,
                         inner_precise=0,
-                        sparse_mode=args.sparse_mode
+                        sparse_mode=args.sparse_mode,
                     )
                 else:
                     # FA v2 with separate Q/K RoPE inputs
                     output = torch_npu.npu_fusion_attention_v2(
-                        query, key, value, n_head, args.shape_order,
+                        query,
+                        key,
+                        value,
+                        n_head,
+                        args.shape_order,
                         pse=pse,
                         padding_mask=None,
                         atten_mask=self.attention_mask,
@@ -424,7 +444,7 @@ class CustomDotProductAttentionImpl:
                         next_tokens=args.next_tockens,
                         keep_prob=1 - self.attention_dropout.p,
                         inner_precise=0,
-                        sparse_mode=args.sparse_mode
+                        sparse_mode=args.sparse_mode,
                     )[0]
 
         # ---------------------------------------------------------------------
