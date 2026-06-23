@@ -589,7 +589,8 @@ def convert_openai_to_intermediate(sample: Dict[str, List[Any]], dataset_attr: "
     # tools field: if it's already a JSON string, pass through; if it's a list
     # or dict (some datasets store it pre-parsed), serialize back to a string
     # since downstream template expects a string.
-    tools = sample[dataset_attr.tools] if dataset_attr.tools else ""
+    tools_key = getattr(dataset_attr, "tools", None)
+    tools = sample.get(tools_key, "") if tools_key else ""
     if isinstance(tools, (list, dict)):
         tools = json.dumps(tools, ensure_ascii=False)
 
