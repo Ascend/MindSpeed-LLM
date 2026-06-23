@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
 # Copyright 2026 Huawei Technologies Co., Ltd
 """
-Batch-replace CANN/Ascend install paths in the MindSpeed-LLM repository.
+Batch-replace the Ascend driver install path in the MindSpeed-LLM repository.
 
 Background:
-  In the international release, the CANN/HDK install path has changed from
-  /usr/local/Ascend to /usr/local/npu. This script replaces all occurrences
-  of the old path across the repository in one pass.
+  In the international release, the Ascend driver install path has changed
+  from /usr/local/Ascend/driver to /usr/local/npu/driver. This script
+  replaces all occurrences of the old driver path across the repository in
+  one pass. Only the driver path is affected; other Ascend subpaths (such
+  as cann, ascend-toolkit, nnal/atb) are left unchanged.
 
 Usage:
   python3 tests/tools/replace_ascend_path.py [options]
@@ -15,7 +17,7 @@ Examples:
   # Preview changes without modifying any files
   python3 tests/tools/replace_ascend_path.py --dry-run
 
-  # Apply replacement: /usr/local/Ascend -> /usr/local/npu (default)
+  # Apply replacement: /usr/local/Ascend/driver -> /usr/local/npu/driver (default)
   python3 tests/tools/replace_ascend_path.py
 """
 
@@ -90,12 +92,16 @@ def format_path(filepath, scan_dir):
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Batch-replace CANN/Ascend install paths in the MindSpeed-LLM repository',
+        description='Batch-replace the Ascend driver install path in the MindSpeed-LLM repository',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=__doc__,
     )
-    parser.add_argument('--source', default='/usr/local/Ascend', help='Source path (default: /usr/local/Ascend)')
-    parser.add_argument('--target', default='/usr/local/npu', help='Target path (default: /usr/local/npu)')
+    parser.add_argument(
+        '--source', default='/usr/local/Ascend/driver', help='Source path (default: /usr/local/Ascend/driver)'
+    )
+    parser.add_argument(
+        '--target', default='/usr/local/npu/driver', help='Target path (default: /usr/local/npu/driver)'
+    )
     parser.add_argument('--dir', default='.', help='Directory to scan (default: current directory)')
     parser.add_argument(
         '--extensions',

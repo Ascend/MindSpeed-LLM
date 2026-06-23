@@ -1,12 +1,13 @@
-# MindSpeed LLM CANN 安装路径批量替换指南
+# MindSpeed LLM Ascend HDK 路径批量替换指南
 
 ## 背景
 
-出海版本中，CANN/HDK 的默认安装路径已由 `/usr/local/Ascend` 变更为 `/usr/local/npu`。
-MindSpeed LLM 仓库中的训练脚本、安装文档等均使用了硬编码的 `/usr/local/Ascend` 路径。
-若出海版本机器上的实际安装路径为 `/usr/local/npu`，需在使用前完成批量替换，确保环境变量可以正常加载。
+MindSpeed LLM 仓库中的 Docker 挂载配置、运行脚本等存在硬编码的 `/usr/local/Ascend/driver/` 路径引用。
+部分版本机器上的实际 HDK 安装路径为 `/usr/local/npu/driver/`，需在使用前完成批量替换，确保 HDK 相关挂载与库加载可以正常工作。
 
-本指南提供使用 `replace_ascend_path.py` 脚本进行批量路径替换的完整步骤。
+> 说明：本次替换**仅针对 HDK 路径**（`/usr/local/Ascend/driver/`），CANN、ascend-toolkit、nnal/atb 等其他子路径保持不变。
+
+本指南提供使用 `replace_ascend_path.py` 脚本进行批量路径替换的完整步骤，并说明部分版本对 `dcmi_get_device_chip_info` 接口返回值的适配要求。
 
 ---
 
@@ -29,12 +30,16 @@ MindSpeed LLM 仓库中的训练脚本、安装文档等均使用了硬编码的
 | Python 文件（`.py`）| 源码（如有路径引用） | 各模块源文件 |
 | Dockerfile | Docker 镜像构建脚本 | `docker/Dockerfile` |
 
-> 路径变体说明：仓库中存在以下几种 Ascend 路径引用，均会被一并替换：
+> 路径变体说明：本次仅替换 driver 相关路径引用，例如：
 >
-> - `/usr/local/Ascend/cann/set_env.sh`（最常见，环境变量初始化）
+> - `/usr/local/Ascend/driver/lib64/`（Docker 挂载路径，最常见）
+> - `/usr/local/Ascend/driver/`（HDK 安装根路径）
+>
+> 以下路径**不在**替换范围内，保持原样：
+>
+> - `/usr/local/Ascend/cann/set_env.sh`（环境变量初始化）
 > - `/usr/local/Ascend/ascend-toolkit/set_env.sh`（Ascend Toolkit 初始化）
 > - `/usr/local/Ascend/nnal/atb/set_env.sh`（ATB 库初始化）
-> - `/usr/local/Ascend/driver/lib64/`（Docker 挂载路径）
 
 ---
 
@@ -57,15 +62,15 @@ python3 tests/tools/replace_ascend_path.py --dry-run
 输出示例：
 
 ```bash
-[DRY RUN] Path replacement: /usr/local/Ascend -> /usr/local/npu
+[DRY RUN] Path replacement: /usr/local/Ascend/driver -> /usr/local/npu/driver
 Scan directory : /path/to/MindSpeed-LLM
 File types     : .md, .py, .rst, .sh, .txt + Dockerfile
 ------------------------------------------------------------
 Found XXX candidate file(s), processing...
 
   [would replace   1] docker/Dockerfile
-  [would replace   7] docker/OVERVIEW.md
-  [would replace   7] docker/OVERVIEW.zh.md
+  [would replace   2] docker/OVERVIEW.md
+  [would replace   2] docker/OVERVIEW.zh.md
   ...
 
 ============================================================
@@ -78,8 +83,8 @@ Found XXX candidate file(s), processing...
 确认预览无误后，执行实际替换：
 
 ```bash
-# 默认：将 /usr/local/Ascend 替换为 /usr/local/npu
-python3 scripts/replace_ascend_path.py
+# 默认：将 /usr/local/Ascend/driver 替换为 /usr/local/npu/driver
+python3 tests/tools/replace_ascend_path.py
 ```
 
 执行完毕后，脚本会输出修改的文件数和替换总次数。
@@ -87,8 +92,8 @@ python3 scripts/replace_ascend_path.py
 ### 4. 验证替换结果
 
 ```bash
-# 检查是否还有未替换的路径（结果应为 0）
-grep -r "/usr/local/Ascend" . \
+# 检查是否还有未替换的 driver 路径（结果应为 0）
+grep -r "/usr/local/Ascend/driver" . \
 --include='.sh' \
 --include='.md' \
 --include='.rst' \
@@ -104,15 +109,14 @@ grep -r "/usr/local/Ascend" . \
 
 ## 执行后验证
 
-### 1. 环境变量加载验证
+### 1. Driver 路径加载验证
 
 ```bash
-# 验证新路径下的 set_env.sh 文件存在
-ls /usr/local/npu/ascend-toolkit/set_env.sh
+# 验证新路径下的 driver 目录存在
+ls /usr/local/npu/driver/lib64/
 
-# 加载环境变量
-# 根据实际情况修改 ascend-toolkit 路径
-source /usr/local/npu/ascend-toolkit/set_env.sh
+# 加载环境变量（ascend-toolkit 路径未变更，仍使用原路径）
+source /usr/local/Ascend/ascend-toolkit/set_env.sh
 
 # 验证环境变量生效
 echo $ASCEND_HOME_PATH
@@ -128,12 +132,21 @@ python3 -c "import mindspeed_llm; print('MindSpeed LLM installed successfully')"
 python3 -c "import torch_npu; print('NPU available:', torch_npu.npu.is_available())"
 ```
 
-### 3. 核心功能冒烟验证
+### 3. 芯片信息接口验证（dcmi_get_device_chip_info）
+
+部分版本要求 `dcmi_get_device_chip_info` 接口返回的芯片型号标识为 `A2G3` 或 `A2G4`。
+
+> 说明：MindSpeed LLM 当前代码未直接调用该接口，此处仅作适配说明。若上层业务或运维脚本依赖该接口返回值进行芯片型号判断，需确保返回值为 `A2G3` 或 `A2G4`，否则可能影响型号相关的逻辑分支。
+
+验证方式请参考：
+[dcmi_get_device_chip_info接口原型](https://support.huawei.com/enterprise/zh/doc/EDOC1100568435/8739bb5a)
+
+### 4. 核心功能冒烟验证
 
 参考对应模型的readme进行配置，验证训练流程可正常启动
 
 ```bash
-source /usr/local/npu/ascend-toolkit/set_env.sh
+source /usr/local/Ascend/ascend-toolkit/set_env.sh
 
 # 运行示例脚本（以具体模型为准）
 bash examples/<model_name>/pretrain_<model_name>.sh
@@ -150,8 +163,8 @@ usage: replace_ascend_path.py [-h] [--source SOURCE] [--target TARGET]
 
 选项：
   -h, --help            显示帮助信息
-  --source SOURCE       源路径（默认：/usr/local/Ascend）
-  --target TARGET       目标路径（默认：/usr/local/npu）
+  --source SOURCE       源路径（默认：/usr/local/Ascend/driver）
+  --target TARGET       目标路径（默认：/usr/local/npu/driver）
   --dir DIR             扫描目录（默认：当前目录 .）
   --extensions EXT...   文件扩展名白名单（默认：.sh .md .rst .py .txt）
   --dry-run             仅预览变更，不修改文件
