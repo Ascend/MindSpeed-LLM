@@ -88,8 +88,8 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
       -v /usr/local/dcmi:/usr/local/dcmi \
       -v /usr/local/Ascend/driver/version.info:/usr/local/Ascend/driver/version.info \
       -v /etc/ascend_install.info:/etc/ascend_install.info \
-      -v /path-to-data:/data \
-      -v /path-to-weights:/weights \
+      -v /data:/data \
+      -v /weights:/weights \
       mindspeed-llm:26.0.0-a3-openeuler24.03-py3.11-aarch64 \
       /bin/bash
    ```
@@ -97,6 +97,7 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
    > [!NOTE]
    >
    > - 当前默认配置驱动和固件安装在/usr/local/Ascend，如有差异请修改指令路径。
+   > - 复制启动命令前，请将-v参数内的/data、/weights两处路径，替换为宿主机本地真实目录，否则容器启动失败。
    > - 当前容器默认初始化NPU驱动和CANN环境信息，如需要安装新的，请自行替换或手动source，详见容器的~/.bashrc。
    > - “_mindspeed-llm:26.0.0-a3-openeuler24.03-py3.11-aarch64_”为镜像名称和标签，可根据实际情况修改。可在宿主机执行`docker images`命令查看当前机器上已有的镜像。
 
@@ -112,13 +113,15 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
     |--name|表示给容器指定一个名称。mindspeed_llm是容器的标识符，可以自行设置，且在当前系统中具有唯一性。如果不设置，Docker会自动分配一个随机名称。|
     |--shm-size|表示指定容器的共享内存（/dev/shm）大小，用户可自行设置，512g为示例值。<br>该值不能超过宿主机剩余的物理内存总量，可使用`free -h`命令查看。|
     |--device|表示将宿主机的设备映射到容器内。每个--device参数将宿主机设备（例如硬件加速卡或其他硬件设备）共享给容器，以便容器可以直接访问。<br>/dev/davinci_manager：davinci相关的管理设备。<br>/dev/hisi_hdc：hdc相关管理设备。<br>/dev/devmm_svm：内存管理相关设备。<br>/dev/davinci*X*：NPU设备，*X*是ID号，如：davinci0。<br>可根据`ll /dev/ \| grep davinci`命令查询device个数及名称，根据需要绑定设备，修改上面命令中的"--device=****"。|
-    |-v|表示将物理机的文件夹映射到容器内的相应目录，以下参数请根据实际路径修改。<br>/usr/local/Ascend/driver：该路径包含硬件驱动程序文件，驱动在宿主机上安装，将其映射到容器中，方可在容器中使用。<br>/usr/local/Ascend/firmware：该路径包含硬件固件程序文件，固件在宿主机上安装，将其映射到容器中，方可在容器中使用。<br>/usr/local/bin/npu-smi：该路径包含npu-smi等NPU状态查看命令，请根据实际路径修改。<br>/usr/local/dcmi：该路径用于挂载dcmi工具。<br>/usr/local/Ascend/driver/version.info：该路径包含驱动版本信息文件。<br>/etc/ascend_install.info：该路径包含安装版本信息文件。<br>/path-to-data：该路径为设定数据集挂载的路径，指向保存数据集的目录，使容器能访问数据集。<br>/path-to-weights：该路径为设定权重挂载的路径，指向保存权重的目录，使容器能访问权重。|
+    |-v|表示将物理机的文件夹映射到容器内的相应目录，以下参数请根据实际路径修改。<br>/usr/local/Ascend/driver：该路径包含硬件驱动程序文件，驱动在宿主机上安装，将其映射到容器中，方可在容器中使用。<br>/usr/local/Ascend/firmware：该路径包含硬件固件程序文件，固件在宿主机上安装，将其映射到容器中，方可在容器中使用。<br>/usr/local/bin/npu-smi：该路径包含npu-smi等NPU状态查看命令，请根据实际路径修改。<br>/usr/local/dcmi：该路径用于挂载dcmi工具。<br>/usr/local/Ascend/driver/version.info：该路径包含驱动版本信息文件。<br>/etc/ascend_install.info：该路径包含安装版本信息文件。<br>/data：该路径为设定数据集挂载的路径，指向保存数据集的目录，使容器能访问数据集。<br>/weights：该路径为设定权重挂载的路径，指向保存权重的目录，使容器能访问权重。|
 
 3. 加载容器并确认环境状态
 
    ```bash
+   # 查询本地运行中的容器ID/名称
+   docker ps -a
    # 加载容器
-   docker exec -it 容器名 bash
+   docker exec -it 容器ID/名称 bash
    # 确认NPU是否可以正常使用
    npu-smi info
    ```
