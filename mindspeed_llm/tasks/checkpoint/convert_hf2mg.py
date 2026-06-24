@@ -486,10 +486,8 @@ class Hf2MgConvert(Convert):
         index_skip_topk_offset = getattr(self.load_model, "index_skip_topk_offset", None)
         index_topk_freq = getattr(self.load_model, "index_topk_freq", None)
         if index_skip_topk_offset is None or index_topk_freq is None:
-            raise ValueError(
-                "enable_dsa_indexer is set, but HF config does not provide "
-                "indexer_types or both index_skip_topk_offset and index_topk_freq."
-            )
+            return True
+
         if index_topk_freq <= 0:
             raise ValueError(f"index_topk_freq must be positive, got {index_topk_freq}")
 
