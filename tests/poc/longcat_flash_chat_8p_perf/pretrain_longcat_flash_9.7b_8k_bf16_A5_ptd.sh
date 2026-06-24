@@ -113,6 +113,7 @@ GPT_ARGS="
     --hidden-dropout 0.0 \
     --position-embedding-type rope \
     --normalization RMSNorm \
+    --swiglu \
     --use-rotary-position-embeddings \
     --use-fused-swiglu \
     --no-masked-softmax-fusion \
