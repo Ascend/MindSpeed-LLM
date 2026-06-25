@@ -148,11 +148,20 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
    CANN软件提供进程级环境变量设置脚本，训练或推理场景下使用NPU执行业务代码前需要调用该脚本，否则业务代码将无法执行。
 
    ```shell
+   # 非root用户的默认安装路径
+   source ${HOME}/Ascend/cann/set_env.sh
+   source ${HOME}/Ascend/nnal/atb/set_env.sh
+   ```
+
+   ```shell
+   # root用户默认安装路径
    source /usr/local/Ascend/cann/set_env.sh
    source /usr/local/Ascend/nnal/atb/set_env.sh
    ```
 
-   以上命令以root用户安装后的默认路径为例，请用户根据set_env.sh的实际路径进行替换。
+   以上命令以CANN离线安装场景未指定安装路径为例，给出了不同用户的默认安装路径及对应的配置环境变量的命令。
+
+   若用户指定安装路径，或使用其他安装方式，请参考上文中的《CANN 软件安装》查阅对应的配置环境变量的命令。
 
 3. 安装PyTorch以及torch_npu
 

@@ -29,13 +29,18 @@
 
 2. 获取开源模型权重
 
-    通过 HuggingFace 获取模型权重文件。
+    创建一个目录存储权重文件
 
     ```shell
-    # 创建一个目录存储权重文件
     mkdir -p ./model_from_hf/qwen3_hf
     cd ./model_from_hf/qwen3_hf
+    ```
 
+    通过HuggingFace或ModelScope获取模型权重文件（择一获取）。
+
+    方式一：通过HuggingFace获取
+
+    ```shell
     # wget获取权重文件
     wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/config.json
     wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/generation_config.json
@@ -49,8 +54,30 @@
     wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/tokenizer.json
     wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/tokenizer_config.json
     wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/vocab.json
+    ```
 
-    # 利用sha256sum计算sha256数值
+    方式二：通过ModelScope获取（国内推荐）
+
+    ```shell
+    # wget获取权重文件（从ModelScope下载）
+    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/config.json
+    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/generation_config.json
+    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/merges.txt
+    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/model-00001-of-00005.safetensors
+    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/model-00002-of-00005.safetensors
+    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/model-00003-of-00005.safetensors
+    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/model-00004-of-00005.safetensors
+    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/model-00005-of-00005.safetensors
+    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/model.safetensors.index.json
+    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/tokenizer.json
+    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/tokenizer_config.json
+    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/vocab.json
+    ```
+
+    利用sha256sum计算sha256数值校验权重文件正确性和完整性。
+
+    ```shell
+    # 打开文件明细可获取sha256值，https://huggingface.co/Qwen/Qwen3-8B/blob/main/model-00001-of-00005.safetensors 或者 https://www.modelscope.cn/models/Qwen/Qwen3-8B/file/view/master/model-00001-of-00005.safetensors
     sha256sum ./model-00001-of-00005.safetensors
     sha256sum ./model-00002-of-00005.safetensors
     sha256sum ./model-00003-of-00005.safetensors
@@ -183,7 +210,7 @@
 
 > [!NOTE]
 >
-> - 多机训练需在多个终端同时启动预训练脚本（每个终端的预训练脚本只有 `NODE_RANK` 参数不同，其他参数均相同）。
+> - 多机训练需在多个终端同时启动预训练脚本（每个终端的预训练脚本只有 `NODE_RANK` 参数不同，MASTER_ADDR均为主节点的IP地址，其他参数均相同）。
 > - FSDP2 后端会自动将模型参数分片到各 NPU，确保每个 NPU 只存储部分参数，从而支持超大规模模型训练。
 
 ## 启动微调
@@ -292,7 +319,7 @@
 
 > [!NOTE]
 >
-> - 多机微调需在多个终端同时启动微调脚本（每个终端的微调脚本只有 `NODE_RANK` 参数不同，其他参数均相同）。
+> - 多机微调需在多个终端同时启动微调脚本（每个终端的微调脚本只有 `NODE_RANK` 参数不同，MASTER_ADDR均为主节点的IP地址，其他参数均相同）。
 > - 微调默认使用 alpaca 数据集格式，如需使用其他数据集，请参考[数据集配置说明](../features/fsdp2/arguments.md)。
 
 脚本中包含训练参数，下表为部分参数解释。

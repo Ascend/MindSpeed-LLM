@@ -29,13 +29,18 @@
 
 2. 获取开源模型权重
 
-    通过HuggingFace获取模型权重文件。
+    创建一个目录存储权重文件
 
     ```shell
-    # 创建一个目录存储权重文件
     mkdir -p ./model_from_hf/qwen3_hf
     cd ./model_from_hf/qwen3_hf
+    ```
 
+    通过HuggingFace或ModelScope获取模型权重文件（择一获取）。
+
+    方式一：通过HuggingFace获取
+
+    ```shell
     # wget获取权重文件
     wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/config.json
     wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/generation_config.json
@@ -49,9 +54,30 @@
     wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/tokenizer.json
     wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/tokenizer_config.json
     wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/vocab.json
+    ```
 
-    # 利用sha256sum计算sha256数值
-    # 打开文件明细可获取sha256值，https://huggingface.co/Qwen/Qwen3-8B/blob/main/model-00001-of-00005.safetensors
+    方式二：通过ModelScope获取（国内推荐）
+
+    ```shell
+    # wget获取权重文件（从ModelScope下载）
+    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/config.json
+    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/generation_config.json
+    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/merges.txt
+    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/model-00001-of-00005.safetensors
+    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/model-00002-of-00005.safetensors
+    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/model-00003-of-00005.safetensors
+    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/model-00004-of-00005.safetensors
+    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/model-00005-of-00005.safetensors
+    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/model.safetensors.index.json
+    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/tokenizer.json
+    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/tokenizer_config.json
+    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/vocab.json
+    ```
+
+    利用sha256sum计算sha256数值校验权重文件正确性和完整性。
+
+    ```shell
+    # 打开文件明细可获取sha256值，https://huggingface.co/Qwen/Qwen3-8B/blob/main/model-00001-of-00005.safetensors 或者 https://www.modelscope.cn/models/Qwen/Qwen3-8B/file/view/master/model-00001-of-00005.safetensors
     sha256sum ./model-00001-of-00005.safetensors
     sha256sum ./model-00002-of-00005.safetensors
     sha256sum ./model-00003-of-00005.safetensors
@@ -152,11 +178,11 @@
 2. 修改并保存微调参数配置，配置示例如下：
 
     ```bash
-    NPUS_PER_NODE=8  # 单节点的卡数
-    MASTER_ADDR=localhost
-    MASTER_PORT=6000
-    NNODES=1
-    NODE_RANK=0
+    NPUS_PER_NODE=8           # 单节点的卡数
+    MASTER_ADDR=localhost     # 单机使用本节点IP地址或者localhost，多机所有节点都配置为主节点IP地址
+    MASTER_PORT=6000          # 本节点端口号为6000
+    NNODES=1                  # 根据参与节点数量配置，单机为1，多机即多节点
+    NODE_RANK=0               # 单机RANK为0，多机为(0,NNODES-1)，不同节点不可重复，NODE_RANK为0的节点为主节点
     WORLD_SIZE=$(($NPUS_PER_NODE * $NNODES))
 
     # 根据实际情况配置权重保存、权重加载、词表、数据集路径，多机中所有节点都要有如下数据

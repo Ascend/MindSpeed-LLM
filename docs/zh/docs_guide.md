@@ -112,7 +112,7 @@ docs/zh/
 |------|------|
 | [install_guide_pytorch](./pytorch/training/install_guide.md) | 基于PyTorch框架环境安装指导 |
 | [quick_start_pytorch](./pytorch/training/quick_start.md) | Mcore后端的快速上手指导，基于PyTorch框架从环境安装到模型预训练和微调 |
-| [finetune_fsdp2](pytorch/training/finetune/fsdp2/finetune_fsdp2.md) | FSDP2后端的快速上手指导，从环境安装到模型训练 |
+| [fsdp2_quick_start](./pytorch/training/fsdp2_quick_start.md) | FSDP2后端的快速上手指导，从环境安装到模型预训练和微调 |
 | [supported_models](pytorch/models/supported_models.md) | 模型支持列表 |
 
 ### Mcore后端
