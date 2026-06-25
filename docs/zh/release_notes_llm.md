@@ -24,7 +24,7 @@
     </tr>
     <tr>
       <th class="firstcol" valign="top" width="26.25%"><p>发布时间</p></th>
-      <td class="cellrowborder" valign="top" width="73.75%"><p>2026年6月</p></td>
+      <td class="cellrowborder" valign="top" width="73.75%"><p>2026年7月</p></td>
     </tr>
     <tr>
       <th class="firstcol" valign="top" width="26.25%"><p>维护周期</p></th>
@@ -44,29 +44,99 @@
 | MindSpeed LLM版本 | MindSpeed Core代码分支名称 | Megatron版本 | PyTorch版本  | Ascend Extension for PyTorch版本 | CANN版本 | Triton-Ascend版本 | Python版本     |
 | ---------------- | ------------------ | ------------ | -----------  | ------------- |--------------------- |-----------------| ------------------- |
 | master（在研版本）| master（在研版本）  | core_v0.12.1  | 2.7.1       | 在研版本       | 在研版本  | 在研版本            | Python3.10      |
-| 26.1.0（商用）   | 26.1.0_core_r0.12.1 | core_v0.12.1  | 2.7.1       | 26.1.0        | 9.1.0  | 3.2.2           | Python3.10      |
-| 26.0.0（商用）   | 26.0.0_core_r0.12.1 | core_v0.12.1  | 2.7.1       | 26.0.0        | 9.0.0  | 3.2.1           | Python3.10      |
+| 26.1.0           | 26.1.0_core_r0.12.1 | core_v0.12.1  | 2.7.1       | 26.1.0        | 9.1.0  | 3.2.2           | Python3.10      |
+| 26.0.0           | 26.0.0_core_r0.12.1 | core_v0.12.1  | 2.7.1       | 26.0.0        | 9.0.0  | 3.2.1           | Python3.10      |
 
 >[!NOTE]
 >
->用户可根据需要选择MindSpeed LLM代码分支下载源码并进行安装。
+> - 用户可根据需要选择MindSpeed LLM代码分支下载源码并进行安装。
+> - Triton-Ascend版本与CANN版本强绑定，Triton-Ascend的使用应该与CANN版本一一对应，详见[Triton-Ascend兼容性](https://gitcode.com/Ascend/triton-ascend#%E5%85%BC%E5%AE%B9%E6%80%A7)。
 
 ## 版本兼容性说明
 
-|MindSpeed LLM版本|CANN版本|Ascend Extension for PyTorch版本|
-|--|--|--|
-|26.1.0|CANN 9.1.0<br>CANN 9.0.0<br>CANN 8.5.0<br>CANN 8.3.RC1<br>CANN 8.2.RC1<br>CANN 8.1.RC1|26.1.0|
-|26.0.0|CANN 9.0.0<br>CANN 8.5.0<br>CANN 8.3.RC1<br>CANN 8.2.RC1<br>CANN 8.1.RC1|26.0.0|
+> [!NOTE]
+>
+> 本节表格中“/”表示不可配套，“Y”表示可配套。
 
-|CANN版本| Triton-Ascend版本 |
-|--|-----------------|
-|CANN 9.1.0| 3.2.2           |
-|CANN 9.0.0| 3.2.1           |
-|CANN 8.5.0| 3.2.0           |
+**表 2**  MindSpeed LLM与Ascend Extention for PyTorch版本兼容
 
-## 版本使用注意事项
+<table style="table-layout: fixed; width: 750px">
+  <colgroup>
+    <col style="width: 150px">
+    <col style="width: 150px">
+    <col style="width: 150px">
+    <col style="width: 150px">
+    <col style="width: 150px">
+  </colgroup>
+  <thead>
+    <tr>
+      <th rowspan="2">MindSpeed LLM</th>
+      <th colspan="4">Ascend Extention for PyTorch版本</th>
+    </tr>
+    <tr>
+      <th>7.2.0</th>
+      <th>7.3.0</th>
+      <th>26.0.0</th>
+      <th>26.1.X</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>26.0.0</td>
+      <td>Y</td>
+      <td>Y</td>
+      <td>Y</td>
+      <td>/</td>
+    </tr>
+    <tr>
+      <td>26.1.0</td>
+      <td>Y</td>
+      <td>Y</td>
+      <td>Y</td>
+      <td>Y</td>
+    </tr>
+  </tbody>
+</table>
 
-- Triton-Ascend版本与CANN版本强绑定，Triton-Ascend的使用应该与CANN版本一一对应。
+**表 3**  MindSpeed LLM与CANN版本兼容
+
+<table style="table-layout: fixed; width: 750px">
+  <colgroup>
+    <col style="width: 150px">
+    <col style="width: 150px">
+    <col style="width: 150px">
+    <col style="width: 150px">
+    <col style="width: 150px">
+  </colgroup>
+  <thead>
+    <tr>
+      <th rowspan="2">MindSpeed LLM</th>
+      <th colspan="4">CANN版本</th>
+    </tr>
+    <tr>
+      <th>8.3.RC1</th>
+      <th>8.5.0</th>
+      <th>9.0.0</th>
+      <th>9.1.0</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>26.0.0</td>
+      <td>Y</td>
+      <td>Y</td>
+      <td>Y</td>
+      <td>/</td>
+    </tr>
+    <tr>
+      <td>26.1.0</td>
+      <td>Y</td>
+      <td>Y</td>
+      <td>Y</td>
+      <td>Y</td>
+    </tr>
+  </tbody>
+</table>
 
 ## 更新说明
 
@@ -74,7 +144,7 @@
 
 |组件|描述|目的|
 |--|--|--|
-|MindSpeed LLM|新增Mcore训练支持|支持Seed-OSS、GLM5模型训练|
+|MindSpeed LLM|Megatron训练后端新增模型支持|支持Seed-OSS、GLM5模型训练|
 |MindSpeed LLM|工具效率提升|支持异步保存权重|
 
 ### 删除特性
@@ -114,7 +184,8 @@
 |文档名称|内容简介|更新说明|
 |--|--|--|
 |《[MindSpeed LLM安装指导](./pytorch/training/install_guide.md)》|指导用户如何在NPU上完成MindSpeed LLM的安装，内容涵盖硬件与操作系统兼容性说明、驱动固件及CANN基础软件安装，以及基于PyTorch框架的完整安装流程，帮助用户快速搭建大语言模型分布式训练环境。|-|
-|《[MindSpeed LLM快速入门](./pytorch/training/quick_start.md)》|以Qwen3-8B为例，指导初次接触MindSpeed LLM的开发者完成NPU上的预训练和微调任务，帮助用户快速上手大模型分布式训练。|-|
+|《[MindSpeed LLM快速入门（基于Megatron训练后端）](./pytorch/training/quick_start.md)》|以Qwen3-8B为例，指导初次接触MindSpeed LLM的开发者完成NPU上基于Megatron训练后端的预训练和微调任务，帮助用户快速上手大模型分布式训练。|-|
+|《[MindSpeed LLM快速入门（基于FSDP2训练后端）](./pytorch/training/fsdp2_quick_start.md)》|以Qwen3-8B为例，指导初次接触MindSpeed LLM的开发者完成NPU上基于FSDP2训练后端的预训练和微调任务，帮助用户快速上手大模型分布式训练。|-|
 
 ## 病毒扫描及漏洞修补列表
 
