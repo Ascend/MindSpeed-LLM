@@ -430,9 +430,10 @@ class DSAIndexer(MegatronModule):
 
     def all_gather_qk_weight_kvallgather(self, q, k, weights):
         k = gather_from_sp_cp(k)
-        group = parallel_state.get_tensor_model_parallel_group()
-        q = gather_from_sequence_parallel_region(q, group=group)
-        weights = gather_from_sequence_parallel_region(weights, group=group)
+        if self.use_fused_lightning_indexer:
+            group = parallel_state.get_tensor_model_parallel_group()
+            q = gather_from_sequence_parallel_region(q, group=group)
+            weights = gather_from_sequence_parallel_region(weights, group=group)
         return q, k, weights
 
     def post_process_index(self, topk_indices, topk_score):
