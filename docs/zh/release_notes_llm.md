@@ -12,7 +12,7 @@
     </tr>
     <tr>
       <th class="firstcol" valign="top" width="26.25%"><p>产品版本</p></th>
-      <td class="cellrowborder" valign="top" width="73.75%"><p>26.1.0</p></td>
+      <td class="cellrowborder" valign="top" width="73.75%"><p>26.0.0</p></td>
     </tr>
     <tr>
       <th class="firstcol" valign="top" width="26.25%"><p>版本类型</p></th>
@@ -24,7 +24,7 @@
     </tr>
     <tr>
       <th class="firstcol" valign="top" width="26.25%"><p>发布时间</p></th>
-      <td class="cellrowborder" valign="top" width="73.75%"><p>2026年7月</p></td>
+      <td class="cellrowborder" valign="top" width="73.75%"><p>2026年4月</p></td>
     </tr>
     <tr>
       <th class="firstcol" valign="top" width="26.25%"><p>维护周期</p></th>
@@ -44,7 +44,6 @@
 | MindSpeed LLM版本 | MindSpeed Core代码分支名称 | Megatron版本 | PyTorch版本  | Ascend Extension for PyTorch版本 | CANN版本 | Triton-Ascend版本 | Python版本     |
 | ---------------- | ------------------ | ------------ | -----------  | ------------- |--------------------- |-----------------| ------------------- |
 | master（在研版本）| master（在研版本）  | core_v0.12.1  | 2.7.1       | 在研版本       | 在研版本  | 在研版本            | Python3.10      |
-| 26.1.0           | 26.1.0_core_r0.12.1 | core_v0.12.1  | 2.7.1       | 26.1.0        | 9.1.0  | 3.2.2           | Python3.10      |
 | 26.0.0           | 26.0.0_core_r0.12.1 | core_v0.12.1  | 2.7.1       | 26.0.0        | 9.0.0  | 3.2.1           | Python3.10      |
 
 >[!NOTE]
@@ -60,82 +59,58 @@
 
 **表 2**  MindSpeed LLM与Ascend Extention for PyTorch版本兼容
 
-<table style="table-layout: fixed; width: 750px">
-  <colgroup>
-    <col style="width: 150px">
-    <col style="width: 150px">
-    <col style="width: 150px">
-    <col style="width: 150px">
-    <col style="width: 150px">
-  </colgroup>
-  <thead>
-    <tr>
-      <th rowspan="2">MindSpeed LLM</th>
-      <th colspan="4">Ascend Extention for PyTorch版本</th>
-    </tr>
-    <tr>
-      <th>7.2.0</th>
-      <th>7.3.0</th>
-      <th>26.0.0</th>
-      <th>26.1.X</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>26.0.0</td>
-      <td>Y</td>
-      <td>Y</td>
-      <td>Y</td>
-      <td>/</td>
-    </tr>
-    <tr>
-      <td>26.1.0</td>
-      <td>Y</td>
-      <td>Y</td>
-      <td>Y</td>
-      <td>Y</td>
-    </tr>
-  </tbody>
+<table style="table-layout: fixed; width: 433px"><colgroup>
+<col style="width: 156px">
+<col style="width: 88px">
+<col style="width: 91px">
+<col style="width: 98px">
+</colgroup>
+<thead>
+  <tr>
+    <th rowspan="2">MindSpeed LLM</th>
+    <th colspan="3">Ascend Extention for PyTorch版本</th>
+  </tr>
+  <tr>
+    <th>7.2.0</th>
+    <th>7.3.0</th>
+    <th>26.0.0</th>
+  </tr></thead>
+<tbody>
+  <tr>
+    <td>26.0.0</td>
+    <td>Y</td>
+    <td>Y</td>
+    <td>Y</td>
+  </tr>
+</tbody>
 </table>
 
 **表 3**  MindSpeed LLM与CANN版本兼容
 
-<table style="table-layout: fixed; width: 750px">
-  <colgroup>
-    <col style="width: 150px">
-    <col style="width: 150px">
-    <col style="width: 150px">
-    <col style="width: 150px">
-    <col style="width: 150px">
-  </colgroup>
-  <thead>
-    <tr>
-      <th rowspan="2">MindSpeed LLM</th>
-      <th colspan="4">CANN版本</th>
-    </tr>
-    <tr>
-      <th>8.3.RC1</th>
-      <th>8.5.0</th>
-      <th>9.0.0</th>
-      <th>9.1.0</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td>26.0.0</td>
-      <td>Y</td>
-      <td>Y</td>
-      <td>Y</td>
-      <td>/</td>
-    </tr>
-    <tr>
-      <td>26.1.0</td>
-      <td>Y</td>
-      <td>Y</td>
-      <td>Y</td>
-      <td>Y</td>
-    </tr>
-  </tbody>
+<table style="table-layout: fixed; width: 449px"><colgroup>
+<col style="width: 162px">
+<col style="width: 91px">
+<col style="width: 94px">
+<col style="width: 102px">
+</colgroup>
+<thead>
+  <tr>
+    <th rowspan="2">MindSpeed LLM</th>
+    <th colspan="3">CANN版本</th>
+  </tr>
+  <tr>
+    <th>8.3.RC1</th>
+    <th>8.5.0</th>
+    <th>9.0.0</th>
+  </tr></thead>
+<tbody>
+  <tr>
+    <td>26.0.0</td>
+    <td>Y</td>
+    <td>Y</td>
+    <td>Y</td>
+  </tr>
+</tbody>
 </table>
 
 ## 更新说明
