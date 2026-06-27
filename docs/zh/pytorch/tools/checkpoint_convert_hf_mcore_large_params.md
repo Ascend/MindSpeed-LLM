@@ -289,14 +289,6 @@ MTP层的层数。默认值为 0，支持减层时配置MTP层，不能大于原
 
 如果需要配合训练脚本进行减层调试，请注意此参数需要**和训练脚本保持一致**。
 
-## 使用约束
-
-1、权重转换v2当前暂不支持LoRA/QLoRA权重转换到Huggingface功能，包括：LoRA/QLoRA权重与base权重合并转到Huggingface格式、LoRA/QLoRA权重单独转为Huggingface格式；
-
-2、权重转换v2当前暂不支持从Huggingface到Megatron-Mcore的QLoRA量化权重转换；
-
-3、权重转换v1与权重转换v2为两套不同的方案，请不要混用，如使用权重转换v2做hf-mg，再使用v1做mg-hf。
-
 ## 社区贡献
 
 欢迎社区贡献！如您在使用 MindSpeed LLM 权重转换过程中，有任何改进建议或发现了任何问题（包括但不限于功能问题、合规问题），请在Gitcode提交issue，我们将及时审视并解决。

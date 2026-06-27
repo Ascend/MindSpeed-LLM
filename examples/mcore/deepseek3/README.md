@@ -32,14 +32,14 @@ c. tune_deepseek3_671b_4k_full_xxx.sh (根据集群选择A2或者A3脚本)
 d. ckpt_convert_deepseek3_mcore2hf.sh（可选）
 ```
 
-Lora/QLora微调过程脚本使用顺序为：
+Lora微调过程脚本使用顺序为：
 
 ```shell
 a. data_convert_deepseek3_instruction.sh
 
 b. ckpt_convert_deepseek3_hf2mcore.sh
 
-注意：此脚本是示例，需根据c.tune_deepseek3_671b_4k_xlora_xxx.sh脚本设置权重转换参数。参数说明查看以下的"DeepSeek-V3权重转换"章节
+注意：此脚本是示例，需根据c.tune_deepseek3_671b_4k_lora_xxx.sh脚本设置权重转换参数。参数说明查看以下的"DeepSeek-V3权重转换"章节
 
 c. tune_deepseek3_671b_4k_xlora_xxx.sh(根据集群选择A2或者A3脚本)
 
@@ -57,6 +57,7 @@ d. ckpt_convert_deepseek3_merge_lora2hf.sh （可选）
 (1) huggingface转megatron
 
 - 支持将[huggingface权重](https://huggingface.co/deepseek-ai/DeepSeek-V3/tree/main)转换为分布式megatron mcore权重，用于微调、推理、评估等任务。要求原权重做反量化后获得bf16数据格式，反量化方法请参考MindIE官方提供的[代码](https://modelers.cn/models/MindIE/deepseekv3/blob/main/NPU_inference/fp8_cast_bf16.py)。
+
 - DeepSeek-V3模型目录下的<a href="../../mcore/deepseek3/ckpt_convert_deepseek3_hf2mcore.sh">ckpt_convert_deepseek3_hf2mcore.sh</a>脚本，设置与训练脚本相同配置，再执行转换：
 
 ```shell
@@ -66,15 +67,16 @@ bash examples/mcore/deepseek3/ckpt_convert_deepseek3_hf2mcore.sh
 (2) megatron转huggingface
 
 - 支持将训练好的分布式megatron mcore格式的权重转换回huggingface格式。
+
 - DeepSeek-V3模型目录下的<a href="../../mcore/deepseek3/ckpt_convert_deepseek3_mcore2hf.sh">ckpt_convert_deepseek3_mcore2hf.sh</a>脚本，设置与训练脚本相同配置，再执行转换：
 
 ```shell
 bash examples/mcore/deepseek3/ckpt_convert_deepseek3_mcore2hf.sh
 ```
 
-(3) LoRA/QLoRA转huggingface
+(3) LoRA转huggingface
 
-- 支持将训练好的LoRA/QLoRA格式的权重转huggingface格式。
+- 支持将训练好的LoRA格式的权重转huggingface格式。
 - DeepSeek-V3模型目录下的<a href="../../mcore/deepseek3/ckpt_convert_deepseek3_merge_lora2hf.sh">ckpt_convert_deepseek3_merge_lora2hf.sh</a>脚本，设置与训练脚本相同配置，再执行转换：
 
 ```shell
@@ -132,7 +134,7 @@ bash examples/mcore/deepseek3/ckpt_convert_deepseek3_merge_lora2hf.sh
       <td>--mtp-num-layers</td>
       <td>MTP层的层数。如不需要MTP层，可设置为0。最大可设置为1。默认值为0。
 MTP层权重默认存储在最后一个pp stage。
-注意，QLoRA和LoRA权重转换不支持MTP。</td>
+注意，LoRA权重转换不支持MTP。</td>
       <td>✅</td>
     </tr>
     <tr>
@@ -164,17 +166,12 @@ MTP层权重默认存储在最后一个pp stage。
     <tr>
       <td>--mla-mm-split</td>
       <td>在MLA中，将2个up-proj matmul操作拆分成4个。默认值为False。<br>
-注意，QLoRA和LoRA权重转换不支持该参数。</td>
+注意，LoRA权重转换不支持该参数。</td>
       <td>✅</td>
     </tr>
     <tr>
       <td>--schedules-method</td>
       <td>流水线并行方法，可选dualpipev。默认值为None。</td>
-      <td>✅</td>
-    </tr>
-    <tr>
-      <td>--qlora-nf4</td>
-      <td>指定是否开启QLoRA权重的量化转换功能，默认为False。</td>
       <td>✅</td>
     </tr>
     <tr>
@@ -273,53 +270,3 @@ python examples/mcore/deepseek3/convert_ckpt_deepseek3_mcore2hf.py \
 --save-lora-to-hf：指定此参数,仅将LoRA权重转为huggingface格式,注意该权重仅为LoRA权重，在LoRA微调中加入'--lora-ckpt-filter'，只保存LoRA权重
 
 【适用场景】在LoRA微调时加参数'--lora-ckpt-filter'，则保存的权重只包含LoRA权重，仅将Lora权重转为HF格式
-
-## 3 QLoRA 权重转换
-
-### 3.1 QLoRA 权重包含 base 权重
-
-如果 QLoRA 权重包含了 base 权重，并且需要将其合并到一起转为huggingface格式：
-
-在微调脚本中加入'--qlora-save-dequantize',保存时将权重反量化。
-
-【适用场景】在QLoRA微调时没有加参数'--lora-ckpt-filter'，则保存的权重包括base权重和QLoRA权重
-
-合并脚本同`2.1 LoRA 权重包含 base 权重`
-
-### 3.2 QLoRA 权重与 base 权重分开加载
-
-如果需要将 base 权重和独立的 QLoRA 权重合并转为huggingface格式，可以分别指定两个路径进行加载：
-
-示例：
-
-```bash
-python examples/mcore/deepseek3/convert_ckpt_deepseek3_mcore2hf.py \
-    --source-tensor-parallel-size 1 \
-    --source-pipeline-parallel-size 4 \
-    --source-expert-parallel-size 8 \
-    --load-dir ./model_weights/deepseek3-mcore \
-    --lora-load ./ckpt/filter_lora \
-    --save-dir ./model_from_hf/deepseek3-hf \
-    --num-layers 61 \
-    --first-k-dense-replace 3 \
-    --num-layer-list 16,15,15,15 \
-    --lora-r 8 \
-    --lora-alpha 16
-    # --num-layer-list, --noop-layers, --num-layers-per-virtual-pipeline-stage等参数根据任务需要进行配置
-```
-
---load-dir：指定base权重路径，由于QLoRA微调加载的权重是量化过的，所以不能直接作为base权重，需要重新转出一份不加参数'--qlora-nf4'的mcore权重作为合并时的base权重
-
---lora-load：指定QLoRA权重路径，注意该权重仅为QLoRA权重，在微调脚本中加入'--qlora-save-dequantize',保存时将权重反量化，并加入'--lora-ckpt-filter'，只保存QLoRA权重
-
---lora-r、--lora-alpha：与LoRA微调时配置相同
-
-【适用场景】在QLoRA微调时加参数'--lora-ckpt-filter'，保存的权重只包含LoRA权重，需要将Lora和HF权重合并
-
-### 3.3 只将QLoRA权重转为huggingface格式
-
-如果需要将单独的QLoRA权重转为huggingface格式，在微调脚本中加入'--qlora-save-dequantize',保存时将权重反量化，并加入'--lora-ckpt-filter'，只保存QLoRA权重。
-
-转换脚本同`2.3 只将LoRA权重转为huggingface格式`
-
-【适用场景】在QLoRA微调时加参数'--lora-ckpt-filter'，则保存的权重只包含LoRA权重，仅将Lora权重转为HF格式

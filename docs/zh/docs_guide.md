@@ -71,7 +71,6 @@ docs/zh/
     │   │   │   ├── instruction_finetune.md      # 全参微调
     │   │   │   ├── lora_finetune.md             # LoRA微调
     │   │   │   ├── lu_lora_finetune.md          # LU-LoRA微调
-    │   │   │   ├── qlora_finetune.md            # QLoRA微调
     │   │   │   ├── multi_sample_pack_finetune.md # 多样本Pack微调
     │   │   │   ├── single_sample_finetune.md    # 单样本微调
     │   │   │   ├── multi_turn_conversation.md   # 多轮对话微调
@@ -141,7 +140,6 @@ docs/zh/
 | | [multi_turn_conversation](pytorch/training/finetune/mcore/multi_turn_conversation.md) | 多轮对话微调方案 |
 | | [lora_finetune](pytorch/training/finetune/mcore/lora_finetune.md) | 模型LoRA微调方案 |
 | | [lu_lora_finetune](pytorch/training/finetune/mcore/lu_lora_finetune.md) | 模型LU-LoRA微调方案 |
-| | [qlora_finetune](pytorch/training/finetune/mcore/qlora_finetune.md) | 模型QLoRA微调方案 |
 | | [offline_dpo](pytorch/training/finetune/mcore/offline_dpo.md) | 离线DPO对齐方案 |
 | | [layerwise_disaggregated_training](pytorch/training/finetune/mcore/layerwise_disaggregated_training.md) | 逐层分离训练微调方案 |
 | | [pmcc_obfuscation](pytorch/training/finetune/mcore/pmcc_obfuscation.md) | PMCC混淆方案 |

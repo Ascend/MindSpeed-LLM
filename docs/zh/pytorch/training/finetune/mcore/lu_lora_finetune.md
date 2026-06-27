@@ -79,16 +79,17 @@ MindSpeed-LLM LU-LoRA微调脚本命名及启动方式：
 source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路径
 source /usr/local/Ascend/nnal/atb/set_env.sh # 修改为实际安装的nnal包路径
 # 启动任务
+# 脚本内容参考：https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.0.0/examples/mcore/llama2/tune_llama2_7b_lu_lora_ptd.sh
 bash examples/mcore/llama2/tune_llama2_7b_lu_lora_ptd.sh
 ```
 
 参数描述：
 
-- **`--lu-lora-final-layer-index`** 
+- **`--lu-lora-final-layer-index`**
  使用LU-LoRA训练的最后一层的索引，例如，入参为11，表示模型的前12层（0层-11层）使用LU-LoRA算法，其余层使用LoRA算法。具有更多层的模型应更新更多层以进行局部学习，从而减少计算和内存消耗。然而，LU-LoRA覆盖的层数过多可能会限制模型的泛化能力。建议首先选择37.5%的层数以获得适当的内存消耗减少。进一步调整超参数可以进一步改善。
-- **`--lu-lora-lr-ratio`** 
+- **`--lu-lora-lr-ratio`**
  LU-LoRA B与LU-LoRA A适配器的学习率比值，通常建议设置为24（默认），但根据特定模型的实验结果，可能会更小。
-- **`--lu-lora-lr`** 
+- **`--lu-lora-lr`**
  LU-LoRA层的初始学习率，默认1.25e-6。LU-LoRA适配器的学习率可以与LoRA适配器的学习率不同。
 
 ### LU-LoRA权重与基础权重的合并与转换
@@ -120,13 +121,13 @@ python convert_ckpt.py \
  --lora-target-modules linear_qkv linear_proj linear_fc1 linear_fc2 \
  --target-tensor-parallel-size 1 \
  --target-pipeline-parallel-size 1 \
- --model-type-hf llama2 
+ --model-type-hf llama2
 ```
 
 以下是与LoRA类似的启动转换脚本示例：
 
 ```shell
-# 开始任务 
+# 开始任务
 bash examples/mcore/llama2/ckpt_convert_llama2_mg2mg_lora.sh
 ```
 
@@ -179,6 +180,7 @@ CHECKPOINT_LORA="./ckpt/llama-2-7b-lora/"
 TOKENIZER_PATH="./model_from_hf/llama-2-7b-hf/"
 
 #启动任务
+# 脚本内容参考：https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.0.0/examples/mcore/llama2/generate_llama2_7b_lora_ptd.sh
 bash examples/mcore/llama2/generate_llama2_7b_lora_ptd.sh
 ```
 

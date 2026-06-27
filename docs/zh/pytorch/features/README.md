@@ -289,14 +289,12 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
     <th>方案名称</th>
     <th>Mcore</th>
     <th><a href="../training/finetune/mcore/lora_finetune.md">LoRA</a></th>
-    <th><a href="../training/finetune/mcore/qlora_finetune.md">QLoRA</a></th>
     <th>Released</th>
     <th>贡献方</th>
   </tr></thead>
 <tbody>
   <tr>
     <td><a href="../training/finetune/mcore/instruction_finetune.md">单样本微调</a></td>
-    <td>✅</td>
     <td>✅</td>
     <td>✅</td>
     <td>✅</td>
@@ -307,14 +305,12 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
     <td>✅</td>
     <td>✅</td>
     <td>❌</td>
-    <td>❌</td>
     <td>【Ascend】</td>
   </tr>
     <tr>
     <td><a href="../training/finetune/mcore/multi_turn_conversation.md">多轮对话微调</a></td>
     <td>✅</td>
     <td>✅</td>
-    <td>❌</td>
     <td>❌</td>
     <td>【Ascend】</td>
   </tr>
@@ -336,13 +332,6 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
     <td><a href="mcore/cc_lora.md">CCLoRA</a></td>
     <td>✅</td>
     <td>✅</td>
-    <td>【Ascend】</td>
-  </tr>
-  <tr>
-      <td rowspan="1"><a href="../training/finetune/mcore/qlora_finetune.md">QLoRA微调</a></td>
-      <td><a href="mcore/cc_lora.md">CCLoRA</a></td>
-    <td>❌</td>
-    <td>❌</td>
     <td>【Ascend】</td>
   </tr>
   <tr>

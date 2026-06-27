@@ -1,6 +1,6 @@
 # 评估指导手册
 
-MindSpeed LLM 支持大模型在公开基准数据集上进行准确率评估，当前支持的 Benchmark 
+MindSpeed LLM 支持大模型在公开基准数据集上进行准确率评估，当前支持的 Benchmark
  详细统计信息可参考[evaluation.md](./models_evaluation.md)。
 
 ## 环境变量
@@ -15,6 +15,7 @@ MindSpeed LLM 基准评估脚本命名风格及启动方法为：
 
 ```shell
 # 命名及启动：examples/mcore/model_name/evaluate_xxx.sh
+# 脚本内容参考：https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.0.0/examples/mcore/llama2/evaluate_llama2_7b_mmlu_ptd.sh
 bash examples/mcore/llama2/evaluate_llama2_7b_mmlu_ptd.sh
 ```
 
@@ -27,6 +28,7 @@ DATA_PATH="./mmlu/data/test/"
 TASK="mmlu"  # 支持 mmlu、ceval、agieval、bbh、boolq、human_eval
 
 # 启动评估脚本
+# 脚本内容参考：https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.0.0/examples/mcore/llama2/evaluate_llama2_7b_mmlu_ptd.sh
 bash examples/mcore/llama2/evaluate_llama2_7b_mmlu_ptd.sh
 ```
 
@@ -47,6 +49,7 @@ bash examples/mcore/llama2/evaluate_llama2_7b_mmlu_ptd.sh
 使用指令微调后权重的评估脚本命名风格及启动方法为：
 
 ```shell
+# 脚本内容参考：https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.0.0/examples/mcore/llama2/evaluate_llama2_7b_full_mmlu_ptd.sh
 bash examples/mcore/llama2/evaluate_llama2_7b_full_mmlu_ptd.sh
 ```
 

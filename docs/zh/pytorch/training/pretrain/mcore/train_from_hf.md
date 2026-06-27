@@ -10,7 +10,7 @@
 - 自动数据预处理：数据预处理功能在模型训练时自动识别并转换原始数据文件，用户无需手动执行原始数据转换。系统将根据输入路径自动判断是否为原始数据格式（如 .jsonl、.parquet 等），并在训练初始化阶段自动完成数据格式转换。
 
 ## 使用方法
- 
+
 ### 权重转换与训练合一
 
 当前仅支持单机或共享存储模式，系统会在训练初始化阶段自动检测当前是否为共享存储环境。
@@ -104,7 +104,7 @@
 
 #### 约束条件
 
-- HF→MG转换 (`--enable-hf2mg-convert`) 
+- HF→MG转换 (`--enable-hf2mg-convert`)
   - 设置加载路径。启用此功能时必须设置`--load`参数，用于指定HuggingFace权重目录，不支持从随机初始化开始训练。
   - 不支持Megatron格式权重。配置此参数后，不支持使用离线转换的Megatron格式权重。
   - 存储路径规则：
@@ -112,10 +112,10 @@
     - 如果未指定，则默认保存至`{load}/megatron_cache_tp{TP}pp{PP}ep{EP}`目录。
     - 训练过程将自动使用该路径作为权重加载路径。
 
-- MG→HF转换 (`--enable-mg2hf-convert`) 
+- MG→HF转换 (`--enable-mg2hf-convert`)
   - 设置保存路径。启用此功能时必须设置`--save`参数，用于指定训练输出路径。
   - 此功能仅支持在单机或者共享存储环境中使用。
-  - 不支持LoRA/QLoRA。不支持对LoRA或QLoRA微调后的权重进行Megatron→HuggingFace转换。
+  - 不支持LoRA。不支持对LoRA微调后的权重进行Megatron→HuggingFace转换。
   - 存储路径规则：
     - 如果指定`--hf-save-dir`，则转换后的HuggingFace权重将保存至`{hf_save_dir}/mg2hf_iteration{iteration}/`目录。
     - 如果未指定，则默认保存至`{save}/mg2hf_iteration{iteration}`目录。
@@ -188,4 +188,4 @@ CKPT_LOAD_DIR="/path_to_huggingface_model/Qwen3-8B"
 
 - 当前权重转换`--enable-mg2hf-convert`功能仅支持单机或者共享存储环境。
 
-- 当前权重转换`--enable-mg2hf-convert`功能不支持对LoRA/QLoRA微调后的权重进行Megatron→HF权重转换。
+- 当前权重转换`--enable-mg2hf-convert`功能不支持对LoRA微调后的权重进行Megatron→HF权重转换。
