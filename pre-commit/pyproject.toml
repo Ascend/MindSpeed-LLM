@@ -99,6 +99,7 @@ disable = [
   "too-many-nested-blocks",
   "broad-exception-raised",
   "duplicate-code",
+  "consider-using-dict-items",
 
   # 导入相关
   "wrong-import-order",

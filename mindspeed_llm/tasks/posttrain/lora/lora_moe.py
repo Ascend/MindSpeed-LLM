@@ -2,8 +2,8 @@
 from typing import Any
 
 import torch
-import torch.nn as nn
-import torch.nn.init as init
+from torch import nn
+from torch.nn import init
 
 from peft.tuners.lora.layer import LoraLayer
 from mindspeed_llm.core.transformer.moe.layers import SEColumnParallelLinear, SERowParallelLinear
@@ -40,7 +40,7 @@ class LoraParallelLinearMoE(nn.Module, LoraLayer):
         self.backend = backend
         self.is_parallel_a = isinstance(base_layer, backend.RowParallelLinear)
         self.fan_in_fan_out = fan_in_fan_out
-        self._active_adapter = adapter_name       
+        self._active_adapter = adapter_name
         self.is_expert = base_layer.is_expert
         self.shared_expert = getattr(base_layer, "shared_expert", False)
 
@@ -90,6 +90,14 @@ class LoraParallelLinearMoE(nn.Module, LoraLayer):
             raise ValueError(f"`r` should be a positive integer value but the value passed is {r}")
         self.r[adapter_name] = r
         self.lora_alpha[adapter_name] = lora_alpha
+
+        # adapt peft 0.19.1
+        if hasattr(self, "lora_bias"):
+            self.lora_bias[adapter_name] = False
+
+        if hasattr(self, "use_dora"):
+            self.use_dora[adapter_name] = use_dora
+
         if lora_dropout > 0.0:
             lora_dropout_layer = nn.Dropout(p=lora_dropout)
         else:
@@ -102,15 +110,17 @@ class LoraParallelLinearMoE(nn.Module, LoraLayer):
         megatron_config.params_dtype = torch.float32
         if self.is_parallel_a:
             if self.shared_expert:
-                lora_a = SERowParallelLinear(input_size=self.in_features,
-                            output_size=r,
-                            bias=False,
-                            input_is_parallel=input_is_parallel,
-                            skip_bias_add=True,
-                            init_method=init_method,
-                            config=megatron_config,
-                            is_expert=self.is_expert,
-                            shared_expert=self.shared_expert)
+                lora_a = SERowParallelLinear(
+                    input_size=self.in_features,
+                    output_size=r,
+                    bias=False,
+                    input_is_parallel=input_is_parallel,
+                    skip_bias_add=True,
+                    init_method=init_method,
+                    config=megatron_config,
+                    is_expert=self.is_expert,
+                    shared_expert=self.shared_expert,
+                )
             else:
                 lora_a = self.backend.RowParallelLinear(
                     input_size=self.in_features,
@@ -134,7 +144,7 @@ class LoraParallelLinearMoE(nn.Module, LoraLayer):
                     init_method=init_method,
                     config=megatron_config,
                     is_expert=self.is_expert,
-                    shared_expert=self.shared_expert
+                    shared_expert=self.shared_expert,
                 )
             else:
                 lora_b = self.backend.ColumnParallelLinear(

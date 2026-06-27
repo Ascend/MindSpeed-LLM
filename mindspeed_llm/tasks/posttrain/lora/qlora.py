@@ -1,7 +1,6 @@
 # Copyright (c) 2024; NVIDIA CORPORATION. All rights reserved.
 # Copyright (c) 2025, HUAWEI CORPORATION. All rights reserved.
 import torch
-import torch_npu
 from torch.nn.parameter import Parameter
 
 from megatron.training import get_args
@@ -26,12 +25,11 @@ def parallel_linear_init_wrapper(fn):
         fn(self, input_size, output_size, **kwargs)
         if is_enable_qlora():
             self.weight.data = self.weight.data.to("cpu")
+
     return wrapper
 
 
-def linear_with_frozen_weight_forward(
-        ctx, input_, weight, bias, allreduce_dgrad
-    ):
+def linear_with_frozen_weight_forward(ctx, input_, weight, bias, allreduce_dgrad):
     ctx.save_for_backward(weight)
     ctx.allreduce_dgrad = allreduce_dgrad
     if hasattr(weight, "quant_state"):
@@ -69,7 +67,9 @@ def parallel_linear_save_to_state_dict_wrapper(fn):
 
         if args.qlora_save_dequantize and getattr(self.weight, "quant_state", None) is not None:
             device = self.weight.device
-            dequantized_weight = Parameter(bnb.functional.dequantize_4bit(self.weight.data.to(device), self.weight.quant_state)).cpu()
+            dequantized_weight = Parameter(
+                bnb.functional.dequantize_4bit(self.weight.data.to(device), self.weight.quant_state)
+            ).cpu()
             destination[prefix + "weight"] = dequantized_weight.detach()
 
         if getattr(self.weight, "quant_state", None) is not None and not args.qlora_save_dequantize:
@@ -81,7 +81,7 @@ def parallel_linear_save_to_state_dict_wrapper(fn):
 
 def parallel_linear_load_from_state_dict_wrapper(fn):
     def wrapper(self, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs):
-        if any(['bitsandbytes' in i for i in state_dict.keys()]):  # is quantized linear
+        if any('bitsandbytes' in i for i in state_dict.keys()):  # is quantized linear
             qs_dict = {}
             for k, v in state_dict.items():
                 key = k.replace(prefix, "")
@@ -90,11 +90,15 @@ def parallel_linear_load_from_state_dict_wrapper(fn):
 
             self.weight = bnb.nn.Params4bit.from_prequantized(
                 data=qs_dict.get('weight'),
-                quantized_stats={key.replace('weight.', ''): qs_dict[key] for key in qs_dict if key != 'weight' and key != 'bias'},
+                quantized_stats={
+                    key.replace('weight.', ''): qs_dict[key] for key in qs_dict if key not in ('weight', 'bias')
+                },
                 requires_grad=False,
-                device='npu')
+                device='npu',
+            )
         fn(self, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs)
         self.weight.data = self.weight.data.to("npu")
+
     return wrapper
 
 
@@ -103,15 +107,14 @@ def get_model(model_provider_func, model_type=ModelType.encoder_or_decoder, wrap
     from megatron.core import tensor_parallel
     from megatron.core.transformer.module import Float16Module
     from megatron.core.distributed import DistributedDataParallelConfig
-    
+
     tpl = tensor_parallel.layers
     model_provider_func = model_provider_func_wrapper(model_provider_func)
     args = get_args()
     args.model_type = model_type
 
     # Build model.
-    if mpu.get_pipeline_model_parallel_world_size() > 1 and \
-       args.virtual_pipeline_model_parallel_size is not None:
+    if mpu.get_pipeline_model_parallel_world_size() > 1 and args.virtual_pipeline_model_parallel_size is not None:
         if model_type == ModelType.encoder_and_decoder:
             raise ValueError("Interleaved schedule not supported for model with both encoder and decoder")
         model = []
@@ -120,10 +123,7 @@ def get_model(model_provider_func, model_type=ModelType.encoder_or_decoder, wrap
             # Set pre_process and post_process only after virtual rank is set.
             pre_process = mpu.is_pipeline_first_stage()
             post_process = mpu.is_pipeline_last_stage()
-            this_model = model_provider_func(
-                pre_process=pre_process,
-                post_process=post_process
-            )
+            this_model = model_provider_func(pre_process=pre_process, post_process=post_process)
             this_model.model_type = model_type
             model.append(this_model)
     else:
@@ -138,21 +138,15 @@ def get_model(model_provider_func, model_type=ModelType.encoder_or_decoder, wrap
                 rank = mpu.get_pipeline_model_parallel_rank()
                 split_rank = args.pipeline_model_parallel_split_rank
                 world_size = mpu.get_pipeline_model_parallel_world_size()
-                pre_process = rank == 0 or rank == split_rank
-                post_process = (rank == (split_rank - 1)) or (
-                        rank == (world_size - 1))
+                pre_process = rank in (0, split_rank)
+                post_process = rank in (split_rank - 1, world_size - 1)
                 add_encoder = mpu.is_pipeline_stage_before_split()
                 add_decoder = mpu.is_pipeline_stage_after_split()
             model = model_provider_func(
-                pre_process=pre_process,
-                post_process=post_process,
-                add_encoder=add_encoder,
-                add_decoder=add_decoder)
-        else:
-            model = model_provider_func(
-                pre_process=pre_process,
-                post_process=post_process
+                pre_process=pre_process, post_process=post_process, add_encoder=add_encoder, add_decoder=add_decoder
             )
+        else:
+            model = model_provider_func(pre_process=pre_process, post_process=post_process)
         model.model_type = model_type
 
     if not isinstance(model, list):
@@ -168,12 +162,14 @@ def get_model(model_provider_func, model_type=ModelType.encoder_or_decoder, wrap
 
     # Print number of parameters.
     if mpu.get_data_parallel_rank() == 0:
-        print(' > number of parameters on (tensor, pipeline) '
-              'model parallel rank ({}, {}): {}'.format(
-            mpu.get_tensor_model_parallel_rank(),
-            mpu.get_pipeline_model_parallel_rank(),
-            sum([sum([p.nelement() for p in model_module.parameters()])
-                 for model_module in model])), flush=True)
+        print(
+            ' > number of parameters on (tensor, pipeline) model parallel rank ({}, {}): {}'.format(
+                mpu.get_tensor_model_parallel_rank(),
+                mpu.get_pipeline_model_parallel_rank(),
+                sum(sum(p.nelement() for p in model_module.parameters()) for model_module in model),
+            ),
+            flush=True,
+        )
 
     # start of megatron_adaptation,
     # here we keep the main model's linear layers on CPU to avoid OOM in QLoRA.
@@ -186,8 +182,7 @@ def get_model(model_provider_func, model_type=ModelType.encoder_or_decoder, wrap
 
                 is_lora_adapter = any(substring in name for substring in ["lora_A", "lora_B"])
                 is_target_linear = (
-                    isinstance(module, (tpl.ColumnParallelLinear, tpl.RowParallelLinear))
-                    and "layers" in name
+                    isinstance(module, (tpl.ColumnParallelLinear, tpl.RowParallelLinear)) and "layers" in name
                 )
                 if not (is_target_linear and not is_lora_adapter):
                     module.weight.data = module.weight.data.to(torch.cuda.current_device())
@@ -213,14 +208,19 @@ def get_model(model_provider_func, model_type=ModelType.encoder_or_decoder, wrap
             overlap_grad_reduce=args.overlap_grad_reduce,
             use_distributed_optimizer=args.use_distributed_optimizer,
             check_for_nan_in_grad=args.check_for_nan_in_loss_and_grad,
-            bucket_size=args.ddp_bucket_size)
-        model = [DDP(config,
-                     ddp_config,
-                     model_chunk,
-                     # Turn off bucketing for model_chunk 2 onwards, since communication for these
-                     # model chunks is overlapped with compute anyway.
-                     disable_bucketing=(model_chunk_idx > 0))
-                 for (model_chunk_idx, model_chunk) in enumerate(model)]
+            bucket_size=args.ddp_bucket_size,
+        )
+        model = [
+            DDP(
+                config,
+                ddp_config,
+                model_chunk,
+                # Turn off bucketing for model_chunk 2 onwards, since communication for these
+                # model chunks is overlapped with compute anyway.
+                disable_bucketing=(model_chunk_idx > 0),
+            )
+            for (model_chunk_idx, model_chunk) in enumerate(model)
+        ]
 
         # Broadcast params from data parallel src rank to other data parallel ranks.
         if args.data_parallel_random_init:
@@ -234,24 +234,22 @@ def _load_bnb_nf4_weight(state_dict, prefix, weight_name):
     prefix_name = prefix + weight_name
     quantized_weight = state_dict.get(prefix_name)
     if quantized_weight is None:
-        raise ValueError(f"quantized_weight is None, expected a tensor of type torch.uint8.")
+        raise ValueError("quantized_weight is None, expected a tensor of type torch.uint8.")
     elif not isinstance(quantized_weight, torch.Tensor) or quantized_weight.dtype != torch.uint8:
         raise TypeError(f"Expected quantized_weight to be of type torch.uint8, but got {quantized_weight.dtype}")
-    
+
     qs_dict = {}
     for k, v in state_dict.items():
         if prefix_name not in k or prefix_name == k:
             continue
         key = k.replace(prefix_name, "")[1:]
-        if "lora_a" == key or "lora_b" == key:
+        if key in ('lora_a', 'lora_b'):
             continue
         qs_dict[key] = v
 
     return bnb.nn.Params4bit.from_prequantized(
-        data=quantized_weight,
-        quantized_stats=qs_dict,
-        requires_grad=False,
-        device='npu')
+        data=quantized_weight, quantized_stats=qs_dict, requires_grad=False, device='npu'
+    )
 
 
 def groupedmlp_load_from_state_dict_wrapper(fn):
@@ -259,6 +257,7 @@ def groupedmlp_load_from_state_dict_wrapper(fn):
         self.weight1 = _load_bnb_nf4_weight(state_dict, prefix, "weight1")
         self.weight2 = _load_bnb_nf4_weight(state_dict, prefix, "weight2")
         fn(self, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs)
+
     return wrapper
 
 
@@ -276,10 +275,7 @@ class WeightNf4QuantGMMFunction(torch.autograd.Function):
     @staticmethod
     def forward(ctx, original_weight, x, weight, bias, group_args):
         group_list, group_type, gemm_fusion, group_list_type, group_list_data_type = group_args
-        weight_tmp = bnb.functional.dequantize_4bit(
-            original_weight.data,
-            original_weight.quant_state
-        ).to(x.dtype)
+        weight_tmp = bnb.functional.dequantize_4bit(original_weight.data, original_weight.quant_state).to(x.dtype)
         hidden_size = list(set(weight_tmp.shape) & set(weight.shape))[0]
         weight_tmp_shape = infer_dequant_shape(hidden_size, weight.shape)
         weight_tmp = weight_tmp.reshape(*weight_tmp_shape)
@@ -289,9 +285,16 @@ class WeightNf4QuantGMMFunction(torch.autograd.Function):
             raise ValueError("group_type must be zero to compute gradients of x and weight!")
         bias = [] if bias is None else [bias]
         if group_list_type == 0:
-            outputs = GMMFunction.builder.load().npu_gmm([x], [weight_tmp], bias, group_list, group_type, group_list_type)
+            outputs = GMMFunction.builder.load().npu_gmm(
+                [x], [weight_tmp], bias, group_list, group_type, group_list_type
+            )
         elif group_list_type == 1:
-            outputs = GMMFunction.builder2.load().npu_gmm([x], [weight_tmp], bias, group_list, group_type, group_list_type)
+            outputs = GMMFunction.builder2.load().npu_gmm(
+                [x], [weight_tmp], bias, group_list, group_type, group_list_type
+            )
+        else:
+            raise ValueError(f"Unsupported group_list_type: {group_list_type}")
+
         if group_list_data_type == 0:
             ctx.save_for_backward(x, weight, original_weight)
             ctx.group_list = group_list
@@ -311,25 +314,30 @@ class WeightNf4QuantGMMFunction(torch.autograd.Function):
             group_list = ctx.group_list
         else:
             x, weight, group_list, original_weight = ctx.saved_tensors
-        weight_tmp = bnb.functional.dequantize_4bit(
-            original_weight.data,
-            original_weight.quant_state
-        ).to(grad_outputs.dtype).reshape(ctx.weight_tmp_shape)
+        weight_tmp = (
+            bnb.functional.dequantize_4bit(original_weight.data, original_weight.quant_state)
+            .to(grad_outputs.dtype)
+            .reshape(ctx.weight_tmp_shape)
+        )
 
         if ctx.gemm_fusion:
             if ctx.group_list_type == 0:
-                dx, _, dbias = GMMFunction.builder.load().npu_gmm_backward_fusion([grad_outputs], [weight_tmp], group_list,
-                                                                    ctx.group_list_type)
+                dx, _, dbias = GMMFunction.builder.load().npu_gmm_backward_fusion(
+                    [grad_outputs], [weight_tmp], group_list, ctx.group_list_type
+                )
                 npu_groupmatmul_add_fp32(x, grad_outputs, group_list, original_weight.main_grad)
-                
+
             elif ctx.group_list_type == 1:
-                dx, _, dbias = GMMFunction.builder2.load().npu_gmm_backward_fusion([grad_outputs], [weight_tmp], group_list,
-                                                                    ctx.group_list_type)
-                group_list_v2 = torch.cumsum(group_list, dim=0)                                           
+                dx, _, dbias = GMMFunction.builder2.load().npu_gmm_backward_fusion(
+                    [grad_outputs], [weight_tmp], group_list, ctx.group_list_type
+                )
+                group_list_v2 = torch.cumsum(group_list, dim=0)
                 npu_groupmatmul_add_fp32(x, grad_outputs, group_list_v2, original_weight.main_grad)
+            else:
+                raise ValueError(f"Unsupported group_list_type: {ctx.group_list_type}")
 
             dbias = None if len(dbias) == 0 else dbias[0]
-  
+
             if hasattr(original_weight, 'grad_added_to_main_grad'):
                 if getattr(weight, 'zero_out_wgrad', False):
                     grad_weight = torch.zeros(
@@ -352,11 +360,16 @@ class WeightNf4QuantGMMFunction(torch.autograd.Function):
             return None, dx[0], grad_weight, dbias, None
         else:
             if ctx.group_list_type == 0:
-                dx, dw, dbias = GMMFunction.builder.load().npu_gmm_backward([grad_outputs], [x], [weight_tmp], group_list,
-                                                                    ctx.group_list_type)
+                dx, dw, dbias = GMMFunction.builder.load().npu_gmm_backward(
+                    [grad_outputs], [x], [weight_tmp], group_list, ctx.group_list_type
+                )
             elif ctx.group_list_type == 1:
-                dx, dw, dbias = GMMFunction.builder2.load().npu_gmm_backward([grad_outputs], [x], [weight_tmp], group_list,
-                                                                    ctx.group_list_type)
+                dx, dw, dbias = GMMFunction.builder2.load().npu_gmm_backward(
+                    [grad_outputs], [x], [weight_tmp], group_list, ctx.group_list_type
+                )
+            else:
+                raise ValueError(f"Unsupported group_list_type: {ctx.group_list_type}")
+
             dbias = None if len(dbias) == 0 else dbias[0]
 
             return None, dx[0], dw[0], dbias, None
@@ -381,4 +394,16 @@ def moe_layer_overlap_all2all_gmm_op_wrapper(fn):
         else:
             weight_tmp = weight
         return fn(x, weight_tmp, bias, group_list, group_type)
+
+    return wrapper
+
+
+def dispatch_megatron_wrapper(original_func):
+    def wrapper(target, adapter_name, config, **kwargs):
+        # adapt peft 0.19.1
+        if "fan_in_fan_out" not in kwargs:
+            kwargs.setdefault("fan_in_fan_out", config.fan_in_fan_out)
+
+        return original_func(target, adapter_name, config=config, **kwargs)
+
     return wrapper
