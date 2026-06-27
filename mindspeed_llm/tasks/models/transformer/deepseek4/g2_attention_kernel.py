@@ -6,13 +6,19 @@ import torch
 from torch import nn
 import torch_npu
 
-import triton
-import triton.language as tl
-
 try:
-    import triton.language.extra.cann.extension as al
+    import triton
+    import triton.language as tl
+
+    try:
+        import triton.language.extra.cann.extension as al
+    except ImportError:
+        import triton.language as al
+    TRITON_AVAILABLE = True
 except ImportError:
-    import triton.language as al
+    TRITON_AVAILABLE = False
+    pass
+
 
 from megatron.training import get_args
 
@@ -399,845 +405,859 @@ class SparseFlashAttentionTriton(torch.autograd.Function):
         )
 
 
-@triton.jit
-def _inner_fwd(
-    q_base,
-    kv_base,
-    idx_base,
-    Sink_ptr,
-    lse_base,
-    out_base,
-    k_buf_ptr,
-    v_buf_ptr,
-    qk_buf_ptr,
-    p_buf_ptr,
-    pv_buf_ptr,
-    stride_qh,
-    stride_qd,
-    stride_kvs,
-    stride_kvd,
-    stride_in,
-    stride_sink,
-    stride_mh,
-    stride_oh,
-    stride_od,
-    off_d,
-    sm_scale,
-    HEAD_DIM: tl.constexpr,
-    BLOCK_N: tl.constexpr,
-    TOPK: tl.constexpr,
-    START_H: tl.constexpr,
-    BLOCK_H: tl.constexpr,
-    H: tl.constexpr,
-    KV_CTX: tl.constexpr,
-):
-    """
-    Ascend NPU FlashAttention compute block (1:2 Mix Mode)
-
-    Pipeline Stages:
-    1. [Vector] Load KV (Split) -> Signal 0
-    2. [Cube]   Calc QK (Full)  -> Signal 1
-    3. [Vector] Softmax (Split) -> Signal 2
-    4. [Cube]   Calc PV (Full)  -> Signal 3
-    5. [Vector] Accumulate (Split)
-    """
-    num_steps = triton.cdiv(TOPK, BLOCK_N)
-
-    off_h_full = START_H + tl.arange(0, BLOCK_H)
-    h_mask_full = off_h_full < H
-
-    q_ptrs = q_base + off_h_full[:, None] * stride_qh + off_d[None, :] * stride_qd
-    q_full = tl.load(q_ptrs, mask=h_mask_full[:, None], other=0.0)
-
-    sub_id = al.sub_vec_id()
-
-    HALF_H: tl.constexpr = BLOCK_H // 2
-    row_indices = tl.arange(0, HALF_H) + sub_id * HALF_H
-    off_h_sub = START_H + row_indices
-    h_mask_sub = off_h_sub < H
-
-    HALF_N: tl.constexpr = BLOCK_N // 2
-    n_offset_local = sub_id * HALF_N
-    n_offset_local1 = sub_id.to(tl.float32) * HALF_N
-
-    acc = tl.zeros([HALF_H, HEAD_DIM], dtype=tl.float32)
-    m_i = tl.full([HALF_H], -10e10, dtype=tl.float32)
-    l_i = tl.zeros([HALF_H], dtype=tl.float32)
-
-    for i in range(num_steps):
-        # Step 1: AIC load KV
-        start_n = i * BLOCK_N
-        start_n1 = i.to(tl.float32) * BLOCK_N
-
-        off_n_local = start_n + n_offset_local + tl.arange(0, HALF_N)
-        off_n_local1 = start_n1 + n_offset_local1 + tl.arange(0, HALF_N).to(tl.float32)
-        n_mask = off_n_local1 < TOPK
-
-        k_idx = tl.load(idx_base + off_n_local * stride_in, mask=n_mask, other=-1)
-        # k_idx = tl.load(idx_base + off_n_local * stride_in)
-        # k_idx = tl.arange(0, HALF_N)
-        # load_mask = (k_idx >= 0) & n_mask
-        load_mask = (k_idx.to(tl.float32) >= 0) & n_mask
-
-        # address conflict
-        # plan 1
-        # dummy_idx = off_n_local % TOPK + 5120
-
-        # plan 2
-        dummy_idx = (KV_CTX - 1) - tl.arange(0, HALF_N)
-
-        # plan3
-        # dummy_idx = (off_n_local + 2048) % 4096
-
-        k_idx_optimized = tl.where(load_mask, k_idx, dummy_idx)
-        kv_ptrs = kv_base + k_idx_optimized[:, None] * stride_kvs + off_d[None, :] * stride_kvd
-
-        # kv_ptrs = kv_base + k_idx[:, None] * stride_kvs + off_d[None, :] * stride_kvd
-        kv = tl.load(kv_ptrs, mask=load_mask[:, None], other=0.0)
-
-        buf_row_idx = n_offset_local + tl.arange(0, HALF_N)
-        tl.store(k_buf_ptr + buf_row_idx[:, None] * HEAD_DIM + off_d[None, :], kv)
-
-        al.sync_block_set("vector", "cube", 0)
-
-        # Step 2: AIC 计算 QK
-        al.sync_block_wait("vector", "cube", 0)
-
-        off_n_buf = tl.arange(0, BLOCK_N)
-        kv_load = tl.load(k_buf_ptr + off_n_buf[:, None] * HEAD_DIM + off_d[None, :])
-
-        qk_full = tl.dot(q_full, tl.trans(kv_load))
-
-        qk_store_ptr = qk_buf_ptr + tl.arange(0, BLOCK_H)[:, None] * BLOCK_N + off_n_buf[None, :]
-        tl.store(qk_store_ptr, qk_full)
-
-        # # Step 3: AIV Softmax
-        off_n_buf = tl.arange(0, BLOCK_N)
-        qk_load_ptr = qk_buf_ptr + row_indices[:, None] * BLOCK_N + off_n_buf[None, :]
-        qk_sub = tl.load(qk_load_ptr)
-
-        qk_sub *= sm_scale * LOG2_E
-
-        off_n_full_global0 = start_n + off_n_buf
-        off_n_full_global1 = start_n.to(tl.float32) + off_n_buf.to(tl.float32)
-        n_mask_full = off_n_full_global1 < TOPK
-        k_idx_full = tl.load(idx_base + off_n_full_global0 * stride_in, mask=n_mask_full, other=-1).to(tl.float32)
-        mask_full = (k_idx_full >= 0) & n_mask_full
-        qk_sub = tl.where(mask_full[None, :], qk_sub, -10e10)
-
-        m_ij = tl.max(qk_sub, 1)
-        m_next = tl.maximum(m_i, m_ij)
-        alpha = tl.math.exp2(m_i - m_next)
-        p_sub = tl.math.exp2(qk_sub - m_next[:, None])
-
-        acc = acc * alpha[:, None]
-
-        p_store_ptr = p_buf_ptr + row_indices[:, None] * BLOCK_N + off_n_buf[None, :]
-        tl.store(p_store_ptr, p_sub.to(tl.float16))
-
-        al.sync_block_set("vector", "cube", 2)
-
-        # Step 4: AIC 计算 PV
-        al.sync_block_wait("vector", "cube", 2)
-
-        p_full = tl.load(p_buf_ptr + tl.arange(0, BLOCK_H)[:, None] * BLOCK_N + off_n_buf[None, :])
-
-        pv_full = tl.dot(p_full.to(kv_load.dtype), kv_load)
-
-        pv_store_ptr = pv_buf_ptr + tl.arange(0, BLOCK_H)[:, None] * HEAD_DIM + off_d[None, :]
-        tl.store(pv_store_ptr, pv_full)
-
-        # # Step 5: AIV Update
-        pv_load_ptr = pv_buf_ptr + row_indices[:, None] * HEAD_DIM + off_d[None, :]
-        pv_sub = tl.load(pv_load_ptr)
-
-        acc += pv_sub
-        l_i = l_i * alpha + tl.sum(p_sub, 1)
-        m_i = m_next
-
-    sink_ptrs = Sink_ptr + off_h_sub * stride_sink
-    attn_sink = tl.load(sink_ptrs, mask=h_mask_sub, other=0.0) * LOG2_E
-
-    p_sink = tl.math.exp2(attn_sink - m_i)
-    l_i += p_sink
-    lse = m_i + tl.math.log2(l_i)
-
-    tl.store(lse_base + off_h_sub * stride_mh, lse, mask=h_mask_sub)
-
-    out = acc / l_i[:, None]
-    out_ptrs = out_base + off_h_sub[:, None] * stride_oh + off_d[None, :] * stride_od
-    tl.store(out_ptrs, out.to(out_base.dtype.element_ty), mask=h_mask_sub[:, None])
-
-
-@triton.jit
-def _attn_fwd(
-    Q_ptr,
-    KV_ptr,
-    TopKIdx_ptr,
-    Sink_ptr,
-    LSE_ptr,
-    Out_ptr,
-    K_Buffer_ptr,
-    V_Buffer_ptr,
-    QK_Buffer_ptr,
-    P_Buffer_ptr,
-    PV_Buffer_ptr,
-    sm_scale,
-    stride_qz,
-    stride_qs,
-    stride_qh,
-    stride_qd,
-    stride_kvz,
-    stride_kvs,
-    stride_kvd,
-    stride_iz,
-    stride_is,
-    stride_in,
-    stride_oz,
-    stride_os,
-    stride_oh,
-    stride_od,
-    stride_sink,
-    stride_mz,
-    stride_ms,
-    stride_mh,
-    H: tl.constexpr,
-    HEAD_DIM: tl.constexpr,
-    BLOCK_N: tl.constexpr,
-    TOPK: tl.constexpr,
-    BLOCK_H: tl.constexpr,
-    KV_CTX: tl.constexpr,
-):
-    off_batch = tl.program_id(0).to(tl.int64)
-    off_seq = tl.program_id(1).to(tl.int64)
-
-    q_base = Q_ptr + off_batch * stride_qz + off_seq * stride_qs
-    out_base = Out_ptr + off_batch * stride_oz + off_seq * stride_os
-    idx_base = TopKIdx_ptr + off_batch * stride_iz + off_seq * stride_is
-    lse_base = LSE_ptr + off_batch * stride_mz + off_seq * stride_ms
-    kv_base = KV_ptr + off_batch * stride_kvz
-
-    pid = tl.program_id(0) * tl.num_programs(1) + tl.program_id(1)
-
-    off_buf_kv = pid * (BLOCK_N * HEAD_DIM)
-    off_buf_qk = pid * (BLOCK_H * BLOCK_N)
-    off_buf_pv = pid * (BLOCK_H * HEAD_DIM)
-
-    cur_k_buf = K_Buffer_ptr + off_buf_kv
-    cur_v_buf = V_Buffer_ptr + off_buf_kv
-    cur_qk_buf = QK_Buffer_ptr + off_buf_qk
-    cur_p_buf = P_Buffer_ptr + off_buf_qk
-    cur_pv_buf = PV_Buffer_ptr + off_buf_pv
-
-    off_d = tl.arange(0, HEAD_DIM)
-
-    for start_h in range(0, H, BLOCK_H):
-        _inner_fwd(
-            q_base,
-            kv_base,
-            idx_base,
-            Sink_ptr,
-            lse_base,
-            out_base,
-            cur_k_buf,
-            cur_v_buf,
-            cur_qk_buf,
-            cur_p_buf,
-            cur_pv_buf,
-            stride_qh,
-            stride_qd,
-            stride_kvs,
-            stride_kvd,
-            stride_in,
-            stride_sink,
-            stride_mh,
-            stride_oh,
-            stride_od,
-            off_d,
-            sm_scale,
-            HEAD_DIM,
-            BLOCK_N,
-            TOPK,
-            START_H=start_h,
-            BLOCK_H=BLOCK_H,
-            H=H,
-            KV_CTX=KV_CTX,
-        )
-
-
-@triton.jit
-def _get_delta_split(
-    Out_ptr,
-    Grad_O_ptr,
-    stride_oh,
-    stride_od,
-    stride_goh,
-    stride_god,
-    off_d,
-    row_indices,
-    h_mask_sub,
-    HEAD_DIM: tl.constexpr,
-):
-    out_ptrs = Out_ptr + row_indices[:, None] * stride_oh + off_d[None, :] * stride_od
-    do_ptrs = Grad_O_ptr + row_indices[:, None] * stride_goh + off_d[None, :] * stride_god
-
-    out = tl.load(out_ptrs, mask=h_mask_sub[:, None], other=0.0).to(tl.float32)
-    grad_o = tl.load(do_ptrs, mask=h_mask_sub[:, None], other=0.0).to(tl.float32)
-
-    delta = tl.sum(out * grad_o, axis=1)
-    return delta
-
-
-@triton.jit
-def _inner_dq(
-    q_full,
-    do_full,
-    lse_sub,
-    delta,
-    KV_ptr,
-    TopKIdx_ptr,
-    k_buf_ptr,
-    s_buf_ptr,
-    dp_buf_ptr,
-    ds_buf_ptr,
-    dq_buf_ptr,
-    stride_kvn,
-    stride_kvd,
-    stride_tk,
-    off_d,
-    sm_scale,
-    sub_id,
-    row_indices,
-    n_offset_local,
-    n_offset_local1,
-    HEAD_DIM: tl.constexpr,
-    BLOCK_K: tl.constexpr,
-    BLOCK_H: tl.constexpr,
-    TOPK: tl.constexpr,
-    NUM_BLOCKS: tl.constexpr,
-    KV_CTX: tl.constexpr,
-):
-    HALF_H: tl.constexpr = BLOCK_H // 2
-    acc_dq = tl.zeros([HALF_H, HEAD_DIM], dtype=tl.float32)
-
-    HALF_K: tl.constexpr = BLOCK_K // 2
-    off_k_buf = tl.arange(0, BLOCK_K)
-    buf_range_h = tl.arange(0, BLOCK_H)
-
-    for i in range(NUM_BLOCKS):
-        start_k = i * BLOCK_K
-        start_k1 = i.to(tl.float32) * BLOCK_K
-
-        # --- Stage 1: Load K ---
-        off_k_local0 = start_k + n_offset_local + tl.arange(0, HALF_K)
-        off_k_local1 = start_k1 + n_offset_local1 + tl.arange(0, HALF_K).to(tl.float32)
-        k_mask = off_k_local1 < TOPK
-
-        idx = tl.load(TopKIdx_ptr + off_k_local0 * stride_tk, mask=k_mask, other=-1).to(tl.float32)
-        valid = k_mask & (idx >= 0)
-        # idx_safe = idx * valid
-
-        # address conflict
-        # plan 1
-        # dummy_idx = off_n_local % TOPK + 5120
-
-        # plan 2
-        dummy_idx = (KV_CTX - 1) - tl.arange(0, HALF_K)
-
-        # plan3
-        # dummy_idx = (off_n_local + 2048) % 4096
-
-        k_idx_optimized = tl.where(valid, idx, dummy_idx)
-        k_ptrs = KV_ptr + k_idx_optimized[:, None].to(tl.int64) * stride_kvn + off_d[None, :] * stride_kvd
-
-        # k_ptrs = KV_ptr + idx_safe[:, None].to(tl.int64) * stride_kvn + off_d[None, :] * stride_kvd
-        k_val = tl.load(k_ptrs, mask=valid[:, None], other=0.0)
-
-        buf_k_idx = n_offset_local + tl.arange(0, HALF_K)
-        tl.store(k_buf_ptr + buf_k_idx[:, None] * HEAD_DIM + off_d[None, :], k_val)
-
-        al.sync_block_set("vector", "cube", 0)
-
-        # --- Stage 2: S, dP ---
-        al.sync_block_wait("vector", "cube", 0)
-
-        k_load = tl.load(k_buf_ptr + off_k_buf[:, None] * HEAD_DIM + off_d[None, :])
-
-        s_res = tl.dot(q_full, tl.trans(k_load))
-        dp_res = tl.dot(do_full, tl.trans(k_load))  # Reuse K
-
-        tl.store(s_buf_ptr + buf_range_h[:, None] * BLOCK_K + off_k_buf[None, :], s_res)
-        tl.store(dp_buf_ptr + buf_range_h[:, None] * BLOCK_K + off_k_buf[None, :], dp_res)
-
-        # # --- Stage 3: P, dS ---
-        s_sub = tl.load(s_buf_ptr + row_indices[:, None] * BLOCK_K + off_k_buf[None, :])
-        dp_sub = tl.load(dp_buf_ptr + row_indices[:, None] * BLOCK_K + off_k_buf[None, :])
-
-        s_sub = s_sub * (sm_scale * LOG2_E)
-        p_sub = tl.math.exp2(s_sub - lse_sub[:, None])
-
-        off_k_global = start_k + off_k_buf
-        idx_global_mask = off_k_global.to(tl.float32) < TOPK
-        idx_global = tl.load(TopKIdx_ptr + off_k_global * stride_tk, mask=idx_global_mask, other=-1).to(tl.float32)
-        valid_compute = (off_k_global.to(tl.float32) < TOPK) & (idx_global >= 0)
-
-        p_sub = tl.where(valid_compute[None, :], p_sub, 0.0)
-        ds_sub = p_sub * (dp_sub - delta[:, None])
-        ds_sub = tl.where(valid_compute[None, :], ds_sub, 0.0)
-
-        tl.store(ds_buf_ptr + row_indices[:, None] * BLOCK_K + off_k_buf[None, :], ds_sub.to(tl.bfloat16))
-
-        al.sync_block_set("vector", "cube", 2)
-
-        # --- Stage 4: dQ_part ---
-        al.sync_block_wait("vector", "cube", 2)
-
-        ds_full = tl.load(ds_buf_ptr + buf_range_h[:, None] * BLOCK_K + off_k_buf[None, :])
-        dq_part = tl.dot(ds_full, k_load)
-
-        tl.store(dq_buf_ptr + buf_range_h[:, None] * HEAD_DIM + off_d[None, :], dq_part)
-
-        # # --- Stage 5: Accumulate dQ ---
-        dq_load = tl.load(dq_buf_ptr + row_indices[:, None] * HEAD_DIM + off_d[None, :])
-        acc_dq += dq_load * sm_scale
-
-    return acc_dq
-
-
-@triton.jit
-def _inner_dkv(
-    q_full,
-    do_full,
-    lse_sub,
-    delta,
-    KV_ptr,
-    TopKIdx_ptr,
-    Grad_KV_ptr,
-    k_buf_ptr,
-    s_buf_ptr,
-    dp_buf_ptr,
-    p_buf_ptr,
-    ds_buf_ptr,
-    dk_buf_ptr,
-    dv_buf_ptr,
-    stride_kvn,
-    stride_kvd,
-    stride_tk,
-    stride_gkvs,
-    stride_gkvd,
-    off_d,
-    sm_scale,
-    sub_id,
-    row_indices,
-    n_offset_local,
-    n_offset_local1,
-    HEAD_DIM: tl.constexpr,
-    BLOCK_K: tl.constexpr,
-    BLOCK_H: tl.constexpr,
-    TOPK: tl.constexpr,
-    NUM_BLOCKS: tl.constexpr,
-    KV_CTX: tl.constexpr,
-):
-    HALF_K: tl.constexpr = BLOCK_K // 2
-    off_k_buf = tl.arange(0, BLOCK_K)
-    buf_range_h = tl.arange(0, BLOCK_H)
-
-    for i in range(NUM_BLOCKS):
-        start_k = i * BLOCK_K
-        start_k1 = i.to(tl.float32) * BLOCK_K
-
-        # --- Stage 1: Load K ---
-        off_k_local0 = start_k + n_offset_local + tl.arange(0, HALF_K)
-        off_k_local1 = start_k1 + n_offset_local1 + tl.arange(0, HALF_K).to(tl.float32)
-        k_mask = off_k_local1 < TOPK
-        idx = tl.load(TopKIdx_ptr + off_k_local0 * stride_tk, mask=k_mask, other=-1).to(tl.int32)
-        valid = k_mask & (idx.to(tl.float32) >= 0)
-        # idx_safe = tl.where(valid, idx, 0)
-
-        # address conflict
-        # plan 1
-        # dummy_idx = off_n_local % TOPK + 5120
-
-        # plan 2
-        dummy_idx = (KV_CTX - 1) - tl.arange(0, HALF_K)
-
-        # plan3
-        # dummy_idx = (off_n_local + 2048) % 4096
-
-        k_idx_optimized = tl.where(valid, idx, dummy_idx)
-        k_ptrs = KV_ptr + k_idx_optimized[:, None].to(tl.int64) * stride_kvn + off_d[None, :] * stride_kvd
-
-        # k_ptrs = KV_ptr + idx_safe[:, None].to(tl.int64) * stride_kvn + off_d[None, :] * stride_kvd
-        k_val = tl.load(k_ptrs, mask=valid[:, None], other=0.0)
-
-        buf_k_idx = n_offset_local + tl.arange(0, HALF_K)
-        tl.store(k_buf_ptr + buf_k_idx[:, None] * HEAD_DIM + off_d[None, :], k_val.to(tl.float32))
-        al.sync_block_set("vector", "cube", 0)
-
-        # --- Stage 2: S, dP ---
-        al.sync_block_wait("vector", "cube", 0)
-        k_load = tl.load(k_buf_ptr + off_k_buf[:, None] * HEAD_DIM + off_d[None, :])
-        k_load_bf16 = k_load.to(tl.bfloat16)
-        s_res = tl.dot(q_full, tl.trans(k_load_bf16))
-        dp_res = tl.dot(do_full, tl.trans(k_load_bf16))
-        tl.store(s_buf_ptr + buf_range_h[:, None] * BLOCK_K + off_k_buf[None, :], s_res)
-        tl.store(dp_buf_ptr + buf_range_h[:, None] * BLOCK_K + off_k_buf[None, :], dp_res)
-        al.sync_block_set("cube", "vector", 1)
-
-        # --- Stage 3: P, dS ---
-        al.sync_block_wait("cube", "vector", 1)
-        s_sub = tl.load(s_buf_ptr + row_indices[:, None] * BLOCK_K + off_k_buf[None, :]).to(tl.float32)
-        dp_sub = tl.load(dp_buf_ptr + row_indices[:, None] * BLOCK_K + off_k_buf[None, :]).to(tl.float32)
-        s_sub = s_sub * (sm_scale * LOG2_E)
-        p_sub = tl.math.exp2(s_sub - lse_sub[:, None])
-
-        off_k_global0 = start_k + off_k_buf
-        off_k_global1 = start_k.to(tl.float32) + off_k_buf.to(tl.float32)
-        idx_global_mask = off_k_global1 < TOPK
-        idx_global = tl.load(TopKIdx_ptr + off_k_global0 * stride_tk, mask=idx_global_mask, other=-1).to(tl.float32)
-        valid_compute = (off_k_global1 < TOPK) & (idx_global >= 0)
-
-        p_sub = tl.where(valid_compute[None, :], p_sub, 0.0)
-        ds_sub = p_sub * (dp_sub - delta[:, None])
-        ds_sub = tl.where(valid_compute[None, :], ds_sub, 0.0)
-
-        tl.store(p_buf_ptr + row_indices[:, None] * BLOCK_K + off_k_buf[None, :], p_sub.to(tl.bfloat16))
-        tl.store(ds_buf_ptr + row_indices[:, None] * BLOCK_K + off_k_buf[None, :], ds_sub.to(tl.bfloat16))
-        al.sync_block_set("vector", "cube", 2)
-
-        # --- Stage 4 & 5: Serial Compute ---
-        al.sync_block_wait("vector", "cube", 2)
-
-        # Prepare shared params for atomic_add
-        buf_k_idx0 = n_offset_local + tl.arange(0, HALF_K)
-        buf_k_idx1 = n_offset_local.to(tl.float32) + tl.arange(0, HALF_K).to(tl.float32)
-        idx_step_mask = (start_k.to(tl.float32) + buf_k_idx1) < TOPK
-        idx_step = tl.load(TopKIdx_ptr + (start_k + buf_k_idx0) * stride_tk, mask=idx_step_mask, other=-1).to(
-            tl.float32
-        )
-        valid_step = idx_step_mask & (idx_step >= 0)
-
-        # address conflict
-        # plan 1
-        # dummy_idx_step = off_n_local % TOPK + 5120
-
-        # plan 2
-        dummy_idx_step = (KV_CTX - 1) - tl.arange(0, HALF_K)
-
-        # plan3
-        # dummy_idx_step = (off_n_local + 2048) % 4096
-
-        idx_safe_step = tl.where(valid_step, idx_step, dummy_idx_step)
-        gk_ptrs = Grad_KV_ptr + idx_safe_step[:, None].to(tl.int64) * stride_gkvs + off_d[None, :] * stride_gkvd
-        # idx_safe_step = tl.where(valid_step, idx_step, 0)
-        # gk_ptrs = Grad_KV_ptr + idx_safe_step[:, None].to(tl.int64) * stride_gkvs + off_d[None, :] * stride_gkvd
-
-        # -----------------------------------------------------------
-        # [Part A] Compute dV and store
-        # -----------------------------------------------------------
-        p_full = tl.load(p_buf_ptr + buf_range_h[:, None] * BLOCK_K + off_k_buf[None, :])
-        # compute dV (BF16 Dot -> FP32 Accum)
-        dv_part = tl.dot(tl.trans(p_full.to(tl.bfloat16)), do_full)
-
-        # 将 dV 存入 Buffer (暂存)
-        tl.store(dv_buf_ptr + off_k_buf[:, None] * HEAD_DIM + off_d[None, :], dv_part)
-
-        # Atomic add dV
-        dv_val = tl.load(dv_buf_ptr + buf_k_idx0[:, None] * HEAD_DIM + off_d[None, :]).to(tl.float32)
-        dv_val = tl.where(valid_step[:, None], dv_val, 0.0)
-        tl.atomic_add(gk_ptrs, dv_val, mask=valid_step[:, None])
-
-        # [Memory Release] acc_dv register released
-
-        # -----------------------------------------------------------
-        # [Part B] Compute dK and store
-        # -----------------------------------------------------------
-        ds_full = tl.load(ds_buf_ptr + buf_range_h[:, None] * BLOCK_K + off_k_buf[None, :])
-        # compute dK (复用刚才 dV 占用的 L1 空间)
-        dk_part = tl.dot(tl.trans(ds_full.to(tl.bfloat16)), q_full)
-
-        # 将 dK 存入 Buffer (可以复用 dv_buf_ptr 的空间，或者用独立的 dk_buf_ptr)
-        tl.store(dk_buf_ptr + off_k_buf[:, None] * HEAD_DIM + off_d[None, :], dk_part)
-
-        # Atomic add dK
-        dk_val = tl.load(dk_buf_ptr + buf_k_idx0[:, None] * HEAD_DIM + off_d[None, :]).to(tl.float32)
-        dk_grad = dk_val * sm_scale
-        dk_grad = tl.where(valid_step[:, None], dk_grad, 0.0)
-        tl.atomic_add(gk_ptrs, dk_grad, mask=valid_step[:, None])
-
-
-@triton.jit
-def _attn_bwd_dq_dsink(
-    Q_ptr,
-    KV_ptr,
-    Sink_ptr,
-    TopKIdx_ptr,
-    grad_out_ptr,
-    grad_q_ptr,
-    grad_sink_ptr,
-    LSE_ptr,
-    Out_ptr,
-    k_buf_ptr,
-    s_buf_ptr,
-    dp_buf_ptr,
-    ds_buf_ptr,
-    dq_buf_ptr,
-    stride_qb,
-    stride_qm,
-    stride_qh,
-    stride_qd,
-    stride_kvb,
-    stride_kvn,
-    stride_kvd,
-    stride_gob,
-    stride_gom,
-    stride_goh,
-    stride_god,
-    stride_gqb,
-    stride_gqm,
-    stride_gqh,
-    stride_gqd,
-    stride_tb,
-    stride_tm,
-    stride_tk,
-    stride_lseb,
-    stride_lsem,
-    stride_lseh,
-    stride_ob,
-    stride_om,
-    stride_oh,
-    stride_od,
-    stride_sink,
-    stride_gsink,
-    sm_scale,
-    TOPK: tl.constexpr,
-    n_ctx: tl.constexpr,
-    n_heads: tl.constexpr,
-    head_dim: tl.constexpr,
-    BLOCK_K: tl.constexpr,
-    NUM_BLOCKS: tl.constexpr,
-    BLOCK_H: tl.constexpr,
-    KV_CTX: tl.constexpr,
-):
-    off_batch = tl.program_id(axis=0)
-    off_seq = tl.program_id(axis=1)
-
-    pid = tl.program_id(0) * tl.num_programs(1) + tl.program_id(1)
-    off_buf_kv = pid * (BLOCK_K * head_dim)
-    off_buf_qk = pid * (BLOCK_H * BLOCK_K)
-    off_buf_dq = pid * (BLOCK_H * head_dim)
-
-    cur_k_buf = k_buf_ptr + off_buf_kv
-    cur_s_buf = s_buf_ptr + off_buf_qk
-    cur_dp_buf = dp_buf_ptr + off_buf_qk
-    cur_ds_buf = ds_buf_ptr + off_buf_qk
-    cur_dq_buf = dq_buf_ptr + off_buf_dq
-
-    q_base = Q_ptr + off_batch * stride_qb + off_seq * stride_qm
-    grad_o_base = grad_out_ptr + off_batch * stride_gob + off_seq * stride_gom
-    lse_base = LSE_ptr + off_batch * stride_lseb + off_seq * stride_lsem
-    out_base = Out_ptr + off_batch * stride_ob + off_seq * stride_om
-    grad_q_base = grad_q_ptr + off_batch * stride_gqb + off_seq * stride_gqm
-    topk_ptr_base = TopKIdx_ptr + off_batch * stride_tb + off_seq * stride_tm
-    kv_ptr_base = KV_ptr + off_batch * stride_kvb
-
-    off_d = tl.arange(0, head_dim)
-
-    for start_h in range(0, n_heads, BLOCK_H):
-        off_h_full = start_h + tl.arange(0, BLOCK_H)
-        h_mask_full = off_h_full < n_heads
-
-        sub_id = al.sub_vec_id()
-        HALF_H: tl.constexpr = BLOCK_H // 2
-        row_indices = tl.arange(0, HALF_H) + sub_id * HALF_H
-        off_h_sub = start_h + row_indices
-        h_mask_sub = off_h_sub < n_heads
-        HALF_K: tl.constexpr = BLOCK_K // 2
-        n_offset_local = sub_id * HALF_K
-        n_offset_local1 = sub_id.to(tl.float32) * HALF_K
+if TRITON_AVAILABLE:
+
+    @triton.jit
+    def _inner_fwd(
+        q_base,
+        kv_base,
+        idx_base,
+        Sink_ptr,
+        lse_base,
+        out_base,
+        k_buf_ptr,
+        v_buf_ptr,
+        qk_buf_ptr,
+        p_buf_ptr,
+        pv_buf_ptr,
+        stride_qh,
+        stride_qd,
+        stride_kvs,
+        stride_kvd,
+        stride_in,
+        stride_sink,
+        stride_mh,
+        stride_oh,
+        stride_od,
+        off_d,
+        sm_scale,
+        HEAD_DIM: tl.constexpr,
+        BLOCK_N: tl.constexpr,
+        TOPK: tl.constexpr,
+        START_H: tl.constexpr,
+        BLOCK_H: tl.constexpr,
+        H: tl.constexpr,
+        KV_CTX: tl.constexpr,
+    ):
+        """
+        Ascend NPU FlashAttention compute block (1:2 Mix Mode)
+
+        Pipeline Stages:
+        1. [Vector] Load KV (Split) -> Signal 0
+        2. [Cube]   Calc QK (Full)  -> Signal 1
+        3. [Vector] Softmax (Split) -> Signal 2
+        4. [Cube]   Calc PV (Full)  -> Signal 3
+        5. [Vector] Accumulate (Split)
+        """
+        num_steps = triton.cdiv(TOPK, BLOCK_N)
+
+        off_h_full = START_H + tl.arange(0, BLOCK_H)
+        h_mask_full = off_h_full < H
 
         q_ptrs = q_base + off_h_full[:, None] * stride_qh + off_d[None, :] * stride_qd
-        do_ptrs = grad_o_base + off_h_full[:, None] * stride_goh + off_d[None, :] * stride_god
         q_full = tl.load(q_ptrs, mask=h_mask_full[:, None], other=0.0)
-        do_full = tl.load(do_ptrs, mask=h_mask_full[:, None], other=0.0)
-
-        delta = _get_delta_split(
-            out_base, grad_o_base, stride_oh, stride_od, stride_goh, stride_god, off_d, off_h_sub, h_mask_sub, head_dim
-        )
-
-        sink_ptr_now = Sink_ptr + off_batch * stride_sink + off_h_sub
-        gsink_ptr_now = grad_sink_ptr + off_batch * stride_gsink + off_h_sub
-        sink_val = tl.load(sink_ptr_now, mask=h_mask_sub, other=0.0)
-        lse_val = tl.load(lse_base + off_h_sub * stride_lseh, mask=h_mask_sub, other=0.0)
-        p_sink = tl.math.exp2(sink_val * LOG2_E - lse_val)
-        d_sink = -p_sink * delta
-        tl.atomic_add(gsink_ptr_now, d_sink, mask=h_mask_sub)
-
-        acc_dq = _inner_dq(
-            q_full,
-            do_full,
-            lse_val,
-            delta,
-            kv_ptr_base,
-            topk_ptr_base,
-            cur_k_buf,
-            cur_s_buf,
-            cur_dp_buf,
-            cur_ds_buf,
-            cur_dq_buf,
-            stride_kvn,
-            stride_kvd,
-            stride_tk,
-            off_d,
-            sm_scale,
-            sub_id,
-            row_indices,
-            n_offset_local,
-            n_offset_local1,
-            head_dim,
-            BLOCK_K,
-            BLOCK_H,
-            TOPK,
-            NUM_BLOCKS,
-            KV_CTX,
-        )
-
-        gq_ptrs = grad_q_base + off_h_sub[:, None] * stride_gqh + off_d[None, :] * stride_gqd
-        tl.store(gq_ptrs, acc_dq.to(tl.bfloat16), mask=h_mask_sub[:, None])
-
-
-@triton.jit
-def _attn_bwd_dk_dv(
-    Q_ptr,
-    KV_ptr,
-    TopKIdx_ptr,
-    grad_out_ptr,
-    grad_kv_ptr,
-    LSE_ptr,
-    Out_ptr,
-    k_buf_ptr,
-    s_buf_ptr,
-    dp_buf_ptr,
-    p_buf_ptr,
-    ds_buf_ptr,
-    dk_buf_ptr,
-    dv_buf_ptr,
-    stride_qb,
-    stride_qm,
-    stride_qh,
-    stride_qd,
-    stride_kvb,
-    stride_kvn,
-    stride_kvd,
-    stride_gob,
-    stride_gom,
-    stride_goh,
-    stride_god,
-    stride_gkvs,
-    stride_gkvd,
-    stride_tb,
-    stride_tm,
-    stride_tk,
-    stride_lseb,
-    stride_lsem,
-    stride_lseh,
-    stride_ob,
-    stride_om,
-    stride_oh,
-    stride_od,
-    sm_scale,
-    TOPK: tl.constexpr,
-    n_ctx: tl.constexpr,
-    n_heads: tl.constexpr,
-    head_dim: tl.constexpr,
-    BLOCK_K: tl.constexpr,
-    NUM_BLOCKS: tl.constexpr,
-    BLOCK_H: tl.constexpr,
-    KV_CTX: tl.constexpr,
-):
-    off_batch = tl.program_id(axis=0)
-    off_seq = tl.program_id(axis=1)
-
-    pid = tl.program_id(0) * tl.num_programs(1) + tl.program_id(1)
-    off_buf_kv = pid * (BLOCK_K * head_dim)
-    off_buf_qk = pid * (BLOCK_H * BLOCK_K)
-    off_buf_dk = pid * (BLOCK_K * head_dim)
-
-    cur_k_buf = k_buf_ptr + off_buf_kv
-    cur_s_buf = s_buf_ptr + off_buf_qk
-    cur_dp_buf = dp_buf_ptr + off_buf_qk
-    cur_p_buf = p_buf_ptr + off_buf_qk
-    cur_ds_buf = ds_buf_ptr + off_buf_qk
-    cur_dk_buf = dk_buf_ptr + off_buf_dk
-    cur_dv_buf = dv_buf_ptr + off_buf_dk
-
-    q_base = Q_ptr + off_batch * stride_qb + off_seq * stride_qm
-    grad_o_base = grad_out_ptr + off_batch * stride_gob + off_seq * stride_gom
-    lse_base = LSE_ptr + off_batch * stride_lseb + off_seq * stride_lsem
-    out_base = Out_ptr + off_batch * stride_ob + off_seq * stride_om
-    topk_ptr_base = TopKIdx_ptr + off_batch * stride_tb + off_seq * stride_tm
-    kv_ptr_base = KV_ptr + off_batch * stride_kvb
-    grad_kv_ptr_base = grad_kv_ptr + off_batch * stride_kvb
-
-    off_d = tl.arange(0, head_dim)
-
-    for start_h in range(0, n_heads, BLOCK_H):
-        off_h_full = start_h + tl.arange(0, BLOCK_H)
-        h_mask_full = off_h_full < n_heads
 
         sub_id = al.sub_vec_id()
+
         HALF_H: tl.constexpr = BLOCK_H // 2
         row_indices = tl.arange(0, HALF_H) + sub_id * HALF_H
-        off_h_sub = start_h + row_indices
-        h_mask_sub = off_h_sub < n_heads
+        off_h_sub = START_H + row_indices
+        h_mask_sub = off_h_sub < H
+
+        HALF_N: tl.constexpr = BLOCK_N // 2
+        n_offset_local = sub_id * HALF_N
+        n_offset_local1 = sub_id.to(tl.float32) * HALF_N
+
+        acc = tl.zeros([HALF_H, HEAD_DIM], dtype=tl.float32)
+        m_i = tl.full([HALF_H], -10e10, dtype=tl.float32)
+        l_i = tl.zeros([HALF_H], dtype=tl.float32)
+
+        for i in range(num_steps):
+            # Step 1: AIC load KV
+            start_n = i * BLOCK_N
+            start_n1 = i.to(tl.float32) * BLOCK_N
+
+            off_n_local = start_n + n_offset_local + tl.arange(0, HALF_N)
+            off_n_local1 = start_n1 + n_offset_local1 + tl.arange(0, HALF_N).to(tl.float32)
+            n_mask = off_n_local1 < TOPK
+
+            k_idx = tl.load(idx_base + off_n_local * stride_in, mask=n_mask, other=-1)
+            # k_idx = tl.load(idx_base + off_n_local * stride_in)
+            # k_idx = tl.arange(0, HALF_N)
+            # load_mask = (k_idx >= 0) & n_mask
+            load_mask = (k_idx.to(tl.float32) >= 0) & n_mask
+
+            # address conflict
+            # plan 1
+            # dummy_idx = off_n_local % TOPK + 5120
+
+            # plan 2
+            dummy_idx = (KV_CTX - 1) - tl.arange(0, HALF_N)
+
+            # plan3
+            # dummy_idx = (off_n_local + 2048) % 4096
+
+            k_idx_optimized = tl.where(load_mask, k_idx, dummy_idx)
+            kv_ptrs = kv_base + k_idx_optimized[:, None] * stride_kvs + off_d[None, :] * stride_kvd
+
+            # kv_ptrs = kv_base + k_idx[:, None] * stride_kvs + off_d[None, :] * stride_kvd
+            kv = tl.load(kv_ptrs, mask=load_mask[:, None], other=0.0)
+
+            buf_row_idx = n_offset_local + tl.arange(0, HALF_N)
+            tl.store(k_buf_ptr + buf_row_idx[:, None] * HEAD_DIM + off_d[None, :], kv)
+
+            al.sync_block_set("vector", "cube", 0)
+
+            # Step 2: AIC 计算 QK
+            al.sync_block_wait("vector", "cube", 0)
+
+            off_n_buf = tl.arange(0, BLOCK_N)
+            kv_load = tl.load(k_buf_ptr + off_n_buf[:, None] * HEAD_DIM + off_d[None, :])
+
+            qk_full = tl.dot(q_full, tl.trans(kv_load))
+
+            qk_store_ptr = qk_buf_ptr + tl.arange(0, BLOCK_H)[:, None] * BLOCK_N + off_n_buf[None, :]
+            tl.store(qk_store_ptr, qk_full)
+
+            # # Step 3: AIV Softmax
+            off_n_buf = tl.arange(0, BLOCK_N)
+            qk_load_ptr = qk_buf_ptr + row_indices[:, None] * BLOCK_N + off_n_buf[None, :]
+            qk_sub = tl.load(qk_load_ptr)
+
+            qk_sub *= sm_scale * LOG2_E
+
+            off_n_full_global0 = start_n + off_n_buf
+            off_n_full_global1 = start_n.to(tl.float32) + off_n_buf.to(tl.float32)
+            n_mask_full = off_n_full_global1 < TOPK
+            k_idx_full = tl.load(idx_base + off_n_full_global0 * stride_in, mask=n_mask_full, other=-1).to(tl.float32)
+            mask_full = (k_idx_full >= 0) & n_mask_full
+            qk_sub = tl.where(mask_full[None, :], qk_sub, -10e10)
+
+            m_ij = tl.max(qk_sub, 1)
+            m_next = tl.maximum(m_i, m_ij)
+            alpha = tl.math.exp2(m_i - m_next)
+            p_sub = tl.math.exp2(qk_sub - m_next[:, None])
+
+            acc = acc * alpha[:, None]
+
+            p_store_ptr = p_buf_ptr + row_indices[:, None] * BLOCK_N + off_n_buf[None, :]
+            tl.store(p_store_ptr, p_sub.to(tl.float16))
+
+            al.sync_block_set("vector", "cube", 2)
+
+            # Step 4: AIC 计算 PV
+            al.sync_block_wait("vector", "cube", 2)
+
+            p_full = tl.load(p_buf_ptr + tl.arange(0, BLOCK_H)[:, None] * BLOCK_N + off_n_buf[None, :])
+
+            pv_full = tl.dot(p_full.to(kv_load.dtype), kv_load)
+
+            pv_store_ptr = pv_buf_ptr + tl.arange(0, BLOCK_H)[:, None] * HEAD_DIM + off_d[None, :]
+            tl.store(pv_store_ptr, pv_full)
+
+            # # Step 5: AIV Update
+            pv_load_ptr = pv_buf_ptr + row_indices[:, None] * HEAD_DIM + off_d[None, :]
+            pv_sub = tl.load(pv_load_ptr)
+
+            acc += pv_sub
+            l_i = l_i * alpha + tl.sum(p_sub, 1)
+            m_i = m_next
+
+        sink_ptrs = Sink_ptr + off_h_sub * stride_sink
+        attn_sink = tl.load(sink_ptrs, mask=h_mask_sub, other=0.0) * LOG2_E
+
+        p_sink = tl.math.exp2(attn_sink - m_i)
+        l_i += p_sink
+        lse = m_i + tl.math.log2(l_i)
+
+        tl.store(lse_base + off_h_sub * stride_mh, lse, mask=h_mask_sub)
+
+        out = acc / l_i[:, None]
+        out_ptrs = out_base + off_h_sub[:, None] * stride_oh + off_d[None, :] * stride_od
+        tl.store(out_ptrs, out.to(out_base.dtype.element_ty), mask=h_mask_sub[:, None])
+
+    @triton.jit
+    def _attn_fwd(
+        Q_ptr,
+        KV_ptr,
+        TopKIdx_ptr,
+        Sink_ptr,
+        LSE_ptr,
+        Out_ptr,
+        K_Buffer_ptr,
+        V_Buffer_ptr,
+        QK_Buffer_ptr,
+        P_Buffer_ptr,
+        PV_Buffer_ptr,
+        sm_scale,
+        stride_qz,
+        stride_qs,
+        stride_qh,
+        stride_qd,
+        stride_kvz,
+        stride_kvs,
+        stride_kvd,
+        stride_iz,
+        stride_is,
+        stride_in,
+        stride_oz,
+        stride_os,
+        stride_oh,
+        stride_od,
+        stride_sink,
+        stride_mz,
+        stride_ms,
+        stride_mh,
+        H: tl.constexpr,
+        HEAD_DIM: tl.constexpr,
+        BLOCK_N: tl.constexpr,
+        TOPK: tl.constexpr,
+        BLOCK_H: tl.constexpr,
+        KV_CTX: tl.constexpr,
+    ):
+        off_batch = tl.program_id(0).to(tl.int64)
+        off_seq = tl.program_id(1).to(tl.int64)
+
+        q_base = Q_ptr + off_batch * stride_qz + off_seq * stride_qs
+        out_base = Out_ptr + off_batch * stride_oz + off_seq * stride_os
+        idx_base = TopKIdx_ptr + off_batch * stride_iz + off_seq * stride_is
+        lse_base = LSE_ptr + off_batch * stride_mz + off_seq * stride_ms
+        kv_base = KV_ptr + off_batch * stride_kvz
+
+        pid = tl.program_id(0) * tl.num_programs(1) + tl.program_id(1)
+
+        off_buf_kv = pid * (BLOCK_N * HEAD_DIM)
+        off_buf_qk = pid * (BLOCK_H * BLOCK_N)
+        off_buf_pv = pid * (BLOCK_H * HEAD_DIM)
+
+        cur_k_buf = K_Buffer_ptr + off_buf_kv
+        cur_v_buf = V_Buffer_ptr + off_buf_kv
+        cur_qk_buf = QK_Buffer_ptr + off_buf_qk
+        cur_p_buf = P_Buffer_ptr + off_buf_qk
+        cur_pv_buf = PV_Buffer_ptr + off_buf_pv
+
+        off_d = tl.arange(0, HEAD_DIM)
+
+        for start_h in range(0, H, BLOCK_H):
+            _inner_fwd(
+                q_base,
+                kv_base,
+                idx_base,
+                Sink_ptr,
+                lse_base,
+                out_base,
+                cur_k_buf,
+                cur_v_buf,
+                cur_qk_buf,
+                cur_p_buf,
+                cur_pv_buf,
+                stride_qh,
+                stride_qd,
+                stride_kvs,
+                stride_kvd,
+                stride_in,
+                stride_sink,
+                stride_mh,
+                stride_oh,
+                stride_od,
+                off_d,
+                sm_scale,
+                HEAD_DIM,
+                BLOCK_N,
+                TOPK,
+                START_H=start_h,
+                BLOCK_H=BLOCK_H,
+                H=H,
+                KV_CTX=KV_CTX,
+            )
+
+    @triton.jit
+    def _get_delta_split(
+        Out_ptr,
+        Grad_O_ptr,
+        stride_oh,
+        stride_od,
+        stride_goh,
+        stride_god,
+        off_d,
+        row_indices,
+        h_mask_sub,
+        HEAD_DIM: tl.constexpr,
+    ):
+        out_ptrs = Out_ptr + row_indices[:, None] * stride_oh + off_d[None, :] * stride_od
+        do_ptrs = Grad_O_ptr + row_indices[:, None] * stride_goh + off_d[None, :] * stride_god
+
+        out = tl.load(out_ptrs, mask=h_mask_sub[:, None], other=0.0).to(tl.float32)
+        grad_o = tl.load(do_ptrs, mask=h_mask_sub[:, None], other=0.0).to(tl.float32)
+
+        delta = tl.sum(out * grad_o, axis=1)
+        return delta
+
+    @triton.jit
+    def _inner_dq(
+        q_full,
+        do_full,
+        lse_sub,
+        delta,
+        KV_ptr,
+        TopKIdx_ptr,
+        k_buf_ptr,
+        s_buf_ptr,
+        dp_buf_ptr,
+        ds_buf_ptr,
+        dq_buf_ptr,
+        stride_kvn,
+        stride_kvd,
+        stride_tk,
+        off_d,
+        sm_scale,
+        sub_id,
+        row_indices,
+        n_offset_local,
+        n_offset_local1,
+        HEAD_DIM: tl.constexpr,
+        BLOCK_K: tl.constexpr,
+        BLOCK_H: tl.constexpr,
+        TOPK: tl.constexpr,
+        NUM_BLOCKS: tl.constexpr,
+        KV_CTX: tl.constexpr,
+    ):
+        HALF_H: tl.constexpr = BLOCK_H // 2
+        acc_dq = tl.zeros([HALF_H, HEAD_DIM], dtype=tl.float32)
+
         HALF_K: tl.constexpr = BLOCK_K // 2
-        n_offset_local = sub_id * HALF_K
-        n_offset_local1 = sub_id.to(tl.float32) * HALF_K
+        off_k_buf = tl.arange(0, BLOCK_K)
+        buf_range_h = tl.arange(0, BLOCK_H)
 
-        q_ptrs = q_base + off_h_full[:, None] * stride_qh + off_d[None, :] * stride_qd
-        do_ptrs = grad_o_base + off_h_full[:, None] * stride_goh + off_d[None, :] * stride_god
-        q_full = tl.load(q_ptrs, mask=h_mask_full[:, None], other=0.0)
-        do_full = tl.load(do_ptrs, mask=h_mask_full[:, None], other=0.0)
+        for i in range(NUM_BLOCKS):
+            start_k = i * BLOCK_K
+            start_k1 = i.to(tl.float32) * BLOCK_K
 
-        delta = _get_delta_split(
-            out_base, grad_o_base, stride_oh, stride_od, stride_goh, stride_god, off_d, off_h_sub, h_mask_sub, head_dim
-        )
+            # --- Stage 1: Load K ---
+            off_k_local0 = start_k + n_offset_local + tl.arange(0, HALF_K)
+            off_k_local1 = start_k1 + n_offset_local1 + tl.arange(0, HALF_K).to(tl.float32)
+            k_mask = off_k_local1 < TOPK
 
-        lse_val = tl.load(lse_base + off_h_sub * stride_lseh, mask=h_mask_sub, other=0.0)
+            idx = tl.load(TopKIdx_ptr + off_k_local0 * stride_tk, mask=k_mask, other=-1).to(tl.float32)
+            valid = k_mask & (idx >= 0)
+            # idx_safe = idx * valid
 
-        _inner_dkv(
-            q_full,
-            do_full,
-            lse_val,
-            delta,
-            kv_ptr_base,
-            topk_ptr_base,
-            grad_kv_ptr_base,
-            cur_k_buf,
-            cur_s_buf,
-            cur_dp_buf,
-            cur_p_buf,
-            cur_ds_buf,
-            cur_dk_buf,
-            cur_dv_buf,
-            stride_kvn,
-            stride_kvd,
-            stride_tk,
-            stride_gkvs,
-            stride_gkvd,
-            off_d,
-            sm_scale,
-            sub_id,
-            row_indices,
-            n_offset_local,
-            n_offset_local1,
-            head_dim,
-            BLOCK_K,
-            BLOCK_H,
-            TOPK,
-            NUM_BLOCKS,
-            KV_CTX,
-        )
+            # address conflict
+            # plan 1
+            # dummy_idx = off_n_local % TOPK + 5120
+
+            # plan 2
+            dummy_idx = (KV_CTX - 1) - tl.arange(0, HALF_K)
+
+            # plan3
+            # dummy_idx = (off_n_local + 2048) % 4096
+
+            k_idx_optimized = tl.where(valid, idx, dummy_idx)
+            k_ptrs = KV_ptr + k_idx_optimized[:, None].to(tl.int64) * stride_kvn + off_d[None, :] * stride_kvd
+
+            # k_ptrs = KV_ptr + idx_safe[:, None].to(tl.int64) * stride_kvn + off_d[None, :] * stride_kvd
+            k_val = tl.load(k_ptrs, mask=valid[:, None], other=0.0)
+
+            buf_k_idx = n_offset_local + tl.arange(0, HALF_K)
+            tl.store(k_buf_ptr + buf_k_idx[:, None] * HEAD_DIM + off_d[None, :], k_val)
+
+            al.sync_block_set("vector", "cube", 0)
+
+            # --- Stage 2: S, dP ---
+            al.sync_block_wait("vector", "cube", 0)
+
+            k_load = tl.load(k_buf_ptr + off_k_buf[:, None] * HEAD_DIM + off_d[None, :])
+
+            s_res = tl.dot(q_full, tl.trans(k_load))
+            dp_res = tl.dot(do_full, tl.trans(k_load))  # Reuse K
+
+            tl.store(s_buf_ptr + buf_range_h[:, None] * BLOCK_K + off_k_buf[None, :], s_res)
+            tl.store(dp_buf_ptr + buf_range_h[:, None] * BLOCK_K + off_k_buf[None, :], dp_res)
+
+            # # --- Stage 3: P, dS ---
+            s_sub = tl.load(s_buf_ptr + row_indices[:, None] * BLOCK_K + off_k_buf[None, :])
+            dp_sub = tl.load(dp_buf_ptr + row_indices[:, None] * BLOCK_K + off_k_buf[None, :])
+
+            s_sub = s_sub * (sm_scale * LOG2_E)
+            p_sub = tl.math.exp2(s_sub - lse_sub[:, None])
+
+            off_k_global = start_k + off_k_buf
+            idx_global_mask = off_k_global.to(tl.float32) < TOPK
+            idx_global = tl.load(TopKIdx_ptr + off_k_global * stride_tk, mask=idx_global_mask, other=-1).to(tl.float32)
+            valid_compute = (off_k_global.to(tl.float32) < TOPK) & (idx_global >= 0)
+
+            p_sub = tl.where(valid_compute[None, :], p_sub, 0.0)
+            ds_sub = p_sub * (dp_sub - delta[:, None])
+            ds_sub = tl.where(valid_compute[None, :], ds_sub, 0.0)
+
+            tl.store(ds_buf_ptr + row_indices[:, None] * BLOCK_K + off_k_buf[None, :], ds_sub.to(tl.bfloat16))
+
+            al.sync_block_set("vector", "cube", 2)
+
+            # --- Stage 4: dQ_part ---
+            al.sync_block_wait("vector", "cube", 2)
+
+            ds_full = tl.load(ds_buf_ptr + buf_range_h[:, None] * BLOCK_K + off_k_buf[None, :])
+            dq_part = tl.dot(ds_full, k_load)
+
+            tl.store(dq_buf_ptr + buf_range_h[:, None] * HEAD_DIM + off_d[None, :], dq_part)
+
+            # # --- Stage 5: Accumulate dQ ---
+            dq_load = tl.load(dq_buf_ptr + row_indices[:, None] * HEAD_DIM + off_d[None, :])
+            acc_dq += dq_load * sm_scale
+
+        return acc_dq
+
+    @triton.jit
+    def _inner_dkv(
+        q_full,
+        do_full,
+        lse_sub,
+        delta,
+        KV_ptr,
+        TopKIdx_ptr,
+        Grad_KV_ptr,
+        k_buf_ptr,
+        s_buf_ptr,
+        dp_buf_ptr,
+        p_buf_ptr,
+        ds_buf_ptr,
+        dk_buf_ptr,
+        dv_buf_ptr,
+        stride_kvn,
+        stride_kvd,
+        stride_tk,
+        stride_gkvs,
+        stride_gkvd,
+        off_d,
+        sm_scale,
+        sub_id,
+        row_indices,
+        n_offset_local,
+        n_offset_local1,
+        HEAD_DIM: tl.constexpr,
+        BLOCK_K: tl.constexpr,
+        BLOCK_H: tl.constexpr,
+        TOPK: tl.constexpr,
+        NUM_BLOCKS: tl.constexpr,
+        KV_CTX: tl.constexpr,
+    ):
+        HALF_K: tl.constexpr = BLOCK_K // 2
+        off_k_buf = tl.arange(0, BLOCK_K)
+        buf_range_h = tl.arange(0, BLOCK_H)
+
+        for i in range(NUM_BLOCKS):
+            start_k = i * BLOCK_K
+            start_k1 = i.to(tl.float32) * BLOCK_K
+
+            # --- Stage 1: Load K ---
+            off_k_local0 = start_k + n_offset_local + tl.arange(0, HALF_K)
+            off_k_local1 = start_k1 + n_offset_local1 + tl.arange(0, HALF_K).to(tl.float32)
+            k_mask = off_k_local1 < TOPK
+            idx = tl.load(TopKIdx_ptr + off_k_local0 * stride_tk, mask=k_mask, other=-1).to(tl.int32)
+            valid = k_mask & (idx.to(tl.float32) >= 0)
+            # idx_safe = tl.where(valid, idx, 0)
+
+            # address conflict
+            # plan 1
+            # dummy_idx = off_n_local % TOPK + 5120
+
+            # plan 2
+            dummy_idx = (KV_CTX - 1) - tl.arange(0, HALF_K)
+
+            # plan3
+            # dummy_idx = (off_n_local + 2048) % 4096
+
+            k_idx_optimized = tl.where(valid, idx, dummy_idx)
+            k_ptrs = KV_ptr + k_idx_optimized[:, None].to(tl.int64) * stride_kvn + off_d[None, :] * stride_kvd
+
+            # k_ptrs = KV_ptr + idx_safe[:, None].to(tl.int64) * stride_kvn + off_d[None, :] * stride_kvd
+            k_val = tl.load(k_ptrs, mask=valid[:, None], other=0.0)
+
+            buf_k_idx = n_offset_local + tl.arange(0, HALF_K)
+            tl.store(k_buf_ptr + buf_k_idx[:, None] * HEAD_DIM + off_d[None, :], k_val.to(tl.float32))
+            al.sync_block_set("vector", "cube", 0)
+
+            # --- Stage 2: S, dP ---
+            al.sync_block_wait("vector", "cube", 0)
+            k_load = tl.load(k_buf_ptr + off_k_buf[:, None] * HEAD_DIM + off_d[None, :])
+            k_load_bf16 = k_load.to(tl.bfloat16)
+            s_res = tl.dot(q_full, tl.trans(k_load_bf16))
+            dp_res = tl.dot(do_full, tl.trans(k_load_bf16))
+            tl.store(s_buf_ptr + buf_range_h[:, None] * BLOCK_K + off_k_buf[None, :], s_res)
+            tl.store(dp_buf_ptr + buf_range_h[:, None] * BLOCK_K + off_k_buf[None, :], dp_res)
+            al.sync_block_set("cube", "vector", 1)
+
+            # --- Stage 3: P, dS ---
+            al.sync_block_wait("cube", "vector", 1)
+            s_sub = tl.load(s_buf_ptr + row_indices[:, None] * BLOCK_K + off_k_buf[None, :]).to(tl.float32)
+            dp_sub = tl.load(dp_buf_ptr + row_indices[:, None] * BLOCK_K + off_k_buf[None, :]).to(tl.float32)
+            s_sub = s_sub * (sm_scale * LOG2_E)
+            p_sub = tl.math.exp2(s_sub - lse_sub[:, None])
+
+            off_k_global0 = start_k + off_k_buf
+            off_k_global1 = start_k.to(tl.float32) + off_k_buf.to(tl.float32)
+            idx_global_mask = off_k_global1 < TOPK
+            idx_global = tl.load(TopKIdx_ptr + off_k_global0 * stride_tk, mask=idx_global_mask, other=-1).to(tl.float32)
+            valid_compute = (off_k_global1 < TOPK) & (idx_global >= 0)
+
+            p_sub = tl.where(valid_compute[None, :], p_sub, 0.0)
+            ds_sub = p_sub * (dp_sub - delta[:, None])
+            ds_sub = tl.where(valid_compute[None, :], ds_sub, 0.0)
+
+            tl.store(p_buf_ptr + row_indices[:, None] * BLOCK_K + off_k_buf[None, :], p_sub.to(tl.bfloat16))
+            tl.store(ds_buf_ptr + row_indices[:, None] * BLOCK_K + off_k_buf[None, :], ds_sub.to(tl.bfloat16))
+            al.sync_block_set("vector", "cube", 2)
+
+            # --- Stage 4 & 5: Serial Compute ---
+            al.sync_block_wait("vector", "cube", 2)
+
+            # Prepare shared params for atomic_add
+            buf_k_idx0 = n_offset_local + tl.arange(0, HALF_K)
+            buf_k_idx1 = n_offset_local.to(tl.float32) + tl.arange(0, HALF_K).to(tl.float32)
+            idx_step_mask = (start_k.to(tl.float32) + buf_k_idx1) < TOPK
+            idx_step = tl.load(TopKIdx_ptr + (start_k + buf_k_idx0) * stride_tk, mask=idx_step_mask, other=-1).to(
+                tl.float32
+            )
+            valid_step = idx_step_mask & (idx_step >= 0)
+
+            # address conflict
+            # plan 1
+            # dummy_idx_step = off_n_local % TOPK + 5120
+
+            # plan 2
+            dummy_idx_step = (KV_CTX - 1) - tl.arange(0, HALF_K)
+
+            # plan3
+            # dummy_idx_step = (off_n_local + 2048) % 4096
+
+            idx_safe_step = tl.where(valid_step, idx_step, dummy_idx_step)
+            gk_ptrs = Grad_KV_ptr + idx_safe_step[:, None].to(tl.int64) * stride_gkvs + off_d[None, :] * stride_gkvd
+            # idx_safe_step = tl.where(valid_step, idx_step, 0)
+            # gk_ptrs = Grad_KV_ptr + idx_safe_step[:, None].to(tl.int64) * stride_gkvs + off_d[None, :] * stride_gkvd
+
+            # -----------------------------------------------------------
+            # [Part A] Compute dV and store
+            # -----------------------------------------------------------
+            p_full = tl.load(p_buf_ptr + buf_range_h[:, None] * BLOCK_K + off_k_buf[None, :])
+            # compute dV (BF16 Dot -> FP32 Accum)
+            dv_part = tl.dot(tl.trans(p_full.to(tl.bfloat16)), do_full)
+
+            # 将 dV 存入 Buffer (暂存)
+            tl.store(dv_buf_ptr + off_k_buf[:, None] * HEAD_DIM + off_d[None, :], dv_part)
+
+            # Atomic add dV
+            dv_val = tl.load(dv_buf_ptr + buf_k_idx0[:, None] * HEAD_DIM + off_d[None, :]).to(tl.float32)
+            dv_val = tl.where(valid_step[:, None], dv_val, 0.0)
+            tl.atomic_add(gk_ptrs, dv_val, mask=valid_step[:, None])
+
+            # [Memory Release] acc_dv register released
+
+            # -----------------------------------------------------------
+            # [Part B] Compute dK and store
+            # -----------------------------------------------------------
+            ds_full = tl.load(ds_buf_ptr + buf_range_h[:, None] * BLOCK_K + off_k_buf[None, :])
+            # compute dK (复用刚才 dV 占用的 L1 空间)
+            dk_part = tl.dot(tl.trans(ds_full.to(tl.bfloat16)), q_full)
+
+            # 将 dK 存入 Buffer (可以复用 dv_buf_ptr 的空间，或者用独立的 dk_buf_ptr)
+            tl.store(dk_buf_ptr + off_k_buf[:, None] * HEAD_DIM + off_d[None, :], dk_part)
+
+            # Atomic add dK
+            dk_val = tl.load(dk_buf_ptr + buf_k_idx0[:, None] * HEAD_DIM + off_d[None, :]).to(tl.float32)
+            dk_grad = dk_val * sm_scale
+            dk_grad = tl.where(valid_step[:, None], dk_grad, 0.0)
+            tl.atomic_add(gk_ptrs, dk_grad, mask=valid_step[:, None])
+
+    @triton.jit
+    def _attn_bwd_dq_dsink(
+        Q_ptr,
+        KV_ptr,
+        Sink_ptr,
+        TopKIdx_ptr,
+        grad_out_ptr,
+        grad_q_ptr,
+        grad_sink_ptr,
+        LSE_ptr,
+        Out_ptr,
+        k_buf_ptr,
+        s_buf_ptr,
+        dp_buf_ptr,
+        ds_buf_ptr,
+        dq_buf_ptr,
+        stride_qb,
+        stride_qm,
+        stride_qh,
+        stride_qd,
+        stride_kvb,
+        stride_kvn,
+        stride_kvd,
+        stride_gob,
+        stride_gom,
+        stride_goh,
+        stride_god,
+        stride_gqb,
+        stride_gqm,
+        stride_gqh,
+        stride_gqd,
+        stride_tb,
+        stride_tm,
+        stride_tk,
+        stride_lseb,
+        stride_lsem,
+        stride_lseh,
+        stride_ob,
+        stride_om,
+        stride_oh,
+        stride_od,
+        stride_sink,
+        stride_gsink,
+        sm_scale,
+        TOPK: tl.constexpr,
+        n_ctx: tl.constexpr,
+        n_heads: tl.constexpr,
+        head_dim: tl.constexpr,
+        BLOCK_K: tl.constexpr,
+        NUM_BLOCKS: tl.constexpr,
+        BLOCK_H: tl.constexpr,
+        KV_CTX: tl.constexpr,
+    ):
+        off_batch = tl.program_id(axis=0)
+        off_seq = tl.program_id(axis=1)
+
+        pid = tl.program_id(0) * tl.num_programs(1) + tl.program_id(1)
+        off_buf_kv = pid * (BLOCK_K * head_dim)
+        off_buf_qk = pid * (BLOCK_H * BLOCK_K)
+        off_buf_dq = pid * (BLOCK_H * head_dim)
+
+        cur_k_buf = k_buf_ptr + off_buf_kv
+        cur_s_buf = s_buf_ptr + off_buf_qk
+        cur_dp_buf = dp_buf_ptr + off_buf_qk
+        cur_ds_buf = ds_buf_ptr + off_buf_qk
+        cur_dq_buf = dq_buf_ptr + off_buf_dq
+
+        q_base = Q_ptr + off_batch * stride_qb + off_seq * stride_qm
+        grad_o_base = grad_out_ptr + off_batch * stride_gob + off_seq * stride_gom
+        lse_base = LSE_ptr + off_batch * stride_lseb + off_seq * stride_lsem
+        out_base = Out_ptr + off_batch * stride_ob + off_seq * stride_om
+        grad_q_base = grad_q_ptr + off_batch * stride_gqb + off_seq * stride_gqm
+        topk_ptr_base = TopKIdx_ptr + off_batch * stride_tb + off_seq * stride_tm
+        kv_ptr_base = KV_ptr + off_batch * stride_kvb
+
+        off_d = tl.arange(0, head_dim)
+
+        for start_h in range(0, n_heads, BLOCK_H):
+            off_h_full = start_h + tl.arange(0, BLOCK_H)
+            h_mask_full = off_h_full < n_heads
+
+            sub_id = al.sub_vec_id()
+            HALF_H: tl.constexpr = BLOCK_H // 2
+            row_indices = tl.arange(0, HALF_H) + sub_id * HALF_H
+            off_h_sub = start_h + row_indices
+            h_mask_sub = off_h_sub < n_heads
+            HALF_K: tl.constexpr = BLOCK_K // 2
+            n_offset_local = sub_id * HALF_K
+            n_offset_local1 = sub_id.to(tl.float32) * HALF_K
+
+            q_ptrs = q_base + off_h_full[:, None] * stride_qh + off_d[None, :] * stride_qd
+            do_ptrs = grad_o_base + off_h_full[:, None] * stride_goh + off_d[None, :] * stride_god
+            q_full = tl.load(q_ptrs, mask=h_mask_full[:, None], other=0.0)
+            do_full = tl.load(do_ptrs, mask=h_mask_full[:, None], other=0.0)
+
+            delta = _get_delta_split(
+                out_base,
+                grad_o_base,
+                stride_oh,
+                stride_od,
+                stride_goh,
+                stride_god,
+                off_d,
+                off_h_sub,
+                h_mask_sub,
+                head_dim,
+            )
+
+            sink_ptr_now = Sink_ptr + off_batch * stride_sink + off_h_sub
+            gsink_ptr_now = grad_sink_ptr + off_batch * stride_gsink + off_h_sub
+            sink_val = tl.load(sink_ptr_now, mask=h_mask_sub, other=0.0)
+            lse_val = tl.load(lse_base + off_h_sub * stride_lseh, mask=h_mask_sub, other=0.0)
+            p_sink = tl.math.exp2(sink_val * LOG2_E - lse_val)
+            d_sink = -p_sink * delta
+            tl.atomic_add(gsink_ptr_now, d_sink, mask=h_mask_sub)
+
+            acc_dq = _inner_dq(
+                q_full,
+                do_full,
+                lse_val,
+                delta,
+                kv_ptr_base,
+                topk_ptr_base,
+                cur_k_buf,
+                cur_s_buf,
+                cur_dp_buf,
+                cur_ds_buf,
+                cur_dq_buf,
+                stride_kvn,
+                stride_kvd,
+                stride_tk,
+                off_d,
+                sm_scale,
+                sub_id,
+                row_indices,
+                n_offset_local,
+                n_offset_local1,
+                head_dim,
+                BLOCK_K,
+                BLOCK_H,
+                TOPK,
+                NUM_BLOCKS,
+                KV_CTX,
+            )
+
+            gq_ptrs = grad_q_base + off_h_sub[:, None] * stride_gqh + off_d[None, :] * stride_gqd
+            tl.store(gq_ptrs, acc_dq.to(tl.bfloat16), mask=h_mask_sub[:, None])
+
+    @triton.jit
+    def _attn_bwd_dk_dv(
+        Q_ptr,
+        KV_ptr,
+        TopKIdx_ptr,
+        grad_out_ptr,
+        grad_kv_ptr,
+        LSE_ptr,
+        Out_ptr,
+        k_buf_ptr,
+        s_buf_ptr,
+        dp_buf_ptr,
+        p_buf_ptr,
+        ds_buf_ptr,
+        dk_buf_ptr,
+        dv_buf_ptr,
+        stride_qb,
+        stride_qm,
+        stride_qh,
+        stride_qd,
+        stride_kvb,
+        stride_kvn,
+        stride_kvd,
+        stride_gob,
+        stride_gom,
+        stride_goh,
+        stride_god,
+        stride_gkvs,
+        stride_gkvd,
+        stride_tb,
+        stride_tm,
+        stride_tk,
+        stride_lseb,
+        stride_lsem,
+        stride_lseh,
+        stride_ob,
+        stride_om,
+        stride_oh,
+        stride_od,
+        sm_scale,
+        TOPK: tl.constexpr,
+        n_ctx: tl.constexpr,
+        n_heads: tl.constexpr,
+        head_dim: tl.constexpr,
+        BLOCK_K: tl.constexpr,
+        NUM_BLOCKS: tl.constexpr,
+        BLOCK_H: tl.constexpr,
+        KV_CTX: tl.constexpr,
+    ):
+        off_batch = tl.program_id(axis=0)
+        off_seq = tl.program_id(axis=1)
+
+        pid = tl.program_id(0) * tl.num_programs(1) + tl.program_id(1)
+        off_buf_kv = pid * (BLOCK_K * head_dim)
+        off_buf_qk = pid * (BLOCK_H * BLOCK_K)
+        off_buf_dk = pid * (BLOCK_K * head_dim)
+
+        cur_k_buf = k_buf_ptr + off_buf_kv
+        cur_s_buf = s_buf_ptr + off_buf_qk
+        cur_dp_buf = dp_buf_ptr + off_buf_qk
+        cur_p_buf = p_buf_ptr + off_buf_qk
+        cur_ds_buf = ds_buf_ptr + off_buf_qk
+        cur_dk_buf = dk_buf_ptr + off_buf_dk
+        cur_dv_buf = dv_buf_ptr + off_buf_dk
+
+        q_base = Q_ptr + off_batch * stride_qb + off_seq * stride_qm
+        grad_o_base = grad_out_ptr + off_batch * stride_gob + off_seq * stride_gom
+        lse_base = LSE_ptr + off_batch * stride_lseb + off_seq * stride_lsem
+        out_base = Out_ptr + off_batch * stride_ob + off_seq * stride_om
+        topk_ptr_base = TopKIdx_ptr + off_batch * stride_tb + off_seq * stride_tm
+        kv_ptr_base = KV_ptr + off_batch * stride_kvb
+        grad_kv_ptr_base = grad_kv_ptr + off_batch * stride_kvb
+
+        off_d = tl.arange(0, head_dim)
+
+        for start_h in range(0, n_heads, BLOCK_H):
+            off_h_full = start_h + tl.arange(0, BLOCK_H)
+            h_mask_full = off_h_full < n_heads
+
+            sub_id = al.sub_vec_id()
+            HALF_H: tl.constexpr = BLOCK_H // 2
+            row_indices = tl.arange(0, HALF_H) + sub_id * HALF_H
+            off_h_sub = start_h + row_indices
+            h_mask_sub = off_h_sub < n_heads
+            HALF_K: tl.constexpr = BLOCK_K // 2
+            n_offset_local = sub_id * HALF_K
+            n_offset_local1 = sub_id.to(tl.float32) * HALF_K
+
+            q_ptrs = q_base + off_h_full[:, None] * stride_qh + off_d[None, :] * stride_qd
+            do_ptrs = grad_o_base + off_h_full[:, None] * stride_goh + off_d[None, :] * stride_god
+            q_full = tl.load(q_ptrs, mask=h_mask_full[:, None], other=0.0)
+            do_full = tl.load(do_ptrs, mask=h_mask_full[:, None], other=0.0)
+
+            delta = _get_delta_split(
+                out_base,
+                grad_o_base,
+                stride_oh,
+                stride_od,
+                stride_goh,
+                stride_god,
+                off_d,
+                off_h_sub,
+                h_mask_sub,
+                head_dim,
+            )
+
+            lse_val = tl.load(lse_base + off_h_sub * stride_lseh, mask=h_mask_sub, other=0.0)
+
+            _inner_dkv(
+                q_full,
+                do_full,
+                lse_val,
+                delta,
+                kv_ptr_base,
+                topk_ptr_base,
+                grad_kv_ptr_base,
+                cur_k_buf,
+                cur_s_buf,
+                cur_dp_buf,
+                cur_p_buf,
+                cur_ds_buf,
+                cur_dk_buf,
+                cur_dv_buf,
+                stride_kvn,
+                stride_kvd,
+                stride_tk,
+                stride_gkvs,
+                stride_gkvd,
+                off_d,
+                sm_scale,
+                sub_id,
+                row_indices,
+                n_offset_local,
+                n_offset_local1,
+                head_dim,
+                BLOCK_K,
+                BLOCK_H,
+                TOPK,
+                NUM_BLOCKS,
+                KV_CTX,
+            )
 
 
 # pytorch baseline

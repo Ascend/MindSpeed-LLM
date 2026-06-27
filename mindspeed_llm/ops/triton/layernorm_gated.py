@@ -6,14 +6,19 @@ import math
 import torch
 import torch.nn.functional as F
 
-import triton
-import triton.language as tl
+try:
+    import triton
+    import triton.language as tl
+
+    TRITON_AVAILABLE = True
+except ImportError:
+    TRITON_AVAILABLE = False
+    pass
 
 from einops import rearrange
 
 # NPU support
-import torch_npu
-import triton.runtime.driver as driver
+from triton.runtime import driver
 
 
 def get_npu_properties():
@@ -56,7 +61,6 @@ def rms_norm_ref(x, weight, bias, z=None, eps=1e-6, group_size=None, norm_before
         Group normalization divides the feature dimension into groups for normalization.
     """
     dtype = x.dtype
-    N = x.shape[-1]
     weight = weight.float()
     bias = bias.float() if bias is not None else None
     if upcast:
@@ -78,10 +82,12 @@ def rms_norm_ref(x, weight, bias, z=None, eps=1e-6, group_size=None, norm_before
     return out.to(dtype)
 
 
-@triton.heuristics({"HAS_BIAS": lambda args: args["B"] is not None})
-@triton.heuristics({"HAS_Z": lambda args: args["Z"] is not None})
-@triton.jit
-def _layer_norm_fwd_1pass_kernel(
+if TRITON_AVAILABLE:
+
+    @triton.heuristics({"HAS_BIAS": lambda args: args["B"] is not None})
+    @triton.heuristics({"HAS_Z": lambda args: args["Z"] is not None})
+    @triton.jit
+    def _layer_norm_fwd_1pass_kernel(
         X,  # pointer to the input
         Y,  # pointer to the output
         W,  # pointer to the weights
@@ -104,55 +110,60 @@ def _layer_norm_fwd_1pass_kernel(
         ngroups_step: tl.constexpr,
         task_num: tl.constexpr,
         num_core: tl.constexpr,
-):
-    # NPU optimization: Use 1D physical core grid with task dispatch
-    core_id = tl.program_id(0)
+    ):
+        # NPU optimization: Use 1D physical core grid with task dispatch
+        core_id = tl.program_id(0)
 
-    for task_id in tl.range(core_id, task_num, num_core):
-        # Reconstruct original 2D indices from task_id
-        row = task_id // ngroups_step
-        group = task_id % ngroups_step
+        for task_id in tl.range(core_id, task_num, num_core):
+            # Reconstruct original 2D indices from task_id
+            row = task_id // ngroups_step
+            group = task_id % ngroups_step
 
-        # Calculate pointer offsets
-        X_ptr = X + row * stride_x_row + group * N
-        Y_ptr = Y + row * stride_y_row + group * N
-        if HAS_Z:
-            Z_ptr = Z + row * stride_z_row + group * N
-        if not IS_RMS_NORM:
-            Mean_ptr = Mean + group * M
-        Rstd_ptr = Rstd + group * M
-        W_ptr = W + group * N
-        if HAS_BIAS:
-            B_ptr = B + group * N
+            # Calculate pointer offsets
+            X_ptr = X + row * stride_x_row + group * N
+            Y_ptr = Y + row * stride_y_row + group * N
+            Z_ptr = None
+            if HAS_Z:
+                Z_ptr = Z + row * stride_z_row + group * N
+            if not IS_RMS_NORM:
+                Mean_ptr = Mean + group * M
+            Rstd_ptr = Rstd + group * M
+            W_ptr = W + group * N
+            if HAS_BIAS:
+                B_ptr = B + group * N
 
-        # Compute mean and variance
-        cols = tl.arange(0, BLOCK_N)
-        x = tl.load(X_ptr + cols, mask=cols < N, other=0.).to(tl.float32)
-        if HAS_Z and not NORM_BEFORE_GATE:
-            z = tl.load(Z_ptr + cols, mask=cols < N).to(tl.float32)
-            x *= z * tl.sigmoid(z)
-        if not IS_RMS_NORM:
-            mean = tl.sum(x, axis=0) / N
-            tl.store(Mean_ptr + row, mean)
-            xbar = tl.where(cols < N, x - mean, 0.)
-            var = tl.sum(xbar * xbar, axis=0) / N
-        else:
-            xbar = tl.where(cols < N, x, 0.)
-            var = tl.sum(xbar * xbar, axis=0) / N
-        rstd = 1 / tl.sqrt(var + eps)
-        tl.store(Rstd_ptr + row, rstd)
-        # Normalize and apply linear transformation
-        mask = cols < N
-        w = tl.load(W_ptr + cols, mask=mask).to(tl.float32)
-        if HAS_BIAS:
-            b = tl.load(B_ptr + cols, mask=mask).to(tl.float32)
-        x_hat = (x - mean) * rstd if not IS_RMS_NORM else x * rstd
-        y = x_hat * w + b if HAS_BIAS else x_hat * w
-        if HAS_Z and NORM_BEFORE_GATE:
-            z = tl.load(Z_ptr + cols, mask=mask).to(tl.float32)
-            y *= z * tl.sigmoid(z)
-        # Write output
-        tl.store(Y_ptr + cols, y, mask=mask)
+            # Compute mean and variance
+            cols = tl.arange(0, BLOCK_N)
+            x = tl.load(X_ptr + cols, mask=cols < N, other=0.0).to(tl.float32)
+            if HAS_Z and not NORM_BEFORE_GATE:
+                z = tl.load(Z_ptr + cols, mask=cols < N).to(tl.float32)
+                x *= z * tl.sigmoid(z)
+            if not IS_RMS_NORM:
+                mean = tl.sum(x, axis=0) / N
+                tl.store(Mean_ptr + row, mean)
+                xbar = tl.where(cols < N, x - mean, 0.0)
+                var = tl.sum(xbar * xbar, axis=0) / N
+            else:
+                xbar = tl.where(cols < N, x, 0.0)
+                var = tl.sum(xbar * xbar, axis=0) / N
+            rstd = 1 / tl.sqrt(var + eps)
+            tl.store(Rstd_ptr + row, rstd)
+            # Normalize and apply linear transformation
+            mask = cols < N
+            w = tl.load(W_ptr + cols, mask=mask).to(tl.float32)
+            if HAS_BIAS:
+                b = tl.load(B_ptr + cols, mask=mask).to(tl.float32)
+            x_hat = (x - mean) * rstd if not IS_RMS_NORM else x * rstd
+            y = x_hat * w + b if HAS_BIAS else x_hat * w
+            if HAS_Z and NORM_BEFORE_GATE:
+                z = tl.load(Z_ptr + cols, mask=mask).to(tl.float32)
+                y *= z * tl.sigmoid(z)
+            # Write output
+            tl.store(Y_ptr + cols, y, mask=mask)
+else:
+
+    def _layer_norm_fwd_1pass_kernel():
+        raise ValueError("please install triton-Ascend")
 
 
 def _layer_norm_fwd(x, weight, bias, eps, z=None, out=None, group_size=None, norm_before_gate=True, is_rms_norm=False):
@@ -160,7 +171,9 @@ def _layer_norm_fwd(x, weight, bias, eps, z=None, out=None, group_size=None, nor
     if group_size is None:
         group_size = min(N, 2048)
     if N % group_size != 0:
-        raise ValueError(f"N current value is {N}, group_size current value is {group_size}, N should be divisible by group_size")
+        raise ValueError(
+            f"N current value is {N}, group_size current value is {group_size}, N should be divisible by group_size"
+        )
     ngroups = N // group_size
     if x.stride(-1) != 1:
         raise ValueError(f"x.stride(-1) current value is {x.stride(-1)}, x.stride(-1) should be 1")
@@ -203,24 +216,38 @@ def _layer_norm_fwd(x, weight, bias, eps, z=None, out=None, group_size=None, nor
     task_num = M * ngroups
     ngroups_step = ngroups
 
-    _layer_norm_fwd_1pass_kernel[grid](x, out, weight, bias, z, mean, rstd,
-                                       x.stride(0), out.stride(0), z.stride(0) if z is not None else 0,
-                                       M, group_size, eps,
-                                       BLOCK_N=BLOCK_N,
-                                       NORM_BEFORE_GATE=norm_before_gate,
-                                       IS_RMS_NORM=is_rms_norm,
-                                       ngroups_step=ngroups_step,
-                                       task_num=task_num,
-                                       num_core=num_core,
-                                       num_warps=num_warps)
+    _layer_norm_fwd_1pass_kernel[grid](
+        x,
+        out,
+        weight,
+        bias,
+        z,
+        mean,
+        rstd,
+        x.stride(0),
+        out.stride(0),
+        z.stride(0) if z is not None else 0,
+        M,
+        group_size,
+        eps,
+        BLOCK_N=BLOCK_N,
+        NORM_BEFORE_GATE=norm_before_gate,
+        IS_RMS_NORM=is_rms_norm,
+        ngroups_step=ngroups_step,
+        task_num=task_num,
+        num_core=num_core,
+        num_warps=num_warps,
+    )
     return out, mean, rstd
 
 
-@triton.heuristics({"HAS_BIAS": lambda args: args["B"] is not None})
-@triton.heuristics({"HAS_Z": lambda args: args["Z"] is not None})
-@triton.heuristics({"RECOMPUTE_OUTPUT": lambda args: args["Y"] is not None})
-@triton.jit
-def _layer_norm_bwd_kernel(
+if TRITON_AVAILABLE:
+
+    @triton.heuristics({"HAS_BIAS": lambda args: args["B"] is not None})
+    @triton.heuristics({"HAS_Z": lambda args: args["Z"] is not None})
+    @triton.heuristics({"RECOMPUTE_OUTPUT": lambda args: args["Y"] is not None})
+    @triton.jit
+    def _layer_norm_bwd_kernel(
         X,  # pointer to the input
         W,  # pointer to the weights
         B,  # pointer to the biases
@@ -255,106 +282,122 @@ def _layer_norm_bwd_kernel(
         ngroups_step: tl.constexpr,
         task_num: tl.constexpr,
         num_core: tl.constexpr,
-):
-    # NPU optimization: Use 1D physical core grid with task dispatch
-    core_id = tl.program_id(0)
+    ):
+        # NPU optimization: Use 1D physical core grid with task dispatch
+        core_id = tl.program_id(0)
 
-    for task_id in tl.range(core_id, task_num, num_core):
-        # Reconstruct original 2D indices from task_id
-        row_block_id = task_id // ngroups_step
-        group = task_id % ngroups_step
+        for task_id in tl.range(core_id, task_num, num_core):
+            # Reconstruct original 2D indices from task_id
+            row_block_id = task_id // ngroups_step
+            group = task_id % ngroups_step
 
-        row_start = row_block_id * rows_per_program
-        cols = tl.arange(0, BLOCK_N)
-        mask = cols < N
+            row_start = row_block_id * rows_per_program
+            cols = tl.arange(0, BLOCK_N)
+            mask = cols < N
 
-        # Calculate pointer offsets
-        X_ptr = X + row_start * stride_x_row + group * N
-        if HAS_Z:
-            Z_ptr = Z + row_start * stride_z_row + group * N
-            DZ_ptr = DZ + row_start * stride_dz_row + group * N
-        DY_ptr = DY + row_start * stride_dy_row + group * N
-        DX_ptr = DX + row_start * stride_dx_row + group * N
-        if RECOMPUTE_OUTPUT:
-            Y_ptr = Y + row_start * stride_y_row + group * N
-        if not IS_RMS_NORM:
-            Mean_ptr = Mean + group * M
-        Rstd_ptr = Rstd + group * M
-        W_ptr = W + group * N
-        w = tl.load(W_ptr + cols, mask=mask).to(tl.float32)
-        if (RECOMPUTE_OUTPUT or HAS_Z) and HAS_BIAS:
-            B_ptr = B + group * N
-            b = tl.load(B_ptr + cols, mask=mask, other=0.).to(tl.float32)
-        dw = tl.zeros((BLOCK_N,), dtype=tl.float32)
-        if HAS_BIAS:
-            db = tl.zeros((BLOCK_N,), dtype=tl.float32)
-        row_end = min((row_block_id + 1) * rows_per_program, M)
-
-        for row in range(row_start, row_end):
-            # Load data to SRAM
-            x = tl.load(X_ptr + cols, mask=mask, other=0).to(tl.float32)
-            dy = tl.load(DY_ptr + cols, mask=mask, other=0).to(tl.float32)
-            if not IS_RMS_NORM:
-                mean = tl.load(Mean_ptr + row)
-            if HAS_Z and not NORM_BEFORE_GATE:
-                z = tl.load(Z_ptr + cols, mask=mask, other=0.).to(tl.float32)
-                x_og = x
-                x = x_og * z * tl.sigmoid(z)
-            rstd = tl.load(Rstd_ptr + row)
-            # Compute dx
-            xhat = (x - mean) * rstd if not IS_RMS_NORM else x * rstd
-            xhat = tl.where(mask, xhat, 0.)
-            if HAS_Z and NORM_BEFORE_GATE:
-                z = tl.load(Z_ptr + cols, mask=mask, other=0.).to(tl.float32)
-                z_sigmoid = tl.sigmoid(z)
-                y = xhat * w + b if HAS_BIAS else xhat * w
-                if RECOMPUTE_OUTPUT:
-                    tl.store(Y_ptr + cols, y * z * z_sigmoid, mask=mask)
-                dz = dy * y * z_sigmoid * (1 + z * (1 - z_sigmoid))
-                tl.store(DZ_ptr + cols, dz, mask=mask)
-                dy *= z * z_sigmoid
-            else:
-                if RECOMPUTE_OUTPUT:
-                    y = xhat * w + b if HAS_BIAS else xhat * w
-                    tl.store(Y_ptr + cols, y, mask=mask)
-            wdy = w * dy
-            c1 = tl.sum(xhat * wdy, axis=0) / N
-            if not IS_RMS_NORM:
-                c2 = tl.sum(wdy, axis=0) / N
-                dx = (wdy - (xhat * c1 + c2)) * rstd
-            else:
-                dx = (wdy - xhat * c1) * rstd
-            dw += dy * xhat
-            if HAS_BIAS:
-                db += dy
-            if HAS_Z and not NORM_BEFORE_GATE:
-                z_sigmoid = tl.sigmoid(z)
-                dz = dx * x_og * z_sigmoid * (1 + z * (1 - z_sigmoid))
-                tl.store(DZ_ptr + cols, dz, mask=mask)
-                dx *= z * z_sigmoid
-            # Write dx
-            tl.store(DX_ptr + cols, dx, mask=mask)
-
-            X_ptr += stride_x_row
+            # Calculate pointer offsets
+            X_ptr = X + row_start * stride_x_row + group * N
             if HAS_Z:
-                Z_ptr += stride_z_row
-                DZ_ptr += stride_dz_row
+                Z_ptr = Z + row_start * stride_z_row + group * N
+                DZ_ptr = DZ + row_start * stride_dz_row + group * N
+            DY_ptr = DY + row_start * stride_dy_row + group * N
+            DX_ptr = DX + row_start * stride_dx_row + group * N
             if RECOMPUTE_OUTPUT:
-                Y_ptr += stride_y_row
-            DY_ptr += stride_dy_row
-            DX_ptr += stride_dx_row
-        tl.store(DW + row_block_id * stride_dw_row + group * N + cols, dw, mask=mask)
-        if HAS_BIAS:
-            tl.store(DB + row_block_id * stride_db_row + group * N + cols, db, mask=mask)
+                Y_ptr = Y + row_start * stride_y_row + group * N
+            if not IS_RMS_NORM:
+                Mean_ptr = Mean + group * M
+            Rstd_ptr = Rstd + group * M
+            W_ptr = W + group * N
+            w = tl.load(W_ptr + cols, mask=mask).to(tl.float32)
+            if (RECOMPUTE_OUTPUT or HAS_Z) and HAS_BIAS:
+                B_ptr = B + group * N
+                b = tl.load(B_ptr + cols, mask=mask, other=0.0).to(tl.float32)
+            dw = tl.zeros((BLOCK_N,), dtype=tl.float32)
+            if HAS_BIAS:
+                db = tl.zeros((BLOCK_N,), dtype=tl.float32)
+            row_end = min((row_block_id + 1) * rows_per_program, M)
+
+            for row in range(row_start, row_end):
+                # Load data to SRAM
+                x = tl.load(X_ptr + cols, mask=mask, other=0).to(tl.float32)
+                dy = tl.load(DY_ptr + cols, mask=mask, other=0).to(tl.float32)
+                if not IS_RMS_NORM:
+                    mean = tl.load(Mean_ptr + row)
+                if HAS_Z and not NORM_BEFORE_GATE:
+                    z = tl.load(Z_ptr + cols, mask=mask, other=0.0).to(tl.float32)  # pylint:disable=used-before-assignment
+                    x_og = x
+                    x = x_og * z * tl.sigmoid(z)
+                rstd = tl.load(Rstd_ptr + row)
+                # Compute dx
+                xhat = (x - mean) * rstd if not IS_RMS_NORM else x * rstd
+                xhat = tl.where(mask, xhat, 0.0)
+                if HAS_Z and NORM_BEFORE_GATE:
+                    z = tl.load(Z_ptr + cols, mask=mask, other=0.0).to(tl.float32)
+                    z_sigmoid = tl.sigmoid(z)
+                    y = xhat * w + b if HAS_BIAS else xhat * w  # pylint:disable=possibly-used-before-assignment
+                    if RECOMPUTE_OUTPUT:
+                        tl.store(Y_ptr + cols, y * z * z_sigmoid, mask=mask)
+                    dz = dy * y * z_sigmoid * (1 + z * (1 - z_sigmoid))
+                    tl.store(DZ_ptr + cols, dz, mask=mask)  # pylint:disable=used-before-assignment
+                    dy *= z * z_sigmoid
+                else:
+                    if RECOMPUTE_OUTPUT:
+                        y = xhat * w + b if HAS_BIAS else xhat * w
+                        tl.store(Y_ptr + cols, y, mask=mask)
+                wdy = w * dy
+                c1 = tl.sum(xhat * wdy, axis=0) / N
+                if not IS_RMS_NORM:
+                    c2 = tl.sum(wdy, axis=0) / N
+                    dx = (wdy - (xhat * c1 + c2)) * rstd
+                else:
+                    dx = (wdy - xhat * c1) * rstd
+                dw += dy * xhat
+                if HAS_BIAS:
+                    db += dy
+                if HAS_Z and not NORM_BEFORE_GATE:
+                    z_sigmoid = tl.sigmoid(z)
+                    dz = dx * x_og * z_sigmoid * (1 + z * (1 - z_sigmoid))
+                    tl.store(DZ_ptr + cols, dz, mask=mask)
+                    dx *= z * z_sigmoid
+                # Write dx
+                tl.store(DX_ptr + cols, dx, mask=mask)
+
+                X_ptr += stride_x_row
+                if HAS_Z:
+                    Z_ptr += stride_z_row
+                    DZ_ptr += stride_dz_row
+                if RECOMPUTE_OUTPUT:
+                    Y_ptr += stride_y_row
+                DY_ptr += stride_dy_row
+                DX_ptr += stride_dx_row
+            tl.store(DW + row_block_id * stride_dw_row + group * N + cols, dw, mask=mask)
+            if HAS_BIAS:
+                tl.store(DB + row_block_id * stride_db_row + group * N + cols, db, mask=mask)
 
 
-def _layer_norm_bwd(dy, x, weight, bias, eps, mean, rstd, z=None, group_size=None,
-                    norm_before_gate=True, is_rms_norm=False, recompute_output=False, dz=None, out=None):
+def _layer_norm_bwd(
+    dy,
+    x,
+    weight,
+    bias,
+    eps,
+    mean,
+    rstd,
+    z=None,
+    group_size=None,
+    norm_before_gate=True,
+    is_rms_norm=False,
+    recompute_output=False,
+    dz=None,
+    out=None,
+):
     M, N = x.shape
     if group_size is None:
         group_size = min(N, 2048)
     if N % group_size != 0:
-        raise ValueError(f"N current value is {N}, group_size current value is {group_size}, N should be divisible by group_size")
+        raise ValueError(
+            f"N current value is {N}, group_size current value is {group_size}, N should be divisible by group_size"
+        )
     ngroups = N // group_size
     if x.stride(-1) != 1:
         raise ValueError(f"x.stride(-1) current value is {x.stride(-1)}, x.stride(-1) should be 1")
@@ -418,36 +461,48 @@ def _layer_norm_bwd(dy, x, weight, bias, eps, mean, rstd, z=None, group_size=Non
     task_num = nrow_groups * ngroups
     ngroups_step = ngroups
 
-    _layer_norm_bwd_kernel[grid](x, weight, bias, z, out if recompute_output else None,
-                                 dy, dx, _dw, _db, dz, mean, rstd,
-                                 x.stride(0),
-                                 z.stride(0) if z is not None else 0,
-                                 0 if not recompute_output else out.stride(0),
-                                 dy.stride(0), dx.stride(0),
-                                 dz.stride(0) if dz is not None else 0,
-                                 _dw.stride(0),
-                                 _db.stride(0) if _db is not None else 0,
-                                 M, group_size, eps,
-                                 rows_per_program,
-                                 BLOCK_N=BLOCK_N,
-                                 NORM_BEFORE_GATE=norm_before_gate,
-                                 IS_RMS_NORM=is_rms_norm,
-                                 ngroups_step=ngroups_step,
-                                 task_num=task_num,
-                                 num_core=num_core,
-                                 num_warps=num_warps)
+    _layer_norm_bwd_kernel[grid](  # pylint:disable=possibly-used-before-assignment
+        x,
+        weight,
+        bias,
+        z,
+        out if recompute_output else None,
+        dy,
+        dx,
+        _dw,
+        _db,
+        dz,
+        mean,
+        rstd,
+        x.stride(0),
+        z.stride(0) if z is not None else 0,
+        0 if not recompute_output else out.stride(0),
+        dy.stride(0),
+        dx.stride(0),
+        dz.stride(0) if dz is not None else 0,
+        _dw.stride(0),
+        _db.stride(0) if _db is not None else 0,
+        M,
+        group_size,
+        eps,
+        rows_per_program,
+        BLOCK_N=BLOCK_N,
+        NORM_BEFORE_GATE=norm_before_gate,
+        IS_RMS_NORM=is_rms_norm,
+        ngroups_step=ngroups_step,
+        task_num=task_num,
+        num_core=num_core,
+        num_warps=num_warps,
+    )
     dw = _dw.sum(0).to(weight.dtype)
     db = _db.sum(0).to(bias.dtype) if bias is not None else None
     return (dx, dw, db, dz) if not recompute_output else (dx, dw, db, dz, out)
 
 
 class LayerNormFn(torch.autograd.Function):
-
     @staticmethod
-    def forward(ctx, x, weight, bias, z=None, eps=1e-6, group_size=None, norm_before_gate=True,
-                is_rms_norm=False):
-        """If z is not None, we do norm(x) * silu(z) if norm_before_gate, else norm(x * silu(z))
-        """
+    def forward(ctx, x, weight, bias, z=None, eps=1e-6, group_size=None, norm_before_gate=True, is_rms_norm=False):
+        """If z is not None, we do norm(x) * silu(z) if norm_before_gate, else norm(x * silu(z))"""
 
         x_shape_og = x.shape
         # reshape input data into 2D tensor
@@ -463,8 +518,9 @@ class LayerNormFn(torch.autograd.Function):
         weight = weight.contiguous()
         if bias is not None:
             bias = bias.contiguous()
-        y, mean, rstd = _layer_norm_fwd(x, weight, bias, eps, z=z, group_size=group_size,
-                                        norm_before_gate=norm_before_gate, is_rms_norm=is_rms_norm)
+        y, mean, rstd = _layer_norm_fwd(
+            x, weight, bias, eps, z=z, group_size=group_size, norm_before_gate=norm_before_gate, is_rms_norm=is_rms_norm
+        )
         ctx.save_for_backward(x, weight, bias, mean, rstd, z)
         ctx.x_shape_og = x_shape_og
         ctx.eps = eps
@@ -481,10 +537,19 @@ class LayerNormFn(torch.autograd.Function):
             dy = dy.contiguous()
         if dy.shape != x.shape:
             raise ValueError(f"dy.shape current value is {dy.shape}, dy.shape should be x.shape")
-        dx, dw, db, dz = _layer_norm_bwd(dy, x, weight, bias, ctx.eps, mean, rstd, z, ctx.group_size,
-                                         ctx.norm_before_gate, ctx.is_rms_norm)
-        return dx.reshape(ctx.x_shape_og), dw, db, dz.reshape(
-            ctx.x_shape_og) if dz is not None else None, None, None, None, None
+        dx, dw, db, dz = _layer_norm_bwd(
+            dy, x, weight, bias, ctx.eps, mean, rstd, z, ctx.group_size, ctx.norm_before_gate, ctx.is_rms_norm
+        )
+        return (
+            dx.reshape(ctx.x_shape_og),
+            dw,
+            db,
+            dz.reshape(ctx.x_shape_og) if dz is not None else None,
+            None,
+            None,
+            None,
+            None,
+        )
 
 
 def layernorm_fn(x, weight, bias, z=None, eps=1e-6, group_size=None, norm_before_gate=True, is_rms_norm=False):
@@ -496,7 +561,6 @@ def rmsnorm_fn(x, weight, bias, z=None, eps=1e-6, group_size=None, norm_before_g
 
 
 class LayerNorm(torch.nn.Module):
-
     def __init__(self, hidden_size, eps=1e-5, group_size=None, norm_before_gate=True, device=None, dtype=None):
         """If group_size is not None, we do GroupNorm with each group having group_size elements.
         group_size=None is equivalent to group_size=hidden_size (i.e. there's only 1 group).
@@ -516,14 +580,19 @@ class LayerNorm(torch.nn.Module):
         torch.nn.init.zeros_(self.bias)
 
     def forward(self, x, z=None):
-        """If z is not None, we do norm(x) * silu(z) if norm_before_gate, else norm(x * silu(z))
-        """
-        return layernorm_fn(x, self.weight, self.bias, z=z, group_size=self.group_size, eps=self.eps,
-                            norm_before_gate=self.norm_before_gate)
+        """If z is not None, we do norm(x) * silu(z) if norm_before_gate, else norm(x * silu(z))"""
+        return layernorm_fn(
+            x,
+            self.weight,
+            self.bias,
+            z=z,
+            group_size=self.group_size,
+            eps=self.eps,
+            norm_before_gate=self.norm_before_gate,
+        )
 
 
 class RMSNorm(torch.nn.Module):
-
     def __init__(self, hidden_size, eps=1e-5, group_size=None, norm_before_gate=True, device=None, dtype=None):
         """If group_size is not None, we do GroupNorm with each group having group_size elements.
         group_size=None is equivalent to group_size=hidden_size (i.e. there's only 1 group).
@@ -541,7 +610,13 @@ class RMSNorm(torch.nn.Module):
         torch.nn.init.ones_(self.weight)
 
     def forward(self, x, z=None):
-        """If z is not None, we do norm(x) * silu(z) if norm_before_gate, else norm(x * silu(z))
-        """
-        return rmsnorm_fn(x, self.weight, self.bias, z=z, eps=self.eps, group_size=self.group_size,
-                          norm_before_gate=self.norm_before_gate)
+        """If z is not None, we do norm(x) * silu(z) if norm_before_gate, else norm(x * silu(z))"""
+        return rmsnorm_fn(
+            x,
+            self.weight,
+            self.bias,
+            z=z,
+            eps=self.eps,
+            group_size=self.group_size,
+            norm_before_gate=self.norm_before_gate,
+        )

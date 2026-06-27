@@ -1,31 +1,38 @@
 import torch
-import torch_npu
+
 try:
     import triton
     import triton.language as tl
 
+    try:
+        import triton.language.extra.cann.extension as tle
+    except ImportError:
+        import triton.language as tle
     TRITON_AVAILABLE = True
 except ImportError:
     TRITON_AVAILABLE = False
     pass
-
-try:
-    import triton.language.extra.cann.extension as tle
-except ImportError:
-    import triton.language as tle
 
 
 if TRITON_AVAILABLE:
 
     @triton.jit
     def hc_post_bmm2_fwd_kernel(
-        H_ptr, X_ptr, Y_ptr,
-        stride_h_bs: tl.constexpr, stride_h_n: tl.constexpr, stride_h_k: tl.constexpr,
-        stride_x_bs: tl.constexpr, stride_x_k: tl.constexpr, stride_x_c: tl.constexpr,
-        stride_y_bs: tl.constexpr, stride_y_n: tl.constexpr, stride_y_c: tl.constexpr,
+        H_ptr,
+        X_ptr,
+        Y_ptr,
+        stride_h_bs: tl.constexpr,
+        stride_h_n: tl.constexpr,
+        stride_h_k: tl.constexpr,
+        stride_x_bs: tl.constexpr,
+        stride_x_k: tl.constexpr,
+        stride_x_c: tl.constexpr,
+        stride_y_bs: tl.constexpr,
+        stride_y_n: tl.constexpr,
+        stride_y_c: tl.constexpr,
         GROUP: tl.constexpr,
         BLOCK_C: tl.constexpr,
-        C: tl.constexpr
+        C: tl.constexpr,
     ):
         pid_bs_blk = tl.program_id(0)
         pid_c_blk = tl.program_id(1)
@@ -78,16 +85,23 @@ if TRITON_AVAILABLE:
         tl.store(Y_base + 2 * stride_y_n, y2, mask=c_mask[None, :])
         tl.store(Y_base + 3 * stride_y_n, y3, mask=c_mask[None, :])
 
-
     @triton.jit
     def hc_post_bmm2_bwd_dx_kernel(
-        H_ptr, dY_ptr, dX_ptr,
-        stride_h_bs: tl.constexpr, stride_h_n: tl.constexpr, stride_h_k: tl.constexpr,
-        stride_dy_bs: tl.constexpr, stride_dy_n: tl.constexpr, stride_dy_c: tl.constexpr,
-        stride_dx_bs: tl.constexpr, stride_dx_k: tl.constexpr, stride_dx_c: tl.constexpr,
+        H_ptr,
+        dY_ptr,
+        dX_ptr,
+        stride_h_bs: tl.constexpr,
+        stride_h_n: tl.constexpr,
+        stride_h_k: tl.constexpr,
+        stride_dy_bs: tl.constexpr,
+        stride_dy_n: tl.constexpr,
+        stride_dy_c: tl.constexpr,
+        stride_dx_bs: tl.constexpr,
+        stride_dx_k: tl.constexpr,
+        stride_dx_c: tl.constexpr,
         GROUP: tl.constexpr,
         BLOCK_C: tl.constexpr,
-        C: tl.constexpr
+        C: tl.constexpr,
     ):
         pid_bs_blk = tl.program_id(0)
         pid_c_blk = tl.program_id(1)
@@ -145,13 +159,20 @@ if TRITON_AVAILABLE:
         tl.store(dX_base + 2 * stride_dx_k, dx2, mask=c_mask[None, :])
         tl.store(dX_base + 3 * stride_dx_k, dx3, mask=c_mask[None, :])
 
-
     @triton.jit
     def hc_post_bmm2_bwd_dh_kernel(
-        X_ptr, dY_ptr, dH_ptr,
-        stride_x_bs: tl.constexpr, stride_x_k: tl.constexpr, stride_x_c: tl.constexpr,
-        stride_dy_bs: tl.constexpr, stride_dy_n: tl.constexpr, stride_dy_c: tl.constexpr,
-        stride_dh_bs: tl.constexpr, stride_dh_n: tl.constexpr, stride_dh_k: tl.constexpr,
+        X_ptr,
+        dY_ptr,
+        dH_ptr,
+        stride_x_bs: tl.constexpr,
+        stride_x_k: tl.constexpr,
+        stride_x_c: tl.constexpr,
+        stride_dy_bs: tl.constexpr,
+        stride_dy_n: tl.constexpr,
+        stride_dy_c: tl.constexpr,
+        stride_dh_bs: tl.constexpr,
+        stride_dh_n: tl.constexpr,
+        stride_dh_k: tl.constexpr,
         C: tl.constexpr,
         BLOCK_C_R: tl.constexpr,
     ):
@@ -247,12 +268,22 @@ def hc_post_bmm2_forward(
 
     grid = (triton.cdiv(BS, GROUP), triton.cdiv(C, BLOCK_C))
 
-    hc_post_bmm2_fwd_kernel[grid](
-            H, X, Y,
-            stride_h_bs=H.stride(0), stride_h_n=H.stride(1), stride_h_k=H.stride(2),
-            stride_x_bs=X.stride(0), stride_x_k=X.stride(1), stride_x_c=X.stride(2),
-            stride_y_bs=Y.stride(0), stride_y_n=Y.stride(1), stride_y_c=Y.stride(2),
-            GROUP=GROUP, BLOCK_C=BLOCK_C, C=C,
+    hc_post_bmm2_fwd_kernel[grid](  # pylint:disable=possibly-used-before-assignment
+        H,
+        X,
+        Y,
+        stride_h_bs=H.stride(0),
+        stride_h_n=H.stride(1),
+        stride_h_k=H.stride(2),
+        stride_x_bs=X.stride(0),
+        stride_x_k=X.stride(1),
+        stride_x_c=X.stride(2),
+        stride_y_bs=Y.stride(0),
+        stride_y_n=Y.stride(1),
+        stride_y_c=Y.stride(2),
+        GROUP=GROUP,
+        BLOCK_C=BLOCK_C,
+        C=C,
     )
 
     return Y.view(B, S, N, C)
@@ -268,21 +299,31 @@ def hc_post_bmm2_backward(H_res: torch.Tensor, x: torch.Tensor, dY: torch.Tensor
     _, _, _, C = x.shape
     BS = B * S
 
-    H = H_res.contiguous().view(BS, N, N)         # fp32
-    X = x.contiguous().view(BS, N, C)             # bf16
-    dY_ = dY.contiguous().view(BS, N, C)          # fp32
+    H = H_res.contiguous().view(BS, N, N)  # fp32
+    X = x.contiguous().view(BS, N, C)  # bf16
+    dY_ = dY.contiguous().view(BS, N, C)  # fp32
 
     # --- dX (unchanged) ---
     dX_fp32 = torch.empty((BS, N, C), device=x.device, dtype=torch.float32)
     GROUP = 1
     BLOCK_C = 4096 if C > 4096 else C
     grid_dx = (triton.cdiv(BS, GROUP), triton.cdiv(C, BLOCK_C))
-    hc_post_bmm2_bwd_dx_kernel[grid_dx](
-        H, dY_, dX_fp32,
-        stride_h_bs=H.stride(0), stride_h_n=H.stride(1), stride_h_k=H.stride(2),
-        stride_dy_bs=dY_.stride(0), stride_dy_n=dY_.stride(1), stride_dy_c=dY_.stride(2),
-        stride_dx_bs=dX_fp32.stride(0), stride_dx_k=dX_fp32.stride(1), stride_dx_c=dX_fp32.stride(2),
-        GROUP=GROUP, BLOCK_C=BLOCK_C, C=C
+    hc_post_bmm2_bwd_dx_kernel[grid_dx](  # pylint:disable=possibly-used-before-assignment
+        H,
+        dY_,
+        dX_fp32,
+        stride_h_bs=H.stride(0),
+        stride_h_n=H.stride(1),
+        stride_h_k=H.stride(2),
+        stride_dy_bs=dY_.stride(0),
+        stride_dy_n=dY_.stride(1),
+        stride_dy_c=dY_.stride(2),
+        stride_dx_bs=dX_fp32.stride(0),
+        stride_dx_k=dX_fp32.stride(1),
+        stride_dx_c=dX_fp32.stride(2),
+        GROUP=GROUP,
+        BLOCK_C=BLOCK_C,
+        C=C,
     )
     dX = dX_fp32.view(B, S, N, C)
 
@@ -292,11 +333,19 @@ def hc_post_bmm2_backward(H_res: torch.Tensor, x: torch.Tensor, dY: torch.Tensor
     BLOCK_C_R = 4096 if C > 4096 else C
 
     grid_dh = (BS, triton.cdiv(C, BLOCK_C_R))
-    hc_post_bmm2_bwd_dh_kernel[grid_dh](
-        X, dY_, dH,
-        stride_x_bs=X.stride(0), stride_x_k=X.stride(1), stride_x_c=X.stride(2),
-        stride_dy_bs=dY_.stride(0), stride_dy_n=dY_.stride(1), stride_dy_c=dY_.stride(2),
-        stride_dh_bs=dH.stride(0), stride_dh_n=dH.stride(1), stride_dh_k=dH.stride(2),
+    hc_post_bmm2_bwd_dh_kernel[grid_dh](  # pylint:disable=possibly-used-before-assignment
+        X,
+        dY_,
+        dH,
+        stride_x_bs=X.stride(0),
+        stride_x_k=X.stride(1),
+        stride_x_c=X.stride(2),
+        stride_dy_bs=dY_.stride(0),
+        stride_dy_n=dY_.stride(1),
+        stride_dy_c=dY_.stride(2),
+        stride_dh_bs=dH.stride(0),
+        stride_dh_n=dH.stride(1),
+        stride_dh_k=dH.stride(2),
         C=C,
         BLOCK_C_R=BLOCK_C_R,
     )

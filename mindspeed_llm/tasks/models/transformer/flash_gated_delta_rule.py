@@ -11,11 +11,17 @@ except ModuleNotFoundError:
 
 import torch
 
+try:
+    from mindspeed.ops.triton.utils import autocast_custom_bwd, autocast_custom_fwd, input_guard
+
+    TRITON_AVAILABLE = True
+except ImportError:
+    TRITON_AVAILABLE = False
+    pass
 from mindspeed.ops.triton.l2norm import l2norm_bwd, l2norm_fwd
 from mindspeed.ops.triton.chunk_scaled_dot_kkt import chunk_scaled_dot_kkt_fwd
 from mindspeed.ops.triton.solve_tril import solve_tril
 from mindspeed.ops.triton.cumsum import chunk_local_cumsum
-from mindspeed.ops.triton.utils import autocast_custom_bwd, autocast_custom_fwd, input_guard
 
 
 def prepare_chunk_indices(cu_seqlens: list[int], chunk_size: int) -> list[int]:
@@ -212,71 +218,73 @@ def flash_chunk_gated_delta_rule_bwd(
     return dq, dk, dv, db, dg, dh0
 
 
-class ChunkGatedDeltaRuleFunction(torch.autograd.Function):
-    @staticmethod
-    @input_guard
-    @autocast_custom_fwd
-    def forward(
-        ctx,
-        q: torch.Tensor,
-        k: torch.Tensor,
-        v: torch.Tensor,
-        g: torch.Tensor,
-        beta: torch.Tensor,
-        scale: float,
-        initial_state: torch.Tensor,
-        output_final_state: bool,
-        cu_seqlens: Optional[torch.LongTensor] = None,
-        use_qk_l2norm_in_kernel: bool = False,
-        chunk_size: int = 64,
-    ):
-        if use_qk_l2norm_in_kernel:
-            q, q_rstd = l2norm_fwd(q)
-            k, k_rstd = l2norm_fwd(k)
-        else:
-            q_rstd, k_rstd = None, None
+if TRITON_AVAILABLE:
 
-        g, o, A, final_state = flash_chunk_gated_delta_rule_fwd(
-            q=q,
-            k=k,
-            v=v,
-            g=g,
-            beta=beta,
-            scale=scale,
-            initial_state=initial_state,
-            output_final_state=output_final_state,
-            cu_seqlens=cu_seqlens,
-            chunk_size=chunk_size,
-        )
-        ctx.save_for_backward(q, q_rstd, k, k_rstd, v, g, beta, A, initial_state, cu_seqlens)
-        ctx.scale = scale
-        ctx.use_qk_l2norm_in_kernel = use_qk_l2norm_in_kernel
-        ctx.chunk_size = chunk_size
-        return o.to(q.dtype), final_state
+    class ChunkGatedDeltaRuleFunction(torch.autograd.Function):
+        @staticmethod
+        @input_guard
+        @autocast_custom_fwd
+        def forward(
+            ctx,
+            q: torch.Tensor,
+            k: torch.Tensor,
+            v: torch.Tensor,
+            g: torch.Tensor,
+            beta: torch.Tensor,
+            scale: float,
+            initial_state: torch.Tensor,
+            output_final_state: bool,
+            cu_seqlens: Optional[torch.LongTensor] = None,
+            use_qk_l2norm_in_kernel: bool = False,
+            chunk_size: int = 64,
+        ):
+            if use_qk_l2norm_in_kernel:
+                q, q_rstd = l2norm_fwd(q)
+                k, k_rstd = l2norm_fwd(k)
+            else:
+                q_rstd, k_rstd = None, None
 
-    @staticmethod
-    @input_guard
-    @autocast_custom_bwd
-    def backward(ctx, do: torch.Tensor, dht: torch.Tensor):
-        q, q_rstd, k, k_rstd, v, g, beta, A, initial_state, cu_seqlens = ctx.saved_tensors
-        dq, dk, dv, db, dg, dh0 = flash_chunk_gated_delta_rule_bwd(
-            q=q,
-            k=k,
-            v=v,
-            g=g,
-            beta=beta,
-            A=A,
-            scale=ctx.scale,
-            initial_state=initial_state,
-            do=do,
-            dht=dht,
-            cu_seqlens=cu_seqlens,
-            chunk_size=ctx.chunk_size,
-        )
-        if ctx.use_qk_l2norm_in_kernel:
-            dq = l2norm_bwd(q, q_rstd, dq)
-            dk = l2norm_bwd(k, k_rstd, dk)
-        return dq.to(q), dk.to(k), dv.to(v), dg.to(g), db.to(beta), None, dh0, None, None, None, None
+            g, o, A, final_state = flash_chunk_gated_delta_rule_fwd(
+                q=q,
+                k=k,
+                v=v,
+                g=g,
+                beta=beta,
+                scale=scale,
+                initial_state=initial_state,
+                output_final_state=output_final_state,
+                cu_seqlens=cu_seqlens,
+                chunk_size=chunk_size,
+            )
+            ctx.save_for_backward(q, q_rstd, k, k_rstd, v, g, beta, A, initial_state, cu_seqlens)
+            ctx.scale = scale
+            ctx.use_qk_l2norm_in_kernel = use_qk_l2norm_in_kernel
+            ctx.chunk_size = chunk_size
+            return o.to(q.dtype), final_state
+
+        @staticmethod
+        @input_guard
+        @autocast_custom_bwd
+        def backward(ctx, do: torch.Tensor, dht: torch.Tensor):
+            q, q_rstd, k, k_rstd, v, g, beta, A, initial_state, cu_seqlens = ctx.saved_tensors
+            dq, dk, dv, db, dg, dh0 = flash_chunk_gated_delta_rule_bwd(
+                q=q,
+                k=k,
+                v=v,
+                g=g,
+                beta=beta,
+                A=A,
+                scale=ctx.scale,
+                initial_state=initial_state,
+                do=do,
+                dht=dht,
+                cu_seqlens=cu_seqlens,
+                chunk_size=ctx.chunk_size,
+            )
+            if ctx.use_qk_l2norm_in_kernel:
+                dq = l2norm_bwd(q, q_rstd, dq)
+                dk = l2norm_bwd(k, k_rstd, dk)
+            return dq.to(q), dk.to(k), dv.to(v), dg.to(g), db.to(beta), None, dh0, None, None, None, None
 
 
 @torch.compiler.disable
@@ -401,7 +409,7 @@ def flash_gated_delta_rule(
 
     if scale is None:
         scale = k.shape[-1] ** -0.5
-    o, final_state = ChunkGatedDeltaRuleFunction.apply(
+    o, final_state = ChunkGatedDeltaRuleFunction.apply(  # pylint:disable=possibly-used-before-assignment
         q, k, v, g, beta, scale, initial_state, output_final_state, cu_seqlens, use_qk_l2norm_in_kernel, chunk_size
     )
     return o, final_state

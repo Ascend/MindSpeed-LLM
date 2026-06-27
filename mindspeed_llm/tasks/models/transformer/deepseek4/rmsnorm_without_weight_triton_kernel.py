@@ -1,30 +1,39 @@
 # Copyright (c) 2026, Huawei Technologies Co., Ltd.  All rights reserved.
 import torch
-import triton
-import triton.language as tl
+
+try:
+    import triton
+    import triton.language as tl
+
+    TRITON_AVAILABLE = True
+except ImportError:
+    TRITON_AVAILABLE = False
+    pass
 
 
-@triton.jit
-def _rmsnorm_without_weight_kernel(
-    x_ptr, res_ptr, D: tl.constexpr, norm_eps: tl.constexpr, head: tl.constexpr, BLOCK_D: tl.constexpr
-):
-    """Triton kernel for RMSNorm scaling factor forward pass"""
-    pid = tl.program_id(0)
-    offset_base = tl.arange(0, BLOCK_D)
+if TRITON_AVAILABLE:
 
-    # Accumulate sum of squares over feature dimension
-    for idx in range(0, head):
-        square_sum = 0.0
-        for d in range(0, D, BLOCK_D):
-            d_mask = (d + offset_base) < D
-            offset = pid * head * D + idx * D + d + offset_base
-            x = tl.load(x_ptr + offset, mask=d_mask, other=0.0)
-            square_sum += tl.sum(x * x)
+    @triton.jit
+    def _rmsnorm_without_weight_kernel(
+        x_ptr, res_ptr, D: tl.constexpr, norm_eps: tl.constexpr, head: tl.constexpr, BLOCK_D: tl.constexpr
+    ):
+        """Triton kernel for RMSNorm scaling factor forward pass"""
+        pid = tl.program_id(0)
+        offset_base = tl.arange(0, BLOCK_D)
 
-        # Compute scaling factor
-        mean = square_sum / D
-        res = tl.rsqrt(mean + norm_eps)
-        tl.store(res_ptr + pid * head + idx, res)
+        # Accumulate sum of squares over feature dimension
+        for idx in range(0, head):
+            square_sum = 0.0
+            for d in range(0, D, BLOCK_D):
+                d_mask = (d + offset_base) < D
+                offset = pid * head * D + idx * D + d + offset_base
+                x = tl.load(x_ptr + offset, mask=d_mask, other=0.0)
+                square_sum += tl.sum(x * x)
+
+            # Compute scaling factor
+            mean = square_sum / D
+            res = tl.rsqrt(mean + norm_eps)
+            tl.store(res_ptr + pid * head + idx, res)
 
 
 def rmsnorm_without_weight(x: torch.Tensor, norm_eps: float = 1e-6) -> torch.Tensor:
@@ -49,32 +58,34 @@ def rmsnorm_without_weight(x: torch.Tensor, norm_eps: float = 1e-6) -> torch.Ten
     # Auto-configure block size
     BLOCK_D = min(triton.next_power_of_2(D), 16384)
     # Launch kernel
-    _rmsnorm_without_weight_kernel[(batch_seq_size,)](x, res, D, norm_eps, head, BLOCK_D)
+    _rmsnorm_without_weight_kernel[(batch_seq_size,)](x, res, D, norm_eps, head, BLOCK_D)  # pylint:disable=possibly-used-before-assignment
     return res
 
 
-@triton.jit
-def _rmsnorm_without_weight_backward_kernel(
-    grad_res_ptr, x_ptr, res_ptr, grad_x_ptr, D: tl.constexpr, head: tl.constexpr, BLOCK_D: tl.constexpr
-):
-    """Triton kernel for RMSNorm scaling factor backward pass"""
-    pid = tl.program_id(0)
-    offset_base = tl.arange(0, BLOCK_D)
-    for idx in range(0, head):
-        # Load scalar values (broadcast to feature dim)
-        grad_res = tl.load(grad_res_ptr + pid * head + idx)
-        res = tl.load(res_ptr + pid * head + idx)
+if TRITON_AVAILABLE:
 
-        # Compute constant factor
-        factor = (-1.0) * grad_res * (res * res * res) / D
+    @triton.jit
+    def _rmsnorm_without_weight_backward_kernel(
+        grad_res_ptr, x_ptr, res_ptr, grad_x_ptr, D: tl.constexpr, head: tl.constexpr, BLOCK_D: tl.constexpr
+    ):
+        """Triton kernel for RMSNorm scaling factor backward pass"""
+        pid = tl.program_id(0)
+        offset_base = tl.arange(0, BLOCK_D)
+        for idx in range(0, head):
+            # Load scalar values (broadcast to feature dim)
+            grad_res = tl.load(grad_res_ptr + pid * head + idx)
+            res = tl.load(res_ptr + pid * head + idx)
 
-        # Compute gradient over feature dimension
-        for d in range(0, D, BLOCK_D):
-            d_mask = (d + offset_base) < D
-            offset = pid * head * D + idx * D + d + offset_base
-            x = tl.load(x_ptr + offset, mask=d_mask, other=0.0)
-            grad_x = factor * x
-            tl.store(grad_x_ptr + offset, grad_x, mask=d_mask)
+            # Compute constant factor
+            factor = (-1.0) * grad_res * (res * res * res) / D
+
+            # Compute gradient over feature dimension
+            for d in range(0, D, BLOCK_D):
+                d_mask = (d + offset_base) < D
+                offset = pid * head * D + idx * D + d + offset_base
+                x = tl.load(x_ptr + offset, mask=d_mask, other=0.0)
+                grad_x = factor * x
+                tl.store(grad_x_ptr + offset, grad_x, mask=d_mask)
 
 
 def rmsnorm_without_weight_backward(
@@ -106,6 +117,6 @@ def rmsnorm_without_weight_backward(
     # Auto-configure block size
     BLOCK_D = min(triton.next_power_of_2(D), 16384)
     # Launch kernel
-    _rmsnorm_without_weight_backward_kernel[(batch_seq_size,)](grad_res, x, res, grad_x, D, head, BLOCK_D)
+    _rmsnorm_without_weight_backward_kernel[(batch_seq_size,)](grad_res, x, res, grad_x, D, head, BLOCK_D)  # pylint:disable=possibly-used-before-assignment
 
     return grad_x
