@@ -34,39 +34,39 @@
 
 在`pretrain_xxx.sh`或者`tune_xxx.sh`的预训练和微调脚本中，根据使用场景增加参数以开启权重转换，更多详情请参见[参数说明](#参数说明)。
 
-**场景1：从HuggingFace加载并训练**
+- 场景1：从HuggingFace加载并训练
 
-```bash
-# 从HuggingFace格式加载，自动转换为Megatron格式进行训练
---enable-hf2mg-convert \
---model-type-hf <model_type>
-```
-
-**场景2：开启双向权重转换**
-
-```bash
-# 训练时同时保存两种格式的权重，作用等同于自动启用双向转换
+    ```bash
+    # 从HuggingFace格式加载，自动转换为Megatron格式进行训练
     --enable-hf2mg-convert \
-    --enable-mg2hf-convert \
     --model-type-hf <model_type>
-```
+    ```
 
-**场景3：将训练每次保存的Megatron格式权重转换为HuggingFace格式**
+- 场景2：开启双向权重转换
 
-```bash
-# 将训练过程中每次保存的Megatron格式权重转换为HuggingFace格式
-    --enable-mg2hf-convert \
-    --model-type-hf  <model_type>
-```
+    ```bash
+    # 训练时同时保存两种格式的权重，作用等同于自动启用双向转换
+        --enable-hf2mg-convert \
+        --enable-mg2hf-convert \
+        --model-type-hf <model_type>
+    ```
 
-**场景4：仅转换最终保存模型为HuggingFace格式**
+- 场景3：将训练每次保存的Megatron格式权重转换为HuggingFace格式
 
-```bash
-# 仅将训练结束后保存的Megatron格式权重转换为HuggingFace格式，不转换训练中间过程保存的Megatron格式权重
-    --enable-mg2hf-convert \
-    --only-convert-last-checkpoint \
-    --model-type-hf  <model_type>
-```
+    ```bash
+    # 将训练过程中每次保存的Megatron格式权重转换为HuggingFace格式
+        --enable-mg2hf-convert \
+        --model-type-hf  <model_type>
+    ```
+
+- 场景4：仅转换最终保存模型为HuggingFace格式
+
+    ```bash
+    # 仅将训练结束后保存的Megatron格式权重转换为HuggingFace格式，不转换训练中间过程保存的Megatron格式权重
+        --enable-mg2hf-convert \
+        --only-convert-last-checkpoint \
+        --model-type-hf  <model_type>
+    ```
 
 #### 参数说明
 
@@ -119,9 +119,7 @@
   - 存储路径规则：
     - 如果指定`--hf-save-dir`，则转换后的HuggingFace权重将保存至`{hf_save_dir}/mg2hf_iteration{iteration}/`目录。
     - 如果未指定，则默认保存至`{save}/mg2hf_iteration{iteration}`目录。
-    - 配置文件处理：
-      - 指定`--hf-cfg-dir`时，从该目录复制配置文件至转换后的HuggingFace权重目录。
-      - 未指定但启用双向转换时，从`{load}`目录复制配置文件。
+    - 配置文件处理：指定`--hf-cfg-dir`时，从该目录复制配置文件至转换后的HuggingFace权重目录；未指定但启用双向转换时，从`{load}`目录复制配置文件。
 
 > [!NOTE]
 >

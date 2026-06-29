@@ -30,9 +30,11 @@
     启动预训练前请参考[MindSpeed LLM安装指导](../../install_guide.md)完成环境安装，并确保已完成昇腾NPU套件相关的环境变量配置，如下所示：
 
     ```shell
-    source /usr/local/Ascend/cann/set_env.sh     # 修改为实际安装的Toolkit包路径
-    source /usr/local/Ascend/nnal/atb/set_env.sh # 修改为实际安装的nnal包路径
+    source /usr/local/Ascend/cann/set_env.sh
+    source /usr/local/Ascend/nnal/atb/set_env.sh
     ```
+
+    以上命令以root用户安装后的默认路径为例，请用户根据set_env.sh的实际路径进行替换。
 
 2. 预训练数据预处理
 
@@ -56,8 +58,8 @@
 
     数据预处理相关参数说明:
 
-    - `input`：可以直接输入到数据集目录或具体文件，如果是目录，则处理全部文件, 支持`.parquet`，`.csv`，`.json`，`.jsonl`，`.txt`，`.arrow`格式， 同一个文件夹下的数据格式需要保持一致。
-    - `handler-name`：当前预训练默认使用 `GeneralPretrainHandler`，支持的是预训练数据风格，提取数据的`text`列，格式如下：
+    - `input`：可以直接输入到数据集目录或具体文件，如果是目录，则处理全部文件, 支持`.parquet`、`.csv`、`.json`、`.jsonl`、`.txt`以及`.arrow`格式，同一个文件夹下的数据格式需要保持一致。
+    - `handler-name`：当前预训练默认使用`GeneralPretrainHandler`，支持的是预训练数据风格，提取数据的`text`列，格式如下：
 
         ```shell
         [
@@ -66,7 +68,7 @@
         ]
         ```
 
-    - `json-keys`：从文件中提取的列名列表，默认为 `text`，可以为 `text`, `input`, `title` 等多个输入，结合具体需求及数据集内容使用，如：
+    - `json-keys`：从文件中提取的列名列表，默认为`text`，可以为`text`、`input`及`title`等多个输入，结合具体需求及数据集内容使用，如：
 
         ```shell
         --json-keys text input output
@@ -89,8 +91,8 @@
     - 单机配置
 
         ```bash
-        NPUS_PER_NODE=8  # 单节点的卡数
-        MASTER_ADDR=localhost
+        NPUS_PER_NODE=8        # 使用单节点的8卡NPU
+        MASTER_ADDR=localhost  # 使用本节点IP地址或者localhost
         MASTER_PORT=6000
         NNODES=1
         NODE_RANK=0
@@ -102,10 +104,10 @@
         ```bash
         # 根据分布式集群实际情况配置分布式参数
         NPUS_PER_NODE=8                    # 每个节点的卡数
-        MASTER_ADDR="your master node IP"  # 都需要修改为主节点的IP地址（不能为localhost）
+        MASTER_ADDR="your master node IP"  # 所有节点都配置为主节点IP地址（不能为localhost）
         MASTER_PORT=6000
-        NNODES=2                           # 集群里的节点数，以实际情况填写
-        NODE_RANK="current node id"        # 当前节点的RANK，多个节点不能重复，主节点为0, 其他节点可以是1、2...
+        NNODES=2                           # 根据参与节点数量配置，多机即多节点
+        NODE_RANK="current node id"        # 多机为(0,NNODES-1)，不同节点不可重复，NODE_RANK为0的节点为主节点
         WORLD_SIZE=$(($NPUS_PER_NODE * $NNODES))
         ```
 
