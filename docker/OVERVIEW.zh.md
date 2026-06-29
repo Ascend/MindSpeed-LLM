@@ -207,7 +207,7 @@ docker run -it --rm \
 
 ## 许可证
 
-MindSpeed LLM 基于 Apache License 2.0 许可证发布。详见 [LICENSE](../LICENSE) 文件。
+MindSpeed LLM 基于 Apache License 2.0 许可证发布。详见 [LICENSE](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/LICENSE) 文件。
 
 与所有 Docker 镜像一样，这些镜像可能还包含受其他许可证约束的其他软件（例如基础发行版中的 Bash，以及所包含主要软件的任何直接或间接依赖项）。
 

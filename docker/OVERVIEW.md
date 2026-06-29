@@ -205,7 +205,7 @@ docker run -it --rm \
 
 ## License
 
-MindSpeed LLM is released under the Apache License 2.0. See the [LICENSE](../LICENSE) file for details.
+MindSpeed LLM is released under the Apache License 2.0. See the [LICENSE](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/LICENSE) file for details.
 
 Like all Docker images, this image may contain other software subject to separate license agreements, such as Bash from the base system and all direct and indirect dependencies of integrated core software.
 
