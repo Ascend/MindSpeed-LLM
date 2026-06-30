@@ -897,6 +897,42 @@
       <td>是否使能FA算子。</td>
     </tr>
     <tr>
+      <td>use_sparse_flash_attn</td>
+      <td>bool</td>
+      <td>False</td>
+      <td>是否使能SFA融合算子。仅支持DeepSeek-V3.2和GLM-5系列模型。</td>
+    </tr>
+    <tr>
+      <td>use_fused_lightning_indexer</td>
+      <td>bool</td>
+      <td>False</td>
+      <td>是否使能LI融合算子。仅支持DeepSeek-V3.2和GLM-5系列模型。</td>
+    </tr>
+    <tr>
+      <td>use_fused_lightning_indexer_loss</td>
+      <td>bool</td>
+      <td>False</td>
+      <td>是否使能稀疏indexer的kl loss融合算子。仅支持DeepSeek-V3.2和GLM-5系列模型。</td>
+    </tr>
+    <tr>
+      <td>indexer_loss_coeff</td>
+      <td>float</td>
+      <td>1.0</td>
+      <td>indexer loss的系数。</td>
+    </tr>
+    <tr>
+      <td>pre_tokens</td>
+      <td>int</td>
+      <td>1048576</td>
+      <td>attention计算中滑窗的pre-token维度。</td>
+    </tr>
+    <tr>
+      <td>next_tokens</td>
+      <td>int</td>
+      <td>0</td>
+      <td>attention计算中滑窗的next-token维度。</td>
+    </tr>
+    <tr>
       <td>use_triton_gdn</td>
       <td>bool</td>
       <td>False</td>

@@ -27,7 +27,9 @@ class ModelArguments:
         metadata={"help": "Path to pretrained model or model identifier from huggingface.co/models"}
     )
     model_id: Optional[
-        Literal["gpt_oss", "qwen3", "qwen3_moe", "qwen3_next", "step35", "mamba3", "minimax_m27", "longcat_flash"]
+        Literal[
+            "gpt_oss", "qwen3", "qwen3_moe", "qwen3_next", "step35", "mamba3", "minimax_m27", "longcat_flash", "glm52"
+        ]
     ] = field(
         default=None,
         metadata={
@@ -648,6 +650,30 @@ class OptimizationArguments:
     )
     use_fused_rotary_pos_emb: bool = field(default=False, metadata={"help": "Use fused rotary-pos-emb."})
     use_flash_attn: bool = field(default=False, metadata={"help": "use FlashAttention implementation of attention."})
+    use_sparse_flash_attn: bool = field(
+        default=False,
+        metadata={"help": "Use NPU sparse flash attention for DSA attention."},
+    )
+    use_fused_lightning_indexer: bool = field(
+        default=False,
+        metadata={"help": "Use NPU lightning indexer to select DSA sparse attention indices."},
+    )
+    use_fused_lightning_indexer_loss: bool = field(
+        default=False,
+        metadata={"help": "Use fused NPU sparse lightning indexer KL loss."},
+    )
+    indexer_loss_coeff: float = field(
+        default=1.0,
+        metadata={"help": "Loss coefficient for DSA indexer KL loss."},
+    )
+    pre_tokens: int = field(
+        default=1048576,
+        metadata={"help": "Previous-token window passed to attention."},
+    )
+    next_tokens: int = field(
+        default=0,
+        metadata={"help": "Next-token window passed to attention."},
+    )
     use_triton_gdn: bool = field(default=False, metadata={"help": "Use triton kernel accelerate training."})
     use_flash_gdn: bool = field(default=False, metadata={"help": "Use flash kernel accelerate training."})
     gdn_chunk_size: int = field(default=64, metadata={"help": "Matrix blocking size of Gated DeltaNet."})
@@ -714,6 +740,20 @@ def _validate_cross_args(args):
         raise ValueError(
             f"qwen3_next only supports 'ulysses' context parallel type when cp_size > 1, "
             f"but got cp_type='{args.parallel.cp_type}'."
+        )
+
+    dsa_fusion_args = (
+        "use_sparse_flash_attn",
+        "use_fused_lightning_indexer",
+        "use_fused_lightning_indexer_loss",
+    )
+    enabled_dsa_fusions = [name for name in dsa_fusion_args if getattr(args.optimization, name)]
+    model_id = args.model.model_id or ""
+    supports_dsa_fusions = model_id in {"dsv32", "deepseek_v32"} or model_id.startswith("glm5")
+    if enabled_dsa_fusions and not supports_dsa_fusions:
+        raise ValueError(
+            f"{', '.join(enabled_dsa_fusions)} only support DeepSeek-V3.2 and GLM-5 series models, "
+            f"but got model_id='{model_id or None}'."
         )
 
 

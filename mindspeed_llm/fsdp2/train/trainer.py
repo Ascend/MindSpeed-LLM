@@ -318,6 +318,7 @@ class Trainer:
                         self._last_logged_step,
                         self._total_loss_scalar,
                         self._last_logged_loss_scalar,
+                        sparse_attn_reduce_group=reduce_group,
                     )
                     # update record
                     self._step_start_time = record_info['time']

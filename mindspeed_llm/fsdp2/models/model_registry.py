@@ -16,6 +16,7 @@ class ModelRegistry:
     from mindspeed_llm.fsdp2.models.mamba3.modeling_mamba3 import Mamba3ForCausalLM
     from mindspeed_llm.fsdp2.models.minimax_m27.modeling_minimax_m2 import MiniMaxM2ForCausalLM
     from mindspeed_llm.fsdp2.models.longcat_flash.modeling_longcat_flash import LongcatFlashNgramForCausalLM
+    from mindspeed_llm.fsdp2.models.glm52.modeling_glm_moe_dsa import GlmMoeDsaForCausalLM
 
     _REGISTRY: Dict[str, Type[Any]] = {
         "gpt_oss": GptOssForCausalLM,
@@ -26,6 +27,7 @@ class ModelRegistry:
         "mamba3": Mamba3ForCausalLM,
         "minimax_m27": MiniMaxM2ForCausalLM,
         "longcat_flash": LongcatFlashNgramForCausalLM,
+        "glm52": GlmMoeDsaForCausalLM,
     }
 
     @classmethod
