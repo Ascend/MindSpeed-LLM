@@ -935,14 +935,14 @@
   </tbody>
 </table>
 
-# megatron参数对照
+## Megatron参数对照
 
 <table>
   <thead>
     <tr>
       <th>参数类型</th>
       <th>FSDP2参数</th>
-      <th>megatron参数</th>
+      <th>Megatron参数</th>
     </tr>
   </thead>
   <tbody>
