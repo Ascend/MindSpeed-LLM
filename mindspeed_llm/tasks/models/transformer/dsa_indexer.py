@@ -736,6 +736,48 @@ def compute_dsa_indexer_loss(main_attn_dist, index_score, topk_indices, loss_sca
     return loss
 
 
+def compute_dsa_indexer_loss_dsv4(main_attn_dist, index_score, topk_indices, loss_scale, eps=1e-9, cmp_ratio=1):
+    """Compute dsa indexer loss at sparse training stage
+    Reference: https://github.com/deepseek-ai/DeepSeek-V3.2-Exp/blob/main/DeepSeek_V3_2.pdf
+    Args:
+        main_attn_dist: Q dist
+        index_score: P dist
+        topk_indices: Selected top-K indices for sparse phase
+        loss_scale: Dsa indexer loss scale
+    """
+    args = get_args()
+
+    index_score = F.softmax(index_score, dim=-1, dtype=torch.float32)
+    if args.use_fused_lightning_indexer and cmp_ratio > 1:
+        index_score = index_score.clone() if index_score.dtype == torch.float32 else index_score.float()
+        index_score[:, : cmp_ratio - 1, :] = 0
+
+    max_valid_idx = main_attn_dist.size(-1) - 1
+    topk_indices_clean = topk_indices.masked_fill_(topk_indices == -1, max_valid_idx)
+    topk_indices_clean.clamp_(min=0, max=max_valid_idx)
+
+    # considering only the selected token
+    main_attn_dist = F.normalize(main_attn_dist, p=1, dim=-1)
+    selected_main_attn_dist = torch.gather(main_attn_dist, dim=-1, index=topk_indices_clean)
+    loss = compute_indexer_loss(selected_main_attn_dist, index_score, eps=eps)
+    loss *= loss_scale
+
+    return loss
+
+
+def compute_indexer_loss(attn_softmax_out, indexer_softmax_out, eps=1e-9):
+    y = attn_softmax_out
+    Y = indexer_softmax_out
+    reduce_target = torch.sum(y, dim=-1, keepdim=True)
+    norm_target = torch.div(y, reduce_target + eps)
+
+    logp = torch.clamp(norm_target, min=eps).log()
+    log_Y = (Y + eps).log()
+    tmp = logp - log_Y
+    result = tmp * y
+    return result.sum(-1).mean()
+
+
 def get_attn_scores(
     query,
     key,

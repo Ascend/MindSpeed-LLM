@@ -29,7 +29,7 @@ from mindspeed_llm.tasks.models.transformer.deepseek4.compressor import get_comp
 from mindspeed_llm.tasks.models.transformer.dsa_indexer import (
     get_dsa_indexer_spec,
     DSAIndexerLossAutoScaler,
-    compute_dsa_indexer_loss,
+    compute_dsa_indexer_loss_dsv4,
     get_attn_scores,
     DSAIndexerLossLoggingHelper,
     fused_sparse_attn_shared_kv_kvallgather,
@@ -452,7 +452,7 @@ class DeepSeek4SelfAttention(MegatronModule):
                     self.softmax_scale,
                     allgather_q=True,
                 )
-                loss = compute_dsa_indexer_loss(
+                loss = compute_dsa_indexer_loss_dsv4(
                     main_attn_dist,
                     compress_topk_score,
                     compress_topk_idxs,
