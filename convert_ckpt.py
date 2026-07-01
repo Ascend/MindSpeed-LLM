@@ -124,7 +124,6 @@ def main():
         default="configs/checkpoint/model_cfg.json",
         help="Path to the config directory. If not specified, the default path in the repository will be used.",
     )
-    parser.add_argument('--qlora-nf4', action='store_true', help='use bitsandbytes nf4 to quantize model.')
     parser.add_argument(
         '--save-lora-to-hf', action='store_true', default=False, help='Enable only save lora-checkpoint to hf'
     )

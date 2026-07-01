@@ -1,10 +1,8 @@
 # Copyright (c) 2024, HUAWEI CORPORATION.  All rights reserved.
-import math
 from dataclasses import dataclass
 from typing import Union
 
 import torch
-import torch.nn.functional as F
 
 from megatron.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb
 from megatron.core.transformer import TransformerConfig, ModuleSpec, build_module
@@ -12,19 +10,14 @@ from megatron.core.transformer.attention import SelfAttention, SelfAttentionSubm
 from megatron.core.transformer.enums import AttnMaskType
 from megatron.training import get_args
 
-try:
-    import bitsandbytes as bnb
-except ImportError:
-    bnb = None
-
-
 
 @dataclass
 class CustomQwen3NextSelfAttentionSubmodules(SelfAttentionSubmodules):
     """Submodules for the Qwen3Next self-attention layer with NPU."""
+
     q_proj: Union[ModuleSpec, type] = None
     k_proj: Union[ModuleSpec, type] = None
-    v_proj: Union[ModuleSpec, type] = None      
+    v_proj: Union[ModuleSpec, type] = None
     core_attention: Union[ModuleSpec, type] = None
     linear_proj: Union[ModuleSpec, type] = None
     q_layernorm: Union[ModuleSpec, type] = None
@@ -95,7 +88,7 @@ class CustomQwen3NextSelfAttention(SelfAttention):
             skip_bias_add=False,
             is_expert=False,
             tp_comm_buffer_name="v_proj",
-        )        
+        )
 
         if submodules.q_layernorm is not None:
             self.q_layernorm = build_module(
@@ -172,7 +165,7 @@ class CustomQwen3NextSelfAttention(SelfAttention):
                 cu_seqlens_q = packed_seq_params.cu_seqlens_q
                 cu_seqlens_kv = packed_seq_params.cu_seqlens_kv
             else:
-                cu_seqlens_q = cu_seqlens_kv = None  
+                cu_seqlens_q = cu_seqlens_kv = None
 
             query = apply_rotary_pos_emb(query, rotary_q_pos_emb, config=self.config, cu_seqlens=cu_seqlens_q)
             key = apply_rotary_pos_emb(key, rotary_k_pos_emb, config=self.config, cu_seqlens=cu_seqlens_kv)
@@ -182,12 +175,12 @@ class CustomQwen3NextSelfAttention(SelfAttention):
             args.context_parallel_size > 1
             and args.context_parallel_algo in ["ulysses_cp_algo", "hybrid_cp_algo"]
             and args.kv_head_repeat_before_uly_alltoall
-            )
+        )
         heads_per_gqa_group = self.num_attention_heads_per_partition // self.num_query_groups_per_partition
 
         if should_kv_repeat_before_uly and heads_per_gqa_group > 1:
             key = key.repeat_interleave(heads_per_gqa_group, dim=2)
-            value = value.repeat_interleave(heads_per_gqa_group, dim=2)            
+            value = value.repeat_interleave(heads_per_gqa_group, dim=2)
 
         # ==================================
         # core attention computation

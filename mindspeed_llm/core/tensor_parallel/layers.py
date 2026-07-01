@@ -1,14 +1,11 @@
-from functools import wraps
 from typing import Optional, Callable
 
 import torch
+import torch.nn.functional as F
 from torch.nn.parameter import Parameter
 
 from megatron.core import parallel_state, ModelParallelConfig
-from megatron.core.tensor_parallel import (
-    copy_to_tensor_model_parallel_region,
-    gather_from_tensor_model_parallel_region
-)
+from megatron.core.tensor_parallel import copy_to_tensor_model_parallel_region, gather_from_tensor_model_parallel_region
 from megatron.core.tensor_parallel.utils import VocabUtility
 from megatron.core.tensor_parallel.layers import (
     linear_with_frozen_weight,
@@ -20,29 +17,23 @@ from megatron.core.tensor_parallel.layers import (
 )
 from megatron.legacy.model.fused_layer_norm import MixedFusedLayerNorm
 from megatron.training import get_args
-
-import torch.nn.functional as F
 from megatron.core.tensor_parallel.mappings import (
     reduce_scatter_to_sequence_parallel_region,
     reduce_from_tensor_model_parallel_region,
 )
-from mindspeed_llm.training.utils import get_actual_seq_len_list, set_actual_seq_len_list
 
-try:
-    import bitsandbytes as bnb
-except ImportError:
-    bnb = None
+from mindspeed_llm.training.utils import get_actual_seq_len_list, set_actual_seq_len_list
 
 
 def vocab_embedding_init_func(
-        self,
-        num_embeddings: int,
-        embedding_dim: int,
-        *,
-        init_method: Callable,
-        config: ModelParallelConfig,
-        reduce_scatter_embeddings: bool = False,
-        skip_weight_param_allocation: bool = False,
+    self,
+    num_embeddings: int,
+    embedding_dim: int,
+    *,
+    init_method: Callable,
+    config: ModelParallelConfig,
+    reduce_scatter_embeddings: bool = False,
+    skip_weight_param_allocation: bool = False,
 ):
     """Patch for legacy norm."""
     super(VocabParallelEmbedding, self).__init__()
@@ -65,9 +56,7 @@ def vocab_embedding_init_func(
     if not skip_weight_param_allocation:
         if config.use_cpu_initialization:
             self.weight = Parameter(
-                torch.empty(
-                    self.num_embeddings_per_partition, self.embedding_dim, dtype=config.params_dtype
-                )
+                torch.empty(self.num_embeddings_per_partition, self.embedding_dim, dtype=config.params_dtype)
             )
             if config.perform_initialization:
                 _initialize_affine_weight_cpu(
@@ -110,8 +99,7 @@ def vocab_parallel_embedding_forward(self, input_, weight=None):
 
     if self.tensor_model_parallel_size > 1:
         # Build the mask.
-        input_mask = (input_ < self.vocab_start_index) | \
-                     (input_ >= self.vocab_end_index)
+        input_mask = (input_ < self.vocab_start_index) | (input_ >= self.vocab_end_index)
         # Mask the input.
         masked_input = input_.clone() - self.vocab_start_index
         masked_input *= ~input_mask
@@ -140,7 +128,7 @@ def vocab_parallel_embedding_forward(self, input_, weight=None):
 
 class SegmentedColumnParallelLinear(ColumnParallelLinear):
     def __int__(self):
-        super(ColumnParallelLinear, self).__init__()
+        super().__init__()
 
     def forward(self, input_: torch.Tensor, weight: Optional[torch.Tensor] = None):
         """Forward of ColumnParallelLinear
@@ -169,8 +157,7 @@ class SegmentedColumnParallelLinear(ColumnParallelLinear):
             expected_shape = (self.output_size_per_partition, self.input_size)
             if weight.shape != expected_shape:
                 raise RuntimeError(
-                    f"supplied weight's shape is {tuple(weight.shape)}, "
-                    f"not {expected_shape} as expected"
+                    f"supplied weight's shape is {tuple(weight.shape)}, not {expected_shape} as expected"
                 )
 
         if self.config._cpu_offloading_context is not None:
@@ -180,12 +167,7 @@ class SegmentedColumnParallelLinear(ColumnParallelLinear):
 
         bias = self.bias if not self.skip_bias_add else None
 
-        if (
-                self.allreduce_dgrad
-                or self.sequence_parallel
-                or self.explicit_expert_comm
-                or self.disable_grad_reduce
-        ):
+        if self.allreduce_dgrad or self.sequence_parallel or self.explicit_expert_comm or self.disable_grad_reduce:
             input_parallel = input_
         else:
             input_parallel = copy_to_tensor_model_parallel_region(input_)
@@ -199,25 +181,24 @@ class SegmentedColumnParallelLinear(ColumnParallelLinear):
         else:
             self._forward_impl = linear_with_grad_accumulation_and_async_allreduce
 
-
         allreduce_dgrad = False if self.explicit_expert_comm else self.allreduce_dgrad
 
         weight = torch.split(weight, weight.shape[0] // args_.output_layer_slice_num, dim=0)
 
         output_parallel = []
         for i in range(args_.output_layer_slice_num):
-            output_parallel.append(self._forward_impl(
-                input=input_parallel,
-                weight=weight[i],
-                bias=bias,
-                gradient_accumulation_fusion=self.gradient_accumulation_fusion,
-                async_grad_allreduce=allreduce_dgrad,
-                sequence_parallel=False if self.explicit_expert_comm else self.sequence_parallel,
-                grad_output_buffer=self.grad_output_buffer
-                if self.config.defer_embedding_wgrad_compute
-                else None,
-                allreduce_dgrad=allreduce_dgrad,
-            ))
+            output_parallel.append(
+                self._forward_impl(
+                    input=input_parallel,
+                    weight=weight[i],
+                    bias=bias,
+                    gradient_accumulation_fusion=self.gradient_accumulation_fusion,
+                    async_grad_allreduce=allreduce_dgrad,
+                    sequence_parallel=False if self.explicit_expert_comm else self.sequence_parallel,
+                    grad_output_buffer=self.grad_output_buffer if self.config.defer_embedding_wgrad_compute else None,
+                    allreduce_dgrad=allreduce_dgrad,
+                )
+            )
         output_parallel = torch.cat(output_parallel, dim=2)
 
         if self.gather_output:
@@ -236,19 +217,20 @@ def checkpoint_forward_wrapper(fn):
     Fixes TypeError caused by Megatron CheckpointFunction not supporting list[Tensor] inputs.
 
     Background:
-    In hybrid_cp_algo + attention_mask_type=general mode, attention_mask is converted to 
+    In hybrid_cp_algo + attention_mask_type=general mode, attention_mask is converted to
     list[Tensor], triggering CheckpointFunction native limitation.
 
     Solution:
-    Flatten the list into independent Tensors during forward to bypass the check; restore 
+    Flatten the list into independent Tensors during forward to bypass the check; restore
     the structure via closure during recomputation to ensure logical consistency.
     """
+
     def wrapper(ctx, run_function, distribute_saved_activations, *args):
         ctx.actual_seq_len_list = get_actual_seq_len_list()
 
         flat_args = []
         arg_structure = []
-        
+
         for arg in args:
             if isinstance(arg, (list, tuple)) and len(arg) > 0 and torch.is_tensor(arg[0]):
                 arg_structure.append(("seq", len(arg), type(arg)))
@@ -256,7 +238,7 @@ def checkpoint_forward_wrapper(fn):
             else:
                 arg_structure.append(("item", 1, None))
                 flat_args.append(arg)
-        
+
         ctx.custom_arg_structure = arg_structure
 
         def wrapped_run_func(*rebuilt_flat_args):
@@ -309,15 +291,13 @@ class LinearNoTP(torch.nn.Linear):
         setattr(self.weight, 'all_reduce', True)
 
         self._register_load_state_dict_pre_hook(
-            lambda state_dict, prefix, *args, **kwargs: state_dict.pop(
-                f'{prefix}_extra_state', None)
+            lambda state_dict, prefix, *args, **kwargs: state_dict.pop(f'{prefix}_extra_state', None)
         )
 
     def forward(self, input_):
-        if hasattr(self.weight, "quant_state"):
-            output = bnb.matmul_4bit(input_, self.weight.t(), self.weight.quant_state, bias=self.bias)
-        elif get_args().fp8:
+        if get_args().fp8:
             from mindspeed.te.pytorch.fp8.recipes import matmul_fp8
+
             output = matmul_fp8(input_, self.weight)
             if self.bias is not None:
                 output = output + self.bias
@@ -328,24 +308,7 @@ class LinearNoTP(torch.nn.Linear):
         return output
 
     def _save_to_state_dict(self, destination, prefix, keep_vars):
-        args = get_args()
-        if args.qlora_save_dequantize and getattr(self.weight, "quant_state", None) is not None:
-            self.weight = torch.nn.Parameter(bnb.functional.dequantize_4bit(self.weight.data, self.weight.quant_state))
         super()._save_to_state_dict(destination, prefix, keep_vars)
         if getattr(self.weight, "quant_state", None) is not None:
             for k, v in self.weight.quant_state.as_dict(packed=True).items():
                 destination[prefix + "weight." + k] = v if keep_vars else v.detach()
-
-    def _load_from_state_dict(self, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs):
-        if any(['bitsandbytes' in i for i in state_dict.keys()]):  # is quantized linear
-            qs_dict = {}
-            for k, v in state_dict.items():
-                key = k.replace(prefix, "")
-                if key != '_extra_state':
-                    qs_dict[key] = v
-            self.weight = bnb.nn.Params4bit.from_prequantized(
-                data=qs_dict.get('weight'),
-                quantized_stats={key.replace('weight.', ''): qs_dict[key] for key in qs_dict if key != 'weight'},
-                requires_grad=False,
-                device='npu')
-        super()._load_from_state_dict(state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs)

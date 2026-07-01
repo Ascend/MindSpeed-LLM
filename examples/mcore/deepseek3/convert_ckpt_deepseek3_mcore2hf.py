@@ -12,7 +12,6 @@ from itertools import product
 import numpy as np
 import tqdm
 import torch
-import torch_npu
 import safetensors.torch
 
 logger.basicConfig(format="")
@@ -42,31 +41,31 @@ def tensor_memory_size(tensor):
     return tensor.element_size() * tensor.numel()
 
 
-class MgCkptConvert(object):
-    """ deepseek3 mg -> hf """
+class MgCkptConvert:
+    """deepseek3 mg -> hf"""
 
     def __init__(
-            self,
-            mg_model_path: str,
-            hf_save_path: str,
-            num_layers: int,
-            tp_size: int = 1,
-            pp_size: int = 1,
-            ep_size: int = 1,
-            vpp_stage: int = None,
-            num_dense_layers: int = 3,
-            num_layer_list: str = None,
-            noop_layers: str = None,
-            moe_grouped_gemm: bool = False,
-            moe_tp_extend_ep: bool = False,
-            mla_mm_split: bool = False,
-            dualpipe: bool = False,
-            mtp_num_layers: int = 0,
-            lora_model_path: str = None,
-            lora_r: int = 16,
-            lora_alpha: int = 32,
-            lora_target_modules: str = None,
-            save_lora_to_hf: bool = False
+        self,
+        mg_model_path: str,
+        hf_save_path: str,
+        num_layers: int,
+        tp_size: int = 1,
+        pp_size: int = 1,
+        ep_size: int = 1,
+        vpp_stage: int = None,
+        num_dense_layers: int = 3,
+        num_layer_list: str = None,
+        noop_layers: str = None,
+        moe_grouped_gemm: bool = False,
+        moe_tp_extend_ep: bool = False,
+        mla_mm_split: bool = False,
+        dualpipe: bool = False,
+        mtp_num_layers: int = 0,
+        lora_model_path: str = None,
+        lora_r: int = 16,
+        lora_alpha: int = 32,
+        lora_target_modules: str = None,
+        save_lora_to_hf: bool = False,
     ):
         self.tp_size = tp_size
         self.pp_size = pp_size
@@ -88,7 +87,7 @@ class MgCkptConvert(object):
         self.moe_grouped_gemm = moe_grouped_gemm
         self.moe_tp_extend_ep = moe_tp_extend_ep
         self.mla_mm_split = mla_mm_split
-        self.dualpipe = True if dualpipe == "dualpipev" else False
+        self.dualpipe = dualpipe == "dualpipev"
         self.first_k_dense_replace = num_dense_layers
         self.num_layer_list_cmd = num_layer_list
         self.mtp_num_layers = mtp_num_layers
@@ -145,7 +144,7 @@ class MgCkptConvert(object):
         if self.num_layer_list_cmd is None:
             if self.num_layers % self.pp_size != 0:
                 raise ValueError("number of layers should be divisible by the pipeline parallel size")
-            
+
             if self.vpp_stage is not None:
                 if (self.num_layers % self.pp_size) % self.vpp_stage != 0:
                     raise ValueError("number of pp_stage should be divisible by the vpp_stage")
@@ -168,13 +167,13 @@ class MgCkptConvert(object):
                 raise ValueError("num_layer_list supports only full parameters")
 
         if self.last_save_hf_layer == -1:
-            raise ValueError("Does not contain a vaild model layer. Please check the parameters!")
+            raise ValueError("Does not contain a valid model layer. Please check the parameters!")
 
         if self.lora_r is not None:
             if self.mtp_num_layers != 0:
-                raise ValueError("mtp_num_layers and lora/qlora can not exist together")
+                raise ValueError("mtp_num_layers and lora can not exist together")
             if self.mla_mm_split:
-                raise ValueError("mla_mm_split and lora/qlora can not exist together")
+                raise ValueError("mla_mm_split and lora can not exist together")
 
     @staticmethod
     def get_iter_path(ckpt_path, iteration=None):
@@ -182,7 +181,7 @@ class MgCkptConvert(object):
         if iteration is None:
             latest_iter_file = os.path.join(ckpt_path, "latest_checkpointed_iteration.txt")
             if os.path.exists(latest_iter_file):
-                with open(latest_iter_file, "r") as f:
+                with open(latest_iter_file, "r", encoding="utf-8") as f:
                     try:
                         iteration = int(f.read().strip())
                     except ValueError:
@@ -219,7 +218,7 @@ class MgCkptConvert(object):
 
     def calc_pprank_layeridxs(self) -> None:
         """pp->hf layers, {pp1: [0,1,2,3]}"""
-        num_layer_list_ = [i for i in range(self.num_real_layers)]
+        num_layer_list_ = list(range(self.num_real_layers))
         layers_each_pp = self.num_layer_list.copy()
 
         if self.noop_layers is not None:
@@ -233,7 +232,7 @@ class MgCkptConvert(object):
 
     def calc_vpprank_layeridxs(self) -> None:
         """vpp rank -> hf layers, {pp1: {vpp1: [0, 2], vpp2: [1, 3]}}"""
-        num_layer_list_ = [i for i in range(self.num_real_layers)]
+        num_layer_list_ = list(range(self.num_real_layers))
 
         layers_each_vpp = [[self.vpp_stage] * self.vpp_size for _ in range(self.pp_size)]
 
@@ -246,16 +245,19 @@ class MgCkptConvert(object):
 
             for vpp_rank in range(self.vpp_size):
                 for pp_rank in range(self.pp_size):
-                    self.vpprank_layer_idxs[pp_rank][vpp_rank] = [num_layer_list_.pop(0) for _ in range(layers_each_vpp[pp_rank][vpp_rank])]
+                    self.vpprank_layer_idxs[pp_rank][vpp_rank] = [
+                        num_layer_list_.pop(0) for _ in range(layers_each_vpp[pp_rank][vpp_rank])
+                    ]
         else:
-            noop_layers_list = None if not self.noop_layers else np.array(
-                sorted(list(map(int, self.noop_layers.split(",")))))
+            noop_layers_list = (
+                None if not self.noop_layers else np.array(sorted(list(map(int, self.noop_layers.split(",")))))
+            )
             min_noop_layer = None if not self.noop_layers else noop_layers_list[0]
 
             dualpipe_layer_list = []
             layers_each_pp = self.num_layers // self.pp_size
             layer_pop_num = layers_each_pp // 2
-            all_layer_list = [i for i in range(self.num_layers)]
+            all_layer_list = list(range(self.num_layers))
             # dualpipe_layer_list example
             # pp2: [0 1 2 3 4 5 6 7] -> [0 1 6 7 | 2 3 4 5]
             # pp4: [0 1 2 3 4 5 6 7] -> [0 7 | 1 6 | 2 5 | 3 4]
@@ -298,7 +300,7 @@ class MgCkptConvert(object):
         pp_local_layer_idx = defaultdict()
 
         for pp_rank in range(self.pp_size):
-            pp_local_layer_idx[pp_rank] = [i for i in range(self.num_layer_list[pp_rank])]
+            pp_local_layer_idx[pp_rank] = list(range(self.num_layer_list[pp_rank]))
 
         if self.noop_layers is not None:
             noop_list = list(map(int, self.noop_layers.split(",")))
@@ -321,7 +323,7 @@ class MgCkptConvert(object):
         if not self.dualpipe:
             for pp_rank in range(self.pp_size):
                 for vpp_rank in range(self.vpp_size):
-                    vpprank_layer_idxs_all[pp_rank][vpp_rank] = [i for i in range(layers_each_vpp[pp_rank][vpp_rank])]
+                    vpprank_layer_idxs_all[pp_rank][vpp_rank] = list(range(layers_each_vpp[pp_rank][vpp_rank]))
 
             if self.noop_layers is not None:
                 for layer in list(map(int, self.noop_layers.split(","))):
@@ -334,13 +336,16 @@ class MgCkptConvert(object):
                 for vpp_rank, layer_list in self.vpprank_layer_idxs[pp_rank].items():
                     for local_idx, hf_layer in enumerate(layer_list):
                         self.layeridx_vpprank[hf_layer] = (
-                            pp_rank, vpp_rank, vpprank_layer_idxs_all[pp_rank][vpp_rank][local_idx])
+                            pp_rank,
+                            vpp_rank,
+                            vpprank_layer_idxs_all[pp_rank][vpp_rank][local_idx],
+                        )
         else:
             vpprank_hflayer_idxs = defaultdict(dict)
             dualpipe_layer_list = []
             layers_each_pp = self.num_layers // self.pp_size
             layer_pop_num = layers_each_pp // 2
-            all_layer_list = [i for i in range(self.num_layers)]
+            all_layer_list = list(range(self.num_layers))
             while all_layer_list:
                 dualpipe_layer_list.extend(all_layer_list[:layer_pop_num])
                 dualpipe_layer_list.extend(all_layer_list[-layer_pop_num:])
@@ -349,12 +354,14 @@ class MgCkptConvert(object):
             # vpprank_hflayer_idxs {pp_rank: {vpp_rank: [hf_layer1, hf_layer2, ...]}}
             for pp_rank in range(self.pp_size):
                 for vpp_rank in range(self.vpp_size):
-                    pp_list = dualpipe_layer_list[pp_rank * layers_each_pp:(pp_rank + 1) * layers_each_pp]
+                    pp_list = dualpipe_layer_list[pp_rank * layers_each_pp : (pp_rank + 1) * layers_each_pp]
                     vpprank_hflayer_idxs[pp_rank][vpp_rank] = pp_list[
-                                                              vpp_rank * self.vpp_stage:(vpp_rank + 1) * self.vpp_stage]
+                        vpp_rank * self.vpp_stage : (vpp_rank + 1) * self.vpp_stage
+                    ]
 
-            noop_layers_list = None if not self.noop_layers else np.array(
-                sorted(list(map(int, self.noop_layers.split(",")))))
+            noop_layers_list = (
+                None if not self.noop_layers else np.array(sorted(list(map(int, self.noop_layers.split(",")))))
+            )
             min_noop_layer = None if not self.noop_layers else noop_layers_list[0]
 
             for pp_rank in vpprank_hflayer_idxs:
@@ -391,8 +398,8 @@ class MgCkptConvert(object):
         hf_dict["model.embed_tokens.weight"] = emb_weights
 
     def set_model_postprocess(self, hf_dict, mg_models):
-        global GLOBAL_LM_HEAD_WEIGHTS
         """final_norm & output_layer"""
+        global GLOBAL_LM_HEAD_WEIGHTS
         final_norm_key = "decoder.final_layernorm.weight"
         if self.mtp_num_layers:
             final_norm_key = "final_layernorm.weight"
@@ -427,8 +434,7 @@ class MgCkptConvert(object):
         """attn"""
 
         def _generate_attn_layers_key(mtp_flag, local_idx):
-            prefix = f"mtp.layers.{local_idx}.transformer_layer" if mtp_flag else \
-                f"decoder.layers.{local_idx}"
+            prefix = f"mtp.layers.{local_idx}.transformer_layer" if mtp_flag else f"decoder.layers.{local_idx}"
 
             qkv_key = f"{prefix}.self_attention.linear_qkv.weight"
             dense_key = f"{prefix}.self_attention.linear_proj.weight"
@@ -440,8 +446,7 @@ class MgCkptConvert(object):
             return qkv_key, dense_key, q_layernorm_key, kv_layernorm_key, q_b_key, kv_b_key
 
         def _generate_attn_mm_split_key(mtp_flag, local_idx):
-            prefix = f"mtp.layers.{local_idx}.transformer_layer" if mtp_flag else \
-                f"decoder.layers.{local_idx}"
+            prefix = f"mtp.layers.{local_idx}.transformer_layer" if mtp_flag else f"decoder.layers.{local_idx}"
 
             qk_nope_key = f"{prefix}.self_attention.linear_qk_nope.weight"
             qk_rope_key = f"{prefix}.self_attention.linear_qk_rope.weight"
@@ -450,8 +455,9 @@ class MgCkptConvert(object):
 
             return qk_nope_key, qk_rope_key, kv_nope_key, linear_v_key
 
-        linear_qkv_key, linear_proj_key, q_norm_key, k_norm_key, linear_qb_key, linear_kvb_key = _generate_attn_layers_key(
-            mtp_flag, local_layer_idx)
+        linear_qkv_key, linear_proj_key, q_norm_key, k_norm_key, linear_qb_key, linear_kvb_key = (
+            _generate_attn_layers_key(mtp_flag, local_layer_idx)
+        )
 
         linear_proj_list = []
         linear_qb_list = []
@@ -465,8 +471,9 @@ class MgCkptConvert(object):
             cur_linear_proj = mg_models[(tp_rank, self.ep_rank_list[0])].pop(linear_proj_key)
             linear_proj_list.append(cur_linear_proj.clone())
             if self.mla_mm_split:
-                qk_nope_key, qk_rope_key, kv_nope_key, linear_v_key = _generate_attn_mm_split_key(mtp_flag,
-                                                                                                  local_layer_idx)
+                qk_nope_key, qk_rope_key, kv_nope_key, linear_v_key = _generate_attn_mm_split_key(
+                    mtp_flag, local_layer_idx
+                )
                 qk_nope_list.append(mg_models[(tp_rank, self.ep_rank_list[0])].pop(qk_nope_key))
                 qk_rope_list.append(mg_models[(tp_rank, self.ep_rank_list[0])].pop(qk_rope_key))
                 kv_nope_list.append(mg_models[(tp_rank, self.ep_rank_list[0])].pop(kv_nope_key))
@@ -482,7 +489,9 @@ class MgCkptConvert(object):
 
         if self.mla_mm_split:
             qk_nope_weight = torch.cat(qk_nope_list, dim=0).reshape(self.num_attention_heads, self.qk_head_dim, -1)
-            qk_rope_weight = torch.cat(qk_rope_list, dim=0).reshape(self.num_attention_heads, self.qk_pos_emb_head_dim, -1)
+            qk_rope_weight = torch.cat(qk_rope_list, dim=0).reshape(
+                self.num_attention_heads, self.qk_pos_emb_head_dim, -1
+            )
             kv_nope_weight = torch.cat(kv_nope_list, dim=0).reshape(self.num_attention_heads, self.qk_head_dim, -1)
             linear_v_weight = torch.cat(linear_v_list, dim=0).reshape(self.num_attention_heads, self.v_head_dim, -1)
             q_b_proj = torch.cat([qk_nope_weight, qk_rope_weight], dim=1)
@@ -540,8 +549,12 @@ class MgCkptConvert(object):
 
         hf_dict[f"{hf_name_prefix}.model.layers.{hf_layer_idx}.self_attn.q_a_proj.lora_A.weight"] = qkv_A_proj.clone()
         hf_dict[f"{hf_name_prefix}.model.layers.{hf_layer_idx}.self_attn.q_a_proj.lora_B.weight"] = q_a_proj_B.clone()
-        hf_dict[f"{hf_name_prefix}.model.layers.{hf_layer_idx}.self_attn.kv_a_proj_with_mqa.lora_A.weight"] = qkv_A_proj.clone()
-        hf_dict[f"{hf_name_prefix}.model.layers.{hf_layer_idx}.self_attn.kv_a_proj_with_mqa.lora_B.weight"] = kv_a_proj_with_mqa_B.clone()
+        hf_dict[f"{hf_name_prefix}.model.layers.{hf_layer_idx}.self_attn.kv_a_proj_with_mqa.lora_A.weight"] = (
+            qkv_A_proj.clone()
+        )
+        hf_dict[f"{hf_name_prefix}.model.layers.{hf_layer_idx}.self_attn.kv_a_proj_with_mqa.lora_B.weight"] = (
+            kv_a_proj_with_mqa_B.clone()
+        )
         hf_dict[f"{hf_name_prefix}.model.layers.{hf_layer_idx}.self_attn.o_proj.lora_A.weight"] = o_proj_A.clone()
         hf_dict[f"{hf_name_prefix}.model.layers.{hf_layer_idx}.self_attn.o_proj.lora_B.weight"] = o_proj_B.clone()
 
@@ -569,7 +582,7 @@ class MgCkptConvert(object):
         return down_weights
 
     def set_model_mlp(self, hf_dict, mg_models, hf_layer_idx, local_layer_idx, mtp_flag=False):
-        """ dense + moe """
+        """dense + moe"""
 
         def _generate_moe_layer_key(local_idx, mtp_flag):
             prefix = f"mtp.layers.{local_idx}.transformer_layer" if mtp_flag else f"decoder.layers.{local_idx}"
@@ -595,8 +608,9 @@ class MgCkptConvert(object):
             hf_dict[f"model.layers.{hf_layer_idx}.mlp.down_proj.weight"] = down_weights.clone()
         else:
             # moe
-            router_key, router_bias_key, shared_fc1_key, shared_fc2_key, expert_weight1_key, expert_weight2_key = _generate_moe_layer_key(
-                local_layer_idx, mtp_flag)
+            router_key, router_bias_key, shared_fc1_key, shared_fc2_key, expert_weight1_key, expert_weight2_key = (
+                _generate_moe_layer_key(local_layer_idx, mtp_flag)
+            )
 
             router_weights = mg_models[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(router_key)
             router_bias_weights = mg_models[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(router_bias_key)
@@ -666,9 +680,13 @@ class MgCkptConvert(object):
                             local_up = torch.cat(up_list, dim=0)
                             local_down = ep_weight2[local_idx].t()
 
-                            hf_dict[hf_local_gate_key.format(hf_layer_idx, expert_idx)] = local_gate.contiguous().clone()
+                            hf_dict[hf_local_gate_key.format(hf_layer_idx, expert_idx)] = (
+                                local_gate.contiguous().clone()
+                            )
                             hf_dict[hf_local_up_key.format(hf_layer_idx, expert_idx)] = local_up.contiguous().clone()
-                            hf_dict[hf_local_down_key.format(hf_layer_idx, expert_idx)] = local_down.contiguous().clone()
+                            hf_dict[hf_local_down_key.format(hf_layer_idx, expert_idx)] = (
+                                local_down.contiguous().clone()
+                            )
             else:
                 if mtp_flag:
                     local_prefix = f"mtp.layers.{local_layer_idx}.transformer_layer.mlp.experts.local_experts"
@@ -689,7 +707,7 @@ class MgCkptConvert(object):
                         hf_dict[hf_local_down_key.format(hf_layer_idx, expert_idx)] = local_down.contiguous().clone()
 
     def set_model_mlp_lora(self, hf_dict, mg_models, hf_layer_idx, local_layer_idx, mtp_flag=False):
-        """ dense_lora + moe_lora """
+        """dense_lora + moe_lora"""
         hf_name_prefix = "base_model.model"
 
         if hf_layer_idx < self.first_k_dense_replace:
@@ -704,12 +722,22 @@ class MgCkptConvert(object):
             down_A_weights = self.linear_fc2_gather_from_tp(mg_models, linear_fc2_key_A)
             down_B_weights = mg_models[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(linear_fc2_key_B)
 
-            hf_dict[f"{hf_name_prefix}.model.layers.{hf_layer_idx}.mlp.gate_proj.lora_A.weight"] = linear_fc1_A_weight.clone()
-            hf_dict[f"{hf_name_prefix}.model.layers.{hf_layer_idx}.mlp.up_proj.lora_A.weight"] = linear_fc1_A_weight.clone()
-            hf_dict[f"{hf_name_prefix}.model.layers.{hf_layer_idx}.mlp.gate_proj.lora_B.weight"] = gate_B_weights.clone()
+            hf_dict[f"{hf_name_prefix}.model.layers.{hf_layer_idx}.mlp.gate_proj.lora_A.weight"] = (
+                linear_fc1_A_weight.clone()
+            )
+            hf_dict[f"{hf_name_prefix}.model.layers.{hf_layer_idx}.mlp.up_proj.lora_A.weight"] = (
+                linear_fc1_A_weight.clone()
+            )
+            hf_dict[f"{hf_name_prefix}.model.layers.{hf_layer_idx}.mlp.gate_proj.lora_B.weight"] = (
+                gate_B_weights.clone()
+            )
             hf_dict[f"{hf_name_prefix}.model.layers.{hf_layer_idx}.mlp.up_proj.lora_B.weight"] = up_B_weights.clone()
-            hf_dict[f"{hf_name_prefix}.model.layers.{hf_layer_idx}.mlp.down_proj.lora_A.weight"] = down_A_weights.clone()
-            hf_dict[f"{hf_name_prefix}.model.layers.{hf_layer_idx}.mlp.down_proj.lora_B.weight"] = down_B_weights.clone()
+            hf_dict[f"{hf_name_prefix}.model.layers.{hf_layer_idx}.mlp.down_proj.lora_A.weight"] = (
+                down_A_weights.clone()
+            )
+            hf_dict[f"{hf_name_prefix}.model.layers.{hf_layer_idx}.mlp.down_proj.lora_B.weight"] = (
+                down_B_weights.clone()
+            )
         else:
             # moe_gemm
             local_expert_nums = self.num_experts // self.ep_size
@@ -734,17 +762,26 @@ class MgCkptConvert(object):
                         local_fc2_key_B = f"{local_prefix}.{local_idx}.linear_fc2.lora_B.default.weight"
 
                         fc1_weight_A = mg_models[(self.tp_rank_list[0], ep_rank)].pop(local_fc1_key_A)
-                        local_gate_B, local_up_B = self.linear_fc1_gather_from_tp(mg_models, local_fc1_key_B,
-                                                                                  ep_rank=ep_rank)
+                        local_gate_B, local_up_B = self.linear_fc1_gather_from_tp(
+                            mg_models, local_fc1_key_B, ep_rank=ep_rank
+                        )
                         local_down_A = self.linear_fc2_gather_from_tp(mg_models, local_fc2_key_A, ep_rank=ep_rank)
                         fc2_weight_B = mg_models[(self.tp_rank_list[0], ep_rank)].pop(local_fc2_key_B)
 
-                        hf_dict[hf_local_gate_key_A.format(hf_layer_idx, expert_idx)] = fc1_weight_A.contiguous().clone()
-                        hf_dict[hf_local_gate_key_B.format(hf_layer_idx, expert_idx)] = local_gate_B.contiguous().clone()
+                        hf_dict[hf_local_gate_key_A.format(hf_layer_idx, expert_idx)] = (
+                            fc1_weight_A.contiguous().clone()
+                        )
+                        hf_dict[hf_local_gate_key_B.format(hf_layer_idx, expert_idx)] = (
+                            local_gate_B.contiguous().clone()
+                        )
                         hf_dict[hf_local_up_key_A.format(hf_layer_idx, expert_idx)] = fc1_weight_A.contiguous().clone()
                         hf_dict[hf_local_up_key_B.format(hf_layer_idx, expert_idx)] = local_up_B.contiguous().clone()
-                        hf_dict[hf_local_down_key_A.format(hf_layer_idx, expert_idx)] = local_down_A.contiguous().clone()
-                        hf_dict[hf_local_down_key_B.format(hf_layer_idx, expert_idx)] = fc2_weight_B.contiguous().clone()
+                        hf_dict[hf_local_down_key_A.format(hf_layer_idx, expert_idx)] = (
+                            local_down_A.contiguous().clone()
+                        )
+                        hf_dict[hf_local_down_key_B.format(hf_layer_idx, expert_idx)] = (
+                            fc2_weight_B.contiguous().clone()
+                        )
 
     def set_mtp_layer(self, hf_dict, mg_models, hf_layer_idx, mtp_local_idx=0):
         """all mtp"""
@@ -771,7 +808,8 @@ class MgCkptConvert(object):
 
         # postprocess
         mtp_final_norm = mg_models[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(
-            f"mtp.final_layernorms.{mtp_local_idx}.weight")
+            f"mtp.final_layernorms.{mtp_local_idx}.weight"
+        )
         hf_dict[f"model.layers.{hf_layer_idx}.shared_head.norm.weight"] = mtp_final_norm.clone()
         hf_dict[f"model.layers.{hf_layer_idx}.shared_head.head.weight"] = GLOBAL_LM_HEAD_WEIGHTS.clone()
 
@@ -784,11 +822,11 @@ class MgCkptConvert(object):
         merge_type==1 : merge base_ckpt and lora_ckpt in same checkpoint
         merge_type==2 : merge independent base_ckpt and independent lora_ckpt
         """
-        lora_layer_base_names = list(set([k.split(".lora")[0] for k in model_dict.keys() if ".lora" in k]))
+        lora_layer_base_names = list({k.split(".lora")[0] for k in model_dict.keys() if ".lora" in k})
         unused_keys = [k for k in model_dict if ".lora" in k and k.endswith("_extra_state")]
 
         if self.moe_grouped_gemm:
-            gemm_base_names = list(set([k.split("_lora_")[0] for k in model_dict.keys() if "_lora_" in k]))
+            gemm_base_names = list({k.split("_lora_")[0] for k in model_dict.keys() if "_lora_" in k})
             unused_keys = [k for k in model_dict if "_lora_" in k]
             for _, base in enumerate(gemm_base_names):
                 lora_a = f"{base}_lora_a"
@@ -798,7 +836,7 @@ class MgCkptConvert(object):
 
                 if "weight1" in base:
                     w1 = model_dict[base].view(local_expert_nums, self.hidden_size, -1)
-                    w1_a = model_dict[lora_a].view(local_expert_nums, -1 ,self.lora_r)
+                    w1_a = model_dict[lora_a].view(local_expert_nums, -1, self.lora_r)
                     w1_b = model_dict[lora_b].view(local_expert_nums, self.lora_r, -1)
 
                     for i in tqdm.tqdm(range(local_expert_nums)):
@@ -810,7 +848,7 @@ class MgCkptConvert(object):
 
                 if "weight2" in base:
                     w2 = model_dict[base].view(local_expert_nums, -1, self.hidden_size)
-                    w2_a = model_dict[lora_a].view(local_expert_nums, -1 ,self.lora_r)
+                    w2_a = model_dict[lora_a].view(local_expert_nums, -1, self.lora_r)
                     w2_b = model_dict[lora_b].view(local_expert_nums, self.lora_r, -1)
 
                     for i in tqdm.tqdm(range(local_expert_nums)):
@@ -822,6 +860,7 @@ class MgCkptConvert(object):
 
         for i in tqdm.tqdm(range(len(lora_layer_base_names))):
             name = lora_layer_base_names[i]
+            base_new = None
             if merge_type == 1:
                 base = f"{name}.base_layer.weight"
                 base_new = base.replace(".base_layer", "")
@@ -880,9 +919,9 @@ class MgCkptConvert(object):
             "r": self.lora_r,
             "revision": None,
             "target_modules": self.lora_target_modules,
-            "task_type": "CAUSAL_LM"
+            "task_type": "CAUSAL_LM",
         }
-        with open(json_path, 'w') as f:
+        with open(json_path, 'w', encoding="utf-8") as f:
             json.dump(adapter_config, f)
 
     def save_safetensors(self, hf_dict, cur_file_idx):
@@ -896,8 +935,9 @@ class MgCkptConvert(object):
             TENSOR_SIZE += tensor_memory_size(hf_dict[key])
 
         logger.info(f"Saving to {safetensors_file_name}")
-        safetensors.torch.save_file(hf_dict, os.path.join(self.hf_save_path, safetensors_file_name),
-                                    metadata={"format": "pt"})
+        safetensors.torch.save_file(
+            hf_dict, os.path.join(self.hf_save_path, safetensors_file_name), metadata={"format": "pt"}
+        )
 
     def read_pp_rank_weights(self, pp_rank, mg_models):
         """get pp_rank weights"""
@@ -1008,8 +1048,9 @@ class MgCkptConvert(object):
                             if self.lora_r is not None and self.lora_model_path is None:
                                 self._merge_lora(tmp_model, merge_type=1)
                             elif self.lora_model_path is not None:
-                                lora_path = self.get_pt_path_by_tpppep_rank(self.lora_iter_path, tp_rank, pp_rank,
-                                                                            ep_rank)
+                                lora_path = self.get_pt_path_by_tpppep_rank(
+                                    self.lora_iter_path, tp_rank, pp_rank, ep_rank
+                                )
                                 lora_model = load_data(lora_path)[f'model{vpp_rank}']
                                 tmp_model = {**lora_model, **tmp_model}
                                 self._merge_lora(tmp_model, merge_type=2)
@@ -1028,40 +1069,51 @@ class MgCkptConvert(object):
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--load-dir', type=str, required=True,
-                        help='Directory to load model checkpoint from')
-    parser.add_argument('--save-dir', type=str, required=True,
-                        help='Directory to save model checkpoint to')
-    parser.add_argument('--source-tensor-parallel-size', type=int, default=1,
-                        help='Source tensor model parallel size, defaults to 1')
-    parser.add_argument('--source-pipeline-parallel-size', type=int, default=1,
-                        help='Source pipeline model parallel size, default to 1')
-    parser.add_argument('--source-expert-parallel-size', type=int, default=1,
-                        help='Source expert model parallel size, default to 1')
-    parser.add_argument('--num-layers-per-virtual-pipeline-stage', type=int, default=None,
-                        help='Number of layers per virtual pipeline stage')
+    parser.add_argument('--load-dir', type=str, required=True, help='Directory to load model checkpoint from')
+    parser.add_argument('--save-dir', type=str, required=True, help='Directory to save model checkpoint to')
+    parser.add_argument(
+        '--source-tensor-parallel-size', type=int, default=1, help='Source tensor model parallel size, defaults to 1'
+    )
+    parser.add_argument(
+        '--source-pipeline-parallel-size', type=int, default=1, help='Source pipeline model parallel size, default to 1'
+    )
+    parser.add_argument(
+        '--source-expert-parallel-size', type=int, default=1, help='Source expert model parallel size, default to 1'
+    )
+    parser.add_argument(
+        '--num-layers-per-virtual-pipeline-stage',
+        type=int,
+        default=None,
+        help='Number of layers per virtual pipeline stage',
+    )
     parser.add_argument('--moe-grouped-gemm', action='store_true', help='Use moe grouped gemm.')
     parser.add_argument("--noop-layers", type=str, default=None, help='Specity the noop layers.')
     parser.add_argument('--mtp-num-layers', type=int, default=0, help='Multi-Token prediction layer num')
-    parser.add_argument('--num-layer-list', type=str,
-                        help='a list of number of layers, separated by comma; e.g., 4,4,4,4')
-    parser.add_argument("--moe-tp-extend-ep", action='store_true',
-                        help="use tp group to extend experts parallism instead of sharding weight tensor of experts in tp group")
-    parser.add_argument('--mla-mm-split', action='store_true', default=False,
-                        help='Split 2 up-proj matmul into 4 in MLA')
-    parser.add_argument('--schedules-method', type=str, default=None, choices=['dualpipev'],
-                        help='An innovative bidirectional pipeline parallelism algorithm.')
-    parser.add_argument('--num-layers', type=int, default=61,
-                        help='Number of transformer layers.')
-    parser.add_argument('--first-k-dense-replace', type=int, default=3,
-                        help='Customizing the number of dense layers.')
-    parser.add_argument('--lora-load', type=str, default=None,
-                        help='Directory containing a lora model checkpoint.')
+    parser.add_argument(
+        '--num-layer-list', type=str, help='a list of number of layers, separated by comma; e.g., 4,4,4,4'
+    )
+    parser.add_argument(
+        "--moe-tp-extend-ep",
+        action='store_true',
+        help="use tp group to extend experts parallism instead of sharding weight tensor of experts in tp group",
+    )
+    parser.add_argument(
+        '--mla-mm-split', action='store_true', default=False, help='Split 2 up-proj matmul into 4 in MLA'
+    )
+    parser.add_argument(
+        '--schedules-method',
+        type=str,
+        default=None,
+        choices=['dualpipev'],
+        help='An innovative bidirectional pipeline parallelism algorithm.',
+    )
+    parser.add_argument('--num-layers', type=int, default=61, help='Number of transformer layers.')
+    parser.add_argument('--first-k-dense-replace', type=int, default=3, help='Customizing the number of dense layers.')
+    parser.add_argument('--lora-load', type=str, default=None, help='Directory containing a lora model checkpoint.')
     parser.add_argument('--lora-r', type=int, default=None, help='Lora r.')
     parser.add_argument('--lora-alpha', type=int, default=None, help='Lora alpha.')
     parser.add_argument('--lora-target-modules', nargs='+', type=str, default=[], help='Lora target modules.')
-    parser.add_argument("--save-lora-to-hf", action='store_true',
-                        help="only save lora ckpt to hf")
+    parser.add_argument("--save-lora-to-hf", action='store_true', help="only save lora ckpt to hf")
 
     args = parser.parse_args()
     return args
@@ -1091,7 +1143,7 @@ def main():
         lora_r=args.lora_r,
         lora_alpha=args.lora_alpha,
         lora_target_modules=args.lora_target_modules,
-        save_lora_to_hf=args.save_lora_to_hf
+        save_lora_to_hf=args.save_lora_to_hf,
     )
     converter.run()
 

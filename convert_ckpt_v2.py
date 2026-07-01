@@ -118,9 +118,6 @@ def get_args():
     parser.add_argument('--mamba-num-groups', type=int, default=8, help='Number of groups in Mamba v2 model')
     parser.add_argument('--mamba-head-dim', type=int, default=64, help='Head dimension in Mamba v2 model')
     parser.add_argument(
-        '--qlora-nf4', action='store_true', default=False, help='use bitsandbytes nf4 to quantize model.'
-    )
-    parser.add_argument(
         '--save-layer-by-layer',
         action='store_true',
         default=False,

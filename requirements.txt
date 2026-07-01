@@ -15,7 +15,6 @@ peft
 tiktoken
 ray
 codetiming
-bitsandbytes-npu-beta
 word2number
 latex2sympy2
 mistral_common

@@ -6,20 +6,14 @@ from megatron.core.parallel_state import (
     get_tensor_model_parallel_world_size,
 )
 
-try:
-    import bitsandbytes as bnb
-except ImportError:
-    bnb = None
-
 
 def dequantize(weight, dtype, device):
-    """
-    close weight combine in QLora avoid
-    """
-    if not hasattr(weight, "quant_state"):
-        return weight, True
-    dequantize_weight = bnb.functional.dequantize_4bit(weight.data, weight.quant_state).to(device).to(dtype)
-    return dequantize_weight, False
+    if hasattr(weight, "quant_state"):
+        raise RuntimeError(
+            "Detected weights contains `quant_state`, but the `bitsandbytes` dependency has been removed. "
+            "Please ensure that non-quantized model weights are being used."
+        )
+    return weight, True
 
 
 def get_communication_output(input_, reduce_tensor=False):
@@ -158,9 +152,7 @@ class _FusedRowSeqParallelLoRAFunction(torch.autograd.Function):
         rank = torch.distributed.get_rank(group)
         if torch.__version__ > "2.0":
             global_rank = torch.distributed.get_global_rank(group, rank)
-            hcomm_info = group._get_backend(torch.device("npu")).get_hccl_comm_name(
-                global_rank
-            )
+            hcomm_info = group._get_backend(torch.device("npu")).get_hccl_comm_name(global_rank)
         else:
             hcomm_info = group.get_hccl_comm_name(rank)
         world_size = get_tensor_model_parallel_world_size()
@@ -350,7 +342,7 @@ def column_cc_lora_parallel_linear_forward(input_, base_layer, weight_a, weight_
     bias = base_layer.bias if not base_layer.skip_bias_add else None
     lora_params = [input_, weight, weight_a, weight_b, scaling]
     explicit_expert_comm = base_layer.is_expert and (
-                get_tensor_model_parallel_world_size() > 1 or base_layer.expert_parallel
+        get_tensor_model_parallel_world_size() > 1 or base_layer.expert_parallel
     )
     if explicit_expert_comm or get_tensor_model_parallel_world_size() == 1:
         output_parallel = _FusedBaseParallelLoRAFunction.apply(*lora_params)
@@ -372,7 +364,7 @@ def row_cc_lora_parallel_linear_forward(input_, base_layer, weight_a, weight_b, 
     skip_bias_add, bias = base_layer.skip_bias_add, base_layer.bias
     lora_params = [input_, weight, weight_a, weight_b, scaling]
     explicit_expert_comm = base_layer.is_expert and (
-                get_tensor_model_parallel_world_size() > 1 or base_layer.expert_parallel
+        get_tensor_model_parallel_world_size() > 1 or base_layer.expert_parallel
     )
     if explicit_expert_comm or get_tensor_model_parallel_world_size() == 1:
         output_ = _FusedBaseParallelLoRAFunction.apply(*lora_params)
@@ -407,10 +399,12 @@ def CCLoraParallelLinearForward(self, x, *args, **kwargs):
             x = x.to(lora_A.weight.dtype)
             # before peft 0.7.1, this param name is is_paralle_a, after it is fixed to is_parallel_a
             if getattr(self, 'is_paralle_a', False) or getattr(self, 'is_parallel_a', False):
-                result, bias = row_cc_lora_parallel_linear_forward(x, self.base_layer, lora_A.weight, lora_B.weight,
-                                                                   scaling)
+                result, bias = row_cc_lora_parallel_linear_forward(
+                    x, self.base_layer, lora_A.weight, lora_B.weight, scaling
+                )
             else:
-                result, bias = column_cc_lora_parallel_linear_forward(x, self.base_layer, lora_A.weight, lora_B.weight,
-                                                                      scaling)
+                result, bias = column_cc_lora_parallel_linear_forward(
+                    x, self.base_layer, lora_A.weight, lora_B.weight, scaling
+                )
         result = result.to(previous_dtype)
     return result, bias

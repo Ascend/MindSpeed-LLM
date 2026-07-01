@@ -1,22 +1,16 @@
 # Copyright (c) 2024, HUAWEI CORPORATION.  All rights reserved.
-import math
 from dataclasses import dataclass
 from typing import Union
 
 import torch
-import torch.nn as nn
+from torch import nn
 import torch.nn.functional as F
 
-from megatron.core import parallel_state, tensor_parallel
 from megatron.core.transformer import TransformerConfig, ModuleSpec, build_module
 from megatron.core.transformer.module import MegatronModule
 from megatron.core.transformer.enums import AttnMaskType
 from megatron.training import get_args
-from mindspeed.core.tensor_parallel.random import CheckpointWithoutOutput
-try:
-    import bitsandbytes as bnb
-except ImportError:
-    bnb = None
+
 try:
     from causal_conv1d import causal_conv1d_fn, causal_conv1d_update
 except ImportError:
@@ -26,6 +20,7 @@ except ImportError:
 @dataclass
 class CustomQwen3NextGatedDeltaNetAttentionSubmodules:
     """Submodules for the Qwen3NextGatedDeltaNet self-attention layer with NPU."""
+
     in_proj_qkvz: Union[ModuleSpec, type] = None
     in_proj_ba: Union[ModuleSpec, type] = None
     out_proj: Union[ModuleSpec, type] = None
@@ -221,7 +216,9 @@ class CustomQwen3NextGatedDeltaNetAttention(MegatronModule):
         super().__init__(config)
         args = get_args()
         if args.tensor_model_parallel_size > 1 or args.context_parallel_size > 1:
-            raise AssertionError("Qwen3-next's CustomQwen3NextGatedDeltaNetAttention does not support tensor parallel and context parallel")
+            raise AssertionError(
+                "Qwen3-next's CustomQwen3NextGatedDeltaNetAttention does not support tensor parallel and context parallel"
+            )
         self.use_flash_attn = config.use_flash_attn
         self.shape_order = config.shape_order
 
@@ -305,6 +302,7 @@ class CustomQwen3NextGatedDeltaNetAttention(MegatronModule):
         self.causal_conv1d_update = causal_conv1d_update or torch_causal_conv1d_update
         if args.use_triton_gdn:
             from mindspeed_llm.tasks.models.transformer.chunk_gated_delta_rule import chunk_gated_delta_rule
+
             self.chunk_gated_delta_rule = chunk_gated_delta_rule
         else:
             self.chunk_gated_delta_rule = torch_chunk_gated_delta_rule
@@ -367,11 +365,11 @@ class CustomQwen3NextGatedDeltaNetAttention(MegatronModule):
         batch_size, seq_len, _ = hidden_states.shape
 
         use_precomputed_states = (
-            cache_params is not None
-            and cache_params.has_previous_state
-            and seq_len == 1
-            and cache_position is not None
+            cache_params is not None and cache_params.has_previous_state and seq_len == 1 and cache_position is not None
         )
+
+        conv_state = None
+        recurrent_state = None
 
         # getting projected states from cache if it exists
         if cache_params is not None:
@@ -444,7 +442,7 @@ class CustomQwen3NextGatedDeltaNetAttention(MegatronModule):
                 initial_state=None,
                 output_final_state=cache_params is not None,
                 use_qk_l2norm_in_kernel=True,
-                chunk_size=args.mamba_chunk_size
+                chunk_size=args.mamba_chunk_size,
             )
 
         else:

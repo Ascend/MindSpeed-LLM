@@ -13,12 +13,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import argparse
 from megatron.training import get_args
 
 
 def get_lora_model_classes():
     from peft import PeftModel, LoraModel
+
     return PeftModel, LoraModel
 
 
@@ -27,16 +27,6 @@ def is_enable_lora():
     if hasattr(args, 'lora_target_modules') and args.lora_target_modules:
         return True
     return False
-
-
-def is_enable_qlora(args=None):
-    args = args if args else get_args()
-    if hasattr(args, 'qlora') and args.qlora:
-        return True
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--qlora-nf4', action='store_true')
-    args, _ = parser.parse_known_args()
-    return args.qlora_nf4
 
 
 def merge_dicts(dict1, dict2):
@@ -85,3 +75,14 @@ def filter_lora_keys(state_dict):
             filtered_model_dict = {key: value for key, value in model_dict.items() if 'lora' in key.lower()}
             state_dict[model_key] = filtered_model_dict
     return state_dict
+
+
+def dispatch_megatron_wrapper(original_func):
+    def wrapper(target, adapter_name, config, **kwargs):
+        # adapt peft 0.19.1
+        if "fan_in_fan_out" not in kwargs:
+            kwargs.setdefault("fan_in_fan_out", config.fan_in_fan_out)
+
+        return original_func(target, adapter_name, config=config, **kwargs)
+
+    return wrapper

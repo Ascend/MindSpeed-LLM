@@ -146,7 +146,7 @@ class CheckpointFeature(MindSpeedFeature):
             raise AssertionError('if enable_mg2hf_convert, please set save dir')
 
         if has_valid_lora_target and args.enable_mg2hf_convert:
-            raise AssertionError('Lora and QLora are not supported with enable_mg2hf_convert')
+            raise AssertionError('Lora is not supported with enable_mg2hf_convert')
 
         if args.enable_hf2mg_convert and args.enable_mg2hf_convert and not args.hf_cfg_dir:
             args.hf_cfg_dir = args.load
