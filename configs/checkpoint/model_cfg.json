@@ -748,7 +748,8 @@
     "config_set_value": {
       "qkv_type": "unpack",
       "add_qkv_bias": true,
-      "qk_layernorm": false
+      "qk_layernorm": false,
+      "qkv_split": "per_group"
     },
     "config_hf_key_mapping": {
       "num_layers": "num_hidden_layers",

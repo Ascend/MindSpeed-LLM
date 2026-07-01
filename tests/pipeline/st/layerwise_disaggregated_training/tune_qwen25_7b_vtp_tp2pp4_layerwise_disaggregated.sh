@@ -101,7 +101,7 @@ run_model_conversion() {
        --num-layer-list "2,8,8,8,2" \
        --load-dir "$HF_MODEL_DIR" \
        --save-dir "$MG_EDGE_SAVE_DIR" \
-       --model-type-hf llama2
+       --model-type-hf qwen25
 
     if [ $? -ne 0 ]; then
         log_error "Step 1: HF -> Megatron TP=1 model conversion failed"
@@ -117,7 +117,7 @@ run_model_conversion() {
        --num-layer-list "2,8,8,8,2" \
        --load-dir "$HF_MODEL_DIR" \
        --save-dir "$MG_CLOUD_SAVE_DIR" \
-       --model-type-hf llama2
+       --model-type-hf qwen25
 
     if [ $? -ne 0 ]; then
         log_error "Step 1: HF -> Megatron TP=2 model conversion failed"

@@ -824,11 +824,24 @@ class Mg2HfConvert(Convert):
                     linear_proj_list.append(mg_weight[(tp_rank, self.ep_rank_list[0])].pop(linear_proj_key))
 
             qkv_weight = torch.cat(linear_qkv_list, dim=0)
-            total_qkv_rows = qkv_weight.shape[0]
-            head_dim = total_qkv_rows // (nh + 2 * ng)
-            q_proj = qkv_weight[: nh * head_dim, :]
-            k_proj = qkv_weight[nh * head_dim : (nh + ng) * head_dim, :]
-            v_proj = qkv_weight[(nh + ng) * head_dim :, :]
+            if getattr(self.load_model, 'qkv_split', None) == 'per_group' and ng > 1:
+                repeats = nh // ng
+                qkv_weight = qkv_weight.reshape(
+                    ng,
+                    repeats + 2,
+                    qkv_weight.shape[0] // ng // (repeats + 2),
+                    qkv_weight.shape[1],
+                )
+                hidden_size = qkv_weight.shape[-1]
+                q_proj = qkv_weight[:, :repeats, ...].reshape(-1, hidden_size)
+                k_proj = qkv_weight[:, repeats : repeats + 1, ...].reshape(-1, hidden_size)
+                v_proj = qkv_weight[:, repeats + 1 :, ...].reshape(-1, hidden_size)
+            else:
+                total_qkv_rows = qkv_weight.shape[0]
+                head_dim = total_qkv_rows // (nh + 2 * ng)
+                q_proj = qkv_weight[: nh * head_dim, :]
+                k_proj = qkv_weight[nh * head_dim : (nh + ng) * head_dim, :]
+                v_proj = qkv_weight[(nh + ng) * head_dim :, :]
 
             o_proj = torch.cat(linear_proj_list, dim=1)
 
