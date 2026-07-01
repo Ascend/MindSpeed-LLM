@@ -16,13 +16,12 @@
 
 """Forward step utilities."""
 
-from collections.abc import Iterable
 from functools import wraps
 
 import torch
 
 from megatron.training import get_args
-from megatron.core import mpu, ModelParallelConfig, InferenceParams
+from megatron.core import mpu, ModelParallelConfig
 from megatron.core.pipeline_parallel import p2p_communication
 from megatron.core.tensor_parallel.mappings import gather_from_tensor_model_parallel_region
 from megatron.inference.text_generation.forward_step import _get_recv_buffer_dtype
@@ -41,7 +40,8 @@ def inference_forward_step_init_wrapper(fn):
 
 def _forward_step_helper(self, tokens, position_ids, attention_mask, recv_buffer=None):
     """Single forward step. Update the allocate memory flag so
-    only the first time the memory is allocated."""
+    only the first time the memory is allocated.
+    """
     config = ModelParallelConfig
     batch_size = tokens.size(0)
     sequence_length = tokens.size(1)
@@ -70,9 +70,7 @@ def _no_pipelining_forward_step_wrapper(_no_pipelining_forward_step):
         """If recv_buffer is none, we will allocate one on the fly."""
         # Run a simple forward pass.
         args = get_args()
-        output_tensor = self._forward_step_helper(tokens, position_ids,
-                                            attention_mask,
-                                            recv_buffer=recv_buffer)
+        output_tensor = self._forward_step_helper(tokens, position_ids, attention_mask, recv_buffer=recv_buffer)
         # Update the sequence length offset.
         if self.inference_context:
             self.inference_context.sequence_len_offset += tokens.size(1)
@@ -84,6 +82,7 @@ def _no_pipelining_forward_step_wrapper(_no_pipelining_forward_step):
             else:
                 logits = output_tensor
         return logits
+
     return wrapper
 
 
@@ -96,8 +95,7 @@ def _with_pipelining_forward_step_wrapper(_with_pipelining_forward_step):
         batch_size = tokens.size(0)
 
         # Divide the batch dimension into micro batches.
-        num_micro_batches, last_chunk = divmod(batch_size,
-                                            micro_batch_size)
+        num_micro_batches, last_chunk = divmod(batch_size, micro_batch_size)
         if last_chunk > 0:
             num_micro_batches += 1
 
@@ -107,13 +105,14 @@ def _with_pipelining_forward_step_wrapper(_with_pipelining_forward_step):
             args = get_args()
             if getattr(args, "task", False) and args.task[0] == 'needlebench':
                 logits = torch.empty(
-                    (batch_size, 100, args.padded_vocab_size),
-                    dtype=torch.float32, device=torch.cuda.current_device())
+                    (batch_size, 100, args.padded_vocab_size), dtype=torch.float32, device=torch.cuda.current_device()
+                )
             else:
                 logits = torch.empty(
                     (batch_size, sequence_length, args.padded_vocab_size),
-                    dtype=torch.float32, device=torch.cuda.current_device())
-
+                    dtype=torch.float32,
+                    device=torch.cuda.current_device(),
+                )
 
         # Preallocate recv buffer.
         recv_buffer = _allocate_recv_buffer(micro_batch_size, sequence_length)
@@ -129,9 +128,7 @@ def _with_pipelining_forward_step_wrapper(_with_pipelining_forward_step):
             # Run a simple forward pass.
             if this_micro_batch_size != micro_batch_size:
                 recv_buffer = None
-            output = self._forward_step_helper(tokens2use, position_ids2use,
-                                        attention_mask,
-                                        recv_buffer=recv_buffer)
+            output = self._forward_step_helper(tokens2use, position_ids2use, attention_mask, recv_buffer=recv_buffer)
 
             if self.inference_context:
                 # Adjust the batch size offset to account for the micro-batch.
@@ -153,6 +150,7 @@ def _with_pipelining_forward_step_wrapper(_with_pipelining_forward_step):
             self.inference_context.batch_size_offset = 0
 
         return logits
+
     return wrapper
 
 
@@ -163,8 +161,8 @@ def _allocate_recv_buffer(batch_size, sequence_length):
     args = get_args()
     if args.sequence_parallel:
         sequence_length = sequence_length // mpu.get_tensor_model_parallel_world_size()
-    recv_size = (sequence_length, batch_size, args.hidden_size)
-    return torch.empty(recv_size,
-                       dtype=_get_recv_buffer_dtype(args),
-                       device=torch.cuda.current_device())
-
+    if getattr(args, "enable_mhc", False):
+        recv_size = (sequence_length, batch_size, getattr(args, "hc_mult", 1), args.hidden_size)
+    else:
+        recv_size = (sequence_length, batch_size, args.hidden_size)
+    return torch.empty(recv_size, dtype=_get_recv_buffer_dtype(args), device=torch.cuda.current_device())

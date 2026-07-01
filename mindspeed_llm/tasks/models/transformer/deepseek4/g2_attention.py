@@ -361,6 +361,7 @@ class DeepSeek4SelfAttention(MegatronModule):
                         dsa_hidden_states.dtype,
                         dsa_hidden_states.device,
                         offset,
+                        self.indexer.compress_ratio,
                     )
             else:
                 compress_topk_idxs = self.get_compress_topk_idxs(

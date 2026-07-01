@@ -357,6 +357,20 @@ class DSAIndexer(MegatronModule):
         return compress_idxs.unsqueeze(1)
 
     @staticmethod
+    def _align_compress_idxs(compress_idxs, s1, s2, device):
+        if compress_idxs.size(0) > s1:
+            compress_idxs = compress_idxs[:s1]
+        elif compress_idxs.size(0) < s1:
+            pad_size = s1 - compress_idxs.size(0)
+            if compress_idxs.numel() > 0:
+                pad_start = compress_idxs[-1:] + 1
+            else:
+                pad_start = torch.ones((1, 1), device=device, dtype=compress_idxs.dtype)
+            pad_idxs = pad_start + torch.arange(pad_size, device=device).unsqueeze(1)
+            compress_idxs = torch.cat([compress_idxs, pad_idxs], dim=0)
+        return torch.clamp(compress_idxs, max=s2)
+
+    @staticmethod
     def forward_with_scores_compress(
         x, q, k, weights, mask, packed_seq_params, start_pos, index_topk, offset, compress_ratio=4
     ):
@@ -394,6 +408,8 @@ class DSAIndexer(MegatronModule):
             device = x.device
             compress_idxs = DSAIndexer.get_compress_idxs_on_this_rank(s_total, device) // compress_ratio
             index_score = bf16_index(q.contiguous(), weights.unsqueeze(-1), k.contiguous())
+            if compress_idxs.size(0) != s1:
+                compress_idxs = DSAIndexer._align_compress_idxs(compress_idxs, s1, s2, device)
             mask = torch.arange(s2, device=device).repeat(s1, 1) >= compress_idxs  # (s1, s2)
             index_score = index_score + torch.where(mask, torch.finfo(q.dtype).min, 0)
             topk_score, topk_idxs = index_score.topk(min(index_topk, end_pos // compress_ratio), dim=-1)
@@ -487,6 +503,8 @@ class DSAIndexer(MegatronModule):
             -1, topk_indices_clean, 0
         )
         compress_idxs = DSAIndexer.get_compress_idxs_on_this_rank(s_total, device, False) // compress_ratio
+        if compress_idxs.size(0) != s1:
+            compress_idxs = DSAIndexer._align_compress_idxs(compress_idxs, s1, s2, device)
         mask = torch.arange(s2, device=device).repeat(s1, 1) >= compress_idxs
         mask = torch.where(mask, float('-inf'), 0)
         attention_mask += mask
