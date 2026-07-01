@@ -61,7 +61,7 @@
     - `input`：可以直接输入到数据集目录或具体文件，如果是目录，则处理全部文件, 支持`.parquet`、`.csv`、`.json`、`.jsonl`、`.txt`以及`.arrow`格式，同一个文件夹下的数据格式需要保持一致。
     - `handler-name`：当前预训练默认使用`GeneralPretrainHandler`，支持的是预训练数据风格，提取数据的`text`列，格式如下：
 
-        ```shell
+        ```json
         [
             {"text": "document"},
             {"other keys": "optional content"}

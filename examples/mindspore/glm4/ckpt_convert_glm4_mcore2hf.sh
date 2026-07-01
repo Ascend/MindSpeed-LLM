@@ -14,4 +14,4 @@ python mindspeed_llm/mindspore/convert_ckpt.py \
     --target-pipeline-parallel-size 1 \
     --ai-framework mindspore \
     --load-dir ./model_weights/glm4_mcore/ \
-    --save-dir ./model_from_hf/glm4_hf/  # 需要填入原始HF模型路径，新权重会存于./model_from_hf/glm4_hf/mg2hg/
+    --save-dir ./model_from_hf/glm4_hf/  # 需要填入原始HF模型路径，新权重会存于./model_from_hf/glm4_hf/mg2hf/

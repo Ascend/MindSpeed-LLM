@@ -4,7 +4,7 @@
 
 ### 问题描述
 
-CMMLU（Chinese Multi-Modal Large-scale Understanding）评估集是专门为大规模语言模型（LLM）设计的中文理解任务集合。它旨在全面评估语言模型在中文语境下的知识掌握、推理能力以及跨学科的理解水平。以下是关于CMMLU评估集的具体介绍，尤其是其学科分类的详细内容。
+CMMLU（Chinese Multi-Task Language Understanding）评估集是专门为大规模语言模型（LLM）设计的中文理解任务集合。它旨在全面评估语言模型在中文语境下的知识掌握、推理能力以及跨学科的理解水平。以下是关于CMMLU评估集的具体介绍，尤其是其学科分类的详细内容。
 
 ### 特性介绍
 

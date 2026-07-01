@@ -54,7 +54,7 @@ python ./preprocess_data.py \
 
 【--map-keys '{"history":"histories"}'】
 
-会提取数据集里的`"instruction"、"input"、"output"、"histories"`列，其中`"instruction"、"input"、"output"`列作为默认值隐式存在。 
+会提取数据集里的`"instruction"、"input"、"output"、"histories"`列，其中`"instruction"、"input"、"output"`列作为默认值隐式存在。
 
 ### 启动脚本
 
@@ -98,7 +98,7 @@ TOKENIZER_MODEL="./model_from_hf/gemma2_hf/"
 CKPT_LOAD_DIR="./model_weights/gemma2-9b-mcore/"
 ```
 
-**运行多轮对话指令微调脚本** 
+**运行多轮对话指令微调脚本**
 
 ```shell
 bash examples/mcore/gemma2/chat_gemma2_9b_ptd.sh
@@ -119,13 +119,13 @@ TOKENIZER_PATH="./model_from_hf/gemma2_hf/"
 CHECKPOINT="./ckpt/"
 ```
 
-**运行多轮对话脚本** 
+**运行多轮对话脚本**
 
 ```shell
 bash examples/mcore/gemma2/chat_gemma2_9b_ptd.sh
 ```
 
-在确认成功加载上微调权重后，在出现`You >>的提示后，可以进行对话。
+在确认成功加载上微调权重后，在出现`You >>`的提示后，可以进行对话。
 
 ## 使用约束
 

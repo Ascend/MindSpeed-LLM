@@ -85,7 +85,7 @@ bash examples/mcore/llama2/chat_llama2_13b_ptd.sh
 
 【清空对话记录】
 
-如果需要清空之前的对话记录新建一个Chat对话程序，可以对话框中输入  [clear, new] 其中的一个命令
+如果需要清空之前的对话记录新建一个Chat对话程序，可以在对话框中输入  [clear, new] 其中的一个命令
 
 【退出对话程序】
 

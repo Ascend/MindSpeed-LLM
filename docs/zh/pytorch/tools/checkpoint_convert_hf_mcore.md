@@ -22,9 +22,9 @@
     - [Megatron-Mcore格式权重合并](#megatron-mcore格式权重合并)
 
       支持将Mcore格式的LoRA微调权重与Base模型权重合并，转换为Megatron或HuggingFace格式。
-    
+
     - [LoRA权重转换至HuggingFace格式](#lora权重转换至huggingface格式)
-      
+
       支持将LoRA微调权重单独转为HuggingFace格式。
 
 - [权重转换特性清单](#权重转换特性清单)
@@ -88,7 +88,7 @@ cd ../../
 
 #### 使用约束
 
-- 模型的层数必须能被PP切分数量整除，否则需要增加空层`--noop-layer`或者使用动态PP`--num-layer-list`。
+- 模型的层数必须能被PP切分数量整除，否则需要增加空层`--noop-layers`或者使用动态PP`--num-layer-list`。
 
 - VPP和动态PP划分只能二选一。
 
@@ -255,7 +255,7 @@ python convert_ckpt.py \
 
 > [!NOTE]
 >
-> 配置`--save-dir`参数时，需设置原始HuggingFace模型路径，新权重将保存至./model_from_hf/llama-2-7b-hf/mg2hg。
+> 配置`--save-dir`参数时，需设置原始HuggingFace模型路径，新权重将保存至./model_from_hf/llama-2-7b-hf/mg2hf。
 
 以下是权重转换脚本启动方法。
 

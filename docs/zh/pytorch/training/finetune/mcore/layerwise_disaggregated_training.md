@@ -265,7 +265,7 @@
     配置模型微调脚本，详细配置请参考[Qwen3-32b微调脚本](../../../../../../examples/mcore/qwen3/tune_qwen3_32b_4K_full_ptd.sh)，需要修改相关路径参数和模型切分配置：
 
     ```shell
-    WORLD_SIZE=40                                    # 总卡数，包括边侧和云侧，以边侧1台8卡，云测4台8卡为例，WORLD_SIZE=40
+    WORLD_SIZE=40                                    # 总卡数，包括边侧和云侧，以边侧1台8卡，云侧4台8卡为例，WORLD_SIZE=40
     CKPT_LOAD_DIR="./model_weights/qwen3_vpp_edge/"  # 边侧权重加载路径
     CKPT_LOAD_CLOUD_DIR="./model_weights/qwen3_vpp_cloud/"  # 云侧权重加载路径
     CKPT_SAVE_DIR="./ckpt/qwen3_finetune/"           # 微调完成后的权重保存路径
@@ -306,7 +306,7 @@
     配置模型微调脚本，详细配置请参考[Qwen3-32b微调脚本](../../../../../../examples/mcore/qwen3/tune_qwen3_32b_4K_full_ptd.sh)，需要修改相关路径参数和模型切分配置：
 
     ```shell
-    WORLD_SIZE=33                                    # 总卡数，包括边侧和云侧，以边侧1台1卡，云测4台8卡为例，WORLD_SIZE=33
+    WORLD_SIZE=33                                    # 总卡数，包括边侧和云侧，以边侧1台1卡，云侧4台8卡为例，WORLD_SIZE=33
     CKPT_LOAD_DIR="./model_weights/qwen3_vpp_edge/"  # 边侧权重加载路径
     CKPT_LOAD_CLOUD_DIR="./model_weights/qwen3_vpp_cloud/"  # 云侧权重加载路径
     CKPT_SAVE_DIR="./ckpt/qwen3_finetune/"           # 微调完成后的权重保存路径

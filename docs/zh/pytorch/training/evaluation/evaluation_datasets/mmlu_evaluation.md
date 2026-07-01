@@ -15,7 +15,7 @@ MMLU（Massive Multitask Language Understanding）评估包含一系列多样化
 
 其中，[STEM](#STEM)，[人文学科](#人文学科)和[社会科学](#社会科学)所包含的学科问题集会在文末说明。
 
-目前MindSpeed-LLM仓库对MMLU评估有三种评估模式：
+目前MindSpeed-LLM仓库对MMLU评估有四种评估模式：
 
 ## 使用方法
 

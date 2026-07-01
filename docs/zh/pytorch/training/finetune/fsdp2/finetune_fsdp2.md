@@ -6,7 +6,7 @@
 
 环境安装请参考 [MindSpeed LLM安装指导](../../install_guide.md)
 
-## 2 目录结构  
+## 2. 目录结构
 
 拉起微调相关脚本位置如下所示
 
@@ -21,7 +21,7 @@ MindSpeed-LLM/
 
 ## 3. 配置修改
 
-### 3.1 模型路径配置  
+### 3.1 模型路径配置
 
 ```yaml
 model:
@@ -29,7 +29,7 @@ model:
   tokenizer_name_or_path: None                      # 模型与Tokenizer路径不一致时需指定
 ```
 
-### 3.2 数据集配置  
+### 3.2 数据集配置
 
 #### 方式一：内联配置（单数据集快速验证）
 
@@ -67,7 +67,7 @@ model:
 
 ## 4. 分布式训练启动脚本说明
 
-`examples/fsdp2/gpt_oss/tune_gpt_oss_20b_varlen_fsdp2_A3.sh`  
+`examples/fsdp2/gpt_oss/tune_gpt_oss_20b_varlen_fsdp2_A3.sh`
 
 ```bash
 source examples/fsdp2/env_config.sh                 # 加载NPU环境变量配置
@@ -88,7 +88,7 @@ torchrun \
   # 主节点地址
   --master_port $MASTER_PORT \
   # 主节点端口
-  train_fsdp2.py examples/fsdp2/gpt_oss/tune_gpt_oss_20b_varlen_fsdp2_A3.yaml  
+  train_fsdp2.py examples/fsdp2/gpt_oss/tune_gpt_oss_20b_varlen_fsdp2_A3.yaml
   # 启动训练入口
 ```
 
@@ -179,7 +179,7 @@ training:
 
 其中dataset支持两种配置方式，推荐使用 **dataset_info.json 注册方式** 便于多数据集混合训练。
 
-#### 方式一：内联配置（适用于单数据集快速验证）  
+#### 方式一：内联配置（适用于单数据集快速验证）
 
 ```yaml
 data:
@@ -188,7 +188,7 @@ data:
     formatting: "alpaca"                            # 数据格式模板，支持alpaca/sharegpt等格式
 ```
 
-#### 方式二：通过 `dataset_info.json` 注册  
+#### 方式二：通过 `dataset_info.json` 注册
 
 1. 编辑 `configs/fsdp2/data/dataset_info.json`，添加数据集条目：
 
@@ -204,14 +204,14 @@ data:
     }
     ```
 
-2. 在 YAML 配置中引用：  
+2. 在 YAML 配置中引用：
 
     ```yaml
     data:
       dataset: alpaca_full, sharegpt4_zh                # 微调数据集：可填写逗号分隔的在 dataset_info.json 中配置的数据集名称，支持多数据集混合
     ```
 
-### 6.5 预训练场景数据集配置  
+### 6.5 预训练场景数据集配置
 
 当前预训练场景数据集配置方式和微调场景数据集配置方式有所不同，在此给出示例说明
 

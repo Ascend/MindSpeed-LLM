@@ -13,4 +13,4 @@ python convert_ckpt.py \
     --target-pipeline-parallel-size 1 \
     --add-qkv-bias \
     --load-dir ./model_weights/qwen2.5_mcore/ \
-    --save-dir ./model_from_hf/qwen2.5_7b_hf/  # 需要填入原始HF模型路径，新权重会存于./model_from_hf/qwen2.5_7b_hf/mg2hg/
+    --save-dir ./model_from_hf/qwen2.5_7b_hf/  # 需要填入原始HF模型路径，新权重会存于./model_from_hf/qwen2.5_7b_hf/mg2hf/

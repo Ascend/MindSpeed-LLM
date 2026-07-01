@@ -150,7 +150,7 @@ python convert_ckpt.py \
     --lora-target-modules linear_qkv linear_proj linear_fc1 linear_fc2 \
     --target-tensor-parallel-size 1 \
     --target-pipeline-parallel-size 1 \
-    --save-dir ./model_from_hf/llama-2-7b-hf/ #填写原HF模型路径，新的权重将存储在./model_from_hf/llama-2-7b-hf/mg2hg/
+    --save-dir ./model_from_hf/llama-2-7b-hf/ #填写原HF模型路径，新的权重将存储在./model_from_hf/llama-2-7b-hf/mg2hf/
 ```
 
 引导转换脚本示例如下：

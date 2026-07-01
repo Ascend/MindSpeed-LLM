@@ -17,4 +17,4 @@ python convert_ckpt.py \
     --lora-target-modules linear_qkv linear_proj linear_fc1 linear_fc2 \
     --load-dir ./model_weights/qwen25_mcore/ \
     --lora-load ./ckpt/qwen25_7b_lora \
-    --save-dir ./model_from_hf/qwen25_7b_hf/  # 需要填入原始HF模型路径，新权重会存于./model_from_hf/qwen25_7b_hf/mg2hg/
+    --save-dir ./model_from_hf/qwen25_7b_hf/  # 需要填入原始HF模型路径，新权重会存于./model_from_hf/qwen25_7b_hf/mg2hf/

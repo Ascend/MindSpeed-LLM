@@ -15,4 +15,4 @@ python convert_ckpt.py \
     --target-pipeline-parallel-size 1 \
     --load-checkpoint-loosely \
     --save-lora-to-hf \
-    --save-dir ./model_from_hf/llama-2-7b-hf/    # <-- 需要填入原始HF模型路径，新权重会存于./model_from_hf/llama-2-7b-hf/mg2hg/
+    --save-dir ./model_from_hf/llama-2-7b-hf/    # <-- 需要填入原始HF模型路径，新权重会存于./model_from_hf/llama-2-7b-hf/mg2hf/

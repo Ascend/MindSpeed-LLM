@@ -14,4 +14,4 @@ python convert_ckpt.py \
     --target-tensor-parallel-size 1 \
     --target-pipeline-parallel-size 1 \
     --load-dir ./model_weights/gemma2_mcore/ \
-    --save-dir ./model_from_hf/gemma2_hf/  # 需要填入原始HF模型路径，新权重会存于./model_from_hf/gemma2_hf/mg2hg/
+    --save-dir ./model_from_hf/gemma2_hf/  # 需要填入原始HF模型路径，新权重会存于./model_from_hf/gemma2_hf/mg2hf/

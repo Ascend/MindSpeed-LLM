@@ -2,10 +2,10 @@
 
 ## 使用场景
 
-大模型虽然在预训练后拥有强大的语言能力，但它们往往缺乏任务意识或交互能力。通过在多任务、多样化的数据集上进行微调，指令微调（Instruction Fine-Tuning）使得模型在应对各种任务时更加灵活并更具泛化能力。  
+大模型虽然在预训练后拥有强大的语言能力，但它们往往缺乏任务意识或交互能力。通过在多任务、多样化的数据集上进行微调，指令微调（Instruction Fine-Tuning）使得模型在应对各种任务时更加灵活并更具泛化能力。
 指令微调首先收集多个不同任务的数据集，并将每个任务转换为指令形式的输入，帮助大模型在多样化任务上提升泛化能力。具体来说，就是通过“指令-输出”的配对样本，使用有监督学习的方式，让模型学会执行具体任务。指令微调的基本原理如下：
 
-![指令微调原理](../../../figures/instruction_finetune/General_pipline_of_instruction_tuning.png)  
+![指令微调原理](../../../figures/instruction_finetune/General_pipeline_of_instruction_tuning.png)
 *图源：[Instruction Tuning for Large Language Models: A Survey.](https://arxiv.org/pdf/2308.10792v5)*
 
 根据指令微调的数据格式，可分为以下三种常见的使用场景：

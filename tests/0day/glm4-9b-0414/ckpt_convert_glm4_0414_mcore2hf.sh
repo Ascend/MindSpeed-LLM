@@ -15,6 +15,6 @@ python convert_ckpt.py \
    --use-mcore-models \
    --params-dtype bf16 \
    --load-dir ./model_weights/glm4_9b_0414_mcore/ \
-    --save-dir ./model_from_hf/glm4_9b_0414_hf/  # 需要填入原始HF模型路径，新权重会存于./model_from_hf/glm4_hf/mg2hg/
+    --save-dir ./model_from_hf/glm4_9b_0414_hf/  # 需要填入原始HF模型路径，新权重会存于./model_from_hf/glm4_hf/mg2hf/
 `
 `

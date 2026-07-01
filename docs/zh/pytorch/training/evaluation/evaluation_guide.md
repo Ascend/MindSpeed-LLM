@@ -1,7 +1,7 @@
 # 评估指导手册
 
 MindSpeed LLM 支持大模型在公开基准数据集上进行准确率评估，当前支持的 Benchmark
- 详细统计信息可参考[evaluation.md](./models_evaluation.md)。
+ 详细统计信息可参考[models_evaluation.md](./models_evaluation.md)。
 
 ## 环境变量
 
