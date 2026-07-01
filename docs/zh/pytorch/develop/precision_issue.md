@@ -28,4 +28,4 @@
 |权重初始化对齐|确保训练前的初始化权重一致，确认加载同一个预训练模型或使用一样的初始化随机种子|
 |数据读取对齐|检查从数据集中读取后并送入模型训练的数据是否一致|
 
-完成初步排查后，通常借助[精度工具 msprobe](https://gitcode.com/Ascend/msprobe)对不同问题场景进行分析和定位, 该工具提供了使用指导和[训练精度定位指南](https://gitcode.com/Ascend/msprobe/blob/master/docs/zh/wiki/train_debug_guide.md)。
+完成初步排查后，通常借助[精度工具 msprobe](https://gitcode.com/Ascend/msprobe)对不同问题场景进行分析和定位，该工具提供了使用指导和[训练精度定位指南](https://gitcode.com/Ascend/msprobe/blob/master/docs/zh/wiki/train_debug_guide.md)。

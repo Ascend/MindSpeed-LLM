@@ -57,7 +57,7 @@
 >
 > 本节表格中“/”表示不可配套，“Y”表示可配套。
 
-**表 2**  MindSpeed LLM与Ascend Extention for PyTorch版本兼容
+**表 2**  MindSpeed LLM与Ascend Extension for PyTorch版本兼容
 
 <table style="table-layout: fixed; width: 433px"><colgroup>
 <col style="width: 156px">
@@ -68,7 +68,7 @@
 <thead>
   <tr>
     <th rowspan="2">MindSpeed LLM</th>
-    <th colspan="3">Ascend Extention for PyTorch版本</th>
+    <th colspan="3">Ascend Extension for PyTorch版本</th>
   </tr>
   <tr>
     <th>7.2.0</th>

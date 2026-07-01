@@ -428,7 +428,7 @@
     </tr>
     <tr>
       <td>cp_type</td>
-      <td>Literal[&quot;ulysses&quot,&quot;ring&quot;]</td>
+      <td>Literal[&quot;ulysses&quot;,&quot;ring&quot;]</td>
       <td>ulysses</td>
       <td>长序列并行算法类型，目前仅支持ulysses和ring算法。</td>
     </tr>

@@ -20,7 +20,7 @@
 > 本节表格中“√”代表支持，“x”代表不支持。
 
 - 各硬件产品对应物理机部署场景支持的操作系统请参考[兼容性查询助手](https://www.hiascend.com/hardware/compatibility)。
-- 各硬件产品对应虚拟机及容器部署场景支持的操作系统请参考《CANN 软件安装》的“[操作系统兼容性说明](https://www.hiascend.com/document/detail/zh/canncommercial/900/softwareinst/instg/instg_0101.html?OS=openEuler&InstallType=netyum)”章节（商用版）或“[操作系统兼容性说明](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/900/softwareinst/instg/instg_0101.html?OS=openEuler&InstallType=netyum)”章节（社区版）。
+- 各硬件产品对应虚拟机及容器部署场景支持的操作系统请参考《CANN 软件安装》的“[操作系统兼容性说明](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/900/softwareinst/instg/instg_0101.html?OS=openEuler&InstallType=netyum)”章节。
 
 ## 安装前准备
 
@@ -40,16 +40,20 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
 
 ### 安装CANN
 
-请参考《[CANN 快速安装](https://www.hiascend.com/cann/download)》安装CANN软件（包含Toolkit、ops和NNAL包），并配置环境变量。
+安装配套版本的NPU驱动固件、CANN软件（Toolkit、ops和NNAL）并配置CANN环境变量，具体请参考《[CANN 软件安装](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/900/softwareinst/instg/instg_0000.html)》。
+
+CANN软件提供进程级环境变量设置脚本，训练或推理场景下使用NPU执行业务代码前需要调用该脚本，否则业务代码将无法执行。
 
 ```shell
-# 设置环境变量
-source /usr/local/Ascend/cann/set_env.sh                 # 修改为实际安装的Toolkit包路径
-source /usr/local/Ascend/nnal/atb/set_env.sh --cxx_abi=0 # 修改为实际安装的nnal包路径
+source /usr/local/Ascend/cann/set_env.sh
+source /usr/local/Ascend/nnal/atb/set_env.sh --cxx_abi=0
 ```
 
-> [!NOTICE]  
-> 建议使用非root用户安装运行torch\_npu，且建议对安装程序的目录文件做好权限管控：文件夹权限设置为750，文件权限设置为640。可以通过设置umask控制安装后文件的权限，如设置umask为0027。
+以上命令以root用户安装后的默认路径为例，请用户根据set_env.sh的实际路径进行替换。
+
+> [!NOTICE]
+> 
+> 安装运行程序建议使用非root用户，且建议对安装程序的目录文件做好权限管控：文件夹权限设置为750，文件权限设置为640。可以通过设置umask控制安装后文件的权限，如设置umask为0027。
 > 更多安全相关内容请参见《[安全声明](../SECURITYNOTE.md)》中各组件关于“文件权限控制”的说明。
 
 ### 安装MindSpore框架 
@@ -63,9 +67,11 @@ source /usr/local/Ascend/nnal/atb/set_env.sh --cxx_abi=0 # 修改为实际安装
 1. 使能环境变量。
 
     ```shell
-    source /usr/local/Ascend/cann/set_env.sh                  # 修改为实际安装的Toolkit包路径
-    source /usr/local/Ascend/nnal/atb/set_env.sh --cxx_abi=0  # 修改为实际安装的nnal包路径
+    source /usr/local/Ascend/cann/set_env.sh
+    source /usr/local/Ascend/nnal/atb/set_env.sh --cxx_abi=0
     ```
+
+    以上命令以root用户安装后的默认路径为例，请用户根据set_env.sh的实际路径进行替换。
 
 2. 安装MindSpeed-Core-MS转换工具。
    
