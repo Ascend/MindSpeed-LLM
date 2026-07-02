@@ -1,3 +1,7 @@
+# Copyright (c) 2026, HUAWEI CORPORATION. All rights reserved.
+# Copyright 2023 The vLLM team.
+# Copyright 2023 DeepSeek-AI and the HuggingFace Inc. team. All rights reserved.
+
 import math
 from functools import lru_cache
 
@@ -26,6 +30,37 @@ def apply_rotary_emb(x: torch.Tensor, freqs_cis: torch.Tensor, inverse: bool = F
         freqs_cis = freqs_cis.view(1, x_complex.size(1), 1, x_complex.size(-1))
     x_rotated = torch.view_as_real(x_complex * freqs_cis).flatten(-2)
     return x_rotated.to(original_dtype)
+
+
+def apply_rotary_emb_tnd(x: torch.Tensor, freqs_cis: torch.Tensor, inverse: bool = False) -> torch.Tensor:
+    original_dtype = x.dtype
+    x_complex = torch.view_as_complex(x.float().unflatten(-1, (-1, 2)))
+    if inverse:
+        freqs_cis = freqs_cis.conj()
+    if x_complex.ndim == 3:
+        freqs_cis = freqs_cis.view(x_complex.size(0), 1, x_complex.size(-1))
+    else:
+        freqs_cis = freqs_cis.view(1, x_complex.size(1), 1, x_complex.size(-1))
+    x_rotated = torch.view_as_real(x_complex * freqs_cis).flatten(-2)
+    return x_rotated.to(original_dtype)
+
+
+def get_cmp_cu_seqlens(cu_seqlens, ratio, zero_based=False, return_maxlen=False):
+    max_seqlen = None
+    dtype = cu_seqlens.dtype
+    if zero_based:
+        if cu_seqlens[0] != 0:
+            cu_seqlens = torch.cat((cu_seqlens.new_zeros(1), cu_seqlens))
+        seqlens = (cu_seqlens[1:] - cu_seqlens[:-1]) // ratio
+    else:
+        shifted = torch.cat([cu_seqlens.new_zeros(1), cu_seqlens[:-1]])
+        seqlens = (cu_seqlens - shifted) // ratio
+    if return_maxlen:
+        max_seqlen = seqlens.max().item()
+    cu_seqlens = torch.cumsum(seqlens, dim=0, dtype=dtype)
+    if zero_based:
+        cu_seqlens = torch.cat((cu_seqlens.new_zeros(1), cu_seqlens))
+    return cu_seqlens, max_seqlen
 
 
 @lru_cache(2)

@@ -33,11 +33,13 @@ from mindspeed_llm.tasks.models.transformer.dsa_indexer import (
     get_attn_scores,
     DSAIndexerLossLoggingHelper,
     fused_sparse_attn_shared_kv_kvallgather,
-    fused_ms_sparse_lightning_indexer_kl_loss_kvallgather,
+    fused_sparse_flash_mla_with_indexer_loss_kvallgather,
 )
 from mindspeed_llm.core.context_parallel.kvallgather_context_parallel import gather_from_sp_cp, permute_cp_shard
 from mindspeed_llm.tasks.models.transformer.deepseek4.g2_attention_kernel import G2CoreAttention
-from mindspeed_llm.tasks.models.transformer.deepseek4.deepseek_utils import apply_rotary_emb
+from mindspeed_llm.tasks.models.transformer.deepseek4.deepseek_utils import apply_rotary_emb, get_cmp_cu_seqlens
+from mindspeed_llm.ops.npu_sparse_flash_mla_with_indexer_loss import npu_sparse_flash_mla_with_indexer_loss
+from mindspeed_llm.ops.npu_sparse_flash_mla import npu_sparse_flash_mla
 
 try:
     import mindspeed.ops.npu_sparse_lightning_indexer_grad_kl_loss as ms_slig
@@ -211,6 +213,7 @@ class DeepSeek4SelfAttention(MegatronModule):
         self.kv_allgather = args.context_parallel_size > 1 and args.context_parallel_algo == 'kvallgather_cp_algo'
         self.softmax_scale = self.head_dim**-0.5
 
+        self.indexer = None
         if self.compress_ratio > 1:
             self.compressor = build_module(
                 submodules.compressor, config=self.config, compress_ratio=self.compress_ratio, head_dim=self.head_dim
@@ -232,18 +235,38 @@ class DeepSeek4SelfAttention(MegatronModule):
             return self.freqs_cis[start_pos : start_pos + local_seq_len]
 
     def sparse_attention(
-        self, query, ori_kv, cmp_kv, cmp_sparse_indices, sinks, softmax_scale, cmp_ratio, q_len_global
+        self,
+        query,
+        ori_kv,
+        cmp_kv,
+        cmp_sparse_indices,
+        sinks,
+        softmax_scale,
+        cmp_ratio,
+        q_len_global,
+        packed_seq_params,
     ):
         if self.use_sparse_flash_attn:
-            from mindspeed.ops.npu_sparse_attn_shared_kv import npu_sparse_attn_shared_kv
-
             if self.kv_allgather:
                 output = fused_sparse_attn_shared_kv_kvallgather(
-                    query, ori_kv, cmp_kv, cmp_sparse_indices, sinks, softmax_scale, cmp_ratio
+                    query, ori_kv, cmp_kv, cmp_sparse_indices, sinks, softmax_scale, cmp_ratio, packed_seq_params
                 )
             else:
-                output = npu_sparse_attn_shared_kv(
-                    query, ori_kv, cmp_kv, cmp_sparse_indices, sinks.float(), softmax_scale, cmp_ratio
+                layout = 'TND' if packed_seq_params is not None else 'BSND'
+                cu_seqlens_q = packed_seq_params.cu_seqlens_q if packed_seq_params else None
+                cu_seqlens_kv = packed_seq_params.cu_seqlens_kv if packed_seq_params else None
+                output = npu_sparse_flash_mla(
+                    query,
+                    ori_kv,
+                    cmp_kv,
+                    cmp_sparse_indices,
+                    sinks=sinks.float(),
+                    softmax_scale=softmax_scale,
+                    cmp_ratio=cmp_ratio,
+                    layout_q=layout,
+                    layout_kv=layout,
+                    cu_seqlens_q=cu_seqlens_q,
+                    cu_seqlens_kv=cu_seqlens_kv,
                 )
         else:
             _, bsz, _, _ = query.shape
@@ -258,6 +281,81 @@ class DeepSeek4SelfAttention(MegatronModule):
             kv = ori_kv if cmp_kv is None else torch.cat([ori_kv, cmp_kv], dim=0)
             output = self.core_attention(query, kv, self.attn_sink, topk_idxs, self.head_dim**-0.5)
         return output
+
+    def sparse_attention_with_indexer_loss(
+        self,
+        query,
+        ori_kv,
+        cmp_kv,
+        cmp_sparse_indices,
+        sinks,
+        softmax_scale,
+        cmp_ratio,
+        q_len_global,
+        query_index,
+        key_index,
+        weights,
+        packed_seq_params,
+    ):
+        layout = "TND" if packed_seq_params is not None else "BSND"
+        cu_seqlens_q = cu_seqlens_kv = cu_seqlens_cmp_kv = None
+        if layout == "TND":
+            cu_seqlens_q = packed_seq_params.cu_seqlens_q.int()
+            cu_seqlens_kv = packed_seq_params.cu_seqlens_kv.int()
+            cu_seqlens_cmp_kv, _ = get_cmp_cu_seqlens(cu_seqlens_q, cmp_ratio, zero_based=True)
+        args = get_args()
+        if self.kv_allgather:
+            output = fused_sparse_flash_mla_with_indexer_loss_kvallgather(
+                query,
+                ori_kv,
+                cmp_kv,
+                cmp_sparse_indices,
+                sinks,
+                softmax_scale,
+                cmp_ratio,
+                query_index,
+                key_index,
+                weights,
+                loss_tracker=self.indexer_loss_tracker,
+                loss_coeff=args.indexer_loss_coeff,
+                layout_q=layout,
+                layout_kv=layout,
+                cu_seqlens_q=cu_seqlens_q,
+                cu_seqlens_kv=cu_seqlens_kv,
+                cu_seqlens_cmp_kv=cu_seqlens_cmp_kv,
+            )
+        else:
+            output = npu_sparse_flash_mla_with_indexer_loss(
+                query,
+                ori_kv,
+                cmp_kv,
+                cmp_sparse_indices,
+                query_index,
+                key_index,
+                weights,
+                sinks=sinks.float(),
+                softmax_scale=softmax_scale,
+                cmp_ratio=cmp_ratio,
+                loss_tracker=self.indexer_loss_tracker,
+                loss_coeff=args.indexer_loss_coeff,
+                layout_q=layout,
+                layout_kv=layout,
+                cu_seqlens_q=cu_seqlens_q,
+                cu_seqlens_kv=cu_seqlens_kv,
+                cu_seqlens_cmp_kv=cu_seqlens_cmp_kv,
+            )
+        return output
+
+    def indexer_loss_tracker(self, loss):
+        if self.kv_allgather:
+            # 负载均衡的CP策略由于每个rank计算两个attention块，所以此处loss需要平均一下
+            loss /= 2
+        DSAIndexerLossLoggingHelper.save_loss_to_tracker(
+            loss,
+            self.layer_number,
+            self.config.num_layers,
+            avg_group=parallel_state.get_tensor_and_context_parallel_group(),
+        )
 
     def forward(
         self,
@@ -329,6 +427,7 @@ class DeepSeek4SelfAttention(MegatronModule):
                     q_compressed.detach(),
                     start_pos,
                     local_freqs_cis,
+                    packed_seq_params,
                 )
                 query_index, key_index, weights = self.indexer.all_gather_qk_weight_kvallgather(
                     query_index, key_index, weights
@@ -371,80 +470,66 @@ class DeepSeek4SelfAttention(MegatronModule):
         # get kv compress
         kv_compress = None
         if self.compress_ratio > 1:
-            if (kv_compress := self.compressor(hidden_states, start_pos, local_freqs_cis)) is not None:
+            if (
+                kv_compress := self.compressor(hidden_states, start_pos, local_freqs_cis, packed_seq_params)
+            ) is not None:
                 if self.config.sequence_parallel or self.kv_allgather:
                     kv_compress = gather_from_sp_cp(kv_compress)
 
         self.attn_sink = self.attn_sink.to(hidden_states.device)
-        o = self.sparse_attention(
-            q,
-            kv,
-            kv_compress,
-            compress_topk_idxs,
-            self.attn_sink,
-            self.softmax_scale,
-            self.compress_ratio,
-            q_len_global,
-        )
 
-        if (
-            args.use_g2_indexer_loss
-            and self.compress_ratio > 1
-            and self.indexer is not None
+        use_smla_with_slig = (
+            self.indexer is not None
+            and args.use_g2_indexer_loss
             and torch.is_grad_enabled()
-        ):
-            compress_topk_idxs = (
-                torch.where(compress_topk_idxs == -1, compress_topk_idxs, compress_topk_idxs - offset)
-                if offset != 0
-                else compress_topk_idxs
+            and args.use_fused_lightning_indexer_loss
+        )
+        if use_smla_with_slig:
+            o = self.sparse_attention_with_indexer_loss(
+                q,
+                kv,
+                kv_compress,
+                compress_topk_idxs,
+                self.attn_sink,
+                self.softmax_scale,
+                self.compress_ratio,
+                q_len_global,
+                query_index,
+                key_index,
+                weights,
+                packed_seq_params,
             )
-            if tp_size > 1:
-                total_query = gather_from_tensor_model_parallel_region(q.view(*q.shape[:2], -1))
-                total_query = total_query.view(*q.shape[:2], -1, q.shape[-1])
-            else:
-                total_query = q
-            # key shape align to full key
-            if len(kv_compress.shape) == 3:
-                kv_compress = kv_compress.unsqueeze(2)
-            if args.use_fused_lightning_indexer_loss:
-                if self.kv_allgather:
-                    loss = fused_ms_sparse_lightning_indexer_kl_loss_kvallgather(
-                        total_query,
-                        kv_compress,
-                        query_index,
-                        key_index,
-                        weights,
-                        compress_topk_idxs,
-                        None,
-                        None,
-                        scale_value=self.softmax_scale,
-                        query_rope=None,
-                        key_rope=None,
-                        actual_seq_qlen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_q,
-                        actual_seq_klen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_kv,
-                        layout='BSND',
-                        cmp_ratio=self.compress_ratio,
-                    )
+        else:
+            o = self.sparse_attention(
+                q,
+                kv,
+                kv_compress,
+                compress_topk_idxs,
+                self.attn_sink,
+                self.softmax_scale,
+                self.compress_ratio,
+                q_len_global,
+                packed_seq_params,
+            )
+            if (
+                args.use_g2_indexer_loss
+                and self.compress_ratio > 1
+                and self.indexer is not None
+                and torch.is_grad_enabled()
+            ):
+                compress_topk_idxs = (
+                    torch.where(compress_topk_idxs == -1, compress_topk_idxs, compress_topk_idxs - offset)
+                    if offset != 0
+                    else compress_topk_idxs
+                )
+                if tp_size > 1:
+                    total_query = gather_from_tensor_model_parallel_region(q.view(*q.shape[:2], -1))
+                    total_query = total_query.view(*q.shape[:2], -1, q.shape[-1])
                 else:
-                    loss = ms_slig.npu_sparse_lightning_indexer_grad_kl_loss(
-                        total_query,
-                        kv_compress,
-                        query_index,
-                        key_index,
-                        weights,
-                        compress_topk_idxs,
-                        None,
-                        None,
-                        scale_value=self.softmax_scale,
-                        query_rope=None,
-                        key_rope=None,
-                        actual_seq_qlen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_q,
-                        actual_seq_klen=None if packed_seq_params is None else packed_seq_params.cu_seqlens_kv,
-                        layout='BSND',
-                        cmp_ratio=self.compress_ratio,
-                    )
-                loss *= args.indexer_loss_coeff
-            else:
+                    total_query = q
+                if len(kv_compress.shape) == 3:
+                    kv_compress = kv_compress.unsqueeze(2)
+
                 main_attn_dist = get_attn_scores(
                     total_query.detach(),
                     kv_compress.detach(),
@@ -461,13 +546,14 @@ class DeepSeek4SelfAttention(MegatronModule):
                     cmp_ratio=self.compress_ratio,
                 )
 
-            DSAIndexerLossLoggingHelper.save_loss_to_tracker(
-                loss,
-                self.layer_number,
-                self.config.num_layers,
-                avg_group=parallel_state.get_tensor_and_context_parallel_group(),
-            )
-            o = DSAIndexerLossAutoScaler.apply(o, loss)
+                DSAIndexerLossLoggingHelper.save_loss_to_tracker(
+                    loss,
+                    self.layer_number,
+                    self.config.num_layers,
+                    avg_group=parallel_state.get_tensor_and_context_parallel_group(),
+                )
+                o = DSAIndexerLossAutoScaler.apply(o, loss)
+
         o = o.transpose(0, 1)
         o_rotated = o.clone()
         o_rotated[..., -self.rope_head_dim :] = apply_rotary_emb(o[..., -self.rope_head_dim :], global_freqs_cis, True)

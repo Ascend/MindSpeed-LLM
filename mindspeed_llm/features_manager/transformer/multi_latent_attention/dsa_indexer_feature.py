@@ -103,8 +103,13 @@ class DSAIndexerFeature(MindSpeedFeature):
                 'kvallgather_cp_algo',
             ]:
                 raise ValueError("DSAIndexer is currently only supported `ulysses_cp_algo` when use context parallel.")
-            if args.reset_attention_mask or args.reset_position_ids:
-                raise ValueError("DSAIndexer is currently only supported in BNSD.")
+            if args.reset_attention_mask:
+                if not args.use_fused_lightning_indexer:
+                    raise ValueError("DSA with TND format requires --use-fused-lightning-indexer.")
+                if not args.use_fused_lightning_indexer_loss:
+                    raise ValueError("DSA with TND format requires --use-fused-lightning-indexer-loss.")
+                if not args.use_sparse_flash_attn:
+                    raise ValueError("DSA with TND format requires --use-sparse-flash-attn.")
 
     def register_patches(self, patch_manager, args):
         if args.enable_dsa_indexer:

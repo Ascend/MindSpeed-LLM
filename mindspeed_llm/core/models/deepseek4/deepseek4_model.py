@@ -2,7 +2,6 @@
 # Copyright (c) 2024, HUAWEI CORPORATION.  All rights reserved.
 from copy import deepcopy
 from typing import Literal, Optional
-from functools import wraps
 
 import torch
 from torch import Tensor
@@ -223,6 +222,27 @@ class DeepSeek4Model(MegatronCoreGPTModel):
         # If decoder_input is provided (not None), then input_ids and position_ids are ignored.
         # Otherwise, apply embedding layer on input_ids and position_ids to get decoder_input.
         args = get_args()
+        if args.reset_attention_mask:
+            actual_seq_len = get_actual_seq_len()
+
+            packed_seq_params = PackedSeqParams(
+                qkv_format='thd', cu_seqlens_q=actual_seq_len, cu_seqlens_kv=actual_seq_len
+            )
+
+            actual_seq_len_list = actual_seq_len.tolist()
+            set_actual_seq_len_list(actual_seq_len_list)
+            if args.mtp_num_layers:
+                actual_seq_len_list = actual_seq_len_list[0]
+
+            max_actual_seq_len = actual_seq_len_list[0]
+            for i in range(1, len(actual_seq_len_list)):
+                max_actual_seq_len = max(max_actual_seq_len, actual_seq_len_list[i] - actual_seq_len_list[i - 1])
+            packed_seq_params.max_seqlen_q = max_actual_seq_len
+            packed_seq_params.max_seqlen_kv = max_actual_seq_len
+            q_index, kv_index = compute_qkv_index(actual_seq_len_list)
+            packed_seq_params.q_index = q_index
+            packed_seq_params.kv_index = kv_index
+            packed_seq_params.position_ids = get_position_ids()
 
         inference_context = deprecate_inference_params(inference_context, inference_params)
 
@@ -390,33 +410,3 @@ class DeepSeek4Model(MegatronCoreGPTModel):
 
             return get_shared_embedding_from_dual_chunk()
         return super().shared_embedding_or_output_weight()
-
-
-def gpt_forward_wrapper(fn):
-    @wraps(fn)
-    def wrapper(*args, **kwargs):
-        _args = get_args()
-        actual_seq_len = get_actual_seq_len()
-
-        packed_seq_params = PackedSeqParams(cu_seqlens_q=actual_seq_len, cu_seqlens_kv=actual_seq_len)
-
-        actual_seq_len_list = actual_seq_len.tolist()
-        set_actual_seq_len_list(actual_seq_len_list)
-        if _args.mtp_num_layers:
-            actual_seq_len_list = actual_seq_len_list[0]
-
-        max_actual_seq_len = actual_seq_len_list[0]
-        for i in range(1, len(actual_seq_len_list)):
-            max_actual_seq_len = max(max_actual_seq_len, actual_seq_len_list[i] - actual_seq_len_list[i - 1])
-        packed_seq_params.max_seqlen_q = max_actual_seq_len
-        packed_seq_params.max_seqlen_kv = max_actual_seq_len
-
-        q_index, kv_index = compute_qkv_index(actual_seq_len_list)
-        packed_seq_params.q_index = q_index
-        packed_seq_params.kv_index = kv_index
-        packed_seq_params.position_ids = get_position_ids()
-
-        kwargs['packed_seq_params'] = packed_seq_params
-        return fn(*args, **kwargs)
-
-    return wrapper
