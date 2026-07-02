@@ -195,7 +195,7 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
     ```shell
     git clone https://gitcode.com/ascend/MindSpeed.git
     cd MindSpeed
-    git checkout master  # 切换至MindSpeed的master分支
+    git checkout 26.1.0_core_r0.12.1  # 切换至MindSpeed的26.1.0_core_r0.12.1分支
     pip3 install -r requirements.txt
     pip3 install -e .
     cd ..
@@ -210,7 +210,7 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
     git checkout core_v0.12.1
     cp -r megatron ../MindSpeed-LLM/
     cd ../MindSpeed-LLM
-    git checkout master
+    git checkout 26.1.0
     mkdir logs
 
     pip3 install -r requirements.txt  # 安装其余依赖库
