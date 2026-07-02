@@ -4,12 +4,9 @@ from typing import Union
 
 import torch
 
-from megatron.core.transformer import TransformerConfig, MegatronModule, ModuleSpec, build_module
-from megatron.core.transformer.identity_op import IdentityOp
-from megatron.core import parallel_state
+from megatron.core.transformer import MegatronModule, ModuleSpec, build_module
 from megatron.training import get_args
 from megatron.core import mpu
-from megatron.core.tensor_parallel.mappings import gather_from_sequence_parallel_region
 
 from mindspeed.core.fusions.fused_rms_norm import RMSNorm
 
@@ -30,9 +27,15 @@ def get_compressor_spec():
 
 
 class Compressor(MegatronModule):
-    def __init__(self, submodules: CompressorSubmodules, config, compress_ratio: int = 4, head_dim: int = 512,
-                 rotate: bool = False):
-        super(Compressor, self).__init__(config)
+    def __init__(
+        self,
+        submodules: CompressorSubmodules,
+        config,
+        compress_ratio: int = 4,
+        head_dim: int = 512,
+        rotate: bool = False,
+    ):
+        super().__init__(config)
         args = get_args()
         self.dim = args.hidden_size
         self.head_dim = head_dim
@@ -54,7 +57,7 @@ class Compressor(MegatronModule):
         self.wgate = build_module(submodules.wgate, self.dim, coff * self.head_dim, config=linear_config, bias=False)
         self.norm = RMSNorm(self.head_dim, args.norm_eps, config=config)
         self.kv_cache = None
-        
+
         # If overlap is enabled, state[:, :ratio] for overlapping compression and state[:, ratio:] for normal compression.
         # self.register_buffer("kv_state", torch.zeros(args.max_batch_size, coff * compress_ratio, coff * self.head_dim,
         #                                              dtype=torch.float32), persistent=False)
@@ -87,7 +90,7 @@ class Compressor(MegatronModule):
 
         local_len = tensor.shape[1] // mpu.get_tensor_model_parallel_world_size()
         rank = mpu.get_tensor_model_parallel_rank()
-        tensor = tensor[:, rank * local_len:(rank + 1) * local_len, :]
+        tensor = tensor[:, rank * local_len : (rank + 1) * local_len, :]
         return tensor
 
     def forward(self, x: torch.Tensor, start_pos: int, freqs_cis: torch.Tensor):
@@ -97,7 +100,8 @@ class Compressor(MegatronModule):
 
         ratio, overlap, d = self.compress_ratio, self.overlap, self.head_dim
         dtype = x.dtype
-        x = x.float()
+        if get_args().fp8 is None:
+            x = x.float()
         kv = self.wkv(x)
         score = self.wgate(x)
         if start_pos == 0:
@@ -105,18 +109,18 @@ class Compressor(MegatronModule):
             remainder = seqlen % ratio
             cutoff = seqlen - remainder
             freqs_cis = freqs_cis[:cutoff:ratio]
-            
+
             # offset = ratio if overlap else 0
             # if overlap and cutoff >= ratio:
-                # self.kv_state[:bsz, :ratio] = kv[:, cutoff - ratio: cutoff]
-                # self.score_state[:bsz, :ratio] = score[:, cutoff - ratio: cutoff] + self.ape
-            
+            # self.kv_state[:bsz, :ratio] = kv[:, cutoff - ratio: cutoff]
+            # self.score_state[:bsz, :ratio] = score[:, cutoff - ratio: cutoff] + self.ape
+
             if remainder > 0:
                 # kv, self.kv_state[:bsz, offset: offset + remainder] = kv.split([cutoff, remainder], dim=1)
                 # self.score_state[:bsz, offset: offset + remainder] = score[:, cutoff:] + self.ape[:remainder]
                 kv, _ = kv.split([cutoff, remainder], dim=1)
                 score = score[:, :cutoff]
-            
+
             kv = kv.unflatten(1, (-1, ratio))
             score = score.unflatten(1, (-1, ratio)) + self.ape
             if overlap:
@@ -132,8 +136,9 @@ class Compressor(MegatronModule):
                 self.score_state[:bsz, ratio + start_pos % ratio] = score.squeeze(1)
                 if should_compress:
                     kv_state = torch.cat([self.kv_state[:bsz, :ratio, :d], self.kv_state[:bsz, ratio:, d:]], dim=1)
-                    score_state = torch.cat([self.score_state[:bsz, :ratio, :d], self.score_state[:bsz, ratio:, d:]],
-                                            dim=1)
+                    score_state = torch.cat(
+                        [self.score_state[:bsz, :ratio, :d], self.score_state[:bsz, ratio:, d:]], dim=1
+                    )
                     kv = (kv_state * score_state.softmax(dim=1)).sum(dim=1, keepdim=True)
                     self.kv_state[:bsz, :ratio] = self.kv_state[:bsz, ratio:]
                     self.score_state[:bsz, :ratio] = self.score_state[:bsz, ratio:]
@@ -143,9 +148,9 @@ class Compressor(MegatronModule):
                 if should_compress:
                     kv = (self.kv_state[:bsz] * self.score_state[:bsz].softmax(dim=1)).sum(dim=1, keepdim=True)
         if not should_compress:
-            return
+            return None
         kv = self.norm(kv.to(dtype))
-        kv[..., -self.rope_head_dim:] = apply_rotary_emb(kv[..., -self.rope_head_dim:], freqs_cis)
+        kv[..., -self.rope_head_dim :] = apply_rotary_emb(kv[..., -self.rope_head_dim :], freqs_cis)
         if self.rotate:
             kv = rotate_activation(kv)
         # if start_pos == 0:

@@ -295,7 +295,7 @@ class LinearNoTP(torch.nn.Linear):
         )
 
     def forward(self, input_):
-        if get_args().fp8:
+        if get_args().fp8 and input_.dtype != torch.float32:
             from mindspeed.te.pytorch.fp8.recipes import matmul_fp8
 
             output = matmul_fp8(input_, self.weight)

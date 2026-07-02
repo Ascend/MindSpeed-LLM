@@ -426,6 +426,7 @@ class DSAIndexer(MegatronModule):
 
         # Apply rotary positional embedding to the RoPE part of the query
         q = q.transpose(0, 1)
+        q = q.clone()
         q[..., -self.rope_head_dim :] = apply_rotary_emb(q[..., -self.rope_head_dim :], freqs_cis)
         q = q.transpose(0, 1)
         q = rotate_activation(q)

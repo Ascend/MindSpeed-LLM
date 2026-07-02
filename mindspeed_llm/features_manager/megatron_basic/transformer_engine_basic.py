@@ -154,7 +154,11 @@ class TransformerEngineBasicFeature(MindSpeedFeature):
             from mindspeed.te.pytorch.module.checkpoint import transformer_block_checkpointed_forward, te_checkpoint
 
             # 让路其他组件
-            if not (getattr(args, 'swap_attention', False) or getattr(args, 'recompute_method', False) == 'block'):
+            if not (
+                getattr(args, 'swap_attention', False)
+                or getattr(args, 'recompute_method', False) == 'block'
+                or getattr(args, 'n_hash_layers', 0) >= 1
+            ):
                 pm.register_patch(
                     'megatron.core.transformer.transformer_block.TransformerBlock._checkpointed_forward',
                     transformer_block_checkpointed_forward,

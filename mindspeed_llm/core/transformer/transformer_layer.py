@@ -14,13 +14,13 @@
 # limitations under the License.
 
 import math
-from typing import Any, Dict, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Union
 from dataclasses import dataclass, field
 from torch import Tensor
 
 from megatron.core import tensor_parallel
 from megatron.core.transformer.transformer_layer import TransformerLayerSubmodules
-from megatron.core.utils import WrappedTensor, deprecate_inference_params
+from megatron.core.utils import deprecate_inference_params
 from megatron.core.transformer.transformer_layer import TransformerLayer as MegatronTransformerLayer
 from megatron.core.transformer import TransformerConfig, ModuleSpec, build_module
 from megatron.core.transformer.identity_op import IdentityOp, IdentityFuncOp
@@ -30,7 +30,11 @@ from megatron.core.transformer.moe.experts import GroupedMLP, SequentialMLP
 from megatron.core.utils import make_viewless_tensor
 from megatron.training import get_args
 
-from mindspeed_llm.tasks.models.transformer.deepseek4.mhc.mhc_recompute import MHCRecomputeInfo, RecomputeInputWrap, RecomputeOutputWrap
+from mindspeed_llm.tasks.models.transformer.deepseek4.mhc.mhc_recompute import (
+    MHCRecomputeInfo,
+    RecomputeInputWrap,
+    RecomputeOutputWrap,
+)
 
 
 @dataclass
@@ -75,7 +79,7 @@ class CustomTransformerLayerSubmodules:
 
     # Mapping for sharded tensor keys to be applied in `sharded_state_dict` method
     sharded_state_dict_keys_map: Dict[str, str] = field(default_factory=dict)
-    
+
     attn_mhc: Union[ModuleSpec, type] = IdentityOp
     mlp_mhc: Union[ModuleSpec, type] = IdentityOp
 
@@ -86,17 +90,14 @@ class TransformerLayer(MegatronTransformerLayer):
     """
 
     def __init__(
-            self,
-            config: TransformerConfig,
-            submodules: TransformerLayerSubmodules,
-            layer_number: int = 1,
-            hidden_dropout: float = None,
-            is_mtp_layer: bool = False,
+        self,
+        config: TransformerConfig,
+        submodules: TransformerLayerSubmodules,
+        layer_number: int = 1,
+        hidden_dropout: float = None,
+        is_mtp_layer: bool = False,
     ):
-        super().__init__(config=config,
-                         submodules=submodules,
-                         layer_number=layer_number,
-                         hidden_dropout=hidden_dropout)
+        super().__init__(config=config, submodules=submodules, layer_number=layer_number, hidden_dropout=hidden_dropout)
 
         self.is_mtp = is_mtp_layer
         # build hash module for router
@@ -118,16 +119,10 @@ class TransformerLayer(MegatronTransformerLayer):
             self.self_attention.core_attention.mtp_idx = 0
 
         self.attn_mhc = build_module(
-            submodules.attn_mhc,
-            config=config,
-            mhc_position='attn',
-            layer_number=self.layer_number
+            submodules.attn_mhc, config=config, mhc_position='attn', layer_number=self.layer_number
         )
         self.mlp_mhc = build_module(
-            submodules.mlp_mhc,
-            config=config,
-            mhc_position='mlp',
-            layer_number=self.layer_number
+            submodules.mlp_mhc, config=config, mhc_position='mlp', layer_number=self.layer_number
         )
 
     def forward(self, *args, **kwargs):
@@ -145,11 +140,12 @@ class TransformerLayer(MegatronTransformerLayer):
             recompute_info.use_mhc_triton = get_args().use_triton_mhc
             hidden_states = RecomputeInputWrap.apply(hidden_states, recompute_info)
         else:
-
             recompute_info = None
         kwargs["recompute_info"] = recompute_info
         attention_out, residual, context = self._forward_attention(*args, **kwargs)
-        output = self._forward_mlp(attention_out, residual, kwargs.get("input_ids", None), recompute_info=kwargs["recompute_info"])
+        output = self._forward_mlp(
+            attention_out, residual, kwargs.get("input_ids", None), recompute_info=kwargs["recompute_info"]
+        )
 
         if recompute_info:
             output = RecomputeOutputWrap.apply(output, recompute_info)
@@ -213,9 +209,7 @@ class TransformerLayer(MegatronTransformerLayer):
         # Optional Input Layer norm
         if self.recompute_input_layernorm:
             self.input_layernorm_checkpoint = tensor_parallel.CheckpointWithoutOutput()
-            input_layernorm_output = self.input_layernorm_checkpoint.checkpoint(
-                self.input_layernorm, hidden_states
-            )
+            input_layernorm_output = self.input_layernorm_checkpoint.checkpoint(self.input_layernorm, hidden_states)
         else:
             input_layernorm_output = self.input_layernorm(hidden_states)
         # Self attention.
@@ -243,9 +237,7 @@ class TransformerLayer(MegatronTransformerLayer):
         if self.recompute_input_layernorm:
             # discard the output of the input layernorm and register the recompute
             # as a gradient hook of attention_output_with_bias[0]
-            self.input_layernorm_checkpoint.discard_output_and_register_recompute(
-                attention_output_with_bias[0]
-            )
+            self.input_layernorm_checkpoint.discard_output_and_register_recompute(attention_output_with_bias[0])
 
         # inside the module provided in the `bias_dropout_add_spec` module?
         with self.bias_dropout_add_exec_handler():
@@ -254,16 +246,17 @@ class TransformerLayer(MegatronTransformerLayer):
             )
 
         # mHC post
-        hidden_states = self.attn_mhc(hidden_states, 
-            mhc_stage='post', 
-            residual=residual, 
-            post=post, 
+        hidden_states = self.attn_mhc(
+            hidden_states,
+            mhc_stage='post',
+            residual=residual,
+            post=post,
             comb=comb,
             recompute_info=recompute_info,
         )
 
         if recompute_info:
-            recompute_info.residual = residual.detach() 
+            recompute_info.residual = residual.detach()
             recompute_info.h_post = post.detach()
             recompute_info.h_res = comb.detach()
             recompute_info.hc_post_out = hidden_states.detach()
@@ -298,27 +291,23 @@ class TransformerLayer(MegatronTransformerLayer):
 
     def _forward_mlp(self, attn_output, residual, input_ids=None, recompute_info: MHCRecomputeInfo = None):
         args = get_args()
-        
+
         # mHC pre
         post, comb = None, None
         attn_output = self.mlp_mhc(attn_output, mhc_stage='pre', recompute_info=recompute_info, module='mlp')
         if isinstance(attn_output, tuple):
-            attn_output, post, comb = attn_output[0], attn_output[1], attn_output[2] 
-        
+            attn_output, post, comb = attn_output[0], attn_output[1], attn_output[2]
+
         # Optional Layer norm post the cross-attention.
         if self.recompute_pre_mlp_layernorm:
             self.pre_mlp_norm_checkpoint = tensor_parallel.CheckpointWithoutOutput()
-            pre_mlp_layernorm_output = self.pre_mlp_norm_checkpoint.checkpoint(
-                self.pre_mlp_layernorm, attn_output
-            )
+            pre_mlp_layernorm_output = self.pre_mlp_norm_checkpoint.checkpoint(self.pre_mlp_layernorm, attn_output)
         else:
             pre_mlp_layernorm_output = self.pre_mlp_layernorm(attn_output)
-        
+
         # MLP.
         if self.recompute_mlp:
-            mlp_output_with_bias = tensor_parallel.checkpoint(
-                self.mlp, False, pre_mlp_layernorm_output, input_ids
-            )
+            mlp_output_with_bias = tensor_parallel.checkpoint(self.mlp, False, pre_mlp_layernorm_output, input_ids)
         else:
             if args.n_hash_layers >= 1:
                 mlp_output_with_bias = self.mlp(pre_mlp_layernorm_output, input_ids)
@@ -331,9 +320,7 @@ class TransformerLayer(MegatronTransformerLayer):
         if self.recompute_pre_mlp_layernorm:
             # discard the output of the pre-mlp layernorm and register the recompute
             # as a gradient hook of mlp_output_with_bias[0]
-            self.pre_mlp_norm_checkpoint.discard_output_and_register_recompute(
-                mlp_output_with_bias[0]
-            )
+            self.pre_mlp_norm_checkpoint.discard_output_and_register_recompute(mlp_output_with_bias[0])
 
         if args.scale_depth is not None:
             mlp_output, mlp_bias = mlp_output_with_bias
@@ -352,17 +339,11 @@ class TransformerLayer(MegatronTransformerLayer):
         # won't result in memory savings (like the data loader, or
         # p2p_communication), it serves to document the origin of this
         # 'view' tensor.
-        output = make_viewless_tensor(
-            inp=hidden_states, requires_grad=hidden_states.requires_grad, keep_graph=True
-        )
+        output = make_viewless_tensor(inp=hidden_states, requires_grad=hidden_states.requires_grad, keep_graph=True)
 
         # mHC post
-        output = self.mlp_mhc(output, 
-            mhc_stage='post', 
-            residual=residual, 
-            post=post, 
-            comb=comb,
-            recompute_info=recompute_info
+        output = self.mlp_mhc(
+            output, mhc_stage='post', residual=residual, post=post, comb=comb, recompute_info=recompute_info
         )
 
         if recompute_info:
