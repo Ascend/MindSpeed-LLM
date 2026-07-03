@@ -3,10 +3,20 @@ from functools import lru_cache
 from einops import rearrange
 import torch
 
-try:
-    import cann_ops_transformer.ops as custom_ops
-except ImportError:
-    custom_ops = None
+
+_CUSTOM_OPS = None
+
+
+def _custom_ops():
+    global _CUSTOM_OPS
+    if _CUSTOM_OPS is not None:
+        return _CUSTOM_OPS
+    try:
+        import cann_ops_transformer.ops as custom_ops
+    except ImportError:
+        custom_ops = None
+    _CUSTOM_OPS = custom_ops
+    return _CUSTOM_OPS
 
 
 @lru_cache(maxsize=8)
@@ -25,7 +35,7 @@ def get_npu_lightning_indexer_metadata(
     cmp_ratio=4,
 ):
     cmp_residual_k = torch.tensor([S_K % cmp_ratio], dtype=torch.int32, device="npu")
-    metadata = custom_ops.lightning_indexer_metadata(
+    metadata = _custom_ops().lightning_indexer_metadata(
         N1,
         N2,
         D,
@@ -58,17 +68,17 @@ def npu_lightning_indexer(
     sparse_mode=3,
     cmp_ratio=4,
 ):
-    if custom_ops is None:
+    if _custom_ops() is None:
         raise Exception("Package custom_ops is not available while fused custom ops enabled.")
     S_Q, B, N1, D = query.shape
     S_K, _, N2, _ = key.shape
     if layout == 'TND':
         query = rearrange(query, 's b h d -> (b s) h d').contiguous()  # [S, B, N, D] --> [T, N, D]
-        key = rearrange(key, 's b h d -> (b s) h d').contiguous()  # [S, B, N, D] --> [T, N, D]
+        key = key.reshape(-1, key.shape[2], key.shape[3]).contiguous()  # [S, B, N, D] --> [T, N, D]
         weights = rearrange(weights, 's b n -> (b s) n').contiguous()  # [B, S, N] --> [T, N]
     else:
         query = rearrange(query, 's b h d -> b s h d').to(torch.bfloat16)
-        key = rearrange(key, 's b h d -> b s h d').to(torch.bfloat16)
+        key = key.reshape(key.shape[1], key.shape[0], key.shape[2], key.shape[3]).contiguous().to(torch.bfloat16)
         weights = rearrange(weights, 's b d -> b s d')
 
     if layout == "TND":
@@ -108,7 +118,7 @@ def npu_lightning_indexer(
             cmp_ratio,
         )
     else:
-        metadata = custom_ops.lightning_indexer_metadata(
+        metadata = _custom_ops().lightning_indexer_metadata(
             N1,
             N2,
             D,
@@ -125,7 +135,7 @@ def npu_lightning_indexer(
             cmp_ratio=cmp_ratio,
         )
 
-    sparse_indices, sparse_values = custom_ops.lightning_indexer(
+    sparse_indices, sparse_values = _custom_ops().lightning_indexer(
         query,
         key,
         weights.float(),

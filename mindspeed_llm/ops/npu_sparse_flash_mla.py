@@ -3,13 +3,22 @@ from functools import lru_cache
 
 from einops import rearrange
 import torch
-
-try:
-    import cann_ops_transformer.ops as custom_ops
-except ImportError:
-    custom_ops = None
-
 from mindspeed_llm.tasks.models.transformer.deepseek4.deepseek_utils import get_cmp_cu_seqlens
+
+
+_CUSTOM_OPS = None
+
+
+def _custom_ops():
+    global _CUSTOM_OPS
+    if _CUSTOM_OPS is not None:
+        return _CUSTOM_OPS
+    try:
+        import cann_ops_transformer.ops as custom_ops
+    except ImportError:
+        custom_ops = None
+    _CUSTOM_OPS = custom_ops
+    return _CUSTOM_OPS
 
 
 @lru_cache(maxsize=8)
@@ -33,7 +42,7 @@ def get_sparse_attn_sharedkv_metadata(
 ):
     cmp_residual_k = torch.tensor([S2 % cmp_ratio], dtype=torch.int32, device="npu") if has_cmp else None
 
-    metadata = custom_ops.sparse_flash_mla_metadata(
+    metadata = _custom_ops().sparse_flash_mla_metadata(
         num_heads_q=N1,
         num_heads_kv=N2,
         head_dim=D,
@@ -79,7 +88,7 @@ def get_sparse_flash_mla_grad_metadata(
 ):
     cmp_residual_kv = torch.tensor([ctx_S2 % ctx_cmp_ratio], dtype=torch.int32, device="npu") if ctx_has_cmp else None
 
-    grad_metadata = custom_ops.sparse_flash_mla_grad_metadata(
+    grad_metadata = _custom_ops().sparse_flash_mla_grad_metadata(
         cu_seqlens_q=None,
         cu_seqlens_ori_kv=None,
         cu_seqlens_cmp_kv=None,
@@ -172,7 +181,7 @@ class SparseFlashMlaFunction(torch.autograd.Function):
             seqlens_kv = cu_seqlens_ori_kv[1:] - cu_seqlens_ori_kv[:-1]
             max_seqlen_kv = seqlens_kv.max().item()
             max_seqlen_cmp_kv = (seqlens_kv // cmp_ratio).max().item()
-            metadata = custom_ops.sparse_flash_mla_metadata(
+            metadata = _custom_ops().sparse_flash_mla_metadata(
                 num_heads_q=N1,
                 num_heads_kv=N2,
                 head_dim=D,
@@ -198,7 +207,7 @@ class SparseFlashMlaFunction(torch.autograd.Function):
                 has_cmp_kv=has_cmp,
             )
 
-        result, softmax_lse = custom_ops.sparse_flash_mla(
+        result, softmax_lse = _custom_ops().sparse_flash_mla(
             q,
             ori_kv=ori_kv,
             cmp_kv=cmp_kv,
@@ -290,7 +299,7 @@ class SparseFlashMlaFunction(torch.autograd.Function):
                 ctx.layout_kv,
             )
         else:
-            grad_metadata = custom_ops.sparse_flash_mla_grad_metadata(
+            grad_metadata = _custom_ops().sparse_flash_mla_grad_metadata(
                 cu_seqlens_q=cu_seqlens_q,
                 cu_seqlens_ori_kv=cu_seqlens_ori_kv,
                 cu_seqlens_cmp_kv=cu_seqlens_cmp_kv,
@@ -324,7 +333,7 @@ class SparseFlashMlaFunction(torch.autograd.Function):
             dsinks,
             ori_softmax_l1,
             cmp_softmax_l1,
-        ) = custom_ops.sparse_flash_mla_grad(
+        ) = _custom_ops().sparse_flash_mla_grad(
             q,
             d_out.contiguous(),
             result,
@@ -418,7 +427,7 @@ def npu_sparse_flash_mla(
         result:      attention output (B, S, N1, D)
         softmax_lse: log-sum-exp
     """
-    if custom_ops is None:
+    if _custom_ops() is None:
         raise Exception("Package custom_ops is not available while fused custom ops enabled.")
     # cmp 0 means no compress
     if cmp_ratio == 0:
@@ -428,10 +437,13 @@ def npu_sparse_flash_mla(
         softmax_scale = D**-0.5
     if layout_q == 'BSND':
         q = q.permute(1, 0, 2, 3).contiguous()  # [S, B, N, D] --> [B, S, N, D]
-        ori_kv = ori_kv.permute(1, 0, 2).unsqueeze(2).contiguous()  # [S, B, D] --> [B, S, 1, D]
+        # [S, B, D] --> [B, S, 1, D]
+        ori_kv = ori_kv.reshape(ori_kv.shape[1], ori_kv.shape[0], 1, ori_kv.shape[2]).contiguous()
         cmp_kv = (
-            cmp_kv if cmp_kv is None else cmp_kv.permute(1, 0, 2).unsqueeze(2).contiguous()
-        )  # [S, B, D] --> [B, S, 1, D]
+            cmp_kv
+            if cmp_kv is None
+            else cmp_kv.reshape(cmp_kv.shape[1], cmp_kv.shape[0], 1, cmp_kv.shape[2]).contiguous()
+        )
         cmp_sparse_indices = (
             None if cmp_ratio != 4 else cmp_sparse_indices.unsqueeze(2).contiguous()
         )  # [B, S, K] --> [B, S, 1, K]
@@ -450,10 +462,9 @@ def npu_sparse_flash_mla(
             seqlens_k = cu_seqlens_kv[1:] - cu_seqlens_kv[:-1]
             cmp_residual_kv = seqlens_k % cmp_ratio
         q = rearrange(q, "s b h d -> (b s) h d").contiguous()  # [S, B, N, D] --> [T, N, D]
-        ori_kv = rearrange(ori_kv, "s b d -> (b s) d").unsqueeze(1).contiguous()  # [S, B, D] --> [T, 1, D]
-        cmp_kv = (
-            cmp_kv if cmp_kv is None else rearrange(cmp_kv, "s b d -> (b s) d").unsqueeze(1).contiguous()
-        )  # [S, B, D] --> [T, 1, D]
+        # [S, B, D] --> [T, 1, D]
+        ori_kv = ori_kv.reshape(-1, 1, ori_kv.shape[2]).contiguous()
+        cmp_kv = cmp_kv if cmp_kv is None else cmp_kv.reshape(-1, 1, cmp_kv.shape[2]).contiguous()
         cmp_sparse_indices = (
             None if cmp_ratio != 4 else rearrange(cmp_sparse_indices, "s b d -> (b s) d").unsqueeze(1).contiguous()
         )  # [B, S, K] --> [T, 1, K]
