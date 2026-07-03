@@ -5,16 +5,26 @@ from einops import rearrange
 import torch
 import torch.nn.functional as F
 
-try:
-    import cann_ops_transformer.ops as custom_ops
-except ImportError:
-    custom_ops = None
-
 from mindspeed_llm.ops.npu_sparse_flash_mla import (
     get_sparse_attn_sharedkv_metadata,
     get_sparse_flash_mla_grad_metadata,
 )
 from mindspeed_llm.tasks.models.transformer.deepseek4.deepseek_utils import get_cmp_cu_seqlens
+
+
+_CUSTOM_OPS = None
+
+
+def _custom_ops():
+    global _CUSTOM_OPS
+    if _CUSTOM_OPS is not None:
+        return _CUSTOM_OPS
+    try:
+        import cann_ops_transformer.ops as custom_ops
+    except ImportError:
+        custom_ops = None
+    _CUSTOM_OPS = custom_ops
+    return _CUSTOM_OPS
 
 
 @lru_cache(maxsize=8)
@@ -32,7 +42,7 @@ def get_sparse_lightning_indexer_klloss_grad_metadata(
     ctx_cmp_mask_mode,
 ):
     cmp_residual_kv = torch.tensor([s2 % ctx_cmp_ratio], dtype=torch.int32).npu()
-    slig_metadata = custom_ops.sparse_lightning_indexer_kl_loss_grad_metadata(
+    slig_metadata = _custom_ops().sparse_lightning_indexer_kl_loss_grad_metadata(
         ctx_N1,
         ctx_N2,
         query_index_shape1,
@@ -133,7 +143,7 @@ class SparseFlashMlaWithIndexerLossFunction(torch.autograd.Function):
             max_seqlen_kv = seqused_ori_kv.max().item()
             seqused_cmp_kv = cu_seqlens_cmp_kv[1:] - cu_seqlens_cmp_kv[:-1]
             max_seqlen_cmp_kv = seqused_cmp_kv.max().item()
-            metadata = custom_ops.sparse_flash_mla_metadata(
+            metadata = _custom_ops().sparse_flash_mla_metadata(
                 num_heads_q=N1,
                 num_heads_kv=N2,
                 head_dim=D,
@@ -159,7 +169,7 @@ class SparseFlashMlaWithIndexerLossFunction(torch.autograd.Function):
                 has_cmp_kv=has_cmp,
             )
 
-        result, softmax_lse = custom_ops.sparse_flash_mla(
+        result, softmax_lse = _custom_ops().sparse_flash_mla(
             q,
             ori_kv=ori_kv,
             cmp_kv=cmp_kv,
@@ -259,7 +269,7 @@ class SparseFlashMlaWithIndexerLossFunction(torch.autograd.Function):
                 ctx.layout_kv,
             )
         else:
-            grad_metadata = custom_ops.sparse_flash_mla_grad_metadata(
+            grad_metadata = _custom_ops().sparse_flash_mla_grad_metadata(
                 cu_seqlens_q=cu_seqlens_q,
                 cu_seqlens_ori_kv=cu_seqlens_ori_kv,
                 cu_seqlens_cmp_kv=cu_seqlens_cmp_kv,
@@ -286,7 +296,7 @@ class SparseFlashMlaWithIndexerLossFunction(torch.autograd.Function):
                 has_cmp_kv=ctx.has_cmp,
             )
 
-        dq, dori_kv, dcmp_kv, dsinks, ori_softmax_l1, cmp_softmax_l1 = custom_ops.sparse_flash_mla_grad(
+        dq, dori_kv, dcmp_kv, dsinks, ori_softmax_l1, cmp_softmax_l1 = _custom_ops().sparse_flash_mla_grad(
             q,
             d_out.contiguous(),
             result,
@@ -336,7 +346,7 @@ class SparseFlashMlaWithIndexerLossFunction(torch.autograd.Function):
         else:
             seqlens_cmp = cu_seqlens_cmp_kv[1:] - cu_seqlens_cmp_kv[:-1]
             max_seqlen_cmp = seqlens_cmp.max().item()
-            slig_metadata = custom_ops.sparse_lightning_indexer_kl_loss_grad_metadata(
+            slig_metadata = _custom_ops().sparse_lightning_indexer_kl_loss_grad_metadata(
                 ctx.N1,
                 ctx.N2,
                 query_index.shape[-1],
@@ -353,7 +363,7 @@ class SparseFlashMlaWithIndexerLossFunction(torch.autograd.Function):
                 cmp_ratio=ctx.cmp_ratio,
             )
 
-        d_query_index, d_key_index, d_weights, softmax_out = custom_ops.sparse_lightning_indexer_kl_loss_grad(
+        d_query_index, d_key_index, d_weights, softmax_out = _custom_ops().sparse_lightning_indexer_kl_loss_grad(
             query_index,
             key_index,
             weights,
@@ -454,24 +464,8 @@ def npu_sparse_flash_mla_with_indexer_loss(
     loss_tracker: Optional[callable] = None,
     loss_coeff: float = 1.0,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
-    """Sparse shared-KV attention (forward + backward).
-
-    Args:
-        q:                  query, (B, S, N1, D), BSND
-        ori_kv:             original KV, (B, S, N2, D)
-        cmp_kv:             compressed KV, (B, cmp_max_seqlen, N2, D)
-        cmp_sparse_indices: compressed sparse indices, (B, S, N2, K), int32
-        softmax_scale:      softmax scale, default 1/sqrt(D)
-        cmp_ratio:          compression ratio
-        cmp_residual_kv:    (B,) int32, residual compressed-KV length produced by the compressor
-                            upstream; required by backward when cmp_mask_mode==3 and cmp_ratio!=1.
-                            Passed in, not computed here.
-
-    Returns:
-        result:      attention output (B, S, N1, D)
-        softmax_lse: log-sum-exp
-    """
-    if custom_ops is None:
+    """Sparse mla with sparse lightning indexer loss grad."""
+    if _custom_ops() is None:
         raise Exception("Package custom_ops is not available while fused custom ops enabled.")
     if softmax_scale is None:
         softmax_scale = q.shape[-1] ** -0.5
@@ -479,10 +473,13 @@ def npu_sparse_flash_mla_with_indexer_loss(
     if layout_q == 'BSND':
         query_index, key_index, weights = [x.transpose(0, 1) for x in [query_index, key_index, weights]]
         q = q.permute(1, 0, 2, 3).contiguous()  # [S, B, N, D] --> [B, S, N, D]
-        ori_kv = ori_kv.permute(1, 0, 2).unsqueeze(2).contiguous()  # [S, B, D] --> [B, S, 1, D]
+        # [S, B, D] --> [B, S, 1, D]
+        ori_kv = ori_kv.reshape(ori_kv.shape[1], ori_kv.shape[0], 1, ori_kv.shape[2]).contiguous()
         cmp_kv = (
-            cmp_kv if cmp_kv is None else cmp_kv.permute(1, 0, 2).unsqueeze(2).contiguous()
-        )  # [S, B, D] --> [B, S, 1, D]
+            cmp_kv
+            if cmp_kv is None
+            else cmp_kv.reshape(cmp_kv.shape[1], cmp_kv.shape[0], 1, cmp_kv.shape[2]).contiguous()
+        )
         cmp_sparse_indices = (
             None if cmp_ratio != 4 else cmp_sparse_indices.unsqueeze(2).contiguous()
         )  # [B, S, K] --> [B, S, 1, K]
@@ -499,12 +496,12 @@ def npu_sparse_flash_mla_with_indexer_loss(
         if cmp_residual_kv is None:
             seqlens_k = cu_seqlens_kv[1:] - cu_seqlens_kv[:-1]
             cmp_residual_kv = seqlens_k % cmp_ratio
-        if ori_kv.ndim == 3:
-            ori_kv = ori_kv.unsqueeze(2)
-            cmp_kv = cmp_kv.unsqueeze(2)
-        q, ori_kv, cmp_kv, query_index, key_index = [
-            rearrange(i, 's b h d -> (b s) h d').contiguous() for i in [q, ori_kv, cmp_kv, query_index, key_index]
+        q, query_index, key_index = [
+            rearrange(i, 's b h d -> (b s) h d').contiguous() for i in [q, query_index, key_index]
         ]
+        # [S, B, D] --> [T, 1, D]
+        ori_kv = ori_kv.reshape(-1, 1, ori_kv.shape[2]).contiguous()
+        cmp_kv = cmp_kv if cmp_kv is None else cmp_kv.reshape(-1, 1, cmp_kv.shape[2]).contiguous()
         weights = rearrange(weights, 's b h -> (b s) h').contiguous()
     output = SparseFlashMlaWithIndexerLossFunction.apply(
         q,
