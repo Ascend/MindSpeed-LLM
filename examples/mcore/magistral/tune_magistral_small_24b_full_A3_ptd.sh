@@ -1,5 +1,6 @@
 #!/bin/bash
-export HCCL_CONNECT_TIMEOUT=1800
+export HCCL_CONNECT_TIMEOUT=3600
+export HCCL_EXEC_TIMEOUT=3600
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export NPU_ASD_ENABLE=0
 
@@ -91,6 +92,7 @@ GPT_ARGS="
 
 DATA_ARGS="
     --data-path $DATA_PATH \
+    --handler-name AlpacaStyleInstructionHandler \
     --split 100,0,0
 "
 
@@ -100,6 +102,8 @@ CKPT_ARGS="
     --no-save-optim \
     --no-save-rng \
     --seed 1234 \
+    --enable-hf2mg-convert \
+    --model-type-hf llama2
 "
 
 OUTPUT_ARGS="

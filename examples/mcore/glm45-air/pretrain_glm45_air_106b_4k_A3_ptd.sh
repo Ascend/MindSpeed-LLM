@@ -1,4 +1,6 @@
 #!/bin/bash
+export HCCL_CONNECT_TIMEOUT=3600
+export HCCL_EXEC_TIMEOUT=3600
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 
 NPUS_PER_NODE=16
@@ -112,7 +114,13 @@ GPT_ARGS="
 
 DATA_ARGS="
     --data-path ${DATA_PATH} \
+    --handler-name GeneralPretrainHandler \
     --split 100,0,0
+"
+
+CKPT_ARGS="
+    --enable-hf2mg-convert \
+    --model-type-hf glm45-air \
 "
 
 OUTPUT_ARGS="
@@ -127,6 +135,7 @@ torchrun ${DISTRIBUTED_ARGS} pretrain_gpt.py \
     ${DATA_ARGS} \
     ${OUTPUT_ARGS} \
     ${MOE_ARGS} \
+    ${CKPT_ARGS} \
     --load ${CKPT_LOAD_DIR} \
     --save ${CKPT_SAVE_DIR} \
     --distributed-backend nccl \

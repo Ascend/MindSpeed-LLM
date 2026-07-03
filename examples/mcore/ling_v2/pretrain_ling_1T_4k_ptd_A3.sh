@@ -4,6 +4,7 @@ export CPU_AFFINITY_CONF=1
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
 export HCCL_CONNECT_TIMEOUT=3600
+export HCCL_EXEC_TIMEOUT=3600
 export HCCL_ALGO="alltoall=level0:NA;level1:pipeline"
 export HCCL_BUFFSIZE=400
 
@@ -125,7 +126,13 @@ TRAIN_ARGS="
 
 DATA_ARGS="
     --data-path $DATA_PATH \
+    --handler-name GeneralPretrainHandler \
     --split 100,0,0
+"
+
+CKPT_ARGS="
+    --enable-hf2mg-convert \
+    --model-type-hf bailing_mini
 "
 
 OUTPUT_ARGS="
@@ -152,6 +159,7 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     $MOE_ARGS \
     $TRAIN_ARGS \
     $MEM_ARGS \
+    $CKPT_ARGS \
     --distributed-backend nccl \
     --save $CKPT_SAVE_DIR \
     --load $CKPT_LOAD_DIR \

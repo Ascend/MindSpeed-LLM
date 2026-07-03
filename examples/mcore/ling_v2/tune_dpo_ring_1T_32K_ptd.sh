@@ -4,6 +4,7 @@ export CPU_AFFINITY_CONF=1
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
 export HCCL_CONNECT_TIMEOUT=3600
+export HCCL_EXEC_TIMEOUT=3600
 
 NPUS_PER_NODE=16
 MASTER_ADDR=localhost #主节点IP
@@ -142,8 +143,14 @@ TRAIN_ARGS="
 
 DATA_ARGS="
     --data-path $DATA_PATH \
+    --handler-name AlpacaStyleInstructionHandler \
     --split 100,0,0 \
     --is-pairwise-dataset \
+"
+
+CKPT_ARGS="
+    --enable-hf2mg-convert \
+    --model-type-hf bailing_mini
 "
 
 OUTPUT_ARGS="
@@ -164,6 +171,7 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS posttrain_gpt.py \
     $FINETUNE_ARGS \
     $TRAIN_ARGS \
     $MEMORY_ARGS \
+    $CKPT_ARGS \
     --load $CKPT_LOAD_DIR \
     --distributed-backend nccl \
     --transformer-impl local \

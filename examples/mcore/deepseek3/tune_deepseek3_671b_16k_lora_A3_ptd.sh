@@ -2,6 +2,7 @@
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
 export HCCL_CONNECT_TIMEOUT=3600
+export HCCL_EXEC_TIMEOUT=3600
 
 
 NPUS_PER_NODE=16
@@ -146,7 +147,13 @@ GPT_ARGS="
 
 DATA_ARGS="
     --data-path $DATA_PATH \
+    --handler-name AlpacaStyleInstructionHandler \
     --split 100,0,0
+"
+
+CKPT_ARGS="
+    --enable-hf2mg-convert \
+    --model-type-hf deepseek3
 "
 
 OUTPUT_ARGS="
@@ -168,6 +175,7 @@ FINETUNE_ARGS="
     --lora-alpha 16 \
     --lora-fusion \
     --lora-target-modules linear_qkv linear_proj linear_fc1 linear_fc2 \
+    --prompt-type deepseek3
 "
 
 python -m torch.distributed.launch $DISTRIBUTED_ARGS posttrain_gpt.py \
@@ -178,8 +186,8 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS posttrain_gpt.py \
     $ROPE_ARGS \
     $MOE_ARGS \
     $FINETUNE_ARGS \
+    $CKPT_ARGS \
     --save $CKPT_SAVE_DIR \
     --load $CKPT_LOAD_DIR \
     --transformer-impl local \
     --distributed-backend nccl 2>&1 | tee "logs/tune_deepseek3_671b_16k_lora_A3_ptd.log"
-

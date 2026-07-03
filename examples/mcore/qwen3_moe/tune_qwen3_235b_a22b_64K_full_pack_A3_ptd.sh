@@ -1,8 +1,8 @@
 # 验证所使用数据集下载自 https://huggingface.co/datasets/Congliu/Chinese-DeepSeek-R1-Distill-data-110k-SFT/tree/main
 #!/bin/bash
 
-export HCCL_CONNECT_TIMEOUT=7200
-export HCCL_EXEC_TIMEOUT=7200
+export HCCL_CONNECT_TIMEOUT=3600
+export HCCL_EXEC_TIMEOUT=3600
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
 export HCCL_IF_BASE_PORT=25919
@@ -142,7 +142,13 @@ GPT_ARGS="
 
 DATA_ARGS="
     --data-path $DATA_PATH \
+    --handler-name AlpacaStyleInstructionHandler \
     --split 100,0,0
+"
+
+CKPT_ARGS="
+    --enable-hf2mg-convert \
+    --model-type-hf qwen3-moe
 "
 
 OUTPUT_ARGS="
@@ -175,6 +181,7 @@ torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     $OPTIMIZE_ARGS \
     $TRAIN_ARGS \
     $MODEL_PARALLEL_ARGS \
+    $CKPT_ARGS \
     --distributed-backend nccl \
     --transformer-impl local \
     | tee logs/tune_qwen3_235b_64k_a22b_full.log

@@ -1,5 +1,6 @@
 #!/bin/bash
-export HCCL_CONNECT_TIMEOUT=1800
+export HCCL_CONNECT_TIMEOUT=3600
+export HCCL_EXEC_TIMEOUT=3600
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export NPU_ASD_ENABLE=0
 export HCCL_BUFFSIZE=64
@@ -98,6 +99,7 @@ GPT_ARGS="
 
 DATA_ARGS="
     --data-path $DATA_PATH \
+    --handler-name GeneralPretrainHandler \
     --split 100,0,0
 "
 
@@ -110,10 +112,16 @@ OUTPUT_ARGS="
     --no-save-rng
 "
 
+CKPT_ARGS="
+    --enable-hf2mg-convert \
+    --model-type-hf plm
+"
+
 python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     $GPT_ARGS \
     $DATA_ARGS \
     $OUTPUT_ARGS \
+    $CKPT_ARGS \
     $MLA_ARGS \
     $ROPE_ARGS \
     --distributed-backend nccl \

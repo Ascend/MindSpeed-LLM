@@ -189,6 +189,11 @@ DATA_ARGS="
     --handler-name GeneralPretrainHandler \
 "
 
+CKPT_ARGS="
+    --enable-hf2mg-convert \
+    --model-type-hf glm5
+"
+
 
 OUTPUT_ARGS="
     --log-interval 1 \
@@ -209,6 +214,7 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     $MEM_ARGS \
     $MOE_ARGS \
     $DSA_ARGS \
+    $CKPT_ARGS \
     ${OTHERS_ARGS[@]} \
     --save $CKPT_SAVE_DIR \
     --load $CKPT_LOAD_DIR \

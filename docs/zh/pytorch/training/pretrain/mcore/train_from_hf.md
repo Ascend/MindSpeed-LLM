@@ -88,6 +88,7 @@
 >
 > - 对于Mamba等特殊模型，必须手动指定 `--model-type-hf`。
 > - 由于Megatron→HF权重转换仅生成权重以及`model.safetensors.index.json`，不会生成配置文件，因此需要通过指定`--hf-cfg-dir`参数，将原HuggingFace模型的配置文件复制到权重转换所生成的HuggingFace权重目录中。
+> - `--model-type-hf`为权重转换的参数，一般可以在同模型目录下的`ckpt_xxx.sh`脚本中找到。参数全集位于`mindspeed_llm/features_manager/convert_checkpoint/convert_checkpoint.py`。
 
 #### 资源要求
 
@@ -161,7 +162,11 @@
 
 > [!NOTE]
 >
-> 若未指定`--output-prefix`, 处理后的数据文件将默认生成在原始数据集所在的目录下。
+> - 若未指定`--output-prefix`, 处理后的数据文件将默认生成在原始数据集所在的目录下。
+> - `--handler-name`为数据处理 handler 名称：
+>   - 对于预训练脚本，一般可以在同模型目录下的`data_xxx_pretrain.sh`脚本中找到，一般统一为`GeneralPretrainHandler`。
+>   - 对于微调脚本，一般可以在同模型目录下的`data_xxx_instruction.sh`脚本中找到，一般统一为`AlpacaStyleInstructionHandler`。
+> - `--prompt-type`为指定微调 prompt 模板，一般可以在同模型目录下的`data_xxx_instruction.sh`脚本中找到。参数全集位于`preprocess_data.py`。
 
 ### 使用示例
 
@@ -187,3 +192,45 @@ CKPT_LOAD_DIR="/path_to_huggingface_model/Qwen3-8B"
 - 当前权重转换`--enable-mg2hf-convert`功能仅支持单机或者共享存储环境。
 
 - 当前权重转换`--enable-mg2hf-convert`功能不支持对LoRA微调后的权重进行Megatron→HF权重转换。
+
+## 离线权重与数据处理
+
+MindSpeed-LLM仍然支持传统的离线权重转换与数据处理方式，即先离线完成权重转换和数据预处理，再启动训练任务。
+
+### 离线权重转换
+
+单独运行权重转换脚本，将HuggingFace权重转换为Megatron格式后再启动训练。
+
+```shell
+# 启动权重转换脚本（以llama2为例）
+bash examples/mcore/llama2/ckpt_convert_llama2_hf2mcore.sh
+```
+
+转换完成后，在训练脚本中：
+
+- 将`--load`参数指向转换后的Megatron权重目录（如`./model_weights/llama-2-7b-mcore/`），而非HuggingFace权重目录。
+- 移除以下在线转换相关参数：`--enable-hf2mg-convert`、`--enable-mg2hf-convert`、`--only-convert-last-checkpoint`、`--mg-save-dir`、`--hf-save-dir`、`--hf-cfg-dir`。
+
+更多权重转换使用详情请参见[权重转换](../../../tools/checkpoint_convert_hf_mcore.md)。
+
+### 离线数据预处理
+
+单独运行数据预处理脚本，将原始数据集转换为Megatron格式的`.bin/.idx`文件后再启动训练。
+
+```shell
+# 启动数据预处理脚本（以llama2为例）
+bash examples/mcore/llama2/data_convert_llama2_pretrain.sh
+```
+
+转换完成后，在训练脚本中：
+
+- 将`--data-path`参数指向转换后的数据文件前缀（如`./dataset/alpaca_llama2_7b_text_document`），而非原始数据文件路径。
+- 移除以下在线数据预处理相关参数：`--handler-name`、`--append-eod`、`--prompt-type`、`--json-keys`、`--workers`、`--n-subs`、`--pack`、`--neat-pack`、`--enable-thinking`、`--output-prefix`、`--seq-length`、`--reasoning-effort`、`--drop-thinking`。
+
+更多数据预处理使用详情请参见[预训练数据集处理](../../../tools/data_process_pretrain.md)。
+
+### 离线方式使用场景
+
+- 权重转换：100B以上模型建议采用离线方式，防止每次在线转权重带来大量时间浪费
+
+- 数据预处理：若存在已经转换好的数据，建议采用离线方式，直接填写数据路径

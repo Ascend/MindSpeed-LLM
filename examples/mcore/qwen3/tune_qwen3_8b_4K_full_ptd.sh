@@ -1,4 +1,6 @@
 #!/bin/bash
+export HCCL_CONNECT_TIMEOUT=3600
+export HCCL_EXEC_TIMEOUT=3600
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
 
@@ -90,6 +92,11 @@ DATA_ARGS="
     --split 100,0,0
 "
 
+CKPT_ARGS="
+    --enable-hf2mg-convert \
+    --model-type-hf qwen3
+"
+
 OUTPUT_ARGS="
     --log-interval 1 \
     --save-interval 1000 \
@@ -110,10 +117,9 @@ torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     $DATA_ARGS \
     $OUTPUT_ARGS \
     $TUNE_ARGS \
+    $CKPT_ARGS \
     --distributed-backend nccl \
     --load ${CKPT_LOAD_DIR} \
     --save ${CKPT_SAVE_DIR} \
     --transformer-impl local \
-    --enable-hf2mg-convert \
-    --model-type-hf qwen3 \
     | tee logs/tune_qwen3_8b_full.log

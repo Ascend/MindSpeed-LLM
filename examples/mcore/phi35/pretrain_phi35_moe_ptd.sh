@@ -1,4 +1,6 @@
 #!/bin/bash
+export HCCL_CONNECT_TIMEOUT=3600
+export HCCL_EXEC_TIMEOUT=3600
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 
 # Change for multinode config
@@ -123,6 +125,7 @@ TRAIN_ARGS="
 
 DATA_ARGS="
     --data-path $DATA_PATH \
+    --handler-name GeneralPretrainHandler \
     --split 100,0,0
 "
 
@@ -134,6 +137,11 @@ OUTPUT_ARGS="
     --eval-iters 0
 "
 
+CKPT_ARGS="
+    --enable-hf2mg-convert \
+    --model-type-hf phi3.5
+"
+
 torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     $MOE_ARGS \
     $GPT_ARGS \
@@ -141,6 +149,7 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     $TRAIN_ARGS \
     $DATA_ARGS \
     $OUTPUT_ARGS \
+    $CKPT_ARGS \
     --distributed-backend nccl \
     --load ${CKPT_LOAD_DIR} \
     --save ${CKPT_SAVE_DIR} \

@@ -1,4 +1,6 @@
 #!/bin/bash
+export HCCL_CONNECT_TIMEOUT=3600
+export HCCL_EXEC_TIMEOUT=3600
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
 export TASK_QUEUE_ENABLE=2
@@ -101,7 +103,13 @@ GPT_ARGS="
 
 DATA_ARGS="
     --data-path $DATA_PATH \
+    --handler-name GeneralPretrainHandler \
     --split 100,0,0
+"
+
+CKPT_ARGS="
+    --enable-hf2mg-convert \
+    --model-type-hf qwen3
 "
 
 OUTPUT_ARGS="
@@ -118,6 +126,7 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     $OPTIMIZE_ARGS \
     $TRAIN_ARGS \
     $MODEL_PARALLEL_ARGS \
+    $CKPT_ARGS \
     --distributed-backend nccl \
     --log-throughput \
     --load ${CKPT_LOAD_DIR} \

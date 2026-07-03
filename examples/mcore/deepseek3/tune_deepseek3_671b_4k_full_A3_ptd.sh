@@ -3,6 +3,7 @@
 
 
 export HCCL_CONNECT_TIMEOUT=3600
+export HCCL_EXEC_TIMEOUT=3600
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
 export STREAMS_PER_DEVICE=32
@@ -157,11 +158,14 @@ CKPT_ARGS="
     --seed 1234 \
     --load ${CKPT_LOAD_DIR} \
     --save ${CKPT_SAVE_DIR} \
+    --enable-hf2mg-convert \
+    --model-type-hf deepseek3
 "
 
 DATA_ARGS="
     --no-shared-storage \
     --data-path $DATA_PATH \
+    --handler-name AlpacaStyleInstructionHandler \
     --split 100,0,0
 "
 
@@ -177,6 +181,7 @@ FINETUNE_ARGS="
     --stage sft \
     --is-instruction-dataset \
     --no-pad-to-seq-lengths \
+    --prompt-type deepseek3
 "
 
 python -m torch.distributed.launch $DISTRIBUTED_ARGS posttrain_gpt.py \
@@ -190,6 +195,7 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS posttrain_gpt.py \
     $MTP_ARGS \
     $MOE_ARGS \
     $FINETUNE_ARGS \
+    $CKPT_ARGS \
     --distributed-backend nccl \
     --transformer-impl local \
     | tee tune_deepseek3_671b_4k_full_A3_256_ptd.log

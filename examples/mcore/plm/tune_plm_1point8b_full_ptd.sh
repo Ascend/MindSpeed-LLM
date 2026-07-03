@@ -1,4 +1,6 @@
 #!/bin/bash
+export HCCL_CONNECT_TIMEOUT=3600
+export HCCL_EXEC_TIMEOUT=3600
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
 
@@ -105,6 +107,7 @@ GPT_ARGS="
 
 DATA_ARGS="
     --data-path $DATA_PATH \
+    --handler-name AlpacaStyleInstructionHandler \
     --split 100,0,0
 "
 
@@ -117,10 +120,16 @@ OUTPUT_ARGS="
     --no-save-rng
 "
 
+CKPT_ARGS="
+    --enable-hf2mg-convert \
+    --model-type-hf plm
+"
+
 torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     $GPT_ARGS \
     $DATA_ARGS \
     $OUTPUT_ARGS \
+    $CKPT_ARGS \
     $MLA_ARGS \
     $ROPE_ARGS \
     $FITUNE_ARGS \
@@ -128,4 +137,3 @@ torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     --save $CKPT_SAVE_DIR \
     --transformer-impl local \
     | tee ./logs/tune_plm_1point8b.log
-

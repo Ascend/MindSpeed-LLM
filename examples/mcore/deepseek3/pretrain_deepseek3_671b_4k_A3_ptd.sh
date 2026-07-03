@@ -7,6 +7,7 @@ export CPU_AFFINITY_CONF=1
 export TASK_QUEUE_ENABLE=2
 export PYTORCH_NPU_ALLOC_CONF="expandable_segments:True"
 export HCCL_CONNECT_TIMEOUT=3600
+export HCCL_EXEC_TIMEOUT=3600
 export STREAMS_PER_DEVICE=32
 
 NPUS_PER_NODE=16
@@ -169,7 +170,13 @@ GPT_ARGS="
 
 DATA_ARGS="
     --data-path $DATA_PATH \
+    --handler-name GeneralPretrainHandler \
     --split 100,0,0
+"
+
+CKPT_ARGS="
+    --enable-hf2mg-convert \
+    --model-type-hf deepseek3
 "
 
 OUTPUT_ARGS="
@@ -191,6 +198,7 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     $ROPE_ARGS \
     $MOE_ARGS \
     $MTP_ARGS \
+    $CKPT_ARGS \
     --save $CKPT_SAVE_DIR \
     --load $CKPT_LOAD_DIR \
     --transformer-impl local \
