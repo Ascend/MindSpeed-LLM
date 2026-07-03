@@ -1402,20 +1402,12 @@ def fused_lightning_indexer_with_compress_kvallgather(
     for i in range(2):
         q_i = q_chunks[i].clone()
         k_i = k_chunks[i].clone()
-        w_i = weights_chunks[i].clone()
-        # [S, B, ...] -> [B, S, ...]
-        q_bshd = q_i.transpose(0, 1).contiguous().to(torch.bfloat16)
-        k_bshd = k_i.transpose(0, 1).contiguous().to(torch.bfloat16)
-
-        if w_i is not None:
-            w_bsd = w_i.transpose(0, 1).contiguous().to(torch.bfloat16)
-        else:
-            w_bsd = None
+        w_i = weights_chunks[i].clone() if weights_chunks[i] is not None else None
 
         idx, score = npu_lightning_indexer(
-            q_bshd,
-            k_bshd,
-            w_bsd,
+            q_i,
+            k_i,
+            w_i,
             index_topk,
             sparse_mode=3,
             cmp_ratio=compress_ratio,
