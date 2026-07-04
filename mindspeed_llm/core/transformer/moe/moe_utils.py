@@ -1,4 +1,5 @@
 # coding=utf-8
+# Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
 # Copyright (c) 2024, HUAWEI CORPORATION.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +18,7 @@ from functools import wraps
 from typing import Optional
 
 import torch
-import torch.nn.functional as F  
+import torch.nn.functional as F
 from megatron.core import parallel_state
 from megatron.core.transformer.moe.moe_utils import get_capacity
 from megatron.training import get_args
@@ -82,9 +83,7 @@ def group_limited_topk(
 
     # Mask the experts based on selection groups
     score_mask = (
-        group_mask.unsqueeze(-1)
-        .expand(num_tokens, num_groups, num_experts // num_groups)
-        .reshape(num_tokens, -1)
+        group_mask.unsqueeze(-1).expand(num_tokens, num_groups, num_experts // num_groups).reshape(num_tokens, -1)
     )
 
     masked_scores = scores.masked_fill(~score_mask.bool(), float('-inf'))
@@ -94,21 +93,21 @@ def group_limited_topk(
 
 
 def topk_softmax_with_capacity_and_hash(
-        logits: torch.Tensor,
-        topk: int,
-        capacity_factor: Optional[float] = None,
-        pad_to_capacity: bool = False,
-        drop_policy: str = "probs",
-        use_pre_softmax: bool = False,
-        num_groups: Optional[int] = None,
-        group_topk: Optional[int] = None,
-        scaling_factor: Optional[float] = None,
-        deterministic_mode: bool = False,
-        score_function: str = "softmax",
-        expert_bias: Optional[torch.Tensor] = None,
-        token_hash: bool = False,
-        tid2eid: Optional[torch.Tensor] = None,
-        input_ids: Optional[torch.Tensor] = None,
+    logits: torch.Tensor,
+    topk: int,
+    capacity_factor: Optional[float] = None,
+    pad_to_capacity: bool = False,
+    drop_policy: str = "probs",
+    use_pre_softmax: bool = False,
+    num_groups: Optional[int] = None,
+    group_topk: Optional[int] = None,
+    scaling_factor: Optional[float] = None,
+    deterministic_mode: bool = False,
+    score_function: str = "softmax",
+    expert_bias: Optional[torch.Tensor] = None,
+    token_hash: bool = False,
+    tid2eid: Optional[torch.Tensor] = None,
+    input_ids: Optional[torch.Tensor] = None,
 ):
     """
     patch hash operator in megatron topk_softmax_with_capacity
@@ -128,6 +127,7 @@ def topk_softmax_with_capacity_and_hash(
             )
         else:
             return torch.topk(scores, k=topk, dim=1)
+
     if score_function == "softmax":
         if use_pre_softmax:
             scores = torch.softmax(logits, dim=-1, dtype=torch.float32).type_as(logits)
@@ -179,7 +179,7 @@ def topk_softmax_with_capacity_and_hash(
     if scaling_factor:
         probs = probs * scaling_factor
 
-    # TODO Try using element-wise operations instead of scatter?
+    # TODO Try using element-wise operations instead of scatter?   # pylint: disable = fixme
     topk_masked_gates = torch.zeros_like(logits).scatter(1, top_indices, probs)
     topk_map = torch.zeros_like(logits).int().scatter(1, top_indices, 1).bool()
     tokens_per_expert = topk_map.sum(dim=0)
@@ -195,9 +195,7 @@ def topk_softmax_with_capacity_and_hash(
 
         # Maskout exceeded tokens
         if drop_policy == "probs":
-            _, capacity_indices = torch.topk(
-                topk_masked_gates, k=expert_capacity, dim=0, sorted=False
-            )
+            _, capacity_indices = torch.topk(topk_masked_gates, k=expert_capacity, dim=0, sorted=False)
             capacity_mask = torch.zeros_like(logits).scatter(0, capacity_indices, 1).bool()
         elif drop_policy == "position":
             _, capacity_indices = torch.topk(topk_map.int(), k=expert_capacity, dim=0, sorted=False)
@@ -347,9 +345,7 @@ def topk_softmax_with_capacity(
 
         # Maskout exceeded tokens
         if drop_policy == "probs":
-            _, capacity_indices = torch.topk(
-                topk_masked_gates, k=expert_capacity, dim=0, sorted=False
-            )
+            _, capacity_indices = torch.topk(topk_masked_gates, k=expert_capacity, dim=0, sorted=False)
             capacity_mask = torch.zeros_like(logits).scatter(0, capacity_indices, 1).bool()
         elif drop_policy == "position":
             _, capacity_indices = torch.topk(topk_map.int(), k=expert_capacity, dim=0, sorted=False)
