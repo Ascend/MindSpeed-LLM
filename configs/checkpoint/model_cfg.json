@@ -56,7 +56,8 @@
         "first_k_dense_replace": 0,
         "moe_layer_freq": 1,
         "add_qkv_bias": true,
-        "n_shared_experts": 1
+        "n_shared_experts": 1,
+        "qkv_split": "per_group"
       },
       "config_hf_key_mapping": {
         "num_layers": "num_hidden_layers",
@@ -266,7 +267,8 @@
     "qwen25": {
       "__base__": "base",
       "config_set_value": {
-        "add_qkv_bias": true
+        "add_qkv_bias": true,
+        "qkv_split": "per_group"
       }
     },
     "baichuan": {
