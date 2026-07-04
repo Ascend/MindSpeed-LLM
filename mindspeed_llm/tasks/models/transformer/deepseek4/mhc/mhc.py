@@ -95,23 +95,26 @@ def torch_hc_split_sinkhorn(
     eps: float = 1e-6,
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """
-    HC-Split Sinkhorn 算子的 PyTorch 原生精度标杆实现
-    完全对齐原算子逻辑，用于验证 Triton/TileLang 版本的精度
+    Native PyTorch reference implementation for the HC-Split Sinkhorn operator.
+    It matches the operator logic and is used as the accuracy baseline for
+    Triton or TileLang implementations.
 
     Args:
-        mixes: 输入张量，形状 [b, s, (2+hc_mult)*hc_mult] 即，[b, s, hc_mult + hc_mult + hc_mult*hc_mult]
-        hc_scale: 缩放张量，形状 [3]
-        hc_base: 偏置张量，形状 [(2+hc_mult)*hc_mult] 即，[hc_mult + hc_mult + hc_mult*hc_mult]
-        hc_mult: HC维度大小，默认4
-        sinkhorn_iters: Sinkhorn迭代次数，默认20
-        eps: 防止除零的小常数，默认1e-6
+        mixes: Input tensor with shape [b, s, (2+hc_mult)*hc_mult], namely
+            [b, s, hc_mult + hc_mult + hc_mult*hc_mult].
+        hc_scale: Scale tensor with shape [3].
+        hc_base: Bias tensor with shape [(2+hc_mult)*hc_mult], namely
+            [hc_mult + hc_mult + hc_mult*hc_mult].
+        hc_mult: HC dimension size. Defaults to 4.
+        sinkhorn_iters: Sinkhorn iteration count. Defaults to 20.
+        eps: Small epsilon to avoid division by zero. Defaults to 1e-6.
 
     Returns:
-        pre: [b, s, hc_mult]，Sigmoid激活+eps
-        post: [b, s, hc_mult]，2×Sigmoid激活
-        comb: [b, s, hc_mult, hc_mult]，Sinkhorn归一化后的矩阵
+        pre: [b, s, hc_mult], sigmoid activation plus eps.
+        post: [b, s, hc_mult], two times sigmoid activation.
+        comb: [b, s, hc_mult, hc_mult], Sinkhorn-normalized matrix.
     """
-    # 0. 输入校验（保证计算合法性）
+    # 0. Validate inputs before running the reference computation.
     assert mixes.dim() == 3, f"mixes must be 3D, got {mixes.dim()}D"
     assert hc_scale.shape == (3,), f"hc_scale must be [3], got {hc_scale.shape}"
     assert hc_base.shape == ((2 + hc_mult) * hc_mult,), (
@@ -119,42 +122,42 @@ def torch_hc_split_sinkhorn(
     )
     assert eps > 0, "eps must be positive to avoid division by zero"
 
-    # 1. 保存原始形状，用于最终重塑
+    # 1. Keep the original shape for the final reshape.
     b, s, _ = mixes.shape
-    # 展平为 [b*s, (2+hc_mult)*hc_mult]（对齐原算子的展平逻辑）
+    # Flatten to [b*s, (2+hc_mult)*hc_mult], matching the operator logic.
     mixes_flat = mixes.view(-1, (2 + hc_mult) * hc_mult)
 
-    # 2. 计算pre：[b*s, hc_mult]
-    pre_slice = mixes_flat[:, :hc_mult]  # 前hc_mult维
+    # 2. Compute pre: [b*s, hc_mult].
+    pre_slice = mixes_flat[:, :hc_mult]
     pre_flat = torch.sigmoid(pre_slice * hc_scale[0] + hc_base[:hc_mult]) + eps
 
-    # 3. 计算post：[b*s, hc_mult]
-    post_slice = mixes_flat[:, hc_mult : 2 * hc_mult]  # 中间hc_mult维
+    # 3. Compute post: [b*s, hc_mult].
+    post_slice = mixes_flat[:, hc_mult : 2 * hc_mult]
     post_flat = 2 * torch.sigmoid(post_slice * hc_scale[1] + hc_base[hc_mult : 2 * hc_mult])
 
-    # 4. 计算comb初始值：[b*s, hc_mult, hc_mult]
-    comb_slice = mixes_flat[:, 2 * hc_mult :]  # 最后hc_mult×hc_mult维
-    comb_init_flat = comb_slice.view(-1, hc_mult, hc_mult)  # 重塑为二维矩阵
-    # 线性变换（scale+base）：base需广播到batch维度
+    # 4. Compute initial comb: [b*s, hc_mult, hc_mult].
+    comb_slice = mixes_flat[:, 2 * hc_mult :]
+    comb_init_flat = comb_slice.view(-1, hc_mult, hc_mult)
+    # Apply scale and bias. Bias is broadcast across the batch dimension.
 
     comb_init_flat = comb_init_flat * hc_scale[2] + hc_base[2 * hc_mult :].view(1, hc_mult, hc_mult)
 
-    # 5. comb初始Softmax（行维度）+ 首次列归一化（对齐原算子）
+    # 5. Initial row-wise softmax plus the first column normalization.
     comb_flat = comb_init_flat.clone()
-    # 按行减最大值（数值稳定，避免exp爆炸）
-    row_max = comb_flat.max(dim=-1, keepdim=True).values
-    comb_flat = torch.exp(comb_flat - row_max)
+    comb_flat = comb_flat.softmax(-1) + eps
+    col_sum = comb_flat.sum(dim=-2, keepdim=True)
+    comb_flat = comb_flat / (col_sum + eps)
 
-    # 6. Sinkhorn迭代（交替行/列归一化）
-    for _ in range(sinkhorn_iters):
-        # 6.1 行归一化
+    # 6. Sinkhorn iterations with alternating row and column normalization.
+    for _ in range(sinkhorn_iters - 1):
+        # 6.1 Row normalization.
         row_sum = comb_flat.sum(dim=-1, keepdim=True)
         comb_flat = comb_flat / (row_sum + eps)
-        # 6.2 列归一化
+        # 6.2 Column normalization.
         col_sum = comb_flat.sum(dim=-2, keepdim=True)
         comb_flat = comb_flat / (col_sum + eps)
 
-    # 7. 重塑为原始形状 [b, s, ...]
+    # 7. Restore the original [b, s, ...] shape.
     pre = pre_flat.view(b, s, hc_mult)
     post = post_flat.view(b, s, hc_mult)
     comb = comb_flat.view(b, s, hc_mult, hc_mult)
