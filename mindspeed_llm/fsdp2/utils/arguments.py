@@ -13,6 +13,8 @@ import types
 from typing import Optional, List, Union, Any, Callable, Dict, Literal, TypeVar, get_type_hints, get_origin, get_args
 import yaml
 from mindspeed_llm.fsdp2.utils.logging import get_logger
+import transformers
+from packaging import version
 
 logger = get_logger(__name__)
 
@@ -28,7 +30,16 @@ class ModelArguments:
     )
     model_id: Optional[
         Literal[
-            "gpt_oss", "qwen3", "qwen3_moe", "qwen3_next", "step35", "mamba3", "minimax_m27", "longcat_flash", "glm52"
+            "gpt_oss",
+            "qwen3",
+            "qwen3_moe",
+            "qwen3_next",
+            "step35",
+            "mamba3",
+            "minimax_m27",
+            "longcat_flash",
+            "glm52",
+            "deepseek_v4",
         ]
     ] = field(
         default=None,
@@ -152,6 +163,11 @@ class ModelArguments:
     def __post_init__(self):
         if self.model_name_or_path is None:
             raise ValueError("`model_name_or_path` must be specified.")
+        if self.model_id == "deepseek_v4" and version.parse(transformers.__version__) < version.parse("5.8.1"):
+            raise EnvironmentError(
+                f"Detected model_id = deepseek_v4, current transformers version {transformers.__version__} is too low. "
+                "Please upgrade transformers to at least 5.8.1."
+            )
 
 
 @dataclass
