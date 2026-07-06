@@ -9,16 +9,26 @@ import torch
 class FSDPPlanConfig:
     ignored_modules: List[str] = None
     apply_modules: Dict[str, Any] = None
+    param_init_fn: Optional[Callable[[torch.nn.Module], None]] = None
 
     # mp_policy settings
     param_dtype: Optional[torch.dtype] = None
     reduce_dtype: Optional[torch.dtype] = None
     output_dtype: Optional[torch.dtype] = None
     cast_forward_inputs: bool = True
+    reshard_after_forward: bool = True
 
     # prefetch settings
     num_to_forward_prefetch: Optional[int] = 0
     num_to_backward_prefetch: Optional[int] = 0
+
+    # fsdp2 hook manager
+    hook_modules: Optional[List[str]] = None
+
+    # FSDP implementation strategy
+    # 'custom': Use FSDPTurbo custom FSDP implementation
+    # 'native': Use PyTorch native FSDP implementation (default)
+    fsdp_implementation: Literal['custom', 'native'] = 'native'
 
 
 @dataclass
@@ -55,7 +65,7 @@ class QuantizeConfig:
     @property
     def recipe(self):
         if hasattr(self, '_recipe'):
-            return self._recipe
+            return self._recipe  # pylint:disable=E0203
 
         from mindspeed.fsdp.quantization.config import QuantRecipe
 
@@ -99,7 +109,7 @@ class ParallelEngineConfig:
         self.validate_fsdp_config()
 
     def validate_fsdp_config(self):
-        ''' fully shard plan
+        '''fully shard plan
         config = ParallelEngineConfig(
             fsdp_plan=FSDPPlanConfig(
                 'ignored_modules':['*mlp.experts*'],
@@ -119,7 +129,7 @@ class ParallelEngineConfig:
             self.fsdp_plan.ignored_modules = list(set(self.fsdp_plan.ignored_modules))  # remove duplicates
 
     def validate_tp_config(self):
-        ''' tensor parallelize plan
+        '''tensor parallelize plan
 
         config = ParallelEngineConfig(
             tp_plan=TPPlanConfig(
@@ -131,10 +141,12 @@ class ParallelEngineConfig:
         self.tp_plan = TPPlanConfig() if self.tp_plan is None else self.tp_plan
         self.tp_plan.colwise_parallel = [] if self.tp_plan.colwise_parallel is None else self.tp_plan.colwise_parallel
         self.tp_plan.rowwise_parallel = [] if self.tp_plan.rowwise_parallel is None else self.tp_plan.rowwise_parallel
-        self.tp_plan.sequence_parallel = [] if self.tp_plan.sequence_parallel is None else self.tp_plan.sequence_parallel
+        self.tp_plan.sequence_parallel = (
+            [] if self.tp_plan.sequence_parallel is None else self.tp_plan.sequence_parallel
+        )
 
     def validate_ep_config(self):
-        ''' expert parallelize plan
+        '''expert parallelize plan
 
         config = ParallelEngineConfig(
             ep_plan=EPPlanConfig(
@@ -144,7 +156,9 @@ class ParallelEngineConfig:
         )
         '''
         self.ep_plan = EPPlanConfig(apply_modules=[], dispatcher='eager') if self.ep_plan is None else self.ep_plan
-        self.ep_plan._gradient_divide_factor = self.expert_parallel_size * self.expert_fully_shard_parallel_size * self.expert_data_parallel_size
+        self.ep_plan._gradient_divide_factor = (
+            self.expert_parallel_size * self.expert_fully_shard_parallel_size * self.expert_data_parallel_size
+        )
         if self.ep_plan.apply_efsdp_modules is None:
             self.ep_plan.apply_efsdp_modules = []
             for ep_module in self.ep_plan.apply_modules:

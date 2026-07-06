@@ -201,7 +201,16 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
     cd ..
     ```
 
-6. 准备MindSpeed LLM及Megatron-LM源码
+6. 安装FSDPTurbo加速库
+
+    ```shell
+    git clone https://gitcode.com/Ascend/FSDPTurbo.git
+    cd FSDPTurbo
+    pip3 install -e .
+    cd ..
+    ```
+
+7. 准备MindSpeed LLM及Megatron-LM源码
 
     ```shell
     git clone https://gitcode.com/ascend/MindSpeed-LLM.git

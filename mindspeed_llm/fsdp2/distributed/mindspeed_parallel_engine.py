@@ -2,9 +2,9 @@
 from typing import Optional, Any
 import torch
 
-from mindspeed.fsdp.distributed.fully_shard_parallel.fully_shard_parallel import fully_shard_parallel_modules
-from mindspeed.fsdp.distributed.tensor_parallel.tensor_parallel import tensor_parallel_modules
-from mindspeed.fsdp.memory.recompute.recompute import recompute_modules
+from fsdp_turbo.distributed.fully_shard_parallel.fully_shard_parallel import fully_shard_parallel_modules
+from fsdp_turbo.distributed.tensor_parallel.tensor_parallel import tensor_parallel_modules
+from fsdp_turbo.memory.recompute.recompute import recompute_modules
 from mindspeed_llm.fsdp2.distributed.parallel_state import init_parallel_state
 from mindspeed_llm.fsdp2.distributed.parallel_engine_config import ParallelEngineConfig
 from mindspeed_llm.fsdp2.distributed.context_parallel.context_parallel_manager import apply_context_parallelize_modules
@@ -90,7 +90,7 @@ class MindSpeedParallelEngine(torch.nn.Module):
             if self.config.recompute:
                 self.config.quantization_plan.fsdp_low_precision_all_gather_mode = "all"
 
-            from mindspeed.fsdp.quantization.converter.model_converter import build_model_converter
+            from fsdp_turbo.quantization.converter.model_converter import build_model_converter
 
             model_converters = build_model_converter(self.config.quantization_plan)
             model_converters.convert(self.model)
