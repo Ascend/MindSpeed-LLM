@@ -1,7 +1,7 @@
 #!/bin/bash
 
-export HCCL_CONNECT_TIMEOUT=3600
-export HCCL_EXEC_TIMEOUT=3600
+export HCCL_CONNECT_TIMEOUT=7200
+export HCCL_EXEC_TIMEOUT=7200
 export ACL_DEVICE_SYNC_TIMEOUT=7200
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
@@ -194,13 +194,7 @@ GPT_ARGS="
 
 DATA_ARGS="
     --data-path $DATA_PATH \
-    --handler-name GeneralPretrainHandler \
     --split 100,0,0 \
-"
-
-CKPT_ARGS="
-    --enable-hf2mg-convert \
-    --model-type-hf deepseek4
 "
 
 OUTPUT_ARGS="
@@ -225,5 +219,4 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_deepseek4.py \
     $CA_ARGS \
     $MEM_ARGS \
     $MTP_ARGS \
-    $CKPT_ARGS \
     --distributed-backend nccl 2>&1 | tee logs/pretrain_deepseek4_flash_4k_A3_ptd.log
