@@ -1,4 +1,4 @@
-# MindSpeed LLM 
+# MindSpeed LLM
 
 - [MindSpeed LLM简介](introduction.md)
 - [软件安装](./pytorch/training/install_guide.md)
@@ -17,6 +17,5 @@
 - [模型性能调优](./pytorch/tuning/performance_tuning.md)
 - [开发工具]()
   - [性能数据采集](./pytorch/tools/profiling.md)
-  - [权重转换](./pytorch/tools/checkpoint_convert_hf_mcore.md)
+  - [权重转换](./pytorch/tools/checkpoint_convert_hf_mcore_large_params.md)
 - [FAQ](FAQ.md)
-

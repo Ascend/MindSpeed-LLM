@@ -176,7 +176,6 @@ docs/zh/
 
 | 内容 | 说明 |
 |------|------|
-| [checkpoint_convert_hf_mcore](pytorch/tools/checkpoint_convert_hf_mcore.md) | 支持Huggingface、Megatron-core两种格式的权重互转，支持LoRA权重合并 |
 | [checkpoint_convert_hf_mcore_large_params](pytorch/tools/checkpoint_convert_hf_mcore_large_params.md) | 支持大参数模型mcore、hf等各种不同格式权重间的转换 |
 | [checkpoint_convert_hf_dcp](pytorch/tools/checkpoint_convert_hf_dcp.md) | HF和DCP之间的权重转换工具 |
 | [data_process_pretrain](pytorch/tools/data_process_pretrain.md) | 预训练任务的数据预处理 |

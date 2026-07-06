@@ -17,7 +17,7 @@
 > [!NOTE]
 >
 > - 数据预处理时如果需要使用数据集Pack模式，请参考[多样本Pack模式预训练](./pretrain_eod.md)。
-> - 预训练时可以不加载初始权重，此时模型权重采用随机初始化。如果需要加载权重，则需提前进行权重转换，具体请参考[权重转换v1](../../../tools/checkpoint_convert_hf_mcore.md)或[权重转换v2](../../../tools/checkpoint_convert_hf_mcore_large_params.md)。
+> - 预训练时可以不加载初始权重，此时模型权重采用随机初始化。如果需要加载权重，则需提前进行权重转换，具体请参考[权重转换](../../../tools/checkpoint_convert_hf_mcore_large_params.md)。
 
 本章节以Qwen3-8B模型为例，介绍了预训练启动方法。大模型分布式预训练主要包含以下流程：
 
