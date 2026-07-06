@@ -40,7 +40,7 @@
     wget https://huggingface.co/Qwen/Qwen3-0.6B/resolve/main/vocab.json
     ```
 
-2. 通过sha256sum验证模型权重文件完整性。  
+2. 通过sha256sum验证模型权重文件完整性。
 
     ```shell
     # 利用sha256sum计算sha256数值
@@ -50,7 +50,7 @@
 
 ### 权重转换
 
-昇腾MindSpeed LLM要求模型权重采用Megatron-Mcore格式，在这里我们将原始HuggingFace权重格式转换为Megatron-Mcore格式，详见[hf2mg权重转换](../pytorch/tools/checkpoint_convert_hf_mcore.md#21-huggingface权重转换到megatron-mcore格式)。
+昇腾MindSpeed LLM要求模型权重采用Megatron-Mcore格式，在这里我们将原始HuggingFace权重格式转换为Megatron-Mcore格式，详见[hf2mg权重转换](../pytorch/tools/checkpoint_convert_hf_mcore_large_params.md#21-Huggingface权重转换到Megatron-Mcore格式)。
 
 使用官方提供的转换脚本，获取对应切分的mg权重。
 
@@ -117,7 +117,7 @@
     ```
 
 > [!NOTE]
-> 
+>
 > - 对于Qwen3-0.6B模型，此处推荐的切分配置是tp1pp1，对应上述配置。
 > - MindSpore框架默认在Device侧进行权重转换，在模型较大时存在OOM风险，因此建议用户手动修改`convert_ckpt.py`，在包导入时加入如下代码设置CPU侧执行权重转换：
 >
@@ -256,15 +256,15 @@
     bash examples/mindspore/qwen3/pretrain_qwen3_0point6b_4K_ms.sh
     ```
 
-    **图 1**  启动预训练  
+    **图 1**  启动预训练
     ![img_2.png](../pytorch/figures/quick_start/running_log.png)
 
     脚本中特性包含训练参数或优化特性，下表为部分参数解释。
 
-    **表 3**  训练脚本参数说明  
+    **表 3**  训练脚本参数说明
 
     |参数名|说明|
-    |----|----| 
+    |----|----|
     |`--use-mcore-models`|使用Mcore分支运行模型|
     |`--disable-bias-linear`|去掉linear的偏移值，与Qwen原模型一致|
     |`--group-query-attention`|开启GQA注意力处理机制|
@@ -274,7 +274,7 @@
     |`--ai-framework`|指定使用的训练框架|
 
 > [!NOTE]
-> 
+>
 > - 多机训练需在多个终端同时启动预训练脚本（每个终端的预训练脚本只有NODE_RANK参数不同，其他参数均相同）。
 > - 如果使用多机训练，且没有设置数据共享，需要在训练启动脚本中增加`--no-shared-storage`参数，设置此参数之后将会根据分布式参数判断非主节点是否需要load数据，并检查相应缓存和生成数据。
 > - MindSpore框架需在预训练脚本中指定`--ai-framework`参数为`mindspore`。
@@ -408,10 +408,10 @@
 
     脚本中特性包含微调参数或优化特性，下表为部分参数解释。
 
-    **表 5**  微调脚本参数说明  
+    **表 5**  微调脚本参数说明
 
     |参数名|说明|
-    |----|----| 
+    |----|----|
     |`--finetune`|启动模型的微调模式。|
     |`--stage`|训练方法。|
     |`--is-instruction-dataset`|用于指定微调过程中采用指令微调数据集，以确保模型依据特定指令数据进行微调。|
@@ -422,5 +422,5 @@
     |`--bf16`|昇腾芯片对bf16精度支持良好，可显著提升训练速度。|
     |`--ai-framework`|指定使用的训练框架|
 
-    > [!NOTE]  
+    > [!NOTE]
     > MindSpore框架需在微调脚本中指定`--ai-framework`参数为`mindspore`。

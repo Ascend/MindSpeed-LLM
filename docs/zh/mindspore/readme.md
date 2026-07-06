@@ -260,7 +260,7 @@ MindSpore后端已完全支持MindSpeed-LLM的预训练、指令微调、RLHF等
 
 ### 权重转换
 
-MindSpeed MindSpore后端的权重转换与PyTorch后端保持了一致，当前支持huggingface、megatron-core两种格式的权重互转。权重转换特性参数和使用说明参考[权重转换](../pytorch/tools/checkpoint_convert_hf_mcore.md)。
+MindSpeed MindSpore后端的权重转换与PyTorch后端保持了一致，当前支持huggingface、megatron-core两种格式的权重互转。权重转换特性参数和使用说明参考[权重转换](../pytorch/tools/checkpoint_convert_hf_mcore_large_params.md)。
 
 <table>
   <thead>
