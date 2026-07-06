@@ -456,4 +456,13 @@
         <td>/</td>
         <td>/</td>
     </tr>
+    <tr>
+        <td>pretrain_glm52_tp1pp2ep1_dsa_share_index</td>
+        <td>/data/ci/models/glm52/hf/glm52_hf</td>
+        <td>/data/ci/models/glm52/mg/glm52_layer10_tp1pp2ep1</td>
+        <td>/data/ci/datasets/origin/train-00000-of-00001-a09b74b3ef9c3b56.parquet</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/</td>
+    </tr>
 </table>

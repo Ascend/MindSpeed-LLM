@@ -370,7 +370,7 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td>Y</td>
     </tr>
     <tr>
-        <td rowspan="17">ST</td>
+        <td rowspan="18">ST</td>
         <td rowspan="1">deepseek3</td>
         <td>deepseekv3, dualpipev, mla-up-proj-tp-overlap, moe-fb-overlap</td>
         <td><a href="pipeline/st/deepseek3/deepseek_v3_mcore_tp2_pp2_ep2_dualpipev_fb.sh">deepseek_v3_mcore_tp2_pp2_ep2_dualpipev_fb.sh</a></td>
@@ -497,6 +497,14 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td rowspan="1">minimax-m2.7</td>
         <td>minimax fsdp2 pretrain </td>
         <td><a href="pipeline/st/minimax-m2.7/pretrain_minimax_m2p7_4K_fsdp2.sh">pretrain_minimax_m2p7_4K_fsdp2.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td rowspan="1">glm52</td>
+        <td>glm52 dsa index share index</td>
+        <td><a href="pipeline/st/glm52/pretrain_glm52_tp1pp2ep1_dsa_share_index.sh">pretrain_glm52_tp1pp2ep1_dsa_share_index.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
