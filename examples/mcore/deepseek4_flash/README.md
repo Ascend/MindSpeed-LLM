@@ -25,7 +25,7 @@
     </tr>
     <tr>
       <td>Lora微调</td>
-      <td>TODO</td>
+      <td>DOING</td>
     </tr>
   </tbody>
   <tbody>
@@ -152,3 +152,25 @@ bash examples/mcore/deepseek4_flash/tune_deepseek4_flash_4k_A3_ptd.sh
   | DATA_PATH | 数据预处理后的数据路径  |
   | TOKENIZER_PATH | tokenizer目录  |
   | CKPT_LOAD_DIR | 权重转换保存的权重路径，为初始加载的权重 |
+
+## LoRA微调
+
+MindSpeed LLM提供[脚本](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/examples/mcore/deepseek4_flash) 进行模型训练
+
+```sh
+cd MindSpeed-LLM
+bash examples/mcore/deepseek4_flash/lora_finetune_deepseek4_flash_4k_A3_ptd.sh
+```
+
+用户需要根据实际情况修改脚本中以下变量
+
+  | 变量名  | 含义                |
+  |--------|-----------------|
+  | MASTER_ADDR | 多机情况下主节点IP  |
+  | NODE_RANK | 多机下，各机对应节点序号    |
+  | CKPT_SAVE_DIR | 训练中权重保存路径  |
+  | DATA_PATH | 数据预处理后的数据路径  |
+  | TOKENIZER_PATH | tokenizer目录  |
+  | CKPT_LOAD_DIR | 权重转换保存的权重路径，为初始加载的权重 |
+
+注：LoRA微调使用指令数据集，需先执行 `examples/mcore/deepseek4_flash/data_convert_deepseek4_instruction.sh` 完成数据预处理，再将产物前缀填入 `DATA_PATH`。
