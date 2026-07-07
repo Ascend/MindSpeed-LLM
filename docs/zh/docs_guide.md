@@ -94,8 +94,7 @@ docs/zh/
         ├── data_process_sft_sharegpt_style.md # ShareGPT格式数据处理
         ├── data_process_dpo_pairwise.md       # Pairwise数据处理
         ├── data_process_pretrain.md           # 预训练数据处理
-        ├── checkpoint_convert_hf_mcore.md     # 权重转换
-        ├── checkpoint_convert_hf_mcore_large_params.md  # 权重转换V2
+        ├── checkpoint_convert_hf_mcore_large_params.md  # 权重转换
         ├── checkpoint_convert_hf_dcp.md       # HF-DCP权重转换
         ├── profiling.md                       # 性能分析
         └── deterministic_computation.md       # 确定性计算

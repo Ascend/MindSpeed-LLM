@@ -699,8 +699,11 @@ class DSAIndexerLossLoggingHelper:
         """Collect and reduce the DSA indexer losses across ranks."""
         tracker = DSAIndexerLossLoggingHelper.tracker
         if "values" not in tracker:
-            return
-        values = tracker["values"]
+            values = torch.tensor([0.0], dtype=torch.float32, device=torch.cuda.current_device())
+        else:
+            values = torch.tensor(
+                [tracker["values"].sum().item()], dtype=torch.float32, device=tracker["values"].device
+            )
         # Collect DSA indexer losses across PP.
         torch.distributed.all_reduce(values, group=parallel_state.get_pipeline_model_parallel_group())
         # Reduce DSA indexer losses across ranks.
@@ -713,17 +716,17 @@ class DSAIndexerLossLoggingHelper:
             group=parallel_state.get_data_parallel_group(with_context_parallel=False),
             op=torch.distributed.ReduceOp.AVG,
         )
+        return values
 
     @staticmethod
     def track_das_indexer_metrics(loss_scale, iteration, writer, wandb_writer=None, total_loss_dict=None):
         """Track the DSA Indexer metrics for logging."""
-        DSAIndexerLossLoggingHelper.reduce_loss_in_tracker()
+        reduced_values = DSAIndexerLossLoggingHelper.reduce_loss_in_tracker()
         tracker = DSAIndexerLossLoggingHelper.tracker
         if "values" not in tracker:
             return
-        das_indexer_losses = tracker["values"] * loss_scale
-        das_indexer_num_layers = das_indexer_losses.shape[0]
-        loss = das_indexer_losses.sum() / das_indexer_num_layers
+        dsa_indexer_num_layers = tracker["values"].shape[0]
+        loss = (reduced_values[0] * loss_scale) / dsa_indexer_num_layers
         name = "dsa_indexer_loss"
         if total_loss_dict is not None:
             total_loss_dict[name] = loss
