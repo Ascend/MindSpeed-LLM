@@ -50,7 +50,7 @@
 
 ### 权重转换
 
-昇腾MindSpeed LLM要求模型权重采用Megatron-Mcore格式，在这里我们将原始HuggingFace权重格式转换为Megatron-Mcore格式，详见[hf2mg权重转换](../pytorch/tools/checkpoint_convert_hf_mcore_large_params.md#21-Huggingface权重转换到Megatron-Mcore格式)。
+昇腾MindSpeed LLM要求模型权重采用Megatron-Mcore格式，在这里我们将原始HuggingFace权重格式转换为Megatron-Mcore格式，详见[hf2mg权重转换](../pytorch/tools/checkpoint_convert_hf_mcore_large_params.md#huggingface权重转换至megatron-mcore格式)。
 
 使用官方提供的转换脚本，获取对应切分的mg权重。
 
