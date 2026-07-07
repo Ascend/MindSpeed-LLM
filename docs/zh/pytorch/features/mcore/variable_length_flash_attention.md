@@ -15,13 +15,14 @@
 首先确保每一个文档的末尾都添加了EOD Token。
 
 ```shell
+# 使能TND必须增加eod: --append-eod
 python ./preprocess_data.py \
    --input ./dataset/train-00000-of-00001-a09b74b3ef9c3b56.parquet \
    --tokenizer-name-or-path ./model_from_hf/Llama3-hf/ \
    --output-prefix ./dataset/enwiki \
    --workers 4 \
    --log-interval 1000  \
-   --append-eod \ #使能TND必须增加eod
+   --append-eod \
    --tokenizer-type PretrainedFromHF
 ```
 
