@@ -109,7 +109,7 @@ bash image_build.sh \
 
 ### 2. Image Usage Instructions
 
-**Important Note**: Due to different dependency environments of various models, only basic torch and torch_npu dependency packages are pre-installed in the image. After pulling the image and starting the container, users need to manually install dependencies required by the target model in the base environment according to the model README file.
+**Important Note**: Due to different dependency environments of various models, only basic torch and TorchNPU dependency packages are pre-installed in the image. After pulling the image and starting the container, users need to manually install dependencies required by the target model in the base environment according to the model README file.
 
 #### Run Image
 
@@ -151,7 +151,7 @@ The image contains the following pre-configured environment:
 
 | Environment | Description | Working Directory |
 | ------ | ------ | --------- |
-| base | Basic environment including `PyTorch`、`torch_npu`、`MindSpeed LLM`、`MindSpeed`、`Megatron-LM` | `/workspace/MindSpeed-LLM` |
+| base | Basic environment including `PyTorch`、`TorchNPU`、`MindSpeed LLM`、`MindSpeed`、`Megatron-LM` | `/workspace/MindSpeed-LLM` |
 
 ## Secondary Development
 
@@ -192,7 +192,7 @@ docker run -it --rm \
 | Python | 3.11 |
 | Miniconda | 26.1.1-1 |
 | PyTorch | 2.7.1 |
-| torch_npu | 2.7.1 |
+| TorchNPU | 2.7.1 |
 | MindSpeed LLM | 26.0.0 |
 
 ### Compatibility Change Notes
@@ -201,7 +201,7 @@ docker run -it --rm \
 - The default base image uses `CANN 8.5.2`, `910b`, `openEuler24.03`, and `Python3.11`.
 - You can switch to `ubuntu22.04`, `a3`, or other `CANN` base image versions via `docker/image_build.sh`.
 - `MindSpeed-LLM` is cloned to `/MindSpeed-LLM`, `MindSpeed` is cloned to `/MindSpeed`, and `Megatron-LM` is cloned to `/Megatron-LM`.
-- The image installs `PyTorch`, `torch_npu`, `MindSpeed-LLM`, `MindSpeed`, `Megatron-LM`, and the `Python` dependency from `requirements.txt`.
+- The image installs `PyTorch`, `TorchNPU`, `MindSpeed-LLM`, `MindSpeed`, `Megatron-LM`, and the `Python` dependency from `requirements.txt`.
 
 ## License
 

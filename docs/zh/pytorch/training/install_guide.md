@@ -51,13 +51,13 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
 > [!NOTE]
 >
 > - 使用镜像前，请先确认机器型号。最新镜像仅支持aarch64架构，可通过uname -a命令确认当前环境是否符合要求。
-> - 配套镜像已预装配套的CANN 9.0.0软件及Ascend Extension for PyTorch 26.0.0插件，您可根据需要选用。
+> - 配套镜像已预装配套的CANN 9.1.0软件及TorchNPU 26.1.0插件，您可根据需要选用。
 > - 若您当前环境与提供的镜像不兼容，请选择[方式二：源码安装](#方式二源码安装)。
-> - master分支后续会更新新的镜像，如果需要自定义构建镜像请参见[镜像概述](../../../../docker/OVERVIEW.zh.md)。
+> - 26.1.0分支后续会更新新的镜像，如果需要自定义构建镜像请参见[镜像概述](../../../../docker/OVERVIEW.zh.md)。
 
 1. 获取镜像
 
-   最新镜像均配套[MindSpeed LLM的26.0.0分支](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.0.0)，请按需[获取镜像](https://www.hiascend.com/developer/ascendhub/detail/e26da9266559438b93354792f25b2f4a)。
+   最新镜像均配套[MindSpeed LLM的26.1.0分支](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0)，该镜像即将上线，当前可使用MindSpeed LLM 26.0.0分支对应镜像，请单击[获取镜像](https://www.hiascend.com/developer/ascendhub/detail/e26da9266559438b93354792f25b2f4a)。
 
    - <term>Atlas A2 训练系列产品</term>：26.0.0-910b-openeuler24.03-py3.11-aarch64
 
@@ -164,17 +164,20 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
 
    若用户指定安装路径或使用其他安装方式，请参考《[CANN 软件安装](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/900/softwareinst/instg/instg_0000.html)》查阅对应的配置环境变量的命令。
 
-3. 安装PyTorch以及torch_npu
+3. 安装PyTorch以及TorchNPU
 
-   请参考《Ascend Extension for PyTorch 软件安装指南》中的“[安装PyTorch](https://www.hiascend.com/document/detail/zh/Pytorch/2600/configandinstg/instg/docs/zh/installation_guide/installation_via_binary_package.md)”章节，获取配套版本的PyTorch以及torch_npu软件包。
+   请参考《TorchNPU软件安装》中的“[安装PyTorch](https://www.hiascend.com/document/detail/zh/Pytorch/2600/configandinstg/instg/docs/zh/installation_guide/installation_via_binary_package.md)”章节，获取配套版本的PyTorch以及TorchNPU软件包。
 
    可参考如下安装命令：
 
    ```shell
-   # 安装torch和torch_npu构建参考 https://gitcode.com/ascend/pytorch/releases
    pip3 install torch-2.7.1-cp310-cp310-manylinux_2_28_aarch64.whl
    pip3 install torch_npu-2.7.1rc1-cp310-cp310-manylinux_2_28_aarch64.whl
    ```
+
+   > [!NOTE]
+   >
+   > 更多TorchNPU插件版本请参考https://gitcode.com/ascend/pytorch/releases。
 
 4. 安装Triton-Ascend
 

@@ -111,7 +111,7 @@ bash image_build.sh \
 
 ### 2、镜像使用指导
 
-**重要提示：** 由于不同模型的依赖环境存在差异，镜像中仅预安装了`torch`、`torch_npu`基础依赖包。用户在拉取镜像并启动容器后，需根据目标模型的 README 文件，在 base 环境中手动安装该模型所需的依赖环境。
+**重要提示：** 由于不同模型的依赖环境存在差异，镜像中仅预安装了`torch`、`TorchNPU`基础依赖包。用户在拉取镜像并启动容器后，需根据目标模型的 README 文件，在 base 环境中手动安装该模型所需的依赖环境。
 
 #### 运行镜像
 
@@ -153,7 +153,7 @@ docker exec -it mindspeed-llm /bin/bash
 
 | 环境 | 说明 | 工作目录 |
 | ------ | ------ | --------- |
-| base | 基础环境，包含`PyTorch`、`torch_npu`、`MindSpeed LLM`、`MindSpeed`、`Megatron-LM` | `/workspace/MindSpeed-LLM` |
+| base | 基础环境，包含`PyTorch`、`TorchNPU`、`MindSpeed LLM`、`MindSpeed`、`Megatron-LM` | `/workspace/MindSpeed-LLM` |
 
 ## 二次开发
 
@@ -194,7 +194,7 @@ docker run -it --rm \
 | Python | 3.11     |
 | Miniconda | 26.1.1-1 |
 | PyTorch | 2.7.1    |
-| torch_npu | 2.7.1    |
+| TorchNPU | 2.7.1    |
 | MindSpeed LLM | 26.0.0   |
 
 ### 兼容性说明
@@ -203,7 +203,7 @@ docker run -it --rm \
 - 默认基础镜像使用 `CANN 8.5.2`、`910b`、`openEuler24.03`、`Python3.11`。
 - 可以通过`docker/image_build.sh`切换 `ubuntu22.04`、`a3` 或其他 `CANN` 基础镜像版本。
 - `MindSpeed-LLM`克隆到 /MindSpeed-LLM，`MindSpeed` 克隆到 /MindSpeed，`Megatron-LM`克隆到 /Megatron-LM。
-- 镜像安装`PyTorch`、`torch_npu`、`MindSpeed-LLM`、`MindSpeed`、`Megatron-LM` 以及 `requirements.txt` 中的 `Python`依赖。
+- 镜像安装`PyTorch`、`TorchNPU`、`MindSpeed-LLM`、`MindSpeed`、`Megatron-LM` 以及 `requirements.txt` 中的 `Python`依赖。
 
 ## 许可证
 
