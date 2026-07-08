@@ -15,4 +15,13 @@ DISTRIBUTED_ARGS="
     --master_port $MASTER_PORT
 "
 
-torchrun $DISTRIBUTED_ARGS train_fsdp2.py ./tests/st/shell_scripts/pretrain_qwen3_8b_4K_fsdp2.yaml
+# Commonly used parameters are passed as CLI args here; see companion YAML for full config.
+# CLI args take precedence over the YAML when both are set. All args can also be moved into the YAML if preferred.
+torchrun $DISTRIBUTED_ARGS train_fsdp2.py ./tests/st/shell_scripts/pretrain_qwen3_8b_4K_fsdp2.yaml \
+    --model.model_name_or_path /data/ci/models/Qwen3-8B/hf/Qwen3-8B \
+    --parallel.fsdp_size 8 \
+    --parallel.ep_size 1 \
+    --parallel.ep_fsdp_size 1 \
+    --training.per_device_train_batch_size 2 \
+    --training.gradient_accumulation_steps 1 \
+    --training.output_dir ./output

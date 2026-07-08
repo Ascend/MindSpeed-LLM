@@ -20,4 +20,14 @@ DISTRIBUTED_ARGS="
     --master_port $MASTER_PORT
 "
 
-torchrun $DISTRIBUTED_ARGS train_fsdp2.py examples/fsdp2/mamba3/pretrain_mamba3_demo_1b_2K_fsdp2_A2.yaml
+# Commonly used parameters are passed as CLI args here; see companion YAML for full config.
+# CLI args take precedence over the YAML when both are set. All args can also be moved into the YAML if preferred.
+torchrun $DISTRIBUTED_ARGS train_fsdp2.py examples/fsdp2/mamba3/pretrain_mamba3_demo_1b_2K_fsdp2_A2.yaml \
+    --model.model_name_or_path /home/hf_weights/Mamba3/ \
+    --parallel.fsdp_size 8 \
+    --parallel.ep_size 1 \
+    --parallel.ep_fsdp_size 1 \
+    --training.per_device_train_batch_size 1 \
+    --training.gradient_accumulation_steps 1 \
+    --training.output_dir ./output \
+    --optimization.use_triton_rmsnormgated True

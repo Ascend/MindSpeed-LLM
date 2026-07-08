@@ -22,7 +22,6 @@ parallel:
     - model.layers.{*}
     - model.embed_tokens
     - lm_head
-  tp_size: 1
   ep_size: 128
   ep_modules:
     - model.layers.{*}.mlp.experts

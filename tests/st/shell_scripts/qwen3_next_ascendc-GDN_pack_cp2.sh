@@ -22,4 +22,20 @@ DISTRIBUTED_ARGS="
     --master_port $MASTER_PORT
 "
 
-torchrun $DISTRIBUTED_ARGS train_fsdp2.py ./tests/st/shell_scripts/qwen3_next_ascendc-GDN_pack_cp2.yaml
+# Commonly used parameters are passed as CLI args here; see companion YAML for full config.
+# CLI args take precedence over the YAML when both are set. All args can also be moved into the YAML if preferred.
+torchrun $DISTRIBUTED_ARGS train_fsdp2.py ./tests/st/shell_scripts/qwen3_next_ascendc-GDN_pack_cp2.yaml \
+    --model.model_name_or_path /data/ci/models/qwen3_next/hf/qwen3_next_L4_mtp \
+    --parallel.fsdp_size 8 \
+    --parallel.ep_size 1 \
+    --parallel.ep_fsdp_size 1 \
+    --training.per_device_train_batch_size 1 \
+    --training.gradient_accumulation_steps 2 \
+    --training.output_dir ./output \
+    --optimization.chunk_loss_size 1024 \
+    --optimization.use_triton_gdn False \
+    --optimization.use_flash_gdn True \
+    --optimization.use_fused_rmsnorm True \
+    --optimization.moe_grouped_gemm True \
+    --optimization.use_fused_rotary_pos_emb True \
+    --optimization.use_flash_attn True

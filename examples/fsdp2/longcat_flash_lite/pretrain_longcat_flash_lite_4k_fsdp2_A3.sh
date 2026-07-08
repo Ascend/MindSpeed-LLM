@@ -14,7 +14,16 @@ DISTRIBUTED_ARGS="
     --master_addr $MASTER_ADDR \
     --master_port $MASTER_PORT
 "
-mkdir -p ./logs
 
+mkdir -p ./logs
 bash tests/tools/fsdp2/longcat_flash_lite_moe_hf_weight_convert.sh
-torchrun $DISTRIBUTED_ARGS train_fsdp2.py examples/fsdp2/longcat_flash_lite/pretrain_longcat_flash_lite_4k_fsdp2_A3.yaml | tee logs/pretrain_longcat_flash_lite_4k_fsdp2_A3.log
+# Commonly used parameters are passed as CLI args here; see companion YAML for full config.
+# CLI args take precedence over the YAML when both are set. All args can also be moved into the YAML if preferred.
+torchrun $DISTRIBUTED_ARGS train_fsdp2.py examples/fsdp2/longcat_flash_lite/pretrain_longcat_flash_lite_4k_fsdp2_A3.yaml \
+    --model.model_name_or_path ./fsdp_weights/LongCat-Flash-Lite-mergeExperts \
+    --parallel.fsdp_size 32 \
+    --parallel.ep_size 32 \
+    --training.per_device_train_batch_size 1 \
+    --training.gradient_accumulation_steps 1 \
+    --training.output_dir ./output \
+    | tee logs/pretrain_longcat_flash_lite_4k_fsdp2_A3.log

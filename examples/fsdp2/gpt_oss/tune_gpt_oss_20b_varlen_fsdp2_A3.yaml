@@ -1,9 +1,7 @@
 model:
   model_id: gpt_oss
-  model_name_or_path: /home/data/gpt-oss-20b-hf/
   trust_remote_code: False
   train_from_scratch: False
-  tokenizer_name_or_path: None
 
 data:
   dataset: alpaca_full
@@ -14,16 +12,12 @@ data:
   preprocessing_num_workers: 1
 
 parallel:
-  fsdp_size: 16
   fsdp_modules:
     - model.layers.{*}
     - model.embed_tokens
     - lm_head
-  tp_size: 1
-  ep_size: 4
   ep_modules:
     - model.layers.{*}.mlp.experts
-  ep_fsdp_size: 4
   ep_fsdp_modules:
     - model.layers.{*}.mlp.experts
   ep_dispatcher: eager
@@ -34,13 +28,10 @@ parallel:
   cp_type: ulysses
 
 training:
-  per_device_train_batch_size: 1
-  gradient_accumulation_steps: 1
   dataloader_num_workers : 1
   disable_shuffling: 1
   seed: 42
   dataloader_drop_last: True
-  output_dir: ./output
   optimizer: adamw
   lr: 1.25e-06
   weight_decay: 0.0
@@ -54,9 +45,3 @@ training:
   max_steps: 2000
   save_steps: 500
   logging_steps: 1
-
-optimization:
-  use_fused_rmsnorm: True
-  moe_grouped_gemm: True
-  use_fused_rotary_pos_emb: True
-  use_flash_attn: True

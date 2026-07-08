@@ -20,4 +20,13 @@ DISTRIBUTED_ARGS="
     --master_port $MASTER_PORT
 "
 
-torchrun $DISTRIBUTED_ARGS train_fsdp2.py examples/fsdp2/step35/pretrain_step_3p5_flash_196b_4K_fsdp2.yaml
+# Commonly used parameters are passed as CLI args here; see companion YAML for full config.
+# CLI args take precedence over the YAML when both are set. All args can also be moved into the YAML if preferred.
+torchrun $DISTRIBUTED_ARGS train_fsdp2.py examples/fsdp2/step35/pretrain_step_3p5_flash_196b_4K_fsdp2_A3.yaml \
+    --model.model_name_or_path /home/hf_weights/Step-3.5-Flash/ \
+    --parallel.fsdp_size 192 \
+    --parallel.ep_size 96 \
+    --parallel.ep_fsdp_size 2 \
+    --training.per_device_train_batch_size 1 \
+    --training.gradient_accumulation_steps 1 \
+    --training.output_dir ./output

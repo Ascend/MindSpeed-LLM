@@ -1,6 +1,5 @@
 model:
   model_id: longcat_flash
-  model_name_or_path: ./fsdp_weights/LongCat-Flash-Lite-mergeExperts
   trust_remote_code: True
   train_from_scratch: False
   tokenizer_name_or_path: ./fsdp_weights/LongCat-Flash-Lite-mergeExperts
@@ -17,7 +16,6 @@ data:
   data_manager_type: mg
 
 parallel:
-  fsdp_size: 32
   fsdp_modules:
     - model.layers.{*}
     - model.embed_tokens
@@ -26,7 +24,6 @@ parallel:
     - lm_head
   ignored_modules:
     - model.layers.{*}.mlp.experts
-  ep_size: 32
   ep_modules:
     - model.layers.{*}.mlp.experts
   ep_dispatcher: eager
@@ -36,12 +33,9 @@ parallel:
 
 training:
   stage: pt
-  per_device_train_batch_size: 1
-  gradient_accumulation_steps: 1
   dataloader_num_workers : 4
   seed: 42
   dataloader_drop_last: True
-  output_dir: ./output
   optimizer: adamw
   lr: 1e-05
   weight_decay: 0.01

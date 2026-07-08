@@ -1,6 +1,5 @@
 model:
   model_id: minimax_m27
-  model_name_or_path: /data/ci/models/minimax-m2.7/hf/minimax-m2.7/ #此处需填转换后保存的权重路径
   trust_remote_code: True
   train_from_scratch: False
   init_model_with_meta_device: True
@@ -16,16 +15,12 @@ data:
   data_manager_type: mg
 
 parallel:
-  fsdp_size: 8
   fsdp_modules:
     - model.layers.{*}
     - model.embed_tokens
     - lm_head
-  tp_size: 1
   ep_modules:
     - model.layers.{*}.mlp.experts
-  ep_size: 8
-  ep_fsdp_size: 1
   ep_fsdp_modules:
     - model.layers.{*}.mlp.experts
   ep_dispatcher: eager
@@ -35,13 +30,10 @@ parallel:
 
 training:
   stage: pt
-  per_device_train_batch_size: 1
-  gradient_accumulation_steps: 1
   dataloader_num_workers : 1
   disable_shuffling: 1
   seed: 42
   dataloader_drop_last: True
-  output_dir: ./output
   optimizer: adamw
   lr: 1e-05
   weight_decay: 0.01
@@ -58,8 +50,3 @@ training:
   save_epochs: 0
   save_hf_weights: False
   logging_steps: 1
-
-optimization:
-  moe_grouped_gemm: True
-  use_fused_rmsnorm: True
-  use_fused_rotary_pos_emb: True

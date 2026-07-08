@@ -18,6 +18,7 @@ DISTRIBUTED_ARGS="
 mkdir -p ./logs
 bash tests/tools/fsdp2/longcat_flash_lite_moe_hf_weight_convert.sh
 torchrun $DISTRIBUTED_ARGS inference_fsdp2.py examples/fsdp2/longcat_flash_lite/pretrain_longcat_flash_lite_4k_fsdp2_A3.yaml \
+    --model.model_name_or_path ./fsdp_weights/LongCat-Flash-Lite-mergeExperts \
     --parallel.fsdp_size 16 \
     --parallel.ep_size 16 \
     --inference.infer_backend huggingface \
