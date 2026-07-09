@@ -67,7 +67,7 @@ class TrainMonitor:
         return {
             "base": " iteration {:8d}/{:8d} | consumed samples: {:10d} | consumed tokens: {:10d} | elapsed time per iteration (ms): {:.2f} |",
             "throughput": " tokens/s: {:.2f} | mfu: {:.2f} |",
-            "optimizer": " learning rate: {:.6E} | global batch size: {:5d} | lm loss: {:.6E} |",
+            "optimizer": " learning rate: {:.6E} | global batch size: {:5d} | lm loss: {:.6E} | mtp loss: {:.6E} |",
             "grad_norm": " grad norm: {:.3f} |",
             "npu_memory": " max_memory_allocated(GB): {:.2f} | max_memory_reserved(GB): {:.2f} |",
             "cpu_memory": " cpu_used_memory(GB): {:.2f} | cpu_available_memory(GB): {:.2f} | cpu_memory_usage(%): {:.1f} |",
@@ -124,7 +124,11 @@ class TrainMonitor:
         current_step,
         _last_logged_step,
         _total_loss_scalar,
+        _total_lm_loss_scalar,
+        _total_mtp_loss_scalar,
         _last_logged_loss_scalar,
+        _last_logged_lm_loss_scalar,
+        _last_logged_mtp_loss_scalar,
         sparse_attn_reduce_group=None,
     ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         """
@@ -171,7 +175,14 @@ class TrainMonitor:
 
         # 3.2 Loss & Optimizer Metrics (avg loss/gradient norm)
         loss_optimizer_metrics = TrainMonitor._compute_loss_optimizer_metrics(
-            _total_loss_scalar, _last_logged_loss_scalar, step_diff, grad_norm
+            _total_loss_scalar,
+            _total_lm_loss_scalar,
+            _total_mtp_loss_scalar,
+            _last_logged_loss_scalar,
+            _last_logged_lm_loss_scalar,
+            _last_logged_mtp_loss_scalar,
+            step_diff,
+            grad_norm,
         )
 
         # 3.3 Memory Metrics (merged NPU + CPU memory stats)
@@ -215,7 +226,9 @@ class TrainMonitor:
 
         # 6. Logging State Update
         # Update state for resume training (last logged step/loss/time)
-        logging_state = TrainMonitor._update_logging_state(current_step, _total_loss_scalar, current_time)
+        logging_state = TrainMonitor._update_logging_state(
+            current_step, _total_loss_scalar, _total_lm_loss_scalar, _total_mtp_loss_scalar, current_time
+        )
 
         # 7. Save key statistics for state_dict
         self._last_iteration = metrics.get("iteration", 0)
@@ -245,7 +258,14 @@ class TrainMonitor:
 
     @staticmethod
     def _compute_loss_optimizer_metrics(
-        cumulative_loss: float, last_logged_loss: float, step_diff: int, grad_norm: float
+        cumulative_loss: float,
+        lm_loss: float,
+        mtp_loss: float,
+        last_logged_loss: float,
+        last_logged_lm_loss: float,
+        last_logged_mtp_loss: float,
+        step_diff: int,
+        grad_norm: float,
     ) -> Dict[str, float]:
         """
         Compute loss and optimizer metrics (single responsibility)
@@ -253,13 +273,23 @@ class TrainMonitor:
         # Calculate average loss over the logging interval
         avg_loss = (cumulative_loss - last_logged_loss) / step_diff
         # Safe handling: NaN/Inf protection
-        avg_loss = 0.0 if not (-1e10 < avg_loss < 1e10) else avg_loss
+        avg_loss = 0.0 if not (-1e10 < avg_loss < 1e10) else avg_loss  # pylint:disable=R1716
+
+        # Calculate average loss over the logging interval
+        avg_lm_loss = (lm_loss - last_logged_lm_loss) / step_diff
+        # Safe handling: NaN/Inf protection
+        avg_lm_loss = 0.0 if not (-1e10 < avg_lm_loss < 1e10) else avg_lm_loss  # pylint:disable=R1716
+
+        # Calculate average loss over the logging interval
+        avg_mtp_loss = (mtp_loss - last_logged_mtp_loss) / step_diff
+        # Safe handling: NaN/Inf protection
+        avg_mtp_loss = 0.0 if not (-1e10 < avg_mtp_loss < 1e10) else avg_mtp_loss  # pylint:disable=R1716
 
         # Safe handling of gradient norm
         grad_norm = grad_norm.item() if isinstance(grad_norm, torch.Tensor) else grad_norm
         grad_norm = 0.0 if not (-1e10 < grad_norm < 1e10) else grad_norm
 
-        return {"avg_loss": avg_loss, "grad_norm": grad_norm}
+        return {"avg_loss": avg_loss, "avg_lm_loss": avg_lm_loss, "avg_mtp_loss": avg_mtp_loss, "grad_norm": grad_norm}
 
     @staticmethod
     def _compute_memory_metrics() -> Dict[str, Any]:
@@ -380,7 +410,9 @@ class TrainMonitor:
         global_batch_size = metrics["consumed_samples"] // metrics["iteration"] if metrics["iteration"] > 0 else 0
 
         # Append optimizer/loss metrics using predefined template
-        log_string += self.log_templates["optimizer"].format(metrics["lr"], global_batch_size, metrics["avg_loss"])
+        log_string += self.log_templates["optimizer"].format(
+            metrics["lr"], global_batch_size, metrics["avg_lm_loss"], metrics["avg_mtp_loss"]
+        )
 
         # Append sparse-attention metrics when a model reported an indexer loss.
         if "indexer_loss" in metrics:
@@ -405,11 +437,23 @@ class TrainMonitor:
         logger.info_rank0(log_string)
 
     @staticmethod
-    def _update_logging_state(current_step: int, cumulative_loss: float, current_time: float) -> Dict[str, Any]:
+    def _update_logging_state(
+        current_step: int,
+        cumulative_loss: float,
+        cumulative_lm_loss: float,
+        cumulative_mtp_loss: float,
+        current_time: float,
+    ) -> Dict[str, Any]:
         """
         Update logging state (for resume training)
         """
-        return {"logged_step": current_step, "logged_loss": cumulative_loss, "time": current_time}
+        return {
+            "logged_step": current_step,
+            "logged_loss": cumulative_loss,
+            "logged_lm_loss": cumulative_lm_loss,
+            "logged_mtp_loss": cumulative_mtp_loss,
+            "time": current_time,
+        }
 
     @staticmethod
     def _get_empty_logging_state() -> Dict[str, Any]:

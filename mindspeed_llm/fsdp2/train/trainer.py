@@ -19,9 +19,19 @@ from mindspeed_llm.fsdp2.utils.dist_op import all_reduce
 from mindspeed_llm.fsdp2.utils.logging import get_logger
 from mindspeed_llm.fsdp2.utils.train_monitor import TrainMonitor
 from mindspeed_llm.fsdp2.utils.profiler import ProfilerConfig, ProfilerManager
+from mindspeed_llm.fsdp2.models.common.mtp import roll_tensor
+from dataclasses import dataclass
 
 
 logger = get_logger(__name__)
+
+
+@dataclass
+class LossOutput:
+    loss: torch.Tensor
+    lm_loss_output: torch.Tensor
+    mtp_loss_output: torch.Tensor
+    outputs: dict | None = None
 
 
 class Trainer:
@@ -61,9 +71,13 @@ class Trainer:
         self.global_step = 0
         self._last_logged_step = 0
         self._total_loss_scalar = 0.0
+        self._total_lm_loss_scalar = 0.0
+        self._total_mtp_loss_scalar = 0.0
         self._logging_loss_scalar = 0.0
         self._global_step_last_logged = 0
         self._last_logged_loss_scalar = 0.0
+        self._last_logged_lm_loss_scalar = 0.0
+        self._last_logged_mtp_loss_scalar = 0.0
         self.batch_seqlens = []
 
         # Timing state
@@ -249,6 +263,8 @@ class Trainer:
                 self.current_gradient_accumulation_steps = len(batch_samples)
                 # Initialize accumulated loss for the current step
                 current_step_loss = 0.0
+                current_step_lm_loss = 0.0
+                current_step_mtp_loss = 0.0
 
                 # --- Micro-Batch Loop ---
                 for i, inputs in enumerate(batch_samples):
@@ -267,12 +283,16 @@ class Trainer:
                     with sync_context:
                         # Forward & Backward
                         # Note: training_step already divides loss by accum_steps
-                        loss = self.training_step(inputs, num_items_in_batch)
+                        loss, lm_loss, mtp_loss = self.training_step(inputs, num_items_in_batch)
 
                     # Accumulate Loss for logging (restore to original scale for display)
                     # Check for NaN/Inf to avoid polluting metrics
                     if not torch.isnan(loss) and not torch.isinf(loss):
                         current_step_loss += loss.item()
+                    if not torch.isnan(lm_loss) and not torch.isinf(lm_loss):
+                        current_step_lm_loss += lm_loss.item()
+                    if not torch.isnan(mtp_loss) and not torch.isinf(mtp_loss):
+                        current_step_mtp_loss += mtp_loss.item()
 
                 # --- Optimizer Step (Executed only after accumulation) ---
                 # At this point, the micro-batch loop is finished, gradients are accumulated
@@ -299,9 +319,13 @@ class Trainer:
                 # Only perform this when global_step updates.
                 # current_step_loss is sum(micro_batches), conceptually it represents the loss of the mini-batch.
 
-                reduced_loss, reduced_grad_norm = all_reduce((current_step_loss, grad_norm), group=reduce_group)
+                reduced_loss, reduced_lm_loss, reduced_mtp_loss, reduced_grad_norm = all_reduce(
+                    (current_step_loss, current_step_lm_loss, current_step_mtp_loss, grad_norm), group=reduce_group
+                )
 
                 self._total_loss_scalar += reduced_loss
+                self._total_lm_loss_scalar += reduced_lm_loss
+                self._total_mtp_loss_scalar += reduced_mtp_loss
                 self.batch_seqlens.extend(batch_seqlens)
 
                 # 4. Logging
@@ -317,12 +341,18 @@ class Trainer:
                         self.global_step,
                         self._last_logged_step,
                         self._total_loss_scalar,
+                        self._total_lm_loss_scalar,
+                        self._total_mtp_loss_scalar,
                         self._last_logged_loss_scalar,
+                        self._last_logged_lm_loss_scalar,
+                        self._last_logged_mtp_loss_scalar,
                         sparse_attn_reduce_group=reduce_group,
                     )
                     # update record
                     self._step_start_time = record_info['time']
                     self._last_logged_loss_scalar = record_info['logged_loss']
+                    self._last_logged_lm_loss_scalar = record_info['logged_lm_loss']
+                    self._last_logged_mtp_loss_scalar = record_info['logged_mtp_loss']
                     self._last_logged_step = record_info['logged_step']
                     self.batch_seqlens.clear()
 
@@ -431,9 +461,13 @@ class Trainer:
             self.optimizer.train()
 
         # 2. Forward pass
-        loss = self._compute_loss(inputs, return_outputs=False, num_items_in_batch=num_items_in_batch)
+        loss_all = self._compute_loss(inputs, return_outputs=False, num_items_in_batch=num_items_in_batch)
         if self.args.stage == 'pt':
-            loss = loss / self.current_gradient_accumulation_steps
+            loss_all.loss = loss_all.loss / self.current_gradient_accumulation_steps
+            loss_all.lm_loss_output = loss_all.lm_loss_output / self.current_gradient_accumulation_steps
+            loss_all.mtp_loss_output = loss_all.mtp_loss_output / self.current_gradient_accumulation_steps
+
+        loss = loss_all.loss
         # 3. Clean up inputs to save memory
         del inputs
 
@@ -448,7 +482,7 @@ class Trainer:
         loss.backward()
 
         # 6. Return detached loss
-        return loss.detach()
+        return loss.detach(), loss_all.lm_loss_output.detach(), loss_all.mtp_loss_output.detach()
 
     def get_batch_samples_func(self):
         if self.parallel_args.cp_size > 1:
@@ -663,14 +697,40 @@ class Trainer:
         # 2. Forward pass
         outputs = self.model(**model_inputs)
 
+        lm_loss_output = torch.tensor(0.0, device=device, dtype=torch.float32)
+        mtp_loss_output = torch.tensor(0.0, device=device, dtype=torch.float32)
+
         # 3. Extract loss from outputs
         if args.stage == 'pt' and "loss" not in outputs:
             logits = outputs.logits.contiguous().float()
             loss = self._compute_language_model_pretrain_loss(logits, labels, **kwargs)
+            lm_loss_output = loss.clone()
+            aux_loss = getattr(outputs, 'aux_loss', None)
+            if aux_loss is not None and isinstance(aux_loss, torch.Tensor):
+                router_aux_loss_coef = getattr(self.model.config, 'router_aux_loss_coef', 0.0)
+                loss = loss + router_aux_loss_coef * aux_loss.to(loss.device)
         else:
             if isinstance(outputs, dict) and "loss" not in outputs:
                 raise ValueError(f"Model outputs have no loss key: {list(outputs.keys())}")
             loss = outputs["loss"] if isinstance(outputs, dict) else outputs[0]
+            lm_loss_output = loss.clone()
+
+        if args.stage == 'pt' and getattr(outputs, 'mtp_logits', None) is not None:
+            mtp_losses = []
+            for one_mtp_logits in outputs.mtp_logits:
+                labels, _ = roll_tensor(labels, fill_value=-100)
+                mtp_loss = self._compute_language_model_pretrain_loss(
+                    one_mtp_logits.contiguous().float(), labels, **kwargs
+                )
+                mtp_losses.append(mtp_loss)
+        else:
+            mtp_losses = getattr(outputs, 'mtp_loss', None)
+        if mtp_losses:
+            final_mtp_loss = 0
+            for i in range(len(mtp_losses)):
+                final_mtp_loss += mtp_losses[i] / len(mtp_losses)
+            mtp_loss_output = final_mtp_loss.clone()
+            loss += final_mtp_loss * getattr(args, 'mtp_loss_scaling_factor', 0.3)
 
         # 4. Cross-device token averaging adjustment
         # If the loss was calculated using 'mean' locally but needs global scaling based on tokens
@@ -679,9 +739,20 @@ class Trainer:
         ps = ParallelState()
         if dist.is_initialized() and args.stage != 'pt':
             loss *= ps.get_group_size("dp_fsdp")
+            lm_loss_output *= ps.get_group_size("dp_fsdp")
+            if mtp_losses:
+                final_mtp_loss = 0
+                for i in range(len(mtp_losses)):
+                    final_mtp_loss += mtp_losses[i] * ps.get_group_size("dp_fsdp") / len(mtp_losses)
+                loss += final_mtp_loss * getattr(args, 'mtp_loss_scaling_factor', 0.3)
+                mtp_loss_output *= ps.get_group_size("dp_fsdp")
 
         # 5. Return loss (or tuple of loss + outputs)
-        return (loss, outputs) if return_outputs else loss
+        model_outputs = outputs if return_outputs else None
+        loss_result = LossOutput(
+            loss=loss, lm_loss_output=lm_loss_output, mtp_loss_output=mtp_loss_output, outputs=model_outputs
+        )
+        return loss_result
 
     def _compute_language_model_pretrain_loss(self, logits, labels, ignore_index: int = -100, **kwargs) -> torch.Tensor:
         args = self.args

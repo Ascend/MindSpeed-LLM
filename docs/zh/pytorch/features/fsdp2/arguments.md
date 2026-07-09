@@ -731,6 +731,12 @@
       <td>True</td>
       <td>训练完成后，是否保存HuggingFace格式的权重。</td>
     </tr>
+    <tr>
+      <td>mtp_loss_scaling_factor</td>
+      <td>float</td>
+      <td>0.3</td>
+      <td>MTP(Multi Token Prediction)损失缩放因子</td>
+    </tr>
   </tbody>
 </table>
 

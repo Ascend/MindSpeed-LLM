@@ -530,6 +530,9 @@ class TrainingArguments:
         default=False,
         metadata={"help": "Whether to enable logging of memory utilization statistics for CPU devices."},
     )
+    mtp_loss_scaling_factor: float = field(
+        default=0.3, metadata={"help": "MTP(Multi Token Prediction) loss scaling factor."}
+    )
     stage: Literal["pt", "sft"] = field(
         default="sft",
         metadata={"help": "Which stage will be performed in training."},
