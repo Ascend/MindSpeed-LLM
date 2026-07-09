@@ -1,4 +1,5 @@
 import os
+import importlib
 import torch
 import torch.distributed as dist
 from transformers import AutoConfig
@@ -18,6 +19,19 @@ from mindspeed_llm.fsdp2.utils.logging import get_logger
 from mindspeed_llm.fsdp2.models.model_loader import ModelLoader
 
 logger = get_logger(__name__)
+
+
+def _get_config_class(model_id: str):
+    """Dynamically import the config class by model_id."""
+    try:
+        module_path = f"transformers.models.{model_id}.configuration_{model_id}"
+        config_module = importlib.import_module(module_path)
+        # Convert model_id like "qwen3_next" to "Qwen3NextConfig"
+        parts = model_id.split("_")
+        class_name = "".join(p.capitalize() for p in parts) + "Config"
+        return getattr(config_module, class_name)
+    except (ImportError, AttributeError):
+        return None
 
 
 # ==============================================================================
@@ -62,7 +76,25 @@ class ModelFactory:
         # 3. Load HF Config
         logger.info_rank0(f"> Loading AutoConfig from {model_args.model_name_or_path}...")
         trust_remote_code = model_args.trust_remote_code
-        hf_config = AutoConfig.from_pretrained(model_args.model_name_or_path, trust_remote_code=trust_remote_code)
+        attn_implementation = "eager" if parallel_args.cp_size > 1 else None
+
+        hf_config = None
+        model_id = getattr(model_args, 'model_id', None)
+        if model_id:
+            config_cls = _get_config_class(model_id)
+            if config_cls is not None:
+                logger.info_rank0(f"> Using direct config class: {config_cls.__name__}")
+                hf_config = config_cls.from_pretrained(
+                    model_args.model_name_or_path,
+                    trust_remote_code=trust_remote_code,
+                    attn_implementation=attn_implementation,
+                )
+        if hf_config is None:
+            hf_config = AutoConfig.from_pretrained(
+                model_args.model_name_or_path,
+                trust_remote_code=trust_remote_code,
+                attn_implementation=attn_implementation,
+            )
 
         # 4. Load HF Model
         # Decide loading method based on init_device and whether training from scratch or fine-tuning.
@@ -75,7 +107,7 @@ class ModelFactory:
                 model_cls.register_patches(model_args)
 
         # Use ModelLoader to create model based on init_device
-        loader = ModelLoader(model_args, init_device=init_device)
+        loader = ModelLoader(model_args, init_device=init_device, hf_config=hf_config)
         model, weights_path = loader.create_model(model_cls=model_cls)
         hf_config = loader.hf_config
 
