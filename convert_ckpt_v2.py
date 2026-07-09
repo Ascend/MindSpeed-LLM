@@ -47,6 +47,7 @@ def get_args():
             'magistral',
             'deepseek2-lite',
             'phi3.5',
+            'phi3.5-moe',
             'plm',
             'mamba2',
             'longcat',

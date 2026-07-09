@@ -488,6 +488,13 @@ class Mg2HfConvert(Convert):
         hf_weight[hf_weight_key["layers_input_layernorm"]] = input_norm.clone()
         hf_weight[hf_weight_key["layers_self_attention_pre_mlp_layernorm"]] = pre_mlp_norm.clone()
 
+        extra_norm_keys = ["layers_self_attention_post_attention_layernorm", "layers_self_attention_post_mlp_layernorm"]
+        for key in extra_norm_keys:
+            if key in mg_weight_key and key in hf_weight_key:
+                if mg_weight_key[key] in mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])]:
+                    val = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(mg_weight_key[key])
+                    hf_weight[hf_weight_key[key]] = val.clone()
+
     def _is_full_indexer_layer(self, hf_layer_idx, mtp_layer_flag=False):
         """Return whether this HF layer should own full DSA indexer weights.
 
@@ -839,6 +846,7 @@ class Mg2HfConvert(Convert):
             else:
                 total_qkv_rows = qkv_weight.shape[0]
                 head_dim = total_qkv_rows // (nh + 2 * ng)
+
                 q_proj = qkv_weight[: nh * head_dim, :]
                 k_proj = qkv_weight[nh * head_dim : (nh + ng) * head_dim, :]
                 v_proj = qkv_weight[(nh + ng) * head_dim :, :]
@@ -1035,9 +1043,13 @@ class Mg2HfConvert(Convert):
         gate_list, up_list = [], []
         for tp_rank, ep_rank in self.attention_tp_ckpts_list:
             cur_linear_fc1 = mg_weight[(tp_rank, ep_rank)].pop(fc1_key)
-            cur_gate, cur_up = torch.chunk(cur_linear_fc1, 2, dim=0)
-            gate_list.append(cur_gate.clone())
-            up_list.append(cur_up.clone())
+            if getattr(self.save_model, "fc_type", None) == "up_down":
+                gate_list.append(cur_linear_fc1.clone())
+                up_list.append(cur_linear_fc1.clone())
+            else:
+                cur_gate, cur_up = torch.chunk(cur_linear_fc1, 2, dim=0)
+                gate_list.append(cur_gate.clone())
+                up_list.append(cur_up.clone())
 
         gate_weights = torch.cat(gate_list, dim=0)
         up_weights = torch.cat(up_list, dim=0)
@@ -1058,9 +1070,13 @@ class Mg2HfConvert(Convert):
         gate_list, up_list = [], []
         for tp_rank in self.tp_rank_list:
             cur_linear_fc1 = mg_weight[(tp_rank, ep_rank)].pop(fc1_key)
-            cur_gate, cur_up = torch.chunk(cur_linear_fc1, 2, dim=0)
-            gate_list.append(cur_gate.clone())
-            up_list.append(cur_up.clone())
+            if getattr(self.save_model, "fc_type", None) == "up_down":
+                gate_list.append(cur_linear_fc1.clone())
+                up_list.append(cur_linear_fc1.clone())
+            else:
+                cur_gate, cur_up = torch.chunk(cur_linear_fc1, 2, dim=0)
+                gate_list.append(cur_gate.clone())
+                up_list.append(cur_up.clone())
 
         gate_weights = torch.cat(gate_list, dim=0)
         up_weights = torch.cat(up_list, dim=0)
@@ -1297,10 +1313,12 @@ class Mg2HfConvert(Convert):
                 )
                 down_weights = self.linear_fc2_gather_from_tp(mg_weight, mg_weight_key["layers_mlp_linear_fc2"])
 
-            if getattr(self.load_model, "fc_type", None) == "gate_up":
+            if getattr(self.save_model, "fc_type", None) == "gate_up":
                 hf_weight[hf_weight_key["layers_mlp_linear_fc1"]] = torch.cat(
                     [gate_weights.clone(), up_weights.clone()], dim=0
                 )
+            elif getattr(self.save_model, "fc_type", None) == "up_down":
+                hf_weight[hf_weight_key["layers_mlp_up_proj"]] = gate_weights.clone()
             else:
                 hf_weight[hf_weight_key["layers_mlp_gate_proj"]] = gate_weights.clone()
                 hf_weight[hf_weight_key["layers_mlp_up_proj"]] = up_weights.clone()
