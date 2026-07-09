@@ -247,13 +247,13 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
 <tbody>
   <tr>
     <td rowspan="5">SPTD并行</td>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/tensor-parallel.md">张量并行</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/tensor-parallel.md">张量并行</a></td>
     <td>✅</td>
     <td>✅</td>
     <td rowspan="29">【Ascend】</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/pipeline-parallel.md">流水线并行</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/pipeline-parallel.md">流水线并行</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
@@ -263,12 +263,12 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/sequence-parallel.md">序列并行</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/sequence-parallel.md">序列并行</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/noop-layers.md">noop layers</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/noop-layers.md">noop layers</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
@@ -279,12 +279,12 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/ulysses-context-parallel.md">Ulysses 长序列并行</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/ulysses-context-parallel.md">Ulysses 长序列并行</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/hybrid-context-parallel.md">混合长序列并行</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/hybrid-context-parallel.md">混合长序列并行</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
@@ -295,23 +295,23 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/megatron_moe/megatron-moe-allgather-dispatcher.md">MOE 重排通信优化</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/megatron_moe/megatron-moe-allgather-dispatcher.md">MOE 重排通信优化</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
   <tr>
     <td rowspan="6">显存优化</td>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/reuse-fp32-param.md">参数副本复用</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/reuse-fp32-param.md">参数副本复用</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
     <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/distributed-optimizer.md">分布式优化器</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/distributed-optimizer.md">分布式优化器</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/swap_attention.md">Swap Attention</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/swap_attention.md">Swap Attention</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
@@ -321,7 +321,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/norm-recompute.md">Norm重计算</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/norm-recompute.md">Norm重计算</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
@@ -332,7 +332,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
   </tr>
   <tr>
     <td rowspan="7">融合算子</td>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/flash-attention.md">Flash attention</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/flash-attention.md">Flash attention</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
@@ -342,43 +342,43 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/rms_norm.md">Fused rmsnorm</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/rms_norm.md">Fused rmsnorm</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/swiglu.md">Fused swiglu</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/swiglu.md">Fused swiglu</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/rotary-embedding.md">Fused rotary position embedding</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/rotary-embedding.md">Fused rotary position embedding</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/megatron_moe/megatron-moe-gmm.md">GMM</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/megatron_moe/megatron-moe-gmm.md">GMM</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/npu_matmul_add.md">Matmul Add</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/npu_matmul_add.md">Matmul Add</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
   <tr>
     <td rowspan="6">通信优化</td>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/async-ddp-param-gather.md">梯度reduce通算掩盖</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/async-ddp-param-gather.md">梯度reduce通算掩盖</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/recompute_independent_pipelining.md">Recompute in advance</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/recompute_independent_pipelining.md">Recompute in advance</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/async-ddp-param-gather.md">权重all-gather通算掩盖</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/async-ddp-param-gather.md">权重all-gather通算掩盖</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
@@ -393,7 +393,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
     <td>❌</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/hccl-replace-gloo.md">Ascend Gloo 存档落盘优化</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/hccl-replace-gloo.md">Ascend Gloo 存档落盘优化</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
@@ -489,7 +489,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
     <td>❌</td>
     <td>❌</td>
     <td>【Ascend】</td>
-  </tr>  
+  </tr>
 </tbody></table>
 
 ### 加速特性
@@ -774,7 +774,7 @@ MindSpeed LLM已发布版本维护策略：
 
 ---
 
-[MindSpeed LLM安全声明](https://gitcode.com/Ascend/MindSpeed-LLM/wiki/%E5%AE%89%E5%85%A8%E7%9B%B8%E5%85%B3%2F%E5%AE%89%E5%85%A8%E5%A3%B0%E6%98%8E.md)
+[MindSpeed LLM安全声明](./docs/zh/SECURITYNOTE.md)
 
 # 免责声明
 
@@ -794,7 +794,7 @@ MindSpeed LLM已发布版本维护策略：
 # License声明
 
 - MindSpeed LLM产品的使用许可证，具体请参见[LICENSE](LICENSE)。
-- MindSpeed LLM工具docs目录下的文档适用CC-BY 4.0许可证，具体请参见[LICENSE](./docs/zh/LICENSE)。
+- MindSpeed LLM工具docs目录下的文档适用CC-BY 4.0许可证，具体请参见[LICENSE](./docs/LICENSE)。
 
 # 贡献声明
 

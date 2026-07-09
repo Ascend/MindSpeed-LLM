@@ -30,7 +30,7 @@ python ./preprocess_data.py \
 
 ### 训练参数
 
-dpo训练脚本参照：[dpo_llama3_8b_full_ptd.sh](../../../../../../examples/mcore/llama3/dpo_llama3_8b_full_ptd.sh)
+dpo训练脚本参照：[dpo_qwen3_30b_a3b_16K_A3_ptd.sh](../../../../../../examples/mcore/qwen3_moe/dpo_qwen3_30b_a3b_16K_A3_ptd.sh)
 
 相较于普通预训练，dpo需要增加以下几个参数：
 
@@ -70,15 +70,20 @@ dpo训练脚本参照：[dpo_llama3_8b_full_ptd.sh](../../../../../../examples/m
 
 dpo同样支持lora微调，跟普通lora微调一样，加上lora微调相关参数即可：
 
-- **`--lora-r`** 
+- **`--lora-r`**
+
   LoRA rank，表示低秩矩阵的维度。较低的 rank 值模型在训练时会使用更少的参数更新，从而减少计算量和内存消耗。
-- **`--lora-alpha`** 
+
+- **`--lora-alpha`**
+
   控制 LoRA 权重对原始权重的影响比例, 数值越高则影响越大。一般保持 `α/r` 为 2。
 
-- **`--lora-target-modules`** 
-  选择需要添加 LoRA 的模块，mcore 模型可选模块： `linear_qkv`, `linear_proj`, `linear_fc1`, `linear_fc2` 
+- **`--lora-target-modules`**
 
-- **`--lora-load`** 
+  选择需要添加 LoRA 的模块，mcore 模型可选模块： `linear_qkv`、 `linear_proj`、`linear_fc1`、`linear_fc2`。
+
+- **`--lora-load`**
+
   lora权重路径
 
 ## 参考文献
