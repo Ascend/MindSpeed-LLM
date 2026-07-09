@@ -89,11 +89,10 @@ OTHERS_ARGS="
 
 MEM_ARGS="
     --mtp-mem-efficient-logits \
-    --recompute-activation-function \
-    --recompute-mla-up-proj \
-    --moe-zero-memory level0 \
     --swap-optimizer \
-    --mla-swap-core-attn-out \
+    --recompute-method uniform \
+    --recompute-granularity full \
+    --recompute-num-layers 1 \
 "
 
 ROPE_ARGS="
@@ -198,6 +197,6 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     $MTP_ARGS \
     $OTHERS_ARGS \
     --save $CKPT_SAVE_DIR \
-    --load $CKPT_LOAD_DIR \    
+    --load $CKPT_LOAD_DIR \
     --transformer-impl local \
     --distributed-backend nccl | tee logs/pretrain_deepseek3_671b_4k_512die_A3_ptd.log
