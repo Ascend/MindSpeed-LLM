@@ -78,13 +78,13 @@ def _find_submodule(module: nn.Module, name: str) -> Tuple[nn.Module, str]:
 class ModelLoader:
     """Load model on CPU or meta device."""
 
-    def __init__(self, model_args, init_device: str = "cpu"):
+    def __init__(self, model_args, init_device: str = "cpu", hf_config: Optional[AutoConfig] = None):
         self.model_args = model_args
         self.init_device = init_device
         self.trust_remote_code = getattr(model_args, 'trust_remote_code', False)
         self.model_path = model_args.model_name_or_path
         self.train_from_scratch = getattr(model_args, 'train_from_scratch', False)
-        self.hf_config = None
+        self.hf_config = hf_config
 
     def load_config(self) -> AutoConfig:
         """Load HuggingFace model config."""

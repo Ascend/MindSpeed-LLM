@@ -7,12 +7,11 @@ from typing import Optional, Union
 import torch
 import transformers
 from transformers.modeling_outputs import MoeCausalLMOutputWithPast, MoeModelOutputWithPast
-from transformers.models.qwen3_next.modeling_qwen3_next import Qwen3NextDynamicCache
 from transformers.processing_utils import Unpack
 from transformers.utils import can_return_tuple, TransformersKwargs
 
 from mindspeed_llm.fsdp2.models.common.modules import LMHead
-from mindspeed_llm.fsdp2.models.qwen3_next.modeling_qwen3_next import Qwen3NextModel
+from mindspeed_llm.fsdp2.models.qwen3_next.modeling_qwen3_next import Qwen3NextDynamicCache, Qwen3NextModel
 
 
 class Qwen3NextForCausalLM(transformers.Qwen3NextPreTrainedModel):
@@ -72,7 +71,8 @@ class Qwen3NextForCausalLM(transformers.Qwen3NextPreTrainedModel):
         >>> generate_ids = model.generate(inputs.input_ids, max_length=30)
         >>> tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
         "Hey, are you conscious? Can you talk to me?\nI'm not conscious, but I can talk to you."
-        ```"""
+        ```
+        """
 
         output_router_logits = (
             output_router_logits if output_router_logits is not None else self.config.output_router_logits
