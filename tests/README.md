@@ -379,6 +379,14 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td>Y</td>
     </tr>
     <tr>
+        <td rowspan="1">deepseek4</td>
+        <td>deepseekv4_flash fsdp2 pretrain</td>
+        <td><a href="pipeline/st/deepseek4/pretrain_deepseek4_flash_1k_fsdp2.sh">pretrain_deepseek4_flash_1k_fsdp2.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
         <td rowspan="1">step3.5-flash</td>
         <td>fsdp2 pretrain</td>
         <td><a href="pipeline/st/step35-flash/pretrain_step_3p5_flash_4K_fsdp2.sh">pretrain_step_3p5_flash_4K_fsdp2.sh</a></td>

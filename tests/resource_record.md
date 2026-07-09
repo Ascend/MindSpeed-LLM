@@ -465,4 +465,13 @@
         <td>/</td>
         <td>/</td>
     </tr>
+    <tr>
+        <td>pretrain_deepseek4_flash_1k_fsdp2</td>
+        <td>/data/ci/models/deepseek4-flash/hf/DeepSeek-V4-Flash-4L-hf-convert/</td>
+        <td>/</td>
+        <td>/data/ci/datasets/origin/train-00000-of-00001-a09b74b3ef9c3b56.parquet</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/</td>
+    </tr>
 </table>
