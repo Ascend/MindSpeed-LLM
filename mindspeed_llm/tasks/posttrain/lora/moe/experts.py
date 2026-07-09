@@ -397,7 +397,6 @@ class LoraParallelGroupedMlpWithCompAndCommOverlapAll2AllSEQ(torch.autograd.Func
                 bw_permute1_prob_all2all_handle,
             )
         )
-        mm1_inputs = None
 
         if moe_zero_memory == "level0" or (moe_zero_memory == "level1" and is_only_recompute_activation):
             permuted_probs_inputs_handle.wait()
@@ -416,7 +415,10 @@ class LoraParallelGroupedMlpWithCompAndCommOverlapAll2AllSEQ(torch.autograd.Func
             if config.gemm_gradient_accumulation_fusion:
                 npu_groupmatmul_add_fp32(mm1_a, act_inputs.grad, group_list, original_weight1_b.main_grad)
                 npu_groupmatmul_add_fp32(
-                    mm1_inputs, mm1_b_inputs_grad * ctx.scaling, group_list, original_weight1_a.main_grad
+                    mm1_inputs,  # pylint: disable=E0606
+                    mm1_b_inputs_grad * ctx.scaling,
+                    group_list,
+                    original_weight1_a.main_grad,
                 )
                 if hasattr(original_weight1_b, 'grad_added_to_main_grad'):
                     if getattr(weights1, 'zero_out_wgrad', False):
