@@ -448,6 +448,15 @@ class Hf2MgConvert(Convert):
                 mg_weight[ep_rank][tp_rank][input_norm_key] = input_norm.clone()
                 mg_weight[ep_rank][tp_rank][post_norm_key] = post_attn_norm.clone()
 
+        extra_norm_keys = ["layers_self_attention_post_attention_layernorm", "layers_self_attention_post_mlp_layernorm"]
+        for key in extra_norm_keys:
+            if key in hf_weight_key and key in mg_weight_key:
+                if hf_weight_key[key] in hf_weight:
+                    val = hf_weight.pop(hf_weight_key[key])
+                    for ep_rank in range(self.expert_model_parallel_size):
+                        for tp_rank in range(self.tensor_model_parallel_size):
+                            mg_weight[ep_rank][tp_rank][mg_weight_key[key]] = val.clone()
+
     def _is_full_indexer_layer(self, layer_idx, mtp_layer_flag=False):
         """Return whether this layer should own full DSA indexer weights.
 
@@ -1064,6 +1073,8 @@ class Hf2MgConvert(Convert):
             # dense layer
             if getattr(self.load_model, "fc_type", None) == "gate_up":
                 linear_fc1_weight = hf_weight.pop(hf_weight_key["layers_mlp_linear_fc1"])
+            elif getattr(self.load_model, "fc_type", None) == "up_down":
+                linear_fc1_weight = hf_weight.pop(hf_weight_key["layers_mlp_up_proj"])
             else:
                 gate_proj = hf_weight.pop(hf_weight_key["layers_mlp_gate_proj"])
                 up_proj = hf_weight.pop(hf_weight_key["layers_mlp_up_proj"])

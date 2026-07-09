@@ -4,17 +4,11 @@ export CUDA_DEVICE_MAX_CONNECTIONS=1
 
 
 # 权重格式转换
-python convert_ckpt.py \
-   --use-mcore-models \
-   --model-type-hf plm \
-   --model-type GPT \
-   --load-model-type hf \
-   --save-model-type mg \
-   --params-dtype bf16 \
-   --target-tensor-parallel-size 1 \
-   --target-pipeline-parallel-size 1 \
-   --tokenizer-model ./model_from_hf/plm \
-   --spec mindspeed_llm.tasks.models.spec.plm_spec layer_spec \
-   --load-dir ./model_from_hf/plm \
-   --save-dir ./model_weights/plm \
-
+python convert_ckpt_v2.py \
+    --load-model-type hf \
+    --save-model-type mg \
+    --model-type-hf plm \
+    --target-tensor-parallel-size 1 \
+    --target-pipeline-parallel-size 1 \
+    --load-dir ./model_from_hf/plm \
+    --save-dir ./model_weights/plm \

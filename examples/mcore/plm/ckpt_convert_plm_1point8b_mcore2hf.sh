@@ -2,15 +2,10 @@
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 
-python convert_ckpt.py \
-    --use-mcore-models \
-    --model-type-hf plm \
-    --model-type GPT \
+python convert_ckpt_v2.py \
     --load-model-type mg \
     --save-model-type hf \
-    --params-dtype bf16 \
-    --target-tensor-parallel-size 1 \
-    --target-pipeline-parallel-size 1 \
-    --spec mindspeed_llm.tasks.models.spec.plm_spec layer_spec \
+    --model-type-hf plm \
     --load-dir ./model_weights/plm \
-    --save-dir ./model_from_hf/plm
+    --save-dir ./model_from_hf/plm \
+    --hf-cfg-dir ./model_from_hf/plm

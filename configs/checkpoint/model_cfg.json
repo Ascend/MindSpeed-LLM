@@ -363,7 +363,8 @@
       "__base__": "base",
       "config_set_value": {
         "seq_length": 8192,
-        "tie_word_embeddings": true
+        "tie_word_embeddings": true,
+        "qkv_split": "per_group"
       },
       "config_hf_key_mapping": {
         "kv_channels": "head_dim"
@@ -641,6 +642,7 @@
       "config_set_value": {
         "normalization": "LayerNorm",
         "moe_flag": true,
+        "add_qkv_bias": true,
         "add_output_layer_bias": true
       },
       "config_hf_key_mapping": {
