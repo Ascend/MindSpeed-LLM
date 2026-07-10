@@ -29,7 +29,7 @@
 
 2. 获取开源模型权重
 
-    创建一个目录存储权重文件
+    创建一个目录存储权重文件。
 
     ```shell
     mkdir -p ./model_from_hf/qwen3_hf
@@ -198,7 +198,7 @@
     bash examples/fsdp2/qwen3/pretrain_qwen3_8b_4k_fsdp2_A2.sh
     ```
 
-    执行后一段时间可见终端显示
+    执行后一段时间可见终端显示。
 
     ```shell
     INFO [2026-06-22 19:28:40] >>  iteration        1/    2000 | consumed samples:          8 | consumed tokens:      32768 | elapsed time per iteration (ms): 10520.60 | learning rate: 9.999994E-06 | global batch size:     8 | lm loss: 1.304194E+00 | grad norm: 8.515 | max_memory_allocated(GB): 19.07 | max_memory_reserved(GB): 20.87 |
@@ -206,7 +206,7 @@
     INFO [2026-06-22 19:28:43] >>  iteration        3/    2000 | consumed samples:         24 | consumed tokens:      98304 | elapsed time per iteration (ms): 1769.99 | learning rate: 9.999950E-06 | global batch size:     8 | lm loss: 1.134654E+00 | grad norm: 1.550 | max_memory_allocated(GB): 19.65 | max_memory_reserved(GB): 25.59 |
     ```
 
-    进入迭代，说明训练正常进行
+    进入迭代，说明训练正常进行。
 
 > [!NOTE]
 >
@@ -307,7 +307,7 @@
     bash examples/fsdp2/qwen3/tune_qwen3_8b_4k_fsdp2_A2.sh
     ```
 
-    执行后一段时间可见终端显示
+    执行后一段时间可见终端显示。
 
     ```shell
     INFO [2026-06-22 19:25:37] >>  iteration        1/    2000 | consumed samples:          8 | consumed tokens:        564 | elapsed time per iteration (ms): 7827.39 | learning rate: 1.666667E-07 | global batch size:     8 | lm loss: 3.316887E+00 | grad norm: 70.959 | max_memory_allocated(GB): 19.07 | max_memory_reserved(GB): 20.90 |
@@ -315,7 +315,7 @@
     INFO [2026-06-22 19:25:38] >>  iteration        3/    2000 | consumed samples:         24 | consumed tokens:       2113 | elapsed time per iteration (ms): 981.08 | learning rate: 5.000000E-07 | global batch size:     8 | lm loss: 2.669216E+00 | grad norm: 45.335 | max_memory_allocated(GB): 19.07 | max_memory_reserved(GB): 22.43 |
     ```
 
-    进入迭代，说明训练正常进行
+    进入迭代，说明训练正常进行。
 
 > [!NOTE]
 >
@@ -341,4 +341,4 @@
 
 > [!NOTE]
 >
-> 🔍 完整参数说明请参考：[FSDP2 参数说明](../features/fsdp2/arguments.md)
+> 🔍 完整参数说明请参见[FSDP2 参数说明](../features/fsdp2/arguments.md)。

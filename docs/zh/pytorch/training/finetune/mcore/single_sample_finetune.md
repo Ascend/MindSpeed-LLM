@@ -17,9 +17,11 @@
 本章节介绍如何基于预训练语言模型，使用单样本格式数据完成指令微调任务，其他数据格式请参考[多样本Pack微调](./multi_sample_pack_finetune.md)和[多轮对话微调](./multi_turn_conversation.md)。该使用方法是基于Qwen3-8B模型和单台`Atlas 900 A2 PoD`（1x8集群）进行全参数微调。大模型微调主要包含以下流程：
 
 **图 1**  单样本微调流程图
+
 ![微调流程图](../../../figures/instruction_finetune/process_of_instruction_tuning.png)
 
 1. 环境搭建
+
     启动微调前请参考[MindSpeed LLM安装指导](../.././install_guide.md)完成环境安装，并确保已完成昇腾NPU套件相关的环境变量配置，如下所示：
 
     ```shell
@@ -28,6 +30,7 @@
     ```
 
 2. 模型和数据集准备
+
     - 模型准备
         模型权重下载请参考[模型支持列表](../../../models/supported_models.md)文档中对应模型的下载链接。以[Qwen3-8B](https://huggingface.co/Qwen/Qwen3-8B/tree/main)模型为例，完整的模型文件夹应该包括以下内容：
 
@@ -52,6 +55,7 @@
         数据集准备请参考[Alpaca风格数据集](../../../tools/data_process_sft_alpaca_style.md)和[ShareGPT风格数据集](../../../tools/data_process_sft_sharegpt_style.md)的相关内容，目前已支持`.parquet`、`.csv`、 `.json`、`.jsonl`、`.txt`以及`.arrow`格式的数据文件。
 
 3. 模型权重转换
+
     请参考[权重转换](../../../tools/checkpoint_convert_hf_mcore_large_params.md)，即将模型原始的HF权重转换成Megatron权重，以Qwen3-8B模型在TP1PP4切分为例，详细配置请参考[Qwen3-8B权重转换脚本](../../../../../../examples/mcore/qwen3/ckpt_convert_qwen3_hf2mcore.sh)。
 
     首先需要修改脚本中的以下参数配置：
@@ -71,6 +75,7 @@
     ```
 
 4. 数据预处理
+
     因为不同数据集使用的处理方法不同，请先确认好预处理的数据格式，详细使用说明请参考以下文档：
 
     - [Alpaca微调数据使用文档](../../../tools/data_process_sft_alpaca_style.md)
@@ -104,6 +109,7 @@
     ```
 
 5. 配置单机或多机微调脚本
+
     详细的参数配置请参考[Qwen3-8B微调脚本](../../../../../../examples/mcore/qwen3/tune_qwen3_8b_4K_full_ptd.sh)。脚本中的环境变量配置见[环境变量说明](../../../features/mcore/environment_variable.md)。
 
     环境变量确认无误后，需要在脚本中修改节点相关配置，单机和多机配置如下：
@@ -152,11 +158,13 @@
         ![variable-seq-lengths图示](../../../figures/instruction_finetune/variable_seq_lengths.png)
 
     > [!NOTE]
+    >
     > - 提供的路径需要加双引号。
     > - 多机训练中请确保每台机器上的模型路径和数据集路径等无误。
-    > - 训练参数的并行配置，如TP/PP/EP/VPP等（具体列表查看[权重转换指南](../../../tools/checkpoint_convert_hf_mcore_large_params.md#21-huggingface权重转换到megatron-mcore格式)）需要与第3步保持一致。
+    > - 微调脚本中使用的并行配置（包括TP/PP/EP/VPP等），应与权重转换时使用的配置保持一致，否则可能导致权重加载或转换异常。具体的并行配置请参考[权重转换指南](../../../tools/checkpoint_convert_hf_mcore_large_params.md#huggingface权重转换至megatron-mcore格式)。
 
 6. 启动微调
+
     参数配置完毕后，可运行脚本启动微调（多机场景中需要在多个终端上同时启动脚本）：
 
     ```shell
@@ -164,6 +172,7 @@
     ```
 
 7. 推理验证
+
     完成微调后，需要进一步验证模型是否具备了预期的输出能力。我们提供了简单的模型生成脚本，只需要加载微调后的模型权重，便可观察模型在不同生成参数配置下的回复，详细配置请参考[Qwen3-8B推理脚本](../../../../../../examples/mcore/qwen3/generate_qwen3_8b_ptd.sh)。
 
     首先在脚本中修改以下参数：

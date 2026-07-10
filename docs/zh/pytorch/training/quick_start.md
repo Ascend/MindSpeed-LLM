@@ -29,7 +29,7 @@
 
 2. 获取开源模型权重
 
-    创建一个目录存储权重文件
+    创建一个目录存储权重文件。
 
     ```shell
     mkdir -p ./model_from_hf/qwen3_hf
