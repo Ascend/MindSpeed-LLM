@@ -1,31 +1,27 @@
 """
 This module provides a unified checkpoint management implementation based on PyTorch Distributed Checkpoint (DCP) for large-scale distributed training.
 """
+
 import gc
 import json
 import os
 from collections import OrderedDict
-from dataclasses import asdict, dataclass
+from dataclasses import asdict
 from typing import Any, Dict, Optional, Sequence, Union, Set
 import yaml
 
 import torch
 import torch.distributed as dist
 import torch.distributed.checkpoint as dcp
-from torch.distributed._tensor import DeviceMesh, DTensor, Shard
+from torch.distributed._tensor import DTensor
 from torch.distributed.checkpoint import FileSystemReader, FileSystemWriter
-from torch.distributed.checkpoint.default_planner import _EmptyStateDictLoadPlanner
-from torch.distributed.checkpoint.metadata import STATE_DICT_TYPE
 from torch.distributed.checkpoint.state_dict import (
     get_model_state_dict,
     get_optimizer_state_dict,
     set_model_state_dict,
     set_optimizer_state_dict,
-    StateDictOptions
 )
 from torch.distributed.checkpoint.stateful import Stateful
-from torch.distributed.checkpoint.state_dict_loader import _load_state_dict
-from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 
 from transformers import (
     GenerationConfig,
@@ -44,7 +40,7 @@ from .utils import (
     synchronize,
     drop_ep_dim,
     restore_ep_dim,
-    build_ep_fqn2spec_info
+    build_ep_fqn2spec_info,
 )
 
 # --------------------------
@@ -91,8 +87,7 @@ class ModelState(Stateful):
         ep_plan = getattr(getattr(model, "config", None), "ep_plan", None)
         self.should_ep_aware = ep_plan is not None and self.parallel_state.is_ep_enable()
         self.ep_fqn2spec_info = (
-            build_ep_fqn2spec_info(model, self.parallel_state, ep_plan)
-            if self.should_ep_aware else {}
+            build_ep_fqn2spec_info(model, self.parallel_state, ep_plan) if self.should_ep_aware else {}
         )
 
     @torch.no_grad()
@@ -111,9 +106,7 @@ class ModelState(Stateful):
 
             for name, tensor in model_state_dict.items():
                 if name in self.ep_fqn2spec_info and torch.is_tensor(tensor) and tensor.ndim > 0:
-                    model_state_dict[name] = restore_ep_dim(
-                        tensor, self.ep_fqn2spec_info[name].ep_fsdp_mesh
-                    )
+                    model_state_dict[name] = restore_ep_dim(tensor, self.ep_fqn2spec_info[name].ep_fsdp_mesh)
 
         return model_state_dict
 
@@ -144,9 +137,7 @@ class ModelState(Stateful):
         # Drop the EP dimension from expert tensors to match the model's sharded layout
         for name, tensor in state_dict.items():
             if name in self.ep_fqn2spec_info and torch.is_tensor(tensor) and tensor.ndim > 0:
-                state_dict[name] = drop_ep_dim(
-                    tensor, self.ep_fqn2spec_info[name].ep_fsdp_mesh
-                )
+                state_dict[name] = drop_ep_dim(tensor, self.ep_fqn2spec_info[name].ep_fsdp_mesh)
 
         # Copy loaded tensors into model parameters, extracting local tensors from DTensors
         param_dict = dict(self.model.named_parameters())
@@ -161,8 +152,7 @@ class ModelState(Stateful):
             if target_tensor.shape != local_tensor.shape:
                 if dist.get_rank() == 0:
                     logger.error(
-                        f"Shape mismatch for '{name}': "
-                        f"loaded={local_tensor.shape}, model={target_tensor.shape}"
+                        f"Shape mismatch for '{name}': loaded={local_tensor.shape}, model={target_tensor.shape}"
                     )
                 continue
 
@@ -220,9 +210,7 @@ class OptimizerState(Stateful):
                     continue
                 tensor = optim_sd[name]
                 if torch.is_tensor(tensor) and tensor.ndim > 0:
-                    optim_sd[name] = restore_ep_dim(
-                        tensor, self.ep_fqn2spec_info[ep_fqn].ep_fsdp_mesh
-                    )
+                    optim_sd[name] = restore_ep_dim(tensor, self.ep_fqn2spec_info[ep_fqn].ep_fsdp_mesh)
 
             return optim_sd
 
@@ -271,9 +259,11 @@ class OptimizerState(Stateful):
 
         # Non-EP → single optimizer
         set_optimizer_state_dict(
-            model=self.model, optimizers=self.optimizer, optim_state_dict=state_dict,
+            model=self.model,
+            optimizers=self.optimizer,
+            optim_state_dict=state_dict,
         )
-    
+
     def _find_ep_fqn(self, key: str) -> Optional[str]:
         """Find the EP parameter fully-qualified name (FQN) matching a state dict key.
 
@@ -306,7 +296,7 @@ class CheckpointManager:
     dcp_save_future: Optional[Any] = None
 
     # Dedicated process group for async save (created lazily)
-    _async_process_group: Optional[Any] = None
+    _metadata_process_group: Optional[Any] = None
 
     # --------------------------
     # Public Save Interface
@@ -428,11 +418,9 @@ class CheckpointManager:
             storage_writer (FileSystemWriter): Backend writer
             save_async (bool): Enable async save
         """
+        if cls._metadata_process_group is None:
+            cls._metadata_process_group = dist.new_group(backend="gloo")
         if save_async:
-            # Create a dedicated Gloo process group for async saves
-            if cls._async_process_group is None:
-                cls._async_process_group = dist.new_group(backend="gloo")
-
             # Ensure previous async save is finished
             if cls.dcp_save_future is not None:
                 cls.dcp_save_future.result()
@@ -442,12 +430,13 @@ class CheckpointManager:
             cls.dcp_save_future = dcp.async_save(
                 state_dict=save_state,
                 storage_writer=storage_writer,
-                process_group=cls._async_process_group,
+                process_group=cls._metadata_process_group,
             )
         else:
             dcp.save(
                 state_dict=save_state,
                 storage_writer=storage_writer,
+                process_group=cls._metadata_process_group,
             )
             if dist.is_initialized():
                 dist.barrier()
@@ -480,9 +469,7 @@ class CheckpointManager:
         os.makedirs(output_dir, exist_ok=True)
 
         # Determine sharding strategy
-        is_sharded, total_size, weight_map = get_shard_info(
-            state_dict, save_dtype, shard_size, safe_serialization
-        )
+        is_sharded, total_size, weight_map = get_shard_info(state_dict, save_dtype, shard_size, safe_serialization)
 
         full_state_dict = OrderedDict()
         prev_file_name = None
@@ -495,11 +482,7 @@ class CheckpointManager:
                 tensor = tensor.data
 
             if save_dtype:
-                tensor = tensor.to(
-                    dtype=getattr(torch, save_dtype)
-                    if isinstance(save_dtype, str)
-                    else save_dtype
-                )
+                tensor = tensor.to(dtype=getattr(torch, save_dtype) if isinstance(save_dtype, str) else save_dtype)
 
             # Flush shard when file boundary changes
             if prev_file_name and weight_map[name] != prev_file_name:
@@ -536,12 +519,8 @@ class CheckpointManager:
                     "metadata": {"total_size": total_size},
                     "weight_map": weight_map,
                 }
-                index_file = (
-                    SAFE_WEIGHTS_INDEX_NAME
-                    if safe_serialization
-                    else WEIGHTS_INDEX_NAME
-                )
-                with open(os.path.join(output_dir, index_file), "w") as f:
+                index_file = SAFE_WEIGHTS_INDEX_NAME if safe_serialization else WEIGHTS_INDEX_NAME
+                with open(os.path.join(output_dir, index_file), "w", encoding='utf-8') as f:
                     f.write(json.dumps(index, indent=2) + "\n")
 
             cls.save_config(output_dir, model_configs)
@@ -569,7 +548,7 @@ class CheckpointManager:
             output_path (str): Target directory
         """
         os.makedirs(output_path, exist_ok=True)
-        with open(os.path.join(output_path, "training_args.yaml"), "w") as f:
+        with open(os.path.join(output_path, "training_args.yaml"), "w", encoding='utf-8') as f:
             f.write(yaml.safe_dump(asdict(args)))
 
     # --------------------------
@@ -632,9 +611,6 @@ class CheckpointManager:
         try:
             reader = FileSystemReader(checkpoint_dir)
             metadata = reader.read_metadata()
-            return {
-                fqn.split(".")[0]
-                for fqn in metadata.state_dict_metadata.keys()
-            }
+            return {fqn.split(".")[0] for fqn in metadata.state_dict_metadata.keys()}
         except Exception:
             return set()
