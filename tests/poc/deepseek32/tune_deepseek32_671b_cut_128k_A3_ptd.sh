@@ -53,7 +53,6 @@ MOE_ARGS="
     --moe-grouped-gemm \
     --moe-permutation-async-comm \
     --moe-token-dispatcher-type alltoall \
-    --moe-permute-fusion \
     --moe-shared-expert-intermediate-size 2048 \
     --num-experts 256 \
     --moe-router-topk 8 \
