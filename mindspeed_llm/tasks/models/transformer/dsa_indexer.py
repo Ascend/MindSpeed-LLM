@@ -32,6 +32,7 @@ from mindspeed_llm.tasks.models.transformer.deepseek4.deepseek_utils import (
 )
 from mindspeed_llm.ops.npu_lightning_indexer import npu_lightning_indexer
 from mindspeed.te.pytorch.attention.dot_product_attention.kvallgather_context_parallel import (
+    get_distributed_rank,
     get_distributed_world_size,
     get_seq_chunk_ids_for_reordering_before_attn,
 )
@@ -1247,6 +1248,9 @@ def fused_sparse_flash_attention_kvallgather(q, k, v, topk_indices, q_rope, k_ro
     if not (q.shape[0] % 2 == 0 and k.shape[0] % 2 == 0):
         raise AssertionError("Sequence length per GPU needs to be divisible by 2!")
 
+    cp_size = get_distributed_world_size(cp_group)
+    rank = get_distributed_rank(cp_group)
+
     # [s, b, ...] -> [2, s//2, b, ...] -> [2, b, s//2, ...]
     q, q_rope = [t.view(2, t.shape[0] // 2, *t.shape[1:]).transpose(1, 2) for t in [q, q_rope]]
 
@@ -1262,19 +1266,22 @@ def fused_sparse_flash_attention_kvallgather(q, k, v, topk_indices, q_rope, k_ro
     softmax_sum = [None, None]
     # [2, b, s//2, n, d]
     out = torch.empty_like(q)
+    local_seq_chunk_ids = [rank + 1, 2 * cp_size - rank]
+    chunk_size = k_ag.shape[1] // cp_size // 2
 
-    num_steps = 2
-    for i in range(num_steps):
+    for i, chunk_id in enumerate(local_seq_chunk_ids):
+        kv_len = chunk_id * chunk_size
+
         attn_outs = torch_npu.npu_sparse_flash_attention(
             q[i],
-            k_ag,
-            v_ag,
+            k_ag[:, :kv_len, ...],
+            v_ag[:, :kv_len, ...],
             sparse_indices=topk_indices[i].to(torch.int32),
             block_table=None,
             actual_seq_lengths_query=None,
             actual_seq_lengths_kv=None,
             query_rope=q_rope[i],
-            key_rope=k_rope_ag,
+            key_rope=k_rope_ag[:, :kv_len, ...],
             scale_value=scale,
             sparse_block_size=1,
             layout_query='BSND',
