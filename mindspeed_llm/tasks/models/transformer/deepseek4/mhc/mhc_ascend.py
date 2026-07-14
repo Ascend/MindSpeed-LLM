@@ -6,6 +6,8 @@ operator package. It adapts tensor layouts between the model convention
 ([s, b, ...]) and the Ascend fused operator convention ([b, s, ...]).
 """
 
+import torch
+
 
 def _mhc_ops():
     """Load Ascend MHC fused operators only when the feature is enabled."""
@@ -75,4 +77,6 @@ def mhc_post_ascend(h_out, x, h_post, h_res):
     h_res_bsnn = h_res.permute(1, 0, 2, 3).contiguous()
 
     out = ops.mhc_post(x_bsnd, h_res_bsnn, h_out_bsd, h_post_bsn)
-    return out.permute(1, 0, 2, 3).contiguous()
+    # Pipeline deallocation requires its output not to be a view. `permute`
+    # creates a view, so materialize a contiguous tensor before returning it.
+    return out.permute(1, 0, 2, 3).clone(memory_format=torch.contiguous_format)
