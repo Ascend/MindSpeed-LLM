@@ -211,7 +211,7 @@ bash examples/mcore/llama2/ckpt_convert_llama2_hf2mcore.sh
 - 将`--load`参数指向转换后的Megatron权重目录（如`./model_weights/llama-2-7b-mcore/`），而非HuggingFace权重目录。
 - 移除以下在线转换相关参数：`--enable-hf2mg-convert`、`--enable-mg2hf-convert`、`--only-convert-last-checkpoint`、`--mg-save-dir`、`--hf-save-dir`、`--hf-cfg-dir`。
 
-更多权重转换使用详情请参见[权重转换](../../../tools/checkpoint_convert_hf_mcore.md)。
+更多权重转换使用详情请参见[权重转换](../../../tools/checkpoint_convert_hf_mcore_large_params.md)。
 
 ### 离线数据预处理
 
