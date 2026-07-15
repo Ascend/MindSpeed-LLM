@@ -3,8 +3,6 @@ model:
   train_from_scratch: False
 
 data:
-  dataset:
-    file_name: "your origin data path.example: /home/train-00000-of-a09b74b3ef9c3b56.parquet"
   template: qwen3
   cutoff_len: 4096
   max_samples: 100000

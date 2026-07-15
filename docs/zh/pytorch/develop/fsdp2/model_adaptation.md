@@ -258,14 +258,11 @@ examples/fsdp2/gpt_oss/
 ```yaml
 model:
   model_id: gpt_oss                               # 启用ModelRegistry中注册的GPT-OSS自定义实现
-  model_name_or_path: /home/data/gpt-oss-20b-hf/  # HuggingFace权重目录
   trust_remote_code: false                        # 本地已有模型实现时通常设为false
   train_from_scratch: false                       # false表示加载已有权重
   tokenizer_name_or_path: null                    # tokenizer路径；null表示默认使用model_name_or_path
 
 data:
-  dataset:
-    file_name: /home/data/alpaca/train-00000-of-00001-a09b74b3ef9c3b56.parquet  # 原始parquet数据路径
   template: gpt                              # 数据模板，GPT-OSS示例使用gpt
   cutoff_len: 4096                           # 单条样本最大token长度
   max_samples: 100000                        # 最多读取样本数，调试时可改小
@@ -274,16 +271,12 @@ data:
   data_manager_type: mg                      # 预训练示例使用mg数据管理
 
 parallel:
-  fsdp_size: 16                              # FSDP切分规模，通常与训练卡数匹配
   fsdp_modules:
     - model.layers.{*}                       # Transformer层按层FSDP包裹
     - model.embed_tokens                     # embedding 层参与FSDP
     - lm_head                                # 输出头参与FSDP
-  tp_size: 1                                 # 张量并行规模
-  ep_size: 4                                 # 专家并行规模
   ep_modules:
     - model.layers.{*}.mlp.experts           # 专家并行作用的专家模块路径
-  ep_fsdp_size: 4                            # 专家模块内部FSDP切分规模
   ep_fsdp_modules:
     - model.layers.{*}.mlp.experts           # 专家模块内部FSDP包裹路径
   ep_dispatcher: eager                       # 专家token分发方式
@@ -295,12 +288,9 @@ parallel:
 
 training:
   stage: pt                                  # 训练阶段，pt表示预训练
-  per_device_train_batch_size: 1             # 单卡batch size
-  gradient_accumulation_steps: 1             # 梯度累积步数
   dataloader_num_workers: 1                  # dataloader worker数
   disable_shuffling: 1                       # 是否关闭数据shuffle
   seed: 42                                   # 随机种子
-  output_dir: ./output                       # checkpoint和输出目录
   optimizer: adamw                           # 优化器类型
   lr: 1.25e-06                               # 学习率
   weight_decay: 0.0                          # 权重衰减
@@ -309,11 +299,6 @@ training:
   max_steps: 2000                            # 最大训练步数
   save_steps: 500                            # checkpoint保存间隔
   logging_steps: 1                           # 日志打印间隔
-
-optimization:
-  use_fused_rmsnorm: true                    # 使用融合RMSNorm
-  moe_grouped_gemm: true                     # 使用grouped GEMM专家计算路径
-  use_fused_rotary_pos_emb: true             # 使用融合RoPE
 ```
 
 常见参数可选项说明：
@@ -321,11 +306,11 @@ optimization:
 | 配置 | 常见取值 | 说明 |
 | --- | --- | --- |
 | `model.model_id` | `gpt_oss`、`qwen3`、`qwen3_moe`、`qwen3_next`、`step35`、`mamba3`、`minimax_m27` | 指定自定义注册模型。仅路径二需要配置；使用路径一原生 Transformers 适配时不要配置该项。 |
-| `model.model_name_or_path` | 本地HuggingFace权重目录 | 必填，指向包含`config.json`、tokenizer 和权重文件的目录。 |
+| `model.model_name_or_path` | 本地HuggingFace权重目录 | 必填，指向包含`config.json`、tokenizer 和权重文件的目录，已配置在CLI参数中。 |
 | `model.trust_remote_code` | `true` / `false` | 模型依赖Hub上自定义代码时设为`true`；使用MindSpeed LLM内置模型实现时通常为`false`。 |
 | `model.train_from_scratch` | `true` / `false` | `true`表示按config随机初始化；`false`表示加载已有权重。 |
 | `model.tokenizer_name_or_path` | `null`或tokenizer目录 | `null` 表示默认使用`model_name_or_path`。 |
-| `data.dataset.file_name` | 本地parquet/json/jsonl路径 | 原始数据路径；示例使用Alpaca parquet。 |
+| `data.dataset` | JSON字符串或数据集名称 | 原始数据路径（如 `{"file_name": "..."}`）或 dataset_info.json 中注册的数据集名称。 |
 | `data.template` | `gpt` 等模板名 | 指定样本拼接模板，GPT-OSS示例使用 `gpt`。 |
 | `data.data_manager_type` | `mg` / `lf` | `mg`用于Megatron风格预训练数据；`lf`用于LlamaFactory风格SFT数据。 |
 | `training.stage` | `pt` / `sft` | `pt`表示预训练；`sft`表示监督微调。 |
@@ -364,11 +349,16 @@ NODE_RANK=0
 torchrun $DISTRIBUTED_ARGS train_fsdp2.py \
   examples/fsdp2/gpt_oss/pretrain_gpt_oss_20b_4k_fsdp2_A3.yaml \
   --model.model_name_or_path /home/data/gpt-oss-20b-hf/ \
-  --data.dataset.file_name /home/data/alpaca/train-00000-of-00001-a09b74b3ef9c3b56.parquet \
+  --data.dataset '{"file_name": "/home/data/alpaca/train-00000-of-00001-a09b74b3ef9c3b56.parquet"}' \
   --parallel.fsdp_size 16 \
   --parallel.ep_size 4 \
   --parallel.ep_fsdp_size 4 \
+  --training.per_device_train_batch_size 1 \
+  --training.gradient_accumulation_steps 1 \
   --training.output_dir ./output/gpt_oss_20b \
+  --optimization.use_fused_rmsnorm True \
+  --optimization.moe_grouped_gemm True \
+  --optimization.use_fused_rotary_pos_emb True \
   --training.max_steps 2000 \
   | tee logs/pretrain_gpt_oss_20b_4k_${TIMESTAMP}.log
 ```

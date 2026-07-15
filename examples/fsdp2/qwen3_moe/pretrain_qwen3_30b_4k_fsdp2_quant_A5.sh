@@ -30,6 +30,7 @@ mkdir -p ./logs
 torchrun $DISTRIBUTED_ARGS train_fsdp2.py \
     examples/fsdp2/qwen3_moe/pretrain_qwen3_30b_4k_fsdp2_A5.yaml \
     --model.model_name_or_path ./model_weights/Qwen3-30B-A3B/ \
+    --data.dataset '{"file_name": "./train-00000-of-00001-a09b74b3ef9c3b56.parquet"}' \
     --parallel.fsdp_size 8 \
     --parallel.ep_size 1 \
     --parallel.ep_fsdp_size 1 \

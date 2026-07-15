@@ -139,7 +139,15 @@
         --master_port $MASTER_PORT
     "
 
-    torchrun $DISTRIBUTED_ARGS train_fsdp2.py examples/fsdp2/qwen3/pretrain_qwen3_8b_4k_fsdp2_A2.yaml
+    torchrun $DISTRIBUTED_ARGS train_fsdp2.py examples/fsdp2/qwen3/pretrain_qwen3_8b_4k_fsdp2_A2.yaml \
+        --model.model_name_or_path ./model_from_hf/qwen3_hf/ \
+        --data.dataset '{"file_name": "./dataset/train-00000-of-00001-a09b74b3ef9c3b56.parquet"}' \
+        --parallel.fsdp_size 8 \
+        --parallel.ep_size 1 \
+        --parallel.ep_fsdp_size 1 \
+        --training.per_device_train_batch_size 1 \
+        --training.gradient_accumulation_steps 1 \
+        --training.output_dir ./output
     ```
 
 3. 编辑训练参数配置文件。
@@ -152,13 +160,10 @@
 
     ```yaml
     model:
-      model_name_or_path: ./model_from_hf/qwen3_hf/     # 替换为下载的HuggingFace权重路径
       trust_remote_code: False
       train_from_scratch: False
 
     data:
-      dataset:
-        file_name: ./dataset/train-00000-of-00001-a09b74b3ef9c3b56.parquet   # 替换为下载的数据集路径
       template: qwen3
       cutoff_len: 4096
       max_samples: 100000
@@ -167,24 +172,24 @@
       data_manager_type: mg
 
     parallel:
-      fsdp_size: 8                                       # FSDP 分片数量，必须等于NPUS_PER_NODE * NNODES（即world size）
       fsdp_modules:
         - model.layers.{*}
         - model.embed_tokens
         - lm_head
-      tp_size: 1
+      ep_modules:
+        - model.layers.{*}.mlp.experts
+      ep_fsdp_modules:
+        - model.layers.{*}.mlp.experts
+      ep_dispatcher: eager
       recompute: True
       recompute_modules:
         - model.layers.{*}
 
     training:
       stage: pt                                          # 训练阶段，pt 为预训练
-      per_device_train_batch_size: 1
-      gradient_accumulation_steps: 1
       dataloader_num_workers: 4
       seed: 42
       dataloader_drop_last: True
-      output_dir: ./output                               # 训练保存权重输出目录
       optimizer: adamw
       lr: 1e-05
       max_steps: 2000
@@ -243,7 +248,15 @@
         --master_port $MASTER_PORT
     "
 
-    torchrun $DISTRIBUTED_ARGS train_fsdp2.py examples/fsdp2/qwen3/tune_qwen3_8b_4k_fsdp2_A2.yaml
+    torchrun $DISTRIBUTED_ARGS train_fsdp2.py examples/fsdp2/qwen3/tune_qwen3_8b_4k_fsdp2_A2.yaml \
+        --model.model_name_or_path ./model_from_hf/qwen3_hf/ \
+        --data.dataset '{"file_name": "./dataset/train-00000-of-00001-a09b74b3ef9c3b56.parquet"}' \
+        --parallel.fsdp_size 8 \
+        --parallel.ep_size 1 \
+        --parallel.ep_fsdp_size 1 \
+        --training.per_device_train_batch_size 1 \
+        --training.gradient_accumulation_steps 1 \
+        --training.output_dir ./output
     ```
 
 3. 编辑微调参数配置文件。
@@ -256,14 +269,10 @@
 
     ```yaml
     model:
-      model_name_or_path: ./model_from_hf/qwen3_hf/     # 替换为下载的HuggingFace权重路径
       trust_remote_code: False
       train_from_scratch: False
 
     data:
-      dataset:
-          file_name: "/home/dataset/train-00000-of-00001-a09b74b3ef9c3b56.parquet"   # 替换为下载的数据集路径
-          formatting: "alpaca"                                                       # 数据集数据格式，默认为alpaca
       template: qwen3
       cutoff_len: 4096
       max_samples: 100000
@@ -271,24 +280,24 @@
       preprocessing_num_workers: 1
 
     parallel:
-      fsdp_size: 8                                       # FSDP 分片数量，必须等于NPUS_PER_NODE * NNODES（即world size）
       fsdp_modules:
         - model.layers.{*}
         - model.embed_tokens
         - lm_head
-      tp_size: 1
+      ep_modules:
+        - model.layers.{*}.mlp.experts
+      ep_fsdp_modules:
+        - model.layers.{*}.mlp.experts
+      ep_dispatcher: eager
       recompute: True
       recompute_modules:
         - model.layers.{*}
 
     training:
-      per_device_train_batch_size: 1
-      gradient_accumulation_steps: 1
       dataloader_num_workers: 4
       disable_shuffling: 1
       seed: 42
       dataloader_drop_last: True
-      output_dir: ./output                               # 微调结果输出目录
       optimizer: adamw
       lr: 1e-05
       weight_decay: 0.01
@@ -328,16 +337,22 @@
 
 |参数名|说明|配置示例|
 |----|----|----|
-|`fsdp_size`|全分片数据并行大小，必须等于 world size（即 `NPUS_PER_NODE * NNODES`）。|正整数，如 `8`、`16`|
-|`fsdp_modules`|启用FSDP的模型层结构列表|`["model.layers.{*}", "model.embed_tokens", "lm_head"]`|
-|`recompute`|是否启用重计算，通过牺牲部分计算量节省显存|`True` / `False`|
-|`recompute_modules`|启用激活重计算的模型层结构|`["model.layers.{*}"]`|
-|`data_manager_type`|数据管理器类型，mg表示预训练场景，微调时无需配置|预训练：`mg`，微调：不配置|
-|`dataset`|数据集：使用数据集注册表中的名称，也可以使用本地数据集路径|`alpaca_full`、`sharegpt4_zh`|
-|`template`|微调构建prompt的模板名称|`qwen3`、`gpt`|
-|`cutoff_len`|分词后输入序列的截断长度，超过该长度的序列会被截断|`2048`、`4096`、`16384`|
+|`model_name_or_path`|HuggingFace 权重目录路径，替换为实际模型路径|`./model_from_hf/qwen3_hf/`|
 |`trust_remote_code`|是否允许加载HuggingFace上自定义建模文件中的模型|`True` / `False`|
 |`train_from_scratch`|是否使用随机权重从头开始训练模型，不加载模型权重|`True` / `False`|
+|`dataset`|数据集：JSON 字符串指定本地路径，或使用数据集注册表中的名称|`'{"file_name": "..."}`'、`alpaca_full`|
+|`template`|微调构建prompt的模板名称|`qwen3`、`gpt`|
+|`cutoff_len`|分词后输入序列的截断长度，超过该长度的序列会被截断|`2048`、`4096`、`16384`|
+|`data_manager_type`|数据管理器类型，mg表示预训练场景，微调时无需配置|预训练：`mg`，微调：不配置|
+|`fsdp_size`|全分片数据并行大小，必须等于 world size（即 `NPUS_PER_NODE * NNODES`）|正整数，如 `8`、`16`|
+|`fsdp_modules`|启用FSDP的模型层结构列表|`["model.layers.{*}", "model.embed_tokens", "lm_head"]`|
+|`ep_size`|专家并行大小|正整数，如 `1`、`4`|
+|`ep_fsdp_size`|专家并行组内的FSDP大小|正整数，如 `1`、`4`|
+|`recompute`|是否启用重计算，通过牺牲部分计算量节省显存|`True` / `False`|
+|`recompute_modules`|启用激活重计算的模型层结构|`["model.layers.{*}"]`|
+|`per_device_train_batch_size`|单卡训练 batch size|正整数，如 `1`、`4`|
+|`gradient_accumulation_steps`|梯度累积步数|正整数，如 `1`、`8`|
+|`output_dir`|训练保存权重输出目录|`./output`|
 
 > [!NOTE]
 >

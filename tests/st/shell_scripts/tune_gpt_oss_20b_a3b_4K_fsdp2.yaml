@@ -4,9 +4,6 @@ model:
   train_from_scratch: False
 
 data:
-  dataset:
-    file_name: "/data/ci/datasets/origin/train-00000-of-00001-a09b74b3ef9c3b56.parquet"
-    formatting: "alpaca"
   template: gpt
   cutoff_len: 2048
   max_samples: 100000

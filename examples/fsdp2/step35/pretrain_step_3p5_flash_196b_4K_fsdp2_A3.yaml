@@ -6,8 +6,6 @@ model:
   init_model_with_meta_device: True
 
 data:
-  dataset:
-    file_name: "/home/dataset/train-00000-of-00042-d964455e17e96d5a.parquet"
   template: gpt
   cutoff_len: 4096
   max_samples: 100000

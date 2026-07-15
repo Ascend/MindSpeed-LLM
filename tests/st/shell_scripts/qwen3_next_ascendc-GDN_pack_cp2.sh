@@ -26,6 +26,7 @@ DISTRIBUTED_ARGS="
 # CLI args take precedence over the YAML when both are set. All args can also be moved into the YAML if preferred.
 torchrun $DISTRIBUTED_ARGS train_fsdp2.py ./tests/st/shell_scripts/qwen3_next_ascendc-GDN_pack_cp2.yaml \
     --model.model_name_or_path /data/ci/models/qwen3_next/hf/qwen3_next_L4_mtp \
+    --data.dataset '{"file_name": "/data/ci/datasets/origin/train-00000-of-00001-a09b74b3ef9c3b56.parquet"}' \
     --parallel.fsdp_size 8 \
     --parallel.ep_size 1 \
     --parallel.ep_fsdp_size 1 \

@@ -24,6 +24,7 @@ DISTRIBUTED_ARGS="
 # CLI args take precedence over the YAML when both are set. All args can also be moved into the YAML if preferred.
 torchrun $DISTRIBUTED_ARGS train_fsdp2.py examples/fsdp2/mamba3/pretrain_mamba3_demo_1b_2K_fsdp2_A2.yaml \
     --model.model_name_or_path /home/hf_weights/Mamba3/ \
+    --data.dataset '{"file_name": "/home/dataset/train-00000-of-00042-d964455e17e96d5a.parquet"}' \
     --parallel.fsdp_size 8 \
     --parallel.ep_size 1 \
     --parallel.ep_fsdp_size 1 \

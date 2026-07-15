@@ -6,8 +6,6 @@ model:
   init_model_with_meta_device: True
 
 data:
-  dataset:
-    file_name: "./train-00000-of-00001-a09b74b3ef9c3b56.parquet"
   template: qwen3
   cutoff_len: 4096
   max_samples: 100000

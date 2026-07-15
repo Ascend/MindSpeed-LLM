@@ -21,6 +21,7 @@ mkdir -p ./logs
 # CLI args take precedence over the YAML when both are set. All args can also be moved into the YAML if preferred.
 torchrun $DISTRIBUTED_ARGS train_fsdp2.py examples/fsdp2/minimax_m27/pretrain_minimax_m2p7_229b_8K_fsdp2_A3.yaml \
     --model.model_name_or_path /home/data/MiniMax-M2.7/ \
+    --data.dataset '{"file_name": "/home/dataset/train-00000-of-00042-d964455e17e96d5a.parquet"}' \
     --parallel.fsdp_size 128 \
     --parallel.ep_size 128 \
     --parallel.ep_fsdp_size 1 \

@@ -21,6 +21,7 @@ mkdir -p ./logs
 # CLI args take precedence over the YAML when both are set. All args can also be moved into the YAML if preferred.
 torchrun $DISTRIBUTED_ARGS train_fsdp2.py examples/fsdp2/gpt_oss/pretrain_gpt_oss_20b_4k_fsdp2_A3.yaml \
     --model.model_name_or_path /home/data/gpt-oss-20b-hf/ \
+    --data.dataset '{"file_name": "your origin data path.example: /home/train-00000-of-a09b74b3ef9c3b56.parquet"}' \
     --parallel.fsdp_size 16 \
     --parallel.ep_size 4 \
     --parallel.ep_fsdp_size 4 \

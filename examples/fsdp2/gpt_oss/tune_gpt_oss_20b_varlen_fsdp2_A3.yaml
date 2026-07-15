@@ -4,7 +4,6 @@ model:
   train_from_scratch: False
 
 data:
-  dataset: alpaca_full
   template: gpt
   cutoff_len: 4096
   max_samples: 100000

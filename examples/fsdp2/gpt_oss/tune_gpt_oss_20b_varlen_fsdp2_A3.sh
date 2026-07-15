@@ -22,6 +22,7 @@ mkdir -p ./logs
 torchrun $DISTRIBUTED_ARGS train_fsdp2.py examples/fsdp2/gpt_oss/tune_gpt_oss_20b_varlen_fsdp2_A3.yaml \
     --model.model_name_or_path /home/data/gpt-oss-20b-hf/ \
     --model.tokenizer_name_or_path None \
+    --data.dataset alpaca_full \
     --parallel.fsdp_size 16 \
     --parallel.ep_size 4 \
     --parallel.ep_fsdp_size 4 \
