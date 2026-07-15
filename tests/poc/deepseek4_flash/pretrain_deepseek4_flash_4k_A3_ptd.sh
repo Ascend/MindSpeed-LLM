@@ -1,18 +1,13 @@
 #!/bin/bash
-
-export HCCL_CONNECT_TIMEOUT=7200
-export HCCL_EXEC_TIMEOUT=7200
-export ACL_DEVICE_SYNC_TIMEOUT=7200
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
-export TASK_QUEUE_ENABLE=1
+export TASK_QUEUE_ENABLE=2
 export CPU_AFFINITY_CONF=1
-export HCCL_ALGO="alltoall=level0:NA;level1:pipeline"
 
 NPUS_PER_NODE=16
 MASTER_ADDR=localhost #主节点IP
 MASTER_PORT=6000
-NNODES=8
+NNODES=16
 NODE_RANK=0
 WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
@@ -21,16 +16,16 @@ DATA_PATH="your data path"
 TOKENIZER_PATH="your tokenizer path"
 CKPT_LOAD_DIR="your model ckpt path"
 
-TP=2
+TP=1
 PP=2
 VPP=11
-EP=64
+EP=128
 CP=1
-CP_TYPE='ulysses_cp_algo'
-NUM_LAYERS=44
+CP_TYPE='kvallgather_cp_algo'
+NUM_LAYERS=43
 SEQ_LEN=4096
 MBS=1
-GBS=1024
+GBS=2048
 
 DISTRIBUTED_ARGS="
     --nproc_per_node $NPUS_PER_NODE \
@@ -40,24 +35,31 @@ DISTRIBUTED_ARGS="
     --master_port $MASTER_PORT
 "
 
+DEBUG_ARGS="
+    --fix-router \
+"
+
+MHC_ARGS="
+    --enable-mhc \
+    --hc-mult 4 \
+    --use-triton-mhc \
+    --use-ascend-mhc \
+"
+
 DSA_ARGS="
     --enable-dsa-indexer \
     --index-n-heads 64 \
     --index-head-dim 128 \
     --index-topk 512 \
-    --enable-mhc \
-    --hc-mult 4 \
-    --kv-compress \
-    --norm-eps 1e-6 \
-    --use-triton-sinkhorn \
-    --use-triton-mhc \
-    --use-triton-rmsnorm-without-weight \
     --use-fused-lightning-indexer-loss \
     --use-fused-lightning-indexer \
     --use-sparse-flash-attn \
+    --indexer-loss-coeff 1.0 \
+    --use-g2-indexer-loss \
 "
 
-MLA_ARGS="
+ATTN_ARGS="
+    --use-g2-attention \
     --multi-latent-attention \
     --qk-pos-emb-head-dim 64 \
     --qk-head-dim 512 \
@@ -66,11 +68,8 @@ MLA_ARGS="
     --kv-lora-rank 512 \
     --v-head-dim 128 \
     --qk-layernorm \
-    --mla-fa-without-pad \
-"
-
-CA_ARGS="
-    --use-g2-attention \
+    --kv-compress \
+    --norm-eps 1e-6 \
     --o-groups 8 \
     --g2-window-size 128 \
     --rope-head-dim 64 \
@@ -79,7 +78,6 @@ CA_ARGS="
     --compress-rope-theta 160000.0 \
     --max-batch-size 4 \
     --compress-ratios 0 0 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 \
-    --use-g2-indexer-loss \
 "
 
 MOE_ARGS="
@@ -102,9 +100,9 @@ MOE_ARGS="
     --moe-shared-expert-intermediate-size 2048 \
     --moe-router-dtype fp32 \
     --n-hash-layers 3 \
-    --fix-router \
     --moe-permute-fusion \
     --moe-fb-overlap \
+    --swiglu-limit 10.0 \
 "
 
 MTP_ARGS="
@@ -130,9 +128,7 @@ ROPE_ARGS="
     --rope-scaling-type yarn
 "
 
-
 GPT_ARGS="
-    --noop-layers 43 \
     --transformer-impl local \
     --spec mindspeed_llm.tasks.models.spec.deepseek4_spec layer_spec \
     --mtp-spec mindspeed_llm.tasks.models.spec.deepseek4_spec mtp_spec \
@@ -143,13 +139,13 @@ GPT_ARGS="
     --use-mcore-models \
     --tensor-model-parallel-size ${TP} \
     --pipeline-model-parallel-size ${PP} \
-    --num-layers-per-virtual-pipeline-stage ${VPP} \
     --expert-model-parallel-size ${EP} \
     --expert-tensor-parallel-size 1 \
     --sequence-parallel \
     --context-parallel-size ${CP} \
     --context-parallel-algo  ${CP_TYPE} \
     --num-layers ${NUM_LAYERS} \
+    --pipeline-model-parallel-layout Et*11|t*12|t*12|t*8mL \
     --hidden-size 4096 \
     --ffn-hidden-size 4096 \
     --num-attention-heads 64 \
@@ -194,6 +190,7 @@ GPT_ARGS="
     --distributed-timeout-minutes 120 \
     --no-shared-storage \
     --no-gradient-accumulation-fusion \
+    --ckpt-format torch
 "
 
 DATA_ARGS="
@@ -220,8 +217,9 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_deepseek4.py \
     $ROPE_ARGS \
     $MOE_ARGS \
     $MTP_ARGS \
+    $MHC_ARGS \
     $DSA_ARGS \
-    $CA_ARGS \
+    $ATTN_ARGS \
     $MEM_ARGS \
-    $PROF_ARGS \
+    $DEBUG_ARGS \
     --distributed-backend nccl 2>&1 | tee logs/pretrain_deepseek4_flash_4k_A3_ptd.log
