@@ -93,6 +93,7 @@ from mindspeed_llm.features_manager.tensor_parallel.tp_2d import TP2dFeature
 from mindspeed_llm.features_manager.arguments.deprecated_args import DeprecatedArgsFeature
 from mindspeed_llm.features_manager.convert_checkpoint.convert_checkpoint import CheckpointFeature
 from mindspeed_llm.features_manager.memory.chunk_loss import ChunkLossFeature
+from mindspeed_llm.features_manager.memory.swap_layer_input import SwapLayerInputFeature
 from mindspeed_llm.features_manager.layerwise_disaggregated_training.u_shaped_split_feature import UShapedSplitFeature
 from mindspeed_llm.features_manager.layerwise_disaggregated_training.vtp_feature import VTPFeature
 from mindspeed_llm.features_manager.qat.qat_quant_engine import QATQuantEngineFeature
@@ -239,7 +240,7 @@ def add_reuse_param_features(features_list: List[MindSpeedFeature]):
 
 
 def add_swap_manage_features(features_list: List[MindSpeedFeature]):
-    features_list.extend([SmartSwapFeature(), SwapAttentionFeature()])
+    features_list.extend([SmartSwapFeature(), SwapAttentionFeature(), SwapLayerInputFeature()])
 
 
 def add_moe_features(features_list: List[MindSpeedFeature]):
