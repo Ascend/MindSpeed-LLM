@@ -257,7 +257,7 @@ class HighAvailabilityFeature(MindSpeedFeature):
                     'megatron.training.training.num_floating_point_operations', num_floating_point_operations_wrapper
                 )
                 patch_manager.register_patch('megatron.training.utils.print_rank_last', print_rank_last_wrapper)
-            if args.mtp_num_layers is not None:
+            if getattr(args, 'mtp_num_layers', None) is not None:
                 from mindspeed_llm.core.transformer.multi_token_prediction import track_mtp_metrics
 
                 patch_manager.register_patch(
