@@ -1,15 +1,14 @@
 import math
 import torch
-import torch.nn as nn
+from torch import nn
 import torch.nn.functional as F
 from torch.distributed.tensor import distribute_tensor
 
 from transformers.modeling_utils import PreTrainedModel
 from transformers.configuration_utils import PretrainedConfig
 from transformers.modeling_outputs import CausalLMOutputWithPast
-from transformers.utils import TransformersKwargs, auto_docstring, can_return_tuple
 
-from .mamba3_block import Mamba3
+from .mamba3_block import Mamba3  # pylint: disable=import-error,no-name-in-module,relative-beyond-top-level
 
 
 class Mamba2Config(PretrainedConfig):
@@ -96,9 +95,7 @@ class Mamba3Block(nn.Module):
     def __init__(self, config: Mamba3Config, layer_idx: int):
         super().__init__()
         self.layer_idx = layer_idx
-        self.mamba = Mamba3(
-            d_model=config.hidden_size, is_mimo=config.is_mimo
-        )
+        self.mamba = Mamba3(d_model=config.hidden_size, is_mimo=config.is_mimo)
 
     def forward(self, hidden_states, inference_params=None):
         residual = hidden_states
@@ -115,12 +112,8 @@ class Mamba3Model(PreTrainedModel):
         vocab_size = max(config.vocab_size, 200000)
         self.embeddings = nn.Embedding(vocab_size, config.hidden_size)
 
-        self.layers = nn.ModuleList([
-            Mamba3Block(config, layer_idx=i)
-            for i in range(config.n_layer)
-        ])
+        self.layers = nn.ModuleList([Mamba3Block(config, layer_idx=i) for i in range(config.n_layer)])
         self.norm_f = Mamba3RMSNorm(config.hidden_size, eps=config.layer_norm_epsilon)
-
 
     def get_input_embeddings(self):
         return self.embeddings
@@ -134,7 +127,6 @@ class Mamba3Model(PreTrainedModel):
         inference_params=None,
         **kwargs,
     ):
-
         inputs_embeds = self.embeddings(input_ids)
         hidden_states = inputs_embeds
 
@@ -143,7 +135,6 @@ class Mamba3Model(PreTrainedModel):
 
         hidden_states = self.norm_f(hidden_states)
         return hidden_states
-
 
     def _init_weights(self, module):
         super()._init_weights(module)
@@ -155,11 +146,7 @@ class Mamba3Model(PreTrainedModel):
             dt = torch.clamp(dt, min=module.mamba.dt_init_floor)
             dt_bias = dt + torch.log(-torch.expm1(-dt))
 
-            dt_bias = distribute_tensor(
-                    dt_bias,
-                    module.mamba.dt_bias.device_mesh,
-                    module.mamba.dt_bias.placements
-                )
+            dt_bias = distribute_tensor(dt_bias, module.mamba.dt_bias.device_mesh, module.mamba.dt_bias.placements)
             module.mamba.dt_bias[:] = dt_bias
             module.mamba.B_bias.data.fill_(1.0)
             module.mamba.C_bias.data.fill_(1.0)
@@ -173,9 +160,6 @@ class Mamba3Model(PreTrainedModel):
 class Mamba2ForCausalLM(PreTrainedModel):
     config_class = Mamba2Config
 
-    def __init__(self, config: Mamba2Config):
-        super().__init__(config)
-
 
 class Mamba3ForCausalLM(Mamba2ForCausalLM):
     config_class = Mamba3Config
@@ -185,7 +169,7 @@ class Mamba3ForCausalLM(Mamba2ForCausalLM):
 
         self.model = Mamba3Model(config)
         self.lm_head = nn.Linear(config.d_model, config.vocab_size, bias=False)
-
+        self.post_init()
 
     def get_input_embeddings(self):
         return self.model.get_input_embeddings()

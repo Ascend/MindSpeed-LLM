@@ -1,0 +1,54 @@
+model:
+  model_id: qwen3_moe
+  model_name_or_path: /data/ci/models/Qwen3-30B-A3B/hf/Qwen3-30B-A3B-layer2
+  trust_remote_code: False
+  train_from_scratch: False
+  init_model_with_meta_device: True
+
+data:
+  template: qwen3
+  cutoff_len: 4096
+  max_samples: 100000
+  overwrite_cache: True
+  preprocessing_num_workers: 1
+  data_manager_type: mg
+
+parallel:
+  fsdp_modules:
+    - model.layers.{*}
+    - model.embed_tokens
+    - lm_head
+  ep_modules:
+    - model.layers.{*}.mlp.experts
+  ep_fsdp_modules:
+    - model.layers.{*}.mlp.experts
+  ep_dispatcher: eager
+  recompute: True
+  reduce_dtype: bf16
+  recompute_modules:
+    - model.layers.{*}
+  cp_size: 1
+  cp_type: ulysses
+
+training:
+  stage: pt
+  dataloader_num_workers: 4
+  seed: 42
+  dataloader_drop_last: True
+  optimizer: adamw
+  lr: 1e-05
+  weight_decay: 0.01
+  adam_beta1: 0.9
+  adam_beta2: 0.95
+  adam_epsilon: 1e-08
+  max_grad_norm: 1.0
+  lr_scheduler_type: cosine
+  warmup_ratio: 0.0
+  min_lr: 1e-06
+  num_train_epochs: 3.0
+  max_steps: 15
+  save_steps: 0
+  save_epochs: 0
+  logging_steps: 1
+  log_throughput: True
+  log_cpu_memory: True

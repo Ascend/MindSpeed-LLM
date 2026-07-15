@@ -474,4 +474,22 @@
         <td>/</td>
         <td>/</td>
     </tr>
+    <tr>
+        <td>pretrain_qwen3_moe_30b_4K_fsdp2</td>
+        <td>/data/ci/models/Qwen3-30B-A3B/hf/Qwen3-30B-A3B-layer2</td>
+        <td>/</td>
+        <td>/data/ci/datasets/origin/train-00000-of-00001-a09b74b3ef9c3b56.parquet</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/</td>
+    </tr>
+    <tr>
+        <td>pretrain_mamba3_2k_fsdp2</td>
+        <td>/data/ci/models/mamba3/hf/mamba3</td>
+        <td>/</td>
+        <td>/data/ci/datasets/origin/train-00000-of-00001-a09b74b3ef9c3b56.parquet</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/</td>
+    </tr>
 </table>

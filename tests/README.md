@@ -18,7 +18,7 @@ CI门禁用例看护仓库重点模型和基本特性，覆盖冒烟测试场景
     </tr>
     <tr>
         <td rowspan="17">ST</td>
-        <td rowspan="13">Pretrain</td>
+        <td rowspan="14">Pretrain</td>
         <td>TP，PP，VPP，distributed_optimizer，o2_gradient，o2_optimizer，重计算，enable_recompute_layers_per_pp_rank，FA_TND，use_fused_rotary_pos_emb</td>
         <td><a href="st/shell_scripts/qwen3_8b_tp2_pp4_vpp2.sh">qwen3_8b_tp2_pp4_vpp2.sh</a></td>
         <td>Y</td>
@@ -247,7 +247,7 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td>Y</td>
     </tr>
     <tr>
-        <td rowspan="12">llama2</td>
+        <td rowspan="11">llama2</td>
         <td>llama2, distributed_optimizer, overlap_grad_reduce, gloo</td>
         <td><a href="pipeline/legacy/llama2/llama2_tp1_pp8_patch_gloo_ptd.sh">llama2_tp1_pp8_patch_gloo_ptd.sh</a></td>
         <td>Y</td>
@@ -370,7 +370,7 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td>Y</td>
     </tr>
     <tr>
-        <td rowspan="18">ST</td>
+        <td rowspan="21">ST</td>
         <td rowspan="1">deepseek3</td>
         <td>deepseekv3, dualpipev, mla-up-proj-tp-overlap, moe-fb-overlap</td>
         <td><a href="pipeline/st/deepseek3/deepseek_v3_mcore_tp2_pp2_ep2_dualpipev_fb.sh">deepseek_v3_mcore_tp2_pp2_ep2_dualpipev_fb.sh</a></td>
@@ -434,6 +434,14 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td>Y</td>
     </tr>
     <tr>
+        <td rowspan="1">mamba3</td>
+        <td>mamba3, fsdp2 pretrain </td>
+        <td><a href="pipeline/st/mamba3/pretrain_mamba3_2k_fsdp2.sh">pretrain_mamba3_2k_fsdp2.sh</a></td>
+        <td>Y</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
         <td rowspan="1">phi35-moe</td>
         <td>phi35-moe, distributed_optimizer, overlap_grad_reduce, overlap_param_gather, longrope</td>
         <td><a href="pipeline/st/phi35-moe/phi35_moe_tp1_pp8_mcore.sh">phi35_moe_tp1_pp8_mcore.sh</a></td>
@@ -442,7 +450,7 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td>Y</td>
     </tr>
     <tr>
-        <td rowspan="2">qwen3-30b</td>
+        <td rowspan="4">qwen3-30b</td>
         <td>qwen3-30b DPO, distributed_optimizer, recompute, DPO</td>
         <td><a href="pipeline/st/qwen3-30b/dpo_qwen3_30b_a3b_16K_A3_ptd_tp2pp4.sh">dpo_qwen3_30b_a3b_16K_A3_ptd_tp2pp4.sh</a></td>
         <td>Y</td>
@@ -457,9 +465,15 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td>Y</td>
     </tr>
     <tr>
-        <td rowspan="1">qwen3-30b</td>
         <td>qwen3-30b w4a16-mxfp4</td>
         <td><a href="pipeline/st/qwen3-30b/tune_qwen3_30b_a3b_4K_full_ptd_tp4_pp2_ep1.sh">tune_qwen3_30b_a3b_4K_full_ptd_tp4_pp2_ep1.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td>qwen3-30b, fsdp2 pretrain, MoE, recompute</td>
+        <td><a href="pipeline/st/qwen3-30b/pretrain_qwen3_moe_30b_4K_fsdp2.sh">pretrain_qwen3_moe_30b_4K_fsdp2.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
