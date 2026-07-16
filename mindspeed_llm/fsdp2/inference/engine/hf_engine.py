@@ -14,6 +14,7 @@ from mindspeed_llm.fsdp2.inference.engine.base_engine import BaseEngine, Respons
 
 
 logger = get_logger(__name__)
+_STREAM_END = object()
 
 
 class HuggingfaceEngine(BaseEngine):
@@ -135,7 +136,10 @@ class HuggingfaceEngine(BaseEngine):
         thread.start()
 
         def stream():
-            return next(streamer)
+            try:
+                return next(streamer)
+            except StopIteration:
+                return _STREAM_END
 
         return stream
 
@@ -150,6 +154,9 @@ class HuggingfaceEngine(BaseEngine):
             stream_func = self._stream_chat(*input_args, **input_kwargs)
             while True:
                 try:
-                    yield await asyncio.to_thread(stream_func)
+                    new_text = await asyncio.to_thread(stream_func)
+                    if new_text is _STREAM_END:
+                        break
+                    yield new_text
                 except StopAsyncIteration:
                     break
