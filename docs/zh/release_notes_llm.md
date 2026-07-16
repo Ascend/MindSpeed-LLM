@@ -59,7 +59,7 @@
 
 **表 2**  MindSpeed LLM与TorchNPU版本兼容
 
-<table style="table-layout: fixed; width: 750px">
+<table style="table-layout: fixed; width: 750px; text-align:center">
   <colgroup>
     <col style="width: 150px">
     <col style="width: 150px">
@@ -99,7 +99,7 @@
 
 **表 3**  MindSpeed LLM与CANN版本兼容
 
-<table style="table-layout: fixed; width: 750px">
+<table style="table-layout: fixed; width: 750px; text-align:center">
   <colgroup>
     <col style="width: 150px">
     <col style="width: 150px">
