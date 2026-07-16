@@ -61,6 +61,11 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
         self.num_layer_list = getattr(args, "num_layer_list", None)
         self.noop_layers = getattr(args, "noop_layers", None)
 
+        num_noop_layers = (
+            0 if self.noop_layers is None else len([int(x) for x in str(self.noop_layers).split(",") if x.strip()])
+        )
+        self.num_layers = self.num_layers + num_noop_layers
+
         self.num_layers_per_virtual_pipeline_stage = getattr(args, "num_layers_per_virtual_pipeline_stage", None)
         self.dualpipe = getattr(args, "schedules_method", None) == "dualpipev"
         if self.dualpipe:
@@ -89,10 +94,7 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
 
         if not os.path.exists(self.hf_model_path):
             raise FileNotFoundError(f"Model path does not exist: {self.hf_model_path}")
-        num_noop_layers = (
-            0 if self.noop_layers is None else len([int(x) for x in str(self.noop_layers).split(",") if x.strip()])
-        )
-        self.num_layers = self.num_layers + num_noop_layers
+
         self._valid_parameter()
 
         if self.num_layers_per_virtual_pipeline_stage is None:
