@@ -730,10 +730,18 @@ def _make_choice_type_function(choices: List[Any]) -> Callable[[str], Any]:
 
 def _validate_cross_args(args):
     """Validate constraints that span multiple argument dataclasses."""
-    if args.data.reset_attention_mask and args.training.per_device_train_batch_size > 1:
+    # Inference does not configure data arguments, so access them defensively to skip training-only validation.
+    data_args = getattr(args, "data", None)
+    training_args = getattr(args, "training", None)
+    if (
+        data_args is not None
+        and training_args is not None
+        and data_args.reset_attention_mask
+        and training_args.per_device_train_batch_size > 1
+    ):
         raise ValueError(
             "When reset_attention_mask=True, per_device_train_batch_size must be 1, "
-            f"but got {args.training.per_device_train_batch_size}."
+            f"but got {training_args.per_device_train_batch_size}."
         )
 
     if args.model.model_id == "qwen3_next" and args.parallel.cp_size > 1 and args.parallel.cp_type != "ulysses":
