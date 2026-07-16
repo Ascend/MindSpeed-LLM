@@ -6,7 +6,7 @@
 
 yarn通过ntk-by-part调整位置编码，提升序列扩增后的精度。
 
-![position_embedding.png](../../figures/yarn/position_embedding.PNG)
+![position_embedding.png](../../figures/yarn/position_embedding.png)
 
 ![ntk_by_parts.png](../../figures/yarn/ntk_by_parts.png)
 

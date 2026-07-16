@@ -41,7 +41,7 @@
 
 **Table 1** MindSpeed LLM software version compatibility matrix
 
-| MindSpeed LLM version | MindSpeed Core code branch name | Megatron version | PyTorch version | Ascend Extension for PyTorch version | CANN version | Python version |
+| MindSpeed LLM version | MindSpeed Core code branch name | Megatron version | PyTorch version | TorchNPU version | CANN version | Python version |
 | -------------------- | ------------------------------ | ---------------- | --------------- | ----------------------------------- | ------------ | -------------- |
 | master (under development) | master (under development) | core_v0.12.1 | 2.7.1 | In development | In development | Python 3.10 |
 | 26.0.0 (commercial) | 26.0.0_core_r0.12.1 | core_v0.12.1 | 2.7.1 | 26.0.0 | 9.0.0 | Python 3.10 |
@@ -54,7 +54,7 @@
 
 ## Version Compatibility Information
 
-| MindSpeed LLM version | CANN version | Ascend Extension for PyTorch version |
+| MindSpeed LLM version | CANN version | TorchNPU version |
 | -- | -- | -- |
 | 26.0.0 | CANN 9.0.0<br>CANN 8.5.0<br>CANN 8.3.RC1<br>CANN 8.2.RC1<br>CANN 8.1.RC1 | 26.0.0 |
 | 2.3.0 | CANN 8.5.0<br>CANN 8.3.RC1<br>CANN 8.2.RC1<br>CANN 8.1.RC1<br>CANN 8.0.0<br> | 7.3.0 |

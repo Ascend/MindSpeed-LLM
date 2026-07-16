@@ -17,6 +17,7 @@ This document explains how to quickly install MindSpeed LLM, the distributed tra
 | <term>Atlas training products</term> | x |
 
 > [!NOTE]
+>
 > The "√" in the table indicates support, and "x" indicates no support.
 
 - For the OSs supported by each hardware product in physical machine deployment scenarios, see the [Compatibility Query Assistant](https://www.hiascend.com/hardware/compatibility).
@@ -28,7 +29,7 @@ See the "Related Product Version Support" section in the Release Notes to downlo
 
 ### Installing Driver Firmware
 
-Download the [Firmware and Drivers](https://hiascend.com/hardware/firmware-drivers/community). Choose the community or commercial firmware and driver package according to the OS and hardware model.
+Download the [Firmware and Drivers](https://www.hiascend.com/hardware/firmware-drivers/community). Choose the community or commercial firmware and driver package according to the OS and hardware model.
 
 Use the following commands for installation:
 
@@ -50,7 +51,8 @@ source /usr/local/Ascend/nnal/atb/set_env.sh --cxx_abi=0 # Change this to the ac
 ```
 
 > [!NOTICE]
-> You are advised to install and run `torch_npu` as a non-root user. You are also advised to control permissions for the installer directory and files. Set directory permissions to `750` and file permissions to `640`. You can control the permissions after installation by setting `umask`, for example `umask 0027`.
+>
+> You are advised to install and run the software as a non-root user. You are also advised to control permissions for the installer directory and files. Set directory permissions to `750` and file permissions to `640`. You can control the permissions after installation by setting `umask`, for example `umask 0027`.
 > For more security-related information, see the explanation of file permission control for each component in [Security Statement](../SECURITYNOTE.md).
 
 ### Installing MindSpore

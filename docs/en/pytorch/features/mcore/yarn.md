@@ -6,7 +6,7 @@ Transformer-based LLMs have become the default choice for many natural language 
 
 YaRN adjusts positional encoding through `ntk-by-part` to improve accuracy after sequence expansion.
 
-![position_embedding.png](../../figures/yarn/position_embedding.PNG)
+![position_embedding.png](../../figures/yarn/position_embedding.png)
 
 ![ntk_by_parts.png](../../figures/yarn/ntk_by_parts.png)
 

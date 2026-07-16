@@ -41,7 +41,7 @@
 
 **表 1**  MindSpeed LLM软件版本配套表
 
-| MindSpeed LLM版本 | MindSpeed Core代码分支名称 | Megatron版本 | PyTorch版本  | Ascend Extension for PyTorch版本 | CANN版本 | Triton-Ascend版本 | Python版本     |
+| MindSpeed LLM版本 | MindSpeed Core代码分支名称 | Megatron版本 | PyTorch版本  | TorchNPU版本 | CANN版本 | Triton-Ascend版本 | Python版本     |
 | ---------------- | ------------------ | ------------ | -----------  | ------------- |--------------------- |-----------------| ------------------- |
 | master（在研版本）| master（在研版本）  | core_v0.12.1  | 2.7.1       | 在研版本       | 在研版本  | 在研版本            | Python3.10      |
 | 26.1.0           | 26.1.0_core_r0.12.1 | core_v0.12.1  | 2.7.1       | 26.1.0        | 9.1.0  | 3.2.2           | Python3.10      |
@@ -60,7 +60,7 @@
 
 **表 2**  MindSpeed LLM与TorchNPU版本兼容
 
-<table style="table-layout: fixed; width: 750px">
+<table style="table-layout: fixed; width: 750px; text-align:center">
   <colgroup>
     <col style="width: 150px">
     <col style="width: 150px">
@@ -100,7 +100,7 @@
 
 **表 3**  MindSpeed LLM与CANN版本兼容
 
-<table style="table-layout: fixed; width: 750px">
+<table style="table-layout: fixed; width: 750px; text-align:center">
   <colgroup>
     <col style="width: 150px">
     <col style="width: 150px">

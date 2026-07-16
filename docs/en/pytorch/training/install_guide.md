@@ -32,7 +32,7 @@ See the "[Related Product Version Compatibility](../../release_notes_llm.md#rela
 > You are advised to install and run the software as a non-root user. You are also advised to control permissions for the installer directory and files. Set directory permissions to `750` and file permissions to `640`. You can control the permissions after installation by setting `umask`, for example `umask 0027`.
 > For more security-related information, see the explanation of file permission control for each component in [Security Note](../../SECURITYNOTE.md).
 
-Download the [Firmware and Drivers](https://hiascend.com/hardware/firmware-drivers/community). Choose the community or commercial firmware and driver package according to the OS and hardware model.
+Download the [Firmware and Drivers](https://www.hiascend.com/hardware/firmware-drivers/community). Choose the community or commercial firmware and driver package according to the OS and hardware model.
 
 Use the following commands for installation:
 
@@ -50,7 +50,7 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
 > [!NOTE]
 >
 > - Before using the image, confirm the machine model. The latest image supports only the AArch64 architecture. Run `uname -a` to verify.
-> - The image is pre-installed with CANN 9.0.0 and Ascend Extension for PyTorch 26.0.0. You can use it as needed.
+> - The image is pre-installed with CANN 9.0.0 and TorchNPU 26.0.0. You can use it as needed.
 > - If your environment is incompatible with the provided image, choose [Method 2: Installation from Source](#method-2-installation-from-source).
 > - The master branch will be updated with new images. For custom image building, see [Image Overview](../../../../docker/OVERVIEW.md).
 
@@ -153,14 +153,14 @@ Follow these steps to obtain the corresponding source code, install the required
 
    The preceding commands use the default installation paths after installation for the root user as an example. Replace them with the actual path to `set_env.sh`.
 
-2. Install PyTorch and `torch_npu`.
+2. Install PyTorch and `TorchNPU`.
 
-   Refer to the "[Install PyTorch](https://www.hiascend.com/document/detail/zh/Pytorch/2600/configandinstg/instg/docs/en/installation_guide/installation_via_binary_package.md)" section in the Ascend Extension for PyTorch Software Installation Guide to obtain matching versions of the PyTorch and `torch_npu` packages.
+   Refer to the "[Install PyTorch](https://www.hiascend.com/document/detail/zh/Pytorch/2600/configandinstg/instg/docs/en/installation_guide/installation_via_binary_package.md)" section in the TorchNPU Software Installation Guide to obtain matching versions of the PyTorch and `TorchNPU` packages.
 
    You can use the following installation commands:
 
    ```shell
-   # Refer to https://gitcode.com/ascend/pytorch/releases for torch and torch_npu build instructions
+   # Refer to https://gitcode.com/ascend/pytorch/releases for torch and TorchNPU build instructions
    pip3 install torch-2.7.1-cp310-cp310-manylinux_2_28_aarch64.whl
    pip3 install torch_npu-2.7.1rc1-cp310-cp310-manylinux_2_28_aarch64.whl
    ```
