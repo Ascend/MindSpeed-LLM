@@ -38,17 +38,17 @@ python ./preprocess_data.py \
 
 初始化attn_mask为压缩下三角矩阵（2048*2048）；
 
-<img alt="causal_mask.png" src="../../figures/variable_length_flash_attention/causal_mask.png" width="261"/>
+<img alt="使能前的下三角因果注意力掩码示意图" src="../../figures/variable_length_flash_attention/causal_mask.png" width="261"/>
 
 多个文档被视为同一序列，互相间的self attention没有掩盖，所有token均参与计算。
 
 ### 2.使能后
 
-不初始化mask，根据eod位置生成actual_seq_len,假设一个序列中真实的文本长度分别为[2,2,0,2,2]，则actual_seq_len为[2,4,4,6,8]；
+不初始化mask，根据eod位置生成actual_seq_len，假设一个序列中真实的文本长度分别为[2,2,0,2,2]，则actual_seq_len为[2,4,4,6,8]；
 实际计算量由actual_seq_len决定；
 
-attn_mask可以类似的表示为（实际计算时不生成）：
+attn_mask可以类似地表示为（实际计算时不生成）：
 
-<img alt="varlen_mask.png" src="../../figures/variable_length_flash_attention/varlen_mask.png" width="414"/>
+<img alt="使能后的可变长注意力掩码示意图" src="../../figures/variable_length_flash_attention/varlen_mask.png" width="414"/>
 
 其中左下角空白位置不参与计算。
