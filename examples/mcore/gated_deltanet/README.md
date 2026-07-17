@@ -37,7 +37,7 @@ GatedDeltaNet，即 `(N-1):1` 的 GDN:attn 比例。论文评估了 24:1 / 12:1 
 - 340M 取 `sample/100BT` 的前若干个 parquet 分片累计到 ~20B tokens。
 
 把原始文件（`.parquet`/`.jsonl`）填进 `pretrain_*.sh` 的 `DATA_PATH`，训练初始化时自动预处理
-（参考 train_from_hf：`docs/zh/pytorch/training/pretrain/mcore/train_from_hf.md`），无需单独的数据转换脚本。
+（参考[train_from_hf](../../../docs/zh/pytorch/training/pretrain/mcore/train_from_hf.md)），无需单独的数据转换脚本。
 tokenizer 与模型一致（`PretrainedFromHF`，`padded-vocab-size=32000`）。
 
 **优化配置**（完整超参以各 `pretrain_*.sh` 为准）：

@@ -1,6 +1,6 @@
 # DeepSeek-V3模型训练
 
-若需使用DeepSeek-V3训练，先根据预训练/微调任务查看使用指导文档示例，配置<a href="../../mcore/deepseek3/">deepseekv3训练脚本</a>，然后执行训练过程。
+若需使用DeepSeek-V3训练，先根据预训练/微调任务查看使用指导文档示例，配置<a href="../../mcore/deepseek3/">DeepSeek-V3训练脚本</a>，然后执行训练过程。
 
 ## 1. 预训练使用指导
 
@@ -32,7 +32,7 @@ c. tune_deepseek3_671b_4k_full_xxx.sh (根据集群选择A2或者A3脚本)
 d. ckpt_convert_deepseek3_mcore2hf.sh（可选）
 ```
 
-Lora微调过程脚本使用顺序为：
+LoRA微调过程脚本使用顺序为：
 
 ```shell
 a. data_convert_deepseek3_instruction.sh
@@ -41,7 +41,7 @@ b. ckpt_convert_deepseek3_hf2mcore.sh
 
 注意：此脚本是示例，需根据c.tune_deepseek3_671b_4k_lora_xxx.sh脚本设置权重转换参数。参数说明查看以下的"DeepSeek-V3权重转换"章节
 
-c. tune_deepseek3_671b_4k_xlora_xxx.sh(根据集群选择A2或者A3脚本)
+c. tune_deepseek3_671b_4k_lora_xxx.sh(根据集群选择A2或者A3脚本)
 
 d. ckpt_convert_deepseek3_merge_lora2hf.sh （可选）
 ```
@@ -56,7 +56,7 @@ d. ckpt_convert_deepseek3_merge_lora2hf.sh （可选）
 
 (1) huggingface转megatron
 
-- 支持将[huggingface权重](https://huggingface.co/deepseek-ai/DeepSeek-V3/tree/main)转换为分布式megatron mcore权重，用于微调、推理、评估等任务。要求原权重做反量化后获得bf16数据格式，反量化方法请参考MindIE官方提供的[代码](https://modelers.cn/models/MindIE/deepseekv3/blob/main/NPU_inference/fp8_cast_bf16.py)。
+- 支持将[huggingface权重](https://huggingface.co/deepseek-ai/DeepSeek-V3/tree/main)转换为分布式megatron mcore权重，用于微调、推理、评估等任务。要求原权重做反量化后获得bf16数据格式，反量化方法请参考MindIE官方提供的[fp8转bf16反量化脚本](https://modelers.cn/models/MindIE/deepseekv3/blob/main/NPU_inference/fp8_cast_bf16.py)。
 
 - DeepSeek-V3模型目录下的<a href="../../mcore/deepseek3/ckpt_convert_deepseek3_hf2mcore.sh">ckpt_convert_deepseek3_hf2mcore.sh</a>脚本，设置与训练脚本相同配置，再执行转换：
 
@@ -183,7 +183,7 @@ MTP层权重默认存储在最后一个pp stage。
   </tbody>
 </table>
 
-## 2 LoRA权重转换
+## 2. LoRA权重转换
 
 ### 2.1 LoRA 权重包含 base 权重
 
@@ -241,7 +241,7 @@ python examples/mcore/deepseek3/convert_ckpt_deepseek3_mcore2hf.py \
 
 --lora-r、--lora-alpha：与LoRA微调时配置相同
 
-【适用场景】在LoRA微调时加参数'--lora-ckpt-filter'，保存的权重只包含LoRA权重，需要将Lora和HF权重合并
+【适用场景】在LoRA微调时加参数'--lora-ckpt-filter'，保存的权重只包含LoRA权重，需要将LoRA和base权重合并
 
 ### 2.3 只将LoRA权重转为huggingface格式
 
@@ -269,4 +269,4 @@ python examples/mcore/deepseek3/convert_ckpt_deepseek3_mcore2hf.py \
 
 --save-lora-to-hf：指定此参数,仅将LoRA权重转为huggingface格式,注意该权重仅为LoRA权重，在LoRA微调中加入'--lora-ckpt-filter'，只保存LoRA权重
 
-【适用场景】在LoRA微调时加参数'--lora-ckpt-filter'，则保存的权重只包含LoRA权重，仅将Lora权重转为HF格式
+【适用场景】在LoRA微调时加参数'--lora-ckpt-filter'，则保存的权重只包含LoRA权重，仅将LoRA权重转为HF格式
