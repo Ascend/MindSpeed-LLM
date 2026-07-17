@@ -19,7 +19,7 @@
 
 - 具备基础的 PyTorch 使用经验
 - 具备初级的 Python 开发经验
-- 对 FSDP（Fully Sharded Data Parallel，全分片数据并行） 有基本了解
+- 对FSDP（Fully Sharded Data Parallel，全分片数据并行）有基本了解
 
 ## 环境准备
 
