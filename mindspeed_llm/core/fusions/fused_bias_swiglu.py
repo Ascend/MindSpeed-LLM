@@ -20,8 +20,8 @@ def fused_swiglu_with_limit(x, limit=0):
     else:
         limit = _SWIGLU_LIMIT
     if limit > 0:
-        y_1, y_2 = torch.chunk(x, 2, dim=0)
+        y_1, y_2 = torch.chunk(x, 2, dim=-1)
         y_1 = y_1.clamp(min=None, max=limit)
         y_2 = y_2.clamp(min=-limit, max=limit)
-        return torch_npu.npu_swiglu(torch.cat([y_1, y_2], dim=0).to(x.dtype), dim=-1)
+        return torch_npu.npu_swiglu(torch.cat([y_1, y_2], dim=-1).to(x.dtype), dim=-1)
     return torch_npu.npu_swiglu(x, dim=-1)
