@@ -24,7 +24,7 @@ The MindSpeed LLM architecture is shown in [Figure 1](#architecture) and consist
 - **MindSpeed LLM training algorithms**.
   - **Distributed pretraining**: Supports end-to-end distributed pretraining, including data processing and mainstream model and data partitioning schemes.
   - **Distributed instruction fine-tuning**: Supports multiple mainstream fine-tuning algorithms in the industry to achieve competitive training results.
-- **MindSpeed LLM LLMs**.
+- **Models supported by MindSpeed LLM**.
   - **More than 100 prebuilt reference models**: Covers mainstream Dense, MoE, and SSM families and provides high-performance model training scripts that are ready to use.
   - **Compatible with multiple mainstream LLM architectures**: Supports LLMs based on Transformer and SSM architectures.
 

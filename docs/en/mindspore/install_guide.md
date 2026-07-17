@@ -28,7 +28,7 @@ See the "Related Product Version Support" section in the Release Notes to downlo
 
 ### Installing Driver Firmware
 
-Download the [Firmware and Drivers](https://hiascend.com/hardware/firmware-drivers/community). Choose the community or commercial firmware and driver package according to the OS and hardware model.
+Download the [Firmware and Drivers](https://www.hiascend.com/hardware/firmware-drivers/community). Choose the community or commercial firmware and driver package according to the OS and hardware model.
 
 Use the following commands for installation:
 

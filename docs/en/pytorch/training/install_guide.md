@@ -21,7 +21,7 @@ This document explains how to quickly install MindSpeed LLM, the PyTorch-based d
 > The "√" in the table indicates support, and "x" indicates no support.
 
 - For the OSs supported by each hardware product in physical machine deployment scenarios, see the [Compatibility Query Assistant](https://www.hiascend.com/hardware/compatibility).
-- For the OSs supported by each hardware product in VM and container deployment scenarios, see [OS Compatibility](https://www.hiascend.com/document/detail/en/canncommercial/900/softwareinst/instg/instg_0101.html?OS=openEuler&InstallType=netyum) in CANN Software Installation for the commercial edition, or [OS Compatibility](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/900/softwareinst/instg/instg_0101.html?OS=openEuler&InstallType=netyum) for the community edition.
+- For the OSs supported by each hardware product in VM and container deployment scenarios, see [OS Compatibility](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/900/softwareinst/instg/instg_0101.html?OS=openEuler&InstallType=netyum) in CANN Software Installation for the community edition.
 
 ## Preparation before Installation
 
@@ -32,7 +32,7 @@ See [Related Product Version Compatibility](../../release_notes_llm.md#related-p
 > You are advised to install and run the software as a non-root user. You are also advised to control permissions for the installer directory and files. Set directory permissions to `750` and file permissions to `640`. You can control the permissions after installation by setting `umask`, for example `umask 0027`.
 > For more security-related information, see the explanation of file permission control for each component in [Security Note](../../SECURITYNOTE.md).
 
-Download the [Firmware and Drivers](https://hiascend.com/hardware/firmware-drivers/community). Choose the community or commercial firmware and driver package according to the OS and hardware model.
+Download the [Firmware and Drivers](https://www.hiascend.com/hardware/firmware-drivers/community). Choose the community or commercial firmware and driver package according to the OS and hardware model.
 
 Use the following commands for installation:
 
@@ -121,8 +121,8 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
          -v /usr/local/Ascend/driver/lib64/:/usr/local/Ascend/driver/lib64/ \
          -v /usr/local/Ascend/driver/version.info:/usr/local/Ascend/driver/version.info \
          -v /etc/ascend_install.info:/etc/ascend_install.info \
-         -v /path/to/data:/data \
-         -v /path/to/weights:/weights \
+         -v /data:/data \
+         -v /weights:/weights \
          mindspeed-llm:26.0.0-a3-openeuler24.03-py3.11-aarch64 bash
       ```
 
@@ -139,7 +139,7 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
 
 1. Install CANN.
 
-   Install the matching versions of the NPU driver and firmware, and install the CANN software, including the Toolkit, ops, and NNAL packages, and configure the CANN environment variables. For details, see [CANN Software Installation](https://www.hiascend.com/document/detail/en/canncommercial/900/softwareinst/instg/instg_0000.html) for the commercial edition or [CANN Software Installation](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/900/softwareinst/instg/instg_0000.html) for the community edition.
+   Install the matching versions of the NPU driver and firmware, and install the CANN software, including the Toolkit, ops, and NNAL packages, and configure the CANN environment variables. For details, see [CANN Software Installation](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/900/softwareinst/instg/instg_0000.html) for the community edition.
 
    CANN software provides a script for setting process-level environment variables. Before you run application code with NPU acceleration in training or inference scenarios, you must call this script. Otherwise, the application code cannot run.
 

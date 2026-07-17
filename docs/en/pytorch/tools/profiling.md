@@ -139,7 +139,7 @@ The directory structure of this file is as follows:
 
 ## Visual Performance Analysis
 
-Using the MindStudio Insight tool as an example, refer to the [MindStudio Insight installation guide](https://gitcode.com/Ascend/msinsight/blob/26.0.0/docs/zh/user_guide/mindstudio_insight_install_guide.md) to deploy the tool, then import the generated profiling file into the tool for performance breakdown analysis.
+Using the MindStudio Insight tool as an example, refer to the [MindStudio Insight installation guide](https://gitcode.com/Ascend/msinsight/blob/26.0.0/docs/en/user_guide/mindstudio_insight_install_guide.md) to deploy the tool, then import the generated profiling file into the tool for performance breakdown analysis.
 
 The following briefly introduces the main interfaces of MindStudio Insight:
 
@@ -163,5 +163,5 @@ The following briefly introduces the main interfaces of MindStudio Insight:
 
 > [!NOTE]
 >
-> - If you want to learn more about how to use the tool, refer to the [MindStudio Insight system tuning](https://gitcode.com/Ascend/msinsight/blob/master/docs/zh/user_guide/system_tuning.md#%E5%9F%BA%E7%A1%80%E5%8A%9F%E8%83%BD) section in the official MindStudio Insight documentation.
+> - If you want to learn more about how to use the tool, refer to the [MindStudio Insight system tuning](https://gitcode.com/Ascend/msinsight/blob/26.0.0/docs/en/user_guide/system_tuning.md#basic-functions) section in the official MindStudio Insight documentation.
 > - If you need a more customized profiling collection method, refer to the "Performance Data Collection and Automatic Parsing" section in the [CANN Performance Tuning Tool User Guide](https://www.hiascend.com/document/detail/zh/canncommercial/900/devaids/Profiling/atlasprofiling_16_0033.html) to customize data collection and analysis by modifying the collection code.

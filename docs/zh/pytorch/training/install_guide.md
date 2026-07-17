@@ -31,7 +31,7 @@
 >
 > 安装运行程序建议使用非root用户，且建议对安装程序的目录文件做好权限管控：文件夹权限设置为750，文件权限设置为640。可以通过设置umask控制安装后文件的权限，如设置umask为0027。更多安全相关内容请参见《[安全声明](../../SECURITYNOTE.md)》中各组件关于“文件权限控制”的说明。
 
-下载[固件与驱动](https://hiascend.com/hardware/firmware-drivers/community)，请根据系统和硬件产品型号选择对应版本的社区版本或商用版本的固件与驱动。
+下载[固件与驱动](https://www.hiascend.com/hardware/firmware-drivers/community)，请根据系统和硬件产品型号选择对应版本的社区版本或商用版本的固件与驱动。
 参考如下命令安装：
 
 ```shell
@@ -114,8 +114,8 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
          -v /usr/local/Ascend/driver/lib64/:/usr/local/Ascend/driver/lib64/ \
          -v /usr/local/Ascend/driver/version.info:/usr/local/Ascend/driver/version.info \
          -v /etc/ascend_install.info:/etc/ascend_install.info \
-         -v /path/to/data:/data \
-         -v /path/to/weights:/weights \
+         -v /data:/data \
+         -v /weights:/weights \
          mindspeed-llm:26.0.0-a3-openeuler24.03-py3.11-aarch64 bash
       ```
 
