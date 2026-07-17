@@ -8,9 +8,9 @@
 
 <img src="../../../figures/multi_sample_pack_fine_tuning/samples_pack.png" width="60%"/>
 
-微调数据每个样本的组成是一个problem(p)对应一个response(r)，即一问一答相对应，写做p1r1、p2r2等。
+微调数据每个样本的组成是一个 problem(p) 对应一个 response(r)，即一问一答相对应，记作 p1r1、p2r2 等。
 
-参与计算式的`attn_mask` 也改变成锯齿状的矩阵类型：
+参与计算的 `attn_mask` 也改变成锯齿状的矩阵类型：
 
 <img src="../../../figures/multi_sample_pack_fine_tuning/zigzag_attn_mask.png" width="20%"/>
 
@@ -20,7 +20,7 @@
 
 ## 使用说明
 
-本章节以[Qwen3-32B Pack微调脚本](../../../../../../examples/mcore/qwen3/tune_qwen3_32b_32K_full_pack_A3_ptd.sh)使用Alpaca数据集微调为例，介绍多样本Pack微调方法，**更多模型支持Pack模式，请参考example目录使用**。
+本章节以[Qwen3-32B Pack微调脚本](../../../../../../examples/mcore/qwen3/tune_qwen3_32b_32K_full_pack_A3_ptd.sh)使用 Alpaca 数据集微调为例，介绍多样本 Pack 微调方法，**更多模型支持 Pack 模式，请参考 examples 目录使用**。
 
 多样本Pack微调主要包含以下流程：
 
@@ -50,7 +50,7 @@
     - `--prompt-type`：用于指定模型模板，能够让base模型微调后能具备更好的对话能力。`prompt-type`的可选项可以在[templates.json](../../../../../../configs/finetune/templates.json)文件内查看。
     - `--reset-attention-mask`：启用该参数时，将根据EOD计算句子的分隔位置，生成`actual_seq_len`，并将其传入FA算子，实现类似锯齿状的mask计算效果，FA算子随后进行TND格式的计算。
     - `--neat-pack`：是Pack场景下使用锯齿状的`attention_mask`参与计算的开关，其作用是利用数据集处理阶段生成的`attention_mask`生成对应的`actual_seq_len`。
-    - `--padded-samples` 【可选参数】：将样本总数凑成`batch-size`的整数倍。
+    - `--padded-samples`【可选参数】：将样本总数凑成`batch-size`的整数倍。
     - `--no-shuffle`【可选参数】：数据顺序加载。
 
 3. 启动微调
@@ -61,7 +61,7 @@
     ```
 
 > [!NOTE]
-> [Qwen3-32B Pack微调脚本](../../../../../../examples/mcore/qwen3/tune_qwen3_32b_32K_full_pack_A3_ptd.sh)支持数据/权重在线加载训练，即集成了数据预处理、权重转换和训练于一体，单脚本即可启动训练任务。若需该功能更多详情可参见[数据/权重在线加载训练](../../pretrain/mcore/train_from_hf.md)。
+> [Qwen3-32B Pack微调脚本](../../../../../../examples/mcore/qwen3/tune_qwen3_32b_32K_full_pack_A3_ptd.sh)支持数据/权重在线加载训练，即集成了数据预处理、权重转换和训练于一体，单脚本即可启动训练任务。若需了解该功能的更多详情可参见[数据/权重在线加载训练](../../pretrain/mcore/train_from_hf.md)。
 >
 > - 权重转换合一训练：实现HuggingFace权重到Megatron格式的双向自动转换与训练合一，用户无需单独执行权重转换步骤，实现从HuggingFace权重到训练任务的一键式集成。
 > - 自动转换原始数据：数据预处理功能在模型训练时自动识别并转换原始数据文件，无需用户手动执行原始数据转换。系统将根据输入路径自动判断是否为原始数据格式（如`.jsonl`、`.parquet`等），并在训练初始化阶段自动完成数据格式转换。
