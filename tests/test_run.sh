@@ -92,7 +92,7 @@ if [[ "$HAS_TYPE_FLAG" == false ]]; then
     RUN_ST=true
     RUN_UT=true
 fi
-GENERATE_LOG_BASE_DIR="/$(echo "$BASE_DIR" | cut -d'/' -f2)/pipeline_log_v2"
+GENERATE_LOG_BASE_DIR="/home/pipeline_log"
 GENERATE_LOG_DIR="$GENERATE_LOG_BASE_DIR/$CURRENT_TIME"
 
 PIPELINE_DIR="$BASE_DIR/pipeline"
