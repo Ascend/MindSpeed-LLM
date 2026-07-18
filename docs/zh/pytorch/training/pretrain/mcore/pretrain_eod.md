@@ -46,7 +46,7 @@
 
     数据预处理相关参数说明:
 
-    - `input`：可以直接输入到数据集目录或具体文件，如果是目录，则处理全部文件, 支持`.parquet`，`.csv`，`.json`，`.jsonl`，`.txt`，`.arrow`格式， 同一个文件夹下的数据格式需要保持一致。
+    - `input`：可以直接输入到数据集目录或具体文件，如果是目录，则处理全部文件，支持`.parquet`、`.csv`、`.json`、`.jsonl`、`.txt`、`.arrow`格式，同一个文件夹下的数据格式需要保持一致。
     - `handler-name`：当前预训练默认使用 `GeneralPretrainHandler`，支持的是预训练数据风格，提取数据的`text`列，格式如下：
 
         ```shell
@@ -62,7 +62,7 @@
         --json-keys text input output
         ```
 
-    - `n-subs`：数据预处理并行加速参数。当需要预处理的数据集比较大时，可以通过并行处理进行加速，方法为设置参数`--n-subs`，通过该参数设置并行处理数量。在数据预处理过程会将原始数据集切分为`n-subs`个子集，对子集进行并行处理，然后合并，从而实现加速。建议预处理数据集超过GB级别时加上该参数。
+    - `n-subs`：数据预处理并行加速参数。当需要预处理的数据集比较大时，可以通过并行处理进行加速，方法为设置参数`--n-subs`，通过该参数设置并行处理数量。在数据预处理过程中会将原始数据集切分为`n-subs`个子集，对子集进行并行处理，然后合并，从而实现加速。建议预处理数据集超过GB级别时加上该参数。
     - `append-eod`：该参数的作用是将文档结束标记`EOD`显式地添加到每条数据的末尾，防止模型学习无意义的关联。该参数使能后的效果如下：
 
         ![append-eod示意图](../../../figures/pretrain/append-eod.png)
@@ -116,7 +116,7 @@
 
     以上通用配置完成后，要开启Pack模式训练，需要在[Qwen3-8B预训练脚本](../../../../../../examples/mcore/qwen3/pretrain_qwen3_8b_4K_ptd.sh)基础上，加上`--reset-attention-mask`参数。该参数开启时，会按照EOD计算句子的分隔位置，生成actual_seq_len，传入FA算子中相当于锯齿状的mask计算效果。该参数的使能效果如下图所示：
 
-    ![reset-position-ids图示0](../../../figures/pretrain/reset-position-ids.png)
+    ![reset-position-ids图示](../../../figures/pretrain/reset-position-ids.png)
 
     另外，使用`--attention-mask-type`需要注意：默认是causal，支持causal和general格式。
     1. `--attention-mask-type`是general，attention-mask会从数据获取生成。

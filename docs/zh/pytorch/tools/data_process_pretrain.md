@@ -34,10 +34,10 @@ python ./preprocess_data.py \
     --output-prefix ./dataset/alpaca_llama2_7b \
     --json-keys text \
     --workers 4 \
-    --log-interval 1000  
+    --log-interval 1000
 ```
 
-MindSpeed-LLM预训练数据集处理脚本命名风格及启动方法为:
+MindSpeed-LLM预训练数据集处理脚本命名风格及启动方法为：
 
 ```shell
 # 命名及启动：examples/mcore/model_name/data_convert_xxx_pretrain.sh
@@ -48,7 +48,7 @@ bash examples/mcore/llama2/data_convert_llama2_pretrain.sh
 
 【--input】
 
-可以直接输入到数据集目录或具体文件，如果是目录，则处理全部文件, 支持.parquet/.csv/.json/.jsonl/.txt/.arrow格式， 同一个文件夹下的数据格式需要保持一致 
+可以直接输入到数据集目录或具体文件，如果是目录，则处理全部文件，支持.parquet/.csv/.json/.jsonl/.txt/.arrow格式，同一个文件夹下的数据格式需要保持一致
 
 【--tokenizer-type】
 
@@ -73,7 +73,7 @@ bash examples/mcore/llama2/data_convert_llama2_pretrain.sh
 ]
 ```
 
-用户可结合具体数据处理需求添加新的Handler进行数据处理 
+用户可结合具体数据处理需求添加新的Handler进行数据处理
 
 【--json-keys】
 
