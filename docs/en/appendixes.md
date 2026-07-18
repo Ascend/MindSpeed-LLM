@@ -31,6 +31,6 @@
 
 Based on the dense `GPT3-175B` LLM, we scaled the MFU and linearity experiments from 128 NPUs to 7,968 NPUs. The experimental data is shown below.
 
-<p align="center"> <img src="./pytorch/figures/readme/linearity&mfu.png" height="490px" width="715px"> </p>
+<p align="center"> <img src="https://raw.gitcode.com/Ascend/MindSpeed-LLM/raw/26.0.0/docs/en/pytorch/figures/readme/linearity&mfu.png" height="490px" width="715px"> </p>
 
 The figure shows the `MFU` values and the overall `linearity` of the cluster at the corresponding scale.
