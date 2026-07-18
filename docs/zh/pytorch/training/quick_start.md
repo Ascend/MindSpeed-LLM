@@ -131,7 +131,7 @@
 
     # 根据实际情况配置权重保存、权重加载、词表、数据集路径，多机中所有节点都要有如下数据
     CKPT_SAVE_DIR="./ckpt/qwen3-8b"                # 训练完成后的权重保存路径
-    DATA_PATH="./dataset/train-00000-of-00001-a09b74b3ef9c3b56.parquet"     # 数据集路径，填入下载的HuggingFace原数据的路径
+    DATA_PATH="./dataset/train-00000-of-00001-a09b74b3ef9c3b56.parquet"     # 数据集路径，填入下载的HuggingFace原始数据的路径
     TOKENIZER_PATH="./model_from_hf/qwen3_hf/"     # 词表路径，填入下载的开源权重词表路径
     CKPT_LOAD_DIR="./model_from_hf/qwen3_hf/"      # 权重加载路径，填入下载的HuggingFace权重的路径
     ```
@@ -188,7 +188,7 @@
     # 根据实际情况配置权重保存、权重加载、词表、数据集路径，多机中所有节点都要有如下数据
     CKPT_LOAD_DIR="./model_from_hf/qwen3_hf/"     # 指向下载的HuggingFace开源权重的位置
     CKPT_SAVE_DIR="./ckpt/qwen3-8b"               # 指向用户指定的微调后权重保存路径
-    DATA_PATH="./dataset/train-00000-of-00001-a09b74b3ef9c3b56.parquet"         # 指定获取的数据集原数据路径
+    DATA_PATH="./dataset/train-00000-of-00001-a09b74b3ef9c3b56.parquet"         # 指定获取的数据集原始数据路径
     TOKENIZER_PATH="./model_from_hf/qwen3_hf/"    # 指定模型的tokenizer路径
     ```
 
@@ -209,10 +209,10 @@
     |参数名|说明|
     |----|----|
     |`--finetune`|启动模型的微调模式。|
-    |`--stage`|训练方法。|
+    |`--stage`|训练方法，如 sft（监督微调）、dpo 等。|
     |`--is-instruction-dataset`|用于指定微调过程中采用指令微调数据集，以确保模型依据特定指令数据进行微调。|
     |`--prompt-type`|用于指定模型模板，能够让base模型微调后能具备更好的对话能力。可在[templates.json](../../../../configs/finetune/templates.json)文件内查看`prompt-type`的可选项。|
-    |`--no-pad-to-seq-lengths`|支持动态序列长度微调，默认按照8的倍数进行padding。|
+    |`--no-pad-to-seq-lengths`|关闭固定序列长度padding，支持动态序列长度微调，默认按照8的倍数进行padding。|
     |`--sequence-parallel`|开启序列并行。|
     |`--use-distributed-optimizer`|启用分布式优化器。|
     |`--use-flash-attn`|启用Flash Attention。|
