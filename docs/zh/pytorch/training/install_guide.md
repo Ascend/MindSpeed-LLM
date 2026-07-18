@@ -22,7 +22,7 @@
 > 本节表格中“√”代表支持，“x”代表不支持。
 
 - 各硬件产品对应物理机部署场景支持的操作系统请参考[兼容性查询助手](https://www.hiascend.com/hardware/compatibility)。
-- 各硬件产品对应虚拟机及容器部署场景支持的操作系统请参考《CANN 软件安装》的“[操作系统兼容性说明](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/900/softwareinst/instg/instg_0101.html?OS=openEuler&InstallType=netyum)”章节。
+- 各硬件产品对应虚拟机及容器部署场景支持的操作系统请参考《CANN 软件安装》的“操作系统兼容性说明”章节<!--[操作系统兼容性说明](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/900/softwareinst/instg/instg_0101.html?OS=openEuler&InstallType=netyum)-->。
 
 ## 安装前准备
 
@@ -144,7 +144,7 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
 
 2. 安装CANN
 
-   安装配套版本的NPU驱动固件、CANN软件（Toolkit、ops和NNAL）并配置CANN环境变量，具体请参考《[CANN 软件安装](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/900/softwareinst/instg/instg_0000.html)》。
+   安装配套版本的NPU驱动固件、CANN软件（Toolkit、ops和NNAL）并配置CANN环境变量，具体请参考《CANN 软件安装》<!--《[CANN 软件安装](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/900/softwareinst/instg/instg_0000.html)》-->。
 
    CANN软件提供进程级环境变量设置脚本，训练或推理场景下使用NPU执行业务代码前需要调用该脚本，否则业务代码将无法执行。
 
@@ -162,11 +162,11 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
 
    以上命令以CANN离线安装场景未指定安装路径为例，给出了不同用户的默认安装路径及对应的配置环境变量的命令。
 
-   若用户指定安装路径或使用其他安装方式，请参考《[CANN 软件安装](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/900/softwareinst/instg/instg_0000.html)》查阅对应的配置环境变量的命令。
+   若用户指定安装路径或使用其他安装方式，请参考《CANN 软件安装》<!--《[CANN 软件安装](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/900/softwareinst/instg/instg_0000.html)》-->查阅对应的配置环境变量的命令。
 
 3. 安装PyTorch以及TorchNPU
 
-   请参考《TorchNPU软件安装》中的“[安装PyTorch](https://www.hiascend.com/document/detail/zh/Pytorch/2600/configandinstg/instg/docs/zh/installation_guide/installation_via_binary_package.md)”章节，获取配套版本的PyTorch以及TorchNPU软件包。
+   请参考《TorchNPU软件安装》中的“[安装TorchNPU](https://www.hiascend.com/document/detail/zh/Pytorch/2600/configandinstg/instg/docs/zh/installation_guide/installation_via_binary_package.md)”章节，获取配套版本的PyTorch以及TorchNPU软件包。
 
    可参考如下安装命令：
 
