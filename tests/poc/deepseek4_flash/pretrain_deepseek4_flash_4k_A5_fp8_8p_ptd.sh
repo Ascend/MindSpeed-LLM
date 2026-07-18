@@ -1,16 +1,18 @@
 #!/bin/bash
-
 export HCCL_CONNECT_TIMEOUT=7200
 export HCCL_EXEC_TIMEOUT=7200
 export ACL_DEVICE_SYNC_TIMEOUT=7200
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
-export TASK_QUEUE_ENABLE=1
-export CPU_AFFINITY_CONF=1
-export HCCL_ALGO="alltoall=level0:NA;level1:pipeline"
+
+export TASK_QUEUE_ENABLE=2
+export CPU_AFFINITY_CONF=1,npu0:192-215,npu1:216-239,npu2:0-23,npu3:24-47,npu4:48-71,npu5:72-95,npu6:240-263,npu7:264-287
+
+export HCCL_BUFFSIZE=300
+export HCCL_ALG_MULTIPLE_DIMENSION_SPLIT_RATIO=0.75
 
 NPUS_PER_NODE=8
-MASTER_ADDR=localhost #主节点IP
+MASTER_ADDR=localhost
 MASTER_PORT=6000
 NNODES=1
 NODE_RANK=0
@@ -21,10 +23,6 @@ DATA_PATH="your data path"
 TOKENIZER_PATH="your tokenizer path"
 CKPT_LOAD_DIR="your model ckpt path"
 
-SAVE_DIR=../profiles/A3_dsv4_ep8_gbs16_nomtp
-
-mkdir $SAVE_DIR
-
 TP=1
 PP=1
 EP=8
@@ -33,7 +31,7 @@ CP_TYPE='ulysses_cp_algo'
 NUM_LAYERS=4
 SEQ_LEN=4096
 MBS=1
-GBS=16
+GBS=64
 
 DISTRIBUTED_ARGS="
     --nproc_per_node $NPUS_PER_NODE \
@@ -52,9 +50,9 @@ DSA_ARGS="
     --hc-mult 4 \
     --kv-compress \
     --norm-eps 1e-6 \
-    --use-triton-sinkhorn \
-    --use-triton-mhc \
-    --use-triton-rmsnorm-without-weight \
+    --use-sparse-flash-attn \
+    --use-fused-lightning-indexer-loss \
+    --use-fused-lightning-indexer \
 "
 
 MLA_ARGS="
@@ -75,8 +73,8 @@ CA_ARGS="
     --g2-window-size 128 \
     --rope-head-dim 64 \
     --original-seq-len 65536 \
-    --rope-factor 4 \
-    --compress-rope-theta 40000.0 \
+    --rope-factor 16 \
+    --compress-rope-theta 160000.0 \
     --max-batch-size 4 \
     --compress-ratios 0 0 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 \
     --use-g2-indexer-loss \
@@ -88,7 +86,7 @@ MOE_ARGS="
     --moe-token-dispatcher-type alltoall \
     --moe-layer-freq 1 \
     --first-k-dense-replace -1 \
-    --num-experts 256 \
+    --num-experts 128 \
     --moe-router-topk 6 \
     --moe-ffn-hidden-size 2048 \
     --moe-router-load-balancing-type none \
@@ -102,7 +100,6 @@ MOE_ARGS="
     --moe-shared-expert-intermediate-size 2048 \
     --moe-router-dtype fp32 \
     --n-hash-layers 3 \
-    --moe-permute-fusion \
     --fix-router
 "
 
@@ -116,7 +113,6 @@ MEM_ARGS="
     --recompute-granularity full \
     --recompute-method uniform \
     --recompute-num-layers 1 \
-    --swap-optimizer \
 "
 
 ROPE_ARGS="
@@ -130,7 +126,8 @@ ROPE_ARGS="
 "
 
 GPT_ARGS="
-    --transformer-impl local \
+    --disable-gloo-group \
+    --transformer-impl transformer_engine \
     --spec mindspeed_llm.tasks.models.spec.deepseek4_spec layer_spec \
     --mtp-spec mindspeed_llm.tasks.models.spec.deepseek4_spec mtp_spec \
     --manual-gc \
@@ -156,7 +153,7 @@ GPT_ARGS="
     --micro-batch-size ${MBS} \
     --global-batch-size ${GBS} \
     --make-vocab-size-divisible-by 1 \
-    --lr 1.0e-5 \
+    --lr 1.0e-6 \
     --train-iters 2000 \
     --lr-decay-style cosine \
     --untie-embeddings-and-output-weights \
@@ -190,6 +187,7 @@ GPT_ARGS="
     --distributed-timeout-minutes 120 \
     --no-shared-storage \
     --no-gradient-accumulation-fusion \
+    --ckpt-format torch \
 "
 
 DATA_ARGS="
@@ -206,6 +204,12 @@ OUTPUT_ARGS="
     --no-save-rng \
 "
 
+FP8="
+    --fp8-reuse-quantized-weight \
+    --fp8-format e4m3 \
+    --fp8-recipe mxfp8
+"
+
 python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_deepseek4.py \
     $GPT_ARGS \
     $DATA_ARGS \
@@ -217,4 +221,7 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_deepseek4.py \
     $CA_ARGS \
     $MEM_ARGS \
     $MTP_ARGS \
-    --distributed-backend nccl 2>&1 | tee logs/pretrain_deepseek4_flash_4k_A5_ptd.log
+    $FP8 \
+    --load ${CKPT_LOAD_DIR} \
+    --save ${CKPT_SAVE_DIR} \
+    --distributed-backend nccl 2>&1 | tee logs/pretrain_deepseek4_flash_4k_fp8_ptd.log
