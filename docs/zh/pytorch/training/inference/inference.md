@@ -2,7 +2,7 @@
 
 ## 使用效果
 
-- Chatglm3-6b-Base流式推理效果
+- ChatGLM3-6b-Base流式推理效果
 
     ```shell
     Instruction: "how are you?"
@@ -14,7 +14,7 @@
                 Is there something specific you would like to know?"
     ```
 
-- Lama3.1-8b-Instruct流式推理效果
+- Llama3.1-8b-Instruct流式推理效果
 
     ```shell
     Instruction: "how are you?"

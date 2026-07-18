@@ -33,15 +33,15 @@ TOKENIZER_PATH="./model_from_hf/llama-2-7b-hf-chat/"
 TOKENIZER_MODEL="./model_from_hf/llama-2-7b-hf-chat/tokenizer.model"
 ```
 
-【--tokenizer-type】
+【--tokenizer-name-or-path】与【--tokenizer-model】
 
 参数值为PretrainedFromHF时， 词表路径仅需要填到模型文件夹即可，不需要到tokenizer.model文件
 
 **示例：**
 
 ```shell
-    TOKENIZER_PATH="./model_from_hf/llama-2-hf/"
-    --tokenizer-name-or-path ${TOKENIZER_PATH}
+TOKENIZER_PATH="./model_from_hf/llama-2-hf/"
+--tokenizer-name-or-path ${TOKENIZER_PATH}
 ```
 
 参数值不为PretrainedFromHF时，例如Llama2Tokenizer，需要指定到tokenizer.model文件
@@ -49,8 +49,8 @@ TOKENIZER_MODEL="./model_from_hf/llama-2-7b-hf-chat/tokenizer.model"
 **示例：**
 
 ```shell
-    TOKENIZER_MODEL="./model_from_hf/llama-2-hf/tokenizer.model"
-    --tokenizer-model ${TOKENIZER_MODEL} \
+TOKENIZER_MODEL="./model_from_hf/llama-2-hf/tokenizer.model"
+--tokenizer-model ${TOKENIZER_MODEL}
 ```
 
 #### 运行脚本
