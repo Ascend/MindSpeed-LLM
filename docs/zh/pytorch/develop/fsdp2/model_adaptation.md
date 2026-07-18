@@ -46,7 +46,7 @@ GPT-OSS在MindSpeed LLM中使用第二种路径：先基于Transformers原生实
 
 | 名称 | 链接 | 用途 |
 | --- | --- | --- |
-| Alpaca parquet文件 | [https://huggingface.co/datasets/tatsu-lab/alpaca/resolve/main/data/train-00000-of-00001-a09b74b3ef9c3b56.parquet](https://huggingface.co/datasets/tatsu-lab/alpaca/resolve/main/data/train-00000-of-00001-a09b74b3ef9c3b56.parquet) | 可直接下载到本地作为示例数据。 |
+| Alpaca parquet文件 | [Alpaca train-00000 parquet（HuggingFace）](https://huggingface.co/datasets/tatsu-lab/alpaca/resolve/main/data/train-00000-of-00001-a09b74b3ef9c3b56.parquet) | 可直接下载到本地作为示例数据。 |
 
 下载 parquet 文件：
 
@@ -346,7 +346,7 @@ optimization:
 
 ### 修改启动脚本
 
-确认 预训练脚本`examples/fsdp2/gpt_oss/pretrain_gpt_oss_20b_4k_fsdp2_A3.sh`中的机器配置符合实际环境：
+确认预训练脚本`examples/fsdp2/gpt_oss/pretrain_gpt_oss_20b_4k_fsdp2_A3.sh`中的机器配置符合实际环境：
 
 ```bash
 NPUS_PER_NODE=16
@@ -361,6 +361,10 @@ NODE_RANK=0
 建议将模型权重路径、数据路径、模型切分和调试步数等随机器或任务变化较多的参数放在sh脚本中覆盖YAML 默认值，避免频繁修改同一个YAML。点分参数会覆盖YAML中的同名字段，例如：
 
 ```bash
+DISTRIBUTED_ARGS="--nproc_per_node 16 --nnodes 1 --node_rank 0 --master_addr localhost --master_port 6499"
+TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+mkdir -p logs
+
 torchrun $DISTRIBUTED_ARGS train_fsdp2.py \
   examples/fsdp2/gpt_oss/pretrain_gpt_oss_20b_4k_fsdp2_A3.yaml \
   --model.model_name_or_path /home/data/gpt-oss-20b-hf/ \
