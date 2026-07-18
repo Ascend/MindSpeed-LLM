@@ -119,8 +119,8 @@
     TOKENIZER_PATH="your tokenizer path"      # 词表路径，填入下载的开源权重词表路径
     CKPT_LOAD_DIR="your model ckpt path"      # 权重加载路径，填入权重转换时保存的权重路径
 
-    TP=1 # 模型权重转换的tp大小，在本例中是1
-    PP=4 # 模型权重转换的pp大小，在本例中是4
+    TP=1 # 模型切分的tp大小，在本例中是1
+    PP=4 # 模型切分的pp大小，在本例中是4
     ```
 
     脚本内的其他参数说明:
