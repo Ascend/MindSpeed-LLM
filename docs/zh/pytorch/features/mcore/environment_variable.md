@@ -16,7 +16,7 @@
 | NPUS_PER_NODE | 配置一个计算节点上使用的NPU数量。| 
 | [HCCL_SOCKET_IFNAME](https://www.hiascend.com/document/detail/zh/canncommercial/900/maintenref/envvar/envref_07_0075.html) | 指定HCCL Socket通讯走的网卡配置。|
 | GLOO_SOCKET_IFNAME | 指定Gloo Socket通讯走的网卡配置。| 
-| [HCCL_LOGIC_SUPERPOD_ID](https://www.hiascend.com/document/detail/zh/canncommercial/900/maintenref/envvar/envref_07_0100.html) | 指定当前设备的逻辑超节点ID，如果走ROCE，不同多机超节点ID不同，0-N。|
+| [HCCL_LOGIC_SUPERPOD_ID](https://www.hiascend.com/document/detail/zh/canncommercial/900/maintenref/envvar/envref_07_0100.html) | 指定当前设备的逻辑超节点ID，如果走ROCE，不同多机超节点ID不同，0～N。|
 | [CPU_AFFINITY_CONF](https://www.hiascend.com/document/detail/zh/Pytorch/2600/comref/Envvariables/docs/zh/environment_variable_reference/CPU_AFFINITY_CONF.md) | 开启粗/细粒度绑核。该配置能够避免线程间抢占，提高缓存命中，避免跨NUMA节点的内存访问，减少任务调度开销，优化任务执行效率。|
 | [NPU_ASD_ENABLE](https://www.hiascend.com/document/detail/zh/Pytorch/2600/comref/Envvariables/docs/zh/environment_variable_reference/NPU_ASD_ENABLE.md) | 0：关闭检测功能；<br>1：开启特征值检测功能，打印异常日志，不告警；<br>2：开启，并告警；<br>3：开启，告警，并在Device侧info级别日志中记录过程数据。|
-| [HCCL_ASYNC_ERROR_HANDLING](https://www.hiascend.com/document/detail/zh/Pytorch/2600/comref/Envvariables/docs/zh/environment_variable_reference/HCCL_ASYNC_ERROR_HANDLING.md) | 当使用HCCL作为通信后端时，通过此环境变量可控制是否开启异步错误处理，默认值为1 。<br>0：不开启异步错误处理；<br>1：开启异步错误处理。|
+| [HCCL_ASYNC_ERROR_HANDLING](https://www.hiascend.com/document/detail/zh/Pytorch/2600/comref/Envvariables/docs/zh/environment_variable_reference/HCCL_ASYNC_ERROR_HANDLING.md) | 当使用HCCL作为通信后端时，通过此环境变量可控制是否开启异步错误处理，默认值为1。<br>0：不开启异步错误处理；<br>1：开启异步错误处理。|
