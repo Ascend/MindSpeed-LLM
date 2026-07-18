@@ -78,11 +78,11 @@ The following table shows support for the key acceleration features of MindSpeed
 <tbody>
   <tr>
     <td rowspan="6">SPTD parallelism</td>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/tensor-parallel.md">Tensor parallelism</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/tensor-parallel.md">Tensor parallelism</a></td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/pipeline-parallel.md">Pipeline parallelism</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/pipeline-parallel.md">Pipeline parallelism</a></td>
     <td>✅</td>
   </tr>
   <tr>
@@ -90,15 +90,15 @@ The following table shows support for the key acceleration features of MindSpeed
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/sequence-parallel.md">Sequence parallelism</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/sequence-parallel.md">Sequence parallelism</a></td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/noop-layers.md">Noop Layers</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/noop-layers.md">Noop Layers</a></td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/custom_fsdp.md">Fully sharded parallelism</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/custom_fsdp.md">Fully sharded parallelism</a></td>
     <td>Does not currently support enabling `pp` or the `--reuse-fp32-param` parameter.</td>
   </tr>
   <tr>
@@ -107,7 +107,7 @@ The following table shows support for the key acceleration features of MindSpeed
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/ulysses-context-parallel.md">Ulysses long-sequence parallelism</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/ulysses-context-parallel.md">Ulysses long-sequence parallelism</a></td>
     <td>✅</td>
   </tr>
   <tr>
@@ -116,16 +116,16 @@ The following table shows support for the key acceleration features of MindSpeed
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/megatron_moe/megatron-moe-allgather-dispatcher.md">MOE dispatch communication optimization</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/megatron_moe/megatron-moe-allgather-dispatcher.md">MOE dispatch communication optimization</a></td>
     <td>Only `alltoall` is supported.</td>
   </tr>
   <tr>
     <td rowspan="5">Memory optimization</td>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/reuse-fp32-param.md">Parameter copy reuse</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/reuse-fp32-param.md">Parameter copy reuse</a></td>
     <td>Must be used together with the distributed optimizer feature.</td>
   </tr>
     <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/distributed-optimizer.md">Distributed optimizer</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/distributed-optimizer.md">Distributed optimizer</a></td>
     <td>✅</td>
   </tr>
   <tr>
@@ -133,16 +133,16 @@ The following table shows support for the key acceleration features of MindSpeed
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/norm-recompute.md">Norm recomputation</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/norm-recompute.md">Norm recomputation</a></td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/virtual-optimizer.md">Virtual Optimizer</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/virtual-optimizer.md">Virtual Optimizer</a></td>
     <td>✅</td>
   </tr>
   <tr>
     <td rowspan="7">Fused operators</td>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/flash-attention.md">Flash attention</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/flash-attention.md">Flash attention</a></td>
     <td>✅</td>
   </tr>
   <tr>
@@ -150,32 +150,32 @@ The following table shows support for the key acceleration features of MindSpeed
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/rms_norm.md">Fused RMSNorm</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/rms_norm.md">Fused RMSNorm</a></td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/swiglu.md">Fused SwiGLU</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/swiglu.md">Fused SwiGLU</a></td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/rotary-embedding.md">Fused rotary position embedding</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/rotary-embedding.md">Fused rotary position embedding</a></td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/megatron_moe/megatron-moe-gmm.md">GMM</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/megatron_moe/megatron-moe-gmm.md">GMM</a></td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/npu_matmul_add.md">Matmul Add</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/npu_matmul_add.md">Matmul Add</a></td>
     <td>✅</td>
   </tr>
   <tr>
     <td rowspan="3">Communication optimization</td>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/async-ddp-param-gather.md">Gradient reduce communication overlap</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/async-ddp-param-gather.md">Gradient reduce communication overlap</a></td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/zh/features/async-ddp-param-gather.md">Weight all-gather communication overlap</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/async-ddp-param-gather.md">Weight all-gather communication overlap</a></td>
     <td>✅</td>
   </tr>
   <tr>

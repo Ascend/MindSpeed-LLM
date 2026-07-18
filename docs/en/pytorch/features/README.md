@@ -81,13 +81,13 @@ The measured pretraining performance of MindSpeed LLM is as follows.
 <tbody>
   <tr>
     <td rowspan="5">SPTD Parallelism</td>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/tensor-parallel.md">Tensor Parallelism</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/tensor-parallel.md">Tensor Parallelism</a></td>
     <td>✅</td>
     <td>✅</td>
     <td rowspan="29">【Ascend】</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/pipeline-parallel.md">Pipeline Parallelism</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/pipeline-parallel.md">Pipeline Parallelism</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
@@ -97,12 +97,12 @@ The measured pretraining performance of MindSpeed LLM is as follows.
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/sequence-parallel.md">Sequence Parallelism</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/sequence-parallel.md">Sequence Parallelism</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/noop-layers.md">noop layers</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/noop-layers.md">noop layers</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
@@ -113,12 +113,12 @@ The measured pretraining performance of MindSpeed LLM is as follows.
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/ulysses-context-parallel.md">Ulysses Long-Sequence Parallelism</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/ulysses-context-parallel.md">Ulysses Long-Sequence Parallelism</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/hybrid-context-parallel.md">Hybrid Long-Sequence Parallelism</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/hybrid-context-parallel.md">Hybrid Long-Sequence Parallelism</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
@@ -129,23 +129,23 @@ The measured pretraining performance of MindSpeed LLM is as follows.
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/megatron_moe/megatron-moe-allgather-dispatcher.md">MoE Reordering Communication Optimization</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/megatron_moe/megatron-moe-allgather-dispatcher.md">MoE Reordering Communication Optimization</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
   <tr>
     <td rowspan="6">Memory Optimization</td>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/reuse-fp32-param.md">Parameter Replica Reuse</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/reuse-fp32-param.md">Parameter Replica Reuse</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
     <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/distributed-optimizer.md">Distributed Optimizer</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/distributed-optimizer.md">Distributed Optimizer</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/swap_attention.md">Swap Attention</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/swap_attention.md">Swap Attention</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
@@ -155,7 +155,7 @@ The measured pretraining performance of MindSpeed LLM is as follows.
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/norm-recompute.md">Norm Recompute</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/norm-recompute.md">Norm Recompute</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
@@ -166,7 +166,7 @@ The measured pretraining performance of MindSpeed LLM is as follows.
   </tr>
   <tr>
     <td rowspan="7">Fused Operators</td>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/flash-attention.md">Flash Attention</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/flash-attention.md">Flash Attention</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
@@ -176,43 +176,43 @@ The measured pretraining performance of MindSpeed LLM is as follows.
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/rms_norm.md">Fused RMSNorm</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/rms_norm.md">Fused RMSNorm</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/swiglu.md">Fused SwiGLU</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/swiglu.md">Fused SwiGLU</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/rotary-embedding.md">Fused Rotary Position Embedding</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/rotary-embedding.md">Fused Rotary Position Embedding</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/megatron_moe/megatron-moe-gmm.md">GMM</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/megatron_moe/megatron-moe-gmm.md">GMM</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/npu_matmul_add.md">Matmul Add</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/npu_matmul_add.md">Matmul Add</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
   <tr>
     <td rowspan="6">Communication Optimization</td>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/async-ddp-param-gather.md">Gradient Reduce Communication Overlap</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/async-ddp-param-gather.md">Gradient Reduce Communication Overlap</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/recompute_independent_pipelining.md">Recompute in Advance</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/recompute_independent_pipelining.md">Recompute in Advance</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/async-ddp-param-gather.md">Weight All-Gather Communication Overlap</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/async-ddp-param-gather.md">Weight All-Gather Communication Overlap</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
@@ -227,7 +227,7 @@ The measured pretraining performance of MindSpeed LLM is as follows.
     <td>❌</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/hccl-replace-gloo.md">Ascend Gloo Archive-to-Drive Optimization</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/hccl-replace-gloo.md">Ascend Gloo Archive-to-Drive Optimization</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>

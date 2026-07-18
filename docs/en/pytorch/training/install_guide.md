@@ -20,8 +20,8 @@ This document explains how to quickly install MindSpeed LLM, the PyTorch-based d
 >
 > The "√" in the table indicates support, and "x" indicates no support.
 
-- For the OSs supported by each hardware product in physical machine deployment scenarios, see the [Compatibility Query Assistant](https://www.hiascend.com/hardware/compatibility).
-- For the OSs supported by each hardware product in VM and container deployment scenarios, see [OS Compatibility](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/900/softwareinst/instg/instg_0101.html?OS=openEuler&InstallType=netyum) in CANN Software Installation for the community edition.
+<!--- For the OSs supported by each hardware product in physical machine deployment scenarios, see the [Compatibility Query Assistant](https://www.hiascend.com/hardware/compatibility).
+- For the OSs supported by each hardware product in VM and container deployment scenarios, see [OS Compatibility](https://www.hiascend.com/document/detail/en/CANNCommunityEdition/900/softwareinst/instg/instg_0101.html?OS=openEuler&InstallType=netyum) in CANN Software Installation for the community edition.-->
 
 ## Preparation before Installation
 
@@ -139,7 +139,7 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
 
 1. Install CANN.
 
-   Install the matching versions of the NPU driver and firmware, and install the CANN software, including the Toolkit, ops, and NNAL packages, and configure the CANN environment variables. For details, see [CANN Software Installation](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/900/softwareinst/instg/instg_0000.html) for the community edition.
+   Install the matching versions of the NPU driver and firmware, and install the CANN software, including the Toolkit, ops, and NNAL packages, and configure the CANN environment variables. For details, see [CANN Software Installation](https://www.hiascend.com/document/detail/en/CANNCommunityEdition/900/softwareinst/instg/instg_0000.html) for the community edition.
 
    CANN software provides a script for setting process-level environment variables. Before you run application code with NPU acceleration in training or inference scenarios, you must call this script. Otherwise, the application code cannot run.
 
@@ -152,7 +152,7 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
 
 2. Install PyTorch and `torch_npu`.
 
-   Refer to the "[Install PyTorch](https://www.hiascend.com/document/detail/zh/Pytorch/2600/configandinstg/instg/docs/zh/installation_guide/installation_via_binary_package.md)" section in the Ascend Extension for PyTorch Installation Guide to obtain matching versions of the PyTorch and `torch_npu` packages.
+   Refer to the "[Installing PyTorch](https://www.hiascend.com/document/detail/en/Pytorch/2600/configandinstg/instg/docs/en/installation_guide/installation_via_binary_package.md)" section in the Ascend Extension for PyTorch Installation Guide to obtain matching versions of the PyTorch and `torch_npu` packages.
 
    You can use the following installation commands:
 

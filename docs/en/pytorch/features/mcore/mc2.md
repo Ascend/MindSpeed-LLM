@@ -25,7 +25,7 @@ On the Python script side, MC2 fuses the original sequential Matmul and All-Gath
 
 For details, see the [code implementation](https://gitcode.com/ascend/MindSpeed/blob/core_r0.8.0/mindspeed/core/tensor_parallel/ascend_turbo/mc2_linears_seq_parallel.py).
 
-For the MC2 operator interface, see the [`torch_npu.npu_mm_all_reduce_base` interface documentation](https://www.hiascend.com/document/detail/zh/Pytorch/60RC1/apiref/apilist/ptaoplist_000449.html).
+For the MC2 operator interface, see the [`torch_npu.npu_mm_all_reduce_base` interface documentation](https://www.hiascend.com/document/detail/en/Pytorch/2600/apiref/torchnpuCustomapi/docs/en/custom_APIs/torch_npu/torch_npu-npu_mm_all_reduce_base.md).
 
 ## Use Cases
 

@@ -72,11 +72,11 @@ MindSpeed LLM has not yet released a wheel package. Therefore, it does not provi
 
 ## Communication Security Hardening
 
-[Communication security hardening instructions](https://gitcode.com/Ascend/pytorch/blob/v2.7.1-26.0.0/docs/zh/SECURITYNOTE.md#%E9%80%9A%E4%BF%A1%E5%AE%89%E5%85%A8%E5%8A%A0%E5%9B%BA)
+[Communication security hardening instructions](https://gitcode.com/Ascend/pytorch/blob/v2.7.1-26.0.0/docs/en/SECURITYNOTE.md#communication-security-hardening)
 
 ## Communication Matrix
 
-[Communication matrix instructions](https://gitcode.com/Ascend/pytorch/blob/v2.7.1-26.0.0/docs/zh/SECURITYNOTE.md#%E9%80%9A%E4%BF%A1%E7%9F%A9%E9%98%B5)
+[Communication matrix instructions](https://gitcode.com/Ascend/pytorch/blob/v2.7.1-26.0.0/docs/en/SECURITYNOTE.md#communication-matrix)
 
 ### Special Scenarios
 

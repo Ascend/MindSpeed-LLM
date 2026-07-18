@@ -164,4 +164,4 @@ The following briefly introduces the main interfaces of MindStudio Insight:
 > [!NOTE]
 >
 > - If you want to learn more about how to use the tool, refer to the [MindStudio Insight system tuning](https://gitcode.com/Ascend/msinsight/blob/26.0.0/docs/en/user_guide/system_tuning.md#basic-functions) section in the official MindStudio Insight documentation.
-> - If you need a more customized profiling collection method, refer to the "Performance Data Collection and Automatic Parsing" section in the [CANN Performance Tuning Tool User Guide](https://www.hiascend.com/document/detail/zh/canncommercial/900/devaids/Profiling/atlasprofiling_16_0033.html) to customize data collection and analysis by modifying the collection code.
+> - If you need a more customized profiling collection method, refer to the "Performance Data Collection and Automatic Parsing" section in the [CANN Performance Tuning Tool User Guide](https://www.hiascend.com/document/detail/en/CANNCommunityEdition/latest/devaids/Profiling/atlasprofiling_16_0033.html) to customize data collection and analysis by modifying the collection code.

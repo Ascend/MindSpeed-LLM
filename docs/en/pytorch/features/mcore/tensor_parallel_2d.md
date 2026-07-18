@@ -1,6 +1,6 @@
 # High-Dimensional Tensor Parallelism
 
-Refer to [High-Dimensional Tensor Parallelism](https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/tensor-parallel-2d.md) for an introduction to this feature.
+Refer to [High-Dimensional Tensor Parallelism](https://gitcode.com/Ascend/MindSpeed/blob/26.0.0_core_r0.12.1/docs/en/features/tensor-parallel-2d.md) for an introduction to this feature.
 
 ## Use Cases
 
