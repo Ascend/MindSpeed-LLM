@@ -170,17 +170,19 @@
 
 ### 使用示例
 
-以Qwen3-8B模型微调为例, 同时开启数据预处理和权重转换集成训练，则需要在[Qwen3-8B微调脚本](../../../../../../examples/mcore/qwen3/tune_qwen3_8b_4K_full_ptd.sh)基础上增加以下几个参数：
+以Qwen3-8B模型微调为例，同时开启数据预处理和权重转换集成训练，则需要在[Qwen3-8B微调脚本](../../../../../../examples/mcore/qwen3/tune_qwen3_8b_4K_full_ptd.sh)基础上增加以下几个参数：
 
 ```bash
 DATA_PATH="/path_your_dataset/xxx.parquet"
 CKPT_LOAD_DIR="/path_to_huggingface_model/Qwen3-8B"
---data-path $DATA_PATH \
---load $CKPT_LOAD_DIR \
---enable-hf2mg-convert \
---model-type-hf qwen3 \
---handler-name AlpacaStyleInstructionHandler \
---prompt-type qwen3 \
+
+bash examples/mcore/qwen3/tune_qwen3_8b_4K_full_ptd.sh \
+    --data-path "${DATA_PATH}" \
+    --load "${CKPT_LOAD_DIR}" \
+    --enable-hf2mg-convert \
+    --model-type-hf qwen3 \
+    --handler-name AlpacaStyleInstructionHandler \
+    --prompt-type qwen3
 ```
 
 ## 使用约束

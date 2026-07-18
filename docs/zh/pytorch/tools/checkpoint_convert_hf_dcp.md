@@ -18,7 +18,7 @@
 | `--load-dir` | str | 无（必填） | DCP权重所在目录，需包含有效的PyTorch分布式权重文件 |
 | `--save-dir` | str | `<load-dir>/hf_ckpt` | HuggingFace格式权重的输出目录 |
 | `--model-configs` | str | None | 模型配置文件目录，将被复制到输出目录 |
-| `--shard-size` | int | `5000000000`（5GB） | 单个权重分片文件的最大字节数 |
+| `--shard-size` | int | `5000000000`（5 GB） | 单个权重分片文件的最大字节数 |
 
 ### 2. 基本转换
 
@@ -64,7 +64,7 @@ python mindspeed_llm/fsdp2/checkpoint/merge_dcp_to_hf.py \
         --shard-size 2000000000
 ```
 
-上述示例将单个分片大小限制为 2GB，有助于降低转换过程中的内存峰值。
+上述示例将单个分片大小限制为 2 GB，有助于降低转换过程中的内存峰值。
 
 ## 输出说明
 

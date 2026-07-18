@@ -44,7 +44,7 @@
 
 - 拼接后输入示例：
 
-    ```json
+    ```text
     <bos> Instruction: 请将以下句子翻译成英文：我们正在开发一款新的人工智能助手。
     Response: We are developing a new AI assistant. <eos>
     Instruction: 请列出三个可再生能源的例子。
@@ -70,7 +70,7 @@
 
 - 构造的输入示例：
 
-    ```json
+    ```text
     <user>: 你好
     <assistant>: 你好，有什么我可以帮你的吗？
     <user>: 什么是强化学习？

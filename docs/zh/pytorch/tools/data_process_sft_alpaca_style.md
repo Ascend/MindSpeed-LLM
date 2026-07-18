@@ -44,7 +44,7 @@ python ./preprocess_data.py \
 
 【--input】
 
-可以直接输入到数据集目录或具体文件，如果是目录，则处理全部文件, 支持.parquet/.csv/.json/.jsonl/.txt/.arrow格式， 同一个文件夹下的数据格式需要保持一致 
+可以直接输入到数据集目录或具体文件，则处理全部文件，支持.parquet/.csv/.json/.jsonl/.txt/.arrow格式，同一个文件夹下的数据格式需要保持一致
 
 【--map-keys】
 
@@ -79,7 +79,7 @@ Alpaca风格示例：
 
 【--prompt-type】
 
-用于指定模型模板，能够让base模型微调后能具备更好的对话能力。`prompt-type`的可选项可以在[templates](../../../../mindspeed_llm/tasks/preprocess/templates.py)文件内查看。
+用于指定模型模板，能够让base模型微调后能具备更好的对话能力。`prompt-type`的可选项可以在[templates](../../../../configs/finetune/templates.json)文件内查看。
 
 【--handler-name】
 
@@ -99,7 +99,7 @@ Alpaca风格示例：
 --map-keys '{"history":"histories"}'
 ```
 
-则会提取数据集里的`"instruction"、"input"、"output"、"histories"`列，其中`"instruction"、"input"、"output"`列作为默认值隐式存在。 
+则会提取数据集里的`"instruction"、"input"、"output"、"histories"`列，其中`"instruction"、"input"、"output"`列作为默认值隐式存在。
 
 ### 启动脚本
 
