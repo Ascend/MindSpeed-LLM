@@ -26,18 +26,18 @@
 
 【--context-parallel-size】
 
-设置CP切分的并行数目，配置值要求能够被序列长度整除。
+设置 CP 切分的并行数目，序列长度要求能够被配置值整除。
 
 【--attention-mask-type】
 
-设置`--attention-mask-type`类型：默认是causal，支持causal和general格式。
+设置 `--attention-mask-type` 类型：默认是 causal，支持 causal 和 general 格式。
 
-1. `--attention-mask-type`是general，attention-mask会从数据获取生成。
-2. `--attention-mask-type`是causal，attention-mask会在FA前生成压缩固定长度(2048)的mask，性能和显存会比方案1更好，推荐使用。
+1. `--attention-mask-type` 为 general 时，attention mask 会从数据获取生成。
+2. `--attention-mask-type` 为 causal 时，attention mask 会在 FA 前生成压缩固定长度（2048）的 mask，性能和显存会比方案 1 更好，推荐使用。
 
 【--context-parallel-algo】
 
-通过传入指定参数，选择不同的cp算法，具体包含如下几种：
+通过传入指定参数，选择不同的 CP 算法，具体包含如下几种：
 
 1. [**megatron_cp_algo**](https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/ring-attention-context-parallel.md)
 2. [**ulysses_cp_algo**](https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/ulysses-context-parallel.md)
@@ -46,7 +46,7 @@
 ```shell
     --seq-length 131072
     --context-parallel-size 8
-    --context-parallel-algo megatron_cp_algo  # CP较小时(CP<=4），使用ulysses_cp_algo是性能不错的选择
+    --context-parallel-algo megatron_cp_algo  # CP 较小时(CP<=4), 使用 ulysses_cp_algo 是性能不错的选择
     --attention-mask-type general
 ```
 

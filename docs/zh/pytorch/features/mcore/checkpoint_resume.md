@@ -12,7 +12,7 @@
 
 为了支持断点续训，需在启动预训练脚本时正确设置相关参数，确保优化器状态、模型参数和训练进度均被完整保存，正确设置 `pretrain` 脚本参数。
 
- 关键参数说明
+关键参数说明：
 
 | 参数                            | 说明                             |
 |-------------------------------|--------------------------------|
@@ -21,7 +21,7 @@
 | `--no-load-optim`             | ❌ 不可设置，否则不会恢复优化器状态（如学习率、动量等）   |
 | `--no-load-rng`               | ❌ 不可设置，否则不会恢复随机状态              |
 
-> [!NOTE]  
+> [!NOTE]
 > 若设置了 `--finetune`、`--no-load-optim` 或 `--no-load-rng`，系统将不恢复优化器状态和随机状态，导致无法真正“续训”。
 
 ---
@@ -48,14 +48,14 @@
 /your/checkpoint/path/
 ├── latest_checkpointed_iteration.txt
 ├── iter_0000001/
-│   ├── mp_rank_00_000
-|   |    |—— distrib_optim.pt
-|   |    |—— model_optim_rng.pt
+│   ├── mp_rank_00_000/
+│   │   ├── distrib_optim.pt
+│   │   └── model_optim_rng.pt
 │   └── ...
 └── iter_0000500/
-    ├── mp_rank_00_000
-    |    |—— distrib_optim.pt
-    |    |—— model_optim_rng.pt
+    ├── mp_rank_00_000/
+    │   ├── distrib_optim.pt
+    │   └── model_optim_rng.pt
     └── ...
 ```
 
@@ -71,21 +71,18 @@
 
 ### 3. 加载权重恢复训练
 
-要从中断处继续训练，在预训练脚本中的启动命令中指定 `--load` 为之前的保存路径：
+要从中断处继续训练，在预训练脚本中的启动命令中指定 `--load` 为之前的保存路径。以下为参数片段，请将其合入完整预训练命令中：
 
-```bash
---use-distributed-optimizer \  # 使用分布式优化器（必选）
+```text
+CHECKPOINT_PATH=/your/checkpoint/path
 
-...
-
-torchrun ${DISTRIBUTED_ARGS} pretrain_gpt.py \
-    [其他参数...] \
-    --load $CHECKPOINT_PATH \
+--use-distributed-optimizer  # 使用分布式优化器（必选）
+--load ${CHECKPOINT_PATH}
 ```
 
 > 系统会自动读取 `latest_checkpointed_iteration.txt` 文件，找到最新的迭代步数，并恢复模型和优化器状态。
 
-### 4. 确认续训结果 
+### 4. 确认续训结果
 
 自动恢复内容包括
 
