@@ -1,8 +1,8 @@
-# 后训练方法DPO(直接偏好对齐)
+# 后训练方法DPO（直接偏好对齐）
 
 直接偏好优化（Direct Preference Optimization，DPO）是一种用于优化大型语言模型（LLMs）的训练方法，其目的是通过人类偏好数据来调整模型参数。与PPO等其他复杂的RLHF方法需要在训练过程中更新多个模型相比，DPO在训练过程中只需要对policy一个模型进行参数更新，训练效率更高。
 
-![](../../../figures/dpo/dpo_vs_rlhf.png)
+![DPO与RLHF流程对比](../../../figures/dpo/dpo_vs_rlhf.png)
 
 这里实现的是经典DPO算法，在训练过程中，不会使用policy-model进行推理并参与其权重更新，因此是offline的。
 
@@ -10,7 +10,7 @@
 
 ### 数据预处理
 
-dpo使用pairwise正负样本配对数据集，数据预处理命令如下：
+DPO使用pairwise正负样本配对数据集，数据预处理命令如下：
 
 ```shell
 python ./preprocess_data.py \
@@ -30,9 +30,9 @@ python ./preprocess_data.py \
 
 ### 训练参数
 
-dpo训练脚本参照：[dpo_qwen3_30b_a3b_16K_A3_ptd.sh](../../../../../../examples/mcore/qwen3_moe/dpo_qwen3_30b_a3b_16K_A3_ptd.sh)
+DPO训练脚本参照：[dpo_qwen3_30b_a3b_16K_A3_ptd.sh](../../../../../../examples/mcore/qwen3_moe/dpo_qwen3_30b_a3b_16K_A3_ptd.sh)
 
-相较于普通预训练，dpo需要增加以下几个参数：
+相较于普通预训练，DPO需要增加以下几个参数：
 
 - **`--stage`**
 
@@ -68,18 +68,18 @@ dpo训练脚本参照：[dpo_qwen3_30b_a3b_16K_A3_ptd.sh](../../../../../../exam
 
 ### DPO-LORA
 
-dpo同样支持lora微调，跟普通lora微调一样，加上lora微调相关参数即可：
+DPO同样支持LORA微调，跟普通LORA微调一样，加上LORA微调相关参数即可：
 
 - **`--lora-r`** 
   LoRA rank，表示低秩矩阵的维度。较低的 rank 值模型在训练时会使用更少的参数更新，从而减少计算量和内存消耗。
 - **`--lora-alpha`** 
-  控制 LoRA 权重对原始权重的影响比例, 数值越高则影响越大。一般保持 `α/r` 为 2。
+  控制 LoRA 权重对原始权重的影响比例，数值越高则影响越大。一般保持 `α/r` 为 2。
 
 - **`--lora-target-modules`** 
   选择需要添加 LoRA 的模块，mcore 模型可选模块： `linear_qkv`, `linear_proj`, `linear_fc1`, `linear_fc2` 
 
 - **`--lora-load`** 
-  lora权重路径
+  LoRA权重路径
 
 ## 参考文献
 
