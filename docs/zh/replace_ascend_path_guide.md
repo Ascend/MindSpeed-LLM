@@ -99,6 +99,7 @@ grep -r "/usr/local/Ascend/driver" . \
 --include='.rst' \
 --include='.py' \
 --include='.txt' \
+--include='Dockerfile' \
 --exclude='replace_ascend_path.py' \
 --exclude='replace_ascend_path_guide.md' \
 --exclude-dir='.git' \
@@ -166,6 +167,6 @@ usage: replace_ascend_path.py [-h] [--source SOURCE] [--target TARGET]
   --source SOURCE       源路径（默认：/usr/local/Ascend/driver）
   --target TARGET       目标路径（默认：/usr/local/npu/driver）
   --dir DIR             扫描目录（默认：当前目录 .）
-  --extensions EXT...   文件扩展名白名单（默认：.sh .md .rst .py .txt）
+  --extensions EXT...   文件扩展名白名单（默认：.sh .md .rst .py .txt + Dockerfile）
   --dry-run             仅预览变更，不修改文件
 ```

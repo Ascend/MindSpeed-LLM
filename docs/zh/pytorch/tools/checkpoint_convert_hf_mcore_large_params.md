@@ -6,7 +6,7 @@
 
 - [权重下载](#权重下载)
 
-  从Huggingface等网站下载开源模型权重，支持命令行和网页下载。
+  从HuggingFace等网站下载开源模型权重，支持命令行和网页下载。
 
 - [权重转换使用](#权重转换使用)
   - [HuggingFace权重转换至Megatron-Mcore](#huggingface权重转换至megatron-mcore格式)
@@ -19,7 +19,7 @@
 
   - [【调试功能】HuggingFace权重减层转换至Megatron-Mcore格式](#调试功能huggingface权重减层转换至megatron-mcore格式)
 
-    支持将Huggingface模型权重减层转换为Megatron-Mcore格式，支持多种并行切分。
+    支持将HuggingFace模型权重减层转换为Megatron-Mcore格式，支持多种并行切分。
 
 ## 权重转换介绍
 
@@ -27,7 +27,7 @@
 
 **权重互转**：能够在HuggingFace、Megatron-LM主流框架之间实现任意并行切分策略的权重格式互转。
 
-**训练并行策略权重转换**：支持多种训练并行策略之间的权重转换，包括张量并行（TP）、流水线并行（PP）、专家并行（EP）、专家张量并行（ETP）和 虚拟流水并行（VPP）等。无论是针对不同并行策略的训练，还是需要在不同策略之间切换的场景，都能实现灵活的权重转换，以适应各种训练和推理需求。
+**训练并行策略权重转换**：支持多种训练并行策略之间的权重转换，包括张量并行（TP）、流水并行（PP）、专家并行（EP）、专家张量并行（ETP）和 虚拟流水并行（VPP）等。无论是针对不同并行策略的训练，还是需要在不同策略之间切换的场景，都能实现灵活的权重转换，以适应各种训练和推理需求。
 
 ## 权重下载
 
@@ -159,7 +159,7 @@ bash examples/mcore/qwen3_moe/ckpt_convert_qwen3_moe_235b_hf2mcore.sh
 
 #### 使用约束
 
-- 由于HuggingFace权重不涉及并行切分，转至HuggingFace权重时**无需设置--target-tensor-parallel-size 、--target-pipeline-parallel-size、--target-expert-parallel-size、--num-layers-per-virtual-pipeline-stage**。
+- 由于HuggingFace权重不涉及并行切分，转至HuggingFace权重时**无需设置--target-tensor-parallel-size、--target-pipeline-parallel-size、--target-expert-parallel-size、--num-layers-per-virtual-pipeline-stage**。
 
 - 转换成功后的权重保存目录下仅包含模型权重文件，不会生成config.json模型配置文件和tokenizer.model、vocab.json等词表文件。可以使用`--hf-cfg-dir`参数指向原始HuggingFace模型的配置文件路径，自动将配置文件拷贝至mg2hf转出的权重保存目录。
 

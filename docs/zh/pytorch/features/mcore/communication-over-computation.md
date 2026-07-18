@@ -41,9 +41,11 @@
 
 ### 1. 使用通过Python脚本使能的计算通信并行特性
 
-```shell
---use-ascend-coc
---coc-parallel-num 2 # 或者4，或者8
+在脚本中添加如下参数：
+
+```text
+    --use-ascend-coc \
+    --coc-parallel-num 2 # 或者4,或者8
 ```
 
 ### 2. 使用通过融合算子使能的计算通信并行特性
@@ -52,11 +54,13 @@
 
 ATB安装方法：
 
-- 二进制包安装：安装CANN-NNAL包之后, source /usr/local/Ascend/nnal/atb/set_env.sh
+- 二进制包安装：安装CANN-NNAL包之后，source /usr/local/Ascend/nnal/atb/set_env.sh
 
-```shell
---use-ascend-coc
---coc-fused-kernel # 注意：当前只支持TP=8的场景！
+在脚本中添加如下参数：
+
+```text
+    --use-ascend-coc \
+    --coc-fused-kernel # 注意:当前只支持TP=8的场景!
 ```
 
 同时使用coc-parallel-num > 1和coc-fused-kernel参数时，coc-fused-kernel参数优先级更高，会覆盖coc-parallel-num > 1
