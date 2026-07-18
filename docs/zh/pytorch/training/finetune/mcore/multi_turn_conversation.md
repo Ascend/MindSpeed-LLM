@@ -101,7 +101,7 @@ CKPT_LOAD_DIR="./model_weights/gemma2-9b-mcore/"
 **运行多轮对话指令微调脚本**
 
 ```shell
-bash examples/mcore/gemma2/chat_gemma2_9b_ptd.sh
+bash examples/mcore/gemma2/tune_gemma2_9b_full_ptd.sh
 ```
 
 ## 开始多轮对话
