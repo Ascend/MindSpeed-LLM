@@ -82,7 +82,7 @@ LoRA微调需要在全参微调脚本基础上，在TUNE_ARGS中增加LoRA参数
 微调脚本相关参数说明：
 
 - `lora-r`：LoRA rank，表示低秩矩阵的维度。较低的 rank 值模型在训练时会使用更少的参数更新，从而减少计算量和内存消耗。然而，过低的 rank 可能限制模型的表达能力。
-- `lora-alpha`：控制 LoRA 权重对原始权重的影响比例, 数值越高则影响越大。一般保持 `α/r` 为 2。
+- `lora-alpha`：控制 LoRA 权重对原始权重的影响比例，数值越高则影响越大。一般保持 `α/r` 为 2。
 - `lora-fusion`： 是否启用[CCLoRA](../../features/mcore/cc_lora.md)算法，该算法通过计算通信掩盖提高性能。当前GLM-4.5模型不支持开启该参数。
 - `lora-target-modules`：选择需要添加 LoRA 的模块。当前可选模块： `linear_qkv`, `linear_proj`, `linear_fc1`, `linear_fc2`
 

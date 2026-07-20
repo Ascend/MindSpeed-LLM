@@ -9,7 +9,7 @@ $
 W' = W + A \cdot B
 $
 
-![alt text](../../../figures/lora_finetune/lora_model.png)
+![LoRA权重更新示意图](../../../figures/lora_finetune/lora_model.png)
 
    其中，$W'$ 是更新后的权重，$W$ 是原始权重，$A$ 和 $B$ 是需要学习的低秩矩阵。
 
@@ -19,7 +19,7 @@ $
 
 基于预训练语言模型，当前文档提供了一个简单的单样本格式数据LoRA微调任务示例。下面以Qwen3-8B模型和单台`Atlas 900 A2 POD`（1x8集群）进行LoRA微调。大模型LoRA微调主要包含以下流程：
 
-![alt text](../../../figures/lora_finetune/process_of_lora_tuning.png)
+![LoRA微调流程图](../../../figures/lora_finetune/process_of_lora_tuning.png)
 
 第一步，请参考[MindSpeed LLM安装指导](../../../training/install_guide.md)，完成环境安装。请在训练开始前配置好昇腾NPU套件相关的环境变量，如下所示：
 
@@ -120,10 +120,10 @@ PP=2                                      # 权重转换时target-pipeline-paral
 - `DATA_PATH`：数据集路径。请注意实际数据预处理生成文件末尾会增加`_input_ids_document`等后缀，该参数填写到数据集的前缀即可。例如实际的数据集相对路径是`./finetune_dataset/alpaca/alpaca_packed_input_ids_document.bin`等，那么只需要填`./finetune_dataset/alpaca/alpaca`即可。
 - `is-instruction-dataset`：用于指定微调过程中采用指令微调数据集，以确保模型依据特定指令数据进行微调。
 - `prompt-type`：指定模型模板，使 base 模型在微调后具备更好的对话能力。
-- `no-pad-to-seq-lengths`： 支持动态序列长度微调，默认按 8 的倍数进行 padding，可以通过 `--pad-to-multiple-of` 参数修改 padding 的倍数。
+- `no-pad-to-seq-lengths`：支持动态序列长度微调，默认按 8 的倍数进行 padding，可以通过 `--pad-to-multiple-of` 参数修改 padding 的倍数。
 - `lora-r`：LoRA rank，表示低秩矩阵的维度。较低的 rank 值模型在训练时会使用更少的参数更新，从而减少计算量和内存消耗。然而，过低的 rank 可能限制模型的表达能力。
-- `lora-alpha`：控制 LoRA 权重对原始权重的影响比例, 数值越高则影响越大。一般保持 `α/r` 为 2。
-- `lora-fusion`： 是否启用[CCLoRA](../../../features/mcore/cc_lora.md)算法，该算法通过计算通信掩盖提高性能。当前GLM-4.5模型不支持开启该参数。
+- `lora-alpha`：控制 LoRA 权重对原始权重的影响比例，数值越高则影响越大。一般保持 `α/r` 为 2。
+- `lora-fusion`：是否启用[CCLoRA](../../../features/mcore/cc_lora.md)算法，该算法通过计算通信掩盖提高性能。当前GLM-4.5模型不支持开启该参数。
 - `lora-target-modules`：选择需要添加 LoRA 的模块。当前可选模块： `linear_qkv`, `linear_proj`, `linear_fc1`, `linear_fc2`
 
 第六步，启动LoRA微调脚本。参数配置完毕后，如果是单机运行场景，只需要在一台机器上启动LoRA微调脚本：

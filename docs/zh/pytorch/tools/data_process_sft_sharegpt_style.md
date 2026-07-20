@@ -135,7 +135,7 @@ python ./preprocess_data.py \
 --map-keys '{"messages":"chat"}'
 ```
 
-则会提取数据集里的`"chat"`列，其中`"tags"`属性包含角色格式和内容格式，做为默认值隐式存在，角色格式可以为：`"from": "human"、"from": "gpt"、"from": "observation"、"from": "function_call"`，内容格式为`"value": "具体内容"`
+则会提取数据集里的`"chat"`列，其中`"tags"`属性包含角色格式和内容格式，作为默认值隐式存在，角色格式可以为：`"from": "human"、"from": "gpt"、"from": "observation"、"from": "function_call"`，内容格式为`"value": "具体内容"`
 
 **示例2：**
 

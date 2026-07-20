@@ -126,7 +126,7 @@ class ModelArguments:
         default=None,
         metadata={"help": "Auth token to log in with Modelers Hub."},
     )
-    quant_recipe_name: Literal["mxfp8"] = field(
+    quant_recipe_name: Optional[Literal["mxfp8"]] = field(
         default=None,
         metadata={"help": "Quantization recipe name"},
     )
@@ -390,7 +390,7 @@ class ParallelArguments:
         default_factory=lambda: ['model.layers.{*}', 'model.embed_tokens', 'lm_head'],
         metadata={"help": "Model structure of layers with Fully Sharded Data Parallel."},
     )
-    ignored_modules: List[str] = field(
+    ignored_modules: Optional[List[str]] = field(
         default=None,
         metadata={"help": "Model structure of layers with not Fully Sharded Data Parallel."},
     )
@@ -696,7 +696,7 @@ class OptimizationArguments:
     use_triton_gdn: bool = field(default=False, metadata={"help": "Use triton kernel accelerate training."})
     use_flash_gdn: bool = field(default=False, metadata={"help": "Use flash kernel accelerate training."})
     gdn_chunk_size: int = field(default=64, metadata={"help": "Matrix blocking size of Gated DeltaNet."})
-    chunk_loss_size: int = field(
+    chunk_loss_size: Optional[int] = field(
         default=None, metadata={"help": "Chunk loss size: set to > 0 to enable chunk loss calculation"}
     )
     use_triton_rmsnormgated: bool = field(default=False, metadata={"help": "Use triton rmsnorm."})
