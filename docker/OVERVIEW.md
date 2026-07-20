@@ -12,22 +12,26 @@
 
 ## Image Tag Key Field Description
 
-Image Tag naming format: `{Version}-{ChipType}-{OS}-py{PythonVersion}-{Architecture}`
+Image Tag naming format: `{MindSpeed LLM Version}-cann{CANN Version}-torch_npu{TorchNPU Version}-{ChipType}-{OS}-py{Python Version}-{Architecture}`
 
 | Field | Description | Example Value |
 | ------ | ------ | -------- |
-| Version | MindSpeed LLM version label, also serves as Git branch name | `master`, `26.0.0` |
+| MindSpeed LLM Version | MindSpeed LLM version label, also serves as Git branch name | `26.0.0` |
+| CANNVersion | CANN base image version | `9.0.0` |
+| TorchNPUVersion | TorchNPU version | `2.7.1` |
 | ChipType | NPU chip type (lowercase) | `a3`, `910b` |
 | OS | Operating system version | `openeuler24.03`, `ubuntu22.04` |
-| PythonVersion | Python runtime version | `3.11` |
+| Python Version | Python runtime version | `3.11` |
 | Architecture | CPU architecture type | `aarch64`, `x86_64` |
 
 ### Tag Examples
 
-| Tag | NPU | Operating System | Python | Architecture |
-| ----- | ----- | --------- | -------- | ------ |
-| `master-a3-openeuler24.03-py3.11-aarch64` | `a3` | `openeuler24.03` | `3.11` | `aarch64` |
-| `26.0.0-910b-ubuntu22.04-py3.11-x86_64` | `910b` | `ubuntu22.04` | `3.11` | `x86_64` |
+| Tag | MindSpeed LLM | CANN | torch-npu | NPU | OS | Python | Architecture |
+| ----- | ----- | ----- | ----- | ----- | --------- | -------- | ------ |
+| `v26.0.0-cann9.0.0-torch_npu2.7.1-910b-openeuler24.03-py3.11-aarch64` | `v26.0.0` | `9.0.0` | `2.7.1` | `910b` | `openeuler24.03` | `3.11` | `aarch64` |
+| `v26.0.0-cann9.0.0-torch_npu2.7.1-910b-ubuntu22.04-py3.11-x86_64` | `v26.0.0` | `9.0.0` | `2.7.1` | `910b` | `ubuntu22.04` | `3.11` | `x86_64` |
+| `v26.0.0-cann9.0.0-torch_npu2.7.1-a3-openeuler24.03-py3.11-aarch64` | `v26.0.0` | `9.0.0` | `2.7.1` | `a3` | `openeuler24.03` | `3.11` | `aarch64` |
+| `v26.0.0-cann9.0.0-torch_npu2.7.1-a3-ubuntu22.04-py3.11-x86_64` | `v26.0.0` | `9.0.0` | `2.7.1` | `a3` | `ubuntu22.04` | `3.11` | `x86_64` |
 
 ## Dockerfile Archive Path
 
@@ -64,11 +68,11 @@ The `image_build.sh` script supports flexible parameter configuration. Default v
 | `--megatron-branch` | Megatron-LM version tag, also used as Git branch name      | `core_v0.12.1` |
 | `--python-version` | Python version                           | `3.11` |
 | `--torch-version` | PyTorch version                          | `2.7.1` |
-| `--torch-npu-version` | torch-npu version                        | `2.7.1` |
-| `--base-image-version` | Base image CANN version                        | `8.5.2` |
+| `--torch-npu-version` | TorchNPU version                        | `2.7.1` |
+| `--base-image-version` | Base image CANN version                        | `9.0.0` |
 | `--base-image` | Full base image name, passed as-is to pull the image if not empty           | None |
 
-**Note:** The current NPU types are A2 and A3; A5 is yet to be built.
+**Note:** The current NPU types are `910b` (Atlas A2 training products) and `a3` (Atlas A3 training products), `a5` (Ascend 950 training products)is pending.
 
 ### Basic Build Examples
 
@@ -82,13 +86,13 @@ bash image_build.sh
 bash image_build.sh -t a3
 
 # Build a3 + openEuler image
-bash image_build.sh -t a3 -o openEuler24.03
+bash image_build.sh -t a3 -o openeuler24.03
 
 # Build with specified PyTorch version
 bash image_build.sh -t a3 --torch-version 2.7.1 --torch-npu-version 2.7.1
 
 # Build a3 + specified CANN base image version
-bash image_build.sh -t a3 --base-image-version 8.5.2
+bash image_build.sh -t a3 --base-image-version 9.0.0
 
 # Build a3 + specified version
 bash image_build.sh -t a3 --mindspeed-llm-branch 26.0.0 --mindspeed-branch 26.0.0_core_r0.12.1 --megatron-branch core_v0.12.1
@@ -104,7 +108,7 @@ The build script supports automatic downloading of the following resources. Plea
 # Specify the base image
 cd docker
 bash image_build.sh \
-  --base-image swr.cn-south-1.myhuaweicloud.com/ascendhub/cann:8.5.2-910b-openeuler24.03-py3.11
+  --base-image swr.cn-south-1.myhuaweicloud.com/ascendhub/cann:9.0.0-910b-openeuler24.03-py3.11
 ```
 
 ### 2. Image Usage Instructions
@@ -113,12 +117,12 @@ bash image_build.sh \
 
 #### Run Image
 
-Image names use the `REPOSITORY:TAG` from `docker images`, for example, `mindspeed-llm:master-910b-openeuler24.03-py3.11-aarch64`.
+Image names use the `REPOSITORY:TAG` from `docker images`, for example, `mindspeed-llm:v26.0.0-cann9.0.0-torch_npu2.7.1-910b-openeuler24.03-py3.11-aarch64`.
 
 ```bash
 # Basic run
 docker run -it --rm \
-    mindspeed-llm:master-910b-openeuler24.03-py3.11-aarch64 bash
+    mindspeed-llm:v26.0.0-cann9.0.0-torch_npu2.7.1-910b-openeuler24.03-py3.11-aarch64 bash
 
 # Run with NPU device (Example: /dev/davinci1)
 # Assume NPU device /dev/davinci1 and NPU driver installed at /usr/local/Ascend
@@ -138,7 +142,7 @@ docker run -it --rm \
     -v /home/:/home/ \
     -v /data:/data \
     -v /mnt:/mnt \
-    mindspeed-llm:master-910b-openeuler24.03-py3.11-aarch64 \
+    mindspeed-llm:v26.0.0-cann9.0.0-torch_npu2.7.1-910b-openeuler24.03-py3.11-aarch64 \
     /bin/bash
 
 # Enter the running container
@@ -151,14 +155,14 @@ The image contains the following pre-configured environment:
 
 | Environment | Description | Working Directory |
 | ------ | ------ | --------- |
-| base | Basic environment including `PyTorch`、`TorchNPU`、`MindSpeed LLM`、`MindSpeed`、`Megatron-LM` | `/workspace/MindSpeed-LLM` |
+| base | Basic environment including `PyTorch`,`TorchNPU`,`MindSpeed LLM`,`MindSpeed`,`Megatron-LM` | `/workspace/MindSpeed-LLM` |
 
 ## Secondary Development
 
 Create a custom Dockerfile based on this image:
 
 ```dockerfile
-FROM mindspeed-llm:master-910b-openeuler24.03-py3.11-aarch64
+FROM mindspeed-llm:v26.0.0-cann9.0.0-torch_npu2.7.1-910b-openeuler24.03-py3.11-aarch64
 
 RUN pip install your-package==1.0.0
 
@@ -177,7 +181,7 @@ docker run -it --rm \
     --device=/dev/devmm_svm \
     --device=/dev/hisi_hdc \
     -v /usr/local/dcmi:/usr/local/dcmi \
-    -v /usr/local/bin/npu-smi:/usr/local/bin/npu-smi \
+    -v /usr/local/sbin/npu-smi:/usr/local/sbin/npu-smi \
     -v /usr/local/Ascend/driver/lib64/:/usr/local/Ascend/driver/lib64/ \
     -v /usr/local/Ascend/driver/version.info:/usr/local/Ascend/driver/version.info \
     -v /etc/ascend_install.info:/etc/ascend_install.info \
@@ -188,7 +192,7 @@ docker run -it --rm \
 
 | Component | Version |
 | ------ | ------ |
-| CANN | 8.5.2 |
+| CANN | 9.0.0 |
 | Python | 3.11 |
 | Miniconda | 26.1.1-1 |
 | PyTorch | 2.7.1 |
@@ -198,9 +202,9 @@ docker run -it --rm \
 ### Compatibility Change Notes
 
 - The current version uses a unified Dockerfile + build script structure and supports configurable CANN base image selection.
-- The default base image uses `CANN 8.5.2`, `910b`, `openEuler24.03`, and `Python3.11`.
+- The default base image uses `CANN 9.0.0`, `910b`, `openEuler24.03`, and `Python3.11`.
 - You can switch to `ubuntu22.04`, `a3`, or other `CANN` base image versions via `docker/image_build.sh`.
-- `MindSpeed-LLM` is cloned to `/MindSpeed-LLM`, `MindSpeed` is cloned to `/MindSpeed`, and `Megatron-LM` is cloned to `/Megatron-LM`.
+- `MindSpeed-LLM` is cloned to `/workspace/MindSpeed-LLM`, `MindSpeed` is cloned to `/workspace/MindSpeed`, and `Megatron-LM` is cloned to `/workspace/Megatron-LM`.
 - The image installs `PyTorch`, `TorchNPU`, `MindSpeed-LLM`, `MindSpeed`, `Megatron-LM`, and the `Python` dependency from `requirements.txt`.
 
 ## License

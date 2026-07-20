@@ -33,13 +33,15 @@ BASE_IMAGE=""
 PYTHON_VERSION="3.11"
 TORCH_VERSION="2.7.1"
 TORCH_NPU_VERSION="2.7.1"
-BASE_IMAGE_VERSION="8.5.2"
+BASE_IMAGE_VERSION="9.0.0"
 MINDSPEED_LLM_BRANCH="26.0.0"
 MINDSPEED_BRANCH="26.0.0_core_r0.12.1"
 MEGATRON_BRANCH="core_v0.12.1"
 NO_CACHE=""
 NPU_TYPE_EXPLICIT=false
 OS_EXPLICIT=false
+BASE_IMAGE_VERSION_EXPLICIT=false
+PYTHON_VERSION_EXPLICIT=false
 CLEANUP_ON_FAIL=false
 
 show_help() {
@@ -54,12 +56,12 @@ Required:
 
 Optional:
     -i, --image-name NAME    Custom output image full name
-                             Default rule: mindspeed-llm:{version}-{chip}-{os}-py{py_ver}-{arch}
+                             Default rule: mindspeed-llm:{version}-cann{cann_ver}-torch_npu{torch_npu_ver}-{chip}-{os}-py{py_ver}-{arch}
     -o, --os OS              OS type: openEuler24.03 or ubuntu22.04 (default: openEuler24.03)
     -n, --no-cache           Build without using Docker build cache
     --base-image IMAGE       Full base image name, passed directly to FROM as-is
-                             Example: swr.cn-south-1.myhuaweicloud.com/ascendhub/cann:8.5.2-a3-openeuler24.03-py3.11
-    --base-image-version VER CANN base image version (default: 8.5.2)
+                             Example: swr.cn-south-1.myhuaweicloud.com/ascendhub/cann:9.0.0-a3-openeuler24.03-py3.11
+    --base-image-version VER CANN base image version (default: 9.0.0)
     --python-version VER     Python version (default: 3.11)
     --torch-version VER      PyTorch version for online installation (default: 2.7.1)
     --torch-npu-version VER  torch-npu version for online installation (default: 2.7.1)
@@ -70,10 +72,10 @@ Optional:
     -h, --help               Show this help message and exit
 
 Image Tag Convention:
-    {mindspeed_llm_branch}-{npu_type_lower}-{os}-py{python_version}-{arch}
+    v{mindspeed_llm_branch}-cann{base_image_version}-torch_npu{torch_npu_version}-{npu_type_lower}-{os}-py{python_version}-{arch}
     Example:
-        26.0.0-a3-openeuler24.03-py3.11-aarch64
-        26.0.0-910b-ubuntu22.04-py3.11-x86_64
+        v26.0.0-cann9.0.0-torch_npu2.7.1-a3-openeuler24.03-py3.11-aarch64
+        v26.0.0-cann9.0.0-torch_npu2.7.1-910b-ubuntu22.04-py3.11-x86_64
 
 Examples:
     bash $0 -t A3
@@ -81,7 +83,7 @@ Examples:
     bash $0 -t A3 -o openEuler24.03
     bash $0 -t A3 --torch-version 2.7.1 --torch-npu-version 2.7.1
     bash $0 -t A3 --base-image-version 9.0.0
-    bash $0 -t A3 --base-image swr.cn-south-1.myhuaweicloud.com/ascendhub/cann:8.5.2-a3-openeuler24.03-py3.11
+    bash $0 -t A3 --base-image swr.cn-south-1.myhuaweicloud.com/ascendhub/cann:9.0.0-a3-openeuler24.03-py3.11
     bash $0 -t A3 -i myproject/mindspeed-llm:v26.0.0-a3
     bash $0 -t A3 --no-cache --cleanup-on-fail
 EOF
@@ -92,6 +94,10 @@ parse_base_image_tag() {
     local tag="${image##*:}"
     local tag_lower
     tag_lower=$(echo "$tag" | tr '[:upper:]' '[:lower:]')
+
+    if [[ "$tag_lower" =~ ^([0-9]+\.[0-9]+\.[0-9]+) ]]; then
+        DETECTED_CANN_VERSION="${BASH_REMATCH[1]}"
+    fi
 
     if [[ "$tag_lower" == *"910b"* ]]; then
         DETECTED_NPU_TYPE="910b"
@@ -113,17 +119,17 @@ parse_base_image_tag() {
 while [[ $# -gt 0 ]]; do
     case $1 in
         -t|--npu-type)          NPU_TYPE="$2"; NPU_TYPE_EXPLICIT=true; shift 2 ;;
-        -i|--image-name)        IMAGE_NAME="$2"; OS_EXPLICIT=true; shift 2 ;;
-        -o|--os)                OS="$2"; shift 2 ;;
+        -i|--image-name)        IMAGE_NAME="$2"; shift 2 ;;
+        -o|--os)                OS="$2"; OS_EXPLICIT=true; shift 2 ;;
         -n|--no-cache)          NO_CACHE="--no-cache"; shift ;;
         --mindspeed-llm-branch) MINDSPEED_LLM_BRANCH="$2"; shift 2 ;;
         --mindspeed-branch)     MINDSPEED_BRANCH="$2"; shift 2 ;;
         --megatron-branch)      MEGATRON_BRANCH="$2"; shift 2 ;;
         --base-image)           BASE_IMAGE="$2"; shift 2 ;;
-        --python-version)       PYTHON_VERSION="$2"; shift 2 ;;
+        --python-version)       PYTHON_VERSION="$2"; PYTHON_VERSION_EXPLICIT=true; shift 2 ;;
         --torch-version)        TORCH_VERSION="$2"; shift 2 ;;
         --torch-npu-version)    TORCH_NPU_VERSION="$2"; shift 2 ;;
-        --base-image-version)   BASE_IMAGE_VERSION="$2"; shift 2 ;;
+        --base-image-version)   BASE_IMAGE_VERSION="$2"; BASE_IMAGE_VERSION_EXPLICIT=true; shift 2 ;;
         --cleanup-on-fail)      CLEANUP_ON_FAIL=true; shift ;;
         -h|--help)              show_help; exit 0 ;;
         *)                      echo "Unknown argument: $1"; show_help; exit 1 ;;
@@ -141,6 +147,7 @@ fi
 DETECTED_NPU_TYPE=""
 DETECTED_OS=""
 DETECTED_PYTHON_VERSION=""
+DETECTED_CANN_VERSION=""
 if [ -n "$BASE_IMAGE" ]; then
     parse_base_image_tag "$BASE_IMAGE"
     if [ "$NPU_TYPE_EXPLICIT" = false ] && [ -n "$DETECTED_NPU_TYPE" ]; then
@@ -149,8 +156,11 @@ if [ -n "$BASE_IMAGE" ]; then
     if [ "$OS_EXPLICIT" = false ] && [ -n "$DETECTED_OS" ]; then
         OS="$DETECTED_OS"
     fi
-    if [ -n "$DETECTED_PYTHON_VERSION" ]; then
+    if [ "$PYTHON_VERSION_EXPLICIT" = false ] && [ -n "$DETECTED_PYTHON_VERSION" ]; then
         PYTHON_VERSION="$DETECTED_PYTHON_VERSION"
+    fi
+    if [ "$BASE_IMAGE_VERSION_EXPLICIT" = false ] && [ -n "$DETECTED_CANN_VERSION" ]; then
+        BASE_IMAGE_VERSION="$DETECTED_CANN_VERSION"
     fi
 fi
 
@@ -179,7 +189,7 @@ case "$HOST_ARCH" in
 esac
 if [ -z "$IMAGE_NAME" ]; then
     TAG_REF=$(echo "$MINDSPEED_LLM_BRANCH" | tr '/:' '--')
-    IMAGE_NAME="mindspeed-llm:${TAG_REF}-${NPU_TYPE_LOWER}-${OS}-py${PYTHON_VERSION}-${ARCH_NAME}"
+    IMAGE_NAME="mindspeed-llm:v${TAG_REF}-cann${BASE_IMAGE_VERSION}-torch_npu${TORCH_NPU_VERSION}-${NPU_TYPE_LOWER}-${OS}-py${PYTHON_VERSION}-${ARCH_NAME}"
 fi
 
 cd "$SCRIPT_DIR"
