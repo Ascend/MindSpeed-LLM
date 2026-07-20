@@ -33,6 +33,7 @@ from transformers.utils import SAFE_WEIGHTS_INDEX_NAME, WEIGHTS_INDEX_NAME
 
 from mindspeed_llm.fsdp2.utils.logging import get_logger
 from mindspeed_llm.fsdp2.distributed.parallel_state import ParallelState
+from .weight_conv_adapter import revert_weight_conversion_for_hf
 from .utils import (
     empty_cache,
     get_shard_info,
@@ -467,6 +468,7 @@ class CheckpointManager:
         optional safe serialization using safetensors.
         """
         os.makedirs(output_dir, exist_ok=True)
+        state_dict = revert_weight_conversion_for_hf(state_dict, model_configs)
 
         # Determine sharding strategy
         is_sharded, total_size, weight_map = get_shard_info(state_dict, save_dtype, shard_size, safe_serialization)
