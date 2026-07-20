@@ -1,16 +1,18 @@
 # Copyright (c) 2026, Huawei Technologies Co., Ltd. All rights reserved.
 """
-Weight conversion execution engine for MindSpeed-LLM.
+Weight conversion utilities for MindSpeed-LLM.
 
 Provides a thin wrapper over transformers' conversion_mapping API to execute
-weight conversions during checkpoint loading. Mapping rules are defined
-separately in conversion_mappings.py.
+weight conversions during checkpoint loading and revert them during
+HuggingFace export. Mapping rules are defined separately in conversion_mappings.py.
 """
 
 import re
 from copy import deepcopy
 from importlib.metadata import version
-from typing import Optional, Tuple
+from typing import Dict, Optional, Sequence, Tuple
+
+import torch
 
 from mindspeed_llm.fsdp2.utils.logging import get_logger
 
@@ -122,3 +124,48 @@ class WeightConvAdapter:
             if isinstance(tensor, list):
                 tensor = tensor[0]
             yield name, tensor
+
+
+def revert_weight_conversion_for_hf(
+    state_dict: Dict[str, torch.Tensor],
+    model_configs: Optional[Sequence[object]] = None,
+) -> Dict[str, torch.Tensor]:
+    """Revert converted weights to their original HuggingFace layout."""
+    config = _find_model_config(model_configs)
+    model_type = getattr(config, "model_type", None)
+    if not model_type:
+        return state_dict
+
+    try:
+        from transformers.core_model_loading import revert_weight_conversion
+    except ImportError as exc:
+        raise RuntimeError(
+            "Exporting original HF weights through transformers conversion mapping requires transformers >= 5.0.0."
+        ) from exc
+
+    adapter = WeightConvAdapter(model_type)
+    if not adapter.converters:
+        return state_dict
+
+    proxy_model = _WeightConversionProxyModel(config, adapter.converters)
+    return revert_weight_conversion(proxy_model, state_dict)
+
+
+class _WeightConversionProxyModel:
+    """Minimal model-like object required by transformers revert_weight_conversion."""
+
+    def __init__(self, config: object, converters: list) -> None:
+        self.config = config
+        self._weight_conversions = converters
+
+
+def _find_model_config(model_configs: Optional[Sequence[object]]) -> Optional[object]:
+    if model_configs is None:
+        return None
+    if hasattr(model_configs, "model_type"):
+        return model_configs
+
+    for item in model_configs:
+        if hasattr(item, "model_type"):
+            return item
+    return None
