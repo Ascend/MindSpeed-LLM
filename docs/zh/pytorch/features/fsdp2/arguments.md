@@ -124,7 +124,7 @@
     </tr>
     <tr>
       <td>quant_recipe_name</td>
-      <td>Literal[&quot;mxfp8&quot;]</td>
+      <td>Optional[Literal[&quot;mxfp8&quot;]]</td>
       <td>None</td>
       <td>量化策略。</td>
     </tr>
@@ -150,7 +150,7 @@
       <td>enable_fsdp_low_precision_all_gather</td>
       <td>bool</td>
       <td>True</td>
-      <td>是否启用低精度通信</td>
+      <td>是否启用低精度通信。</td>
     </tr>
     <tr>
       <td>fsdp_low_precision_all_gather_mode</td>
@@ -317,7 +317,7 @@
       <td>enable_thinking</td>
       <td>Optional[bool]</td>
       <td>True</td>
-      <td>是否为推理模型启用思考模式，启用后模型会生成中间思考过程。True表示启用，False表示不启用，None表示不删除原始数据中的<code>cot</code>标签，适用于原始数据为混合类型的情况。</td>
+      <td>是否为推理模型启用思考模式，启用后模型会生成中间思考过程。True表示启用，False表示不启用，None表示不删除原始数据中的<code>CoT</code>标签，适用于原始数据为混合类型的情况。</td>
     </tr>
     <tr>
       <td>tokenized_path</td>
@@ -440,7 +440,7 @@
     </tr>
     <tr>
       <td>ignored_modules</td>
-      <td>List[str]</td>
+      <td>Optional[List[str]]</td>
       <td>None</td>
       <td>不启用FSDP的模块列表。</td>
     </tr>
@@ -936,17 +936,17 @@
       <td>use_triton_gdn</td>
       <td>bool</td>
       <td>False</td>
-      <td>是否使能triton融合算子加速Gated DeltaNet网络计算。</td>
+      <td>是否使能Triton融合算子加速Gated DeltaNet网络计算。</td>
     </tr>
     <tr>
       <td>use_flash_gdn</td>
       <td>bool</td>
       <td>False</td>
-      <td>是否使能ascendC融合算子加速Gated DeltaNet网络计算，此参数与use_triton_gdn最多开启一个。</td>
+      <td>是否使能Ascend C融合算子加速Gated DeltaNet网络计算，此参数与use_triton_gdn最多开启一个。</td>
     </tr>
     <tr>
     <td>chunk_loss_size</td>
-    <td>int</td>
+    <td>Optional[int]</td>
     <td>None</td>
     <td>每次计算loss时使用的序列长度，分段进行loss计算可以节省显存。</td>
     </tr>
