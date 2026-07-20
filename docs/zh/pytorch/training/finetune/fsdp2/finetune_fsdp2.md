@@ -121,7 +121,7 @@ parallel:
     - model.embed_tokens                            # 词嵌入层启用FSDP分片
     - lm_head                                       # 语言模型输出头启用FSDP分片
   tp_size: 1                                        # 张量并行(Tensor Parallel)大小，将模型张量按列/行拆分到多张卡
-  ep_size: 1                                        # 专家并行(Expert Parallel)大小，适用于MoE模型，将不同专家拆分到多张卡
+  ep_size: 1                                        # 专家并行（Expert Parallel）大小，适用于 MoE 模型，将不同专家拆分到多张卡
   ep_modules:                                       #  启用专家并行的模型层结构，仅适用于MoE模型
     - model.layers.{*}.mlp.experts                  # 所有层的专家模块启用专家并行
   ep_fsdp_size: 1                                   # 专家并行组内的FSDP大小，在专家并行基础上对单个专家参数进行分片
@@ -173,39 +173,7 @@ training:
   preprocessing_num_workers: 1                      # 数据预处理的进程数
 ```
 
-其中dataset支持两种配置方式，推荐使用 **dataset_info.json 注册方式** 便于多数据集混合训练。
-
-#### 方式一：内联配置（适用于单数据集快速验证）
-
-```yaml
-data:
-  dataset:
-    file_name: "./my_data.json"                     # 数据文件路径
-    formatting: "alpaca"                            # 数据格式模板，支持alpaca/sharegpt等格式
-```
-
-#### 方式二：通过 `dataset_info.json` 注册
-
-1. 编辑 `configs/fsdp2/data/dataset_info.json`，添加数据集条目：
-
-    ```json
-    {
-      "alpaca_full": {
-        "file_name": "./train-00000-of-00001.parquet"
-      },
-      "sharegpt4_zh": {
-        "file_name": "./sharegpt_zh.jsonl",
-        "formatting": "sharegpt"
-      }
-    }
-    ```
-
-2. 在 YAML 配置中引用：
-
-    ```yaml
-    data:
-      dataset: alpaca_full, sharegpt4_zh                # 微调数据集：可填写逗号分隔的在 dataset_info.json 中配置的数据集名称，支持多数据集混合
-    ```
+`dataset` 支持内联配置和通过 `dataset_info.json` 注册两种方式。推荐使用注册方式，以便进行多数据集混合训练；具体配置方法和示例请参考 [3.2 数据集配置](#32-数据集配置)。
 
 ### 6.5 预训练场景数据集配置
 
