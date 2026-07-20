@@ -48,7 +48,10 @@ from mindspeed_llm.tasks.models.transformer.mla_dot_product_attention import (
     MlaDotProductAttention,
     MlaTEDotProductAttention,
 )
-from mindspeed_llm.tasks.models.transformer.mla_up_proj_overlap_tp_comm import mla_up_projection_overlap_tp_comm
+from mindspeed_llm.tasks.models.transformer.mla_up_proj_overlap_tp_comm import (
+    mla_up_projection_overlap_tp_comm,
+    should_recompute_mla_up_proj,
+)
 from mindspeed_llm.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb_bshd_in_complex
 
 logger = logging.getLogger(__name__)
@@ -514,11 +517,8 @@ class CustomMLASelfAttention(SelfAttention):
                 ],
                 dim=-1,
             )
-            if self.mla_up_proj_tp_overlap:
-                query, key, value = mla_up_projection_overlap_tp_comm(
-                    q_compressed, kv_compressed, k_pos_emb, rotary_pos_emb, packed_seq_params, self
-                )
-            else:
+
+            def mla_up_projection_no_tp_overlap(q_compressed, kv_compressed, k_pos_emb):
                 if self.q_layernorm is not None:
                     q_compressed = self.q_layernorm(q_compressed)
                     if self.mla_scale_q_lora is not None:
@@ -592,31 +592,61 @@ class CustomMLASelfAttention(SelfAttention):
                     k_pos_emb.shape[0], k_pos_emb.shape[1], q_no_pe.shape[2], k_pos_emb.shape[3]
                 )
                 if args.mla_fa_divide_qk:
+                    return q_no_pe, q_pos_emb, k_no_pe, k_pos_emb, value
+
+                query = torch.cat([q_no_pe, q_pos_emb], dim=-1)
+                key = torch.cat([k_no_pe, k_pos_emb], dim=-1)
+
+                if self.use_flash_attn and self.q_head_dim != self.v_head_dim and not self.mla_fa_without_pad:
+                    if self.shape_order == "BNSD":
+                        value = F.pad(value, [0, self.q_head_dim - self.v_head_dim])
+                    else:
+                        query = F.pad(query, [0, self.fa_padding_length - self.q_head_dim])
+                        key = F.pad(key, [0, self.fa_padding_length - self.q_head_dim])
+                        value = F.pad(value, [0, self.fa_padding_length - self.v_head_dim])
+
+                # Do repeat KV to support GQA+Ulysses
+                should_kv_repeat_before_uly = (
+                    args.context_parallel_size > 1
+                    and args.context_parallel_algo in ["ulysses_cp_algo", "hybrid_cp_algo"]
+                    and args.kv_head_repeat_before_uly_alltoall
+                )
+                heads_per_gqa_group = self.num_attention_heads_per_partition // self.num_query_groups_per_partition
+                if should_kv_repeat_before_uly and heads_per_gqa_group > 1:
+                    key = key.repeat_interleave(heads_per_gqa_group, dim=2)
+                    value = value.repeat_interleave(heads_per_gqa_group, dim=2)
+
+                return query, key, value
+
+            should_recompute_no_tp_overlap = not self.mla_up_proj_tp_overlap and should_recompute_mla_up_proj(
+                args, self.recompute_mla_up_proj
+            )
+            if self.mla_up_proj_tp_overlap:
+                query, key, value = mla_up_projection_overlap_tp_comm(
+                    q_compressed, kv_compressed, k_pos_emb, rotary_pos_emb, packed_seq_params, self
+                )
+            elif not should_recompute_no_tp_overlap:
+                self.recompute_mla_up_proj_ckpt = None
+                if args.mla_fa_divide_qk:
+                    q_no_pe, q_pos_emb, k_no_pe, k_pos_emb, value = mla_up_projection_no_tp_overlap(
+                        q_compressed, kv_compressed, k_pos_emb
+                    )
                     query = [q_no_pe, q_pos_emb]
                     key = [k_no_pe, k_pos_emb]
                 else:
-                    query = torch.cat([q_no_pe, q_pos_emb], dim=-1)
-                    key = torch.cat([k_no_pe, k_pos_emb], dim=-1)
-
-                    if self.use_flash_attn and self.q_head_dim != self.v_head_dim and not self.mla_fa_without_pad:
-                        if self.shape_order == "BNSD":
-                            value = F.pad(value, [0, self.q_head_dim - self.v_head_dim])
-                        else:
-                            query = F.pad(query, [0, self.fa_padding_length - self.q_head_dim])
-                            key = F.pad(key, [0, self.fa_padding_length - self.q_head_dim])
-                            value = F.pad(value, [0, self.fa_padding_length - self.v_head_dim])
-
-                    # Do repeat KV to support GQA+Ulysses
-                    args = get_args()
-                    should_kv_repeat_before_uly = (
-                        args.context_parallel_size > 1
-                        and args.context_parallel_algo in ["ulysses_cp_algo", "hybrid_cp_algo"]
-                        and args.kv_head_repeat_before_uly_alltoall
+                    query, key, value = mla_up_projection_no_tp_overlap(q_compressed, kv_compressed, k_pos_emb)
+            else:
+                self.recompute_mla_up_proj_ckpt = CheckpointWithoutOutput()
+                if args.mla_fa_divide_qk:
+                    q_no_pe, q_pos_emb, k_no_pe, k_pos_emb, value = self.recompute_mla_up_proj_ckpt.checkpoint(
+                        mla_up_projection_no_tp_overlap, False, q_compressed, kv_compressed, k_pos_emb
                     )
-                    heads_per_gqa_group = self.num_attention_heads_per_partition // self.num_query_groups_per_partition
-                    if should_kv_repeat_before_uly and heads_per_gqa_group > 1:
-                        key = key.repeat_interleave(heads_per_gqa_group, dim=2)
-                        value = value.repeat_interleave(heads_per_gqa_group, dim=2)
+                    query = [q_no_pe, q_pos_emb]
+                    key = [k_no_pe, k_pos_emb]
+                else:
+                    query, key, value = self.recompute_mla_up_proj_ckpt.checkpoint(
+                        mla_up_projection_no_tp_overlap, False, q_compressed, kv_compressed, k_pos_emb
+                    )
 
             # DSAIndexer module computation
             nonlocal attention_mask
