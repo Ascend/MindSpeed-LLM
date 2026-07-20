@@ -7,7 +7,7 @@
 
 # Global arguments for base image selection
 ARG OS=openeuler24.03
-ARG BASE_IMAGE_VERSION=8.5.2
+ARG BASE_IMAGE_VERSION=9.0.0
 ARG NPU_TYPE=910b
 ARG PYTHON_VERSION=3.11
 ARG BASE_IMAGE=""

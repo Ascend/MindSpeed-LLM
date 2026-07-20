@@ -12,22 +12,26 @@
 
 ## 镜像 Tag 关键字段描述
 
-镜像 Tag 命名遵循模板：`{版本号}-{芯片信息}-{操作系统}-py{Python版本}-{架构类型}`
+镜像 Tag 命名遵循模板：`{MindSpeed LLM版本}-cann{CANN版本}-torch_npu{TorchNPU版本}-{芯片信息}-{操作系统}-py{Python版本}-{架构类型}`
 
 | 字段 | 说明 | 示例值 |
 | ------ | ------ | -------- |
-| 版本号 | MindSpeed LLM 版本标识，同时也是 Git 分支名称 | `master`, `26.0.0` |
+| MindSpeed LLM版本 | MindSpeed LLM 版本标识，同时也是 Git 分支名称 | `26.0.0` |
+| CANN版本 | CANN 基础镜像版本 | `9.0.0` |
+| TorchNPU版本 | TorchNPU 版本 | `2.7.1` |
 | 芯片信息 | NPU 芯片类型（小写） | `a3`, `910b` |
-| 操作系统 | 操作系统 | `openeuler24.03`, `ubuntu22.04` |
+| 操作系统 | 操作系统类型 | `openeuler24.03`, `ubuntu22.04` |
 | Python版本 | Python 版本 | `3.11` |
 | 架构类型 | CPU 架构 | `aarch64`, `x86_64` |
 
 ### 示例 Tag
 
-| Tag | NPU | 操作系统 | Python | 架构 |
-| ----- | ----- | --------- | -------- | ------ |
-| `master-a3-openeuler24.03-py3.11-aarch64` | `a3` | `openeuler24.03` | `3.11` | `aarch64` |
-| `26.0.0-910b-ubuntu22.04-py3.11-x86_64` | `910b` | `ubuntu22.04` | `3.11` | `x86_64` |
+| Tag | MindSpeed LLM | CANN | torch-npu | NPU | 操作系统 | Python | 架构 |
+| ----- | ----- | ----- | ----- | ----- | --------- | -------- | ------ |
+| `v26.0.0-cann9.0.0-torch_npu2.7.1-910b-openeuler24.03-py3.11-aarch64` | `v26.0.0` | `9.0.0` | `2.7.1` | `910b` | `openeuler24.03` | `3.11` | `aarch64` |
+| `v26.0.0-cann9.0.0-torch_npu2.7.1-910b-ubuntu22.04-py3.11-x86_64` | `v26.0.0` | `9.0.0` | `2.7.1` | `910b` | `ubuntu22.04` | `3.11` | `x86_64` |
+| `v26.0.0-cann9.0.0-torch_npu2.7.1-a3-openeuler24.03-py3.11-aarch64` | `v26.0.0` | `9.0.0` | `2.7.1` | `a3` | `openeuler24.03` | `3.11` | `aarch64` |
+| `v26.0.0-cann9.0.0-torch_npu2.7.1-a3-ubuntu22.04-py3.11-x86_64` | `v26.0.0` | `9.0.0` | `2.7.1` | `a3` | `ubuntu22.04` | `3.11` | `x86_64` |
 
 ## Dockerfile 归档路径
 
@@ -66,11 +70,11 @@ docker/
 | `--megatron-branch` | Megatron-LM 版本标识，同时作为 Git 分支名称      | `core_v0.12.1` |
 | `--python-version` | Python 版本                           | `3.11` |
 | `--torch-version` | PyTorch 版本                          | `2.7.1` |
-| `--torch-npu-version` | torch-npu 版本                        | `2.7.1` |
-| `--base-image-version` | 基础镜像 CANN 版本                        | `8.5.2` |
+| `--torch-npu-version` | TorchNPU 版本                        | `2.7.1` |
+| `--base-image-version` | 基础镜像 CANN 版本                        | `9.0.0` |
 | `--base-image` | 完整基础镜像名称，当设置不为空时会原样传入拉取镜像           | 无 |
 
-**提示：** 当前的NPU类型为A2和A3，A5待搭建
+**提示：** 当前的NPU类型为 `910b`（Atlas A2 训练系列产品）和 `a3`（Atlas A3 训练系列产品），`a5`（Ascend 950 训练系列产品）待搭建。
 
 #### 基础构建示例
 
@@ -89,7 +93,7 @@ bash image_build.sh -t a3 -o openeuler24.03
 # 构建 a3 + 指定 PyTorch 版本构建
 bash image_build.sh -t a3 --torch-version 2.7.1 --torch-npu-version 2.7.1
 
-# 构建 a3 + CANN9.0镜像
+# 构建 a3 + CANN9.0.0镜像
 bash image_build.sh -t a3 --base-image-version 9.0.0
 
 # 指定仓库版本构建
@@ -106,7 +110,7 @@ bash image_build.sh -t a3 --mindspeed-llm-branch 26.0.0 --mindspeed-branch 26.0.
 # 指定基础镜像
 cd docker
 bash image_build.sh \
-  --base-image swr.cn-south-1.myhuaweicloud.com/ascendhub/cann:8.5.2-910b-openeuler24.03-py3.11
+  --base-image swr.cn-south-1.myhuaweicloud.com/ascendhub/cann:9.0.0-910b-openeuler24.03-py3.11
 ```
 
 ### 2、镜像使用指导
@@ -115,12 +119,12 @@ bash image_build.sh \
 
 #### 运行镜像
 
-镜像名使用`docker images`中的`REPOSITORY:TAG`，例如`mindspeed-llm:master-910b-openeuler24.03-py3.11-aarch64`。
+镜像名使用`docker images`中的`REPOSITORY:TAG`，例如`mindspeed-llm:v26.0.0-cann9.0.0-torch_npu2.7.1-910b-openeuler24.03-py3.11-aarch64`。
 
 ```bash
 # 基本运行
 docker run -it --rm \
-  mindspeed-llm:master-910b-openeuler24.03-py3.11-aarch64 bash
+  mindspeed-llm:v26.0.0-cann9.0.0-torch_npu2.7.1-910b-openeuler24.03-py3.11-aarch64 bash
 
 # 使用 NPU 设备运行（示例：设备 /dev/davinci1）
 # 假设您的 NPU 设备安装在 /dev/davinci1 上，并且 NPU 驱动程序安装在 /usr/local/Ascend 上：
@@ -140,7 +144,7 @@ docker run -it --rm \
   -v /home/:/home/ \
   -v /data:/data \
   -v /mnt:/mnt \
-  mindspeed-llm:master-910b-openeuler24.03-py3.11-aarch64 \
+  mindspeed-llm:v26.0.0-cann9.0.0-torch_npu2.7.1-910b-openeuler24.03-py3.11-aarch64 \
   /bin/bash
 
 # 进入已启动容器
@@ -153,14 +157,14 @@ docker exec -it mindspeed-llm /bin/bash
 
 | 环境 | 说明 | 工作目录 |
 | ------ | ------ | --------- |
-| base | 基础环境，包含`PyTorch`、`TorchNPU`、`MindSpeed LLM`、`MindSpeed`、`Megatron-LM` | `/workspace/MindSpeed-LLM` |
+| base | 基础环境，包含`PyTorch`，`TorchNPU`，`MindSpeed LLM`，`MindSpeed`，`Megatron-LM` | `/workspace/MindSpeed-LLM` |
 
 ## 二次开发
 
 基于此镜像创建自定义Dockerfile：
 
 ```dockerfile
-FROM mindspeed-llm:master-910b-openeuler24.03-py3.11-aarch64
+FROM mindspeed-llm:v26.0.0-cann9.0.0-torch_npu2.7.1-910b-openeuler24.03-py3.11-aarch64
 
 RUN pip install your-package==1.0.0
 
@@ -179,7 +183,7 @@ docker run -it --rm \
   --device=/dev/devmm_svm \
   --device=/dev/hisi_hdc \
   -v /usr/local/dcmi:/usr/local/dcmi \
-  -v /usr/local/bin/npu-smi:/usr/local/bin/npu-smi \
+  -v /usr/local/sbin/npu-smi:/usr/local/sbin/npu-smi \
   -v /usr/local/Ascend/driver/lib64/:/usr/local/Ascend/driver/lib64/ \
   -v /usr/local/Ascend/driver/version.info:/usr/local/Ascend/driver/version.info \
   -v /etc/ascend_install.info:/etc/ascend_install.info \
@@ -190,7 +194,7 @@ docker run -it --rm \
 
 | 组件 | 版本       |
 | ------ |----------|
-| CANN | 8.5.2    |
+| CANN | 9.0.0    |
 | Python | 3.11     |
 | Miniconda | 26.1.1-1 |
 | PyTorch | 2.7.1    |
@@ -200,9 +204,9 @@ docker run -it --rm \
 ### 兼容性说明
 
 - 当前版本采用统一 Dockerfile + 构建脚本结构，支持可配置的 CANN 基础镜像选择。
-- 默认基础镜像使用 `CANN 8.5.2`、`910b`、`openEuler24.03`、`Python3.11`。
+- 默认基础镜像使用 `CANN 9.0.0`、`910b`、`openEuler24.03`、`Python3.11`。
 - 可以通过`docker/image_build.sh`切换 `ubuntu22.04`、`a3` 或其他 `CANN` 基础镜像版本。
-- `MindSpeed-LLM`克隆到 /MindSpeed-LLM，`MindSpeed` 克隆到 /MindSpeed，`Megatron-LM`克隆到 /Megatron-LM。
+- `MindSpeed-LLM`克隆到 `/workspace/MindSpeed-LLM`，`MindSpeed` 克隆到 `/workspace/MindSpeed`，`Megatron-LM`克隆到 `/workspace/Megatron-LM`。
 - 镜像安装`PyTorch`、`TorchNPU`、`MindSpeed-LLM`、`MindSpeed`、`Megatron-LM` 以及 `requirements.txt` 中的 `Python`依赖。
 
 ## 许可证
