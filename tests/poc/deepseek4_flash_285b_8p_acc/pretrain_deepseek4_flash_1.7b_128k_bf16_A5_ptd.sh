@@ -189,6 +189,7 @@ GPT_ARGS="
 
 DATA_ARGS="
     --data-path $DATA_PATH \
+    --handler-name GeneralPretrainHandler \
     --split 100,0,0 \
 "
 
@@ -199,12 +200,6 @@ OUTPUT_ARGS="
     --eval-iters 0 \
     --no-save-optim \
     --no-save-rng \
-"
-
-FP8="
-    --fp8-reuse-quantized-weight \
-    --fp8-format e4m3 \
-    --fp8-recipe mxfp8
 "
 
 python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_deepseek4.py \
@@ -218,7 +213,6 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_deepseek4.py \
     $CA_ARGS \
     $MEM_ARGS \
     $MTP_ARGS \
-    $FP8 \
     --load ${CKPT_LOAD_DIR} \
     --save ${CKPT_SAVE_DIR} \
-    --distributed-backend nccl 2>&1 | tee logs/pretrain_deepseek4_flash_128k_fp8_ptd.log
+    --distributed-backend nccl 2>&1 | tee logs/pretrain_deepseek4_flash_128k_bf16_ptd.log
