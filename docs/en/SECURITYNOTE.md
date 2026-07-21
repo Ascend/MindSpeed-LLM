@@ -49,7 +49,7 @@ For security and least-privilege reasons, you are advised not to use `root` or o
 ## Runtime Security Statement
 
 1. You are advised to write training scripts that match the available resources. If the training script does not match the resource conditions, for example, if the dataset loading memory exceeds the available memory or if the training script generates more data locally than the available disk space, errors may occur and the process may exit unexpectedly.
-2. MindSpeed LLM uses PyTorch internally, and version mismatches may cause runtime errors. For details, see the PyTorch [Security Statement](https://gitcode.com/ascend/pytorch#%E5%AE%89%E5%85%A8%E5%A3%B0%E6%98%8E).
+2. MindSpeed LLM uses PyTorch internally, and version mismatches may cause runtime errors. For details, see the PyTorch [Security Statement](https://gitcode.com/Ascend/pytorch/blob/v2.7.1-26.0.0/docs/en/SECURITYNOTE.md).
 3. This software uses `torch.load` from PyTorch to load models, and the code uses this interface with `weights_only=True`. For PyTorch versions `<= 2.5.1`, a deserialization vulnerability, CVE-2025-32434, exists. Please ensure the safety of the loaded weights and avoid malicious model loading that could attack the execution machine or device.
 
 ## Public Internet Address Statement
