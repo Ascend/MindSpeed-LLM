@@ -18,6 +18,7 @@ docs/zh/
 ├── introduction.md           # 项目介绍
 ├── project_guide.md          # 项目导读
 ├── docs_guide.md             # 文档导航
+├── task_entry_guide.md       # 任务入口导读
 ├── appendixes.md             # 附录文档
 ├── release_notes_llm.md      # 版本发布说明
 ├── replace_ascend_path_guide.md  # 昇腾路径替换指南
@@ -103,7 +104,7 @@ docs/zh/
 
 ## 核心文档导航
 
-**快速跳转**：[入门指南](#入门指南) | [Mcore后端](#mcore后端) | [FSDP2后端](#fsdp2后端) | [工具链](#工具链) | [调优指南](#调优指南) | [其他](#其他)
+**快速跳转**：[入门指南](#入门指南) | [任务入口](./task_entry_guide.md) | [Mcore后端](#mcore后端) | [FSDP2后端](#fsdp2后端) | [工具链](#工具链) | [调优指南](#调优指南) | [其他](#其他)
 
 ### 入门指南
 
@@ -113,6 +114,7 @@ docs/zh/
 | [quick_start_pytorch](./pytorch/training/quick_start.md) | Mcore后端的快速上手指导，基于PyTorch框架从环境安装到模型预训练和微调 |
 | [fsdp2_quick_start](./pytorch/training/fsdp2_quick_start.md) | FSDP2后端的快速上手指导，从环境安装到模型预训练和微调 |
 | [supported_models](pytorch/models/supported_models.md) | 模型支持列表 |
+| [task_entry_guide](./task_entry_guide.md) | 按任务类型查看入口脚本、示例脚本、配置来源和实现路径 |
 
 ### Mcore后端
 
