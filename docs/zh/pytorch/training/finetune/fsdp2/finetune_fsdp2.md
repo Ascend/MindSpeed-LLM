@@ -2,6 +2,10 @@
 
 本文档以 **微调场景** GPT-OSS 20B 为例，介绍如何使用 MindSpeed LLM 的 FSDP2 后端进行大语言模型训练，涵盖环境准备、配置说明与训练启动全流程。
 
+> [!NOTE]
+>
+> 若您是首次使用 FSDP2 后端，建议先按 [FSDP2 快速入门](../../fsdp2_quick_start.md)（Qwen3-8B 预训练与微调）完成一次端到端跟练。本文档侧重 YAML 配置、`dataset_info.json` 注册方式与参数说明，适用于更换模型或自定义数据集场景。
+
 ## 1. 环境安装
 
 环境安装请参考 [MindSpeed LLM安装指导](../../install_guide.md)
@@ -210,6 +214,6 @@ data:
   data_manager_type: mg                             # 数据管理器类型，lf 表示微调数据处理，mg 表示预训练
 ```
 
-> 🔍 完整参数说明请参考：[FSDP参数说明](../../../features/fsdp2/arguments.md)
+> 🔍 完整参数说明请参考：[FSDP参数说明](../../../features/fsdp2/arguments.md)。首次使用建议先阅读 [FSDP2 快速入门](../../fsdp2_quick_start.md)。
 
 ---

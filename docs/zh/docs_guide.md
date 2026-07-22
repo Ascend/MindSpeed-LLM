@@ -6,7 +6,7 @@
 
 MindSpeed LLM 文档按照不同的训练框架进行组织，主要包含以下核心目录：
 
-- **pytorch/**：基于 PyTorch 训练框架的文档，主要支持 Mcore和FSDP2 两种训练后端，包含安装指南、模型清单、特性说明、训练方案和工具链等
+- **pytorch/**：基于 PyTorch 训练框架的文档，主要支持 Mcore 和 FSDP2 两种训练后端，包含安装指南、模型清单、特性说明、训练方案和工具链等
 
 ### 文档目录结构
 
@@ -61,7 +61,8 @@ docs/zh/
     │   └── supported_models.md
     ├── training/             # 训练解决方案文档
     │   ├── install_guide.md    # 安装指南
-    │   ├── quick_start.md      # 快速入门指南
+    │   ├── quick_start.md      # Mcore 快速入门指南
+    │   ├── fsdp2_quick_start.md # FSDP2 快速入门指南
     │   ├── evaluation/         # 模型评估
     │   │   ├── evaluation_guide.md
     │   │   ├── models_evaluation.md
@@ -77,8 +78,8 @@ docs/zh/
     │   │   │   ├── offline_dpo.md               # 离线DPO
     │   │   │   ├── layerwise_disaggregated_training.md # 逐层分离训练微调
     │   │   │   └── pmcc_obfuscation.md          # PMCC混淆
-    │   │   └── fsdp2/        # FSDP2 微调方案
-    │   │       └── finetune_fsdp2.md
+    │   │   └── fsdp2/        # FSDP2 训练方案
+    │   │       └── finetune_fsdp2.md  # FSDP2 训练使用指南（YAML 配置与参数说明）
     │   ├── inference/        # 模型推理
     │   │   ├── inference.md
     │   │   └── chat.md
@@ -169,7 +170,8 @@ docs/zh/
 
 | 分类 | 内容 | 说明 |
 |------|------|------|
-| 微调 | [finetune](pytorch/training/finetune/fsdp2/finetune_fsdp2.md) | 全参微调方法 |
+| 快速入门 | [fsdp2_quick_start](pytorch/training/fsdp2_quick_start.md) | Qwen3-8B 模型预训练及微调快速入门（跟练教程） |
+| 训练指南 | [finetune_fsdp2](pytorch/training/finetune/fsdp2/finetune_fsdp2.md) | FSDP2 训练使用指南（YAML 配置、`dataset_info.json` 与参数说明，含预训练/微调） |
 
 ### 工具链
 

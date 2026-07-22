@@ -21,6 +21,10 @@
 - 具备初级的 Python 开发经验
 - 对FSDP（Fully Sharded Data Parallel，全分片数据并行）有基本了解
 
+> [!NOTE]
+>
+> 本文档为 **快速入门跟练教程**。若需更换模型、注册自定义数据集或查阅更完整的 YAML 配置说明，请参考 [FSDP2 后端训练使用指南](./finetune/fsdp2/finetune_fsdp2.md)。
+
 ## 环境准备
 
 1. 环境搭建
@@ -329,7 +333,7 @@
 > [!NOTE]
 >
 > - 多机微调需在多个终端同时启动微调脚本（每个终端的微调脚本只有 `NODE_RANK` 参数不同，MASTER_ADDR均为主节点的IP地址，其他参数均相同）。
-> - 微调默认使用 alpaca 数据集格式，如需使用其他数据集，请参考[数据集配置说明](../features/fsdp2/arguments.md)。
+> - 微调默认使用 alpaca 数据集格式，如需使用其他数据集，请参考 [FSDP2 后端训练使用指南](./finetune/fsdp2/finetune_fsdp2.md) 中的数据集配置说明，或 [FSDP2 参数说明](../features/fsdp2/arguments.md)。
 
 脚本中包含训练参数，下表为部分参数解释。
 
@@ -356,4 +360,5 @@
 
 > [!NOTE]
 >
-> 🔍 完整参数说明请参见[FSDP2 参数说明](../features/fsdp2/arguments.md)。
+> - 完整参数说明请参考 [FSDP2 参数说明](../features/fsdp2/arguments.md)。
+> - YAML 配置与数据集注册示例请参考 [FSDP2 后端训练使用指南](./finetune/fsdp2/finetune_fsdp2.md)。
