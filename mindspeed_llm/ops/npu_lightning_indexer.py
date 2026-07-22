@@ -34,7 +34,7 @@ def get_npu_lightning_indexer_metadata(
     sparse_mode=3,
     cmp_ratio=4,
 ):
-    cmp_residual_k = torch.tensor([S_K % cmp_ratio], dtype=torch.int32, device="npu")
+    cmp_residual_k = torch.full((B,), S_Q % cmp_ratio, dtype=torch.int32, device="npu")
     metadata = _custom_ops().lightning_indexer_metadata(
         N1,
         N2,
@@ -100,7 +100,7 @@ def npu_lightning_indexer(
         seqused_q = torch.full((B,), S_Q, dtype=torch.int32).npu()
         seqused_k = torch.full((B,), S_K, dtype=torch.int32).npu()
         if cmp_residual_k is None:
-            cmp_residual_k = torch.tensor([S_K % cmp_ratio], dtype=torch.int32, device="npu")
+            cmp_residual_k = torch.full((B,), S_Q % cmp_ratio, dtype=torch.int32, device="npu")
 
     if layout == "BSND":
         metadata = get_npu_lightning_indexer_metadata(

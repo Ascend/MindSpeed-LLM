@@ -41,7 +41,7 @@ def get_sparse_lightning_indexer_klloss_grad_metadata(
     ctx_layout_kv,
     ctx_cmp_mask_mode,
 ):
-    cmp_residual_kv = torch.tensor([s2 % ctx_cmp_ratio], dtype=torch.int32).npu()
+    cmp_residual_kv = torch.full((ctx_B,), ctx_S1 % ctx_cmp_ratio, dtype=torch.int32).npu()
     slig_metadata = _custom_ops().sparse_lightning_indexer_kl_loss_grad_metadata(
         ctx_N1,
         ctx_N2,
@@ -484,7 +484,7 @@ def npu_sparse_flash_mla_with_indexer_loss(
             None if cmp_ratio != 4 else cmp_sparse_indices.unsqueeze(2).contiguous()
         )  # [B, S, K] --> [B, S, 1, K]
         if cmp_residual_kv is None:
-            cmp_residual_kv = torch.tensor([S1 % cmp_ratio], dtype=torch.int32).npu()
+            cmp_residual_kv = torch.full((B,), S1 % cmp_ratio, dtype=torch.int32).npu()
     elif layout_q == 'TND':
         cu_seqlens_q = cu_seqlens_q.int()
         cu_seqlens_kv = cu_seqlens_kv.int()
