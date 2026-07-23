@@ -7,7 +7,7 @@ ci:
   autoupdate_schedule: monthly
 
 repos:
-  # pre-commit 基础检查
+  # pre-commit basic checks
   - repo: https://gitcode.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
     hooks:
@@ -20,8 +20,8 @@ repos:
       - id: detect-private-key
       - id: check-json
 
-  # -------------------------- Python 核心检查 --------------------------
-  # Ruff：指定读取 pre-commit/pyproject.toml
+  # -------------------------- Python Core Checks --------------------------
+  # Ruff: load configuration from pre-commit/pyproject.toml
   - repo: https://gitcode.com/gh_mirrors/ru/ruff-pre-commit
     rev: v0.14.14
     hooks:
@@ -44,7 +44,7 @@ repos:
             "*.toml,*.py,*.cpp,*.hpp,*.c,*.h",
           ]
 
-  # pylint：指定 pre-commit/pyproject.toml
+  # pylint: load configuration from pre-commit/pyproject.toml
   - repo: https://gitcode.com/gh_mirrors/pyl/pylint
     rev: v4.0.5
     hooks:
@@ -54,12 +54,12 @@ repos:
         args: ["--rcfile=pre-commit/pyproject.toml"]
         verbose: false
 
-  # Bandit：指定 pre-commit/pyproject.toml
+  # Bandit: load configuration from pre-commit/pyproject.toml
   - repo: https://gitcode.com/gh_mirrors/ba/bandit
     rev: 1.9.4
     hooks:
       - id: bandit
-        name: bandit (Python 安全漏洞检查)
+        name: bandit (Python security vulnerability scan)
         types: [python]
         args: [
           "--config=pre-commit/pyproject.toml",
@@ -73,13 +73,27 @@ repos:
       - id: typos
         args: ["--force-exclude", "--config", "pre-commit/typos.toml"]
 
-  #--------------- C++ 核心检查 ---------------------------------------------
+  #--------------- C++ Core Checks ---------------------------------------------
   - repo: https://gitcode.com/pre-commit-clang/mirrors-clang-format
     rev: v18.1.8
     hooks:
       - id: clang-format
         files: \.(c|h|cpp|hpp|cc|hh|cxx|hxx)$
         args:
-          - "--style=file"  # 读取 .clang-format 文件
+          - "--style=file"  # Load .clang-format configuration file
           - "--verbose"
           - "-i"
+# -------------------------- Gitleaks Local Offline Binary Scan --------------------------
+  - repo: local
+    hooks:
+      - id: gitleaks-offline-scan
+        name: Gitleaks Secret Scan(Local Binary)
+        entry: ./gitleaks
+        language: system
+        pass_filenames: true
+        args:
+          - protect
+          - --verbose
+          - --redact
+          - --config=pre-commit/.gitleaks.toml
+        stages: [pre-commit]

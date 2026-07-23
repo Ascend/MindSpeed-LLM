@@ -1,0 +1,83 @@
+# ==============================================
+# Gitleaks Custom Configuration File
+# Path: pre-commit/.gitleaks.toml
+# Current Status: Inherit all official built-in default rules, no additional rules and no rules suppressed
+# Standard inheritance syntax: [extend] useDefault = true (Officially recommended, compatible with general offline binaries)
+# ==============================================
+title = "pre-commit secret scan config"
+
+# 【Standard inheritance of built-in default rules】
+# useDefault=true: Load all built-in secret detection rules (AWS/Git/SSH/OBS, etc.)
+# Note: useDefault and path are mutually exclusive and cannot be used simultaneously
+[extend]
+useDefault = true
+# disabledRules = ["generic-api-key","generic-password"]
+# ↑ Uncomment to globally disable specified built-in rules in batch, fill in rule ID array
+
+# ==============================================================================
+# 1. Two syntax for globally disabling built-in rules (commented examples, not enabled currently)
+# ==============================================================================
+# Syntax A (Recommended for new versions, batch disable via array, placed inside [extend])
+# [extend]
+# useDefault = true
+# disabledRules = ["generic-api-key","generic-password"]
+
+# Syntax B (Legacy compatibility, disable rules one by one)
+# [[rules.disabled]]
+# id = "generic-api-key"
+# [[rules.disabled]]
+# id = "generic-password"
+# Command to list all built-in rule IDs: ./gitleaks detect --list-rules --config=pre-commit/.gitleaks.toml
+
+# ==============================================================================
+# 2. Add custom business detection rules (commented examples, not enabled currently)
+# Fixed format [[rules]], used to detect project-specific credentials
+# ==============================================================================
+# [[rules]]
+# id = "huawei-obs-plain-ak-sk"
+# description = "Hardcoded plaintext Huawei Cloud OBS AK/SK credentials"
+# regex = '''(access_key|secret_key|AK|SK)\s*[:=]\s*["']?[A-Z0-9]{20,}["']?'''
+# secretGroup = 1
+# entropy = 3.5
+# keywords = ["ak", "sk", "obs"]
+# # Local allowlist for single rule: skip this rule for ut test directories
+# [[rules.allowlist]]
+# paths = ["^ut/", "^test/"]
+
+# ==============================================================================
+# 3. Global allowlist configuration (new version requires [[allowlists]], [allowlist] is invalid)
+# Syntax requirement: At least one uncommented array must exist inside, otherwise configuration loading fails
+# ==============================================================================
+[[allowlists]]
+# Placeholder empty regular expression, only used to pass syntax validation, no files will be allowed
+paths = ["^$"]
+# Uncomment example if directories need to be allowed
+# paths = [
+#     "^dist/",
+#     "^build/",
+#     "\\.md$"
+# ]
+# Allow fixed dummy test secret strings
+stopwords = [
+    # "dummy-test-ak-123456",
+    # "fake-secret-000000"
+]
+commits = []
+
+# ==============================================================================
+# 4. Inline suppression for single line / full file (no need to modify this config file)
+# Two inline comment formats, add at the end of code line when committing code, gitleaks will automatically skip detection
+# ==============================================================================
+# Method 1: Suppress secret alert only for current single line (Recommended)
+# access_key = "AKXXXXXXXXXXXXXXXXXXXX"  # gitleaks:allow
+#
+# Method 2: Suppress all alerts of the entire file, place at the top of target file
+# # gitleaks:skip-file
+
+# ==============================================================================
+# Global basic scan parameters
+# ==============================================================================
+minEntropy = 3.0
+redact = true
+maxMatchLength = 2048
+scanGitHistory = false
