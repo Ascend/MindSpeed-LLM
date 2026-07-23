@@ -8,7 +8,10 @@ from fsdp_turbo.memory.recompute.recompute import recompute_modules
 from mindspeed_llm.fsdp2.distributed.parallel_state import init_parallel_state
 from mindspeed_llm.fsdp2.distributed.parallel_engine_config import ParallelEngineConfig
 from mindspeed_llm.fsdp2.distributed.context_parallel.context_parallel_manager import apply_context_parallelize_modules
-from mindspeed_llm.fsdp2.distributed.expert_parallel.expert_parallel import expert_parallelize_modules
+from mindspeed_llm.fsdp2.distributed.expert_parallel.expert_parallel import (
+    expert_parallelize_modules,
+    apply_grad_division_hook,
+)
 from mindspeed_llm.fsdp2.distributed.expert_parallel.expert_fully_shard_parallel import expert_fully_shard_modules
 from mindspeed_llm.fsdp2.models.model_loader import WeightLoader
 from mindspeed_llm.fsdp2.utils.logging import get_logger
@@ -40,6 +43,10 @@ class MindSpeedParallelEngine(torch.nn.Module):
         self.apply_recompute_modules()
         self.apply_fsdp_modules()
 
+        # Apply expert grad division hooks
+        # This step should be executed after all parallel wrapping is complete to ensure the model structure is fixed
+        self._apply_expert_grad_division_hooks()
+
         # For meta device: load weights after fsdp wrapping
         if self.init_device == "meta":
             logger.info_rank0("> Loading weights after FSDP wrapping...")
@@ -60,7 +67,7 @@ class MindSpeedParallelEngine(torch.nn.Module):
             self.model = expert_parallelize_modules(
                 self.model, self.parallel_state.get_ep_device_mesh(), self.config.ep_plan
             )
-        if self.config.expert_fully_shard_parallel_size > 1:
+
             self.model = expert_fully_shard_modules(
                 self.model, self.parallel_state.get_efsdp_device_mesh(), self.config.ep_plan
             )
@@ -103,6 +110,24 @@ class MindSpeedParallelEngine(torch.nn.Module):
         from mindspeed.fsdp.quantization.core.cache import hook_optimizer_step
 
         hook_optimizer_step(self.model, optimizer)
+
+    def _apply_expert_grad_division_hooks(self) -> None:
+        try:
+            ep_mesh = self.parallel_state.get_ep_device_mesh()
+            ep_group = ep_mesh.get_group()
+            ep_size = torch.distributed.get_world_size(ep_group)
+        except Exception as e:
+            logger.warning(f"Failed to get EP device mesh/group: {e}. Skipping expert grad division hooks.")
+            return
+
+        for name, sub_module in self.model.named_modules():
+            class_name = sub_module.__class__.__name__
+            if "experts" in class_name.lower():
+                logger.debug(f"Found expert module: {name}, class: {class_name}")
+                try:
+                    apply_grad_division_hook(sub_module, ep_size)
+                except Exception as e:
+                    logger.error(f"Failed to apply hook to {name} ({class_name}): {e}")
 
     def forward(self, *args, **kwargs):
         return self.model(*args, **kwargs)

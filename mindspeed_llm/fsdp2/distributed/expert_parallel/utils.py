@@ -21,8 +21,9 @@ def permute(tokens, indices, fused=False):
 
 def eager_unpermute(permuted_tokens, sorted_indices, probs):
     num_tokens, topk = (permuted_tokens.size(0), 1) if probs is None else (probs.numel(), probs.size(1))
-    unpermuted_tokens = torch.zeros([num_tokens, permuted_tokens.shape[-1]], dtype=permuted_tokens.dtype,
-                                    device=permuted_tokens.device)
+    unpermuted_tokens = torch.zeros(
+        [num_tokens, permuted_tokens.shape[-1]], dtype=permuted_tokens.dtype, device=permuted_tokens.device
+    )
     unpermuted_tokens.index_copy_(0, sorted_indices.long(), permuted_tokens)
     unpermuted_tokens = unpermuted_tokens.reshape(-1, topk, permuted_tokens.size(-1))
     if probs is not None:
@@ -37,7 +38,8 @@ def fused_unpermute(permuted_tokens, sorted_indices, probs):
 def unpermute(permuted_tokens, sorted_indices, probs=None, fused=False):
     if permuted_tokens.size(0) != sorted_indices.numel():
         raise AssertionError(f'permuted tokens({permuted_tokens.size(0)}) != sorted indices({sorted_indices.size()})')
-    return fused_unpermute(permuted_tokens, sorted_indices, probs) if fused \
+    return (
+        fused_unpermute(permuted_tokens, sorted_indices, probs)
+        if fused
         else eager_unpermute(permuted_tokens, sorted_indices, probs)
-
-
+    )

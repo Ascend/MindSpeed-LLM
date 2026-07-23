@@ -5,6 +5,11 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
+try:
+    import torch_npu
+except ImportError:
+    torch_npu = None
+
 from transformers import initialization as init
 from transformers.activations import ACT2FN
 from transformers.cache_utils import Cache, DynamicCache, DynamicSlidingWindowLayer
@@ -24,6 +29,8 @@ from transformers.models.deepseek_v4.configuration_deepseek_v4 import DeepseekV4
 from mindspeed_llm.fsdp2.models.common.mtp import MultiTokenPredictionBlock, MTPCausalLMOutputWithPast
 from mindspeed_llm.fsdp2.utils.global_vars import get_args
 from fsdp_turbo.distributed.expert_parallel.utils import fixed_router_for_debug
+from fsdp_turbo.ops.moe import grouped_matmul
+
 
 # Custom DeepSeek-V4 modeling implementation, modified based on transformers official source code.
 # Modification list compared with original transformers framework:
@@ -993,24 +1000,28 @@ class DeepseekV4Experts(nn.Module):
         self.down_proj = nn.Parameter(torch.empty(self.num_experts, self.hidden_dim, self.intermediate_dim))
         self.act_fn = ACT2FN[config.hidden_act]
         self.limit = config.swiglu_limit
+        self.args = get_args()
 
     def forward(
         self, hidden_states: torch.Tensor, top_k_index: torch.Tensor, top_k_weights: torch.Tensor
     ) -> torch.Tensor:
         if get_args().fix_router:
             top_k_index, top_k_weights = fixed_router_for_debug(top_k_index, top_k_weights, self.num_experts)
-        final = torch.zeros_like(hidden_states)
-        with torch.no_grad():
-            mask = F.one_hot(top_k_index, num_classes=self.num_experts).permute(2, 1, 0)
-            hit = torch.greater(mask.sum(dim=(-1, -2)), 0).nonzero()
-        for expert_idx in hit:
-            expert_idx = expert_idx[0]
-            if expert_idx == self.num_experts:
-                continue
-            top_k_pos, token_idx = torch.where(mask[expert_idx])
-            current = self._apply_gate(F.linear(hidden_states[token_idx], self.gate_up_proj[expert_idx]))
-            current = F.linear(current, self.down_proj[expert_idx]) * top_k_weights[token_idx, top_k_pos, None]
-            final.index_add_(0, token_idx, current.to(final.dtype))
+        if self.args.moe_grouped_gemm:
+            final = self.gmm_forward(hidden_states, top_k_index, top_k_weights)
+        else:
+            final = torch.zeros_like(hidden_states)
+            with torch.no_grad():
+                mask = F.one_hot(top_k_index, num_classes=self.num_experts).permute(2, 1, 0)
+                hit = torch.greater(mask.sum(dim=(-1, -2)), 0).nonzero()
+            for expert_idx in hit:
+                expert_idx = expert_idx[0]
+                if expert_idx == self.num_experts:
+                    continue
+                top_k_pos, token_idx = torch.where(mask[expert_idx])
+                current = self._apply_gate(F.linear(hidden_states[token_idx], self.gate_up_proj[expert_idx]))
+                current = F.linear(current, self.down_proj[expert_idx]) * top_k_weights[token_idx, top_k_pos, None]
+                final.index_add_(0, token_idx, current.to(final.dtype))
         return final
 
     def _apply_gate(self, gate_up: torch.Tensor) -> torch.Tensor:
@@ -1021,6 +1032,26 @@ class DeepseekV4Experts(nn.Module):
         gate = gate.clamp(max=self.limit)
         up = up.clamp(min=-self.limit, max=self.limit)
         return self.act_fn(gate) * up
+
+    def gmm_forward(
+        self, hidden_states: torch.Tensor, topk_indices: torch.Tensor, topk_weights: torch.Tensor
+    ) -> torch.Tensor:
+        gate_up_proj = self.gate_up_proj.to_local() if hasattr(self.gate_up_proj, "to_local") else self.gate_up_proj
+        down_proj = self.down_proj.to_local() if hasattr(self.down_proj, "to_local") else self.down_proj
+        permuted_tokens, row_ids_map = torch_npu.npu_moe_token_permute(hidden_states, topk_indices)
+        tokens_per_expert = torch.histc(topk_indices, bins=self.num_experts, min=0, max=self.num_experts).long()
+
+        fc1_output = grouped_matmul(permuted_tokens, tokens_per_expert, gate_up_proj)
+        gate, up = fc1_output.chunk(2, dim=-1)
+        gate = gate.clamp(max=self.limit)
+        up = up.clamp(min=-self.limit, max=self.limit)
+        combined = torch.cat((gate, up), dim=-1)
+
+        fc1_activation = torch_npu.npu_swiglu(combined, dim=-1)
+        fc2_output = grouped_matmul(fc1_activation, tokens_per_expert, down_proj)
+
+        output = torch_npu.npu_moe_token_unpermute(fc2_output, row_ids_map, probs=topk_weights)
+        return output
 
 
 class DeepseekV4TopKRouter(nn.Module):

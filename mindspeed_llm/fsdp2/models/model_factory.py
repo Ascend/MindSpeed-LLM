@@ -17,6 +17,7 @@ from mindspeed_llm.fsdp2.distributed.parallel_engine_config import (
 
 from mindspeed_llm.fsdp2.utils.logging import get_logger
 from mindspeed_llm.fsdp2.models.model_loader import ModelLoader
+from mindspeed_llm.fsdp2.utils.global_vars import get_args
 
 logger = get_logger(__name__)
 
@@ -177,11 +178,13 @@ class ModelFactory:
         # For Mixture-of-Experts (MoE) models
         ep_size = parallel_args.ep_size
         ep_fsdp_size = parallel_args.ep_fsdp_size
+        args = get_args()
 
         ep_plan = EPPlanConfig(
             apply_modules=parallel_args.ep_modules,
             apply_efsdp_modules=parallel_args.ep_fsdp_modules,
             dispatcher=parallel_args.ep_dispatcher,
+            fixed_router=args.fix_router,
         )
 
         cp_plan = CPPlanConfig(context_parallel_type=parallel_args.cp_type, is_pack=getattr(model_args, "pack", False))

@@ -34,8 +34,6 @@ def apply_zero_experts_forward(module: torch.nn.Module, ep_mesh: DeviceMesh, pla
     experts_forward_fn = get_zero_experts_forward_fn(ep_group, False)
     module.forward = types.MethodType(experts_forward_fn, module)
 
-    apply_grad_division_hook(module, ep_size)
-
 
 def apply_common_experts_forward(module: torch.nn.Module, ep_mesh: DeviceMesh, plan: EPPlanConfig):
     ep_group = ep_mesh.get_group()
@@ -60,7 +58,7 @@ def apply_common_experts_forward(module: torch.nn.Module, ep_mesh: DeviceMesh, p
     distribute_experts_module(module, ep_mesh)
 
     # replace forward with ep forward
-    experts_forward_fn = get_dispatcher_fn(plan.dispatcher, ep_group)
+    experts_forward_fn = get_dispatcher_fn(plan.dispatcher, ep_group, fixed_router=plan.fixed_router)
     module.forward = types.MethodType(experts_forward_fn, module)
 
     # apply ep parameter grad division, if efsdp is enabled, the hook will be overridden
@@ -126,17 +124,17 @@ def distribute_experts_module(module: torch.nn.Module, ep_mesh: DeviceMesh):
     # input_fn=prepare_distribute_input_fn, output_fn=prepare_distribute_output_fn)
 
 
-def get_dispatcher_fn(dispatcher, ep_group):
+def get_dispatcher_fn(dispatcher, ep_group, fixed_router=False):
     forward_fn = None
     if isinstance(dispatcher, Callable):
         forward_fn = partial(dispatcher, ep_group)
     elif isinstance(dispatcher, str):
         if dispatcher == 'eager':
-            forward_fn = get_experts_forward_fn(ep_group, fused=False)
+            forward_fn = get_experts_forward_fn(ep_group, fused=False, fixed_router=fixed_router)
         elif dispatcher == 'fused':
-            forward_fn = get_experts_forward_fn(ep_group, fused=True)
+            forward_fn = get_experts_forward_fn(ep_group, fused=True, fixed_router=fixed_router)
         elif dispatcher == 'mc2':
-            forward_fn = get_experts_forward_mc2_fn(ep_group)
+            forward_fn = get_experts_forward_mc2_fn(ep_group, fixed_router=fixed_router)
 
     if forward_fn is None:
         raise RuntimeError(f'Unsupported dispatcher {dispatcher}.')
@@ -144,16 +142,10 @@ def get_dispatcher_fn(dispatcher, ep_group):
     return forward_fn
 
 
-def get_grad_division_hook(param, ep_size):
-    def hook(*unused):
-        return param.grad.mul_(1 / ep_size)
-
-    return hook
-
-
 def apply_grad_division_hook(module, ep_size):
-    for param in module.parameters():
-        if param.requires_grad:
-            param_tmp = param.expand_as(param)
-            grad_acc = param_tmp.grad_fn.next_functions[0][0]
-            grad_acc.register_hook(get_grad_division_hook(param, ep_size))
+    def backward_hook(module, grad_input, grad_output):
+        for name, p in module.named_parameters():
+            if p.grad is not None:
+                p.grad.mul_(1.0 / ep_size)
+
+    return module.register_full_backward_hook(backward_hook)

@@ -50,6 +50,7 @@ class EPPlanConfig:
     dispatcher: Union[Literal["eager", "fused", "mc2"], Callable] = None
     apply_efsdp_modules: List[str] = None
     _gradient_divide_factor: float = None
+    fixed_router: bool = False
 
 
 @dataclass
