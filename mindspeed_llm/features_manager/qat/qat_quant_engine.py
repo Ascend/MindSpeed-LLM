@@ -16,12 +16,29 @@ class QATQuantEngineFeature(MindSpeedFeature):
             '--qat-scheme',
             type=str,
             default=None,
-            choices=['w4a16-mxfp4', 'w4a16-mxfp4-moe-only', 'w4a4-mxfp4'],
+            choices=['w4a16-mxfp4', 'w4a16-mxfp4-moe-only', 'w4a4-mxfp4', 'w4a8-moe-only'],
             help='Set the QAT quantization method',
+        )
+        group.add_argument(
+            '--qat-quant-block-size',
+            type=int,
+            default=None,
+            choices=[32, 128],
+            help='Set the QAT quantization block size (effective only when --qat-scheme=w4a8-moe-only)',
         )
 
     def register_patches(self, pm: MindSpeedPatchesManager, args):
-        if getattr(args, 'qat_scheme', None) == "w4a16-mxfp4":
+        scheme = getattr(args, 'qat_scheme', None)
+        if scheme == "w4a8-moe-only":
+            if getattr(args, "gemm_gradient_accumulation_fusion", False):
+                warnings.warn("gemm_gradient_accumulation_fusion is forced to False under 'w4a8-moe-only' scheme.")
+        if scheme != "w4a8-moe-only":
+            if getattr(args, 'qat_quant_block_size', None) is not None:
+                warnings.warn(
+                    f"--qat-quant-block-size is only effective when --qat-scheme='w4a8-moe-only', "
+                    f"but current scheme is '{scheme}'. The parameter will be ignored."
+                )
+        if scheme == "w4a16-mxfp4":
             if getattr(args, "transformer_impl", "transformer_engine") == "local":
                 use_optimized_linear = (
                     getattr(args, "gradient_accumulation_fusion", False)
@@ -50,7 +67,7 @@ class QATQuantEngineFeature(MindSpeedFeature):
                     )
             else:
                 warnings.warn("w4a16-mxfp4 just not support TE implement")
-        elif getattr(args, 'qat_scheme', None) == "w4a4-mxfp4":
+        elif scheme == "w4a4-mxfp4":
             if getattr(args, "transformer_impl", "transformer_engine") == "local":
                 use_optimized_linear = (
                     getattr(args, "gradient_accumulation_fusion", False)

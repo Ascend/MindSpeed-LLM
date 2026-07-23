@@ -89,6 +89,15 @@ class DSAIndexerFeature(MindSpeedFeature):
             default=False,
             help='No Use c8 indexer.',
         )
+        group.add_argument(
+            '--indexer-qk-quant-scheme',
+            type=str,
+            default=None,
+            choices=['mxfp4', 'mxfp8'],
+            help='Support quant type for Indexer. '
+            '(Effective only when --enable-dsa-indexer is set, '
+            'requires --kv-compress, and is incompatible with --use-fused-lightning-indexer.)',
+        )
 
     def validate_args(self, args):
         if args.enable_dsa_indexer:
@@ -110,6 +119,22 @@ class DSAIndexerFeature(MindSpeedFeature):
                     raise ValueError("DSA with TND format requires --use-fused-lightning-indexer-loss.")
                 if not args.use_sparse_flash_attn:
                     raise ValueError("DSA with TND format requires --use-sparse-flash-attn.")
+        if args.indexer_qk_quant_scheme is not None:
+            if not args.enable_dsa_indexer:
+                raise ValueError(
+                    "--index-quant-scheme requires --enable-dsa-indexer to be enabled. "
+                    "Please set --enable-dsa-indexer or remove --index-quant-scheme."
+                )
+            if not args.kv_compress:
+                raise ValueError(
+                    "--index-quant-scheme requires --kv-compress to be enabled. "
+                    "Please set --kv-compress or remove --index-quant-scheme."
+                )
+            if args.use_fused_lightning_indexer:
+                raise ValueError(
+                    "--index-quant-scheme is not compatible with --use-fused-lightning-indexer. "
+                    "Please disable --use-fused-lightning-indexer or remove --index-quant-scheme."
+                )
 
     def register_patches(self, patch_manager, args):
         if args.enable_dsa_indexer:

@@ -105,6 +105,117 @@ def bf16_index(q: torch.Tensor, weights: torch.Tensor, k: torch.Tensor) -> torch
     return reduce_out
 
 
+def quant_index(q: torch.Tensor, weights: torch.Tensor, k: torch.Tensor, quant_scheme: str) -> torch.Tensor:
+    """
+    Perform index score using MXFP4/MXFP8 precision.
+
+    Args:
+        q(torch.Tensor): query tensor of shape [S, B, N, D]
+        weights(torch.Tensor): weights tensor of shape [S, B, Di, 1]
+        k(torch.Tensor): key tensor of shape [S, B, N, D]
+
+        bf16 q bf16 k -> mxfp4/mxfp8 q mxfp4/mxfp8 k
+        q @ k -> bf16 logits
+        relu(bf16 logits) * weights -> fp32 logits
+        sum(fp32 logits) -> fp32 index_score
+    """
+    dst_type = None
+    if quant_scheme == "mxfp4":
+        q = rotate_activation(q)
+        k = rotate_activation(k)
+        dst_type = torch_npu.float4_e2m1fn_x2
+    elif quant_scheme == "mxfp8":
+        dst_type = torch_npu.float8_e4m3fn
+
+    query = rearrange(q, 's b h d -> b h s d').to(torch.bfloat16)
+    key = rearrange(k, 's b h d -> b h d s').to(torch.bfloat16)
+    block_size = 32
+    output_dtype = torch.bfloat16
+    scale_alg = 0
+
+    q_shape = query.shape
+    k_shape = key.shape
+
+    q_batch = q_shape[:-2]
+    k_batch = k_shape[:-2]
+    M, K = q_shape[-2], q_shape[-1]
+    N = k_shape[-1]
+
+    if k_batch.numel() == 1:
+        M_total = q_batch.numel() * M
+        q_flat = query.reshape(M_total, K)
+        k_2d = key.reshape(K, N)
+
+        q_mxfp8, q_scale = torch_npu.npu_dynamic_mx_quant(
+            q_flat, axis=-1, round_mode="rint", dst_type=dst_type, block_size=block_size, scale_alg=scale_alg
+        )
+        k_mxfp8, k_scale = torch_npu.npu_dynamic_mx_quant(
+            k_2d, axis=-2, round_mode="rint", dst_type=dst_type, block_size=block_size, scale_alg=scale_alg
+        )
+
+        out_2d = torch_npu.npu_quant_matmul(
+            q_mxfp8,
+            k_mxfp8,
+            scale=k_scale,
+            pertoken_scale=q_scale,
+            scale_dtype=torch_npu.float8_e8m0fnu,
+            pertoken_scale_dtype=torch_npu.float8_e8m0fnu,
+            output_dtype=output_dtype,
+            x1_dtype=dst_type,
+            x2_dtype=dst_type,
+            group_sizes=[1, 1, block_size],
+        )
+        out_shape = q_shape[:-1] + (N,)
+        p = out_2d.reshape(out_shape)
+        relu_out = torch.nn.functional.relu(p)
+
+        weight_out = relu_out * weights.permute(1, 2, 0, 3)
+
+        reduce_out = torch.sum(weight_out, dim=1)
+        return reduce_out
+
+    expanded_k_shape = q_batch + (K, N)
+    key_expanded = key.expand(expanded_k_shape)
+
+    total_batch = q_batch.numel()
+    q_flat = query.reshape(total_batch, M, K)
+    k_flat = key_expanded.reshape(total_batch, K, N)
+
+    q_mxfp8_all, q_scale_all = torch_npu.npu_dynamic_mx_quant(
+        q_flat, axis=-1, round_mode="rint", dst_type=dst_type, block_size=block_size, scale_alg=scale_alg
+    )
+    k_mxfp8_all, k_scale_all = torch_npu.npu_dynamic_mx_quant(
+        k_flat, axis=-2, round_mode="rint", dst_type=dst_type, block_size=block_size, scale_alg=scale_alg
+    )
+
+    outputs = []
+    for i in range(total_batch):
+        out_i = torch_npu.npu_quant_matmul(
+            q_mxfp8_all[i],
+            k_mxfp8_all[i],
+            scale=k_scale_all[i],
+            pertoken_scale=q_scale_all[i],
+            scale_dtype=torch_npu.float8_e8m0fnu,
+            pertoken_scale_dtype=torch_npu.float8_e8m0fnu,
+            output_dtype=output_dtype,
+            x1_dtype=dst_type,
+            x2_dtype=dst_type,
+            group_sizes=[1, 1, block_size],
+        )
+        outputs.append(out_i)
+
+    out = torch.stack(outputs, dim=0)
+    out_shape = q_batch + (M, N)
+
+    p = out.reshape(out_shape)
+    relu_out = torch.nn.functional.relu(p)
+
+    weight_out = relu_out * weights.permute(1, 2, 0, 3)
+
+    reduce_out = torch.sum(weight_out, dim=1)
+    return reduce_out
+
+
 class LayerNorm(torch.nn.Module):
     """
     Layer Normalization in DSAIndexer.
@@ -428,7 +539,12 @@ class DSAIndexer(MegatronModule):
             end_pos = start_pos + s_total
             device = x.device
             compress_idxs = DSAIndexer.get_compress_idxs_on_this_rank(s_total, device) // compress_ratio
-            index_score = bf16_index(q.contiguous(), weights.unsqueeze(-1), k.contiguous())
+            if args.indexer_qk_quant_scheme is not None:
+                index_score = quant_index(
+                    q.contiguous(), weights.unsqueeze(-1), k.contiguous(), args.indexer_qk_quant_scheme
+                )
+            else:
+                index_score = bf16_index(q.contiguous(), weights.unsqueeze(-1), k.contiguous())
             if compress_idxs.size(0) != s1:
                 compress_idxs = DSAIndexer._align_compress_idxs(compress_idxs, s1, s2, device)
             mask = torch.arange(s2, device=device).repeat(s1, 1) >= compress_idxs  # (s1, s2)
