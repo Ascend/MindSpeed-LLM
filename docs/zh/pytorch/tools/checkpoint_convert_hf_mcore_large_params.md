@@ -44,7 +44,6 @@
 将下载的权重保存至`MindSpeed-LLM/model_from_hf`目录，例如：
 
 ```shell
-#!/bin/bash
 mkdir ./model_from_hf/llama-2-7b-hf/
 cd ./model_from_hf/llama-2-7b-hf/
 wget https://huggingface.co/daryl149/llama-2-7b-hf/resolve/main/config.json

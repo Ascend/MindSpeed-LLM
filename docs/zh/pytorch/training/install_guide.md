@@ -177,7 +177,7 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
 
    > [!NOTE]
    >
-   > 更多TorchNPU插件版本请参考https://gitcode.com/ascend/pytorch/releases。
+   > 更多TorchNPU插件版本请单击[Link](https://gitcode.com/ascend/pytorch/releases)。
 
 4. 安装Triton-Ascend
 
@@ -193,12 +193,12 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
    >
    > Triton-Ascend 3.2.0及以下版本，Triton-Ascend和Triton不能同时存在。需先卸载社区Triton，再安装Triton-Ascend。
 
-5. 安装MindSpeed加速库
+5. 安装MindSpeed Core训练加速库
 
     ```shell
     git clone https://gitcode.com/ascend/MindSpeed.git
     cd MindSpeed
-    git checkout 26.1.0_core_r0.12.1  # 切换至MindSpeed的26.1.0_core_r0.12.1分支
+    git checkout 26.1.0_core_r0.12.1  # 切换至MindSpeed Core的26.1.0_core_r0.12.1分支
     pip3 install -r requirements.txt
     pip3 install -e .
     cd ..

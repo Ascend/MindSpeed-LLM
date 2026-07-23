@@ -113,10 +113,10 @@
       <th colspan="4">CANN版本</th>
     </tr>
     <tr>
-      <th>8.3.RC1</th>
-      <th>8.5.0</th>
-      <th>9.0.0</th>
-      <th>9.1.0</th>
+      <th>8.3.RCX</th>
+      <th>8.5.X</th>
+      <th>9.0.X</th>
+      <th>9.1.X</th>
     </tr>
   </thead>
   <tbody>

@@ -5,29 +5,29 @@
 本文档提供了一个简易示例，帮助初次接触MindSpeed LLM的开发者快速启动模型训练任务，并基于预训练语言模型，使用单样本格式数据完成指令单机微调任务。
 以下将以Qwen3-8B模型为例，指导开发者完成大语言模型的预训练和微调任务，主要步骤包括：
 
-- 环境准备：根据仓库指导文件搭建环境
-- 准备开源模型权重：从HuggingFace下载Qwen3-8B原始模型
+- 环境准备：根据安装指引进行搭建环境
+- 权重和数据集准备：从HuggingFace下载Qwen3-8B开源模型权重，并获取Alpaca数据集
 - 启动训练任务：在昇腾NPU上进行模型预训练和微调
 
 > [!NOTE]
 >
 > MindSpeed LLM支持<term>Ascend 950 系列产品</term>、<term>Atlas A3 训练系列产品</term>和<term>Atlas A2 训练系列产品</term>，且要求单NPU的片上内存为64GB及以上，详见[模型支持列表](../models/supported_models.md)。
 >
-> 当前Qwen3-8B的示例脚本中`NPUS_PER_NODE=8`表示需要8个NPU，如果实际情况低于此配置，可能遇到OOM问题。
+> 当前Qwen3-8B的示例脚本中`NPUS_PER_NODE=8`表示需要8个NPU，如果实际情况低于此配置，可能遇到OOM（Out of Memory，内存不足）问题。
 
 开发者入门基础：
 
 - 具备基础的PyTorch使用经验
 - 具备初级的Python开发经验
-- 对Megatron-LM仓库有基本的了解
+- 对[Megatron-LM](https://github.com/NVIDIA/Megatron-LM)有基本的了解
 
 ## 环境准备
 
-1. 环境搭建
+请单击[MindSpeed快速安装](https://www.hiascend.com/developer/software/mindspeed)根据引导进行环境搭建，详细安装说明请参考[MindSpeed LLM安装指导](install_guide.md)。
 
-    基于PyTorch框架，环境搭建请参考[MindSpeed LLM安装指导](install_guide.md)。
+## 权重和数据集准备
 
-2. 获取开源模型权重
+1. 获取开源模型权重
 
     创建一个目录存储权重文件。
 
@@ -86,7 +86,7 @@
     cd ../..
     ```
 
-3. 获取数据集
+2. 获取数据集
 
     通过HuggingFace获取Alpaca数据集。
 
@@ -100,7 +100,7 @@
     cd ..
     ```
 
-4. 设置环境变量
+3. 设置环境变量
 
     ```shell
     source /usr/local/Ascend/cann/set_env.sh
@@ -113,13 +113,15 @@
 
 在这一阶段，我们将修改预训练示例脚本，启动模型预训练，具体步骤如下：
 
-1. 编辑预训练示例脚本。
+1. 编辑预训练示例脚本
 
     ```shell
     vi examples/mcore/qwen3/pretrain_qwen3_8b_4K_ptd.sh
     ```
 
-2. 修改并保存预训练参数配置，配置示例如下：
+2. 修改并保存预训练参数配置
+
+    配置示例如下：
 
     ```bash
     NPUS_PER_NODE=8           # 使用单节点的8卡NPU
@@ -136,7 +138,7 @@
     CKPT_LOAD_DIR="./model_from_hf/qwen3_hf/"      # 权重加载路径，填入下载的HuggingFace权重的路径
     ```
 
-3. 执行预训练脚本。
+3. 执行预训练脚本
 
     ```shell
     bash examples/mcore/qwen3/pretrain_qwen3_8b_4K_ptd.sh
@@ -169,13 +171,15 @@
 
 在这一阶段，我们将修改微调示例脚本，启动模型微调，具体步骤如下：
 
-1. 编辑微调启动示例脚本。
+1. 编辑微调启动示例脚本
 
     ```shell
     vi examples/mcore/qwen3/tune_qwen3_8b_4K_full_ptd.sh
     ```
 
-2. 修改并保存微调参数配置，配置示例如下：
+2. 修改并保存微调参数配置
+
+    配置示例如下：
 
     ```bash
     NPUS_PER_NODE=8           # 单节点的卡数
@@ -192,7 +196,7 @@
     TOKENIZER_PATH="./model_from_hf/qwen3_hf/"    # 指定模型的tokenizer路径
     ```
 
-3. 执行微调脚本。
+3. 执行微调脚本
 
     ```shell
     bash examples/mcore/qwen3/tune_qwen3_8b_4K_full_ptd.sh
