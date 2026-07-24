@@ -6,11 +6,10 @@ from tests.test_tools.st_runner import discover_test_scripts, run_st_case, setup
 
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-SHELL_SCRIPTS_DIR = os.path.join(BASE_DIR, "shell_scripts")
-BASELINE_DIR = os.path.join(BASE_DIR, "baseline_results")
-TEST_CI_SCRIPT = os.path.join(BASE_DIR, "..", "test_tools", "test_ci_st.py")
+BASELINE_DIR = os.path.join(BASE_DIR, "baseline")
+TEST_CI_SCRIPT = os.path.join(BASE_DIR, "..", "..", "test_tools", "test_ci_st.py")
 
-test_scripts = discover_test_scripts(SHELL_SCRIPTS_DIR)
+test_scripts = discover_test_scripts(BASE_DIR, recursive=True, exclude_dirs={BASELINE_DIR})
 
 
 @pytest.fixture(scope="session", autouse=True)
