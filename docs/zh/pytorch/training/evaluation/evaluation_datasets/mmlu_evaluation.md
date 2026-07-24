@@ -1,10 +1,10 @@
-# MMLU评估
+# MMLU 评估
 
 ## 使用场景
 
 ### 问题描述
 
-MMLU（Massive Multitask Language Understanding）评估包含一系列多样化的任务和领域，旨在全面测试模型的理解能力和知识广度。具体来说，MMLU涵盖了以下主要领域：
+MMLU（Massive Multitask Language Understanding）评估包含一系列多样化的任务和领域，旨在全面测试模型的理解能力和知识广度。具体来说，MMLU 涵盖了以下主要领域：
 
 1. **人文学科**：如历史、哲学、文学等。
 2. **社会科学**：如心理学、社会学、经济学等。
@@ -13,17 +13,17 @@ MMLU（Massive Multitask Language Understanding）评估包含一系列多样化
 
 每个领域下又包含多个具体的任务和问题，通过这些多样化的任务，MMLU能够评估模型在不同领域的知识掌握情况和跨领域的泛化能力。
 
-其中，[STEM](#STEM)，[人文学科](#人文学科)和[社会科学](#社会科学)所包含的学科问题集会在文末说明。
+其中，[STEM](#STEM)、[人文学科](#人文学科)和[社会科学](#社会科学)所包含的学科问题集会在文末说明。
 
-目前MindSpeed-LLM仓库对MMLU评估有四种评估模式：
+目前 MindSpeed-LLM 仓库对 MMLU 评估有四种评估模式：
 
 ## 使用方法
 
 ### 1. 直接评估模式
 
-#### 使用影响
+#### 工作原理
 
-此模式将会读取对外公开的[MMLU评估模板的文件](../../../../../../mindspeed_llm/tasks/evaluation/eval_impl/fewshot_template/mmlu_5shot_template.json)，在与需要模型回答的问题连接后，输入到模型中，直接进行评估。
+此模式将会读取对外公开的 [MMLU 评估模板的文件](../../../../../../mindspeed_llm/tasks/evaluation/eval_impl/fewshot_template/mmlu_5shot_template.json)，在与需要模型回答的问题连接后，输入到模型中，直接进行评估。
 
 此种模式下，模型的第一个输出将会作为答案。
 
@@ -33,11 +33,11 @@ MMLU（Massive Multitask Language Understanding）评估包含一系列多样化
 
 【--max-new-tokens】
 
-设置为1或者2
+设置为 1 或者 2
 
 ### 2. 微调模板评估模式
 
-#### 使用影响
+#### 工作原理
 
 此模式将会读取您的启动脚本中的`DATA_PATH`路径中的同级`dev`文件夹中对应问题的以`_dev.csv`为后缀的文件，作为模板问题，经处理后输入到模型中。
 
@@ -49,15 +49,15 @@ MMLU（Massive Multitask Language Understanding）评估包含一系列多样化
 
 【--max-new-tokens】
 
-设置为1或者2
+设置为 1 或者 2
 
 【--prompt-type】
 
-该参数用于指定模型模板类型，应与您在使用MindSpeed-LLM仓进行微调时配置的`--prompt-type`参数保持一致。
+该参数用于指定模型模板类型，应与你在使用 MindSpeed-LLM 仓库进行微调时配置的 `--prompt-type` 参数保持一致。
 
 ### 3. 平替模板输出模式
 
-#### 使用影响
+#### 使用说明
 
 与`微调模板评估模式`相同的是，该模式也会使用您评估脚本中的`DATA_PATH`路径中的同级`dev`文件夹中对应问题的以`_dev.csv`为后缀的文件，并作为模板问题。
 
@@ -69,15 +69,15 @@ MMLU（Massive Multitask Language Understanding）评估包含一系列多样化
 
 【--max-new-tokens】
 
-设置为128或者以上
+设置为 128 或者以上
 
 【--alternative-prompt】
 
-使能`平替模板输出模式`
+设置为 true
 
 ### 4. PPL模式
 
-#### 使用影响
+#### 使用说明
 
 `ppl` 是困惑度 (perplexity) 的缩写，是一种评价模型进行语言建模能力的指标。该模式也会使用您评估脚本中的`DATA_PATH`路径中`dev`文件夹中对应问题的以`_dev.csv`为后缀的文件，并作为模板问题。此时，我们会将 n 个选项拼接上上下文后，形成 n 个序列，然后计算模型对这 n 个序列的 perplexity，我们认为其中 perplexity 最低的序列所对应的选项即为模型在这道题上面的推理结果，该种评测方法的后处理简单直接、确定性高。
 
@@ -87,7 +87,7 @@ MMLU（Massive Multitask Language Understanding）评估包含一系列多样化
 
 设置为 `mmlu_ppl`
 
-## MMLU评估的子集
+## MMLU 评估的子集
 
 <a name="STEM"></a>
 
