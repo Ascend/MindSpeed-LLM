@@ -3,7 +3,8 @@ import os
 import glob
 import json
 from contextlib import contextmanager
-from typing import Optional, Dict, Tuple, Set
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from typing import Optional, Dict, Tuple, Set, List
 
 from safetensors import safe_open
 import torch
@@ -269,7 +270,8 @@ class WeightLoader:
                 parameter_names_to_load.remove(name)
                 WeightLoader._dispatch_parameter(model, name, pending_weights.pop(name))
 
-        # Dispatch converted weights (streaming via native WeightConverter.convert)
+        # Prepare conversion tasks (sequential — touches shared parameter_names_to_load)
+        conversion_tasks: List[Tuple] = []
         for target_name, collected in converted_groups.items():
             source_pattern = next(iter(collected))
             converter = adapter.match_converter(source_pattern)
@@ -284,8 +286,35 @@ class WeightLoader:
             parameter_names_to_load.discard(full_name)
             original_keys = [item[0] for item in collected[source_pattern]]
             tensors_only = {sp: [item[1] for item in items] for sp, items in collected.items()}
-            for name, tensor in WeightConvAdapter.dispatch_converted(converter, full_name, tensors_only, original_keys):
-                WeightLoader._dispatch_parameter(model, name, tensor)
+            conversion_tasks.append((converter, full_name, tensors_only, original_keys))
+
+        # Run weight conversions in parallel.
+        # PyTorch CPU tensor ops release the GIL, so a thread pool achieves
+        # real speedup.  Each task is independent (distinct target / tensors).
+        @torch.no_grad()
+        def _run_convert(task):
+            cv, fn, tn, ok = task
+            return fn, list(WeightConvAdapter.dispatch_converted(cv, fn, tn, ok))
+
+        num_workers = min(len(conversion_tasks), 4)
+        old_num_threads = torch.get_num_threads()
+        torch.set_num_threads(1)  # 1 ATen thread per worker → no oversubscription
+        try:
+            if num_workers > 1:
+                logger.info_rank0(f"> Converting {len(conversion_tasks)} groups with {num_workers} threads...")
+                with ThreadPoolExecutor(max_workers=num_workers) as executor:
+                    futures = [executor.submit(_run_convert, t) for t in conversion_tasks]
+                    for fut in as_completed(futures):
+                        full_name, results = fut.result()
+                        for name, tensor in results:
+                            WeightLoader._dispatch_parameter(model, name, tensor)
+            else:
+                for task in conversion_tasks:
+                    full_name, results = _run_convert(task)
+                    for name, tensor in results:
+                        WeightLoader._dispatch_parameter(model, name, tensor)
+        finally:
+            torch.set_num_threads(old_num_threads)
 
         # Log remaining unexpected keys
         for name in pending_weights:
