@@ -475,6 +475,9 @@ class TrainingArguments:
     output_dir: str = field(
         metadata={"help": "The output directory where the model predictions and checkpoints will be written."}
     )
+    deterministic: Optional[bool] = field(
+        default=True, metadata={"help": "Enable deterministic computation for reproducible training results."}
+    )
     # --- Optimization ---
     optimizer: Literal["adamw", "muon"] = field(
         default="adamw",
@@ -776,7 +779,7 @@ def _validate_cross_args(args):
     )
     enabled_dsa_fusions = [name for name in dsa_fusion_args if getattr(args.optimization, name)]
     model_id = args.model.model_id or ""
-    supports_dsa_fusions = model_id in {"dsv32", "deepseek_v32"} or model_id.startswith("glm5")
+    supports_dsa_fusions = model_id in {"dsv32", "deepseek_v32", "deepseek_v4"} or model_id.startswith("glm5")
     if enabled_dsa_fusions and not supports_dsa_fusions:
         raise ValueError(
             f"{', '.join(enabled_dsa_fusions)} only support DeepSeek-V3.2 and GLM-5 series models, "

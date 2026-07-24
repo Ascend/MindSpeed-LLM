@@ -737,6 +737,12 @@
       <td>0.3</td>
       <td>MTP（Multi Token Prediction）损失缩放因子。</td>
     </tr>
+    <tr>
+      <td>deterministic</td>
+      <td>bool</td>
+      <td>True</td>
+      <td>是否开启确定性计算</td>
+    </tr>
   </tbody>
 </table>
 

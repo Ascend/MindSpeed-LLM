@@ -26,16 +26,18 @@ from transformers.utils import TransformersKwargs, auto_docstring, can_return_tu
 from transformers.utils.generic import maybe_autocast, merge_with_config_defaults
 from transformers.utils.output_capturing import OutputRecorder, capture_outputs
 from transformers.models.deepseek_v4.configuration_deepseek_v4 import DeepseekV4Config
-from mindspeed_llm.fsdp2.models.common.mtp import MultiTokenPredictionBlock, MTPCausalLMOutputWithPast
-from mindspeed_llm.fsdp2.utils.global_vars import get_args
 from fsdp_turbo.distributed.expert_parallel.utils import fixed_router_for_debug
 from fsdp_turbo.ops.moe import grouped_matmul
 
 
-# Custom DeepSeek-V4 modeling implementation, modified based on transformers official source code.
-# Modification list compared with original transformers framework:
-# 1. Precision dtype optimization: Add explicit float cast & dtype restore logic in core computation functions to improve numerical stability.
-# 2. MTP (Multi Token Prediction) module integration: Import and embed external MultiTokenPredictionBlock, customize MTPCausalLMOutputWithPast for multi-step prediction loss computation, expand model output structure.
+from mindspeed_llm.fsdp2.models.common.mtp import MultiTokenPredictionBlock, MTPCausalLMOutputWithPast
+from mindspeed_llm.fsdp2.utils.global_vars import get_args
+from mindspeed_llm.fsdp2.distributed.parallel_state import ParallelState
+from mindspeed_llm.fsdp2.models.common.indexer_loss import (
+    compute_dsa_indexer_loss,
+    IndexerLossAutoScaler,
+    IndexerLossLoggingHelper,
+)
 
 
 @use_kernel_forward_from_hub("RMSNorm")
@@ -49,11 +51,15 @@ class DeepseekV4RMSNorm(nn.Module):
         self.variance_epsilon = eps
 
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
-        input_dtype = hidden_states.dtype
-        hidden_states = hidden_states.to(torch.float32)
-        variance = hidden_states.pow(2).mean(-1, keepdim=True)
-        hidden_states = hidden_states * torch.rsqrt(variance + self.variance_epsilon)
-        return self.weight * hidden_states.to(input_dtype)
+        if get_args().use_fused_rmsnorm:
+            output = torch_npu.npu_rms_norm(hidden_states, self.weight, epsilon=self.variance_epsilon)[0]
+        else:
+            input_dtype = hidden_states.dtype
+            hidden_states = hidden_states.to(torch.float32)
+            variance = hidden_states.pow(2).mean(-1, keepdim=True)
+            hidden_states = hidden_states * torch.rsqrt(variance + self.variance_epsilon)
+            output = self.weight * hidden_states.to(input_dtype)
+        return output
 
     def extra_repr(self):
         return f"{tuple(self.weight.shape)}, eps={self.variance_epsilon}"
@@ -65,7 +71,13 @@ class DeepseekV4UnweightedRMSNorm(nn.Module):
         self.eps = eps
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return x * torch.rsqrt(x.float().square().mean(-1, keepdim=True) + self.eps).to(x.dtype)
+        if get_args().use_fused_rmsnorm:
+            nD = x.shape[-1]
+            norm_gamma = torch.ones(nD, device=x.device, dtype=torch.float32)
+            x = torch_npu.npu_rms_norm(x, gamma=norm_gamma, epsilon=self.eps)[0]
+        else:
+            x = x * torch.rsqrt(x.float().square().mean(-1, keepdim=True) + self.eps).to(x.dtype)
+        return x
 
 
 class DeepseekV4RotaryEmbedding(nn.Module):
@@ -325,7 +337,8 @@ class DeepseekV4GroupedLinear(nn.Linear):
         w = self.weight.view(self.n_groups, -1, hidden_dim).transpose(1, 2)
         x = x.reshape(-1, self.n_groups, hidden_dim).transpose(0, 1)
         y = torch.bmm(x, w).transpose(0, 1)
-        return y.reshape(*input_shape, self.n_groups, -1)
+        output = y.reshape(*input_shape, self.n_groups, -1)
+        return output
 
 
 def rotate_half(x):
@@ -408,7 +421,9 @@ class DeepseekV4HCACompressor(nn.Module):
         if chunk_kv.shape[1] > 0:  # there were at least self.compress_rate tokens
             n_windows = chunk_kv.shape[1] // self.compress_rate
             chunk_kv = chunk_kv.view(batch, n_windows, self.compress_rate, -1)
-            chunk_gate = chunk_gate.view(batch, n_windows, self.compress_rate, -1) + self.position_bias
+            chunk_gate = chunk_gate.view(batch, n_windows, self.compress_rate, -1) + self.position_bias.to(
+                chunk_gate.dtype
+            )
             # Use float for softmax computation to avoid precision loss, cast back to original dtype after weighted sum
             compressed = self.kv_norm(
                 (chunk_kv * chunk_gate.softmax(dim=2, dtype=torch.float32).to(chunk_kv.dtype)).sum(dim=2).to(dtype)
@@ -427,7 +442,7 @@ class DeepseekV4HCACompressor(nn.Module):
         compressed_len = compressed_kv.shape[2]
         seq_len = position_ids.shape[1]
         if seq_len == 1 or compressed_len == 0:
-            return compressed_kv, None
+            return compressed_kv, None, None, None
 
         # query `t` may only see cache entries at pos `w` t > w * compress_rate (ex: t=7, w=2 t does not attend to it).
         entry_indices = torch.arange(compressed_len, device=compressed_kv.device)
@@ -437,7 +452,7 @@ class DeepseekV4HCACompressor(nn.Module):
             entry_indices.view(1, 1, 1, -1) >= causal_threshold.unsqueeze(1).unsqueeze(-1),
             float("-inf"),
         )
-        return compressed_kv, block_bias
+        return compressed_kv, block_bias, None, None
 
 
 class DeepseekV4Indexer(nn.Module):
@@ -494,15 +509,69 @@ class DeepseekV4Indexer(nn.Module):
         position_ids: torch.Tensor,
         past_key_values: Cache | None,
         layer_idx: int,
-    ) -> torch.LongTensor:
+        layout: str = "BSND",
+        cu_seq_lens_q: torch.Tensor = None,
+        cu_seq_lens_k: torch.Tensor = None,
+    ) -> tuple[torch.LongTensor, torch.Tensor]:
+        args = get_args()
+
         batch, seq_len, _ = hidden_states.shape
-        cache_layer: DeepseekV4CSACache | None = (
-            past_key_values.layers[layer_idx] if past_key_values is not None else None
-        )
-        # Cast input hidden_states to float before linear projection to boost calculation precision
-        dtype = hidden_states.dtype
-        kv = self.kv_proj(hidden_states.float())
-        gate = self.gate_proj(hidden_states.float())
+        cache_layer: DeepseekV4CSACache = past_key_values.layers[layer_idx] if past_key_values is not None else None
+        kv = self.kv_proj(hidden_states)
+        cos_q, sin_q = self.rotary_emb(hidden_states, position_ids=position_ids, layer_type=self.rope_layer_type)
+        q = self.q_b_proj(q_residual).view(batch, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
+        q = apply_rotary_pos_emb(q, cos_q, sin_q).transpose(1, 2)
+
+        if args.use_fused_lightning_indexer:
+            from mindspeed_llm.fsdp2.ops.npu_lightning_indexer import npu_lightning_indexer
+
+            gate = self.gate_proj(hidden_states)
+            compressed_kv = self._compress_index_kv(kv, gate, cache_layer)  # [B,T,d]
+
+            indexer_weights = (
+                self.weights_proj(hidden_states).float() * self.weights_scaling * self.softmax_scale
+            )  # [B,S,N]
+
+            sparse_indices, sparse_values = npu_lightning_indexer(
+                q,
+                compressed_kv,
+                indexer_weights,
+                self.index_topk,
+                compress_rate=self.compress_rate,
+            )
+
+            self.query_index, self.key_index, self.weights = q, compressed_kv.unsqueeze(2), indexer_weights
+            return sparse_indices, sparse_values
+        else:
+            gate = self.gate_proj(hidden_states)
+            compressed_kv = self._compress_index_kv(kv, gate, cache_layer)
+
+            # ReLU(q·kᵀ) * weights, then top-k
+            scores = torch.matmul(q.float(), compressed_kv.transpose(-1, -2).float().unsqueeze(1))  # [B, S, H, T]
+            scores = F.relu(scores) * self.softmax_scale
+            weights = self.weights_proj(hidden_states).float() * self.weights_scaling  # [B, S, H]
+            index_scores = (scores * weights.unsqueeze(-1)).sum(dim=2)  # [B, S, T]
+            compressed_len = compressed_kv.shape[1]
+            top_k = min(self.index_topk, compressed_len)
+            compressed_kv_expanded = compressed_kv.unsqueeze(2)  # [B, T, 1, D]
+            self.query_index, self.key_index, self.weights = q, compressed_kv_expanded, weights
+
+            if compressed_len > 0:
+                causal_threshold = (position_ids + 1) // self.compress_rate  # [B, S]
+                entry_indices = torch.arange(compressed_len, device=index_scores.device)
+                future_mask = entry_indices.view(1, 1, -1) >= causal_threshold.unsqueeze(-1)  # [B, S, T]
+                index_scores = index_scores.masked_fill(future_mask, float("-inf"))
+                top_k_scores, top_k_indices = index_scores.topk(top_k, dim=-1)  # [B, S, k]
+                invalid = top_k_indices >= causal_threshold.unsqueeze(-1)  # [B, S, k]
+                top_k_indices = torch.where(invalid, torch.full_like(top_k_indices, -1), top_k_indices)
+                top_k_scores = torch.where(invalid, torch.full_like(top_k_scores, float("-inf")), top_k_scores)
+                return top_k_indices, top_k_scores
+            topk_out = index_scores.topk(top_k, dim=-1)
+            return topk_out.indices, topk_out.topk(top_k, dim=-1)
+
+    def _compress_index_kv(self, kv, gate, cache_layer):
+        """Windowing/overlap/kv_norm/rope -> compressed index KV [B, T, head_dim]."""
+        batch = kv.shape[0]
 
         if cache_layer is None:
             usable = (kv.shape[1] // self.compress_rate) * self.compress_rate
@@ -514,9 +583,7 @@ class DeepseekV4Indexer(nn.Module):
             n_windows = chunk_kv.shape[1] // self.compress_rate
             ratio = self.compress_rate
             chunk_kv = chunk_kv.view(batch, n_windows, ratio, -1)
-            chunk_gate = chunk_gate.view(batch, n_windows, ratio, -1) + self.position_bias
-
-            # Same Ca / Cb overlap layout as the outer CSA compressor, at index_head_dim.
+            chunk_gate = chunk_gate.view(batch, n_windows, ratio, -1) + self.position_bias.to(chunk_gate.dtype)
             new_kv = chunk_kv.new_zeros((batch, n_windows, 2 * ratio, self.head_dim))
             new_gate = chunk_gate.new_full((batch, n_windows, 2 * ratio, self.head_dim), float("-inf"))
             new_kv[:, :, ratio:] = chunk_kv[..., self.head_dim :]
@@ -529,51 +596,19 @@ class DeepseekV4Indexer(nn.Module):
                 if prior_kv is not None:
                     new_kv[:, 0, :ratio] = prior_kv.to(new_kv.dtype)
                     new_gate[:, 0, :ratio] = prior_gate.to(new_gate.dtype)
-
-            # Use float for softmax computation to avoid precision loss, cast back to original dtype after weighted sum
             compressed = self.kv_norm(
-                (new_kv * new_gate.softmax(dim=2, dtype=torch.float32).to(new_kv.dtype)).sum(dim=2).to(dtype)
+                (new_kv * new_gate.softmax(dim=2, dtype=torch.float32).to(new_kv.dtype)).sum(dim=2).to(gate.dtype)
             )
             positions = torch.arange(n_windows, device=compressed.device)
-            positions = positions * self.compress_rate + first_window_position
-            positions = positions.unsqueeze(0).expand(batch, -1)
+            positions = (positions * self.compress_rate + first_window_position).unsqueeze(0).expand(batch, -1)
             cos, sin = self.rotary_emb(compressed, position_ids=positions, layer_type=self.rope_layer_type)
             compressed = apply_rotary_pos_emb(compressed.unsqueeze(1), cos, sin).squeeze(1)
         else:
-            compressed = chunk_kv.new_zeros((batch, 0, self.head_dim))
+            compressed = kv.new_zeros((batch, 0, self.head_dim))
+        return compressed if cache_layer is None else cache_layer.update_compressor_states("indexer", compressed)
 
-        compressed_kv = (
-            compressed if cache_layer is None else cache_layer.update_compressor_states("indexer", compressed)
-        )
-
-        cos_q, sin_q = self.rotary_emb(hidden_states, position_ids=position_ids, layer_type=self.rope_layer_type)
-        q = self.q_b_proj(q_residual).view(batch, seq_len, -1, self.head_dim).transpose(1, 2)
-        q = apply_rotary_pos_emb(q, cos_q, sin_q).transpose(1, 2)
-
-        # ReLU(q·kᵀ) * weights, then top-k
-        scores = torch.matmul(q.float(), compressed_kv.transpose(-1, -2).float().unsqueeze(1))  # [B, S, H, T]
-        scores = F.relu(scores) * self.softmax_scale
-        weights = self.weights_proj(hidden_states).float() * self.weights_scaling  # [B, S, H]
-        index_scores = (scores * weights.unsqueeze(-1)).sum(dim=2)  # [B, S, T]
-        compressed_len = compressed_kv.shape[1]
-        top_k = min(self.index_topk, compressed_len)
-
-        # not all queries can attend to the compressed entries. If a query's position
-        # is small than the relative position of the key (say m=4, query 2 cannot attend
-        # to compressed key at position 4, because it compressed info for states at position
-        # 12 to 16. Thus we need to make sure that top_k does not land in that range.
-        # Picks that still point past `causal_threshold` (early queries with too few ready
-        # blocks) are replaced with a `-1` sentinel that the compresser treats as invalid.
-        if compressed_len > 0:
-            causal_threshold = (position_ids + 1) // self.compress_rate  # [B, S]
-            entry_indices = torch.arange(compressed_len, device=index_scores.device)
-            future_mask = entry_indices.view(1, 1, -1) >= causal_threshold.unsqueeze(-1)  # [B, S, T]
-            index_scores = index_scores.masked_fill(future_mask, float("-inf"))
-            top_k_indices = index_scores.topk(top_k, dim=-1).indices  # [B, S, k]
-            invalid = top_k_indices >= causal_threshold.unsqueeze(-1)
-            return torch.where(invalid, torch.full_like(top_k_indices, -1), top_k_indices)
-
-        return index_scores.topk(top_k, dim=-1).indices
+    def get_indexer_params(self):
+        return self.query_index, self.key_index, self.weights
 
 
 class DeepseekV4CSACompressor(nn.Module):
@@ -617,11 +652,9 @@ class DeepseekV4CSACompressor(nn.Module):
         position_ids: torch.Tensor,
         past_key_values: Cache | None,
         layer_idx: int,
-    ) -> tuple[torch.Tensor, torch.Tensor]:
+    ) -> torch.Tensor:
         batch, seq_len, _ = hidden_states.shape
-        cache_layer: DeepseekV4CSACache | None = (
-            past_key_values.layers[layer_idx] if past_key_values is not None else None
-        )
+        cache_layer: DeepseekV4CSACache = past_key_values.layers[layer_idx] if past_key_values is not None else None
         # Cast input hidden_states to float before linear projection to boost calculation precision
         dtype = hidden_states.dtype
         kv = self.kv_proj(hidden_states.float())
@@ -637,7 +670,7 @@ class DeepseekV4CSACompressor(nn.Module):
             n_windows = chunk_kv.shape[1] // self.compress_rate
             ratio = self.compress_rate
             chunk_kv = chunk_kv.view(batch, n_windows, ratio, -1)
-            chunk_gate = chunk_gate.view(batch, n_windows, ratio, -1) + self.position_bias
+            chunk_gate = chunk_gate.view(batch, n_windows, ratio, -1) + self.position_bias.to(chunk_gate.dtype)
 
             # Lay out the two series in [B, n_win, 2*ratio, head_dim]: Cb
             # (`[..., head_dim:]`) goes in the second half (current window),
@@ -683,7 +716,9 @@ class DeepseekV4CSACompressor(nn.Module):
         # Ex: for query at index 5, m=4, and `index_topk=1024`, 1024 index are return but only 2 should be
         # attended to. The indexer marks the rest with `-1`; we clamp before the gather and keep the `valid`
         # to drop them from the per-query block mask afterwards.
-        top_k_indices = self.indexer(hidden_states, q_residual, position_ids, past_key_values, layer_idx)  # [B, S, k]
+        top_k_indices, topk_scores = self.indexer(
+            hidden_states, q_residual, position_ids, past_key_values, layer_idx
+        )  # [B, S, k]
         compressed_len = compressed_kv.shape[2]
         valid = top_k_indices >= 0  # [B, S, k]
         # Per-query block bias: query `t` may only see the cache entries that are <= `seq_len // m`
@@ -692,7 +727,7 @@ class DeepseekV4CSACompressor(nn.Module):
         safe_indices = torch.where(valid, top_k_indices, torch.full_like(top_k_indices, compressed_len))
         block_bias = compressed_kv.new_full((batch, 1, seq_len, compressed_len + 1), float("-inf"))
         block_bias.scatter_(-1, safe_indices.unsqueeze(1), 0.0)
-        return compressed_kv, block_bias[..., :compressed_len]
+        return compressed_kv, block_bias[..., :compressed_len], top_k_indices, topk_scores
 
 
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
@@ -776,6 +811,13 @@ class DeepseekV4Attention(nn.Module):
         self.attention_dropout = config.attention_dropout
         self.is_causal = True
         self.scaling = self.head_dim**-0.5
+        self.compress_ratio = config.compress_rates.get(self.layer_type, 1)  # per layer-type: 1 / 4 / 128
+
+        args = get_args()
+        self.use_sparse_flash_attn = getattr(args, "use_sparse_flash_attn", False)
+        self.use_fused_lightning_indexer_loss = getattr(args, "use_fused_lightning_indexer_loss", False)
+        self.indexer_loss_coeff = getattr(args, "indexer_loss_coeff", 0.0)
+        self.num_layers = config.num_hidden_layers
 
         self.q_a_proj = nn.Linear(config.hidden_size, config.q_lora_rank, bias=False)
         self.q_a_norm = DeepseekV4RMSNorm(config.q_lora_rank, eps=config.rms_norm_eps)
@@ -823,53 +865,165 @@ class DeepseekV4Attention(nn.Module):
         if past_key_values is not None:  # sliding where K==V
             kv = past_key_values.update(kv, kv, self.layer_idx)[0]
 
-        block_bias = None
-        if self.compressor is not None:  # Compressed KV (CSA or HCA)
-            compressed_kv, block_bias = self.compressor(
+        compressed_kv = top_k_indices = index_scores = block_bias = None
+        if self.compressor is not None:  # CSA or HCA
+            compressed_kv, block_bias, top_k_indices, index_scores = self.compressor(
                 hidden_states, q_residual, position_ids, past_key_values, self.layer_idx
             )
-            kv = torch.cat([kv, compressed_kv], dim=2)
 
-        # The compressor path concatenates extra entries onto the KV axis after the
-        # standard sliding-window cache update, so a tensor `attention_mask` (built
-        # for the pre-concat KV length) needs to be extended to cover them. The
-        # compressor returns a `block_bias` carrying per-query causality + indexer
-        # validity over those new slots — cat it in instead of zero-padding (which
-        # would let every query see every compressed slot).
-        if isinstance(attention_mask, torch.Tensor) and kv.shape[2] > attention_mask.shape[-1]:
-            if block_bias is not None:
-                attention_mask = torch.cat([attention_mask, block_bias.to(attention_mask.dtype)], dim=-1)
-            else:
-                attention_mask = F.pad(attention_mask, (0, kv.shape[2] - attention_mask.shape[-1]), value=0.0)
+        # The indexer KL loss only exists on CSA layers during training. It is either folded
+        # into the sparse-attention op's backward (fused) or computed eagerly and attached
+        # via the AutoScaler (non-fused); the two paths are numerically equivalent.
+        needs_indexer_loss = (
+            self.training
+            and torch.is_grad_enabled()
+            and self.layer_type == "compressed_sparse_attention"
+            and bool(self.indexer_loss_coeff)
+        )
+        fuse_indexer_loss = needs_indexer_loss and self.use_sparse_flash_attn and self.use_fused_lightning_indexer_loss
 
-        attention_interface: Callable = ALL_ATTENTION_FUNCTIONS.get_interface(
-            self.config._attn_implementation, eager_attention_forward
-        )
-        attn_output, attn_weights = attention_interface(
-            self,
-            q,
-            kv,
-            kv,
-            attention_mask,
-            dropout=0.0 if not self.training else self.attention_dropout,
-            scaling=self.scaling,
-            sliding_window=self.sliding_window,
-            s_aux=self.sinks,
-            **kwargs,
-        )
+        if fuse_indexer_loss:
+            attn_output = self._sparse_flash_attn_with_indexer_loss(
+                q, kv, compressed_kv, top_k_indices, *self.compressor.indexer.get_indexer_params()
+            )
+            attn_weights = None
+        elif self.use_sparse_flash_attn:
+            attn_output = self._sparse_flash_attn(q, kv, compressed_kv, top_k_indices)
+            attn_weights = None
+        else:
+            # dense fallback: concat the compressed KV and extend the additive mask
+            kv_full = kv if compressed_kv is None else torch.cat([kv, compressed_kv], dim=2)
+            if isinstance(attention_mask, torch.Tensor) and kv_full.shape[2] > attention_mask.shape[-1]:
+                if block_bias is not None:
+                    attention_mask = torch.cat([attention_mask, block_bias.to(attention_mask.dtype)], dim=-1)
+                else:
+                    attention_mask = F.pad(attention_mask, (0, kv_full.shape[2] - attention_mask.shape[-1]), value=0.0)
+            attention_interface: Callable = ALL_ATTENTION_FUNCTIONS.get_interface(
+                self.config._attn_implementation, eager_attention_forward
+            )
+            attn_output, attn_weights = attention_interface(
+                self,
+                q,
+                kv_full,
+                kv_full,
+                attention_mask,
+                dropout=0.0 if not self.training else self.attention_dropout,
+                scaling=self.scaling,
+                sliding_window=self.sliding_window,
+                s_aux=self.sinks,
+                **kwargs,
+            )
+
+        if needs_indexer_loss and not fuse_indexer_loss:
+            indexer_loss = self._compute_indexer_kl_loss(q, compressed_kv, index_scores, top_k_indices)
+            IndexerLossLoggingHelper.save_loss_to_tracker(indexer_loss)
+            attn_output = IndexerLossAutoScaler.apply(attn_output, indexer_loss)
 
         # K=V in V4, so V picked up rope on its trailing rope slice. Apply the conjugate
-        # rotation (`-sin`) at the query position to undo it on the rope slice of the
-        # output before the grouped output projection mixes heads. The transpose pair is
-        # just a layout fix-up: apply_rotary_pos_emb expects `[B, S, H, D]` (its
-        # `unsqueeze_dim=1` adds a head-broadcast dim to cos/sin); attention gave us
-        # `[B, H, S, D]`.
+        # rotation (-sin) at the query position to undo it before the grouped output
+        # projection mixes heads.
         attn_output = apply_rotary_pos_emb(attn_output.transpose(1, 2), cos, -sin).transpose(1, 2)
 
         grouped = attn_output.reshape(*input_shape, self.config.o_groups, -1)
         grouped = self.o_a_proj(grouped).flatten(2)
-        output = self.o_b_proj(grouped)
-        return output, attn_weights
+        return self.o_b_proj(grouped), attn_weights
+
+    def _compute_indexer_kl_loss(self, q, compressed_kv, index_scores, top_k_indices):
+        """KL indexer loss, identical algorithm for fused and non-fused SFA paths.
+
+        In the fused-indexer path `index_scores` may be None (the fused indexer returns
+        sparse_indices/values instead of the full P distribution), so recompute the
+        indexer scores here exactly as the non-fused path does, keeping this loss
+        byte-for-byte aligned with the verified baseline.
+        """
+        if index_scores is None:
+            raise ValueError("index_scores must be provided by the indexer for CSA layers")
+
+        if len(compressed_kv.shape) == 3:
+            compressed_kv = compressed_kv.unsqueeze(2)
+
+        if self.compress_ratio > 1:
+            index_score_up = index_scores[:, : self.compress_ratio - 1, :]
+            index_score_down = index_scores[:, self.compress_ratio - 1 :, :]
+            zeros_up = torch.zeros_like(index_score_up, dtype=torch.float32)
+            index_scores = torch.cat([zeros_up, index_score_down], dim=1)
+
+        ps = ParallelState()
+        return compute_dsa_indexer_loss(
+            index_scores,
+            top_k_indices,
+            q.detach(),
+            compressed_kv.detach(),
+            self.scaling,
+            self.indexer_loss_coeff,
+            True,
+            ps.get_tp_group(),
+            self.compress_ratio,
+        )
+
+    def _sparse_flash_attn(self, q, kv, compressed_kv, top_k_indices):
+        """BSND shared-KV sparse flash attention (no fused loss).
+        q [B,N,S,D] / kv [B,1,S,D] / compressed_kv [B,1,T,D]|None / top_k_indices [B,S,k]|None
+        returns [B,S,N,D].
+        """
+        from mindspeed_llm.fsdp2.ops.npu_sparse_flash_mla import npu_sparse_flash_mla
+
+        q_in = q.transpose(1, 2).contiguous()  # [B,N,S,D] -> [B,S,N,D]
+        ori_kv = kv.transpose(1, 2).contiguous()  # [B,1,S,D] -> [B,S,1,D]
+        has_cmp = compressed_kv is not None and self.compress_ratio > 1
+        cmp_kv = compressed_kv.transpose(1, 2).contiguous() if has_cmp else None  # [B,1,T,D]->[B,T,1,D]
+        cmp_idx = (
+            top_k_indices.to(torch.int32).contiguous()
+            if (self.compress_ratio == 4 and top_k_indices is not None)
+            else None
+        )
+        return npu_sparse_flash_mla(
+            q_in,
+            ori_kv,
+            cmp_kv,
+            cmp_idx,
+            sinks=self.sinks.float(),
+            softmax_scale=self.scaling,
+            cmp_ratio=self.compress_ratio,
+            ori_mask_mode=4,
+            cmp_mask_mode=3,
+            ori_win_left=self.sliding_window - 1,
+            ori_win_right=0,
+        )
+
+    def _sparse_flash_attn_with_indexer_loss(
+        self, q, kv, compressed_kv, top_k_indices, query_index, key_index, weights
+    ):
+        from mindspeed_llm.fsdp2.ops.npu_sparse_flash_mla_with_indexer_loss import (
+            npu_sparse_flash_mla_with_indexer_loss,
+        )
+
+        args = get_args()
+        q_in = q.transpose(1, 2).contiguous()  # [B,N,S,512] -> [B,S,N,512]
+        ori_kv = kv.transpose(1, 2).contiguous()  # [B,1,S,512] -> [B,S,1,512]
+        cmp_kv = compressed_kv.transpose(1, 2).contiguous()  # [B,1,T,512] -> [B,T,1,512]
+
+        return npu_sparse_flash_mla_with_indexer_loss(
+            q_in,
+            ori_kv,
+            cmp_kv,
+            top_k_indices,
+            query_index,
+            key_index,
+            weights,
+            sinks=self.sinks.float(),
+            softmax_scale=self.scaling,
+            cmp_ratio=self.compress_ratio,
+            ori_mask_mode=4,
+            cmp_mask_mode=3,
+            ori_win_left=self.sliding_window - 1,
+            ori_win_right=0,
+            indexer_loss_coeff=args.indexer_loss_coeff,
+            loss_tracker=self._indexer_loss_tracker,
+        )
+
+    def _indexer_loss_tracker(self, loss):
+        IndexerLossLoggingHelper.save_loss_to_tracker(loss)
 
 
 class DeepseekV4HyperConnection(nn.Module):
@@ -1070,8 +1224,10 @@ class DeepseekV4TopKRouter(nn.Module):
         logits = F.linear(flat, self.weight)
         scores = self.score_fn(logits)
         indices = torch.topk(scores + self.e_score_correction_bias, self.top_k, dim=-1, sorted=False).indices
+
         weights = scores.gather(1, indices)
         weights = weights / (weights.sum(dim=-1, keepdim=True) + 1e-20)
+
         return logits, weights * self.routed_scaling_factor, indices
 
 

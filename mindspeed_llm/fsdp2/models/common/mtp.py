@@ -188,7 +188,7 @@ class MultiTokenPredictionBlock(nn.Module):
             if use_cache and past_key_values is None:
                 past_key_values = DynamicCache(config=self.config)
             # norm, linear projection and transformer
-            hidden_states, *_ = self.layers[str(self.mtp_start_layer_idx + layer_number)](
+            hidden_states = self.layers[str(self.mtp_start_layer_idx + layer_number)](
                 hidden_states,
                 input_ids=input_ids,
                 attention_mask=attention_mask,

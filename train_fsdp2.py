@@ -68,7 +68,7 @@ class MindSpeedAutoTrainer:
         self._parse_args()
 
         # 2. Initialize distributed environment
-        self._initialize(seed=self.training_args.seed)
+        self._initialize(seed=self.training_args.seed, deterministic=self.training_args.deterministic)
 
         self.rank = torch.distributed.get_rank()
         self._print_parsed_args()
@@ -101,7 +101,7 @@ class MindSpeedAutoTrainer:
         )
 
     @staticmethod
-    def _initialize(seed: int):
+    def _initialize(seed: int, deterministic: bool):
         """
         Static initialization method: Receives external seed and local_rank,
         avoiding dependency on hardcoding or self.
@@ -137,7 +137,7 @@ class MindSpeedAutoTrainer:
 
         # --- 2. Dynamically set random seed ---
         # MindSpeed's set_seed usually handles offset for different ranks.
-        set_seed(seed, set_deterministic=True)
+        set_seed(seed, set_deterministic=deterministic)
 
         # --- 3. Initialize distributed process group ---
         # Simple fault tolerance: Manual injection for single-script runs (non-torchrun)
