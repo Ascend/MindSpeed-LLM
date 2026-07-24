@@ -1,6 +1,6 @@
 # 评估指导手册
 
-MindSpeed LLM 支持大模型在公开基准数据集上进行准确率评估，当前支持的 Benchmark
+MindSpeed-LLM 支持大模型在公开基准数据集上进行准确率评估，当前支持的 Benchmark
  详细统计信息可参考[models_evaluation.md](./models_evaluation.md)。
 
 ## 环境变量
@@ -11,7 +11,7 @@ MindSpeed LLM 支持大模型在公开基准数据集上进行准确率评估，
 
 ### 1. 基准评估
 
-MindSpeed LLM 基准评估脚本命名风格及启动方法为：
+MindSpeed-LLM 基准评估脚本命名风格及启动方法为：
 
 ```shell
 # 命名及启动：examples/mcore/model_name/evaluate_xxx.sh
@@ -38,11 +38,11 @@ bash examples/mcore/llama2/evaluate_llama2_7b_mmlu_ptd.sh
 
 【--evaluation-batch-size】
 
-可以设置多batch推理，提升模型评估性能
+可以设置多 batch 推理，提升模型评估性能
 
 【--broadcast】
 
-在开启Expert Parallel时，需启用该参数进行评估
+在开启 Expert Parallel 时，需启用该参数进行评估
 
 ### 2. 指令微调评估
 
@@ -59,7 +59,7 @@ bash examples/mcore/llama2/evaluate_llama2_7b_full_mmlu_ptd.sh
 
 【--hf-chat-template】
 
-如果模型的tokenizer已经具备`chat_template`属性，则可以选择通过添加`--hf-chat-template`来使用模型内置的对话模板进行评估
+如果模型的 tokenizer 已经具备 `chat_template` 属性，则可以选择通过添加 `--hf-chat-template` 来使用模型内置的对话模板进行评估
 
 【--eval-language】
 

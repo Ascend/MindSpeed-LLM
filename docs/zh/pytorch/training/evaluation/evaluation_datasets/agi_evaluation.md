@@ -1,4 +1,4 @@
-# AGI评估
+# AGI 评估
 
 ## 使用场景
 
@@ -8,11 +8,11 @@
 
 ### 特性介绍
 
-新版本更新了中国高考（化学、生物、物理）数据集，纳入了2023年的题目，并处理了标注方面的问题。为了便于评估，现在所有选择题任务都只有一个答案（高考物理和JEC-QA数据集以前有多个正确答案）。AGIEval 包含20项任务，其中包括18项选择题任务和两项完形填空任务（高考数学完形填空和MATH）。
+新版本更新了中国高考（化学、生物、物理）数据集，纳入了 2023 年的题目，并处理了标注方面的问题。为了便于评估，现在所有选择题任务都只有一个答案（高考物理和 JEC-QA 数据集以前有多个正确答案）。AGIEval 包含 20 项任务，其中包括 18 项选择题任务和两项完形填空任务（高考数学完形填空和 MATH）。
 
 ![AGIEval](../../../figures/evaluation/AGIEval_tasks.png)
 
-目前MindSpeed-LLM仓库对 AGI 评估有两种评估模式：
+目前 MindSpeed-LLM 仓库对 AGI 评估有两种评估模式：
 
 ## 使用方法
 
@@ -20,29 +20,29 @@
 
 #### 使用影响
 
- - 此模式将会直接将[模板提示](../../../../../../mindspeed_llm/tasks/evaluation/eval_impl/fewshot_template/AGI_fewshot.json)和需要回答的问题连接起来输入到模型中，进行评估
+- 此模式将会直接将[模板提示](../../../../../../mindspeed_llm/tasks/evaluation/eval_impl/fewshot_template/AGI_fewshot.json)和需要回答的问题连接起来输入到模型中，进行评估
 
 #### 推荐参数配置
 
 【--max-new-tokens】
 
-设置为3
+设置为 3
 
 ### 2. 平替模板输出模式
 
 #### 使用影响
 
-- 与`直接评估模式`不相同的是，该模式也会使用[agi_utils](../../../../../../mindspeed_llm/tasks/evaluation/eval_utils/agi_utils.py)中的`template_mapping`中的固定模板和需要回答的问题连接起来输入到模型中，进行评估
+- 与`直接评估模式`不同，该模式使用 [agi_utils](../../../../../../mindspeed_llm/tasks/evaluation/eval_utils/agi_utils.py) 中的 `template_mapping` 中的固定模板和需要回答的问题连接起来输入到模型中，进行评估
 
 #### 推荐参数配置
 
 【--max-new-tokens】
 
-设置为5或者以上
+设置为 5 或者以上
 
 【--alternative-prompt】
 
-使能`平替模板输出模式`
+设置为 true
 
 ## 参考文献
 
