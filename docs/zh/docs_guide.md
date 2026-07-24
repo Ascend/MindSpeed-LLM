@@ -80,7 +80,7 @@ docs/zh/
     │   │   │   ├── layerwise_disaggregated_training.md # 逐层分离训练微调
     │   │   │   └── pmcc_obfuscation.md          # PMCC混淆
     │   │   └── fsdp2/        # FSDP2 训练方案
-    │   │       └── finetune_fsdp2.md  # FSDP2 训练使用指南（YAML 配置与参数说明）
+    │   │       └── finetune_fsdp2.md  # FSDP2模型微调使用指南
     │   ├── inference/        # 模型推理
     │   │   ├── inference.md
     │   │   └── chat.md
@@ -173,7 +173,7 @@ docs/zh/
 | 分类 | 内容 | 说明 |
 |------|------|------|
 | 快速入门 | [fsdp2_quick_start](pytorch/training/fsdp2_quick_start.md) | Qwen3-8B 模型预训练及微调快速入门（跟练教程） |
-| 训练指南 | [finetune_fsdp2](pytorch/training/finetune/fsdp2/finetune_fsdp2.md) | FSDP2 训练使用指南（YAML 配置、`dataset_info.json` 与参数说明，含预训练/微调） |
+| 微调 | [finetune_fsdp2](pytorch/training/finetune/fsdp2/finetune_fsdp2.md) | FSDP2 全参数微调使用指南（模型、数据集、YAML 配置与参数说明） |
 
 ### 工具链
 
