@@ -63,6 +63,65 @@ def get_cmp_cu_seqlens(cu_seqlens, ratio, zero_based=False, return_maxlen=False)
     return cu_seqlens, max_seqlen
 
 
+def _compute_prefix_kv_cu_seqlens(global_cu_seqlens, rank_offset, local_len):
+    """Build cu_seqlens for prefix KV mode.
+
+    Returns (cu_q, cu_kv, kv_segments), one entry per batch:
+      - seq fully local: q_len == kv_len
+      - seq crosses rank boundary: q_len < kv_len (kv_len includes prefix)
+      - seq not local: skipped
+
+    kv_segments: (start, end) per batch in global KV, used by _rearrange_prefix_kv.
+    """
+    if global_cu_seqlens[0] != 0:
+        cu_seqlens = torch.cat([global_cu_seqlens.new_zeros(1), global_cu_seqlens])
+    else:
+        cu_seqlens = global_cu_seqlens
+
+    local_end = rank_offset + local_len
+    q_lens = []
+    kv_lens = []
+    kv_segments = []
+
+    cu_list = cu_seqlens.tolist()
+    for i in range(len(cu_list) - 1):
+        seq_start = cu_list[i]
+        seq_end = cu_list[i + 1]
+
+        clipped_start = max(seq_start, rank_offset)
+        clipped_end = min(seq_end, local_end)
+
+        if clipped_end > clipped_start:
+            q_lens.append(clipped_end - clipped_start)
+            kv_lens.append(clipped_end - seq_start)
+            kv_segments.append((seq_start, clipped_end))
+
+    if not q_lens:
+        result = torch.tensor([0], dtype=global_cu_seqlens.dtype, device=global_cu_seqlens.device)
+        return result, result, []
+
+    cu_q = torch.zeros(len(q_lens) + 1, dtype=global_cu_seqlens.dtype, device=global_cu_seqlens.device)
+    cu_kv = torch.zeros(len(kv_lens) + 1, dtype=global_cu_seqlens.dtype, device=global_cu_seqlens.device)
+    cu_q[1:] = torch.tensor(q_lens, dtype=global_cu_seqlens.dtype, device=global_cu_seqlens.device).cumsum(0)
+    cu_kv[1:] = torch.tensor(kv_lens, dtype=global_cu_seqlens.dtype, device=global_cu_seqlens.device).cumsum(0)
+    return cu_q, cu_kv, kv_segments
+
+
+def _rearrange_prefix_kv(kv, kv_segments):
+    """Reorder prefix KV by batch order to match cu_kv (starts from 0).
+
+    After gather, KV is in rank order; cu_kv assumes batch-contiguous order.
+    Takes the global slice [start:end] per batch. Also works for freqs_cis.
+    Returns kv unchanged if kv_segments is empty.
+    """
+    if kv_segments is None or not kv_segments:
+        return kv
+    segments = []
+    for start, end in kv_segments:
+        segments.append(kv[start:end])
+    return torch.cat(segments, dim=0)
+
+
 @lru_cache(2)
 def precompute_freqs_cis(dim, seqlen, original_seq_len, base, factor, beta_fast, beta_slow) -> torch.Tensor:
     """

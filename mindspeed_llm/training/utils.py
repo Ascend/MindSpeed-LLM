@@ -14,6 +14,7 @@
 # limitations under the License.
 
 """General utilities."""
+
 import os
 import json
 import re
@@ -25,7 +26,7 @@ import warnings
 from contextlib import contextmanager
 from functools import wraps
 from logging import getLogger
-from typing import Optional, Union, List
+from typing import List
 from itertools import takewhile
 from packaging.version import Version as PkgVersion
 from collections import defaultdict
@@ -44,22 +45,24 @@ from megatron.core.parallel_state import is_pipeline_last_stage
 from tqdm import tqdm
 
 from mindspeed.core.context_parallel.utils import pad_data
-from mindspeed.core.context_parallel.get_batch_utils import  set_actual_seq_len
-from mindspeed.utils import ( set_position_ids,
-                             _get_batch_on_this_cp_rank_in_megatron_cp,
-                             _get_batch_on_this_cp_rank_in_hybrid_cp_general,
-                             _get_batch_on_this_cp_rank_in_hybrid_cp,
-                             broadcast_dynamic, _broadcast)
+from mindspeed.core.context_parallel.get_batch_utils import set_actual_seq_len, get_ring_degree
+from mindspeed.utils import (
+    set_position_ids,
+    _get_batch_on_this_cp_rank_in_megatron_cp,
+    _get_batch_on_this_cp_rank_in_hybrid_cp_general,
+    _get_batch_on_this_cp_rank_in_hybrid_cp,
+    broadcast_dynamic,
+)
 from mindspeed.core.tensor_parallel_y_union_cp import TensorParallelYUnionCP
-from mindspeed.core.transformer.flash_attention.reset_attention_mask.adaptor import get_ring_degree
 from mindspeed.model.transformer import set_attention_mask
 from mindspeed.utils import _get_batch_on_this_tp_y_cp_rank_in_megatron_cp
 from mindspeed_llm.tasks.dataset.shared_memory_manager import SharedMemoryManager
 
 try:
+    # pylint: disable=ungrouped-imports
     from mindspeed.core.pipeline_parallel.dualpipev.dualpipev_schedules import get_post_process_flag
 except Exception:
-    pass
+    pass  # nosec B110 - optional import pattern
 
 try:
     _torch_version = PkgVersion(torch.__version__)
@@ -122,18 +125,13 @@ def temporal_async_caller_schedule_async_call(self, async_req):
     if async_req.preload_fn:
         async_fn_args[1] = async_req.preload_fn()
 
-    rank = torch.distributed.get_rank()
-    start_sync = time.time()
     torch.cuda.synchronize()
-    end_sync = time.time()
 
     ctx = mp.get_context('spawn')
     self.start_time = time.time()
-    self.process = ctx.Process(
-        target=async_req.async_fn, args=async_fn_args, kwargs=async_req.async_fn_kwargs
-    )
+    self.process = ctx.Process(target=async_req.async_fn, args=async_fn_args, kwargs=async_req.async_fn_kwargs)
     self.process.start()
-    init_time = time.time()
+
 
 _CAN_RECORD_REGISTRY = {}
 WRITE_FILE_DEFAULT_FLAGS = os.O_WRONLY | os.O_CREAT
@@ -149,7 +147,7 @@ _ACTUAL_COUNT = 0
 ARCH_ALIAS_MAP = {
     # HF architecture  ->  model-type-hf
     "bailingmoev2": "bailing_mini",
-    "phi3": "phi3.5"
+    "phi3": "phi3.5",
 }
 
 
@@ -158,7 +156,12 @@ def get_attn_ratio(actual_seq_len, seq_length):
     last_seq_list = np.array(actual_seq_len[1:])
 
     seq_list_without_first = (last_seq_list - first_seq_list).tolist()
-    seq_length_list = np.array([actual_seq_len[0], ] + seq_list_without_first)
+    seq_length_list = np.array(
+        [
+            actual_seq_len[0],
+        ]
+        + seq_list_without_first
+    )
     ratio = 0.5 * sum(seq_length_list * seq_length_list) / (seq_length * seq_length)
 
     return ratio
@@ -240,7 +243,7 @@ def recompute_valid_actual_seq_len(actual_seq_len, micro_batch_size):
     if len(indices) < micro_batch_size:
         return actual_seq_len
     first_continuous = indices[micro_batch_size - 1].item()
-    return torch.cat([s[:first_continuous + 1], s[-1:]])
+    return torch.cat([s[: first_continuous + 1], s[-1:]])
 
 
 def compute_actual_seq_len(origin_seq):
@@ -261,16 +264,13 @@ def compute_actual_seq_len(origin_seq):
     return actual_seq_len
 
 
-
-
-
 def regenerate_position_ids(tensor, offset):
     if tensor is None:
         return None
     tensor = tensor.clone()
     for i in range(tensor.size(0)):
         row = tensor[i]
-        zero_mask = (row == 0)
+        zero_mask = row == 0
         if zero_mask.any():
             first_zero_idx = torch.argmax(zero_mask.int()).item()
             tensor[i, :first_zero_idx] = torch.arange(first_zero_idx)
@@ -286,12 +286,9 @@ def parse_args():
 def is_rank_0():
     """Check whether it is rank 0."""
     if torch.distributed.is_initialized():
-        if torch.distributed.get_rank() == 0 or (
-                torch.distributed.get_rank() % torch.cuda.device_count() == 0
-        ):
-            return True
-        else:
-            return False
+        return bool(
+            torch.distributed.get_rank() == 0 or (torch.distributed.get_rank() % torch.cuda.device_count() == 0)
+        )
     else:
         return True
 
@@ -310,14 +307,18 @@ def get_tune_attention_mask(attention_mask_1d):
         micro_batch_size = attention_mask_1d.shape[0] // 2
         attention_mask_1d = attention_mask_1d[:micro_batch_size]
 
-    attention_mask = torch.ones((micro_batch_size, seq_length, seq_length),
-                                 device=attention_mask_1d.device,
-                                 dtype=torch.bool).tril_().view(micro_batch_size, 1, seq_length, seq_length)
+    attention_mask = (
+        torch.ones((micro_batch_size, seq_length, seq_length), device=attention_mask_1d.device, dtype=torch.bool)
+        .tril_()
+        .view(micro_batch_size, 1, seq_length, seq_length)
+    )
 
     if args.tokenizer_padding_side == "left":
         attention_mask_1d = attention_mask_1d.view(seq_length, 1, -1)
 
-    attention_mask = attention_mask.masked_fill_(attention_mask_1d.bool().bitwise_not_().view(-1, 1, 1, seq_length), value=0)
+    attention_mask = attention_mask.masked_fill_(
+        attention_mask_1d.bool().bitwise_not_().view(-1, 1, 1, seq_length), value=0
+    )
     attention_mask.bitwise_not_()
 
     return attention_mask
@@ -336,6 +337,7 @@ def get_batch_on_this_cp_rank_wrapper(fn):
         return batch
 
     return wrapper
+
 
 def print_args_wrapper(fn):
     """
@@ -363,8 +365,7 @@ def print_args(title, args):
             str_list.append('  {} {} {}'.format(arg, dots, getattr(args, arg)))
         for arg in sorted(str_list, key=lambda x: x.lower()):
             print(arg, flush=True)
-        print(f'-------------------- end of {title} ---------------------',
-              flush=True)
+        print(f'-------------------- end of {title} ---------------------', flush=True)
 
 
 def seed_all(seed=1234):
@@ -384,7 +385,7 @@ def emit(self, record):
     except Exception:
         rank = -1  # 如果获取rank失败，则设置为一个不合法的rank
 
-    if rank == 0 or rank == -1:
+    if rank in (0, -1):
         try:
             msg = self.format(record)
             tqdm.write(msg)
@@ -395,7 +396,7 @@ def emit(self, record):
 
 def get_device_wrapper(fn):
     @wraps(fn)
-    def wrapper(local_rank=None, *arg, **kwargs):
+    def wrapper(local_rank=None, *arg, **kwargs):  # pylint: disable=W1113
         backend = torch.distributed.get_backend()
         if backend == 'hccl':
             if local_rank is None:
@@ -427,14 +428,14 @@ def get_finetune_data_on_this_tp_rank(data_iterator):
         data_iterator = iter(data_iterator)
         ds = next(data_iterator)
     tokens = ds.get('input_ids').long().cuda(non_blocking=True)
-    args = get_args()
     tokens_shape = tokens.shape
     micro_batch_size = tokens_shape[0]
 
     def _broadcast(item):
         if item is not None:
-            torch.distributed.broadcast(item, mpu.get_tensor_model_parallel_src_rank(),
-                                        group=mpu.get_tensor_model_parallel_group())
+            torch.distributed.broadcast(
+                item, mpu.get_tensor_model_parallel_src_rank(), group=mpu.get_tensor_model_parallel_group()
+            )
 
     if mpu.get_tensor_model_parallel_rank() == 0:
         via_length = torch.LongTensor([tokens_shape[1]]).cuda(non_blocking=True)
@@ -448,8 +449,9 @@ def get_finetune_data_on_this_tp_rank(data_iterator):
         _broadcast(via_length)
         tokens = torch.empty((micro_batch_size, via_length), dtype=torch.int64, device=torch.cuda.current_device())
         _broadcast(tokens)
-        attention_mask_1d = torch.empty((micro_batch_size, via_length), dtype=torch.int64,
-                                        device=torch.cuda.current_device())
+        attention_mask_1d = torch.empty(
+            (micro_batch_size, via_length), dtype=torch.int64, device=torch.cuda.current_device()
+        )
         _broadcast(attention_mask_1d)
         attention_mask = get_tune_attention_mask(attention_mask_1d)
 
@@ -509,7 +511,7 @@ def get_sharedmem_mgr(base_shm_name="g_shm", buffer_length=4096):
     tp_size = mpu.get_tensor_model_parallel_world_size()
     device_count = torch.cuda.device_count()
 
-    if not (reset_position_ids and enable_shm and tp_size > 1 and tp_size <= device_count):
+    if not (reset_position_ids and enable_shm and 1 < tp_size <= device_count):
         print(
             f"[SharedMemoryManager][Rank {rank}][global_rank {global_rank}]"
             f"[Func: get_sharedmem_mgr] <INFO> Skip creation. "
@@ -540,12 +542,14 @@ def get_sharedmem_mgr(base_shm_name="g_shm", buffer_length=4096):
     if rank == 0:
         pid = os.getpid()
         pid_tensor = torch.tensor([pid], dtype=torch.int32, device="cuda")
-        torch.distributed.broadcast(pid_tensor, mpu.get_tensor_model_parallel_src_rank(),
-                                    group=mpu.get_tensor_model_parallel_group())
+        torch.distributed.broadcast(
+            pid_tensor, mpu.get_tensor_model_parallel_src_rank(), group=mpu.get_tensor_model_parallel_group()
+        )
     else:
         pid_tensor = torch.zeros(1, dtype=torch.int32, device="cuda")
-        torch.distributed.broadcast(pid_tensor, mpu.get_tensor_model_parallel_src_rank(),
-                                    group=mpu.get_tensor_model_parallel_group())
+        torch.distributed.broadcast(
+            pid_tensor, mpu.get_tensor_model_parallel_src_rank(), group=mpu.get_tensor_model_parallel_group()
+        )
         pid = pid_tensor.item()
         _GLOBAL_SHM_MANAGER = SharedMemoryManager(
             base_shm_name, rank0_pid=pid, buffer_length=buffer_length, tp_size=tp_size, existing=True
@@ -564,8 +568,9 @@ def get_batch_on_this_tp_rank(data_iterator):
 
     def _broadcast(item):
         if item is not None:
-            torch.distributed.broadcast(item, mpu.get_tensor_model_parallel_src_rank(),
-                                        group=mpu.get_tensor_model_parallel_group())
+            torch.distributed.broadcast(
+                item, mpu.get_tensor_model_parallel_src_rank(), group=mpu.get_tensor_model_parallel_group()
+            )
 
     shm_manager = None
     actual_seq_len = None
@@ -585,6 +590,7 @@ def get_batch_on_this_tp_rank(data_iterator):
 
             if '910B' not in acl.get_soc_name() and args.mtp_num_layers and get_post_process_flag():
                 from mindspeed_llm.core.transformer.multi_token_prediction import roll_tensor
+
                 position_ids_mtp = []
                 cur_position_id = data["position_ids"]
                 for _ in range(args.mtp_num_layers):
@@ -593,15 +599,15 @@ def get_batch_on_this_tp_rank(data_iterator):
                     position_ids_mtp.append(cur_position_id)
                 set_mtp_position_ids((position_ids_mtp, shm_manager))
 
-        if args.return_document_ids and mpu.get_context_parallel_rank() == 0 and mpu.get_pipeline_model_parallel_rank() == 0:
+        if (
+            args.return_document_ids
+            and mpu.get_context_parallel_rank() == 0
+            and mpu.get_pipeline_model_parallel_rank() == 0
+        ):
             document_ids = [
-                [x.item() for x in takewhile(lambda y: y.item() != -100, row)]
-                for row in data['document_ids']
+                [x.item() for x in takewhile(lambda y: y.item() != -100, row)] for row in data['document_ids']
             ]
-            data_idx = [
-                [x.item() for x in takewhile(lambda y: y.item() != -100, row)]
-                for row in data['idx']
-            ]
+            data_idx = [[x.item() for x in takewhile(lambda y: y.item() != -100, row)] for row in data['idx']]
 
             data.pop("document_ids", None)
             data.pop("idx", None)
@@ -610,18 +616,22 @@ def get_batch_on_this_tp_rank(data_iterator):
                 'tokens': data["tokens"].cuda(non_blocking=True),
                 'labels': data["labels"].cuda(non_blocking=True),
                 'loss_mask': data["loss_mask"].cuda(non_blocking=True),
-                'attention_mask': None if "attention_mask" not in data else data["attention_mask"].cuda(non_blocking=True),
+                'attention_mask': None
+                if "attention_mask" not in data
+                else data["attention_mask"].cuda(non_blocking=True),
                 'position_ids': data["position_ids"].cuda(non_blocking=True),
                 'document_ids': document_ids,
-                'idx': data_idx
+                'idx': data_idx,
             }
         else:
             batch = {
                 'tokens': data["tokens"].cuda(non_blocking=True),
                 'labels': data["labels"].cuda(non_blocking=True),
                 'loss_mask': data["loss_mask"].cuda(non_blocking=True),
-                'attention_mask': None if "attention_mask" not in data else data["attention_mask"].cuda(non_blocking=True),
-                'position_ids': data["position_ids"].cuda(non_blocking=True)
+                'attention_mask': None
+                if "attention_mask" not in data
+                else data["attention_mask"].cuda(non_blocking=True),
+                'position_ids': data["position_ids"].cuda(non_blocking=True),
             }
         if args.pipeline_model_parallel_size == 1:
             _broadcast(batch['tokens'])
@@ -647,7 +657,7 @@ def get_batch_on_this_tp_rank(data_iterator):
             _broadcast(batch['labels'])
             _broadcast(batch['loss_mask'])
             _broadcast(batch['attention_mask'])
-            if args.reset_attention_mask  or args.mtp_num_layers or args.schedules_method == 'dualpipev':
+            if args.reset_attention_mask or args.mtp_num_layers or args.schedules_method == 'dualpipev':
                 _broadcast(batch['position_ids'])
         elif args.reset_attention_mask:
             _broadcast(batch['position_ids'])
@@ -655,10 +665,14 @@ def get_batch_on_this_tp_rank(data_iterator):
             _broadcast(batch['attention_mask'])
         if args.reset_attention_mask:
             actual_seq_len = broadcast_dynamic(data['actual_seq_len'])
-            if args.attention_mask_type == 'causal' \
-              and args.context_parallel_size > 1 \
-              and args.context_parallel_algo == 'megatron_cp_algo':
-                actual_seq_len = pad_data(actual_seq_len, batch, args.context_parallel_size, args.tensor_model_parallel_size)
+            if (
+                args.attention_mask_type == 'causal'
+                and args.context_parallel_size > 1
+                and args.context_parallel_algo == 'megatron_cp_algo'
+            ):
+                actual_seq_len = pad_data(
+                    actual_seq_len, batch, args.context_parallel_size, args.tensor_model_parallel_size
+                )
                 actual_seq_len //= get_ring_degree()
             set_actual_seq_len(actual_seq_len)
 
@@ -668,24 +682,26 @@ def get_batch_on_this_tp_rank(data_iterator):
             if '910B' not in acl.get_soc_name() and args.mtp_num_layers and get_post_process_flag():
                 set_mtp_position_ids((None, shm_manager))
 
-        tokens = torch.empty((args.micro_batch_size, args.seq_length),
-                             dtype=torch.int64,
-                             device=torch.cuda.current_device())
-        labels = torch.empty((args.micro_batch_size, args.seq_length),
-                             dtype=torch.int64,
-                             device=torch.cuda.current_device())
-        loss_mask = torch.empty((args.micro_batch_size, args.seq_length),
-                                dtype=torch.float32,
-                                device=torch.cuda.current_device())
+        tokens = torch.empty(
+            (args.micro_batch_size, args.seq_length), dtype=torch.int64, device=torch.cuda.current_device()
+        )
+        labels = torch.empty(
+            (args.micro_batch_size, args.seq_length), dtype=torch.int64, device=torch.cuda.current_device()
+        )
+        loss_mask = torch.empty(
+            (args.micro_batch_size, args.seq_length), dtype=torch.float32, device=torch.cuda.current_device()
+        )
         if getattr(args, 'create_attention_mask_in_dataloader', False):
             attention_mask = torch.empty(
-                (args.micro_batch_size, 1, args.seq_length, args.seq_length), dtype=torch.bool, device=torch.cuda.current_device()
+                (args.micro_batch_size, 1, args.seq_length, args.seq_length),
+                dtype=torch.bool,
+                device=torch.cuda.current_device(),
             )
         else:
             attention_mask = None
-        position_ids = torch.empty((args.micro_batch_size, args.seq_length),
-                                   dtype=torch.int64,
-                                   device=torch.cuda.current_device())
+        position_ids = torch.empty(
+            (args.micro_batch_size, args.seq_length), dtype=torch.int64, device=torch.cuda.current_device()
+        )
 
         if args.pipeline_model_parallel_size == 1:
             _broadcast(tokens)
@@ -733,24 +749,26 @@ def get_batch_on_this_tp_rank(data_iterator):
             'labels': labels,
             'loss_mask': loss_mask,
             'attention_mask': attention_mask,
-            'position_ids': position_ids
+            'position_ids': position_ids,
         }
         if args.reset_attention_mask:
             actual_seq_len = broadcast_dynamic(None)
-            if args.attention_mask_type == 'causal' \
-                    and args.context_parallel_size > 1 \
-                    and args.context_parallel_algo == 'megatron_cp_algo':
-                actual_seq_len = pad_data(actual_seq_len, batch, args.context_parallel_size,
-                                          args.tensor_model_parallel_size)
+            if (
+                args.attention_mask_type == 'causal'
+                and args.context_parallel_size > 1
+                and args.context_parallel_algo == 'megatron_cp_algo'
+            ):
+                actual_seq_len = pad_data(
+                    actual_seq_len, batch, args.context_parallel_size, args.tensor_model_parallel_size
+                )
                 actual_seq_len /= get_ring_degree()
             set_actual_seq_len(actual_seq_len)
     return batch
 
 
-
 def get_batch_on_this_cp_rank(batch):
-    """ Slice batch input along sequence dimension into multiple chunks,
-        which are parallelized across GPUs in a context parallel group.
+    """Slice batch input along sequence dimension into multiple chunks,
+    which are parallelized across GPUs in a context parallel group.
     """
 
     # With causal masking, each token only attends to its prior tokens. Simply split
@@ -760,7 +778,9 @@ def get_batch_on_this_cp_rank(batch):
     # and chunk_3 are assigned to GPU0, chunk_1 and chunk_2 are assigned to GPU1, so
     # that we can get balanced workload among GPUs in a context parallel group.
     args = get_args()
-    tp_y_cp_size = TensorParallelYUnionCP().get_parallel_group_world_size() if args.tp_2d else args.context_parallel_size
+    tp_y_cp_size = (
+        TensorParallelYUnionCP().get_parallel_group_world_size() if args.tp_2d else args.context_parallel_size
+    )
     if not tp_y_cp_size > 1:
         return batch
 
@@ -775,7 +795,7 @@ def get_batch_on_this_cp_rank(batch):
             batch = _get_batch_on_this_tp_y_cp_rank_in_megatron_cp(batch)
         else:
             batch = _get_batch_on_this_cp_rank_in_megatron_cp(batch)
-    elif args.context_parallel_algo == 'ulysses_cp_algo' or args.context_parallel_algo == 'mamba_cp_algo':
+    elif args.context_parallel_algo in ('ulysses_cp_algo', 'mamba_cp_algo'):
         batch = _get_batch_on_this_cp_rank_in_ulysses_cp(batch)
     elif args.context_parallel_algo == 'hybrid_cp_algo':
         if args.attention_mask_type == 'general':
@@ -825,11 +845,17 @@ def is_last_rank_wrapper(fn):
         if it is the last rank.
         """
         from mindspeed_llm.core.high_availability import elastic_training_common
+
         if not elastic_training_common.zit_scale_in_running_state():
             return fn()
         else:
-            return torch.distributed.get_rank() == torch.distributed.get_process_group_ranks(
-                group=elastic_training_common.zit_get_scale_in_world_group())[-1]
+            return (
+                torch.distributed.get_rank()
+                == torch.distributed.get_process_group_ranks(
+                    group=elastic_training_common.zit_get_scale_in_world_group()
+                )[-1]
+            )
+
     return wrapper
 
 
@@ -841,21 +867,22 @@ def print_rank_last_wrapper(fn):
         replace the batch_size.
         """
         from mindspeed_llm.core.high_availability import elastic_training_common
+
         if elastic_training_common.zit_scale_in_running_state():
             args = get_args()
             from megatron.core.num_microbatches_calculator import get_num_microbatches
-            batch_size = args.micro_batch_size * args.data_parallel_size * \
-                         get_num_microbatches()
+
+            batch_size = args.micro_batch_size * args.data_parallel_size * get_num_microbatches()
             src_str = f' global batch size: {batch_size:5d} |'
             batch_size = get_args().global_batch_size
             dest_str = f' global batch size: {batch_size:5d} |'
             message = message.replace(src_str, dest_str)
         return fn(message)
+
     return wrapper
 
 
 def is_shared_path(path: str, retry: int = 3, wait: float = 0.5) -> bool:
-
     if not torch.distributed.is_initialized() or torch.distributed.get_world_size() == 1:
         return True
 
@@ -874,7 +901,7 @@ def is_shared_path(path: str, retry: int = 3, wait: float = 0.5) -> bool:
 
     try:
         if local_rank == 0:
-            with open(marker_file, "w") as f:
+            with open(marker_file, "w", encoding="utf-8") as f:
                 f.write(f"marker from {hostname}")
         torch.distributed.barrier()
 
@@ -886,23 +913,25 @@ def is_shared_path(path: str, retry: int = 3, wait: float = 0.5) -> bool:
             time.sleep(wait)
 
         visible_count = len(visible_files)
-        visible_tensor = torch.tensor(
-            [visible_count],
-            dtype=torch.int,
-            device="npu"
-        )
+        visible_tensor = torch.tensor([visible_count], dtype=torch.int, device="npu")
         torch.distributed.all_reduce(visible_tensor, op=torch.distributed.ReduceOp.MAX)
         total_visible = visible_tensor.item()
 
         if rank == 0:
             if total_visible > 1:
-                logger.info(f"[is_shared_path] Detection result: Shared storage ({path}), detected {total_visible} node marker files.")
+                logger.info(
+                    f"[is_shared_path] Detection result: Shared storage ({path}), detected {total_visible} node marker files."
+                )
                 shared = True
             elif total_visible == 1:
-                logger.info(f"[is_shared_path] Detection result: Non-shared storage ({path}), only local node can access its own marker.")
+                logger.info(
+                    f"[is_shared_path] Detection result: Non-shared storage ({path}), only local node can access its own marker."
+                )
                 shared = False
             else:
-                raise RuntimeError(f"[is_shared_path] Detection failed: No visible marker files, please check mount configuration.")
+                raise RuntimeError(
+                    "[is_shared_path] Detection failed: No visible marker files, please check mount configuration."
+                )
         else:
             shared = None
 
@@ -921,23 +950,20 @@ def is_shared_path(path: str, retry: int = 3, wait: float = 0.5) -> bool:
             logger.info(f"[is_shared_path] Exception during shared path check: {e}")
         raise
 
+
 def check_model_inputs(func):
     """
     Decorator to intercept Router c layer outputs without using hooks.
     """
+
     @wraps(func)
     def wrapper(self, *args, **kwargs):
-
         # _can_record_outputs is None by default
         capture_flags = _CAN_RECORD_REGISTRY.get(str(self.__class__)) or {}  # there is a weak ref for executorch
-        
-        if capture_flags:
 
-            recordable_keys = {
-                f"output_{k}": True
-                for k in capture_flags
-            }
-            
+        if capture_flags:
+            recordable_keys = {f"output_{k}": True for k in capture_flags}
+
             collected_outputs = defaultdict(tuple)
             monkey_patched_layers = []
 
@@ -945,7 +971,7 @@ def check_model_inputs(func):
                 @wraps(orig_forward)
                 def wrapped_forward(*args, **kwargs):
                     output = orig_forward(*args, **kwargs)
-                    if output[2] is not None: 
+                    if output[2] is not None:
                         if key not in collected_outputs:
                             collected_outputs[key] = (output[2],)
                         else:
@@ -966,23 +992,22 @@ def check_model_inputs(func):
 
                 for name, module in self.named_modules():
                     for key, specs in capture_tasks:
-                        if (specs is not None and isinstance(module, specs)):
+                        if specs is not None and isinstance(module, specs):
                             # Monkey patch forward
                             original_forward = module.forward
                             module.forward = make_capture_wrapper(module, original_forward, key)
                             monkey_patched_layers.append((module, original_forward))
 
-           
             outputs = func(self, *args, **kwargs)
 
             # Restore original forward methods
             for module, original_forward in monkey_patched_layers:
                 module.forward = original_forward
-            
+
             # Inject collected outputs into global variable
             for key in collected_outputs:
                 globals()[key] = collected_outputs[key]
-                
+
             return outputs
         else:
             outputs = func(self, *args, **kwargs)
@@ -1028,11 +1053,7 @@ def is_distributed_ckpt_complete(
         if enable_etp and ep > 1:
             tp_ep_pairs = get_etp_valid_ckpts_list(tp, ep)
         else:
-            tp_ep_pairs = [
-                (tp_rank, ep_rank)
-                for tp_rank in range(tp)
-                for ep_rank in range(ep)
-            ]
+            tp_ep_pairs = [(tp_rank, ep_rank) for tp_rank in range(tp) for ep_rank in range(ep)]
 
         for tp_rank, ep_rank in tp_ep_pairs:
             for pp_rank in range(pp):
@@ -1043,14 +1064,9 @@ def is_distributed_ckpt_complete(
                 elif ep == 1 and pp != 1:
                     rank_dir = f"mp_rank_{tp_rank:02d}_{pp_rank:03d}"
                 else:
-                    rank_dir = (
-                        f"mp_rank_{tp_rank:02d}_{pp_rank:03d}_{ep_rank:03d}"
-                    )
+                    rank_dir = f"mp_rank_{tp_rank:02d}_{pp_rank:03d}_{ep_rank:03d}"
 
-
-                weight_path = os.path.join(
-                    iter_dir, rank_dir, weight_filename
-                )
+                weight_path = os.path.join(iter_dir, rank_dir, weight_filename)
 
                 if not os.path.isfile(weight_path):
                     return False
@@ -1072,7 +1088,7 @@ def is_distributed_ckpt_complete(
     torch.distributed.broadcast(flag, src=0)
 
     return bool(flag.item())
-    
+
 
 def _normalize_name(name: str) -> str:
     name = name.lower()
@@ -1083,10 +1099,7 @@ def _normalize_name(name: str) -> str:
     return name
 
 
-def infer_model_type_from_hf_config(
-    config_path: str,
-    choices: List[str]
-) -> str:
+def infer_model_type_from_hf_config(config_path: str, choices: List[str]) -> str:
     """
     from architectures of Huggingface config.json to inference model_type_hf
     """
@@ -1129,14 +1142,16 @@ def auto_coverage(func):
     """
     Decide whether to collect coverage based on the START_COVERAGE environment variable.
     """
+
     @wraps(func)
     def wrapper(*args, **kwargs):
         # Check the environment variable.
         if os.environ.get('START_COVERAGE', '').lower() != 'true':
             return func(*args, **kwargs)
-        
+
         import coverage
-        cov = coverage.Coverage(data_suffix=f"usecase-{time.time_ns()}_{random.randint(0, 100)}")
+
+        cov = coverage.Coverage(data_suffix=f"usecase-{time.time_ns()}_{random.randint(0, 100)}")  # nosec B311 - coverage filename suffix, not security-sensitive
         # Collect coverage.
         cov.start()
         try:
@@ -1146,7 +1161,7 @@ def auto_coverage(func):
             cov.stop()
             # Save coverage data.
             cov.save()
-    
+
     return wrapper
 
 
@@ -1157,7 +1172,6 @@ def check_pipeline_config(num_layers, pp, vpp_stage, noop_layers):
     layers_per_pp_group = num_layers // pp
 
     for pp_idx in range(pp):
-
         pp_start = pp_idx * layers_per_pp_group
         pp_end = pp_start + layers_per_pp_group
         pp_layers = all_layers[pp_start:pp_end]

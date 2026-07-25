@@ -225,6 +225,8 @@ class SparseFlashMlaWithIndexerLossFunction(torch.autograd.Function):
         ctx.max_seqlen_cmp_kv = max_seqlen_cmp_kv
         ctx.loss_tracker = loss_tracker
         ctx.loss_coeff = loss_coeff
+        scale = SparseFlashMlaWithIndexerLossFunction.indexer_grad_scale
+        ctx.indexer_scale = scale if scale is not None else torch.tensor(1.0)
         ctx.mark_non_differentiable(softmax_lse)
 
         return result
@@ -379,12 +381,20 @@ class SparseFlashMlaWithIndexerLossFunction(torch.autograd.Function):
             cmp_ratio=ctx.cmp_ratio,
         )
         # ori/cmp_softmax_l1 are the attn_softmax_out for the kl_div side loss
-        grad_scale = SparseFlashMlaWithIndexerLossFunction.indexer_grad_scale
-        if grad_scale is None:
-            SparseFlashMlaWithIndexerLossFunction.set_loss_scale(torch.tensor(1.0))
-            grad_scale = SparseFlashMlaWithIndexerLossFunction.indexer_grad_scale
+        grad_scale = ctx.indexer_scale
         if ctx.layout_q == 'TND':
-            num_seqs = query_index.shape[0]
+            local_num = cu_seqlens_q[-1].item()
+            from megatron.core import parallel_state
+
+            cp_size = parallel_state.get_context_parallel_world_size()
+            if cp_size > 1:
+                _dev = "npu" if torch.npu.is_available() else "cpu"
+                _local_t = torch.tensor([local_num], dtype=torch.int64, device=_dev)
+                _all_nums = torch.empty(cp_size, dtype=torch.int64, device=_dev)
+                torch.distributed.all_gather_into_tensor(_all_nums, _local_t)
+                num_seqs = _all_nums.sum().item()
+            else:
+                num_seqs = local_num
         else:
             num_seqs = ctx.B * ctx.S1
         d_query_index = d_query_index * grad_scale / num_seqs

@@ -1,7 +1,9 @@
 # Copyright (c) 2026, HUAWEI CORPORATION.  All rights reserved.
+import copy
 import logging
 from contextlib import nullcontext
 from dataclasses import dataclass
+from enum import Enum, auto
 from functools import lru_cache
 from typing import Union
 from einops import rearrange
@@ -37,9 +39,41 @@ from mindspeed_llm.tasks.models.transformer.dsa_indexer import (
 )
 from mindspeed_llm.core.context_parallel.kvallgather_context_parallel import gather_from_sp_cp, permute_cp_shard
 from mindspeed_llm.tasks.models.transformer.deepseek4.g2_attention_kernel import G2CoreAttention
-from mindspeed_llm.tasks.models.transformer.deepseek4.deepseek_utils import apply_rotary_emb, get_cmp_cu_seqlens
+from mindspeed_llm.tasks.models.transformer.deepseek4.deepseek_utils import (
+    apply_rotary_emb,
+    get_cmp_cu_seqlens,
+    _compute_prefix_kv_cu_seqlens,
+    _rearrange_prefix_kv,
+)
 from mindspeed_llm.ops.npu_sparse_flash_mla_with_indexer_loss import npu_sparse_flash_mla_with_indexer_loss
 from mindspeed_llm.ops.npu_sparse_flash_mla import npu_sparse_flash_mla
+
+
+class LayerCompressMode(Enum):
+    """Per-layer compress mode based on compress_ratio."""
+
+    NO_COMPRESS = auto()  # ratio == 1: no compressor/indexer
+    COMPRESSOR_ONLY = auto()  # ratio > 1 and != 4: compressor only, no indexer
+    INDEXER = auto()  # ratio == 4: compressor + indexer + sparse topk
+
+
+def _get_rank_offset(local_len, all_lens=None):
+    """Compute token offset of this rank in global TND (sum of prior ranks' tokens).
+    Used by prefix KV path to derive local cu_seqlens_q.
+
+    all_lens: pre-gathered per-rank lengths to reuse. If None, this func does all_gather.
+    """
+    cp_size = parallel_state.get_context_parallel_world_size()
+    if cp_size <= 1:
+        return 0
+    rank = parallel_state.get_context_parallel_rank()
+    if all_lens is not None:
+        return sum(all_lens[:rank]).item() if rank > 0 else 0
+    local_len_t = torch.tensor([local_len], dtype=torch.int, device="npu" if torch.npu.is_available() else "cpu")
+    all_lens = torch.empty(cp_size, dtype=torch.int, device=local_len_t.device)
+    torch.distributed.all_gather_into_tensor(all_lens, local_len_t)
+    return sum(all_lens[:rank]).item() if rank > 0 else 0
+
 
 try:
     import mindspeed.ops.npu_sparse_lightning_indexer_grad_kl_loss as ms_slig
@@ -203,36 +237,53 @@ class DeepSeek4SelfAttention(MegatronModule):
             tp_comm_buffer_name="o_up_proj",
         )
         self.core_attention = G2CoreAttention()
-        self.max_seq_len = args.rope_scaling_original_max_position_embeddings  # 4096
-        self.original_seq_len = args.original_seq_len  # 0,
+        self.max_seq_len = args.rope_scaling_original_max_position_embeddings
+        self.original_seq_len = args.original_seq_len
         self.compress_ratio = args.compress_ratios[self.layer_number - 1]
-        self.rope_theta = args.compress_rope_theta if self.compress_ratio > 1 else args.rope_theta
-        self.rope_factor = args.rope_factor  # 40,
-        self.beta_fast = args.beta_fast  # 32,
-        self.beta_slow = args.beta_slow  # 1
+        if self.compress_ratio <= 1:
+            self.compress_ratio = 1
+            self.mode = LayerCompressMode.NO_COMPRESS
+        elif self.compress_ratio == 4:
+            self.mode = LayerCompressMode.INDEXER
+        else:
+            self.mode = LayerCompressMode.COMPRESSOR_ONLY
+        self.rope_theta = args.compress_rope_theta if self.mode != LayerCompressMode.NO_COMPRESS else args.rope_theta
+        self.rope_factor = args.rope_factor
+        self.beta_fast = args.beta_fast
+        self.beta_slow = args.beta_slow
         self.kv_allgather = args.context_parallel_size > 1 and args.context_parallel_algo == 'kvallgather_cp_algo'
+        # TND (reset_attention_mask): continuous shard, rank r holds [r*L, (r+1)*L), freqs_cis needs cp_rank offset.
+        # BSND: load-balanced shard, rank holds two discontiguous chunks, cp_offset stays 0.
+        self.tnd_continuous_shard = self.kv_allgather and args.reset_attention_mask
         self.softmax_scale = self.head_dim**-0.5
 
         self.indexer = None
-        if self.compress_ratio > 1:
+        if self.mode != LayerCompressMode.NO_COMPRESS:
             self.compressor = build_module(
                 submodules.compressor, config=self.config, compress_ratio=self.compress_ratio, head_dim=self.head_dim
             )
             self.indexer = (
-                None
-                if self.compress_ratio != 4
-                else build_module(submodules.dsa_indexer, config=self.config, layer_number=self.layer_number)
+                build_module(submodules.dsa_indexer, config=self.config, layer_number=self.layer_number)
+                if self.mode == LayerCompressMode.INDEXER
+                else None
             )
         self.freqs_cis = None
 
     def get_freqs_cis(self, start_pos, local_seq_len, get_global=False):
-        if get_global:
-            global_seq_len = local_seq_len * parallel_state.get_tensor_model_parallel_world_size()
-            return self.freqs_cis[start_pos : start_pos + global_seq_len]
+        tp_rank = parallel_state.get_tensor_model_parallel_rank()
+        tp_size = parallel_state.get_tensor_model_parallel_world_size()
+        if self.tnd_continuous_shard:
+            cp_rank = parallel_state.get_context_parallel_rank()
+            cp_offset = local_seq_len * cp_rank
         else:
-            offset = local_seq_len * parallel_state.get_tensor_model_parallel_rank()
-            start_pos = start_pos + offset
-            return self.freqs_cis[start_pos : start_pos + local_seq_len]
+            cp_offset = 0
+        if get_global:
+            global_seq_len = local_seq_len * tp_size
+            s = start_pos + cp_offset
+            return self.freqs_cis[s : s + global_seq_len]
+        else:
+            s = start_pos + cp_offset + local_seq_len * tp_rank
+            return self.freqs_cis[s : s + local_seq_len]
 
     def sparse_attention(
         self,
@@ -298,11 +349,26 @@ class DeepSeek4SelfAttention(MegatronModule):
         packed_seq_params,
     ):
         layout = "TND" if packed_seq_params is not None else "BSND"
+        self._current_layout = layout
         cu_seqlens_q = cu_seqlens_kv = cu_seqlens_cmp_kv = None
         if layout == "TND":
-            cu_seqlens_q = packed_seq_params.cu_seqlens_q.int()
             cu_seqlens_kv = packed_seq_params.cu_seqlens_kv.int()
-            cu_seqlens_cmp_kv, _ = get_cmp_cu_seqlens(cu_seqlens_q, cmp_ratio, zero_based=True)
+            cu_seqlens_q = packed_seq_params.cu_seqlens_q.int()
+            if cu_seqlens_q[0] != 0:
+                cu_seqlens_q = torch.cat((cu_seqlens_q.new_zeros(1), cu_seqlens_q))
+            if cu_seqlens_kv[0] != 0:
+                cu_seqlens_kv = torch.cat((cu_seqlens_kv.new_zeros(1), cu_seqlens_kv))
+            if cmp_kv is not None:
+                cu_seqlens_cmp_kv, _ = get_cmp_cu_seqlens(
+                    cu_seqlens_kv,
+                    cmp_ratio,
+                    zero_based=True,
+                )
+            if cu_seqlens_cmp_kv is not None:
+                assert len(cu_seqlens_q) == len(cu_seqlens_kv) == len(cu_seqlens_cmp_kv)
+        if cu_seqlens_cmp_kv is not None:
+            assert cu_seqlens_cmp_kv[-1] == cmp_kv.shape[0]
+
         args = get_args()
         if self.kv_allgather:
             output = fused_sparse_flash_mla_with_indexer_loss_kvallgather(
@@ -347,8 +413,9 @@ class DeepSeek4SelfAttention(MegatronModule):
         return output
 
     def indexer_loss_tracker(self, loss):
-        if self.kv_allgather:
-            # 负载均衡的CP策略由于每个rank计算两个attention块，所以此处loss需要平均一下
+        if self.kv_allgather and getattr(self, "_current_layout", "TND") != "TND":
+            # BSND CP: each rank runs two attention blocks, so average the loss.
+            # TND: single segment per rank with prefix KV, no average needed.
             loss /= 2
         DSAIndexerLossLoggingHelper.save_loss_to_tracker(
             loss,
@@ -370,8 +437,7 @@ class DeepSeek4SelfAttention(MegatronModule):
         rotary_pos_sin=None,
         sequence_len_offset=None,
     ):
-        self.freqs_cis = rotary_pos_emb[0] if self.compress_ratio > 1 else rotary_pos_emb[1]
-        # Do patch for repeating KV so that GQA+Ulysses is better supported.
+        self.freqs_cis = rotary_pos_emb[0] if self.mode != LayerCompressMode.NO_COMPRESS else rotary_pos_emb[1]
         args = get_args()
         tp_size = parallel_state.get_tensor_model_parallel_world_size()
         cp_size = parallel_state.get_context_parallel_world_size()
@@ -381,10 +447,11 @@ class DeepSeek4SelfAttention(MegatronModule):
         q_len = q_len_local * tp_size if self.config.sequence_parallel else q_len_local
         q_len_global = q_len * cp_size if cp_size > 1 else q_len
         self.freqs_cis = self.freqs_cis[start_pos : start_pos + q_len_global]
-        if self.kv_allgather:
+        # TND: continuous shard, uses cp_offset (see get_freqs_cis), no permute needed.
+        if self.kv_allgather and not self.tnd_continuous_shard:
             self.freqs_cis = permute_cp_shard(self.freqs_cis, reorder=False)
-        q_compressed = self.linear_q(hidden_states)  # s,b,lora_rank
-        kv_compressed = self.linear_kv(hidden_states)  # s,b,head_dim
+        q_compressed = self.linear_q(hidden_states)
+        kv_compressed = self.linear_kv(hidden_states)
 
         # ========================================
         # q layer_norm+wq_b + RMS + rope
@@ -415,24 +482,68 @@ class DeepSeek4SelfAttention(MegatronModule):
         kv[..., -self.rope_head_dim :] = apply_rotary_emb(kv[..., -self.rope_head_dim :], local_freqs_cis)
         kv = kv.transpose(0, 1)
         if self.config.sequence_parallel or self.kv_allgather:
-            kv = gather_from_sp_cp(kv)
+            pre_gather_len = kv.shape[0]
+            kv = gather_from_sp_cp(kv, tnd=packed_seq_params is not None)
+        else:
+            pre_gather_len = None
+        _fix_prefix_kv_segments = None
+        _prefix_freqs_cis = None
+        if packed_seq_params is not None:
+            packed_seq_params = copy.copy(packed_seq_params)
+            # Prefix KV mode: keep prior ranks' KV as prefix; op derives CP offset from cu_q != cu_kv.
+            if pre_gather_len is not None:
+                cp_size_inner = parallel_state.get_context_parallel_world_size()
+                if cp_size_inner > 1:
+                    _local_len_t = torch.tensor(
+                        [pre_gather_len], dtype=torch.int, device="npu" if torch.npu.is_available() else "cpu"
+                    )
+                    _all_lens = torch.empty(cp_size_inner, dtype=torch.int, device=_local_len_t.device)
+                    torch.distributed.all_gather_into_tensor(_all_lens, _local_len_t)
+                else:
+                    _all_lens = None
+                rank_offset = _get_rank_offset(pre_gather_len, all_lens=_all_lens)
+                local_cu_seqlens_q, local_cu_seqlens_kv, _fix_prefix_kv_segments = _compute_prefix_kv_cu_seqlens(
+                    packed_seq_params.cu_seqlens_kv, rank_offset, pre_gather_len
+                )
+                packed_seq_params.cu_seqlens_q = local_cu_seqlens_q
+                packed_seq_params.cu_seqlens_kv = local_cu_seqlens_kv
+                kv = _rearrange_prefix_kv(kv, _fix_prefix_kv_segments)
+                if local_freqs_cis is not None and self.mode != LayerCompressMode.NO_COMPRESS:
+                    _freqs_gathered = gather_from_sp_cp(local_freqs_cis, tnd=True)
+                    _prefix_freqs_cis = _rearrange_prefix_kv(_freqs_gathered, _fix_prefix_kv_segments)
+            cu_seqlens_cmp_kv, _ = get_cmp_cu_seqlens(
+                packed_seq_params.cu_seqlens_kv, self.compress_ratio, zero_based=True
+            )
+            cu_seqlens_cmp_kv = cu_seqlens_cmp_kv.int()
+        else:
+            cu_seqlens_cmp_kv = None
 
         # get kv compress topk idxs
         compress_topk_idxs = None
-        if self.compress_ratio > 1:
+        if self.mode != LayerCompressMode.NO_COMPRESS:
             offset = 0 if self.use_sparse_flash_attn else kv.size(0)
             if self.indexer is not None:
+                # indexer: q uses local freqs_cis, compressor uses prefix freqs_cis; x gathered then rearranged.
+                _x_for_indexer = hidden_states.detach()
+                _q_for_indexer = q_compressed.detach()
+                _local_freqs_for_indexer = local_freqs_cis
+                _freqs_cis_for_kv = _prefix_freqs_cis
+                if packed_seq_params is not None and pre_gather_len is not None:
+                    _x_gathered = gather_from_sp_cp(_x_for_indexer, tnd=True)
+                    _x_for_indexer = _rearrange_prefix_kv(_x_gathered, _fix_prefix_kv_segments)
                 query_index, key_index, weights, dsa_hidden_states = self.indexer.forward_with_index_compress(
-                    hidden_states.detach(),
-                    q_compressed.detach(),
+                    _x_for_indexer,
+                    _q_for_indexer,
                     start_pos,
-                    local_freqs_cis,
+                    _local_freqs_for_indexer,
                     packed_seq_params,
+                    q_rope_preapplied=False,
+                    freqs_cis_for_kv=_freqs_cis_for_kv,
                 )
+                # TND: key_index stays local; cu_seqlens_k derived from actual shape in forward_with_scores_compress.
                 query_index, key_index, weights = self.indexer.all_gather_qk_weight_kvallgather(
-                    query_index, key_index, weights
+                    query_index, key_index, weights, tnd=packed_seq_params is not None
                 )
-                # Fuse LILossTrain includes LIG
                 dsa_indexer_context = torch.no_grad() if args.use_fused_lightning_indexer_loss else nullcontext()
                 with dsa_indexer_context:
                     compress_topk_idxs, compress_topk_score = self.indexer.forward_with_scores_compress(
@@ -469,12 +580,27 @@ class DeepSeek4SelfAttention(MegatronModule):
 
         # get kv compress
         kv_compress = None
-        if self.compress_ratio > 1:
-            if (
-                kv_compress := self.compressor(hidden_states, start_pos, local_freqs_cis, packed_seq_params)
-            ) is not None:
-                if self.config.sequence_parallel or self.kv_allgather:
-                    kv_compress = gather_from_sp_cp(kv_compress)
+        if self.mode != LayerCompressMode.NO_COMPRESS:
+            if packed_seq_params is not None and pre_gather_len is not None:
+                # compressor uses prefix hidden_states + prefix freqs_cis; output matches prefix cu_seqlens_kv.
+                _hs_gathered = gather_from_sp_cp(hidden_states, tnd=True)
+                _hs_for_compressor = _rearrange_prefix_kv(_hs_gathered, _fix_prefix_kv_segments)
+                _freqs_for_compressor = _prefix_freqs_cis if _prefix_freqs_cis is not None else local_freqs_cis
+                kv_compress = self.compressor(_hs_for_compressor, start_pos, _freqs_for_compressor, packed_seq_params)
+            else:
+                kv_compress = self.compressor(hidden_states, start_pos, local_freqs_cis, packed_seq_params)
+            if kv_compress is not None:
+                # TND prefix KV (varlen input) needs detach to avoid cross-rank gather backward error.
+                if packed_seq_params is not None:
+                    kv_compress = kv_compress.detach()
+                if packed_seq_params is None:
+                    if self.config.sequence_parallel or self.kv_allgather:
+                        kv_compress = gather_from_sp_cp(kv_compress, tnd=False)
+                elif cu_seqlens_cmp_kv is not None:
+                    assert kv_compress.shape[0] == cu_seqlens_cmp_kv[-1]
+            else:
+                compress_topk_idxs = None
+                cu_seqlens_cmp_kv = None
 
         self.attn_sink = self.attn_sink.to(hidden_states.device)
 
@@ -485,6 +611,7 @@ class DeepSeek4SelfAttention(MegatronModule):
             and args.use_fused_lightning_indexer_loss
         )
         if use_smla_with_slig:
+            _cmp_ratio_for_slig = self.compress_ratio if kv_compress is not None else 1
             o = self.sparse_attention_with_indexer_loss(
                 q,
                 kv,
@@ -492,7 +619,7 @@ class DeepSeek4SelfAttention(MegatronModule):
                 compress_topk_idxs,
                 self.attn_sink,
                 self.softmax_scale,
-                self.compress_ratio,
+                _cmp_ratio_for_slig,
                 q_len_global,
                 query_index,
                 key_index,
@@ -500,6 +627,7 @@ class DeepSeek4SelfAttention(MegatronModule):
                 packed_seq_params,
             )
         else:
+            _cmp_ratio_for_attn = self.compress_ratio if kv_compress is not None else 1
             o = self.sparse_attention(
                 q,
                 kv,
@@ -507,13 +635,13 @@ class DeepSeek4SelfAttention(MegatronModule):
                 compress_topk_idxs,
                 self.attn_sink,
                 self.softmax_scale,
-                self.compress_ratio,
+                _cmp_ratio_for_attn,
                 q_len_global,
                 packed_seq_params,
             )
             if (
                 args.use_g2_indexer_loss
-                and self.compress_ratio > 1
+                and self.mode != LayerCompressMode.NO_COMPRESS
                 and self.indexer is not None
                 and torch.is_grad_enabled()
             ):
@@ -555,9 +683,9 @@ class DeepSeek4SelfAttention(MegatronModule):
                 o = DSAIndexerLossAutoScaler.apply(o, loss)
 
         o = o.transpose(0, 1)
-        o_rotated = o.clone()
-        o_rotated[..., -self.rope_head_dim :] = apply_rotary_emb(o[..., -self.rope_head_dim :], global_freqs_cis, True)
-        o = o_rotated.transpose(0, 1)
+        o_rope = apply_rotary_emb(o[..., -self.rope_head_dim :], global_freqs_cis, True)
+        o = torch.cat([o[..., : -self.rope_head_dim], o_rope], dim=-1)
+        o = o.transpose(0, 1)
 
         o = rearrange(
             o,
@@ -579,6 +707,7 @@ class DeepSeek4SelfAttention(MegatronModule):
         )
         o = torch.einsum("sbgd,gld->sbgl", o, weight_woa)
         core_attn_out, bias = self.linear_o_up_proj(o.flatten(2))
+
         return core_attn_out, bias
 
     @staticmethod
@@ -642,5 +771,6 @@ class DeepSeek4MTPSelfAttention(DeepSeek4SelfAttention):
         )
 
         self.indexer = None
-        self.compress_ratio = 0
+        self.compress_ratio = 1
+        self.mode = LayerCompressMode.NO_COMPRESS
         self.compressor = None

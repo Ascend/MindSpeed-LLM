@@ -92,7 +92,7 @@ def npu_lightning_indexer(
         if max_seqlen_k is None:
             max_seqlen_k = seqused_k.max().item()
         if cmp_residual_k is None:
-            cmp_residual_k = seqused_q % cmp_ratio
+            raise ValueError("cmp_residual_k is required for TND layout.")
         B = len(cu_seqlens_q) - 1
     else:
         max_seqlen_q = S_Q

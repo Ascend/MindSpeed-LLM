@@ -490,21 +490,42 @@ class DSAIndexer(MegatronModule):
         if args.use_fused_lightning_indexer:
             layout = 'TND' if packed_seq_params is not None else 'BSND'
             if layout == 'TND':
-                cu_seqlens_q = packed_seq_params.cu_seqlens_q.int()
+                cu_seqlens_q_raw = packed_seq_params.cu_seqlens_q.int()
+                if cu_seqlens_q_raw[0] != 0:
+                    cu_seqlens_q_raw = torch.cat((cu_seqlens_q_raw.new_zeros(1), cu_seqlens_q_raw))
+                cu_seqlens_q = cu_seqlens_q_raw
                 max_seqlen_q = packed_seq_params.max_seqlen_q
-                cu_seqlens_k = packed_seq_params.cu_seqlens_kv.int()
-                if cu_seqlens_q[0] != 0:
-                    cu_seqlens_q = torch.cat((cu_seqlens_q.new_zeros(1), cu_seqlens_q))
+                cu_seqlens_kv = packed_seq_params.cu_seqlens_kv.int()
+                if cu_seqlens_kv[0] != 0:
+                    cu_seqlens_kv = torch.cat((cu_seqlens_kv.new_zeros(1), cu_seqlens_kv))
+                # cu_seqlens_k from prefix cu_seqlens_kv, matches cmp_kv length (prefix KV path)
                 cu_seqlens_k, max_seqlen_k = get_cmp_cu_seqlens(
-                    cu_seqlens_k,
+                    cu_seqlens_kv,
                     compress_ratio,
                     zero_based=True,
                     return_maxlen=True,
                 )
+                n_batches = len(cu_seqlens_q_raw) - 1
+                n_batches = min(n_batches, len(cu_seqlens_kv) - 1)
+                seqlen_kv = cu_seqlens_kv[1 : n_batches + 1] - cu_seqlens_kv[:n_batches]
+                cmp_residual_k = seqlen_kv % compress_ratio
+                target_batches = len(cu_seqlens_k) - 1
+                if len(cmp_residual_k) < target_batches:
+                    pad = torch.zeros(
+                        target_batches - len(cmp_residual_k),
+                        dtype=cmp_residual_k.dtype,
+                        device=cmp_residual_k.device,
+                    )
+                    cmp_residual_k = torch.cat([pad, cmp_residual_k])
             else:
                 cu_seqlens_q = cu_seqlens_k = None
                 max_seqlen_q = max_seqlen_k = None
-            if args.context_parallel_size > 1 and args.context_parallel_algo == 'kvallgather_cp_algo':
+                cmp_residual_k = None
+            if (
+                layout != 'TND'
+                and args.context_parallel_size > 1
+                and args.context_parallel_algo == 'kvallgather_cp_algo'
+            ):
                 topk_idxs, topk_score = fused_lightning_indexer_with_compress_kvallgather(
                     q,
                     k,
@@ -512,6 +533,7 @@ class DSAIndexer(MegatronModule):
                     index_topk,
                     actual_seq_qlen=cu_seqlens_q,
                     actual_seq_klen=cu_seqlens_k,
+                    cmp_residual_k=cmp_residual_k,
                     max_seqlen_q=max_seqlen_q,
                     max_seqlen_k=max_seqlen_k,
                     layout_query=layout,
@@ -526,6 +548,7 @@ class DSAIndexer(MegatronModule):
                     index_topk,
                     actual_seq_qlen=cu_seqlens_q,
                     actual_seq_klen=cu_seqlens_k,
+                    cmp_residual_k=cmp_residual_k,
                     max_seqlen_q=max_seqlen_q,
                     max_seqlen_k=max_seqlen_k,
                     layout_query=layout,
@@ -557,7 +580,14 @@ class DSAIndexer(MegatronModule):
         return topk_idxs, topk_score
 
     def forward_with_index_compress(
-        self, x: Tensor, qr: Tensor, start_pos: int, freqs_cis: Tensor, packed_seq_params=None
+        self,
+        x: Tensor,
+        qr: Tensor,
+        start_pos: int,
+        freqs_cis: Tensor,
+        packed_seq_params=None,
+        q_rope_preapplied: bool = False,
+        freqs_cis_for_kv: Tensor = None,
     ):
         # Project low-rank query to full multi-head query
         q = self.wq_b(qr)
@@ -566,13 +596,17 @@ class DSAIndexer(MegatronModule):
         # Apply rotary positional embedding to the RoPE part of the query
         q = q.transpose(0, 1)
         q = q.clone()
-        q[..., -self.rope_head_dim :] = apply_rotary_emb(q[..., -self.rope_head_dim :], freqs_cis)
+        if not q_rope_preapplied:
+            q[..., -self.rope_head_dim :] = apply_rotary_emb(q[..., -self.rope_head_dim :], freqs_cis)
         q = q.transpose(0, 1)
         q = rotate_activation(q)
-        k = self.kv_compressor(x, start_pos, freqs_cis, packed_seq_params).unsqueeze(2)
-        # Apply structured rotation (e.g., scaled Hadamard transform) to both query and key
-        # This promotes mixing and can improve retrieval performance in sparse attention
-        weights = self.weights_proj(x)
+        _freqs_cis_for_compressor = freqs_cis_for_kv if freqs_cis_for_kv is not None else freqs_cis
+        k = self.kv_compressor(x, start_pos, _freqs_cis_for_compressor, packed_seq_params).unsqueeze(2)
+        # weights has same len as q; for prefix x, take the last q_len segment.
+        _x_for_weights = x
+        if freqs_cis_for_kv is not None and x.shape[0] != q.shape[0]:
+            _x_for_weights = x[-q.shape[0] :]
+        weights = self.weights_proj(_x_for_weights)
         weights = weights * self.n_heads**-0.5
         weights = weights * self.softmax_scale
         return q, k, weights, x
@@ -584,9 +618,10 @@ class DSAIndexer(MegatronModule):
             weights = gather_from_sp_cp(weights)
         return q, k, weights
 
-    def all_gather_qk_weight_kvallgather(self, q, k, weights):
-        k = gather_from_sp_cp(k)
-        if self.use_fused_lightning_indexer:
+    def all_gather_qk_weight_kvallgather(self, q, k, weights, tnd=False):
+        if not tnd:
+            k = gather_from_sp_cp(k)
+        if self.use_fused_lightning_indexer and not tnd:
             group = parallel_state.get_tensor_model_parallel_group()
             q = gather_from_sequence_parallel_region(q, group=group)
             weights = gather_from_sequence_parallel_region(weights, group=group)
@@ -656,52 +691,29 @@ class DSAIndexer(MegatronModule):
 
 
 class DSAIndexerLossAutoScaler(torch.autograd.Function):
-    """An AutoScaler that triggers the backward pass and scales the grad for DSA indexer loss."""
+    """AutoScaler: scale indexer loss grad by main loss scale in backward.
+
+    scale is captured from class var to ctx in forward to avoid race when
+    class var is overwritten in multi-layer backward.
+    """
 
     main_loss_backward_scale: torch.Tensor = None
 
     @staticmethod
     def forward(ctx, output: torch.Tensor, loss: torch.Tensor):
-        """Preserve the indexer_loss by storing it in the context to avoid garbage collection.
-
-        Args:
-            ctx: Context object used to save tensors for backward pass.
-            output (torch.Tensor): The output tensor.
-            loss (torch.Tensor): The indexer loss tensor.
-
-        Returns:
-            torch.Tensor: The output tensor.
-        """
         ctx.save_for_backward(loss)
+        scale = DSAIndexerLossAutoScaler.main_loss_backward_scale
+        ctx.loss_scale = scale if scale is not None else torch.tensor(1.0, device=loss.device)
         return output
 
     @staticmethod
     def backward(ctx, grad_output: torch.Tensor):
-        """Compute and scale the gradient for indexer loss.
-
-        Args:
-            ctx: Context object used to save tensors for backward pass.
-            grad_output (torch.Tensor): The gradient of the output.
-
-        Returns:
-            Tuple[torch.Tensor, torch.Tensor]: The gradient of the output, scaled indexer loss
-                                               gradient.
-        """
         (loss,) = ctx.saved_tensors
-        if DSAIndexerLossAutoScaler.main_loss_backward_scale is None:
-            DSAIndexerLossAutoScaler.main_loss_backward_scale = torch.tensor(1.0, device=loss.device)
-        dsa_indexer_loss_backward_scale = DSAIndexerLossAutoScaler.main_loss_backward_scale
-        scaled_dsa_indexer_loss_grad = torch.ones_like(loss) * dsa_indexer_loss_backward_scale
+        scaled_dsa_indexer_loss_grad = torch.ones_like(loss) * ctx.loss_scale
         return grad_output, scaled_dsa_indexer_loss_grad
 
     @staticmethod
     def set_loss_scale(scale: torch.Tensor):
-        """set the scale of the indexer loss.
-
-        Args:
-            scale (torch.Tensor): The scale value to set. Please ensure that the scale passed in
-                                  matches the scale of the main_loss.
-        """
         if DSAIndexerLossAutoScaler.main_loss_backward_scale is None:
             DSAIndexerLossAutoScaler.main_loss_backward_scale = scale
         else:
@@ -1425,7 +1437,7 @@ def fused_sparse_flash_attention_kvallgather(q, k, v, topk_indices, q_rope, k_ro
     return out, softmax_max_out, softmax_sum_out
 
 
-def fused_sparse_attn_shared_kv_kvallgather(
+def _fused_sparse_attn_shared_kv_tnd(
     query,
     ori_kv,
     cmp_kv,
@@ -1433,18 +1445,46 @@ def fused_sparse_attn_shared_kv_kvallgather(
     sinks,
     softmax_scale,
     cmp_ratio,
-    packed_seq_params=None,
+    packed_seq_params,
 ):
+    """TND branch: passthrough, no chunk."""
+    from mindspeed_llm.ops.npu_sparse_flash_mla import npu_sparse_flash_mla
+
+    return npu_sparse_flash_mla(
+        query,
+        ori_kv,
+        cmp_kv,
+        cmp_sparse_indices,
+        sinks=sinks.float(),
+        softmax_scale=softmax_scale,
+        cmp_ratio=cmp_ratio,
+        layout_q='TND',
+        layout_kv='TND',
+        cu_seqlens_q=packed_seq_params.cu_seqlens_q,
+        cu_seqlens_kv=packed_seq_params.cu_seqlens_kv,
+    )
+
+
+def _fused_sparse_attn_shared_kv_bsnd(
+    query,
+    ori_kv,
+    cmp_kv,
+    cmp_sparse_indices,
+    sinks,
+    softmax_scale,
+    cmp_ratio,
+):
+    """BSND branch: two-segment CP chunk inference."""
     from mindspeed_llm.ops.npu_sparse_flash_mla import npu_sparse_flash_mla
 
     cp_size = parallel_state.get_context_parallel_world_size()
     cp_rank = parallel_state.get_context_parallel_rank()
 
     chunk_size = query.shape[0] // 2
-    q_chunks = query.chunk(2, dim=0)  # [1024, 1, 64, 512] x 2
+    q_chunks = query.chunk(2, dim=0)
 
     if cmp_sparse_indices is not None:
-        indices_chunks = cmp_sparse_indices.chunk(2, dim=1)  # [1, 1024, K] x 2
+        indices_chunks = cmp_sparse_indices.chunk(2, dim=1)
     else:
         indices_chunks = [None, None]
 
@@ -1455,17 +1495,11 @@ def fused_sparse_attn_shared_kv_kvallgather(
 
     if cmp_kv is not None:
         chunk_size_cmp = chunk_size // cmp_ratio
-
         end_idx_0_cmp = (cp_rank + 1) * chunk_size_cmp
         end_idx_1_cmp = (2 * cp_size - cp_rank) * chunk_size_cmp
-
         cmp_k_chunks = [cmp_kv[:end_idx_0_cmp, ...], cmp_kv[:end_idx_1_cmp, ...]]
     else:
         cmp_k_chunks = [None, None]
-
-    layout = 'TND' if packed_seq_params is not None else 'BSND'
-    cu_seqlens_q = packed_seq_params.cu_seqlens_q if packed_seq_params else None
-    cu_seqlens_kv = packed_seq_params.cu_seqlens_kv if packed_seq_params else None
 
     outputs = []
     for i in range(2):
@@ -1477,16 +1511,141 @@ def fused_sparse_attn_shared_kv_kvallgather(
             sinks=sinks.float(),
             softmax_scale=softmax_scale,
             cmp_ratio=cmp_ratio,
-            layout_q=layout,
-            layout_kv=layout,
-            cu_seqlens_q=cu_seqlens_q,
-            cu_seqlens_kv=cu_seqlens_kv,
+            layout_q='BSND',
+            layout_kv='BSND',
         )
         outputs.append(out)
 
-    output = torch.cat(outputs, dim=0)
+    return torch.cat(outputs, dim=0)
 
-    return output
+
+def fused_sparse_attn_shared_kv_kvallgather(
+    query,
+    ori_kv,
+    cmp_kv,
+    cmp_sparse_indices,
+    sinks,
+    softmax_scale,
+    cmp_ratio,
+    packed_seq_params=None,
+):
+    """Sparse attention (kvallgather CP), dispatch to TND / BSND by layout."""
+    if packed_seq_params is not None:
+        return _fused_sparse_attn_shared_kv_tnd(
+            query,
+            ori_kv,
+            cmp_kv,
+            cmp_sparse_indices,
+            sinks,
+            softmax_scale,
+            cmp_ratio,
+            packed_seq_params,
+        )
+    return _fused_sparse_attn_shared_kv_bsnd(
+        query,
+        ori_kv,
+        cmp_kv,
+        cmp_sparse_indices,
+        sinks,
+        softmax_scale,
+        cmp_ratio,
+    )
+
+
+def _fused_lightning_indexer_with_compress_tnd(
+    q,
+    k,
+    weights,
+    index_topk,
+    actual_seq_qlen,
+    actual_seq_klen,
+    cmp_residual_k,
+    max_seqlen_q,
+    max_seqlen_k,
+    compress_ratio,
+):
+    """TND branch: passthrough, no chunk."""
+    q_cont = q.contiguous().to(torch.bfloat16)
+    k_cont = k.contiguous().to(torch.bfloat16)
+    w_cont = weights.contiguous().to(torch.bfloat16) if weights is not None else None
+    idx, score = npu_lightning_indexer(
+        q_cont,
+        k_cont,
+        w_cont,
+        index_topk,
+        sparse_mode=3,
+        cmp_ratio=compress_ratio,
+        layout='TND',
+        cu_seqlens_q=actual_seq_qlen,
+        cu_seqlens_k=actual_seq_klen,
+        cmp_residual_k=cmp_residual_k,
+        max_seqlen_q=max_seqlen_q,
+        max_seqlen_k=max_seqlen_k,
+    )
+    return idx.squeeze(2), score.squeeze(2)
+
+
+def _fused_lightning_indexer_with_compress_bsnd(
+    q,
+    k,
+    weights,
+    index_topk,
+    actual_seq_qlen,
+    actual_seq_klen,
+    cmp_residual_k,
+    max_seqlen_q,
+    max_seqlen_k,
+    compress_ratio,
+):
+    """BSND branch: two-segment CP chunk inference."""
+    cp_size = parallel_state.get_context_parallel_world_size()
+    cp_rank = parallel_state.get_context_parallel_rank()
+    chunk_size_q = q.shape[0] // 2
+    q_chunks = q.chunk(2, dim=0)
+
+    if weights is not None:
+        weights_chunks = weights.chunk(2, dim=0)
+    else:
+        weights_chunks = [None, None]
+
+    chunk_size_k = chunk_size_q // compress_ratio
+    end_idx_0_k = (cp_rank + 1) * chunk_size_k
+    end_idx_1_k = (2 * cp_size - cp_rank) * chunk_size_k
+    k_chunks = [k[:end_idx_0_k, ...], k[:end_idx_1_k, ...]]
+
+    topk_idxs_list = []
+    topk_score_list = []
+
+    for i in range(2):
+        q_i = q_chunks[i].clone()
+        k_i = k_chunks[i].clone()
+        w_i = weights_chunks[i].clone() if weights_chunks[i] is not None else None
+        q_i = q_i.contiguous().to(torch.bfloat16)
+        k_i = k_i.contiguous().to(torch.bfloat16)
+        w_i = w_i.contiguous().to(torch.bfloat16) if w_i is not None else None
+
+        idx, score = npu_lightning_indexer(
+            q_i,
+            k_i,
+            w_i,
+            index_topk,
+            sparse_mode=3,
+            cmp_ratio=compress_ratio,
+            layout='BSND',
+            cu_seqlens_q=actual_seq_qlen,
+            cu_seqlens_k=actual_seq_klen,
+            cmp_residual_k=cmp_residual_k,
+            max_seqlen_q=max_seqlen_q,
+            max_seqlen_k=max_seqlen_k,
+        )
+        idx = idx.squeeze(2)
+        score = score.squeeze(2)
+        topk_idxs_list.append(idx)
+        topk_score_list.append(score)
+
+    topk_idxs_out = torch.cat(topk_idxs_list, dim=1)
+    topk_score_out = torch.cat(topk_score_list, dim=1)
+    return topk_idxs_out, topk_score_out
 
 
 def fused_lightning_indexer_with_compress_kvallgather(
@@ -1503,60 +1662,32 @@ def fused_lightning_indexer_with_compress_kvallgather(
     layout_key='BSND',
     compress_ratio=4,
 ):
-    cp_size = parallel_state.get_context_parallel_world_size()
-    cp_rank = parallel_state.get_context_parallel_rank()
-
-    # Q shape: [S, B, N, D] splite dim=0
-    chunk_size_q = q.shape[0] // 2
-    q_chunks = q.chunk(2, dim=0)
-
-    # Weights [S, B, N] splite dim=0
-    if weights is not None:
-        weights_chunks = weights.chunk(2, dim=0)
-    else:
-        weights_chunks = [None, None]
-
-    chunk_size_k = chunk_size_q // compress_ratio
-
-    end_idx_0_k = (cp_rank + 1) * chunk_size_k
-    end_idx_1_k = (2 * cp_size - cp_rank) * chunk_size_k
-
-    k_chunks = [k[:end_idx_0_k, ...], k[:end_idx_1_k, ...]]
-
-    topk_idxs_list = []
-    topk_score_list = []
-
-    for i in range(2):
-        q_i = q_chunks[i].clone()
-        k_i = k_chunks[i].clone()
-        w_i = weights_chunks[i].clone() if weights_chunks[i] is not None else None
-
-        idx, score = npu_lightning_indexer(
-            q_i,
-            k_i,
-            w_i,
+    """Lightning indexer + compress (kvallgather CP), dispatch to TND / BSND by layout."""
+    if layout_query == 'TND':
+        return _fused_lightning_indexer_with_compress_tnd(
+            q,
+            k,
+            weights,
             index_topk,
-            sparse_mode=3,
-            cmp_ratio=compress_ratio,
-            layout=layout_query,
-            cu_seqlens_q=actual_seq_qlen,
-            cu_seqlens_k=actual_seq_klen,
-            cmp_residual_k=cmp_residual_k,
-            max_seqlen_q=max_seqlen_q,
-            max_seqlen_k=max_seqlen_k,
+            actual_seq_qlen,
+            actual_seq_klen,
+            cmp_residual_k,
+            max_seqlen_q,
+            max_seqlen_k,
+            compress_ratio,
         )
-
-        # [B, S, 1, K] -> [B, S, K]
-        idx = idx.squeeze(2)
-        score = score.squeeze(2)
-
-        topk_idxs_list.append(idx)
-        topk_score_list.append(score)
-
-    topk_idxs_out = torch.cat(topk_idxs_list, dim=1)
-    topk_score_out = torch.cat(topk_score_list, dim=1)
-
-    return topk_idxs_out, topk_score_out
+    return _fused_lightning_indexer_with_compress_bsnd(
+        q,
+        k,
+        weights,
+        index_topk,
+        actual_seq_qlen,
+        actual_seq_klen,
+        cmp_residual_k,
+        max_seqlen_q,
+        max_seqlen_k,
+        compress_ratio,
+    )
 
 
 def fused_ms_sparse_lightning_indexer_kl_loss_kvallgather(
@@ -1636,7 +1767,7 @@ def fused_ms_sparse_lightning_indexer_kl_loss_kvallgather(
     return final_loss
 
 
-def fused_sparse_flash_mla_with_indexer_loss_kvallgather(
+def _fused_sparse_flash_mla_with_indexer_loss_tnd(
     query,
     ori_kv,
     cmp_kv,
@@ -1649,12 +1780,52 @@ def fused_sparse_flash_mla_with_indexer_loss_kvallgather(
     weights,
     loss_tracker,
     loss_coeff,
-    layout_q="BSND",
-    layout_kv="BSND",
-    cu_seqlens_q=None,
-    cu_seqlens_kv=None,
-    cu_seqlens_cmp_kv=None,
+    cu_seqlens_q,
+    cu_seqlens_kv,
+    cu_seqlens_cmp_kv,
 ):
+    """TND branch: passthrough, no chunk."""
+    from mindspeed_llm.ops.npu_sparse_flash_mla_with_indexer_loss import npu_sparse_flash_mla_with_indexer_loss
+
+    return npu_sparse_flash_mla_with_indexer_loss(
+        query,
+        ori_kv,
+        cmp_kv,
+        cmp_sparse_indices,
+        query_index,
+        key_index,
+        weights,
+        sinks=sinks.float(),
+        softmax_scale=softmax_scale,
+        cmp_ratio=cmp_ratio,
+        loss_tracker=loss_tracker,
+        loss_coeff=loss_coeff,
+        layout_q='TND',
+        layout_kv='TND',
+        cu_seqlens_q=cu_seqlens_q,
+        cu_seqlens_kv=cu_seqlens_kv,
+        cu_seqlens_cmp_kv=cu_seqlens_cmp_kv,
+    )
+
+
+def _fused_sparse_flash_mla_with_indexer_loss_bsnd(
+    query,
+    ori_kv,
+    cmp_kv,
+    cmp_sparse_indices,
+    sinks,
+    softmax_scale,
+    cmp_ratio,
+    query_index,
+    key_index,
+    weights,
+    loss_tracker,
+    loss_coeff,
+    cu_seqlens_q,
+    cu_seqlens_kv,
+    cu_seqlens_cmp_kv,
+):
+    """BSND branch: two-segment CP chunk inference."""
     from mindspeed_llm.ops.npu_sparse_flash_mla_with_indexer_loss import npu_sparse_flash_mla_with_indexer_loss
 
     cp_size = parallel_state.get_context_parallel_world_size()
@@ -1679,6 +1850,8 @@ def fused_sparse_flash_mla_with_indexer_loss_kvallgather(
         cmp_k_chunks = [cmp_kv[:end_idx_0_cmp, ...], cmp_kv[:end_idx_1_cmp, ...]]
     else:
         cmp_k_chunks = [None, None]
+        end_idx_0_cmp = end_idx_0
+        end_idx_1_cmp = end_idx_1
 
     q_idx_chunks = query_index.chunk(2, dim=0)
     k_idx_chunks = [key_index[:end_idx_0_cmp, ...], key_index[:end_idx_1_cmp, ...]]
@@ -1703,13 +1876,69 @@ def fused_sparse_flash_mla_with_indexer_loss_kvallgather(
             cmp_ratio=cmp_ratio,
             loss_tracker=loss_tracker,
             loss_coeff=loss_coeff,
-            layout_q=layout_q,
-            layout_kv=layout_kv,
+            layout_q='BSND',
+            layout_kv='BSND',
             cu_seqlens_q=cu_seqlens_q,
             cu_seqlens_kv=cu_seqlens_kv,
             cu_seqlens_cmp_kv=cu_seqlens_cmp_kv,
         )
         outputs.append(out)
 
-    output = torch.cat(outputs, dim=0)
-    return output
+    return torch.cat(outputs, dim=0)
+
+
+def fused_sparse_flash_mla_with_indexer_loss_kvallgather(
+    query,
+    ori_kv,
+    cmp_kv,
+    cmp_sparse_indices,
+    sinks,
+    softmax_scale,
+    cmp_ratio,
+    query_index,
+    key_index,
+    weights,
+    loss_tracker,
+    loss_coeff,
+    layout_q="BSND",
+    layout_kv="BSND",
+    cu_seqlens_q=None,
+    cu_seqlens_kv=None,
+    cu_seqlens_cmp_kv=None,
+):
+    """Sparse MLA + indexer loss (kvallgather CP), dispatch to TND / BSND by layout."""
+    if layout_q == 'TND':
+        return _fused_sparse_flash_mla_with_indexer_loss_tnd(
+            query,
+            ori_kv,
+            cmp_kv,
+            cmp_sparse_indices,
+            sinks,
+            softmax_scale,
+            cmp_ratio,
+            query_index,
+            key_index,
+            weights,
+            loss_tracker,
+            loss_coeff,
+            cu_seqlens_q,
+            cu_seqlens_kv,
+            cu_seqlens_cmp_kv,
+        )
+    return _fused_sparse_flash_mla_with_indexer_loss_bsnd(
+        query,
+        ori_kv,
+        cmp_kv,
+        cmp_sparse_indices,
+        sinks,
+        softmax_scale,
+        cmp_ratio,
+        query_index,
+        key_index,
+        weights,
+        loss_tracker,
+        loss_coeff,
+        cu_seqlens_q,
+        cu_seqlens_kv,
+        cu_seqlens_cmp_kv,
+    )

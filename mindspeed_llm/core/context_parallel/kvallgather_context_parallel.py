@@ -2,13 +2,13 @@
 # Copyright (c) 2025, Huawei Technologies Co., Ltd.  All rights reserved.
 
 import torch
-import torch_npu
 
 from megatron.core import parallel_state
 from megatron.core.tensor_parallel.mappings import gather_from_sequence_parallel_region
 
 _seq_chunk_ids_cache_for_reordering_before_attn = {}
 _seq_chunk_ids_cache_for_sharding = {}
+
 
 def get_seq_chunk_ids_for_reordering_before_attn(cp_size, device):
     """
@@ -26,6 +26,7 @@ def get_seq_chunk_ids_for_reordering_before_attn(cp_size, device):
         _seq_chunk_ids_cache_for_reordering_before_attn[(cp_size, device)] = chunk_ids
     return _seq_chunk_ids_cache_for_reordering_before_attn[(cp_size, device)]
 
+
 def get_seq_chunk_ids_on_for_sharding(cp_size, device):
     """
     Context parallelism assigns two discontiguous sequence chunks to each NPU for load balancing.
@@ -37,22 +38,20 @@ def get_seq_chunk_ids_on_for_sharding(cp_size, device):
     _seq_chunk_ids_cache_for_sharding[(cp_size, device)] = chunk_ids
     return _seq_chunk_ids_cache_for_sharding[(cp_size, device)]
 
+
 def gather_from_sp_cp(
     t: torch.Tensor,
+    tnd: bool = False,
 ) -> torch.Tensor:
     cp_size = parallel_state.get_context_parallel_world_size()
     group = parallel_state.get_tensor_and_context_parallel_group()
-
-    # [s, ...] -> [cp, s, ...]
     t_ag = gather_from_sequence_parallel_region(t, group=group)
-    if cp_size > 1:
+    if cp_size > 1 and not tnd:
         t_ag = permute_cp_shard(t_ag, reorder=True)
     return t_ag
 
-def permute_cp_shard(
-    t: torch.Tensor,
-    reorder=True
-) -> torch.Tensor:
+
+def permute_cp_shard(t: torch.Tensor, reorder=True) -> torch.Tensor:
     cp_size = parallel_state.get_context_parallel_world_size()
     if cp_size <= 1:
         return t

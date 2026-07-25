@@ -120,8 +120,7 @@ class Compressor(MegatronModule):
         kv = self.wkv(x)
         score = self.wgate(x)
 
-        kv = gather_from_sp_cp(kv)
-        score = gather_from_sp_cp(score)
+        # TND: no gather of raw KV here; g2_attention gathers the compressed result later.
 
         tensor_list_kv = []
         tensor_list_score = []
@@ -159,6 +158,8 @@ class Compressor(MegatronModule):
 
         kv = (kv * score.softmax(dim=1)).sum(dim=1)
 
+        if not freqs_list:
+            return None
         freqs_cis = torch.cat(freqs_list, dim=0)
 
         kv = self.norm(kv.to(dtype))
