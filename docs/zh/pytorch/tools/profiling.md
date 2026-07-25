@@ -44,7 +44,7 @@ MindSpeed LLM支持基于昇腾芯片采集profiling数据，以提供对模型�
 | `--profile` | bool | `false` | 是否启用profiling |
 | `--profile-step-start` | int | `0` | 指定开启采集数据的步骤（包含） |
 | `--profile-step-end` | int | `-1` | 指定结束采集数据的步骤（不包含）；设置为-1时表示采集到训练结束 |
-| `--profile-ranks` | List[int] | `[0]` | 指定采集数据的卡号，设置为-1时表示采集所有rank的profiling数据 |
+| `--profile-ranks` | List[int] | `0` | 指定采集数据的卡号，设置为 `-1` 时表示采集所有 rank 的 profiling 数据。多个卡号用空格分隔，例如 `--profile-ranks 0 1` |
 | `--profile-level` | string | `level0` | 数据采集水平：<br>• `level0`：基础算子耗时<br>• `level1`：增加AICore利用率、通信算子（推荐）<br>• `level2`：更详细（含缓存、内存等） |
 | `--profile-export-type` | string | `text` | 指定性能数据结果文件导出格式：<br>• `text`：文本格式 <br>• `db`：数据库格式 |
 | `--profile-data-simplification` | bool | `false` | 是否启用数据精简模式（减小trace文件体积） |
