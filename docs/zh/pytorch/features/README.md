@@ -294,7 +294,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
   </tr></thead>
 <tbody>
   <tr>
-    <td><a href="../training/finetune/mcore/instruction_finetune.md">单样本微调</a></td>
+    <td><a href="../training/finetune/mcore/single_sample_finetune.md">单样本微调</a></td>
     <td>✅</td>
     <td>✅</td>
     <td>✅</td>
