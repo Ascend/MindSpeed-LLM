@@ -492,4 +492,13 @@
         <td>/</td>
         <td>/</td>
     </tr>
+    <tr>
+        <td>pretrain_longcat_flash_lite_4k_fsdp2</td>
+        <td>/data/ci/models/Longcat-Flash-Lite/hf/Longcat-Flash-Lite</td>
+        <td>/</td>
+        <td>/data/ci/datasets/origin/alpaca/train-00000-of-00001-a09b74b3ef9c3b56.parquet</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/</td>
+    </tr>
 </table>

@@ -284,7 +284,7 @@ class WeightLoader:
                 continue
 
             parameter_names_to_load.discard(full_name)
-            original_keys = [item[0] for item in collected[source_pattern]]
+            original_keys = {sp: [item[0] for item in items] for sp, items in collected.items()}
             tensors_only = {sp: [item[1] for item in items] for sp, items in collected.items()}
             conversion_tasks.append((converter, full_name, tensors_only, original_keys))
 

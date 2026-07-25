@@ -370,7 +370,7 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td>Y</td>
     </tr>
     <tr>
-        <td rowspan="21">ST</td>
+        <td rowspan="22">ST</td>
         <td rowspan="1">deepseek3</td>
         <td>deepseekv3, dualpipev, mla-up-proj-tp-overlap, moe-fb-overlap</td>
         <td><a href="pipeline/st/deepseek3/deepseek_v3_mcore_tp2_pp2_ep2_dualpipev_fb.sh">deepseek_v3_mcore_tp2_pp2_ep2_dualpipev_fb.sh</a></td>
@@ -424,6 +424,14 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
+    </tr>
+    <tr>
+        <td rowspan="1">longcat-flash-lite</td>
+        <td>longcat-flash-lite, FSDP2 pretrain, EP, recompute, N-gram embedding, HF checkpoint online conversion</td>
+        <td><a href="pipeline/st/longcat-flash-lite/pretrain_longcat_flash_lite_4k_fsdp2.sh">pretrain_longcat_flash_lite_4k_fsdp2.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td></td>
     </tr>
     <tr>
         <td rowspan="1">mamba2</td>

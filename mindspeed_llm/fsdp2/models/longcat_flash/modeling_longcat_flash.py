@@ -1,3 +1,18 @@
+# Copyright (c) 2026, HUAWEI CORPORATION. All rights reserved.
+# Copyright 2025 Meituan and the HuggingFace Inc. team. All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from typing import Optional, Tuple, Dict, List
 
 import torch
@@ -17,7 +32,18 @@ from transformers.models.longcat_flash.modeling_longcat_flash import (
     LongcatFlashDecoderLayer,
 )
 
+from mindspeed_llm.fsdp2.utils.global_vars import get_args
+from mindspeed.core.fusions.grouped_matmul import Ops
 from mindspeed.patch_utils import MindSpeedPatchesManager as pm
+
+_MOE_TOKEN_OPS_IMPORT_ERROR = None
+try:
+    from mindspeed.ops.npu_moe_token_permute import npu_moe_token_permute
+    from mindspeed.ops.npu_moe_token_unpermute import npu_moe_token_unpermute
+except ImportError as exc:
+    npu_moe_token_permute = None
+    npu_moe_token_unpermute = None
+    _MOE_TOKEN_OPS_IMPORT_ERROR = exc
 
 logger = logging.get_logger(__name__)
 
@@ -317,6 +343,96 @@ class LongcatFlashNgramForCausalLM(LongcatFlashForCausalLM):
 
         return super().generate(inputs=inputs, generation_config=generation_config, **kwargs)
 
+    def _install_ngram_embedding_early_post_backward(self):
+        """
+        For FSDP2-wrapped N-gram leaf embeddings:
+
+        1. Do not all-gather the full weight during backward.
+        2. After the full embedding grad is written, immediately trigger this
+        FSDP group's post_backward() so dense grads from multiple tables do not
+        accumulate before the root callback.
+        """
+        import torch.distributed as dist
+        from torch.distributed.fsdp._fully_shard._fsdp_common import TrainingState
+
+        ngram_embeddings = getattr(getattr(self, "model", None), "ngram_embeddings", None)
+        embedders = getattr(ngram_embeddings, "embedders", [])
+
+        for idx, module in enumerate(embedders):
+            module_name = f"model.ngram_embeddings.embedders.{idx}"
+
+            # Keep the existing optimization: Embedding backward does not need the full weight.
+            set_unshard_in_backward = getattr(module, "set_unshard_in_backward", None)
+            if not callable(set_unshard_in_backward) or not callable(getattr(module, "_get_fsdp_state", None)):
+                continue
+            set_unshard_in_backward(False)
+
+            def _bind_full_param_grad_hook(
+                fsdp_module,
+                _inputs,
+                *,
+                module_name=module_name,
+            ):
+                # FSDP registers its own pre-hook with prepend=True.
+                # This hook uses the default prepend=False, so by the time it runs,
+                # FSDP has completed all-gather and attached the full param back to module.weight.
+                state = fsdp_module._get_fsdp_state()
+                param_group = state._fsdp_param_group
+
+                if param_group is None or len(param_group.fsdp_params) != 1:
+                    return
+
+                fsdp_param = param_group.fsdp_params[0]
+                full_param = fsdp_param.unsharded_param
+
+                old = getattr(
+                    fsdp_module,
+                    "_ngram_early_post_backward_hook",
+                    None,
+                )
+                if old is not None and old["param_id"] == id(full_param):
+                    return
+
+                # In the non-compile eager path, full_param is usually reused.
+                # If that object changes in the future, remove the old hook first.
+                if old is not None:
+                    old["handle"].remove()
+
+                def _on_full_grad_ready(_param):
+                    # The full embedding grad has already been written by EmbeddingBackward.
+                    # Immediately follow FSDP's original post_backward path.
+                    if param_group._training_state is not TrainingState.PRE_BACKWARD:
+                        return
+
+                    # Initial validation is recommended with G.A.=1.
+                    # If gradient sync is disabled for this micro-step, FSDP will not reduce-scatter,
+                    # and the full grad may still be retained across micro-steps.
+                    if not param_group.reduce_grads:
+                        return
+
+                    param_group.post_backward()
+
+                handle = full_param.register_post_accumulate_grad_hook(_on_full_grad_ready)
+
+                fsdp_module._ngram_early_post_backward_hook = {
+                    "param_id": id(full_param),
+                    "handle": handle,
+                }
+
+                rank = dist.get_rank() if dist.is_initialized() else 0
+                if rank == 0:
+                    print(
+                        f"[FSDP2] installed early post-backward hook: {module_name}",
+                        flush=True,
+                    )
+
+            # Do not use prepend=True.
+            # FSDP's own pre-hook uses prepend=True and must unshard first.
+            module.register_forward_pre_hook(
+                _bind_full_param_grad_hook,
+                prepend=False,
+            )
+
     @staticmethod
     def register_patches(config):
         """patching the transformers model."""
@@ -389,8 +505,8 @@ class LongcatFlashExperts(nn.Module):
             selection_idx, token_idx = torch.where(expert_mask[expert_idx].squeeze(0))
             if token_idx.numel() == 0:
                 continue
-            current_state = hidden_states[token_idx]
 
+            current_state = hidden_states[token_idx]
             if expert_idx >= self.num_routed_experts or self.gate_up_proj is None:
                 current_hidden_states = self.identity_expert(current_state)
             else:
@@ -404,6 +520,74 @@ class LongcatFlashExperts(nn.Module):
         return final_hidden_states
 
 
+class LongcatFlashGroupedGemmExperts(LongcatFlashExperts):
+    @staticmethod
+    def _as_local(tensor):
+        return tensor.to_local() if hasattr(tensor, "to_local") else tensor
+
+    def _view_experts_weight(self, num_experts=None, dtype=None):
+        if self.gate_up_proj is None:
+            return None, None
+
+        gate_up_proj = self._as_local(self.gate_up_proj)
+        down_proj = self._as_local(self.down_proj)
+        if dtype is not None:
+            gate_up_proj = gate_up_proj.to(dtype)
+            down_proj = down_proj.to(dtype)
+
+        return gate_up_proj, down_proj
+
+    def forward(self, hidden_states, top_k_index, top_k_weights):
+        if top_k_index.numel() == 0:
+            return torch.zeros_like(hidden_states)
+
+        gate_up_proj, down_proj = self._view_experts_weight(dtype=hidden_states.dtype)
+        input_dtype = hidden_states.dtype
+        if self.num_routed_experts <= 0:
+            return hidden_states * top_k_weights.sum(dim=-1, keepdim=True).to(input_dtype)
+
+        final_hidden_states = torch.zeros_like(hidden_states)
+        routed_mask = top_k_index < self.num_routed_experts
+        identity_mask = ~routed_mask
+
+        if identity_mask.any():
+            token_idx, slot_idx = torch.where(identity_mask)
+            identity_output = hidden_states[token_idx] * top_k_weights[token_idx, slot_idx, None].to(input_dtype)
+            final_hidden_states.index_add_(0, token_idx, identity_output)
+
+        if routed_mask.any():
+            token_idx, slot_idx = torch.where(routed_mask)
+            routed_hidden_states = hidden_states[token_idx]
+            routed_expert_idx = top_k_index[token_idx, slot_idx]
+            routed_weights = top_k_weights[token_idx, slot_idx].to(input_dtype).view(-1, 1)
+
+            permuted_hidden_states, row_ids_map = npu_moe_token_permute(
+                routed_hidden_states, routed_expert_idx.view(-1, 1).to(torch.int32)
+            )
+            tokens_per_expert = torch.bincount(routed_expert_idx, minlength=self.num_routed_experts).to(torch.int64)
+
+            gate_up_output = Ops.gmm(permuted_hidden_states, gate_up_proj, tokens_per_expert, trans_b=False)
+            gate, up = gate_up_output.chunk(2, dim=-1)
+            routed_output = self.act_fn(gate) * up
+            routed_output = Ops.gmm(routed_output, down_proj, tokens_per_expert, trans_b=False)
+            routed_output = npu_moe_token_unpermute(routed_output, row_ids_map, probs=routed_weights)
+
+            final_hidden_states.index_add_(0, token_idx, routed_output.to(input_dtype))
+
+        return final_hidden_states
+
+    def ep_forward(self, hidden_states, tokens_per_expert):
+        gate_up_proj, down_proj = self._view_experts_weight(
+            num_experts=self.num_local_experts, dtype=hidden_states.dtype
+        )
+        tokens_per_expert = tokens_per_expert.to(torch.int64)
+
+        gate_up_output = Ops.gmm(hidden_states, gate_up_proj, tokens_per_expert, trans_b=False)
+        gate, up = gate_up_output.chunk(2, dim=-1)
+        hidden_states = self.act_fn(gate) * up
+        return Ops.gmm(hidden_states, down_proj, tokens_per_expert, trans_b=False)
+
+
 class LongcatFlashMoE(nn.Module):
     """
     A mixed expert module containing zero compute (identity) experts.
@@ -413,7 +597,11 @@ class LongcatFlashMoE(nn.Module):
         super().__init__()
         self.intermediate_size = config.expert_ffn_hidden_size
         self.config = config
-        self.experts = LongcatFlashExperts(config)
+        self.args = get_args()
+        if self.args.moe_grouped_gemm:
+            self.experts = LongcatFlashGroupedGemmExperts(config)
+        else:
+            self.experts = LongcatFlashExperts(config)
 
         self.router = LongcatFlashTopkRouter(config)
 

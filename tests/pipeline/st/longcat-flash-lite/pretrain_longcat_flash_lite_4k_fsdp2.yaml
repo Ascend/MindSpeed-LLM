@@ -2,7 +2,7 @@ model:
   model_id: longcat_flash_ngram
   trust_remote_code: True
   train_from_scratch: False
-  tokenizer_name_or_path: ./hf_weights/LongCat-Flash-Lite
+  tokenizer_name_or_path: /data/ci/models/Longcat-Flash-Lite/hf/Longcat-Flash-Lite
   init_model_with_meta_device: True
 
 data:
@@ -32,7 +32,7 @@ parallel:
 
 training:
   stage: pt
-  dataloader_num_workers : 4
+  dataloader_num_workers: 4
   seed: 42
   dataloader_drop_last: True
   optimizer: adamw
@@ -46,8 +46,9 @@ training:
   warmup_ratio: 0.0
   min_lr: 1e-06
   num_train_epochs: 3.0
-  max_steps: 2000
-  save_steps: 500
+  max_steps: 15
+  save_steps: 0
+  save_epochs: 0
   logging_steps: 1
 
 optimization:

@@ -43,10 +43,6 @@ class MindSpeedParallelEngine(torch.nn.Module):
         self.apply_recompute_modules()
         self.apply_fsdp_modules()
 
-        # Apply expert grad division hooks
-        # This step should be executed after all parallel wrapping is complete to ensure the model structure is fixed
-        self._apply_expert_grad_division_hooks()
-
         # For meta device: load weights after fsdp wrapping
         if self.init_device == "meta":
             logger.info_rank0("> Loading weights after FSDP wrapping...")
@@ -128,6 +124,22 @@ class MindSpeedParallelEngine(torch.nn.Module):
                     apply_grad_division_hook(sub_module, ep_size)
                 except Exception as e:
                     logger.error(f"Failed to apply hook to {name} ({class_name}): {e}")
+
+    def apply_ngram_hook(self):
+        model_type = str(getattr(self.hf_config, "model_type", "") or "").lower()
+        if model_type != "longcat_flash_ngram":
+            return
+
+        if hasattr(self.model, "_install_ngram_embedding_early_post_backward"):
+            self.model._install_ngram_embedding_early_post_backward()
+            logger.info_rank0("> Applied LongCat-Flash-Lite N-gram embedding FSDP2 optimization.")
+
+    def apply_model_hooks(self, optimizer: torch.optim.Optimizer):
+        # Apply expert grad division hooks
+        # This step should be executed after all parallel wrapping is complete to ensure the model structure is fixed
+        self._apply_expert_grad_division_hooks()
+        self.apply_optimizer_hook(optimizer)
+        self.apply_ngram_hook()
 
     def forward(self, *args, **kwargs):
         return self.model(*args, **kwargs)

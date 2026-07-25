@@ -195,6 +195,10 @@ _MODELS_WITH_2D_MERGED_EXPERTS = [
     "minimax_m2",
 ]
 
+_MODELS_WITH_3D_MERGED_EXPERTS = [
+    "longcat_flash_ngram",
+]
+
 
 class GroupedGemmFlattenRule(MappingRule):
     """
@@ -210,7 +214,7 @@ class GroupedGemmFlattenRule(MappingRule):
 
     down_proj (single-source):
         MergeModulelist → Transpose(1,2) → FlattenExperts
-        [E,I,H] → [E,H,I] → [E*H, I]
+        [E,H,I] → [E,I,H] → [E*I, H]
     """
 
     name = "grouped_gemm_flatten"
@@ -230,16 +234,64 @@ class GroupedGemmFlattenRule(MappingRule):
             entry.operations.extend([Transpose(1, 2), FlattenExperts()])
 
 
+class GroupedGemmTransposeRule(MappingRule):
+    """
+    LongCat-Flash-Lite keeps merged expert weights in 3-D:
+
+    gate_up_proj:
+        MergeModulelist -> Concatenate -> Transpose(1,2)
+        [E,I,H] -> [E,2I,H] -> [E,H,2I]
+
+    down_proj:
+        MergeModulelist -> Transpose(1,2)
+        [E,H,I] -> [E,I,H]
+    """
+
+    name = "grouped_gemm_transpose"
+    model_types = _MODELS_WITH_3D_MERGED_EXPERTS
+
+    def condition(self, model_type: str) -> bool:
+        return True
+
+    def apply(self, conversions: list, model_type: str) -> None:
+        from transformers.core_model_loading import MergeModulelist, Transpose
+
+        for entry in conversions:
+            if not hasattr(entry, "operations"):
+                continue
+            if not any(isinstance(op, MergeModulelist) for op in entry.operations):
+                continue
+            entry.operations.append(Transpose(1, 2))
+
+
 # ==============================================================================
 # Register built-in rules
 # ==============================================================================
 
 MappingRuleRegistry.register(GroupedGemmFlattenRule())
+MappingRuleRegistry.register(GroupedGemmTransposeRule())
 
 
 # ==============================================================================
 # Public API
 # ==============================================================================
+
+
+def register_custom_conversion_mappings() -> None:
+    """Register MindSpeed-LLM model mappings with transformers."""
+    if version("transformers") < "5.0.0":
+        return
+
+    from transformers.conversion_mapping import (
+        get_checkpoint_conversion_mapping,
+        register_checkpoint_conversion_mapping,
+    )
+
+    if get_checkpoint_conversion_mapping("longcat_flash_ngram") is None:
+        register_checkpoint_conversion_mapping(
+            "longcat_flash_ngram",
+            get_checkpoint_conversion_mapping("longcat_flash"),
+        )
 
 
 def apply_custom_mappings(conversions: list, model_type: str) -> None:

@@ -45,7 +45,13 @@ def get_zero_experts_forward_fn(ep_group, fused):
         def normal_experts_part_forward(
             hidden_states: torch.Tensor, top_k_index: torch.Tensor, top_k_weights: torch.Tensor
         ):
-            weights = (self.gate_up_proj.to_local(), self.down_proj.to_local())
+            gate_up_proj = self.gate_up_proj.to_local()
+            down_proj = self.down_proj.to_local()
+            if not callable(getattr(self, "ep_forward", None)):
+                # The generic dispatcher expects per-expert Linear weights in [out_features, in_features].
+                gate_up_proj = gate_up_proj.transpose(1, 2)
+                down_proj = down_proj.transpose(1, 2)
+            weights = (gate_up_proj, down_proj)
 
             act_fn = getattr(self, 'act_fn', None)
 
@@ -54,6 +60,11 @@ def get_zero_experts_forward_fn(ep_group, fused):
             else:
                 # top_k_weights are already [B, S, K], use directly.
                 real_top_k_weights = top_k_weights
+
+            act_limit = self.limit if hasattr(self, 'limit') else None
+            quant_config = getattr(self, '_quant_config', None) or getattr(self, 'config', None)
+            if quant_config is not None and not hasattr(quant_config, 'get_key_dtype'):
+                quant_config = None
 
             return dispatch_mlp_combine(
                 ep_group,
@@ -65,6 +76,8 @@ def get_zero_experts_forward_fn(ep_group, fused):
                 act_fn,
                 self.num_routed_experts,
                 self.expert_ids_per_ep_rank,
+                act_limit,
+                quant_config,
                 expert_module=self,
             )
 

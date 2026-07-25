@@ -49,12 +49,17 @@ class WeightConvAdapter:
 
         from transformers.conversion_mapping import get_checkpoint_conversion_mapping
         from transformers.core_model_loading import WeightConverter, WeightRenaming
-        from mindspeed_llm.fsdp2.checkpoint.conversion_mappings import apply_custom_mappings
+        from mindspeed_llm.fsdp2.checkpoint.conversion_mappings import (
+            apply_custom_mappings,
+            register_custom_conversion_mappings,
+        )
 
+        register_custom_conversion_mappings()
         conversions = get_checkpoint_conversion_mapping(model_type)
         if not conversions:
             return
 
+        conversions = deepcopy(conversions)
         apply_custom_mappings(conversions, model_type)
 
         for entry in conversions:
@@ -92,7 +97,7 @@ class WeightConvAdapter:
         return None
 
     @staticmethod
-    def dispatch_converted(converter, target_name: str, collected: dict, original_keys: list = None):
+    def dispatch_converted(converter, target_name: str, collected: dict, original_keys=None):
         """
         Run the native WeightConverter.convert() pipeline on raw tensors.
 
@@ -100,22 +105,14 @@ class WeightConvAdapter:
             converter: Converter template from match_converter().
             target_name: Full model parameter name (e.g. model.layers.0.mlp.experts.gate_up_proj).
             collected: {source_pattern: [tensor, ...]} grouped for one layer.
-            original_keys: Original checkpoint keys for the first source pattern's
-                tensors, used to sort by expert index when weights span multiple
+            original_keys: Original checkpoint keys grouped by source pattern,
+                used to sort by expert index when weights span multiple
                 safetensors files.
 
         Yields:
             (full_name, tensor) pairs ready for dispatch.
         """
-        if original_keys and len(original_keys) > 1:
-            m = re.search(r'\.experts\.(\d+)\.', original_keys[0])
-            if m:
-                indexed = []
-                for sp, tensors in collected.items():
-                    pairs = list(zip(original_keys, tensors))
-                    pairs.sort(key=lambda p: int(re.search(r'\.experts\.(\d+)\.', p[0]).group(1)))
-                    indexed.append((sp, [t for _, t in pairs]))
-                collected = dict(indexed)
+        collected = WeightConvAdapter._sort_collected_by_expert_id(collected, original_keys)
 
         fresh = deepcopy(converter)
         fresh.collected_tensors = collected
@@ -124,6 +121,69 @@ class WeightConvAdapter:
             if isinstance(tensor, list):
                 tensor = tensor[0]
             yield name, tensor
+
+    @staticmethod
+    def _sort_collected_by_expert_id(collected: dict, original_keys):
+        if not original_keys:
+            return collected
+
+        WeightConvAdapter._validate_expert_id_groups(original_keys)
+        sorted_collected = {}
+        for source_pattern, tensors in collected.items():
+            keys = original_keys.get(source_pattern)
+            sorted_collected[source_pattern] = WeightConvAdapter._sort_tensor_list_by_expert_id(tensors, keys)
+        return sorted_collected
+
+    @staticmethod
+    def _validate_expert_id_groups(original_keys: dict):
+        expert_ids_by_pattern = {}
+        for source_pattern, keys in original_keys.items():
+            ids = WeightConvAdapter._extract_expert_ids(keys)
+            if ids:
+                if len(ids) != len(set(ids)):
+                    raise ValueError(
+                        f"Duplicate expert ids in converted source pattern {source_pattern}: {sorted(ids)}"
+                    )
+                expert_ids_by_pattern[source_pattern] = ids
+
+        if len(expert_ids_by_pattern) <= 1:
+            return
+
+        expected_pattern, expected_ids = next(iter(expert_ids_by_pattern.items()))
+        expected_set = set(expected_ids)
+        for source_pattern, ids in list(expert_ids_by_pattern.items())[1:]:
+            if set(ids) != expected_set:
+                raise ValueError(
+                    "Expert id mismatch across converted source patterns: "
+                    f"{expected_pattern} has {sorted(expected_set)}, "
+                    f"{source_pattern} has {sorted(set(ids))}"
+                )
+
+    @staticmethod
+    def _extract_expert_ids(keys: Optional[list]):
+        if not keys:
+            return []
+
+        matches = [re.search(r"\.experts\.(\d+)\.", key) for key in keys]
+        if not any(matches):
+            return []
+        if not all(matches):
+            bad_keys = [key for key, match in zip(keys, matches) if match is None]
+            raise ValueError(f"Cannot extract expert id from converted source keys: {bad_keys}")
+        return [int(match.group(1)) for match in matches]
+
+    @staticmethod
+    def _sort_tensor_list_by_expert_id(tensors: list, keys: Optional[list]):
+        if not keys or len(keys) <= 1 or len(keys) != len(tensors):
+            return tensors
+
+        expert_ids = WeightConvAdapter._extract_expert_ids(keys)
+        if not expert_ids:
+            return tensors
+
+        pairs = list(zip(expert_ids, tensors))
+        pairs.sort(key=lambda p: p[0])
+        return [tensor for _, tensor in pairs]
 
 
 def revert_weight_conversion_for_hf(

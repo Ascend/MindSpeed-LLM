@@ -37,7 +37,7 @@ class ModelArguments:
             "step35",
             "mamba3",
             "minimax_m27",
-            "longcat_flash",
+            "longcat_flash_ngram",
             "glm52",
             "deepseek_v4",
         ]

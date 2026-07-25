@@ -16,11 +16,10 @@ DISTRIBUTED_ARGS="
 "
 
 mkdir -p ./logs
-bash tests/tools/fsdp2/longcat_flash_lite_moe_hf_weight_convert.sh
 # Commonly used parameters are passed as CLI args here; see companion YAML for full config.
 # CLI args take precedence over the YAML when both are set. All args can also be moved into the YAML if preferred.
 torchrun $DISTRIBUTED_ARGS train_fsdp2.py examples/fsdp2/longcat_flash_lite/pretrain_longcat_flash_lite_4k_fsdp2_A3.yaml \
-    --model.model_name_or_path ./fsdp_weights/LongCat-Flash-Lite-mergeExperts \
+    --model.model_name_or_path ./hf_weights/LongCat-Flash-Lite \
     --data.dataset '{"file_name": "./datasets/alpaca/train-00000-of-00001-a09b74b3ef9c3b56.parquet"}' \
     --parallel.fsdp_size 32 \
     --parallel.ep_size 32 \

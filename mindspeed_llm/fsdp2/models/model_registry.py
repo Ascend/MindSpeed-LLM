@@ -33,7 +33,7 @@ class ModelRegistry:
             "qwen3_next": Qwen3NextForCausalLM,
             "mamba3": Mamba3ForCausalLM,
             "minimax_m27": MiniMaxM2ForCausalLM,
-            "longcat_flash": LongcatFlashNgramForCausalLM,
+            "longcat_flash_ngram": LongcatFlashNgramForCausalLM,
             "glm52": GlmMoeDsaForCausalLM,
         }
 

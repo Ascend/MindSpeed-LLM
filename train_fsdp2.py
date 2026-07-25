@@ -83,7 +83,7 @@ class MindSpeedAutoTrainer:
         self.lr_scheduler = self._build_scheduler(self.optimizer)
         self.checkpoint_manager = self._build_checkpointer()
         self.train_monitor = self._build_monitor()
-        self.model.apply_optimizer_hook(self.optimizer)  # hook optimizer step for clearing quantization cache
+        self.model.apply_model_hooks(self.optimizer)
 
         # 4. Dependency Injection
         self.trainer = Trainer(
