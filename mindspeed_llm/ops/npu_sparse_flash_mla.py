@@ -40,7 +40,7 @@ def get_sparse_attn_sharedkv_metadata(
     layout_q,
     layout_kv,
 ):
-    cmp_residual_k = torch.tensor([S2 % cmp_ratio], dtype=torch.int32, device="npu") if has_cmp else None
+    cmp_residual_k = torch.full((B,), S2 % cmp_ratio, dtype=torch.int32, device="npu") if has_cmp else None
 
     metadata = _custom_ops().sparse_flash_mla_metadata(
         num_heads_q=N1,
@@ -86,7 +86,9 @@ def get_sparse_flash_mla_grad_metadata(
     ctx_layout_q,
     ctx_layout_kv,
 ):
-    cmp_residual_kv = torch.tensor([ctx_S2 % ctx_cmp_ratio], dtype=torch.int32, device="npu") if ctx_has_cmp else None
+    cmp_residual_kv = (
+        torch.full((ctx_B,), ctx_S2 % ctx_cmp_ratio, dtype=torch.int32, device="npu") if ctx_has_cmp else None
+    )
 
     grad_metadata = _custom_ops().sparse_flash_mla_grad_metadata(
         cu_seqlens_q=None,
@@ -449,7 +451,7 @@ def npu_sparse_flash_mla(
         )  # [B, S, K] --> [B, S, 1, K]
         cu_seqlens_cmp_kv = None
         if cmp_residual_kv is None:
-            cmp_residual_kv = torch.tensor([S1 % cmp_ratio], dtype=torch.int32).npu()
+            cmp_residual_kv = torch.full((B,), S1 % cmp_ratio, dtype=torch.int32).npu()
     else:
         cu_seqlens_q = cu_seqlens_q.int()
         cu_seqlens_kv = cu_seqlens_kv.int()

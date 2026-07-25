@@ -533,7 +533,8 @@ class DSAIndexer(MegatronModule):
         mask = torch.where(mask, float('-inf'), 0)
         attention_mask += mask
         if getattr(args, 'use_flash_attn', False):
-            attention_mask = torch.isinf(attention_mask) & (attention_mask < 0).unsqueeze(1)
+            attention_mask = torch.isinf(attention_mask) & (attention_mask < 0)
+            attention_mask = attention_mask.unsqueeze(1)
             args.sparse_mode = 0
         return attention_mask
 
