@@ -11,6 +11,11 @@ pip install -r requirements.txt
 pip3 install -e .
 cd ..
 
+git clone https://gitcode.com/Ascend/FSDPTurbo.git
+cd FSDPTurbo
+pip3 install -e .
+cd ..
+
 git clone -b master https://gitcode.com/ascend/MindSpeed-LLM.git
 cd MindSpeed-LLM
 chmod 777 -R ./
