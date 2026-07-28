@@ -53,6 +53,7 @@ def get_args():
             'longcat',
             'glm5',
             'deepseek4_base',
+            'minimax_m2',
         ],
         help='model type of huggingface',
     )
