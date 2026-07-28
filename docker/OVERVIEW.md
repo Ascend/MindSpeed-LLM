@@ -9,24 +9,29 @@
 | **Source Repository** | [https://gitcode.com/Ascend/MindSpeed-LLM](https://gitcode.com/Ascend/MindSpeed-LLM) |
 | **Dockerfile Path** | `docker/Dockerfile` |
 | **License** | Apache-2.0 |
+| **Where to get help** | [Issue Feedback](https://gitcode.com/Ascend/MindSpeed-LLM/issues) |
+
+## MindSpeed-LLM
+
+MindSpeed-LLM is a distributed training suite for large language models tailored to the Huawei Atlas ecosystem. It delivers end-to-end LLM training solutions for ecosystem partners of Huawei Atlas chips. The suite supports distributed pre-training and distributed instruction fine-tuning, and comes with a full development toolchain encompassing data preprocessing, weight conversion, online inference, baseline evaluation and more core capabilities.
 
 ## Image Tag Key Field Description
 
-Image Tag naming format: `{MindSpeed LLM Version}-cann{CANN Version}-torch_npu{TorchNPU Version}-{ChipType}-{OS}-py{Python Version}-{Architecture}`
+Image Tag naming format: `v{MindSpeed LLM Version}-cann{CANN Version}-torch_npu{TorchNPU Version}-{ChipType}-{OS}-py{Python Version}-{Architecture}`
 
 | Field | Description | Example Value |
 | ------ | ------ | -------- |
 | MindSpeed LLM Version | MindSpeed LLM version label, also serves as Git branch name | `26.0.0` |
-| CANNVersion | CANN base image version | `9.0.0` |
-| TorchNPUVersion | TorchNPU version | `2.7.1` |
-| ChipType | NPU chip type (lowercase) | `a3`, `910b` |
+| CANN Version | CANN base image version | `9.0.0` |
+| TorchNPU Version | TorchNPU version | `2.7.1` |
+| Chip Type | NPU chip type (lowercase) | `a3`, `910b` |
 | OS | Operating system version | `openeuler24.03`, `ubuntu22.04` |
 | Python Version | Python runtime version | `3.11` |
 | Architecture | CPU architecture type | `aarch64`, `x86_64` |
 
 ### Tag Examples
 
-| Tag | MindSpeed LLM | CANN | torch-npu | NPU | OS | Python | Architecture |
+| Tag | MindSpeed LLM | CANN | TorchNPU | NPU | OS | Python | Architecture |
 | ----- | ----- | ----- | ----- | ----- | --------- | -------- | ------ |
 | `v26.0.0-cann9.0.0-torch_npu2.7.1-910b-openeuler24.03-py3.11-aarch64` | `v26.0.0` | `9.0.0` | `2.7.1` | `910b` | `openeuler24.03` | `3.11` | `aarch64` |
 | `v26.0.0-cann9.0.0-torch_npu2.7.1-910b-ubuntu22.04-py3.11-x86_64` | `v26.0.0` | `9.0.0` | `2.7.1` | `910b` | `ubuntu22.04` | `3.11` | `x86_64` |
@@ -63,14 +68,17 @@ The `image_build.sh` script supports flexible parameter configuration. Default v
 | ------ |-------------------------------------| ------------ |
 | `-t, --npu-type` | NPU type:`a3` or `910b`                | `910b` |
 | `-o, --os` | OS：`openeuler24.03`or`ubuntu22.04` | `openeuler24.03` |
+| `--no-cache` | Build without using Docker build cache                          | None |
 | `--mindspeed-llm-branch` |MindSpeed LLM version tag, also used as Git branch name    | `26.0.0` |
 | `--mindspeed-branch` | MindSpeed version tag, also used as Git branch name        | `26.0.0_core_r0.12.1` |
 | `--megatron-branch` | Megatron-LM version tag, also used as Git branch name      | `core_v0.12.1` |
 | `--python-version` | Python version                           | `3.11` |
 | `--torch-version` | PyTorch version                          | `2.7.1` |
 | `--torch-npu-version` | TorchNPU version                        | `2.7.1` |
+| `--triton-ascend-version` | Triton-Ascend version                        | `3.2.1` |
 | `--base-image-version` | Base image CANN version                        | `9.0.0` |
 | `--base-image` | Full base image name, passed as-is to pull the image if not empty           | None |
+| `--cleanup-on-fail` | Clean up dangling images/containers when build fails           | None |
 
 **Note:** The current NPU types are `910b` (Atlas A2 training products) and `a3` (Atlas A3 training products), `a5` (Ascend 950 training products)is pending.
 
@@ -194,9 +202,9 @@ docker run -it --rm \
 | ------ | ------ |
 | CANN | 9.0.0 |
 | Python | 3.11 |
-| Miniconda | 26.1.1-1 |
 | PyTorch | 2.7.1 |
 | TorchNPU | 2.7.1 |
+| Triton-Ascend | 3.2.1 |
 | MindSpeed LLM | 26.0.0 |
 
 ### Compatibility Change Notes

@@ -54,11 +54,6 @@ RUN chmod +x /tmp/configure_repo.sh && \
     bash /tmp/configure_repo.sh && \
     rm /tmp/configure_repo.sh
 
-# Clean YUM cache and temporary files
-RUN yum clean all && \
-    rm -rf /var/cache/yum && \
-    rm -rf /tmp/* /var/tmp/* /var/log/*
-
 # Install system dependencies
 RUN echo "Installing system dependencies..." && \
     if [ "$OS_FAMILY" = "openeuler" ]; then \
@@ -95,34 +90,14 @@ FROM base AS builder
 
 ARG TORCH_VERSION=2.7.1
 ARG TORCH_NPU_VERSION=2.7.1
+ARG TRITON_ASCEND_VERSION=3.2.1
 
 WORKDIR /tmp
 
-# Install Miniconda (auto-detect architecture)
-RUN echo "=== Detecting system architecture ===" && \
-    arch=$(uname -m) && \
-    echo "Current architecture: $arch" && \
-    if [ "$arch" = "x86_64" ]; then \
-        MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-py311_26.1.1-1-Linux-x86_64.sh"; \
-    elif [ "$arch" = "aarch64" ]; then \
-        MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-py311_26.1.1-1-Linux-aarch64.sh"; \
-    fi && \
-    echo "Download URL: $MINICONDA_URL" && \
-    wget --no-check-certificate "$MINICONDA_URL" -O miniconda.sh && \
-    bash miniconda.sh -b -p /opt/conda && \
-    rm -f miniconda.sh && \
-    /opt/conda/bin/conda clean -ya && \
-    ln -sf /opt/conda/bin/python /usr/bin/python && \
-    ln -sf /opt/conda/bin/pip /usr/bin/pip
-
-# Set environment variables for Conda
-ENV PATH=/opt/conda/bin:$PATH
-ENV CONDA_AUTO_UPDATE_CONDA=false
-
 # Configure pip source
 RUN pip config set global.index-url https://repo.huaweicloud.com/repository/pypi/simple && \
-    pip config set global.trusted-host "repo.huaweicloud.com" && \
-    /opt/conda/bin/conda init bash
+    pip config set global.extra-index-url "https://mirrors.aliyun.com/pypi/simple/ https://pypi.douban.com/simple/ https://pypi.tuna.tsinghua.edu.cn/simple/" && \
+    pip config set global.trusted-host "repo.huaweicloud.com mirrors.aliyun.com pypi.douban.com pypi.tuna.tsinghua.edu.cn"
 
 # Install PyTorch and torch_npu (ONLINE INSTALL ONLY)
 RUN echo "Installing PyTorch and torch_npu from PyPI..." && \
@@ -147,7 +122,12 @@ RUN echo "Installing PyTorch and torch_npu from PyPI..." && \
             pip install --no-cache-dir torch-npu==${TORCH_NPU_VERSION} && break; \
         done;
 
-RUN conda clean -ya
+# Install Triton-Ascend
+RUN echo "Installing Triton-Ascend..." && \
+    pip install --no-cache-dir triton-ascend==${TRITON_ASCEND_VERSION} --extra-index-url=https://triton-ascend.osinfra.cn/pypi/simple
+
+# Clean pip cache
+RUN pip cache purge
 
 # ------------------------------
 # Stage 3: Final Runtime Image
@@ -168,8 +148,14 @@ RUN git config --global http.sslVerify false
 RUN git clone https://gitcode.com/ascend/MindSpeed.git && \
     cd MindSpeed && \
     git checkout ${MINDSPEED_BRANCH} && \
-    pip3 install -r requirements.txt && \
-    pip3 install -e .
+    pip3 install --no-cache-dir -r requirements.txt && \
+    pip3 install --no-cache-dir -e .
+
+# Install FSDPTurbo
+RUN git clone https://gitcode.com/Ascend/FSDPTurbo.git && \
+    cd FSDPTurbo && \
+    pip3 install --no-cache-dir -e . && \
+    cd ..
 
 # Install MindSpeed-LLM and Megatron-LM
 RUN git clone https://gitcode.com/ascend/MindSpeed-LLM.git && \
@@ -180,16 +166,15 @@ RUN git clone https://gitcode.com/ascend/MindSpeed-LLM.git && \
     cd ../MindSpeed-LLM && \
     git checkout ${MINDSPEED_LLM_BRANCH} && \
     mkdir logs && \
-    pip3 install -r requirements.txt
+    pip3 install --no-cache-dir -r requirements.txt
 
 # Set working directory
 WORKDIR /workspace/MindSpeed-LLM
 
 # Auto-run on login
 RUN echo 'cd /workspace/MindSpeed-LLM' >> /root/.bashrc && \
-    echo '. /opt/conda/etc/profile.d/conda.sh' >> /root/.bashrc && \
-    echo 'conda activate base' >> /root/.bashrc
+    echo '[ -f /usr/local/Ascend/ascend-toolkit/set_env.sh ] && source /usr/local/Ascend/ascend-toolkit/set_env.sh' >> /root/.bashrc && \
+    echo '[ -f /usr/local/Ascend/nnal/atb/set_env.sh ] && source /usr/local/Ascend/nnal/atb/set_env.sh' >> /root/.bashrc
 
-# Environment variables
-ENV PATH=/opt/conda/bin:$PATH
+    # Environment variables
 ENV ASCEND_TOOLKIT_HOME=/usr/local/Ascend/ascend-toolkit

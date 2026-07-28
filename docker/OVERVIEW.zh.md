@@ -9,10 +9,15 @@
 | **源码仓库** | [https://gitcode.com/Ascend/MindSpeed-LLM](https://gitcode.com/Ascend/MindSpeed-LLM) |
 | **Dockerfile 路径** | `docker/Dockerfile` |
 | **许可证** | Apache-2.0 |
+| **问题反馈** | [Issue Feedback](https://gitcode.com/Ascend/MindSpeed-LLM/issues) |
+
+## MindSpeed-LLM
+
+MindSpeed LLM：基于昇腾生态的大语言模型分布式训练套件，旨在为华为昇腾芯片生态合作伙伴提供端到端的大语言模型训练方案，包含分布式预训练、分布式指令微调以及对应的开发工具链，如：数据预处理、权重转换、在线推理、基线评估等。
 
 ## 镜像 Tag 关键字段描述
 
-镜像 Tag 命名遵循模板：`{MindSpeed LLM版本}-cann{CANN版本}-torch_npu{TorchNPU版本}-{芯片信息}-{操作系统}-py{Python版本}-{架构类型}`
+镜像 Tag 命名遵循模板：`v{MindSpeed LLM版本}-cann{CANN版本}-torch_npu{TorchNPU版本}-{芯片信息}-{操作系统}-py{Python版本}-{架构类型}`
 
 | 字段 | 说明 | 示例值 |
 | ------ | ------ | -------- |
@@ -26,7 +31,7 @@
 
 ### 示例 Tag
 
-| Tag | MindSpeed LLM | CANN | torch-npu | NPU | 操作系统 | Python | 架构 |
+| Tag | MindSpeed LLM | CANN | TorchNPU | NPU | 操作系统 | Python | 架构 |
 | ----- | ----- | ----- | ----- | ----- | --------- | -------- | ------ |
 | `v26.0.0-cann9.0.0-torch_npu2.7.1-910b-openeuler24.03-py3.11-aarch64` | `v26.0.0` | `9.0.0` | `2.7.1` | `910b` | `openeuler24.03` | `3.11` | `aarch64` |
 | `v26.0.0-cann9.0.0-torch_npu2.7.1-910b-ubuntu22.04-py3.11-x86_64` | `v26.0.0` | `9.0.0` | `2.7.1` | `910b` | `ubuntu22.04` | `3.11` | `x86_64` |
@@ -65,14 +70,17 @@ docker/
 | ------ |-------------------------------------| ------------ |
 | `-t, --npu-type` | NPU 类型：`a3` 或 `910b`                | `910b` |
 | `-o, --os` | 操作系统：`openeuler24.03`或`ubuntu22.04` | `openeuler24.03` |
+| `--no-cache` | 构建时不使用 Docker 构建缓存                          | 无 |
 | `--mindspeed-llm-branch` | MindSpeed LLM 版本标识，同时作为 Git 分支名称    | `26.0.0` |
 | `--mindspeed-branch` | MindSpeed 版本标识，同时作为 Git 分支名称        | `26.0.0_core_r0.12.1` |
 | `--megatron-branch` | Megatron-LM 版本标识，同时作为 Git 分支名称      | `core_v0.12.1` |
 | `--python-version` | Python 版本                           | `3.11` |
 | `--torch-version` | PyTorch 版本                          | `2.7.1` |
 | `--torch-npu-version` | TorchNPU 版本                        | `2.7.1` |
+| `--triton-ascend-version` | Triton-Ascend 版本                        | `3.2.1` |
 | `--base-image-version` | 基础镜像 CANN 版本                        | `9.0.0` |
 | `--base-image` | 完整基础镜像名称，当设置不为空时会原样传入拉取镜像           | 无 |
+| `--cleanup-on-fail` | 构建失败时清理悬空的镜像和容器           | 无 |
 
 **提示：** 当前的NPU类型为 `910b`（Atlas A2 训练系列产品）和 `a3`（Atlas A3 训练系列产品），`a5`（Ascend 950 训练系列产品）待搭建。
 
@@ -196,9 +204,9 @@ docker run -it --rm \
 | ------ |----------|
 | CANN | 9.0.0    |
 | Python | 3.11     |
-| Miniconda | 26.1.1-1 |
 | PyTorch | 2.7.1    |
 | TorchNPU | 2.7.1    |
+| Triton-Ascend | 3.2.1    |
 | MindSpeed LLM | 26.0.0   |
 
 ### 兼容性说明

@@ -37,6 +37,7 @@ BASE_IMAGE_VERSION="9.0.0"
 MINDSPEED_LLM_BRANCH="26.0.0"
 MINDSPEED_BRANCH="26.0.0_core_r0.12.1"
 MEGATRON_BRANCH="core_v0.12.1"
+TRITON_ASCEND_VERSION="3.2.1"
 NO_CACHE=""
 NPU_TYPE_EXPLICIT=false
 OS_EXPLICIT=false
@@ -58,7 +59,7 @@ Optional:
     -i, --image-name NAME    Custom output image full name
                              Default rule: mindspeed-llm:{version}-cann{cann_ver}-torch_npu{torch_npu_ver}-{chip}-{os}-py{py_ver}-{arch}
     -o, --os OS              OS type: openEuler24.03 or ubuntu22.04 (default: openEuler24.03)
-    -n, --no-cache           Build without using Docker build cache
+    --no-cache               Build without using Docker build cache
     --base-image IMAGE       Full base image name, passed directly to FROM as-is
                              Example: swr.cn-south-1.myhuaweicloud.com/ascendhub/cann:9.0.0-a3-openeuler24.03-py3.11
     --base-image-version VER CANN base image version (default: 9.0.0)
@@ -68,6 +69,7 @@ Optional:
     --mindspeed-llm-branch   MindSpeed-LLM git branch/version (default: 26.0.0)
     --mindspeed-branch       MindSpeed git branch/version (default: 26.0.0_core_r0.12.1)
     --megatron-branch        Megatron-LM git branch/version (default: core_v0.12.1)
+    --triton-ascend-version  Triton-Ascend version (default: 3.2.1)
     --cleanup-on-fail        Clean up dangling <none> images/containers when build fails
     -h, --help               Show this help message and exit
 
@@ -121,10 +123,11 @@ while [[ $# -gt 0 ]]; do
         -t|--npu-type)          NPU_TYPE="$2"; NPU_TYPE_EXPLICIT=true; shift 2 ;;
         -i|--image-name)        IMAGE_NAME="$2"; shift 2 ;;
         -o|--os)                OS="$2"; OS_EXPLICIT=true; shift 2 ;;
-        -n|--no-cache)          NO_CACHE="--no-cache"; shift ;;
+        --no-cache)             NO_CACHE="--no-cache"; shift ;;
         --mindspeed-llm-branch) MINDSPEED_LLM_BRANCH="$2"; shift 2 ;;
         --mindspeed-branch)     MINDSPEED_BRANCH="$2"; shift 2 ;;
         --megatron-branch)      MEGATRON_BRANCH="$2"; shift 2 ;;
+        --triton-ascend-version) TRITON_ASCEND_VERSION="$2"; shift 2 ;;
         --base-image)           BASE_IMAGE="$2"; shift 2 ;;
         --python-version)       PYTHON_VERSION="$2"; PYTHON_VERSION_EXPLICIT=true; shift 2 ;;
         --torch-version)        TORCH_VERSION="$2"; shift 2 ;;
@@ -205,6 +208,7 @@ BUILD_ARGS="$BUILD_ARGS --build-arg TORCH_NPU_VERSION=${TORCH_NPU_VERSION}"
 BUILD_ARGS="$BUILD_ARGS --build-arg MINDSPEED_LLM_BRANCH=${MINDSPEED_LLM_BRANCH}"
 BUILD_ARGS="$BUILD_ARGS --build-arg MINDSPEED_BRANCH=${MINDSPEED_BRANCH}"
 BUILD_ARGS="$BUILD_ARGS --build-arg MEGATRON_BRANCH=${MEGATRON_BRANCH}"
+BUILD_ARGS="$BUILD_ARGS --build-arg TRITON_ASCEND_VERSION=${TRITON_ASCEND_VERSION}"
 
 if [ -n "$BASE_IMAGE" ]; then
     BUILD_ARGS="$BUILD_ARGS --build-arg BASE_IMAGE=${BASE_IMAGE}"
@@ -230,6 +234,7 @@ echo "torch-npu Version:  ${TORCH_NPU_VERSION}"
 echo "MindSpeed LLM Ver:  ${MINDSPEED_LLM_BRANCH}"
 echo "MindSpeed Ver:      ${MINDSPEED_BRANCH}"
 echo "Megatron Ver:       ${MEGATRON_BRANCH}"
+echo "Triton-Ascend Ver:  ${TRITON_ASCEND_VERSION}"
 echo "No Cache:           ${NO_CACHE:-No}"
 echo "=========================================="
 
