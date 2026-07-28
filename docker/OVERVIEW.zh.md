@@ -23,7 +23,7 @@ MindSpeed LLM：基于昇腾生态的大语言模型分布式训练套件，旨�
 | ------ | ------ | -------- |
 | MindSpeed LLM版本 | MindSpeed LLM 版本标识，同时也是 Git 分支名称 | `26.0.0` |
 | CANN版本 | CANN 基础镜像版本 | `9.0.0` |
-| TorchNPU版本 | TorchNPU 版本 | `2.7.1` |
+| TorchNPU版本 | TorchNPU匹配的PyTorch版本 | `2.7.1` |
 | 芯片信息 | NPU 芯片类型（小写） | `a3`, `910b` |
 | 操作系统 | 操作系统类型 | `openeuler24.03`, `ubuntu22.04` |
 | Python版本 | Python 版本 | `3.11` |
@@ -76,7 +76,7 @@ docker/
 | `--megatron-branch` | Megatron-LM 版本标识，同时作为 Git 分支名称      | `core_v0.12.1` |
 | `--python-version` | Python 版本                           | `3.11` |
 | `--torch-version` | PyTorch 版本                          | `2.7.1` |
-| `--torch-npu-version` | TorchNPU 版本                        | `2.7.1` |
+| `--torch-npu-version` | TorchNPU匹配的PyTorch版本                      | `2.7.1` |
 | `--triton-ascend-version` | Triton-Ascend 版本                        | `3.2.1` |
 | `--base-image-version` | 基础镜像 CANN 版本                        | `9.0.0` |
 | `--base-image` | 完整基础镜像名称，当设置不为空时会原样传入拉取镜像           | 无 |
@@ -123,7 +123,7 @@ bash image_build.sh \
 
 ### 2、镜像使用指导
 
-**重要提示：** 由于不同模型的依赖环境存在差异，镜像中仅预安装了`torch`、`TorchNPU`基础依赖包。用户在拉取镜像并启动容器后，需根据目标模型的 README 文件，在 base 环境中手动安装该模型所需的依赖环境。
+**重要提示：** 由于不同模型的依赖环境存在差异，镜像中仅预安装了`PyTorch`、`TorchNPU`基础依赖包。用户在拉取镜像并启动容器后，需根据目标模型的 README 文件，在 base 环境中手动安装该模型所需的依赖环境。
 
 #### 运行镜像
 
@@ -205,7 +205,7 @@ docker run -it --rm \
 | CANN | 9.0.0    |
 | Python | 3.11     |
 | PyTorch | 2.7.1    |
-| TorchNPU | 2.7.1    |
+| TorchNPU | 26.0.0    |
 | Triton-Ascend | 3.2.1    |
 | MindSpeed LLM | 26.0.0   |
 

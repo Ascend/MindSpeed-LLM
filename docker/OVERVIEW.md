@@ -23,7 +23,7 @@ Image Tag naming format: `v{MindSpeed LLM Version}-cann{CANN Version}-torch_npu{
 | ------ | ------ | -------- |
 | MindSpeed LLM Version | MindSpeed LLM version label, also serves as Git branch name | `26.0.0` |
 | CANN Version | CANN base image version | `9.0.0` |
-| TorchNPU Version | TorchNPU version | `2.7.1` |
+| TorchNPU Version | PyTorch version matching TorchNPU | `2.7.1` |
 | Chip Type | NPU chip type (lowercase) | `a3`, `910b` |
 | OS | Operating system version | `openeuler24.03`, `ubuntu22.04` |
 | Python Version | Python runtime version | `3.11` |
@@ -74,7 +74,7 @@ The `image_build.sh` script supports flexible parameter configuration. Default v
 | `--megatron-branch` | Megatron-LM version tag, also used as Git branch name      | `core_v0.12.1` |
 | `--python-version` | Python version                           | `3.11` |
 | `--torch-version` | PyTorch version                          | `2.7.1` |
-| `--torch-npu-version` | TorchNPU version                        | `2.7.1` |
+| `--torch-npu-version` | PyTorch version matching TorchNPU          | `2.7.1` |
 | `--triton-ascend-version` | Triton-Ascend version                        | `3.2.1` |
 | `--base-image-version` | Base image CANN version                        | `9.0.0` |
 | `--base-image` | Full base image name, passed as-is to pull the image if not empty           | None |
@@ -121,7 +121,7 @@ bash image_build.sh \
 
 ### 2. Image Usage Instructions
 
-**Important Note**: Due to different dependency environments of various models, only basic torch and TorchNPU dependency packages are pre-installed in the image. After pulling the image and starting the container, users need to manually install dependencies required by the target model in the base environment according to the model README file.
+**Important Note**: Due to different dependency environments of various models, only basic PyTorch and TorchNPU dependency packages are pre-installed in the image. After pulling the image and starting the container, users need to manually install dependencies required by the target model in the base environment according to the model README file.
 
 #### Run Image
 
@@ -203,7 +203,7 @@ docker run -it --rm \
 | CANN | 9.0.0 |
 | Python | 3.11 |
 | PyTorch | 2.7.1 |
-| TorchNPU | 2.7.1 |
+| TorchNPU | 26.0.0 |
 | Triton-Ascend | 3.2.1 |
 | MindSpeed LLM | 26.0.0 |
 
