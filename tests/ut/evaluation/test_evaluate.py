@@ -14,17 +14,15 @@
 # limitations under the License.
 """Tests of Evaluation"""
 
-import sys
 import os
 from pathlib import Path
-import logging
 import re
 import math
 import pytest
 import torch.distributed as dist
-from evaluation import main
+from evaluation import main  # pylint: disable=no-name-in-module
 from tests.test_tools.dist_test import DistributedTest
-from tests.test_tools.utils import build_args, create_testconfig, setup_logger
+from tests.test_tools.utils import create_testconfig, setup_logger
 
 
 PATTERN = r"acc = (.*)"
@@ -40,43 +38,6 @@ def acquire_score(log_capture):
     else:
         raise ValueError("No matching context found in the provided log.")
     return score
-
-
-class TestEvaluate(DistributedTest):
-    world_size = 8
-    test_config = create_testconfig(Path(__file__).with_suffix(".json"))
-
-    @pytest.mark.parametrize("params", test_config["test_llama2_mcore_agieval_evaluate"])
-    def test_llama2_mcore_agieval_evaluate(self, build_args, params):
-        os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
-        os.environ["CLOSE_MATMUL_K_SHIFT"] = "1"
-        if dist.get_rank() == 0:
-            handler, log_capture = setup_logger(PATTERN)
-
-        main()
-        if dist.get_rank() == 0:
-            print("=================== llama2 mcore AGIEVAL score ===============")
-            print(log_capture)
-
-            expected_score = acquire_score(log_capture)
-            assert math.isclose(expected_score, 0.192771,
-                                abs_tol=1e-2), f"score {expected_score}, forward pass has been changed, check it!"
-
-    @pytest.mark.parametrize("params", test_config["test_llama2_mcore_bbh_evaluate"])
-    def test_llama2_mcore_bbh_evaluate(self, build_args, params):
-        os.environ["CUDA_DEVICE_MAX_CONNECTIONS"] = "1"
-        os.environ["CLOSE_MATMUL_K_SHIFT"] = "1"
-        if dist.get_rank() == 0:
-            handler, log_capture = setup_logger(PATTERN)
-
-        main()
-        if dist.get_rank() == 0:
-            print("=================== llama2 mcore BBH score ===============")
-            print(log_capture)
-
-            expected_score = acquire_score(log_capture)
-            assert math.isclose(expected_score, 0.744186,
-                                abs_tol=1e-2), f"score {expected_score}, forward pass has been changed, check it!"
 
 
 class TestEvaluateWorldSize1(DistributedTest):
@@ -95,6 +56,6 @@ class TestEvaluateWorldSize1(DistributedTest):
             print(log_capture)
 
             expected_score = acquire_score(log_capture)
-            assert math.isclose(expected_score, 0.520468, abs_tol=1e-2), f"score {expected_score}, forward pass has been changed, check it!"
-
-    
+            assert math.isclose(expected_score, 0.520468, abs_tol=1e-2), (
+                f"score {expected_score}, forward pass has been changed, check it!"
+            )

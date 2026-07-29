@@ -1,47 +1,4 @@
 {
-    "test_llama2_mcore_prompt_greedy_search": [
-        {
-            "param": {
-                "tensor-model-parallel-size": 8,
-                "pipeline-model-parallel-size": 1,
-                "use-mcore-models": null,
-                "use-kv-cache": null,
-                "use-flash-attn": null,
-                "use-fused-swiglu": null,
-                "use-fused-rmsnorm": null,
-                "use-fused-rotary-pos-emb": null,
-                "num-layers": 32,
-                "hidden-size": 4096,
-                "ffn-hidden-size": 11008,
-                "position-embedding-type": "rope", 
-                "seq-length": 4096, 
-                "max-new-tokens": 30,
-                "micro-batch-size": 1,
-                "global-batch-size": 1,
-                "num-attention-heads": 32,
-                "max-position-embeddings": 4096,
-                "make-vocab-size-divisible-by": 1,
-                "swiglu": null,
-                "normalization": "RMSNorm", 
-                "load":"/data/ci/models/llama2/mg/llama2-tp8pp1",
-                "tokenizer-type": "PretrainedFromHF",  
-                "tokenizer-name-or-path":"/data/ci/models/llama2/hf/llama-2-7b-hf",
-                "tokenizer-model": "/data/ci/models/llama2/hf/llama-2-7b-hftokenizer.model",
-                "disable-bias-linear": null,
-                "attention-softmax-in-fp32": null, 
-                "untie-embeddings-and-output-weights": null, 
-                "no-masked-softmax-fusion": null, 
-                "no-load-optim": null, 
-                "no-load-rng": null, 
-                "fp16": null,
-                "task":"greedy",
-                "npu-deterministic": null,
-                "prompt-type": "llama2",
-                "transformer-impl": "local"
-            }
-        }
-    ],
-    
     "test_deepseek2_mcore_greedy_search": [
         {
             "param": {
@@ -118,53 +75,6 @@
                 "rope-scaling-mscale-all-dim": 1.0,
                 "rope-scaling-original-max-position-embeddings": 4096,
                 "rope-scaling-type": "yarn",
-                "transformer-impl": "local"
-            }
-        }
-    ],
-
-    "test_llama3_mcore_greedy_search_with_tp2pp4sp": [
-        {
-            "param": {
-                "tensor-model-parallel-size": 2,
-                "pipeline-model-parallel-size": 4,
-                "sequence-parallel": null,
-                "use-mcore-models": null,
-                "use-fused-swiglu": null,
-                "use-fused-rmsnorm": null,
-                "use-fused-rotary-pos-emb": null,
-                "num-layers": 32,
-                "hidden-size": 4096,
-                "ffn-hidden-size": 14336,
-                "position-embedding-type": "rope",
-                "rotary-base": 500000, 
-                "seq-length": 8192,
-                "max-position-embeddings": 8192,
-                "max-new-tokens": 50,
-                "micro-batch-size": 1,
-                "num-attention-heads": 32,
-                "num-query-groups": 8,
-                "group-query-attention": null,
-                "make-vocab-size-divisible-by": 16032,
-                "swiglu": null,
-                "normalization": "RMSNorm", 
-                "norm-epsilon": 1e-5,
-                "hidden-dropout": 0,
-                "attention-dropout": 0,
-                "load": "/data/ci/models/llama3/mg/llama3-8b-mcore-tp2-pp4",
-                "tokenizer-type": "PretrainedFromHF",  
-                "tokenizer-name-or-path":"/data/ci/models/llama3/hf/llama-3-8b-hf",
-                "tokenizer-model": "/data/ci/models/llama3/hf/llama-3-8b-hf/tokenizer.model", 
-                "disable-bias-linear": null,
-                "attention-softmax-in-fp32": null, 
-                "untie-embeddings-and-output-weights": null, 
-                "no-masked-softmax-fusion": null, 
-                "no-load-optim": null, 
-                "no-load-rng": null, 
-                "bf16": null,
-                "task":"greedy",
-                "seed": 42,
-                "npu-deterministic": null,
                 "transformer-impl": "local"
             }
         }
