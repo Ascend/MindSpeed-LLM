@@ -57,6 +57,41 @@ class LayerCompressMode(Enum):
     INDEXER = auto()  # ratio == 4: compressor + indexer + sparse topk
 
 
+def _select_per_layer_cu_seqlens(packed_seq_params, mtp_idx):
+    """Select per-layer cu_seqlens for G2 attention path.
+
+    G2 path uses cu_seqlens_q/kv from packed_seq_params; MTP layers need
+    per-layer slicing (row mtp_idx of the 2D mtp_res). Also recomputes
+    max_seqlen for the selected layer.
+
+    Follows existing pattern in dot_product_attention.py and
+    custom_dot_product_attention.py (actual_seq_len[self.mtp_idx]).
+
+    Note: G2 path does not use q_index/kv_index. If a new non-G2 attention
+    path is added, re-evaluate whether q_index/kv_index need similar handling.
+
+    Args:
+        packed_seq_params: PackedSeqParams (will be shallow-copied by caller).
+        mtp_idx: 0 for main model, i for i-th MTP layer.
+
+    Returns:
+        packed_seq_params with 1D cu_seqlens_q/kv and updated max_seqlen.
+    """
+    if packed_seq_params.cu_seqlens_kv.dim() <= 1:
+        return packed_seq_params  # already 1D, nothing to do
+
+    packed_seq_params.cu_seqlens_q = packed_seq_params.cu_seqlens_q[mtp_idx]
+    packed_seq_params.cu_seqlens_kv = packed_seq_params.cu_seqlens_kv[mtp_idx]
+
+    cu_seqlens_1d = packed_seq_params.cu_seqlens_q
+    if cu_seqlens_1d.numel() > 1:
+        diffs = cu_seqlens_1d[1:] - cu_seqlens_1d[:-1]
+        packed_seq_params.max_seqlen_q = int(diffs.max().item())
+        packed_seq_params.max_seqlen_kv = packed_seq_params.max_seqlen_q
+
+    return packed_seq_params
+
+
 def _get_rank_offset(local_len, all_lens=None):
     """Compute token offset of this rank in global TND (sum of prior ranks' tokens).
     Used by prefix KV path to derive local cu_seqlens_q.
@@ -490,6 +525,11 @@ class DeepSeek4SelfAttention(MegatronModule):
         _prefix_freqs_cis = None
         if packed_seq_params is not None:
             packed_seq_params = copy.copy(packed_seq_params)
+            # Select per-layer cu_seqlens by mtp_idx for MTP+CP+pack.
+            # Follows existing pattern in dot_product_attention.py and custom_dot_product_attention.py.
+            if args.mtp_num_layers:
+                mtp_idx = self.core_attention.mtp_idx
+                packed_seq_params = _select_per_layer_cu_seqlens(packed_seq_params, mtp_idx)
             # Prefix KV mode: keep prior ranks' KV as prefix; op derives CP offset from cu_q != cu_kv.
             if pre_gather_len is not None:
                 cp_size_inner = parallel_state.get_context_parallel_world_size()

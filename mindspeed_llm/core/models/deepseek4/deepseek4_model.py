@@ -239,6 +239,8 @@ class DeepSeek4Model(MegatronCoreGPTModel):
                 max_actual_seq_len = max(max_actual_seq_len, actual_seq_len_list[i] - actual_seq_len_list[i - 1])
             packed_seq_params.max_seqlen_q = max_actual_seq_len
             packed_seq_params.max_seqlen_kv = max_actual_seq_len
+            if not hasattr(args, 'ring_degree'):
+                args.ring_degree = 1
             q_index, kv_index = compute_qkv_index(actual_seq_len_list)
             packed_seq_params.q_index = q_index
             packed_seq_params.kv_index = kv_index
