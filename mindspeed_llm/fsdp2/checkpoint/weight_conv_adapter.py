@@ -8,9 +8,10 @@ HuggingFace export. Mapping rules are defined separately in conversion_mappings.
 """
 
 import re
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from copy import deepcopy
 from importlib.metadata import version
-from typing import Dict, Optional, Sequence, Tuple
+from typing import Callable, Dict, List, Optional, Sequence, Tuple
 
 import torch
 
@@ -229,3 +230,42 @@ def _find_model_config(model_configs: Optional[Sequence[object]]) -> Optional[ob
         if hasattr(item, "model_type"):
             return item
     return None
+
+
+@torch.no_grad()
+def parallel_dispatch_converted(
+    conversion_tasks: List[Tuple],
+    dispatch_fn: Callable[[str, torch.Tensor], None],
+    max_workers: int = 4,
+) -> None:
+    """Dispatch converted weights in parallel using a thread pool.
+
+    Args:
+        conversion_tasks: List of (converter, full_name, tensors_only, original_keys) tuples.
+        dispatch_fn: Callback to apply each converted (name, tensor) pair, e.g.
+            ``WeightLoader._dispatch_parameter``.
+        max_workers: Upper bound on thread-pool size; actual workers = min(len(tasks), max_workers).
+    """
+    num_workers = min(len(conversion_tasks), max_workers)
+    old_num_threads = torch.get_num_threads()
+    torch.set_num_threads(1)
+
+    def _run_convert(task):
+        cv, fn, tn, ok = task
+        return fn, list(WeightConvAdapter.dispatch_converted(cv, fn, tn, ok))
+
+    try:
+        if num_workers > 1:
+            with ThreadPoolExecutor(max_workers=num_workers) as executor:
+                futures = [executor.submit(_run_convert, t) for t in conversion_tasks]
+                for fut in as_completed(futures):
+                    full_name, results = fut.result()
+                    for name, tensor in results:
+                        dispatch_fn(name, tensor)
+        else:
+            for task in conversion_tasks:
+                full_name, results = _run_convert(task)
+                for name, tensor in results:
+                    dispatch_fn(name, tensor)
+    finally:
+        torch.set_num_threads(old_num_threads)
