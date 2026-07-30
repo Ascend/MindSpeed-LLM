@@ -38,6 +38,20 @@ MINDSPEED_LLM_BRANCH="26.0.0"
 MINDSPEED_BRANCH="26.0.0_core_r0.12.1"
 MEGATRON_BRANCH="core_v0.12.1"
 TRITON_ASCEND_VERSION="3.2.1"
+FLASH_LINEAR_ATTENTION_NPU_BRANCH="v26.1.0"
+FLA_NPU_SOC=""
+FLA_NPU_OPS=(
+    causal_conv1d
+    chunk_bwd_dv_local
+    chunk_bwd_dqkwg
+    chunk_gated_delta_rule_bwd_dhu
+    prepare_wy_repr_bwd_da
+    prepare_wy_repr_bwd_full
+    chunk_fwd_o
+    chunk_gated_delta_rule_fwd_h
+    recurrent_gated_delta_rule
+    recompute_wu_fwd
+)
 NO_CACHE=""
 NPU_TYPE_EXPLICIT=false
 OS_EXPLICIT=false
@@ -70,6 +84,8 @@ Optional:
     --mindspeed-branch       MindSpeed git branch/version (default: 26.0.0_core_r0.12.1)
     --megatron-branch        Megatron-LM git branch/version (default: core_v0.12.1)
     --triton-ascend-version  Triton-Ascend version (default: 3.2.1)
+    --fla-npu-branch VER             flash-linear-attention-npu git branch/version (default: v26.1.0)
+    --fla-npu-soc SOC                flash-linear-attention-npu build soc. Default is mapped from NPU type:
     --cleanup-on-fail        Clean up dangling <none> images/containers when build fails
     -h, --help               Show this help message and exit
 
@@ -134,6 +150,8 @@ while [[ $# -gt 0 ]]; do
         --torch-npu-version)    TORCH_NPU_VERSION="$2"; shift 2 ;;
         --base-image-version)   BASE_IMAGE_VERSION="$2"; BASE_IMAGE_VERSION_EXPLICIT=true; shift 2 ;;
         --cleanup-on-fail)      CLEANUP_ON_FAIL=true; shift ;;
+        --fla-npu-branch)       FLASH_LINEAR_ATTENTION_NPU_BRANCH="$2"; shift 2 ;;
+        --fla-npu-soc)          FLA_NPU_SOC="$2"; shift 2 ;;
         -h|--help)              show_help; exit 0 ;;
         *)                      echo "Unknown argument: $1"; show_help; exit 1 ;;
     esac
@@ -175,6 +193,14 @@ if [ "$NPU_TYPE_LOWER" != "a3" ] && [ "$NPU_TYPE_LOWER" != "910b" ]; then
     exit 1
 fi
 
+if [ -z "$FLA_NPU_SOC" ]; then
+    case "$NPU_TYPE_LOWER" in
+        910b) FLA_NPU_SOC="ascend910b" ;;
+        a3)   FLA_NPU_SOC="ascend910_93" ;;
+        950)  FLA_NPU_SOC="ascend950" ;;
+    esac
+fi
+
 if [ "$OS" != "ubuntu22.04" ] && [ "$OS" != "openeuler24.03" ]; then
     echo "Error: OS must be ubuntu22.04 or openeuler24.03"
     exit 1
@@ -209,6 +235,10 @@ BUILD_ARGS="$BUILD_ARGS --build-arg MINDSPEED_LLM_BRANCH=${MINDSPEED_LLM_BRANCH}
 BUILD_ARGS="$BUILD_ARGS --build-arg MINDSPEED_BRANCH=${MINDSPEED_BRANCH}"
 BUILD_ARGS="$BUILD_ARGS --build-arg MEGATRON_BRANCH=${MEGATRON_BRANCH}"
 BUILD_ARGS="$BUILD_ARGS --build-arg TRITON_ASCEND_VERSION=${TRITON_ASCEND_VERSION}"
+BUILD_ARGS="$BUILD_ARGS --build-arg FLASH_LINEAR_ATTENTION_NPU_BRANCH=${FLASH_LINEAR_ATTENTION_NPU_BRANCH}"
+BUILD_ARGS="$BUILD_ARGS --build-arg FLA_NPU_SOC=${FLA_NPU_SOC}"
+FLA_NPU_OPS_CSV=$(IFS=,; echo "${FLA_NPU_OPS[*]}")
+BUILD_ARGS="$BUILD_ARGS --build-arg FLA_NPU_OPS=${FLA_NPU_OPS_CSV}"
 
 if [ -n "$BASE_IMAGE" ]; then
     BUILD_ARGS="$BUILD_ARGS --build-arg BASE_IMAGE=${BASE_IMAGE}"
@@ -235,6 +265,9 @@ echo "MindSpeed LLM Ver:  ${MINDSPEED_LLM_BRANCH}"
 echo "MindSpeed Ver:      ${MINDSPEED_BRANCH}"
 echo "Megatron Ver:       ${MEGATRON_BRANCH}"
 echo "Triton-Ascend Ver:  ${TRITON_ASCEND_VERSION}"
+echo "FLA NPU Ver:           ${FLASH_LINEAR_ATTENTION_NPU_BRANCH}"
+echo "FLA NPU SOC:           ${FLA_NPU_SOC}"
+echo "FLA NPU Ops:           ${FLA_NPU_OPS_CSV}"
 echo "No Cache:           ${NO_CACHE:-No}"
 echo "=========================================="
 

@@ -64,21 +64,22 @@ docker/
 
 The `image_build.sh` script supports flexible parameter configuration. Default values are for reference only and can be adjusted as needed.
 
-| Parameter | Description                                  | Default (Example) |
-| ------ |-------------------------------------| ------------ |
-| `-t, --npu-type` | NPU type:`a3` or `910b`                | `910b` |
-| `-o, --os` | OS：`openeuler24.03`or`ubuntu22.04` | `openeuler24.03` |
-| `--no-cache` | Build without using Docker build cache                          | None |
-| `--mindspeed-llm-branch` |MindSpeed LLM version tag, also used as Git branch name    | `26.0.0` |
-| `--mindspeed-branch` | MindSpeed version tag, also used as Git branch name        | `26.0.0_core_r0.12.1` |
-| `--megatron-branch` | Megatron-LM version tag, also used as Git branch name      | `core_v0.12.1` |
-| `--python-version` | Python version                           | `3.11` |
-| `--torch-version` | PyTorch version                          | `2.7.1` |
-| `--torch-npu-version` | PyTorch version matching TorchNPU          | `2.7.1` |
+| Parameter                 | Description                                  | Default (Example) |
+|---------------------------|-------------------------------------| ------------ |
+| `-t, --npu-type`          | NPU type:`a3` or `910b`                | `910b` |
+| `-o, --os`                | OS：`openeuler24.03`or`ubuntu22.04` | `openeuler24.03` |
+| `--no-cache`              | Build without using Docker build cache                          | None |
+| `--mindspeed-llm-branch`  |MindSpeed LLM version tag, also used as Git branch name    | `26.0.0` |
+| `--mindspeed-branch`      | MindSpeed version tag, also used as Git branch name        | `26.0.0_core_r0.12.1` |
+| `--megatron-branch`       | Megatron-LM version tag, also used as Git branch name      | `core_v0.12.1` |
+| `--python-version`        | Python version                           | `3.11` |
+| `--torch-version`         | PyTorch version                          | `2.7.1` |
+| `--torch-npu-version`     | PyTorch version matching TorchNPU          | `2.7.1` |
 | `--triton-ascend-version` | Triton-Ascend version                        | `3.2.1` |
-| `--base-image-version` | Base image CANN version                        | `9.0.0` |
-| `--base-image` | Full base image name, passed as-is to pull the image if not empty           | None |
-| `--cleanup-on-fail` | Clean up dangling images/containers when build fails           | None |
+|  `--fla-npu-branch`       | flash-linear-attention-npu version tag, also used as Git branch name       | `v26.1.0` |
+| `--base-image-version`    | Base image CANN version                        | `9.0.0` |
+| `--base-image`            | Full base image name, passed as-is to pull the image if not empty           | None |
+| `--cleanup-on-fail`       | Clean up dangling images/containers when build fails           | None |
 
 **Note:** The current NPU types are `910b` (Atlas A2 training products) and `a3` (Atlas A3 training products), `a5` (Ascend 950 training products)is pending.
 
@@ -118,6 +119,26 @@ cd docker
 bash image_build.sh \
   --base-image swr.cn-south-1.myhuaweicloud.com/ascendhub/cann:9.0.0-910b-openeuler24.03-py3.11
 ```
+
+#### flash-linear-attention-npu Ops Build
+
+During image build, the Dockerfile sources the CANN environment after cloning `flash-linear-attention-npu`, then builds and installs the GDN custom operator run package and the `torch_custom/fla_npu` wheel.
+
+The FLA NPU `--soc` value is mapped from the selected NPU type by default:
+
+| NPU type | FLA NPU `--soc` |
+| ------ | ------ |
+| `910b` | `ascend910b` |
+| `a3` | `ascend910_93` |
+| `950` | `ascend950` |
+
+Override the mapping if needed:
+
+```bash
+bash image_build.sh --fla-npu-soc ascend910_93
+```
+
+The FLA NPU operator list is maintained in the `FLA_NPU_OPS` array in `docker/image_build.sh`. Add new operator names to that array, and the script will convert it to the comma-separated value required by `build.sh --ops`.
 
 ### 2. Image Usage Instructions
 

@@ -78,6 +78,7 @@ docker/
 | `--torch-version` | PyTorch 版本                          | `2.7.1` |
 | `--torch-npu-version` | TorchNPU匹配的PyTorch版本                      | `2.7.1` |
 | `--triton-ascend-version` | Triton-Ascend 版本                        | `3.2.1` |
+| `--fla-npu-branch` | flash-linear-attention-npu 分支       | `v26.1.0` |
 | `--base-image-version` | 基础镜像 CANN 版本                        | `9.0.0` |
 | `--base-image` | 完整基础镜像名称，当设置不为空时会原样传入拉取镜像           | 无 |
 | `--cleanup-on-fail` | 构建失败时清理悬空的镜像和容器           | 无 |
@@ -120,6 +121,26 @@ cd docker
 bash image_build.sh \
   --base-image swr.cn-south-1.myhuaweicloud.com/ascendhub/cann:9.0.0-910b-openeuler24.03-py3.11
 ```
+
+#### flash-linear-attention-npu 算子编译
+
+镜像构建过程中会在 clone `flash-linear-attention-npu` 后自动 source CANN 环境，并编译安装 GDN 相关自定义算子 run 包和 `torch_custom/fla_npu` whl 包。
+
+`--soc` 默认按机型自动映射：
+
+| 机型 | FLA NPU `--soc` |
+| ------ | ------ |
+| `910b` | `ascend910b` |
+| `a3` | `ascend910_93` |
+| `950` | `ascend950` |
+
+如需覆盖默认映射，可通过构建参数指定：
+
+```bash
+bash image_build.sh --fla-npu-soc ascend910_93
+```
+
+FLA NPU 算子列表在 `docker/image_build.sh` 的 `FLA_NPU_OPS` 数组中统一维护。后续如需新增算子，只需向该数组追加算子名称即可，脚本会自动拼接为 `build.sh --ops` 所需的逗号分隔参数。
 
 ### 2、镜像使用指导
 

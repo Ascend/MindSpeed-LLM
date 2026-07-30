@@ -138,11 +138,46 @@ FROM builder AS final
 ARG MINDSPEED_LLM_BRANCH=26.0.0
 ARG MINDSPEED_BRANCH=26.0.0_core_r0.12.1
 ARG MEGATRON_BRANCH=core_v0.12.1
+ARG FLASH_LINEAR_ATTENTION_NPU_BRANCH=v26.1.0
+ARG FLA_NPU_SOC=ascend910b
+ARG FLA_NPU_OPS="causal_conv1d,chunk_bwd_dv_local,chunk_bwd_dqkwg,chunk_gated_delta_rule_bwd_dhu,prepare_wy_repr_bwd_da,prepare_wy_repr_bwd_full,chunk_fwd_o,chunk_gated_delta_rule_fwd_h,recurrent_gated_delta_rule,recompute_wu_fwd"
 
 WORKDIR /workspace
 
 # Disable Git SSL verification (before cloning)
 RUN git config --global http.sslVerify false
+
+RUN if command -v apt-get >/dev/null 2>&1; then \
+        apt-get update && \
+        apt-get install -y --no-install-recommends patch && \
+        rm -rf /var/lib/apt/lists/*; \
+    elif command -v yum >/dev/null 2>&1; then \
+        yum install -y patch && \
+        yum clean all; \
+    else \
+        echo "No supported package manager found"; \
+        exit 1; \
+    fi
+
+RUN python -m pip install --no-cache-dir PyYAML
+
+RUN git clone https://github.com/flashserve/flash-linear-attention-npu.git && \
+    cd flash-linear-attention-npu && \
+    git checkout ${FLASH_LINEAR_ATTENTION_NPU_BRANCH}
+
+RUN cd flash-linear-attention-npu && \
+    if [ -f /usr/local/Ascend/ascend-toolkit/set_env.sh ]; then \
+        source /usr/local/Ascend/ascend-toolkit/set_env.sh; \
+    elif [ -f /usr/local/Ascend/cann/set_env.sh ]; then \
+        source /usr/local/Ascend/cann/set_env.sh; \
+    else \
+        echo "ERROR: CANN set_env.sh not found"; \
+        exit 1; \
+    fi && \
+    bash build.sh --soc=${FLA_NPU_SOC} --pkg --ops=${FLA_NPU_OPS} && \
+    ./build_out/cann-*.run && \
+    cd torch_custom/fla_npu && \
+    bash build.sh
 
 # Install MindSpeed
 RUN git clone https://gitcode.com/ascend/MindSpeed.git && \
