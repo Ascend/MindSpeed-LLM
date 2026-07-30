@@ -477,8 +477,13 @@ class Mg2HfConvert(Convert):
             pre_mlp_norm_key = mg_weight_key["mtp_layers_self_attention_post_attention_layernorm"]
         else:
             input_norm_key = mg_weight_key["layers_input_layernorm"]
-            if hasattr(self.load_model, "post_attention"):
-                pre_mlp_norm_key = mg_weight_key["layers_self_attention_post_attention_layernorm"]
+            # Match hf2mg structure: post_norm > TE dense > default.
+            # TE dense stores pre_mlp norm under mlp.linear_fc1.layer_norm_weight
+            # (pre_mlp_layernorm_te_dense), not pre_mlp_layernorm.
+            if getattr(self.load_model, "post_norm", False):
+                pre_mlp_norm_key = mg_weight_key["layers_self_attention_pre_mlp_layernorm"]
+            elif self.transformer_impl == "transformer_engine" and hf_layer_idx < self.get_first_k_dense_replace():
+                pre_mlp_norm_key = mg_weight_key["layers_self_attention_pre_mlp_layernorm_te_dense"]
             else:
                 pre_mlp_norm_key = mg_weight_key["layers_self_attention_pre_mlp_layernorm"]
 
@@ -488,12 +493,15 @@ class Mg2HfConvert(Convert):
         hf_weight[hf_weight_key["layers_input_layernorm"]] = input_norm.clone()
         hf_weight[hf_weight_key["layers_self_attention_pre_mlp_layernorm"]] = pre_mlp_norm.clone()
 
-        extra_norm_keys = ["layers_self_attention_post_attention_layernorm", "layers_self_attention_post_mlp_layernorm"]
-        for key in extra_norm_keys:
-            if key in mg_weight_key and key in hf_weight_key:
-                if mg_weight_key[key] in mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])]:
-                    val = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(mg_weight_key[key])
-                    hf_weight[hf_weight_key[key]] = val.clone()
+        # post_norm norms only exist in non-MTP transformer layers; MTP reuses
+        # pre_mlp_norm as post_attention_layernorm (see mtp branch above).
+        if not mtp_layer_flag and getattr(self.load_model, "post_norm", False):
+            post_attn_norm_key = mg_weight_key["layers_self_attention_post_attention_layernorm"]
+            post_mlp_norm_key = mg_weight_key["layers_self_attention_post_mlp_layernorm"]
+            post_attn_norm = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(post_attn_norm_key)
+            post_mlp_norm = mg_weight[(self.tp_rank_list[0], self.ep_rank_list[0])].pop(post_mlp_norm_key)
+            hf_weight[hf_weight_key["layers_self_attention_post_attention_layernorm"]] = post_attn_norm.clone()
+            hf_weight[hf_weight_key["layers_self_attention_post_mlp_layernorm"]] = post_mlp_norm.clone()
 
     def _is_full_indexer_layer(self, hf_layer_idx, mtp_layer_flag=False):
         """Return whether this HF layer should own full DSA indexer weights.
@@ -686,11 +694,14 @@ class Mg2HfConvert(Convert):
             return qkv_bias_key
 
         # common params
+        # Match v1 (models.py) behavior: GQA is decided by num_key_value_heads
+        # presence and inequality with num_attention_heads, NOT by the
+        # group_query_attention flag saved in mg checkpoint (which is unreliable).
         nh = self.load_model.num_attention_heads
-        if hasattr(self.load_model, 'num_query_groups'):
-            ng = self.load_model.num_query_groups
-        else:
+        if hasattr(self.load_model, 'num_key_value_heads') and self.load_model.num_key_value_heads != nh:
             ng = self.load_model.num_key_value_heads
+        else:
+            ng = nh
 
         if self.load_model.qkv_type == "pack_mla":
             linear_proj_list = []
@@ -831,25 +842,17 @@ class Mg2HfConvert(Convert):
                     linear_proj_list.append(mg_weight[(tp_rank, self.ep_rank_list[0])].pop(linear_proj_key))
 
             qkv_weight = torch.cat(linear_qkv_list, dim=0)
-            if getattr(self.load_model, 'qkv_split', None) == 'per_group' and ng > 1:
-                repeats = nh // ng
-                qkv_weight = qkv_weight.reshape(
-                    ng,
-                    repeats + 2,
-                    qkv_weight.shape[0] // ng // (repeats + 2),
-                    qkv_weight.shape[1],
-                )
-                hidden_size = qkv_weight.shape[-1]
-                q_proj = qkv_weight[:, :repeats, ...].reshape(-1, hidden_size)
-                k_proj = qkv_weight[:, repeats : repeats + 1, ...].reshape(-1, hidden_size)
-                v_proj = qkv_weight[:, repeats + 1 :, ...].reshape(-1, hidden_size)
-            else:
-                total_qkv_rows = qkv_weight.shape[0]
-                head_dim = total_qkv_rows // (nh + 2 * ng)
-
-                q_proj = qkv_weight[: nh * head_dim, :]
-                k_proj = qkv_weight[nh * head_dim : (nh + ng) * head_dim, :]
-                v_proj = qkv_weight[(nh + ng) * head_dim :, :]
+            repeats = nh // ng
+            qkv_weight = qkv_weight.reshape(
+                ng,
+                repeats + 2,
+                qkv_weight.shape[0] // ng // (repeats + 2),
+                qkv_weight.shape[1],
+            )
+            hidden_size = qkv_weight.shape[-1]
+            q_proj = qkv_weight[:, :repeats, ...].reshape(-1, hidden_size)
+            k_proj = qkv_weight[:, repeats : repeats + 1, ...].reshape(-1, hidden_size)
+            v_proj = qkv_weight[:, repeats + 1 :, ...].reshape(-1, hidden_size)
 
             o_proj = torch.cat(linear_proj_list, dim=1)
 
@@ -1040,16 +1043,20 @@ class Mg2HfConvert(Convert):
 
     def linear_fc1_gather_from_etp(self, mg_weight, fc1_key):
         """cat linear fc1"""
+        if getattr(self.load_model, "fc_type", None) == "up_down":
+            up_list = []
+            for tp_rank, ep_rank in self.attention_tp_ckpts_list:
+                cur_linear_fc1 = mg_weight[(tp_rank, ep_rank)].pop(fc1_key)
+                up_list.append(cur_linear_fc1.clone())
+            up_weights = torch.cat(up_list, dim=0)
+            return None, up_weights
+
         gate_list, up_list = [], []
         for tp_rank, ep_rank in self.attention_tp_ckpts_list:
             cur_linear_fc1 = mg_weight[(tp_rank, ep_rank)].pop(fc1_key)
-            if getattr(self.save_model, "fc_type", None) == "up_down":
-                gate_list.append(cur_linear_fc1.clone())
-                up_list.append(cur_linear_fc1.clone())
-            else:
-                cur_gate, cur_up = torch.chunk(cur_linear_fc1, 2, dim=0)
-                gate_list.append(cur_gate.clone())
-                up_list.append(cur_up.clone())
+            cur_gate, cur_up = torch.chunk(cur_linear_fc1, 2, dim=0)
+            gate_list.append(cur_gate.clone())
+            up_list.append(cur_up.clone())
 
         gate_weights = torch.cat(gate_list, dim=0)
         up_weights = torch.cat(up_list, dim=0)
@@ -1067,16 +1074,20 @@ class Mg2HfConvert(Convert):
 
     def linear_fc1_gather_from_tp(self, mg_weight, fc1_key, ep_rank=0):
         """cat linear fc1"""
+        if getattr(self.load_model, "fc_type", None) == "up_down":
+            up_list = []
+            for tp_rank in self.tp_rank_list:
+                cur_linear_fc1 = mg_weight[(tp_rank, ep_rank)].pop(fc1_key)
+                up_list.append(cur_linear_fc1.clone())
+            up_weights = torch.cat(up_list, dim=0)
+            return None, up_weights
+
         gate_list, up_list = [], []
         for tp_rank in self.tp_rank_list:
             cur_linear_fc1 = mg_weight[(tp_rank, ep_rank)].pop(fc1_key)
-            if getattr(self.save_model, "fc_type", None) == "up_down":
-                gate_list.append(cur_linear_fc1.clone())
-                up_list.append(cur_linear_fc1.clone())
-            else:
-                cur_gate, cur_up = torch.chunk(cur_linear_fc1, 2, dim=0)
-                gate_list.append(cur_gate.clone())
-                up_list.append(cur_up.clone())
+            cur_gate, cur_up = torch.chunk(cur_linear_fc1, 2, dim=0)
+            gate_list.append(cur_gate.clone())
+            up_list.append(cur_up.clone())
 
         gate_weights = torch.cat(gate_list, dim=0)
         up_weights = torch.cat(up_list, dim=0)
@@ -1199,7 +1210,8 @@ class Mg2HfConvert(Convert):
                 else:
                     shared_gate_weights, shared_up_weights = self.linear_fc1_gather_from_tp(mg_weight, shared_fc1_key)
                     shared_down_weights = self.linear_fc2_gather_from_tp(mg_weight, shared_fc2_key)
-                hf_weight[hf_weight_key["layers_mlp_shared_experts_gate_proj"]] = shared_gate_weights.clone()
+                if getattr(self.load_model, "fc_type", None) != "up_down":
+                    hf_weight[hf_weight_key["layers_mlp_shared_experts_gate_proj"]] = shared_gate_weights.clone()
                 hf_weight[hf_weight_key["layers_mlp_shared_experts_up_proj"]] = shared_up_weights.clone()
                 hf_weight[hf_weight_key["layers_mlp_shared_experts_linear_fc2"]] = shared_down_weights.clone()
 
@@ -1296,7 +1308,8 @@ class Mg2HfConvert(Convert):
                         local_gate, local_up = self.linear_fc1_gather_from_tp(mg_weight, local_fc1_key, ep_rank=ep_rank)
                         local_down = self.linear_fc2_gather_from_tp(mg_weight, local_fc2_key, ep_rank=ep_rank)
 
-                        hf_weight[hf_weight_key["layers_mlp_experts_gate_proj"]] = local_gate.contiguous().clone()
+                        if getattr(self.load_model, "fc_type", None) != "up_down":
+                            hf_weight[hf_weight_key["layers_mlp_experts_gate_proj"]] = local_gate.contiguous().clone()
                         hf_weight[hf_weight_key["layers_mlp_experts_up_proj"]] = local_up.contiguous().clone()
                         hf_weight[hf_weight_key["layers_mlp_experts_linear_fc2"]] = local_down.contiguous().clone()
         else:
@@ -1313,12 +1326,12 @@ class Mg2HfConvert(Convert):
                 )
                 down_weights = self.linear_fc2_gather_from_tp(mg_weight, mg_weight_key["layers_mlp_linear_fc2"])
 
-            if getattr(self.save_model, "fc_type", None) == "gate_up":
+            if getattr(self.load_model, "fc_type", None) == "gate_up":
                 hf_weight[hf_weight_key["layers_mlp_linear_fc1"]] = torch.cat(
                     [gate_weights.clone(), up_weights.clone()], dim=0
                 )
-            elif getattr(self.save_model, "fc_type", None) == "up_down":
-                hf_weight[hf_weight_key["layers_mlp_up_proj"]] = gate_weights.clone()
+            elif getattr(self.load_model, "fc_type", None) == "up_down":
+                hf_weight[hf_weight_key["layers_mlp_up_proj"]] = up_weights.clone()
             else:
                 hf_weight[hf_weight_key["layers_mlp_gate_proj"]] = gate_weights.clone()
                 hf_weight[hf_weight_key["layers_mlp_up_proj"]] = up_weights.clone()
@@ -1584,6 +1597,28 @@ class Mg2HfConvert(Convert):
         with open(json_path, 'w', encoding='utf-8') as f:
             json.dump(adapter_config, f)
 
+    @staticmethod
+    def _load_lora_override(lora_path, vpp_key='model'):
+        """Load lora checkpoint and rename base_layer.weight -> .weight.
+
+        v1 (checkpointing.py merge_dicts + modify_keys_with_dict):
+        - target_modules base weights: from lora ckpt's base_layer.weight
+          (peft saves a copy of base in base_layer.weight during lora training;
+           v1 uses this copy, NOT the base ckpt, for lora merge)
+        - non-target weights (output_layer, embedding, layernorm): from lora ckpt
+        - lora_A/lora_B: from lora ckpt
+        So: take ALL weights from lora ckpt, and rename base_layer.weight -> .weight
+        for target_modules so _merge_lora can find them.
+        """
+        lora_model = load_data(lora_path)[vpp_key]
+        lora_override = {}
+        for k, v in lora_model.items():
+            if v is None:
+                continue
+            new_key = k.replace('.base_layer.weight', '.weight') if k.endswith('.base_layer.weight') else k
+            lora_override[new_key] = v
+        return lora_override
+
     def _merge_lora(self, model_dict, merge_type):
         """
         unified: Base and LoRA checkpoint in same file
@@ -1693,8 +1728,8 @@ class Mg2HfConvert(Convert):
                             self._merge_lora(mg_weight, merge_type="unified")
                         elif self.lora_model_path is not None:
                             lora_path = self.get_pt_path_by_tpppep_rank(self.lora_iter_path, tp_rank, pp_rank, ep_rank)
-                            lora_model = load_data(lora_path)['model']
-                            mg_weight = {**lora_model, **mg_weight}
+                            lora_override = self._load_lora_override(lora_path)
+                            mg_weight = {**mg_weight, **lora_override}
                             self._merge_lora(mg_weight, merge_type="independent")
 
                     mg_weights[(tp_rank, ep_rank)] = mg_weight
@@ -1717,8 +1752,8 @@ class Mg2HfConvert(Convert):
                                 lora_path = self.get_pt_path_by_tpppep_rank(
                                     self.lora_iter_path, tp_rank, pp_rank, ep_rank
                                 )
-                                lora_model = load_data(lora_path)[f'model{vpp_rank}']
-                                mg_weight = {**lora_model, **mg_weight}
+                                lora_override = self._load_lora_override(lora_path, vpp_key=f'model{vpp_rank}')
+                                mg_weight = {**mg_weight, **lora_override}
                                 self._merge_lora(mg_weight, merge_type="independent")
 
                         mg_weights[(tp_rank, ep_rank)] = mg_weight

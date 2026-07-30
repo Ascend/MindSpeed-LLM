@@ -428,34 +428,40 @@ class Hf2MgConvert(Convert):
         post_attn_norm = hf_weight.pop(hf_weight_key["layers_self_attention_pre_mlp_layernorm"])
         first_k_dense_replace = self.get_first_k_dense_replace()
 
+        if getattr(self.load_model, "post_norm", False):
+            extra_post_norm = hf_weight.pop(hf_weight_key["layers_self_attention_post_attention_layernorm"])
+            post_mlp_norm = hf_weight.pop(hf_weight_key["layers_self_attention_post_mlp_layernorm"])
+
         # Weight key of the mtp layer is different from that of the transformers layer.
         if mtp_layer_flag:
             input_norm_key = mg_weight_key["mtp_layers_input_layernorm"]
             post_norm_key = mg_weight_key["mtp_layers_self_attention_post_attention_layernorm"]
+            extra_post_norm_key = None
+            post_mlp_norm_key = None
         else:
             input_norm_key = mg_weight_key["layers_input_layernorm"]
-            if self.transformer_impl == "transformer_engine" and hf_layer_idx < first_k_dense_replace:
+            if getattr(self.load_model, "post_norm", False):
+                post_norm_key = mg_weight_key["layers_self_attention_pre_mlp_layernorm"]
+                extra_post_norm_key = mg_weight_key["layers_self_attention_post_attention_layernorm"]
+                post_mlp_norm_key = mg_weight_key["layers_self_attention_post_mlp_layernorm"]
+            elif self.transformer_impl == "transformer_engine" and hf_layer_idx < first_k_dense_replace:
                 post_norm_key = mg_weight_key["layers_self_attention_pre_mlp_layernorm_te_dense"]
+                extra_post_norm_key = None
+                post_mlp_norm_key = None
             else:
-                post_norm_key = (
-                    mg_weight_key["layers_self_attention_post_attention_layernorm"]
-                    if hasattr(self.load_model, "post_attention")
-                    else mg_weight_key["layers_self_attention_pre_mlp_layernorm"]
-                )
+                post_norm_key = mg_weight_key["layers_self_attention_pre_mlp_layernorm"]
+                extra_post_norm_key = None
+                post_mlp_norm_key = None
 
         for ep_rank in range(self.expert_model_parallel_size):
             for tp_rank in range(self.tensor_model_parallel_size):
                 mg_weight[ep_rank][tp_rank][input_norm_key] = input_norm.clone()
                 mg_weight[ep_rank][tp_rank][post_norm_key] = post_attn_norm.clone()
-
-        extra_norm_keys = ["layers_self_attention_post_attention_layernorm", "layers_self_attention_post_mlp_layernorm"]
-        for key in extra_norm_keys:
-            if key in hf_weight_key and key in mg_weight_key:
-                if hf_weight_key[key] in hf_weight:
-                    val = hf_weight.pop(hf_weight_key[key])
-                    for ep_rank in range(self.expert_model_parallel_size):
-                        for tp_rank in range(self.tensor_model_parallel_size):
-                            mg_weight[ep_rank][tp_rank][mg_weight_key[key]] = val.clone()
+                if getattr(self.load_model, "post_norm", False):
+                    if extra_post_norm_key is not None:
+                        mg_weight[ep_rank][tp_rank][extra_post_norm_key] = extra_post_norm.clone()
+                    if post_mlp_norm_key is not None:
+                        mg_weight[ep_rank][tp_rank][post_mlp_norm_key] = post_mlp_norm.clone()
 
     def _is_full_indexer_layer(self, layer_idx, mtp_layer_flag=False):
         """Return whether this layer should own full DSA indexer weights.
@@ -1083,11 +1089,14 @@ class Hf2MgConvert(Convert):
             linear_fc2_weight = hf_weight.pop(hf_weight_key["layers_mlp_linear_fc2"])
 
             for ep_rank in range(self.expert_model_parallel_size):
-                gate, up = torch.chunk(linear_fc1_weight, 2, dim=0)
+                if getattr(self.load_model, "fc_type", None) == "up_down":
+                    mlp_l0_weight = torch.chunk(linear_fc1_weight, self.tensor_model_parallel_size, dim=0)
+                else:
+                    gate, up = torch.chunk(linear_fc1_weight, 2, dim=0)
 
-                mlp_l0_weight_W = torch.chunk(gate, self.tensor_model_parallel_size, dim=0)
-                mlp_l0_weight_V = torch.chunk(up, self.tensor_model_parallel_size, dim=0)
-                mlp_l0_weight = [torch.cat(weights, dim=0) for weights in zip(mlp_l0_weight_W, mlp_l0_weight_V)]
+                    mlp_l0_weight_W = torch.chunk(gate, self.tensor_model_parallel_size, dim=0)
+                    mlp_l0_weight_V = torch.chunk(up, self.tensor_model_parallel_size, dim=0)
+                    mlp_l0_weight = [torch.cat(weights, dim=0) for weights in zip(mlp_l0_weight_W, mlp_l0_weight_V)]
 
                 mlp_l1_weight = torch.chunk(linear_fc2_weight, self.tensor_model_parallel_size, dim=1)
                 for tp_rank in range(self.tensor_model_parallel_size):
