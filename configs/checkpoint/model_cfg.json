@@ -1205,6 +1205,51 @@
         "final_layernorm": "model.norm",
         "output_layer": "lm_head"
       }
+    },
+    "HYV3": {
+      "__base__": "base",
+      "config_set_value": {
+        "qkv_type": "unpack",
+        "qk_layernorm": true,
+        "router_bias": true,
+        "moe_layer_freq": 1
+      },
+      "config_hf_key_mapping": {
+        "first_k_dense_replace": "first_k_dense_replace",
+        "moe_intermediate_size": "moe_intermediate_size",
+        "num_experts": "num_experts",
+        "rotary_base": "rope_theta",
+        "n_shared_experts": "num_shared_experts",
+        "kv_channels": "head_dim"
+      },
+      "model_hf_key_mapping": {
+        "embedding_word_embeddings": "model.embed_tokens",
+        "layers_input_layernorm": "model.layers[layer_idx].input_layernorm",
+        "layers_self_attention_linear_proj": "model.layers[layer_idx].self_attn.o_proj",
+        "layers_self_attention_linear_q_proj": "model.layers[layer_idx].self_attn.q_proj",
+        "layers_self_attention_linear_k_proj": "model.layers[layer_idx].self_attn.k_proj",
+        "layers_self_attention_linear_v_proj": "model.layers[layer_idx].self_attn.v_proj",
+        "layers_self_attention_q_layernorm": "model.layers[layer_idx].self_attn.q_norm",
+        "layers_self_attention_k_layernorm": "model.layers[layer_idx].self_attn.k_norm",
+        "layers_self_attention_pre_mlp_layernorm": "model.layers[layer_idx].post_attention_layernorm",
+        "layers_mlp_gate_proj": "model.layers[layer_idx].mlp.gate_proj",
+        "layers_mlp_up_proj": "model.layers[layer_idx].mlp.up_proj",
+        "layers_mlp_linear_fc2": "model.layers[layer_idx].mlp.down_proj",
+        "layers_mlp_experts_gate_proj": "model.layers[layer_idx].mlp.experts[expert_idx].gate_proj",
+        "layers_mlp_experts_up_proj": "model.layers[layer_idx].mlp.experts[expert_idx].up_proj",
+        "layers_mlp_experts_linear_fc2": "model.layers[layer_idx].mlp.experts[expert_idx].down_proj",
+        "layers_mlp_router": "model.layers[layer_idx].mlp.router.gate",
+        "layers_mlp_router_bias": "model.layers[layer_idx].mlp.expert_bias",
+        "layers_mlp_shared_experts_gate_proj": "model.layers[layer_idx].mlp.shared_mlp.gate_proj",
+        "layers_mlp_shared_experts_up_proj": "model.layers[layer_idx].mlp.shared_mlp.up_proj",
+        "layers_mlp_shared_experts_linear_fc2": "model.layers[layer_idx].mlp.shared_mlp.down_proj",
+        "final_layernorm": "model.norm",
+        "output_layer": "lm_head",
+        "mtp_layers_enorm": "model.layers[layer_idx].enorm",
+        "mtp_layers_hnorm": "model.layers[layer_idx].hnorm",
+        "mtp_layers_eh_proj": "model.layers[layer_idx].eh_proj",
+        "mtp_layers_shared_head_norm": "model.layers[layer_idx].final_layernorm"
+      }
     }
   }
 }
