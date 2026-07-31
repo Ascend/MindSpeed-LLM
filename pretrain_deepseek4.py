@@ -2,45 +2,45 @@
 # Copyright (c) 2023, NVIDIA CORPORATION.  All rights reserved.
 """Pretrain GPT."""
 
-import os
 from functools import partial
 from typing import Union
 
 import torch
-from mindspeed_llm import megatron_adaptor
-from megatron.training import get_args
-from megatron.training import print_rank_0
-from megatron.training import get_timers
-from megatron.training import get_tokenizer
-from megatron.core import mpu, tensor_parallel
-from megatron.core.enums import ModelType
+
+# MindSpeed patches must be applied before any Megatron modules are imported.
+# isort: off
+from mindspeed_llm import megatron_adaptor  # noqa: F401  # pylint: disable=ungrouped-imports
+# isort: on
+
+import megatron.legacy.model
+from megatron.core import mpu
 from megatron.core.datasets.blended_megatron_dataset_builder import BlendedMegatronDatasetBuilder
 from megatron.core.datasets.gpt_dataset import GPTDatasetConfig
 from megatron.core.datasets.gpt_dataset import MockGPTDataset, GPTDataset
 from megatron.core.datasets.utils import get_blend_from_list
-from megatron.core.rerun_state_machine import get_rerun_state_machine
-import megatron.legacy.model
-from mindspeed_llm.training.training import pretrain
-from megatron.core.transformer.spec_utils import import_module
-from megatron.training.utils import (
-    get_batch_on_this_cp_rank,
-    get_batch_on_this_tp_rank,
-    average_losses_across_data_parallel_group
-)
-from megatron.training.arguments import core_transformer_config_from_args
-from megatron.training.yaml_arguments import core_transformer_config_from_yaml
+from megatron.core.enums import ModelType
 from megatron.core.models.gpt.gpt_layer_specs import (
     get_gpt_layer_local_spec,
     get_gpt_layer_with_transformer_engine_spec,
     get_gpt_mtp_block_spec,
 )
+from megatron.core.rerun_state_machine import get_rerun_state_machine
+from megatron.core.transformer.spec_utils import import_module
+from megatron.training.arguments import core_transformer_config_from_args
+from megatron.training import get_args, get_timers, get_tokenizer, print_rank_0
+from megatron.training.utils import get_batch_on_this_cp_rank, get_batch_on_this_tp_rank
+from megatron.training.yaml_arguments import core_transformer_config_from_yaml
+
 from mindspeed_llm.core.models.deepseek4.deepseek4_model import DeepSeek4Model
-from mindspeed_llm.tasks.models.transformer.deepseek4.mhc.mhc import get_mhc_spec
-from mindspeed_llm.training.utils import  set_mtp_batch_list, get_mtp_batch_list
 from mindspeed_llm.core.transformer.multi_token_prediction import generate_mtp_batch_list_on_this_tp_rank
+from mindspeed_llm.tasks.models.transformer.deepseek4.mhc import get_mhc_spec
+from mindspeed_llm.training.training import pretrain
+from mindspeed_llm.training.utils import set_mtp_batch_list
 
 
-def model_provider(pre_process=True, post_process=True, use_dualpipe_mtp=False) -> Union[DeepSeek4Model, megatron.legacy.model.GPTModel]:
+def model_provider(
+    pre_process=True, post_process=True, use_dualpipe_mtp=False
+) -> Union[DeepSeek4Model, megatron.legacy.model.GPTModel]:
     """Builds the model.
 
     If you set the use_mcore_models to True, it will return the mcore GPT model and if not the legacy GPT model.
@@ -68,7 +68,9 @@ def model_provider(pre_process=True, post_process=True, use_dualpipe_mtp=False) 
             transformer_layer_spec = import_module(args.spec)
         else:
             if use_te:
-                transformer_layer_spec = get_gpt_layer_with_transformer_engine_spec(args.num_experts, args.moe_grouped_gemm)
+                transformer_layer_spec = get_gpt_layer_with_transformer_engine_spec(
+                    args.num_experts, args.moe_grouped_gemm
+                )
             else:
                 transformer_layer_spec = get_gpt_layer_local_spec(args.num_experts, args.moe_grouped_gemm)
         mtp_block_spec = None
@@ -98,7 +100,7 @@ def model_provider(pre_process=True, post_process=True, use_dualpipe_mtp=False) 
             rotary_base=args.rotary_base,
             rope_scaling=args.use_rope_scaling,
             mtp_block_spec=mtp_block_spec,
-            hc_head_spec=hc_head_spec
+            hc_head_spec=hc_head_spec,
         )
     else:
         raise ValueError("DeepSeek4 model is only supported with Megatron Core!")
@@ -119,8 +121,17 @@ def get_batch(data_iterator):
     # get batches based on the TP rank you are on
     batch = get_batch_on_this_tp_rank(data_iterator)
 
-    if args.return_document_ids and mpu.get_context_parallel_rank() == 0 and mpu.get_tensor_model_parallel_rank() == 0 and mpu.get_pipeline_model_parallel_rank() == 0:
-        print("current idx: {}, current rank: {}, data_parallel_rank: {}, document_ids: {}".format(batch['idx'], torch.distributed.get_rank(), mpu.get_data_parallel_rank(), batch['document_ids']))
+    if (
+        args.return_document_ids
+        and mpu.get_context_parallel_rank() == 0
+        and mpu.get_tensor_model_parallel_rank() == 0
+        and mpu.get_pipeline_model_parallel_rank() == 0
+    ):
+        print(
+            "current idx: {}, current rank: {}, data_parallel_rank: {}, document_ids: {}".format(
+                batch['idx'], torch.distributed.get_rank(), mpu.get_data_parallel_rank(), batch['document_ids']
+            )
+        )
         batch.pop('document_ids', None)
         batch.pop('idx', None)
 
@@ -168,14 +179,14 @@ def loss_func(loss_mask: torch.Tensor, output_tensor: torch.Tensor):
             result=loss[0],
             rejection_func=torch.isnan,
             message="found NaN in local forward loss calculation",
-            tolerance=0.0,        # forward pass calculations are determinisic
+            tolerance=0.0,  # forward pass calculations are determinisic
             fatal=True,
         )
         rerun_state_machine.validate_result(
             result=loss[0],
             rejection_func=torch.isinf,
             message="found Inf in local forward loss calculation",
-            tolerance=0.0,        # forward pass calculations are determinisic
+            tolerance=0.0,  # forward pass calculations are determinisic
             fatal=True,
         )
     # Check for spiky loss
@@ -188,7 +199,7 @@ def loss_func(loss_mask: torch.Tensor, output_tensor: torch.Tensor):
                 context="loss",
             ),
             message="Spiky loss",
-            tolerance=0.0,        # forward pass calculations are determinisic
+            tolerance=0.0,  # forward pass calculations are determinisic
             fatal=False,
         )
     # Reduce loss for logging.
@@ -196,6 +207,7 @@ def loss_func(loss_mask: torch.Tensor, output_tensor: torch.Tensor):
     try:
         if args.enable_elastic_training:
             from mindspeed_llm.core.high_availability import elastic_training_common
+
             if not elastic_training_common.zit_scale_in_running_state():
                 torch.distributed.all_reduce(reporting_loss, group=mpu.get_data_parallel_group())
         else:
@@ -226,16 +238,13 @@ def forward_step(data_iterator, model: DeepSeek4Model):
 
     # Get the batch.
     timers('batch-generator', log_level=2).start()
-    tokens, labels, loss_mask, attention_mask, position_ids = get_batch(
-        data_iterator)
+    tokens, labels, loss_mask, attention_mask, position_ids = get_batch(data_iterator)
     timers('batch-generator').stop()
 
     if args.use_legacy_models:
-        output_tensor = model(tokens, position_ids, attention_mask,
-                              labels=labels)
+        output_tensor = model(tokens, position_ids, attention_mask, labels=labels)
     else:
-        output_tensor = model(tokens, position_ids, attention_mask,
-                              labels=labels, loss_mask=loss_mask)
+        output_tensor = model(tokens, position_ids, attention_mask, labels=labels, loss_mask=loss_mask)
 
     return output_tensor, partial(loss_func, loss_mask)
 
@@ -254,7 +263,7 @@ def core_gpt_dataset_config_from_args(args):
         blend_per_split=[
             get_blend_from_list(args.train_data_path),
             get_blend_from_list(args.valid_data_path),
-            get_blend_from_list(args.test_data_path)
+            get_blend_from_list(args.test_data_path),
         ],
         split=args.split,
         path_to_cache=args.data_cache_path,
@@ -284,10 +293,7 @@ def train_valid_test_datasets_provider(train_val_test_num_samples):
     print_rank_0("> building train, validation, and test datasets for GPT ...")
 
     train_ds, valid_ds, test_ds = BlendedMegatronDatasetBuilder(
-        dataset_type,
-        train_val_test_num_samples,
-        is_dataset_built_on_rank,
-        config
+        dataset_type, train_val_test_num_samples, is_dataset_built_on_rank, config
     ).build()
 
     print_rank_0("> finished creating GPT datasets ...")
@@ -298,10 +304,7 @@ def train_valid_test_datasets_provider(train_val_test_num_samples):
 def main():
     # Temporary for transition to core datasets
     train_valid_test_datasets_provider.is_distributed = True
-    pretrain(train_valid_test_datasets_provider,
-             model_provider,
-             ModelType.encoder_or_decoder,
-             forward_step)
+    pretrain(train_valid_test_datasets_provider, model_provider, ModelType.encoder_or_decoder, forward_step)
 
 
 if __name__ == "__main__":

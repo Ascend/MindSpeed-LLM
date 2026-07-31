@@ -43,7 +43,7 @@ MHC_ARGS="
     --enable-mhc \
     --hc-mult 4 \
     --use-triton-mhc \
-    --use-ascend-mhc \
+    --use-fused-mhc \
 "
 
 DSA_ARGS="
@@ -55,11 +55,9 @@ DSA_ARGS="
     --use-fused-lightning-indexer \
     --use-sparse-flash-attn \
     --indexer-loss-coeff 1.0 \
-    --use-g2-indexer-loss \
 "
 
 ATTN_ARGS="
-    --use-g2-attention \
     --multi-latent-attention \
     --qk-pos-emb-head-dim 64 \
     --qk-head-dim 512 \
@@ -69,10 +67,8 @@ ATTN_ARGS="
     --v-head-dim 128 \
     --qk-layernorm \
     --kv-compress \
-    --norm-eps 1e-6 \
     --o-groups 8 \
-    --g2-window-size 128 \
-    --rope-head-dim 64 \
+    --sliding-window-size 128 \
     --original-seq-len 65536 \
     --rope-factor 16 \
     --compress-rope-theta 160000.0 \
@@ -164,10 +160,8 @@ GPT_ARGS="
     --attention-dropout 0.0 \
     --init-method-std 0.02 \
     --hidden-dropout 0.0 \
-    --position-embedding-type g2 \
+    --position-embedding-type deepseek4 \
     --normalization RMSNorm \
-    --use-fused-rotary-pos-emb \
-    --use-rotary-position-embeddings \
     --use-fused-swiglu \
     --use-fused-rmsnorm \
     --swiglu \

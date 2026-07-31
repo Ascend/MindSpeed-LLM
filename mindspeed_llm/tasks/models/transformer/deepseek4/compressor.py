@@ -43,8 +43,8 @@ class Compressor(MegatronModule):
         args = get_args()
         self.dim = args.hidden_size
         self.head_dim = head_dim
-        self.rope_head_dim = args.rope_head_dim
-        self.nope_head_dim = head_dim - args.rope_head_dim
+        self.rope_head_dim = args.qk_pos_emb_head_dim
+        self.nope_head_dim = head_dim - args.qk_pos_emb_head_dim
         self.compress_ratio = compress_ratio
         self.overlap = compress_ratio == 4
         self.rotate = rotate
@@ -59,7 +59,7 @@ class Compressor(MegatronModule):
         linear_config.bias = False
         self.wkv = build_module(submodules.wkv, self.dim, coff * self.head_dim, config=linear_config, bias=False)
         self.wgate = build_module(submodules.wgate, self.dim, coff * self.head_dim, config=linear_config, bias=False)
-        self.norm = RMSNorm(self.head_dim, args.norm_eps, config=config)
+        self.norm = RMSNorm(self.head_dim, args.norm_epsilon, config=config)
         self.kv_cache = None
 
         # If overlap is enabled, state[:, :ratio] for overlapping compression and state[:, ratio:] for normal compression.
@@ -120,7 +120,7 @@ class Compressor(MegatronModule):
         kv = self.wkv(x)
         score = self.wgate(x)
 
-        # TND: no gather of raw KV here; g2_attention gathers the compressed result later.
+        # TND: no gather of raw KV here; CSA gathers the compressed result later.
 
         tensor_list_kv = []
         tensor_list_score = []

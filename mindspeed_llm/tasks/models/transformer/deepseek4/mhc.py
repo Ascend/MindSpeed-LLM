@@ -38,10 +38,8 @@ from megatron.core.pipeline_parallel.schedules import (
 )
 
 from mindspeed_llm.core.tensor_parallel.layers import LinearNoTP
-from mindspeed_llm.tasks.models.transformer.deepseek4.rmsnorm_without_weight import rmsnorm_without_weight_triton
-from mindspeed_llm.tasks.models.transformer.deepseek4.mhc.sinkhorn import hc_split_sinkhorn_triton
-from mindspeed_llm.tasks.models.transformer.deepseek4.mhc.mhc_triton import MHCPostTriton, MHCPreOnlyTriton, MhcPreBmm
-from mindspeed_llm.tasks.models.transformer.deepseek4.mhc.mhc_ascend import mhc_post_ascend, mhc_pre_sinkhorn_ascend
+from mindspeed_llm.ops.npu_mhc import mhc_post_ascend, mhc_pre_sinkhorn_ascend
+from mindspeed_llm.ops.triton.mhc_pre_only import MHCPreOnlyTriton
 
 
 @dataclass
@@ -96,8 +94,7 @@ def torch_hc_split_sinkhorn(
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """
     Native PyTorch reference implementation for the HC-Split Sinkhorn operator.
-    It matches the operator logic and is used as the accuracy baseline for
-    Triton or TileLang implementations.
+    It implements the HC-Split Sinkhorn calculation used by the unfused MHC path.
 
     Args:
         mixes: Input tensor with shape [b, s, (2+hc_mult)*hc_mult], namely
@@ -196,10 +193,8 @@ class MHC(MegatronModule):
         self.mhc_position = mhc_position
         self.hc_eps = args.hc_eps
         self.use_triton_mhc = args.use_triton_mhc
-        self.use_ascend_mhc = args.use_ascend_mhc
+        self.use_fused_mhc = args.use_fused_mhc
         self.hc_mult = hc_mult = args.hc_mult
-        self.use_triton_sinkhorn = args.use_triton_sinkhorn
-        self.use_triton_rmsnorm_without_weight = args.use_triton_rmsnorm_without_weight
         mix_hc = hc_mult if self.mhc_position == 'head' else (2 + hc_mult) * hc_mult
         hc_dim = hc_mult * args.hidden_size
         self.hc_sinkhorn_iters = args.hc_sinkhorn_iters
@@ -233,11 +228,7 @@ class MHC(MegatronModule):
 
         self.register_parameter('hc_scale', hc_scale)
 
-        args = get_args()
-        if args.use_triton_sinkhorn:
-            self.hc_split_sinkhorn = hc_split_sinkhorn_triton
-        else:
-            self.hc_split_sinkhorn = torch_hc_split_sinkhorn
+        self.hc_split_sinkhorn = torch_hc_split_sinkhorn
 
     def get_mhc_forward(self, mhc_stage='identity'):
         if self.enable_mhc:
@@ -255,11 +246,9 @@ class MHC(MegatronModule):
             return self.hc_identity
 
     def hc_pre(self, x: torch.Tensor, *args, **kwargs):
-        recompute_info = kwargs['recompute_info']
-        module = kwargs['module']
         # x: [s,b,hc,d], hc_fn: [mix_hc,hc*d], hc_scale: [3], hc_base: [mix_hc], y: [s,b,d]
         shape, dtype = x.size(), x.dtype
-        if self.use_ascend_mhc:
+        if self.use_fused_mhc:
             y, post, comb = mhc_pre_sinkhorn_ascend(
                 x,
                 self.hc_fn.weight,
@@ -274,20 +263,8 @@ class MHC(MegatronModule):
             return y, post, comb
         else:
             x = x.flatten(2)
-            if recompute_info and module == "attention":
-                recompute_info.hc_pre_input = x.detach()
-
             x = x.float()
-
-            if recompute_info and module == "attention":
-                recompute_info.hc_pre_input_fp32 = x.detach()
-            elif recompute_info and module == "mlp":
-                recompute_info.mlp_hc_pre_input_fp32 = x.detach()
-
-            if self.use_triton_rmsnorm_without_weight:
-                rsqrt = rmsnorm_without_weight_triton(x, self.norm_eps)
-            else:
-                rsqrt = torch.rsqrt(x.square().mean(-1, keepdim=True) + self.norm_eps)
+            rsqrt = torch.rsqrt(x.square().mean(-1, keepdim=True) + self.norm_eps)
             mixes = self.hc_fn(x) * rsqrt
 
             mixes = rearrange(mixes, 's b h -> b s h')
@@ -296,42 +273,20 @@ class MHC(MegatronModule):
             )
             pre, post = [rearrange(x, 'b s h -> s b h') for x in [pre, post]]
             comb = rearrange(comb, 'b s h1 h2 -> s b h1 h2')
-
-            if recompute_info and module == "attention":
-                recompute_info.h_pre = pre.detach()
-            elif recompute_info and module == "mlp":
-                recompute_info.mlp_h_pre = pre.detach()
-
-            if self.use_triton_mhc:
-                x_unflatten = x.view(shape)
-                y = MhcPreBmm.apply(pre, x_unflatten).to(dtype)
-            else:
-                y = torch.sum(pre.unsqueeze(-1) * x.view(shape), dim=2).to(dtype)
-
-            if recompute_info and module == "attention":
-                recompute_info.h_pre_out = y.detach()
-            elif recompute_info and module == "mlp":
-                recompute_info.mlp_h_pre_out = y.detach()
-
+            y = torch.sum(pre.unsqueeze(-1) * x.view(shape), dim=2).to(dtype)
             return y, post, comb
 
     def hc_post(self, x: torch.Tensor, *args, **kwargs):
-        recompute_info = kwargs['recompute_info']
         residual, post, comb = kwargs['residual'], kwargs['post'], kwargs['comb']
 
         # x: [s,b,d], residual: [s,b,hc,d], post: [s,b,hc], comb: [s,b,hc,hc], y: [s,b,hc,d]
-        if self.use_ascend_mhc:
+        if self.use_fused_mhc:
             y = mhc_post_ascend(x, residual, post, comb)
             return y.type_as(x)
-        if self.use_triton_mhc:
-            y = MHCPostTriton.apply(x, residual, post, comb, recompute_info)
-            return y
-        else:
-            y = (post.unsqueeze(-1) * x.unsqueeze(-2)) + torch.sum(comb.unsqueeze(-1) * residual.unsqueeze(-2), dim=2)
-            return y.type_as(x)
+        y = (post.unsqueeze(-1) * x.unsqueeze(-2)) + torch.sum(comb.unsqueeze(-1) * residual.unsqueeze(-2), dim=2)
+        return y.type_as(x)
 
     def hc_head(self, x: torch.Tensor, *args, **kwargs):
-        recompute_info = kwargs['recompute_info']
         shape, dtype = x.size(), x.dtype
         x = x.flatten(2)
         if self.use_triton_mhc:
@@ -344,7 +299,6 @@ class MHC(MegatronModule):
                 False,
                 self.hc_mult,
                 self.hc_eps,
-                recompute_info,
             )
         else:
             x = x.float()
@@ -357,12 +311,8 @@ class MHC(MegatronModule):
     def hc_identity(self, x, *args, **kwargs):
         return x
 
-    def forward(
-        self, hidden_states, mhc_stage='identity', recompute_info=None, module: str = "attention", *args, **kwargs
-    ):  # pylint: disable=keyword-arg-before-vararg
+    def forward(self, hidden_states, mhc_stage='identity', *args, **kwargs):  # pylint: disable=keyword-arg-before-vararg
         mhc_forward = self.get_mhc_forward(mhc_stage)
-        kwargs["recompute_info"] = recompute_info
-        kwargs["module"] = module
         return mhc_forward(hidden_states, *args, **kwargs)
 
 

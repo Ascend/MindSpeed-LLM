@@ -9,33 +9,20 @@ class MHCFeature(MindSpeedFeature):
         group = parser.add_argument_group(title=self.feature_name)
 
         group.add_argument('--enable-mhc', action='store_true', default=False, help='add mhc module in model.')
-        group.add_argument(
-            '--use-triton-rmsnorm-without-weight',
-            action='store_true',
-            default=False,
-            help='use triton rmsnorm-without-weight.',
-        )
-        group.add_argument('--use-triton-sinkhorn', action='store_true', default=False, help='use triton sinkhorn.')
         group.add_argument('--hc-mult', type=int, default=4, help='dimension for index head number.')
         group.add_argument('--hc-sinkhorn-iters', type=int, default=20, help='dimension for index head dim.')
         group.add_argument('--hc-eps', type=float, default=1e-6, help='dimension for index head dim.')
         group.add_argument(
-            '--use-triton-mhc', action='store_true', default=False, help='use triton for pre/pos/only pre.'
+            '--use-triton-mhc', action='store_true', default=False, help='use Triton operators for the MHC head.'
         )
         group.add_argument(
-            '--use-ascend-mhc', action='store_true', default=False, help='use Ascend fused operators for MHC pre/post.'
-        )
-        group.add_argument(
-            '--mhc-recompute',
-            action='store_true',
-            default=False,
-            help='Fine-grained recompute for attention pre/pos and mlp pre.',
+            '--use-fused-mhc', action='store_true', default=False, help='use fused NPU operators for MHC pre/post.'
         )
 
     def register_patches(self, patch_manager, args):
         if args.enable_mhc:
             # adapt mhc in PP stage
-            from mindspeed_llm.tasks.models.transformer.deepseek4.mhc.mhc import get_tensor_shapes_in_mhc
+            from mindspeed_llm.tasks.models.transformer.deepseek4.mhc import get_tensor_shapes_in_mhc
 
             patch_manager.register_patch(
                 'megatron.core.pipeline_parallel.schedules.get_tensor_shapes', get_tensor_shapes_in_mhc
@@ -45,7 +32,7 @@ class MHCFeature(MindSpeedFeature):
                 getattr(args, "num_layers_per_virtual_pipeline_stage", False)
                 and args.num_layers_per_virtual_pipeline_stage is not None
             ):
-                from mindspeed_llm.tasks.models.transformer.deepseek4.mhc.mhc import (
+                from mindspeed_llm.tasks.models.transformer.deepseek4.mhc import (
                     forward_backward_pipelining_with_interleaving_in_mhc,
                 )
 
@@ -55,7 +42,7 @@ class MHCFeature(MindSpeedFeature):
                 )
 
             # adapt mhc weight dtype
-            from mindspeed_llm.tasks.models.transformer.deepseek4.mhc.mhc import mhc2fp32_fp16module_init_wrapper
+            from mindspeed_llm.tasks.models.transformer.deepseek4.mhc import mhc2fp32_fp16module_init_wrapper
 
             patch_manager.register_patch(
                 'megatron.core.transformer.module.Float16Module.__init__', mhc2fp32_fp16module_init_wrapper
@@ -72,7 +59,7 @@ class MHCFeature(MindSpeedFeature):
             valid_algos = ['ulysses_cp_algo', 'kvallgather_cp_algo']
             if args.context_parallel_size > 1 and args.context_parallel_algo not in valid_algos:
                 raise ValueError("DSAIndexer is currently only supported `ulysses_cp_algo` when use context parallel.")
-            if args.use_ascend_mhc and args.hc_mult != 4:
-                raise ValueError("Ascend fused MHC currently only supports --hc-mult 4.")
-            if args.use_ascend_mhc and args.hc_sinkhorn_iters != 20:
-                raise ValueError("Ascend fused MHC currently only supports --hc-sinkhorn-iters 20.")
+            if args.use_fused_mhc and args.hc_mult != 4:
+                raise ValueError("Fused NPU MHC currently only supports --hc-mult 4.")
+            if args.use_fused_mhc and args.hc_sinkhorn_iters != 20:
+                raise ValueError("Fused NPU MHC currently only supports --hc-sinkhorn-iters 20.")

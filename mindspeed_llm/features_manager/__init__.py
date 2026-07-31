@@ -100,7 +100,7 @@ from mindspeed_llm.features_manager.qat.qat_quant_engine import QATQuantEngineFe
 from mindspeed_llm.features_manager.layerwise_disaggregated_training.vdp_feature import VirtualDPFeature
 from mindspeed_llm.features_manager.optimizer.muon_optimizer_feature import MuonOptimizerFeature
 from mindspeed_llm.features_manager.transformer.mhc_feature import MHCFeature
-from mindspeed_llm.features_manager.transformer.multi_latent_attention.g2_feature import G2Feature
+from mindspeed_llm.features_manager.transformer.multi_latent_attention.csa_feature import CSAFeature
 
 FEATURES_LIST = [
     # MindSpeed Legacy Features
@@ -222,7 +222,7 @@ def add_transformer_features(features_list: List[MindSpeedFeature]):
             # LLM feature
             ResetAttentionMaskFeature(),
             FusionAttentionV2Feature(),
-            G2Feature(),
+            CSAFeature(),
         ]
     )
 

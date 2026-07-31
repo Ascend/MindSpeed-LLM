@@ -23,7 +23,7 @@ from megatron.training.utils import get_batch_on_this_cp_rank
 
 from mindspeed.core.context_parallel.get_batch_utils import set_actual_seq_len, get_actual_seq_len
 from mindspeed_llm.training.utils import get_mtp_batch_list
-from mindspeed_llm.tasks.models.transformer.deepseek4.mhc.mhc import get_mhc_spec, hc_repeat
+from mindspeed_llm.tasks.models.transformer.deepseek4.mhc import get_mhc_spec, hc_repeat
 
 
 def mtp_reduce_loss_in_tracker():
@@ -73,7 +73,11 @@ def mtp_layer_init_wrapper(fn):
 
         # set mtp_idx for tnd
         self.transformer_layer.mtp_idx = self.layer_number
-        self.transformer_layer.self_attention.core_attention.mtp_idx = self.layer_number
+        self_attention = self.transformer_layer.self_attention
+        if hasattr(self_attention, "mtp_idx"):
+            self_attention.mtp_idx = self.layer_number
+        elif hasattr(self_attention, "core_attention"):
+            self_attention.core_attention.mtp_idx = self.layer_number
         args = get_args()
         hc_head_spec = get_mhc_spec(args.enable_mhc)
         self.hc_head_spec = hc_head_spec

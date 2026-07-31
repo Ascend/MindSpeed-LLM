@@ -26,7 +26,7 @@ from megatron.training.yaml_arguments import core_transformer_config_from_yaml
 
 from mindspeed_llm.tasks.inference.infer_deepseek4 import task_factory
 from mindspeed_llm.tasks.inference.deepseek4_module import DeepSeek4MegatronModuleForCausalLM, DeepSeek4ModelInfer
-from mindspeed_llm.tasks.models.transformer.deepseek4.mhc.mhc import get_mhc_spec
+from mindspeed_llm.tasks.models.transformer.deepseek4.mhc import get_mhc_spec
 from mindspeed_llm.training.utils import auto_coverage
 
 

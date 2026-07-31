@@ -14,7 +14,7 @@ def _mhc_ops():
     try:
         import cann_ops_transformer
     except ImportError as exc:
-        raise ImportError("cann_ops_transformer is required when --use-ascend-mhc is enabled.") from exc
+        raise ImportError("cann_ops_transformer is required when --use-fused-mhc is enabled.") from exc
     return cann_ops_transformer.ops
 
 

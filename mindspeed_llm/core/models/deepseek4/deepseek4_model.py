@@ -30,8 +30,8 @@ from mindspeed.utils import compute_qkv_index, get_position_ids
 from mindspeed_llm.core.tensor_parallel.layers import SegmentedColumnParallelLinear
 from mindspeed_llm.training.utils import set_actual_seq_len_list, _CAN_RECORD_REGISTRY, check_model_inputs
 from mindspeed_llm.core.models.common.chunk_loss import chunk_loss, calculate_lm_loss
-from mindspeed_llm.tasks.models.transformer.deepseek4.mhc.mhc import hc_repeat
-from mindspeed_llm.core.models.common.embeddings.rotary_pos_embedding import apply_g2_rotary_embedding
+from mindspeed_llm.tasks.models.transformer.deepseek4.mhc import hc_repeat
+from mindspeed_llm.core.models.common.embeddings.rotary_pos_embedding import apply_deepseek4_rotary_embedding
 
 
 class DeepSeek4Model(MegatronCoreGPTModel):
@@ -51,7 +51,7 @@ class DeepSeek4Model(MegatronCoreGPTModel):
         fp16_lm_cross_entropy: bool = False,
         parallel_output: bool = True,
         share_embeddings_and_output_weights: bool = False,
-        position_embedding_type: Literal['learned_absolute', 'rope', 'g2', 'none'] = 'learned_absolute',
+        position_embedding_type: Literal['learned_absolute', 'rope', 'deepseek4', 'none'] = 'learned_absolute',
         rotary_percent: float = 1.0,
         rotary_base: int = 10000,
         seq_len_interpolation_factor: Optional[float] = None,
@@ -123,8 +123,8 @@ class DeepSeek4Model(MegatronCoreGPTModel):
                 rotary_base=rotary_base,
                 use_cpu_initialization=self.config.use_cpu_initialization,
             )
-        elif self.position_embedding_type == 'g2':
-            self.rotary_pos_emb = apply_g2_rotary_embedding
+        elif self.position_embedding_type == 'deepseek4':
+            self.rotary_pos_emb = apply_deepseek4_rotary_embedding
         else:
             pass
 
@@ -269,11 +269,11 @@ class DeepSeek4Model(MegatronCoreGPTModel):
                 inference_context, self.decoder, decoder_input, self.config, packed_seq_params
             )
             rotary_pos_emb = self.rotary_pos_emb(rotary_seq_len)
-        elif self.position_embedding_type == 'g2':
+        elif self.position_embedding_type == 'deepseek4':
             rope_theta = args.rope_theta  # compress_ration=1
             compress_rope_theta = args.compress_rope_theta  # for compress_ratio>1
             rotary_pos_emb_comp = self.rotary_pos_emb(
-                args.rope_head_dim,
+                args.qk_pos_emb_head_dim,
                 args.rope_scaling_original_max_position_embeddings,
                 args.original_seq_len,
                 compress_rope_theta,
@@ -282,7 +282,7 @@ class DeepSeek4Model(MegatronCoreGPTModel):
                 args.beta_slow,
             )
             rotary_pos_emb_no_comp = self.rotary_pos_emb(
-                args.rope_head_dim,
+                args.qk_pos_emb_head_dim,
                 args.rope_scaling_original_max_position_embeddings,
                 0,
                 rope_theta,

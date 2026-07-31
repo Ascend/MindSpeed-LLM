@@ -38,7 +38,6 @@ from mindspeed_llm.tasks.models.transformer.dsa_indexer import (
     fused_sparse_flash_mla_with_indexer_loss_kvallgather,
 )
 from mindspeed_llm.core.context_parallel.kvallgather_context_parallel import gather_from_sp_cp, permute_cp_shard
-from mindspeed_llm.tasks.models.transformer.deepseek4.g2_attention_kernel import G2CoreAttention
 from mindspeed_llm.tasks.models.transformer.deepseek4.deepseek_utils import (
     apply_rotary_emb,
     get_cmp_cu_seqlens,
@@ -58,16 +57,16 @@ class LayerCompressMode(Enum):
 
 
 def _select_per_layer_cu_seqlens(packed_seq_params, mtp_idx):
-    """Select per-layer cu_seqlens for G2 attention path.
+    """Select per-layer cu_seqlens for the DeepSeek-V4 CSA path.
 
-    G2 path uses cu_seqlens_q/kv from packed_seq_params; MTP layers need
+    CSA uses cu_seqlens_q/kv from packed_seq_params; MTP layers need
     per-layer slicing (row mtp_idx of the 2D mtp_res). Also recomputes
     max_seqlen for the selected layer.
 
     Follows existing pattern in dot_product_attention.py and
     custom_dot_product_attention.py (actual_seq_len[self.mtp_idx]).
 
-    Note: G2 path does not use q_index/kv_index. If a new non-G2 attention
+    Note: CSA does not use q_index/kv_index. If another attention
     path is added, re-evaluate whether q_index/kv_index need similar handling.
 
     Args:
@@ -119,12 +118,11 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class CustomG2SelfAttentionSubmodules(SelfAttentionSubmodules):
+class DeepSeek4SelfAttentionSubmodules(SelfAttentionSubmodules):
     """Submodules for the MLA self-attention layer with NPU."""
 
     linear_q: Union[ModuleSpec, type] = None
     linear_kv: Union[ModuleSpec, type] = None
-    core_attention: Union[ModuleSpec, type] = None
     linear_o_down_proj: Union[ModuleSpec, type] = None
     linear_o_up_proj: Union[ModuleSpec, type] = None
     q_layernorm: Union[ModuleSpec, type] = None
@@ -142,12 +140,11 @@ def get_deepseek4_self_attn_submodules(qk_layernorm, mla_mm_split, enable_dsa_in
     else:
         ColumnLinear = ColumnParallelLinear
         RowLinear = RowParallelLinear
-    return CustomG2SelfAttentionSubmodules(
+    return DeepSeek4SelfAttentionSubmodules(
         linear_q=LinearNoTP,
         linear_kv=LinearNoTP,
         linear_o_down_proj=ColumnLinear,  # wo_a
         linear_o_up_proj=RowLinear,  # wo_b
-        core_attention=G2CoreAttention,
         q_layernorm=PTNorm if qk_layernorm else IdentityOp,  # q_norm
         kv_layernorm=PTNorm if qk_layernorm else IdentityOp,  # kvnorm
         linear_q_up_proj=ColumnLinear,  # wq_b
@@ -162,7 +159,7 @@ class DeepSeek4SelfAttention(MegatronModule):
     def __init__(
         self,
         config: TransformerConfig,
-        submodules: CustomG2SelfAttentionSubmodules,
+        submodules: DeepSeek4SelfAttentionSubmodules,
         layer_number: int,
         attn_mask_type=AttnMaskType.padding,
         cp_comm_type=None,
@@ -173,20 +170,20 @@ class DeepSeek4SelfAttention(MegatronModule):
 
         args = get_args()
         self.head_dim = args.qk_head_dim
-        self.rope_head_dim = args.rope_head_dim
+        self.rope_head_dim = args.qk_pos_emb_head_dim
         self.nope_head_dim = self.head_dim - self.rope_head_dim
         self.q_lora_rank = args.q_lora_rank
         self.o_lora_rank = args.o_lora_rank
-        if args.g2_window_size:
-            self.window_size = args.g2_window_size  # 128
+        if args.sliding_window_size:
+            self.window_size = args.sliding_window_size  # 128
         world_size = parallel_state.get_tensor_model_parallel_world_size()
         self.world_size = world_size
         self.n_groups = args.o_groups  # 8
         self.n_local_groups = args.o_groups // world_size
         self.dim = args.hidden_size  # 4096
         self.layer_number = layer_number + get_transformer_layer_offset(self.config)
+        self.mtp_idx = 0
         self.n_heads = args.num_attention_heads  # 64
-        self.use_triton_sfa = args.use_triton_sfa
         self.n_local_heads = self.n_heads // world_size
         self.use_sparse_flash_attn = args.use_sparse_flash_attn
         # self.num_attention_heads_per_partition= divide(self.n_heads, world_size)
@@ -271,7 +268,6 @@ class DeepSeek4SelfAttention(MegatronModule):
             is_expert=False,
             tp_comm_buffer_name="o_up_proj",
         )
-        self.core_attention = G2CoreAttention()
         self.max_seq_len = args.rope_scaling_original_max_position_embeddings
         self.original_seq_len = args.original_seq_len
         self.compress_ratio = args.compress_ratios[self.layer_number - 1]
@@ -320,6 +316,59 @@ class DeepSeek4SelfAttention(MegatronModule):
             s = start_pos + cp_offset + local_seq_len * tp_rank
             return self.freqs_cis[s : s + local_seq_len]
 
+    @staticmethod
+    def eager_sparse_attn(
+        query_states: torch.Tensor,  # [S, B, N, D]
+        kv_states: torch.Tensor,  # [S, B, D]
+        attn_sink: torch.Tensor,  # [N]
+        topk_idxs: torch.Tensor,  # [S, B, K]
+        softmax_scale: float,
+    ):
+        # q: [B, N, S, D]
+        q = query_states.permute(1, 2, 0, 3).contiguous()
+
+        # kv: [B, 1, S, D]
+        kv = kv_states.permute(1, 0, 2).unsqueeze(1).contiguous()
+        kv = kv.to(q.device)
+
+        # logits: [B, N, S, S]
+        attn_weights = torch.matmul(q, kv.transpose(-1, -2)) * softmax_scale
+
+        # topk: [B, S, K]
+        topk = topk_idxs.to(q.device).permute(1, 0, 2).contiguous()
+
+        neg = torch.finfo(attn_weights.dtype).min
+        index_mask = torch.full(
+            (q.size(0), 1, q.size(2), kv.size(2) + 1),
+            fill_value=neg,
+            dtype=attn_weights.dtype,
+            device=q.device,
+        )
+        max_valid_idx = kv.size(2)
+        # Replace -1 with max_valid_idx, then limit the index range
+        topk_clean = torch.where(topk == -1, torch.tensor(max_valid_idx, device=topk.device, dtype=topk.dtype), topk)
+        topk_clean = torch.clamp(topk_clean, 0, max_valid_idx)
+        index_mask.scatter_(-1, topk_clean.unsqueeze(1), 0)
+
+        # apply topk mask (exclude the sink column)
+        attn_weights = attn_weights + index_mask[..., :-1]  # [B, N, S, S] + [B, 1, S, S]
+
+        # sinks: [B, N, S, 1]
+        sinks = attn_sink.to(q.device).reshape(1, -1, 1, 1).expand(q.size(0), -1, q.size(2), 1)
+
+        # combined: [B, N, S, S+1]
+        combined_logits = torch.cat([attn_weights, sinks], dim=-1)
+        combined_logits = combined_logits - combined_logits.max(dim=-1, keepdim=True).values
+
+        probs = torch.nn.functional.softmax(combined_logits, dim=-1, dtype=combined_logits.dtype)
+        scores = probs[..., :-1]  # [B, N, S, S]
+
+        # out: [B, N, S, D]
+        attn_output = torch.matmul(scores, kv)
+
+        # back to [S, B, N, D]
+        return attn_output.permute(2, 0, 1, 3).contiguous()
+
     def sparse_attention(
         self,
         query,
@@ -365,7 +414,7 @@ class DeepSeek4SelfAttention(MegatronModule):
                 else torch.cat([topk_idxs, cmp_sparse_indices.transpose(0, 1)], dim=-1)
             )
             kv = ori_kv if cmp_kv is None else torch.cat([ori_kv, cmp_kv], dim=0)
-            output = self.core_attention(query, kv, self.attn_sink, topk_idxs, self.head_dim**-0.5)
+            output = self.eager_sparse_attn(query, kv, self.attn_sink, topk_idxs, self.head_dim**-0.5)
         return output
 
     def sparse_attention_with_indexer_loss(
@@ -528,8 +577,7 @@ class DeepSeek4SelfAttention(MegatronModule):
             # Select per-layer cu_seqlens by mtp_idx for MTP+CP+pack.
             # Follows existing pattern in dot_product_attention.py and custom_dot_product_attention.py.
             if args.mtp_num_layers:
-                mtp_idx = self.core_attention.mtp_idx
-                packed_seq_params = _select_per_layer_cu_seqlens(packed_seq_params, mtp_idx)
+                packed_seq_params = _select_per_layer_cu_seqlens(packed_seq_params, self.mtp_idx)
             # Prefix KV mode: keep prior ranks' KV as prefix; op derives CP offset from cu_q != cu_kv.
             if pre_gather_len is not None:
                 cp_size_inner = parallel_state.get_context_parallel_world_size()
@@ -646,7 +694,8 @@ class DeepSeek4SelfAttention(MegatronModule):
 
         use_smla_with_slig = (
             self.indexer is not None
-            and args.use_g2_indexer_loss
+            and args.indexer_loss_coeff > 0
+            and self.training
             and torch.is_grad_enabled()
             and args.use_fused_lightning_indexer_loss
         )
@@ -680,9 +729,10 @@ class DeepSeek4SelfAttention(MegatronModule):
                 packed_seq_params,
             )
             if (
-                args.use_g2_indexer_loss
+                args.indexer_loss_coeff > 0
                 and self.mode != LayerCompressMode.NO_COMPRESS
                 and self.indexer is not None
+                and self.training
                 and torch.is_grad_enabled()
             ):
                 compress_topk_idxs = (
@@ -797,7 +847,7 @@ class DeepSeek4MTPSelfAttention(DeepSeek4SelfAttention):
     def __init__(
         self,
         config: TransformerConfig,
-        submodules: CustomG2SelfAttentionSubmodules,
+        submodules: DeepSeek4SelfAttentionSubmodules,
         layer_number: int,
         attn_mask_type=AttnMaskType.padding,
         cp_comm_type=None,
