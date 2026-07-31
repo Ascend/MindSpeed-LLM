@@ -88,7 +88,7 @@ docs/zh/
     │           ├── pretrain_eod.md
     │           └── train_from_hf.md
     ├── tuning/               # 调优文档
-    │   └── performance_tuning.md # 性能调优
+    │   └── fsdp2_backend_performance_optimization.md # FSDP2 后端模型性能优化
     └── tools/                # 工具文档
         ├── data_process_sft_alpaca_style.md   # Alpaca格式数据处理
         ├── data_process_sft_sharegpt_style.md # ShareGPT格式数据处理

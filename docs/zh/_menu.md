@@ -14,7 +14,7 @@
 - [模型迁移]()
   - [模型适配指南（基于FSDP2训练后端）](./pytorch/develop/fsdp2/model_adaptation.md)
   - [精度调试](./pytorch/develop/precision_issue.md)
-- [模型性能调优](./pytorch/tuning/performance_tuning.md)
+- [模型性能调优](./pytorch/tuning/fsdp2_backend_performance_optimization.md)
 - [开发工具]()
   - [性能数据采集](./pytorch/tools/profiling.md)
   - [权重转换](./pytorch/tools/checkpoint_convert_hf_mcore_large_params.md)
