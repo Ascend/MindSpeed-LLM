@@ -68,7 +68,7 @@ CI门禁用例看护仓库重点模型和基本特性，覆盖冒烟测试场景
         <td>Y</td>
     </tr>
     <tr>
-        <td>dsa_indexer, mhc, kv_compress, moe_fb_overlap, triton-sinkhorn, triton-mhc, triton-rmsnorm-without-weight, seq_aux, index_loss</td>
+        <td>dsa_indexer, mhc, kv_compress, moe_fb_overlap, triton-mhc, seq_aux, index_loss</td>
         <td><a href="st/shell_scripts/deepseek4_flash_mcore_tp1_pp1_ep8.sh">deepseek4_flash_mcore_tp1_pp1_ep8.sh</a></td>
         <td>Y</td>
         <td>Y</td>

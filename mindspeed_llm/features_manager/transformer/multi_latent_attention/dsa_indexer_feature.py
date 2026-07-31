@@ -40,8 +40,6 @@ class DSAIndexerFeature(MindSpeedFeature):
             '--kv-compress', action='store_true', default=False, help='Apply compress to kv computations.'
         )
         group.add_argument('--compress-ratios', type=int, nargs='+', default=None, help='Compress ratios of layers.')
-        group.add_argument('--rope-head-dim', type=int, default=64, help='rope head dim.')
-        group.add_argument('--norm-eps', type=float, default=1e-6, help='norm-eps.')
         group.add_argument('--max-batch-size', type=int, default=4, help='rope head dim.')
         group.add_argument('--original-seq-len', type=int, default=65536, help='')
         group.add_argument('--compress-rope-theta', type=float, default=40000.0, help='')
@@ -91,6 +89,17 @@ class DSAIndexerFeature(MindSpeedFeature):
         )
 
     def validate_args(self, args):
+        if args.use_fused_lightning_indexer != args.use_fused_lightning_indexer_loss:
+            from mindspeed_llm.training.utils import print_rank0_by_args
+
+            args.use_fused_lightning_indexer = True
+            args.use_fused_lightning_indexer_loss = True
+            print_rank0_by_args(
+                args,
+                "[INFO] --use-fused-lightning-indexer and --use-fused-lightning-indexer-loss "
+                "must be enabled together. The framework has automatically enabled both options.",
+            )
+
         if args.enable_dsa_indexer:
             if not args.multi_latent_attention:
                 raise ValueError(

@@ -318,7 +318,7 @@ def apply_rotary_pos_emb_bshd_in_complex(t: Tensor, freqs: Tensor, rotary_interl
     return y.to(t.dtype)
 
 
-def apply_g2_rotary_embedding(dim, seqlen, original_seq_len, base, factor, beta_fast, beta_slow) -> torch.Tensor:
+def apply_deepseek4_rotary_embedding(dim, seqlen, original_seq_len, base, factor, beta_fast, beta_slow) -> torch.Tensor:
     """
     Precomputes frequency-based complex exponential values for rotary positional embeddings.
 

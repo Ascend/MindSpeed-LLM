@@ -51,10 +51,8 @@ DSA_ARGS="
     --enable-mhc \
     --hc-mult 4 \
     --kv-compress \
-    --norm-eps 1e-6 \
-    --use-triton-sinkhorn \
     --use-triton-mhc \
-    --use-triton-rmsnorm-without-weight \
+    --indexer-loss-coeff 1.0 \
 "
 
 MLA_ARGS="
@@ -70,16 +68,13 @@ MLA_ARGS="
 "
 
 CA_ARGS="
-    --use-g2-attention \
     --o-groups 8 \
-    --g2-window-size 128 \
-    --rope-head-dim 64 \
+    --sliding-window-size 128 \
     --original-seq-len 65536 \
     --rope-factor 4 \
     --compress-rope-theta 40000.0 \
     --max-batch-size 4 \
     --compress-ratios 0 0 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 128 4 \
-    --use-g2-indexer-loss \
 "
 
 MOE_ARGS="
@@ -164,10 +159,8 @@ GPT_ARGS="
     --attention-dropout 0.0 \
     --init-method-std 0.02 \
     --hidden-dropout 0.0 \
-    --position-embedding-type g2 \
+    --position-embedding-type deepseek4 \
     --normalization RMSNorm \
-    --use-fused-rotary-pos-emb \
-    --use-rotary-position-embeddings \
     --use-fused-swiglu \
     --use-fused-rmsnorm \
     --swiglu \
