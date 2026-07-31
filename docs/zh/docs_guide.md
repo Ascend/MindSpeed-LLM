@@ -188,7 +188,7 @@ docs/zh/
 
 | 内容 | 说明 |
 |------|------|
-| [performance_tuning](pytorch/tuning/performance_tuning.md) | 性能调优指南 |
+| [fsdp2_backend_performance_optimization](pytorch/tuning/fsdp2_backend_performance_optimization.md) | FSDP2 后端模型性能优化指南 |
 
 ### 精度定位
 
