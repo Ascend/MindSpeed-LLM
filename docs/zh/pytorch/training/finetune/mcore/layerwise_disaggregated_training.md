@@ -95,8 +95,8 @@
     ```shell
     python mindspeed_llm/tasks/posttrain/ldt_sft/convert_ckpt_pp_vpp.py merge \
         --load-dir ./model_weights/qwen3_mcore_tp1/ \
-        --save-dir-edge ./mmpath/Qwen3_32B_vtp/vpp_edge/ \
-        --save-dir-cloud ./mmpath/Qwen3_32B_vtp/vpp_cloud/ \
+        --save-dir-edge ./model_weights/qwen3_vpp_edge/ \
+        --save-dir-cloud ./model_weights/qwen3_vpp_cloud/ \
         --merge-stages 0,3 \
         --middle-stages 1,2
     ```
@@ -128,7 +128,7 @@
     在训练脚本中增加以下参数开启边云协同分布式训练特性：
 
     ```shell
-    --layerwise-disaggregated-training               # 开启边云协同分布式安全训练
+    --layerwise-disaggregated-training               # 开启边云协同分布式可信训练
     --num-layer-list 1,31,31,1                       # 非均匀PP切分，与权重转换时保持一致
     --num-virtual-stages-per-pipeline-rank 2         # 虚拟Pipeline Stage数，必须配置为2
     ```
@@ -203,8 +203,8 @@
     python mindspeed_llm/tasks/posttrain/ldt_sft/convert_ckpt_pp_vpp.py merge \
         --load-dir-edge ./model_weights/qwen3_mcore_tp1/ \
         --load-dir-cloud ./model_weights/qwen3_mcore_tp8/ \
-        --save-dir-edge ./mmpath/Qwen3_32B_vtp/vpp_edge/ \
-        --save-dir-cloud ./mmpath/Qwen3_32B_vtp/vpp_cloud/ \
+        --save-dir-edge ./model_weights/qwen3_vpp_edge/ \
+        --save-dir-cloud ./model_weights/qwen3_vpp_cloud/ \
         --merge-stages 0,3 \
         --middle-stages 1,2
     ```
@@ -239,7 +239,7 @@
     在训练脚本中增加以下参数开启边云协同分布式训练特性：
 
     ```shell
-    --layerwise-disaggregated-training               # 开启边云协同分布式安全训练
+    --layerwise-disaggregated-training               # 开启边云协同分布式可信训练
     --num-layer-list 1,31,31,1                       # 非均匀PP切分，与权重转换时保持一致
     --num-virtual-stages-per-pipeline-rank 2         # 虚拟Pipeline Stage数，必须配置为2
     ```
@@ -280,7 +280,7 @@
     在训练脚本中增加以下参数开启边云协同分布式训练特性：
 
     ```shell
-    --layerwise-disaggregated-training               # 开启边云协同分布式安全训练
+    --layerwise-disaggregated-training               # 开启边云协同分布式可信训练
     --num-layer-list 1,31,31,1                       # 非均匀PP切分，与权重转换时保持一致
     --num-virtual-stages-per-pipeline-rank 2         # 虚拟Pipeline Stage数，必须配置为2
     ```
@@ -321,7 +321,7 @@
        在训练脚本中增加以下参数开启边云协同分布式训练特性：
 
     ```shell
-    --layerwise-disaggregated-training               # 开启边云协同分布式安全训练
+    --layerwise-disaggregated-training               # 开启边云协同分布式可信训练
     --num-layer-list 1,31,31,1                       # 非均匀PP切分，与权重转换时保持一致
     --num-virtual-stages-per-pipeline-rank 2         # 虚拟Pipeline Stage数，必须配置为2
     ```
