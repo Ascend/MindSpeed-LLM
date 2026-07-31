@@ -7,6 +7,8 @@
 # reworked/refactored some parts to make it run.
 import pytest
 
+from tests.test_tools.utils import build_args  # noqa: F401
+
 
 def pytest_configure(config):
     config.option.color = "yes"
@@ -41,5 +43,3 @@ def pytest_fixture_setup(fixturedef, request):
     if getattr(fixturedef.func, "is_dist_fixture", False):
         dist_fixture_class = fixturedef.func()
         dist_fixture_class(request)
-
-

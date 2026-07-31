@@ -10,7 +10,7 @@ NNODES=1
 NODE_RANK=0
 WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
-basepath=$(cd `dirname $0`; cd ../../../; pwd)
+basepath=$(cd `dirname $0`; cd ../../../../; pwd)
 
 DISTRIBUTED_ARGS="
     --nproc_per_node $NPUS_PER_NODE \

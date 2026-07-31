@@ -22,4 +22,4 @@ DISTRIBUTED_ARGS="
     --master_port $MASTER_PORT
 "
 
-torchrun $DISTRIBUTED_ARGS train_fsdp2.py ./tests/st/shell_scripts/qwen3_next_ascendc-GDN_pack_cp2.yaml
+torchrun $DISTRIBUTED_ARGS train_fsdp2.py ./tests/pipeline/st/qwen3-next/qwen3_next_ascendc-GDN_pack_cp2.yaml

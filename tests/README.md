@@ -17,8 +17,8 @@ CI门禁用例看护仓库重点模型和基本特性，覆盖冒烟测试场景
         <th>Mem.</th>
     </tr>
     <tr>
-        <td rowspan="17">ST</td>
-        <td rowspan="13">Pretrain</td>
+        <td rowspan="12">ST</td>
+        <td rowspan="9">Pretrain</td>
         <td>TP，PP，VPP，distributed_optimizer，o2_gradient，o2_optimizer，重计算，enable_recompute_layers_per_pp_rank，FA_TND，use_fused_rotary_pos_emb</td>
         <td><a href="st/shell_scripts/qwen3_8b_tp2_pp4_vpp2.sh">qwen3_8b_tp2_pp4_vpp2.sh</a></td>
         <td>Y</td>
@@ -54,13 +54,6 @@ CI门禁用例看护仓库重点模型和基本特性，覆盖冒烟测试场景
         <td>Y</td>
     </tr>
     <tr>
-        <td>mla_attention，moe_grouped_gemm，EP，allgather_dispatcher，moe_allgather_overlap_comm，use_fused_rotary_pos_emb，recompute_norm</td>
-        <td><a href="st/shell_scripts/deepseek_v2_mcore_tp1_pp1_ep8.sh">deepseek_v2_mcore_tp1_pp1_ep8.sh</a></td>
-        <td>Y</td>
-        <td>Y</td>
-        <td>Y</td>
-    </tr>
-    <tr>
         <td>n_group，seq_aux，gradient_accumulation_fusion，recompute_mtp_layer，recompute_mtp_norm</td>
         <td><a href="st/shell_scripts/deepseek_v3_mcore_tp1_pp2_ep4.sh">deepseek_v3_mcore_tp1_pp2_ep4.sh</a></td>
         <td>Y</td>
@@ -68,36 +61,8 @@ CI门禁用例看护仓库重点模型和基本特性，覆盖冒烟测试场景
         <td>Y</td>
     </tr>
     <tr>
-        <td>moe_alltoall_overlap_comm，moe-zero-memory，swap-attention，reuse_fp32_param，fused_rmsnorm，fused_swiglu</td>
-        <td><a href="st/shell_scripts/deepseek_500b_tp1_pp2_ep2_cp2_overlap.sh">deepseek_500b_tp1_pp2_ep2_cp2_overlap.sh</a></td>
-        <td>Y</td>
-        <td>Y</td>
-        <td>Y</td>
-    </tr>
-    <tr>
-        <td>moe-fb-overlap, mtp-mem-efficient-logits, mla-mm-split, mla-fa-without-pad</td>
-        <td><a href="st/shell_scripts/deepseek32_tp1_pp2_vpp1_ep4.sh">deepseek32_tp1_pp2_vpp1_ep4.sh</a></td>
-        <td>Y</td>
-        <td>Y</td>
-        <td>Y</td>
-    </tr>
-    <tr>
         <td>EP，CP，num_experts，moe_router_topk，aux_loss，moe_allgather，group_query_attention，rotary_base</td>
         <td><a href="st/shell_scripts/qwen3_30b_tp4_cp2_ep2.sh">qwen3_30b_tp4_cp2_ep2.sh</a></td>
-        <td>Y</td>
-        <td>Y</td>
-        <td>Y</td>
-    </tr>
-    <tr>
-        <td>mamba_cp_algo，分布式优化器，reuse_fp32_param，recompute-granularity，enable-recompute-layers-per-pp-rank</td>
-        <td><a href="st/shell_scripts/mamba2_8b_tp4_pp1_cp2_recompute_4k_ptd.sh">mamba2_8b_tp4_pp1_cp2_recompute_4k_ptd.sh</a></td>
-        <td>Y</td>
-        <td>Y</td>
-        <td>Y</td>
-    </tr>
-    <tr>
-        <td>triton, topk-softmax-in-fp32, moe-router-pre-softmax</td>
-        <td><a href="st/shell_scripts/qwen3_next_80b_4K_A3_ptd.sh">qwen3_next_80b_4K_A3_ptd.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
@@ -142,7 +107,7 @@ CI门禁用例看护仓库重点模型和基本特性，覆盖冒烟测试场景
     <tr>
         <td rowspan="4">UT</td>
         <td>Inference</td>
-        <td>greedy_search, lora_inference, deterministic_computation</td>
+        <td>greedy_search</td>
         <td><a href="ut/inference/test_inference.py">test_inference.py</a></td>
         <td>Y</td>
         <td></td>
@@ -150,7 +115,7 @@ CI门禁用例看护仓库重点模型和基本特性，覆盖冒烟测试场景
     </tr>
     <tr>
         <td>Evaluation</td>
-        <td>mmlu, prompt_mmlu, qwen2_mmlu, agieval, bbh</td>
+        <td>qwen2_mmlu</td>
         <td><a href="ut/evaluation/test_evaluate.py">test_evaluate.py</a></td>
         <td>Y</td>
         <td></td>
@@ -158,7 +123,7 @@ CI门禁用例看护仓库重点模型和基本特性，覆盖冒烟测试场景
     </tr>
     <tr>
         <td rowspan="1">Checkpoint</td>
-        <td>hf2mcore, mcore2hf, TP, PP, EP, DPP, VPP, moe, noop_layers, lora, deepseek2, deepseek2_lite, llama2, llama3, qwen2</td>
+        <td>hf2mcore, TP, PP, EP, VPP, noop_layers, deepseek3</td>
         <td><a href="ut/checkpoint/test_checkpoint.py">test_checkpoint.py</a></td>
         <td>Y</td>
         <td></td>
@@ -166,7 +131,7 @@ CI门禁用例看护仓库重点模型和基本特性，覆盖冒烟测试场景
     </tr>
     <tr>
         <td rowspan="1">ProcessData</td>
-        <td>pretrain_data_alpaca, pretrain_merge_datasets, instruction_data_alpaca, instruction_merge_datasets</td>
+        <td>pretrain_data_alpaca</td>
         <td><a href="ut/process_data/test_preprocess_data.py">test_preprocess_data.py</a></td>
         <td>Y</td>
         <td></td>
@@ -190,7 +155,7 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <th>Mem.</th>
     </tr>
     <tr>
-        <td rowspan="24">LEGACY</td>
+        <td rowspan="28">LEGACY</td>
         <td rowspan="1">baichuan2-13B</td>
         <td>baichuan2_13b, no-gradient-accumulation-fusion</td>
         <td><a href="pipeline/legacy/baichuan2-13B/baichuan2_13b_tp8_pp1_mcore.sh">baichuan2_13b_tp8_pp1_mcore.sh</a></td>
@@ -207,9 +172,23 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td>Y</td>
     </tr>
     <tr>
-        <td rowspan="1">deepseek2</td>
+        <td rowspan="3">deepseek2</td>
         <td>deepseekv2, moe-grouped-gemm, moe-permutation-async-comm, first-k-dense-replace</td>
         <td><a href="pipeline/legacy/deepseek2/deepseek2_tp1_pp1_mcore_moe.sh">deepseek2_tp1_pp1_mcore_moe.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+        <tr>
+        <td>mla_attention，moe_grouped_gemm，EP，allgather_dispatcher，moe_allgather_overlap_comm，use_fused_rotary_pos_emb，recompute_norm</td>
+        <td><a href="pipeline/legacy/deepseek2/deepseek_v2_mcore_tp1_pp1_ep8.sh">deepseek_v2_mcore_tp1_pp1_ep8.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td>moe_alltoall_overlap_comm，moe-zero-memory，swap-attention，reuse_fp32_param，fused_rmsnorm，fused_swiglu</td>
+        <td><a href="pipeline/legacy/deepseek2/deepseek_500b_tp1_pp2_ep2_cp2_overlap.sh">deepseek_500b_tp1_pp2_ep2_cp2_overlap.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
@@ -247,7 +226,7 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td>Y</td>
     </tr>
     <tr>
-        <td rowspan="12">llama2</td>
+        <td rowspan="11">llama2</td>
         <td>llama2, distributed_optimizer, overlap_grad_reduce, gloo</td>
         <td><a href="pipeline/legacy/llama2/llama2_tp1_pp8_patch_gloo_ptd.sh">llama2_tp1_pp8_patch_gloo_ptd.sh</a></td>
         <td>Y</td>
@@ -347,6 +326,21 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td>Y</td>
     </tr>
     <tr>
+        <td rowspan="2">mamba2</td>
+        <td>mamba2, mamba_cp_algo, distributed_optimizer, reuse_fp32_param, overlap_grad_reduce, overlap_param_gather</td>
+        <td><a href="pipeline/legacy/mamba2/mamba2_2.7b_tp1_pp1.sh">mamba2_2.7b_tp1_pp1.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td>mamba_cp_algo，分布式优化器，reuse_fp32_param，recompute-granularity，enable-recompute-layers-per-pp-rank</td>
+        <td><a href="pipeline/legacy/mamba2/mamba2_8b_tp4_pp1_cp2_recompute_4k_ptd.sh">mamba2_8b_tp4_pp1_cp2_recompute_4k_ptd.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
         <td rowspan="1">mixtral</td>
         <td> mixtral_8x7b, EP, CP, num_experts, moe_router_topk, aux_loss, moe_allgather, group_query_attention, rotary_base </td>
         <td><a href="pipeline/legacy/mixtral/mixtral_mcore_tp4_cp2_ep2_ptd.sh">mixtral_mcore_tp4_cp2_ep2_ptd.sh</a></td>
@@ -370,10 +364,17 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td>Y</td>
     </tr>
     <tr>
-        <td rowspan="17">ST</td>
-        <td rowspan="1">deepseek3</td>
+        <td rowspan="19">ST</td>
+        <td rowspan="2">deepseek3</td>
         <td>deepseekv3, dualpipev, mla-up-proj-tp-overlap, moe-fb-overlap</td>
         <td><a href="pipeline/st/deepseek3/deepseek_v3_mcore_tp2_pp2_ep2_dualpipev_fb.sh">deepseek_v3_mcore_tp2_pp2_ep2_dualpipev_fb.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td>moe-fb-overlap, mtp-mem-efficient-logits, mla-mm-split, mla-fa-without-pad</td>
+        <td><a href="pipeline/st/deepseek3/deepseek32_tp1_pp2_vpp1_ep4.sh">deepseek32_tp1_pp2_vpp1_ep4.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
@@ -418,14 +419,6 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td>Y</td>
     </tr>
     <tr>
-        <td rowspan="1">mamba2</td>
-        <td>mamba2, mamba_cp_algo, distributed_optimizer, reuse_fp32_param, overlap_grad_reduce, overlap_param_gather</td>
-        <td><a href="pipeline/st/mamba2/mamba2_2.7b_tp1_pp1.sh">mamba2_2.7b_tp1_pp1.sh</a></td>
-        <td>Y</td>
-        <td>Y</td>
-        <td>Y</td>
-    </tr>
-    <tr>
         <td rowspan="1">phi35-moe</td>
         <td>phi35-moe, distributed_optimizer, overlap_grad_reduce, overlap_param_gather, longrope</td>
         <td><a href="pipeline/st/phi35-moe/phi35_moe_tp1_pp8_mcore.sh">phi35_moe_tp1_pp8_mcore.sh</a></td>
@@ -452,6 +445,21 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td rowspan="1">qwen3-30b</td>
         <td>qwen3-30b w4a16-mxfp4</td>
         <td><a href="pipeline/st/qwen3-30b/tune_qwen3_30b_a3b_4K_full_ptd_tp4_pp2_ep1.sh">tune_qwen3_30b_a3b_4K_full_ptd_tp4_pp2_ep1.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td rowspan="2">qwen3-next</td>
+        <td>triton, topk-softmax-in-fp32, moe-router-pre-softmax</td>
+        <td><a href="pipeline/st/qwen3-next/qwen3_next_80b_4K_A3_ptd.sh">qwen3_next_80b_4K_A3_ptd.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td>ascendc-GDN, pack, cp2, fsdp2</td>
+        <td><a href="pipeline/st/qwen3-next/qwen3_next_ascendc-GDN_pack_cp2.sh">qwen3_next_ascendc-GDN_pack_cp2.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>

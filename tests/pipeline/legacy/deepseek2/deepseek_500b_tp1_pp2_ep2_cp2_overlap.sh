@@ -9,7 +9,7 @@ NNODES=1
 NODE_RANK=0
 WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
-basepath=$(cd `dirname $0`; cd ../../../; pwd)
+basepath=$(cd `dirname $0`; cd ../../../../; pwd)
 
 CKPT_LOAD_DIR="/data/ci/models/deepseek-500b/mg/deepseek-500b-tp1-pp2-ep2-cp2-overlap-base/"
 DATA_PATH="/data/ci/datasets/processed/pretrain_dataset/alpaca_text_document"
