@@ -18,6 +18,10 @@ class FSDPPlanConfig:
     cast_forward_inputs: bool = True
     reshard_after_forward: bool = True
 
+    # offload_policy settings
+    cpu_offload: bool = False
+    pin_memory: bool = True
+
     # prefetch settings
     num_to_forward_prefetch: Optional[int] = 0
     num_to_backward_prefetch: Optional[int] = 0
