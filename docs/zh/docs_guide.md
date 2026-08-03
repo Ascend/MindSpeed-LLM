@@ -78,7 +78,7 @@ docs/zh/
     │   │   │   ├── layerwise_disaggregated_training.md # 逐层分离训练微调
     │   │   │   └── pmcc_obfuscation.md          # PMCC混淆
     │   │   └── fsdp2/        # FSDP2 微调方案
-    │   │       └── finetune_fsdp2.md
+    │   │       └── finetune_fsdp2.md  # FSDP2模型微调使用指南
     │   ├── inference/        # 模型推理
     │   │   ├── inference.md
     │   │   └── chat.md
@@ -169,7 +169,7 @@ docs/zh/
 
 | 分类 | 内容 | 说明 |
 |------|------|------|
-| 微调 | [finetune](pytorch/training/finetune/fsdp2/finetune_fsdp2.md) | 全参微调方法 |
+| 微调 | [finetune_fsdp2](pytorch/training/finetune/fsdp2/finetune_fsdp2.md) | FSDP2 全参数微调使用指南（模型、数据集、YAML 配置与参数说明） |
 
 ### 工具链
 
