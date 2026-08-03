@@ -311,6 +311,7 @@
     "glm4": {
       "__base__": "base",
       "config_set_value": {
+        "post_norm":true,
         "seq_length": 32768,
         "global_batch_size": 16,
         "group_query_attention": true
@@ -338,6 +339,13 @@
         "layers_self_attention_post_mlp_layernorm": "model.layers[layer_idx].post_mlp_layernorm",
         "final_layernorm": "model.norm",
         "output_layer": "lm_head"
+      }
+    },
+    "glm4_9b":{
+      "__base__": "glm4",
+      "config_set_value": {
+        "post_norm":true,
+        "add_qkv_bias": true
       }
     },
     "mixtral": {

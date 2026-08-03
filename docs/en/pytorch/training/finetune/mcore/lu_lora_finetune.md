@@ -50,17 +50,14 @@ bash examples/mcore/llama2/ckpt_convert_llama2_hf2mcore.sh
 In the hf2mcore weight conversion script, use the following command:
 
 ```shell
-# Convert the weight format. Configure the required parallel settings and use --num-layers-per-virtual-pipeline-stage 5 together with --params-dtype bf16 as needed.
-python convert_ckpt.py \
- --model-type GPT \
+# Convert the weight format. Configure the required parallel settings and use --num-layers-per-virtual-pipeline-stage 5.
+python convert_ckpt_v2.py \
  --load-model-type hf \
  --save-model-type mg \
  --target-tensor-parallel-size 8 \
  --target-pipeline-parallel-size 1 \
  --load-dir ./model_from_hf/llama-2-7b-hf/ \
  --save-dir ./model_weights/llama2-mcore/ \
- --tokenizer-model ./model_from_hf/llama-2-7b-hf/tokenizer.model \
- --use-mcore-models \
  --model-type-hf llama2
 ```
 
@@ -103,34 +100,6 @@ After LU-LoRA fine-tuning, the obtained LU-LoRA weights differ from the base wei
  --lora-target-modules linear_qkv linear_proj linear_fc1 linear_fc2 \
 ```
 
-The following is an example command for converting LoRA weights to MCore weights:
-
-```shell
-source /usr/local/Ascend/cann/set_env.sh # Replace this with the actual Toolkit installation path.
-
-python convert_ckpt.py \
- --use-mcore-models \
- --model-type GPT \
- --load-model-type mg \
- --save-model-type mg \
- --load-dir ./model_weights/llama-2-7b-mcore \
- --lora-load ./ckpt/llama-7b-lora-mcore-tp1pp1 \
- --save-dir ./model_weights/llama2-7b-lora2mcore \
- --lora-r 16 \
- --lora-alpha 32 \
- --lora-target-modules linear_qkv linear_proj linear_fc1 linear_fc2 \
- --target-tensor-parallel-size 1 \
- --target-pipeline-parallel-size 1 \
- --model-type-hf llama2
-```
-
-The following is an example of a launch script similar to the one used for LoRA conversion:
-
-```shell
-# Start the job.
-bash examples/mcore/llama2/ckpt_convert_llama2_mg2mg_lora.sh
-```
-
 #### Merging LU-LoRA Weights and Converting Them to Hugging Face Weights
 
 If you want to merge LU-LoRA weights and convert them to the Hugging Face format, you can use the same LoRA conversion command:
@@ -138,9 +107,7 @@ If you want to merge LU-LoRA weights and convert them to the Hugging Face format
 ```shell
 source /usr/local/Ascend/cann/set_env.sh # Replace this with the actual Toolkit installation path.
 
-python convert_ckpt.py \
-    --model-type GPT \
-    --use-mcore-models \
+python convert_ckpt_v2.py \
     --load-model-type mg \
     --save-model-type hf \
     --load-dir ./model_weights/llama-2-7b-mcore/ \
@@ -150,7 +117,7 @@ python convert_ckpt.py \
     --lora-target-modules linear_qkv linear_proj linear_fc1 linear_fc2 \
     --target-tensor-parallel-size 1 \
     --target-pipeline-parallel-size 1 \
-    --save-dir ./model_from_hf/llama-2-7b-hf/ # Fill in the original Hugging Face model path. The new weights will be stored in ./model_from_hf/llama-2-7b-hf/mg2hg/
+    --save-dir ./model_from_hf/llama-2-7b-hf/
 ```
 
 The example launch script is as follows:

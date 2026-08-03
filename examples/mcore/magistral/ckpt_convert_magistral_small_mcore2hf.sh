@@ -10,4 +10,4 @@ python convert_ckpt_v2.py \
     --target-pipeline-parallel-size 1 \
     --hf-cfg-dir ./origin_hf_cfg \
     --load-dir ./model_weights/magistral_mcore/ \
-    --save-dir ./model_from_hf/magistral_hf/  # 需要填入原始HF模型路径，新权重会存于./model_from_hf/magistral_hf/mg2hf/
+    --save-dir ./model_from_hf/magistral_hf/
