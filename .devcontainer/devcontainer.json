@@ -1,0 +1,82 @@
+{
+    "name": "MindSpeed LLM Dev Container",
+    "build": {
+        "dockerfile": "Dockerfile",
+        "context": "..",
+        "args": {
+            "BASE_IMAGE": "swr.cn-south-1.myhuaweicloud.com/ascendhub/cann:9.0.0-910b-openeuler24.03-py3.11",
+            "OS_FAMILY": "openeuler",
+            "CONFIGURE_REPOSITORY": "true",
+            "TORCH_VERSION": "2.7.1",
+            "TORCH_NPU_VERSION": "2.7.1",
+            "TRITON_ASCEND_VERSION": "3.2.1",
+            "MINDSPEED_BRANCH": "26.0.0_core_r0.12.1",
+            "MEGATRON_BRANCH": "core_v0.12.1"
+        }
+    },
+
+    "workspaceFolder": "/workspace/MindSpeed-LLM",
+    "workspaceMount": "source=${localWorkspaceFolder},target=/workspace/MindSpeed-LLM,type=bind,consistency=cached",
+
+    "runArgs": [
+        "--privileged",
+        "--network=host",
+        "--ipc=host",
+        "--pid=host",
+        "--shm-size=512g",
+        "--volume=/usr/local/Ascend/driver:/usr/local/Ascend/driver:ro",
+        "--volume=/usr/local/Ascend/firmware:/usr/local/Ascend/firmware:ro",
+        "--volume=/usr/local/dcmi:/usr/local/dcmi:ro",
+        "--volume=/usr/local/bin/npu-smi:/usr/local/bin/npu-smi:ro",
+        "--volume=/etc/ascend_install.info:/etc/ascend_install.info:ro",
+        "--volume=/data:/data"
+    ],
+
+    "mounts": [
+        "source=mindspeed-llm-training-logs,target=/home/pipeline_log,type=volume"
+    ],
+
+    "containerEnv": {
+        "ASCEND_TOOLKIT_HOME": "/usr/local/Ascend/ascend-toolkit",
+        "MINDSPEED_DEPS_ROOT": "/workspace",
+        "PYTHONPATH": "/workspace/MindSpeed-LLM:/workspace/Megatron-LM",
+        "PIP_DISABLE_PIP_VERSION_CHECK": "1",
+        "TEST_MODEL": "true",
+        "MODEL_REQUIREMENTS_FILE": ""
+    },
+
+    "postCreateCommand": [
+        "bash",
+        "-lc",
+        "set -euo pipefail; cd /workspace/MindSpeed-LLM; mkdir -p logs /home/pipeline_log; pip-install-with-fallback -r requirements.txt; if [[ -n \"${MODEL_REQUIREMENTS_FILE:-}\" ]]; then [[ -f \"${MODEL_REQUIREMENTS_FILE}\" ]] || { echo \"Model requirements file not found: ${MODEL_REQUIREMENTS_FILE}\" >&2; exit 1; }; pip-install-with-fallback -r \"${MODEL_REQUIREMENTS_FILE}\"; fi; ln -sfnT \"${MINDSPEED_DEPS_ROOT}/Megatron-LM/megatron\" megatron; python3 -m pip check || echo \"WARNING: pip check reported dependency conflicts; continuing.\" >&2; printf '\\n%s\\n' 'MindSpeed LLM complete NPU development environment is ready.'"
+    ],
+
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "charliermarsh.ruff",
+                "redhat.vscode-yaml",
+                "timonwong.shellcheck"
+            ],
+            "settings": {
+                "python.defaultInterpreterPath": "/usr/local/bin/python3",
+                "python.testing.pytestEnabled": true,
+                "python.testing.unittestEnabled": false,
+                "python.testing.pytestArgs": [
+                    "tests"
+                ],
+                "terminal.integrated.defaultProfile.linux": "bash",
+                "editor.formatOnSave": false,
+                "files.watcherExclude": {
+                    "**/.git/objects/**": true,
+                    "**/logs/**": true,
+                    "**/model_weights/**": true
+                }
+            }
+        }
+    },
+
+    "remoteUser": "root"
+}
