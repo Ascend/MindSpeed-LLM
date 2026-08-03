@@ -1,0 +1,63 @@
+model:
+  model_id: deepseek_v4
+  trust_remote_code: False
+  train_from_scratch: False
+  init_model_with_meta_device: True
+
+data:
+  cutoff_len: 4096
+  max_samples: 100000
+  overwrite_cache: False
+  preprocessing_num_workers: 1
+  data_manager_type: mg
+
+parallel:
+  fsdp_modules:
+    - model.embed_tokens
+    - model.layers.{*}
+    - lm_head
+    - mtp.layers.{*}.layer
+    - model.hc_head
+  ignored_modules:
+    - model.layers.{*}.attn_hc
+    - model.layers.{*}.ffn_hc
+    - model.hc_head
+    - mtp.layers.{*}.layer.attn_hc
+    - mtp.layers.{*}.layer.ffn_hc
+  ep_modules:
+    - model.layers.{*}.mlp.experts
+    - mtp.layers.{*}.layer.mlp.experts
+  ep_dispatcher: mc2
+  ep_fsdp_modules:
+    - model.layers.{*}.mlp.experts
+    - mtp.layers.{*}.layer.mlp.experts
+  recompute: True
+  recompute_modules:
+    - model.layers.{*}
+    - mtp.layers.{*}.layer
+
+training:
+  stage: pt
+  dataloader_num_workers: 1
+  disable_shuffling: 1
+  seed: 42
+  dataloader_drop_last: True
+  output_dir: ../output
+  optimizer: fused_adamw
+  lr: 1e-05
+  weight_decay: 0.01
+  adam_beta1: 0.9
+  adam_beta2: 0.95
+  adam_epsilon: 1e-08
+  max_grad_norm: 1.0
+  lr_scheduler_type: cosine
+  warmup_ratio: 0.0
+  min_lr: 1e-06
+  num_train_epochs: 3.0
+  max_steps: 2000
+  save_steps: 0
+  logging_steps: 1
+  indexer_loss_coeff: 1.0
+  router_aux_loss_coef: 0.001
+  deterministic: False
+  log_throughput: True

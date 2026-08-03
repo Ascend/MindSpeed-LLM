@@ -12,6 +12,8 @@ from fsdp_turbo.ops.moe import grouped_matmul, permute, unpermute
 from fsdp_turbo.quantization.mx_formats.mx_gmm import mx_quant_group_gemm
 from fsdp_turbo.distributed.dist_ops import gather_along_first_dim_expert_parallel
 
+from mindspeed_llm.fsdp2.ops.triton_swiglu_with_limit import apply_swiglu_activation
+
 
 def get_experts_forward_fn(ep_group, fused, fixed_router=False):
     def experts_forward(self, hidden_states: torch.Tensor, top_k_index: torch.Tensor, top_k_weights: torch.Tensor):
@@ -87,7 +89,15 @@ def dispatch_mlp_combine(
     else:
         gate_up_weights, down_weights = weights
         hidden_states = experts_computation(
-            hidden_states, permute_indices[0], gate_up_weights, down_weights, act_fn, act_limit, fused, quant_config
+            hidden_states,
+            permute_indices[0],
+            gate_up_weights,
+            down_weights,
+            act_fn,
+            act_limit,
+            fused,
+            quant_config,
+            use_triton_swiglu_limit=getattr(expert_module, 'use_triton_swiglu_limit', False),
         )
     hidden_states = alltoall_combine(ep_group, hidden_states, top_k_weights, unpermute_indices, split_sizes, fused)
     return hidden_states
@@ -138,7 +148,15 @@ def alltoall_dispatch(ep_group, hidden_states, top_k_index, indices, split_sizes
 
 
 def experts_computation(
-    hidden_states, split_list, gate_up_weights, down_weights, act_fn, act_limit, fused, quant_config=None
+    hidden_states,
+    split_list,
+    gate_up_weights,
+    down_weights,
+    act_fn,
+    act_limit,
+    fused,
+    quant_config=None,
+    use_triton_swiglu_limit=False,
 ):
     if quant_config is not None:
         group_list = torch.cumsum(split_list, dim=0)
@@ -151,11 +169,7 @@ def experts_computation(
             return grouped_matmul(x, split_list, w, use_eager=not fused)
 
     fc1 = gmm_fn(hidden_states, gate_up_weights)
-    gate, up = fc1.chunk(2, dim=-1)
-    if act_limit is not None:
-        gate = gate.clamp(max=act_limit)
-        up = up.clamp(min=-act_limit, max=act_limit)
-    act = act_fn(gate) * up
+    act = apply_swiglu_activation(fc1, act_fn, act_limit, use_triton_swiglu_limit)
     hidden_states = gmm_fn(act, down_weights)
     return hidden_states
 

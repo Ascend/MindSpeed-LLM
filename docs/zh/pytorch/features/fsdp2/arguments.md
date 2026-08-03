@@ -606,6 +606,18 @@
       <td>最小学习率，此参数仅在cosine调度器下生效。</td>
     </tr>
     <tr>
+      <td>indexer_loss_coeff</td>
+      <td>float</td>
+      <td>1.0</td>
+      <td>indexer loss的系数。</td>
+    </tr>
+    <tr>
+      <td>router_aux_loss_coef</td>
+      <td>float</td>
+      <td>0.0</td>
+      <td>aux loss的系数。</td>
+    </tr>
+    <tr>
       <td>num_train_epochs</td>
       <td>float</td>
       <td>3.0</td>
@@ -927,10 +939,16 @@
       <td>是否使能稀疏indexer的kl loss融合算子。仅支持DeepSeek-V3.2和GLM-5系列模型。</td>
     </tr>
     <tr>
-      <td>indexer_loss_coeff</td>
-      <td>float</td>
-      <td>1.0</td>
-      <td>indexer loss的系数。</td>
+      <td>use_ascend_mhc</td>
+      <td>bool</td>
+      <td>False</td>
+      <td>是否使能mhc融合算子。仅支持DeepSeek-V4系列模型。</td>
+    </tr>
+    <tr>
+      <td>use_triton_swiglu_limit</td>
+      <td>bool</td>
+      <td>False</td>
+      <td>是否使能swiglu limit融合算子。仅支持DeepSeek-V4系列模型。</td>
     </tr>
     <tr>
       <td>pre_tokens</td>

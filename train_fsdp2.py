@@ -33,8 +33,8 @@ from mindspeed_llm.fsdp2.utils.train_monitor import TrainMonitor
 from mindspeed_llm.fsdp2.utils.device import set_accelerator_compatible
 from mindspeed_llm.fsdp2.utils.coverage import auto_coverage
 
-from mindspeed.fsdp.utils.random import set_seed
-from mindspeed.fsdp.utils.torch_patch import apply_hccl_premul_sum_patch
+from fsdp_turbo.utils.random import set_seed
+from fsdp_turbo.utils.torch_patch import apply_hccl_premul_sum_patch
 
 
 logger = get_logger(__name__)
@@ -188,6 +188,7 @@ class MindSpeedAutoTrainer:
             ("DataArguments", self.data_args),
             ("ParallelArguments", self.parallel_args),
             ("TrainingArguments", self.training_args),
+            ("OptimizationArguments", self.optimization_args),
         ]
         for module_name, arg_instance in arg_modules:
             logger.info_plain_rank0(f"\n {module_name}")

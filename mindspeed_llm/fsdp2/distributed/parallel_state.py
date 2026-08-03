@@ -10,7 +10,7 @@ from torch.distributed.device_mesh import init_device_mesh, DeviceMesh
 
 
 from mindspeed_llm.fsdp2.distributed.parallel_engine_config import ParallelEngineConfig
-from mindspeed.lite.utils.log import print_rank
+from fsdp_turbo.utils.log import print_rank
 
 logger = logging.getLogger(__name__)
 
@@ -74,20 +74,26 @@ class ParallelState(metaclass=Singleton):
 
         # create EP_DP/EP groups
         mesh_dim_names = ('edp', 'efsdp', 'ep')
-        mesh_shape = (self.expert_fully_shard_parallel_size, self.expert_parallel_size,)
+        mesh_shape = (
+            self.expert_fully_shard_parallel_size,
+            self.expert_parallel_size,
+        )
         self.expert_data_parallel_size = get_last_mesh_dim(mesh_shape)
         mesh_shape = (self.expert_data_parallel_size,) + mesh_shape
         self.add_device_mesh_groups(mesh_dim_names, mesh_shape)
 
         # create DP_FSDP
         mesh_dim_names = ('dp_fsdp', 'cp')
-        mesh_shape = (self.fully_shard_parallel_size * self.data_parallel_size // self.context_parallel_size,
-                      self.context_parallel_size)
+        mesh_shape = (
+            self.fully_shard_parallel_size * self.data_parallel_size // self.context_parallel_size,
+            self.context_parallel_size,
+        )
         self.add_device_mesh_groups(mesh_dim_names, mesh_shape)
 
         if self.data_parallel_size != 1:
             raise Exception(
-                f"Currently, only `data_parallel_size` = 1 is supported, but `self.data_parallel_size` = {self.data_parallel_size} .")
+                f"Currently, only `data_parallel_size` = 1 is supported, but `self.data_parallel_size` = {self.data_parallel_size} ."
+            )
         if self.fully_shard_parallel_size != torch.distributed.get_world_size():
             raise Exception("Currently, `fully_shard_parallel_size` must be equal to the distributed world size.")
 
@@ -149,7 +155,6 @@ class ParallelState(metaclass=Singleton):
             raise RuntimeError(f"Mesh group {mesh_name} not found.")
 
     def add_device_mesh_groups(self, mesh_dim_names, mesh_shape):
-
         def get_methods(name):
             def is_enable_method(self):
                 return self.is_group_enable(name)
@@ -169,10 +174,16 @@ class ParallelState(metaclass=Singleton):
             return is_enable_method, get_group_method, get_size_method, get_rank_method, get_mesh_method
 
         if reduce(lambda a, b: a * b, mesh_shape) != torch.distributed.get_world_size():
-            raise AssertionError(f"Mesh groups {mesh_shape}({reduce(lambda a, b: a * b, mesh_shape)}) "
-                                 f"!= world size({torch.distributed.get_world_size()})")
+            raise AssertionError(
+                f"Mesh groups {mesh_shape}({reduce(lambda a, b: a * b, mesh_shape)}) "
+                f"!= world size({torch.distributed.get_world_size()})"
+            )
 
-        device_mesh = init_device_mesh(device_type=torch.accelerator.current_accelerator().type, mesh_shape=mesh_shape, mesh_dim_names=mesh_dim_names)
+        device_mesh = init_device_mesh(
+            device_type=torch.accelerator.current_accelerator().type,
+            mesh_shape=mesh_shape,
+            mesh_dim_names=mesh_dim_names,
+        )
 
         for mesh_name in mesh_dim_names:
             self.device_mesh_map[mesh_name] = device_mesh

@@ -6,6 +6,8 @@ from fsdp_turbo.distributed.expert_parallel.utils import fixed_router_for_debug,
 from fsdp_turbo.distributed.dist_ops import gather_along_first_dim_expert_parallel
 from fsdp_turbo.ops.moe import permute, unpermute, all2all_grouped_matmul, grouped_matmul_all2all
 
+from mindspeed_llm.fsdp2.ops.triton_swiglu_with_limit import apply_swiglu_activation
+
 
 def get_experts_forward_mc2_fn(ep_group, fixed_router=False):
     def experts_forward(self, hidden_states: torch.Tensor, top_k_index: torch.Tensor, top_k_weights: torch.Tensor):
@@ -23,10 +25,19 @@ def get_experts_forward_mc2_fn(ep_group, fixed_router=False):
 
         act_fn = getattr(self, 'act_fn', None)
         act_limit = self.limit if hasattr(self, 'limit') else None
+        use_triton_swiglu_limit = getattr(self, 'use_triton_swiglu_limit', False)
         num_global_experts = self.num_global_experts
 
         hidden_states = dispatch_mlp_combine(
-            ep_group, hidden_states, top_k_index, top_k_weights, weights, act_fn, act_limit, num_global_experts
+            ep_group,
+            hidden_states,
+            top_k_index,
+            top_k_weights,
+            weights,
+            act_fn,
+            act_limit,
+            num_global_experts,
+            use_triton_swiglu_limit,
         )
         return hidden_states.view(*hidden_states_shape)
 
@@ -34,17 +45,21 @@ def get_experts_forward_mc2_fn(ep_group, fixed_router=False):
 
 
 def dispatch_mlp_combine(
-    ep_group, hidden_states, top_k_index, top_k_weights, weights, act_fn, act_limit, num_global_experts
+    ep_group,
+    hidden_states,
+    top_k_index,
+    top_k_weights,
+    weights,
+    act_fn,
+    act_limit,
+    num_global_experts,
+    use_triton_swiglu_limit=False,
 ):
     gate_up_weights, down_weights = weights
     send_counts, recv_counts = dispatch_preprocess(ep_group, top_k_index, num_global_experts)
     hidden_states, unpermute_indices1 = permute(hidden_states, top_k_index)
     hidden_states = all2all_grouped_matmul(hidden_states, gate_up_weights, ep_group, send_counts, recv_counts)
-    gates, ups = torch.chunk(hidden_states, 2, dim=-1)
-    if act_limit is not None:
-        gates = gates.clamp(max=act_limit)
-        ups = ups.clamp(min=-act_limit, max=act_limit)
-    hidden_states = act_fn(gates) * ups
+    hidden_states = apply_swiglu_activation(hidden_states, act_fn, act_limit, use_triton_swiglu_limit)
     hidden_states = grouped_matmul_all2all(hidden_states, down_weights, ep_group, recv_counts, send_counts)
     hidden_states = unpermute(hidden_states, unpermute_indices1, top_k_weights)
     return hidden_states

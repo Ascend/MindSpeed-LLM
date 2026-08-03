@@ -8,8 +8,8 @@ import torch
 from torch.distributed import DeviceMesh
 from torch.distributed.tensor import Shard, DTensor, Replicate, distribute_tensor, distribute_module
 
-from mindspeed.fsdp.utils.log import print_rank
-from mindspeed.fsdp.utils.str_match import module_name_match
+from fsdp_turbo.utils.log import print_rank
+from fsdp_turbo.utils.str_match import module_name_match
 
 from mindspeed_llm.fsdp2.distributed.expert_parallel.dispatcher import get_experts_forward_fn
 from mindspeed_llm.fsdp2.distributed.expert_parallel.dispatcher_mc2 import get_experts_forward_mc2_fn

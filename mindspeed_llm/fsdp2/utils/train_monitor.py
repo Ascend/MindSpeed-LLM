@@ -68,6 +68,7 @@ class TrainMonitor:
             "base": " iteration {:8d}/{:8d} | consumed samples: {:10d} | consumed tokens: {:10d} | elapsed time per iteration (ms): {:.2f} |",
             "throughput": " tokens/s: {:.2f} | mfu: {:.2f} |",
             "optimizer": " learning rate: {:.6E} | global batch size: {:5d} | lm loss: {:.6E} | mtp loss: {:.6E} |",
+            "aux_loss": " aux loss: {:.6E} |",
             "grad_norm": " grad norm: {:.3f} |",
             "npu_memory": " max_memory_allocated(GB): {:.2f} | max_memory_reserved(GB): {:.2f} |",
             "cpu_memory": " cpu_used_memory(GB): {:.2f} | cpu_available_memory(GB): {:.2f} | cpu_memory_usage(%): {:.1f} |",
@@ -126,9 +127,11 @@ class TrainMonitor:
         _total_loss_scalar,
         _total_lm_loss_scalar,
         _total_mtp_loss_scalar,
+        _total_aux_loss_scalar,
         _last_logged_loss_scalar,
         _last_logged_lm_loss_scalar,
         _last_logged_mtp_loss_scalar,
+        _last_logged_aux_loss_scalar,
         sparse_attn_reduce_group=None,
     ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
         """
@@ -178,9 +181,11 @@ class TrainMonitor:
             _total_loss_scalar,
             _total_lm_loss_scalar,
             _total_mtp_loss_scalar,
+            _total_aux_loss_scalar,
             _last_logged_loss_scalar,
             _last_logged_lm_loss_scalar,
             _last_logged_mtp_loss_scalar,
+            _last_logged_aux_loss_scalar,
             step_diff,
             grad_norm,
         )
@@ -227,7 +232,12 @@ class TrainMonitor:
         # 6. Logging State Update
         # Update state for resume training (last logged step/loss/time)
         logging_state = TrainMonitor._update_logging_state(
-            current_step, _total_loss_scalar, _total_lm_loss_scalar, _total_mtp_loss_scalar, current_time
+            current_step,
+            _total_loss_scalar,
+            _total_lm_loss_scalar,
+            _total_mtp_loss_scalar,
+            _total_aux_loss_scalar,
+            current_time,
         )
 
         # 7. Save key statistics for state_dict
@@ -261,9 +271,11 @@ class TrainMonitor:
         cumulative_loss: float,
         lm_loss: float,
         mtp_loss: float,
+        aux_loss: float,
         last_logged_loss: float,
         last_logged_lm_loss: float,
         last_logged_mtp_loss: float,
+        last_logged_aux_loss: float,
         step_diff: int,
         grad_norm: float,
     ) -> Dict[str, float]:
@@ -285,11 +297,20 @@ class TrainMonitor:
         # Safe handling: NaN/Inf protection
         avg_mtp_loss = 0.0 if not (-1e10 < avg_mtp_loss < 1e10) else avg_mtp_loss  # pylint:disable=R1716
 
+        avg_aux_loss = (aux_loss - last_logged_aux_loss) / step_diff
+        avg_aux_loss = 0.0 if not (-1e10 < avg_aux_loss < 1e10) else avg_aux_loss  # pylint:disable=R1716
+
         # Safe handling of gradient norm
         grad_norm = grad_norm.item() if isinstance(grad_norm, torch.Tensor) else grad_norm
         grad_norm = 0.0 if not (-1e10 < grad_norm < 1e10) else grad_norm
 
-        return {"avg_loss": avg_loss, "avg_lm_loss": avg_lm_loss, "avg_mtp_loss": avg_mtp_loss, "grad_norm": grad_norm}
+        return {
+            "avg_loss": avg_loss,
+            "avg_lm_loss": avg_lm_loss,
+            "avg_mtp_loss": avg_mtp_loss,
+            "avg_aux_loss": avg_aux_loss,
+            "grad_norm": grad_norm,
+        }
 
     @staticmethod
     def _compute_memory_metrics() -> Dict[str, Any]:
@@ -411,8 +432,14 @@ class TrainMonitor:
 
         # Append optimizer/loss metrics using predefined template
         log_string += self.log_templates["optimizer"].format(
-            metrics["lr"], global_batch_size, metrics["avg_lm_loss"], metrics["avg_mtp_loss"]
+            metrics["lr"],
+            global_batch_size,
+            metrics["avg_lm_loss"],
+            metrics["avg_mtp_loss"],
         )
+
+        if (getattr(self.training_args, "router_aux_loss_coef", None) or 0.0) > 0:
+            log_string += self.log_templates["aux_loss"].format(metrics["avg_aux_loss"])
 
         # Append sparse-attention metrics when a model reported an indexer loss.
         if "indexer_loss" in metrics:
@@ -442,6 +469,7 @@ class TrainMonitor:
         cumulative_loss: float,
         cumulative_lm_loss: float,
         cumulative_mtp_loss: float,
+        cumulative_aux_loss: float,
         current_time: float,
     ) -> Dict[str, Any]:
         """
@@ -452,6 +480,7 @@ class TrainMonitor:
             "logged_loss": cumulative_loss,
             "logged_lm_loss": cumulative_lm_loss,
             "logged_mtp_loss": cumulative_mtp_loss,
+            "logged_aux_loss": cumulative_aux_loss,
             "time": current_time,
         }
 

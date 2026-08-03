@@ -4,9 +4,9 @@ import torch
 from torch.distributed.fsdp import fully_shard, MixedPrecisionPolicy
 from torch.distributed.tensor import Shard
 
+from fsdp_turbo.utils.log import print_rank
+from fsdp_turbo.utils.str_match import module_name_match
 from mindspeed_llm.fsdp2.distributed.parallel_engine_config import EPPlanConfig
-from mindspeed.fsdp.utils.log import print_rank
-from mindspeed.fsdp.utils.str_match import module_name_match
 from mindspeed_llm.fsdp2.utils.global_vars import get_args
 
 logger = logging.getLogger(__name__)
@@ -27,9 +27,11 @@ def get_shard_placement_fn():
 
 def expert_fully_shard_modules(model: torch.nn.Module, efsdp_mesh, plan: EPPlanConfig) -> torch.nn.Module:
     efsdp_modules = get_efsdp_modules(model, plan)
-    config = {'mesh': efsdp_mesh,
-              'mp_policy': MixedPrecisionPolicy(param_dtype=torch.bfloat16, reduce_dtype=torch.float32),
-              'shard_placement_fn': get_shard_placement_fn()}
+    config = {
+        'mesh': efsdp_mesh,
+        'mp_policy': MixedPrecisionPolicy(param_dtype=torch.bfloat16, reduce_dtype=torch.float32),
+        'shard_placement_fn': get_shard_placement_fn(),
+    }
 
     for experts in efsdp_modules:
         if isinstance(experts, torch.nn.ModuleList):

@@ -168,7 +168,7 @@ class MultiTokenPredictionBlock(nn.Module):
             )
         hidden_states_main_model = hidden_states
 
-        input_ids, _ = roll_tensor(input_ids, shifts=-1, dims=-1)
+        input_ids = roll_tensor(input_ids, shifts=-1, dims=-1)
         input_embeds = embed_tokens(input_ids)
         if position_embeddings is None:
             position_embeddings = rotary_emb(input_embeds, position_ids, layer_type)
@@ -209,7 +209,7 @@ class MultiTokenPredictionBlock(nn.Module):
             all_mtp_logits.append(mtp_logits)
             if labels is not None:
                 # Calc loss for the current Multi-Token Prediction (MTP) layers.
-                labels, _ = roll_tensor(labels, shifts=-1, dims=-1, fill_value=-100)
+                labels = roll_tensor(labels, shifts=-1, dims=-1, fill_value=-100)
                 mtp_loss = loss_function(mtp_logits, labels, vocab_size=self.config.vocab_size, **kwargs).mean()
                 if all_mtp_loss is None:
                     all_mtp_loss = []
@@ -289,4 +289,4 @@ def roll_tensor(tensor, shifts=-1, dims=-1, fill_value=0):
     """
     rolled_tensor = torch.roll(tensor, shifts=shifts, dims=dims)
     rolled_tensor.select(dims, shifts).fill_(fill_value)
-    return rolled_tensor, rolled_tensor.sum()
+    return rolled_tensor

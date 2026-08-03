@@ -11,7 +11,7 @@ from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
 from torch.distributed.checkpoint.state_dict import get_model_state_dict, StateDictOptions
 
 from mindspeed_llm.fsdp2.distributed.parallel_state import ParallelState
-from mindspeed_llm.fsdp2.distributed.clip_grad_norm import clip_grad_norm
+from mindspeed_llm.fsdp2.optim.clip_grad_norm import clip_grad_norm
 from mindspeed_llm.fsdp2.data.processor.processor_utils import IGNORE_INDEX
 from mindspeed_llm.fsdp2.features.chunkloss import chunk_loss, calculate_lm_loss
 from mindspeed_llm.fsdp2.checkpoint.utils import empty_cache, cleanup_old_checkpoints
@@ -31,6 +31,7 @@ class LossOutput:
     loss: torch.Tensor
     lm_loss_output: torch.Tensor
     mtp_loss_output: torch.Tensor
+    aux_loss_output: torch.Tensor
     outputs: dict | None = None
 
 
@@ -72,12 +73,14 @@ class Trainer:
         self._last_logged_step = 0
         self._total_loss_scalar = 0.0
         self._total_lm_loss_scalar = 0.0
+        self._total_aux_loss_scalar = 0.0
         self._total_mtp_loss_scalar = 0.0
         self._logging_loss_scalar = 0.0
         self._global_step_last_logged = 0
         self._last_logged_loss_scalar = 0.0
         self._last_logged_lm_loss_scalar = 0.0
         self._last_logged_mtp_loss_scalar = 0.0
+        self._last_logged_aux_loss_scalar = 0.0
         self.batch_seqlens = []
 
         # Timing state
@@ -265,6 +268,7 @@ class Trainer:
                 current_step_loss = 0.0
                 current_step_lm_loss = 0.0
                 current_step_mtp_loss = 0.0
+                current_step_aux_loss = 0.0
 
                 # --- Micro-Batch Loop ---
                 for i, inputs in enumerate(batch_samples):
@@ -283,7 +287,7 @@ class Trainer:
                     with sync_context:
                         # Forward & Backward
                         # Note: training_step already divides loss by accum_steps
-                        loss, lm_loss, mtp_loss = self.training_step(inputs, num_items_in_batch)
+                        loss, lm_loss, mtp_loss, aux_loss = self.training_step(inputs, num_items_in_batch)
 
                     # Accumulate Loss for logging (restore to original scale for display)
                     # Check for NaN/Inf to avoid polluting metrics
@@ -293,7 +297,8 @@ class Trainer:
                         current_step_lm_loss += lm_loss.item()
                     if not torch.isnan(mtp_loss) and not torch.isinf(mtp_loss):
                         current_step_mtp_loss += mtp_loss.item()
-
+                    if not torch.isnan(aux_loss) and not torch.isinf(aux_loss):
+                        current_step_aux_loss += aux_loss.item()
                 # --- Optimizer Step (Executed only after accumulation) ---
                 # At this point, the micro-batch loop is finished, gradients are accumulated
 
@@ -319,13 +324,15 @@ class Trainer:
                 # Only perform this when global_step updates.
                 # current_step_loss is sum(micro_batches), conceptually it represents the loss of the mini-batch.
 
-                reduced_loss, reduced_lm_loss, reduced_mtp_loss, reduced_grad_norm = all_reduce(
-                    (current_step_loss, current_step_lm_loss, current_step_mtp_loss, grad_norm), group=reduce_group
+                reduced_loss, reduced_lm_loss, reduced_mtp_loss, reduced_aux_loss, reduced_grad_norm = all_reduce(
+                    (current_step_loss, current_step_lm_loss, current_step_mtp_loss, current_step_aux_loss, grad_norm),
+                    group=reduce_group,
                 )
 
                 self._total_loss_scalar += reduced_loss
                 self._total_lm_loss_scalar += reduced_lm_loss
                 self._total_mtp_loss_scalar += reduced_mtp_loss
+                self._total_aux_loss_scalar += reduced_aux_loss
                 self.batch_seqlens.extend(batch_seqlens)
 
                 # 4. Logging
@@ -343,9 +350,11 @@ class Trainer:
                         self._total_loss_scalar,
                         self._total_lm_loss_scalar,
                         self._total_mtp_loss_scalar,
+                        self._total_aux_loss_scalar,
                         self._last_logged_loss_scalar,
                         self._last_logged_lm_loss_scalar,
                         self._last_logged_mtp_loss_scalar,
+                        self._last_logged_aux_loss_scalar,
                         sparse_attn_reduce_group=reduce_group,
                     )
                     # update record
@@ -354,6 +363,7 @@ class Trainer:
                     self._last_logged_lm_loss_scalar = record_info['logged_lm_loss']
                     self._last_logged_mtp_loss_scalar = record_info['logged_mtp_loss']
                     self._last_logged_step = record_info['logged_step']
+                    self._last_logged_aux_loss_scalar = record_info['logged_aux_loss']
                     self.batch_seqlens.clear()
 
                 # 5. Saving
@@ -466,6 +476,7 @@ class Trainer:
             loss_all.loss = loss_all.loss / self.current_gradient_accumulation_steps
             loss_all.lm_loss_output = loss_all.lm_loss_output / self.current_gradient_accumulation_steps
             loss_all.mtp_loss_output = loss_all.mtp_loss_output / self.current_gradient_accumulation_steps
+            loss_all.aux_loss_output = loss_all.aux_loss_output / self.current_gradient_accumulation_steps
 
         loss = loss_all.loss
         # 3. Clean up inputs to save memory
@@ -482,7 +493,12 @@ class Trainer:
         loss.backward()
 
         # 6. Return detached loss
-        return loss.detach(), loss_all.lm_loss_output.detach(), loss_all.mtp_loss_output.detach()
+        return (
+            loss.detach(),
+            loss_all.lm_loss_output.detach(),
+            loss_all.mtp_loss_output.detach(),
+            loss_all.aux_loss_output.detach(),
+        )
 
     def get_batch_samples_func(self):
         if self.parallel_args.cp_size > 1:
@@ -691,6 +707,11 @@ class Trainer:
             loss_ctx, loss_mask = self._build_chunk_loss(labels, chunk_size=self.optimization_args.chunk_loss_size)
             kwargs['loss_ctx'] = loss_ctx
             kwargs['loss_mask'] = loss_mask
+
+        if args.stage == 'pt' and getattr(args, 'router_aux_loss_coef', 0.0) > 0:
+            # PT keeps labels outside the model, so request router outputs explicitly
+            # and add the returned auxiliary loss below with the external LM loss.
+            kwargs['output_router_logits'] = True
         # Merge inputs without modifying the original dictionary in-place
         model_inputs = {**inputs, **kwargs}
 
@@ -699,15 +720,18 @@ class Trainer:
 
         lm_loss_output = torch.tensor(0.0, device=device, dtype=torch.float32)
         mtp_loss_output = torch.tensor(0.0, device=device, dtype=torch.float32)
+        aux_loss_output = torch.tensor(0.0, device=device, dtype=torch.float32)
+        aux_loss = getattr(outputs, 'aux_loss', None)
+        if isinstance(aux_loss, torch.Tensor):
+            aux_loss_output = aux_loss.clone()
 
         # 3. Extract loss from outputs
         if args.stage == 'pt' and "loss" not in outputs:
             logits = outputs.logits.contiguous().float()
             loss = self._compute_language_model_pretrain_loss(logits, labels, **kwargs)
             lm_loss_output = loss.clone()
-            aux_loss = getattr(outputs, 'aux_loss', None)
-            if aux_loss is not None and isinstance(aux_loss, torch.Tensor):
-                router_aux_loss_coef = getattr(self.model.config, 'router_aux_loss_coef', 0.0)
+            if isinstance(aux_loss, torch.Tensor):
+                router_aux_loss_coef = getattr(args, 'router_aux_loss_coef', 0.0)
                 loss = loss + router_aux_loss_coef * aux_loss.to(loss.device)
         else:
             if isinstance(outputs, dict) and "loss" not in outputs:
@@ -718,7 +742,7 @@ class Trainer:
         if args.stage == 'pt' and getattr(outputs, 'mtp_logits', None) is not None:
             mtp_losses = []
             for one_mtp_logits in outputs.mtp_logits:
-                labels, _ = roll_tensor(labels, fill_value=-100)
+                labels = roll_tensor(labels, fill_value=-100)
                 mtp_loss = self._compute_language_model_pretrain_loss(
                     one_mtp_logits.contiguous().float(), labels, **kwargs
                 )
@@ -750,7 +774,11 @@ class Trainer:
         # 5. Return loss (or tuple of loss + outputs)
         model_outputs = outputs if return_outputs else None
         loss_result = LossOutput(
-            loss=loss, lm_loss_output=lm_loss_output, mtp_loss_output=mtp_loss_output, outputs=model_outputs
+            loss=loss,
+            lm_loss_output=lm_loss_output,
+            mtp_loss_output=mtp_loss_output,
+            aux_loss_output=aux_loss_output,
+            outputs=model_outputs,
         )
         return loss_result
 

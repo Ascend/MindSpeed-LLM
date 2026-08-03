@@ -29,7 +29,6 @@ from transformers.models.deepseek_v4.configuration_deepseek_v4 import DeepseekV4
 from fsdp_turbo.distributed.expert_parallel.utils import fixed_router_for_debug
 from fsdp_turbo.ops.moe import grouped_matmul
 
-
 from mindspeed_llm.fsdp2.models.common.mtp import MultiTokenPredictionBlock, MTPCausalLMOutputWithPast
 from mindspeed_llm.fsdp2.utils.global_vars import get_args
 from mindspeed_llm.fsdp2.distributed.parallel_state import ParallelState
@@ -38,6 +37,14 @@ from mindspeed_llm.fsdp2.models.common.indexer_loss import (
     IndexerLossAutoScaler,
     IndexerLossLoggingHelper,
 )
+from mindspeed_llm.fsdp2.ops.npu_mhc import npu_mhc_post, npu_mhc_pre_sinkhorn
+
+
+def _compression_prefix(kv: torch.Tensor, gate: torch.Tensor, compress_rate: int) -> tuple[torch.Tensor, torch.Tensor]:
+    usable = (kv.shape[1] // compress_rate) * compress_rate
+    if usable == kv.shape[1]:
+        return kv, gate
+    return kv[:, :usable], gate[:, :usable]
 
 
 @use_kernel_forward_from_hub("RMSNorm")
@@ -243,6 +250,9 @@ class DeepseekV4HCACache(DynamicSlidingWindowLayer):
             gate = torch.cat([buffered_gate, gate], dim=1)
         # only return the longest prefix that's a multiple of compress_rate; the rest stays in the buffer for next time
         usable = (kv.shape[1] // self.compress_rate) * self.compress_rate
+        if usable == kv.shape[1]:
+            self.buffer_kv[name], self.buffer_gate[name] = None, None
+            return kv, gate, first_window_position
         self.buffer_kv[name], self.buffer_gate[name] = kv[:, usable:], gate[:, usable:]
         return kv[:, :usable], gate[:, :usable], first_window_position
 
@@ -362,7 +372,11 @@ def apply_rotary_pos_emb(x: torch.Tensor, cos: torch.Tensor, sin: torch.Tensor, 
     sin = sin.repeat_interleave(2, dim=-1).unsqueeze(unsqueeze_dim)
     rope_dim = cos.shape[-1]
     nope, rope = x[..., :-rope_dim], x[..., -rope_dim:]
-    rotated = ((rope.float() * cos) + (rotate_half(rope).float() * sin)).to(x.dtype)
+    args = get_args()
+    if getattr(args, "use_fused_rotary_pos_emb", False) and torch_npu is not None and x.device.type == "npu":
+        rotated = torch_npu.npu_rotary_mul(rope, cos, sin, rotary_mode="interleave")
+    else:
+        rotated = ((rope.float() * cos) + (rotate_half(rope).float() * sin)).to(x.dtype)
     return torch.cat([nope, rotated], dim=-1)
 
 
@@ -413,8 +427,8 @@ class DeepseekV4HCACompressor(nn.Module):
         kv = self.kv_proj(hidden_states.float())
         gate = self.gate_proj(hidden_states.float())
         if cache_layer is None:
-            usable = (kv.shape[1] // self.compress_rate) * self.compress_rate
-            chunk_kv, chunk_gate, first_window_position = kv[:, :usable], gate[:, :usable], 0
+            chunk_kv, chunk_gate = _compression_prefix(kv, gate, self.compress_rate)
+            first_window_position = 0
         else:
             chunk_kv, chunk_gate, first_window_position = cache_layer.store_compression_weights("compressor", kv, gate)
 
@@ -519,8 +533,8 @@ class DeepseekV4Indexer(nn.Module):
         cache_layer: DeepseekV4CSACache = past_key_values.layers[layer_idx] if past_key_values is not None else None
         kv = self.kv_proj(hidden_states)
         cos_q, sin_q = self.rotary_emb(hidden_states, position_ids=position_ids, layer_type=self.rope_layer_type)
-        q = self.q_b_proj(q_residual).view(batch, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
-        q = apply_rotary_pos_emb(q, cos_q, sin_q).transpose(1, 2)
+        q = self.q_b_proj(q_residual).view(batch, seq_len, self.num_heads, self.head_dim)
+        q = apply_rotary_pos_emb(q, cos_q, sin_q, unsqueeze_dim=2)
 
         if args.use_fused_lightning_indexer:
             from mindspeed_llm.fsdp2.ops.npu_lightning_indexer import npu_lightning_indexer
@@ -661,8 +675,8 @@ class DeepseekV4CSACompressor(nn.Module):
         gate = self.gate_proj(hidden_states.float())
 
         if cache_layer is None:
-            usable = (kv.shape[1] // self.compress_rate) * self.compress_rate
-            chunk_kv, chunk_gate, first_window_position = kv[:, :usable], gate[:, :usable], 0
+            chunk_kv, chunk_gate = _compression_prefix(kv, gate, self.compress_rate)
+            first_window_position = 0
         else:
             chunk_kv, chunk_gate, first_window_position = cache_layer.store_compression_weights("compressor", kv, gate)
 
@@ -752,8 +766,10 @@ def eager_attention_forward(
     dropout: float | int = 0.0,
     **kwargs,
 ):
-    key_states = repeat_kv(key, module.num_key_value_groups)
-    value_states = repeat_kv(value, module.num_key_value_groups)
+    # V4 has one shared KV head. Matmul broadcasts it across query heads without
+    # materializing num_attention_heads copies of the same K/V tensor.
+    key_states = key
+    value_states = value
     attn_weights = torch.matmul(query, key_states.transpose(2, 3)) * scaling
     if attention_mask is not None:
         attn_weights = attn_weights + attention_mask
@@ -769,7 +785,7 @@ def eager_attention_forward(
     scores = probs[..., :-1]  # we drop the sink here
     attn_weights = nn.functional.dropout(scores, p=dropout, training=module.training).to(value_states.dtype)
     attn_output = torch.matmul(attn_weights, value_states)
-    attn_output = attn_output.transpose(1, 2).contiguous()
+    attn_output = attn_output.transpose(1, 2)
     return attn_output, attn_weights
 
 
@@ -844,7 +860,7 @@ class DeepseekV4Attention(nn.Module):
         **kwargs: Unpack[FlashAttentionKwargs],
     ) -> tuple[torch.Tensor, torch.Tensor | None]:
         input_shape = hidden_states.shape[:-1]
-        hidden_shape = (*input_shape, -1, self.head_dim)
+        hidden_shape_bsnd = (*input_shape, self.num_heads, self.head_dim)
         # position_embeddings is a {"main", "compress"} dict from the model; pick the
         # one that matches this layer's rope type (sliding → main, CSA/HCA → compress).
         # cos, sin = position_embeddings[self.rope_layer_type]
@@ -855,11 +871,11 @@ class DeepseekV4Attention(nn.Module):
             cos, sin = position_embeddings
 
         q_residual = self.q_a_norm(self.q_a_proj(hidden_states))
-        q = self.q_b_proj(q_residual).view(*hidden_shape).transpose(1, 2)
+        q = self.q_b_proj(q_residual).view(*hidden_shape_bsnd)
         q = self.q_b_norm(q)
-        q = apply_rotary_pos_emb(q, cos, sin)
+        q = apply_rotary_pos_emb(q, cos, sin, unsqueeze_dim=2)
 
-        kv = self.kv_norm(self.kv_proj(hidden_states)).view(*hidden_shape).transpose(1, 2)
+        kv = self.kv_norm(self.kv_proj(hidden_states)).view(*input_shape, 1, self.head_dim).transpose(1, 2)
         kv = apply_rotary_pos_emb(kv, cos, sin)
 
         if past_key_values is not None:  # sliding where K==V
@@ -892,6 +908,7 @@ class DeepseekV4Attention(nn.Module):
             attn_weights = None
         else:
             # dense fallback: concat the compressed KV and extend the additive mask
+            q_eager = q.transpose(1, 2)
             kv_full = kv if compressed_kv is None else torch.cat([kv, compressed_kv], dim=2)
             if isinstance(attention_mask, torch.Tensor) and kv_full.shape[2] > attention_mask.shape[-1]:
                 if block_bias is not None:
@@ -903,7 +920,7 @@ class DeepseekV4Attention(nn.Module):
             )
             attn_output, attn_weights = attention_interface(
                 self,
-                q,
+                q_eager,
                 kv_full,
                 kv_full,
                 attention_mask,
@@ -915,14 +932,15 @@ class DeepseekV4Attention(nn.Module):
             )
 
         if needs_indexer_loss and not fuse_indexer_loss:
-            indexer_loss = self._compute_indexer_kl_loss(q, compressed_kv, index_scores, top_k_indices)
+            q_for_indexer_loss = q.transpose(1, 2)
+            indexer_loss = self._compute_indexer_kl_loss(q_for_indexer_loss, compressed_kv, index_scores, top_k_indices)
             IndexerLossLoggingHelper.save_loss_to_tracker(indexer_loss)
             attn_output = IndexerLossAutoScaler.apply(attn_output, indexer_loss)
 
         # K=V in V4, so V picked up rope on its trailing rope slice. Apply the conjugate
         # rotation (-sin) at the query position to undo it before the grouped output
         # projection mixes heads.
-        attn_output = apply_rotary_pos_emb(attn_output.transpose(1, 2), cos, -sin).transpose(1, 2)
+        attn_output = apply_rotary_pos_emb(attn_output, cos, -sin, unsqueeze_dim=2)
 
         grouped = attn_output.reshape(*input_shape, self.config.o_groups, -1)
         grouped = self.o_a_proj(grouped).flatten(2)
@@ -968,8 +986,9 @@ class DeepseekV4Attention(nn.Module):
         """
         from mindspeed_llm.fsdp2.ops.npu_sparse_flash_mla import npu_sparse_flash_mla
 
-        q_in = q.transpose(1, 2).contiguous()  # [B,N,S,D] -> [B,S,N,D]
-        ori_kv = kv.transpose(1, 2).contiguous()  # [B,1,S,D] -> [B,S,1,D]
+        q_in = q if q.is_contiguous() else q.contiguous()  # [B,N,S,D] -> [B,S,N,D]
+        ori_kv = kv.transpose(1, 2)  # [B,1,S,D] -> [B,S,1,D]
+        ori_kv = ori_kv if ori_kv.is_contiguous() else ori_kv.contiguous()
         has_cmp = compressed_kv is not None and self.compress_ratio > 1
         cmp_kv = compressed_kv.transpose(1, 2).contiguous() if has_cmp else None  # [B,1,T,D]->[B,T,1,D]
         cmp_idx = (
@@ -999,9 +1018,13 @@ class DeepseekV4Attention(nn.Module):
         )
 
         args = get_args()
-        q_in = q.transpose(1, 2).contiguous()  # [B,N,S,512] -> [B,S,N,512]
-        ori_kv = kv.transpose(1, 2).contiguous()  # [B,1,S,512] -> [B,S,1,512]
-        cmp_kv = compressed_kv.transpose(1, 2).contiguous()  # [B,1,T,512] -> [B,T,1,512]
+        q_in = q if q.is_contiguous() else q.contiguous()  # [B,N,S,512] -> [B,S,N,512]
+
+        ori_kv = kv.transpose(1, 2)  # [B,1,S,512] -> [B,S,1,512]
+        ori_kv = ori_kv if ori_kv.is_contiguous() else ori_kv.contiguous()
+
+        cmp_kv = compressed_kv.transpose(1, 2)  # [B,1,T,512] -> [B,T,1,512]
+        cmp_kv = cmp_kv if cmp_kv.is_contiguous() else cmp_kv.contiguous()
 
         return npu_sparse_flash_mla_with_indexer_loss(
             q_in,
@@ -1064,6 +1087,11 @@ class DeepseekV4HyperConnection(nn.Module):
         self.hc_mult = config.hc_mult
         self.hc_sinkhorn_iters = config.hc_sinkhorn_iters
         self.hc_eps = config.hc_eps
+        self.use_ascend_mhc = get_args().use_ascend_mhc
+        if self.use_ascend_mhc and self.hc_mult != 4:
+            raise ValueError("Ascend fused MHC currently only supports hc_mult=4.")
+        if self.use_ascend_mhc and self.hc_sinkhorn_iters != 20:
+            raise ValueError("Ascend fused MHC currently only supports hc_sinkhorn_iters=20.")
         self.input_norm = DeepseekV4UnweightedRMSNorm(eps=config.rms_norm_eps)
         mix = (2 + self.hc_mult) * self.hc_mult
         self.fn = nn.Parameter(torch.empty(mix, self.hc_mult * config.hidden_size))
@@ -1084,6 +1112,20 @@ class DeepseekV4HyperConnection(nn.Module):
         into the sublayer); `post` and `comb` are returned for the caller to
         apply on the sublayer output.
         """
+        if self.use_ascend_mhc:
+            if hidden_streams.device.type != "npu":
+                raise RuntimeError("Ascend fused MHC requires hidden_streams on an NPU device.")
+            return npu_mhc_pre_sinkhorn(
+                hidden_streams,
+                self.fn,
+                self.scale,
+                self.base,
+                self.hc_mult,
+                self.hc_sinkhorn_iters,
+                self.hc_eps,
+                self.input_norm.eps,
+            )
+
         hc = self.hc_mult
         flat = self.input_norm(hidden_streams.flatten(start_dim=2).float())
         pre_w, post_w, comb_w = F.linear(flat, self.fn.float()).split([hc, hc, hc * hc], dim=-1)
@@ -1135,11 +1177,19 @@ class DeepseekV4MLP(nn.Module):
         self.down_proj = nn.Linear(self.intermediate_size, self.hidden_size, bias=config.mlp_bias)
         self.act_fn = ACT2FN[config.hidden_act]
         self.limit = config.swiglu_limit
+        self.use_triton_swiglu_limit = get_args().use_triton_swiglu_limit
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        gate = self.gate_proj(x).clamp(max=self.limit)
-        up = self.up_proj(x).clamp(min=-self.limit, max=self.limit)
-        return self.down_proj(self.act_fn(gate) * up)
+        if self.use_triton_swiglu_limit:
+            from mindspeed_llm.fsdp2.ops.triton_swiglu_with_limit import triton_swiglu_with_limit
+
+            gate_up = torch.cat((self.gate_proj(x), self.up_proj(x)), dim=-1)
+            activation = triton_swiglu_with_limit(gate_up, self.limit)
+        else:
+            gate = self.gate_proj(x).clamp(max=self.limit)
+            up = self.up_proj(x).clamp(min=-self.limit, max=self.limit)
+            activation = self.act_fn(gate) * up
+        return self.down_proj(activation)
 
 
 class DeepseekV4Experts(nn.Module):
@@ -1155,6 +1205,7 @@ class DeepseekV4Experts(nn.Module):
         self.act_fn = ACT2FN[config.hidden_act]
         self.limit = config.swiglu_limit
         self.args = get_args()
+        self.use_triton_swiglu_limit = self.args.use_triton_swiglu_limit
 
     def forward(
         self, hidden_states: torch.Tensor, top_k_index: torch.Tensor, top_k_weights: torch.Tensor
@@ -1182,6 +1233,10 @@ class DeepseekV4Experts(nn.Module):
         # Lives on the class (like gpt-oss's _apply_gate) so the grouped_mm / batched_mm
         # backends swapped in by `@use_experts_implementation` apply the same clamp +
         # SiLU on top of their packed gate_up output instead of bypassing it.
+        if self.use_triton_swiglu_limit:
+            from mindspeed_llm.fsdp2.ops.triton_swiglu_with_limit import triton_swiglu_with_limit
+
+            return triton_swiglu_with_limit(gate_up, self.limit)
         gate, up = gate_up.chunk(2, dim=-1)
         gate = gate.clamp(max=self.limit)
         up = up.clamp(min=-self.limit, max=self.limit)
@@ -1196,12 +1251,14 @@ class DeepseekV4Experts(nn.Module):
         tokens_per_expert = torch.histc(topk_indices, bins=self.num_experts, min=0, max=self.num_experts).long()
 
         fc1_output = grouped_matmul(permuted_tokens, tokens_per_expert, gate_up_proj)
-        gate, up = fc1_output.chunk(2, dim=-1)
-        gate = gate.clamp(max=self.limit)
-        up = up.clamp(min=-self.limit, max=self.limit)
-        combined = torch.cat((gate, up), dim=-1)
-
-        fc1_activation = torch_npu.npu_swiglu(combined, dim=-1)
+        if self.use_triton_swiglu_limit:
+            fc1_activation = self._apply_gate(fc1_output)
+        else:
+            gate, up = fc1_output.chunk(2, dim=-1)
+            gate = gate.clamp(max=self.limit)
+            up = up.clamp(min=-self.limit, max=self.limit)
+            combined = torch.cat((gate, up), dim=-1)
+            fc1_activation = torch_npu.npu_swiglu(combined, dim=-1)
         fc2_output = grouped_matmul(fc1_activation, tokens_per_expert, down_proj)
 
         output = torch_npu.npu_moe_token_unpermute(fc2_output, row_ids_map, probs=topk_weights)
@@ -1323,12 +1380,17 @@ class DeepseekV4DecoderLayer(GradientCheckpointingLayer):
         dtype = hidden_states.dtype
         post, comb, collapsed = self.attn_hc(hidden_states)
         attn_output, _ = self.self_attn(self.input_layernorm(collapsed), **kwargs)
-        hidden_states = post.to(dtype).unsqueeze(-1) * attn_output.unsqueeze(-2) + torch.matmul(
-            comb.to(dtype).transpose(-1, -2), hidden_states
-        )
+        if self.attn_hc.use_ascend_mhc:
+            hidden_states = npu_mhc_post(attn_output, hidden_states, post, comb).to(dtype)
+        else:
+            hidden_states = post.to(dtype).unsqueeze(-1) * attn_output.unsqueeze(-2) + torch.matmul(
+                comb.to(dtype).transpose(-1, -2), hidden_states
+            )
 
         post, comb, collapsed = self.ffn_hc(hidden_states)
         mlp_output = self.mlp(self.post_attention_layernorm(collapsed), input_ids=input_ids)
+        if self.ffn_hc.use_ascend_mhc:
+            return npu_mhc_post(mlp_output, hidden_states, post, comb).to(dtype)
         return post.to(dtype).unsqueeze(-1) * mlp_output.unsqueeze(-2) + torch.matmul(
             comb.to(dtype).transpose(-1, -2), hidden_states
         )
@@ -1476,13 +1538,16 @@ class DeepseekV4Model(DeepseekV4PreTrainedModel):
     ) -> MoeModelOutputWithPast:
         if (input_ids is None) ^ (inputs_embeds is not None):
             raise ValueError("You must specify exactly one of input_ids or inputs_embeds")
-        return_cache = past_key_values if use_cache else None
-        if past_key_values is None:
+
+        use_cache = bool(use_cache) and not self.training
+        if not use_cache:
+            past_key_values = None
+        elif past_key_values is None:
             past_key_values = DynamicCache(config=self.config)
         if inputs_embeds is None:
             inputs_embeds = self.embed_tokens(input_ids)
         if position_ids is None:
-            past_seen = past_key_values.get_seq_length()
+            past_seen = past_key_values.get_seq_length() if past_key_values is not None else 0
             position_ids = torch.arange(inputs_embeds.shape[1], device=inputs_embeds.device) + past_seen
             position_ids = position_ids.unsqueeze(0)
             # `generate()` may pass a per-layer-type mask dict already built by
@@ -1517,11 +1582,15 @@ class DeepseekV4Model(DeepseekV4PreTrainedModel):
 
         hc_head_output = self.hc_head(hidden_states)
 
-        return MoeModelOutputWithPast(last_hidden_state=hc_head_output, past_key_values=return_cache)
+        return MoeModelOutputWithPast(
+            last_hidden_state=hc_head_output,
+            past_key_values=past_key_values if use_cache else None,
+        )
 
 
 def load_balancing_loss_func(
     gate_logits: torch.Tensor | tuple[torch.Tensor] | None,
+    num_hidden_layers: int | None = None,
     num_experts: int | None = None,
     top_k=2,
     attention_mask: torch.Tensor | None = None,
@@ -1552,53 +1621,38 @@ def load_balancing_loss_func(
     if gate_logits is None or not isinstance(gate_logits, tuple):
         return 0
 
-    if isinstance(gate_logits, tuple):
-        compute_device = gate_logits[0].device
-        concatenated_gate_logits = torch.cat([layer_gate.to(compute_device) for layer_gate in gate_logits], dim=0)
+    compute_device = gate_logits[0].device
+    concatenated_gate_logits = torch.cat([layer_gate.to(compute_device) for layer_gate in gate_logits], dim=0)
 
     routing_weights = torch.nn.functional.softmax(concatenated_gate_logits, dim=-1)  # pylint:disable=E0606
 
     _, selected_experts = torch.topk(routing_weights, top_k, dim=-1)
-
-    expert_mask = torch.nn.functional.one_hot(selected_experts, num_experts)
+    num_experts = num_experts or routing_weights.shape[-1]
 
     if attention_mask is None:
-        # Compute the percentage of tokens routed to each experts
-        tokens_per_expert = torch.mean(expert_mask.float(), dim=0)
+        token_weights = torch.ones(selected_experts.shape[0], device=compute_device, dtype=torch.float32)
 
-        # Compute the average probability of routing to these experts
         router_prob_per_expert = torch.mean(routing_weights, dim=0)
     else:
-        batch_size, sequence_length = attention_mask.shape
-        num_hidden_layers = concatenated_gate_logits.shape[0] // (batch_size * sequence_length)
-
-        # Compute the mask that masks all padding tokens as 0 with the same shape of expert_mask
-        expert_attention_mask = (
-            attention_mask[None, :, :, None, None]
-            .expand((num_hidden_layers, batch_size, sequence_length, top_k, num_experts))
-            .reshape(-1, top_k, num_experts)
-            .to(compute_device)
+        token_weights = (
+            attention_mask.to(device=compute_device, dtype=torch.float32)
+            .reshape(1, -1)
+            .expand(num_hidden_layers, -1)
+            .reshape(-1)
+        )
+        router_token_weights = token_weights.to(routing_weights.dtype)
+        router_prob_per_expert = (
+            torch.sum(routing_weights * router_token_weights.unsqueeze(-1), dim=0) / router_token_weights.sum()
         )
 
-        # Compute the percentage of tokens routed to each experts
-        tokens_per_expert = torch.sum(expert_mask.float() * expert_attention_mask, dim=0) / torch.sum(
-            expert_attention_mask, dim=0
-        )
-
-        # Compute the mask that masks all padding tokens as 0 with the same shape of tokens_per_expert
-        router_per_expert_attention_mask = (
-            attention_mask[None, :, :, None]
-            .expand((num_hidden_layers, batch_size, sequence_length, num_experts))
-            .reshape(-1, num_experts)
-            .to(compute_device)
-        )
-
-        # Compute the average probability of routing to these experts
-        router_prob_per_expert = torch.sum(routing_weights * router_per_expert_attention_mask, dim=0) / torch.sum(
-            router_per_expert_attention_mask, dim=0
-        )
-
-    overall_loss = torch.sum(tokens_per_expert * router_prob_per_expert.unsqueeze(0))
+    expert_counts = torch.zeros(num_experts, device=compute_device, dtype=torch.float32)
+    expert_counts.scatter_add_(
+        0,
+        selected_experts.reshape(-1),
+        token_weights.unsqueeze(-1).expand_as(selected_experts).reshape(-1),
+    )
+    tokens_per_expert = expert_counts / token_weights.sum()
+    overall_loss = torch.sum(tokens_per_expert * router_prob_per_expert)
     return overall_loss * num_experts
 
 
@@ -1618,6 +1672,8 @@ class DeepseekV4ForCausalLM(DeepseekV4PreTrainedModel, GenerationMixin):
         self.router_aux_loss_coef = config.router_aux_loss_coef
         self.num_experts = config.num_local_experts
         self.num_experts_per_tok = config.num_experts_per_tok
+        self.num_hidden_layers = config.num_hidden_layers
+        self.has_topk_router = any(isinstance(layer.mlp.gate, DeepseekV4TopKRouter) for layer in self.model.layers)
 
         self.mtp = MultiTokenPredictionBlock(config, DeepseekV4DecoderLayer, DeepseekV4RMSNorm)
         self.norm = DeepseekV4RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
@@ -1684,18 +1740,12 @@ class DeepseekV4ForCausalLM(DeepseekV4PreTrainedModel, GenerationMixin):
         # Only compute necessary logits, and do not upcast them to float if we are not computing the loss
         slice_indices = slice(-logits_to_keep, None) if isinstance(logits_to_keep, int) else logits_to_keep
 
-        # Build causal_mask for MTP layer (same logic as DeepseekV4Model.forward)
-        if inputs_embeds is None and input_ids is not None:
-            inputs_embeds_for_mtp = self.model.embed_tokens(input_ids)
-        else:
-            inputs_embeds_for_mtp = inputs_embeds
-
         if isinstance(attention_mask, dict):
             causal_mask_for_mtp = next(iter(attention_mask.values()))
         else:
             causal_mask_for_mtp = create_sliding_window_causal_mask(
                 config=self.config,
-                inputs_embeds=inputs_embeds_for_mtp,
+                inputs_embeds=hidden_states,
                 attention_mask=attention_mask,
                 past_key_values=outputs.past_key_values,
                 position_ids=position_ids,
@@ -1709,7 +1759,7 @@ class DeepseekV4ForCausalLM(DeepseekV4PreTrainedModel, GenerationMixin):
             attention_mask=causal_mask_for_mtp,
             position_ids=position_ids,
             past_key_values=outputs.past_key_values,
-            use_cache=use_cache,
+            use_cache=outputs.past_key_values is not None,
             position_embeddings=None,
             embed_tokens=self.model.embed_tokens,
             rotary_emb=self.model.rotary_emb,
@@ -1732,13 +1782,21 @@ class DeepseekV4ForCausalLM(DeepseekV4PreTrainedModel, GenerationMixin):
                 loss = self.loss_function(logits=logits, labels=labels, vocab_size=self.config.vocab_size, **kwargs)
                 logits = None
 
-        if labels is not None and output_router_logits:
-            aux_loss = load_balancing_loss_func(
-                outputs.router_logits,
-                self.num_experts,
-                self.num_experts_per_tok,
-                attention_mask,
-            )
+        if output_router_logits:
+            if outputs.router_logits:
+                aux_loss = load_balancing_loss_func(
+                    outputs.router_logits,
+                    self.num_hidden_layers,
+                    self.num_experts,
+                    self.num_experts_per_tok,
+                    attention_mask,
+                )
+            elif self.has_topk_router:
+                raise RuntimeError("output_router_logits=True, but no DeepSeek-V4 TopK router logits were captured")
+            else:
+                # HashRouter dispatch is fixed by tid2eid rather than logits top-k,
+                # so an all-hash model has no compatible load-balancing objective.
+                aux_loss = hidden_states.new_zeros((), dtype=torch.float32)
             if loss is not None:
                 loss += self.router_aux_loss_coef * aux_loss.to(loss.device)
 
@@ -1753,6 +1811,7 @@ class DeepseekV4ForCausalLM(DeepseekV4PreTrainedModel, GenerationMixin):
             aux_loss=aux_loss,
             hidden_states=outputs.hidden_states,
             attentions=outputs.attentions,
+            router_logits=outputs.router_logits,
         )
 
 

@@ -479,7 +479,7 @@ class TrainingArguments:
         default=True, metadata={"help": "Enable deterministic computation for reproducible training results."}
     )
     # --- Optimization ---
-    optimizer: Literal["adamw", "muon"] = field(
+    optimizer: Literal["adamw", "muon", "fused_adamw"] = field(
         default="adamw",
         metadata={"help": "Optimizer. Default to adamw."},
     )
@@ -513,6 +513,14 @@ class TrainingArguments:
         metadata={"help": "Whether or not to disable the shuffling of the training set."},
     )
     seed: int = field(default=42, metadata={"help": "Random seed that will be set at the beginning of training."})
+    indexer_loss_coeff: float = field(
+        default=1.0,
+        metadata={"help": "Loss coefficient for DSA indexer KL loss."},
+    )
+    router_aux_loss_coef: float = field(
+        default=0.0,
+        metadata={"help": "Loss coefficient for DSA indexer KL loss."},
+    )
 
     # --- IO & Logging ---
     save_steps: int = field(default=500, metadata={"help": "Save checkpoint every X updates steps."})
@@ -627,6 +635,8 @@ class TrainingArguments:
     def __post_init__(self):  # Path parameter validation
         if self.output_dir is None:
             raise ValueError("`output_dir` must be specified.")
+        if self.router_aux_loss_coef is not None and self.router_aux_loss_coef < 0:
+            raise ValueError("`router_aux_loss_coef` must be >= 0")
         if self.profile:
             if self.profile_step_start < 0:
                 raise ValueError("`profile_step_start` must be >= 0")
@@ -684,9 +694,13 @@ class OptimizationArguments:
         default=False,
         metadata={"help": "Use fused NPU sparse lightning indexer KL loss."},
     )
-    indexer_loss_coeff: float = field(
-        default=1.0,
-        metadata={"help": "Loss coefficient for DSA indexer KL loss."},
+    use_ascend_mhc: bool = field(
+        default=False,
+        metadata={"help": "Use Ascend fused operators for DeepSeek-V4 MHC pre/post."},
+    )
+    use_triton_swiglu_limit: bool = field(
+        default=False,
+        metadata={"help": "Use the Triton Ascend SwiGLU-with-limit kernel."},
     )
     pre_tokens: int = field(
         default=1048576,
@@ -784,6 +798,14 @@ def _validate_cross_args(args):
         raise ValueError(
             f"{', '.join(enabled_dsa_fusions)} only support DeepSeek-V3.2 and GLM-5 series models, "
             f"but got model_id='{model_id or None}'."
+        )
+
+    if args.optimization.use_ascend_mhc and model_id != "deepseek_v4":
+        raise ValueError(f"use_ascend_mhc only supports model_id='deepseek_v4', but got model_id='{model_id or None}'.")
+
+    if args.optimization.use_triton_swiglu_limit and model_id != "deepseek_v4":
+        raise ValueError(
+            f"use_triton_swiglu_limit only supports model_id='deepseek_v4', but got model_id='{model_id or None}'."
         )
 
 
