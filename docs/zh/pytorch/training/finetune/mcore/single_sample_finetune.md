@@ -61,11 +61,11 @@
     首先需要修改脚本中的以下参数配置：
 
     ```bash
-    --load-dir ./model_from_hf/qwen3_hf/    # HF权重路径
-    --save-dir ./model_weights/qwen3_mcore/ # Megatron权重保存路径
+    --load-dir ./model_from_hf/qwen3_hf/                      # HF权重路径
+    --save-dir ./model_weights/qwen3_mcore/                   # Megatron权重保存路径
     --tokenizer-model ./model_from_hf/qwen3_hf/tokenizer.json # HF的tokenizer路径
-    --target-tensor-parallel-size 1   # TP切分大小
-    --target-pipeline-parallel-size 4 # PP切分大小
+    --target-tensor-parallel-size 1                           # TP切分大小
+    --target-pipeline-parallel-size 4                         # PP切分大小
     ```
 
     然后，确认路径无误后运行权重转换脚本：

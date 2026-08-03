@@ -71,7 +71,7 @@ step_time = computation_time
 
 ## 性能数据采集
 
-详细参数见[性能数据采集](../tools/profiling.md)。官方工具的采集方式和适用场景请参考《性能问题通用定位指南》中的[性能工具的使用](https://www.hiascend.com/document/detail/zh/mindstudio/latest/practicalcases/GeneralPerformanceIssue/MindStudio/26.0.0/cases/general_performance_issue_troubleshooting_guide/performance_tool_usage.md)章节。
+详细参数见[性能数据采集](../tools/profiling.md)。官方工具的采集方式和适用场景请参考《性能问题通用定位指南》中的“[性能工具的使用](https://www.hiascend.com/document/detail/zh/mindstudio/2610/practicalcases/GeneralPerformanceIssue/MindStudio/26.1.0/zh/cases/general_performance_issue_troubleshooting_guide/performance_tool_usage.md)”章节。
 
 ### 采集方式选择
 
@@ -129,7 +129,7 @@ torchrun ${DISTRIBUTED_ARGS} train_fsdp2.py ${CONFIG_YAML} \
   --training.profile_save_path ./profile_fsdp2_deep
 ```
 
-这些开关会增加采集开销和结果体积。采集结果可导入 [MindStudio Insight](https://www.hiascend.com/document/detail/zh/mindstudio/latest/GUI_baseddevelopmenttool/MindStudioInsight/docs/zh/user_guide/overview.md) 查看 Timeline、Operator、Communication 和 Memory。
+这些开关会增加采集开销和结果体积。采集结果可导入 [MindStudio Insight](https://www.hiascend.com/document/detail/zh/mindstudio/2610/GUI_baseddevelopmenttool/MindStudioInsight/docs/zh/user_guide/overview.md) 查看 Timeline、Operator、Communication 和 Memory。
 
 ### 性能数据文件结构
 
@@ -194,7 +194,7 @@ PyTorch 训练数据支持导入以 `_ascend_pt` 结尾的性能数据目录。�
 | 6 | Overlap Analysis（覆盖分析） | 将 Ascend Hardware 的计算、通信任务垂直投影，得到计算、通信和空闲时间的拆分 |
 | 7 | Stats System View（统计视图） | 单卡维度统计汇总信息，可通过左侧“卡序号”下拉框切换不同卡 |
 
-上表列出了定位过程中最常用的 Timeline 泳道。每条泳道可展开查看具体细节，完整界面介绍参见 [MindStudio Insight 时间线](https://gitcode.com/Ascend/msinsight/blob/master/docs/zh/user_guide/system_tuning.md#%E6%97%B6%E9%97%B4%E7%BA%BF%EF%BC%88timeline%EF%BC%89)。
+上表列出了定位过程中最常用的 Timeline 泳道。每条泳道可展开查看具体细节，完整界面介绍参见 [MindStudio Insight 时间线](https://www.hiascend.com/document/detail/zh/mindstudio/2610/GUI_baseddevelopmenttool/MindStudioInsight/docs/zh/user_guide/system_tuning.md#%E6%97%B6%E9%97%B4%E7%BA%BFtimeline)。
 
 **图 2**  泳道展开后的详细信息
 
@@ -298,12 +298,12 @@ PyTorch 训练数据支持导入以 `_ascend_pt` 结尾的性能数据目录。�
 
 ### 算子计算瓶颈
 
-1. 定位热点算子：在 [MindStudio Insight](https://www.hiascend.com/document/detail/zh/mindstudio/latest/GUI_baseddevelopmenttool/MindStudioInsight/docs/zh/user_guide/overview.md) 的 Operator 页签中按总耗时排序，结合调用次数、单次平均耗时、shape 和 dtype，识别总耗时较高或调用过于频繁的算子，分析是否可进一步优化计算逻辑。
+1. 定位热点算子：在 [MindStudio Insight](https://www.hiascend.com/document/detail/zh/mindstudio/2610/GUI_baseddevelopmenttool/MindStudioInsight/docs/zh/user_guide/overview.md) 的 Operator 页签中按总耗时排序，结合调用次数、单次平均耗时、shape 和 dtype，识别总耗时较高或调用过于频繁的算子，分析是否可进一步优化计算逻辑。
 2. 评估融合机会：对于已经完成模型代码适配的热点算子，优先评估 Flash Attention、Fused RMSNorm、Fused RoPE、MoE GroupedMatMul、fused dispatcher 以及模型专用融合算子。启用后需对比端到端 step 耗时、Kernel 数量、峰值显存和精度结果，确认实际收益。
 
 **常见计算优化案例**
 
-更新详细信息请参考[算子性能问题优化方案](https://gitcode.com/Ascend/docs/blob/master/MindStudio/26.1.0/zh/cases/general_performance_issue_troubleshooting_guide/solution_to_top2.md)。
+更新详细信息请参考[算子性能问题优化方案](https://www.hiascend.com/document/detail/zh/mindstudio/2610/practicalcases/GeneralPerformanceIssue/MindStudio/26.1.0/zh/cases/general_performance_issue_troubleshooting_guide/solution_to_top2.md)。
 
 **表 1**  常见优化案例
 
@@ -329,7 +329,7 @@ PyTorch 训练数据支持导入以 `_ascend_pt` 结尾的性能数据目录。�
 
 **Host Bound 简介**
 
-在 TorchNPU 训练场景中，Host 侧（CPU）的算子调度、内存分配和任务下发与 Device 侧（NPU）的任务执行异步进行。当 Host 侧任务下发速度低于 Device 侧执行速度时，Device 会因等待新任务而进入空闲状态，形成 Host Bound。详细定位方法可参考[Host Bound 问题分析](https://gitcode.com/Ascend/docs/blob/master/MindStudio/26.1.0/zh/cases/general_performance_issue_troubleshooting_guide/solution_to_top3.md)。
+在 TorchNPU 训练场景中，Host 侧（CPU）的算子调度、内存分配和任务下发与 Device 侧（NPU）的任务执行异步进行。当 Host 侧任务下发速度低于 Device 侧执行速度时，Device 会因等待新任务而进入空闲状态，形成 Host Bound。详细定位方法可参考[Host Bound问题定位及解决方法](https://www.hiascend.com/document/detail/zh/mindstudio/2610/practicalcases/GeneralPerformanceIssue/MindStudio/26.1.0/zh/cases/general_performance_issue_troubleshooting_guide/solution_to_top3.md)。
 
 **典型表现**
 
@@ -373,7 +373,7 @@ export TASK_QUEUE_ENABLE=2
 
 - 启用 `ASCEND_LAUNCH_BLOCKING=1` 时会强制关闭任务队列，使 `TASK_QUEUE_ENABLE` 配置失效。
 - `TASK_QUEUE_ENABLE=2` 会提高内存访问并发度，可能增加运行期间的 NPU 峰值显存。
-- 详细配置参见 [`TASK_QUEUE_ENABLE`](https://gitcode.com/Ascend/pytorch/blob/master/docs/zh/api/environment_variable/op_execution/TASK_QUEUE_ENABLE.md)。
+- 详细配置参见 [`TASK_QUEUE_ENABLE`](https://www.hiascend.com/document/detail/zh/Pytorch/2610/apiref/ENV/docs/zh/environment_variable_reference/TASK_QUEUE_ENABLE.md)。
 
 **CPU 绑核优化**
 
@@ -387,7 +387,7 @@ export CPU_AFFINITY_CONF=<mode>,npu<value1>:<value2>-<value3>
 - `mode=1`：粗粒度绑核，将单张 NPU 卡关联的所有线程绑定到指定 CPU 核心区间。
 - `mode=2`：细粒度绑核，将单张 NPU 卡关联的主要线程分别绑定到独立 CPU 核心。
 - `npu<value1>:<value2>-<value3>`：为指定 NPU 卡设置 CPU 核心区间，仅在 `mode` 不为 `0` 时生效。
-- 详细配置参见 [`CPU_AFFINITY_CONF`](https://gitcode.com/Ascend/pytorch/blob/master/docs/zh/api/environment_variable/performance_tuning/CPU_AFFINITY_CONF.md)。
+- 详细配置参见 [`CPU_AFFINITY_CONF`](https://www.hiascend.com/document/detail/zh/Pytorch/2610/apiref/ENV/docs/zh/environment_variable_reference/CPU_AFFINITY_CONF.md)。
 
 **配置示例**
 

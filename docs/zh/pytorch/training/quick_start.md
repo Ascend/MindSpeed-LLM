@@ -23,7 +23,7 @@
 
 ## 环境准备
 
-请单击[MindSpeed快速安装](https://www.hiascend.com/developer/software/mindspeed)根据引导进行环境搭建，详细安装说明请参考[MindSpeed LLM安装指导](install_guide.md)。
+请单击[MindSpeed快速安装](https://www.hiascend.com/developer/software/mindspeed/download)根据引导进行环境搭建，详细安装说明请参考[MindSpeed LLM安装指导](install_guide.md)。
 
 ## 权重和数据集准备
 

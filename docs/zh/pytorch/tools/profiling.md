@@ -139,7 +139,7 @@ localhost.localdomain_3687609_20260129150104894_ascend_pt
 
 ## 可视化性能分析
 
-以MindStudio Insight工具为例，对采集到的profiling进行分析，请参考[MindStudio Insight安装指南](https://gitcode.com/Ascend/msinsight/blob/26.1.0/docs/zh/install_guide/mindstudio_insight_install_guide.md)进行工具部署，然后将生成的profiling文件导入到工具中，进行性能的拆解分析。
+以MindStudio Insight工具为例，对采集到的profiling进行分析，请参考[MindStudio Insight安装指南](https://www.hiascend.com/document/detail/zh/mindstudio/2610/GUI_baseddevelopmenttool/MindStudioInsight/docs/zh/install_guide/mindstudio_insight_install_guide.md)进行工具部署，然后将生成的profiling文件导入到工具中，进行性能的拆解分析。
 
 在这里我们简单介绍MindStudio Insight工具主要使用的几个界面：
 
@@ -163,5 +163,5 @@ localhost.localdomain_3687609_20260129150104894_ascend_pt
 
 > [!NOTE]
 >
-> - 如果想要更多了解工具的使用方法，可以参考MindStudio Insight官方文档中的[MindStudio Insight系统调优](https://gitcode.com/Ascend/msinsight/blob/26.1.0/docs/zh/user_guide/system_tuning.md#%E5%9F%BA%E7%A1%80%E5%8A%9F%E8%83%BD)。
-> - 如果您希望更加定制化的profiling采集方式，可参考《CANN性能调优工具用户指南》中的“性能数据采集和自动解析”章节<!--“[性能数据采集和自动解析](https://www.hiascend.com/document/detail/zh/canncommercial/900/devaids/Profiling/atlasprofiling_16_0033.html)”章节-->，通过修改采集代码进行自定义采集和拆解分析。
+> - 如果想要更多了解工具的使用方法，可以参考MindStudio Insight官方文档中的[MindStudio Insight系统调优](https://www.hiascend.com/document/detail/zh/mindstudio/2610/GUI_baseddevelopmenttool/MindStudioInsight/docs/zh/user_guide/system_tuning.md#%E4%BD%BF%E7%94%A8%E8%AF%B4%E6%98%8E)。
+> - 如果您希望更加定制化的profiling采集方式，可参考《CANN性能调优工具用户指南》中的“[性能数据采集和自动解析](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/910/devaids/Profiling/atlasprofiling_16_0033.html)”章节，通过修改采集代码进行自定义采集和拆解分析。

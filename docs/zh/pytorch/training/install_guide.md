@@ -22,27 +22,18 @@
 > 本节表格中“√”代表支持，“x”代表不支持。
 
 - 各硬件产品对应物理机部署场景支持的操作系统请参考[兼容性查询助手](https://www.hiascend.com/hardware/compatibility)。
-- 各硬件产品对应虚拟机及容器部署场景支持的操作系统请参考《CANN 软件安装》的“操作系统兼容性说明”章节<!--[操作系统兼容性说明](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/900/softwareinst/instg/instg_0101.html?OS=openEuler&InstallType=netyum)-->。
+- 各硬件产品对应虚拟机及容器部署场景支持的操作系统请参考《CANN 软件安装》的“[操作系统兼容性说明](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/910/softwareinst/instg/instg_0101.html?OS=openEuler&InstallType=netyum)”章节。
 
 ## 安装前准备
 
 请参见《版本说明》中的“[相关产品版本配套说明](../../release_notes_llm.md#相关产品版本配套说明)”章节，下载安装对应的软件版本。
 
+请单击[固件与驱动](https://www.hiascend.com/hardware/firmware-drivers)，并根据引导完成固件与驱动的安装。
+
 > [!NOTICE]
 >
 > 安装运行程序建议使用非root用户，且建议对安装程序的目录文件做好权限管控：文件夹权限设置为750，文件权限设置为640。可以通过设置umask控制安装后文件的权限，如设置umask为0027。
 > 更多安全相关内容请参见《[安全声明](../../SECURITYNOTE.md)》中各组件关于“文件权限控制”的说明。
-
-下载[固件与驱动](https://www.hiascend.com/hardware/firmware-drivers/community)，请根据系统和硬件产品型号选择对应版本的社区版本或商用版本的固件与驱动。
-
-参考如下命令安装：
-
-```shell
-chmod +x Ascend-hdk-<chip_type>-npu-driver_<version>_linux-<arch>.run
-chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
-./Ascend-hdk-<chip_type>-npu-driver_<version>_linux-<arch>.run --full --force
-./Ascend-hdk-<chip_type>-npu-firmware_<version>.run --full
-```
 
 ## 安装MindSpeed LLM
 
@@ -78,6 +69,7 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
       --network=host \
       --pid=host \
       --name mindspeed_llm \
+      --privileged \
       --shm-size=512g \
       --device=/dev/davinci0 \
       --device=/dev/davinci_manager \
@@ -112,6 +104,7 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
     |--network|表示使用宿主机的网络栈。|
     |--pid|表示使用宿主机的PID命名空间。使用该参数后容器内的进程可以查看宿主机上的所有进程ID。|
     |--name|表示给容器指定一个名称。mindspeed_llm是容器的标识符，可以自行设置，且在当前系统中具有唯一性。如果不设置，Docker会自动分配一个随机名称。|
+    |--privileged|用于解除容器默认权限限制，赋予容器近乎宿主机的权限，保证昇腾驱动调用、npu-smi等工具能够正常与硬件设备交互。|
     |--shm-size|表示指定容器的共享内存（/dev/shm）大小，用户可自行设置，512g为示例值。<br>该值不能超过宿主机剩余的物理内存总量，可使用`free -h`命令查看。|
     |--device|表示将宿主机的设备映射到容器内。每个--device参数将宿主机设备（例如硬件加速卡或其他硬件设备）共享给容器，以便容器可以直接访问。<ul><li>/dev/davinci_manager：davinci相关的管理设备。</li><li>/dev/hisi_hdc：hdc相关管理设备。</li><li>/dev/devmm_svm：内存管理相关设备。</li><li>/dev/davinci*X*：NPU设备，*X*是ID号，如：davinci0。</li></ul>可根据`ll /dev/ \| grep davinci`命令查询device个数及名称，根据需要绑定设备，修改上面命令中的"--device=****"。|
     |-v|表示将物理机的文件夹映射到容器内的相应目录，以下参数请根据实际路径修改。<ul><li>/usr/local/Ascend/driver：该路径包含硬件驱动程序文件，驱动在宿主机上安装，将其映射到容器中，方可在容器中使用。</li><li>/usr/local/Ascend/firmware：该路径包含硬件固件程序文件，固件在宿主机上安装，将其映射到容器中，方可在容器中使用。</li><li>/usr/local/bin/npu-smi：该路径包含npu-smi等NPU状态查看命令，请根据实际路径修改。</li><li>/usr/local/dcmi：该路径用于挂载dcmi工具。</li><li>/usr/local/Ascend/driver/version.info：该路径包含驱动版本信息文件。</li><li>/etc/ascend_install.info：该路径包含安装版本信息文件。</li><li>/data：该路径为设定数据集挂载的路径，指向保存数据集的目录，使容器能访问数据集。</li><li>/weights：该路径为设定权重挂载的路径，指向保存权重的目录，使容器能访问权重。</li></ul>|
@@ -144,7 +137,7 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
 
 2. 安装CANN
 
-   安装配套版本的NPU驱动固件、CANN软件（Toolkit、ops和NNAL）并配置CANN环境变量，具体请参考《CANN 软件安装》<!--《[CANN 软件安装](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/900/softwareinst/instg/instg_0000.html)》-->。
+   安装配套版本的NPU驱动固件、CANN软件（Toolkit、ops和NNAL）并配置CANN环境变量，具体请参考《[CANN 软件安装](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/910/softwareinst/instg/instg_0000.html)》。
 
    CANN软件提供进程级环境变量设置脚本，训练或推理场景下使用NPU执行业务代码前需要调用该脚本，否则业务代码将无法执行。
 
@@ -162,17 +155,17 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
 
    以上命令以CANN离线安装场景未指定安装路径为例，给出了不同用户的默认安装路径及对应的配置环境变量的命令。
 
-   若用户指定安装路径或使用其他安装方式，请参考《CANN 软件安装》<!--《[CANN 软件安装](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/900/softwareinst/instg/instg_0000.html)》-->查阅对应的配置环境变量的命令。
+   若用户指定安装路径或使用其他安装方式，请参考《[CANN 软件安装](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/910/softwareinst/instg/instg_0000.html)》查阅对应的配置环境变量的命令。
 
 3. 安装PyTorch以及TorchNPU
 
-   请参考《TorchNPU软件安装》中的“[安装TorchNPU](https://www.hiascend.com/document/detail/zh/Pytorch/2600/configandinstg/instg/docs/zh/installation_guide/installation_via_binary_package.md)”章节，获取配套版本的PyTorch以及TorchNPU软件包。
+   请参考《TorchNPU软件安装》中的“[安装TorchNPU](https://www.hiascend.com/document/detail/zh/Pytorch/2610/installguide/swinstall/docs/zh/installation_guide/installation_via_binary_package.md)”章节，获取配套版本的PyTorch以及TorchNPU软件包。
 
    可参考如下安装命令：
 
    ```shell
    pip3 install torch-2.7.1-cp310-cp310-manylinux_2_28_aarch64.whl
-   pip3 install torch_npu-2.7.1rc1-cp310-cp310-manylinux_2_28_aarch64.whl
+   pip3 install torch_npu-2.7.1post8-cp310-cp310-manylinux_2_28_aarch64.whl
    ```
 
    > [!NOTE]
