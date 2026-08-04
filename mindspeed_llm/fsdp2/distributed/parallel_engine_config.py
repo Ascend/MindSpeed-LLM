@@ -1,45 +1,27 @@
 # Copyright (c) 2025, Huawei Technologies Co., Ltd. All rights reserved.
+import os
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Callable, Literal, Union, Optional
+from typing import Any, List, Callable, Literal, Union, Optional
 
 import torch
 
-
-@dataclass
-class FSDPPlanConfig:
-    ignored_modules: List[str] = None
-    apply_modules: Dict[str, Any] = None
-    param_init_fn: Optional[Callable[[torch.nn.Module], None]] = None
-
-    # mp_policy settings
-    param_dtype: Optional[torch.dtype] = None
-    reduce_dtype: Optional[torch.dtype] = None
-    output_dtype: Optional[torch.dtype] = None
-    cast_forward_inputs: bool = True
-    reshard_after_forward: bool = True
-
-    # offload_policy settings
-    cpu_offload: bool = False
-    pin_memory: bool = True
-
-    # prefetch settings
-    num_to_forward_prefetch: Optional[int] = 0
-    num_to_backward_prefetch: Optional[int] = 0
-
-    # fsdp2 hook manager
-    hook_modules: Optional[List[str]] = None
-
-    # FSDP implementation strategy
-    # 'custom': Use FSDPTurbo custom FSDP implementation
-    # 'native': Use PyTorch native FSDP implementation (default)
-    fsdp_implementation: Literal['custom', 'native'] = 'native'
+# Reuse configs from FSDPTurbo to stay in sync with its evolution.
+# EPPlanConfig and CPPlanConfig are kept LLM-specific due to field divergence.
+from fsdp_turbo.fsdp_turbo_config import (
+    FSDPPlanConfig as _BaseFSDPPlanConfig,
+    TPPlanConfig as _BaseTPPlanConfig,
+    ChunkBatchPlanConfig as _BaseChunkBatchPlanConfig,
+)
 
 
 @dataclass
-class TPPlanConfig:
-    colwise_parallel: List[str] = None
-    rowwise_parallel: List[str] = None
-    sequence_parallel: List[str] = None
+class FSDPPlanConfig(_BaseFSDPPlanConfig):
+    pass
+
+
+@dataclass
+class TPPlanConfig(_BaseTPPlanConfig):
+    pass
 
 
 @dataclass
@@ -53,7 +35,7 @@ class EPPlanConfig:
     apply_modules: List[str] = None
     dispatcher: Union[Literal["eager", "fused", "mc2"], Callable] = None
     apply_efsdp_modules: List[str] = None
-    _gradient_divide_factor: float = None
+    gradient_divide_factor: Optional[float] = None
     fixed_router: bool = False
 
 
@@ -82,35 +64,8 @@ class QuantizeConfig:
 
 
 @dataclass
-class ChunkBatchPlanConfig:
-    """Configuration for chunked micro-batch execution.
-
-    The feature wraps selected module forwards and executes them with smaller
-    slices along the configured batch dimension. This is useful when a large
-    module's activation or temporary workspace peak is proportional to batch
-    size.
-
-    Example:
-        ``chunk_mbs=1`` with an input tensor shaped ``[4, 2048, hidden]`` runs
-        the selected forward four times with tensors shaped ``[1, 2048, hidden]``
-        and then concatenates the outputs back to ``[4, 2048, hidden]``.
-
-        For Qwen-style decoder layers, a typical plan is:
-            apply_modules=["model.layers.{*}"]
-            batch_dim=0
-            chunk_arg_indexs=[0]
-            chunk_kwarg_names=["hidden_states", "attention_mask"]
-    """
-
-    chunk_mbs: int = 1
-    # Module-name patterns to patch, for example "model.layers.{*}".
-    apply_modules: List[str] = None
-    # Tensor dimension that represents batch. HF decoder layers usually use 0.
-    batch_dim: int = 0
-    # Positional forward arguments that should be sliced by batch.
-    chunk_arg_indexs: Optional[List[int]] = None
-    # Keyword forward arguments that should be sliced by batch.
-    chunk_kwarg_names: Optional[List[str]] = None
+class ChunkBatchPlanConfig(_BaseChunkBatchPlanConfig):
+    pass
 
 
 @dataclass
@@ -161,6 +116,10 @@ class ParallelEngineConfig:
         )
         '''
         self.fsdp_plan = FSDPPlanConfig() if self.fsdp_plan is None else self.fsdp_plan
+        if self.fsdp_plan.gradient_divide_factor is None:
+            world_size = int(os.environ.get('WORLD_SIZE', '1'))
+            dp = world_size // (self.fully_shard_parallel_size * self.tensor_parallel_size)
+            self.fsdp_plan.gradient_divide_factor = self.fully_shard_parallel_size * dp
         if self.fully_shard_parallel_size > 1:
             if self.expert_parallel_size > 1:
                 self.fsdp_plan.ignored_modules.extend(self.ep_plan.apply_modules)
@@ -197,7 +156,7 @@ class ParallelEngineConfig:
         )
         '''
         self.ep_plan = EPPlanConfig(apply_modules=[], dispatcher='eager') if self.ep_plan is None else self.ep_plan
-        self.ep_plan._gradient_divide_factor = (
+        self.ep_plan.gradient_divide_factor = (
             self.expert_parallel_size * self.expert_fully_shard_parallel_size * self.expert_data_parallel_size
         )
         if self.ep_plan.apply_efsdp_modules is None:

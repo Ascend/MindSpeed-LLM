@@ -37,10 +37,10 @@ def expert_fully_shard_modules(model: torch.nn.Module, efsdp_mesh, plan: EPPlanC
         if isinstance(experts, torch.nn.ModuleList):
             for expert in experts:
                 fully_shard(expert, **config)
-                set_gradient_divide_factor(expert, plan._gradient_divide_factor)
+                set_gradient_divide_factor(expert, plan.gradient_divide_factor)
         else:
             fully_shard(experts, **config)
-            set_gradient_divide_factor(experts, plan._gradient_divide_factor)
+            set_gradient_divide_factor(experts, plan.gradient_divide_factor)
 
     return model
 
