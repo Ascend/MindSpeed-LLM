@@ -4,7 +4,9 @@ import torch
 
 from fsdp_turbo.distributed.fully_shard_parallel.fully_shard_parallel import fully_shard_parallel_modules
 from fsdp_turbo.distributed.tensor_parallel.tensor_parallel import tensor_parallel_modules
+from fsdp_turbo.distributed.expert_parallel.expert_fully_shard_parallel import expert_fully_shard_modules
 from fsdp_turbo.memory.recompute.recompute import recompute_modules
+from fsdp_turbo.memory.chunk_batch.chunk_batch import chunk_batch_modules
 from mindspeed_llm.fsdp2.distributed.parallel_state import init_parallel_state
 from mindspeed_llm.fsdp2.distributed.parallel_engine_config import ParallelEngineConfig
 from mindspeed_llm.fsdp2.distributed.context_parallel.context_parallel_manager import apply_context_parallelize_modules
@@ -12,7 +14,6 @@ from mindspeed_llm.fsdp2.distributed.expert_parallel.expert_parallel import (
     expert_parallelize_modules,
     apply_grad_division_hook,
 )
-from mindspeed_llm.fsdp2.distributed.expert_parallel.expert_fully_shard_parallel import expert_fully_shard_modules
 from mindspeed_llm.fsdp2.models.model_loader import WeightLoader
 from mindspeed_llm.fsdp2.utils.logging import get_logger
 
@@ -41,6 +42,7 @@ class MindSpeedParallelEngine(torch.nn.Module):
         self.apply_ep_modules()
         self.apply_cp_modules()
         self.apply_recompute_modules()
+        self.apply_chunk_batch_modules()
         self.apply_fsdp_modules()
 
         # For meta device: load weights after fsdp wrapping
@@ -63,9 +65,8 @@ class MindSpeedParallelEngine(torch.nn.Module):
             self.model = expert_parallelize_modules(
                 self.model, self.parallel_state.get_ep_device_mesh(), self.config.ep_plan
             )
-
             self.model = expert_fully_shard_modules(
-                self.model, self.parallel_state.get_efsdp_device_mesh(), self.config.ep_plan
+                self.model, self.parallel_state.get_efsdp_device_mesh(), self.config.ep_plan, self.config.fsdp_plan
             )
 
     def apply_cp_modules(self):
@@ -84,6 +85,11 @@ class MindSpeedParallelEngine(torch.nn.Module):
         if not self.config.recompute:
             return
         self.model = recompute_modules(self.model, self.config.recompute_plan)
+
+    def apply_chunk_batch_modules(self):
+        if not self.config.enable_chunk_batch:
+            return
+        self.model = chunk_batch_modules(self.model, self.config.chunkbatch_plan)
 
     def apply_quantization_modules(self):
         """Apply quantization based on quantization_format + quantization_recipe."""

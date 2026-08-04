@@ -522,6 +522,54 @@
       <td>1</td>
       <td>FSDP反向传播时预取的模块数，用于优化流水线效率。</td>
     </tr>
+    <tr>
+      <td>hook_modules</td>
+      <td>List[str]</td>
+      <td>[&quot;model.layers.{*}&quot;]</td>
+      <td>挂载FSDP2 hook管理器的模型层结构，对匹配的模块应用FSDP hook。</td>
+    </tr>
+    <tr>
+      <td>fsdp_implementation</td>
+      <td>Literal[&quot;custom&quot;, &quot;native&quot;]</td>
+      <td>native</td>
+      <td>FSDP实现方式：1. custom：使用FSDPTurbo自定义FSDP实现；2. native（默认）：使用PyTorch原生FSDP实现。</td>
+    </tr>
+    <tr>
+      <td>enable_chunk_batch</td>
+      <td>bool</td>
+      <td>False</td>
+      <td>是否启用ChunkMBS（分块微批次）特性。启用后将原始batch沿批次维度切分为多个更小的微批次，在单次FSDP unshard内对选中模块分块执行前向：相比增大micro-batch可节省显存（激活与临时显存峰值随batch size降低），相比梯度累积可减少通信开销。需配合<code>chunk_mbs</code>等参数使用。</td>
+    </tr>
+    <tr>
+      <td>chunk_mbs</td>
+      <td>int</td>
+      <td>1</td>
+      <td>chunk之后的mbs大小。例如原始micro_batch_size为8，切分为4份、每份大小为2，则该字段配置为2。</td>
+    </tr>
+    <tr>
+      <td>chunk_mbs_batch_dim</td>
+      <td>int</td>
+      <td>0</td>
+      <td>执行ChunkMBS时分块所沿的批次维度，HuggingFace风格的decoder层通常使用0。</td>
+    </tr>
+    <tr>
+      <td>chunk_mbs_modules</td>
+      <td>List[str]</td>
+      <td>[&quot;model.layers.{*}&quot;]</td>
+      <td>应用ChunkMBS的模型层结构，仅对这些模块的前向执行分块微批次。</td>
+    </tr>
+    <tr>
+      <td>chunk_mbs_arg_indexs</td>
+      <td>List[int]</td>
+      <td>[0]</td>
+      <td>前向传播中需要按批次维度切分的位置参数索引列表。</td>
+    </tr>
+    <tr>
+      <td>chunk_mbs_kwarg_names</td>
+      <td>List[str]</td>
+      <td>[&quot;position_embeddings&quot;, &quot;position_ids&quot;, &quot;attention_mask&quot;, &quot;input_ids&quot;]</td>
+      <td>前向传播中需要按批次维度切分的关键字参数名称列表。</td>
+    </tr>
   </tbody>
 </table>
 

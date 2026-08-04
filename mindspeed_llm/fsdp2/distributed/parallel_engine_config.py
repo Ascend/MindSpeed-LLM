@@ -82,6 +82,38 @@ class QuantizeConfig:
 
 
 @dataclass
+class ChunkBatchPlanConfig:
+    """Configuration for chunked micro-batch execution.
+
+    The feature wraps selected module forwards and executes them with smaller
+    slices along the configured batch dimension. This is useful when a large
+    module's activation or temporary workspace peak is proportional to batch
+    size.
+
+    Example:
+        ``chunk_mbs=1`` with an input tensor shaped ``[4, 2048, hidden]`` runs
+        the selected forward four times with tensors shaped ``[1, 2048, hidden]``
+        and then concatenates the outputs back to ``[4, 2048, hidden]``.
+
+        For Qwen-style decoder layers, a typical plan is:
+            apply_modules=["model.layers.{*}"]
+            batch_dim=0
+            chunk_arg_indexs=[0]
+            chunk_kwarg_names=["hidden_states", "attention_mask"]
+    """
+
+    chunk_mbs: int = 1
+    # Module-name patterns to patch, for example "model.layers.{*}".
+    apply_modules: List[str] = None
+    # Tensor dimension that represents batch. HF decoder layers usually use 0.
+    batch_dim: int = 0
+    # Positional forward arguments that should be sliced by batch.
+    chunk_arg_indexs: Optional[List[int]] = None
+    # Keyword forward arguments that should be sliced by batch.
+    chunk_kwarg_names: Optional[List[str]] = None
+
+
+@dataclass
 class ParallelEngineConfig:
     data_parallel_size: int = 1
 
@@ -105,6 +137,9 @@ class ParallelEngineConfig:
 
     quantization_plan: Optional[QuantizeConfig] = None
 
+    enable_chunk_batch: bool = False
+    chunkbatch_plan: ChunkBatchPlanConfig = None
+
     def __post_init__(self):
         self.validate_tp_config()
         self.validate_ep_config()
@@ -112,6 +147,7 @@ class ParallelEngineConfig:
         self.validate_recompute_config()
         self.validate_quantization_config()
         self.validate_fsdp_config()
+        self.validate_chunkbatch_config()
 
     def validate_fsdp_config(self):
         '''fully shard plan
@@ -179,3 +215,6 @@ class ParallelEngineConfig:
 
     def validate_quantization_config(self):
         self.quantization_plan = QuantizeConfig() if self.quantization_plan is None else self.quantization_plan
+
+    def validate_chunkbatch_config(self):
+        self.chunkbatch_plan = ChunkBatchPlanConfig() if self.chunkbatch_plan is None else self.chunkbatch_plan

@@ -13,6 +13,7 @@ from mindspeed_llm.fsdp2.distributed.parallel_engine_config import (
     EPPlanConfig,
     CPPlanConfig,
     QuantizeConfig,
+    ChunkBatchPlanConfig,
 )
 
 from mindspeed_llm.fsdp2.utils.logging import get_logger
@@ -168,6 +169,8 @@ class ModelFactory:
             reduce_dtype=parallel_args.reduce_dtype,
             num_to_forward_prefetch=parallel_args.num_to_forward_prefetch,
             num_to_backward_prefetch=parallel_args.num_to_backward_prefetch,
+            hook_modules=parallel_args.hook_modules,
+            fsdp_implementation=parallel_args.fsdp_implementation,
         )
 
         # --- 2. Tensor Parallel Plan ---
@@ -202,8 +205,16 @@ class ModelFactory:
             enable_fsdp_low_precision_all_gather=model_args.enable_fsdp_low_precision_all_gather,
             fsdp_low_precision_all_gather_mode=model_args.fsdp_low_precision_all_gather_mode,
         )
+        # --- 6. ChunkMBS Plan ---
+        chunkbatch_plan = ChunkBatchPlanConfig(
+            apply_modules=parallel_args.chunk_mbs_modules,
+            chunk_mbs=parallel_args.chunk_mbs,
+            batch_dim=parallel_args.chunk_mbs_batch_dim,
+            chunk_arg_indexs=parallel_args.chunk_mbs_arg_indexs,
+            chunk_kwarg_names=parallel_args.chunk_mbs_kwarg_names,
+        )
 
-        # --- 6. Assemble Config ---
+        # --- 7. Assemble Config ---
         # Get parallel sizes safely
         tp_size = parallel_args.tp_size
         fsdp_size = parallel_args.fsdp_size
@@ -229,6 +240,9 @@ class ModelFactory:
             recompute_plan=recompute_plan,
             # Quantization
             quantization_plan=quantization_plan,
+            # ChunkBatch
+            enable_chunk_batch=parallel_args.enable_chunk_batch,
+            chunkbatch_plan=chunkbatch_plan,
         )
 
         return config

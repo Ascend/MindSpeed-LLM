@@ -404,6 +404,14 @@ class ParallelArguments:
     efsdp_shard_placement_fn: Optional[str] = field(
         default='shard_by_dim_1', metadata={"help": "Custom shard placement function for main ep-FSDP module"}
     )
+    hook_modules: List[str] = field(
+        default_factory=lambda: ['model.layers.{*}'],
+        metadata={"help": "List of modules to apply FSDP."},
+    )
+    fsdp_implementation: Literal['custom', 'native'] = field(
+        default="native",
+        metadata={"help": "FSDP implementation type: 'custom' or 'native'."},
+    )
     tp_colwise: List[str] = field(
         default_factory=lambda: ['*.q_proj', '*.k_proj', '*.v_proj', '*.gate_proj', '*.up_proj'],
         metadata={"help": "Model structure of layers with Tensor Parallel(Cols splitting)."},
@@ -453,6 +461,34 @@ class ParallelArguments:
         metadata={
             "help": "Number of modules to prefetch during FSDP backward pass (optimizes pipeline efficiency). Defaults to 1."
         },
+    )
+    enable_chunk_batch: bool = field(
+        default=False,
+        metadata={
+            "help": "Whether to enable chunk micro-batch size (ChunkMBS). "
+            "Splits a large batch into smaller micro-batches for a single FSDP unshard, "
+            "saving memory vs. increasing microbatch and saving communication vs. gradient accumulation."
+        },
+    )
+    chunk_mbs: int = field(
+        default=1,
+        metadata={"help": "Chunked micro batch size. The original batch is split into chunks of this size."},
+    )
+    chunk_mbs_batch_dim: int = field(
+        default=0,
+        metadata={"help": "Batch dimension along which to slice tensors for ChunkMBS."},
+    )
+    chunk_mbs_modules: List[str] = field(
+        default_factory=lambda: ['model.layers.{*}'],
+        metadata={"help": "Model module patterns to apply ChunkMBS to."},
+    )
+    chunk_mbs_arg_indexs: List[int] = field(
+        default_factory=lambda: [0],
+        metadata={"help": "Indices of positional arguments to chunk in the forward pass."},
+    )
+    chunk_mbs_kwarg_names: List[str] = field(
+        default_factory=lambda: ['position_embeddings', 'position_ids', 'attention_mask', 'input_ids'],
+        metadata={"help": "Names of keyword arguments to chunk in the forward pass."},
     )
 
     def __post_init__(self):
