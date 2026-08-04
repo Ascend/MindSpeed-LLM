@@ -35,6 +35,23 @@ parallel:
   recompute_modules:
     - model.layers.{*}
     - mtp.layers.{*}.layer
+  hook_modules:
+    - model.layers.{*}
+    - mtp.layers.{*}.layer
+  fsdp_implementation: custom
+  enable_chunk_batch: True
+  chunk_mbs_modules:
+    - model.layers.{*}
+    - mtp.layers.{*}.layer
+  chunk_mbs: 1  # micro batch size after chunking
+  chunk_mbs_batch_dim: 0
+  chunk_mbs_arg_indexs: [0]
+  chunk_mbs_kwarg_names:
+    - position_embeddings
+    - position_ids
+    - attention_mask
+    - input_ids
+    - loss_mask
 
 training:
   stage: pt

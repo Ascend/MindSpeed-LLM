@@ -23,8 +23,8 @@ torchrun $DISTRIBUTED_ARGS train_fsdp2.py examples/fsdp2/deepseek4/pretrain_deep
     --parallel.fsdp_size 256 \
     --parallel.ep_size 128 \
     --parallel.ep_fsdp_size 2 \
-    --training.per_device_train_batch_size 1 \
-    --training.gradient_accumulation_steps 8 \
+    --training.per_device_train_batch_size 2 \
+    --training.gradient_accumulation_steps 4 \
     --training.output_dir ./output \
     --optimization.use_fused_rmsnorm True \
     --optimization.use_fused_rotary_pos_emb True \
@@ -33,4 +33,5 @@ torchrun $DISTRIBUTED_ARGS train_fsdp2.py examples/fsdp2/deepseek4/pretrain_deep
     --optimization.use_fused_lightning_indexer_loss True \
     --optimization.use_ascend_mhc True \
     --optimization.use_triton_swiglu_limit True \
+    --optimization.chunk_loss_size 1024 \
     | tee logs/pretrain_deepseek4_flash_284b_4k_fsdp2_A3_${TIMESTAMP}.log
