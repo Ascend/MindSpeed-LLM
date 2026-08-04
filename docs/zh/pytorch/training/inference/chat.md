@@ -77,7 +77,7 @@ bash examples/mcore/llama2/chat_llama2_13b_ptd.sh
 
 【--prompt-type】
 
-模型对话模板，作用与`--hf-chat-template`一致，但不需要模型的tokenizer已经具备`chat_template`属性，微调后推理对话时应选择模型对应的对话模板， `prompt-type`的可选项可以在[`templates`](../../../../../configs/finetune/templates.json)文件内查看。
+模型对话模板，作用与`--hf-chat-template`一致，但不需要模型的tokenizer已经具备`chat_template`属性，微调后推理对话时应选择模型对应的对话模板， `prompt-type`的可选项可以在[templates.json](../../../../../configs/finetune/templates.json)文件内查看。
 
 #### Chat对话程序相关命令
 
