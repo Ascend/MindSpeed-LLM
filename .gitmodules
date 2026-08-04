@@ -1,0 +1,11 @@
+[submodule "3rdparty/MindSpeed"]
+	path = 3rdparty/MindSpeed
+	url = https://gitcode.com/ascend/MindSpeed.git
+	branch = master
+[submodule "3rdparty/FSDPTurbo"]
+	path = 3rdparty/FSDPTurbo
+	url = https://gitcode.com/Ascend/FSDPTurbo.git
+	branch = main
+[submodule "3rdparty/Megatron-LM"]
+	path = 3rdparty/Megatron-LM
+	url = https://github.com/NVIDIA/Megatron-LM.git

@@ -227,3 +227,97 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
 
     pip3 install -r requirements.txt  # 安装其余依赖库
     ```
+
+### 方式三：Submodule源码统一安装
+
+> [!NOTE]
+>
+> - 本方式为可选方案，适用于需要统一管理MindSpeed等三方依赖软件版本的场景。
+> - 采用此方式后，上述[方式二](#方式二源码安装)中的逐个依赖仓库拉取与版本切换步骤可通过一条命令完成。
+> - 若已通过方式二手动clone了相关仓库，请先删除对应目录后再使用本方式，避免目录冲突。
+
+MindSpeed LLM支持通过Git Submodule统一管理三方依赖仓库，便于版本追踪与协同开发。子模块统一放置在`3rdparty/`目录下，其中：
+
+- **MindSpeed**：默认拉取远端master分支最新代码。
+- **FSDPTurbo**：默认拉取远端main分支最新代码。
+- **Megatron-LM**：固定在tag `core_v0.12.1`。
+
+1. 基础环境准备
+
+   虚拟环境、CANN、PTA、TA等基础环境准备，同[方式二](#方式二源码安装)的步骤1-4。
+
+2. 下载源码
+
+   在完成MindSpeed LLM源码克隆后，初始化并拉取全部子模块：
+
+   ```shell
+   git clone https://gitcode.com/ascend/MindSpeed-LLM.git
+   cd MindSpeed-LLM
+   git submodule update --init --recursive
+   git submodule update --init --remote 3rdparty/MindSpeed 3rdparty/FSDPTurbo
+   ```
+
+   > [!NOTE]
+   >
+   > 如何更新Submodule?
+   > - MindSpeed和FSDPTurbo默认跟踪远端最新，初始化时已完成刷新，后需继续拉取最新提交可执行`git submodule update --init --remote 3rdparty/MindSpeed 3rdparty/FSDPTurbo`。(3rdparty目录下commit可不关注)
+   > - Megatron-LM固定在相应版本，执行`git submodule update --init`会始终检出该版本，不会自动更新。如需切换版本，参见下方章节[3.切换子模块版本(可选)](#checkout_submodules)。
+
+   源码结构如下：
+
+   ```shell
+   MindSpeed-LLM/
+   ├── 3rdparty/
+   │   ├── MindSpeed/          # 加速库（对应方式二步骤5）
+   │   ├── FSDPTurbo/          # FSDP加速库（对应方式二步骤6）
+   │   └── Megatron-LM/       # Megatron-LM核心代码（对应方式二步骤7）
+   └── ...
+   ```
+
+3. 安装依赖子模块
+
+   拉取子模块后，按顺序安装各组件依赖：
+
+   ```shell
+   # 安装MindSpeed依赖
+   pip3 install -r 3rdparty/MindSpeed/requirements.txt
+
+   # 将依赖仓库源码软链接到MindSpeed LLM根目录
+   ln -s 3rdparty/MindSpeed/mindspeed mindspeed
+   ln -s 3rdparty/FSDPTurbo/fsdpturbo fsdpturbo
+   ln -s 3rdparty/Megatron-LM/megatron megatron
+
+   # 安装MindSpeed LLM其余依赖
+   pip3 install -r requirements.txt
+   ```
+
+   > [!NOTE]
+   >
+   > - MindSpeed和FSDPTurbo通过软链接方式安装，无需`pip3 install -e .`，子模块代码更新后软链接自动生效，无需重新安装。
+   > - Megatron-LM子模块包含完整仓库，需将`megatron/`源码目录链接至MindSpeed LLM根目录下使用。
+   > - 若需使用`pip3 install -e .`方式安装MindSpeed或FSDPTurbo，可分别进入对应子模块目录执行。
+
+4. 切换子模块版本（可选）<div id="checkout_submodules"/>
+
+   如需切换某个子模块到指定分支或标签，例如将Megatron-LM切换到其他版本：
+
+   ```shell
+   cd 3rdparty/Megatron-LM
+   git checkout <tag或分支名>
+   cd ../..
+   ```
+
+   如需将MindSpeed或FSDPTurbo更新到远端最新：
+
+   ```shell
+   cd 3rdparty/MindSpeed
+   git pull origin master
+   cd ../..
+   ```
+
+   如需将版本切换改动提交上仓:
+
+   ```shell
+   git add 3rdparty/<改动的仓库名称>
+   git commit -m "chore: pin <改动的仓库名称> to <版本号>"
+   ```
