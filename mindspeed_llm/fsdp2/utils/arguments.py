@@ -382,7 +382,7 @@ class ParallelArguments:
     ep_size: int = field(default=1, metadata={"help": "Expert Parallel size for MoE models."})
     ep_fsdp_size: int = field(default=1, metadata={"help": "FSDP size inside Expert Parallel groups."})
     cp_size: int = field(default=1, metadata={"help": "context parallel size."})
-    cp_type: Literal["ulysses", "ring"] = field(
+    cp_type: Literal["ulysses", "ring", "kvallgather"] = field(
         default="ulysses",
         metadata={"help": "Use context parallel algo."},
     )

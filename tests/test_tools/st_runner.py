@@ -57,10 +57,14 @@ def run_st_case(script_path, baseline_dir, test_ci_script):
     print(f"Running test: {file_name_prefix}")
 
     exit_code, stdout, stderr = run_test_script(script_path)
+    # Always surface the full training log (the .sh's stdout, incl. the per-step
+    # loss/grad-norm output) so it is visible in the UT log on success AND on any
+    # failure (script crash or comparison mismatch). stderr is printed separately
+    # below only when the script itself failed.
+    print(f"\n=== Training stdout ({file_name_prefix}) ===\n{stdout}")
     if exit_code != 0:
         print(f"\n=== Script {script_name} failed ===")
         print(f"Exit code: {exit_code}")
-        print(f"=== Stdout ===\n{stdout}")
         print(f"=== Stderr ===\n{stderr}")
         pytest.fail(f"Script {script_name} failed with exit code {exit_code}")
 

@@ -111,4 +111,16 @@ MODEL_CP_CONFIG: Dict[str, Dict] = {
             ]
         },
     },
+    "deepseek_v4_kvallgather": {
+        "models": {"deepseek_v4"},
+        "cp_to_att_template": {"fixed_cross_entropy"},
+        "model_specific": {
+            "deepseek_v4": [
+                (
+                    "mindspeed_llm.fsdp2.models.deepseek_v4.modeling_deepseek_v4.DeepseekV4Attention.forward",
+                    "mindspeed_llm.fsdp2.distributed.context_parallel.kvallgather_context_parallel.deepseek_v4_cp_attention.deepseek_v4_cp_attention_forward",
+                ),
+            ]
+        },
+    },
 }

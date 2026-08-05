@@ -91,10 +91,6 @@ def fsdp2_clip_grad_norm(
     else:
         total_norm = (norm_d**norm_type + norm_t**norm_type) ** (1.0 / norm_type)
 
-    # Context Parallel (CP) scale handling
-    ps = ParallelState()
-    total_norm *= ps.get_group_size("cp")
-
     # Execute clipping separately to prevent foreach_mul operator crash
     if len(dtensor_params) > 0:
         torch.nn.utils.clip_grads_with_norm_(dtensor_params, max_norm, total_norm, foreach)

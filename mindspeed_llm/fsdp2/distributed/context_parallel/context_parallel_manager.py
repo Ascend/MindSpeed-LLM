@@ -1,12 +1,15 @@
 import importlib
 from dataclasses import dataclass
-from typing import List, Tuple, Dict, Optional, Set, Counter
+from typing import List, Tuple, Dict, Optional
 from collections import defaultdict, Counter
 
 import torch
 import torch.distributed as dist
 
-from mindspeed_llm.fsdp2.distributed.context_parallel.context_parallel_mappings import COMMON_CP_MAPPINGS, MODEL_CP_CONFIG
+from mindspeed_llm.fsdp2.distributed.context_parallel.context_parallel_mappings import (
+    COMMON_CP_MAPPINGS,
+    MODEL_CP_CONFIG,
+)
 from mindspeed_llm.fsdp2.distributed.parallel_engine_config import CPPlanConfig
 
 
@@ -54,8 +57,10 @@ class ContextParallelMappingManager:
             for target, patches in duplicate_targets.items():
                 patch_info = ", ".join([f"Mapping #{idx + 1}: {patch}" for idx, patch in patches])
                 duplicate_info.append(f"{target} -> [{patch_info}]")
-            warning_msg = f"[Model {model_id}] Detected duplicate target function (same target replaced multiple times):\n  - " + "\n  - ".join(
-                duplicate_info)
+            warning_msg = (
+                f"[Model {model_id}] Detected duplicate target function (same target replaced multiple times):\n  - "
+                + "\n  - ".join(duplicate_info)
+            )
             raise ValueError(f"ERROR: {warning_msg}")
 
     def _get_model_attention_config(self, model_id: str) -> Tuple[str, List[Tuple[str, str]]]:
@@ -78,7 +83,6 @@ class ContextParallelMappingManager:
         """
         # Use dict to ensure unique targets (auto-override)
         mapping_dict: Dict[str, str] = {}
-        cp_type = cp_type_config.cp_type
 
         # 1. Get model configuration
         att_type, model_specific_mappings = self._get_model_attention_config(model_id)
@@ -107,13 +111,13 @@ class ContextParallelMappingManager:
                 print(f"             Target:    {target_filled}")
                 print(f"             Old patch: {old_patch}")
                 print(f"             New patch: {patch}")
-                print(f"             Reason:    model_specific takes precedence over common templates\n")
+                print("             Reason:    model_specific takes precedence over common templates\n")
 
             # Override (or add if new)
             mapping_dict[target_filled] = patch
 
         # ======================== Step 3: Convert back to list and add CP-specific mappings ========================
-        final_mappings = [(target, patch) for target, patch in mapping_dict.items()]
+        final_mappings = list(mapping_dict.items())
         final_mappings.extend(cp_type_config.cp_specific_mappings)
 
         # Optional: Keep duplicate detection (though dict ensures unique targets)
@@ -151,8 +155,7 @@ class ContextParallelMappingManager:
                 target_module = importlib.import_module(module_path)
             except ModuleNotFoundError as e:
                 raise ModuleNotFoundError(
-                    f"Failed to import module '{module_path}' for target '{target_name}'. "
-                    f"Original error: {str(e)}"
+                    f"Failed to import module '{module_path}' for target '{target_name}'. Original error: {str(e)}"
                 )
 
             # 3. Get the target object (class/function) and replace the method/function
@@ -184,8 +187,10 @@ class ContextParallelMappingManager:
 
     @classmethod
     def cp_parallelize_modules(cls, modules: torch.nn.Module, plan: CPPlanConfig) -> None:
-        if plan.context_parallel_type not in ["ulysses", "ring"]:
-            raise ValueError(f"Unsupported CP type: {plan.context_parallel_type}, only 'ulysses'/'ring' are supported")
+        if plan.context_parallel_type not in ["ulysses", "ring", "kvallgather"]:
+            raise ValueError(
+                f"Unsupported CP type: {plan.context_parallel_type}, only 'ulysses'/'ring'/'kvallgather' are supported"
+            )
 
         manager = cls()
         cp_type_config = CPTypeConfig(cp_type=plan.context_parallel_type)

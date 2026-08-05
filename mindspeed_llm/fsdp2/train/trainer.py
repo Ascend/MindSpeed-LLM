@@ -489,12 +489,21 @@ class Trainer:
             # For FSDP2, loss is usually local until aggregation.
             loss = loss.mean()
 
+        loss_for_log = loss.detach()
+        # CP backward loss scaling: scale the backward loss by cp_size (all cp types)
+        # to compensate the differentiable all-gather's backward reduction. The cp grad
+        # grad-norm scaling in clip_grad_norm is removed, so this is the single CP
+        # gradient scaling point. Skip the mul when cp_size == 1 to keep the cp-off
+        # backward graph identical to non-CP.
+        if self.parallel_args.cp_size > 1:
+            loss = loss * self.parallel_args.cp_size
+
         # 5. Backward pass
         loss.backward()
 
-        # 6. Return detached loss
+        # 6. Return detached loss (pre-cp-scale for logging)
         return (
-            loss.detach(),
+            loss_for_log,
             loss_all.lm_loss_output.detach(),
             loss_all.mtp_loss_output.detach(),
             loss_all.aux_loss_output.detach(),
@@ -506,6 +515,8 @@ class Trainer:
                 return self._get_batch_samples_ulysses
             elif self.parallel_args.cp_type == "ring":
                 return self._get_batch_samples_megatron
+            elif self.parallel_args.cp_type == "kvallgather":
+                return self._get_batch_samples_ulysses
             else:
                 raise ValueError(f"Unsupported cp_type: '{self.parallel_args.cp_type}' when cp_size > 1.")
         else:
@@ -525,7 +536,7 @@ class Trainer:
                 sample['position_ids'] = position_ids
 
             for key, val in sample.items():
-                if key in ('attention_mask', 'actual_seq_len'):
+                if key in ('attention_mask', 'actual_seq_len', 'dataset_id'):
                     continue
                 if val is not None:
                     seq_dim = 1

@@ -19,6 +19,9 @@ from dataclasses import dataclass
 import torch
 import torch.nn as nn  # pylint:disable=R0402
 import torch.nn.functional as F
+import torch.distributed as dist
+
+from mindspeed_llm.fsdp2.distributed.parallel_state import ParallelState
 
 from transformers.utils import TransformersKwargs, ModelOutput
 from transformers.cache_utils import Cache, DynamicCache
@@ -168,7 +171,12 @@ class MultiTokenPredictionBlock(nn.Module):
             )
         hidden_states_main_model = hidden_states
 
-        input_ids = roll_tensor(input_ids, shifts=-1, dims=-1)
+        # CP boundary-correct roll: under context parallel the next-token target at a
+        # CP rank boundary lives on the adjacent rank, so exchange it via P2P.
+        ps = ParallelState()
+        cp_group = ps.get_group("cp") if ps.get_group_size("cp") > 1 else None
+
+        input_ids = roll_tensor(input_ids, shifts=-1, dims=-1, cp_group=cp_group)
         input_embeds = embed_tokens(input_ids)
         if position_embeddings is None:
             position_embeddings = rotary_emb(input_embeds, position_ids, layer_type)
@@ -209,7 +217,7 @@ class MultiTokenPredictionBlock(nn.Module):
             all_mtp_logits.append(mtp_logits)
             if labels is not None:
                 # Calc loss for the current Multi-Token Prediction (MTP) layers.
-                labels = roll_tensor(labels, shifts=-1, dims=-1, fill_value=-100)
+                labels = roll_tensor(labels, shifts=-1, dims=-1, fill_value=-100, cp_group=cp_group)
                 mtp_loss = loss_function(mtp_logits, labels, vocab_size=self.config.vocab_size, **kwargs).mean()
                 if all_mtp_loss is None:
                     all_mtp_loss = []
@@ -283,10 +291,44 @@ class MultiTokenPredictionLayer(nn.Module):
         return hidden_states
 
 
-def roll_tensor(tensor, shifts=-1, dims=-1, fill_value=0):
+def roll_tensor(tensor, shifts=-1, dims=-1, fill_value=0, cp_group=None):
     """Roll the tensor input along the given dimension(s).
-    Inserted elements are set to be 0.0.
+    Inserted elements are set to fill_value.
+    When cp_group is provided and cp_size > 1, exchanges boundary tokens
+    between adjacent CP ranks so the rolled tensor has correct cross-rank values.
     """
     rolled_tensor = torch.roll(tensor, shifts=shifts, dims=dims)
+
+    if cp_group is not None and dist.is_initialized():
+        cp_size = dist.get_world_size(cp_group)
+        if cp_size > 1 and shifts == -1:
+            cp_rank = dist.get_rank(cp_group)
+            global_ranks = dist.get_process_group_ranks(cp_group)
+            local_rank = cp_rank
+            prev_rank = global_ranks[(local_rank - 1) % cp_size]
+
+            first_token = tensor.select(dims, 0).contiguous()
+
+            ops = []
+            if cp_rank > 0:
+                ops.append(dist.P2POp(dist.isend, first_token, prev_rank, group=cp_group))
+
+            if cp_rank < cp_size - 1:
+                next_rank = global_ranks[(local_rank + 1) % cp_size]
+                recv_token = torch.empty_like(first_token)
+                ops.append(dist.P2POp(dist.irecv, recv_token, next_rank, group=cp_group))
+
+            if ops:
+                reqs = dist.batch_isend_irecv(ops)
+                for req in reqs:
+                    req.wait()
+
+            if cp_rank < cp_size - 1:
+                rolled_tensor.select(dims, -1).copy_(recv_token)
+            else:
+                rolled_tensor.select(dims, -1).fill_(fill_value)
+
+            return rolled_tensor
+
     rolled_tensor.select(dims, shifts).fill_(fill_value)
     return rolled_tensor

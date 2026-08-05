@@ -70,7 +70,7 @@ class MindSpeedParallelEngine(torch.nn.Module):
             )
 
     def apply_cp_modules(self):
-        VALID_CP_TYPES = ("ulysses", "ring")
+        VALID_CP_TYPES = ("ulysses", "ring", "kvallgather")
         cp_size = self.config.context_parallel_size
         cp_type = self.config.context_parallel_type
 
