@@ -17,8 +17,8 @@ CI门禁用例看护仓库重点模型和基本特性，覆盖冒烟测试场景
         <th>Mem.</th>
     </tr>
     <tr>
-        <td rowspan="13">ST</td>
-        <td rowspan="9">Pretrain</td>
+        <td rowspan="12">ST</td>
+        <td rowspan="8">Pretrain</td>
         <td>TP，PP，VPP，distributed_optimizer，o2_gradient，o2_optimizer，重计算，enable_recompute_layers_per_pp_rank，FA_TND，use_fused_rotary_pos_emb</td>
         <td><a href="st/shell_scripts/qwen3_8b_tp2_pp4_vpp2.sh">qwen3_8b_tp2_pp4_vpp2.sh</a></td>
         <td>Y</td>
@@ -28,13 +28,6 @@ CI门禁用例看护仓库重点模型和基本特性，覆盖冒烟测试场景
     <tr>
         <td>swap_attention，recompute_activation_function，enable_recompute_layers_per_pp_rank，reuse_fp32_param</td>
         <td><a href="st/shell_scripts/qwen3_8b_tp2_pp4_vpp2_swap.sh">qwen3_8b_tp2_pp4_vpp2_swap.sh</a></td>
-        <td>Y</td>
-        <td>Y</td>
-        <td>Y</td>
-    </tr>
-    <tr>
-        <td>cp_ring，general_cp，分布式优化器，reuse_fp32_param，fused_rmsnorm，fused_swiglu，fused_rope，overlap_grad_reduce, overlap_param_gather</td>
-        <td><a href="st/shell_scripts/pretrain_qwen3_8b_general_cp_ring.sh">pretrain_qwen3_8b_general_cp_ring.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
@@ -371,7 +364,7 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td>Y</td>
     </tr>
     <tr>
-        <td rowspan="23">ST</td>
+        <td rowspan="24">ST</td>
         <td rowspan="2">deepseek3</td>
         <td>deepseekv3, dualpipev, mla-up-proj-tp-overlap, moe-fb-overlap</td>
         <td><a href="pipeline/st/deepseek3/deepseek_v3_mcore_tp2_pp2_ep2_dualpipev_fb.sh">deepseek_v3_mcore_tp2_pp2_ep2_dualpipev_fb.sh</a></td>
@@ -445,6 +438,14 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td rowspan="1">phi35-moe</td>
         <td>phi35-moe, distributed_optimizer, overlap_grad_reduce, overlap_param_gather, longrope</td>
         <td><a href="pipeline/st/phi35-moe/phi35_moe_tp1_pp8_mcore.sh">phi35_moe_tp1_pp8_mcore.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td rowspan="1">qwen3-8b</td>
+        <td>cp_ring，general_cp，分布式优化器，reuse_fp32_param，fused_rmsnorm，fused_swiglu，fused_rope，overlap_grad_reduce, overlap_param_gather</td>
+        <td><a href="pipeline/st/qwen3-8b/pretrain_qwen3_8b_general_cp_ring.sh">pretrain_qwen3_8b_general_cp_ring.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>

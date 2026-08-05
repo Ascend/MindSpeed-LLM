@@ -141,6 +141,10 @@ class UTTest:
         self.ut_files = os.path.join(self.base_dir, self.test_dir, "ut")
 
     def run_ut(self, raw_txt_file=None):
+        try:
+            import coverage  # noqa: F401
+        except ImportError:
+            acquire_exitcode("pip install coverage")
         if raw_txt_file is not None and os.path.exists(raw_txt_file):
             filtered_results = filter_exec_ut(raw_txt_file)
 
