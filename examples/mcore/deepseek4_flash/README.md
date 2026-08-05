@@ -70,7 +70,7 @@
 
 ## 安装指导
 
-请参考仓库 [安装指导](../../../docs/zh/pytorch/training/install_guide.md)文档配置环境和拉取仓库代码
+请参考仓库 [MindSpeed LLM软件安装](../../../docs/zh/pytorch/training/install_guide.md)文档配置环境和拉取仓库代码
 
 ## 权重转换
 

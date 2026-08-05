@@ -12,7 +12,7 @@ MindSpeed-LLM已支持接入华为自研AI框架MindSpore，旨在提供华为�
 
 ## 版本配套表
 
-MindSpeed-LLM + MindSpore后端的依赖配套如下表，安装步骤参考[MindSpeed LLM安装指导](../mindspore/install_guide.md)。
+MindSpeed-LLM + MindSpore后端的依赖配套如下表，安装步骤参考[MindSpeed LLM软件安装](../mindspore/install_guide.md)。
 
 <table>
   <tr>

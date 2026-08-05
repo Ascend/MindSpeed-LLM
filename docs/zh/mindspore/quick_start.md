@@ -19,7 +19,7 @@
 
 ### 环境搭建
 
-基于MindSpore框架，环境搭建请参考[MindSpeed LLM安装指导](install_guide.md)。
+基于MindSpore框架，环境搭建请参考[MindSpeed LLM软件安装](install_guide.md)。
 
 ### 获取开源模型权重
 

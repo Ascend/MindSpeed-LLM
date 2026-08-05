@@ -186,7 +186,7 @@
 
 |文档名称|内容简介|更新说明|
 |--|--|--|
-|《[MindSpeed LLM安装指导](./pytorch/training/install_guide.md)》|指导用户如何在NPU上完成MindSpeed LLM的安装，内容涵盖硬件与操作系统兼容性说明、驱动固件及CANN基础软件安装，以及基于PyTorch框架的完整安装流程，帮助用户快速搭建大语言模型分布式训练环境。|安装操作适配版本配套分支，新增Triton-Ascend安装。|
+|《[MindSpeed LLM软件安装](./pytorch/training/install_guide.md)》|指导用户如何在NPU上完成MindSpeed LLM的安装，内容涵盖硬件与操作系统兼容性说明、驱动固件及CANN基础软件安装，以及基于PyTorch框架的完整安装流程，帮助用户快速搭建大语言模型分布式训练环境。|安装操作适配版本配套分支，新增Triton-Ascend安装。|
 |《[MindSpeed LLM快速入门（基于Megatron训练后端）](./pytorch/training/quick_start.md)》|以Qwen3-8B为例，指导初次接触MindSpeed LLM的开发者完成NPU上基于Megatron训练后端的预训练和微调任务，帮助用户快速上手大模型分布式训练。|Qwen3系列模型支持数据和权重在线加载训练，训练操作步骤同步优化。|
 |《[MindSpeed LLM快速入门（基于FSDP2训练后端）](./pytorch/training/fsdp2_quick_start.md)》|以Qwen3-8B为例，指导初次接触MindSpeed LLM的开发者完成NPU上基于FSDP2训练后端的预训练和微调任务，帮助用户快速上手大模型分布式训练。|新增文档，基于MindSpeed LLM使用FSDP2后端进行模型预训练和微调。|
 

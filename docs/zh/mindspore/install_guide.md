@@ -1,4 +1,4 @@
-# MindSpeed LLM安装指导
+# MindSpeed LLM软件安装
 
 本文主要向用户介绍如何快速基于MindSpore框架完成MindSpeed LLM（大语言模型分布式训练套件）的安装。
 

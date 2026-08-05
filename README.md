@@ -122,7 +122,7 @@ MindSpeed-LLM/
 
 ---
 
-- 详细的安装步骤和环境配置请参考[MindSpeed LLM安装指导（基于PyTorch）](./docs/zh/pytorch/training/install_guide.md)。
+- 详细的安装步骤和环境配置请参考[MindSpeed LLM软件安装（基于PyTorch）](./docs/zh/pytorch/training/install_guide.md)。
 
 # 快速上手
 

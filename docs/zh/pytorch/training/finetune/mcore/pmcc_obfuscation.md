@@ -8,7 +8,7 @@ PMCC混淆是指对微调过程使用的模型文件和数据集进行混淆处�
 
 由于PMCC混淆功能当前仅支持Qwen3-32B模型，因此本文档以该模型为例介绍PMCC使能方法，具体步骤如下：
 
-1. 参考[MindSpeed LLM安装指导](../../../training/install_guide.md)，完成环境安装。
+1. 参考[MindSpeed LLM软件安装](../../../training/install_guide.md)，完成环境安装。
     请在训练开始前配置好昇腾NPU套件相关的环境变量，如下所示：
 
     ```shell
