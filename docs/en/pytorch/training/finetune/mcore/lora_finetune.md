@@ -82,7 +82,7 @@ Parameters for data preprocessing:
 - `workers`: Number of parallel workers used to process the dataset.
 - `log-interval`: Number of steps between progress updates.
 - `enable-thinking`: Enables the fast-thinking and slow-thinking template switch. You can set it to `[true, false, none]`, and the default value is `none`. When you enable it, `<think>` and `</think>` are added to model responses in the dataset and are included in the loss calculation. Therefore, all data is treated as slow-thinking data. When you disable it, an empty CoT marker is added to the user input in the dataset and is excluded from the loss calculation. Therefore, all data is treated as fast-thinking data. Setting it to `none` is suitable when the original dataset mixes fast-thinking and slow-thinking data. **Currently, this option supports only Qwen3 series models.**
-- `prompt-type`: Specifies the model template, which helps the base model develop stronger conversational ability after fine-tuning. You can find the available `prompt-type` options in the [`templates`](../../../../../../configs/finetune/templates.json) file.
+- `prompt-type`: Specifies the model template, which helps the base model develop stronger conversational ability after fine-tuning. You can find the available `prompt-type` options in the [templates.json](../../../../../../configs/finetune/templates.json) file.
 
 After you finish configuring the parameters, run the data preprocessing script:
 

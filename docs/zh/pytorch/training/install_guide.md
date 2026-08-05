@@ -1,4 +1,4 @@
-# MindSpeed LLM安装指导
+# MindSpeed LLM软件安装
 
 本文主要向用户介绍如何快速基于PyTorch框架完成MindSpeed LLM（大语言模型分布式训练套件）的安装。
 
@@ -22,27 +22,19 @@
 > 本节表格中“√”代表支持，“x”代表不支持。
 
 - 各硬件产品对应物理机部署场景支持的操作系统请参考[兼容性查询助手](https://www.hiascend.com/hardware/compatibility)。
-- 各硬件产品对应虚拟机及容器部署场景支持的操作系统请参考《CANN 软件安装》的“[操作系统兼容性说明](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/900/softwareinst/instg/instg_0101.html?OS=openEuler&InstallType=netyum)”章节。
+- 各硬件产品对应虚拟机及容器部署场景支持的操作系统请参考《CANN 软件安装》的“[操作系统兼容性说明](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/latest/softwareinst/instg/instg_0101.html?OS=openEuler&InstallType=netyum)”章节。
 
 ## 安装前准备
 
 请参见《版本说明》中的“[相关产品版本配套说明](../../release_notes_llm.md#相关产品版本配套说明)”章节，下载安装对应的软件版本。
 
+请单击[固件与驱动](https://www.hiascend.com/hardware/firmware-drivers)，并根据引导完成固件与驱动的安装。
+
 > [!NOTICE]
 >
 > 安装运行程序建议使用非root用户，且建议对安装程序的目录文件做好权限管控：文件夹权限设置为750，文件权限设置为640。可以通过设置umask控制安装后文件的权限，如设置umask为0027。
+> 
 > 更多安全相关内容请参见《[安全声明](../../SECURITYNOTE.md)》中各组件关于“文件权限控制”的说明。
-
-下载[固件与驱动](https://www.hiascend.com/hardware/firmware-drivers/community)，请根据系统和硬件产品型号选择对应版本的社区版本或商用版本的固件与驱动。
-
-参考如下命令安装：
-
-```shell
-chmod +x Ascend-hdk-<chip_type>-npu-driver_<version>_linux-<arch>.run
-chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
-./Ascend-hdk-<chip_type>-npu-driver_<version>_linux-<arch>.run --full --force
-./Ascend-hdk-<chip_type>-npu-firmware_<version>.run --full
-```
 
 ## 安装MindSpeed LLM
 
@@ -51,7 +43,7 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
 > [!NOTE]
 >
 > - 使用镜像前，请先确认机器型号。最新镜像仅支持aarch64架构，可通过uname -a命令确认当前环境是否符合要求。
-> - 配套镜像已预装配套的CANN 9.1.0软件及TorchNPU 26.0.0插件，您可根据需要选用。
+> - 配套镜像已预装配套的CANN 9.1.0软件及TorchNPU 26.1.0插件，您可根据需要选用。
 > - 若您当前环境与提供的镜像不兼容，请选择[方式二：源码安装](#方式二源码安装)。
 > - master分支后续会更新新的镜像，如果需要自定义构建镜像请参见[镜像概述](../../../../docker/OVERVIEW.zh.md)。
 
@@ -78,6 +70,7 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
       --network=host \
       --pid=host \
       --name mindspeed_llm \
+      --privileged \
       --shm-size=512g \
       --device=/dev/davinci0 \
       --device=/dev/davinci_manager \
@@ -112,6 +105,7 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
     |--network|表示使用宿主机的网络栈。|
     |--pid|表示使用宿主机的PID命名空间。使用该参数后容器内的进程可以查看宿主机上的所有进程ID。|
     |--name|表示给容器指定一个名称。mindspeed_llm是容器的标识符，可以自行设置，且在当前系统中具有唯一性。如果不设置，Docker会自动分配一个随机名称。|
+    |--privileged|用于解除容器默认权限限制，赋予容器近乎宿主机的权限，保证昇腾驱动调用、npu-smi等工具能够正常与硬件设备交互。|
     |--shm-size|表示指定容器的共享内存（/dev/shm）大小，用户可自行设置，512g为示例值。<br>该值不能超过宿主机剩余的物理内存总量，可使用`free -h`命令查看。|
     |--device|表示将宿主机的设备映射到容器内。每个--device参数将宿主机设备（例如硬件加速卡或其他硬件设备）共享给容器，以便容器可以直接访问。<ul><li>/dev/davinci_manager：davinci相关的管理设备。</li><li>/dev/hisi_hdc：hdc相关管理设备。</li><li>/dev/devmm_svm：内存管理相关设备。</li><li>/dev/davinci*X*：NPU设备，*X*是ID号，如：davinci0。</li></ul>可根据`ll /dev/ \| grep davinci`命令查询device个数及名称，根据需要绑定设备，修改上面命令中的"--device=****"。|
      |-v|表示将物理机的文件夹映射到容器内的相应目录，以下参数请根据实际路径修改。<ul><li>/usr/local/Ascend/driver：该路径包含硬件驱动程序文件，驱动在宿主机上安装，将其映射到容器中，方可在容器中使用。</li><li>/usr/local/Ascend/firmware：该路径包含硬件固件程序文件，固件在宿主机上安装，将其映射到容器中，方可在容器中使用。</li><li>/usr/local/bin/npu-smi：该路径包含npu-smi等NPU状态查看命令，请根据实际路径修改。</li><li>/usr/local/dcmi：该路径用于挂载dcmi工具。</li><li>/usr/local/Ascend/driver/version.info：该路径包含驱动版本信息文件。</li><li>/etc/ascend_install.info：该路径包含安装版本信息文件。</li><li>/data：该路径为设定数据集挂载的路径，指向保存数据集的目录，使容器能访问数据集。</li><li>/weights：该路径为设定权重挂载的路径，指向保存权重的目录，使容器能访问权重。</li></ul>|
@@ -144,7 +138,7 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
 
 2. 安装CANN
 
-   安装配套版本的NPU驱动固件、CANN软件（Toolkit、ops和NNAL）并配置CANN环境变量，具体请参考《[CANN 软件安装](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/900/softwareinst/instg/instg_0000.html)》。
+   安装配套版本的NPU驱动固件、CANN软件（Toolkit、ops和NNAL）并配置CANN环境变量，具体请参考《[CANN 软件安装](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/latest/softwareinst/instg/instg_0000.html)》。
 
    CANN软件提供进程级环境变量设置脚本，训练或推理场景下使用NPU执行业务代码前需要调用该脚本，否则业务代码将无法执行。
 
@@ -162,11 +156,11 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
 
    以上命令以CANN离线安装场景未指定安装路径为例，给出了不同用户的默认安装路径及对应的配置环境变量的命令。
 
-   若用户指定安装路径或使用其他安装方式，请参考《[CANN 软件安装](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/900/softwareinst/instg/instg_0000.html)》查阅对应的配置环境变量的命令。
+   若用户指定安装路径或使用其他安装方式，请参考《[CANN 软件安装](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/latest/softwareinst/instg/instg_0000.html)》查阅对应的配置环境变量的命令。
 
 3. 安装PyTorch以及TorchNPU
 
-   请参考《TorchNPU软件安装》中的“[安装PyTorch](https://www.hiascend.com/document/detail/zh/Pytorch/2600/configandinstg/instg/docs/zh/installation_guide/installation_via_binary_package.md)”章节，获取配套版本的PyTorch以及TorchNPU软件包。
+   请参考《TorchNPU软件安装》中的“[安装TorchNPU](https://www.hiascend.com/document/detail/zh/Pytorch/latest/installguide/swinstall/docs/zh/installation_guide/installation_via_binary_package.md)”章节，获取配套版本的PyTorch以及TorchNPU软件包。
 
    可参考如下安装命令：
 
@@ -177,7 +171,7 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
 
    > [!NOTE]
    >
-   > 更多TorchNPU插件版本请参考https://gitcode.com/ascend/pytorch/releases。
+   > 更多TorchNPU插件版本请单击[Link](https://gitcode.com/ascend/pytorch/releases)。
 
 4. 安装Triton-Ascend
 
@@ -193,12 +187,12 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
    >
    > Triton-Ascend 3.2.0及以下版本，Triton-Ascend和Triton不能同时存在。需先卸载社区Triton，再安装Triton-Ascend。
 
-5. 安装MindSpeed加速库
+5. 安装MindSpeed Core训练加速库
 
     ```shell
     git clone https://gitcode.com/ascend/MindSpeed.git
     cd MindSpeed
-    git checkout master  # 切换至MindSpeed的master分支
+    git checkout master  # 切换至MindSpeed Core的master分支
     pip3 install -r requirements.txt
     pip3 install -e .
     cd ..
@@ -233,7 +227,7 @@ chmod +x Ascend-hdk-<chip_type>-npu-firmware_<version>.run
 > [!NOTE]
 >
 > - 本方式为可选方案，适用于需要统一管理MindSpeed等三方依赖软件版本的场景。
-> - 采用此方式后，上述[方式二](#方式二源码安装)中的逐个依赖仓库拉取与版本切换步骤可通过一条命令完成。
+> - 采用此方式后，上述[方式二：源码安装](#方式二源码安装)中的逐个依赖仓库拉取与版本切换步骤可通过一条命令完成。
 > - 若已通过方式二手动clone了相关仓库，请先删除对应目录后再使用本方式，避免目录冲突。
 
 MindSpeed LLM支持通过Git Submodule统一管理三方依赖仓库，便于版本追踪与协同开发。子模块统一放置在`3rdparty/`目录下，其中：
@@ -244,7 +238,7 @@ MindSpeed LLM支持通过Git Submodule统一管理三方依赖仓库，便于版
 
 1. 基础环境准备
 
-   虚拟环境、CANN、PTA、TA等基础环境准备，同[方式二](#方式二源码安装)的步骤1-4。
+   虚拟环境、CANN、TorchNPU、TA等基础环境准备，同[方式二：源码安装](#方式二源码安装)的步骤1-4。
 
 2. 下载源码
 
@@ -270,7 +264,7 @@ MindSpeed LLM支持通过Git Submodule统一管理三方依赖仓库，便于版
    ├── 3rdparty/
    │   ├── MindSpeed/          # 加速库（对应方式二步骤5）
    │   ├── FSDPTurbo/          # FSDP加速库（对应方式二步骤6）
-   │   └── Megatron-LM/       # Megatron-LM核心代码（对应方式二步骤7）
+   │   └── Megatron-LM/        # Megatron-LM核心代码（对应方式二步骤7）
    └── ...
    ```
 

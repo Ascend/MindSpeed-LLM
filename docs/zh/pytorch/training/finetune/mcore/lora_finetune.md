@@ -21,7 +21,7 @@ $
 
 ![LoRA微调流程图](../../../figures/lora_finetune/process_of_lora_tuning.png)
 
-第一步，请参考[MindSpeed LLM安装指导](../../../training/install_guide.md)，完成环境安装。请在训练开始前配置好昇腾NPU套件相关的环境变量，如下所示：
+第一步，请参考[MindSpeed LLM软件安装](../../../training/install_guide.md)，完成环境安装。请在训练开始前配置好昇腾NPU套件相关的环境变量，如下所示：
 
 ```shell
 source /usr/local/Ascend/cann/set_env.sh     # 修改为实际安装的Toolkit包路径
@@ -82,7 +82,7 @@ source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路
 - `workers`：处理数据集的并行数。
 - `log-interval`：处理进度更新的间隔步数。
 - `enable-thinking`：快慢思考模板开关，可设定为`[true,false,none]`，默认值是`none`。开启后，会在数据集的模型回复中添加`<think>`和`</think>`，并参与到loss计算，所有数据被当成慢思考数据；当关闭后，空的CoT标志将被添加到数据集的用户输入中，不参与loss计算，所有数据被当成快思考数据；设置为`none`时适合原始数据集是混合快慢思考数据的场景。**目前只支持Qwen3系列模型**。
-- `prompt-type`：用于指定模型模板，能够让base模型微调后能具备更好的对话能力。`prompt-type`的可选项可以在[`templates`](../../../../../../configs/finetune/templates.json)文件内查看。
+- `prompt-type`：用于指定模型模板，能够让base模型微调后能具备更好的对话能力。`prompt-type`的可选项可以在[templates.json](../../../../../../configs/finetune/templates.json)文件内查看。
 
 相关参数设置完毕后，运行数据预处理脚本：
 

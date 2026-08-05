@@ -72,7 +72,7 @@ python ./preprocess_data.py \
 
 `--prompt-type`
 
-This option specifies the model template and helps the base model develop stronger conversational ability after fine-tuning. You can find the available `prompt-type` options in the [templates](../../../../configs/finetune/templates.json) file.
+This option specifies the model template and helps the base model develop stronger conversational ability after fine-tuning. You can find the available `prompt-type` options in the [templates.json](../../../../configs/finetune/templates.json) file.
 
 `--map-keys`
 

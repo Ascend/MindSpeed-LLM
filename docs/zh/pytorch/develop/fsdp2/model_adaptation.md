@@ -66,7 +66,7 @@ wget -O /home/data/alpaca/train-00000-of-00001-a09b74b3ef9c3b56.parquet \
 
     模型目录至少需要包含`config.json`、tokenizer文件和权重文件。GPT-OSS的`config.json`示例：
 
-    ```jsonc
+    ```json
     {
       // HuggingFace加载模型时使用的模型类名称。
       "architectures": [

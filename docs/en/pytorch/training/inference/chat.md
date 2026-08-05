@@ -77,7 +77,7 @@ If the model tokenizer already has the `chat_template` attribute, you can add `-
 
 `--prompt-type`
 
-The conversation template of the model has the same effect as `--hf-chat-template`, but it does not require the model tokenizer to have the `chat_template` attribute. When you run inference for a fine-tuned model, you should choose the conversation template that matches the model. You can find the available `prompt-type` values in the [`templates`](../../../../../configs/finetune/templates.json) file.
+The conversation template of the model has the same effect as `--hf-chat-template`, but it does not require the model tokenizer to have the `chat_template` attribute. When you run inference for a fine-tuned model, you should choose the conversation template that matches the model. You can find the available `prompt-type` values in the [templates.json](../../../../../configs/finetune/templates.json) file.
 
 #### Commands for the Chat Program
 

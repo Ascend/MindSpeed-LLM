@@ -17,7 +17,7 @@
 
     将Megatron-Mcore模型权重转换为HuggingFace格式，适用于不同框架间的模型迁移。
 
-  - [【调试功能】HuggingFace权重减层转换至Megatron-Mcore格式](#调试功能huggingface权重减层转换至megatron-mcore格式)
+  - [(调试功能)HuggingFace权重减层转换至Megatron-Mcore格式](#调试功能huggingface权重减层转换至megatron-mcore格式)
 
     支持将HuggingFace模型权重减层转换为Megatron-Mcore格式，支持多种并行切分。
 
@@ -44,7 +44,6 @@
 将下载的权重保存至`MindSpeed-LLM/model_from_hf`目录，例如：
 
 ```shell
-#!/bin/bash
 mkdir ./model_from_hf/llama-2-7b-hf/
 cd ./model_from_hf/llama-2-7b-hf/
 wget https://huggingface.co/daryl149/llama-2-7b-hf/resolve/main/config.json
@@ -198,7 +197,7 @@ bash examples/mcore/qwen3_moe/ckpt_convert_qwen3_moe_235b_mcore2hf.sh
 >
 > 需在权重转换脚本中配置并行参数、权重词表路径、权重加载路径（包括词表等配置文件）以及权重保存的路径。
 
-### 【调试功能】HuggingFace权重减层转换至Megatron-Mcore格式
+### (调试功能)HuggingFace权重减层转换至Megatron-Mcore格式
 
 本框架支持HuggingFace权重转换到Megatron-Mcore格式时**减层调试**，并且**无需更改模型的配置文件**，通过以下命令行参数进行减层配置。
 

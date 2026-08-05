@@ -13,14 +13,14 @@
 | 推理 | [inference.py](../../inference.py)、[inference_fsdp2.py](../../inference_fsdp2.py) | [examples/mcore/qwen3/generate_qwen3_8b_ptd.sh](../../examples/mcore/qwen3/generate_qwen3_8b_ptd.sh) | shell 参数或 YAML | [mindspeed_llm/tasks/inference](../../mindspeed_llm/tasks/inference)、[mindspeed_llm/fsdp2/inference](../../mindspeed_llm/fsdp2/inference) | mcore 与 FSDP2 推理入口不同 |
 | 评估 | [evaluation.py](../../evaluation.py) | [examples/mcore/qwen3/evaluate_qwen3_8b_ptd.sh](../../examples/mcore/qwen3/evaluate_qwen3_8b_ptd.sh) | shell 参数、[configs/evaluate](../../configs/evaluate) | [mindspeed_llm/tasks/evaluation](../../mindspeed_llm/tasks/evaluation) | Benchmark 评估任务 |
 | 数据预处理 | [preprocess_data.py](../../preprocess_data.py) | [examples/mcore/qwen3/data_convert_qwen3_pretrain.sh](../../examples/mcore/qwen3/data_convert_qwen3_pretrain.sh) | shell 参数 | [mindspeed_llm/tasks/preprocess](../../mindspeed_llm/tasks/preprocess) | 预训练、SFT、DPO 等数据处理 |
-| 权重转换 | [convert_ckpt.py](../../convert_ckpt.py)、[convert_ckpt_v2.py](../../convert_ckpt_v2.py) | [examples/mcore/qwen3/ckpt_convert_qwen3_hf2mcore.sh](../../examples/mcore/qwen3/ckpt_convert_qwen3_hf2mcore.sh) | shell 参数、[configs/checkpoint](../../configs/checkpoint) | [mindspeed_llm/tasks/checkpoint](../../mindspeed_llm/tasks/checkpoint) | HF、Megatron、mcore 等格式转换 |
+| 权重转换 | [convert_ckpt_v2.py](../../convert_ckpt_v2.py) | [examples/mcore/qwen3/ckpt_convert_qwen3_hf2mcore.sh](../../examples/mcore/qwen3/ckpt_convert_qwen3_hf2mcore.sh) | shell 参数、[configs/checkpoint](../../configs/checkpoint) | [mindspeed_llm/tasks/checkpoint](../../mindspeed_llm/tasks/checkpoint) | HF、Megatron、mcore 等格式转换 |
 
 ## mcore 任务链路
 
 典型 mcore 链路包括数据处理、权重转换、训练、推理和评估：
 
 1. 使用 `preprocess_data.py` 处理数据，例如 `examples/mcore/qwen3/data_convert_qwen3_pretrain.sh`。
-2. 使用 `convert_ckpt.py` 或 `convert_ckpt_v2.py` 转换权重，例如 `examples/mcore/qwen3/ckpt_convert_qwen3_hf2mcore.sh`。
+2. 使用 `convert_ckpt_v2.py` 转换权重，例如 `examples/mcore/qwen3/ckpt_convert_qwen3_hf2mcore.sh`。
 3. 预训练使用 `pretrain_gpt.py`，后训练使用 `posttrain_gpt.py`。
 4. 推理使用 `inference.py`，评估使用 `evaluation.py`。
 
@@ -69,7 +69,7 @@ DPO 属于 mcore DPO 后训练路径，通常通过 `posttrain_gpt.py`、`--stag
 | 推理 | `inference.py`、`inference_fsdp2.py` | 权重路径、tokenizer、并行参数、输出方式 |
 | 评估 | `evaluation.py` | 权重路径、评估数据路径、任务列表、batch 参数 |
 | 数据预处理 | `preprocess_data.py`、`preprocess_prompt.py` | 原始数据路径、tokenizer、输出前缀、数据格式 |
-| 权重转换 | `convert_ckpt.py`、`convert_ckpt_v2.py` | 源权重路径、目标权重路径、模型类型、转换方向、并行切分 |
+| 权重转换 | `convert_ckpt_v2.py` | 源权重路径、目标权重路径、模型类型、转换方向、并行切分 |
 
 ## 配置来源说明
 

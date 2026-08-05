@@ -5,15 +5,9 @@
 本文档提供了一个简易示例，帮助初次接触 MindSpeed LLM 的开发者快速启动模型训练任务，并使用 FSDP2 后端完成大语言模型的预训练和微调任务。
 以下将以 Qwen3-8B 模型为例，指导开发者完成大语言模型的预训练和微调任务，主要步骤包括：
 
-- 环境准备：根据仓库指导文件搭建环境
-- 准备开源模型权重：从 HuggingFace 下载 Qwen3-8B 原始模型
+- 环境准备：根据安装指引进行搭建环境
+- 权重和数据集准备：从HuggingFace下载Qwen3-8B开源模型权重，并获取Alpaca数据集
 - 启动训练任务：在昇腾 NPU 上使用 FSDP2 后端进行模型预训练和微调
-
-> [!NOTE]
->
-> MindSpeed LLM 支持 <term>Ascend 950 系列产品</term>、<term>Atlas A3 训练系列产品</term> 和 <term>Atlas A2 训练系列产品</term>，且要求单 NPU 的片上内存为 64GB 及以上，详见[模型支持列表](../models/supported_models.md)。
->
-> 当前 Qwen3-8B 的示例脚本中 `NPUS_PER_NODE=8` 表示需要 8 个 NPU，如果实际情况低于此配置，可能遇到 OOM 问题。
 
 开发者入门基础：
 
@@ -23,15 +17,19 @@
 
 > [!NOTE]
 >
+> MindSpeed LLM 支持 <term>Ascend 950 系列产品</term>、<term>Atlas A3 训练系列产品</term> 和 <term>Atlas A2 训练系列产品</term>，且要求单 NPU 的片上内存为 64GB 及以上，详见[模型支持列表](../models/supported_models.md)。
+>
 > 本文档为 **快速入门跟练教程**。若需更换模型、注册自定义数据集或查阅更完整的 YAML 配置说明，请参考 [FSDP2 后端训练使用指南](./finetune/fsdp2/finetune_fsdp2.md)。
+>
+> 当前 Qwen3-8B 的示例脚本中 `NPUS_PER_NODE=8` 表示需要 8 个 NPU，如果实际情况低于此配置，可能遇到OOM（Out of Memory，内存不足）问题。
 
 ## 环境准备
 
-1. 环境搭建
+请单击[MindSpeed快速安装](https://www.hiascend.com/developer/software/mindspeed/download)根据引导进行环境搭建，详细安装说明请参考[MindSpeed LLM软件安装](install_guide.md)。
 
-    基于 PyTorch 框架，环境搭建请参考 [MindSpeed LLM 安装指导](./install_guide.md)。
+## 权重和数据集准备
 
-2. 获取开源模型权重
+1. 获取开源模型权重
 
     创建一个目录存储权重文件。
 
@@ -90,7 +88,7 @@
     cd ../..
     ```
 
-3. 获取数据集
+2. 获取数据集
 
     通过 HuggingFace 获取 Alpaca 数据集。
 
@@ -104,7 +102,7 @@
     cd ..
     ```
 
-4. 设置环境变量
+3. 设置环境变量
 
     ```shell
     source /usr/local/Ascend/cann/set_env.sh
@@ -117,13 +115,15 @@
 
 在这一阶段，我们将修改预训练示例脚本和配置文件，启动模型预训练，具体步骤如下：
 
-1. 编辑预训练启动脚本。
+1. 编辑预训练启动脚本
 
     ```shell
     vi examples/fsdp2/qwen3/pretrain_qwen3_8b_4k_fsdp2_A2.sh
     ```
 
-2. 修改并保存分布式参数配置，配置示例如下：
+2. 修改并保存分布式参数配置
+
+    配置示例如下：
 
     ```bash
     source examples/fsdp2/env_config.sh                 # 加载 NPU 环境变量配置
@@ -154,13 +154,15 @@
         --training.output_dir ./output
     ```
 
-3. 编辑训练参数配置文件。
+3. 编辑训练参数配置文件
 
     ```shell
     vi examples/fsdp2/qwen3/pretrain_qwen3_8b_4k_fsdp2_A2.yaml
     ```
 
-4. 修改并保存训练参数配置，配置示例如下：
+4. 修改并保存训练参数配置
+
+    配置示例如下：
 
     ```yaml
     model:
@@ -201,7 +203,7 @@
       logging_steps: 1
     ```
 
-5. 执行预训练脚本。
+5. 执行预训练脚本
 
     ```shell
     bash examples/fsdp2/qwen3/pretrain_qwen3_8b_4k_fsdp2_A2.sh
@@ -226,13 +228,15 @@
 
 在这一阶段，我们将修改微调示例脚本和配置文件，启动模型微调，具体步骤如下：
 
-1. 编辑微调启动脚本。
+1. 编辑微调启动脚本
 
     ```shell
     vi examples/fsdp2/qwen3/tune_qwen3_8b_4k_fsdp2_A2.sh
     ```
 
-2. 修改并保存分布式参数配置，配置示例如下：
+2. 修改并保存分布式参数配置
+
+    配置示例如下：
 
     ```bash
     source examples/fsdp2/env_config.sh                 # 加载 NPU 环境变量配置
@@ -263,13 +267,15 @@
         --training.output_dir ./output
     ```
 
-3. 编辑微调参数配置文件。
+3. 编辑微调参数配置文件
 
     ```shell
     vi examples/fsdp2/qwen3/tune_qwen3_8b_4k_fsdp2_A2.yaml
     ```
 
-4. 修改并保存微调参数配置，配置示例如下：
+4. 修改并保存微调参数配置
+
+    配置示例如下：
 
     ```yaml
     model:
@@ -314,7 +320,7 @@
       logging_steps: 1
     ```
 
-5. 执行微调脚本。
+5. 执行微调脚本
 
     ```shell
     bash examples/fsdp2/qwen3/tune_qwen3_8b_4k_fsdp2_A2.sh
@@ -333,7 +339,7 @@
 > [!NOTE]
 >
 > - 多机微调需在多个终端同时启动微调脚本（每个终端的微调脚本只有 `NODE_RANK` 参数不同，MASTER_ADDR均为主节点的IP地址，其他参数均相同）。
-> - 微调默认使用 alpaca 数据集格式，如需使用其他数据集，请参考 [FSDP2 后端训练使用指南](./finetune/fsdp2/finetune_fsdp2.md) 中的数据集配置说明，或 [FSDP2 参数说明](../features/fsdp2/arguments.md)。
+> - 微调默认使用 Alpaca 数据集格式。如需使用其他数据集，请参考[FSDP2 后端训练使用指南](./finetune/fsdp2/finetune_fsdp2.md) 中的数据集配置说明，或[全量参数介绍（基于FSDP2训练后端）](../features/fsdp2/arguments.md)中的“数据参数（DataArguments）”相关介绍。
 
 脚本中包含训练参数，下表为部分参数解释。
 
@@ -360,5 +366,5 @@
 
 > [!NOTE]
 >
-> - 完整参数说明请参考 [FSDP2 参数说明](../features/fsdp2/arguments.md)。
+> - 完整参数说明请参见[全量参数介绍（基于FSDP2训练后端）](../features/fsdp2/arguments.md)。
 > - YAML 配置与数据集注册示例请参考 [FSDP2 后端训练使用指南](./finetune/fsdp2/finetune_fsdp2.md)。

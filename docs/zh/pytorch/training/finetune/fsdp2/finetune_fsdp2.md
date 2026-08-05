@@ -18,7 +18,7 @@
 
 ### 环境搭建
 
-启动微调前，请参考 [MindSpeed LLM 安装指导](../../install_guide.md)完成环境安装。
+启动微调前，请参考 [MindSpeed LLM软件安装](../../install_guide.md)完成环境安装。
 
 FSDP2 后端的公共环境变量位于 `examples/fsdp2/env_config.sh`，示例启动脚本会自动加载该文件。配置如下：
 

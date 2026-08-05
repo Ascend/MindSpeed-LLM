@@ -27,7 +27,7 @@
 
 1. 环境搭建
 
-    启动预训练前请参考[MindSpeed LLM安装指导](../../install_guide.md)完成环境安装，并确保已完成昇腾NPU套件相关的环境变量配置，如下所示：
+    启动预训练前请参考[MindSpeed LLM软件安装](../../install_guide.md)完成环境安装，并确保已完成昇腾NPU套件相关的环境变量配置，如下所示：
 
     ```shell
     source /usr/local/Ascend/cann/set_env.sh
@@ -154,4 +154,4 @@
 
 ## 使用约束
 
-如需存储日志到脚本文件中，请在运行路径目录下创建`logs`文件夹。
+如需将训练日志保存到文件，请在运行路径目录下创建`logs`文件夹。

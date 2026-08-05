@@ -4,7 +4,7 @@
 
 ## 相关文档
 
-- [MindSpeed LLM安装指导](../../../docs/zh/pytorch/training/install_guide.md)
+- [MindSpeed LLM软件安装](../../../docs/zh/pytorch/training/install_guide.md)
 - [mcore 预训练](../../../docs/zh/pytorch/training/pretrain/mcore/pretrain.md)
 - [mcore 指令微调](../../../docs/zh/pytorch/training/finetune/mcore/instruction_finetune.md)
 - [模型推理](../../../docs/zh/pytorch/training/inference/inference.md)

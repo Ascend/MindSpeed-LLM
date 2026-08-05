@@ -2,7 +2,7 @@
 
 ## 1. 准备工作
 
-参考[MindSpeed LLM安装指导](../../../docs/zh/mindspore/install_guide.md)，完成环境安装和[预训练数据处理](../../../docs/zh/pytorch/tools/data_process_pretrain.md)。
+参考[MindSpeed LLM软件安装](../../../docs/zh/mindspore/install_guide.md)，完成环境安装和[预训练数据处理](../../../docs/zh/pytorch/tools/data_process_pretrain.md)。
 
 ## 2. 权重转换
 

@@ -4,7 +4,7 @@ MindSpeed LLM支持在微调任务上使用LoRA进行低参数训练，使用方
 
 本教程旨在为用户提供模型LoRA微调迁移开发指导。接下来以Qwen3-8B模型和单台`Atlas 900 A2 POD`（1x8集群）为例，逐步说明如何进行LoRA微调脚本开发。
 
-在按照如下步骤操作前，需要先参考[MindSpeed LLM安装指导](../../training/install_guide.md)完成环境安装，并准备好模型权重和微调数据集。模型权重下载请参考[模型支持列表](../../models/supported_models.md)文档中对应模型的下载链接。数据集下载请参考[Alpaca风格数据集](../../tools/data_process_sft_alpaca_style.md)和[ShareGPT风格数据集](../../tools/data_process_sft_sharegpt_style.md)。
+在按照如下步骤操作前，需要先参考[MindSpeed LLM软件安装](../../training/install_guide.md)完成环境安装，并准备好模型权重和微调数据集。模型权重下载请参考[模型支持列表](../../models/supported_models.md)文档中对应模型的下载链接。数据集下载请参考[Alpaca风格数据集](../../tools/data_process_sft_alpaca_style.md)和[ShareGPT风格数据集](../../tools/data_process_sft_sharegpt_style.md)。
 
 ## 1、模型权重转换
 
@@ -45,7 +45,7 @@ source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路
 - `workers`：处理数据集的并行数。
 - `log-interval`：处理进度更新的间隔步数。
 - `enable-thinking`：快慢思考模板开关，可设定为`[true,false,none]`，默认值是`none`。开启后，会在数据集的模型回复中添加`<think>`和`</think>`，并参与到loss计算，所有数据被当成慢思考数据；当关闭后，空的CoT标志将被添加到数据集的用户输入中，不参与loss计算，所有数据被当成快思考数据；设置为`none`时适合原始数据集是混合快慢思考数据的场景。**目前只支持Qwen3系列模型**。
-- `prompt-type`：用于指定模型模板，能够让base模型微调后能具备更好的对话能力。`prompt-type`的可选项可以在[`templates`](../../../../../configs/finetune/templates.json)文件内查看。
+- `prompt-type`：用于指定模型模板，能够让base模型微调后能具备更好的对话能力。`prompt-type`的可选项可以在[templates.json](../../../../../configs/finetune/templates.json)文件内查看。
 
 相关参数设置完毕后，运行数据预处理脚本：
 

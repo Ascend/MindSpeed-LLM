@@ -14,7 +14,7 @@ Specifies that fine-tuning uses an instruction dataset to ensure that the model 
 
 `--prompt-type`
 
-Specifies the model template. It enables the base model to become more conversational after fine-tuning. You can view the available `prompt-type` options in the [`templates`](../../../../../configs/finetune/templates.json) file.
+Specifies the model template. It enables the base model to become more conversational after fine-tuning. You can view the available `prompt-type` options in the [templates.json](../../../../../configs/finetune/templates.json) file.
 
 `--reset-position-ids`
 

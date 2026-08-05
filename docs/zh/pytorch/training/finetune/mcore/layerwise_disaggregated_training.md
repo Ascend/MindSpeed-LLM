@@ -6,7 +6,7 @@
 
 ### 前置准备
 
-1. 参考[MindSpeed LLM安装指导](../../install_guide.md)，完成环境安装。
+1. 参考[MindSpeed LLM软件安装](../../install_guide.md)，完成环境安装。
 
     请在训练开始前配置好昇腾NPU套件相关的环境变量，如下所示：
 

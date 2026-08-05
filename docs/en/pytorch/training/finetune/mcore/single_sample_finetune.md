@@ -56,7 +56,7 @@ This section explains how to use single-sample data to perform instruction fine-
 
 3. Model weight conversion.
 
-    Refer to [Weight Conversion v1](../../../tools/checkpoint_convert_hf_mcore.md) and [Weight Conversion v2](../../../tools/checkpoint_convert_hf_mcore_large_params.md) to convert the original Hugging Face weights to Megatron weights. Using the Qwen3-8B model with a TP1PP4 split as an example, see the [Qwen3-8B weight conversion script](../../../../../../examples/mcore/qwen3/ckpt_convert_qwen3_hf2mcore.sh) for detailed configuration.
+    Refer to [Weight Conversion](../../../tools/checkpoint_convert_hf_mcore_large_params.md) to convert the original Hugging Face weights to Megatron weights. Using the Qwen3-8B model with a TP1PP4 split as an example, see the [Qwen3-8B weight conversion script](../../../../../../examples/mcore/qwen3/ckpt_convert_qwen3_hf2mcore.sh) for detailed configuration.
 
     First, modify the following parameters in the script:
 
@@ -100,7 +100,7 @@ This section explains how to use single-sample data to perform instruction fine-
     - `workers`: The number of parallel workers used to process the dataset.
     - `log-interval`: The number of steps between progress updates.
     - `enable-thinking`: Enables or disables the fast-thinking or slow-thinking template. You can set it to `[true, false, none]`, and the default value is `none`. When you enable it, dataset responses include `<think>` and `</think>`, and these tokens participate in loss calculation. Therefore, all data is treated as slow-thinking data. When you disable it, an empty CoT marker is added to the user input in the dataset, and it does not participate in loss calculation. Therefore, all data is treated as fast-thinking data. Setting it to `none` works well when the original dataset contains a mix of fast-thinking and slow-thinking data. **Currently, this option supports only Qwen3 series models.**
-    - `prompt-type`: Specifies the model template. It helps the base model gain stronger conversational ability after fine-tuning. You can find the available `prompt-type` options in the [`templates.json`](../../../../../../configs/finetune/templates.json) file.
+    - `prompt-type`: Specifies the model template. It helps the base model gain stronger conversational ability after fine-tuning. You can find the available `prompt-type` options in the [templates.json](../../../../../../configs/finetune/templates.json) file.
 
     After you finish configuring the parameters, run the data preprocessing script:
 
