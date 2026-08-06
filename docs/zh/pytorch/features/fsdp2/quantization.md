@@ -9,14 +9,14 @@
 
 ### 1. 参数概览
 
-| 参数 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `--model.quant_recipe_name` | str | mxfp8（必填） | 使用的量化配方名 |
-| `--model.quant_apply_modules` | str | 'model.layers.{*}' | 应用量化的层或模块 |
-| `--model.quant_ignored_modules` | str | '*lm_head'，'*gate' | 不应用量化的子模块列表 |
+| 参数 | 类型 | 默认值                  | 说明 |
+|------|------|----------------------|------|
+| `--model.quant_recipe_name` | str | mxfp8（必填）            | 使用的量化配方名 |
+| `--model.quant_apply_modules` | str | 'model.layers.{*}'   | 应用量化的层或模块 |
+| `--model.quant_ignored_modules` | str | '*lm_head' '*gate'   | 不应用量化的子模块列表 |
 | `--model.quant_converters` | str | 'quantize.linear.mx' | 使用的量化转换器列表 |
-| `--model.enable_fsdp_low_precision_all_gather` | bool | `True` | 是否启用低精度通信 |
-| `--model.fsdp_low_precision_all_gather_mode` | str | 'on-demand' | FSDP低精度all-gather，按需聚合前向或反向权重 |
+| `--model.enable_fsdp_low_precision_all_gather` | bool | `True`               | 是否启用低精度通信 |
+| `--model.fsdp_low_precision_all_gather_mode` | str | 'on-demand'          | FSDP低精度all-gather，按需聚合前向或反向权重 |
 
 ### 2. 核心参数说明
 
