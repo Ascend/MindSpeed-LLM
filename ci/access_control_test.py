@@ -1,9 +1,10 @@
 import os
+import sys
 from pathlib import Path
 
 
 def read_files_from_txt(txt_file):
-    with open(txt_file, "r") as f:
+    with open(txt_file, "r", encoding="utf-8") as f:
         return [line.strip() for line in f.readlines()]
 
 
@@ -13,6 +14,7 @@ def is_examples(file):
 
 def is_poc(file):
     return file.startswith("tests/poc")
+
 
 def is_0day(file):
     return file.startswith("tests/0day")
@@ -64,7 +66,7 @@ def skip_ci(files, skip_conds):
 def choose_skip_ci(raw_txt_file):
     if not os.path.exists(raw_txt_file):
         return False
-    
+
     file_list = read_files_from_txt(raw_txt_file)
     skip_conds = [
         is_examples,
@@ -77,7 +79,7 @@ def choose_skip_ci(raw_txt_file):
         is_no_suffix,
         is_poc,
         is_0day,
-        is_json
+        is_json,
     ]
 
     return skip_ci(file_list, skip_conds)
@@ -85,10 +87,7 @@ def choose_skip_ci(raw_txt_file):
 
 def filter_exec_ut(raw_txt_file):
     file_list = read_files_from_txt(raw_txt_file)
-    filter_conds = [
-        is_ut,
-        is_markdown
-    ]
+    filter_conds = [is_ut, is_markdown]
     for file in file_list:
         if not any(condition(file) for condition in filter_conds):
             return False, None
@@ -105,15 +104,18 @@ def acquire_exitcode(command):
 # UT test, run with pytest
 # =============================
 
+
 class UTTest:
     def __init__(self):
         self.base_dir = Path(__file__).absolute().parents[1]
         self.test_dir = os.path.join(self.base_dir, 'tests')
-        self.ut_files = os.path.join(
-            self.base_dir, self.test_dir, "ut"
-        )
-    
+        self.ut_files = os.path.join(self.base_dir, self.test_dir, "ut")
+
     def run_ut(self, raw_txt_file=None):
+        try:
+            import coverage  # noqa: F401
+        except ImportError:
+            acquire_exitcode("pip install coverage")
         if raw_txt_file is not None and os.path.exists(raw_txt_file):
             filtered_results = filter_exec_ut(raw_txt_file)
 
@@ -129,12 +131,13 @@ class UTTest:
             print("UT test success")
         else:
             print("UT failed")
-            exit(1)
+            sys.exit(1)
 
 
 # ===============================================
 # ST test, run with sh.
 # ===============================================
+
 
 class STTest:
     def __init__(self):
@@ -142,16 +145,14 @@ class STTest:
         self.test_dir = os.path.join(self.base_dir, 'tests')
 
         self.st_dir = "st"
-        self.pytest_suit = os.path.join(
-            self.test_dir, self.st_dir, "test_st.py"
-        )
+        self.pytest_suit = os.path.join(self.test_dir, self.st_dir, "test_st.py")
 
     def run_st(self):
         rectify_case = f"python -m pytest {self.pytest_suit} -v -x"
         rectify_code = acquire_exitcode(rectify_case)
         if rectify_code != 0:
             print("rectify case failed, check it.")
-            exit(1)
+            sys.exit(1)
 
 
 def run_tests(raw_txt_file):
@@ -162,7 +163,7 @@ def run_tests(raw_txt_file):
     else:
         st.run_st()
         ut.run_ut()
-        
+
 
 def main():
     parent_dir = Path(__file__).absolute().parents[2]
@@ -174,6 +175,6 @@ def main():
     else:
         run_tests(raw_txt_file)
 
+
 if __name__ == "__main__":
     main()
-    

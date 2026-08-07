@@ -19,7 +19,7 @@ WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 basepath=$(cd `dirname $0`; cd ../../../; pwd)
 
 TOKENIZER_PATH="/data/ci/models/deepseek4-flash/hf/DeepSeek-V4-Flash/"
-CKPT_LOAD_DIR="/data/ci/models/deepseek4-flash/mg/deepseekv4-flash-tp1-pp1-ep8-16experts/"
+CKPT_LOAD_DIR="/data/ci/models/deepseek4-flash/mg/deekseekv4-tp1pp1ep8layer4-experts16/"
 DATA_PATH="/data/ci/datasets/origin/train-00000-of-00001-a09b74b3ef9c3b56.parquet"
 OUTPUT_PREFIX="/data/ci/cache/deepseek4-flash-dataset/deepsee4-flash"
 
@@ -96,7 +96,6 @@ MOE_ARGS="
     --moe-shared-expert-intermediate-size 2048 \
     --moe-router-dtype fp32 \
     --n-hash-layers 3 \
-    --moe-permute-fusion \
     --moe-fb-overlap \
 "
 
