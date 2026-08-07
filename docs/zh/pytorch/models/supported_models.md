@@ -316,7 +316,7 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
     <tr>
       <td rowspan="5"><a href="https://huggingface.co/meta-llama">LLaMA2</a></td>
       <td><a href="https://huggingface.co/daryl149/llama-2-7b-hf/tree/main">7B</a></td>
-      <td rowspan="5"><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/master/examples/mcore/llama2">llama2</a></td>
+      <td rowspan="5"><a href="../../../../examples/mcore/llama2">llama2</a></td>
       <td>4k</td>
       <th>Mcore</th>
       <td>1x8</td>
@@ -652,7 +652,7 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
     <tr>
       <td rowspan="7"><a href="https://huggingface.co/Qwen">Qwen2.5</a></td>
       <td><a href="https://huggingface.co/Qwen/Qwen2.5-0.5B/tree/main">0.5B</a></td>
-      <td rowspan="7"><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/master/examples/mcore/qwen25">qwen25</a></td>
+      <td rowspan="7"><a href="../../../../examples/mcore/qwen25">qwen25</a></td>
       <td>32k</td>
       <th>Mcore</th>
       <td>1x8</td>
@@ -717,7 +717,7 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
     <tr>
       <td rowspan="7"> <a href="https://huggingface.co/collections/Qwen/qwen3-67dd247413f0e2e4f653967f">Qwen3</a> </td>
       <td><a href="https://huggingface.co/Qwen/Qwen3-0.6B-Base">0.6B</a></td>
-      <td rowspan="6"><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/master/examples/mcore/qwen3">qwen3</a></td>
+      <td rowspan="6"><a href="../../../../examples/mcore/qwen3">qwen3</a></td>
       <td>4k</td>
       <th>Mcore</th>
       <td>1x8</td>
@@ -772,7 +772,7 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
     </tr>
     <tr>
       <td><a href="https://huggingface.co/Qwen/Qwen3-32B">32B</a></td>
-      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/master/examples/fsdp2/qwen3">qwen3</a></td>
+      <td><a href="../../../../examples/fsdp2/qwen3">qwen3</a></td>
       <td>4k</td>
       <th>FSDP2</th>
       <td>1x16</td>
@@ -909,7 +909,7 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
     <tr>
       <td rowspan="2"><a href="https://huggingface.co/google">Gemma2</a></td>
       <td><a href="https://huggingface.co/google/gemma-2-9b/tree/main">9B</a></td>
-      <td rowspan="2"><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/master/examples/mcore/gemma2">gemma2</a></td>
+      <td rowspan="2"><a href="../../../../examples/mcore/gemma2">gemma2</a></td>
       <td>8k</td>
       <th>Mcore</th>
       <td>1x8</td>
@@ -951,7 +951,7 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/microsoft">Phi3.5</a></td>
       <td> <a href="https://huggingface.co/microsoft/Phi-3.5-mini-instruct/tree/main">mini-instruct</a> </td>
-      <td rowspan="1"><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/master/examples/mcore/phi35">phi35</a></td>
+      <td rowspan="1"><a href="../../../../examples/mcore/phi35">phi35</a></td>
       <td>4k</td>
       <th>Mcore</th>
       <td>1x8</td>
@@ -1027,7 +1027,7 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/ByteDance-Seed">Seed-OSS</a></td>
       <td><a href="https://huggingface.co/ByteDance-Seed/Seed-OSS-36B-Base/tree/main">36B</a></td>
-      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/master/examples/mcore/seed_oss">seed_oss</a></td>
+      <td><a href="../../../../examples/mcore/seed_oss">seed_oss</a></td>
       <td>2k</td>
       <th>Mcore</th>
       <td>1x8</td>
@@ -1038,7 +1038,7 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/mistralai">Magistral</a></td>
       <td><a href="https://huggingface.co/mistralai/Magistral-Small-2506/tree/main">24B</a></td>
-      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/master/examples/mcore/magistral">magistral</a></td>
+      <td><a href="../../../../examples/mcore/magistral">magistral</a></td>
       <td>4k</td>
       <th>Mcore</th>
       <td>1x8</td>
@@ -1049,7 +1049,7 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/PLM-Team">PLM</a></td>
       <td><a href="https://huggingface.co/PLM-Team/PLM-1.8B-Base/tree/main">1.8B</a></td>
-      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/master/examples/mcore/plm">plm</a></td>
+      <td><a href="../../../../examples/mcore/plm">plm</a></td>
       <td>2k</td>
       <th>Mcore</th>
       <td>1x8</td>
@@ -1082,7 +1082,7 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
     <tr>
       <td rowspan="4"> <a href="https://huggingface.co/collections/Qwen/qwen3-67dd247413f0e2e4f653967f">Qwen3</a> </td>
       <td rowspan="2"><a href="https://huggingface.co/Qwen/Qwen3-30B-A3B-Base">30B-A3B</a></td>
-      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/master/examples/mcore/qwen3_moe">qwen3_moe</a></td>
+      <td><a href="../../../../examples/mcore/qwen3_moe">qwen3_moe</a></td>
       <td>4k</td>
       <th>Mcore</th>
       <td>2x8</td>
@@ -1091,7 +1091,7 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
       <td>【Pass】</td>
     </tr>
     <tr>
-      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/master/examples/fsdp2/qwen3_moe">qwen3_moe</a></td>
+      <td><a href="../../../../examples/fsdp2/qwen3_moe">qwen3_moe</a></td>
       <td>4k</td>
       <th>FSDP2</th>
       <td>1x16</td>
@@ -1101,7 +1101,7 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
     </tr>
     <tr>
       <td rowspan="2"><a href="https://huggingface.co/Qwen/Qwen3-235B-A22B">235B-A22B</a></td>
-      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/master/examples/mcore/qwen3_moe">qwen3_moe</a></td>
+      <td><a href="../../../../examples/mcore/qwen3_moe">qwen3_moe</a></td>
       <td>4k</td>
       <th>Mcore</th>
       <td>16x16</td>
@@ -1110,7 +1110,7 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
       <td>【Pass】</td>
     </tr>
     <tr>
-      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/master/examples/fsdp2/qwen3_moe">qwen3_moe</a></td>
+      <td><a href="../../../../examples/fsdp2/qwen3_moe">qwen3_moe</a></td>
       <td>4k</td>
       <th>FSDP2</th>
       <td>16x16</td>
@@ -1121,7 +1121,7 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
     <tr>
       <td rowspan="2"><a href="https://huggingface.co/collections/Qwen/qwen3-next">Qwen3-Next</a></td>
       <td rowspan="2"><a href="https://huggingface.co/Qwen/Qwen3-Next-80B-A3B-Instruct">80B-A3B</a></td>
-      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/master/examples/mcore/qwen3_next">qwen3_next</a></td>
+      <td><a href="../../../../examples/mcore/qwen3_next">qwen3_next</a></td>
       <td>16k</td>
       <th>Mcore</th>
       <td>4x16</td>
@@ -1130,7 +1130,7 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
       <td>【Pass】</td>
     </tr>
     <tr>
-      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/master/examples/fsdp2/qwen3_next">qwen3_next</a></td>
+      <td><a href="../../../../examples/fsdp2/qwen3_next">qwen3_next</a></td>
       <td>16k</td>
       <th>FSDP2</th>
       <td>4x16</td>
@@ -1141,7 +1141,7 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/Qwen/Qwen3-Coder-Next/tree/main">Qwen3-Coder-Next</a></td>
       <td><a href="https://huggingface.co/Qwen/Qwen3-Coder-Next/tree/main">80B-A3B</a></td>
-      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/master/examples/mcore/qwen3_coder_next">qwen3_coder_next</a></td>
+      <td><a href="../../../../examples/mcore/qwen3_coder_next">qwen3_coder_next</a></td>
       <td>16k</td>
       <th>Mcore</th>
       <td>4x16</td>
@@ -1222,7 +1222,7 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/deepseek-ai/DeepSeek-V2-Lite">DeepSeek-V2-Lite</a></td>
       <td><a href="https://huggingface.co/deepseek-ai/DeepSeek-V2-Lite/tree/main">16B</a></td>
-      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/master/examples/mcore/deepseek2_lite">deepseek2_lite</a></td>
+      <td><a href="../../../../examples/mcore/deepseek2_lite">deepseek2_lite</a></td>
       <td>8k</td>
       <th>Mcore</th>
       <td>1x8</td>
@@ -1244,7 +1244,7 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/deepseek-ai/DeepSeek-V3">DeepSeek-V3</a></td>
       <td><a href="https://huggingface.co/deepseek-ai/DeepSeek-V3/tree/main">671B</a></td>
-      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/master/examples/mcore/deepseek3">deepseek3</a></td>
+      <td><a href="../../../../examples/mcore/deepseek3">deepseek3</a></td>
       <td>4k</td>
       <th>Mcore</th>
       <td>64x8</td>
@@ -1255,7 +1255,7 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
       <tr>
       <td rowspan="1"><a href="https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp">DeepSeek-V3.2</a></td>
       <td><a href="https://huggingface.co/deepseek-ai/DeepSeek-V3.2-Exp/tree/main">671B</a></td>
-      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/master/examples/mcore/deepseek32">deepseek3.2</a></td>
+      <td><a href="../../../../examples/mcore/deepseek32">deepseek3.2</a></td>
       <td>4k</td>
       <th>Mcore</th>
       <td>32x16</td>
@@ -1266,7 +1266,7 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash-Base">DeepSeek-V4-Flash</a></td>
       <td><a href="https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash-Base/tree/main">284B</a></td>
-      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/master/examples/mcore/deepseek4_flash">deepseekv4-flash</a></td>
+      <td><a href="../../../../examples/mcore/deepseek4_flash">deepseekv4-flash</a></td>
       <td>4k</td>
       <th>Mcore</th>
       <td>8x16</td>
@@ -1288,7 +1288,7 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/inclusionAI/Ling-mini-2.0">Ling-mini-2.0</a></td>
       <td> <a href="https://huggingface.co/inclusionAI/Ling-mini-2.0/tree/main">16B</a> </td>
-      <td rowspan="2"><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/master/examples/mcore/ling_v2">ling_v2</a></td>
+      <td rowspan="2"><a href="../../../../examples/mcore/ling_v2">ling_v2</a></td>
       <td>4k</td>
       <th>Mcore</th>
       <td>1x8</td>
@@ -1309,7 +1309,7 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/microsoft">Phi3.5</a></td>
       <td> <a href="https://huggingface.co/microsoft/Phi-3.5-MoE-instruct">MoE-instruct</a> </td>
-      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/master/examples/mcore/phi35">phi35</a></td>
+      <td><a href="../../../../examples/mcore/phi35">phi35</a></td>
       <td>4k</td>
       <th>Mcore</th>
       <td>2x8</td>
@@ -1342,7 +1342,7 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/zai-org">GLM4.5-Air</a></td>
       <td> <a href="https://huggingface.co/zai-org/GLM-4.5-Air/tree/main">MoE-106B</a> </td>
-      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/master/examples/mcore/glm45-air">glm45-air</a></td>
+      <td><a href="../../../../examples/mcore/glm45-air">glm45-air</a></td>
       <td>4k</td>
       <th>Mcore</th>
       <td>8x8</td>
@@ -1353,7 +1353,7 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/zai-org">GLM5</a></td>
       <td><a href="https://huggingface.co/zai-org/GLM-5">MoE-744B</a></td>
-      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/master/examples/mcore/glm5">glm5</a></td>
+      <td><a href="../../../../examples/mcore/glm5">glm5</a></td>
       <td>4k</td>
       <th>Mcore</th>
       <td>32x16</td>
@@ -1364,7 +1364,7 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/zai-org">GLM5.2</a></td>
       <td><a href="https://huggingface.co/zai-org/GLM-5.2">MoE-744B</a></td>
-      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/master/examples/mcore/glm52">glm52</a></td>
+      <td><a href="../../../../examples/mcore/glm52">glm52</a></td>
       <td>4k</td>
       <th>Mcore</th>
       <td>32x16</td>
@@ -1375,7 +1375,7 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/stepfun-ai">Step3.5-Flash</a></td>
       <td><a href="https://huggingface.co/stepfun-ai/Step-3.5-Flash">MoE-196B</a></td>
-      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/master/examples/fsdp2/step35">step35</a></td>
+      <td><a href="../../../../examples/fsdp2/step35">step35</a></td>
       <td>4k</td>
       <th>FSDP2</th>
       <td>12x16</td>
@@ -1386,7 +1386,7 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/meituan-longcat">LongCat</a></td>
       <td><a href="https://huggingface.co/meituan-longcat/LongCat-Flash-Chat">MoE-560B</a></td>
-      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/master/examples/mcore/longcat">longcat</a></td>
+      <td><a href="../../../../examples/mcore/longcat">longcat</a></td>
       <td>4k</td>
       <th>Mcore</th>
       <td>8x16</td>
@@ -1397,7 +1397,7 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/openai">GPT-OSS</a></td>
       <td><a href="https://modelscope.cn/models/unsloth/gpt-oss-20b-BF16/">MoE-20B</a></td>
-      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/master/examples/fsdp2/gpt_oss">gpt_oss</a></td>
+      <td><a href="../../../../examples/fsdp2/gpt_oss">gpt_oss</a></td>
       <td>4k</td>
       <th>FSDP2</th>
       <td>1x16</td>
@@ -1408,7 +1408,7 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/MiniMaxAI">MiniMax-M2.7</a></td>
       <td><a href="https://huggingface.co/MiniMaxAI/MiniMax-M2.7">MoE-229B</a></td>
-      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/master/examples/fsdp2/minimax_m27">minimax_m27</a></td>
+      <td><a href="../../../../examples/fsdp2/minimax_m27">minimax_m27</a></td>
       <td>4k</td>
       <th>FSDP2</th>
       <td>8x16</td>
@@ -1499,7 +1499,7 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
     <tr>
       <td rowspan="1">Mamba3</td>
       <td>/</td>
-      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/master/examples/fsdp2/mamba3">mamba3</a></td>
+      <td><a href="../../../../examples/fsdp2/mamba3">mamba3</a></td>
       <td>4k</td>
       <th>Mcore</th>
       <td>1x8</td>
