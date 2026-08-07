@@ -83,6 +83,33 @@ RUN echo "Installing system dependencies..." && \
         exit 1; \
     fi
 
+# Ensure CANN built-in Python can compile C++ extensions (e.g. helpers.cpp via Makefile)
+# Makefile needs BOTH: Python.h (for pybind11 --includes) and python3-config (for --extension-suffix)
+RUN PYTHON_INC=$(python3 -c "import sysconfig; print(sysconfig.get_path('include'))") && \
+    echo "Python include path: ${PYTHON_INC}" && \
+    HAVE_H=false && HAVE_CFG=false && \
+    [ -f "${PYTHON_INC}/Python.h" ] && HAVE_H=true; \
+    command -v python3-config >/dev/null 2>&1 && HAVE_CFG=true; \
+    echo "Python.h present: ${HAVE_H}, python3-config present: ${HAVE_CFG}" && \
+    if [ "$HAVE_H" = false ] || [ "$HAVE_CFG" = false ]; then \
+        echo "Installing development headers for CANN built-in Python..." && \
+        PYTHON_VER=$(python3 -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}')") && \
+        if [ "$OS_FAMILY" = "openeuler" ]; then \
+            yum install -y --setopt=sslverify=false python${PYTHON_VER}-devel || yum install -y --setopt=sslverify=false python3-devel; \
+            yum clean all; \
+        elif [ "$OS_FAMILY" = "ubuntu" ]; then \
+            apt-get update -o Acquire::https::Verify-Peer=false -o Acquire::https::Verify-Host=false && \
+            apt-get install -y -o Acquire::https::Verify-Peer=false -o Acquire::https::Verify-Host=false python${PYTHON_VER}-dev || \
+            apt-get install -y -o Acquire::https::Verify-Peer=false -o Acquire::https::Verify-Host=false python3-dev; \
+            apt-get clean; \
+        fi; \
+    else \
+        echo "CANN built-in Python already provides Python.h and python3-config"; \
+    fi && \
+    echo "Verifying build prerequisites:" && \
+    ls "${PYTHON_INC}/Python.h" && \
+    python3-config --extension-suffix
+
 # ------------------------------
 # Stage 2: Builder (Python env + PyTorch)
 # ------------------------------

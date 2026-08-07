@@ -96,7 +96,6 @@ MOE_ARGS="
     --moe-shared-expert-intermediate-size 2048 \
     --moe-router-dtype fp32 \
     --n-hash-layers 3 \
-    --moe-permute-fusion \
     --moe-fb-overlap \
 "
 

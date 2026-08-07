@@ -11,8 +11,6 @@ GRAD_NORM_INFO = "grad norm"
 
 WARM_UP = 5
 
-DROP_MAX_TIME_CASES = {"deepseek4_flash_mcore_tp1_pp1_ep8"}
-
 
 class TestMargin:
     _MARGIN_NAME = " margin"
@@ -42,7 +40,6 @@ class TestCIST:
         # acquire expected results
         self.expected = read_json(baseline_json)
         TestMargin.refresh_margin_from_json(self.expected)
-        self.case_name = os.path.basename(baseline_json).replace(".json", "")
 
     def _get_actual(self, generate_log, generate_json):
         # acquire actual results
@@ -149,16 +146,9 @@ class TestCIST:
         )
 
     def _compare_time(self, expected_list, actual_list):
-        expected_times = expected_list[WARM_UP:]
-        actual_times = actual_list[WARM_UP:]
-
-        if getattr(self, "case_name", "") in DROP_MAX_TIME_CASES and len(actual_times) > 1:
-            expected_times = sorted(expected_times)[:-1]
-            actual_times = sorted(actual_times)[:-1]
-
         try:
-            expected_avg_time = sum(expected_times) / len(expected_times)
-            actual_avg_time = sum(actual_times) / len(actual_times)
+            expected_avg_time = sum(expected_list[WARM_UP:]) / (len(expected_list) - WARM_UP)
+            actual_avg_time = sum(actual_list[WARM_UP:]) / (len(actual_list) - WARM_UP)
         except ZeroDivisionError:
             raise ZeroDivisionError
 
