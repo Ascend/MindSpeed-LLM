@@ -35,6 +35,11 @@ from megatron.training import get_args
 from mindspeed_llm.core.fp8_utils import fp8_context_wrapper
 from mindspeed_llm.core.tensor_parallel.layers import LinearNoTP
 from mindspeed_llm.core.transformer.custom_layers.transformer_engine import PTNorm
+from mindspeed_llm.tasks.models.transformer.dsa_index_share import (
+    get_dsa_index_share_holder,
+    load_dsa_index_share_topk,
+    store_dsa_index_share_topk,
+)
 from mindspeed_llm.tasks.models.transformer.dsa_indexer import (
     get_dsa_indexer_spec,
     DSAIndexerLossAutoScaler,
@@ -52,25 +57,6 @@ from mindspeed_llm.tasks.models.transformer.mla_up_proj_overlap_tp_comm import m
 from mindspeed_llm.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb_bshd_in_complex
 
 logger = logging.getLogger(__name__)
-
-_GLOBAL_DSA_TOPK_INDICES = None
-
-
-def set_dsa_topk_indices(indices):
-    """Store topk_indices to global buffer for subsequent skip layers."""
-    global _GLOBAL_DSA_TOPK_INDICES
-    _GLOBAL_DSA_TOPK_INDICES = indices
-
-
-def get_dsa_topk_indices():
-    """Get cached topk_indices from global buffer.
-
-    Returns:
-        torch.Tensor or None: The cached topk_indices, or None if no
-        non-skip layer has computed indices yet.
-    """
-    global _GLOBAL_DSA_TOPK_INDICES
-    return _GLOBAL_DSA_TOPK_INDICES
 
 
 def _get_pipeline_layer_offset(args):
@@ -158,27 +144,84 @@ def _get_pipeline_layer_offset(args):
     return offset
 
 
+def _normalize_dsa_pattern(args):
+    pattern = getattr(args, "index_topk_pattern", None)
+    if pattern is None:
+        return None
+
+    # Accept both Megatron-style C/S and Transformers config-style F/S.
+    normalized = []
+    for char in str(pattern).upper():
+        if char in {"C", "F"}:
+            normalized.append("C")
+        elif char == "S":
+            normalized.append("S")
+    normalized = "".join(normalized)
+
+    if len(normalized) != int(args.num_layers):
+        raise ValueError(
+            "index_topk_pattern must contain one C/F/S marker per global layer: "
+            f"pattern={pattern!r}, normalized_len={len(normalized)}, num_layers={args.num_layers}."
+        )
+    if normalized[0] == "S":
+        raise ValueError("index_topk_pattern cannot start with Share ('S').")
+    return normalized
+
+
+def _resolve_dsa_source_and_end(args, global_layer_number):
+    """Return the 1-based Compute source layer and final Share consumer."""
+
+    pattern = _normalize_dsa_pattern(args)
+    num_layers = int(args.num_layers)
+
+    if pattern is not None:
+        index = global_layer_number - 1
+        if pattern[index] == "C":
+            source = global_layer_number
+        else:
+            source_index = pattern.rfind("C", 0, index)
+            if source_index < 0:
+                raise ValueError(f"Share layer {global_layer_number} has no preceding Compute layer.")
+            source = source_index + 1
+
+        group_end = source
+        while group_end < num_layers and pattern[group_end] == "S":
+            group_end += 1
+        return source, group_end
+
+    freq = max(int(getattr(args, "index_topk_freq", 1)), 1)
+    offset = max(int(getattr(args, "index_skip_topk_offset", 2)), 1)
+
+    def source_of(layer):
+        return layer - (max(layer - offset, 0) % freq)
+
+    source = source_of(global_layer_number)
+    group_end = global_layer_number
+    while group_end < num_layers and source_of(group_end + 1) == source:
+        group_end += 1
+    return source, group_end
+
+
 def resolve_dsa_indexer_build_config(args, layer_number):
-    """
-    Resolve DSAIndexer build config.
+    """Resolve PP-local and global DSA Compute/Share metadata."""
 
-    layer_number:
-        PP-local 1-based layer number.
-        decoder.layers.0 -> layer_number=1
-    """
     pp_rank = parallel_state.get_pipeline_model_parallel_rank()
-
-    # _get_layer_offset(args) now supports --num-layer-list.
     layer_offset = _get_pipeline_layer_offset(args)
-
     local_layer_idx = layer_number - 1
     global_layer_number = layer_offset + layer_number
     global_layer_idx = global_layer_number - 1
+    source_layer, group_end_layer = _resolve_dsa_source_and_end(args, global_layer_number)
+    skip_dsa_topk = source_layer != global_layer_number
 
-    index_topk_freq = getattr(args, "index_topk_freq", 1)
-    index_skip_topk_offset = getattr(args, "index_skip_topk_offset", 2)
-
-    skip_dsa_topk = max(global_layer_number - index_skip_topk_offset, 0) % index_topk_freq != 0
+    # The holder is process-local, so a Share layer cannot read across PP/VPP boundaries.
+    first_global_layer_on_stage = layer_offset + 1
+    if source_layer < first_global_layer_on_stage:
+        raise ValueError(
+            "A DSA share group is split across pipeline stages: "
+            f"pp_rank={pp_rank}, current_layer={global_layer_number}, source_layer={source_layer}, "
+            f"stage_first_layer={first_global_layer_on_stage}. Adjust --num-layer-list / PP placement so every "
+            "stage starts with a Compute layer."
+        )
 
     return {
         "pp_rank": pp_rank,
@@ -186,6 +229,8 @@ def resolve_dsa_indexer_build_config(args, layer_number):
         "local_layer_idx": local_layer_idx,
         "global_layer_number": global_layer_number,
         "global_layer_idx": global_layer_idx,
+        "source_layer": source_layer,
+        "group_end_layer": group_end_layer,
         "skip_dsa_topk": skip_dsa_topk,
     }
 
@@ -443,6 +488,9 @@ class CustomMLASelfAttention(SelfAttention):
         if args.enable_dsa_indexer:
             dsa_cfg = resolve_dsa_indexer_build_config(args, layer_number)
             self._skip_dsa_topk = dsa_cfg["skip_dsa_topk"]
+            self._dsa_global_layer_number = dsa_cfg["global_layer_number"]
+            self._dsa_source_layer = dsa_cfg["source_layer"]
+            self._dsa_index_share = dsa_cfg["group_end_layer"] > dsa_cfg["source_layer"]
 
             if self._skip_dsa_topk:
                 self.dsa_indexer = IdentityOp()
@@ -456,6 +504,9 @@ class CustomMLASelfAttention(SelfAttention):
                 )
         else:
             self._skip_dsa_topk = False
+            self._dsa_global_layer_number = None
+            self._dsa_source_layer = None
+            self._dsa_index_share = False
             self.dsa_indexer = IdentityOp()
 
         # hook async A2A launcher inside mla forward when TP > 1.
@@ -488,6 +539,16 @@ class CustomMLASelfAttention(SelfAttention):
         Do patch for repeating KV so that GQA+Ulysses is better supported.
         """
         args = get_args()
+        dsa_topk_holder = (
+            get_dsa_index_share_holder(
+                packed_seq_params,
+                attention_mask,
+                self.config,
+                rotary_pos_emb=rotary_pos_emb,
+            )
+            if self._dsa_index_share
+            else None
+        )
 
         @fp8_context_wrapper(config=self.config)
         def mla_naive_attention(hidden_states):
@@ -633,17 +694,23 @@ class CustomMLASelfAttention(SelfAttention):
                     dsa_hidden_states.detach(), dsa_q_compressed.detach(), 0, rotary_pos_emb
                 )
 
-                # Store computed indices in global buffer for subsequent skip layers.
-                set_dsa_topk_indices(topk_indices)
-            elif self._skip_dsa_topk:
-                # IndexCache: reuse indices from global buffer.
-                topk_indices = get_dsa_topk_indices()
-                if topk_indices is None:
-                    raise RuntimeError(
-                        f"CustomMLASelfAttention layer {self.layer_number}: "
-                        f"skip_dsa_topk=True but global buffer is empty. "
-                        f"A non-skip layer must run first."
+                if dsa_topk_holder is not None:
+                    store_dsa_index_share_topk(
+                        dsa_topk_holder,
+                        source_layer=self._dsa_global_layer_number,
+                        topk_indices=topk_indices,
+                        seq_len=q_len,
+                        batch_size=bsz,
                     )
+            elif self._skip_dsa_topk:
+                assert dsa_topk_holder is not None
+                topk_indices = load_dsa_index_share_topk(
+                    dsa_topk_holder,
+                    current_layer=self._dsa_global_layer_number,
+                    source_layer=self._dsa_source_layer,
+                    seq_len=q_len,
+                    batch_size=bsz,
+                )
                 from mindspeed_llm.tasks.models.transformer.dsa_indexer import DSAIndexer
 
                 # Same reason as mla_naive_attention:
@@ -872,17 +939,23 @@ class CustomMLASelfAttention(SelfAttention):
                     topk_indices, attention_mask, (b, s, s), dsa_hidden_states.dtype, dsa_hidden_states.device
                 )
 
-                # Store computed indices in global buffer for subsequent skip layers.
-                set_dsa_topk_indices(topk_indices)
-            elif self._skip_dsa_topk:
-                # IndexCache: reuse indices from global buffer.
-                topk_indices = get_dsa_topk_indices()
-                if topk_indices is None:
-                    raise RuntimeError(
-                        f"CustomMLASelfAttention layer {self.layer_number}: "
-                        f"skip_dsa_topk=True but global buffer is empty. "
-                        f"A non-skip layer must run first."
+                if dsa_topk_holder is not None:
+                    store_dsa_index_share_topk(
+                        dsa_topk_holder,
+                        source_layer=self._dsa_global_layer_number,
+                        topk_indices=topk_indices,
+                        seq_len=q_len,
+                        batch_size=bsz,
                     )
+            elif self._skip_dsa_topk:
+                assert dsa_topk_holder is not None
+                topk_indices = load_dsa_index_share_topk(
+                    dsa_topk_holder,
+                    current_layer=self._dsa_global_layer_number,
+                    source_layer=self._dsa_source_layer,
+                    seq_len=q_len,
+                    batch_size=bsz,
+                )
                 from mindspeed_llm.tasks.models.transformer.dsa_indexer import DSAIndexer
 
                 # Same reason as mla_naive_attention:
