@@ -227,6 +227,7 @@ def checkpoint_forward_wrapper(fn):
 
     def wrapper(ctx, run_function, distribute_saved_activations, *args):
         ctx.actual_seq_len_list = get_actual_seq_len_list()
+        dsa_holder_attr = "_dsa_index_share_topk_holder"
 
         flat_args = []
         arg_structure = []
@@ -240,8 +241,15 @@ def checkpoint_forward_wrapper(fn):
                 flat_args.append(arg)
 
         ctx.custom_arg_structure = arg_structure
+        dsa_holders = [None] * len(flat_args)
 
         def wrapped_run_func(*rebuilt_flat_args):
+            # Checkpoint backward detaches tensor inputs. Restore the per-forward
+            # DSA holder on those new tensor objects before replaying the layers.
+            for arg, holder in zip(rebuilt_flat_args, dsa_holders):
+                if holder is not None and torch.is_tensor(arg):
+                    setattr(arg, dsa_holder_attr, holder)
+
             original_args = []
             idx = 0
             for stype, length, seq_type in ctx.custom_arg_structure:
@@ -253,7 +261,9 @@ def checkpoint_forward_wrapper(fn):
                 idx += length
             return run_function(*original_args)
 
-        return fn(ctx, wrapped_run_func, distribute_saved_activations, *flat_args)
+        outputs = fn(ctx, wrapped_run_func, distribute_saved_activations, *flat_args)
+        dsa_holders[:] = [getattr(arg, dsa_holder_attr, None) if torch.is_tensor(arg) else None for arg in flat_args]
+        return outputs
 
     return wrapper
 
