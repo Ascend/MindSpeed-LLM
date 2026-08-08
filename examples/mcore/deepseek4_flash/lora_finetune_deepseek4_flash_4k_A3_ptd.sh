@@ -22,8 +22,8 @@ TOKENIZER_PATH="your tokenizer path"
 CKPT_LOAD_DIR="your model ckpt path"
 
 TP=1
-PP=1
-EP=16
+PP=4
+EP=4
 CP=1
 CP_TYPE='ulysses_cp_algo'
 NUM_LAYERS=44
@@ -99,13 +99,7 @@ MOE_ARGS="
     --moe-permute-fusion \
 "
 
-MTP_ARGS="
-    --mtp-num-layers 1 \
-    --mtp-loss-scaling-factor 0.3 \
-"
-
 MEM_ARGS="
-    --mtp-mem-efficient-logits \
     --recompute-granularity full \
     --recompute-method uniform \
     --recompute-num-layers 1 \
@@ -126,7 +120,6 @@ GPT_ARGS="
     --noop-layers 43 \
     --transformer-impl local \
     --spec mindspeed_llm.tasks.models.spec.deepseek4_spec layer_spec \
-    --mtp-spec mindspeed_llm.tasks.models.spec.deepseek4_spec mtp_spec \
     --manual-gc \
     --manual-gc-interval 50 \
     --use-distributed-optimizer \
@@ -223,6 +216,5 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS posttrain_gpt.py \
     $DSA_ARGS \
     $CA_ARGS \
     $MEM_ARGS \
-    $MTP_ARGS \
     $FINETUNE_ARGS \
     --distributed-backend nccl 2>&1 | tee logs/lora_finetune_deepseek4_flash_4k_A3_ptd.log
