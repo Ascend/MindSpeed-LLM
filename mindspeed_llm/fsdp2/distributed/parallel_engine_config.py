@@ -1,5 +1,4 @@
 # Copyright (c) 2025, Huawei Technologies Co., Ltd. All rights reserved.
-import os
 from dataclasses import dataclass, field
 from typing import Any, List, Callable, Literal, Union, Optional
 
@@ -116,10 +115,6 @@ class ParallelEngineConfig:
         )
         '''
         self.fsdp_plan = FSDPPlanConfig() if self.fsdp_plan is None else self.fsdp_plan
-        if self.fsdp_plan.gradient_divide_factor is None:
-            world_size = int(os.environ.get('WORLD_SIZE', '1'))
-            dp = world_size // (self.fully_shard_parallel_size * self.tensor_parallel_size)
-            self.fsdp_plan.gradient_divide_factor = self.fully_shard_parallel_size * dp
         if self.fully_shard_parallel_size > 1:
             if self.expert_parallel_size > 1:
                 self.fsdp_plan.ignored_modules.extend(self.ep_plan.apply_modules)
