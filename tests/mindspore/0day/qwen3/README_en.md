@@ -10,7 +10,7 @@ It supports converting Hugging Face weights to MCore weights for training, fine-
 
 ### Launching the Script
 
-Use the [Hugging Face-to-Megatron script](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/convert_ckpt.py) in the Qwen3 model directory.
+Use the [Hugging Face-to-Megatron script](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/convert_ckpt_v2.py) in the Qwen3 model directory.
 
 ```commandline
 # Dense model.

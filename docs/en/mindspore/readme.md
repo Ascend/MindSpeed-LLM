@@ -260,7 +260,7 @@ The MindSpore backend fully supports data preprocessing for MindSpeed LLM pretra
 
 ### Weight Conversion
 
-The weight conversion for the MindSpeed MindSpore backend is consistent with the PyTorch backend. It currently supports mutual conversion between Hugging Face and Megatron-Core weight formats. For the weight conversion parameters and usage, see [Weight Conversion](../pytorch/tools/checkpoint_convert_hf_mcore.md).
+The weight conversion for the MindSpeed MindSpore backend is consistent with the PyTorch backend. It currently supports mutual conversion between Hugging Face and Megatron-Core weight formats. For the weight conversion parameters and usage, see [Weight Conversion](../pytorch/tools/checkpoint_convert_hf_mcore_large_params.md).
 
 <table>
   <thead>

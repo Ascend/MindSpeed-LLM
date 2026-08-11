@@ -272,7 +272,7 @@ See the [open dataset evaluation baselines](docs/en/pytorch/training/evaluation/
 
 ## Weight Conversion
 
-MindSpeed LLM supports two-way weight conversion between Hugging Face and Megatron-core formats, and it supports merging LoRA weights. For parameters and usage instructions for the weight conversion feature, see [Weight Conversion](docs/en/pytorch/tools/checkpoint_convert_hf_mcore.md).
+MindSpeed LLM supports two-way weight conversion between Hugging Face and Megatron-core formats, and it supports merging LoRA weights. For parameters and usage instructions for the weight conversion feature, see [Weight Conversion](docs/en/pytorch/tools/checkpoint_convert_hf_mcore_large_params.md).
 
 <table>
   <thead>

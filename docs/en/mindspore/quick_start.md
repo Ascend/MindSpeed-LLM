@@ -51,7 +51,7 @@ For the MindSpore framework, see [MindSpeed LLM Installation Guide](install_guid
 
 ### Weight Conversion
 
-Ascend MindSpeed LLM requires model weights in the MCore format. Here, you convert the original Hugging Face weight format to the MCore format. For details, see [Weight Conversion](../pytorch/tools/checkpoint_convert_hf_mcore.md#21-converting-hugging-face-weights-to-mcore-weights).
+Ascend MindSpeed LLM requires model weights in the MCore format. Here, you convert the original Hugging Face weight format to the MCore format. For details, see [Weight Conversion](../pytorch/tools/checkpoint_convert_hf_mcore_large_params.md#21-converting-hugging-face-weights-to-the-mcore-format).
 
 Use the official conversion script to obtain the corresponding sharded mg weights.
 

@@ -68,7 +68,7 @@ For security and least-privilege reasons, you are advised not to use `root` or o
 
 ## Public Interface Statement
 
-MindSpeed LLM has not yet released a wheel package. Therefore, it does not provide any formal public interface. All functionality is invoked through shell scripts. The five entry scripts are [pretrain_gpt.py](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/pretrain_gpt.py), [inference.py](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/inference.py), [evaluation.py](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/evaluation.py), [preprocess_data.py](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/preprocess_data.py), and [convert_ckpt.py](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/convert_ckpt.py).
+MindSpeed LLM has not yet released a wheel package. Therefore, it does not provide any formal public interface. All functionality is invoked through shell scripts. The five entry scripts are [pretrain_gpt.py](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/pretrain_gpt.py), [inference.py](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/inference.py), [evaluation.py](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/evaluation.py), [preprocess_data.py](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/preprocess_data.py), and [convert_ckpt.py](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/convert_ckpt_v2.py).
 
 ## Communication Security Hardening
 

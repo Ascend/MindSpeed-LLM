@@ -17,7 +17,7 @@ Pretraining data is usually plain text and is not task-oriented. For example:
 > [!NOTE]
 >
 > - If you need to use Pack mode during data preprocessing, refer to [Pack Mode for Distributed LLM Pretraining](./pretrain_eod.md).
-> - During pretraining, you can skip loading initial weights. In this case, the model weights are randomly initialized. If you need to load weights, convert them in advance. For details, refer to [Checkpoint Conversion v1](../../../tools/checkpoint_convert_hf_mcore.md) or [Checkpoint Conversion v2](../../../tools/checkpoint_convert_hf_mcore_large_params.md).
+> - During pretraining, you can skip loading initial weights. In this case, the model weights are randomly initialized. If you need to load weights, convert them in advance. For details, refer to [Checkpoint Conversion](../../../tools/checkpoint_convert_hf_mcore_large_params.md).
 
 The following example uses the Qwen3-8B model to show how to start pretraining. The process for distributed pretraining is as follows:
 
