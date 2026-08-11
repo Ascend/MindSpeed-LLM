@@ -1505,6 +1505,14 @@ class DeepSeek4Mg2hfConvert(Mg2HfConvert):
                     ckpt_file = load_data(model_path)
                     mg_weight = ckpt_file['model']
 
+                    if self.lora_target_modules:
+                        if self.lora_model_path is None:
+                            self._merge_lora(mg_weight, merge_type="unified")
+                        else:
+                            lora_path = self.get_pt_path_by_tpppep_rank(self.lora_iter_path, tp_rank, pp_rank, ep_rank)
+                            lora_model = load_data(lora_path)['model']
+                            mg_weight = {**lora_model, **mg_weight}
+                            self._merge_lora(mg_weight, merge_type="independent")
                     mg_weights[(tp_rank, ep_rank)] = mg_weight
                 self.read_pp_rank_weights(pp_rank, mg_weights)
             else:
@@ -1518,6 +1526,16 @@ class DeepSeek4Mg2hfConvert(Mg2HfConvert):
                         pt_path = self.get_pt_path_by_tpppep_rank(self.iter_path, tp_rank, pp_rank, ep_rank)
                         mg_weight = load_data(pt_path)[f'model{vpp_rank}']
 
+                        if self.lora_target_modules:
+                            if self.lora_model_path is None:
+                                self._merge_lora(mg_weight, merge_type="unified")
+                            else:
+                                lora_path = self.get_pt_path_by_tpppep_rank(
+                                    self.lora_iter_path, tp_rank, pp_rank, ep_rank
+                                )
+                                lora_model = load_data(lora_path)[f'model{vpp_rank}']
+                                mg_weight = {**lora_model, **mg_weight}
+                                self._merge_lora(mg_weight, merge_type="independent")
                         mg_weights[(tp_rank, ep_rank)] = mg_weight
 
                     self.read_vpp_rank_weights(pp_rank, vpp_rank, mg_weights)
