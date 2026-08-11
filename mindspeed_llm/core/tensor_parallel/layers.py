@@ -240,7 +240,12 @@ def checkpoint_forward_wrapper(fn):
                 arg_structure.append(("item", 1, None))
                 flat_args.append(arg)
 
-        ctx.custom_arg_structure = arg_structure
+        # Keep the reconstruction metadata in the closure without referencing
+        # ``ctx`` from ``wrapped_run_func``. Megatron stores wrapped_run_func on
+        # ctx.run_function, so capturing ctx here would create a reference cycle:
+        # ctx -> wrapped_run_func -> ctx. With manual GC disabled between
+        # intervals, that cycle also retains DSA holders and their NPU tensors.
+        checkpoint_arg_structure = tuple(arg_structure)
         dsa_holders = [None] * len(flat_args)
 
         def wrapped_run_func(*rebuilt_flat_args):
@@ -252,7 +257,7 @@ def checkpoint_forward_wrapper(fn):
 
             original_args = []
             idx = 0
-            for stype, length, seq_type in ctx.custom_arg_structure:
+            for stype, length, seq_type in checkpoint_arg_structure:
                 if stype == "seq":
                     seq = rebuilt_flat_args[idx : idx + length]
                     original_args.append(seq_type(seq))
