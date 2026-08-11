@@ -10,7 +10,7 @@
 
 ### 启动脚本
 
-使用Qwen3模型目录下的[HuggingFace转Megatron脚本](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/convert_ckpt.py)
+使用Qwen3模型目录下的[HuggingFace转Megatron脚本](../../../../convert_ckpt_v2.py)
 
 ```commandline
 #稠密模型
