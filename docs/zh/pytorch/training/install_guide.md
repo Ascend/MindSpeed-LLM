@@ -180,7 +180,7 @@
    可参考如下安装命令：
 
    ```shell
-   pip install triton-ascend==3.2.1 --extra-index-url=https://triton-ascend.osinfra.cn/pypi/simple
+   pip install triton-ascend==3.2.2 --extra-index-url=https://triton-ascend.osinfra.cn/pypi/simple
    ```
 
    > [!NOTE]
