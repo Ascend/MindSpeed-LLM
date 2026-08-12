@@ -214,3 +214,7 @@ MindSpeed LLM is released under the Apache License 2.0. See the [LICENSE](https:
 Like all Docker images, this image may contain other software subject to separate license agreements, such as Bash from the base system and all direct and indirect dependencies of integrated core software.
 
 Users of pre-built images shall be responsible for ensuring that all usage of the image complies with the license requirements of all included software components.
+
+## Disclaimer
+
+The released Ascend software images are community versions and are not intended for commercial accountability. They are provided solely as references for production practices.
