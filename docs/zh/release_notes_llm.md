@@ -49,7 +49,7 @@
 >[!NOTE]
 >
 > - 用户可根据需要选择MindSpeed LLM代码分支下载源码并进行安装。
-> - Triton-Ascend版本与CANN版本强绑定，Triton-Ascend的使用应该与CANN版本一一对应，详见[Triton-Ascend兼容性](https://gitcode.com/Ascend/triton-ascend#%E5%85%BC%E5%AE%B9%E6%80%A7)。
+> - Triton-Ascend版本与CANN版本强绑定，Triton-Ascend的使用应该与CANN版本一一对应，详见[Triton-Ascend兼容性](https://triton-ascend.readthedocs.io/zh-cn/latest/release_note.html#id13)。
 
 ## 版本兼容性说明
 
