@@ -508,6 +508,51 @@ class DeepSeek4SelfAttention(MegatronModule):
             avg_group=parallel_state.get_tensor_and_context_parallel_group(),
         )
 
+    def _linear_o_down_proj(self, grouped_output):
+        weight_woa = rearrange(
+            self.linear_o_down_proj.weight,
+            '(g l) (d h)->g l (d h)',  # outdim*indim
+            d=self.head_dim // self.n_groups,
+            l=self.o_lora_rank,
+            h=self.n_heads,
+            g=self.n_local_groups,
+        )
+        output = torch.einsum("sbgd,gld->sbgl", grouped_output, weight_woa)
+
+        linear = self.linear_o_down_proj
+        if not (hasattr(linear, "lora_A") and hasattr(linear, "lora_B")):
+            return output
+        if getattr(linear, "disable_adapters", False) or getattr(linear, "merged", False):
+            return output
+
+        active_adapters = getattr(linear, "active_adapters", None)
+        if active_adapters is None:
+            active_adapter = getattr(linear, "active_adapter", None)
+            active_adapters = [active_adapter] if isinstance(active_adapter, str) else active_adapter
+        if not active_adapters:
+            return output
+
+        for active_adapter in active_adapters:
+            if active_adapter not in linear.lora_A.keys() or active_adapter not in linear.lora_B.keys():
+                continue
+
+            lora_A = linear.lora_A[active_adapter].weight
+            lora_B = linear.lora_B[active_adapter].weight
+            scaling = linear.scaling[active_adapter]
+
+            lora_input = grouped_output.to(lora_A.dtype)
+            lora_a_output = torch.einsum("sbgd,rd->sbgr", lora_input, lora_A)
+            lora_b_weight = rearrange(
+                lora_B,
+                "(g l) r -> g l r",
+                g=self.n_local_groups,
+                l=self.o_lora_rank,
+            )
+            lora_delta = torch.einsum("sbgr,glr->sbgl", lora_a_output, lora_b_weight) * scaling
+            output = output + lora_delta.to(output.dtype)
+
+        return output
+
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -787,15 +832,7 @@ class DeepSeek4SelfAttention(MegatronModule):
             d=self.head_dim,
         )
 
-        weight_woa = rearrange(
-            self.linear_o_down_proj.weight,
-            '(g l) (d h)->g l (d h)',  # outdim*indim
-            d=self.head_dim // self.n_groups,
-            l=self.o_lora_rank,
-            h=self.n_heads,
-            g=self.n_local_groups,
-        )
-        o = torch.einsum("sbgd,gld->sbgl", o, weight_woa)
+        o = self._linear_o_down_proj(o)
         core_attn_out, bias = self.linear_o_up_proj(o.flatten(2))
 
         return core_attn_out, bias
