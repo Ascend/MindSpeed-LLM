@@ -31,6 +31,7 @@ repos:
       - id: ruff-format
         args: ["--config", "pre-commit/pyproject.toml"]
         types: [python]
+        exclude: ^mindspeed_llm/training/training\.py$
 
   # codespell
   - repo: https://gitcode.com/gh_mirrors/co/codespell
