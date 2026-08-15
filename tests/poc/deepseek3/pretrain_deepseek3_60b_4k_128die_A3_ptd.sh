@@ -162,6 +162,7 @@ TRAIN_ARGS="
 "
 
 DATA_ARGS="
+    --handler-name GeneralPretrainHandler \
     --no-shared-storage \
     --data-path $DATA_PATH \
     --split 100,0,0

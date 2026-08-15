@@ -146,13 +146,14 @@ HF2MG_ARGS=""
 if [ "${CKPT_LOAD_DIR}" != "None" ]; then
     HF2MG_ARGS="--enable-hf2mg-convert"
 fi
+
 CKPT_ARGS="
     --load ${CKPT_LOAD_DIR} \
     --save ${CKPT_SAVE_DIR} \
-    --model-type-hf qwen3-next \
     --enable-mg2hf-convert \
     --hf-cfg-dir ${HF_CFG_DIR} \
     ${HF2MG_ARGS} \
+    --model-type-hf qwen3-next
 "
 
 mkdir -p logs

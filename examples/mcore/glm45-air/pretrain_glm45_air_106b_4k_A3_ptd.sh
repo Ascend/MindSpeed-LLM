@@ -120,7 +120,7 @@ DATA_ARGS="
 
 CKPT_ARGS="
     --enable-hf2mg-convert \
-    --model-type-hf glm45-air \
+    --model-type-hf glm45-air
 "
 
 OUTPUT_ARGS="

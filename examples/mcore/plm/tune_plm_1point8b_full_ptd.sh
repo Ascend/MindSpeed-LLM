@@ -104,6 +104,7 @@ GPT_ARGS="
 "
 
 DATA_ARGS="
+    --handler-name AlpacaStyleInstructionHandler \
     --data-path $DATA_PATH \
     --split 100,0,0
 "
@@ -117,12 +118,18 @@ OUTPUT_ARGS="
     --no-save-rng
 "
 
+CKPT_ARGS="
+    --enable-hf2mg-convert \
+    --model-type-hf plm
+"
+
 torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     $GPT_ARGS \
     $DATA_ARGS \
     $OUTPUT_ARGS \
     $MLA_ARGS \
     $ROPE_ARGS \
+    $CKPT_ARGS \
     $FITUNE_ARGS \
     --distributed-backend nccl \
     --save $CKPT_SAVE_DIR \

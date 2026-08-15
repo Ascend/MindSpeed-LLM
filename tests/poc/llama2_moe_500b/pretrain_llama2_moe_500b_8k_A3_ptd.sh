@@ -46,8 +46,8 @@ GPT_ARGS="
     --hidden-size 4096 \
     --ffn-hidden-size 4096 \
     --num-attention-heads 32 \
-    --tokenizer-type Llama2Tokenizer \
-    --tokenizer-model ${TOKENIZER_MODEL} \
+    --tokenizer-type PretrainedFormHF \
+    --tokenizer-name-or-path ${TOKENIZER_MODEL} \
     --seq-length 8192 \
     --max-position-embeddings 8192 \
     --micro-batch-size 1 \
@@ -98,6 +98,7 @@ GPT_ARGS="
 "
 
 DATA_ARGS="
+    --handler-name GeneralPretrainHandler \
     --data-path ${DATA_PATH} \
     --split 949,50,1
 "

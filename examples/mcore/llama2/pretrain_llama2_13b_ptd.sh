@@ -35,8 +35,8 @@ GPT_ARGS="
     --hidden-size 5120 \
     --ffn-hidden-size 13824 \
     --num-attention-heads 40 \
-    --tokenizer-type Llama2Tokenizer \
-    --tokenizer-model ${TOKENIZER_MODEL} \
+    --tokenizer-type PretrainedFormHF \
+    --tokenizer-name-or-path ${TOKENIZER_MODEL} \
     --seq-length 4096 \
     --max-position-embeddings 4096 \
     --micro-batch-size 4 \

@@ -98,6 +98,7 @@ GPT_ARGS="
 "
 
 DATA_ARGS="
+    --handler-name GeneralPretrainHandler \
     --data-path ${DATA_PATH} \
     --vocab-file ${VOCAB_FILE} \
     --merge-file ${MERGE_FILE} \

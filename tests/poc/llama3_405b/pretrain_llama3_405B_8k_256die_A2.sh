@@ -104,6 +104,7 @@ RECOMPUTE_ARGS="
 "
 
 DATA_ARGS="
+    --handler-name GeneralPretrainHandler \
     --data-path $DATA_PATH \
     --split 949,50,1 \
     --no-shared-storage

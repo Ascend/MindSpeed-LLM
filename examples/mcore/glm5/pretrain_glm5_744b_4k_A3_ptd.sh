@@ -182,6 +182,7 @@ GPT_ARGS="
 
 
 DATA_ARGS="
+    --handler-name GeneralPretrainHandler \
     --data-path $DATA_PATH \
     --split 100,0,0
 "

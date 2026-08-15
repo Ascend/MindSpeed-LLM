@@ -92,6 +92,7 @@ GPT_ARGS="
 "
 
 DATA_ARGS="
+    --handler-name AlpacaStyleInstructionHandler \
     --data-path $DATA_PATH \
     --split 100,0,0
 "
@@ -103,10 +104,16 @@ OUTPUT_ARGS="
     --eval-iters 0 \
 "
 
+CKPT_ARGS="
+    --enable-hf2mg-convert \
+    --model-type-hf gemma2
+"
+
 torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     $GPT_ARGS \
     $DATA_ARGS \
     $OUTPUT_ARGS \
+    $CKPT_ARGS \
     --distributed-backend nccl \
     --load ${CKPT_LOAD_DIR} \
     --save ${CKPT_SAVE_DIR} \

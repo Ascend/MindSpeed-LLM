@@ -112,6 +112,7 @@ GPT_ARGS="
 "
 
 DATA_ARGS="
+    --handler-name GeneralPretrainHandler \
     --data-path ${DATA_PATH} \
     --split 100,0,0
 "
@@ -123,11 +124,17 @@ OUTPUT_ARGS="
     --eval-iters 0 \
 "
 
+CKPT_ARGS="
+    --enable-hf2mg-convert \
+    --model-type-hf glm45-air
+"
+
 torchrun ${DISTRIBUTED_ARGS} pretrain_gpt.py \
     ${GPT_ARGS} \
     ${DATA_ARGS} \
     ${OUTPUT_ARGS} \
     ${MOE_ARGS} \
+    ${CKPT_ARGS} \
     --load ${CKPT_LOAD_DIR} \
     --save ${CKPT_SAVE_DIR} \
     --distributed-backend nccl \

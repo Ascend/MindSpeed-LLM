@@ -3,7 +3,7 @@ export CUDA_DEVICE_MAX_CONNECTIONS=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
 
 NPUS_PER_NODE=8
-MASTER_ADDR=localhost #主节点ip 
+MASTER_ADDR=localhost #主节点ip
 MASTER_PORT=6000
 NNODES=32
 NODE_RANK=0
@@ -118,6 +118,7 @@ CKPT_ARGS="
 "
 
 DATA_ARGS="
+    --handler-name GeneralPretrainHandler \
     --data-path $DATA_PATH \
     --split 100,0,0
 "

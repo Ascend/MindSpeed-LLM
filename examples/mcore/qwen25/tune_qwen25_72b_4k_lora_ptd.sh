@@ -101,6 +101,7 @@ GPT_ARGS="
 "
 
 DATA_ARGS="
+    --handler-name AlpacaStyleInstructionHandler \
     --data-path $DATA_PATH \
     --split 100,0,0
 "
@@ -111,6 +112,8 @@ CKPT_ARGS="
     --no-save-optim \
     --no-save-rng \
     --seed 1234 \
+    --enable-hf2mg-convert \
+    --model-type-hf qwen25
 "
 
 OUTPUT_ARGS="

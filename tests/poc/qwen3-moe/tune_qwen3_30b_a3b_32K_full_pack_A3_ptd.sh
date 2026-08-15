@@ -52,7 +52,7 @@ MOE_ARGS="
     --moe-router-load-balancing-type aux_loss \
     --moe-layer-freq -1 \
     --first-k-dense-replace -1 \
-    --moe-aux-loss-coeff 0.001 
+    --moe-aux-loss-coeff 0.001
 "
 
 OPTIMIZE_ARGS="
@@ -166,10 +166,9 @@ TUNE_ARGS="
     --pack \
 "
 
-
 CKPT_ARGS="
     --enable-hf2mg-convert \
-    --model-type-hf qwen3-moe \
+    --model-type-hf qwen3-moe-moe
 "
 
 torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \

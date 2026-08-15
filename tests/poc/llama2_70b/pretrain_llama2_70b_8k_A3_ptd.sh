@@ -45,8 +45,8 @@ GPT_ARGS="
     --hidden-size 8192 \
     --ffn-hidden-size 28672 \
     --num-attention-heads 64 \
-    --tokenizer-type Llama2Tokenizer \
-    --tokenizer-model ${TOKENIZER_MODEL} \
+    --tokenizer-type PretrainedFormHF \
+    --tokenizer-name-or-path ${TOKENIZER_MODEL} \
     --seq-length 8192 \
     --max-position-embeddings 8192 \
     --micro-batch-size 1 \
@@ -87,6 +87,7 @@ GPT_ARGS="
 "
 
 DATA_ARGS="
+    --handler-name GeneralPretrainHandler \
     --data-path ${DATA_PATH} \
     --split 949,50,1
 "
@@ -98,9 +99,15 @@ OUTPUT_ARGS="
     --eval-iters 10
 "
 
+CKPT_ARGS="
+    --enable-hf2mg-convert \
+    --model-type-hf llama2
+"
+
 python3 -m torch.distributed.launch ${DISTRIBUTED_ARGS} pretrain_gpt.py \
     ${GPT_ARGS} \
     ${DATA_ARGS} \
+    ${CKPT_ARGS} \
     ${OUTPUT_ARGS} \
     --distributed-backend nccl \
     --load ${CKPT_LOAD_DIR} \

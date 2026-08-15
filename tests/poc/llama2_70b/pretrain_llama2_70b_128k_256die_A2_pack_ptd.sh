@@ -98,6 +98,7 @@ GPT_ARGS="
 "
 
 DATA_ARGS="
+    --handler-name GeneralPretrainHandler \
     --data-path $DATA_PATH \
     --split 949,50,1
 "
@@ -109,7 +110,9 @@ CKPT_ARGS="
     --no-save-optim \
     --no-save-rng \
     --seed 1234 \
-    --save ${CKPT_SAVE_DIR}
+    --save ${CKPT_SAVE_DIR} \
+    --enable-hf2mg-convert \
+    --model-type-hf llama2
 "
 
 OUTPUT_ARGS="

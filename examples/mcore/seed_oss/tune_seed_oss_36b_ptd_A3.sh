@@ -104,7 +104,7 @@ CKPT_ARGS="
     --no-save-rng \
     --seed 1234 \
     --enable-hf2mg-convert \
-    --model-type-hf seed-oss \
+    --model-type-hf seed-oss
 "
 
 OUTPUT_ARGS="

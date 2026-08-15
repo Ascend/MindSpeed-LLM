@@ -157,7 +157,7 @@ CKPT_ARGS="
     --load ${CKPT_LOAD_DIR} \
     --save ${CKPT_SAVE_DIR} \
     --enable-hf2mg-convert \
-    --model-type-hf qwen3-next \
+    --model-type-hf qwen3-next
 "
 
 OUTPUT_ARGS="

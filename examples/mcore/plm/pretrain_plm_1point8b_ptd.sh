@@ -97,6 +97,7 @@ GPT_ARGS="
 "
 
 DATA_ARGS="
+    --handler-name GeneralPretrainHandler \
     --data-path $DATA_PATH \
     --split 100,0,0
 "
@@ -110,12 +111,18 @@ OUTPUT_ARGS="
     --no-save-rng
 "
 
+CKPT_ARGS="
+    --enable-hf2mg-convert \
+    --model-type-hf plm
+"
+
 python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     $GPT_ARGS \
     $DATA_ARGS \
     $OUTPUT_ARGS \
     $MLA_ARGS \
     $ROPE_ARGS \
+    $CKPT_ARGS \
     --distributed-backend nccl \
     --save $CKPT_SAVE_DIR \
     --transformer-impl local \

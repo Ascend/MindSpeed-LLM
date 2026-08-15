@@ -185,6 +185,10 @@ OUTPUT_ARGS="
     --no-save-rng
 "
 
+CKPT_ARGS="
+    --enable-hf2mg-convert \
+    --model-type-hf glm5
+"
 
 mkdir -p ./logs
 python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
@@ -195,5 +199,6 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     $MOE_ARGS \
     $DSA_ARGS \
     ${OTHERS_ARGS[@]} \
+    $CKPT_ARGS \
     --load $CKPT_LOAD_DIR \
     --distributed-backend nccl | tee logs/pretrain_glm52_32B_4k_A5_ptd.log
