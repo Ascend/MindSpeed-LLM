@@ -13,41 +13,47 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
-from pickle import NONE
 import time
 from functools import wraps
 from logging import getLogger
 import torch
-import torch_npu
-import socket
+import torch_npu  # noqa: F401  # pylint: disable=unused-import
 
 from megatron.training import get_args, async_utils as async_utils_mod
 from megatron.core import mpu, dist_checkpointing
 from megatron.core.rerun_state_machine import get_rerun_state_machine
 from megatron.core.dist_checkpointing.serialization import get_default_save_sharded_strategy
-from megatron.core.dist_checkpointing.strategies.fully_parallel import \
-    FullyParallelSaveStrategyWrapper
+from megatron.core.dist_checkpointing.strategies.fully_parallel import FullyParallelSaveStrategyWrapper
 from megatron.training.utils import print_rank_0, unwrap_model, append_to_progress_log, is_last_rank
-from megatron.training.async_utils import schedule_async_save, maybe_finalize_async_save
-from megatron.training.checkpointing import (_load_base_checkpoint, get_rng_state, get_checkpoint_name,
-                                             get_distributed_optimizer_checkpoint_name,
-                                             ensure_directory_exists, generate_state_dict, get_checkpoint_tracker_filename)
+from megatron.training.async_utils import schedule_async_save
+from megatron.training.checkpointing import (
+    _load_base_checkpoint,
+    get_rng_state,
+    get_checkpoint_name,
+    get_distributed_optimizer_checkpoint_name,
+    ensure_directory_exists,
+    generate_state_dict,
+    get_checkpoint_tracker_filename,
+)
 from megatron.training.one_logger_utils import on_save_checkpoint_start, on_save_checkpoint_success
-from megatron.training.checkpointing import read_metadata
-from megatron.training.checkpointing import find_checkpoint_rank_0
 
-from mindspeed_llm.tasks.posttrain.lora.utils import is_enable_lora, merge_dicts, modify_keys_with_dict, filter_lora_keys
+from mindspeed_llm.tasks.posttrain.lora.utils import (
+    is_enable_lora,
+    merge_dicts,
+    modify_keys_with_dict,
+    filter_lora_keys,
+)
 from mindspeed_llm.tasks.posttrain.utils import load_checkpoint_loosely
 from mindspeed_llm.tasks.checkpoint.convert_hf2mg import Hf2MgConvert
 from mindspeed_llm.tasks.checkpoint.convert_mg2hf import Mg2HfConvert
 from mindspeed_llm.tasks.checkpoint.convert_ckpt_mamba2 import MambaConverter
+
 try:
     from modelopt.torch.opt.plugins import (
         save_modelopt_state,
         save_sharded_modelopt_state,
-        restore_modelopt_state,
-        restore_sharded_modelopt_state,
     )
+
     has_nvidia_modelopt = True
 except Exception:
     has_nvidia_modelopt = False
@@ -74,6 +80,7 @@ def _load_base_checkpoint_wrapper(fn):
         - LoRA weight key modification
         - Merging base model and LoRA adapter weights
     """
+
     @wraps(fn)
     def wrapper(*args, **kwargs):
         args_ = get_args()
@@ -96,6 +103,7 @@ def _load_base_checkpoint_wrapper(fn):
                 checkpoint_name = checkpoint_name_lora
                 release = release_lora
         return state_dict, checkpoint_name, release, ckpt_type
+
     return wrapper
 
 
@@ -116,7 +124,10 @@ def load_checkpoint_wrapper(fn):
         Loose loading is useful when loading a pretrained model for fine-tuning
         with a different architecture or when some weights are not needed.
     """
+
     @wraps(fn)
+    # Preserve the wrapped Megatron API, which accepts strict positionally.
+    # pylint: disable-next=keyword-arg-before-vararg
     def wrapper(ddp_model, optimizer, opt_param_scheduler, strict=True, *args, **kwargs):
         if load_checkpoint_loosely():
             strict = False
@@ -135,7 +146,7 @@ def load_args_from_checkpoint_wrapper(fn):
         if not isinstance(res, tuple):
             return res
         args, checkpoint_args = res
-        
+
         def _set_arg(arg_name, old_arg_name=None, force=False):
             if not force and getattr(args, arg_name, None) is not None:
                 return
@@ -148,7 +159,7 @@ def load_args_from_checkpoint_wrapper(fn):
                 setattr(args, arg_name, checkpoint_value)
             else:
                 print_rank_0(f"Checkpoint did not provide arguments {arg_name}")
-        
+
         _set_arg('num_layer_list', force=True)
         _set_arg('post_norm', force=True)
         _set_arg('num_experts')
@@ -175,17 +186,30 @@ def load_args_from_checkpoint_wrapper(fn):
         checkpoint_version = state_dict.get('checkpoint_version', 0)
         if checkpoint_version >= 3.0:
             _set_arg('expert_model_parallel_size', force=True)
-            
+
         return args, checkpoint_args
-    
+
     return wrapper
 
 
 def save_checkpoint_wrapper(fn):
     @wraps(fn)
-    def wrapper(iteration, model, optimizer, opt_param_scheduler, num_floating_point_operations_so_far,
-                checkpointing_context=None, pipeline_rank=None, expert_rank=None, tensor_rank=None, pipeline_parallel=None, expert_parallel=None, non_persistent_ckpt=False,
-                train_data_iterator=None, preprocess_common_state_dict_fn=None):
+    def wrapper(
+        iteration,
+        model,
+        optimizer,
+        opt_param_scheduler,
+        num_floating_point_operations_so_far,
+        checkpointing_context=None,
+        pipeline_rank=None,
+        expert_rank=None,
+        tensor_rank=None,
+        pipeline_parallel=None,
+        expert_parallel=None,
+        non_persistent_ckpt=False,
+        train_data_iterator=None,
+        preprocess_common_state_dict_fn=None,
+    ):
         """Save a model checkpoint.
 
         Checkpointing context is used to persist some checkpointing state
@@ -197,9 +221,7 @@ def save_checkpoint_wrapper(fn):
         if args.async_save:
             pending_async = async_utils_mod._async_calls_queue.get_num_unfinalized_calls()
             if pending_async:
-                print_rank_0(
-                    f'WARNING: async checkpoint queue has {pending_async} unfinalized request(s)'
-                )
+                print_rank_0(f'WARNING: async checkpoint queue has {pending_async} unfinalized request(s)')
 
         # Record start time for later end-to-end duration logging.
         # Prepare E2E metrics at start of save checkpoint.
@@ -210,8 +232,9 @@ def save_checkpoint_wrapper(fn):
 
         # Choose save format: use torch_dist for distributed checkpoints; otherwise legacy torch format.
         ckpt_format = args.ckpt_format if args.use_dist_ckpt else 'torch'
-        print_rank_0('saving checkpoint at iteration {:7d} to {} in {} format'.format(
-            iteration, args.save, ckpt_format))
+        print_rank_0(
+            'saving checkpoint at iteration {:7d} to {} in {} format'.format(iteration, args.save, ckpt_format)
+        )
 
         # Collect RNG state to ensure identical random sequences on restore.
         rng_state = get_rng_state(args.ckpt_format)
@@ -221,19 +244,31 @@ def save_checkpoint_wrapper(fn):
         if args.ckpt_format == 'torch_dist':
             rerun_state_machine = get_rerun_state_machine()
             rerun_state = rerun_state_machine.state_dict(
-                data_iterator=train_data_iterator, ckpt_format=ckpt_format,
+                data_iterator=train_data_iterator,
+                ckpt_format=ckpt_format,
             )
 
         # Generate save path (directory for distributed; filename for legacy).
-        checkpoint_name = get_checkpoint_name(args.save, iteration, release=False, pipeline_parallel=pipeline_parallel,
-                                              tensor_rank=tensor_rank, pipeline_rank=pipeline_rank,
-                                              expert_parallel=expert_parallel, expert_rank=expert_rank,
-                                              return_base_dir=args.use_dist_ckpt)
+        checkpoint_name = get_checkpoint_name(
+            args.save,
+            iteration,
+            release=False,
+            pipeline_parallel=pipeline_parallel,
+            tensor_rank=tensor_rank,
+            pipeline_rank=pipeline_rank,
+            expert_parallel=expert_parallel,
+            expert_rank=expert_rank,
+            return_base_dir=args.use_dist_ckpt,
+        )
 
         # In legacy mode, persist distributed optimizer's custom parameter state.
-        if args.use_distributed_optimizer and not args.no_save_optim and optimizer is not None and not args.use_dist_ckpt:
-            optim_checkpoint_name = \
-                get_distributed_optimizer_checkpoint_name(checkpoint_name)
+        if (
+            args.use_distributed_optimizer
+            and not args.no_save_optim
+            and optimizer is not None
+            and not args.use_dist_ckpt
+        ):
+            optim_checkpoint_name = get_distributed_optimizer_checkpoint_name(checkpoint_name)
             ensure_directory_exists(optim_checkpoint_name)
             optimizer.save_parameter_state(optim_checkpoint_name)
 
@@ -244,7 +279,8 @@ def save_checkpoint_wrapper(fn):
                 raise NotImplementedError('Async checkpoint save not implemented for legacy checkpoints')
             elif args.ckpt_format != 'torch_dist':
                 raise NotImplementedError(
-                    f'Async checkpoint save not implemented for {args.ckpt_format} distributed checkpoint format')
+                    f'Async checkpoint save not implemented for {args.ckpt_format} distributed checkpoint format'
+                )
 
         # Global rank of current process, for logging.
         rank = torch.distributed.get_rank() if torch.distributed.is_initialized() else 0
@@ -258,22 +294,19 @@ def save_checkpoint_wrapper(fn):
         )
 
         # Decide which rank generates the state_dict to avoid redundant work.
-        rank_ckpt_save_flag = False
-        if mpu.get_expert_data_parallel_world_size() > mpu.get_data_parallel_world_size():
-            rank_ckpt_save_flag = mpu.get_data_parallel_rank() == 0
-        else:
-            rank_ckpt_save_flag = mpu.get_expert_data_parallel_rank() == 0
+        # Cover both dense TP shards and expert ETP/EP shards while selecting only
+        # one writer from each DP/CP replica domain for legacy checkpoints.
+        rank_ckpt_save_flag = (
+            mpu.get_expert_data_parallel_rank() == 0 or mpu.get_data_parallel_rank(with_context_parallel=True) == 0
+        )
         # Generate state_dict (model params, optimizer state, RNG, etc.).
-        if not torch.distributed.is_initialized() \
-                or rank_ckpt_save_flag \
-                or args.use_dist_ckpt:
-
+        if not torch.distributed.is_initialized() or rank_ckpt_save_flag or args.use_dist_ckpt:
             optim_sd_kwargs = {}
             if args.use_dist_ckpt and args.use_distributed_optimizer:
                 # For distributed save, shard optimizer state as well.
-                optim_sd_kwargs['sharding_type'] = ('fully_sharded_model_space'
-                                                    if args.ckpt_fully_parallel_save
-                                                    else 'dp_zero_gather_scatter')
+                optim_sd_kwargs['sharding_type'] = (
+                    'fully_sharded_model_space' if args.ckpt_fully_parallel_save else 'dp_zero_gather_scatter'
+                )
                 print_rank_0(f'Storing distributed optimizer sharded state of type {optim_sd_kwargs["sharding_type"]}')
             if args.ckpt_format == 'torch_dist':
                 state_dict = generate_state_dict(
@@ -288,10 +321,20 @@ def save_checkpoint_wrapper(fn):
                     rerun_state=rerun_state,
                 )
             elif args.ckpt_format == 'torch':
-                state_dict = generate_state_dict(args, model, optimizer, opt_param_scheduler, rng_state,
-                                             args.use_dist_ckpt, iteration, optim_sd_kwargs=optim_sd_kwargs)
+                state_dict = generate_state_dict(
+                    args,
+                    model,
+                    optimizer,
+                    opt_param_scheduler,
+                    rng_state,
+                    args.use_dist_ckpt,
+                    iteration,
+                    optim_sd_kwargs=optim_sd_kwargs,
+                )
 
             # Record accumulated FLOPs for resume and training statistics.
+            # ckpt_format is validated by the argument parser to be torch or torch_dist.
+            # pylint: disable-next=used-before-assignment
             state_dict['num_floating_point_operations_so_far'] = num_floating_point_operations_so_far
             if args.use_dist_ckpt:
                 # Distributed save: rank0 creates directory; other ranks write their shards.
@@ -299,9 +342,9 @@ def save_checkpoint_wrapper(fn):
                     ensure_directory_exists(checkpoint_name, check_parent=False)
                 validate_sharding_integrity = True
                 # Choose save strategy: default or reuse cached strategy to reduce overhead.
-                save_strategy = (checkpointing_context or {}).get('save_strategy',
-                                                                  get_default_save_sharded_strategy(
-                                                                      args.ckpt_format))
+                save_strategy = (checkpointing_context or {}).get(
+                    'save_strategy', get_default_save_sharded_strategy(args.ckpt_format)
+                )
                 if args.ckpt_assume_constant_structure and args.ckpt_format == 'torch_dist':
                     # Reuse cached metadata when structure is constant to reduce validation cost.
                     save_strategy.use_cached_ckpt_structure = args.ckpt_assume_constant_structure
@@ -311,9 +354,11 @@ def save_checkpoint_wrapper(fn):
                         validate_sharding_integrity = not args.ckpt_assume_constant_structure
                     else:
                         # Fully parallel save: shard writes within the data-parallel group.
-                        save_strategy = FullyParallelSaveStrategyWrapper(save_strategy, mpu.get_data_parallel_group(
-                            with_context_parallel=True),
-                                                                         args.ckpt_assume_constant_structure)
+                        save_strategy = FullyParallelSaveStrategyWrapper(
+                            save_strategy,
+                            mpu.get_data_parallel_group(with_context_parallel=True),
+                            args.ckpt_assume_constant_structure,
+                        )
                 # Cache strategy for reuse in future checkpoints.
                 if checkpointing_context is not None:
                     checkpointing_context['save_strategy'] = save_strategy
@@ -345,9 +390,11 @@ def save_checkpoint_wrapper(fn):
                 # Save.
                 ensure_directory_exists(checkpoint_name)
                 from mindspeed_llm.tasks.high_availability.high_availability_helper import check_mindio_acp_available
+
                 if args.enable_high_availability and check_mindio_acp_available():
                     # High-availability storage path (if enabled and available).
                     import mindio_acp
+
                     mindio_acp.save(state_dict, checkpoint_name)
                 else:
                     # Regular torch.save.
@@ -362,18 +409,15 @@ def save_checkpoint_wrapper(fn):
                 torch.distributed.barrier()
 
         # Update tracker file with latest iteration (rank0 only).
-        if not torch.distributed.is_initialized() \
-                or torch.distributed.get_rank() == 0:
+        if not torch.distributed.is_initialized() or torch.distributed.get_rank() == 0:
             tracker_filename = get_checkpoint_tracker_filename(args.save)
 
             def iter_finalize_fn():
-                with open(tracker_filename, 'w') as f:
+                with open(tracker_filename, 'w', encoding='utf-8') as f:
                     f.write(str(iteration))
-                print_rank_0('  successfully saved checkpoint from iteration {:7d} to {}'
-                             .format(iteration, args.save))
+                print_rank_0('  successfully saved checkpoint from iteration {:7d} to {}'.format(iteration, args.save))
                 if args.log_progress and args.async_save:
-                    append_to_progress_log(f'Saved async checkpoint\tIteration: {iteration}',
-                                           barrier=False)
+                    append_to_progress_log(f'Saved async checkpoint\tIteration: {iteration}', barrier=False)
 
             if args.async_save:
                 if async_save_request is None:
@@ -385,11 +429,10 @@ def save_checkpoint_wrapper(fn):
                 iter_finalize_fn()
 
         # Additional callback for one_logger (last rank)
-        if not torch.distributed.is_initialized() \
-                or is_last_rank():
+        if not torch.distributed.is_initialized() or is_last_rank():
+
             def onelogger_finalize_fn():
                 on_save_checkpoint_success(productive_metrics, args.async_save)
-
 
             if args.async_save:
                 if async_save_request is None:
@@ -403,18 +446,18 @@ def save_checkpoint_wrapper(fn):
             # Hand off the async request to the queue for execution.
             schedule_async_save(async_save_request)
             print_rank_0(
-                '  async checkpoint save scheduled (not completed yet) at iteration {:7d} to {}'
-                .format(iteration, args.save)
+                '  async checkpoint save scheduled (not completed yet) at iteration {:7d} to {}'.format(
+                    iteration, args.save
+                )
             )
-
 
         if torch.distributed.is_initialized():
             # this barrier is not necessary, not required for completion
             torch.distributed.barrier()
 
-
         end_misc = time.time()
         logger.debug(f"rank: {rank}, takes {end_misc - start_misc} to finalize ckpt save ")
+
     return wrapper
 
 
@@ -463,13 +506,9 @@ def _convert_weights_mg2hf(args, iteration):
     dist = torch.distributed
 
     if not hasattr(args, "hf_save_dir_base"):
-        args.hf_save_dir_base = (
-            args.hf_save_dir if getattr(args, "hf_save_dir", None) else args.save
-        )
+        args.hf_save_dir_base = args.hf_save_dir if getattr(args, "hf_save_dir", None) else args.save
 
-    args.hf_save_dir = os.path.join(
-        args.hf_save_dir_base, f"mg2hf_iteration{iteration}"
-    )
+    args.hf_save_dir = os.path.join(args.hf_save_dir_base, f"mg2hf_iteration{iteration}")
 
     os.makedirs(args.hf_save_dir, exist_ok=True)
     logger.info(f"[InitHook] Conversion checkpoint to huggingface path: {args.hf_save_dir}")
@@ -483,5 +522,3 @@ def _convert_weights_mg2hf(args, iteration):
         converter.run()
         logger.info(f"[Convert] Weight conversion completed, time elapsed: {time.time() - start:.2f}s")
     dist.barrier()
-    return
-
