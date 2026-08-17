@@ -41,7 +41,7 @@ GPT_ARGS="
     --hidden-size 5120 \
     --ffn-hidden-size 13824 \
     --num-attention-heads 40 \
-    --tokenizer-type PretrainedFormHF \
+    --tokenizer-type PretrainedFromHF \
     --tokenizer-name-or-path ${TOKENIZER_MODEL} \
     --seq-length 4096 \
     --max-position-embeddings 4096 \

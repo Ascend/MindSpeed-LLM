@@ -164,11 +164,6 @@ OUTPUT_ARGS="
     --log-throughput \
 "
 
-CKPT_ARGS="
-    --enable-hf2mg-convert \
-    --model-type-hf kimi2
-"
-
 torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     $GPT_ARGS \
     $MLA_ARGS \
@@ -176,7 +171,6 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     $MOE_ARGS \
     $OUTPUT_ARGS \
     $DATA_ARGS \
-    $CKPT_ARGS \
     --distributed-backend nccl \
     --save $CKPT_SAVE_DIR \
     --load $CKPT_LOAD_DIR \
