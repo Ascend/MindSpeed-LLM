@@ -185,14 +185,20 @@ def deepseek_v4_cp_attention_forward(
         )
 
         q_in = q_local if q_local.is_contiguous() else q_local.contiguous()  # BSND [B, local_S, N, D]
-        ori_kv = kv[:, :, :local_end, :].transpose(1, 2).contiguous()  # [B, local_end, 1, D]
+        # reshape (not transpose+contiguous): last cp rank's full prefix slice makes contiguous() a no-op on the size-1 head dim, leaving a bad stride aclnnSparseFlashMla rejects
+        ori_kv = kv[:, :, :local_end, :].reshape(batch, local_end, 1, -1).contiguous()  # [B, local_end, 1, D]
         query_index_full, key_index_full, weights_full = self.compressor.indexer.get_indexer_params()
         # indexer triple seq axis is dim 1 for all: query_index [B, S, N, D],
         # key_index [B, T, 1, D], weights [B, S, N], top_k_indices [B, S, k].
         # Slice the q-side tensors to the local q shard [local_start:local_end] and the
         # kv-side tensors to the prefix [0:local_end//cmp_ratio].
         query_index = query_index_full[:, local_start:local_end, :, :].to(torch.bfloat16).contiguous()
-        cmp_kv = compressed_kv[:, :, : local_end // self.compress_ratio, :].transpose(1, 2).contiguous()
+        # reshape (not transpose+contiguous): same reason as ori_kv — avoid the size-1 head dim bad stride on the last cp rank
+        cmp_kv = (
+            compressed_kv[:, :, : local_end // self.compress_ratio, :]
+            .reshape(batch, local_end // self.compress_ratio, 1, -1)
+            .contiguous()
+        )
         key_index = key_index_full[:, : local_end // self.compress_ratio, :, :].contiguous()
         topk_local = top_k_indices[:, local_start:local_end].to(torch.int32).contiguous()
         weights = weights_full[:, local_start:local_end, :].float().contiguous()
@@ -232,10 +238,16 @@ def deepseek_v4_cp_attention_forward(
         from mindspeed_llm.fsdp2.ops.npu_sparse_flash_mla import npu_sparse_flash_mla
 
         q_in = q_local if q_local.is_contiguous() else q_local.contiguous()  # BSND [B, local_S, N, D]
-        ori_kv = kv[:, :, :local_end, :].transpose(1, 2).contiguous()  # [B, local_end, 1, D]
+        # reshape (not transpose+contiguous): last cp rank's full prefix slice makes contiguous() a no-op on the size-1 head dim, leaving a bad stride aclnnSparseFlashMla rejects
+        ori_kv = kv[:, :, :local_end, :].reshape(batch, local_end, 1, -1).contiguous()  # [B, local_end, 1, D]
         has_cmp = compressed_kv is not None and self.compress_ratio > 1
         if has_cmp:
-            cmp_kv = compressed_kv[:, :, : local_end // self.compress_ratio, :].transpose(1, 2).contiguous()
+            # reshape (not transpose+contiguous): same reason as ori_kv — avoid the size-1 head dim bad stride on the last cp rank
+            cmp_kv = (
+                compressed_kv[:, :, : local_end // self.compress_ratio, :]
+                .reshape(batch, local_end // self.compress_ratio, 1, -1)
+                .contiguous()
+            )
             cmp_idx = (
                 top_k_indices[:, local_start:local_end].to(torch.int32).contiguous()
                 if (self.compress_ratio == 4 and top_k_indices is not None)

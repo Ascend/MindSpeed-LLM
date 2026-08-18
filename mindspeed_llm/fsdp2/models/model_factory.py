@@ -20,6 +20,11 @@ from mindspeed_llm.fsdp2.utils.logging import get_logger
 from mindspeed_llm.fsdp2.models.model_loader import ModelLoader
 from mindspeed_llm.fsdp2.utils.global_vars import get_args
 
+# FSDPPlanConfig / TPPlanConfig / ChunkBatchPlanConfig inherit their constructor fields from
+# the external `fsdp_turbo` package, which pylint cannot resolve in the lint environment, so
+# every keyword passed to those constructors is a false E1123 (unexpected-keyword-arg).
+# pylint: disable=unexpected-keyword-arg
+
 logger = get_logger(__name__)
 
 
@@ -182,6 +187,9 @@ class ModelFactory:
         ep_size = parallel_args.ep_size
         ep_fsdp_size = parallel_args.ep_fsdp_size
         args = get_args()
+        # edp = world // (ep * ep_fsdp)
+        ep_world_size = dist.get_world_size() if dist.is_initialized() else 1
+        edp_size = ep_world_size // (ep_size * ep_fsdp_size)
 
         ep_plan = EPPlanConfig(
             apply_modules=parallel_args.ep_modules,
@@ -229,7 +237,7 @@ class ModelFactory:
             # Expert Parallelism
             expert_parallel_size=ep_size,
             expert_fully_shard_parallel_size=ep_fsdp_size,
-            expert_data_parallel_size=dp_size,  # Usually EP data parallel size matches global or has specific logic
+            expert_data_parallel_size=edp_size,
             ep_plan=ep_plan,
             # Context Parallelism
             context_parallel_size=parallel_args.cp_size,

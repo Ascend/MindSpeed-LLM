@@ -151,9 +151,9 @@ class ParallelEngineConfig:
         )
         '''
         self.ep_plan = EPPlanConfig(apply_modules=[], dispatcher='eager') if self.ep_plan is None else self.ep_plan
-        self.ep_plan.gradient_divide_factor = (
-            self.expert_parallel_size * self.expert_fully_shard_parallel_size * self.expert_data_parallel_size
-        )
+        if self.ep_plan.gradient_divide_factor is None:
+            world_size = torch.distributed.get_world_size() if torch.distributed.is_initialized() else 1
+            self.ep_plan.gradient_divide_factor = world_size
         if self.ep_plan.apply_efsdp_modules is None:
             self.ep_plan.apply_efsdp_modules = []
             for ep_module in self.ep_plan.apply_modules:
