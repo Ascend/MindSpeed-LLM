@@ -105,7 +105,8 @@ def _get_rank_offset(local_len, all_lens=None):
         return sum(all_lens[:rank]).item() if rank > 0 else 0
     local_len_t = torch.tensor([local_len], dtype=torch.int, device="npu" if torch.npu.is_available() else "cpu")
     all_lens = torch.empty(cp_size, dtype=torch.int, device=local_len_t.device)
-    torch.distributed.all_gather_into_tensor(all_lens, local_len_t)
+    cp_group = parallel_state.get_context_parallel_group()
+    torch.distributed.all_gather_into_tensor(all_lens, local_len_t, group=cp_group)
     return sum(all_lens[:rank]).item() if rank > 0 else 0
 
 
@@ -600,6 +601,7 @@ class DeepSeek4SelfAttention(MegatronModule):
         q = q.transpose(0, 1)
         global_freqs_cis = self.get_freqs_cis(start_pos, local_seq_len=q_len_local, get_global=True)
         local_freqs_cis = self.get_freqs_cis(start_pos, local_seq_len=q_len_local, get_global=False)
+        # q is global; apply global RoPE.
         q[..., -self.rope_head_dim :] = apply_rotary_emb(q[..., -self.rope_head_dim :], global_freqs_cis)
         q = q.transpose(0, 1)
 
@@ -631,12 +633,26 @@ class DeepSeek4SelfAttention(MegatronModule):
                         [pre_gather_len], dtype=torch.int, device="npu" if torch.npu.is_available() else "cpu"
                     )
                     _all_lens = torch.empty(cp_size_inner, dtype=torch.int, device=_local_len_t.device)
-                    torch.distributed.all_gather_into_tensor(_all_lens, _local_len_t)
+                    # Use CP group to keep sizes consistent under TP>1.
+                    _cp_group = parallel_state.get_context_parallel_group()
+                    torch.distributed.all_gather_into_tensor(_all_lens, _local_len_t, group=_cp_group)
                 else:
                     _all_lens = None
                 rank_offset = _get_rank_offset(pre_gather_len, all_lens=_all_lens)
+                # TP>1 SP: globalize cu_seqlens_kv to match the global q sequence.
+                _cu_seqlens_kv_input = packed_seq_params.cu_seqlens_kv
+                _local_len_for_compute = pre_gather_len
+                if tp_size > 1 and self.config.sequence_parallel:
+                    _local_cu_kv = packed_seq_params.cu_seqlens_kv
+                    if _local_cu_kv.dim() <= 1 < _local_cu_kv.numel():
+                        _local_total_kv = _local_cu_kv[-1].item()
+                        _global_parts = [_local_cu_kv]
+                        for i in range(1, tp_size):
+                            _global_parts.append(_local_cu_kv[1:] + i * _local_total_kv)
+                        _cu_seqlens_kv_input = torch.cat(_global_parts).int()
+                        _local_len_for_compute = pre_gather_len * tp_size
                 local_cu_seqlens_q, local_cu_seqlens_kv, _fix_prefix_kv_segments = _compute_prefix_kv_cu_seqlens(
-                    packed_seq_params.cu_seqlens_kv, rank_offset, pre_gather_len
+                    _cu_seqlens_kv_input, rank_offset, _local_len_for_compute
                 )
                 packed_seq_params.cu_seqlens_q = local_cu_seqlens_q
                 packed_seq_params.cu_seqlens_kv = local_cu_seqlens_kv
@@ -661,6 +677,8 @@ class DeepSeek4SelfAttention(MegatronModule):
                 _q_for_indexer = q_compressed.detach()
                 _local_freqs_for_indexer = local_freqs_cis
                 _freqs_cis_for_kv = _prefix_freqs_cis
+                # weights_proj needs local x (pre-gather) to match local q length.
+                _x_local_for_weights = _x_for_indexer
                 if packed_seq_params is not None and pre_gather_len is not None:
                     _x_gathered = gather_from_sp_cp(_x_for_indexer, tnd=True)
                     _x_for_indexer = _rearrange_prefix_kv(_x_gathered, _fix_prefix_kv_segments)
@@ -672,6 +690,7 @@ class DeepSeek4SelfAttention(MegatronModule):
                     packed_seq_params,
                     q_rope_preapplied=False,
                     freqs_cis_for_kv=_freqs_cis_for_kv,
+                    x_for_weights=_x_local_for_weights,
                 )
                 # TND: key_index stays local; cu_seqlens_k derived from actual shape in forward_with_scores_compress.
                 query_index, key_index, weights = self.indexer.all_gather_qk_weight_kvallgather(

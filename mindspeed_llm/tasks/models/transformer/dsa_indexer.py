@@ -588,6 +588,7 @@ class DSAIndexer(MegatronModule):
         packed_seq_params=None,
         q_rope_preapplied: bool = False,
         freqs_cis_for_kv: Tensor = None,
+        x_for_weights: Tensor = None,
     ):
         # Project low-rank query to full multi-head query
         q = self.wq_b(qr)
@@ -602,10 +603,13 @@ class DSAIndexer(MegatronModule):
         q = rotate_activation(q)
         _freqs_cis_for_compressor = freqs_cis_for_kv if freqs_cis_for_kv is not None else freqs_cis
         k = self.kv_compressor(x, start_pos, _freqs_cis_for_compressor, packed_seq_params).unsqueeze(2)
-        # weights has same len as q; for prefix x, take the last q_len segment.
-        _x_for_weights = x
-        if freqs_cis_for_kv is not None and x.shape[0] != q.shape[0]:
-            _x_for_weights = x[-q.shape[0] :]
+        # weights_proj input must match local q length; prefer caller-provided local x.
+        if x_for_weights is not None:
+            _x_for_weights = x_for_weights
+        else:
+            _x_for_weights = x
+            if freqs_cis_for_kv is not None and x.shape[0] != q.shape[0]:
+                _x_for_weights = x[-q.shape[0] :]
         weights = self.weights_proj(_x_for_weights)
         weights = weights * self.n_heads**-0.5
         weights = weights * self.softmax_scale

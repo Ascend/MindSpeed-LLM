@@ -391,7 +391,9 @@ class SparseFlashMlaWithIndexerLossFunction(torch.autograd.Function):
                 _dev = "npu" if torch.npu.is_available() else "cpu"
                 _local_t = torch.tensor([local_num], dtype=torch.int64, device=_dev)
                 _all_nums = torch.empty(cp_size, dtype=torch.int64, device=_dev)
-                torch.distributed.all_gather_into_tensor(_all_nums, _local_t)
+                # Use CP group to keep sizes consistent under TP>1.
+                _cp_group = parallel_state.get_context_parallel_group()
+                torch.distributed.all_gather_into_tensor(_all_nums, _local_t, group=_cp_group)
                 num_seqs = _all_nums.sum().item()
             else:
                 num_seqs = local_num
