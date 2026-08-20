@@ -15,7 +15,6 @@ MASTER_PORT=29900
 NNODES=1
 NODE_RANK=0
 WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
-TIMESTAMP=$(date "+%Y-%m-%d_%H-%M-%S")
 
 DISTRIBUTED_ARGS="
     --nproc_per_node $NPUS_PER_NODE \
@@ -24,6 +23,8 @@ DISTRIBUTED_ARGS="
     --master_addr $MASTER_ADDR \
     --master_port $MASTER_PORT
 "
+
+mkdir -p ./logs
 
 torchrun $DISTRIBUTED_ARGS train_fsdp2.py tests/pipeline/st/mamba3/pretrain_mamba3_2k_fsdp2.yaml \
     --model.model_name_or_path /data/ci/models/mamba3/hf/mamba3/ \
@@ -34,5 +35,4 @@ torchrun $DISTRIBUTED_ARGS train_fsdp2.py tests/pipeline/st/mamba3/pretrain_mamb
     --training.per_device_train_batch_size 1 \
     --training.gradient_accumulation_steps 1 \
     --training.output_dir ./output \
-    --optimization.use_triton_rmsnormgated True \
-    | tee logs/pretrain_mamba3_2k_${TIMESTAMP}.log
+    --optimization.use_triton_rmsnormgated True

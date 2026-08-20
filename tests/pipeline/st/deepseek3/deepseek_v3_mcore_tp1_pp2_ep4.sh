@@ -1,4 +1,16 @@
 #!/bin/bash
+
+#=============================================
+# Date: 2026-08-18
+# Description: Guards DeepSeek-V3 mcore pretrain features (MLA, MTP, MoE with n_group/
+#              seq_aux/alltoall_seq dispatcher, first-k-dense-replace, sigmoid router with
+#              expert bias, reuse_fp32_param, mla-mm-split, yarn rope). Moved from CI gate
+#              (tests/st) to pipeline: MLA/MTP/EP/seq_aux/yarn remain gated by
+#              deepseek4_flash_mcore_tp1_pp1_ep8.sh, alltoall_seq by qwen3_30b_tp4_cp2_ep2.sh,
+#              and v3-specifics (mla-mm-split, num-groups, MoE dispatchers) are nightly
+#              guarded by the deepseek3/deepseek32/legacy-deepseek2 pipeline cases.
+# Remarks: Heaviest gate case (~238s, ~198s first-step ckpt load of full-size v3 config).
+#=============================================
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
 export HCCL_CONNECT_TIMEOUT=3600
@@ -10,7 +22,7 @@ NNODES=1
 NODE_RANK=0
 WORLD_SIZE=$(($NPUS_PER_NODE*$NNODES))
 
-basepath=$(cd `dirname $0`; cd ../../../; pwd)
+basepath=$(cd `dirname $0`; cd ../../../../; pwd)
 
 DATA_PATH=/data/ci/datasets/processed/pretrain_dataset/alpaca_text_document
 TOKENIZER_PATH=/data/ci/models/deepseek3/mg/deepseek-v3-mcore-tp1-pp2-ep4-16experts

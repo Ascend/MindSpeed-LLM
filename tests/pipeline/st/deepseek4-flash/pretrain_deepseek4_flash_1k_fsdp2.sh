@@ -1,3 +1,11 @@
+#=============================================
+# Date: 2026-08-18
+# Description: Guards DeepSeek-V4-Flash FSDP2 pretrain base scenario (cp_size=1, default
+#              attn implementation): HF weight loading, fsdp_modules sharding incl. MTP,
+#              MoE ep config and recompute. Moved from CI gate (tests/st) to pipeline since
+#              these features are already guarded at the gate by pretrain_deepseek4_flash_1k_fsdp2_cp2.sh.
+# Remarks: Requires transformers==5.8.1, installed and restored automatically by this script.
+#=============================================
 set -e
 set -o pipefail
 
@@ -33,7 +41,7 @@ DISTRIBUTED_ARGS="
 "
 set +e
 torchrun $DISTRIBUTED_ARGS train_fsdp2.py \
-    ./tests/st/shell_scripts/pretrain_deepseek4_flash_1k_fsdp2.yaml
+    ./tests/pipeline/st/deepseek4-flash/pretrain_deepseek4_flash_1k_fsdp2.yaml
 
 TRAIN_EXIT_CODE=$?
 set -e
