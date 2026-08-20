@@ -54,8 +54,14 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
         self.n_hash_layers = self.load_model.n_hash_layers
         self.num_layers = self.load_model.num_layers
         self.num_experts = self.load_model.num_experts
-        self.compress_ratios = self.load_model.compress_ratios
-        if len(self.compress_ratios) != self.num_layers + self.load_model.num_nextn_predict_layers:
+        self.compress_ratios = list(self.load_model.compress_ratios)
+        expected_compress_ratios = self.num_layers + self.load_model.num_nextn_predict_layers
+        # DeepSeek-V4-0731 configs append two reserved zero entries. They do not
+        # correspond to transformer or MTP layers, so discard only this known
+        # suffix while retaining the strict validation for all other layouts.
+        if len(self.compress_ratios) == expected_compress_ratios + 2 and self.compress_ratios[-2:] == [0, 0]:
+            self.compress_ratios = self.compress_ratios[:-2]
+        if len(self.compress_ratios) != expected_compress_ratios:
             raise ValueError("compress-ratios length must equal num-layers add mtp-layers.")
 
         self.num_layer_list = getattr(args, "num_layer_list", None)
