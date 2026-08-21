@@ -1,6 +1,10 @@
 <h1 align="center"> <img src="docs/zh/pytorch/figures/readme/logo.png" height="110px" width="500px"> </h1>
 
 <p align="center">
+  简体中文 | <a href="./README_en.md">English</a>
+</p>
+
+<p align="center">
     <a href="https://gitcode.com/ascend/MindSpeed-LLM/blob/master/LICENSE">
         <img alt="GitHub" src="https://img.shields.io/github/license/huggingface/transformers.svg?color=blue">
     </a>
@@ -479,7 +483,7 @@ MindSpeed LLM系列TC及SIG会议安排请查看[Ascend会议中心](https://mee
 ---
 
 - MindSpeed LLM产品的使用许可证，具体请参见[LICENSE](LICENSE)。
-- MindSpeed LLM工具docs目录下的文档适用CC-BY 4.0许可证，具体请参见[LICENSE](./docs/zh/LICENSE)。
+- MindSpeed LLM工具docs目录下的文档适用CC-BY 4.0许可证，具体请参见[LICENSE](./docs/LICENSE)。
 
 # 贡献声明
 

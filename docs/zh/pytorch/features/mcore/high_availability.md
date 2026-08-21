@@ -44,7 +44,7 @@ Megatron原生的分布式优化器数据流及工作原理如下图：
 
 MindIO的功能以whl包的形式提供。
 
-mindio_ttp下载地址：[MindIO TTP 下载软件包-昇腾社区](https://gitcode.com/Ascend/mind-cluster/blob/branch_v26.0.0/docs/zh/scheduling/fault_recovery_acceleration/02_installation_and_deployment.md#%E5%87%86%E5%A4%87%E8%BD%AF%E4%BB%B6%E5%8C%85)
+mindio_ttp下载地址：[MindIO TTP 下载软件包-昇腾社区](https://gitcode.com/Ascend/mind-cluster/blob/branch_v26.1.0/docs/zh/scheduling/07_references/00_fault_recovery_acceleration/02_installation_and_deployment.md#%E5%87%86%E5%A4%87%E8%BD%AF%E4%BB%B6%E5%8C%85)
 
 ### 启动脚本中添加启动参数
 
@@ -72,7 +72,7 @@ mindio_ttp下载地址：[MindIO TTP 下载软件包-昇腾社区](https://gitco
 
 ## 使用约束
 
-1、由于原理限制，为了保证故障发生后，有完整的优化器状态数据，需要在  PTD（P+T+D 三维并行）切分时保障 Data Parallel Size 大于1，在使用MoE特性时还要求稠密层与稀疏层的 Data Parallel Size 均大于1，在使用长序列并行特性时还要求 dp_cp_size 大于1。
+1、由于原理限制，为了保证故障发生后，有完整的优化器状态数据，需要在 P+T+D 三维并行切分时保障 Data Parallel Size 大于1，在使用MoE特性时还要求稠密层与稀疏层的 Data Parallel Size 均大于1，在使用长序列并行特性时还要求 dp_cp_size 大于1。
 
 2、MindSpeed-llm 的高可用特性仅针对基础模型和基础训练特性进行适配以帮助用户快速体验该特性，暂未进行全量训练特性兼容，如用户对某个训练特性存在兼容需求，请在社区提出 issue 后我们将快速完成适配。
 
@@ -97,10 +97,10 @@ mindio_ttp下载地址：[MindIO TTP 下载软件包-昇腾社区](https://gitco
 
 4、当前缩容后不可再次缩容，扩容仅支持直接扩容回原有规模
 
-详见：[MindIO TTP 约束限制-昇腾社区](https://gitcode.com/Ascend/mind-cluster/blob/branch_v26.0.0/docs/zh/scheduling/fault_recovery_acceleration/02_installation_and_deployment.md#%E7%BA%A6%E6%9D%9F%E9%99%90%E5%88%B6)
+详见：[MindIO TTP 约束限制-昇腾社区](https://gitcode.com/Ascend/mind-cluster/blob/branch_v26.1.0/docs/zh/scheduling/07_references/00_fault_recovery_acceleration/02_installation_and_deployment.md#%E7%BA%A6%E6%9D%9F%E9%99%90%E5%88%B6)
 
 ### Checkpoint 保存与加载优化
 
 开启 `enable-high-availability` 时，若环境上安装了 MindIO ACP SDK ，则会使用mindio_acp的一级异步 checkpoint 保存与加载优化
 
-详见：[MindIO TTP 约束限制-昇腾社区](https://gitcode.com/Ascend/mind-cluster/blob/branch_v26.0.0/docs/zh/scheduling/fault_recovery_acceleration/02_installation_and_deployment.md#%E7%BA%A6%E6%9D%9F%E9%99%90%E5%88%B6)
+详见：[MindIO TTP 约束限制-昇腾社区](https://gitcode.com/Ascend/mind-cluster/blob/branch_v26.1.0/docs/zh/scheduling/07_references/00_fault_recovery_acceleration/02_installation_and_deployment.md#%E7%BA%A6%E6%9D%9F%E9%99%90%E5%88%B6)
