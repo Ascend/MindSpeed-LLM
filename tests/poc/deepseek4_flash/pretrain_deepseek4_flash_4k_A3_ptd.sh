@@ -99,6 +99,7 @@ MOE_ARGS="
     --moe-permute-fusion \
     --moe-fb-overlap \
     --swiglu-limit 10.0 \
+    --use-triton-swiglu-limit \
 "
 
 MTP_ARGS="
@@ -153,7 +154,7 @@ GPT_ARGS="
     --global-batch-size ${GBS} \
     --make-vocab-size-divisible-by 1 \
     --lr 1.0e-5 \
-    --train-iters 2000 \
+    --train-iters 30 \
     --lr-decay-style cosine \
     --untie-embeddings-and-output-weights \
     --disable-bias-linear \
@@ -169,7 +170,7 @@ GPT_ARGS="
     --attention-softmax-in-fp32 \
     --min-lr 1.0e-7 \
     --weight-decay 1e-2 \
-    --lr-warmup-iters 500 \
+    --lr-warmup-iters 0 \
     --clip-grad 1.0 \
     --adam-beta1 0.9 \
     --adam-beta2 0.999 \
