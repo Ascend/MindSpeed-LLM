@@ -93,7 +93,7 @@ In the pretraining and fine-tuning scripts `pretrain_xxx.sh` or `tune_xxx.sh`, a
 
 System resource requirements are as follows:
 
-- Drive space: Ensure that you have enough drive space to store the converted weights.
+- Disk space: Ensure that you have enough disk space to store the converted weights.
 - Conversion time: After training initialization, the system automatically performs weight conversion. Depending on the model size, the expected time ranges from 2 minutes to 2 hours. Please wait patiently.
 - Permission requirements: Ensure that you have read and write permissions for all the following relevant paths:
     - `{load}` - model loading path

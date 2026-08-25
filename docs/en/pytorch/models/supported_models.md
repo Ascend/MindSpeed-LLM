@@ -276,7 +276,7 @@ Dense models are traditional deep learning architectures. Their neurons are dens
       <td>[Pass]</td>
     </tr>
     <tr>
-      <td rowspan="4"><a href="https://huggingface.co/meta-llama">Llama-</a></td>
+      <td rowspan="4"><a href="https://huggingface.co/meta-llama">Llama</a></td>
       <td><a href="https://huggingface.co/huggyllama/llama-7b/tree/main">7B</a></td>
       <td rowspan="4"><a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.0.0/examples/legacy/llama">llama</a></td>
       <td>2K</td>
@@ -660,6 +660,7 @@ Dense models are traditional deep learning architectures. Their neurons are dens
       <td>[Ascend]</td>
       <td>[Pass]</td>
     </tr>
+    <tr>
       <td><a href="https://huggingface.co/Qwen/Qwen2.5-1.5B/tree/main">1.5B</a></td>
       <td> 32K </td>
       <th>MCore</th>
@@ -667,6 +668,7 @@ Dense models are traditional deep learning architectures. Their neurons are dens
       <td><a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.3.0">2.3.0</a></td>
       <td>[Ascend]</td>
       <td>[Pass]</td>
+    </tr>
     <tr>
       <td><a href="https://huggingface.co/Qwen/Qwen2.5-3B/tree/main">3B</a></td>
       <td> 32K </td>
@@ -1004,7 +1006,7 @@ Dense models are traditional deep learning architectures. Their neurons are dens
       <td>[Pass]</td>
     </tr>
     <tr>
-      <td rowspan="2"><a href="https://huggingface.co/deepseek-ai">DeepSeek-R1-Distill-Llama-</a></td>
+      <td rowspan="2"><a href="https://huggingface.co/deepseek-ai">DeepSeek-R1-Distill-Llama</a></td>
       <td><a href="https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Llama-8B">8B</a></td>
       <td rowspan="2"><a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/examples/mcore/deepseek_r1_distill_llama">deepseek_r1_distill_llama</a></td>
       <td> 8K </td>

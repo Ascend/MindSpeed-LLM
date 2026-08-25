@@ -32,7 +32,7 @@
 
   Q：权重转换时报错 number of layers should be divisible by the pipeline parallel size？
 
-  A：模型层数必须能够被 Pipeline Parallel Size（PP）整除。请检查权重转换脚本中的 target_pipeline_parallel_size 配置，或调整 PP 配置后重新执行转换。
+  A：模型层数必须能够被 Pipeline Parallel Size（流水线并行大小，即PP的配置）整除。请检查权重转换脚本中的 target_pipeline_parallel_size 配置，或调整 PP 配置后重新执行转换。
 
 - **问题6**
 

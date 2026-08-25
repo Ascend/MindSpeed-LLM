@@ -32,7 +32,7 @@
 
   Q: Why does weight conversion report "number of layers should be divisible by the pipeline parallel size"?
 
-  A: The number of model layers must be divisible by the Pipeline Parallel Size (PP). Check the `target_pipeline_parallel_size` configuration in the weight conversion script, or adjust the PP configuration and re-run the conversion.
+  A: The number of model layers must be divisible by the Pipeline Parallel Size. Check the `target_pipeline_parallel_size` configuration in the weight conversion script, or adjust the PP configuration and re-run the conversion.
 
 - **Question 6**
 

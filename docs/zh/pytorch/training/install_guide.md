@@ -174,7 +174,7 @@
 
 4. 安装Triton-Ascend
 
-   安装配套版本的Triton-Ascend，请参考《Triton-Ascend》中的"[通过pip安装Triton-Ascend](https://triton-ascend.readthedocs.io/zh-cn/latest/installation_guide.html#piptriton-ascend)"章节，获取配套版本的Triton-Ascend安装指令。
+   安装配套版本的Triton-Ascend，请参考[Triton-Ascend安装指南](https://triton-ascend.readthedocs.io/zh-cn/latest/installation_guide.html#id1)，可获取配套版本的Triton-Ascend安装指令。
 
    可参考如下安装命令：
 

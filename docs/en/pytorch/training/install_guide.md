@@ -174,7 +174,7 @@ Follow these steps to obtain the corresponding source code, install the required
 
 4. Install Triton-Ascend.
 
-   Install the matching version of Triton-Ascend. For details, see [Quick Installation](https://triton-ascend.readthedocs.io/en/latest/installation_guide.html#quick-installation) in Triton-Ascend to obtain the installation command.
+   Install the matching version of Triton-Ascend. For details, see [Triton-Ascend Installation Guide](https://triton-ascend.readthedocs.io/en/latest/installation_guide.html#installation-guide) to obtain the installation command.
 
    You can use the following installation command:
 
