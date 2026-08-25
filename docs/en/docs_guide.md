@@ -13,7 +13,7 @@ The MindSpeed LLM documentation is organized by training framework and mainly in
 The MindSpeed LLM documentation directory hierarchy is shown below:
 
 ``` shell
-docs/zh/
+docs/en/
 
 ├── introduction.md           # Project introduction
 ├── project_guide.md          # Project guide

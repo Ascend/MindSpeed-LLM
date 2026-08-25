@@ -194,7 +194,7 @@ The Timeline lays out the runtime status of the host and device during training 
 | 6 | Overlap Analysis | Vertically projects the computation and communication tasks of Ascend Hardware to obtain a breakdown of computation, communication, and idle time. |
 | 7 | Stats System View | Summary statistics at the single-device level. Use the device number drop-down list on the left to switch between devices. |
 
-The preceding table lists the Timeline lanes most commonly used during analysis. You can expand each lane to view details. For a complete introduction to the interface, see [MindStudio Insight Timeline](https://www.hiascend.com/document/detail/zh/mindstudio/2610/GUI_baseddevelopmenttool/MindStudioInsight/docs/zh/user_guide/system_tuning.md#%E6%97%B6%E9%97%B4%E7%BA%BFtimeline).
+The preceding table lists the Timeline lanes most commonly used during analysis. You can expand each lane to view details. For a complete introduction to the interface, see [MindStudio Insight Timeline](https://www.hiascend.com/document/detail/en/mindstudio/2610/GUI_baseddevelopmenttool/MindStudioInsight/docs/en/user_guide/system_tuning.md#timeline).
 
 **Figure 2**  Detailed information after expanding a lane
 
@@ -298,12 +298,12 @@ Handle only one main bottleneck at a time, and re-measure with the same criteria
 
 ### Operator Computation Bottlenecks
 
-1. Locate hotspot operators: In the Operator tab of [MindStudio Insight](https://www.hiascend.com/document/detail/zh/mindstudio/2610/GUI_baseddevelopmenttool/MindStudioInsight/docs/zh/user_guide/overview.md), sort by total time. Combine the call count, average time per call, shape, and dtype to identify operators with high total time or excessively frequent calls, and analyze whether you can further optimize the computation logic.
+1. Locate hotspot operators: In the Operator tab of [MindStudio Insight](https://www.hiascend.com/document/detail/en/mindstudio/2610/GUI_baseddevelopmenttool/MindStudioInsight/docs/en/user_guide/overview.md), sort by total time. Combine the call count, average time per call, shape, and dtype to identify operators with high total time or excessively frequent calls, and analyze whether you can further optimize the computation logic.
 2. Evaluate fusion opportunities: For hotspot operators whose model code has already been adapted, evaluate Flash Attention, Fused RMSNorm, Fused RoPE, MoE GroupedMatMul, the fused dispatcher, and model-specific fusion operators first. After enabling them, compare the end-to-end step time, kernel count, peak memory, and accuracy results to confirm the actual benefit.
 
 **Common computation optimization cases**
 
-For the latest details, see [Operator Performance Issue Optimization Solutions](https://www.hiascend.com/document/detail/zh/mindstudio/2610/practicalcases/GeneralPerformanceIssue/MindStudio/26.1.0/zh/cases/general_performance_issue_troubleshooting_guide/solution_to_top2.md).
+For the latest details, see [Operator Performance Issue Optimization Solutions](https://www.hiascend.com/document/detail/en/mindstudio/2610/practicalcases/GeneralPerformanceIssue/MindStudio/26.1.0/en/cases/general_performance_issue_troubleshooting_guide/solution_to_top2.md).
 
 **Table 1**  Common optimization cases
 
@@ -329,7 +329,7 @@ When the `Free` time proportion reaches or exceeds 3%, check the host-to-device 
 
 **About Host Bound**
 
-In TorchNPU training scenarios, operator scheduling, memory allocation, and task dispatch on the host side (CPU) run asynchronously with task execution on the device side (NPU). When the Host dispatches tasks more slowly than the Device executes them, the Device enters an idle state waiting for new tasks, which forms Host Bound. For detailed analysis methods, see [Host Bound Issue Location and Resolution](https://www.hiascend.com/document/detail/zh/mindstudio/2610/practicalcases/GeneralPerformanceIssue/MindStudio/26.1.0/zh/cases/general_performance_issue_troubleshooting_guide/solution_to_top3.md).
+In TorchNPU training scenarios, operator scheduling, memory allocation, and task dispatch on the host side (CPU) run asynchronously with task execution on the device side (NPU). When the Host dispatches tasks more slowly than the Device executes them, the Device enters an idle state waiting for new tasks, which forms Host Bound. For detailed analysis methods, see [Host Bound Issue Location and Resolution](https://www.hiascend.com/document/detail/en/mindstudio/2610/practicalcases/GeneralPerformanceIssue/MindStudio/26.1.0/en/cases/general_performance_issue_troubleshooting_guide/solution_to_top3.md).
 
 **Typical symptoms**
 
@@ -373,7 +373,7 @@ export TASK_QUEUE_ENABLE=2
 
 - Setting `ASCEND_LAUNCH_BLOCKING=1` forcibly disables the task queue, making the `TASK_QUEUE_ENABLE` configuration ineffective.
 - `TASK_QUEUE_ENABLE=2` increases memory access concurrency and may increase the NPU peak memory at runtime.
-- For detailed configuration, see [`TASK_QUEUE_ENABLE`](https://www.hiascend.com/document/detail/zh/Pytorch/2610/apiref/ENV/docs/zh/environment_variable_reference/TASK_QUEUE_ENABLE.md).
+- For detailed configuration, see [`TASK_QUEUE_ENABLE`](https://www.hiascend.com/document/detail/en/Pytorch/2610/apiref/ENV/docs/en/environment_variable_reference/TASK_QUEUE_ENABLE.md).
 
 **CPU core binding optimization**
 
@@ -387,7 +387,7 @@ export CPU_AFFINITY_CONF=<mode>,npu<value1>:<value2>-<value3>
 - `mode=1`: coarse-grained core binding, which binds all threads associated with one NPU to the specified CPU core range.
 - `mode=2`: fine-grained core binding, which binds the main threads associated with one NPU to independent CPU cores.
 - `npu<value1>:<value2>-<value3>`: sets the CPU core range for the specified NPU. It takes effect only when `mode` is not 0.
-- For detailed configuration, see [`CPU_AFFINITY_CONF`](https://www.hiascend.com/document/detail/zh/Pytorch/2610/apiref/ENV/docs/zh/environment_variable_reference/CPU_AFFINITY_CONF.md).
+- For detailed configuration, see [`CPU_AFFINITY_CONF`](https://www.hiascend.com/document/detail/en/Pytorch/2610/apiref/ENV/docs/en/environment_variable_reference/CPU_AFFINITY_CONF.md).
 
 **Configuration examples**
 

@@ -139,8 +139,7 @@ Some versions require the chip model identifier returned by the `dcmi_get_device
 
 > Note: The current MindSpeed LLM code does not call this interface directly. This is provided here only as an adaptation note. If upper-layer service or operation scripts rely on the return value of this interface to determine the chip model, the return value must be `A2G3` or `A2G4`. Otherwise, model-related logic branches may be affected.
 
-For the verification method, please refer to:
-[dcmi_get_device_chip_info interface prototype](https://support.huawei.com/enterprise/zh/doc/EDOC1100568435/8739bb5a)
+For the verification method, please refer to the **dcmi_get_device_chip_info interface prototype**.
 
 ### 4. Core Functionality Smoke Verification
 

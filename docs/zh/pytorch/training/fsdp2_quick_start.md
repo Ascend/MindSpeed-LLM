@@ -2,23 +2,23 @@
 
 ## 概述
 
-本文档提供了一个简易示例，帮助初次接触 MindSpeed LLM 的开发者快速启动模型训练任务，并使用 FSDP2 后端完成大语言模型的预训练和微调任务。
-以下将以 Qwen3-8B 模型为例，指导开发者完成大语言模型的预训练和微调任务，主要步骤包括：
+本文档提供了一个简易示例，帮助初次接触MindSpeed LLM的开发者快速启动模型训练任务，并使用FSDP2后端完成大语言模型的预训练和微调任务。
+以下将以Qwen3-8B模型为例，指导开发者完成大语言模型的预训练和微调任务，主要步骤包括：
 
-- 环境准备：根据安装指引进行搭建环境
+- 环境准备：根据安装指引进行环境搭建
 - 权重和数据集准备：从HuggingFace下载Qwen3-8B开源模型权重，并获取Alpaca数据集
-- 启动训练任务：在昇腾 NPU 上使用 FSDP2 后端进行模型预训练和微调
+- 启动训练任务：在昇腾NPU上使用FSDP2后端进行模型预训练和微调
 
 > [!NOTE]
 >
-> MindSpeed LLM 支持 <term>Ascend 950 系列产品</term>、<term>Atlas A3 训练系列产品</term> 和 <term>Atlas A2 训练系列产品</term>，且要求单 NPU 的片上内存为 64GB 及以上，详见[模型支持列表](../models/supported_models.md)。
+> MindSpeed LLM支持<term>Ascend 950 系列产品</term>、<term>Atlas A3 训练系列产品</term> 和 <term>Atlas A2 训练系列产品</term>，且要求单NPU的片上内存为 64GB 及以上，详见[模型支持列表](../models/supported_models.md)。
 >
-> 当前 Qwen3-8B 的示例脚本中 `NPUS_PER_NODE=8` 表示需要 8 个 NPU，如果实际情况低于此配置，可能遇到OOM（Out of Memory，内存不足）问题。
+> 当前Qwen3-8B的示例脚本中`NPUS_PER_NODE=8`表示需要8个NPU，如果实际情况低于此配置，可能遇到OOM（Out of Memory，内存不足）问题。
 
 开发者入门基础：
 
-- 具备基础的 PyTorch 使用经验
-- 具备初级的 Python 开发经验
+- 具备基础的PyTorch使用经验
+- 具备初级的Python开发经验
 - 对FSDP（Fully Sharded Data Parallel，全分片数据并行）有基本了解
 
 ## 环境准备
@@ -88,7 +88,7 @@
 
 2. 获取数据集
 
-    通过 HuggingFace 获取 Alpaca 数据集。
+    通过HuggingFace获取Alpaca数据集。
 
     ```shell
     mkdir dataset
@@ -107,7 +107,7 @@
     source /usr/local/Ascend/nnal/atb/set_env.sh
     ```
 
-    以上命令以 root 用户安装后的默认路径为例，请用户根据 set_env.sh 的实际路径进行替换。
+    以上命令以root用户安装后的默认路径为例，请用户根据 set_env.sh 的实际路径进行替换。
 
 ## 启动预训练
 
@@ -124,7 +124,7 @@
     配置示例如下：
 
     ```bash
-    source examples/fsdp2/env_config.sh                 # 加载 NPU 环境变量配置
+    source examples/fsdp2/env_config.sh                 # 加载NPU环境变量配置
 
     NPUS_PER_NODE=8             # 使用单节点的8卡NPU
     MASTER_ADDR=localhost       # 单机使用本节点IP地址或者localhost，多机所有节点都配置为主节点IP地址
@@ -171,7 +171,7 @@
       data_manager_type: mg
 
     parallel:
-      fsdp_size: 8                                       # FSDP 分片数量，必须等于NPUS_PER_NODE * NNODES（即world size）
+      fsdp_size: 8                                       # FSDP分片数量，必须等于NPUS_PER_NODE * NNODES（即world size）
       fsdp_modules:
         - model.layers.{*}
         - model.embed_tokens
@@ -182,7 +182,7 @@
         - model.layers.{*}
 
     training:
-      stage: pt                                          # 训练阶段，pt 为预训练
+      stage: pt                                          # 训练阶段，pt为预训练
       per_device_train_batch_size: 1
       gradient_accumulation_steps: 1
       dataloader_num_workers: 4
@@ -214,8 +214,8 @@
 
 > [!NOTE]
 >
-> - 多机训练需在多个终端同时启动预训练脚本（每个终端的预训练脚本只有 `NODE_RANK` 参数不同，MASTER_ADDR均为主节点的IP地址，其他参数均相同）。
-> - FSDP2 后端会自动将模型参数分片到各 NPU，确保每个 NPU 只存储部分参数，从而支持超大规模模型训练。
+> - 多机训练需在多个终端同时启动预训练脚本（每个终端的预训练脚本只有`NODE_RANK`参数不同，MASTER_ADDR均为主节点的IP地址，其他参数均相同）。
+> - FSDP2后端会自动将模型参数分片到各NPU，确保每个NPU只存储部分参数，从而支持超大规模模型训练。
 
 ## 启动微调
 
@@ -232,7 +232,7 @@
     配置示例如下：
 
     ```bash
-    source examples/fsdp2/env_config.sh                 # 加载 NPU 环境变量配置
+    source examples/fsdp2/env_config.sh                 # 加载NPU环境变量配置
 
     NPUS_PER_NODE=8             # 使用单节点的8卡NPU
     MASTER_ADDR=localhost       # 单机使用本节点IP地址或者localhost，多机所有节点都配置为主节点IP地址
@@ -279,7 +279,7 @@
       preprocessing_num_workers: 1
 
     parallel:
-      fsdp_size: 8                                       # FSDP 分片数量，必须等于NPUS_PER_NODE * NNODES（即world size）
+      fsdp_size: 8                                       # FSDP分片数量，必须等于NPUS_PER_NODE * NNODES（即world size）
       fsdp_modules:
         - model.layers.{*}
         - model.embed_tokens
@@ -327,8 +327,8 @@
 
 > [!NOTE]
 >
-> - 多机微调需在多个终端同时启动微调脚本（每个终端的微调脚本只有 `NODE_RANK` 参数不同，MASTER_ADDR均为主节点的IP地址，其他参数均相同）。
-> - 微调默认使用 Alpaca 数据集格式。如需使用其他数据集，请参考[全量参数介绍（基于FSDP2训练后端）](../features/fsdp2/arguments.md)中的“数据参数（DataArguments）”相关介绍。
+> - 多机微调需在多个终端同时启动微调脚本（每个终端的微调脚本只有`NODE_RANK`参数不同，MASTER_ADDR均为主节点的IP地址，其他参数均相同）。
+> - 微调默认使用Alpaca数据集格式。如需使用其他数据集，请参考[全量参数介绍（基于FSDP2训练后端）](../features/fsdp2/arguments.md)中的“数据参数（DataArguments）”相关介绍。
 
 脚本中包含训练参数，下表为部分参数解释。
 
@@ -336,7 +336,7 @@
 
 |参数名|说明|配置示例|
 |----|----|----|
-|`fsdp_size`|全分片数据并行大小，必须等于 world size（即 `NPUS_PER_NODE * NNODES`）。|正整数，如 `8`、`16`|
+|`fsdp_size`|全分片数据并行大小，必须等于world size（即 `NPUS_PER_NODE * NNODES`）。|正整数，如 `8`、`16`|
 |`fsdp_modules`|启用FSDP的模型层结构列表|`["model.layers.{*}", "model.embed_tokens", "lm_head"]`|
 |`recompute`|是否启用重计算，通过牺牲部分计算量节省显存|`True` / `False`|
 |`recompute_modules`|启用激活重计算的模型层结构|`["model.layers.{*}"]`|

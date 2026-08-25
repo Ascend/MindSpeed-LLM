@@ -49,7 +49,7 @@ For security and least-privilege reasons, you are advised not to use `root` or o
 ## Runtime Security Statement
 
 1. You are advised to write training scripts that match the available resources. If the training script does not match the resource conditions, for example, if the dataset loading memory exceeds the available memory or if the training script generates more data locally than the available disk space, errors may occur and the process may exit unexpectedly.
-2. MindSpeed LLM uses PyTorch internally, and version mismatches may cause runtime errors. For details, see the PyTorch [Security Statement](https://gitcode.com/Ascend/pytorch/blob/v2.7.1-26.1.0/docs/zh/SECURITYNOTE.md).
+2. MindSpeed LLM uses PyTorch internally, and version mismatches may cause runtime errors. For details, see the PyTorch [Security Statement](https://gitcode.com/Ascend/pytorch/blob/v2.7.1-26.1.0/docs/en/SECURITYNOTE.md).
 3. This software uses `torch.load` from PyTorch to load models, and the code uses this interface in certain scenarios. In some scenarios, `weights_only=False` is explicitly configured, which means these loading operations inherit the potential dangers of the `pickle` module, allowing arbitrary code execution. Attackers may exploit the `pickle` deserialization vulnerability to achieve remote code execution (RCE) by constructing malicious model files. Additionally, even when `weights_only=True` is configured, a deserialization vulnerability, CVE-2025-32434, still exists for PyTorch versions `<= 2.5.1`. Please ensure the safety of the loaded weights and avoid malicious model loading that could attack the execution machine or device.
 
 ## Public Internet Address Statement
@@ -64,7 +64,7 @@ For security and least-privilege reasons, you are advised not to use `root` or o
 | In-house | Not involved | `mindspeed_llm/core/transformer/moe/moe_utils.py:135` | <https://arxiv.org/abs/2101.03961> | Paper URL |
 | In-house | Involved | `mindspeed_llm/tasks/data/collator.py:4` | <https://github.com/OpenAccess-AI-Collective/axolotl/blob/main/src/axolotl/monkeypatch/utils.py> | Source code URL |
 | In-house | Involved | `mindspeed_llm/core/distributed/distributed_data_parallel.py:126` | <https://github.com/NVIDIA/TransformerEngine/pull/719> | Source code URL |
-| In-house | Not involved | `mindspeed_llm/core/datasets/gpt_dataset.py:159, 219` | <https://gitcode.com/Ascend/MindSpeed-LLM/wiki/FAQs.md#1-megatron-data-helpers%E5%8F%AF%E8%83%BD%E5%BC%95%E5%85%A5%E7%9A%84%E9%97%AE%E9%A2%98> | Details URL |
+| In-house | Not involved | `mindspeed_llm/core/datasets/gpt_dataset.py:159, 219` | <https://gitcode.com/Ascend/MindSpeed-LLM/wiki/FAQs.md> | Details URL |
 
 ## Public Interface Statement
 
@@ -72,11 +72,11 @@ MindSpeed LLM has not yet released a wheel package. Therefore, it does not provi
 
 ## Communication Security Hardening
 
-[Communication security hardening instructions](https://gitcode.com/Ascend/pytorch/blob/v2.7.1-26.1.0/docs/zh/SECURITYNOTE.md#%E9%80%9A%E4%BF%A1%E5%AE%89%E5%85%A8%E5%8A%A0%E5%9B%BA)
+[Communication security hardening instructions](https://gitcode.com/Ascend/pytorch/blob/v2.7.1-26.1.0/docs/en/SECURITYNOTE.md#communication-security-hardening)
 
 ## Communication Matrix
 
-[Communication matrix instructions](https://gitcode.com/Ascend/pytorch/blob/v2.7.1-26.1.0/docs/zh/SECURITYNOTE.md#%E9%80%9A%E4%BF%A1%E7%9F%A9%E9%98%B5)
+[Communication matrix instructions](https://gitcode.com/Ascend/pytorch/blob/v2.7.1-26.1.0/docs/en/SECURITYNOTE.md#communication-matrix)
 
 ### Special Scenarios
 

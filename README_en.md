@@ -54,9 +54,9 @@ MindSpeed LLM is a distributed large language model training toolkit built on th
 - [Aug. 23, 2025]: 🚀 An optimized version of large-parameter model [weight conversion v2](./docs/en/pytorch/tools/checkpoint_convert_hf_mcore_large_params.md) is now available.
 - [Jul. 28, 2025]: 🚀 Simultaneous first-release support for the **GLM-4.5-Air** model series
 - [Jul. 25, 2025]: 🌴 MindSpeed LLM released the [v2.1.0 branch](https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.1.0), which supports core_r0.8.0.
-- [Jul. 10, 2025]: 🚀 Features in the **[DeepSeek-R1](https://gitcode.com/Ascend/MindSpeed-RL/blob/master/docs/zh/solutions/r1_zero_deepseek_671b.md)** series are being rolled out gradually.
+- [Jul. 10, 2025]: 🚀 Features in the **DeepSeek-R1** series are being rolled out gradually.
 - [May. 19, 2025]: 🚀 Simultaneous first-release support for the **Qwen3** model series
-- [Mar. 27, 2025]: 🚀 **[DeepSeek-R1-ZERO Qwen-7B](https://gitcode.com/ascend/MindSpeed-RL/blob/master/docs/zh/solutions/r1_zero_qwen25_7b.md)** **[DeepSeek-R1-ZERO Qwen-32B](https://gitcode.com/ascend/MindSpeed-RL/blob/master/docs/zh/solutions/r1_zero_qwen25_32b.md)**
+- [Mar. 27, 2025]: 🚀 **DeepSeek-R1-ZERO Qwen-7B** **DeepSeek-R1-ZERO Qwen-32B**
 - [Mar. 26, 2025]: 🚀 **[DeepSeek-V3-671B model suite](./examples/mcore/deepseek3)** is now available.
 
 </details>
@@ -489,7 +489,7 @@ If you do not want your dataset to be mentioned in MindSpeed LLM model descripti
 
 ---
 
-If you want to report issues or contribute code to MindSpeed LLM, see the [Contribution Guide](./CONTRIBUTING.md).
+If you want to report issues or contribute code to MindSpeed LLM, see the [Contribution Guide](./CONTRIBUTING_en.md).
 
 # FAQ
 
