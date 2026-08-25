@@ -333,6 +333,36 @@ class Step3p5Experts(nn.Module):
             nn.init.kaiming_uniform_(self.gate_up_proj[i], a=math.sqrt(5))
             nn.init.kaiming_uniform_(self.down_proj[i], a=math.sqrt(5))
 
+    @staticmethod
+    def _as_local_tensor(tensor):
+        return tensor.to_local() if hasattr(tensor, "to_local") else tensor
+
+    def _get_grouped_gemm_weights(self, dtype):
+        """Return expert weights in the ``[expert, input, output]`` GMM layout."""
+        gate_up_proj = self._as_local_tensor(self.gate_up_proj).to(dtype)
+        down_proj = self._as_local_tensor(self.down_proj).to(dtype)
+
+        expected_gate_up = (self.hidden_size, 2 * self.moe_intermediate_size)
+        expected_down = (self.moe_intermediate_size, self.hidden_size)
+
+        if gate_up_proj.shape[-2:] == expected_gate_up[::-1]:
+            gate_up_proj = gate_up_proj.transpose(-1, -2)
+        if down_proj.shape[-2:] == expected_down[::-1]:
+            down_proj = down_proj.transpose(-1, -2)
+
+        if gate_up_proj.shape[-2:] != expected_gate_up:
+            raise RuntimeError(
+                "Invalid Step3p5 gate_up_proj layout: "
+                f"expected trailing dimensions {expected_gate_up}, got {tuple(gate_up_proj.shape)}"
+            )
+        if down_proj.shape[-2:] != expected_down:
+            raise RuntimeError(
+                "Invalid Step3p5 down_proj layout: "
+                f"expected trailing dimensions {expected_down}, got {tuple(down_proj.shape)}"
+            )
+
+        return gate_up_proj.contiguous(), down_proj.contiguous()
+
     def get_expert_output(self, inputs: torch.Tensor, expert_id):
         gate_up_output = torch.matmul(inputs, self.gate_up_proj[expert_id])
 
