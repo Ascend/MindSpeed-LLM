@@ -17,8 +17,8 @@ CI门禁用例看护仓库重点模型和基本特性，覆盖冒烟测试场景
         <th>Mem.</th>
     </tr>
     <tr>
-        <td rowspan="11">ST</td>
-        <td rowspan="8">Pretrain</td>
+        <td rowspan="10">ST</td>
+        <td rowspan="7">Pretrain</td>
         <td>TP，PP，VPP，distributed_optimizer，o2_gradient，o2_optimizer，重计算，enable_recompute_layers_per_pp_rank，FA_TND，use_fused_rotary_pos_emb</td>
         <td><a href="st/shell_scripts/qwen3_8b_tp2_pp4_vpp2.sh">qwen3_8b_tp2_pp4_vpp2.sh</a></td>
         <td>Y</td>
@@ -42,13 +42,6 @@ CI门禁用例看护仓库重点模型和基本特性，覆盖冒烟测试场景
     <tr>
         <td>cp_hybrid，gqa</td>
         <td><a href="st/shell_scripts/pretrain_qwen3_8b_4k_hybridcp_gqa.sh">pretrain_qwen3_8b_4k_hybridcp_gqa.sh</a></td>
-        <td>Y</td>
-        <td>Y</td>
-        <td>Y</td>
-    </tr>
-    <tr>
-        <td>n_group，seq_aux，gradient_accumulation_fusion，recompute_mtp_layer，recompute_mtp_norm</td>
-        <td><a href="st/shell_scripts/deepseek_v3_mcore_tp1_pp2_ep4.sh">deepseek_v3_mcore_tp1_pp2_ep4.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
@@ -357,8 +350,8 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td>Y</td>
     </tr>
     <tr>
-        <td rowspan="20">ST</td>
-        <td rowspan="2">deepseek3</td>
+        <td rowspan="21">ST</td>
+        <td rowspan="3">deepseek3</td>
         <td>deepseekv3, dualpipev, mla-up-proj-tp-overlap, moe-fb-overlap</td>
         <td><a href="pipeline/st/deepseek3/deepseek_v3_mcore_tp2_pp2_ep2_dualpipev_fb.sh">deepseek_v3_mcore_tp2_pp2_ep2_dualpipev_fb.sh</a></td>
         <td>Y</td>
@@ -368,6 +361,13 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
     <tr>
         <td>moe-fb-overlap, mtp-mem-efficient-logits, mla-mm-split, mla-fa-without-pad</td>
         <td><a href="pipeline/st/deepseek3/deepseek32_tp1_pp2_vpp1_ep4.sh">deepseek32_tp1_pp2_vpp1_ep4.sh</a></td>
+        <td>Y</td>
+        <td>Y</td>
+        <td>Y</td>
+    </tr>
+    <tr>
+        <td>deepseekv3, MLA, MTP, n_group, seq_aux, alltoall_seq, first-k-dense-replace, sigmoid router, expert bias, reuse_fp32_param, yarn rope</td>
+        <td><a href="pipeline/st/deepseek3/deepseek_v3_mcore_tp1_pp2_ep4.sh">deepseek_v3_mcore_tp1_pp2_ep4.sh</a></td>
         <td>Y</td>
         <td>Y</td>
         <td>Y</td>
