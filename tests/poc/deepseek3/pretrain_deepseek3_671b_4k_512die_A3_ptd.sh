@@ -71,6 +71,7 @@ MOE_ARGS="
     --moe-router-score-function sigmoid \
     --moe-router-enable-expert-bias \
     --moe-router-dtype fp32 \
+    --router-gating-in-fp32 \
 "
 
 MTP_ARGS="
@@ -89,10 +90,12 @@ OTHERS_ARGS="
 
 MEM_ARGS="
     --mtp-mem-efficient-logits \
+    --recompute-activation-function \
+    --recompute-mla-up-proj \
+    --moe-zero-memory level0 \
     --swap-optimizer \
-    --recompute-method uniform \
-    --recompute-granularity full \
-    --recompute-num-layers 1 \
+    --mla-swap-core-attn-out \
+    --disable-fb-overlap-linear-dw-detach \
 "
 
 ROPE_ARGS="
