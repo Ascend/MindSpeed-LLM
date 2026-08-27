@@ -39,9 +39,9 @@
 
 通过传入指定参数，选择不同的 CP 算法，具体包含如下几种：
 
-1. [**megatron_cp_algo**](https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/ring-attention-context-parallel.md)
-2. [**ulysses_cp_algo**](https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/ulysses-context-parallel.md)
-3. [**hybrid_cp_algo**](https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/hybrid-context-parallel.md)
+1. [**megatron_cp_algo**](https://gitcode.com/Ascend/MindSpeed/blob/26.1.0_core_r0.12.1/docs/zh/features/ring-attention-context-parallel.md)
+2. [**ulysses_cp_algo**](https://gitcode.com/Ascend/MindSpeed/blob/26.1.0_core_r0.12.1/docs/zh/features/ulysses-context-parallel.md)
+3. [**hybrid_cp_algo**](https://gitcode.com/Ascend/MindSpeed/blob/26.1.0_core_r0.12.1/docs/zh/features/hybrid-context-parallel.md)
 
 ```shell
     --seq-length 131072

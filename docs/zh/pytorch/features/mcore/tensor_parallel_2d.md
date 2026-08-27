@@ -1,6 +1,6 @@
 # 高维张量并行
 
-特性介绍参考[高维张量并行](https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/tensor-parallel-2d.md)
+特性介绍参考[高维张量并行](https://gitcode.com/Ascend/MindSpeed/blob/26.1.0_core_r0.12.1/docs/zh/features/tensor-parallel-2d.md)
 
 ## 使用场景
 
