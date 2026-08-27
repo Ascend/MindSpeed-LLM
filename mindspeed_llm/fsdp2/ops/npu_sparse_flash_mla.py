@@ -5,7 +5,7 @@ import torch
 from cann_ops_transformer import ops
 
 
-@lru_cache(maxsize=8)
+@lru_cache(maxsize=32)
 def get_sparse_flash_mla_metadata(
     B,
     N1,
@@ -50,6 +50,52 @@ def get_sparse_flash_mla_metadata(
     )
 
 
+@lru_cache(maxsize=32)
+def get_sparse_flash_mla_grad_metadata(
+    B,
+    S1,
+    S2,
+    cmp_S2,
+    N1,
+    N2,
+    D,
+    K,
+    has_cmp,
+    cmp_ratio,
+    residual,
+    ori_mask_mode,
+    cmp_mask_mode,
+    ori_win_left,
+    ori_win_right,
+):
+    # `residual` is the q-derived Python int (q_len % cmp_ratio) the wrapper computed --
+    # NOT re-derived from the KV length: the CP prefix path calls with q_len != kv_len and
+    # the cmp-side causal mask must stay q-aligned. Cached like the fwd metadata (the mcore
+    # twin does the same); cache holds the CANN-side workspace across steps.
+    cmp_residual_kv = torch.full((B,), residual, dtype=torch.int32).npu() if has_cmp else None
+    return ops.sparse_flash_mla_grad_metadata(
+        num_heads_q=N1,
+        num_heads_kv=N2,
+        head_dim=D,
+        cmp_residual_kv=cmp_residual_kv,
+        batch_size=B,
+        max_seqlen_q=S1,
+        max_seqlen_ori_kv=S2,
+        max_seqlen_cmp_kv=cmp_S2,
+        ori_topk=0,
+        cmp_topk=K if has_cmp else 0,
+        cmp_ratio=cmp_ratio,
+        ori_mask_mode=ori_mask_mode,
+        cmp_mask_mode=cmp_mask_mode,
+        ori_win_left=ori_win_left,
+        ori_win_right=ori_win_right,
+        layout_q="BSND",
+        layout_kv="BSND",
+        has_ori_kv=True,
+        has_cmp_kv=has_cmp,
+    )
+
+
 class SparseFlashMlaFunction(torch.autograd.Function):
     @staticmethod
     def forward(
@@ -59,6 +105,7 @@ class SparseFlashMlaFunction(torch.autograd.Function):
         cmp_kv,
         cmp_sparse_indices,
         cmp_residual_kv,
+        residual,
         sinks,
         softmax_scale,
         cmp_ratio,
@@ -73,7 +120,12 @@ class SparseFlashMlaFunction(torch.autograd.Function):
         S3 = cmp_kv.shape[1] if cmp_kv is not None else 0
         has_cmp = cmp_kv is not None
         K = cmp_sparse_indices.shape[-1] if (has_cmp and cmp_ratio == 4 and cmp_sparse_indices is not None) else 0
-        residual = int(cmp_residual_kv[0].item()) if (has_cmp and cmp_residual_kv is not None) else 0
+        # `residual` arrives as a Python int from the wrapper (q_len % cmp_ratio); the
+        # .item() read-back was a per-layer D2H stream sync that the value never needed.
+        if residual is None and has_cmp and cmp_residual_kv is not None:
+            residual = int(cmp_residual_kv[0].item())
+        else:
+            residual = residual or 0
 
         metadata = get_sparse_flash_mla_metadata(
             B,
@@ -122,6 +174,7 @@ class SparseFlashMlaFunction(torch.autograd.Function):
         ctx.ori_win_right = ori_win_right
         ctx.has_cmp = has_cmp
         ctx.K = K
+        ctx.residual = residual
         ctx.mark_non_differentiable(softmax_lse)
         ctx.B, ctx.S1, ctx.S2 = B, S, S2
         ctx.N1, ctx.N2, ctx.D = N1, N2, D
@@ -133,31 +186,22 @@ class SparseFlashMlaFunction(torch.autograd.Function):
         (q, ori_kv, cmp_kv, result, softmax_lse, cmp_sparse_indices, cmp_residual_kv, sinks) = ctx.saved_tensors
 
         cmp_S2 = ctx.S2 // ctx.cmp_ratio
-        cmp_residual_kv_meta = (
-            torch.tensor([int(cmp_residual_kv[0].item())], dtype=torch.int32, device=q.device)
-            if ctx.has_cmp and cmp_residual_kv is not None
-            else None
-        )
-        grad_metadata = ops.sparse_flash_mla_grad_metadata(
-            num_heads_q=ctx.N1,
-            num_heads_kv=ctx.N2,
-            head_dim=ctx.D,
-            cmp_residual_kv=cmp_residual_kv_meta,
-            batch_size=ctx.B,
-            max_seqlen_q=ctx.S1,
-            max_seqlen_ori_kv=ctx.S2,
-            max_seqlen_cmp_kv=cmp_S2,
-            ori_topk=0,
-            cmp_topk=ctx.K if ctx.has_cmp else 0,
-            cmp_ratio=ctx.cmp_ratio,
-            ori_mask_mode=ctx.ori_mask_mode,
-            cmp_mask_mode=ctx.cmp_mask_mode,
-            ori_win_left=ctx.ori_win_left,
-            ori_win_right=ctx.ori_win_right,
-            layout_q="BSND",
-            layout_kv="BSND",
-            has_ori_kv=True,
-            has_cmp_kv=ctx.has_cmp,
+        grad_metadata = get_sparse_flash_mla_grad_metadata(
+            ctx.B,
+            ctx.S1,
+            ctx.S2,
+            cmp_S2,
+            ctx.N1,
+            ctx.N2,
+            ctx.D,
+            ctx.K,
+            ctx.has_cmp,
+            ctx.cmp_ratio,
+            ctx.residual,
+            ctx.ori_mask_mode,
+            ctx.cmp_mask_mode,
+            ctx.ori_win_left,
+            ctx.ori_win_right,
         )
 
         (dq, dori_kv, dcmp_kv, dsinks, _ori_l1, _cmp_l1) = ops.sparse_flash_mla_grad(
@@ -196,6 +240,7 @@ class SparseFlashMlaFunction(torch.autograd.Function):
             dcmp_kv if ctx.has_cmp else None,  # cmp_kv
             None,  # cmp_sparse_indices
             None,  # cmp_residual_kv
+            None,  # residual
             dsinks,  # sinks
             None,
             None,
@@ -242,9 +287,20 @@ def npu_sparse_flash_mla(
     else:
         cmp_sparse_indices = None
 
+    residual = 0
     if cmp_residual_kv is None and has_cmp:
         # pre-compression length = cmp_len * cmp_ratio + residual; equal-length BSND.
-        cmp_residual_kv = torch.full((B,), S % cmp_ratio, dtype=torch.int32, device=q.device)
+        # pre-compression length = cmp_len * cmp_ratio + residual; the op reconstructs
+        # the ori length from it to align the local q to the KV end. Derive it from
+        # the ACTUAL ori_kv length: under CP the local q and the prefix KV have
+        # different lengths (q_len % ratio != ori_len % ratio when local_S is not
+        # divisible), and only the ori-derived value keeps the alignment correct.
+        # The old q_len derivation was right only where the two coincide.
+        residual = ori_kv.shape[1] % cmp_ratio
+        cmp_residual_kv = torch.full((B,), residual, dtype=torch.int32, device=q.device)
+    elif cmp_residual_kv is not None:
+        # externally provided tensor: rare, one read-back here instead of in fwd+bwd.
+        residual = int(cmp_residual_kv[0].item())
 
     result, _ = SparseFlashMlaFunction.apply(
         q,
@@ -252,6 +308,7 @@ def npu_sparse_flash_mla(
         cmp_kv,
         cmp_sparse_indices,
         cmp_residual_kv,
+        residual,
         sinks,
         softmax_scale,
         cmp_ratio,

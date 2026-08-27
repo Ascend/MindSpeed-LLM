@@ -40,6 +40,64 @@ from mindspeed_llm.fsdp2.models.common.indexer_loss import (
 from mindspeed_llm.fsdp2.ops.npu_mhc import npu_mhc_post, npu_mhc_pre_sinkhorn
 
 
+def _normalize_strides(t: torch.Tensor) -> torch.Tensor:
+    """Materialize standard contiguous strides for a [B, N, D] tensor.
+
+    aclnn op tiling (e.g. LightningIndexerV2's CheckKeyContiguous) validates
+    stride(0) against the SHAPE's contiguous expectation -- stricter than
+    torch, which ignores size-1 dims: for B == 1 a prefix slice of a larger
+    buffer (the gathered compressed keys) keeps stride(0) of the FULL length,
+    torch still reports contiguous so .contiguous() no-ops, and the op rejects
+    it with "key only support non-continuous keying on the 0-axis". The 2-D
+    round-trip below is a free view when the strides already match and a copy
+    otherwise.
+    """
+    if t.dim() != 3:
+        return t
+    b, n, d = t.shape
+    return t.reshape(b * n, d).view(b, n, d)
+
+
+def _chunked_compress(kv, gate, position_bias, head_dim, kv_norm, prev_ca_kv, prev_ca_gate, out_dtype):
+    """Stateless windowed compression of ONE chunk of raw projections.
+
+    Identical to the stateless branch of CSACompressor.forward /
+    Indexer._compress_index_kv (same new_kv/new_gate assembly, same fp32 softmax
+    row, same sum order), plus the chunk-boundary handling the full-seq code gets
+    for free from its view slicing: window 0's Ca slot takes the PREVIOUS chunk's
+    last-window Ca slices (`prev_ca_kv` / `prev_ca_gate`), or stays zero-kv /
+    -inf-gate (softmax weight 0) on the first chunk -- exactly the stateless
+    window-0 semantics of the full-seq path.
+
+    kv / gate: [B, n_win * rate, 2 * head_dim] raw projections (already fp32-cast
+    by the caller if the caller does that). Returns [B, n_win, head_dim] with the
+    norm applied but NOT rope (caller owns absolute positions).
+    """
+    batch = kv.shape[0]
+    rate = position_bias.shape[0]
+    n_win = kv.shape[1] // rate
+    kv_w = kv.view(batch, n_win, rate, -1)
+    gate_w = gate.view(batch, n_win, rate, -1) + position_bias.to(gate.dtype)
+    new_kv = kv_w.new_zeros((batch, n_win, 2 * rate, head_dim))
+    new_gate = gate_w.new_full((batch, n_win, 2 * rate, head_dim), float("-inf"))
+    new_kv[:, :, rate:] = kv_w[..., head_dim:]
+    new_gate[:, :, rate:] = gate_w[..., head_dim:]
+    if n_win > 1:
+        new_kv[:, 1:, :rate] = kv_w[:, :-1, :, :head_dim]
+        new_gate[:, 1:, :rate] = gate_w[:, :-1, :, :head_dim]
+    if prev_ca_kv is not None:
+        new_kv[:, 0, :rate] = prev_ca_kv.to(new_kv.dtype)
+        # the full-seq path adds position_bias BEFORE windowing, so the Ca gate
+        # slot it feeds into softmax for window w carries the bias of the Ca
+        # half-columns; the exchanged payload is raw -> add it here
+        new_gate[:, 0, :rate] = (prev_ca_gate + position_bias[:, :head_dim]).to(new_gate.dtype)
+    # cast the weighted sum back to the module's working dtype BEFORE the norm --
+    # same `.to(dtype)` as forward()/_compress_index_kv(). On NPU the mixed
+    # fp32-input / bf16-weight GEMM yields fp32 windows while the norm weight is
+    # bf16, and aclnnRmsNorm rejects x=fp32 + gamma=bf16 (161002).
+    return kv_norm((new_kv * new_gate.softmax(dim=2, dtype=torch.float32).to(new_kv.dtype)).sum(dim=2).to(out_dtype))
+
+
 def _compression_prefix(kv: torch.Tensor, gate: torch.Tensor, compress_rate: int) -> tuple[torch.Tensor, torch.Tensor]:
     usable = (kv.shape[1] // compress_rate) * compress_rate
     if usable == kv.shape[1]:
@@ -419,13 +477,18 @@ class DeepseekV4HCACompressor(nn.Module):
         position_ids: torch.Tensor,
         past_key_values: Cache | None,
         layer_idx: int,
+        need_block_bias: bool = True,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         batch, _, _ = hidden_states.shape
         cache_layer: DeepseekV4HCACache = past_key_values.layers[layer_idx] if past_key_values is not None else None
         # Cast input hidden_states to float before linear projection to boost calculation precision
         dtype = hidden_states.dtype
-        kv = self.kv_proj(hidden_states.float())
-        gate = self.gate_proj(hidden_states.float())
+        # single fp32 cast shared by both projections (two independent .float() calls
+        # materialized the [B, S, hidden] fp32 temp twice -- one redundant cast kernel
+        # + bandwidth per layer; bit-identical results)
+        hidden_states_f = hidden_states.float()
+        kv = self.kv_proj(hidden_states_f)
+        gate = self.gate_proj(hidden_states_f)
         if cache_layer is None:
             chunk_kv, chunk_gate = _compression_prefix(kv, gate, self.compress_rate)
             first_window_position = 0
@@ -454,8 +517,15 @@ class DeepseekV4HCACompressor(nn.Module):
         compressed_kv = compressed.unsqueeze(1)
 
         compressed_len = compressed_kv.shape[2]
-        seq_len = position_ids.shape[1]
+        # position_ids may be None on the CP sparse-flash path (its content is only read
+        # by the eager block-bias build below); take the length from hidden_states then.
+        seq_len = position_ids.shape[1] if position_ids is not None else hidden_states.shape[1]
         if seq_len == 1 or compressed_len == 0:
+            return compressed_kv, None, None, None
+
+        if not need_block_bias:
+            # sparse-flash path consumes compressed_kv directly via the fused op and never
+            # touches block_bias, so skip building the O(N^2) tensor.
             return compressed_kv, None, None, None
 
         # query `t` may only see cache entries at pos `w` t > w * compress_rate (ex: t=7, w=2 t does not attend to it).
@@ -466,6 +536,64 @@ class DeepseekV4HCACompressor(nn.Module):
             entry_indices.view(1, 1, 1, -1) >= causal_threshold.unsqueeze(1).unsqueeze(-1),
             float("-inf"),
         )
+        return compressed_kv, block_bias, None, None
+
+    def forward_cp(
+        self,
+        hidden_local: torch.Tensor,
+        position_ids_local: torch.Tensor,
+        gather,
+        cp_group,
+        cp_size: int,
+        cp_rank: int,
+        layer_idx: int,
+        need_block_bias: bool = True,
+    ):
+        """kvallgather-CP chunked entry: compress the LOCAL shard, all-gather the
+        compressed entries only, slice the prefix (see CSACompressor.forward_cp;
+        HCA windows have no overlap, so there is no boundary-Ca exchange and the
+        gather is the only collective). bit-identical to the full-seq forward on
+        the prefix entries. Requires local_S % compress_rate == 0.
+
+        Returns (compressed_kv [B,1,T,512], block_bias [B,1,S_local,T]|None,
+        None, None); block_bias is built from the LOCAL absolute positions when
+        the eager path needs it (rows are the local queries).
+        """
+        batch, local_S, _ = hidden_local.shape
+        rate = self.compress_rate
+        n_win = local_S // rate
+        dtype = hidden_local.dtype
+
+        # single fp32 cast shared by both projections (see forward)
+        hidden_f = hidden_local.float()
+        kv = self.kv_proj(hidden_f)
+        gate = self.gate_proj(hidden_f)
+
+        kv_w = kv.view(batch, n_win, rate, -1)
+        gate_w = gate.view(batch, n_win, rate, -1) + self.position_bias.to(gate.dtype)
+        compressed_local = self.kv_norm(
+            (kv_w * gate_w.softmax(dim=2, dtype=torch.float32).to(kv_w.dtype)).sum(dim=2).to(dtype)
+        )
+        positions = (torch.arange(n_win, device=compressed_local.device) + cp_rank * n_win) * rate
+        positions = positions.unsqueeze(0).expand(batch, -1)
+        cos, sin = self.rotary_emb(compressed_local, position_ids=positions, layer_type=self.rope_layer_type)
+        compressed_local = apply_rotary_pos_emb(compressed_local.unsqueeze(1), cos, sin).squeeze(1)
+
+        compressed_prefix = _normalize_strides(
+            gather(compressed_local, cp_group, cat_dim=1)[:, : (cp_rank + 1) * n_win]
+        )
+        compressed_kv = compressed_prefix.unsqueeze(1)  # [B, 1, T, head_dim]
+
+        block_bias = None
+        if need_block_bias:
+            compressed_len = compressed_kv.shape[2]
+            entry_indices = torch.arange(compressed_len, device=compressed_kv.device)
+            causal_threshold = (position_ids_local + 1) // self.compress_rate  # [B, S_local] absolute
+            block_bias = compressed_kv.new_zeros((batch, 1, local_S, compressed_len))
+            block_bias = block_bias.masked_fill(
+                entry_indices.view(1, 1, 1, -1) >= causal_threshold.unsqueeze(1).unsqueeze(-1),
+                float("-inf"),
+            )
         return compressed_kv, block_bias, None, None
 
 
@@ -624,6 +752,82 @@ class DeepseekV4Indexer(nn.Module):
     def get_indexer_params(self):
         return self.query_index, self.key_index, self.weights
 
+    def forward_local(self, q_residual, hidden_states, position_ids, key_index, kv_len=None):
+        """kvallgather-CP q-side only: LOCAL queries scored against the PREFIX
+        compressed index keys.
+
+        `kv_len` is the ORI (uncompressed) prefix token count that `key_index`
+        covers; None means q spans the whole k sequence (non-prefix shapes).
+
+        `q_b_proj` / `weights_proj` are per-token linear maps, so the local shard's
+        rows of `query_index` / `weights` are computed from the local `q_residual` /
+        `hidden_states` alone -- no all-gather needed. The top-k selection then runs
+        with q_len=local_S against `key_index` [B, T_prefix, D]: both indexer
+        backends treat the queries as the LAST q_len tokens of the key sequence
+        (the same end-aligned prefix-KV convention the sparse-flash attention op
+        uses; see the mcore kvallgather CP path, which runs the fused lightning
+        indexer on exactly local-q x prefix-k chunks), so causality needs no
+        position offsets. The eager backend masks explicitly from the local
+        ABSOLUTE position_ids.
+
+        Returns (top_k_indices, top_k_scores, query_index, weights), all with
+        local-q rows only -- nothing full-sequence is materialised, and nothing is
+        cached on `self` (CP backward recompute re-runs this).
+
+        Mirrors forward()'s q-side math branch-for-branch, including the fused
+        path's double-scaled weights (weights_scaling * softmax_scale) vs the eager
+        path's weights_scaling-only.
+        """
+        args = get_args()
+
+        batch, seq_len, _ = hidden_states.shape
+        q = self.q_b_proj(q_residual).view(batch, seq_len, self.num_heads, self.head_dim)
+        cos_q, sin_q = self.rotary_emb(hidden_states, position_ids=position_ids, layer_type=self.rope_layer_type)
+        q = apply_rotary_pos_emb(q, cos_q, sin_q, unsqueeze_dim=2)
+
+        compressed_len = key_index.shape[1]
+        top_k = min(self.index_topk, compressed_len)
+        if top_k <= 0:
+            empty_idx = key_index.new_zeros((batch, seq_len, 0), dtype=torch.long)
+            return empty_idx, q.new_zeros((batch, seq_len, 0)), q, q.new_zeros((batch, seq_len, self.num_heads))
+
+        if args.use_fused_lightning_indexer:
+            from mindspeed_llm.fsdp2.ops.npu_lightning_indexer import npu_lightning_indexer
+
+            # CP prefix mode (kv_len > seq_len): the local q rows are the LAST
+            # seq_len tokens of a longer kv sequence. The op accepts these
+            # prefix shapes and applies end-aligned causality (NPU-probe
+            # verified: rows that must have >= top_k valid entries carry no -1
+            # markers), so the fixed-length CP scenario uses exactly this op
+            # call, same as the full-sequence path.
+            indexer_weights = (
+                self.weights_proj(hidden_states).float() * self.weights_scaling * self.softmax_scale
+            )  # [B, S_local, N]
+            top_k_indices, top_k_scores = npu_lightning_indexer(
+                q,
+                key_index,
+                indexer_weights,
+                top_k,
+                compress_rate=self.compress_rate,
+                kv_len=kv_len,
+            )
+            return top_k_indices, top_k_scores, q, indexer_weights
+
+        # eager: explicit absolute-position masking over the prefix keys
+        scores = torch.matmul(q.float(), key_index.transpose(-1, -2).float().unsqueeze(1))  # [B, S, H, T]
+        scores = F.relu(scores) * self.softmax_scale
+        weights = self.weights_proj(hidden_states).float() * self.weights_scaling  # [B, S, H]
+        index_scores = (scores * weights.unsqueeze(-1)).sum(dim=2)  # [B, S, T]
+        causal_threshold = (position_ids + 1) // self.compress_rate  # [B, S] absolute
+        entry_indices = torch.arange(compressed_len, device=index_scores.device)
+        future_mask = entry_indices.view(1, 1, -1) >= causal_threshold.unsqueeze(-1)  # [B, S, T]
+        index_scores = index_scores.masked_fill(future_mask, float("-inf"))
+        top_k_scores, top_k_indices = index_scores.topk(top_k, dim=-1)
+        invalid = top_k_indices >= causal_threshold.unsqueeze(-1)
+        top_k_indices = torch.where(invalid, torch.full_like(top_k_indices, -1), top_k_indices)
+        top_k_scores = torch.where(invalid, torch.full_like(top_k_scores, float("-inf")), top_k_scores)
+        return top_k_indices, top_k_scores, q, weights
+
 
 class DeepseekV4CSACompressor(nn.Module):
     """Compressed Sparse Attention compressor (paper §2.3.1, eqs. 9–17). Compresses
@@ -666,13 +870,16 @@ class DeepseekV4CSACompressor(nn.Module):
         position_ids: torch.Tensor,
         past_key_values: Cache | None,
         layer_idx: int,
+        need_block_bias: bool = True,
     ) -> torch.Tensor:
         batch, seq_len, _ = hidden_states.shape
         cache_layer: DeepseekV4CSACache = past_key_values.layers[layer_idx] if past_key_values is not None else None
         # Cast input hidden_states to float before linear projection to boost calculation precision
         dtype = hidden_states.dtype
-        kv = self.kv_proj(hidden_states.float())
-        gate = self.gate_proj(hidden_states.float())
+        # single fp32 cast shared by both projections (see HCACompressor)
+        hidden_states_f = hidden_states.float()
+        kv = self.kv_proj(hidden_states_f)
+        gate = self.gate_proj(hidden_states_f)
 
         if cache_layer is None:
             chunk_kv, chunk_gate = _compression_prefix(kv, gate, self.compress_rate)
@@ -734,14 +941,257 @@ class DeepseekV4CSACompressor(nn.Module):
             hidden_states, q_residual, position_ids, past_key_values, layer_idx
         )  # [B, S, k]
         compressed_len = compressed_kv.shape[2]
-        valid = top_k_indices >= 0  # [B, S, k]
-        # Per-query block bias: query `t` may only see the cache entries that are <= `seq_len // m`
-        # and in these, only the ones marked valid by the indexer. Everything else is `-inf`.
-        # While the above negated the indexer, here we apply the "causal" masking.
-        safe_indices = torch.where(valid, top_k_indices, torch.full_like(top_k_indices, compressed_len))
-        block_bias = compressed_kv.new_full((batch, 1, seq_len, compressed_len + 1), float("-inf"))
-        block_bias.scatter_(-1, safe_indices.unsqueeze(1), 0.0)
-        return compressed_kv, block_bias[..., :compressed_len], top_k_indices, topk_scores
+        if need_block_bias:
+            valid = top_k_indices >= 0  # [B, S, k]
+            # Per-query block bias: query `t` may only see the cache entries that are <= `seq_len // m`
+            # and in these, only the ones marked valid by the indexer. Everything else is `-inf`.
+            # While the above negated the indexer, here we apply the "causal" masking.
+            safe_indices = torch.where(valid, top_k_indices, torch.full_like(top_k_indices, compressed_len))
+            block_bias = compressed_kv.new_full((batch, 1, seq_len, compressed_len + 1), float("-inf"))
+            block_bias.scatter_(-1, safe_indices.unsqueeze(1), 0.0)
+            block_bias = block_bias[..., :compressed_len]
+        else:
+            # sparse-flash path consumes top_k_indices directly via the fused op and never
+            # touches block_bias, so skip building the O(N^2) tensor (saves ~16GB at 128k seq).
+            block_bias = None
+        return compressed_kv, block_bias, top_k_indices, topk_scores
+
+    def forward_cp_prefix(
+        self,
+        hidden_prefix: torch.Tensor,
+        hidden_local: torch.Tensor,
+        q_residual_local: torch.Tensor,
+        position_ids_local: torch.Tensor,
+        past_key_values: Cache | None,
+        layer_idx: int,
+        need_block_bias: bool = True,
+    ):
+        """kvallgather-CP fallback entry: K-side on the prefix [0:local_end], q-side local.
+
+        Used when the sequence cannot be chunked on window boundaries
+        (local_S % compress_rate != 0); the primary entry is forward_cp.
+
+        The CP attention consumes the compressor's K-side outputs only up to the
+        prefix (`cmp_kv` / `key_index` sliced to [0:local_end]) and the indexer's
+        q-side outputs only for the local shard, so nothing beyond the prefix and
+        no full-sequence q is computed:
+
+          * K-side (this method): the windowed compression of `hidden_prefix`
+            [0:local_end] is exactly the first T_prefix entries of the full-seq
+            computation (windows are anchored at position 0; window 0's overlap
+            slot is zero-filled in stateless mode either way), so the values are
+            identical to running forward() on the full sequence and slicing.
+          * q-side (`Indexer.forward_local`): local queries against those prefix
+            keys; per-token projections never leave the local shard.
+
+        Returns (compressed_kv [B,1,T,D], block_bias [B,1,S_local,T]|None,
+        top_k_indices [B,S_local,k], topk_scores [B,S_local,k],
+        query_index [B,S_local,N,D], key_index [B,T,1,D], weights [B,S_local,N]) --
+        nothing full-sequence, and nothing cached on `self` (CP recompute re-runs).
+        """
+        assert past_key_values is None, "forward_cp supports the stateless (training) path only"
+
+        batch, _, _ = hidden_prefix.shape
+        # K-side: identical windowing to forward(), on the prefix only.
+        dtype = hidden_prefix.dtype
+        # single fp32 cast shared by both projections (see forward)
+        hidden_states_f = hidden_prefix.float()
+        kv = self.kv_proj(hidden_states_f)
+        gate = self.gate_proj(hidden_states_f)
+        chunk_kv, chunk_gate = _compression_prefix(kv, gate, self.compress_rate)
+        first_window_position = 0
+
+        if chunk_kv.shape[1] > 0:
+            n_windows = chunk_kv.shape[1] // self.compress_rate
+            ratio = self.compress_rate
+            chunk_kv = chunk_kv.view(batch, n_windows, ratio, -1)
+            chunk_gate = chunk_gate.view(batch, n_windows, ratio, -1) + self.position_bias.to(chunk_gate.dtype)
+
+            new_kv = chunk_kv.new_zeros((batch, n_windows, 2 * ratio, self.head_dim))
+            new_gate = chunk_gate.new_full((batch, n_windows, 2 * ratio, self.head_dim), float("-inf"))
+            new_kv[:, :, ratio:] = chunk_kv[..., self.head_dim :]
+            new_gate[:, :, ratio:] = chunk_gate[..., self.head_dim :]
+            if n_windows > 1:
+                new_kv[:, 1:, :ratio] = chunk_kv[:, :-1, :, : self.head_dim]
+                new_gate[:, 1:, :ratio] = chunk_gate[:, :-1, :, : self.head_dim]
+
+            compressed = self.kv_norm(
+                (new_kv * new_gate.softmax(dim=2, dtype=torch.float32).to(new_kv.dtype)).sum(dim=2).to(dtype)
+            )
+            positions = torch.arange(n_windows, device=compressed.device)
+            positions = positions * self.compress_rate + first_window_position
+            positions = positions.unsqueeze(0).expand(batch, -1)
+            cos, sin = self.rotary_emb(compressed, position_ids=positions, layer_type=self.rope_layer_type)
+            compressed = apply_rotary_pos_emb(compressed.unsqueeze(1), cos, sin).squeeze(1)
+        else:
+            compressed = chunk_kv.new_zeros((batch, 0, self.head_dim))
+        compressed_kv = compressed.unsqueeze(1)  # [B, 1, T, head_dim]
+
+        # indexer K-side: same prefix, indexer's own projections (no fp32 cast --
+        # matches Indexer.forward). forward_local consumes the 3-dim [B, T, D];
+        # the returned key_index carries the [B, T, 1, D] convention the fused
+        # ops consume (same as Indexer.forward's stored key_index).
+        key_index = self.indexer._compress_index_kv(
+            self.indexer.kv_proj(hidden_prefix),
+            self.indexer.gate_proj(hidden_prefix),
+            None,
+        )  # [B, T, index_head_dim]
+
+        # q-side: local shard only.
+        top_k_indices, topk_scores, query_index, weights = self.indexer.forward_local(
+            q_residual_local, hidden_local, position_ids_local, key_index, kv_len=hidden_prefix.shape[1]
+        )
+
+        block_bias = None
+        if need_block_bias:
+            # Local query rows only; identical to forward()'s construction
+            # restricted to those rows (indexer already marks invalid entries -1).
+            compressed_len = compressed_kv.shape[2]
+            valid = top_k_indices >= 0  # [B, S_local, k]
+            safe_indices = torch.where(valid, top_k_indices, torch.full_like(top_k_indices, compressed_len))
+            block_bias = compressed_kv.new_full((batch, 1, top_k_indices.shape[1], compressed_len + 1), float("-inf"))
+            block_bias.scatter_(-1, safe_indices.unsqueeze(1), 0.0)
+            block_bias = block_bias[..., :compressed_len]
+
+        return compressed_kv, block_bias, top_k_indices, topk_scores, query_index, key_index.unsqueeze(2), weights
+
+    def forward_cp(
+        self,
+        hidden_local: torch.Tensor,
+        q_residual_local: torch.Tensor,
+        position_ids_local: torch.Tensor,
+        gather,
+        cp_group,
+        cp_size: int,
+        cp_rank: int,
+        layer_idx: int,
+        need_block_bias: bool = True,
+    ):
+        """kvallgather-CP primary entry: fully chunked K-side, local q-side.
+
+        Replaces the full-sequence hidden all-gather with two tiny collectives per
+        K-side (see forward_cp_prefix for the q-side / value contract):
+
+          1. boundary-Ca exchange -- each rank contributes its last window's Ca
+             slices ([B, rate, head_dim] kv + gate, a few KB); rank r fills its
+             window 0's overlap slot with rank r-1's payload, rank 0 leaves the
+             zero-kv / -inf-gate stateless window-0 semantics. This reproduces the
+             full-seq windowing exactly: every window's Ca comes from the
+             immediately preceding window, whether that window lives in the same
+             chunk (view slicing, as in forward()) or the previous chunk (here).
+          2. all-gather of the *compressed* entries only ([B, S/rate, head_dim]
+             total across ranks -- ~32x less traffic than the hidden gather at
+             rate=4), then slice to the prefix [0:(cp_rank+1)*n_win].
+
+        Every rank's compression math is bit-identical to the full-seq
+        computation restricted to its windows (same softmax row, same sum order,
+        same absolute rope positions). Requires local_S % compress_rate == 0;
+        the CP caller falls back to forward_cp_prefix otherwise.
+
+        `gather(tensor, group, cat_dim)` is the differentiable all-gather+cat
+        injected by the caller (keeps this module free of collective imports);
+        cp_group/cp_size/cp_rank describe the CP mesh.
+
+        Same 7-tuple return as forward_cp_prefix.
+        """
+        batch, local_S, _ = hidden_local.shape
+        rate = self.compress_rate
+        n_win = local_S // rate
+        dtype = hidden_local.dtype
+
+        # --- compressor K-side, chunked ---
+        # single fp32 cast shared by both projections (see forward)
+        hidden_f = hidden_local.float()
+        kv = self.kv_proj(hidden_f)
+        gate = self.gate_proj(hidden_f)
+
+        # boundary-Ca payload: my last window's Ca kv+gate, flattened so the rank
+        # blocks land on the gathered dim-1 ([B, cp * rate * 2 * head_dim])
+        ca = gather(
+            torch.cat([kv[:, -rate:, : self.head_dim], gate[:, -rate:, : self.head_dim]], dim=-1).flatten(1),
+            cp_group,
+            cat_dim=1,
+        )
+        if cp_rank > 0:
+            prev = ca[:, (cp_rank - 1) * rate * 2 * self.head_dim : cp_rank * rate * 2 * self.head_dim]
+            # payload was cat([kv_ca, gate_ca], dim=-1).flatten(1): per-window
+            # interleaved [kv_i | gate_i] -> view (rate, 2*hd) and split last dim
+            prev = prev.view(batch, rate, 2 * self.head_dim)
+            prev_ca_kv, prev_ca_gate = prev[..., : self.head_dim], prev[..., self.head_dim :]
+        else:
+            prev_ca_kv = prev_ca_gate = None  # stateless window-0: weight-0 Ca slot
+
+        compressed_local = _chunked_compress(
+            kv, gate, self.position_bias, self.head_dim, self.kv_norm, prev_ca_kv, prev_ca_gate, dtype
+        )
+        positions = (torch.arange(n_win, device=compressed_local.device) + cp_rank * n_win) * rate
+        positions = positions.unsqueeze(0).expand(batch, -1)
+        cos, sin = self.rotary_emb(compressed_local, position_ids=positions, layer_type=self.rope_layer_type)
+        compressed_local = apply_rotary_pos_emb(compressed_local.unsqueeze(1), cos, sin).squeeze(1)
+        # rank 0 never consumes the exchanged Ca slices while every other rank
+        # does: without a grad path on rank 0 its gather backward never fires,
+        # and the other ranks' reduce_scatter waits for its participation
+        # forever (async enqueue -> the hang surfaces later, wherever each rank
+        # next blocks on a host-waiting collective -- every rank shows the same
+        # "stuck in MoE all2all" stack). Anchor the gathered buffer into the
+        # graph with a zero contribution: values unchanged, and rank 0's Ca grad
+        # from this path is genuinely zero (its own last-window Ca grad flows
+        # through its local usage).
+        compressed_local = compressed_local + (ca.float().sum() * 0.0).to(compressed_local.dtype)
+
+        compressed_prefix = gather(compressed_local, cp_group, cat_dim=1)[:, : (cp_rank + 1) * n_win]
+        compressed_kv = compressed_prefix.unsqueeze(1)  # [B, 1, T, head_dim]
+
+        # --- indexer K-side, chunked (its own projections / dims / rope) ---
+        ikv = self.indexer.kv_proj(hidden_local)
+        igate = self.indexer.gate_proj(hidden_local)
+        ihd = self.indexer.head_dim
+        ica = gather(
+            torch.cat([ikv[:, -rate:, :ihd], igate[:, -rate:, :ihd]], dim=-1).flatten(1),
+            cp_group,
+            cat_dim=1,
+        )
+        if cp_rank > 0:
+            prev = ica[:, (cp_rank - 1) * rate * 2 * ihd : cp_rank * rate * 2 * ihd]
+            prev = prev.view(batch, rate, 2 * ihd)  # per-window [kv_i | gate_i]
+            iprev_ca_kv, iprev_ca_gate = prev[..., :ihd], prev[..., ihd:]
+        else:
+            iprev_ca_kv = iprev_ca_gate = None
+        key_local = _chunked_compress(
+            ikv,
+            igate,
+            self.indexer.position_bias,
+            ihd,
+            self.indexer.kv_norm,
+            iprev_ca_kv,
+            iprev_ca_gate,
+            igate.dtype,  # mirrors _compress_index_kv's `.to(gate.dtype)`
+        )
+        icos, isin = self.indexer.rotary_emb(key_local, position_ids=positions, layer_type=self.indexer.rope_layer_type)
+        key_local = apply_rotary_pos_emb(key_local.unsqueeze(1), icos, isin).squeeze(1)
+        # same rank-0 anchor as the compressor Ca exchange above
+        key_local = key_local + (ica.float().sum() * 0.0).to(key_local.dtype)
+        key_index = _normalize_strides(gather(key_local, cp_group, cat_dim=1)[:, : (cp_rank + 1) * n_win]).unsqueeze(2)
+
+        # --- q-side: local shard only (unchanged from forward_cp_prefix) ---
+        top_k_indices, topk_scores, query_index, weights = self.indexer.forward_local(
+            q_residual_local,
+            hidden_local,
+            position_ids_local,
+            key_index.squeeze(2),
+            kv_len=(cp_rank + 1) * local_S,
+        )
+
+        block_bias = None
+        if need_block_bias:
+            compressed_len = compressed_kv.shape[2]
+            valid = top_k_indices >= 0
+            safe_indices = torch.where(valid, top_k_indices, torch.full_like(top_k_indices, compressed_len))
+            block_bias = compressed_kv.new_full((batch, 1, top_k_indices.shape[1], compressed_len + 1), float("-inf"))
+            block_bias.scatter_(-1, safe_indices.unsqueeze(1), 0.0)
+            block_bias = block_bias[..., :compressed_len]
+
+        return compressed_kv, block_bias, top_k_indices, topk_scores, query_index, key_index, weights
 
 
 def repeat_kv(hidden_states: torch.Tensor, n_rep: int) -> torch.Tensor:
@@ -883,8 +1333,16 @@ class DeepseekV4Attention(nn.Module):
 
         compressed_kv = top_k_indices = index_scores = block_bias = None
         if self.compressor is not None:  # CSA or HCA
+            # block_bias (O(N^2)) is only used by the eager fallback; sparse-flash takes
+            # top_k_indices directly, so skip building it then to avoid OOM in recompute.
+            need_block_bias = not self.use_sparse_flash_attn
             compressed_kv, block_bias, top_k_indices, index_scores = self.compressor(
-                hidden_states, q_residual, position_ids, past_key_values, self.layer_idx
+                hidden_states,
+                q_residual,
+                position_ids,
+                past_key_values,
+                self.layer_idx,
+                need_block_bias=need_block_bias,
             )
 
         # The indexer KL loss only exists on CSA layers during training. It is either folded
@@ -1160,7 +1618,8 @@ class DeepseekV4HyperHead(nn.Module):
         self.hc_scale = nn.Parameter(torch.empty(1))
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        flat = self.input_norm(x.flatten(2).float())
+        flat = x.flatten(2)
+        flat = self.input_norm(flat.float())
         mixes = F.linear(flat, self.hc_fn.float())
         pre = torch.sigmoid(mixes * self.hc_scale.float() + self.hc_base.float()) + self.eps
         return (pre.unsqueeze(-1) * x).sum(dim=2).to(x.dtype)

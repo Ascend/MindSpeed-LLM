@@ -44,6 +44,11 @@ def npu_lightning_indexer(
     *,
     compress_rate,
     mask_mode=3,
+    kv_len=None,  # ORI (uncompressed) kv length the compressed keys cover; the
+    # op reconstructs it as T*compress_rate + residual to align q to the KV end.
+    # Defaults to q_len (correct for the non-CP call where they are equal); the
+    # CP prefix call passes the prefix token count -- q_len-derived and
+    # T-derived residuals are wrong there whenever local_S % rate != 0.
 ):
     """BSND lightning indexer: select top-k compressed KV entries per query.
 
@@ -61,11 +66,19 @@ def npu_lightning_indexer(
     top_k = min(top_k, S_K)
     if compress_rate == 0:
         compress_rate = 1
-    residual = S_K % compress_rate
+    ori_len = kv_len if kv_len is not None else seq_len
+    residual = ori_len % compress_rate
     cmp_residual_k = torch.full((batch,), residual, dtype=torch.int32, device=q.device)
 
     q_in = q.contiguous().to(torch.bfloat16)
-    k_in = compressed_kv.unsqueeze(2).contiguous().to(torch.bfloat16)
+    # normalize strides BEFORE unsqueeze: a B==1 prefix slice of the gathered
+    # buffer keeps stride(0) of the FULL length (torch ignores size-1 dims, so
+    # .contiguous() no-ops), and the op's tiling rejects it
+    # (CheckKeyContiguous: "key only support non-continuous keying on the
+    # 0-axis"). The 2-D round-trip is a free view when strides are standard.
+    T = compressed_kv.shape[1]
+    k_norm = compressed_kv.reshape(batch * T, compressed_kv.shape[2]).view(batch, T, compressed_kv.shape[2])
+    k_in = k_norm.unsqueeze(2).to(torch.bfloat16)
 
     metadata = get_npu_lightning_indexer_metadata(
         num_heads,

@@ -6,20 +6,24 @@ with ``cp_type="kvallgather"`` (see
 
 Design goal — CP-on == CP-off (bit-for-bit on the local rows):
   * Each CP rank holds a local shard of the sequence ``[local_start:local_end]``.
-  * KV and compressor inputs are all-gathered (differentiable all-gather so
-    backward routes each query row's gradient to its owning rank).
+  * KV and the compressor's K-side inputs are all-gathered (differentiable
+    all-gather so backward routes each query row's gradient to its owning rank);
+    the compressor then runs on the PREFIX ``[0:local_end]`` only, and the
+    indexer's q-side (q_b_proj / weights_proj / top-k) runs on the LOCAL shard
+    (``CSACompressor.forward_cp``) -- no full-sequence indexer q / weights /
+    topk is ever materialised, and q_residual / position_ids are never gathered.
   * Fused sparse-flash path (``use_sparse_flash_attn``, the default): prefix-KV.
     Each rank runs the op on its LOCAL query against the prefix KV ``[0:local_end]``
     (the local q is the last ``local_S`` tokens of the prefix, so the op's internal
     causal+sliding masking — q aligned to the KV end, no query-position offset — is
     correct, and the op supports ``q_len < kv_len`` in BSND). ``compressed_kv`` /
-    ``top_k_indices`` are sliced to the prefix / local q shard. This splits the
-    attention compute across CP ranks (mirrors the mcore kvallgather CP path),
-    instead of gathering q and redundantly computing the full attention — no q
-    all-gather. ``cmp_residual_kv`` is left to the op (derived from the q length, same
-    as non-CP and the mcore BSND path).
+    ``top_k_indices`` come out already scoped to the prefix / local q shard. This
+    splits the attention compute across CP ranks (mirrors the mcore kvallgather CP
+    path), instead of gathering q and redundantly computing the full attention — no
+    q all-gather. ``cmp_residual_kv`` is left to the op (derived from the q length,
+    same as non-CP and the mcore BSND path).
   * The fused-indexer-loss path (``use_fused_lightning_indexer_loss``) also uses
-    prefix-KV: local q + prefix kv + indexer triple sliced to the local q shard /
+    prefix-KV: local q + prefix kv + indexer triple scoped to the local q shard /
     prefix kv, called directly on the op (no q all-gather).
   * The indexer KL loss is computed through the *same* code path as the non-CP
     forward (``DeepseekV4Attention._compute_indexer_kl_loss`` +
@@ -44,7 +48,10 @@ class _DifferentiableAllGather(torch.autograd.Function):
     """All-gather + cat along a given dim with proper gradient flow.
 
     Forward: all-gather local tensor across cp_group, concatenate along cat_dim.
-    Backward: all-reduce the full gradient, then slice out the local portion.
+    Backward: reduce-scatter the full gradient -- each rank sums the gathered
+    gradient across the group and keeps only its own chunk. reduce_scatter (not
+    all-reduce + slice) halves the backward CP traffic: the all-reduce's second
+    phase ships (cp-1)/cp of the data that the slice would discard anyway.
     """
 
     @staticmethod
@@ -52,24 +59,47 @@ class _DifferentiableAllGather(torch.autograd.Function):
         ctx.group = group
         ctx.cat_dim = cat_dim
         ctx.local_size = tensor.shape[cat_dim]
-        gathered_list = [torch.zeros_like(tensor) for _ in range(dist.get_world_size(group))]
+        # all_gather fully overwrites every output buffer, so empty (not zeros) --
+        # the zero-fill kernel was one full-size write of pure waste per gather.
+        gathered_list = [torch.empty_like(tensor) for _ in range(dist.get_world_size(group))]
         dist.all_gather(gathered_list, tensor.contiguous(), group=group)
         return torch.cat(gathered_list, dim=cat_dim)
 
     @staticmethod
     def backward(ctx, grad_output):
         grad_all = grad_output.contiguous()
-        dist.all_reduce(grad_all, group=ctx.group)
-        rank = dist.get_rank(ctx.group)
-        start = rank * ctx.local_size
-        slices = [slice(None)] * grad_all.dim()
-        slices[ctx.cat_dim] = slice(start, start + ctx.local_size)
-        return grad_all[tuple(slices)], None, None
+        cp = dist.get_world_size(ctx.group)
+        if cp == 1:
+            return grad_all, None, None
+
+        cat_dim = ctx.cat_dim
+        if cat_dim == 0:
+            # Gather dim already leads: rank r's chunk is the contiguous row block
+            # [r*local, (r+1)*local), i.e. the tensor is already in reduce-scatter
+            # input layout -- zero copy.
+            rs_input = grad_all
+        else:
+            # Split the gather dim into (cp, local) and move the rank axis to dim 0
+            # while keeping every other axis in order, so row r is rank r's chunk in
+            # the original layout. One local copy -- far cheaper than the
+            # (cp-1)/cp of full-size network traffic the all-reduce + slice wasted.
+            split = (*grad_all.shape[:cat_dim], cp, ctx.local_size, *grad_all.shape[cat_dim + 1 :])
+            perm = (cat_dim, *range(0, cat_dim), *range(cat_dim + 1, grad_all.dim() + 1))
+            rs_input = grad_all.view(split).permute(perm)
+        # Flatten the rank axis into dim 0 ([cp*d0, d1, ...]): same bytes as the
+        # [cp, d0, d1, ...] layout, but process-group backends (gloo) check
+        # input.shape[0] == world * output.shape[0] literally. Free view on the
+        # already-contiguous / copied tensor.
+        local_shape = (*grad_all.shape[:cat_dim], ctx.local_size, *grad_all.shape[cat_dim + 1 :])
+        local_grad = torch.empty(local_shape, dtype=grad_all.dtype, device=grad_all.device)
+        rs_input = rs_input.reshape(-1, *local_grad.shape[1:]).contiguous()
+        dist.reduce_scatter_tensor(local_grad, rs_input, group=ctx.group)
+        return local_grad, None, None
 
 
 def _diff_all_gather(tensor, group, cat_dim):
     if not tensor.requires_grad:
-        gathered_list = [torch.zeros_like(tensor) for _ in range(dist.get_world_size(group))]
+        gathered_list = [torch.empty_like(tensor) for _ in range(dist.get_world_size(group))]
         dist.all_gather(gathered_list, tensor.contiguous(), group=group)
         return torch.cat(gathered_list, dim=cat_dim)
     return _DifferentiableAllGather.apply(tensor, group, cat_dim)
@@ -79,7 +109,7 @@ def _all_gather_and_reorder(tensor, cp_size, cp_rank, cp_group):
     if cp_size <= 1:
         return tensor
 
-    gathered_list = [torch.zeros_like(tensor) for _ in range(cp_size)]
+    gathered_list = [torch.empty_like(tensor) for _ in range(cp_size)]
     dist.all_gather(gathered_list, tensor.contiguous(), group=cp_group)
     return torch.cat(gathered_list, dim=1).contiguous()
 
@@ -147,14 +177,79 @@ def deepseek_v4_cp_attention_forward(
     compressed_kv = None
     top_k_indices = None
     index_scores = None
+    query_index = key_index = weights = None
     if self.compressor is not None:
-        full_hidden_states = _diff_all_gather(hidden_states, cp_group, cat_dim=1)
-        q_residual_full = _diff_all_gather(q_residual_local, cp_group, cat_dim=1)
-        full_position_ids = _all_gather_and_reorder(position_ids, cp_size, cp_rank, cp_group)
-
-        compressed_kv, block_bias, top_k_indices, index_scores = self.compressor(
-            full_hidden_states, q_residual_full, full_position_ids, past_key_values, self.layer_idx
-        )
+        is_csa = self.layer_type == "compressed_sparse_attention"
+        need_block_bias = not self.use_sparse_flash_attn
+        # The CP attention consumes the compressor's K-side outputs only up to the
+        # prefix [0:local_end] and the indexer's q-side outputs only for the local
+        # shard (see the slicing below). Primary path: fully chunked -- each rank
+        # projects and compresses its OWN local_S tokens (a few-KB boundary-Ca
+        # exchange keeps the window overlap identical to full-seq) and only the
+        # compressed entries are all-gathered ([B, S/rate, 512] total, ~32x less
+        # than the hidden gather at rate=4); the indexer's q-side (q_b_proj /
+        # weights_proj are per-token linear; top-k runs with q_len=local_S against
+        # the prefix keys, aligned to the END of k like the sparse-flash op --
+        # mirrors the mcore kvallgather CP path) never leaves the local shard.
+        # Fallback when local_S % compress_rate != 0 (windows would cross rank
+        # chunks): all-gather the hidden states and compute the K-side on the
+        # prefix (forward_cp_prefix) -- still no full-seq indexer q / topk.
+        chunkable = local_S >= self.compress_ratio and local_S % self.compress_ratio == 0
+        if is_csa:
+            if chunkable:
+                compressed_kv, block_bias, top_k_indices, index_scores, query_index, key_index, weights = (
+                    self.compressor.forward_cp(
+                        hidden_states,
+                        q_residual_local,
+                        position_ids,
+                        _diff_all_gather,
+                        cp_group,
+                        cp_size,
+                        cp_rank,
+                        self.layer_idx,
+                        need_block_bias=need_block_bias,
+                    )
+                )
+            else:
+                full_hidden_states = _diff_all_gather(hidden_states, cp_group, cat_dim=1)
+                compressed_kv, block_bias, top_k_indices, index_scores, query_index, key_index, weights = (
+                    self.compressor.forward_cp_prefix(
+                        full_hidden_states[:, :local_end],
+                        hidden_states,
+                        q_residual_local,
+                        position_ids,
+                        past_key_values,
+                        self.layer_idx,
+                        need_block_bias=need_block_bias,
+                    )
+                )
+        else:
+            # HCA: no indexer; q_residual is never read.
+            if chunkable:
+                compressed_kv, block_bias, _, _ = self.compressor.forward_cp(
+                    hidden_states,
+                    position_ids,
+                    _diff_all_gather,
+                    cp_group,
+                    cp_size,
+                    cp_rank,
+                    self.layer_idx,
+                    need_block_bias=need_block_bias,
+                )
+            else:
+                position_ids_prefix = None
+                if need_block_bias:
+                    full_position_ids = _all_gather_and_reorder(position_ids, cp_size, cp_rank, cp_group)
+                    position_ids_prefix = full_position_ids[:, :local_end]
+                hidden_prefix = _diff_all_gather(hidden_states, cp_group, cat_dim=1)[:, :local_end]
+                compressed_kv, block_bias, _, _ = self.compressor(
+                    hidden_prefix,
+                    None,
+                    position_ids_prefix,
+                    past_key_values,
+                    self.layer_idx,
+                    need_block_bias=need_block_bias,
+                )
 
     # The indexer KL loss only exists on CSA layers during training. It is either folded
     # into the sparse-attention op's backward (fused) or computed eagerly and attached
@@ -174,8 +269,8 @@ def deepseek_v4_cp_attention_forward(
         # Fused sparse-flash MLA + indexer loss (folded into the backward), prefix-KV.
         # Same prefix-KV shape as the non-fused path: LOCAL q against the prefix KV
         # [0:local_end], no q all-gather. The indexer triple (query_index / key_index /
-        # weights, produced by the compressor on the full all-gathered hidden states) is
-        # sliced to the local q shard / prefix kv to match.
+        # weights) comes from CSACompressor.forward_cp already scoped to the local q
+        # shard / prefix kv -- no full-sequence tensors to slice.
         #
         # Called directly on the op (not via _sparse_flash_attn_with_indexer_loss, which
         # transposes [B,N,S,D]->[B,S,N,D] and pulls the full triple) so we control the
@@ -187,21 +282,17 @@ def deepseek_v4_cp_attention_forward(
         q_in = q_local if q_local.is_contiguous() else q_local.contiguous()  # BSND [B, local_S, N, D]
         # reshape (not transpose+contiguous): last cp rank's full prefix slice makes contiguous() a no-op on the size-1 head dim, leaving a bad stride aclnnSparseFlashMla rejects
         ori_kv = kv[:, :, :local_end, :].reshape(batch, local_end, 1, -1).contiguous()  # [B, local_end, 1, D]
-        query_index_full, key_index_full, weights_full = self.compressor.indexer.get_indexer_params()
-        # indexer triple seq axis is dim 1 for all: query_index [B, S, N, D],
-        # key_index [B, T, 1, D], weights [B, S, N], top_k_indices [B, S, k].
-        # Slice the q-side tensors to the local q shard [local_start:local_end] and the
-        # kv-side tensors to the prefix [0:local_end//cmp_ratio].
-        query_index = query_index_full[:, local_start:local_end, :, :].to(torch.bfloat16).contiguous()
+        # forward_cp already produced exactly the tensors the op needs -- prefix K
+        # (compressed_kv / key_index) and local-q rows (query_index / topk /
+        # weights) -- so there is no full-sequence indexer triple left to slice.
+        query_index = query_index.to(torch.bfloat16).contiguous()  # [B, local_S, N, D]
         # reshape (not transpose+contiguous): same reason as ori_kv — avoid the size-1 head dim bad stride on the last cp rank
-        cmp_kv = (
-            compressed_kv[:, :, : local_end // self.compress_ratio, :]
-            .reshape(batch, local_end // self.compress_ratio, 1, -1)
-            .contiguous()
-        )
-        key_index = key_index_full[:, : local_end // self.compress_ratio, :, :].contiguous()
-        topk_local = top_k_indices[:, local_start:local_end].to(torch.int32).contiguous()
-        weights = weights_full[:, local_start:local_end, :].float().contiguous()
+        # explicit last dim (head_dim): two -1s make reshape fail with
+        # "only one dimension can be inferred" on [B, 1, T, D]
+        cmp_kv = compressed_kv.reshape(batch, -1, 1, self.head_dim).contiguous()  # [B, local_end//ratio, 1, D]
+        key_index = key_index.contiguous()  # [B, local_end//ratio, 1, D]
+        topk_local = top_k_indices.to(torch.int32).contiguous()
+        weights = weights.float().contiguous()
         # returns [B, local_S, N, D] (BSND)
         attn_output = npu_sparse_flash_mla_with_indexer_loss(
             q_in,
@@ -242,14 +333,11 @@ def deepseek_v4_cp_attention_forward(
         ori_kv = kv[:, :, :local_end, :].reshape(batch, local_end, 1, -1).contiguous()  # [B, local_end, 1, D]
         has_cmp = compressed_kv is not None and self.compress_ratio > 1
         if has_cmp:
-            # reshape (not transpose+contiguous): same reason as ori_kv — avoid the size-1 head dim bad stride on the last cp rank
-            cmp_kv = (
-                compressed_kv[:, :, : local_end // self.compress_ratio, :]
-                .reshape(batch, local_end // self.compress_ratio, 1, -1)
-                .contiguous()
-            )
+            # reshape (not transpose+contiguous): same reason as ori_kv — avoid the size-1 head dim bad stride on the last cp rank.
+            # compressed_kv is already exactly the prefix [0:local_end//ratio]; top_k_indices already local-q rows.
+            cmp_kv = compressed_kv.reshape(batch, -1, 1, self.head_dim).contiguous()
             cmp_idx = (
-                top_k_indices[:, local_start:local_end].to(torch.int32).contiguous()
+                top_k_indices.to(torch.int32).contiguous()
                 if (self.compress_ratio == 4 and top_k_indices is not None)
                 else None
             )
@@ -313,7 +401,9 @@ def deepseek_v4_cp_attention_forward(
         )
 
         if compressed_len > 0 and block_bias is not None:
-            block_bias_chunk = block_bias[:, :, local_start:local_end, :end_idx_cmp]
+            # block_bias rows are the prefix's queries (CSA: local rows built by
+            # forward_cp; HCA: prefix rows) -- the local q rows are the last local_S.
+            block_bias_chunk = block_bias[:, :, -local_S:, :end_idx_cmp]
             chunk_mask = torch.cat([sliding_mask, block_bias_chunk.to(q_chunk.dtype)], dim=-1)
         elif compressed_len > 0:
             compressed_mask = torch.zeros(batch, 1, local_S, end_idx_cmp, device=q_chunk.device, dtype=q_chunk.dtype)
@@ -353,7 +443,8 @@ def deepseek_v4_cp_attention_forward(
     if needs_indexer_loss and not fuse_indexer_loss:
         from mindspeed_llm.fsdp2.models.common.indexer_loss import compute_dsa_indexer_loss
 
-        index_scores_local = index_scores[:, local_start:local_end, :]
+        # forward_cp already produced local-q rows for index_scores / top_k_indices.
+        index_scores_local = index_scores
         if self.compress_ratio > 1:
             zero_n = max(0, self.compress_ratio - 1 - local_start)
             if zero_n > 0:
@@ -362,7 +453,7 @@ def deepseek_v4_cp_attention_forward(
         cmp_kv_for_loss = compressed_kv.unsqueeze(2) if len(compressed_kv.shape) == 3 else compressed_kv
         indexer_loss = compute_dsa_indexer_loss(
             index_scores_local,
-            top_k_indices[:, local_start:local_end],
+            top_k_indices,
             q_local.transpose(1, 2).detach(),  # compute_dsa_indexer_loss expects BNSD [B, N, S, D]
             cmp_kv_for_loss.detach(),
             self.scaling,
