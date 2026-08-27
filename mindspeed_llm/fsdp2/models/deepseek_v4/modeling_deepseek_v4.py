@@ -1,3 +1,23 @@
+# Copyright (c) 2026, HUAWEI CORPORATION. All rights reserved.
+#
+# This file is derived from modeling_deepseek_v4.py in the HuggingFace
+# Transformers project (Copyright 2026 The HuggingFace Inc. team. All
+# rights reserved., Apache-2.0,
+# https://github.com/huggingface/transformers), and adapted for FSDP2
+# training on Ascend NPU in MindSpeed-LLM.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 from collections.abc import Callable
 from typing import Optional
 
@@ -117,6 +137,8 @@ class DeepseekV4RMSNorm(nn.Module):
 
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         if get_args().use_fused_rmsnorm:
+            # npu_rms_norm requires x and gamma to share the same dtype.
+            hidden_states = hidden_states.to(self.weight.dtype)
             output = torch_npu.npu_rms_norm(hidden_states, self.weight, epsilon=self.variance_epsilon)[0]
         else:
             input_dtype = hidden_states.dtype
@@ -1283,7 +1305,6 @@ class DeepseekV4Attention(nn.Module):
         self.use_sparse_flash_attn = getattr(args, "use_sparse_flash_attn", False)
         self.use_fused_lightning_indexer_loss = getattr(args, "use_fused_lightning_indexer_loss", False)
         self.indexer_loss_coeff = getattr(args, "indexer_loss_coeff", 0.0)
-        self.num_layers = config.num_hidden_layers
 
         self.q_a_proj = nn.Linear(config.hidden_size, config.q_lora_rank, bias=False)
         self.q_a_norm = DeepseekV4RMSNorm(config.q_lora_rank, eps=config.rms_norm_eps)
@@ -1392,7 +1413,7 @@ class DeepseekV4Attention(nn.Module):
         if needs_indexer_loss and not fuse_indexer_loss:
             q_for_indexer_loss = q.transpose(1, 2)
             indexer_loss = self._compute_indexer_kl_loss(q_for_indexer_loss, compressed_kv, index_scores, top_k_indices)
-            IndexerLossLoggingHelper.save_loss_to_tracker(indexer_loss)
+            IndexerLossLoggingHelper.save_loss_to_tracker(indexer_loss, self.config.num_hidden_layers)
             attn_output = IndexerLossAutoScaler.apply(attn_output, indexer_loss)
 
         # K=V in V4, so V picked up rope on its trailing rope slice. Apply the conjugate
@@ -1504,7 +1525,7 @@ class DeepseekV4Attention(nn.Module):
         )
 
     def _indexer_loss_tracker(self, loss):
-        IndexerLossLoggingHelper.save_loss_to_tracker(loss)
+        IndexerLossLoggingHelper.save_loss_to_tracker(loss, self.config.num_hidden_layers)
 
 
 class DeepseekV4HyperConnection(nn.Module):
@@ -2039,10 +2060,9 @@ class DeepseekV4Model(DeepseekV4PreTrainedModel):
                 **kwargs,
             )
 
-        hc_head_output = self.hc_head(hidden_states)
-
+        hidden_states = self.norm(self.hc_head(hidden_states))
         return MoeModelOutputWithPast(
-            last_hidden_state=hc_head_output,
+            last_hidden_state=hidden_states,
             past_key_values=past_key_values if use_cache else None,
         )
 
@@ -2135,7 +2155,6 @@ class DeepseekV4ForCausalLM(DeepseekV4PreTrainedModel, GenerationMixin):
         self.has_topk_router = any(isinstance(layer.mlp.gate, DeepseekV4TopKRouter) for layer in self.model.layers)
 
         self.mtp = MultiTokenPredictionBlock(config, DeepseekV4DecoderLayer, DeepseekV4RMSNorm)
-        self.norm = DeepseekV4RMSNorm(config.hidden_size, eps=config.rms_norm_eps)
         # Initialize weights and apply final processing
         self.post_init()
 
@@ -2203,6 +2222,12 @@ class DeepseekV4ForCausalLM(DeepseekV4PreTrainedModel, GenerationMixin):
         # Only compute necessary logits, and do not upcast them to float if we are not computing the loss
         slice_indices = slice(-logits_to_keep, None) if isinstance(logits_to_keep, int) else logits_to_keep
 
+        # Fallback: regenerate position_ids if not provided by caller (same logic as DeepseekV4Model.forward)
+        if position_ids is None:
+            past_seen = outputs.past_key_values.get_seq_length() if outputs.past_key_values is not None else 0
+            position_ids = torch.arange(hidden_states.shape[1], device=hidden_states.device) + past_seen
+            position_ids = position_ids.unsqueeze(0)
+
         if isinstance(attention_mask, dict):
             causal_mask_for_mtp = next(iter(attention_mask.values()))
         else:
@@ -2232,8 +2257,6 @@ class DeepseekV4ForCausalLM(DeepseekV4PreTrainedModel, GenerationMixin):
             layer_type="main",
             **kwargs,
         )
-
-        hidden_states = self.norm(hidden_states)
 
         aux_loss = None
         if loss_ctx:

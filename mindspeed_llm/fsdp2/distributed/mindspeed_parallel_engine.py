@@ -12,7 +12,6 @@ from mindspeed_llm.fsdp2.distributed.parallel_engine_config import ParallelEngin
 from mindspeed_llm.fsdp2.distributed.context_parallel.context_parallel_manager import apply_context_parallelize_modules
 from mindspeed_llm.fsdp2.distributed.expert_parallel.expert_parallel import (
     expert_parallelize_modules,
-    apply_grad_division_hook,
 )
 from mindspeed_llm.fsdp2.models.model_loader import WeightLoader
 from mindspeed_llm.fsdp2.utils.logging import get_logger
@@ -113,24 +112,6 @@ class MindSpeedParallelEngine(torch.nn.Module):
 
         hook_optimizer_step(self.model, optimizer)
 
-    def _apply_expert_grad_division_hooks(self) -> None:
-        try:
-            ep_mesh = self.parallel_state.get_ep_device_mesh()
-            ep_group = ep_mesh.get_group()
-            ep_size = torch.distributed.get_world_size(ep_group)
-        except Exception as e:
-            logger.warning(f"Failed to get EP device mesh/group: {e}. Skipping expert grad division hooks.")
-            return
-
-        for name, sub_module in self.model.named_modules():
-            class_name = sub_module.__class__.__name__
-            if "experts" in class_name.lower():
-                logger.debug(f"Found expert module: {name}, class: {class_name}")
-                try:
-                    apply_grad_division_hook(sub_module, ep_size)
-                except Exception as e:
-                    logger.error(f"Failed to apply hook to {name} ({class_name}): {e}")
-
     def apply_ngram_hook(self):
         model_type = str(getattr(self.hf_config, "model_type", "") or "").lower()
         if model_type != "longcat_flash_ngram":
@@ -141,9 +122,6 @@ class MindSpeedParallelEngine(torch.nn.Module):
             logger.info_rank0("> Applied LongCat-Flash-Lite N-gram embedding FSDP2 optimization.")
 
     def apply_model_hooks(self, optimizer: torch.optim.Optimizer):
-        # Apply expert grad division hooks
-        # This step should be executed after all parallel wrapping is complete to ensure the model structure is fixed
-        self._apply_expert_grad_division_hooks()
         self.apply_optimizer_hook(optimizer)
         self.apply_ngram_hook()
 

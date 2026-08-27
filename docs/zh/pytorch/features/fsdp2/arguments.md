@@ -332,6 +332,18 @@
       <td>是否为推理模型启用思考模式，启用后模型会生成中间思考过程。True表示启用，False表示不启用，None表示不删除原始数据中的<code>CoT</code>标签，适用于原始数据为混合类型的情况。</td>
     </tr>
     <tr>
+      <td>reasoning_effort</td>
+      <td>Optional[str]</td>
+      <td>None</td>
+      <td>DeepSeek-V4的推理力度级别，可选值为None/<code>high</code>/<code>max</code>。<code>max</code>：在首条消息前插入最大推理力度（Reasoning Effort: Absolute maximum）指令前缀；<code>high</code>：预留值，当前无实际效果；None：不插入前缀。仅DeepSeek-V4模板生效，需配合<code>enable_thinking=True</code>使用，与Megatron的<code>--reasoning-effort</code>参数对应。</td>
+    </tr>
+    <tr>
+      <td>drop_thinking</td>
+      <td>Optional[bool]</td>
+      <td>True</td>
+      <td>多轮对话训练时是否丢弃历史轮次中的思考内容（reasoning_content）。True（默认）时剥离历史轮的思考内容，仅最后一轮assistant回复的推理部分作为loss目标；False时保留所有轮次的思考内容。仅DeepSeek-V4模板生效，且消息中包含工具调用（tools）时不执行丢弃，与Megatron的<code>--drop-thinking</code>参数对应。</td>
+    </tr>
+    <tr>
       <td>tokenized_path</td>
       <td>Optional[str]</td>
       <td>None</td>
@@ -1082,7 +1094,7 @@
       <td>--tokenizer-name-or-path</td>
     </tr>
     <tr>
-      <td rowspan="4">DataArguments</td>
+      <td rowspan="6">DataArguments</td>
       <td>dataset</td>
       <td>--data-path</td>
     </tr>
@@ -1097,6 +1109,14 @@
     <tr>
       <td>packing</td>
       <td>--pack</td>
+    </tr>
+    <tr>
+      <td>reasoning_effort</td>
+      <td>--reasoning-effort</td>
+    </tr>
+    <tr>
+      <td>drop_thinking</td>
+      <td>--drop-thinking</td>
     </tr>
     <tr>
       <td rowspan="5">ParallelArguments</td>

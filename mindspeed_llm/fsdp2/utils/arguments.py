@@ -281,6 +281,14 @@ class DataArguments:
         default=True,
         metadata={"help": "Whether or not to enable thinking mode for reasoning models."},
     )
+    reasoning_effort: Optional[str] = field(
+        default=None,
+        metadata={"help": "Reasoning effort level for DeepSeek-V4 (None, 'high', 'max')."},
+    )
+    drop_thinking: Optional[bool] = field(
+        default=True,
+        metadata={"help": "Whether to drop thinking content in history for DeepSeek-V4."},
+    )
     tokenized_path: Optional[str] = field(
         default=None,
         metadata={

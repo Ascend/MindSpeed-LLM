@@ -12,6 +12,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# Portions of this file are derived from the DeepSeek Sparse Attention
+# indexer-loss implementation in megatron-glm5.2 (Copyright (c) 2025,
+# NVIDIA CORPORATION. All rights reserved., Apache-2.0,
+# https://github.com/mindlab-research/megatron-glm5.2), adapted for
+# FSDP2 training in MindSpeed-LLM.
+
 import torch
 import torch.nn.functional as F
 
@@ -51,6 +57,28 @@ class IndexerLossAutoScaler(torch.autograd.Function):
     def set_loss_scale(scale: torch.Tensor) -> None:
         """Set the backward scale applied to the attached indexer loss."""
         IndexerLossAutoScaler.main_loss_backward_scale = scale.detach()
+
+    @staticmethod
+    def set_loss_scale_from_batch_stats(num_items_in_batch: int | None, gradient_accumulation_steps: int) -> None:
+        """Derive the indexer KL backward scale from the trainer's batch statistics.
+
+        The indexer KL loss bypasses the main-loss scaling paths (pt: loss/accum
+        division in the trainer; sft: num_items_in_batch normalization inside the
+        model loss) — it rides the attention output through this scaler.
+        mcore runs with --calculate-per-token-loss: every microbatch backwards its
+        (mean-reduced) indexer loss at scale 1.0 and the accumulated gradients are
+        divided once by the global token count (num_tokens). The f-side KL is a
+        per-token mean, so the equivalent per-microbatch backward scale is
+        1 / num_items_in_batch — the same global token count HF computes for the sft
+        loss. This only collapses to 1/accum_steps when microbatches have equal
+        token counts, which packed varlen batches do not; accum_steps is only the
+        fallback when the token count is unavailable (e.g. no labels in the batch).
+        """
+        if num_items_in_batch is not None:
+            scale = 1.0 / float(num_items_in_batch)
+        else:
+            scale = 1.0 / float(gradient_accumulation_steps)
+        IndexerLossAutoScaler.main_loss_backward_scale = torch.tensor(scale)
 
 
 class NpuSparseLightningIndexerKLLoss(torch.autograd.Function):
@@ -306,16 +334,20 @@ def compute_dsa_indexer_loss(
     attention_scores = F.normalize(attention_scores, p=1, dim=-1)
     selected_attention_scores = torch.gather(attention_scores, dim=-1, index=topk_indices_clean)
 
-    # Softmax on index_scores
     index_scores = F.softmax(index_scores, dim=-1, dtype=torch.float32)
     # Gather index_scores to topk_indices if needed
     if index_scores.size(-1) != topk_indices_clean.size(-1):
         index_scores = torch.gather(index_scores, dim=-1, index=topk_indices_clean)
 
-    # KL(target || index) = target(x) * (log target(x) - log index(x))
-    kl_per_element = selected_attention_scores * (
-        torch.log(selected_attention_scores + 1e-9) - torch.log(index_scores + 1e-9)
-    )
+    # KL(target || index) with the target renormalized inside the top-k support, matching
+    # the mcore compute_indexer_loss definition:
+    #   sum_i y_i * (log(y_i / (sum_j y_j + eps)) - log(Y_i + eps))
+    eps = 1e-9
+    reduce_target = torch.sum(selected_attention_scores, dim=-1, keepdim=True)
+    norm_target = torch.div(selected_attention_scores, reduce_target + eps)
+    logp = torch.clamp(norm_target, min=eps).log()
+    log_y = (index_scores + eps).log()
+    kl_per_element = (logp - log_y) * selected_attention_scores
     # [b, sq, index_topk] -> [b, sq] -> [1]. Each token has the same weight in the loss.
     kl_div = kl_per_element.sum(dim=-1).mean()
     return kl_div * loss_coeff
@@ -324,15 +356,17 @@ def compute_dsa_indexer_loss(
 class IndexerLossLoggingHelper:
     """Collect and reduce indexer losses for the training monitor.
 
-    Losses from all layers and micro-batches are accumulated as a (sum, count) pair, so
-    the reported value is the mean per recorded loss regardless of layer count or
-    gradient accumulation steps.
+    Losses from all layers and micro-batches are accumulated as a (sum, count) pair.
+    When callers provide ``num_layers`` (the model's total layer count), the reported
+    value is ``(sum / count) / num_layers``, mirroring mcore's DSAIndexerLossLoggingHelper
+    (sum * (1/num_microbatches) / num_layers) so both sides log the same number;
+    otherwise it falls back to the mean per recorded loss (``sum / count``).
     """
 
     tracker = {}
 
     @staticmethod
-    def save_loss_to_tracker(loss: torch.Tensor) -> None:
+    def save_loss_to_tracker(loss: torch.Tensor, num_layers: int | None = None) -> None:
         if loss is None:
             return
 
@@ -345,6 +379,8 @@ class IndexerLossLoggingHelper:
             tracker["count"] = torch.zeros_like(count)
         tracker["value"].add_(value)
         tracker["count"].add_(count)
+        if num_layers is not None:
+            tracker["num_layers"] = int(num_layers)
 
     @staticmethod
     def pop_loss(reduce_group=None, loss_scale: float = 1.0) -> float | None:
@@ -356,10 +392,16 @@ class IndexerLossLoggingHelper:
         if torch.distributed.is_available() and torch.distributed.is_initialized():
             torch.distributed.all_reduce(stats, op=torch.distributed.ReduceOp.SUM, group=reduce_group)
 
+        # Mirror mcore's reported value: its training loop scales the accumulated
+        # sum by loss_scale = 1/num_microbatches and then divides by num_layers,
+        # i.e. sum / (num_microbatches * num_layers). The equivalent here is
+        # (per-record mean) / num_layers = sum / (count * num_layers).
+        num_layers = tracker.pop("num_layers", None)
+        denom = stats[1].item() * num_layers if num_layers else stats[1].item()
         IndexerLossLoggingHelper.clean_loss_in_tracker()
         if stats[1].item() <= 0:
             return None
-        return (stats[0] / stats[1] * loss_scale).item()
+        return (stats[0] / denom * loss_scale).item()
 
     @staticmethod
     def track_indexer_metrics(
@@ -383,6 +425,7 @@ class IndexerLossLoggingHelper:
     @staticmethod
     def clean_loss_in_tracker() -> None:
         tracker = IndexerLossLoggingHelper.tracker
+        tracker.pop("num_layers", None)
         if "value" in tracker:
             tracker["value"].zero_()
             tracker["count"].zero_()

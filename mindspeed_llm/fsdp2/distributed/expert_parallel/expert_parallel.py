@@ -61,9 +61,6 @@ def apply_common_experts_forward(module: torch.nn.Module, ep_mesh: DeviceMesh, p
     experts_forward_fn = get_dispatcher_fn(plan.dispatcher, ep_group, fixed_router=plan.fixed_router)
     module.forward = types.MethodType(experts_forward_fn, module)
 
-    # apply ep parameter grad division, if efsdp is enabled, the hook will be overridden
-    apply_grad_division_hook(module, ep_size)
-
 
 def apply_expert_parallel_forward(module: torch.nn.Module, ep_mesh: DeviceMesh, plan: EPPlanConfig):
     if hasattr(module, 'zero_expert_num') and module.zero_expert_num > 0:
@@ -140,12 +137,3 @@ def get_dispatcher_fn(dispatcher, ep_group, fixed_router=False):
         raise RuntimeError(f'Unsupported dispatcher {dispatcher}.')
 
     return forward_fn
-
-
-def apply_grad_division_hook(module, ep_size):
-    def backward_hook(module, grad_input, grad_output):
-        for name, p in module.named_parameters():
-            if p.grad is not None:
-                p.grad.mul_(1.0 / ep_size)
-
-    return module.register_full_backward_hook(backward_hook)

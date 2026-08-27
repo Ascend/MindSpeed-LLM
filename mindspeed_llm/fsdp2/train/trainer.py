@@ -20,6 +20,7 @@ from mindspeed_llm.fsdp2.utils.logging import get_logger
 from mindspeed_llm.fsdp2.utils.train_monitor import TrainMonitor
 from mindspeed_llm.fsdp2.utils.profiler import ProfilerConfig, ProfilerManager
 from mindspeed_llm.fsdp2.models.common.mtp import roll_tensor
+from mindspeed_llm.fsdp2.models.common.indexer_loss import IndexerLossAutoScaler
 from dataclasses import dataclass
 
 
@@ -469,6 +470,13 @@ class Trainer:
         # Some custom optimizers require explicit train() calls
         if hasattr(self.optimizer, "train") and callable(self.optimizer.train):
             self.optimizer.train()
+
+        # Indexer KL loss backward scale: only the batch statistics are passed in here;
+        # the mcore-parity scale derivation lives in indexer_loss
+        # (IndexerLossAutoScaler.set_loss_scale_from_batch_stats).
+        IndexerLossAutoScaler.set_loss_scale_from_batch_stats(
+            num_items_in_batch, self.current_gradient_accumulation_steps
+        )
 
         # 2. Forward pass
         loss_all = self._compute_loss(inputs, return_outputs=False, num_items_in_batch=num_items_in_batch)
