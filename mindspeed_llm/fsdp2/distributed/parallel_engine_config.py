@@ -1,6 +1,6 @@
 # Copyright (c) 2025, Huawei Technologies Co., Ltd. All rights reserved.
-from dataclasses import dataclass, field
-from typing import Any, List, Callable, Literal, Union, Optional
+from dataclasses import dataclass
+from typing import List, Callable, Literal, Union, Optional
 
 import torch
 
@@ -10,6 +10,7 @@ from fsdp_turbo.fsdp_turbo_config import (
     FSDPPlanConfig as _BaseFSDPPlanConfig,
     TPPlanConfig as _BaseTPPlanConfig,
     ChunkBatchPlanConfig as _BaseChunkBatchPlanConfig,
+    QuantizeConfig as _BaseQuantizeConfig,
 )
 
 
@@ -39,14 +40,14 @@ class EPPlanConfig:
 
 
 @dataclass
-class QuantizeConfig:
-    recipe_name: str = None
-    apply_modules: list[str] = field(default_factory=list)
-    ignored_modules: list[str] = field(default_factory=list)
-    quant_converters: list[str] = field(default_factory=list)
-    extra_args: dict[str, Any] = field(default_factory=dict)  # for future extensibility
-    enable_fsdp_low_precision_all_gather: bool = True
-    fsdp_low_precision_all_gather_mode: Literal["on-demand", "all"] = "on-demand"
+class QuantizeConfig(_BaseQuantizeConfig):
+    """Inherits the full field set from FSDPTurbo's QuantizeConfig to stay in
+    sync with its evolution (quant_format, block_size, quant_recipe, converters,
+    quant_apply_modules, quant_ignored_modules, fsdp_world_size, ...).
+
+    Adds the LLM-specific ``recipe``/``get_key_dtype`` helpers used by the MoE
+    dispatcher to resolve per-tensor FP8 dtypes via MindSpeed's QuantRecipe.
+    """
 
     @property
     def recipe(self):
@@ -55,7 +56,7 @@ class QuantizeConfig:
 
         from mindspeed.fsdp.quantization.config import QuantRecipe
 
-        self._recipe = QuantRecipe.from_recipe_name(self.recipe_name)
+        self._recipe = QuantRecipe.from_recipe_name(self.quant_recipe)
         return self._recipe
 
     def get_key_dtype(self, key: str) -> torch.dtype:
@@ -169,6 +170,9 @@ class ParallelEngineConfig:
 
     def validate_quantization_config(self):
         self.quantization_plan = QuantizeConfig() if self.quantization_plan is None else self.quantization_plan
+        # fsdp_world_size is auto-derived from the FSDP parallel size, mirroring
+        # FSDPTurbo's FSDPTurboConfig.validate_quantization_config behavior.
+        self.quantization_plan.fsdp_world_size = self.fully_shard_parallel_size
 
     def validate_chunkbatch_config(self):
         self.chunkbatch_plan = ChunkBatchPlanConfig() if self.chunkbatch_plan is None else self.chunkbatch_plan

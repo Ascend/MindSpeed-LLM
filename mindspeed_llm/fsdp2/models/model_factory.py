@@ -206,10 +206,12 @@ class ModelFactory:
 
         # --- 5. Quantization Config ---
         quantization_plan = QuantizeConfig(
-            recipe_name=model_args.quant_recipe_name,
-            apply_modules=model_args.quant_apply_modules,
-            ignored_modules=model_args.quant_ignored_modules,
-            quant_converters=model_args.quant_converters,
+            quant_recipe=model_args.quant_recipe_name,
+            quant_format=model_args.quant_format,
+            block_size=model_args.quant_block_size,
+            quant_apply_modules=model_args.quant_apply_modules,
+            quant_ignored_modules=model_args.quant_ignored_modules,
+            converters=model_args.quant_converters,
             enable_fsdp_low_precision_all_gather=model_args.enable_fsdp_low_precision_all_gather,
             fsdp_low_precision_all_gather_mode=model_args.fsdp_low_precision_all_gather_mode,
         )

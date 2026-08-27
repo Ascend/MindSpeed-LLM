@@ -12,6 +12,8 @@
 | 参数 | 类型 | 默认值                  | 说明 |
 |------|------|----------------------|------|
 | `--model.quant_recipe_name` | str | mxfp8（必填）            | 使用的量化配方名 |
+| `--model.quant_format` | str | `E4M3`                | 量化使用的 FP8 数据格式，支持 `E4M3`、`E5M2`、`HIF8` |
+| `--model.quant_block_size` | int | `32`                  | MXFP8 分块量化块大小 |
 | `--model.quant_apply_modules` | str | 'model.layers.{*}'   | 应用量化的层或模块 |
 | `--model.quant_ignored_modules` | str | '*lm_head' '*gate'   | 不应用量化的子模块列表 |
 | `--model.quant_converters` | str | 'quantize.linear.mx' | 使用的量化转换器列表 |
@@ -94,6 +96,8 @@ quant_recipe_name的格式为：
 ```bash
 QUANT_ARGS="
     --model.quant_recipe_name mxfp8 \
+    --model.quant_format E4M3 \
+    --model.quant_block_size 32 \
     --model.enable_fsdp_low_precision_all_gather \
     --model.quant_converters quantize.linear.mx quantize.moe.mx \
     --parallel.efsdp_shard_placement_fn shard_by_dim_0

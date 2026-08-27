@@ -18,6 +18,8 @@ DISTRIBUTED_ARGS="
 "
 QUANT_ARGS="
     --model.quant_recipe_name mxfp8 \
+    --model.quant_format E4M3 \
+    --model.quant_block_size 32 \
     --model.enable_fsdp_low_precision_all_gather \
     --model.quant_converters quantize.linear.mx quantize.moe.mx \
     --parallel.efsdp_shard_placement_fn shard_by_dim_0 \

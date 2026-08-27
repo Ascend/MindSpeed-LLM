@@ -93,7 +93,7 @@ class MindSpeedParallelEngine(torch.nn.Module):
 
     def apply_quantization_modules(self):
         """Apply quantization based on quantization_format + quantization_recipe."""
-        if not self.config.quantization_plan.recipe_name:
+        if not self.config.quantization_plan.quant_recipe:
             return
         try:
             if self.config.recompute:
@@ -107,7 +107,7 @@ class MindSpeedParallelEngine(torch.nn.Module):
             raise RuntimeError("Failed to convert quantization plan") from e
 
     def apply_optimizer_hook(self, optimizer: torch.optim.Optimizer):
-        if not self.config.quantization_plan.recipe_name:
+        if not self.config.quantization_plan.quant_recipe:
             return
         from mindspeed.fsdp.quantization.core.cache import hook_optimizer_step
 

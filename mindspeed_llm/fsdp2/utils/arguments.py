@@ -130,6 +130,17 @@ class ModelArguments:
         default=None,
         metadata={"help": "Quantization recipe name"},
     )
+    quant_format: str = field(
+        default="E4M3",
+        metadata={
+            "help": "FP8 data format used for quantization. "
+            "Supported values: 'E4M3', 'E5M2', 'HIF8'. Default is 'E4M3'."
+        },
+    )
+    quant_block_size: int = field(
+        default=32,
+        metadata={"help": "Block size for MXFP8 block-wise quantization. Default is 32."},
+    )
     quant_apply_modules: List[str] = field(
         default_factory=lambda: ['model.layers.{*}'],
         metadata={

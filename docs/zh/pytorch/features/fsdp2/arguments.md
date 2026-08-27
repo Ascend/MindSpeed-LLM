@@ -129,6 +129,18 @@
       <td>量化策略。</td>
     </tr>
     <tr>
+      <td>quant_format</td>
+      <td>str</td>
+      <td>&quot;E4M3&quot;</td>
+      <td>量化使用的 FP8 数据格式，支持 <code>E4M3</code>、<code>E5M2</code>、<code>HIF8</code>。</td>
+    </tr>
+    <tr>
+      <td>quant_block_size</td>
+      <td>int</td>
+      <td>32</td>
+      <td>MXFP8 分块量化块大小。</td>
+    </tr>
+    <tr>
       <td>quant_apply_modules</td>
       <td>List[str]</td>
       <td>['model.layers.{*}']</td>

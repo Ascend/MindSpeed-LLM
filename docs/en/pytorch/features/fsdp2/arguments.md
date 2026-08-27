@@ -129,6 +129,18 @@ Contains parameters related to model and tokenizer loading and initialization.
       <td>The quantization strategy.</td>
     </tr>
     <tr>
+      <td>quant_format</td>
+      <td>str</td>
+      <td>&quot;E4M3&quot;</td>
+      <td>FP8 data format used for quantization. Supported values: <code>E4M3</code>, <code>E5M2</code>, <code>HIF8</code>.</td>
+    </tr>
+    <tr>
+      <td>quant_block_size</td>
+      <td>int</td>
+      <td>32</td>
+      <td>Block size for MXFP8 block-wise quantization.</td>
+    </tr>
+    <tr>
       <td>quant_apply_modules</td>
       <td>List[str]</td>
       <td>['model.layers.{*}']</td>
