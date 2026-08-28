@@ -686,6 +686,19 @@ class TrainingArguments:
     profile_save_path: str = field(
         default="./profile", metadata={"help": "Directory to save profiling traces (TensorBoard format)."}
     )
+    # --- msProbe precision data collection ---
+    msprobe: bool = field(default=False, metadata={"help": "Enable msProbe precision data collection."})
+    msprobe_config_path: Optional[str] = field(
+        default=None, metadata={"help": "Path to a custom msProbe config.json file."}
+    )
+    # --- Full-model module I/O and batch-input tracing ---
+    model_io_trace: bool = field(default=False, metadata={"help": "Enable model I/O tracing."})
+    model_io_trace_config_path: Optional[str] = field(
+        default=None, metadata={"help": "Path to a custom model I/O trace config.json file."}
+    )
+    model_io_trace_output_path: Optional[str] = field(
+        default=None, metadata={"help": "Directory to save model I/O trace results."}
+    )
 
     def __post_init__(self):  # Path parameter validation
         if self.output_dir is None:
@@ -697,6 +710,8 @@ class TrainingArguments:
                 raise ValueError("`profile_step_start` must be >= 0")
             if self.profile_step_end != -1 and self.profile_step_end <= self.profile_step_start:
                 raise ValueError("`profile_step_end` must be > profile_step_start or -1")
+        if self.model_io_trace and not self.model_io_trace_output_path:
+            raise ValueError("`model_io_trace_output_path` must be specified when model I/O tracing is enabled.")
 
 
 @dataclass

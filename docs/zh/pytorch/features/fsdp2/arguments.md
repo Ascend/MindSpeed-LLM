@@ -919,6 +919,70 @@
   </tbody>
 </table>
 
+## msProbe参数
+
+包含FSDP2训练精度数据采集相关参数。
+
+<table>
+  <thead>
+    <tr>
+      <th>参数名</th>
+      <th>类型</th>
+      <th>默认值</th>
+      <th>详细说明</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>msprobe</td>
+      <td>bool</td>
+      <td>False</td>
+      <td>是否开启msProbe精度数据采集。</td>
+    </tr>
+    <tr>
+      <td>msprobe_config_path</td>
+      <td>Optional[str]</td>
+      <td>None</td>
+      <td>自定义msProbe配置文件路径；不配置时使用仓库默认msprobe_config.json。</td>
+    </tr>
+  </tbody>
+</table>
+
+## 模型输入输出采集参数
+
+包含FSDP2全模型Module前反向Hook与batch输入采集相关参数。
+
+<table>
+  <thead>
+    <tr>
+      <th>参数名</th>
+      <th>类型</th>
+      <th>默认值</th>
+      <th>详细说明</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>model_io_trace</td>
+      <td>bool</td>
+      <td>False</td>
+      <td>是否开启模型输入输出采集。</td>
+    </tr>
+    <tr>
+      <td>model_io_trace_config_path</td>
+      <td>Optional[str]</td>
+      <td>None</td>
+      <td>自定义模型输入输出采集配置文件路径；不配置时使用仓库默认model_io_trace_config.json。</td>
+    </tr>
+    <tr>
+      <td>model_io_trace_output_path</td>
+      <td>Optional[str]</td>
+      <td>None</td>
+      <td>模型输入输出采集结果保存路径；开启时必须配置。</td>
+    </tr>
+  </tbody>
+</table>
+
 ## 推理参数（InferenceArguments）
 
 包含推理相关参数。

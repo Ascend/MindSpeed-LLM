@@ -70,6 +70,8 @@ from mindspeed_llm.training.initialize import set_jit_fusion_options
 from mindspeed_llm.tasks.posttrain.lora.utils import is_enable_lora
 from mindspeed_llm.training.utils import get_actual_attn_ratio, clear_actual_attn_ratio, is_distributed_ckpt_complete
 from mindspeed_llm.training.checkpointing import _convert_weights_mg2hf
+from mindspeed_llm.tools.model_io_trace import ModelIOTraceManager
+from mindspeed_llm.tools.msprobe import MsProbeManager
 
 
 # The earliest we can measure the start time.
@@ -473,6 +475,10 @@ def pretrain(train_valid_test_dataset_provider,  # pylint: disable=dangerous-def
 
     args = get_args()
     timers = get_timers()
+    msprobe_manager = MsProbeManager(
+        enabled=args.msprobe,
+        config_path=args.msprobe_config_path,
+    )
 
 
     if args.log_progress:
@@ -535,13 +541,15 @@ def pretrain(train_valid_test_dataset_provider,  # pylint: disable=dangerous-def
                     forward_step_func,
                     model, optimizer, opt_param_scheduler,
                     train_data_iterator, valid_data_iterator,
-                    process_non_loss_data_func, config)
+                    process_non_loss_data_func, config,
+                    msprobe_manager=msprobe_manager)
             else:
                 iteration, num_floating_point_operations_so_far = train(
                     forward_step_func,
                     model, optimizer, opt_param_scheduler,
                     train_data_iterator, valid_data_iterator,
-                    process_non_loss_data_func, config)
+                    process_non_loss_data_func, config,
+                    msprobe_manager=msprobe_manager)
 
         print_datetime('after training is done')
 
@@ -586,7 +594,7 @@ def pretrain(train_valid_test_dataset_provider,  # pylint: disable=dangerous-def
 
 def train(forward_step_func, model, optimizer, opt_param_scheduler,
           train_data_iterator, valid_data_iterator,
-          process_non_loss_data_func, config):
+          process_non_loss_data_func, config, msprobe_manager=None):
     """Train the model function."""
     args = get_args()
     timers = get_timers()
@@ -604,6 +612,17 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
 
     # Iterations.
     iteration = args.iteration
+    if msprobe_manager is None:
+        msprobe_manager = MsProbeManager(
+            enabled=args.msprobe,
+            config_path=args.msprobe_config_path,
+        )
+    model_io_trace_manager = ModelIOTraceManager(
+        enabled=args.model_io_trace,
+        config_path=args.model_io_trace_config_path,
+        output_path=args.model_io_trace_output_path,
+    )
+    msprobe_manager.set_init_step(iteration)
 
     # Track E2E metrics at the start of training
     one_logger_utils.on_train_start(iteration=iteration, consumed_train_samples=args.consumed_train_samples,
@@ -712,6 +731,8 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
         update_num_microbatches(args.consumed_train_samples, consistency_check=True)
 
         args.curr_iteration = iteration
+        msprobe_manager.start_step(model)
+        model_io_trace_manager.start_step(model, iteration)
         loss_dict, skipped_iter, should_checkpoint, should_exit, exit_code, grad_norm, num_zeros_in_grad = \
             train_step(forward_step_func,
                        train_data_iterator,
@@ -719,6 +740,8 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
                        optimizer,
                        opt_param_scheduler,
                        config)
+        msprobe_manager.end_step()
+        model_io_trace_manager.end_step()
         _enable_npu_datadump_step_end()
 
         # Enable forward pre-hooks after first set of forward and backward passes.

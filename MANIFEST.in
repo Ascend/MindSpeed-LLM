@@ -1,0 +1,1 @@
+include mindspeed_llm/tools/*.json

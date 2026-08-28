@@ -19,6 +19,8 @@ from mindspeed_llm.fsdp2.utils.dist_op import all_reduce
 from mindspeed_llm.fsdp2.utils.logging import get_logger
 from mindspeed_llm.fsdp2.utils.train_monitor import TrainMonitor
 from mindspeed_llm.fsdp2.utils.profiler import ProfilerConfig, ProfilerManager
+from mindspeed_llm.tools.model_io_trace import ModelIOTraceManager
+from mindspeed_llm.tools.msprobe import MsProbeManager
 from mindspeed_llm.fsdp2.models.common.mtp import roll_tensor
 from mindspeed_llm.fsdp2.models.common.indexer_loss import IndexerLossAutoScaler
 from dataclasses import dataclass
@@ -105,6 +107,15 @@ class Trainer:
             current_rank=current_rank,
         )
         self.profiler_manager = ProfilerManager(prof_config)
+        self.msprobe_manager = MsProbeManager(
+            enabled=args.msprobe,
+            config_path=args.msprobe_config_path,
+        )
+        self.model_io_trace_manager = ModelIOTraceManager(
+            enabled=args.model_io_trace,
+            config_path=args.model_io_trace_config_path,
+            output_path=args.model_io_trace_output_path,
+        )
 
     @staticmethod
     def _build_chunk_loss(labels, ignore_index=-100, chunk_size=1024):
@@ -213,6 +224,7 @@ class Trainer:
                 # No extra state found, only model weights were loaded, start from scratch
                 logger.info_rank0("Loaded model weights only, starting training from step 0")
 
+        self.msprobe_manager.set_init_step(self.global_step)
         self.model.train()
         train_start_time = time.time()
         self._step_start_time = time.time()
@@ -271,6 +283,9 @@ class Trainer:
                 current_step_mtp_loss = 0.0
                 current_step_aux_loss = 0.0
 
+                self.msprobe_manager.start_step(self.model)
+                self.model_io_trace_manager.start_step(self.model, self.global_step)
+
                 # --- Micro-Batch Loop ---
                 for i, inputs in enumerate(batch_samples):
                     do_sync_step = i == len(batch_samples) - 1
@@ -313,6 +328,8 @@ class Trainer:
                 self.optimizer.step()
                 self.lr_scheduler.step()
                 self.optimizer.zero_grad()
+                self.msprobe_manager.end_step()
+                self.model_io_trace_manager.end_step()
 
                 self.global_step += 1
 

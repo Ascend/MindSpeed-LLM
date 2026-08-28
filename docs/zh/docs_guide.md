@@ -99,6 +99,8 @@ docs/zh/
         ├── checkpoint_convert_hf_mcore_large_params.md  # 权重转换
         ├── checkpoint_convert_hf_dcp.md       # HF-DCP权重转换
         ├── profiling.md                       # 性能分析
+        ├── msprobe.md                         # 精度数据采集
+        ├── model_io_trace.md                  # 模型输入输出采集
         └── deterministic_computation.md       # 确定性计算
 ```
 
@@ -186,6 +188,8 @@ docs/zh/
 | [data_process_sft_sharegpt_style](pytorch/tools/data_process_sft_sharegpt_style.md) | 指令微调sharegpt风格数据预处理 |
 | [data_process_dpo_pairwise](pytorch/tools/data_process_dpo_pairwise.md) | 偏好对齐pairwise数据处理 |
 | [profiling](pytorch/tools/profiling.md) | 基于昇腾芯片采集profiling数据 |
+| [msprobe](pytorch/tools/msprobe.md) | FSDP2与Megatron训练过程中的精度数据采集 |
+| [model_io_trace](pytorch/tools/model_io_trace.md) | 基于Module Hook采集模型前反向输入输出与batch预览 |
 | [deterministic_computation](pytorch/tools/deterministic_computation.md) | 基于昇腾芯片开启确定性计算 |
 
 ### 调优指南
