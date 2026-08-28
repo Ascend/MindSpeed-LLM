@@ -1529,4 +1529,4 @@ SSMs are sequence models based on state-space representations and can efficientl
 
 ## Multimodal Models
 
-Multimodal models, including image-text understanding, text-to-video/image generation, and speech recognition, are maintained separately by MindSpeed-MM. If you need to train a multimodal model, visit the multimodal repository [MindSpeed MM](https://gitcode.com/Ascend/MindSpeed-MM) for detailed instructions. For the current supported models by MindSpeed-MM, refer to the [MindSpeed MM model support list](https://gitcode.com/Ascend/MindSpeed-MM#%E9%85%8D%E5%A5%97%E7%89%88%E6%9C%AC%E4%B8%8E%E6%94%AF%E6%8C%81%E6%A8%A1%E5%9E%8B).
+Multimodal models, including image-text understanding, text-to-video/image generation, and speech recognition, are maintained separately by MindSpeed MM. If you need to train a multimodal model, visit the multimodal repository [MindSpeed MM](https://gitcode.com/Ascend/MindSpeed-MM) for detailed instructions. For the current supported models by MindSpeed MM, refer to the [MindSpeed MM model support list](https://gitcode.com/Ascend/MindSpeed-MM/blob/26.1.0/docs/en/pytorch/supported_models.md).

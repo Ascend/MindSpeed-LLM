@@ -41,18 +41,26 @@
 
 > [!NOTE]
 >
-> - 使用镜像前，请先确认机器型号。最新镜像仅支持aarch64架构，可通过`uname -a`命令确认当前环境是否符合要求。
+> - 使用镜像前，请先确认机器型号。最新镜像支持aarch64及X86_64架构，可通过`uname -a`命令确认当前环境是否符合要求。
 > - 配套镜像已预装配套的CANN 9.1.0软件及TorchNPU 26.1.0插件，可根据需要选用。
 > - 若当前环境与提供的镜像不兼容，请选择[方式二：源码安装](#方式二源码安装)。
-> - 26.1.0分支后续会更新新的镜像，如果需要自定义构建镜像请参见[镜像概述](../../../../docker/OVERVIEW.zh.md)。
+> - 如果需要自定义构建镜像请参见[镜像概述](../../../../docker/OVERVIEW.zh.md)。
 
 1. 获取镜像
 
-   最新镜像均配套[MindSpeed LLM的26.1.0分支](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0)，该镜像即将上线，当前可使用MindSpeed LLM 26.0.0分支对应镜像，请单击[获取镜像](https://www.hiascend.com/developer/ascendhub/detail/e26da9266559438b93354792f25b2f4a)。
+   最新镜像均配套[MindSpeed LLM的26.1.0分支](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0)，请按需[获取镜像](https://www.hiascend.com/developer/ascendhub/detail/e26da9266559438b93354792f25b2f4a)。
 
-   - <term>Atlas A2 训练系列产品</term>：26.0.0-910b-openeuler24.03-py3.11-aarch64
+   - <term>Ascend 950 系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-950-openeuler24.03-py3.12
 
-   - <term>Atlas A3 训练系列产品</term>：26.0.0-a3-openeuler24.03-py3.11-aarch64
+   - <term>Ascend 950 系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-950-ubuntu22.04-py3.12
+
+   - <term>Atlas A3 训练系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-a3-openeuler24.03-py3.12
+
+   - <term>Atlas A3 训练系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-a3-ubuntu22.04-py3.12
+
+   - <term>Atlas A2 训练系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-910b-openeuler24.03-py3.12
+
+   - <term>Atlas A2 训练系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-910b-ubuntu22.04-py3.12
 
    ```bash
    # 确认是否成功获取镜像
@@ -83,7 +91,7 @@
       -v /etc/ascend_install.info:/etc/ascend_install.info \
       -v /data:/data \
       -v /weights:/weights \
-      mindspeed-llm:26.0.0-a3-openeuler24.03-py3.11-aarch64 \
+      mindspeed-llm:v26.1.0-cann9.1.0-torch_npu2.7.1.post8-910b-openeuler24.03-py3.12 \
       /bin/bash
    ```
 
@@ -92,7 +100,7 @@
    > - 当前默认配置驱动和固件安装在/usr/local/Ascend，如有差异请修改指令路径。
    > - 复制启动命令前，请将-v参数内的/data、/weights两处路径，替换为宿主机本地真实目录，否则容器启动失败。
    > - 当前容器默认初始化NPU驱动和CANN环境信息，如需要安装新的，请自行替换或手动source，详见容器的~/.bashrc。
-   > - “_mindspeed-llm:26.0.0-a3-openeuler24.03-py3.11-aarch64_”为镜像名称和标签，可根据实际情况修改。可在宿主机执行`docker images`命令查看当前机器上已有的镜像。
+   > - “_mindspeed-llm:v26.1.0-cann9.1.0-torch_npu2.7.1.post8-910b-openeuler24.03-py3.12_”为镜像名称和标签，可根据实际情况修改。可在宿主机执行`docker images`命令查看当前机器上已有的镜像。
 
    **表 2**  参数说明 <a id="table1"></a>
 

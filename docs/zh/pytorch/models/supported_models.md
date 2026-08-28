@@ -1528,4 +1528,4 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
 
 ## 多模态模型
 
-多模态大模型（图文理解、文生视频/图、语音识别等）由MindSpeed-MM专项维护，如果需要进行多模态大模型的训练，请访问多模态仓库[MindSpeed MM](https://gitcode.com/Ascend/MindSpeed-MM)获取详细的使用说明，当前MindSpeed-MM支持的主流模型请参考[MindSpeed MM模型支持列表](https://gitcode.com/Ascend/MindSpeed-MM#%E9%85%8D%E5%A5%97%E7%89%88%E6%9C%AC%E4%B8%8E%E6%94%AF%E6%8C%81%E6%A8%A1%E5%9E%8B)。
+多模态大模型（图文理解、文生视频/图、语音识别等）由MindSpeed MM专项维护，如果需要进行多模态大模型的训练，请访问多模态仓库[MindSpeed MM](https://gitcode.com/Ascend/MindSpeed-MM)获取详细的使用说明，当前MindSpeed MM支持的主流模型请参考[MindSpeed MM模型支持列表](https://gitcode.com/Ascend/MindSpeed-MM/blob/26.1.0/docs/zh/pytorch/supported_models.md)。
