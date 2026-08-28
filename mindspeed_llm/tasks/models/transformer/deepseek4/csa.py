@@ -742,9 +742,6 @@ class DeepSeek4SelfAttention(MegatronModule):
             else:
                 kv_compress = self.compressor(hidden_states, start_pos, local_freqs_cis, packed_seq_params)
             if kv_compress is not None:
-                # TND prefix KV (varlen input) needs detach to avoid cross-rank gather backward error.
-                if packed_seq_params is not None:
-                    kv_compress = kv_compress.detach()
                 if packed_seq_params is None:
                     if self.config.sequence_parallel or self.kv_allgather:
                         kv_compress = gather_from_sp_cp(kv_compress, tnd=False)

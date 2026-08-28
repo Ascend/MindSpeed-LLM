@@ -382,11 +382,11 @@ class SparseFlashMlaWithIndexerLossFunction(torch.autograd.Function):
         )
         # ori/cmp_softmax_l1 are the attn_softmax_out for the kl_div side loss
         grad_scale = ctx.indexer_scale
+        from megatron.core import parallel_state
+
+        cp_size = parallel_state.get_context_parallel_world_size()
         if ctx.layout_q == 'TND':
             local_num = cu_seqlens_q[-1].item()
-            from megatron.core import parallel_state
-
-            cp_size = parallel_state.get_context_parallel_world_size()
             if cp_size > 1:
                 _dev = "npu" if torch.npu.is_available() else "cpu"
                 _local_t = torch.tensor([local_num], dtype=torch.int64, device=_dev)
@@ -398,7 +398,11 @@ class SparseFlashMlaWithIndexerLossFunction(torch.autograd.Function):
             else:
                 num_seqs = local_num
         else:
-            num_seqs = ctx.B * ctx.S1
+            if cp_size > 1:
+                # DeepSeek4 only supports kvallgather CP, where each BSND op call processes one of two local chunks.
+                num_seqs = ctx.B * ctx.S1 * cp_size * 2
+            else:
+                num_seqs = ctx.B * ctx.S1
         d_query_index = d_query_index * grad_scale / num_seqs
         d_key_index = d_key_index * grad_scale / num_seqs
         d_weights = d_weights * grad_scale / num_seqs
