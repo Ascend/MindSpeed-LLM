@@ -1,15 +1,15 @@
 # ============================================
 # MindSpeed LLM Docker Image
-# NPU Type: Configurable (910b, a3, etc.)
+# NPU Type: Configurable (910b, a3, 950)
 # Supports: x86_64 and aarch64 (ARM)
 # Supports: openEuler and Ubuntu
 # ============================================
 
 # Global arguments for base image selection
 ARG OS=openeuler24.03
-ARG BASE_IMAGE_VERSION=9.0.0
+ARG BASE_IMAGE_VERSION=9.1.0
 ARG NPU_TYPE=910b
-ARG PYTHON_VERSION=3.11
+ARG PYTHON_VERSION=3.12
 ARG BASE_IMAGE=""
 
 # ------------------------------
@@ -37,27 +37,11 @@ RUN ARCH=$(uname -m) && \
         exit 1; \
     fi
 
-# Configure DNS for stable network connection
-RUN if [ -f /etc/resolv.conf ]; then \
-        echo "Existing resolv.conf:" && cat /etc/resolv.conf; \
-    else \
-        echo "No resolv.conf found, creating one..."; \
-    fi && \
-    echo "nameserver 114.114.114.114" > /etc/resolv.conf && \
-    echo "nameserver 8.8.8.8" >> /etc/resolv.conf && \
-    echo "nameserver 223.5.5.5" >> /etc/resolv.conf && \
-    echo "Updated resolv.conf:" && cat /etc/resolv.conf
-
 # Configure repository based on OS_FAMILY (openeuler/ubuntu)
 COPY configure_repo.sh /tmp/configure_repo.sh
 RUN chmod +x /tmp/configure_repo.sh && \
     bash /tmp/configure_repo.sh && \
     rm /tmp/configure_repo.sh
-
-# Clean YUM cache and temporary files
-RUN yum clean all && \
-    rm -rf /var/cache/yum && \
-    rm -rf /tmp/* /var/tmp/* /var/log/*
 
 # Install system dependencies
 RUN echo "Installing system dependencies..." && \
@@ -82,7 +66,8 @@ RUN echo "Installing system dependencies..." && \
             g++ \
             make \
             cmake \
-        && apt-get clean; \
+        && apt-get clean \
+        && rm -rf /var/lib/apt/lists/*; \
     else \
         echo "ERROR: Unsupported OS: $OS_FAMILY"; \
         exit 1; \
@@ -106,7 +91,8 @@ RUN PYTHON_INC=$(python3 -c "import sysconfig; print(sysconfig.get_path('include
             apt-get update -o Acquire::https::Verify-Peer=false -o Acquire::https::Verify-Host=false && \
             apt-get install -y -o Acquire::https::Verify-Peer=false -o Acquire::https::Verify-Host=false python${PYTHON_VER}-dev || \
             apt-get install -y -o Acquire::https::Verify-Peer=false -o Acquire::https::Verify-Host=false python3-dev; \
-            apt-get clean; \
+            apt-get clean && \
+            rm -rf /var/lib/apt/lists/*; \
         fi; \
     else \
         echo "CANN built-in Python already provides Python.h and python3-config"; \
@@ -121,35 +107,13 @@ RUN PYTHON_INC=$(python3 -c "import sysconfig; print(sysconfig.get_path('include
 FROM base AS builder
 
 ARG TORCH_VERSION=2.7.1
-ARG TORCH_NPU_VERSION=2.7.1
+ARG TORCH_NPU_VERSION=2.7.1.post8
+ARG TRITON_ASCEND_VERSION=3.2.2
 
 WORKDIR /tmp
 
-# Install Miniconda (auto-detect architecture)
-RUN echo "=== Detecting system architecture ===" && \
-    arch=$(uname -m) && \
-    echo "Current architecture: $arch" && \
-    if [ "$arch" = "x86_64" ]; then \
-        MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-py311_26.1.1-1-Linux-x86_64.sh"; \
-    elif [ "$arch" = "aarch64" ]; then \
-        MINICONDA_URL="https://repo.anaconda.com/miniconda/Miniconda3-py311_26.1.1-1-Linux-aarch64.sh"; \
-    fi && \
-    echo "Download URL: $MINICONDA_URL" && \
-    wget --no-check-certificate "$MINICONDA_URL" -O miniconda.sh && \
-    bash miniconda.sh -b -p /opt/conda && \
-    rm -f miniconda.sh && \
-    /opt/conda/bin/conda clean -ya && \
-    ln -sf /opt/conda/bin/python /usr/bin/python && \
-    ln -sf /opt/conda/bin/pip /usr/bin/pip
-
-# Set environment variables for Conda
-ENV PATH=/opt/conda/bin:$PATH
-ENV CONDA_AUTO_UPDATE_CONDA=false
-
-# Configure pip source
-RUN pip config set global.index-url https://repo.huaweicloud.com/repository/pypi/simple && \
-    pip config set global.trusted-host "repo.huaweicloud.com" && \
-    /opt/conda/bin/conda init bash
+# Configure a single default pip source
+RUN pip config set global.index-url https://repo.huaweicloud.com/repository/pypi/simple
 
 # Install PyTorch and torch_npu (ONLINE INSTALL ONLY)
 RUN echo "Installing PyTorch and torch_npu from PyPI..." && \
@@ -174,7 +138,18 @@ RUN echo "Installing PyTorch and torch_npu from PyPI..." && \
             pip install --no-cache-dir torch-npu==${TORCH_NPU_VERSION} && break; \
         done;
 
-RUN conda clean -ya
+# Install Triton-Ascend
+RUN echo "Installing Triton-Ascend..." && \
+    mkdir -p /tmp/triton-ascend && \
+    pip download --no-cache-dir --no-deps \
+        triton-ascend==${TRITON_ASCEND_VERSION} \
+        --index-url=https://mirrors.huaweicloud.com/ascend/repos/pypi \
+        --dest /tmp/triton-ascend && \
+    pip install --no-cache-dir /tmp/triton-ascend/triton_ascend-*.whl && \
+    rm -rf /tmp/triton-ascend
+
+# Clean pip cache
+RUN pip cache purge
 
 # ------------------------------
 # Stage 3: Final Runtime Image
@@ -182,21 +157,62 @@ RUN conda clean -ya
 FROM builder AS final
 
 # Arguments for MindSpeed-LLM
-ARG MINDSPEED_LLM_BRANCH=26.0.0
-ARG MINDSPEED_BRANCH=26.0.0_core_r0.12.1
+ARG MINDSPEED_LLM_BRANCH=26.1.0
+ARG MINDSPEED_BRANCH=26.1.0_core_r0.12.1
 ARG MEGATRON_BRANCH=core_v0.12.1
+ARG FLASH_LINEAR_ATTENTION_NPU_BRANCH=v26.1.0
+ARG FLA_NPU_SOC=ascend910b
+ARG FLA_NPU_OPS="causal_conv1d,chunk_bwd_dv_local,chunk_bwd_dqkwg,chunk_gated_delta_rule_bwd_dhu,prepare_wy_repr_bwd_da,prepare_wy_repr_bwd_full,chunk_fwd_o,chunk_gated_delta_rule_fwd_h,recurrent_gated_delta_rule,recompute_wu_fwd"
 
 WORKDIR /workspace
 
 # Disable Git SSL verification (before cloning)
 RUN git config --global http.sslVerify false
 
+RUN if command -v apt-get >/dev/null 2>&1; then \
+        apt-get update && \
+        apt-get install -y --no-install-recommends patch gawk && \
+        rm -rf /var/lib/apt/lists/*; \
+    elif command -v yum >/dev/null 2>&1; then \
+        yum install -y patch gawk && \
+        yum clean all; \
+    else \
+        echo "No supported package manager found"; \
+        exit 1; \
+    fi
+
+RUN python -m pip install --no-cache-dir PyYAML
+
+RUN git clone https://github.com/flashserve/flash-linear-attention-npu.git && \
+    cd flash-linear-attention-npu && \
+    git checkout ${FLASH_LINEAR_ATTENTION_NPU_BRANCH}
+
+RUN cd flash-linear-attention-npu && \
+    if [ -f /usr/local/Ascend/ascend-toolkit/set_env.sh ]; then \
+        source /usr/local/Ascend/ascend-toolkit/set_env.sh; \
+    elif [ -f /usr/local/Ascend/cann/set_env.sh ]; then \
+        source /usr/local/Ascend/cann/set_env.sh; \
+    else \
+        echo "ERROR: CANN set_env.sh not found"; \
+        exit 1; \
+    fi && \
+    bash build.sh --soc=${FLA_NPU_SOC} --pkg --ops=${FLA_NPU_OPS} && \
+    ./build_out/cann-*.run && \
+    cd torch_custom/fla_npu && \
+    bash build.sh
+
 # Install MindSpeed
 RUN git clone https://gitcode.com/ascend/MindSpeed.git && \
     cd MindSpeed && \
     git checkout ${MINDSPEED_BRANCH} && \
-    pip3 install -r requirements.txt && \
-    pip3 install -e .
+    pip3 install --no-cache-dir -r requirements.txt && \
+    pip3 install --no-cache-dir -e .
+
+# Install FSDPTurbo
+RUN git clone https://gitcode.com/Ascend/FSDPTurbo.git && \
+    cd FSDPTurbo && \
+    pip3 install --no-cache-dir -e . && \
+    cd ..
 
 # Install MindSpeed-LLM and Megatron-LM
 RUN git clone https://gitcode.com/ascend/MindSpeed-LLM.git && \
@@ -207,16 +223,15 @@ RUN git clone https://gitcode.com/ascend/MindSpeed-LLM.git && \
     cd ../MindSpeed-LLM && \
     git checkout ${MINDSPEED_LLM_BRANCH} && \
     mkdir logs && \
-    pip3 install -r requirements.txt
+    pip3 install --no-cache-dir -r requirements.txt
 
 # Set working directory
 WORKDIR /workspace/MindSpeed-LLM
 
 # Auto-run on login
 RUN echo 'cd /workspace/MindSpeed-LLM' >> /root/.bashrc && \
-    echo '. /opt/conda/etc/profile.d/conda.sh' >> /root/.bashrc && \
-    echo 'conda activate base' >> /root/.bashrc
+    echo '[ -f /usr/local/Ascend/ascend-toolkit/set_env.sh ] && source /usr/local/Ascend/ascend-toolkit/set_env.sh' >> /root/.bashrc && \
+    echo '[ -f /usr/local/Ascend/nnal/atb/set_env.sh ] && source /usr/local/Ascend/nnal/atb/set_env.sh' >> /root/.bashrc
 
-# Environment variables
-ENV PATH=/opt/conda/bin:$PATH
+    # Environment variables
 ENV ASCEND_TOOLKIT_HOME=/usr/local/Ascend/ascend-toolkit

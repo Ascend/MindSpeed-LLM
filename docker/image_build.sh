@@ -30,13 +30,28 @@ NPU_TYPE="910B"
 IMAGE_NAME=""
 OS="openEuler24.03"
 BASE_IMAGE=""
-PYTHON_VERSION="3.11"
+PYTHON_VERSION="3.12"
 TORCH_VERSION="2.7.1"
-TORCH_NPU_VERSION="2.7.1"
-BASE_IMAGE_VERSION="9.0.0"
-MINDSPEED_LLM_BRANCH="26.0.0"
-MINDSPEED_BRANCH="26.0.0_core_r0.12.1"
+TORCH_NPU_VERSION="2.7.1.post8"
+BASE_IMAGE_VERSION="9.1.0"
+MINDSPEED_LLM_BRANCH="26.1.0"
+MINDSPEED_BRANCH="26.1.0_core_r0.12.1"
 MEGATRON_BRANCH="core_v0.12.1"
+TRITON_ASCEND_VERSION="3.2.2"
+FLASH_LINEAR_ATTENTION_NPU_BRANCH="v26.1.0"
+FLA_NPU_SOC=""
+FLA_NPU_OPS=(
+    causal_conv1d
+    chunk_bwd_dv_local
+    chunk_bwd_dqkwg
+    chunk_gated_delta_rule_bwd_dhu
+    prepare_wy_repr_bwd_da
+    prepare_wy_repr_bwd_full
+    chunk_fwd_o
+    chunk_gated_delta_rule_fwd_h
+    recurrent_gated_delta_rule
+    recompute_wu_fwd
+)
 NO_CACHE=""
 NPU_TYPE_EXPLICIT=false
 OS_EXPLICIT=false
@@ -51,40 +66,44 @@ Usage: $0 [OPTIONS]
 Build MindSpeed LLM Docker Image
 
 Required:
-    -t, --npu-type TYPE      NPU type: A3 or 910B
+    -t, --npu-type TYPE      NPU type: A3, 910B, or 950
                              Auto detected from --base-image if not explicitly specified
 
 Optional:
     -i, --image-name NAME    Custom output image full name
                              Default rule: mindspeed-llm:{version}-cann{cann_ver}-torch_npu{torch_npu_ver}-{chip}-{os}-py{py_ver}-{arch}
     -o, --os OS              OS type: openEuler24.03 or ubuntu22.04 (default: openEuler24.03)
-    -n, --no-cache           Build without using Docker build cache
+    --no-cache               Build without using Docker build cache
     --base-image IMAGE       Full base image name, passed directly to FROM as-is
-                             Example: swr.cn-south-1.myhuaweicloud.com/ascendhub/cann:9.0.0-a3-openeuler24.03-py3.11
-    --base-image-version VER CANN base image version (default: 9.0.0)
-    --python-version VER     Python version (default: 3.11)
+                             Example: swr.cn-south-1.myhuaweicloud.com/ascendhub/cann:9.1.0-950-openeuler24.03-py3.12
+    --base-image-version VER CANN base image version (default: 9.1.0)
+    --python-version VER     Python version (default: 3.12)
     --torch-version VER      PyTorch version for online installation (default: 2.7.1)
-    --torch-npu-version VER  torch-npu version for online installation (default: 2.7.1)
-    --mindspeed-llm-branch   MindSpeed-LLM git branch/version (default: 26.0.0)
-    --mindspeed-branch       MindSpeed git branch/version (default: 26.0.0_core_r0.12.1)
+    --torch-npu-version VER  TorchNPU package version (default: 2.7.1.post8)
+    --mindspeed-llm-branch   MindSpeed-LLM git branch/version (default: 26.1.0)
+    --mindspeed-branch       MindSpeed git branch/version (default: 26.1.0_core_r0.12.1)
     --megatron-branch        Megatron-LM git branch/version (default: core_v0.12.1)
+    --triton-ascend-version  Triton-Ascend version (default: 3.2.2)
+    --fla-npu-branch VER             flash-linear-attention-npu git branch/version (default: v26.1.0)
+    --fla-npu-soc SOC                flash-linear-attention-npu build soc. Default is mapped from NPU type:
     --cleanup-on-fail        Clean up dangling <none> images/containers when build fails
     -h, --help               Show this help message and exit
 
 Image Tag Convention:
     v{mindspeed_llm_branch}-cann{base_image_version}-torch_npu{torch_npu_version}-{npu_type_lower}-{os}-py{python_version}-{arch}
     Example:
-        v26.0.0-cann9.0.0-torch_npu2.7.1-a3-openeuler24.03-py3.11-aarch64
-        v26.0.0-cann9.0.0-torch_npu2.7.1-910b-ubuntu22.04-py3.11-x86_64
+        v26.1.0-cann9.1.0-torch_npu2.7.1.post8-a3-openeuler24.03-py3.12-aarch64
+        v26.1.0-cann9.1.0-torch_npu2.7.1.post8-950-ubuntu22.04-py3.12-x86_64
 
 Examples:
     bash $0 -t A3
     bash $0 -t 910B
+    bash $0 -t 950
     bash $0 -t A3 -o openEuler24.03
-    bash $0 -t A3 --torch-version 2.7.1 --torch-npu-version 2.7.1
-    bash $0 -t A3 --base-image-version 9.0.0
-    bash $0 -t A3 --base-image swr.cn-south-1.myhuaweicloud.com/ascendhub/cann:9.0.0-a3-openeuler24.03-py3.11
-    bash $0 -t A3 -i myproject/mindspeed-llm:v26.0.0-a3
+    bash $0 -t A3 --torch-version 2.7.1 --torch-npu-version 2.7.1.post8
+    bash $0 -t A3 --base-image-version 9.1.0
+    bash $0 --base-image swr.cn-south-1.myhuaweicloud.com/ascendhub/cann:9.1.0-950-openeuler24.03-py3.12
+    bash $0 -t 950 -i myproject/mindspeed-llm:v26.1.0-950
     bash $0 -t A3 --no-cache --cleanup-on-fail
 EOF
 }
@@ -103,6 +122,8 @@ parse_base_image_tag() {
         DETECTED_NPU_TYPE="910b"
     elif [[ "$tag_lower" == *"-a3-"* ]] || [[ "$tag_lower" == *"-a3-py"* ]]; then
         DETECTED_NPU_TYPE="a3"
+    elif [[ "$tag_lower" == *"-950-"* ]] || [[ "$tag_lower" == *"-950-py"* ]]; then
+        DETECTED_NPU_TYPE="950"
     fi
 
     if [[ "$tag_lower" == *"openeuler24.03"* ]]; then
@@ -121,16 +142,19 @@ while [[ $# -gt 0 ]]; do
         -t|--npu-type)          NPU_TYPE="$2"; NPU_TYPE_EXPLICIT=true; shift 2 ;;
         -i|--image-name)        IMAGE_NAME="$2"; shift 2 ;;
         -o|--os)                OS="$2"; OS_EXPLICIT=true; shift 2 ;;
-        -n|--no-cache)          NO_CACHE="--no-cache"; shift ;;
+        --no-cache)             NO_CACHE="--no-cache"; shift ;;
         --mindspeed-llm-branch) MINDSPEED_LLM_BRANCH="$2"; shift 2 ;;
         --mindspeed-branch)     MINDSPEED_BRANCH="$2"; shift 2 ;;
         --megatron-branch)      MEGATRON_BRANCH="$2"; shift 2 ;;
+        --triton-ascend-version) TRITON_ASCEND_VERSION="$2"; shift 2 ;;
         --base-image)           BASE_IMAGE="$2"; shift 2 ;;
         --python-version)       PYTHON_VERSION="$2"; PYTHON_VERSION_EXPLICIT=true; shift 2 ;;
         --torch-version)        TORCH_VERSION="$2"; shift 2 ;;
         --torch-npu-version)    TORCH_NPU_VERSION="$2"; shift 2 ;;
         --base-image-version)   BASE_IMAGE_VERSION="$2"; BASE_IMAGE_VERSION_EXPLICIT=true; shift 2 ;;
         --cleanup-on-fail)      CLEANUP_ON_FAIL=true; shift ;;
+        --fla-npu-branch)       FLASH_LINEAR_ATTENTION_NPU_BRANCH="$2"; shift 2 ;;
+        --fla-npu-soc)          FLA_NPU_SOC="$2"; shift 2 ;;
         -h|--help)              show_help; exit 0 ;;
         *)                      echo "Unknown argument: $1"; show_help; exit 1 ;;
     esac
@@ -167,9 +191,17 @@ fi
 NPU_TYPE_LOWER=$(echo "$NPU_TYPE" | tr '[:upper:]' '[:lower:]')
 OS=$(echo "$OS" | tr '[:upper:]' '[:lower:]')
 
-if [ "$NPU_TYPE_LOWER" != "a3" ] && [ "$NPU_TYPE_LOWER" != "910b" ]; then
-    echo "Error: NPU type must be a3 or 910b"
+if [ "$NPU_TYPE_LOWER" != "a3" ] && [ "$NPU_TYPE_LOWER" != "910b" ] && [ "$NPU_TYPE_LOWER" != "950" ]; then
+    echo "Error: NPU type must be a3, 910b, or 950"
     exit 1
+fi
+
+if [ -z "$FLA_NPU_SOC" ]; then
+    case "$NPU_TYPE_LOWER" in
+        910b) FLA_NPU_SOC="ascend910b" ;;
+        a3)   FLA_NPU_SOC="ascend910_93" ;;
+        950)  FLA_NPU_SOC="ascend950" ;;
+    esac
 fi
 
 if [ "$OS" != "ubuntu22.04" ] && [ "$OS" != "openeuler24.03" ]; then
@@ -205,6 +237,11 @@ BUILD_ARGS="$BUILD_ARGS --build-arg TORCH_NPU_VERSION=${TORCH_NPU_VERSION}"
 BUILD_ARGS="$BUILD_ARGS --build-arg MINDSPEED_LLM_BRANCH=${MINDSPEED_LLM_BRANCH}"
 BUILD_ARGS="$BUILD_ARGS --build-arg MINDSPEED_BRANCH=${MINDSPEED_BRANCH}"
 BUILD_ARGS="$BUILD_ARGS --build-arg MEGATRON_BRANCH=${MEGATRON_BRANCH}"
+BUILD_ARGS="$BUILD_ARGS --build-arg TRITON_ASCEND_VERSION=${TRITON_ASCEND_VERSION}"
+BUILD_ARGS="$BUILD_ARGS --build-arg FLASH_LINEAR_ATTENTION_NPU_BRANCH=${FLASH_LINEAR_ATTENTION_NPU_BRANCH}"
+BUILD_ARGS="$BUILD_ARGS --build-arg FLA_NPU_SOC=${FLA_NPU_SOC}"
+FLA_NPU_OPS_CSV=$(IFS=,; echo "${FLA_NPU_OPS[*]}")
+BUILD_ARGS="$BUILD_ARGS --build-arg FLA_NPU_OPS=${FLA_NPU_OPS_CSV}"
 
 if [ -n "$BASE_IMAGE" ]; then
     BUILD_ARGS="$BUILD_ARGS --build-arg BASE_IMAGE=${BASE_IMAGE}"
@@ -226,10 +263,14 @@ if [ -n "$BASE_IMAGE" ]; then
 fi
 echo "Python Version:     ${PYTHON_VERSION}"
 echo "PyTorch Version:    ${TORCH_VERSION}"
-echo "torch-npu Version:  ${TORCH_NPU_VERSION}"
+echo "TorchNPU Version:   ${TORCH_NPU_VERSION}"
 echo "MindSpeed LLM Ver:  ${MINDSPEED_LLM_BRANCH}"
 echo "MindSpeed Ver:      ${MINDSPEED_BRANCH}"
 echo "Megatron Ver:       ${MEGATRON_BRANCH}"
+echo "Triton-Ascend Ver:  ${TRITON_ASCEND_VERSION}"
+echo "FLA NPU Ver:           ${FLASH_LINEAR_ATTENTION_NPU_BRANCH}"
+echo "FLA NPU SOC:           ${FLA_NPU_SOC}"
+echo "FLA NPU Ops:           ${FLA_NPU_OPS_CSV}"
 echo "No Cache:           ${NO_CACHE:-No}"
 echo "=========================================="
 
