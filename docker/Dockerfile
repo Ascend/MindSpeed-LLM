@@ -1,15 +1,15 @@
 # ============================================
 # MindSpeed LLM Docker Image
-# NPU Type: Configurable (910b, a3, etc.)
+# NPU Type: Configurable (910b, a3, 950)
 # Supports: x86_64 and aarch64 (ARM)
 # Supports: openEuler and Ubuntu
 # ============================================
 
 # Global arguments for base image selection
 ARG OS=openeuler24.03
-ARG BASE_IMAGE_VERSION=9.0.0
+ARG BASE_IMAGE_VERSION=9.1.0
 ARG NPU_TYPE=910b
-ARG PYTHON_VERSION=3.11
+ARG PYTHON_VERSION=3.12
 ARG BASE_IMAGE=""
 
 # ------------------------------
@@ -36,17 +36,6 @@ RUN ARCH=$(uname -m) && \
         echo "ERROR: Unsupported architecture: $ARCH"; \
         exit 1; \
     fi
-
-# Configure DNS for stable network connection
-RUN if [ -f /etc/resolv.conf ]; then \
-        echo "Existing resolv.conf:" && cat /etc/resolv.conf; \
-    else \
-        echo "No resolv.conf found, creating one..."; \
-    fi && \
-    echo "nameserver 114.114.114.114" > /etc/resolv.conf && \
-    echo "nameserver 8.8.8.8" >> /etc/resolv.conf && \
-    echo "nameserver 223.5.5.5" >> /etc/resolv.conf && \
-    echo "Updated resolv.conf:" && cat /etc/resolv.conf
 
 # Configure repository based on OS_FAMILY (openeuler/ubuntu)
 COPY configure_repo.sh /tmp/configure_repo.sh
@@ -77,7 +66,8 @@ RUN echo "Installing system dependencies..." && \
             g++ \
             make \
             cmake \
-        && apt-get clean; \
+        && apt-get clean \
+        && rm -rf /var/lib/apt/lists/*; \
     else \
         echo "ERROR: Unsupported OS: $OS_FAMILY"; \
         exit 1; \
@@ -101,7 +91,8 @@ RUN PYTHON_INC=$(python3 -c "import sysconfig; print(sysconfig.get_path('include
             apt-get update -o Acquire::https::Verify-Peer=false -o Acquire::https::Verify-Host=false && \
             apt-get install -y -o Acquire::https::Verify-Peer=false -o Acquire::https::Verify-Host=false python${PYTHON_VER}-dev || \
             apt-get install -y -o Acquire::https::Verify-Peer=false -o Acquire::https::Verify-Host=false python3-dev; \
-            apt-get clean; \
+            apt-get clean && \
+            rm -rf /var/lib/apt/lists/*; \
         fi; \
     else \
         echo "CANN built-in Python already provides Python.h and python3-config"; \
@@ -116,15 +107,13 @@ RUN PYTHON_INC=$(python3 -c "import sysconfig; print(sysconfig.get_path('include
 FROM base AS builder
 
 ARG TORCH_VERSION=2.7.1
-ARG TORCH_NPU_VERSION=2.7.1
-ARG TRITON_ASCEND_VERSION=3.2.1
+ARG TORCH_NPU_VERSION=2.7.1.post8
+ARG TRITON_ASCEND_VERSION=3.2.2
 
 WORKDIR /tmp
 
-# Configure pip source
-RUN pip config set global.index-url https://repo.huaweicloud.com/repository/pypi/simple && \
-    pip config set global.extra-index-url "https://mirrors.aliyun.com/pypi/simple/ https://pypi.douban.com/simple/ https://pypi.tuna.tsinghua.edu.cn/simple/" && \
-    pip config set global.trusted-host "repo.huaweicloud.com mirrors.aliyun.com pypi.douban.com pypi.tuna.tsinghua.edu.cn"
+# Configure a single default pip source
+RUN pip config set global.index-url https://repo.huaweicloud.com/repository/pypi/simple
 
 # Install PyTorch and torch_npu (ONLINE INSTALL ONLY)
 RUN echo "Installing PyTorch and torch_npu from PyPI..." && \
@@ -151,7 +140,13 @@ RUN echo "Installing PyTorch and torch_npu from PyPI..." && \
 
 # Install Triton-Ascend
 RUN echo "Installing Triton-Ascend..." && \
-    pip install --no-cache-dir triton-ascend==${TRITON_ASCEND_VERSION} --extra-index-url=https://triton-ascend.osinfra.cn/pypi/simple
+    mkdir -p /tmp/triton-ascend && \
+    pip download --no-cache-dir --no-deps \
+        triton-ascend==${TRITON_ASCEND_VERSION} \
+        --index-url=https://mirrors.huaweicloud.com/ascend/repos/pypi \
+        --dest /tmp/triton-ascend && \
+    pip install --no-cache-dir /tmp/triton-ascend/triton_ascend-*.whl && \
+    rm -rf /tmp/triton-ascend
 
 # Clean pip cache
 RUN pip cache purge
@@ -162,8 +157,8 @@ RUN pip cache purge
 FROM builder AS final
 
 # Arguments for MindSpeed-LLM
-ARG MINDSPEED_LLM_BRANCH=26.0.0
-ARG MINDSPEED_BRANCH=26.0.0_core_r0.12.1
+ARG MINDSPEED_LLM_BRANCH=26.1.0
+ARG MINDSPEED_BRANCH=26.1.0_core_r0.12.1
 ARG MEGATRON_BRANCH=core_v0.12.1
 ARG FLASH_LINEAR_ATTENTION_NPU_BRANCH=v26.1.0
 ARG FLA_NPU_SOC=ascend910b
@@ -176,10 +171,10 @@ RUN git config --global http.sslVerify false
 
 RUN if command -v apt-get >/dev/null 2>&1; then \
         apt-get update && \
-        apt-get install -y --no-install-recommends patch && \
+        apt-get install -y --no-install-recommends patch gawk && \
         rm -rf /var/lib/apt/lists/*; \
     elif command -v yum >/dev/null 2>&1; then \
-        yum install -y patch && \
+        yum install -y patch gawk && \
         yum clean all; \
     else \
         echo "No supported package manager found"; \
