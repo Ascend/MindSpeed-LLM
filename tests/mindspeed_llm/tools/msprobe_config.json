@@ -1,0 +1,17 @@
+{
+  "task": "statistics",
+  "dump_path": "./msprobe_dump",
+  "rank": [0],
+  "step": [0],
+  "level": "L0",
+  "async_dump": false,
+  "precision": "low",
+  "extra_info": true,
+  "statistics": {
+    "scope": [],
+    "list": [],
+    "tensor_list": [],
+    "data_mode": ["all"],
+    "summary_mode": "statistics"
+  }
+}

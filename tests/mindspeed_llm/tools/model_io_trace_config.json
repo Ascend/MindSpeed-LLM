@@ -1,0 +1,22 @@
+{
+  "output_format": "text",
+  "ranks": [0],
+  "steps": [0],
+  "module": {
+    "leaf_only": true,
+    "include": [],
+    "exclude": [],
+    "forward": true,
+    "backward": true
+  },
+  "tensor": {
+    "mode": "statistics",
+    "statistics": ["abs_sum", "abs_mean", "max", "min"]
+  },
+  "batch": {
+    "enabled": true,
+    "fields": ["input_ids", "tokens", "labels", "attention_mask", "position_ids"],
+    "max_rows": 2,
+    "max_tokens": 64
+  }
+}

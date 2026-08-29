@@ -1,0 +1,129 @@
+# Copyright (c) 2025, Huawei Technologies Co., Ltd. All rights reserved.
+from typing import Optional, Any
+import torch
+
+from fsdp_turbo.distributed.fully_shard_parallel.fully_shard_parallel import fully_shard_parallel_modules
+from fsdp_turbo.distributed.tensor_parallel.tensor_parallel import tensor_parallel_modules
+from fsdp_turbo.distributed.expert_parallel.expert_fully_shard_parallel import expert_fully_shard_modules
+from fsdp_turbo.memory.recompute.recompute import recompute_modules
+from fsdp_turbo.memory.chunk_batch.chunk_batch import chunk_batch_modules
+from mindspeed_llm.fsdp2.distributed.parallel_state import init_parallel_state
+from mindspeed_llm.fsdp2.distributed.parallel_engine_config import ParallelEngineConfig
+from mindspeed_llm.fsdp2.distributed.context_parallel.context_parallel_manager import apply_context_parallelize_modules
+from mindspeed_llm.fsdp2.distributed.expert_parallel.expert_parallel import (
+    expert_parallelize_modules,
+)
+from mindspeed_llm.fsdp2.models.model_loader import WeightLoader
+from mindspeed_llm.fsdp2.utils.logging import get_logger
+
+logger = get_logger(__name__)
+
+
+class MindSpeedParallelEngine(torch.nn.Module):
+    def __init__(
+        self,
+        config: ParallelEngineConfig,
+        model: torch.nn.Module,
+        init_device: str = "cpu",
+        weights_path: Optional[str] = None,
+        hf_config: Optional[Any] = None,
+    ):
+        super().__init__()
+        self.config = config
+        self.model = model
+        self.init_device = init_device
+        self.weights_path = weights_path
+        self.hf_config = hf_config
+
+        self.parallel_state = init_parallel_state(self.config)
+        self.apply_quantization_modules()
+        self.apply_tp_modules()
+        self.apply_ep_modules()
+        self.apply_cp_modules()
+        self.apply_recompute_modules()
+        self.apply_chunk_batch_modules()
+        self.apply_fsdp_modules()
+
+        # For meta device: load weights after fsdp wrapping
+        if self.init_device == "meta":
+            logger.info_rank0("> Loading weights after FSDP wrapping...")
+            WeightLoader.load(model=self.model, weights_path=self.weights_path, device=None, hf_config=self.hf_config)
+
+    def apply_fsdp_modules(self):
+        self.model = fully_shard_parallel_modules(
+            self.model, self.parallel_state.get_fsdp_device_mesh(), self.config.fsdp_plan
+        )
+
+    def apply_tp_modules(self):
+        if self.config.tensor_parallel_size == 1:
+            return
+        self.model = tensor_parallel_modules(self.model, self.parallel_state.get_tp_device_mesh(), self.config.tp_plan)
+
+    def apply_ep_modules(self):
+        if self.config.expert_parallel_size > 1:
+            self.model = expert_parallelize_modules(
+                self.model, self.parallel_state.get_ep_device_mesh(), self.config.ep_plan
+            )
+            self.model = expert_fully_shard_modules(
+                self.model, self.parallel_state.get_efsdp_device_mesh(), self.config.ep_plan, self.config.fsdp_plan
+            )
+
+    def apply_cp_modules(self):
+        VALID_CP_TYPES = ("ulysses", "ring", "kvallgather")
+        cp_size = self.config.context_parallel_size
+        cp_type = self.config.context_parallel_type
+
+        if cp_size > 1:
+            if cp_type not in VALID_CP_TYPES:
+                raise ValueError(f"context_parallel_type must be one of {VALID_CP_TYPES}")
+            if cp_type == "ulysses" and self.model.config.num_attention_heads % cp_size != 0:
+                raise ValueError(f"num_attention_heads must be divisible by context_parallel_size (current: {cp_size})")
+            apply_context_parallelize_modules(self.model, self.config.cp_plan)
+
+    def apply_recompute_modules(self):
+        if not self.config.recompute:
+            return
+        self.model = recompute_modules(self.model, self.config.recompute_plan)
+
+    def apply_chunk_batch_modules(self):
+        if not self.config.enable_chunk_batch:
+            return
+        self.model = chunk_batch_modules(self.model, self.config.chunkbatch_plan)
+
+    def apply_quantization_modules(self):
+        """Apply quantization based on quantization_format + quantization_recipe."""
+        if not self.config.quantization_plan.quant_recipe:
+            return
+        try:
+            if self.config.recompute:
+                self.config.quantization_plan.fsdp_low_precision_all_gather_mode = "all"
+
+            from fsdp_turbo.quantization.converter.model_converter import build_model_converter
+
+            model_converters = build_model_converter(self.config.quantization_plan)
+            model_converters.convert(self.model)
+        except Exception as e:
+            raise RuntimeError("Failed to convert quantization plan") from e
+
+    def apply_optimizer_hook(self, optimizer: torch.optim.Optimizer):
+        if not self.config.quantization_plan.quant_recipe:
+            return
+        from mindspeed.fsdp.quantization.core.cache import hook_optimizer_step
+
+        hook_optimizer_step(self.model, optimizer)
+
+    def apply_ngram_hook(self):
+        model_type = str(getattr(self.hf_config, "model_type", "") or "").lower()
+        if model_type != "longcat_flash_ngram":
+            return
+
+        if hasattr(self.model, "_install_ngram_embedding_early_post_backward"):
+            self.model._install_ngram_embedding_early_post_backward()
+            logger.info_rank0("> Applied LongCat-Flash-Lite N-gram embedding FSDP2 optimization.")
+
+    def apply_model_hooks(self, optimizer: torch.optim.Optimizer):
+        self.apply_optimizer_hook(optimizer)
+        self.apply_ngram_hook()
+
+    def forward(self, *args, **kwargs):
+        return self.model(*args, **kwargs)
