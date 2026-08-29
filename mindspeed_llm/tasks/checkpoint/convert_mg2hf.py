@@ -73,6 +73,30 @@ class Mg2HfConvert(Convert):
         self.ep_rank_list = list(range(self.load_model.expert_model_parallel_size))
         self.pp_rank_list = list(range(self.load_model.pipeline_model_parallel_size))
 
+        checkpoint_layout = getattr(self.load_model, 'pipeline_model_parallel_layout', None)
+        checkpoint_num_layer_list = getattr(self.load_model, 'num_layer_list', None)
+        if checkpoint_layout is not None and checkpoint_num_layer_list is not None:
+            raise ValueError(
+                "The checkpoint contains both num_layer_list and pipeline_model_parallel_layout; "
+                "the two layer-distribution modes are mutually exclusive."
+            )
+        if checkpoint_layout is not None:
+            if self.pipeline_model_parallel_layout is not None and self._layout_as_text(
+                self.pipeline_model_parallel_layout
+            ) != self._layout_as_text(checkpoint_layout):
+                raise ValueError(
+                    "pipeline_model_parallel_layout from the command line does not match the checkpoint: "
+                    f"command_line={self.pipeline_model_parallel_layout}, checkpoint={checkpoint_layout}"
+                )
+            self.pipeline_model_parallel_layout = checkpoint_layout
+        if self.pipeline_model_parallel_layout is not None and (
+            self.num_layer_list is not None or checkpoint_num_layer_list is not None
+        ):
+            raise ValueError(
+                "num_layer_list and pipeline_model_parallel_layout are mutually exclusive across the command line "
+                "and checkpoint arguments"
+            )
+
         # model arguments
         self.noop_layers = (
             ",".join(map(str, args.noop_layers)) if isinstance(args.noop_layers, set) else args.noop_layers
@@ -86,15 +110,27 @@ class Mg2HfConvert(Convert):
         self.layeridx_vpprank = defaultdict()
         self.layeridx_pprank = defaultdict()
 
-        if getattr(self.load_model, 'num_layer_list', None) is not None:
-            self.num_layer_list = list(map(int, self.load_model.num_layer_list.split(',')))
+        if checkpoint_num_layer_list is not None:
+            self.num_layer_list = self._as_int_list(checkpoint_num_layer_list)
+        elif self.pipeline_model_parallel_layout is not None:
+            self.num_layer_list = None
         else:
             self.num_layer_list = [
                 self.load_model.num_layers // self.load_model.pipeline_model_parallel_size
             ] * self.load_model.pipeline_model_parallel_size
         if not getattr(self.load_model, 'num_experts', None):
             self.first_k_dense_replace = self.load_model.num_layers
-        if getattr(self.load_model, 'num_layers_per_virtual_pipeline_stage', None) is not None:
+        if self.pipeline_model_parallel_layout is not None:
+            self.initialize_pipeline_layout(self.load_model.num_layers, self.mtp_num_layers)
+            layout_layer_mapping = self.get_layout_layer_mapping()
+            if self.uses_virtual_pipeline():
+                self.vpprank_layer_idxs = layout_layer_mapping
+                self.calc_layout_layeridx_vpprank()
+            else:
+                for pp_rank in range(self.pipeline_model_parallel_size):
+                    self.pprank_layer_idxs[pp_rank] = layout_layer_mapping[pp_rank][0]
+                self.calc_layeridx_pprank()
+        elif getattr(self.load_model, 'num_layers_per_virtual_pipeline_stage', None) is not None:
             self.num_layers_per_virtual_pipeline_stage = self.load_model.num_layers_per_virtual_pipeline_stage
             self.vpp_size = (
                 self.load_model.num_layers
@@ -139,10 +175,10 @@ class Mg2HfConvert(Convert):
             )
 
     def _valid_parameter(self):
-        if self.num_layer_list is None:
+        if self.pipeline_layout is None and self.num_layer_list is None:
             if self.load_model.num_layers % self.pipeline_model_parallel_size != 0:
                 raise ValueError("num_layers must be divisible by pp_size")
-        else:
+        elif self.pipeline_layout is None:
             if sum(self.num_layer_list) != self.load_model.num_layers:
                 raise ValueError("Sum of num_layer_list must equal num_layers")
         if self.last_save_hf_layer == -1:
@@ -195,8 +231,16 @@ class Mg2HfConvert(Convert):
                 return self.vpprank_layer_idxs[0][1][-1]
 
         # {pp0:{[0,1],[4,5]}, pp1:{[2,3],[]}}  --> last hf: 3
+        if self.pipeline_layout is not None and self.uses_virtual_pipeline():
+            return max(
+                layer
+                for pp_mapping in self.vpprank_layer_idxs.values()
+                for layer_list in pp_mapping.values()
+                for layer in layer_list
+            )
+
         for pp_rank in range(self.pipeline_model_parallel_size - 1, -1, -1):
-            if getattr(self.load_model, 'num_layers_per_virtual_pipeline_stage', None) is not None:
+            if self.uses_virtual_pipeline():
                 for vpp_rank in range(self.vpp_size - 1, -1, -1):
                     layer_list = self.vpprank_layer_idxs[pp_rank][vpp_rank]
                     if layer_list:
@@ -320,18 +364,7 @@ class Mg2HfConvert(Convert):
 
     def calc_layeridx_pprank(self):
         """hf layer -> pp_rank & local layer index, {layer5: (pp2, local_layer2)}"""
-        pp_local_layer_idx = defaultdict()
-
-        for pp_rank in range(self.pipeline_model_parallel_size):
-            pp_local_layer_idx[pp_rank] = list(range(self.num_layer_list[pp_rank]))
-
-        if self.noop_layers is not None:
-            noop_list = list(map(int, self.noop_layers.split(",")))
-            num_layers_each_pp = self.load_model.num_layers // self.pipeline_model_parallel_size
-            for num_noop_layers in noop_list:
-                pp_idx = num_noop_layers // num_layers_each_pp
-                local_noop_idx = num_noop_layers % num_layers_each_pp
-                pp_local_layer_idx[pp_idx].remove(local_noop_idx)
+        pp_local_layer_idx = self.generate_pp_local_layer_idx()
 
         for pp_rank, layeridxs in self.pprank_layer_idxs.items():
             for idx, layer in enumerate(layeridxs):
@@ -412,6 +445,16 @@ class Mg2HfConvert(Convert):
                             if hf_layer > min_noop_layer:
                                 before_nums = sum(noop_layers_list < hf_layer)
                                 self.layeridx_vpprank[hf_layer - before_nums] = (pp_rank, vpp_rank, local_idx)
+
+    def calc_layout_layeridx_vpprank(self):
+        """Map each HF decoder layer to its flexible-layout PP/VPP-local position."""
+        for pp_rank, vpp_mapping in self.vpprank_layer_idxs.items():
+            for vpp_rank, layer_list in vpp_mapping.items():
+                for local_idx, hf_layer in enumerate(layer_list):
+                    self.layeridx_vpprank[hf_layer] = (pp_rank, vpp_rank, local_idx)
+        logger.info(
+            f"###### HF layer to (pp_rank, vpp_rank, local_idx) flexible-layout mapping: {self.layeridx_vpprank}"
+        )
 
     def get_pt_path_by_tpppep_rank(self, iter_path, tp_rank, pp_rank=None, ep_rank=None):
         """get megatron weight path"""
@@ -1713,7 +1756,7 @@ class Mg2HfConvert(Convert):
 
         for pp_rank in self.pp_rank_list:
             mg_weights = defaultdict()
-            if self.num_layers_per_virtual_pipeline_stage is None:
+            if not self.uses_virtual_pipeline():
                 for tp_rank, ep_rank in product(self.tp_rank_list, self.ep_rank_list):
                     # if expert-tensor-parallel-size is set to 1, the weight files no longer satisfies the TP EP product format
                     # then it is necessary to avoid reading non-existent files

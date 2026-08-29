@@ -14,11 +14,13 @@
 # limitations under the License.
 
 import os
-import argparse
 from pathlib import Path
 from functools import wraps
 from mindspeed.features_manager.features_manager import MindSpeedFeaturesManager
-from mindspeed_llm.features_manager import FEATURES_LIST
+
+# Importing this module initializes MindSpeed-LLM's local feature registry.
+# The registration is a required side effect before register_features_args() runs.
+from mindspeed_llm import features_manager as _features_manager  # noqa: F401
 
 
 cur_file_dir = Path(__file__).absolute().parent
@@ -43,6 +45,7 @@ def extra_args_provider_decorator(extra_args_provider):
         1. Calls the original provider if it exists
         2. Adds MindSpeed-LLM v2 arguments via process_args_v2
     """
+
     @wraps(extra_args_provider)
     def wrapper(parser):
         if extra_args_provider is not None:
@@ -66,6 +69,7 @@ def parse_args_decorator(parse_args):
     Returns:
         Callable: Wrapped function that processes MindSpeed-LLM arguments.
     """
+
     @wraps(parse_args)
     def wrapper(extra_args_provider=None, ignore_unknown_args=False):
         decorated_provider = extra_args_provider_decorator(extra_args_provider)
@@ -123,8 +127,12 @@ def core_transformer_config_from_args_wrapper(fn):
         - MoE expert capacity factor settings
         - Custom layer distribution via num_layer_list
     """
+
     @wraps(fn)
     def wrapper(args, config_class=None):
+        if args.num_layer_list and getattr(args, 'pipeline_model_parallel_layout', None) is not None:
+            raise ValueError("--num-layer-list and --pipeline-model-parallel-layout are mutually exclusive.")
+
         config = fn(args, config_class)
         # Turn down batch_p2p_comm only when pp2vpp
         if args.pipeline_model_parallel_size == 2 and args.num_layers_per_virtual_pipeline_stage is not None:
@@ -144,7 +152,9 @@ def core_transformer_config_from_args_wrapper(fn):
             config.layer_offset = get_layer_offset(args.pipeline_model_parallel_size, config.num_layer_list)
             # validate num_layer_list
             if config.layer_offset[args.pipeline_model_parallel_size] != args.num_layers:
-                raise ValueError(f"Incorrect num_layer_list config since its sum({config.layer_offset[args.pipeline_model_parallel_size]} is unequal to total num layers({args.num_layers}).")
+                raise ValueError(
+                    f"Incorrect num_layer_list config since its sum({config.layer_offset[args.pipeline_model_parallel_size]} is unequal to total num layers({args.num_layers})."
+                )
         else:
             config.num_layer_list = None
 
@@ -202,11 +212,11 @@ def validate_args_v2_decorator(megatron_validate_args):
     def wrapper(args, defaults=None):
         if defaults is None:
             defaults = {}
-                      
+
         # make prev validation and copy some args.
         MindSpeedFeaturesManager.pre_validate_features_args(args)
 
-        # make megatron args validation then restore args thar are copied.
+        # make megatron args validation then restore args that are copied.
         args = megatron_validate_args(args, defaults)
 
         # make post validation after megatron validation.
@@ -216,6 +226,7 @@ def validate_args_v2_decorator(megatron_validate_args):
         MindSpeedFeaturesManager.validate_features_args(args=args)
 
         from mindspeed_llm.training.utils import print_args
+
         print_args('MindSpeed-LLM Arguments', args)
         return args
 

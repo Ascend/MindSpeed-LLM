@@ -158,7 +158,9 @@ def _transformer_block_build_layers(self):
     self.attention_layer_type = None
 
     def build_layer(layer_spec, layer_number):
-        global_layer_number = _get_layer_offset(args) + layer_number
+        pipeline_layout = getattr(self.config, "pipeline_model_parallel_layout", None)
+        layer_offset = _get_layer_offset(args) if pipeline_layout is None else pipeline_layout.get_layer_offset()
+        global_layer_number = layer_offset + layer_number
         # For dense and moe mix
         if args.num_experts and args.first_k_dense_replace and args.moe_layer_freq:
             if (global_layer_number - 1) >= args.first_k_dense_replace and (

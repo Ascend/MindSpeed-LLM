@@ -22,9 +22,9 @@ DATA_PATH="your data path"
 TOKENIZER_PATH="your tokenizer path"
 CKPT_LOAD_DIR="your model ckpt path"
 
-TP=2
-PP=8
-EP=64
+TP=1
+PP=4
+EP=128
 CP=1
 CP_TYPE='ulysses_cp_algo'
 NUM_LAYERS=78
@@ -82,8 +82,7 @@ MOE_ARGS="
     --moe-router-score-function sigmoid \
     --moe-router-enable-expert-bias \
     --moe-router-dtype fp32 \
-    --gemm-gradient-accumulation-fusion \
-    --num-layer-list "10,12,8,8,8,12,12,8"
+    --gemm-gradient-accumulation-fusion
 "
 
 
@@ -114,7 +113,7 @@ OTHERS_ARGS="
 
 PIPELINE_ARGS="
     --moe-fb-overlap \
-    --num-layers-per-virtual-pipeline-stage 2 \
+    --pipeline-model-parallel-layout Ett|(tttt|)*18ttttL \
 "
 
 
@@ -205,12 +204,12 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     $GPT_ARGS \
     $DATA_ARGS \
     $OUTPUT_ARGS \
-    $ROPE_ARGS \
     $MLA_ARGS \
-    $MEM_ARGS \
     $MOE_ARGS \
     $DSA_ARGS \
+    $PROFILE_ARGS \
+    $PIPELINE_ARGS \
     ${OTHERS_ARGS[@]} \
-      --save $CKPT_SAVE_DIR \
+    --save $CKPT_SAVE_DIR \
     --load $CKPT_LOAD_DIR \
     --distributed-backend nccl | tee logs/pretrain_glm52_744b_4k_A3_ptd.log

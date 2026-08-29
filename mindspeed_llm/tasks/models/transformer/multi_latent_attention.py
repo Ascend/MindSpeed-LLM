@@ -9,7 +9,6 @@ import torch
 import torch.nn.functional as F
 
 from mindspeed.core.tensor_parallel.random import CheckpointWithoutOutput
-from mindspeed.core.transformer.transformer_block import _get_layer_offset
 from mindspeed.utils import set_position_ids, get_position_ids
 from mindspeed.core.context_parallel.get_batch_utils import get_actual_seq_len, set_actual_seq_len
 from mindspeed.core.transformer.moe.moe_feature.fb_overlap.modules.attention import (
@@ -62,24 +61,20 @@ from mindspeed_llm.core.models.common.embeddings.rotary_pos_embedding import app
 logger = logging.getLogger(__name__)
 
 
-def _get_pipeline_layer_offset(args):
+def _get_pipeline_layer_offset(args, config=None, vp_rank=None):
     num_layers = args.num_layers
     pipeline_rank = parallel_state.get_pipeline_model_parallel_rank()
     pipeline_world_size = parallel_state.get_pipeline_model_parallel_world_size()
+    vp_world_size = parallel_state.get_virtual_pipeline_model_parallel_world_size()
+    if vp_world_size is None:
+        vp_world_size = getattr(config, "virtual_pipeline_model_parallel_size", None)
+    pipeline_layout = getattr(config, "pipeline_model_parallel_layout", None)
+    if vp_rank is None:
+        vp_rank = parallel_state.get_virtual_pipeline_model_parallel_rank()
 
-    # ------------------------------------------------------------
-    # Custom contiguous PP split controlled by --num-layer-list.
-    #
-    # Example:
-    #   --num-layers 10
-    #   --pipeline-model-parallel-size 2
-    #   --num-layer-list 6,4
-    #
-    # Then:
-    #   pp0 offset = 0
-    #   pp1 offset = 6
-    # ------------------------------------------------------------
     num_layer_list = getattr(args, "num_layer_list", None)
+    if num_layer_list is not None and pipeline_layout is not None:
+        raise ValueError("--num-layer-list and --pipeline-model-parallel-layout are mutually exclusive.")
 
     if num_layer_list is not None:
         if isinstance(num_layer_list, str):
@@ -108,12 +103,31 @@ def _get_pipeline_layer_offset(args):
                 "in this _get_layer_offset implementation."
             )
 
-        if parallel_state.get_virtual_pipeline_model_parallel_world_size() is not None:
+        if vp_world_size is not None:
             raise ValueError(
-                "--num-layer-list custom PP split is not supported with virtual pipeline "
-                "parallelism in this _get_layer_offset implementation."
+                "--num-layer-list does not support virtual pipeline parallelism; "
+                "use --pipeline-model-parallel-layout as the alternative layer-distribution mode."
             )
 
+    # Flexible pipeline layouts already own the authoritative decoder-layer
+    # ordering. In particular, their offset is VPP-major rather than a simple
+    # prefix sum of the total number of layers assigned to each PP rank.
+    if pipeline_layout is not None:
+        return int(pipeline_layout.get_layer_offset(vp_stage=vp_rank, pp_rank=pipeline_rank))
+
+    # ------------------------------------------------------------
+    # Custom contiguous PP split controlled by --num-layer-list.
+    #
+    # Example:
+    #   --num-layers 10
+    #   --pipeline-model-parallel-size 2
+    #   --num-layer-list 6,4
+    #
+    # Then:
+    #   pp0 offset = 0
+    #   pp1 offset = 6
+    # ------------------------------------------------------------
+    if num_layer_list is not None:
         return sum(num_layer_list[:pipeline_rank])
 
     # ------------------------------------------------------------
@@ -128,9 +142,8 @@ def _get_pipeline_layer_offset(args):
         else:
             offset = args.num_layers - (pipeline_rank + 1) * num_layers_per_dualpipe_chunk
 
-    elif parallel_state.get_virtual_pipeline_model_parallel_world_size() is not None:
-        vp_rank = parallel_state.get_virtual_pipeline_model_parallel_rank()
-        vp_size = parallel_state.get_virtual_pipeline_model_parallel_world_size()
+    elif vp_world_size is not None:
+        vp_size = vp_world_size
 
         total_num_layers = num_layers
         num_layers_per_virtual_rank = num_layers_per_pipeline_rank // vp_size
@@ -205,11 +218,12 @@ def _resolve_dsa_source_and_end(args, global_layer_number):
     return source, group_end
 
 
-def resolve_dsa_indexer_build_config(args, layer_number):
+def resolve_dsa_indexer_build_config(args, layer_number, config=None):
     """Resolve PP-local and global DSA Compute/Share metadata."""
 
     pp_rank = parallel_state.get_pipeline_model_parallel_rank()
-    layer_offset = _get_pipeline_layer_offset(args)
+    vp_rank = parallel_state.get_virtual_pipeline_model_parallel_rank()
+    layer_offset = _get_pipeline_layer_offset(args, config=config, vp_rank=vp_rank)
     local_layer_idx = layer_number - 1
     global_layer_number = layer_offset + layer_number
     global_layer_idx = global_layer_number - 1
@@ -228,6 +242,7 @@ def resolve_dsa_indexer_build_config(args, layer_number):
 
     return {
         "pp_rank": pp_rank,
+        "vp_rank": vp_rank,
         "layer_offset": layer_offset,
         "local_layer_idx": local_layer_idx,
         "global_layer_number": global_layer_number,
@@ -489,7 +504,7 @@ class CustomMLASelfAttention(SelfAttention):
 
         self.dsa_indexer = IdentityOp()
         if args.enable_dsa_indexer:
-            dsa_cfg = resolve_dsa_indexer_build_config(args, layer_number)
+            dsa_cfg = resolve_dsa_indexer_build_config(args, layer_number, config=self.config)
             self._skip_dsa_topk = dsa_cfg["skip_dsa_topk"]
             self._dsa_global_layer_number = dsa_cfg["global_layer_number"]
             self._dsa_source_layer = dsa_cfg["source_layer"]
@@ -801,7 +816,7 @@ class CustomMLASelfAttention(SelfAttention):
 
                 DSAIndexerLossLoggingHelper.save_loss_to_tracker(
                     loss,
-                    _get_layer_offset(args) + self.layer_number,
+                    self._dsa_global_layer_number,
                     self.config.num_layers,
                     avg_group=parallel_state.get_tensor_and_context_parallel_group(),
                 )
@@ -1136,7 +1151,7 @@ class CustomMLASelfAttention(SelfAttention):
 
                 DSAIndexerLossLoggingHelper.save_loss_to_tracker(
                     loss,
-                    _get_layer_offset(args) + self.layer_number,
+                    self._dsa_global_layer_number,
                     self.config.num_layers,
                     avg_group=parallel_state.get_tensor_and_context_parallel_group(),
                 )

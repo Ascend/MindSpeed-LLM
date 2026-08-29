@@ -82,11 +82,20 @@ def get_args():
         default=None,
         help='Number of layers per virtual pipeline stage',
     )
+    pipeline_distribution_group = parser.add_mutually_exclusive_group()
+    pipeline_distribution_group.add_argument(
+        '--pipeline-model-parallel-layout',
+        type=str,
+        default=None,
+        help='Custom PP/VPP layout. Mutually exclusive with --num-layer-list.',
+    )
     parser.add_argument('--moe-grouped-gemm', action='store_true', help='Use moe grouped gemm.')
     parser.add_argument("--noop-layers", type=str, default=None, help='Specity the noop layers.')
     parser.add_argument('--mtp-num-layers', type=int, default=0, help='Multi-Token prediction layer num')
-    parser.add_argument(
-        '--num-layer-list', type=str, help='a list of number of layers, separated by comma; e.g., 4,4,4,4'
+    pipeline_distribution_group.add_argument(
+        '--num-layer-list',
+        type=str,
+        help='A PP layer-count list, separated by commas; mutually exclusive with --pipeline-model-parallel-layout.',
     )
     parser.add_argument(
         "--moe-tp-extend-ep",
