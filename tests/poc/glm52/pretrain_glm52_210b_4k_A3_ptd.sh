@@ -24,13 +24,13 @@ CKPT_LOAD_DIR="your model ckpt path"
 
 TP=1
 PP=4
-EP=128
+EP=32
 CP=1
 CP_TYPE='ulysses_cp_algo'
 NUM_LAYERS=78
 SEQ_LEN=4096
 MBS=1
-GBS=2048
+GBS=512
 
 DISTRIBUTED_ARGS="
     --nproc_per_node $NPUS_PER_NODE \
@@ -70,7 +70,7 @@ MOE_ARGS="
     --moe-token-dispatcher-type alltoall \
     --first-k-dense-replace 3 \
     --moe-layer-freq 1 \
-    --num-experts 256 \
+    --num-experts 64 \
     --moe-router-topk 8 \
     --moe-ffn-hidden-size 2048 \
     --moe-shared-expert-intermediate-size 2048 \
@@ -82,7 +82,8 @@ MOE_ARGS="
     --moe-router-score-function sigmoid \
     --moe-router-enable-expert-bias \
     --moe-router-dtype fp32 \
-    --gemm-gradient-accumulation-fusion
+    --gemm-gradient-accumulation-fusion \
+    --num-layer-list "18,20,20,20"
 "
 
 
@@ -204,4 +205,4 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     ${OTHERS_ARGS[@]} \
     --save $CKPT_SAVE_DIR \
     --load $CKPT_LOAD_DIR \
-    --distributed-backend nccl | tee logs/pretrain_glm52_744b_4k_A3_ptd.log
+    --distributed-backend nccl | tee logs/pretrain_glm52_210b_4k_A3_ptd.log

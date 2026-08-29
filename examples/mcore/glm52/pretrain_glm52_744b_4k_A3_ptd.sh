@@ -87,13 +87,6 @@ MOE_ARGS="
 "
 
 
-MTP_ARGS="
-    --mtp-num-layers 1 \
-    --mtp-loss-scaling-factor 0.3 \
-    --mtp-mem-efficient-logits \
-"
-
-
 DSA_ARGS="
     --enable-dsa-indexer \
     --indexer-loss-coeff 1.0 \
@@ -109,12 +102,6 @@ OTHERS_ARGS="
     --recompute-method uniform \
     --recompute-granularity full \
     --recompute-num-layers 1 \
-"
-
-
-PIPELINE_ARGS="
-    --moe-fb-overlap \
-    --num-layers-per-virtual-pipeline-stage 2 \
 "
 
 
@@ -204,9 +191,7 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     $GPT_ARGS \
     $DATA_ARGS \
     $OUTPUT_ARGS \
-    $ROPE_ARGS \
     $MLA_ARGS \
-    $MEM_ARGS \
     $MOE_ARGS \
     $DSA_ARGS \
     ${OTHERS_ARGS[@]} \
