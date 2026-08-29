@@ -437,6 +437,8 @@ def npu_sparse_flash_mla(
     S1, B, _, D = q.shape
     if softmax_scale is None:
         softmax_scale = D**-0.5
+    if cmp_kv is None:
+        cmp_mask_mode = 0
     if layout_q == 'BSND':
         q = q.permute(1, 0, 2, 3).contiguous()  # [S, B, N, D] --> [B, S, N, D]
         # [S, B, D] --> [B, S, 1, D]
@@ -450,13 +452,13 @@ def npu_sparse_flash_mla(
             None if cmp_ratio != 4 else cmp_sparse_indices.unsqueeze(2).contiguous()
         )  # [B, S, K] --> [B, S, 1, K]
         cu_seqlens_cmp_kv = None
-        if cmp_residual_kv is None:
+        if cmp_residual_kv is None and cmp_kv is not None:
             cmp_residual_kv = torch.full((B,), S1 % cmp_ratio, dtype=torch.int32).npu()
     else:
         cu_seqlens_q = cu_seqlens_q.int()
         cu_seqlens_kv = cu_seqlens_kv.int()
         cmp_residual_kv = cmp_residual_kv.int() if cmp_residual_kv is not None else None
-        cu_seqlens_cmp_kv, _ = get_cmp_cu_seqlens(cu_seqlens_q, cmp_ratio, zero_based=True)
+        cu_seqlens_cmp_kv, _ = get_cmp_cu_seqlens(cu_seqlens_kv, cmp_ratio, zero_based=True)
         if cu_seqlens_q[0] != 0:
             cu_seqlens_q = torch.cat((cu_seqlens_q.new_zeros(1), cu_seqlens_q))
             cu_seqlens_kv = torch.cat((cu_seqlens_kv.new_zeros(1), cu_seqlens_kv))

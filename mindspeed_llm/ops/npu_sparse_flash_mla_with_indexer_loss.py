@@ -505,7 +505,7 @@ def npu_sparse_flash_mla_with_indexer_loss(
         cu_seqlens_q = cu_seqlens_q.int()
         cu_seqlens_kv = cu_seqlens_kv.int()
         if cu_seqlens_cmp_kv is None:
-            cu_seqlens_cmp_kv, _ = get_cmp_cu_seqlens(cu_seqlens_q, cmp_ratio, zero_based=True)
+            cu_seqlens_cmp_kv, _ = get_cmp_cu_seqlens(cu_seqlens_kv, cmp_ratio, zero_based=True)
         if cu_seqlens_q[0] != 0:
             cu_seqlens_q = torch.cat((cu_seqlens_q.new_zeros(1), cu_seqlens_q))
             cu_seqlens_kv = torch.cat((cu_seqlens_kv.new_zeros(1), cu_seqlens_kv))

@@ -6,7 +6,7 @@ operator package. It adapts tensor layouts between the model convention
 ([s, b, ...]) and the Ascend fused operator convention ([b, s, ...]).
 """
 
-import torch
+from megatron.core.utils import make_viewless_tensor
 
 
 def _mhc_ops():
@@ -76,7 +76,7 @@ def mhc_post_ascend(h_out, x, h_post, h_res):
     h_post_bsn = h_post.permute(1, 0, 2).contiguous()
     h_res_bsnn = h_res.permute(1, 0, 2, 3).contiguous()
 
-    out = ops.mhc_post(x_bsnd, h_res_bsnn, h_out_bsd, h_post_bsn)
+    out = ops.mhc_post(x_bsnd, h_res_bsnn, h_out_bsd, h_post_bsn).permute(1, 0, 2, 3).contiguous()
     # Pipeline deallocation requires its output not to be a view. `permute`
     # creates a view, so materialize a contiguous tensor before returning it.
-    return out.permute(1, 0, 2, 3).clone(memory_format=torch.contiguous_format)
+    return make_viewless_tensor(inp=out, requires_grad=out.requires_grad, keep_graph=True)

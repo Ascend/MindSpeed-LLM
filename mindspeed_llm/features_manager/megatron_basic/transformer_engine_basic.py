@@ -49,6 +49,13 @@ class TransformerEngineBasicFeature(MindSpeedFeature):
             help="Reuse quantized FP8 weight tensors within one optimizer step.",
         )
 
+        group.add_argument(
+            "--mxfp8-defer-backward-quant",
+            action="store_true",
+            default=False,
+            help="Defer backward-requierd MXFP8 quantization until backward to reduce saved-tensor memory at the cost of additional backward compute.",
+        )
+
     def validate_args(self, args):
         if args.fp8 and args.transformer_impl == 'local':
             raise AssertionError('FP8 just support TE implement.')
@@ -71,6 +78,9 @@ class TransformerEngineBasicFeature(MindSpeedFeature):
                 )
         if getattr(args, "fp8_reuse_quantized_weight", False) and not args.fp8:
             raise ValueError("fp8_reuse_quantized_weight is only valid when FP8 training is enabled")
+
+        if getattr(args, "mxfp8_defer_backward_quant", False) and not args.fp8:
+            raise ValueError("mxfp8_defer_backward_quant is only valid when FP8 training is enabled")
 
     def pre_register_patches(self, pm, args):
         pm.register_patch('transformer_engine.pytorch.tensor.QuantizedTensor', torch.nn.Module, create_dummy=True)
