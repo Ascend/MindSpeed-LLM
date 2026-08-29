@@ -33,7 +33,7 @@
 > [!NOTICE]
 >
 > 安装运行程序建议使用非root用户，且建议对安装程序的目录文件做好权限管控：文件夹权限设置为750，文件权限设置为640。可以通过设置umask控制安装后文件的权限，如设置umask为0027。
-> 
+>
 > 更多安全相关内容请参见《[安全声明](../../SECURITYNOTE.md)》中各组件关于“文件权限控制”的说明。
 
 ## 安装MindSpeed LLM
@@ -127,12 +127,12 @@
 
 1. （可选）创建虚拟环境
 
-   建议使用Python 3.10版本，具体可参见[版本说明](../../release_notes_llm.md)。若不希望影响全局Python环境，可使用venv、conda、uv等常用虚拟环境管理工具创建独立的虚拟环境。
+   建议使用Python 3.12版本，具体可参见[版本说明](../../release_notes_llm.md)。若不希望影响全局Python环境，可使用venv、conda、uv等常用虚拟环境管理工具创建独立的虚拟环境。
 
    以conda为例，可参考如下命令：
 
    ```bash
-   conda create -n test python=3.10
+   conda create -n test python=3.12
    conda activate test
    ```
 
@@ -165,8 +165,8 @@
    可参考如下安装命令：
 
    ```shell
-   pip3 install torch-2.7.1-cp310-cp310-manylinux_2_28_aarch64.whl
-   pip3 install torch_npu-2.7.1rc1-cp310-cp310-manylinux_2_28_aarch64.whl
+   pip3 install torch-2.10.0-cp312-cp312-manylinux_2_28_aarch64.whl
+   pip3 install torch_npu-2.10.0.post2-cp312-cp312-manylinux_2_28_aarch64.whl
    ```
 
    > [!NOTE]
