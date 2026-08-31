@@ -41,18 +41,26 @@ Click [Firmware and Drivers](https://www.hiascend.com/hardware/firmware-drivers)
 
 > [!NOTE]
 >
-> - Before using the image, confirm the machine model. The latest image supports only the AArch64 architecture. Run `uname -a` to verify.
-> - The image is pre-installed with CANN 9.1.0 and TorchNPU 26.1.0. You can use it as needed.
-> - If your environment is incompatible with the provided image, choose [Method 2: Installation from Source](#method-2-installation-from-source).
-> - The 26.1.0 branch will be updated with new images. For custom image building, see [Image Overview](../../../../docker/OVERVIEW.md).
+> - Before using an image, confirm the machine model. The latest images support the AArch64 and x86_64 architectures. You can run the `uname -a` command to check whether the current environment meets the requirements.
+> - The images come with the matching CANN 9.1.0 software and TorchNPU 26.1.0 plugin preinstalled. You can use them as needed.
+> - If the current environment is incompatible with the provided images, select [Method 2: Installation from Source](#method-2-installation-from-source).
+> - If you need to customize the image build, refer to [Image Overview](../../../../docker/OVERVIEW.md).
 
 1. Obtain the image.
 
-   The latest images correspond to the [MindSpeed LLM 26.1.0 branch](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0). The image is coming soon. Currently, you can use the image corresponding to the MindSpeed LLM 26.0.0 branch. Click [Obtain the image](https://www.hiascend.com/developer/ascendhub/detail/e26da9266559438b93354792f25b2f4a).
+   The latest images correspond to the [MindSpeed LLM 26.1.0 branch](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0). [Obtain the image](https://www.hiascend.com/en/developer/ascendhub/detail/e26da9266559438b93354792f25b2f4a) as needed.
 
-   - <term>Atlas A2 training products</term>: `26.0.0-910b-openeuler24.03-py3.11-aarch64`
+   - <term>Ascend 950 products</term>: v26.1.0-cann9.1.0-torch_npu2.7.1.post8-950-openeuler24.03-py3.12
 
-   - <term>Atlas A3 training products</term>: `26.0.0-a3-openeuler24.03-py3.11-aarch64`
+   - <term>Ascend 950 products</term>: v26.1.0-cann9.1.0-torch_npu2.7.1.post8-950-ubuntu22.04-py3.12
+
+   - <term>Atlas A3 training products</term>: v26.1.0-cann9.1.0-torch_npu2.7.1.post8-a3-openeuler24.03-py3.12
+
+   - <term>Atlas A3 training products</term>: v26.1.0-cann9.1.0-torch_npu2.7.1.post8-a3-ubuntu22.04-py3.12
+
+   - <term>Atlas A2 training products</term>: v26.1.0-cann9.1.0-torch_npu2.7.1.post8-910b-openeuler24.03-py3.12
+
+   - <term>Atlas A2 training products</term>: v26.1.0-cann9.1.0-torch_npu2.7.1.post8-910b-ubuntu22.04-py3.12
 
    ```bash
    # Verify that the image was obtained successfully
@@ -83,7 +91,7 @@ Click [Firmware and Drivers](https://www.hiascend.com/hardware/firmware-drivers)
       -v /etc/ascend_install.info:/etc/ascend_install.info \
       -v /data:/data \
       -v /weights:/weights \
-      mindspeed-llm:26.0.0-a3-openeuler24.03-py3.11-aarch64 \
+      mindspeed-llm:v26.1.0-cann9.1.0-torch_npu2.7.1.post8-910b-openeuler24.03-py3.12 \
       /bin/bash
    ```
 
@@ -91,8 +99,8 @@ Click [Firmware and Drivers](https://www.hiascend.com/hardware/firmware-drivers)
    >
    > - By default, the driver and firmware are installed in `/usr/local/Ascend`. If the paths differ, modify the command accordingly.
    > - Before copying the startup command, replace the `/data` and `/weights` paths in the `-v` parameters with the actual local directories on the host. Otherwise, the container fails to start.
-   > - The container initializes the NPU driver and CANN environment by default. To install new ones, replace or source them manually. See `~/.bashrc` in the container for details.
-   > - `mindspeed-llm:26.0.0-a3-openeuler24.03-py3.11-aarch64` is the image name and tag. Modify it based on your requirements. Run `docker images` on the host to view existing images.
+   > - By default, the container initializes the NPU driver and CANN environment information. If you need to install new ones, replace them or manually run `source` as needed. For details, see `~/.bashrc` in the container.
+   > - `mindspeed-llm:v26.1.0-cann9.1.0-torch_npu2.7.1.post8-910b-openeuler24.03-py3.12` is the image name and tag, which can be modified based on the actual situation. You can run the `docker images` command on the host machine to view the existing images.
 
    **Table 2** Parameters <a id="table1"></a>
 
