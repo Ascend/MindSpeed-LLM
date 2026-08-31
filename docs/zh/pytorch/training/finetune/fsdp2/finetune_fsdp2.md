@@ -228,7 +228,7 @@ YAML 中的主要参数说明如下：
 | `max_steps` | 最大训练步数；大于 0 时覆盖 `num_train_epochs`。 | `2000` |
 | `save_steps` | 保存训练检查点的步数间隔。 | `500` |
 
-完整参数说明请参考 [FSDP2 参数说明](../../../features/fsdp2/arguments.md)。
+完整参数说明请参考 [全量参数介绍（基于FSDP2训练后端）](../../../features/fsdp2/arguments.md)。
 
 ### 配置微调脚本
 

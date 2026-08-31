@@ -42,18 +42,26 @@
 
 > [!NOTE]
 >
-> - 使用镜像前，请先确认机器型号。最新镜像仅支持aarch64架构，可通过uname -a命令确认当前环境是否符合要求。
-> - 配套镜像已预装配套的CANN 9.1.0软件及TorchNPU 26.1.0插件，您可根据需要选用。
-> - 若您当前环境与提供的镜像不兼容，请选择[方式二：源码安装](#方式二源码安装)。
+> - 使用镜像前，请先确认机器型号。最新镜像仅支持aarch64及X86_64架构，可通过`uname -a`命令确认当前环境是否符合要求。
+> - 配套镜像已预装配套的CANN 9.1.0软件及TorchNPU 26.1.0插件，可根据需要选用。
+> - 若当前环境与提供的镜像不兼容，请选择[方式二：源码安装](#方式二源码安装)。
 > - master分支后续会更新新的镜像，如果需要自定义构建镜像请参见[镜像概述](../../../../docker/OVERVIEW.zh.md)。
 
 1. 获取镜像
 
-   最新镜像均配套[MindSpeed LLM的26.1.0分支](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0)，该镜像即将上线，当前可使用MindSpeed LLM 26.0.0分支对应镜像，请单击[获取镜像](https://www.hiascend.com/developer/ascendhub/detail/e26da9266559438b93354792f25b2f4a)。
+   最新镜像均配套[MindSpeed LLM的26.1.0分支](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0)，请按需[获取镜像](https://www.hiascend.com/developer/ascendhub/detail/e26da9266559438b93354792f25b2f4a)。
 
-   - <term>Atlas A2 训练系列产品</term>：26.0.0-910b-openeuler24.03-py3.11-aarch64
+   - <term>Ascend 950 系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-950-openeuler24.03-py3.12
 
-   - <term>Atlas A3 训练系列产品</term>：26.0.0-a3-openeuler24.03-py3.11-aarch64
+   - <term>Ascend 950 系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-950-ubuntu22.04-py3.12
+
+   - <term>Atlas A3 训练系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-a3-openeuler24.03-py3.12
+
+   - <term>Atlas A3 训练系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-a3-ubuntu22.04-py3.12
+
+   - <term>Atlas A2 训练系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-910b-openeuler24.03-py3.12
+
+   - <term>Atlas A2 训练系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-910b-ubuntu22.04-py3.12
 
    ```bash
    # 确认是否成功获取镜像
@@ -84,7 +92,7 @@
       -v /etc/ascend_install.info:/etc/ascend_install.info \
       -v /data:/data \
       -v /weights:/weights \
-      mindspeed-llm:26.0.0-a3-openeuler24.03-py3.11-aarch64 \
+      mindspeed-llm:v26.1.0-cann9.1.0-torch_npu2.7.1.post8-910b-openeuler24.03-py3.12 \
       /bin/bash
    ```
 
@@ -93,7 +101,7 @@
    > - 当前默认配置驱动和固件安装在/usr/local/Ascend，如有差异请修改指令路径。
    > - 复制启动命令前，请将-v参数内的/data、/weights两处路径，替换为宿主机本地真实目录，否则容器启动失败。
    > - 当前容器默认初始化NPU驱动和CANN环境信息，如需要安装新的，请自行替换或手动source，详见容器的~/.bashrc。
-   > - “_mindspeed-llm:26.0.0-a3-openeuler24.03-py3.11-aarch64_”为镜像名称和标签，可根据实际情况修改。可在宿主机执行`docker images`命令查看当前机器上已有的镜像。
+   > - “_mindspeed-llm:v26.1.0-cann9.1.0-torch_npu2.7.1.post8-910b-openeuler24.03-py3.12_”为镜像名称和标签，可根据实际情况修改。可在宿主机执行`docker images`命令查看当前机器上已有的镜像。
 
    **表 2**  参数说明 <a id="table1"></a>
 
@@ -138,7 +146,7 @@
 
 2. 安装CANN
 
-   安装配套版本的NPU驱动固件、CANN软件（Toolkit、ops和NNAL）并配置CANN环境变量，具体请参考《[CANN 软件安装](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/latest/softwareinst/instg/instg_0000.html)》。
+   安装配套版本的NPU驱动固件、CANN软件（Toolkit、ops和NNAL）并配置CANN环境变量，具体请参考《[CANN 快速安装](https://www.hiascend.com/cann/download?versionId=783&ids=d806%2Ch0501%2Ch0601%2Ch0703)》。
 
    CANN软件提供进程级环境变量设置脚本，训练或推理场景下使用NPU执行业务代码前需要调用该脚本，否则业务代码将无法执行。
 
@@ -160,27 +168,28 @@
 
 3. 安装PyTorch以及TorchNPU
 
-   请参考《TorchNPU软件安装》中的“[安装TorchNPU](https://www.hiascend.com/document/detail/zh/Pytorch/latest/installguide/swinstall/docs/zh/installation_guide/installation_via_binary_package.md)”章节，获取配套版本的PyTorch以及TorchNPU软件包。
+   请参考《[TorchNPU 快速安装](https://www.hiascend.com/developer/software/ai-frameworks/pytorch/download?versionId=175&ids=89dda9ba9de741349efa03687a487678%2C98%2C107%2C1%2C6%2C177%2C)》，获取配套版本的PyTorch以及TorchNPU软件包。
 
    可参考如下安装命令：
 
    ```shell
    pip3 install torch-2.10.0-cp312-cp312-manylinux_2_28_aarch64.whl
-   pip3 install torch_npu-2.10.0.post2-cp312-cp312-manylinux_2_28_aarch64.whl
+   pip3 install torch_npu-2.10.0.post4-cp312-cp312-manylinux_2_28_aarch64.whl
    ```
 
    > [!NOTE]
    >
-   > 更多TorchNPU插件版本请单击[Link](https://gitcode.com/ascend/pytorch/releases)。
+   > - 更多TorchNPU插件版本请单击[Link](https://gitcode.com/ascend/pytorch/releases)。
+   > - 更多TorchNPU相关文档请参见《[TorchNPU使用导读](https://www.hiascend.com/document/detail/zh/Pytorch/latest/index/index.html)》。
 
 4. 安装Triton-Ascend
 
-   安装配套版本的Triton-Ascend，请参考《Triton-Ascend》中的"[通过pip安装Triton-Ascend](https://triton-ascend.readthedocs.io/zh-cn/latest/installation_guide.html#piptriton-ascend)"章节，获取配套版本的Triton-Ascend安装指令。
+   安装配套版本的Triton-Ascend，请参考[Triton-Ascend安装指南](https://triton-ascend.readthedocs.io/zh-cn/latest/installation_guide.html#id1)，获取配套版本的Triton-Ascend安装指令。
 
    可参考如下安装命令：
 
    ```shell
-   pip install triton-ascend==3.2.2 --extra-index-url=https://triton-ascend.osinfra.cn/pypi/simple
+   pip install triton-ascend==3.2.2 --extra-index-url=https://mirrors.huaweicloud.com/ascend/repos/pypi
    ```
 
    > [!NOTE]
@@ -222,7 +231,7 @@
     pip3 install -r requirements.txt  # 安装其余依赖库
     ```
 
-### 方式三：Submodule源码统一安装
+### 方式三：源码安装（Submodule统一安装）
 
 > [!NOTE]
 >
@@ -236,9 +245,9 @@ MindSpeed LLM支持通过Git Submodule统一管理三方依赖仓库，便于版
 - **FSDPTurbo**：默认拉取远端main分支最新代码。
 - **Megatron-LM**：固定在tag `core_v0.12.1`。
 
-1. 基础环境准备
+1. 准备基础环境
 
-   虚拟环境、CANN、TorchNPU、TA等基础环境准备，同[方式二：源码安装](#方式二源码安装)的步骤1-4。
+   准备虚拟环境、CANN、TorchNPU、Triton-Ascend等基础环境准备，详情请参考[方式二：源码安装](#方式二源码安装)的步骤1-4。
 
 2. 下载源码
 
@@ -253,9 +262,9 @@ MindSpeed LLM支持通过Git Submodule统一管理三方依赖仓库，便于版
 
    > [!NOTE]
    >
-   > 如何更新Submodule?
+   > 如需更新Submodule，详见如下操作：
    > - MindSpeed和FSDPTurbo默认跟踪远端最新，初始化时已完成刷新，后需继续拉取最新提交可执行`git submodule update --init --remote 3rdparty/MindSpeed 3rdparty/FSDPTurbo`。(3rdparty目录下commit可不关注)
-   > - Megatron-LM固定在相应版本，执行`git submodule update --init`会始终检出该版本，不会自动更新。如需切换版本，参见下方章节[3.切换子模块版本(可选)](#checkout_submodules)。
+   > - Megatron-LM固定在相应版本，执行`git submodule update --init`会始终检出该版本，不会自动更新。如需切换版本，参见下方章节[（可选）切换子模块版本](#checkout_submodules)。
 
    源码结构如下：
 
@@ -291,7 +300,7 @@ MindSpeed LLM支持通过Git Submodule统一管理三方依赖仓库，便于版
    > - Megatron-LM子模块包含完整仓库，需将`megatron/`源码目录链接至MindSpeed LLM根目录下使用。
    > - 若需使用`pip3 install -e .`方式安装MindSpeed或FSDPTurbo，可分别进入对应子模块目录执行。
 
-4. 切换子模块版本（可选）<div id="checkout_submodules"/>
+4. （可选）切换子模块版本<div id="checkout_submodules"/>
 
    如需切换某个子模块到指定分支或标签，例如将Megatron-LM切换到其他版本：
 
