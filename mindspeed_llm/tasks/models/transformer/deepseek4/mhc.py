@@ -12,7 +12,7 @@ import contextlib
 from functools import wraps
 
 from megatron.training import get_args
-from megatron.core import parallel_state
+from megatron.core import parallel_state, tensor_parallel
 from megatron.core.pipeline_parallel import p2p_communication
 from megatron.core.transformer.cuda_graphs import create_cudagraphs
 from megatron.core.transformer.module import MegatronModule
@@ -24,6 +24,7 @@ from megatron.core.utils import (
     get_model_config,
     get_model_type,
     get_model_xattn,
+    make_viewless_tensor,
 )
 from megatron.core.pipeline_parallel.schedules import (
     clear_embedding_activation_buffer,
@@ -186,15 +187,25 @@ class AddOpWithBias(torch.nn.Module):
 
 
 class MHC(MegatronModule):
-    def __init__(self, config: TransformerConfig, submodules: MHCSubmodules, mhc_position: str, layer_number: int):
+    def __init__(
+        self,
+        config: TransformerConfig,
+        submodules: MHCSubmodules,
+        mhc_position: str,
+        layer_number: int,
+        is_mtp_layer: bool = False,
+    ):
         super().__init__(config=config)
         args = get_args()
 
         self.mhc_position = mhc_position
+        self.is_mtp_layer = is_mtp_layer
         self.hc_eps = args.hc_eps
         self.use_triton_mhc = args.use_triton_mhc
         self.use_fused_mhc = args.use_fused_mhc
         self.hc_mult = hc_mult = args.hc_mult
+        self.mhc_pre_ascend_checkpoint = None
+        self.mhc_post_ascend_checkpoint = None
         mix_hc = hc_mult if self.mhc_position == 'head' else (2 + hc_mult) * hc_mult
         hc_dim = hc_mult * args.hidden_size
         self.hc_sinkhorn_iters = args.hc_sinkhorn_iters
@@ -230,6 +241,61 @@ class MHC(MegatronModule):
 
         self.hc_split_sinkhorn = torch_hc_split_sinkhorn
 
+    def _should_recompute_mhc_post_ascend(self):
+        return (
+            self.training
+            and self.use_fused_mhc
+            and self.mhc_position == 'attn'
+            and not self.is_mtp_layer
+            and getattr(get_args(), 'mhc_recompute', False)
+        )
+
+    def _should_recompute_mhc_pre_ascend(self):
+        return (
+            self.training
+            and self.use_fused_mhc
+            and not self.is_mtp_layer
+            and getattr(get_args(), 'mhc_recompute', False)
+        )
+
+    def _mhc_pre_ascend_output(self, x):
+        y, post, comb = mhc_pre_sinkhorn_ascend(
+            x,
+            self.hc_fn.weight,
+            self.hc_scale,
+            self.hc_base,
+            self.hc_mult,
+            self.hc_sinkhorn_iters,
+            self.hc_eps,
+            self.norm_eps,
+        )
+        y = y.to(x.dtype)
+        return tuple(
+            make_viewless_tensor(inp=output, requires_grad=output.requires_grad, keep_graph=True)
+            for output in (y, post, comb)
+        )
+
+    def _mhc_post_ascend_output(self, x, residual, post, comb):
+        return mhc_post_ascend(x, residual, post, comb).type_as(x)
+
+    def _mhc_post_ascend_recompute_inputs(self, x, residual, post, comb):
+        args = get_args()
+        if getattr(args, 'moe_fb_overlap', False) and not getattr(args, 'recompute_csa_attention', False):
+            # fb-overlap can release this transient attention output before the checkpoint hook runs.
+            x = x.clone()
+        return x, residual, post, comb
+
+    def discard_mhc_post_ascend_output(self, hook_tensor):
+        if self.mhc_post_ascend_checkpoint is not None:
+            self.mhc_post_ascend_checkpoint.discard_output_and_register_recompute(hook_tensor)
+            self.mhc_post_ascend_checkpoint = None
+
+    def discard_mhc_pre_ascend_output(self, hook_tensor):
+        if self.mhc_pre_ascend_checkpoint is not None:
+            if isinstance(hook_tensor, torch.Tensor) and hook_tensor.requires_grad:
+                self.mhc_pre_ascend_checkpoint.discard_output_and_register_recompute(hook_tensor)
+            self.mhc_pre_ascend_checkpoint = None
+
     def get_mhc_forward(self, mhc_stage='identity'):
         if self.enable_mhc:
             if mhc_stage == 'pre':
@@ -249,18 +315,10 @@ class MHC(MegatronModule):
         # x: [s,b,hc,d], hc_fn: [mix_hc,hc*d], hc_scale: [3], hc_base: [mix_hc], y: [s,b,d]
         shape, dtype = x.size(), x.dtype
         if self.use_fused_mhc:
-            y, post, comb = mhc_pre_sinkhorn_ascend(
-                x,
-                self.hc_fn.weight,
-                self.hc_scale,
-                self.hc_base,
-                self.hc_mult,
-                self.hc_sinkhorn_iters,
-                self.hc_eps,
-                self.norm_eps,
-            )
-            y = y.to(dtype)
-            return y, post, comb
+            if self._should_recompute_mhc_pre_ascend():
+                self.mhc_pre_ascend_checkpoint = tensor_parallel.CheckpointWithoutOutput()
+                return self.mhc_pre_ascend_checkpoint.checkpoint(self._mhc_pre_ascend_output, x)
+            return self._mhc_pre_ascend_output(x)
         else:
             x = x.flatten(2)
             x = x.float()
@@ -281,8 +339,11 @@ class MHC(MegatronModule):
 
         # x: [s,b,d], residual: [s,b,hc,d], post: [s,b,hc], comb: [s,b,hc,hc], y: [s,b,hc,d]
         if self.use_fused_mhc:
-            y = mhc_post_ascend(x, residual, post, comb)
-            return y.type_as(x)
+            if self._should_recompute_mhc_post_ascend():
+                x, residual, post, comb = self._mhc_post_ascend_recompute_inputs(x, residual, post, comb)
+                self.mhc_post_ascend_checkpoint = tensor_parallel.CheckpointWithoutOutput()
+                return self.mhc_post_ascend_checkpoint.checkpoint(self._mhc_post_ascend_output, x, residual, post, comb)
+            return self._mhc_post_ascend_output(x, residual, post, comb)
         y = (post.unsqueeze(-1) * x.unsqueeze(-2)) + torch.sum(comb.unsqueeze(-1) * residual.unsqueeze(-2), dim=2)
         return y.type_as(x)
 

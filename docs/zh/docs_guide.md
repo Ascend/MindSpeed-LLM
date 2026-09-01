@@ -38,6 +38,7 @@ docs/zh/
     │   │   ├── checkpoint_resume.md              # 断点续训
     │   │   ├── chunk_loss.md                     # Chunk Loss
     │   │   ├── communication-over-computation.md  # 通信计算重叠
+    │   │   ├── deepseek4_fine_grained_recompute.md # DeepSeek V4细粒度重计算
     │   │   ├── environment_variable.md            # 环境变量
     │   │   ├── fine-tuning-with-context-parallel.md # 上下文并行微调
     │   │   ├── high_availability.md               # 高可用

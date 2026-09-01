@@ -116,10 +116,18 @@ class TransformerLayer(MegatronTransformerLayer):
                 self.self_attention.core_attention.mtp_idx = 0
 
         self.attn_mhc = build_module(
-            submodules.attn_mhc, config=config, mhc_position='attn', layer_number=self.layer_number
+            submodules.attn_mhc,
+            config=config,
+            mhc_position='attn',
+            layer_number=self.layer_number,
+            is_mtp_layer=is_mtp_layer,
         )
         self.mlp_mhc = build_module(
-            submodules.mlp_mhc, config=config, mhc_position='mlp', layer_number=self.layer_number
+            submodules.mlp_mhc,
+            config=config,
+            mhc_position='mlp',
+            layer_number=self.layer_number,
+            is_mtp_layer=is_mtp_layer,
         )
 
     def forward(self, *args, **kwargs):
@@ -132,6 +140,13 @@ class TransformerLayer(MegatronTransformerLayer):
 
         attention_out, residual, context = self._forward_attention(*args, **kwargs)
         output = self._forward_mlp(attention_out, residual, kwargs.get("input_ids", None))
+
+        if hasattr(self.attn_mhc, 'discard_mhc_pre_ascend_output'):
+            self.attn_mhc.discard_mhc_pre_ascend_output(output)
+        if hasattr(self.attn_mhc, 'discard_mhc_post_ascend_output'):
+            self.attn_mhc.discard_mhc_post_ascend_output(output)
+        if hasattr(self.mlp_mhc, 'discard_mhc_pre_ascend_output'):
+            self.mlp_mhc.discard_mhc_pre_ascend_output(output)
 
         return output, context
 
@@ -223,6 +238,8 @@ class TransformerLayer(MegatronTransformerLayer):
             hidden_states = self.self_attn_bda(self.training, self.config.bias_dropout_fusion)(
                 attention_output_with_bias, residual, self.hidden_dropout
             )
+        if hasattr(self.self_attention, 'discard_csa_attention_output'):
+            self.self_attention.discard_csa_attention_output(hidden_states)
 
         # mHC post
         hidden_states = self.attn_mhc(
@@ -232,7 +249,6 @@ class TransformerLayer(MegatronTransformerLayer):
             post=post,
             comb=comb,
         )
-
         # Residual connection.
         residual = hidden_states
 

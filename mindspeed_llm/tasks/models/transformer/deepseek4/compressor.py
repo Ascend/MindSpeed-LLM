@@ -6,7 +6,7 @@ import torch
 
 from megatron.core.transformer import MegatronModule, ModuleSpec, build_module
 from megatron.training import get_args
-from megatron.core import mpu
+from megatron.core import mpu, tensor_parallel
 
 from mindspeed.core.fusions.fused_rms_norm import RMSNorm
 
@@ -61,6 +61,7 @@ class Compressor(MegatronModule):
         self.wgate = build_module(submodules.wgate, self.dim, coff * self.head_dim, config=linear_config, bias=False)
         self.norm = RMSNorm(self.head_dim, args.norm_epsilon, config=config)
         self.kv_cache = None
+        self.x_float_checkpoint = None
 
         # If overlap is enabled, state[:, :ratio] for overlapping compression and state[:, ratio:] for normal compression.
         # self.register_buffer("kv_state", torch.zeros(args.max_batch_size, coff * compress_ratio, coff * self.head_dim,
@@ -104,6 +105,16 @@ class Compressor(MegatronModule):
         rank = mpu.get_tensor_model_parallel_rank()
         tensor = tensor[:, rank * local_len : (rank + 1) * local_len, :]
         return tensor
+
+    @staticmethod
+    def _float_input(x):
+        return x.float()
+
+    def discard_x_float_output(self, hook_tensor):
+        if self.x_float_checkpoint is not None:
+            if isinstance(hook_tensor, torch.Tensor) and hook_tensor.requires_grad:
+                self.x_float_checkpoint.discard_output_and_register_recompute(hook_tensor)
+            self.x_float_checkpoint = None
 
     def _forward_tnd(self, x: torch.Tensor, start_pos: int, freqs_cis: torch.Tensor, packed_seq_params):
         assert start_pos == 0, "TND format only supports start_pos == 0"
@@ -172,6 +183,7 @@ class Compressor(MegatronModule):
 
     def forward(self, x: torch.Tensor, start_pos: int, freqs_cis: torch.Tensor, packed_seq_params=None):
         if packed_seq_params is not None:
+            self.x_float_checkpoint = None
             return self._forward_tnd(x, start_pos, freqs_cis, packed_seq_params)
         # assert self.kv_cache is not None
         x = x.transpose(0, 1)  # SBH --> BSH
@@ -179,8 +191,22 @@ class Compressor(MegatronModule):
 
         ratio, overlap, d = self.compress_ratio, self.overlap, self.head_dim
         dtype = x.dtype
-        if get_args().fp8 is None:
-            x = x.float()
+        args = get_args()
+        recompute_x_float = (
+            self.training
+            and args.fp8 is None
+            and getattr(args, 'recompute_csa_attention', False)
+            and torch.is_grad_enabled()
+        )
+        if args.fp8 is None:
+            if recompute_x_float:
+                self.x_float_checkpoint = tensor_parallel.CheckpointWithoutOutput()
+                x = self.x_float_checkpoint.checkpoint(self._float_input, x)
+            else:
+                self.x_float_checkpoint = None
+                x = x.float()
+        else:
+            self.x_float_checkpoint = None
         kv = self.wkv(x)
         score = self.wgate(x)
         if start_pos == 0:
@@ -227,6 +253,7 @@ class Compressor(MegatronModule):
                 if should_compress:
                     kv = (self.kv_state[:bsz] * self.score_state[:bsz].softmax(dim=1)).sum(dim=1, keepdim=True)
         if not should_compress:
+            self.x_float_checkpoint = None
             return None
         kv = self.norm(kv.to(dtype))
         kv[..., -self.rope_head_dim :] = apply_rotary_emb(kv[..., -self.rope_head_dim :], freqs_cis)

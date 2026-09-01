@@ -19,14 +19,18 @@ import torch
 import torch.nn.functional as F
 
 from megatron.training import get_args
-from megatron.core import parallel_state
 from megatron.core.transformer.spec_utils import build_module
 from megatron.core.tensor_parallel.layers import _initialize_affine_weight_gpu
 from megatron.core.transformer.mlp import MLP
 from megatron.core.transformer.transformer_config import TransformerConfig
-from mindspeed.core.tensor_parallel.tp_2d.group_api_2d import TPXCollectiveComm, TPXOverlapCollectiveComm, \
-    TPYCollectiveComm, TPYOverlapCollectiveComm
+from mindspeed.core.tensor_parallel.tp_2d.group_api_2d import (
+    TPXCollectiveComm,
+    TPXOverlapCollectiveComm,
+    TPYCollectiveComm,
+    TPYOverlapCollectiveComm,
+)
 from mindspeed.core.tensor_parallel.tp_2d.parallel_linear_2d import ParallelLinear2D
+from mindspeed.core.memory.recompute.recompute_common import should_recompute
 
 
 def should_recompute_activation(self):
@@ -34,44 +38,7 @@ def should_recompute_activation(self):
     if not args.recompute_activation_function or self.layer_number is None:
         return False
 
-    activation_recompute_layers = args.recompute_activation_function_num_layers
-    vpp_rank = parallel_state.get_virtual_pipeline_model_parallel_rank()
-    vpp_size = args.virtual_pipeline_model_parallel_size
-    pp_size = args.transformer_pipeline_model_parallel_size
-
-    if vpp_size is not None:
-        layer_per_chunk = args.num_layers_per_virtual_pipeline_stage
-    elif pp_size is not None:
-        layer_per_chunk = args.num_layers // pp_size
-    else:
-        layer_per_chunk = args.num_layers
-
-    if vpp_rank is None or not args.enable_recompute_layers_per_pp_rank:
-        vpp_rank = 0
-    if vpp_size is None or not args.enable_recompute_layers_per_pp_rank:
-        vpp_size = 1
-    recompute_priority = ((self.layer_number - 1) % layer_per_chunk) * vpp_size + vpp_rank
-    full_recompute_layers = args.recompute_num_layers
-
-    if full_recompute_layers:
-        if recompute_priority < full_recompute_layers:
-            # Do full re-computation when both full re-computation and activation re-computation are enabled
-            return False
-        elif activation_recompute_layers is None:
-            # Do activation function re-computation
-            return True
-        elif recompute_priority < full_recompute_layers + activation_recompute_layers:
-            # Do activation function re-computation
-            return True
-        else:
-            # No recomputation
-            return False
-
-    if activation_recompute_layers is None:
-        # Do activation function re-computation
-        return True
-    else:
-        return recompute_priority < activation_recompute_layers
+    return should_recompute(args, self.layer_number, args.recompute_activation_function_num_layers)
 
 
 def core_mlp_init(self, config, submodules, is_expert=False, input_size=None, shared_expert=False):
@@ -88,6 +55,7 @@ def core_mlp_init(self, config, submodules, is_expert=False, input_size=None, sh
         self.config.bias_gelu_fusion = False
 
     if _args.gelu_tanh:
+
         def gelu_tanh_approximation(x):
             return 0.5 * x * (1 + torch.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * torch.pow(x, 3))))
 
@@ -111,7 +79,7 @@ def core_mlp_init(self, config, submodules, is_expert=False, input_size=None, sh
             skip_bias_add=True,
             is_expert=is_expert,
             tp_comm_buffer_name='fc1',
-            shared_expert=shared_expert
+            shared_expert=shared_expert,
         )
     else:
         self.linear_fc1 = build_module(
@@ -124,7 +92,7 @@ def core_mlp_init(self, config, submodules, is_expert=False, input_size=None, sh
             bias=self.config.add_bias_linear,
             skip_bias_add=True,
             is_expert=is_expert,
-            tp_comm_buffer_name='fc1'
+            tp_comm_buffer_name='fc1',
         )
 
     self.activation_func = self.config.activation_func
@@ -141,7 +109,7 @@ def core_mlp_init(self, config, submodules, is_expert=False, input_size=None, sh
             skip_bias_add=True,
             is_expert=is_expert,
             tp_comm_buffer_name='fc2',
-            shared_expert=shared_expert
+            shared_expert=shared_expert,
         )
     else:
         self.linear_fc2 = build_module(
@@ -154,7 +122,7 @@ def core_mlp_init(self, config, submodules, is_expert=False, input_size=None, sh
             input_is_parallel=True,
             skip_bias_add=True,
             is_expert=is_expert,
-            tp_comm_buffer_name='fc2'
+            tp_comm_buffer_name='fc2',
         )
 
     self.shared_expert = shared_expert
@@ -179,7 +147,7 @@ def core_mlp_init(self, config, submodules, is_expert=False, input_size=None, sh
             enable_overlap_matmul_with_rs=_args.enable_overlap_matmul_with_rs,
             partition_dim=0,
             enable_backward_overlap_ag_with_matmul=_args.enable_backward_overlap_ag_with_matmul,
-            _initialize_affine_weight_gpu=_initialize_affine_weight_gpu
+            _initialize_affine_weight_gpu=_initialize_affine_weight_gpu,
         )
         self.linear_fc2 = ParallelLinear2D(
             self.config.ffn_hidden_size,
@@ -197,7 +165,7 @@ def core_mlp_init(self, config, submodules, is_expert=False, input_size=None, sh
             enable_overlap_matmul_with_rs=False,
             partition_dim=1,
             enable_backward_overlap_ag_with_matmul=False,
-            _initialize_affine_weight_gpu=_initialize_affine_weight_gpu
+            _initialize_affine_weight_gpu=_initialize_affine_weight_gpu,
         )
 
 
@@ -218,6 +186,7 @@ def core_mlp_init_wrapper(fn):
             _config.bias_gelu_fusion = False
 
         if _args.gelu_tanh:
+
             def gelu_tanh_approximation(x):
                 return 0.5 * x * (1 + torch.tanh(math.sqrt(2 / math.pi) * (x + 0.044715 * torch.pow(x, 3))))
 
@@ -241,5 +210,5 @@ def core_mlp_init_wrapper(fn):
             fn(self, *args, **kwargs)
         else:
             fn(self, _config, *args[1:], **kwargs)
-    return wrapper
 
+    return wrapper

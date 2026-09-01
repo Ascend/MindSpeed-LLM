@@ -88,7 +88,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
     <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/tensor-parallel.md">张量并行</a></td>
     <td>✅</td>
     <td>✅</td>
-    <td rowspan="30">【Ascend】</td>
+    <td rowspan="31">【Ascend】</td>
   </tr>
   <tr>
     <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/pipeline-parallel.md">流水线并行</a></td>
@@ -138,7 +138,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
     <td>✅</td>
   </tr>
   <tr>
-    <td rowspan="6">显存优化</td>
+    <td rowspan="7">显存优化</td>
     <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/reuse-fp32-param.md">参数副本复用</a></td>
     <td>✅</td>
     <td>✅</td>
@@ -157,6 +157,11 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
     <td><a href="mcore/recompute_relative.md">重计算</a></td>
     <td>✅</td>
     <td>✅</td>
+  </tr>
+  <tr>
+    <td><a href="mcore/deepseek4_fine_grained_recompute.md">DeepSeek V4细粒度重计算</a></td>
+    <td>✅</td>
+    <td>❌</td>
   </tr>
   <tr>
     <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/norm-recompute.md">Norm重计算</a></td>

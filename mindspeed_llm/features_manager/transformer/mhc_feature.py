@@ -18,6 +18,12 @@ class MHCFeature(MindSpeedFeature):
         group.add_argument(
             '--use-fused-mhc', action='store_true', default=False, help='use fused NPU operators for MHC pre/post.'
         )
+        group.add_argument(
+            '--mhc-recompute',
+            action='store_true',
+            default=False,
+            help='Enable fine-grained recompute for fused NPU MHC pre/post.',
+        )
 
     def register_patches(self, patch_manager, args):
         if args.enable_mhc:

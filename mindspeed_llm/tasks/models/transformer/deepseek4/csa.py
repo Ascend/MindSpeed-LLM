@@ -21,9 +21,10 @@ from megatron.core.transformer.module import MegatronModule
 from megatron.core.transformer.attention import SelfAttentionSubmodules
 from megatron.core.transformer.custom_layers.transformer_engine import TEColumnParallelLinear, TERowParallelLinear
 from megatron.core.transformer.enums import AttnMaskType
-from megatron.core import parallel_state
+from megatron.core import parallel_state, tensor_parallel
 from megatron.training import get_args
 from megatron.core.transformer.transformer_layer import get_transformer_layer_offset
+from mindspeed.model.transformer import should_recompute_norm
 
 from mindspeed_llm.core.tensor_parallel.layers import LinearNoTP
 from mindspeed_llm.core.transformer.custom_layers.transformer_engine import PTNorm
@@ -288,6 +289,12 @@ class DeepSeek4SelfAttention(MegatronModule):
         # BSND: load-balanced shard, rank holds two discontiguous chunks, cp_offset stays 0.
         self.tnd_continuous_shard = self.kv_allgather and args.reset_attention_mask
         self.softmax_scale = self.head_dim**-0.5
+        self.recompute_csa_attention = getattr(args, 'recompute_csa_attention', False)
+        self.is_mtp_attention = False
+        self.csa_q_norm_checkpoint = None
+        self.csa_sparse_attention_checkpoint = None
+        self.csa_o_up_checkpoint = None
+        self.csa_intermediate_outputs_discarded = False
 
         self.indexer = None
         if self.mode != LayerCompressMode.NO_COMPRESS:
@@ -509,6 +516,43 @@ class DeepSeek4SelfAttention(MegatronModule):
             avg_group=parallel_state.get_tensor_and_context_parallel_group(),
         )
 
+    def _should_recompute(self, enabled):
+        return enabled and not self.is_mtp_attention and self.training and torch.is_grad_enabled()
+
+    def _should_recompute_q_norm(self):
+        args = get_args()
+        return (
+            getattr(args, 'recompute_norm', False)
+            and not self.is_mtp_attention
+            and should_recompute_norm(self)
+            and self.training
+            and torch.is_grad_enabled()
+        )
+
+    def _linear_q_up_proj_output(self, q_compressed):
+        return self.linear_q_up_proj(q_compressed)[0]
+
+    def _q_norm(self, q):
+        args = get_args()
+        if args.use_fused_rmsnorm:
+            norm_gamma = torch.ones(q.shape[-1], device=q.device, dtype=torch.float32)
+            return torch_npu.npu_rms_norm(q, gamma=norm_gamma, epsilon=self.config.layernorm_epsilon)[0]
+        return q * torch.rsqrt(q.square().mean(-1, keepdim=True) + self.config.layernorm_epsilon)
+
+    def _q_norm_with_rope(self, q, freqs_cis):
+        q = self._q_norm(q)
+        q = q.transpose(0, 1)
+        q[..., -self.rope_head_dim :] = apply_rotary_emb(q[..., -self.rope_head_dim :], freqs_cis)
+        return q.transpose(0, 1)
+
+    def _q_up_norm_with_rope(self, q_compressed, freqs_cis):
+        q = self._linear_q_up_proj_output(q_compressed)
+        q = q.view(q.size(0), q.size(1), self.n_local_heads, -1)
+        return self._q_norm_with_rope(q, freqs_cis)
+
+    def _linear_o_up_proj_output(self, o):
+        return self.linear_o_up_proj(o)[0]
+
     def _linear_o_down_proj(self, grouped_output):
         weight_woa = rearrange(
             self.linear_o_down_proj.weight,
@@ -554,6 +598,54 @@ class DeepSeek4SelfAttention(MegatronModule):
 
         return output
 
+    def _o_down_proj_output(self, o, freqs_cis):
+        o = o.transpose(0, 1)
+        o_rope = apply_rotary_emb(o[..., -self.rope_head_dim :], freqs_cis, True)
+        o = torch.cat([o[..., : -self.rope_head_dim], o_rope], dim=-1)
+        o = o.transpose(0, 1)
+        o = rearrange(
+            o,
+            's b (g h) d -> s b g (h d)',
+            g=self.n_groups // self.world_size,
+            h=self.n_heads // self.n_groups,
+        )
+        return self._linear_o_down_proj(o).flatten(2)
+
+    def _o_down_up_proj_output(self, o, freqs_cis):
+        return self._linear_o_up_proj_output(self._o_down_proj_output(o, freqs_cis))
+
+    def _linear_o_up_proj_bias(self):
+        if getattr(self.linear_o_up_proj, 'skip_bias_add', False):
+            return getattr(self.linear_o_up_proj, 'bias', None)
+        return None
+
+    @staticmethod
+    def _discard_checkpoint_output(checkpoint):
+        if checkpoint is None or checkpoint.outputs is None:
+            return
+        for output in checkpoint.outputs:
+            output.untyped_storage().resize_(0)
+
+    def discard_csa_attention_intermediate_outputs(self):
+        """Discard q-norm/sparse outputs while retaining o-up until MHC post is safe."""
+        if self.csa_intermediate_outputs_discarded:
+            return
+        self._discard_checkpoint_output(self.csa_q_norm_checkpoint)
+        self._discard_checkpoint_output(self.csa_sparse_attention_checkpoint)
+        self.csa_intermediate_outputs_discarded = True
+
+    def discard_csa_attention_output(self, hook_tensor):
+        if self.csa_q_norm_checkpoint is not None:
+            self.csa_q_norm_checkpoint.discard_output_and_register_recompute(hook_tensor)
+            self.csa_q_norm_checkpoint = None
+        if self.csa_sparse_attention_checkpoint is not None:
+            self.csa_sparse_attention_checkpoint.discard_output_and_register_recompute(hook_tensor)
+            self.csa_sparse_attention_checkpoint = None
+        if self.csa_o_up_checkpoint is not None:
+            self.csa_o_up_checkpoint.discard_output_and_register_recompute(hook_tensor)
+            self.csa_o_up_checkpoint = None
+        self.csa_intermediate_outputs_discarded = False
+
     def forward(
         self,
         hidden_states: torch.Tensor,
@@ -582,28 +674,34 @@ class DeepSeek4SelfAttention(MegatronModule):
             self.freqs_cis = permute_cp_shard(self.freqs_cis, reorder=False)
         q_compressed = self.linear_q(hidden_states)
         kv_compressed = self.linear_kv(hidden_states)
+        recompute_csa_attention = self._should_recompute(self.recompute_csa_attention)
+        recompute_q_norm = self._should_recompute_q_norm()
+        self.csa_intermediate_outputs_discarded = False
 
         # ========================================
         # q layer_norm+wq_b + RMS + rope
         q_compressed = self.q_layernorm(q_compressed)  # s,b,lora_rank
 
-        q, _ = self.linear_q_up_proj(q_compressed)  # s,b,n_heads_local * self.head_dim
-
-        q = q.view(q_len, bsz, self.n_local_heads, -1)
-
-        if args.use_fused_rmsnorm:
-            nD = q.shape[-1]
-            norm_gamma = torch.ones(nD, device=q.device, dtype=torch.float32)
-            q = torch_npu.npu_rms_norm(q, gamma=norm_gamma, epsilon=self.config.layernorm_epsilon)[0]
-        else:
-            q = q * torch.rsqrt(q.square().mean(-1, keepdim=True) + self.config.layernorm_epsilon)
-
-        q = q.transpose(0, 1)
         global_freqs_cis = self.get_freqs_cis(start_pos, local_seq_len=q_len_local, get_global=True)
         local_freqs_cis = self.get_freqs_cis(start_pos, local_seq_len=q_len_local, get_global=False)
-        # q is global; apply global RoPE.
-        q[..., -self.rope_head_dim :] = apply_rotary_emb(q[..., -self.rope_head_dim :], global_freqs_cis)
-        q = q.transpose(0, 1)
+        q_norm_checkpoint = None
+        if recompute_csa_attention and recompute_q_norm:
+            q_norm_checkpoint = tensor_parallel.CheckpointWithoutOutput()
+            q = q_norm_checkpoint.checkpoint(self._q_up_norm_with_rope, q_compressed, global_freqs_cis)
+        else:
+            if recompute_csa_attention:
+                q_up_checkpoint = tensor_parallel.CheckpointWithoutOutput()
+                q = q_up_checkpoint.checkpoint(self._linear_q_up_proj_output, q_compressed)
+            else:
+                q = self._linear_q_up_proj_output(q_compressed)
+            q = q.view(q_len, bsz, self.n_local_heads, -1)
+            if recompute_q_norm:
+                q_norm_checkpoint = tensor_parallel.CheckpointWithoutOutput()
+                q = q_norm_checkpoint.checkpoint(self._q_norm_with_rope, q, global_freqs_cis)
+            else:
+                q = self._q_norm_with_rope(q, global_freqs_cis)
+            if recompute_csa_attention:
+                q_up_checkpoint.discard_output_and_register_recompute(q)
 
         # ========================================
         # kv norm + rope  &topk_idxs
@@ -669,62 +767,86 @@ class DeepSeek4SelfAttention(MegatronModule):
 
         # get kv compress topk idxs
         compress_topk_idxs = None
+        compress_topk_score = None
+        query_index = key_index = weights = None
         if self.mode != LayerCompressMode.NO_COMPRESS:
             offset = 0 if self.use_sparse_flash_attn else kv.size(0)
             if self.indexer is not None:
                 # indexer: q uses local freqs_cis, compressor uses prefix freqs_cis; x gathered then rearranged.
-                _x_for_indexer = hidden_states.detach()
-                _q_for_indexer = q_compressed.detach()
+                _x_for_indexer = hidden_states
+                _q_for_indexer = q_compressed
                 _local_freqs_for_indexer = local_freqs_cis
                 _freqs_cis_for_kv = _prefix_freqs_cis
-                # weights_proj needs local x (pre-gather) to match local q length.
-                _x_local_for_weights = _x_for_indexer
-                if packed_seq_params is not None and pre_gather_len is not None:
-                    _x_gathered = gather_from_sp_cp(_x_for_indexer, tnd=True)
-                    _x_for_indexer = _rearrange_prefix_kv(_x_gathered, _fix_prefix_kv_segments)
-                query_index, key_index, weights, dsa_hidden_states = self.indexer.forward_with_index_compress(
-                    _x_for_indexer,
-                    _q_for_indexer,
-                    start_pos,
-                    _local_freqs_for_indexer,
-                    packed_seq_params,
-                    q_rope_preapplied=False,
-                    freqs_cis_for_kv=_freqs_cis_for_kv,
-                    x_for_weights=_x_local_for_weights,
-                )
-                # TND: key_index stays local; cu_seqlens_k derived from actual shape in forward_with_scores_compress.
-                query_index, key_index, weights = self.indexer.all_gather_qk_weight_kvallgather(
-                    query_index, key_index, weights, tnd=packed_seq_params is not None
-                )
-                dsa_indexer_context = torch.no_grad() if args.use_fused_lightning_indexer_loss else nullcontext()
-                with dsa_indexer_context:
-                    compress_topk_idxs, compress_topk_score = self.indexer.forward_with_scores_compress(
-                        dsa_hidden_states,
-                        query_index,
-                        key_index,
-                        weights,
-                        attention_mask,
-                        packed_seq_params,
+                base_attention_mask = attention_mask
+
+                def indexer_forward(x_, q_compressed_, local_freqs_, *optional_attention_mask):
+                    indexer_attention_mask = (
+                        optional_attention_mask[0] if optional_attention_mask else base_attention_mask
+                    )
+                    # weights_proj consumes the local pre-gather input so its sequence length matches q.
+                    x_local_for_weights = x_.detach()
+                    x_for_indexer = x_local_for_weights
+                    if packed_seq_params is not None and pre_gather_len is not None:
+                        x_for_indexer = gather_from_sp_cp(x_for_indexer, tnd=True)
+                        x_for_indexer = _rearrange_prefix_kv(x_for_indexer, _fix_prefix_kv_segments)
+                    query_index_, key_index_, weights_, dsa_hidden_states_ = self.indexer.forward_with_index_compress(
+                        x_for_indexer,
+                        q_compressed_.detach(),
                         start_pos,
-                        self.indexer.index_topk,
-                        offset,
-                        self.indexer.compress_ratio,
+                        local_freqs_,
+                        packed_seq_params,
+                        q_rope_preapplied=False,
+                        freqs_cis_for_kv=_freqs_cis_for_kv,
+                        x_for_weights=x_local_for_weights,
                     )
-                    compress_topk_idxs, compress_topk_score = self.indexer.post_process_index(
-                        compress_topk_idxs, compress_topk_score
+                    # TND: key_index stays local; cu_seqlens_k is derived from the actual shape.
+                    query_index_, key_index_, weights_ = self.indexer.all_gather_qk_weight_kvallgather(
+                        query_index_, key_index_, weights_, tnd=packed_seq_params is not None
                     )
-                if not args.use_fused_lightning_indexer_loss:
-                    b, s1, _ = compress_topk_idxs.size()
-                    s2 = key_index.size(0)
-                    attention_mask = self.indexer.generate_sparse_mask_compress(
-                        compress_topk_idxs,
-                        attention_mask,
+                    dsa_indexer_context = torch.no_grad() if args.use_fused_lightning_indexer_loss else nullcontext()
+                    with dsa_indexer_context:
+                        compress_topk_idxs_, compress_topk_score_ = self.indexer.forward_with_scores_compress(
+                            dsa_hidden_states_,
+                            query_index_,
+                            key_index_,
+                            weights_,
+                            indexer_attention_mask,
+                            packed_seq_params,
+                            start_pos,
+                            self.indexer.index_topk,
+                            offset,
+                            self.indexer.compress_ratio,
+                        )
+                        compress_topk_idxs_, compress_topk_score_ = self.indexer.post_process_index(
+                            compress_topk_idxs_, compress_topk_score_
+                        )
+                    if args.use_fused_lightning_indexer_loss:
+                        return compress_topk_idxs_, compress_topk_score_, query_index_, key_index_, weights_
+
+                    b, s1, _ = compress_topk_idxs_.size()
+                    s2 = key_index_.size(0)
+                    indexer_attention_mask = self.indexer.generate_sparse_mask_compress(
+                        compress_topk_idxs_,
+                        indexer_attention_mask,
                         (b, s1, s2),
-                        dsa_hidden_states.dtype,
-                        dsa_hidden_states.device,
+                        dsa_hidden_states_.dtype,
+                        dsa_hidden_states_.device,
                         offset,
                         self.indexer.compress_ratio,
                     )
+                    return compress_topk_idxs_, compress_topk_score_, indexer_attention_mask
+
+                indexer_inputs = [_x_for_indexer, _q_for_indexer, _local_freqs_for_indexer]
+                if isinstance(attention_mask, torch.Tensor):
+                    indexer_inputs.append(attention_mask)
+                if recompute_csa_attention:
+                    indexer_outputs = tensor_parallel.checkpoint(indexer_forward, False, *indexer_inputs)
+                else:
+                    indexer_outputs = indexer_forward(*indexer_inputs)
+                if args.use_fused_lightning_indexer_loss:
+                    compress_topk_idxs, compress_topk_score, query_index, key_index, weights = indexer_outputs
+                else:
+                    compress_topk_idxs, compress_topk_score, attention_mask = indexer_outputs
             else:
                 compress_topk_idxs = self.get_compress_topk_idxs(
                     self.compress_ratio, bsz, q_len_global, start_pos, offset, self.kv_allgather
@@ -747,6 +869,8 @@ class DeepSeek4SelfAttention(MegatronModule):
                         kv_compress = gather_from_sp_cp(kv_compress, tnd=False)
                 elif cu_seqlens_cmp_kv is not None:
                     assert kv_compress.shape[0] == cu_seqlens_cmp_kv[-1]
+                if recompute_csa_attention and hasattr(self.compressor, 'discard_x_float_output'):
+                    self.compressor.discard_x_float_output(kv_compress)
             else:
                 compress_topk_idxs = None
                 cu_seqlens_cmp_kv = None
@@ -760,35 +884,82 @@ class DeepSeek4SelfAttention(MegatronModule):
             and torch.is_grad_enabled()
             and args.use_fused_lightning_indexer_loss
         )
+        sparse_attention_checkpoint = None
         if use_smla_with_slig:
-            _cmp_ratio_for_slig = self.compress_ratio if kv_compress is not None else 1
-            o = self.sparse_attention_with_indexer_loss(
-                q,
-                kv,
-                kv_compress,
-                compress_topk_idxs,
-                self.attn_sink,
-                self.softmax_scale,
-                _cmp_ratio_for_slig,
-                q_len_global,
-                query_index,
-                key_index,
-                weights,
-                packed_seq_params,
-            )
+            has_kv_compress = kv_compress is not None
+
+            def sparse_attention_with_indexer_loss_forward(q_, kv_, *optional_inputs):
+                input_idx = 0
+                kv_compress_ = optional_inputs[input_idx] if has_kv_compress else None
+                input_idx += int(has_kv_compress)
+                compress_topk_idxs_, query_index_, key_index_, weights_ = optional_inputs[input_idx:]
+                return self.sparse_attention_with_indexer_loss(
+                    q_,
+                    kv_,
+                    kv_compress_,
+                    compress_topk_idxs_,
+                    self.attn_sink,
+                    self.softmax_scale,
+                    self.compress_ratio if kv_compress_ is not None else 1,
+                    q_len_global,
+                    query_index_,
+                    key_index_,
+                    weights_,
+                    packed_seq_params,
+                )
+
+            if recompute_csa_attention:
+                sparse_attention_checkpoint = tensor_parallel.CheckpointWithoutOutput()
+                sparse_attention_inputs = [q, kv]
+                if has_kv_compress:
+                    sparse_attention_inputs.append(kv_compress)
+                sparse_attention_inputs.extend([compress_topk_idxs, query_index, key_index, weights])
+                o = sparse_attention_checkpoint.checkpoint(
+                    sparse_attention_with_indexer_loss_forward,
+                    *sparse_attention_inputs,
+                )
+            else:
+                sparse_attention_inputs = [q, kv]
+                if has_kv_compress:
+                    sparse_attention_inputs.append(kv_compress)
+                sparse_attention_inputs.extend([compress_topk_idxs, query_index, key_index, weights])
+                o = sparse_attention_with_indexer_loss_forward(*sparse_attention_inputs)
         else:
-            _cmp_ratio_for_attn = self.compress_ratio if kv_compress is not None else 1
-            o = self.sparse_attention(
-                q,
-                kv,
-                kv_compress,
-                compress_topk_idxs,
-                self.attn_sink,
-                self.softmax_scale,
-                _cmp_ratio_for_attn,
-                q_len_global,
-                packed_seq_params,
-            )
+            has_kv_compress = kv_compress is not None
+            has_compress_topk_idxs = compress_topk_idxs is not None
+
+            def sparse_attention_forward(q_, kv_, *optional_inputs):
+                input_idx = 0
+                kv_compress_ = optional_inputs[input_idx] if has_kv_compress else None
+                input_idx += int(has_kv_compress)
+                compress_topk_idxs_ = optional_inputs[input_idx] if has_compress_topk_idxs else None
+                return self.sparse_attention(
+                    q_,
+                    kv_,
+                    kv_compress_,
+                    compress_topk_idxs_,
+                    self.attn_sink,
+                    self.softmax_scale,
+                    self.compress_ratio if kv_compress_ is not None else 1,
+                    q_len_global,
+                    packed_seq_params,
+                )
+
+            if recompute_csa_attention:
+                sparse_attention_checkpoint = tensor_parallel.CheckpointWithoutOutput()
+                sparse_attention_inputs = [q, kv]
+                if has_kv_compress:
+                    sparse_attention_inputs.append(kv_compress)
+                if has_compress_topk_idxs:
+                    sparse_attention_inputs.append(compress_topk_idxs)
+                o = sparse_attention_checkpoint.checkpoint(sparse_attention_forward, *sparse_attention_inputs)
+            else:
+                sparse_attention_inputs = [q, kv]
+                if has_kv_compress:
+                    sparse_attention_inputs.append(kv_compress)
+                if has_compress_topk_idxs:
+                    sparse_attention_inputs.append(compress_topk_idxs)
+                o = sparse_attention_forward(*sparse_attention_inputs)
             if (
                 args.indexer_loss_coeff > 0
                 and self.mode != LayerCompressMode.NO_COMPRESS
@@ -833,23 +1004,22 @@ class DeepSeek4SelfAttention(MegatronModule):
                 )
                 o = DSAIndexerLossAutoScaler.apply(o, loss)
 
-        o = o.transpose(0, 1)
-        o_rope = apply_rotary_emb(o[..., -self.rope_head_dim :], global_freqs_cis, True)
-        o = torch.cat([o[..., : -self.rope_head_dim], o_rope], dim=-1)
-        o = o.transpose(0, 1)
+        if recompute_q_norm and sparse_attention_checkpoint is None:
+            q_norm_checkpoint.discard_output_and_register_recompute(o)
 
-        o = rearrange(
-            o,
-            's b (g h) d -> s b g (h d)',
-            s=q_len,
-            b=bsz,
-            g=self.n_groups // self.world_size,
-            h=self.n_heads // self.n_groups,
-            d=self.head_dim,
-        )
+        if recompute_csa_attention:
+            self.csa_o_up_checkpoint = tensor_parallel.CheckpointWithoutOutput()
+            core_attn_out = self.csa_o_up_checkpoint.checkpoint(self._o_down_up_proj_output, o, global_freqs_cis)
+            bias = self._linear_o_up_proj_bias()
+        else:
+            self.csa_o_up_checkpoint = None
+            o = self._o_down_proj_output(o, global_freqs_cis)
+            core_attn_out, bias = self.linear_o_up_proj(o)
 
-        o = self._linear_o_down_proj(o)
-        core_attn_out, bias = self.linear_o_up_proj(o.flatten(2))
+        if sparse_attention_checkpoint is not None:
+            if recompute_q_norm:
+                self.csa_q_norm_checkpoint = q_norm_checkpoint
+            self.csa_sparse_attention_checkpoint = sparse_attention_checkpoint
 
         return core_attn_out, bias
 
@@ -917,3 +1087,4 @@ class DeepSeek4MTPSelfAttention(DeepSeek4SelfAttention):
         self.compress_ratio = 1
         self.mode = LayerCompressMode.NO_COMPRESS
         self.compressor = None
+        self.is_mtp_attention = True

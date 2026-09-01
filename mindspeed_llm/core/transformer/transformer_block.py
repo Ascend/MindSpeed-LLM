@@ -20,7 +20,7 @@ from typing import Optional
 
 import torch
 from torch import Tensor
-from megatron.core import InferenceParams, tensor_parallel, parallel_state, mpu
+from megatron.core import InferenceParams, tensor_parallel, parallel_state
 from megatron.core.packed_seq_params import PackedSeqParams
 from megatron.core.transformer.identity_op import IdentityOp
 from megatron.training import get_args
@@ -37,6 +37,7 @@ from mindspeed.core.pipeline_parallel.noop_layers.adaptor import NoopTransformer
 from mindspeed.core.transformer.transformer_block import _get_layer_offset
 from mindspeed.core.transformer.transformer import norm_recompute_forward
 from mindspeed.model.transformer import should_recompute_norm
+from mindspeed.core.memory.recompute.recompute_common import get_recompute_priority
 
 
 def get_num_layers_to_build(config: TransformerConfig) -> int:
@@ -583,15 +584,11 @@ def _block_method_checkpointed_forward_func(
         return custom_forward
 
     global_args = get_args()
-    vpp_rank = mpu.get_virtual_pipeline_model_parallel_rank()
-    vpp_size = global_args.virtual_pipeline_model_parallel_size
-    if vpp_rank is None or not global_args.enable_recompute_layers_per_pp_rank:
-        vpp_rank = 0
-    if vpp_size is None or not global_args.enable_recompute_layers_per_pp_rank:
-        vpp_size = 1
 
     for single_layer in range(self.num_layers_per_pipeline_rank):
-        should_recompute = (single_layer * vpp_size + vpp_rank) < self.config.recompute_num_layers
+        layer = self._get_layer(single_layer)
+        recompute_priority = get_recompute_priority(global_args, layer.layer_number)
+        should_recompute = recompute_priority < self.config.recompute_num_layers
         if should_recompute:
             hidden_states, context = tensor_parallel.checkpoint(
                 custom(single_layer, single_layer + 1),
