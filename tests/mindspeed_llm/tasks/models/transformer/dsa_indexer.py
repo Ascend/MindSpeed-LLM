@@ -1018,6 +1018,7 @@ def fused_lightning_indexer(
 ):
     q = rearrange(q, 's b h d -> b s h d').to(torch.bfloat16)
     k = rearrange(k, 's b h d -> b s h d').to(torch.bfloat16)
+    k = k.view(-1).view(k.shape).contiguous()
     weights = rearrange(weights, 's b d -> b s d').to(torch.bfloat16)
 
     topk_indices, topk_score = torch_npu.npu_lightning_indexer(

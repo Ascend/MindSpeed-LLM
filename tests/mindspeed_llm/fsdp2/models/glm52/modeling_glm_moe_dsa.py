@@ -543,6 +543,7 @@ def npu_sparse_flash_attention_forward(
     query_rope_bshd, key_rope_bshd = _prepare_bshd_rope_inputs(module, query_rope, key_rope, query_bshd.shape[2])
     actual_seq_lengths_query = torch.tensor([query_bshd.shape[1]], dtype=torch.int32, device=query_bshd.device)
     actual_seq_lengths_kv = torch.tensor([key_bshd.shape[1]], dtype=torch.int32, device=key_bshd.device)
+    key_bshd = key_bshd.view(-1).view(key_bshd.shape).contiguous()
 
     attn_outs = torch_npu.npu_sparse_flash_attention(
         query_bshd,

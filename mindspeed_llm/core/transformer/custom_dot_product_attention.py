@@ -376,6 +376,7 @@ class CustomDotProductAttentionImpl:
                     query_rope = rearrange(query_rope, 's b h d -> b s h d')
                     key_rope = rearrange(key_rope, 's b h d -> b s h d')
                     actual_seq_len = torch.tensor([query.shape[1]], dtype=torch.int32, device=query.device)
+                    key = key.view(-1).view(key.shape).contiguous()
 
                     output, softmax_max, softmax_sum, *_ = torch_npu.npu_sparse_flash_attention(
                         query,
