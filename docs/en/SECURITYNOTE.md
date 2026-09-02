@@ -87,4 +87,4 @@ MindSpeed LLM has not yet released a wheel package. Therefore, it does not provi
 
 ## Vulnerability Response
 
-We place high importance on the security of the community version. The Mind open-source community receives, investigates, and discloses security vulnerabilities related to this community. For details, see [Ascend Vulnerability Response](https://gitcode.com/Ascend/community/blob/master/docs/security.md).
+We place high importance on the security of the community version. The Mind open-source community receives, investigates, and discloses security vulnerabilities related to this community. <!--For details, see [Ascend Vulnerability Response](https://gitcode.com/Ascend/community/blob/master/docs/security.md).-->

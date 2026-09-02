@@ -21,14 +21,14 @@ This document explains how to quickly install MindSpeed LLM, the PyTorch-based d
 >
 > The "√" in the table indicates support, and "x" indicates no support.
 
-- For the OSs supported by each hardware product in physical machine deployment scenarios, see the [Compatibility Query Assistant](https://www.hiascend.com/hardware/compatibility).
-- For the OSs supported by each hardware product in VM and container deployment scenarios, see the ["OS Compatibility"](https://www.hiascend.com/document/detail/en/CANNCommunityEdition/910/softwareinst/instg/instg_0101.html?OS=openEuler&InstallType=netyum) section in *CANN Software Installation*.
+<!-- - For the OSs supported by each hardware product in physical machine deployment scenarios, see the [Compatibility Query Assistant](https://www.hiascend.com/en/hardware/compatibility).
+- For the OSs supported by each hardware product in VM and container deployment scenarios, see the ["OS Compatibility"](https://www.hiascend.com/document/detail/en/CANNCommunityEdition/910/softwareinst/instg/instg_0101.html?OS=openEuler&InstallType=netyum) section in *CANN Software Installation*.-->
 
 ## Preparation Before Installation
 
 See [Related Product Version Mapping](../../release_notes_llm.md#related-product-version-mapping) in the *Release Notes* to download and install the corresponding software version.
 
-Click [Firmware and Drivers](https://www.hiascend.com/hardware/firmware-drivers) and follow the guidance to install the firmware and drivers.
+Click [Firmware and Drivers](https://www.hiascend.com/en/hardware/firmware-drivers) and follow the guidance to install the firmware and drivers.
 
 > [!NOTICE]
 >
@@ -145,7 +145,7 @@ Follow these steps to obtain the corresponding source code, install the required
 
 2. Install CANN.
 
-   Install the matching versions of the NPU driver and firmware, and install the CANN software, including the Toolkit, ops, and NNAL packages, and configure the CANN environment variables. For details, see [CANN Software Installation](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/910/softwareinst/instg/instg_0000.html).
+   Install the matching versions of the NPU driver and firmware, and install the CANN software, including the Toolkit, ops, and NNAL packages, and configure the CANN environment variables. For details, see [CANN Quick Installation](https://www.hiascend.com/en/cann/download?versionId=788&ids=d806%2Ch0501%2Ch0601%2Ch0703).
 
    CANN software provides a script for setting process-level environment variables. Before you run application code with NPU acceleration in training or inference scenarios, you must call this script. Otherwise, the application code cannot run.
 
@@ -163,11 +163,11 @@ Follow these steps to obtain the corresponding source code, install the required
 
    The preceding commands use the default installation paths when no installation path is specified during offline CANN installation as an example, showing the default installation paths and corresponding environment variable configuration commands for different users.
 
-   If you specify an installation path or use another installation method, see [CANN Software Installation](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/910/softwareinst/instg/instg_0000.html) for instructions on configuring environment variables.
+   If you specify an installation path or use another installation method, see [CANN Software Installation](https://www.hiascend.com/document/detail/en/CANNCommunityEdition/910/softwareinst/instg/instg_0000.html) for instructions on configuring environment variables.
 
 3. Install PyTorch and TorchNPU.
 
-   Refer to [Install TorchNPU](https://www.hiascend.com/document/detail/zh/Pytorch/2610/installguide/swinstall/docs/zh/installation_guide/installation_via_binary_package.md) in the *TorchNPU Software Installation Guide* to obtain matching versions of the PyTorch and TorchNPU packages.
+   Refer to [Install TorchNPU](https://www.hiascend.com/document/detail/en/Pytorch/2610/installguide/swinstall/docs/en/installation_guide/installation_via_binary_package.md) in the *TorchNPU Software Installation Guide* to obtain matching versions of the PyTorch and TorchNPU packages.
 
    You can use the following installation commands:
 
