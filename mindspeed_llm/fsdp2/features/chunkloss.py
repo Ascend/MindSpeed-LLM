@@ -1,6 +1,5 @@
 from typing import Any, Callable, Optional, Tuple
 import torch
-import torch.nn.functional as F
 
 
 class ChunkLoss(torch.autograd.Function):
@@ -17,13 +16,13 @@ class ChunkLoss(torch.autograd.Function):
 
     @staticmethod
     def forward(
-            ctx,
-            hidden_states: torch.Tensor,
-            head_weight: torch.Tensor,
-            head_bias: Optional[torch.Tensor],
-            loss_forward: Callable,
-            loss_kwargs_chunks: list[Any],
-            chunk_size: int,
+        ctx,
+        hidden_states: torch.Tensor,
+        head_weight: torch.Tensor,
+        head_bias: Optional[torch.Tensor],
+        loss_forward: Callable,
+        loss_kwargs_chunks: list[Any],
+        chunk_size: int,
     ) -> torch.Tensor:
         """
         Forward pass: compute the total loss by processing hidden states in chunks.
@@ -43,7 +42,7 @@ class ChunkLoss(torch.autograd.Function):
         """
 
         if head_bias is not None:
-            raise NotImplementedError(f"head_bias is not supported in ChunkLoss")
+            raise NotImplementedError("head_bias is not supported in ChunkLoss")
 
         device = hidden_states.device
         # Initialize accumulated scalar loss on the same device
@@ -58,7 +57,7 @@ class ChunkLoss(torch.autograd.Function):
 
         # Process each chunk independently
         for hidden_states_chunk, grad_inputs_chunk, loss_kwargs in zip(
-                hidden_states_chunks, grad_inputs_chunks, loss_kwargs_chunks
+            hidden_states_chunks, grad_inputs_chunks, loss_kwargs_chunks
         ):
             # Compute both gradients and loss value for this chunk
             (chunk_grad_input, chunk_grad_weight), (per_chunk_loss, _) = torch.func.grad_and_value(
@@ -96,12 +95,12 @@ class ChunkLoss(torch.autograd.Function):
 
 
 def fixed_cross_entropy(
-        source: torch.Tensor,
-        target: torch.Tensor,
-        alpha: Optional[torch.Tensor] = None,
-        ignore_index: int = -100,
-        reduction: str = "sum",
-        **kwargs,
+    source: torch.Tensor,
+    target: torch.Tensor,
+    alpha: Optional[torch.Tensor] = None,
+    ignore_index: int = -100,
+    reduction: str = "sum",
+    **kwargs,
 ) -> torch.Tensor:
     """
     Compute a modified cross-entropy loss that optionally normalizes the loss by a per-example or global scaling factor (alpha).
@@ -151,15 +150,15 @@ def fixed_cross_entropy(
 
 
 def calculate_lm_loss(
-        hidden_states: torch.Tensor,
-        head_weight: torch.Tensor,
-        head_bias: Optional[torch.Tensor] = None,
-        *,
-        shift_labels: torch.Tensor,
-        alpha: Optional[torch.Tensor] = None,
-        ignore_index: int = -100,
-        reduction: Optional[str] = None,
-        **kwargs
+    hidden_states: torch.Tensor,
+    head_weight: torch.Tensor,
+    head_bias: Optional[torch.Tensor] = None,
+    *,
+    shift_labels: torch.Tensor,
+    alpha: Optional[torch.Tensor] = None,
+    ignore_index: int = -100,
+    reduction: Optional[str] = None,
+    **kwargs,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     """
     Compute the language modeling (LM) loss using a linear output head and a modified cross-entropy function.
@@ -213,16 +212,11 @@ def calculate_lm_loss(
 
     # Project to logits using only the weight (bias is intentionally omitted here)
     # Cast to float to ensure numerical stability in loss computation
-    logits = F.linear(hidden_states, head_weight).float()
+    logits = torch.mm(hidden_states, head_weight).float()
 
     # Compute the modified cross-entropy loss
     loss = fixed_cross_entropy(
-        logits,
-        shift_labels,
-        alpha=alpha,
-        ignore_index=ignore_index,
-        reduction=reduction,
-        **kwargs
+        logits, shift_labels, alpha=alpha, ignore_index=ignore_index, reduction=reduction, **kwargs
     )
 
     return loss, logits
@@ -243,11 +237,4 @@ def chunk_loss(hidden_states, head_weight, head_bias, loss_forward, loss_kwargs_
     Returns:
         The total accumulated loss as a scalar tensor.
     """
-    return ChunkLoss.apply(
-        hidden_states,
-        head_weight,
-        head_bias,
-        loss_forward,
-        loss_kwargs_chunks,
-        chunk_size
-    )
+    return ChunkLoss.apply(hidden_states, head_weight, head_bias, loss_forward, loss_kwargs_chunks, chunk_size)
