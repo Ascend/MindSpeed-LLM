@@ -204,8 +204,27 @@ class Trainer:
             if extra_state:
                 # Restore training step counters
                 self.global_step = state["extra_state"]["global_step"]
-                self._global_step_last_logged = state['extra_state']['_global_step_last_logged']
-                self._last_logged_step = state['extra_state']['_global_step_last_logged']
+                self._global_step_last_logged = state["extra_state"].get("_global_step_last_logged", self.global_step)
+                # Use the saved logging cursor; older checkpoints may only have global_step.
+                self._last_logged_step = state["extra_state"].get("_last_logged_step", self.global_step)
+                self._last_logged_loss_scalar = state["extra_state"].get("_last_logged_loss_scalar", 0.0)
+                self._last_logged_lm_loss_scalar = state["extra_state"].get("_last_logged_lm_loss_scalar", 0.0)
+                self._last_logged_mtp_loss_scalar = state["extra_state"].get("_last_logged_mtp_loss_scalar", 0.0)
+                self._last_logged_aux_loss_scalar = state["extra_state"].get("_last_logged_aux_loss_scalar", 0.0)
+                # Keep (total - last_logged) on the same baseline across resume.
+                # Prefer restored totals; if missing, seed from last_logged cursors.
+                self._total_loss_scalar = state["extra_state"].get("_total_loss_scalar", self._last_logged_loss_scalar)
+                self._total_lm_loss_scalar = state["extra_state"].get(
+                    "_total_lm_loss_scalar", self._last_logged_lm_loss_scalar
+                )
+                self._total_mtp_loss_scalar = state["extra_state"].get(
+                    "_total_mtp_loss_scalar", self._last_logged_mtp_loss_scalar
+                )
+                self._total_aux_loss_scalar = state["extra_state"].get(
+                    "_total_aux_loss_scalar", self._last_logged_aux_loss_scalar
+                )
+                if "train_metric" in state["extra_state"]:
+                    self.train_monitor.load_state_dict(state["extra_state"]["train_metric"])
 
                 # Calculate completed epochs and steps within current epoch based on global step
                 epochs_trained = int(self.global_step // total_updates_per_epoch)
@@ -400,6 +419,14 @@ class Trainer:
                                 "global_step": self.global_step,
                                 "_global_step_last_logged": self._global_step_last_logged,
                                 "_last_logged_step": self._last_logged_step,
+                                "_last_logged_loss_scalar": self._last_logged_loss_scalar,
+                                "_last_logged_lm_loss_scalar": self._last_logged_lm_loss_scalar,
+                                "_last_logged_mtp_loss_scalar": self._last_logged_mtp_loss_scalar,
+                                "_last_logged_aux_loss_scalar": self._last_logged_aux_loss_scalar,
+                                "_total_loss_scalar": self._total_loss_scalar,
+                                "_total_lm_loss_scalar": self._total_lm_loss_scalar,
+                                "_total_mtp_loss_scalar": self._total_mtp_loss_scalar,
+                                "_total_aux_loss_scalar": self._total_aux_loss_scalar,
                                 "lr_scheduler": self.lr_scheduler.state_dict(),
                                 "train_metric": self.train_monitor.state_dict(),
                                 "torch_rng_state": torch.get_rng_state(),
@@ -436,6 +463,14 @@ class Trainer:
                             "global_step": self.global_step,
                             "_global_step_last_logged": self._global_step_last_logged,
                             "_last_logged_step": self._last_logged_step,
+                            "_last_logged_loss_scalar": self._last_logged_loss_scalar,
+                            "_last_logged_lm_loss_scalar": self._last_logged_lm_loss_scalar,
+                            "_last_logged_mtp_loss_scalar": self._last_logged_mtp_loss_scalar,
+                            "_last_logged_aux_loss_scalar": self._last_logged_aux_loss_scalar,
+                            "_total_loss_scalar": self._total_loss_scalar,
+                            "_total_lm_loss_scalar": self._total_lm_loss_scalar,
+                            "_total_mtp_loss_scalar": self._total_mtp_loss_scalar,
+                            "_total_aux_loss_scalar": self._total_aux_loss_scalar,
                             "lr_scheduler": self.lr_scheduler.state_dict(),
                             "train_metric": self.train_monitor.state_dict(),
                             "torch_rng_state": torch.get_rng_state(),
