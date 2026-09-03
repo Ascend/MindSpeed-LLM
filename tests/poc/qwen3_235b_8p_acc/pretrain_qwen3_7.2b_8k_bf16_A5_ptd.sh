@@ -138,7 +138,8 @@ GPT_ARGS="
     --group-query-attention \
     --num-query-groups 4 \
     --use-fused-ring-attention-update \
-    --swap-optimizer
+    --swap-optimizer \
+    --ckpt-format torch
 "
 
 OVERLAP_ARGS="
@@ -160,11 +161,6 @@ OUTPUT_ARGS="
     --no-load-rng
 "
 
-CKPT_ARGS="
-    --enable-hf2mg-convert \
-    --model-type-hf qwen3-moe
-"
-
 mkdir -p logs
 
 
@@ -178,7 +174,6 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     $OVERLAP_ARGS \
     $TRAIN_ARGS \
     $MODEL_PARALLEL_ARGS \
-    $CKPT_ARGS \
     --transformer-impl transformer_engine \
     --load  ${CKPT_LOAD_DIR} \
     --save  ${CKPT_SAVE_DIR} \

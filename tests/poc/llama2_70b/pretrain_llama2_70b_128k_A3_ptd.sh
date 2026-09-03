@@ -100,15 +100,9 @@ OUTPUT_ARGS="
     --eval-iters 10
 "
 
-CKPT_ARGS="
-    --enable-hf2mg-convert \
-    --model-type-hf llama2
-"
-
 python3 -m torch.distributed.launch ${DISTRIBUTED_ARGS} pretrain_gpt.py \
     ${GPT_ARGS} \
     ${DATA_ARGS} \
-    ${CKPT_ARGS} \
     ${OUTPUT_ARGS} \
     --distributed-backend nccl \
     --load ${CKPT_LOAD_DIR} \

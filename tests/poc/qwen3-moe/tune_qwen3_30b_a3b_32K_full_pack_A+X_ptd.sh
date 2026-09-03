@@ -166,11 +166,6 @@ TUNE_ARGS="
     --pack \
 "
 
-CKPT_ARGS="
-    --enable-hf2mg-convert \
-    --model-type-hf qwen3-moe-moe
-"
-
 torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     $TUNE_ARGS \
     $GPT_ARGS \
@@ -180,7 +175,6 @@ torchrun $DISTRIBUTED_ARGS posttrain_gpt.py \
     $OPTIMIZE_ARGS \
     $TRAIN_ARGS \
     $MODEL_PARALLEL_ARGS \
-    $CKPT_ARGS \
     --distributed-backend nccl \
     --transformer-impl local \
     | tee logs/tune_qwen3_30b_a3b_32K_full_pack.log

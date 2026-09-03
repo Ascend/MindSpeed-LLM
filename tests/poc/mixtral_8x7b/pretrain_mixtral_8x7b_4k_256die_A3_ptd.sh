@@ -105,9 +105,7 @@ CKPT_ARGS="
     --load ${CKPT_LOAD_DIR} \
     --no-load-optim \
     --no-load-rng \
-    --save ${CKPT_SAVE_DIR} \
-    --enable-hf2mg-convert \
-    --model-type-hf mixtral
+    --save ${CKPT_SAVE_DIR}
 "
 
 OUTPUT_ARGS="

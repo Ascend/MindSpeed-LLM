@@ -136,11 +136,6 @@ OUTPUT_ARGS="
     --log-throughput
 "
 
-CKPT_ARGS="
-    --enable-hf2mg-convert \
-    --model-type-hf qwen3-moe
-"
-
 torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     $GPT_ARGS \
     $DATA_ARGS \
@@ -149,7 +144,6 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     $OPTIMIZE_ARGS \
     $TRAIN_ARGS \
     $MODEL_PARALLEL_ARGS \
-    $CKPT_ARGS \
     --distributed-backend nccl \
     --load ${CKPT_LOAD_DIR} \
     --save ${CKPT_SAVE_DIR} \

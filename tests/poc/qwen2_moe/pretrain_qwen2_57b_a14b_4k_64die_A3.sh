@@ -143,11 +143,6 @@ OUTPUT_ARGS="
     --no-load-rng
 "
 
-CKPT_ARGS="
-    --enable-hf2mg-convert \
-    --model-type-hf qwen2-moe
-"
-
 torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     $GPT_ARGS \
     $DATA_ARGS \
@@ -156,7 +151,6 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     $OPTIMIZE_ARGS \
     $TRAIN_ARGS \
     $MODEL_PARALLEL_ARGS \
-    $CKPT_ARGS \
     --distributed-backend nccl \
     --transformer-impl local \
     | tee logs/train_mcore_qwen2_57b_a14b_4k.log

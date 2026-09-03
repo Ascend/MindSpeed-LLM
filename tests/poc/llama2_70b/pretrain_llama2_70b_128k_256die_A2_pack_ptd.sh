@@ -110,9 +110,7 @@ CKPT_ARGS="
     --no-save-optim \
     --no-save-rng \
     --seed 1234 \
-    --save ${CKPT_SAVE_DIR} \
-    --enable-hf2mg-convert \
-    --model-type-hf llama2
+    --save ${CKPT_SAVE_DIR}
 "
 
 OUTPUT_ARGS="
