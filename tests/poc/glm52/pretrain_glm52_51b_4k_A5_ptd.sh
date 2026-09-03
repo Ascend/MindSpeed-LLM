@@ -22,15 +22,15 @@ DATA_PATH="your data path"
 TOKENIZER_PATH="your tokenizer path"
 CKPT_LOAD_DIR="your model ckpt path"
 
-TP=2
-PP=1
-EP=8
+TP=1
+PP=2
+EP=4
 CP=1
 CP_TYPE='ulysses_cp_algo'
-NUM_LAYERS=6
+NUM_LAYERS=78
 SEQ_LEN=4096
 MBS=1
-GBS=16
+GBS=64
 
 DISTRIBUTED_ARGS="
     --nproc_per_node $NPUS_PER_NODE \
@@ -70,7 +70,7 @@ MOE_ARGS="
     --moe-token-dispatcher-type alltoall \
     --first-k-dense-replace 3 \
     --moe-layer-freq 1 \
-    --num-experts 256 \
+    --num-experts 8 \
     --moe-router-topk 8 \
     --moe-ffn-hidden-size 2048 \
     --moe-shared-expert-intermediate-size 2048 \
@@ -85,12 +85,17 @@ MOE_ARGS="
     --gemm-gradient-accumulation-fusion \
 "
 
+FP8="
+    --fp8-format e4m3 \
+    --fp8-recipe mxfp8 \
+    --mxfp8-defer-backward-quant \
+"
 
 DSA_ARGS="
     --enable-dsa-indexer \
     --indexer-loss-coeff 1.0 \
     --use-sparse-flash-attn \
-    --index-topk 2048 \
+    --index-topk 1024 \
     --init-norm-weight-in-fp32 \
     --apply-rope-no-in-complex \
     --no-use-sparse-c8-indexer \
@@ -104,13 +109,20 @@ OTHERS_ARGS="
 "
 
 
+PIPELINE_ARGS="
+    --moe-fb-overlap \
+    --pipeline-model-parallel-layout Ett|(tttt|)*18ttttL \
+"
+
+
 GPT_ARGS="
     --kv-channels 64 \
-    --transformer-impl local \
+    --transformer-impl transformer_engine \
     --spec mindspeed_llm.tasks.models.spec.deepseek_spec layer_spec \
     --manual-gc \
     --manual-gc-interval 50 \
     --use-distributed-optimizer \
+    --swap-optimizer \
     --use-flash-attn \
     --use-mcore-models \
     --tensor-model-parallel-size ${TP} \
@@ -150,7 +162,7 @@ GPT_ARGS="
     --attention-softmax-in-fp32 \
     --min-lr 1.0e-7 \
     --weight-decay 1e-2 \
-    --lr-warmup-iters 0 \
+    --lr-warmup-iters 500 \
     --clip-grad 1.0 \
     --adam-beta1 0.9 \
     --adam-beta2 0.999 \
@@ -185,7 +197,8 @@ OUTPUT_ARGS="
     --no-save-rng
 "
 
-mkdir -p ./logs
+mkdir -p logs
+
 python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     $GPT_ARGS \
     $DATA_ARGS \
@@ -193,6 +206,7 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     $MLA_ARGS \
     $MOE_ARGS \
     $DSA_ARGS \
+    $PIPELINE_ARGS \
+    $FP8 \
     ${OTHERS_ARGS[@]} \
-    --load $CKPT_LOAD_DIR \
-    --distributed-backend nccl | tee logs/pretrain_glm52_32B_4k_A5_ptd.log
+    --distributed-backend nccl | tee logs/pretrain_glm52_51b_4k_A5_ptd.log

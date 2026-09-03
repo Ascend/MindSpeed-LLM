@@ -1,4 +1,4 @@
-#！/bin/bash
+#!/bin/bash
 
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export CPU_AFFINITY_CONF=1
@@ -10,7 +10,7 @@ export STREAMS_PER_DEVICE=32
 export HCCL_IF_BASE_PORT=25809
 export TORCH_DISABLE_GLOO=1
 
-NPUS_PER_NODE=16
+NPUS_PER_NODE=8
 MASTER_ADDR=localhost
 MASTER_PORT=6000
 NNODES=8
@@ -23,7 +23,7 @@ TOKENIZER_PATH="your tokenizer path"
 CKPT_LOAD_DIR="your model ckpt path"
 
 TP=1
-PP=4
+PP=2
 EP=32
 CP=1
 CP_TYPE='ulysses_cp_algo'
@@ -83,9 +83,13 @@ MOE_ARGS="
     --moe-router-enable-expert-bias \
     --moe-router-dtype fp32 \
     --gemm-gradient-accumulation-fusion \
-    --num-layer-list "18,20,20,20"
 "
 
+FP8="
+    --fp8-format e4m3 \
+    --fp8-recipe mxfp8 \
+    --mxfp8-defer-backward-quant \
+"
 
 DSA_ARGS="
     --enable-dsa-indexer \
@@ -113,7 +117,7 @@ PIPELINE_ARGS="
 
 GPT_ARGS="
     --kv-channels 64 \
-    --transformer-impl local \
+    --transformer-impl transformer_engine \
     --spec mindspeed_llm.tasks.models.spec.deepseek_spec layer_spec \
     --manual-gc \
     --manual-gc-interval 50 \
@@ -139,7 +143,7 @@ GPT_ARGS="
     --micro-batch-size ${MBS}
     --global-batch-size ${GBS} \
     --make-vocab-size-divisible-by 1 \
-    --lr 1.0e-5 \
+    --lr 1.0e-6 \
     --train-iters 3000 \
     --lr-decay-style cosine \
     --untie-embeddings-and-output-weights \
@@ -193,6 +197,7 @@ OUTPUT_ARGS="
     --no-save-rng
 "
 
+mkdir -p logs
 
 python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     $GPT_ARGS \
@@ -202,7 +207,6 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     $MOE_ARGS \
     $DSA_ARGS \
     $PIPELINE_ARGS \
+    $FP8 \
     ${OTHERS_ARGS[@]} \
-    --save $CKPT_SAVE_DIR \
-    --load $CKPT_LOAD_DIR \
-    --distributed-backend nccl | tee logs/pretrain_glm52_210b_4k_A3_ptd.log
+    --distributed-backend nccl | tee logs/pretrain_glm52_210b_4k_A5_ptd_fp8.log

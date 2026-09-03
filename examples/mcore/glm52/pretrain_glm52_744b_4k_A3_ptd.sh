@@ -152,7 +152,7 @@ GPT_ARGS="
     --attention-softmax-in-fp32 \
     --min-lr 1.0e-7 \
     --weight-decay 1e-2 \
-    --lr-warmup-iters 0 \
+    --lr-warmup-iters 500 \
     --clip-grad 1.0 \
     --adam-beta1 0.9 \
     --adam-beta2 0.999 \
