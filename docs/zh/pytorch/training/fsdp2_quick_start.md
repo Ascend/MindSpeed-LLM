@@ -367,4 +367,4 @@
 > [!NOTE]
 >
 > - 完整参数说明请参见[全量参数介绍（基于FSDP2训练后端）](../features/fsdp2/arguments.md)。
-> - YAML 配置与数据集注册示例请参考 [FSDP2 后端训练使用指南](./finetune/fsdp2/finetune_fsdp2.md)。
+> - YAML 配置与数据集注册示例请参考 [FSDP2 后端微调使用指南](./finetune/fsdp2/finetune_fsdp2.md)。

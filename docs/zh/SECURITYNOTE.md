@@ -68,7 +68,7 @@
 
 ## 公开接口声明
 
-MindSpeed LLM 暂时未发布wheel包，无正式对外公开接口，所有功能均通过shell脚本调用。5个入口脚本分别为[pretrain_gpt.py](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/pretrain_gpt.py)、[inference.py](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/inference.py)、[evaluation.py](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/evaluation.py)、[preprocess_data.py](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/preprocess_data.py) 和 [convert_ckpt_v2.py](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/convert_ckpt_v2.py)。
+MindSpeed LLM 暂时未发布wheel包，无正式对外公开接口，所有功能均通过shell脚本调用。5个入口脚本分别为[pretrain_gpt.py](../../pretrain_gpt.py)、[inference.py](../../inference.py)、[evaluation.py](../../evaluation.py)、[preprocess_data.py](../../preprocess_data.py) 和 [convert_ckpt_v2.py](../../convert_ckpt_v2.py)。
 
 ## 通信安全加固
 

@@ -58,7 +58,7 @@ MindSpeed LLM支持基于昇腾芯片采集profiling数据，以提供对模型�
 
 本工具基于 `torch_npu.profiler` 实现，集成于 MindSpeed FSDP2 训练流程。通过配置 YAML 或命令行参数，即可在指定训练步数和指定 rank 上自动采集性能数据，并生成 profiling 文件。
 
-### 推荐使用方法  
+### 推荐使用方法
 
 这里给出两种配置示例，展示比较常用的使用场景。在训练配置文件（YAML）的 `training` 字段下添加 profiling 参数：
 
@@ -67,7 +67,7 @@ MindSpeed LLM支持基于昇腾芯片采集profiling数据，以提供对模型�
     ```yaml
     training:
       # ... 其他训练参数 ...
-    
+
       # --- Profiling: 初步性能分析 ---
       profile: true
       profile_step_start: 5
@@ -83,7 +83,7 @@ MindSpeed LLM支持基于昇腾芯片采集profiling数据，以提供对模型�
     ```yaml
     training:
       # ... 其他训练参数 ...
-    
+
       # --- Profiling: 深度分析（含堆栈/内存/shape）---
       profile: true
       profile_step_start: 5
@@ -122,7 +122,7 @@ MindSpeed LLM支持基于昇腾芯片采集profiling数据，以提供对模型�
 localhost.localdomain_3687609_20260129150104894_ascend_pt
 ```
 
-该文件的目录结构如下：  
+该文件的目录结构如下：
 
 ```shell
  localhost.localdomain_3687609_20260129150104894_ascend_pt
@@ -139,7 +139,7 @@ localhost.localdomain_3687609_20260129150104894_ascend_pt
 
 ## 可视化性能分析
 
-以MindStudio Insight工具为例，对采集到的profiling进行分析，请参考[MindStudio Insight安装指南](https://www.hiascend.com/document/detail/zh/mindstudio/latest/GUI_baseddevelopmenttool/MindStudioInsight/docs/zh/install_guide/mindstudio_insight_install_guide.md)进行工具部署，然后将生成的profiling文件导入到工具中，进行性能的拆解分析。
+以MindStudio Insight工具为例，对采集到的profiling进行分析，请参考[MindStudio Insight安装指南](https://gitcode.com/Ascend/msinsight/blob/26.1.0/docs/zh/install_guide/mindstudio_insight_install_guide.md)进行工具部署，然后将生成的profiling文件导入到工具中，进行性能的拆解分析。
 
 在这里我们简单介绍MindStudio Insight工具主要使用的几个界面：
 
@@ -149,7 +149,7 @@ localhost.localdomain_3687609_20260129150104894_ascend_pt
 
     ![时间线](../figures/profiling/timeline.png)
 
-- **内存（Memory）** 
+- **内存（Memory）**
 
     内存界面由参数配置栏（区域一）、算子内存折线图（区域二）、内存申请/释放详情表（区域三）三个部分组成，如图所示。
 
@@ -163,5 +163,5 @@ localhost.localdomain_3687609_20260129150104894_ascend_pt
 
 > [!NOTE]
 >
-> - 如果想要更多了解工具的使用方法，可以参考MindStudio Insight官方文档中的[MindStudio Insight系统调优](https://www.hiascend.com/document/detail/zh/mindstudio/latest/GUI_baseddevelopmenttool/MindStudioInsight/docs/zh/user_guide/system_tuning.md#%E4%BD%BF%E7%94%A8%E8%AF%B4%E6%98%8E)。
+> - 如果想要更多了解工具的使用方法，可以参考MindStudio Insight官方文档中的[MindStudio Insight系统调优](https://gitcode.com/Ascend/msinsight/blob/26.1.0/docs/zh/user_guide/system_tuning.md#%E4%BD%BF%E7%94%A8%E8%AF%B4%E6%98%8E)。
 > - 如果您希望更加定制化的profiling采集方式，可参考《CANN性能调优工具用户指南》中的“[性能数据采集和自动解析](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/latest/devaids/Profiling/atlasprofiling_16_0033.html)”章节，通过修改采集代码进行自定义采集和拆解分析。

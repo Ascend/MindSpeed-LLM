@@ -42,7 +42,7 @@
 
 > [!NOTE]
 >
-> - 使用镜像前，请先确认机器型号。最新镜像仅支持aarch64及X86_64架构，可通过`uname -a`命令确认当前环境是否符合要求。
+> - 使用镜像前，请先确认机器型号。最新镜像支持aarch64及X86_64架构，可通过`uname -a`命令确认当前环境是否符合要求。
 > - 配套镜像已预装配套的CANN 9.1.0软件及TorchNPU 26.1.0插件，可根据需要选用。
 > - 若当前环境与提供的镜像不兼容，请选择[方式二：源码安装](#方式二源码安装)。
 > - master分支后续会更新新的镜像，如果需要自定义构建镜像请参见[镜像概述](../../../../docker/OVERVIEW.zh.md)。
@@ -51,17 +51,21 @@
 
    最新镜像均配套[MindSpeed LLM的26.1.0分支](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0)，请按需[获取镜像](https://www.hiascend.com/developer/ascendhub/detail/e26da9266559438b93354792f25b2f4a)。
 
+   <!-- npu="950" id5 -->
    - <term>Ascend 950 系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-950-openeuler24.03-py3.12
 
    - <term>Ascend 950 系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-950-ubuntu22.04-py3.12
-
+   <!-- end id5 -->
+   <!-- npu="A3" id4 -->
    - <term>Atlas A3 训练系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-a3-openeuler24.03-py3.12
 
    - <term>Atlas A3 训练系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-a3-ubuntu22.04-py3.12
-
+   <!-- end id4 -->
+   <!-- npu="910b" id3 -->
    - <term>Atlas A2 训练系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-910b-openeuler24.03-py3.12
 
    - <term>Atlas A2 训练系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-910b-ubuntu22.04-py3.12
+   <!-- end id3 -->
 
    ```bash
    # 确认是否成功获取镜像
@@ -168,19 +172,12 @@
 
 3. 安装PyTorch以及TorchNPU
 
-   请参考《[TorchNPU 快速安装](https://www.hiascend.com/developer/software/ai-frameworks/pytorch/download?versionId=175&ids=89dda9ba9de741349efa03687a487678%2C98%2C107%2C1%2C6%2C177%2C)》，获取配套版本的PyTorch以及TorchNPU软件包。
-
-   可参考如下安装命令：
-
-   ```shell
-   pip3 install torch-2.10.0-cp312-cp312-manylinux_2_28_aarch64.whl
-   pip3 install torch_npu-2.10.0.post4-cp312-cp312-manylinux_2_28_aarch64.whl
-   ```
+   根据引导安装配套版本的PyTorch以及TorchNPU，具体请参考《[TorchNPU 快速安装](https://www.hiascend.com/developer/software/ai-frameworks/pytorch/download?versionId=175&ids=89dda9ba9de741349efa03687a487678%2C98%2C107%2C1%2C6%2C177%2C)》。
 
    > [!NOTE]
    >
    > - 更多TorchNPU插件版本请单击[Link](https://gitcode.com/ascend/pytorch/releases)。
-   > - 更多TorchNPU相关文档请参见《[TorchNPU使用导读](https://www.hiascend.com/document/detail/zh/Pytorch/latest/index/index.html)》。
+   > - TorchNPU相关文档请参见《[TorchNPU使用导读](https://www.hiascend.com/document/detail/zh/Pytorch/latest/index/index.html)》。
 
 4. 安装Triton-Ascend
 

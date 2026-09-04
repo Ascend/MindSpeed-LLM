@@ -2,81 +2,106 @@
 
 ## 概述
 
-MindSpeed LLM FSDP2 与 Megatron 后端支持在训练过程中调用 msProbe 采集 Module/API 前反向输入输出的统计量或真实 Tensor。一次训练迭代（包括其全部 micro-batch 和 optimizer update）对应一个 msProbe step。
+MindSpeed LLM FSDP2与Megatron后端支持在训练过程中调用msProbe采集Module/API前反向输入输出的统计量或真实Tensor。一次训练迭代（包括其全部micro-batch和optimizer update）对应一个msProbe step。
 
-msProbe 的 `rank`、`step`、`level`、`task` 和输出路径继续由其原生配置文件控制。仓库提供了可直接使用的[默认配置文件](../../../../mindspeed_llm/tools/msprobe_config.json)，默认采集 rank 0、step 0 的 L0 级统计量，并将结果写入当前工作目录下的 `msprobe_dump`。
+msProbe的`rank`、`step`、`level`、`task`和输出路径继续由其原生配置文件控制。MindSpeed LLM提供了可直接使用的默认配置文件[`msprobe_config.json`](../../../../mindspeed_llm/tools/msprobe_config.json)，默认采集rank 0、step 0的L0级统计量，并将结果写入当前工作目录下的`msprobe_dump`。
 
-msProbe 适用于需要按 Module/API 分层采集统计量或真实 Tensor，并结合调用栈、构图信息开展复杂精度问题定位的场景。如果只需要快速查看指定训练 step 的 Module 前反向输入输出或 batch 字段，可使用[模型输入输出采集](model_io_trace.md)。
+msProbe适用于需要按Module/API分层采集统计量或真实Tensor，并结合调用栈、构图信息开展复杂精度问题定位的场景。如果只需要快速查看指定训练step的Module前反向输入输出或batch字段，可使用[模型输入输出采集](model_io_trace.md)。
 
-## 环境准备
+## 工具准备
 
-安装与当前 PyTorch、torch_npu 和 CANN 版本兼容的 msProbe。为避免预发布版本变化影响采集结果，建议固定安装稳定版本：
+安装与当前PyTorch、TorchNPU和CANN版本兼容的msProbe。为避免预发布版本变化影响采集结果，请参考[msProbe工具安装指南](https://gitcode.com/Ascend/msprobe/blob/26.0.0/docs/zh/msprobe_install_guide.md)安装稳定版本。
+
+在线安装可执行如下命令：
 
 ```bash
 pip install mindstudio-probe==26.0.0
 ```
 
-其他软件版本配套关系请参考 msProbe 对应版本的发布说明。
+其他软件版本配套关系请参见[msProbe Release](https://gitcode.com/Ascend/msprobe/releases)。
 
-未开启 msProbe 时，MindSpeed LLM 不会导入或依赖该软件包。
+未开启msProbe时，MindSpeed LLM不会导入或依赖该软件包。
 
-## FSDP2 后端开启采集
+## FSDP2后端开启采集
 
-在 FSDP2 训练 YAML 的 `training` 字段中增加：
+基于FSDP2后端进行模型训练时，需在YAML配置文件的`training`字段中增加如下示例代码：
 
 ```yaml
 training:
   msprobe: true
-  # 可选；不配置时使用仓库默认 msprobe_config.json
-  msprobe_config_path: /absolute/path/to/custom_msprobe_config.json
+  msprobe_config_path: /home/custom_msprobe_config.json
 ```
 
 也可以通过命令行覆盖：
 
 ```bash
 --training.msprobe True \
---training.msprobe_config_path /absolute/path/to/custom_msprobe_config.json
+--training.msprobe_config_path /home/custom_msprobe_config.json
 ```
 
-`msprobe_config_path` 为可选参数；需要覆盖默认 rank、step、采集级别或输出路径时再传入自定义配置。自定义配置文件必须是所有训练进程均可访问的文件。断点续训时，采集 step 会与恢复后的训练 global step 对齐。
+- `msprobe`：可选参数，是否启用msProbe精度数据采集。MindSpeed LLM默认未开启，启用工具时必选该参数。
 
-## Qwen3-8B FSDP2 使用案例
+- `msprobe_config_path`：可选参数，需要覆盖默认rank、step、采集级别或输出路径时可进行自定义配置。
 
-以仓库中的 [Qwen3-8B FSDP2 预训练配置](../../../../examples/fsdp2/qwen3/pretrain_qwen3_8b_4k_fsdp2_A3.yaml) 为例，假设首个训练 step 的 loss 异常，需要采集 rank 0、step 0 的 Module 级统计量进行定位。
+> [!NOTE]
+>
+> - `msprobe_config_path`参数未配置时，MindSpeed LLM默认使用[`msprobe_config.json`](../../../../mindspeed_llm/tools/msprobe_config.json)。
+> - 自定义配置文件`custom_msprobe_config.json`必须是所有训练进程均可访问的文件。
+> - 断点续训时，采集step会与恢复后的训练global step对齐。
 
-默认配置已经采集 rank 0、step 0，因此只需在预训练 YAML 的 `training` 字段中开启功能：
+## Qwen3-8B FSDP2使用案例
 
-```yaml
-training:
-  msprobe: true
-```
+以 [Qwen3-8B FSDP2预训练配置](../../../../examples/fsdp2/qwen3/pretrain_qwen3_8b_4k_fsdp2_A3.yaml) 为例，假设首个训练step的loss异常，需要采集rank 0、step 0的Module级统计量进行定位。
 
-根据实际环境修改模型和数据路径后，运行仓库中的启动脚本：
+1. 启用msProbe
 
-```bash
-bash examples/fsdp2/qwen3/pretrain_qwen3_8b_4k_fsdp2_A3.sh
-```
+    默认配置已经采集rank 0、step 0，此时只需在预训练YAML文件的`training`字段中启用msProbe。
 
-首个训练 step 完成后，rank 0 的采集结果位于 `./msprobe_dump/step0/rank0/`。先根据 `dump.json` 中的统计量定位可疑 API；需要修改输出目录或采集真实 Tensor 时，复制默认配置并通过 `msprobe_config_path` 传入自定义文件。
+    ```yaml
+    training:
+      msprobe: true
+    ```
 
-## Megatron 后端开启采集
+2. 编辑训练示例脚本
 
-在 Megatron 训练启动参数中增加：
+    根据实际环境修改并保存模型和数据路径，命令如下：
+
+    ```bash
+    vi examples/fsdp2/qwen3/pretrain_qwen3_8b_4k_fsdp2_A3.sh
+    ```
+
+3. 执行训练脚本
+
+    ```bash
+    bash examples/fsdp2/qwen3/pretrain_qwen3_8b_4k_fsdp2_A3.sh
+    ```
+
+首个训练step完成后，rank 0的采集结果位于`./msprobe_dump/step0/rank0/`。先根据`dump.json`中的统计量定位可疑API，若需修改输出目录或采集真实Tensor，可复制默认配置，并通过`msprobe_config_path`传入自定义配置文件。
+
+## Megatron后端开启采集
+
+基于Megatron后端进行模型训练时，需在训练启动参数中增加如下示例代码：
 
 ```bash
 --msprobe \
---msprobe-config-path /absolute/path/to/custom_msprobe_config.json
+--msprobe-config-path /home/custom_msprobe_config.json
 ```
 
-`--msprobe-config-path` 可省略；省略时使用仓库默认 `msprobe_config.json`。
+- `--msprobe`：可选参数，是否启用msProbe精度数据采集。MindSpeed LLM默认未开启，启用工具时必选该参数。
 
-Megatron 后端会在每次 `train_step()` 前开启采集，并在该训练迭代结束后依次调用 `stop()` 和 `step()`。PP/VPP 场景会将当前 rank 上的全部模型分块作为一个列表传入 msProbe。
+- `--msprobe-config-path`：可选参数，需要覆盖默认rank、step、采集级别或输出路径时可进行自定义配置。
 
-断点续训时，msProbe 的起始 step 会使用 checkpoint 恢复后的 `args.iteration`。全新训练的第一次迭代对应 msProbe `step0`，训练日志在该次迭代完成后显示 `iteration 1`。
+  > [!NOTE]
+  >
+  > `--msprobe-config-path`参数未配置时，MindSpeed LLM默认使用[`msprobe_config.json`](../../../../mindspeed_llm/tools/msprobe_config.json)。
 
-## config.json 示例
+Megatron后端会在每次`train_step()`前开启采集，并在该训练迭代结束后依次调用`stop()`和`step()`。PP/VPP场景会将当前 rank上的全部模型分块作为一个列表传入msProbe。
 
-大模型首次定位建议只采集目标 rank、目标 step 的 Module 级统计量：
+断点续训时，msProbe的起始step会使用checkpoint恢复后的`args.iteration`。全新训练的第一次迭代对应msProbe `step0`，训练日志在该次迭代完成后显示`iteration 1`。
+
+## config.json示例
+
+大模型进行首次定位时，建议只采集目标rank、目标step的Module级统计量。config.json配置示例如下：
 
 ```json
 {
@@ -98,7 +123,7 @@ Megatron 后端会在每次 `train_step()` 前开启采集，并在该训练迭�
 }
 ```
 
-定位到可疑 API 后，再单独采集真实 Tensor：
+定位到可疑API后，再单独采集真实Tensor。config.json配置示例如下：
 
 ```json
 {
@@ -117,9 +142,9 @@ Megatron 后端会在每次 `train_step()` 前开启采集，并在该训练迭�
 }
 ```
 
-`list` 中的名称应替换为首次采集生成的 `dump.json` 中实际存在的 API 名称。不要在大模型上使用空 `list` 采集整网 Tensor，否则会产生大量数据。
+- `list`中的名称应替换为首次采集生成的`dump.json`中实际存在的API名称。不要在大模型上使用空`list`采集整网Tensor，否则会产生大量数据。
 
-`step` 支持单步、离散步数和闭区间，例如 `[10]`、`[10, 15]` 和 `["10-19"]`。FSDP2 与 Megatron 后端都会在未命中的训练迭代继续推进 msProbe 内部 step，但不会为该迭代落盘。
+- `step`支持单步、离散步数和闭区间，例如`[10]`、`[10, 15]`和`["10-19"]`。FSDP2与Megatron后端都会在未命中的训练迭代继续推进msProbe内部step，但不会为该迭代落盘。
 
 ## 输出
 
@@ -135,7 +160,7 @@ dump_path/
         └── dump_tensor_data/
 ```
 
-`task: statistics` 只保存 shape、dtype、max、min、mean、norm 等统计量；`task: tensor` 还会在 `dump_tensor_data` 中保存真实 Tensor。
+`task: statistics`仅保存shape、dtype、max、min、mean、norm等统计量；`task: tensor`还会在`dump_tensor_data`中保存真实Tensor。
 
 更多配置与定位流程请参考：
 

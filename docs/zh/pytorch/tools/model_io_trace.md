@@ -1,23 +1,25 @@
 # 模型输入输出采集
 
-模型输入输出采集适用于快速查看指定训练 step 的 Module 前反向输入输出和 batch 字段等简单定位场景；需要按 Module/API 分层采集、调用栈或构图信息等复杂精度定位能力时，建议使用 [msProbe 精度数据采集](msprobe.md)。
+本文档适用于快速查看指定训练step的Module前反向输入输出和batch字段等简单定位场景。需要按Module/API分层采集、调用栈或构图信息等复杂精度定位能力时，建议使用[msProbe 精度数据采集](msprobe.md)。
 
 ## 概述
 
-MindSpeed LLM 提供独立于 msProbe 的源码级模型输入输出采集能力，适用于无法安装 msProbe、需要查看
-batch 原始字段，或需要按 Module 名称直接定位前反向数据的场景。该功能支持：
+MindSpeed LLM提供了独立于msProbe的源码级模型输入输出采集能力，适用于无法安装msProbe、需要查看
+batch原始字段，或需要按Module名称直接定位前反向数据的场景。该功能支持：
 
-- 对目标 rank、目标训练 step 注册全模型 Module 前向 Hook 和完整反向 Hook。
-- 默认采集所有叶子 Module 的输入、输出及梯度统计量。
-- 采集 `input_ids`、`tokens`、`labels`、`attention_mask`、`position_ids` 等 batch 字段预览。
-- 按需将完整 Tensor 保存为 `.pt` 文件。
+- 对目标rank、目标训练step注册全模型Module前向Hook和完整反向Hook。
+- 默认采集所有叶子Module的输入、输出及梯度统计量。
+- 采集`input_ids`、`tokens`、`labels`、`attention_mask`、`position_ids`等batch字段预览。
+- 按需将完整Tensor保存为`.pt`文件。
 
-Hook 只在配置命中的训练 step 内存在，step 结束后会立即移除。一个 step 表示一次完整训练迭代，包含该次
-迭代的所有 micro-batch 和 optimizer update。
+Hook只在配置命中的训练step内存在，step结束后会立即移除。一个step表示一次完整训练迭代，包含该次
+迭代的所有micro-batch和optimizer update。
 
-## config.json
+## config.json文件
 
-仓库提供了[默认配置文件](../../../../mindspeed_llm/tools/model_io_trace_config.json)，未指定自定义配置文件时自动使用该配置。默认配置显式列出全部支持项，采集 rank 0、step 0 的叶子 Module 统计量和常用 batch 字段：
+MindSpeed LLM提供了默认配置文件[`model_io_trace_config.json`](../../../../mindspeed_llm/tools/model_io_trace_config.json)，在未指定自定义配置文件时自动使用该配置。
+
+默认配置显式列出全部支持项，采集rank 0、step 0的叶子Module统计量和常用batch字段，配置示例如下：
 
 ```json
 {
@@ -44,7 +46,7 @@ Hook 只在配置命中的训练 step 内存在，step 结束后会立即移除�
 }
 ```
 
-如需修改采集 rank、step 或 Module 范围，可复制默认文件并通过启动参数传入自定义配置路径。采集结果根目录不写入 `config.json`，统一从 FSDP2 或 Megatron 的启动参数传入。
+如需修改采集rank、step或Module范围，可复制默认文件并通过启动参数传入自定义配置路径。采集结果根目录不写入`config.json`，统一由FSDP2或Megatron的启动参数传入。
 
 | 配置项 | 是否必选 | 默认值 | 说明 |
 | --- | --- | --- | --- |
@@ -63,72 +65,105 @@ Hook 只在配置命中的训练 step 内存在，step 结束后会立即移除�
 | `batch.max_rows` | 否 | `2` | batch 预览最多记录的行数。 |
 | `batch.max_tokens` | 否 | `64` | batch 预览每行最多记录的元素数。 |
 
-用于 `include`、`exclude` 和 JSONL 记录的 Module 名称以 `model_chunk_0`、`model_chunk_1` 开头，
-便于区分 Megatron PP/VPP 当前 rank 上的模型分块。单模型 `text` 输出会去掉 `model_chunk_0` 前缀，
-使 Module 名称更加简洁；多模型分块场景保留前缀以防止重名。`include` 和 `exclude` 使用 glob，例如：
+- 用于`include`、`exclude`和JSONL记录的Module名称以`model_chunk_0`、`model_chunk_1`开头，便于区分Megatron PP/VPP当前rank上的模型分块。
 
-```json
-{
-  "include": ["model_chunk_0.*.mlp.*"],
-  "exclude": ["*.dropout*"]
-}
-```
+- 单模型`text`输出会去掉`model_chunk_0`前缀，使Module名称更加简洁；多模型分块场景保留前缀以防止重名。
 
-## FSDP2 开启方式
+- `include`和`exclude`使用 glob，例如：
 
-在训练 YAML 的 `training` 字段增加：
+    ```json
+    {
+      "include": ["model_chunk_0.*.mlp.*"],
+      "exclude": ["*.dropout*"]
+    }
+    ```
+
+## 基于FSDP2后端开启采集
+
+需在YAML配置文件的`training`字段中增加如下示例代码：
 
 ```yaml
 training:
   model_io_trace: true
-  model_io_trace_output_path: /absolute/path/to/output
-  # 可选；不配置时使用仓库默认 model_io_trace_config.json
-  model_io_trace_config_path: /absolute/path/to/custom_config.json
+  model_io_trace_output_path: /data/model_io_trace/qwen3_8b
+  model_io_trace_config_path: /home/custom_config.json
 ```
 
 也可通过命令行覆盖：
 
 ```bash
 --training.model_io_trace True \
---training.model_io_trace_output_path /absolute/path/to/output \
---training.model_io_trace_config_path /absolute/path/to/custom_config.json
+--training.model_io_trace_output_path /data/model_io_trace/qwen3_8b \
+--training.model_io_trace_config_path /home/custom_config.json
 ```
 
-## Qwen3-8B FSDP2 使用案例
+- `model_io_trace`：可选参数，是否开启模型输入输出采集。MindSpeed LLM默认未开启，启用该功能时必选此参数。
 
-以仓库中的 [Qwen3-8B FSDP2 预训练配置](../../../../examples/fsdp2/qwen3/pretrain_qwen3_8b_4k_fsdp2_A3.yaml) 为例，假设首个训练 step 的 loss 异常，需要快速查看 rank 0、step 0 的 Module 前反向输入输出和 batch 字段。
+- `model_io_trace_output_path`：必选参数，模型输入输出采集结果保存路径。
 
-默认配置已经采集 rank 0、step 0，因此只需在预训练 YAML 的 `training` 字段中开启功能并指定输出目录：
+- `model_io_trace_config_path`：可选参数，自定义模型输入输出采集配置文件路径。
 
-```yaml
-training:
-  model_io_trace: true
-  model_io_trace_output_path: /data/model_io_trace/qwen3_8b
-```
+  > [!NOTE]
+  >
+  > - `model_io_trace_config_path`参数未配置时，MindSpeed LLM默认使用[`model_io_trace_config.json`](../../../../mindspeed_llm/tools/model_io_trace_config.json)。
+  > - 自定义配置文件`custom_config.json`必须是所有训练进程均可访问的文件。
 
-根据实际环境修改模型和数据路径后，运行仓库中的启动脚本：
+## Qwen3-8B FSDP2使用案例
 
-```bash
-bash examples/fsdp2/qwen3/pretrain_qwen3_8b_4k_fsdp2_A3.sh
-```
+以[Qwen3-8B FSDP2预训练配置](../../../../examples/fsdp2/qwen3/pretrain_qwen3_8b_4k_fsdp2_A3.yaml)为例，假设首个训练step的loss异常，需要快速查看rank 0、step 0的Module前反向输入输出和batch字段。
 
-首个训练 step 完成后，rank 0 的采集结果位于 `/data/model_io_trace/qwen3_8b/rank0/step0/`。可先查看 `output.txt` 和 `token_ids.log`；定位到可疑 Module 后，再通过 `module.include` 缩小采集范围。
+1. 启用模型输入输出采集
 
-## Megatron 开启方式
+    默认配置已经采集rank 0、step 0，因此只需在预训练YAML文件的`training`字段中开启功能并指定输出目录。
 
-在训练命令中增加：
+    ```yaml
+    training:
+      model_io_trace: true
+      model_io_trace_output_path: /data/model_io_trace/qwen3_8b
+    ```
+
+2. 编辑训练示例脚本
+
+    根据实际环境修改并保存模型和数据路径，命令如下：
+
+    ```bash
+    vi examples/fsdp2/qwen3/pretrain_qwen3_8b_4k_fsdp2_A3.sh
+    ```
+
+3. 执行训练脚本
+
+    ```bash
+    bash examples/fsdp2/qwen3/pretrain_qwen3_8b_4k_fsdp2_A3.sh
+    ```
+
+首个训练step完成后，rank 0的采集结果位于`/data/model_io_trace/qwen3_8b/rank0/step0/`。可先查看`output.txt`和`token_ids.log`，若定位到可疑 Module后，再通过`module.include`缩小采集范围。
+
+## 基于Megatron后端开启采集
+
+基于Megatron后端进行模型训练时，需在训练启动参数中增加如下示例代码：
 
 ```bash
 --model-io-trace \
---model-io-trace-output-path /absolute/path/to/output
+--model-io-trace-output-path /data/model_io_trace/qwen3_8b \
+--model-io-trace-config-path /home/custom_config.json
 ```
 
-需要覆盖默认配置时，再增加 `--model-io-trace-config-path /absolute/path/to/custom_config.json`。
+- `--model-io-trace`：可选参数，是否开启模型输入输出采集。MindSpeed LLM默认未开启，启用该功能时必选此参数。
 
-Megatron 的 step 使用恢复后的 `args.iteration`；FSDP2 使用恢复后的 `global_step`。因此全新训练第一次迭代
-均对应 step 0。
+- `--model-io-trace-output-path`：必选参数，模型输入输出采集结果保存路径。
+
+- `--model-io-trace-config-path`：可选参数，自定义模型输入输出采集配置文件路径。
+
+  > [!NOTE]
+  >
+  > - `--model-io-trace-config-path`参数未配置时，MindSpeed LLM默认使用[`model_io_trace_config.json`](../../../../mindspeed_llm/tools/model_io_trace_config.json)。
+  > - 自定义配置文件`custom_config.json`必须是所有训练进程均可访问的文件。
+
+Megatron的step使用恢复后的`args.iteration`；FSDP2使用恢复后的`global_step`。因此全新训练第一次迭代均对应step 0。
 
 ## 输出
+
+典型输出结构如下：
 
 ```text
 output_path/
@@ -139,19 +174,18 @@ output_path/
         └── tensors/
 ```
 
-`output.txt` 按调用顺序记录 Module 前反向输入输出、Tensor，以及绝对值 `sum/mean/max/min`。
-单模型场景使用简洁的 Module 名称；Megatron PP/VPP 多模型分块场景增加 `model_chunk_N` 前缀防止重名。
-`token_ids.log` 保存每次模型入口调用的 batch 字段 shape 与截断预览，便于 NPU 与 GPU 使用同一套文本处理脚本。
-`text` 模式会将 Tensor 转为 CPU `float32` 后写出 PyTorch 文本表示，即使 `tensor.mode` 为
-`statistics` 也会包含截断后的数值预览。
+- `output.txt`：按调用顺序记录Module前反向输入输出、Tensor，以及绝对值`sum/mean/max/min`。
+- 单模型场景使用简洁的Module名称；Megatron PP/VPP多模型分块场景增加`model_chunk_N`前缀防止重名。
+- `token_ids.log`保存每次模型入口调用的batch字段shape与截断预览，便于NPU与GPU使用同一套文本处理脚本。
 
-配置为 `"output_format": "jsonl"` 时生成 `module_io.jsonl` 和 `batch_inputs.jsonl`。前者每行记录一个
-Module 输入、输出或梯度 Tensor，包括 Module 名称、阶段、槽位、shape、dtype、device 和统计量；后者
-保存 batch 字段 shape 与截断预览。配置为 `both` 时同时生成两套文件。
-仅当 `tensor.mode` 为 `tensor` 时才创建 `tensors/`。
+配置为`"output_format": "text"`模式时，会将Tensor转为CPU `float32`后写出PyTorch文本表示，即使`tensor.mode`设置为`statistics`也会包含截断后的数值预览。
+
+配置为`"output_format": "jsonl"`时，将生成`module_io.jsonl`和`batch_inputs.jsonl`。前者每行记录一个Module输入、输出或梯度Tensor，包括Module名称、阶段、槽位、shape、dtype、device和统计量；后者保存batch字段shape与截断预览。
+
+配置为`both`时同时生成两套文件。
+
+仅当`tensor.mode`为`tensor`时才创建`tensors/`。
 
 ## 使用注意
 
-全模型前反向 Hook 会显著降低训练性能，完整 Tensor 还会引入设备到主机同步并快速占满磁盘。首次定位建议
-只选一个 rank、一个 step，保持 `leaf_only: true` 和 `tensor.mode: statistics`；确定可疑 Module 后，再用
-`include` 缩小范围并将 `tensor.mode` 改为 `tensor`。batch 预览和完整 Tensor 可能包含训练数据，不应写入公共目录。
+全模型前反向Hook会显著降低训练性能，完整Tensor还会引入设备到主机同步并快速占满磁盘。首次定位，建议只选一个rank、一个step，保持`leaf_only: true`和`tensor.mode: statistics`；确定可疑Module后，再用`include`缩小范围并将`tensor.mode`改为`tensor`。batch预览和完整Tensor可能包含训练数据，不应写入公共目录。
