@@ -4,21 +4,19 @@ import torch
 from megatron.training import get_args
 from megatron.core import mpu
 from mindspeed.model.transformer import set_attention_mask
-from mindspeed.core.context_parallel.get_batch_utils import (set_actual_seq_len,
-                             _get_batch_on_this_cp_rank_in_megatron_cp,
-                             _get_batch_on_this_cp_rank_in_hybrid_cp_general,
-                             _get_batch_on_this_cp_rank_in_hybrid_cp,
-                             _get_batch_on_this_cp_rank_in_adaptive_cp,
-                             _get_batch_on_this_cp_rank_in_hybrid_adaptive_cp,
-                             _get_batch_on_this_tp_y_cp_rank_in_megatron_cp,
-                             broadcast_dynamic, _broadcast, get_ring_degree)
+from mindspeed.core.context_parallel.get_batch_utils import (
+    _get_batch_on_this_cp_rank_in_megatron_cp,
+    _get_batch_on_this_cp_rank_in_hybrid_cp_general,
+    _get_batch_on_this_cp_rank_in_hybrid_cp,
+    _get_batch_on_this_tp_y_cp_rank_in_megatron_cp,
+)
 
 from mindspeed_llm.training.utils import _get_batch_on_this_cp_rank_in_ulysses_cp
 
 
 def get_batch_on_this_cp_rank(batch):
-    """ Slice batch input along sequence dimension into multiple chunks,
-        which are parallelized across GPUs in a context parallel group.
+    """Slice batch input along sequence dimension into multiple chunks,
+    which are parallelized across GPUs in a context parallel group.
     """
 
     # With causal masking, each token only attends to its prior tokens. Simply split
@@ -44,7 +42,11 @@ def get_batch_on_this_cp_rank(batch):
             batch = _get_batch_on_this_tp_y_cp_rank_in_megatron_cp(batch)
         else:
             batch = _get_batch_on_this_cp_rank_in_megatron_cp(batch)
-    elif args.context_parallel_algo == 'ulysses_cp_algo' or args.context_parallel_algo == 'mamba_cp_algo':
+    elif args.context_parallel_algo in (
+        'ulysses_cp_algo',
+        'mamba_cp_algo',
+        'deepseek_v4_cp_algo',
+    ):
         batch = _get_batch_on_this_cp_rank_in_ulysses_cp(batch)
     elif args.context_parallel_algo == 'hybrid_cp_algo':
         if args.attention_mask_type == 'general':

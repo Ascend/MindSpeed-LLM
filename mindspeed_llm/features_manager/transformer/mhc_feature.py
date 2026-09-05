@@ -62,9 +62,12 @@ class MHCFeature(MindSpeedFeature):
                 )
             if not args.use_flash_attn:
                 raise ValueError("DSAIndexer is currently only supported in FA, plese open --use-flash-attn.")
-            valid_algos = ['ulysses_cp_algo', 'kvallgather_cp_algo']
+            valid_algos = ['ulysses_cp_algo', 'kvallgather_cp_algo', 'deepseek_v4_cp_algo']
             if args.context_parallel_size > 1 and args.context_parallel_algo not in valid_algos:
-                raise ValueError("DSAIndexer is currently only supported `ulysses_cp_algo` when use context parallel.")
+                raise ValueError(
+                    "DSAIndexer is currently only supported with ulysses_cp_algo, kvallgather_cp_algo, "
+                    "or deepseek_v4_cp_algo when use context parallel."
+                )
             if args.use_fused_mhc and args.hc_mult != 4:
                 raise ValueError("Fused NPU MHC currently only supports --hc-mult 4.")
             if args.use_fused_mhc and args.hc_sinkhorn_iters != 20:

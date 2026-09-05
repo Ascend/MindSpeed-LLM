@@ -22,7 +22,7 @@ class ContextParallelFeature(MindspeedContextParallelFeature):
             '--context-parallel-algo',
             type=str,
             default='megatron_cp_algo',
-            choices=['megatron_cp_algo', 'hybrid_cp_algo', 'kvallgather_cp_algo'],
+            choices=['megatron_cp_algo', 'hybrid_cp_algo', 'kvallgather_cp_algo', 'deepseek_v4_cp_algo'],
             help='context parallel algorithm',
         )
 
@@ -52,8 +52,14 @@ class ContextParallelFeature(MindspeedContextParallelFeature):
                 raise AssertionError("Context parallel does not support use_kv_cache")
             if args.sliding_window is not None and args.seq_length > args.sliding_window:
                 raise AssertionError("Context parallel does not support sliding_windows")
-            if _is_deepseek4_spec(args) and args.context_parallel_algo != 'kvallgather_cp_algo':
-                raise AssertionError("DeepSeek4 only supports kvallgather_cp_algo when context parallel is enabled")
+            if _is_deepseek4_spec(args) and args.context_parallel_algo not in [
+                'kvallgather_cp_algo',
+                'deepseek_v4_cp_algo',
+            ]:
+                raise AssertionError(
+                    "DeepSeek4 only supports kvallgather_cp_algo or deepseek_v4_cp_algo "
+                    "when context parallel is enabled"
+                )
 
         # kvallgather_cp_algo
         if args.context_parallel_size > 1 and args.context_parallel_algo == 'kvallgather_cp_algo':
@@ -69,6 +75,44 @@ class ContextParallelFeature(MindspeedContextParallelFeature):
                 if hasattr(args, 'seq_length') and args.seq_length % args.context_parallel_size != 0:
                     raise AssertionError(
                         "sequence length must be divisible by context_parallel_size in kvallgather_cp_algo with THD format"
+                    )
+
+        # DeepSeek V4 compressed-attention context parallel
+        if args.context_parallel_size > 1 and args.context_parallel_algo == 'deepseek_v4_cp_algo':
+            if args.attention_mask_type != "causal":
+                raise AssertionError("deepseek_v4_cp_algo only supports causal attention mask type")
+            if getattr(args, 'position_embedding_type', None) == 'alibi':
+                raise AssertionError("deepseek_v4_cp_algo does not support alibi position embedding")
+            if getattr(args, 'tp_2d', False):
+                raise AssertionError("deepseek_v4_cp_algo does not support tp_2d")
+            if hasattr(args, 'seq_length') and args.seq_length % args.context_parallel_size != 0:
+                raise AssertionError(
+                    "sequence length must be divisible by context_parallel_size in deepseek_v4_cp_algo"
+                )
+            if not getattr(args, 'use_sparse_flash_attn', False):
+                raise AssertionError("deepseek_v4_cp_algo requires --use-sparse-flash-attn")
+            if getattr(args, 'recompute_csa_attention', False):
+                raise AssertionError("deepseek_v4_cp_algo does not support --recompute-csa-attention")
+            if getattr(args, 'enable_dsa_indexer', False) and not getattr(args, 'kv_compress', False):
+                raise AssertionError("deepseek_v4_cp_algo with --enable-dsa-indexer requires --kv-compress")
+            if getattr(args, 'indexer_qk_quant_scheme', None) is not None:
+                raise AssertionError("deepseek_v4_cp_algo does not support --indexer-qk-quant-scheme")
+            compress_ratios = getattr(args, 'compress_ratios', None)
+            if compress_ratios is not None:
+                unsupported_ratios = sorted({int(ratio) for ratio in compress_ratios} - {0, 1, 4, 128})
+                if unsupported_ratios:
+                    raise AssertionError(
+                        "deepseek_v4_cp_algo only supports compression ratios 0, 1, 4, and 128; "
+                        f"got {unsupported_ratios}"
+                    )
+            if getattr(args, 'enable_dsa_indexer', False) and float(getattr(args, 'indexer_loss_coeff', 0.0)) > 0:
+                if not getattr(args, 'use_fused_lightning_indexer', False):
+                    raise AssertionError(
+                        "deepseek_v4_cp_algo with --indexer-loss-coeff > 0 requires --use-fused-lightning-indexer"
+                    )
+                if not getattr(args, 'use_fused_lightning_indexer_loss', False):
+                    raise AssertionError(
+                        "deepseek_v4_cp_algo with --indexer-loss-coeff > 0 requires --use-fused-lightning-indexer-loss"
                     )
 
     def register_patches(self, patch_manager, args):

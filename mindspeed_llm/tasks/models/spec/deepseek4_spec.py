@@ -30,6 +30,44 @@ num_experts, moe_grouped_gemm, qk_layernorm, mla_mm_split, enable_dsa_indexer, e
     args.transformer_impl == "transformer_engine",
 )
 
+_is_deepseek_v4_cp = (
+    int(getattr(args, "context_parallel_size", 1)) > 1
+    and getattr(args, "context_parallel_algo", "") == "deepseek_v4_cp_algo"
+)
+
+if _is_deepseek_v4_cp:
+    from mindspeed.core.transformer.deepseek_v4 import (
+        DeepSeekV4MTPSelfAttentionCP,
+        DeepSeekV4SelfAttentionCP,
+        get_deepseek_v4_cp_self_attn_submodules,
+    )
+
+    _self_attention = DeepSeekV4SelfAttentionCP
+    _mtp_self_attention = DeepSeekV4MTPSelfAttentionCP
+    _self_attention_submodules = get_deepseek_v4_cp_self_attn_submodules(
+        qk_layernorm=qk_layernorm,
+        mla_mm_split=mla_mm_split,
+        enable_dsa_indexer=enable_dsa_indexer,
+        use_te=use_te,
+    )
+    _mtp_attention_submodules = get_deepseek_v4_cp_self_attn_submodules(
+        qk_layernorm=qk_layernorm,
+        mla_mm_split=mla_mm_split,
+        enable_dsa_indexer=False,
+        use_te=use_te,
+        compressor=False,
+    )
+else:
+    _self_attention = DeepSeek4SelfAttention
+    _mtp_self_attention = DeepSeek4MTPSelfAttention
+    _self_attention_submodules = get_deepseek4_self_attn_submodules(
+        qk_layernorm=qk_layernorm,
+        mla_mm_split=mla_mm_split,
+        enable_dsa_indexer=enable_dsa_indexer,
+        compressor=True,
+    )
+    _mtp_attention_submodules = _self_attention_submodules
+
 layer_spec = ModuleSpec(
     module=TransformerLayer,
     submodules=CustomTransformerLayerSubmodules(
@@ -37,14 +75,9 @@ layer_spec = ModuleSpec(
         mlp_mhc=get_mhc_spec(enable_mhc=enable_mhc),
         input_layernorm=PTNorm,
         self_attention=ModuleSpec(
-            module=DeepSeek4SelfAttention,
+            module=_self_attention,
             params={"attn_mask_type": AttnMaskType.causal},
-            submodules=get_deepseek4_self_attn_submodules(
-                qk_layernorm=qk_layernorm,
-                mla_mm_split=mla_mm_split,
-                enable_dsa_indexer=enable_dsa_indexer,
-                compressor=True,
-            ),
+            submodules=_self_attention_submodules,
         ),
         self_attn_bda=get_add_op_with_bias,
         pre_mlp_layernorm=PTNorm,
@@ -67,14 +100,9 @@ mtp_spec = ModuleSpec(
         mlp_mhc=get_mhc_spec(enable_mhc=enable_mhc),
         input_layernorm=PTNorm,
         self_attention=ModuleSpec(
-            module=DeepSeek4MTPSelfAttention,
+            module=_mtp_self_attention,
             params={"attn_mask_type": AttnMaskType.causal},
-            submodules=get_deepseek4_self_attn_submodules(
-                qk_layernorm=qk_layernorm,
-                mla_mm_split=mla_mm_split,
-                enable_dsa_indexer=enable_dsa_indexer,
-                compressor=True,
-            ),
+            submodules=_mtp_attention_submodules,
         ),
         self_attn_bda=get_add_op_with_bias,
         pre_mlp_layernorm=PTNorm,

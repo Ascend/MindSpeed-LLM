@@ -119,8 +119,12 @@ class DSAIndexerFeature(MindSpeedFeature):
             if args.context_parallel_size > 1 and args.context_parallel_algo not in [
                 'ulysses_cp_algo',
                 'kvallgather_cp_algo',
+                'deepseek_v4_cp_algo',
             ]:
-                raise ValueError("DSAIndexer is currently only supported `ulysses_cp_algo` when use context parallel.")
+                raise ValueError(
+                    "DSAIndexer is currently only supported with ulysses_cp_algo, kvallgather_cp_algo, "
+                    "or deepseek_v4_cp_algo when use context parallel."
+                )
             if args.reset_attention_mask:
                 if not args.use_fused_lightning_indexer:
                     raise ValueError("DSA with TND format requires --use-fused-lightning-indexer.")

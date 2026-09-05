@@ -421,6 +421,7 @@ def npu_sparse_flash_mla(
         cmp_sparse_indices: compressed sparse indices, (B, S, N2, K), int32
         softmax_scale:      softmax scale, default 1/sqrt(D)
         cmp_ratio:          compression ratio
+        cmp_mask_mode:      cmp-side mask; must stay 3 on A2/A3 even when cmp_kv is None (SWA)
         cmp_residual_kv:    (B,) int32, residual compressed-KV length produced by the compressor
                             upstream; required by backward when cmp_mask_mode==3 and cmp_ratio!=1.
                             Passed in, not computed here.
@@ -437,8 +438,8 @@ def npu_sparse_flash_mla(
     S1, B, _, D = q.shape
     if softmax_scale is None:
         softmax_scale = D**-0.5
-    if cmp_kv is None:
-        cmp_mask_mode = 0
+    # Keep default cmp_mask_mode=3 when cmp_kv is None (SWA / C1A).
+    # A2/A3 SparseFlashMla tiling rejects 0; A5 also accepts 3.
     if layout_q == 'BSND':
         q = q.permute(1, 0, 2, 3).contiguous()  # [S, B, N, D] --> [B, S, N, D]
         # [S, B, D] --> [B, S, 1, D]

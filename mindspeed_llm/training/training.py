@@ -1148,8 +1148,25 @@ def training_log(loss_dict, total_loss_dict, learning_rate, decoupled_learning_r
             )
     if args.enable_dsa_indexer:
         dsa_indexer_loss_scale = 1 / get_num_microbatches()
-        DSAIndexerLossLoggingHelper.track_das_indexer_metrics(
-            dsa_indexer_loss_scale, iteration, writer, wandb_writer, total_loss_dict
+        is_deepseek_v4_cp = (
+            int(getattr(args, "context_parallel_size", 1)) > 1
+            and getattr(args, "context_parallel_algo", "") == "deepseek_v4_cp_algo"
+        )
+        if is_deepseek_v4_cp:
+            from mindspeed.core.transformer.deepseek_v4 import (
+                track_deepseek_v4_cp_indexer_metrics,
+            )
+
+            track_deepseek_v4_cp_indexer_metrics(
+                dsa_indexer_loss_scale,
+                iteration,
+                writer,
+                wandb_writer,
+                total_loss_dict,
+            )
+        else:
+            DSAIndexerLossLoggingHelper.track_das_indexer_metrics(
+                dsa_indexer_loss_scale, iteration, writer, wandb_writer, total_loss_dict
             )
     if iteration % args.log_interval == 0:
         if args.record_memory_history and is_last_rank():

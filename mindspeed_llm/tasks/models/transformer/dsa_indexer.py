@@ -783,13 +783,24 @@ def forward_step_dsa_wrapper(fn):
                 indexer_loss_scale = loss_scale
             else:
                 indexer_loss_scale = loss_scale / num_microbatches
-            DSAIndexerLossAutoScaler.set_loss_scale(indexer_loss_scale)
-            if getattr(global_args, 'use_fused_lightning_indexer_loss', False):
-                from mindspeed_llm.ops.npu_sparse_flash_mla_with_indexer_loss import (
-                    SparseFlashMlaWithIndexerLossFunction,
+            is_deepseek_v4_cp = (
+                int(getattr(global_args, "context_parallel_size", 1)) > 1
+                and getattr(global_args, "context_parallel_algo", "") == "deepseek_v4_cp_algo"
+            )
+            if is_deepseek_v4_cp:
+                from mindspeed.core.transformer.deepseek_v4 import (
+                    set_deepseek_v4_cp_indexer_loss_scale,
                 )
 
-                SparseFlashMlaWithIndexerLossFunction.set_loss_scale(indexer_loss_scale)
+                set_deepseek_v4_cp_indexer_loss_scale(indexer_loss_scale)
+            else:
+                DSAIndexerLossAutoScaler.set_loss_scale(indexer_loss_scale)
+                if getattr(global_args, 'use_fused_lightning_indexer_loss', False):
+                    from mindspeed_llm.ops.npu_sparse_flash_mla_with_indexer_loss import (
+                        SparseFlashMlaWithIndexerLossFunction,
+                    )
+
+                    SparseFlashMlaWithIndexerLossFunction.set_loss_scale(indexer_loss_scale)
         return output_tensor, num_tokens
 
     return wrapper
