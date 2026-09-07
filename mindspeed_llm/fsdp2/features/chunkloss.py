@@ -212,7 +212,7 @@ def calculate_lm_loss(
 
     # Project to logits using only the weight (bias is intentionally omitted here)
     # Cast to float to ensure numerical stability in loss computation
-    logits = torch.mm(hidden_states, head_weight).float()
+    logits = torch.mm(hidden_states, head_weight.T).float()
 
     # Compute the modified cross-entropy loss
     loss = fixed_cross_entropy(
