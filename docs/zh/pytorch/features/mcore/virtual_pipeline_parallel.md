@@ -14,7 +14,7 @@ PipeDream 流水线并行切分粒度过大，运行过程中仍然有许多空�
 
 ![虚拟流水线并行前后向调度示意图](../../figures/virtual_pipeline_parallel/virtual-pipeline.png)
 
-[原文链接](https://people.eecs.berkeley.edu/~matei/papers/2021/sc_megatron_lm.pdf)
+[原文链接](https://arxiv.org/abs/2104.04473?utm_source=chatgpt.com)
 
 为了方便理解，举一个例子：假设模型层数为 16，张量并行大小为 1，流水线并行大小为 4，虚拟流水线并行大小为 2。模型会被分为 4 * 2 = 8 个阶段，每个阶段 16 / 8 = 2 个层。
 

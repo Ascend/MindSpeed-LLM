@@ -208,7 +208,7 @@ See the [open dataset evaluation baselines](docs/en/pytorch/training/evaluation/
   <tbody>
     <tr>
       <td rowspan="12"><a href="docs/en/pytorch/training/evaluation/evaluation_guide.md">Evaluation</a></td>
-      <td><a href="https://people.eecs.berkeley.edu/~hendrycks/data.tar">MMLU</a></td>
+      <td><a href="https://huggingface.co/datasets/cais/mmlu/resolve/main/data.tar?utm_source=chatgpt.com">MMLU</a></td>
       <td>✅</td>
       <td>❌</td>
       <td>[Ascend] </td>
