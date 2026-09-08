@@ -579,7 +579,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
   <tbody>
     <tr>
       <td rowspan="8"><a href="docs/zh/pytorch/training/evaluation/evaluation_guide.md">评测</a></td>
-      <td><a href="https://people.eecs.berkeley.edu/~hendrycks/data.tar">MMLU</a></td>
+      <td><a href="https://huggingface.co/datasets/cais/mmlu/resolve/main/data.tar?utm_source=chatgpt.com">MMLU</a></td>
       <td>✅</td>
       <td>❌</td>
       <td>【NAIE】</td>

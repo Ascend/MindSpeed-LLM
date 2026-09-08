@@ -14,7 +14,7 @@ With the number of devices unchanged, divide the workload into more pipeline sta
 
 ![Alt text](../../figures/virtual_pipeline_parallel/virtual-pipeline.png)
 
-[Original paper link](https://people.eecs.berkeley.edu/~matei/papers/2021/sc_megatron_lm.pdf)
+[Original paper link](https://arxiv.org/abs/2104.04473?utm_source=chatgpt.com)
 
 For ease of understanding, here is an example. Assume that the model has 16 layers, the tensor parallel size is 1, the pipeline parallel size is 4, and the virtual pipeline parallel size is 2. The model is divided into 4 * 2 = 8 stages, and each stage has 16 / 8 = 2 layers.
 
