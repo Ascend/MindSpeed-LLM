@@ -5,6 +5,8 @@ from einops import rearrange
 import torch
 from mindspeed_llm.tasks.models.transformer.deepseek4.deepseek_utils import get_cmp_cu_seqlens
 
+from packaging.version import Version
+from torch_npu.npu.utils import get_cann_version
 
 _CUSTOM_OPS = None
 
@@ -19,6 +21,11 @@ def _custom_ops():
         custom_ops = None
     _CUSTOM_OPS = custom_ops
     return _CUSTOM_OPS
+
+
+def cann_ge_920():
+    version = get_cann_version("CANN")
+    return Version(version) >= Version("9.2.0")
 
 
 @lru_cache(maxsize=8)
@@ -421,7 +428,7 @@ def npu_sparse_flash_mla(
         cmp_sparse_indices: compressed sparse indices, (B, S, N2, K), int32
         softmax_scale:      softmax scale, default 1/sqrt(D)
         cmp_ratio:          compression ratio
-        cmp_mask_mode:      cmp-side mask; must stay 3 on A2/A3 even when cmp_kv is None (SWA)
+        cmp_mask_mode:      cmp-side mask
         cmp_residual_kv:    (B,) int32, residual compressed-KV length produced by the compressor
                             upstream; required by backward when cmp_mask_mode==3 and cmp_ratio!=1.
                             Passed in, not computed here.
@@ -438,7 +445,8 @@ def npu_sparse_flash_mla(
     S1, B, _, D = q.shape
     if softmax_scale is None:
         softmax_scale = D**-0.5
-    if cmp_kv is None:
+    # When using the cann package version 9.2.0 or later, cmp_mask_mode needs to be set to 0 when cmp_kv is None.
+    if cmp_kv is None and cann_ge_920():
         cmp_mask_mode = 0
     if layout_q == 'BSND':
         q = q.permute(1, 0, 2, 3).contiguous()  # [S, B, N, D] --> [B, S, N, D]
