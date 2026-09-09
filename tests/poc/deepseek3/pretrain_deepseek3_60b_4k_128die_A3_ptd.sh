@@ -69,6 +69,7 @@ MOE_ARGS="
     --moe-router-enable-expert-bias \
     --moe-tp-extend-ep \
     --fix-router \
+    --disable-gloo-group \
 "
 
 MTP_ARGS="
