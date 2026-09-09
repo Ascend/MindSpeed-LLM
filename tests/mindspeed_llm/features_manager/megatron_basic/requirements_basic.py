@@ -2,7 +2,7 @@
 from argparse import ArgumentParser
 
 import torch
-from mindspeed.features_manager.megatron_basic.requirements_basic import (
+from megatron_adaptor.features_manager.requirements.requirements import (
     RequirementsBasicFeature as MindspeedRequirementsBasicFeature,
 )
 
@@ -19,11 +19,9 @@ class RequirementsBasicFeature(MindspeedRequirementsBasicFeature):
         )
 
     def register_patches(self, patch_manager, args):
-        super().register_patches(patch_manager, args)
         self.version_patch(patch_manager, args)
 
     def pre_register_patches(self, patch_manager, args):
-        super().pre_register_patches(patch_manager, args)
         self.load_checkpoint_patch(patch_manager, args)
 
     def optimizer_selection(self, pm, args):

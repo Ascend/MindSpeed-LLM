@@ -36,6 +36,7 @@ from megatron.core.extensions.transformer_engine import te_checkpoint
 from mindspeed.core.pipeline_parallel.noop_layers.adaptor import NoopTransformerLayer
 from mindspeed.core.transformer.transformer_block import _get_layer_offset
 from mindspeed.core.transformer.transformer import norm_recompute_forward
+from megatron.core.recompute import checkpointed_forward
 from mindspeed.model.transformer import should_recompute_norm
 
 
@@ -158,7 +159,7 @@ def _transformer_block_build_layers(self):
     self.attention_layer_type = None
 
     def build_layer(layer_spec, layer_number):
-        global_layer_number = _get_layer_offset(args) + layer_number
+        global_layer_number = _get_layer_offset(args, getattr(self, "vp_stage", 0)) + layer_number
         # For dense and moe mix
         if args.num_experts and args.first_k_dense_replace and args.moe_layer_freq:
             if (global_layer_number - 1) >= args.first_k_dense_replace and (
@@ -190,6 +191,7 @@ def _transformer_block_build_layers(self):
         return build_module(
             layer_spec,
             config=self.config,
+            vp_stage=getattr(self, 'vp_stage', None),
             layer_number=layer_number,
         )
 
@@ -277,7 +279,11 @@ def transformer_block_forward(
     #   already creates viewless tensors. That said, make_viewless_tensor()
     #   is called here to be future-proof and corner-case-proof.
     if self.input_embeds_norm and self.pre_process:
-        normalizer = torch.tensor(self.hidden_size**0.5, dtype=hidden_states.dtype)
+        normalizer = torch.tensor(
+            self.hidden_size**0.5,
+            dtype=hidden_states.dtype,
+            device=hidden_states.device,
+        )
         hidden_states = hidden_states * normalizer
 
     hidden_states = make_viewless_tensor(
@@ -300,73 +306,45 @@ def transformer_block_forward(
     use_inner_fp8_context = self.config.fp8 and self.config.fp8_recipe != Fp8Recipe.delayed
     outer_fp8_context = get_fp8_context(self.config) if use_outer_fp8_context else nullcontext()
 
-    global_args = get_args()
     key_value_states = None
 
-    with rng_context, outer_fp8_context:
-        # Forward pass.
-        if self.config.recompute_granularity == 'full' and self.training:
-            # te 版本 131 引入fix inner 采用fp8
-            kwargs = {}
-            if 'use_inner_fp8_context' in self._checkpointed_forward.__code__.co_varnames:
-                kwargs['use_inner_fp8_context'] = use_inner_fp8_context
+    # Megatron-Core 0.18 native checkpointed_forward currently follows
+    # the standard TransformerLayer return protocol. The MindSpeed
+    # share_kvstates/hash-layer extensions use a different protocol.
+    use_mindspeed_extended_forward = (
+        getattr(args, "share_kvstates", False)
+        or getattr(args, "n_hash_layers", 0) >= 1
+    )
 
-            if global_args.share_kvstates:
-                if args.n_hash_layers >= 1:
-                    hidden_states, key_value_states = self._checkpointed_forward(
-                        hidden_states=hidden_states,
-                        attention_mask=attention_mask,
-                        key_value_states=key_value_states,
-                        context=context,
-                        context_mask=context_mask,
-                        rotary_pos_emb=rotary_pos_emb,
-                        packed_seq_params=packed_seq_params,
-                        input_ids=input_ids,
-                        **kwargs,
-                    )
-                else:
-                    hidden_states, key_value_states = self._checkpointed_forward(
-                        hidden_states=hidden_states,
-                        attention_mask=attention_mask,
-                        key_value_states=key_value_states,
-                        context=context,
-                        context_mask=context_mask,
-                        rotary_pos_emb=rotary_pos_emb,
-                        packed_seq_params=packed_seq_params,
-                        **kwargs,
-                    )
-            else:
-                if args.n_hash_layers >= 1:
-                    hidden_states = self._checkpointed_forward(
-                        hidden_states=hidden_states,
-                        attention_mask=attention_mask,
-                        context=context,
-                        context_mask=context_mask,
-                        rotary_pos_emb=rotary_pos_emb,
-                        attention_bias=None,
-                        packed_seq_params=packed_seq_params,
-                        input_ids=input_ids,
-                        **kwargs,
-                    )
-                else:
-                    hidden_states = self._checkpointed_forward(
-                        hidden_states=hidden_states,
-                        attention_mask=attention_mask,
-                        context=context,
-                        context_mask=context_mask,
-                        rotary_pos_emb=rotary_pos_emb,
-                        attention_bias=None,
-                        packed_seq_params=packed_seq_params,
-                        **kwargs,
-                    )
+    use_full_recompute = (
+        self.config.recompute_granularity == "full"
+        and self.training
+        and not use_mindspeed_extended_forward
+    )
+
+    with rng_context, outer_fp8_context:
+        if use_full_recompute:
+            # Megatron-Core 0.18 uses the module-level checkpointed_forward
+            # function instead of self._checkpointed_forward.
+            hidden_states = checkpointed_forward(
+                self,
+                hidden_states=hidden_states,
+                attention_mask=attention_mask,
+                context=context,
+                context_mask=context_mask,
+                rotary_pos_emb=rotary_pos_emb,
+                attention_bias=None,
+                packed_seq_params=packed_seq_params,
+                use_inner_quantization_context=use_inner_fp8_context,
+            )
         else:
             for _, layer in enumerate(self.layers):
                 inner_fp8_context = (
                     get_fp8_context(self.config, layer.layer_number - 1) if use_inner_fp8_context else nullcontext()
                 )
                 with self.offload_context, inner_fp8_context:
-                    if global_args.share_kvstates:
-                        if args.n_hash_layers >= 1:
+                    if getattr(args, "share_kvstates", False):
+                        if getattr(args, "n_hash_layers", 0) >= 1:
                             hidden_states, context, key_value_states = layer(
                                 hidden_states=hidden_states,
                                 attention_mask=attention_mask,
@@ -396,15 +374,18 @@ def transformer_block_forward(
                                 sequence_len_offset=sequence_len_offset,
                             )
                     else:
-                        if args.n_hash_layers >= 1:
+                        if getattr(args, "n_hash_layers", 0) >= 1:
                             hidden_states, context = layer(
                                 hidden_states=hidden_states,
                                 attention_mask=attention_mask,
                                 context=context,
                                 context_mask=context_mask,
                                 rotary_pos_emb=rotary_pos_emb,
+                                rotary_pos_cos=rotary_pos_cos,
+                                rotary_pos_sin=rotary_pos_sin,
                                 inference_context=inference_context,
                                 packed_seq_params=packed_seq_params,
+                                sequence_len_offset=sequence_len_offset,
                                 input_ids=input_ids,
                             )
                         else:
@@ -414,8 +395,11 @@ def transformer_block_forward(
                                 context=context,
                                 context_mask=context_mask,
                                 rotary_pos_emb=rotary_pos_emb,
+                                rotary_pos_cos=rotary_pos_cos,
+                                rotary_pos_sin=rotary_pos_sin,
                                 inference_context=inference_context,
                                 packed_seq_params=packed_seq_params,
+                                sequence_len_offset=sequence_len_offset,
                             )
 
                 if (

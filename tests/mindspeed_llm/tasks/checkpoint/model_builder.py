@@ -44,7 +44,7 @@ class Model(abc.ABC):
 
         current_directory = os.path.dirname(os.path.abspath(__file__))
         cfg_dir = os.path.join(
-            os.path.dirname(os.path.dirname(os.path.dirname(current_directory))), "configs/checkpoint/model_cfg.json"
+            os.path.dirname(os.path.dirname(os.path.dirname(current_directory))), "../configs/checkpoint/model_cfg.json"
         )
         with open(cfg_dir, 'r', encoding='utf-8') as file:
             config = json.load(file)

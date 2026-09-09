@@ -13,7 +13,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import sys
 
-backend = os.environ.get("TRAINING_BACKEND", "mcore").lower()
-if backend == "mcore":
-    from mindspeed_llm.tasks import megatron_adaptor_v2 as megatron_adaptor
+llm_version = os.environ.get("MINDSPEED_LLM_VERSION", "012").lower()
+if llm_version == "018":
+    _repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    sys.path.insert(0, os.path.join(_repo_root, "tests"))
+    sys.modules.pop(__name__, None)
+    _mindspeed_llm = __import__(__name__)
+    sys.modules[__name__] = _mindspeed_llm
+    globals().update(_mindspeed_llm.__dict__)
+else:
+    backend = os.environ.get("TRAINING_BACKEND", "mcore").lower()
+    if backend == "mcore":
+        from mindspeed_llm.tasks import megatron_adaptor_v2 as megatron_adaptor  # noqa: F401

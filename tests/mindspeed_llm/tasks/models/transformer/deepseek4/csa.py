@@ -19,7 +19,7 @@ from megatron.core.tensor_parallel.mappings import gather_from_tensor_model_para
 from megatron.core.transformer import TransformerConfig, ModuleSpec, build_module
 from megatron.core.transformer.module import MegatronModule
 from megatron.core.transformer.attention import SelfAttentionSubmodules
-from megatron.core.transformer.custom_layers.transformer_engine import TEColumnParallelLinear, TERowParallelLinear
+from megatron.core.extensions.transformer_engine import TEColumnParallelLinear, TERowParallelLinear
 from megatron.core.transformer.enums import AttnMaskType
 from megatron.core import parallel_state
 from megatron.training import get_args

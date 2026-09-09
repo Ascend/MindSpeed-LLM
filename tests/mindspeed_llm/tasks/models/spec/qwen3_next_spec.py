@@ -14,7 +14,7 @@ from megatron.core.transformer.dot_product_attention import DotProductAttention
 from megatron.core.transformer.moe.moe_layer import MoELayer, MoESubmodules
 from megatron.core.transformer.moe.shared_experts import SharedExpertMLP
 from megatron.core.transformer.mlp import MLP, MLPSubmodules
-from megatron.core.transformer.moe.experts import GroupedMLP, SequentialMLP
+from megatron.core.transformer.moe.experts import TEGroupedMLP, SequentialMLP
 from mindspeed_llm.core.transformer.custom_layers.transformer_engine import PTNorm
 from mindspeed_llm.tasks.models.transformer.qwen3_next_full_attention import (
     CustomQwen3NextSelfAttentionSubmodules,
@@ -44,11 +44,11 @@ qwen3_next_mlp = MLPSubmodules(
 if num_experts:
     # experts spec
     if moe_grouped_gemm:
-        ## use legacy GroupedMLP
-        expert_module = GroupedMLP
+        # use TEGroupedMLP
+        expert_module = TEGroupedMLP
         expert_submodule = None
     else:
-        ## use SequentialMLP
+        # use SequentialMLP
         expert_module = SequentialMLP
         expert_submodule = qwen3_next_mlp
 
@@ -82,6 +82,7 @@ full_attention_spec = ModuleSpec(
     module=CustomQwen3NextSelfAttention,
     params={"attn_mask_type": AttnMaskType.causal},
     submodules=CustomQwen3NextSelfAttentionSubmodules(
+        linear_qkv=None,
         q_proj=ColumnParallelLinear,
         k_proj=ColumnParallelLinear,
         v_proj=ColumnParallelLinear,

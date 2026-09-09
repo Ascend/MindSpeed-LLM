@@ -15,7 +15,6 @@ from megatron.core.tensor_parallel.layers import (
     _initialize_affine_weight_gpu,
     VocabParallelEmbedding,
 )
-from megatron.legacy.model.fused_layer_norm import MixedFusedLayerNorm
 from megatron.training import get_args
 from megatron.core.tensor_parallel.mappings import (
     reduce_scatter_to_sequence_parallel_region,
@@ -81,11 +80,6 @@ def vocab_embedding_init_func(
                 _initialize_affine_weight_gpu(self.weight, init_method, partition_dim=0, stride=1)
     else:
         self.weight = None
-
-    args = get_args()
-    if parallel_state.is_pipeline_first_stage() and args.embed_layernorm:
-        norm = MixedFusedLayerNorm(args.hidden_size)
-        self.norm = norm
 
 
 def vocab_parallel_embedding_forward(self, input_, weight=None):

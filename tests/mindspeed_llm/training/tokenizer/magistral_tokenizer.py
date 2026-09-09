@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from transformers.utils import PaddingStrategy
 from typing import Dict, List, Optional
-from megatron.core.datasets.megatron_tokenizer import MegatronTokenizer
+from megatron.core.tokenizers import MegatronTokenizer
 
 logging.basicConfig(level=logging.INFO)
 

@@ -8,7 +8,7 @@ from megatron.core.transformer.identity_op import IdentityOp
 from megatron.core.transformer.moe.moe_layer import MoELayer, MoESubmodules
 from megatron.core.transformer.moe.shared_experts import SharedExpertMLP
 from megatron.core.transformer.mlp import MLPSubmodules
-from megatron.core.transformer.moe.experts import GroupedMLP, SequentialMLP
+from megatron.core.transformer.moe.experts import TEGroupedMLP, SequentialMLP
 from megatron.training import get_args
 
 from mindspeed_llm.core.transformer.custom_layers.transformer_engine import PTNorm
@@ -25,11 +25,11 @@ if num_experts:
 
     # experts spec
     if moe_grouped_gemm:
-        ## use legacy GroupedMLP
-        expert_module = GroupedMLP
+        # use TEGroupedMLP
+        expert_module = TEGroupedMLP
         expert_submodule = None
     else:
-        ## use SequentialMLP
+        # use SequentialMLP
         expert_module = SequentialMLP
         expert_submodule = qwen2_mlp
 

@@ -20,16 +20,92 @@ import torch
 import torch.nn.functional as F
 
 from megatron.training import get_args, get_tokenizer
-from megatron.core.parallel_state import get_expert_model_parallel_world_size
+from megatron.core.parallel_state import get_expert_model_parallel_world_size, get_pipeline_model_parallel_group
 from megatron.core import mpu
-from megatron.inference.text_generation.communication import (
-    copy_from_last_to_first_pipeline_stage,
-    broadcast_from_last_pipeline_stage,
-    broadcast_from_last_to_first_pipeline_stage)
-from megatron.inference.text_generation.forward_step import ForwardStep
+from megatron.core.inference.communication_utils import broadcast_from_last_pipeline_stage
 from megatron.core.inference.contexts import StaticInferenceContext
-from megatron.inference.text_generation.beam_utils import BeamHypotheses
-from megatron.inference.text_generation.generation import _build_attention_mask_and_position_ids
+from megatron.core.inference.model_inference_wrappers.gpt.gpt_inference_wrapper import GPTInferenceWrapper
+from mindspeed_llm.inference.text_generation.forward_step import ForwardStep
+from mindspeed_llm.inference.text_generation.beam_utils import BeamHypotheses
+
+def _send_and_recv_from_last_to_first_pipeline_stage(tensor=None):
+    is_last_stage = mpu.is_pipeline_last_stage()
+    is_first_stage = mpu.is_pipeline_first_stage()
+
+    if is_last_stage or is_first_stage:
+        if is_first_stage:
+            recv_prev_op = torch.distributed.P2POp(
+                torch.distributed.irecv, tensor,
+                mpu.get_pipeline_model_parallel_last_rank(), group=get_pipeline_model_parallel_group())
+            reqs = torch.distributed.batch_isend_irecv([recv_prev_op])
+        elif is_last_stage:
+            send_next_op = torch.distributed.P2POp(
+                torch.distributed.isend, tensor,
+                mpu.get_pipeline_model_parallel_first_rank(), group=get_pipeline_model_parallel_group())
+            reqs = torch.distributed.batch_isend_irecv([send_next_op])
+
+        for req in reqs:
+            req.wait()
+        # To protect against race condition when using batch_isend_irecv().
+        torch.cuda.synchronize()
+
+        return tensor
+
+
+def broadcast_from_last_to_first_pipeline_stage(size, dtype, tensor=None):
+    """Broadcast tensor values from last stage into the first stage."""
+
+    is_last_stage = mpu.is_pipeline_last_stage()
+    is_first_stage = mpu.is_pipeline_first_stage()
+    # If first stage and last state are the same, then there is no
+    # pipeline parallelism and no need to communicate.
+    if is_first_stage and is_last_stage:
+        return tensor
+    # Only first and last stage pipeline stages need to be involved.
+    if is_last_stage or is_first_stage:
+        if is_last_stage:
+            assert tensor is not None
+            assert tensor.is_cuda
+            assert tensor.is_contiguous()
+        else:
+            tensor = torch.empty(size,
+                                 dtype=dtype,
+                                 device=torch.cuda.current_device())
+        tensor = _send_and_recv_from_last_to_first_pipeline_stage(tensor)
+    else:
+        tensor = None
+
+    return tensor
+
+
+def copy_from_last_to_first_pipeline_stage(size, dtype, tensor=None):
+    """Copy tensor values from last stage into the first stage.
+    Note that the input tensor is updated in place."""
+
+    is_last_stage = mpu.is_pipeline_last_stage()
+    is_first_stage = mpu.is_pipeline_first_stage()
+    # If first stage and last state are the same, then there is no
+    # pipeline parallelism and no need to communicate.
+    if is_first_stage and is_last_stage:
+        return
+    # Only first and last stage pipeline stages need to be involved.
+    if is_last_stage or is_first_stage:
+        assert tensor is not None
+        assert tensor.is_cuda
+        is_contiguous = tensor.is_contiguous()
+        if is_contiguous:
+            tensor_ = tensor
+        else:
+            if is_last_stage:
+                tensor_ = tensor.contiguous()
+            else:
+                tensor_ = torch.empty(size,
+                                      dtype=dtype,
+                                      device=torch.cuda.current_device())
+        tensor_ = _send_and_recv_from_last_to_first_pipeline_stage(tensor_)
+        # Update the first stage tensor
+        if is_first_stage and not is_contiguous:
+            tensor[...] = tensor_
 
 
 def generate_tokens_probs_and_return_on_first_stage(
@@ -120,7 +196,7 @@ def generate_tokens_probs_and_return_on_first_stage(
                                         device=tokens.device)
             position_ids = position_ids.unsqueeze(0).expand_as(tokens)
         else:
-            attention_mask, position_ids = _build_attention_mask_and_position_ids(
+            attention_mask, position_ids = GPTInferenceWrapper._build_attention_mask_and_position_ids(
                 tokens)
                 
         if get_args().spec is not None and get_args().spec[0] == "mindspeed_llm.tasks.models.spec.hunyuan_spec":
@@ -285,7 +361,7 @@ def beam_search_and_return_on_first_stage(
     with torch.no_grad():
         tokens = tokens.repeat(beam_size, 1)
         lengths = lengths.repeat(beam_size, 1)
-        attention_mask, position_ids = _build_attention_mask_and_position_ids(tokens)
+        attention_mask, position_ids = GPTInferenceWrapper._build_attention_mask_and_position_ids(tokens)
         if get_args().spec is not None and get_args().spec[0] == "mindspeed_llm.tasks.models.spec.hunyuan_spec":
             pad_id = 127961
             attention_mask = tokens.ne(pad_id)

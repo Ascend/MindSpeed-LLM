@@ -22,14 +22,12 @@ class FusionAttentionFeature(MindSpeedFusionAttentionFeature):
 
 
     def register_patches(self, patch_manager, args):
-        from mindspeed.core.transformer.attention import attention_init
+        from mindspeed.core.transformer.attention import attention_init_wrapper
         from mindspeed_llm.core.transformer.custom_dot_product_attention import CustomDotProductAttention
 
         # Attention
         if int(getattr(args, 'context_parallel_size', 1)) < 2:
             patch_manager.register_patch('megatron.core.transformer.attention.Attention.__init__',
-                                          attention_init)
+                                        attention_init_wrapper)
             patch_manager.register_patch('megatron.core.transformer.dot_product_attention.DotProductAttention',
-                                          CustomDotProductAttention)
-            patch_manager.register_patch('megatron.core.transformer.custom_layers.transformer_engine.TEDotProductAttention',
                                           CustomDotProductAttention)

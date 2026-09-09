@@ -15,12 +15,25 @@
 # limitations under the License.
 from typing import Union
 
-from mindspeed_llm import megatron_adaptor
-from megatron.core.models.gpt.gpt_layer_specs import get_gpt_layer_with_transformer_engine_spec, \
-    get_gpt_layer_local_spec
+# MindSpeed patches must be applied before any Megatron modules.
+# isort: off
+from mindspeed_llm import megatron_adaptor  # noqa: F401  # pylint: disable=ungrouped-imports
+# isort: on
+
+from megatron.core.models.gpt.gpt_layer_specs import (
+    get_gpt_layer_with_transformer_engine_spec,
+    get_gpt_layer_local_spec,
+)
 from megatron.core.transformer.spec_utils import import_module
 from megatron.training import get_args, print_rank_0
-from megatron.legacy.model import GPTModel
+import os
+import sys
+
+if os.environ.get("MINDSPEED_LLM_VERSION", "012") == "018":
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "tests"))
+    from megatron.core.models.gpt.gpt_model import GPTModel
+else:
+    from megatron.legacy.model import GPTModel
 from megatron.training.initialize import initialize_megatron
 from megatron.training.arguments import core_transformer_config_from_args
 from megatron.training.yaml_arguments import core_transformer_config_from_yaml
@@ -64,7 +77,9 @@ def model_provider(pre_process=True, post_process=True) -> Union[GPTModelInfer, 
             transformer_layer_spec = import_module(args.spec)
         else:
             if use_te:
-                transformer_layer_spec = get_gpt_layer_with_transformer_engine_spec(args.num_experts, args.moe_grouped_gemm)
+                transformer_layer_spec = get_gpt_layer_with_transformer_engine_spec(
+                    args.num_experts, args.moe_grouped_gemm
+                )
             else:
                 transformer_layer_spec = get_gpt_layer_local_spec(args.num_experts, args.moe_grouped_gemm)
 
@@ -76,11 +91,11 @@ def model_provider(pre_process=True, post_process=True) -> Union[GPTModelInfer, 
             pre_process=pre_process,
             post_process=post_process,
             fp16_lm_cross_entropy=args.fp16_lm_cross_entropy,
-            parallel_output=True if args.sequence_parallel else False,
+            parallel_output=args.sequence_parallel,
             share_embeddings_and_output_weights=not args.untie_embeddings_and_output_weights,
             position_embedding_type=args.position_embedding_type,
             rotary_percent=args.rotary_percent,
-            seq_len_interpolation_factor=args.rotary_seq_len_interpolation_factor
+            seq_len_interpolation_factor=args.rotary_seq_len_interpolation_factor,
         )
     else:
         if not args.context_parallel_size == 1:
@@ -88,9 +103,9 @@ def model_provider(pre_process=True, post_process=True) -> Union[GPTModelInfer, 
 
         model = GPTModel(
             config,
-            parallel_output=True if args.sequence_parallel else False,
+            parallel_output=args.sequence_parallel,
             pre_process=pre_process,
-            post_process=post_process
+            post_process=post_process,
         )
 
     return model
@@ -98,14 +113,12 @@ def model_provider(pre_process=True, post_process=True) -> Union[GPTModelInfer, 
 
 @auto_coverage
 def main():
-    initialize_megatron(args_defaults={'no_load_rng': True,
-                                       'no_load_optim': True})
+    initialize_megatron(args_defaults={'no_load_rng': True, 'no_load_optim': True})
 
     args = get_args()
 
     model = MegatronModuleForCausalLM.from_pretrained(
-        model_provider=model_provider,
-        pretrained_model_name_or_path=args.load
+        model_provider=model_provider, pretrained_model_name_or_path=args.load
     )
 
     task_factory(args, model)

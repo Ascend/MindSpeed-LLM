@@ -17,9 +17,8 @@ from megatron.core.tensor_parallel import (
 from megatron.core.transformer.spec_utils import build_module
 from megatron.core.transformer.multi_token_prediction import MTPLossLoggingHelper, roll_tensor, MTPLossAutoScaler
 from megatron.core.transformer.transformer_config import TransformerConfig
-from megatron.core.utils import make_viewless_tensor
+from megatron.core.utils import make_viewless_tensor, get_batch_on_this_cp_rank
 from megatron.training import get_args
-from megatron.training.utils import get_batch_on_this_cp_rank
 
 from mindspeed.core.context_parallel.get_batch_utils import set_actual_seq_len, get_actual_seq_len
 from mindspeed_llm.training.utils import get_mtp_batch_list
@@ -59,21 +58,30 @@ def mtp_layer_init_wrapper(fn):
         config,
         submodules,
         layer_number,
+        vp_stage=None,
+        pg_collection=None,
+        mtp_layer_pattern=None,
+        name=None,
+        **kwargs,
     ):
         fn(
             self,
-            config,
-            submodules,
-            layer_number,
+            config=config,
+            submodules=submodules,
+            layer_number=layer_number,
+            vp_stage=vp_stage,
+            pg_collection=pg_collection,
+            mtp_layer_pattern=mtp_layer_pattern,
+            name=name,
+            **kwargs,
         )
-        self.transformer_layer = build_module(submodules.transformer_layer, config=self.config, is_mtp_layer=True)
 
         # fn move out of layer
         self.final_layernorm = None
 
-        # set mtp_idx for tnd
-        self.transformer_layer.mtp_idx = self.layer_number
-        self_attention = self.transformer_layer.self_attention
+        # Keep MindSpeed MTP index propagation.
+        self.mtp_model_layer.mtp_idx = self.layer_number
+        self_attention = self.mtp_model_layer.self_attention
         if hasattr(self_attention, "mtp_idx"):
             self_attention.mtp_idx = self.layer_number
         elif hasattr(self_attention, "core_attention"):
@@ -88,9 +96,11 @@ def mtp_layer_init_wrapper(fn):
 
 def mtp_layer_forward(
     self,
-    decoder_input: Tensor,
+    input_ids: Tensor,
+    position_ids: Tensor,
     hidden_states: Tensor,
     attention_mask: Tensor,
+    padding_mask: Tensor = None,
     context: Tensor = None,
     context_mask: Tensor = None,
     rotary_pos_emb: Tensor = None,
@@ -100,13 +110,29 @@ def mtp_layer_forward(
     inference_params: InferenceParams = None,
     packed_seq_params: PackedSeqParams = None,
     sequence_len_offset: Tensor = None,
-    input_ids: Tensor = None,
+    embedding=None,
     pre_process: Tensor = None,
     post_process: Tensor = None,
 ):
     args = get_args()
     if context is not None:
         raise NotImplementedError("multi token prediction + cross attention is not yet supported.")
+
+    # MCore 0.18 contract: prepare decoder_input inside MultiTokenPredictionLayer.
+    (
+        input_ids,
+        position_ids,
+        padding_mask,
+        decoder_input,
+        hidden_states,
+    ) = self._get_embeddings(
+        input_ids=input_ids,
+        position_ids=position_ids,
+        padding_mask=padding_mask,
+        embedding=embedding,
+        hidden_states=hidden_states,
+        packed_seq_params=packed_seq_params,
+    )
 
     hidden_states = make_viewless_tensor(inp=hidden_states, requires_grad=True, keep_graph=True)
 
@@ -136,7 +162,7 @@ def mtp_layer_forward(
             hidden_states = scatter_to_sequence_parallel_region(hidden_states)
         if pre_process:
             hidden_states = hc_repeat(hidden_states, args.enable_mhc, args.hc_mult)
-        hidden_states, _ = self.transformer_layer(
+        hidden_states, _ = self.mtp_model_layer(
             input_ids=input_ids,
             hidden_states=hidden_states,
             attention_mask=attention_mask,
@@ -153,13 +179,18 @@ def mtp_layer_forward(
         if post_process:
             hidden_states = self.hc_head(hidden_states, mhc_stage='head')
 
-    return hidden_states
+    return (
+        hidden_states,
+        input_ids,
+        position_ids,
+        padding_mask,
+    )
 
 
 def mtp_block_build_layers_wrapper(fn):
     @wraps(fn)
-    def wrapper(self):
-        fn(self)
+    def wrapper(self, pg_collection):
+        fn(self, pg_collection)
         # fn move to block
         self.final_layernorms = torch.nn.ModuleList(
             [
@@ -169,7 +200,7 @@ def mtp_block_build_layers_wrapper(fn):
                     hidden_size=self.config.hidden_size,
                     eps=self.config.layernorm_epsilon,
                 )
-                for i, layer_spec in enumerate(self.submodules.layer_specs)
+                for _, layer_spec in enumerate(self.submodules.layer_specs)
             ]
         )
 
@@ -201,6 +232,7 @@ def mtp_block_forward(
     compute_language_model_loss=None,
     pre_process: Tensor = None,
     post_process: Tensor = None,
+    padding_mask: Tensor = None,
 ) -> Tensor:
     """
     Perform the forward pass through all of the MTP modules.
@@ -230,20 +262,28 @@ def mtp_block_forward(
             (input_ids, position_ids, labels, loss_mask, attention_mask), mtp_batch_list, layer_number
         )
 
-        # embedding
-        decoder_input = embedding(input_ids=input_ids, position_ids=position_ids)
-        # norm, linear projection and transformer
-        hidden_states = self.layers[layer_number](
+        # norm, embedding, linear projection and transformer
+        (
+            hidden_states,
+            input_ids,
+            position_ids,
+            padding_mask,
+        ) = self.layers[layer_number](
             input_ids=input_ids,
-            decoder_input=decoder_input,
+            position_ids=position_ids,
             hidden_states=hidden_states,
             attention_mask=attention_mask,
-            inference_params=inference_params,
+            padding_mask=padding_mask,
+            context=context,
+            context_mask=context_mask,
             rotary_pos_emb=rotary_pos_emb,
             rotary_pos_cos=rotary_pos_cos,
             rotary_pos_sin=rotary_pos_sin,
+            attention_bias=attention_bias,
+            inference_params=inference_params,
             packed_seq_params=packed_seq_params,
             sequence_len_offset=sequence_len_offset,
+            embedding=embedding,
             pre_process=pre_process,
             post_process=post_process,
             **(extra_block_kwargs or {}),
@@ -311,7 +351,6 @@ def get_mtp_layer_input(input_data, mtp_batch_list, layer_number):
         raise AssertionError("labels should not be None for calculating multi token prediction loss.")
 
     if not mtp_batch_list:
-        input_ids, _ = roll_tensor(input_ids, shifts=-1, dims=-1)
         labels, _ = roll_tensor(labels, shifts=-1, dims=-1)
         loss_mask, _ = roll_tensor(loss_mask, shifts=-1, dims=-1)
 

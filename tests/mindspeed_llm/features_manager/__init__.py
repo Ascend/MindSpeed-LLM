@@ -1,12 +1,11 @@
 from typing import List
 
-from mindspeed.deprecate import AutoExecuteFunction
+from megatron_adaptor.auto_execute import AutoExecuteFunction
 from mindspeed.features_manager import (
     DisableGlooGroupFeature,
     FusedEmaAdamwFeature,
     FusedMoEPermuteFeature,
     FusedSoftmaxFeature,
-    GroupedMatmulFeature,
     MC2Feature,
     MoEAlltoAllOverLapFeature,
     MoEAllGatherOverLapFeature,
@@ -26,22 +25,21 @@ from mindspeed.features_manager import (
     HcclOpModeSetFeature,
     RecomputeNormFeature,
     RecomputeActivationFeature,
-    NPUDeterministicFeature,
-    NPUDataDumpFeature,
     EnableRecomputeLayersPerPPRank,
     RecomputeMethodFeature,
     SmartSwapFeature,
     SwapAttentionFeature,
-    ContextParallelKvCacheFeature,
     TorchFullyShardedDataParallelFeature,
-    ProfilerDefaultFeature,
     OptimizeP2PCommFeature,
     FusionAttentionV2Feature,
     MoEAlltoAllMC2Feature,
     PipelineModelParallelLayoutFeature,
+    MoEFixRouterFeature,
 )
 from mindspeed.features_manager.feature import MindSpeedFeature
 from mindspeed.features_manager.features_manager import MindSpeedFeaturesManager
+from mindspeed.features_manager.npu_enhancement import NpuEnhancementFeature
+from megatron_adaptor.features_manager import NPUDeterministicFeature, NPUDataDumpFeature, ProfilerDefaultFeature
 
 from mindspeed_llm.features_manager.fusions.swiglu_limit_feature import SwigluLimitFeature
 from mindspeed_llm.features_manager.low_precision.low_precision_optimizer_feature import LowPrecisionOptimizerFeature
@@ -116,6 +114,7 @@ FEATURES_LIST = [
 
 
 def add_megatron_basic_features(features_list: List[MindSpeedFeature]):
+    features_list.extend([NpuEnhancementFeature()])
     features_list.extend(
         [
             RequirementsBasicFeature(),
@@ -161,7 +160,6 @@ def add_context_parallel_features(features_list: List[MindSpeedFeature]):
         [
             ContextParallelFeature(),
             UlyssesContextParallelFeature(),
-            ContextParallelKvCacheFeature(),
             MambaContextParallelFeature(),
         ]
     )
@@ -173,7 +171,6 @@ def add_fusions_features(features_list: List[MindSpeedFeature]):
             SwigluLimitFeature(),
             FusedSoftmaxFeature(),
             RotaryPositionEmbeddingFeature(),
-            GroupedMatmulFeature(),
             FusedMoEPermuteFeature(),
         ]
     )
@@ -239,6 +236,7 @@ def add_moe_features(features_list: List[MindSpeedFeature]):
         [
             MoEGmmFeature(),
             MoEAlltoAllMC2Feature(),
+            MoEFixRouterFeature(),
             # LLM feature
             MoERouter(),
             MoETpExtendEpFeature(),

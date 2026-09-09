@@ -25,11 +25,10 @@ from megatron.core.transformer.moe.router import MoEAuxLossAutoScaler
 from megatron.core.transformer.moe.moe_utils import save_to_aux_losses_tracker
 from megatron.core import parallel_state
 from megatron.training import get_args
-from megatron.core.transformer.moe.moe_utils import topk_softmax_with_capacity
 from mindspeed.core.tensor_parallel.random import CheckpointWithoutOutput
 
 from mindspeed_llm.tasks.models.common.pai_megatron import pai_megatron_aux_loss
-from mindspeed_llm.core.transformer.moe.moe_utils import topk_softmax_with_capacity_and_hash
+from mindspeed_llm.core.transformer.moe.moe_utils import topk_softmax_with_capacity, topk_softmax_with_capacity_and_hash
 
 
 def group_limited_greedy_topKgating(self, logits: torch.Tensor):
@@ -462,9 +461,14 @@ def apply_seq_aux_loss(self, activation, logits, topk_idx):
         raise ValueError(f"Invalid score_function: {self.score_function}")
 
     scores_for_aux = scores  # [s*b, n_global_experts]
-    topk_idx_for_aux_loss = topk_idx.view(seq_length, args.micro_batch_size, -1)
-    scores_for_seq_aux = scores_for_aux.view(seq_length, args.micro_batch_size, -1)
-    ce = topk_idx_for_aux_loss.sum(dim=0, dtype=torch.float32)
+    topk_idx_for_aux_loss = topk_idx.view(args.micro_batch_size, -1)  # [b, s*top_k]
+    scores_for_seq_aux = scores_for_aux.view(args.micro_batch_size, seq_length, -1)
+    ce = torch.stack(
+        [
+            torch.histc(x.to(torch.int32), bins=args.num_experts, min=0, max=args.num_experts)
+            for x in topk_idx_for_aux_loss
+        ]
+    )
 
     num_sub_sequence = 1
     sequence_partition_group = parallel_state.get_context_parallel_group()
@@ -474,8 +478,8 @@ def apply_seq_aux_loss(self, activation, logits, topk_idx):
         torch.distributed.all_reduce(ce, group=sequence_partition_group)
 
     num_tokens = seq_length * num_sub_sequence
-    fi = ce.div(num_tokens * args.moe_router_topk / args.num_experts)  # [b, n_global_experts]
-    Pi = scores_for_seq_aux.mean(dim=0)  # [b, n_global_experts]
+    fi = ce.div(num_sub_sequence * num_tokens * args.moe_router_topk / args.num_experts)  # [b, n_global_experts]
+    Pi = scores_for_seq_aux.mean(dim=1)  # [b, n_global_experts]
     aux_loss = (Pi * fi).sum(dim=1).mean() * moe_aux_loss_coeff
 
     save_to_aux_losses_tracker(
@@ -551,7 +555,28 @@ def topk_router_routing(self, logits: torch.Tensor, input_ids: torch.Tensor = No
     if self.routing_type == "sinkhorn":
         scores, routing_map = self.sinkhorn_load_balancing(logits)
     elif self.routing_type == "aux_loss":
-        scores, routing_map = self.aux_loss_load_balancing(logits)
+        scores, routing_map, _ = topk_softmax_with_capacity(
+            logits,
+            self.topk,
+            capacity_factor=self.config.moe_expert_capacity_factor,
+            pad_to_capacity=self.config.moe_pad_expert_input_to_capacity,
+            drop_policy=self.config.moe_token_drop_policy,
+            use_pre_softmax=self.config.moe_router_pre_softmax,
+            num_groups=self.config.moe_router_num_groups,
+            group_topk=self.config.moe_router_group_topk,
+            scaling_factor=self.config.moe_router_topk_scaling_factor,
+            deterministic_mode=self.config.deterministic_mode,
+            score_function=self.score_function,
+            expert_bias=self.expert_bias,
+        )
+        # Apply Megatron 0.18 aux loss via the new _apply_aux_loss method
+        if self.training and torch.is_grad_enabled() and hasattr(self, 'is_aux_loss_enabled') and self.is_aux_loss_enabled():
+            from megatron.core.transformer.moe.moe_utils import compute_routing_scores_for_aux_loss
+            routing_map_for_aux_loss, scores_for_aux_loss = compute_routing_scores_for_aux_loss(
+                logits, self.topk, self.score_function,
+                fused=getattr(self.config, 'moe_router_fusion', False),
+            )
+            scores = self._apply_aux_loss(scores, scores_for_aux_loss, routing_map_for_aux_loss)
         if args.norm_topk_prob:
             scores = scores / scores.sum(dim=-1, keepdim=True)
         if args.topk_softmax_in_fp32:

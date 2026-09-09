@@ -22,13 +22,17 @@ class MlaDotProductAttention(DotProductAttention):
             attention_dropout: float = None,
             softmax_scale: float = None,
             cp_comm_type: str = None,
+            pg_collection=None,
     ):
         super().__init__(
             config=config,
             layer_number=layer_number,
             attn_mask_type=attn_mask_type,
             attention_type=attention_type,
-            attention_dropout=attention_dropout
+            attention_dropout=attention_dropout,
+            softmax_scale=softmax_scale,
+            cp_comm_type=cp_comm_type,
+            pg_collection=pg_collection,
         )
         args = get_args()
         from megatron.core import parallel_state
@@ -62,14 +66,17 @@ class MlaTEDotProductAttention(TEDotProductAttention):
     """
  	 
     def __init__(
-            self,
-            config: TransformerConfig,
-            layer_number: int,
-            attn_mask_type: AttnMaskType,
-            attention_type: str,
-            attention_dropout: float = None,
-            softmax_scale: float = None,
-            cp_comm_type: str = None,
+        self,
+        config,
+        layer_number,
+        attn_mask_type,
+        attention_type,
+        attention_dropout=None,
+        softmax_scale=None,
+        cp_comm_type=None,
+        pg_collection=None,
+        k_channels=None,
+        v_channels=None,
     ):
         args = get_args()
 
@@ -93,7 +100,11 @@ class MlaTEDotProductAttention(TEDotProductAttention):
             attn_mask_type=attn_mask_type,
             attention_type=attention_type,
             attention_dropout=attention_dropout,
-            softmax_scale=self.softmax_scale
+            softmax_scale=softmax_scale,
+            cp_comm_type=cp_comm_type,
+            pg_collection=pg_collection,
+            k_channels=k_channels,
+            v_channels=v_channels,
         )
 
         if hasattr(super(), "scale_mask_softmax"):

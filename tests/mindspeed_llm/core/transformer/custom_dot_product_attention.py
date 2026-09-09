@@ -45,6 +45,7 @@ class CustomDotProductAttentionImpl:
         attention_dropout: float = None,
         softmax_scale: float = None,
         cp_comm_type: str = None,
+        pg_collection=None,
     ):
         """
         Args:
@@ -60,7 +61,7 @@ class CustomDotProductAttentionImpl:
         # Preconditions: Only non-CP and FlashAttention are supported
         # ---------------------------------------------------------------------
         super().__init__(
-            config, layer_number, attn_mask_type, attention_type, attention_dropout, softmax_scale, cp_comm_type
+            config, layer_number, attn_mask_type, attention_type, attention_dropout, softmax_scale, cp_comm_type, pg_collection=pg_collection
         )
         args = get_args()
 

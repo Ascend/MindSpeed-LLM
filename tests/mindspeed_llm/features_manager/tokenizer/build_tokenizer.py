@@ -20,8 +20,6 @@ class BuildTokenizerFeature(MindSpeedBuildTokenizerFeature):
                             help="Name or path of the huggingface tokenizer.")
         group.add_argument("--tokenizer-not-use-fast", action='store_false',
                             help="HuggingFace tokenizer not use the fast version.")
-        group.add_argument('--padded-vocab-size', type=int, default=None,
-                            help='set padded vocab size')
         group.add_argument('--prompt-type', type=str, default=None,
                             choices=['default', 'empty', 'trl', 'chatglm2', 'chatglm3', 'chatglm3_system', 'glm4', 'glm4_moe', 'chatml', 'bailing_mini',
                                 'chatml_de', 'qwen', 'qwen_r1', "qwen_math_r1", 'llama3', 'llama2', 'mistral', 'mixtral', 'gemma', 'alpaca',
@@ -34,4 +32,4 @@ class BuildTokenizerFeature(MindSpeedBuildTokenizerFeature):
 
     def register_patches(self, patch_manager, args):
         from mindspeed_llm.training.tokenizer import build_tokenizer
-        patch_manager.register_patch('megatron.training.tokenizer.tokenizer.build_tokenizer', build_tokenizer)
+        patch_manager.register_patch('megatron.core.tokenizers.utils.build_tokenizer', build_tokenizer)

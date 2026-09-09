@@ -15,7 +15,6 @@ class TrainingBasicFeature(MindSpeedFeature):
         super().__init__(feature_name="training", optimization_level=0)
 
     def pre_validate_args(self, args):
-        args.use_mcore_models = not args.use_legacy_models
         if args.reset_attention_mask:
             args.shape_order = 'TND'
             print_rank0_by_args(args, "When reset_attention_mask is enabled, shape_order should be TND.")
@@ -136,7 +135,7 @@ class TrainingBasicFeature(MindSpeedFeature):
             'megatron.training.training.build_pretraining_data_loader', build_pretraining_data_loader
         )
         if not getattr(args, 'reset_attention_mask', None):
-            patch_manager.register_patch('megatron.training.utils.get_batch_on_this_tp_rank', get_batch_on_this_tp_rank)
+            patch_manager.register_patch('megatron.core.utils.get_batch_on_this_tp_rank', get_batch_on_this_tp_rank)
 
         patch_manager.register_patch('megatron.training.training.train', train)
         patch_manager.register_patch('megatron.training.training.load_checkpoint', load_checkpoint_wrapper)

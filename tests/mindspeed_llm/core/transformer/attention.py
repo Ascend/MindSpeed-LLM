@@ -18,7 +18,7 @@ from mindspeed.core.tensor_parallel.tp_2d.group_api_2d import (
     TPYOverlapCollectiveComm,
 )
 from mindspeed.core.tensor_parallel.tp_2d.parallel_linear_2d import ParallelLinear2D
-from mindspeed.core.fusions.fused_rope import apply_rotary_pos_emb
+from mindspeed.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb
 
 
 def self_attention_init_tp2d_wrapper(fn):
@@ -82,6 +82,9 @@ def self_attention_init(
     layer_number: int,
     attn_mask_type=AttnMaskType.padding,
     cp_comm_type: str = None,
+    pg_collection=None,
+    pp_layer_offset=None,
+    name=None,
 ):
     args = get_args()
     super(SelfAttention, self).__init__(
@@ -91,6 +94,9 @@ def self_attention_init(
         attn_mask_type=attn_mask_type,
         attention_type="self",
         cp_comm_type=cp_comm_type,
+        pg_collection=pg_collection,
+        pp_layer_offset=pp_layer_offset,
+        name=name,
     )
 
     if not args.no_enable_linear_qkv:

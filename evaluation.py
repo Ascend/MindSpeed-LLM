@@ -15,6 +15,7 @@
 # limitations under the License.
 
 """Sample Generate LLAMA"""
+
 import os
 import sys
 import time
@@ -23,13 +24,25 @@ from typing import Union
 
 from torch import distributed as dist
 from transformers import AutoTokenizer
-from mindspeed_llm import megatron_adaptor
-from megatron.core.models.gpt.gpt_layer_specs import get_gpt_layer_with_transformer_engine_spec, \
-    get_gpt_layer_local_spec
+
+# MindSpeed patches must be applied before any Megatron modules.
+# isort: off
+from mindspeed_llm import megatron_adaptor  # noqa: F401  # pylint: disable=ungrouped-imports
+
+# isort: on
+from megatron.core.models.gpt.gpt_layer_specs import (
+    get_gpt_layer_with_transformer_engine_spec,
+    get_gpt_layer_local_spec,
+)
 from megatron.core.transformer.spec_utils import import_module
 from megatron.training.initialize import initialize_megatron
 from megatron.training import get_args, print_rank_0
-from megatron.legacy.model import GPTModel
+
+if os.environ.get("MINDSPEED_LLM_VERSION", "012") == "018":
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "tests"))
+    from megatron.core.models.gpt.gpt_model import GPTModel
+else:
+    from megatron.legacy.model import GPTModel
 from megatron.training.arguments import core_transformer_config_from_args
 from megatron.training.yaml_arguments import core_transformer_config_from_yaml
 
@@ -80,7 +93,9 @@ def model_provider(pre_process=True, post_process=True) -> Union[GPTModelInfer, 
             transformer_layer_spec = import_module(args.spec)
         else:
             if use_te:
-                transformer_layer_spec = get_gpt_layer_with_transformer_engine_spec(args.num_experts, args.moe_grouped_gemm)
+                transformer_layer_spec = get_gpt_layer_with_transformer_engine_spec(
+                    args.num_experts, args.moe_grouped_gemm
+                )
             else:
                 transformer_layer_spec = get_gpt_layer_local_spec(args.num_experts, args.moe_grouped_gemm)
 
@@ -92,11 +107,11 @@ def model_provider(pre_process=True, post_process=True) -> Union[GPTModelInfer, 
             pre_process=pre_process,
             post_process=post_process,
             fp16_lm_cross_entropy=args.fp16_lm_cross_entropy,
-            parallel_output=True if args.sequence_parallel else False,
+            parallel_output=args.sequence_parallel,
             share_embeddings_and_output_weights=not args.untie_embeddings_and_output_weights,
             position_embedding_type=args.position_embedding_type,
             rotary_percent=args.rotary_percent,
-            seq_len_interpolation_factor=args.rotary_seq_len_interpolation_factor
+            seq_len_interpolation_factor=args.rotary_seq_len_interpolation_factor,
         )
     else:
         if not args.context_parallel_size == 1:
@@ -104,9 +119,9 @@ def model_provider(pre_process=True, post_process=True) -> Union[GPTModelInfer, 
 
         model = GPTModel(
             config,
-            parallel_output=True if args.sequence_parallel else False,
+            parallel_output=args.sequence_parallel,
             pre_process=pre_process,
-            post_process=post_process
+            post_process=post_process,
         )
 
     return model
@@ -145,20 +160,30 @@ class LLMChat(Chat):
     def chat(self, instruction, history):
         instruction_temp = None
         if getattr(self.args, "task", False) and self.args.task[0] == 'needlebench':
-            instruction_temp = [self.tokenizer.apply_chat_template([{"role": "user", "content": ins + '\n'}], add_generation_prompt=True, tokenize=False) for ins in instruction]
+            instruction_temp = [
+                self.tokenizer.apply_chat_template(
+                    [{"role": "user", "content": ins + '\n'}], add_generation_prompt=True, tokenize=False
+                )
+                for ins in instruction
+            ]
         elif self.args.prompt_type is None:
-            instruction_temp = [self.template.format(instruction=ins) if (self.tokenizer.chat_template is None or self.args.no_chat_template) else self.tokenizer.apply_chat_template([{"role": "user", "content": ins}]) for ins in instruction]
+            instruction_temp = [
+                self.template.format(instruction=ins)
+                if (self.tokenizer.chat_template is None or self.args.no_chat_template)
+                else self.tokenizer.apply_chat_template([{"role": "user", "content": ins}])
+                for ins in instruction
+            ]
         else:
             instruction_temp = instruction
 
-        return_output_log_probs = False if (getattr(self.args, "task", False) and self.args.task[0] == 'needlebench') else True
+        return_output_log_probs = not (getattr(self.args, "task", False) and self.args.task[0] == 'needlebench')
         result = self.model.generate(
             instruction_temp,
             do_sample=False,
             max_new_tokens=self.args.max_new_tokens,
             stream=False,
             return_output_log_probs=return_output_log_probs,
-            broadcast=self.args.broadcast
+            broadcast=self.args.broadcast,
         )
         if getattr(self.args, "task", False) and self.args.task[0] == 'needlebench':
             return result, dist.get_rank()
@@ -167,16 +192,17 @@ class LLMChat(Chat):
     def beam_search_chat(self, instruction, history):
         instruction_temp = None
         if self.args.prompt_type is None:
-            instruction_temp = self.template.format(instruction=instruction) if (self.tokenizer.chat_template is None or self.args.no_chat_template) else self.tokenizer.apply_chat_template([{"role": "user", "content": instruction}])
+            instruction_temp = (
+                self.template.format(instruction=instruction)
+                if (self.tokenizer.chat_template is None or self.args.no_chat_template)
+                else self.tokenizer.apply_chat_template([{"role": "user", "content": instruction}])
+            )
         else:
             instruction_temp = instruction
-        
+
         if "human_eval" in self.args.task and self.args.alternative_prompt:
             result = self.model.generate(
-                instruction_temp,
-                do_sample=False,
-                max_new_tokens=self.args.max_new_tokens,
-                stream=False
+                instruction_temp, do_sample=False, max_new_tokens=self.args.max_new_tokens, stream=False
             )
         else:
             result = self.model.generate(
@@ -187,14 +213,14 @@ class LLMChat(Chat):
                 num_beams=4,
                 top_k=50,
                 top_p=0.95,
-                length_penalty=0.7
+                length_penalty=0.7,
             )
         return [result], dist.get_rank()
 
 
 def mmlu(eval_args, agent):
     data_path = None
-    answer = None 
+    answer = None
     score_df = None
     for path in eval_args.task_data_path:
         data_path = path
@@ -203,7 +229,7 @@ def mmlu(eval_args, agent):
             mmlu_eval = MmluEval(test_dir=data_path, eval_args=eval_args)
             answer, score_df = mmlu_eval.eval(chat=agent)
             if dist.get_rank() == 0:
-                logger.info('\n{}'.format(score_df))
+                logger.info('\n%s', score_df)
     except Exception as e:
         logger.info(e)
 
@@ -212,7 +238,7 @@ def mmlu(eval_args, agent):
 
 def cmmlu(eval_args, agent):
     data_path = None
-    answer = None 
+    answer = None
     score_df = None
     for path in eval_args.task_data_path:
         data_path = path
@@ -221,7 +247,7 @@ def cmmlu(eval_args, agent):
             cmmlu_eval = CmmluEval(test_dir=data_path, eval_args=eval_args)
             answer, score_df = cmmlu_eval.eval(chat=agent)
             if dist.get_rank() == 0:
-                logger.info('\n{}'.format(score_df))
+                logger.info('\n%s', score_df)
     except Exception as e:
         logger.info(e)
     return answer, score_df
@@ -238,12 +264,10 @@ def needlebench(eval_args, agent):
     except Exception as e:
         logger.info(e)
 
-    return
-
 
 def mmlu_ppl(eval_args, agent):
     data_path = None
-    answer = None 
+    answer = None
     score_df = None
     for path in eval_args.task_data_path:
         if 'mmlu' in path:
@@ -253,14 +277,14 @@ def mmlu_ppl(eval_args, agent):
             mmlu_ppl_eval = MmluEval_PPL(test_dir=data_path, eval_args=eval_args)
             answer, score_df = mmlu_ppl_eval.eval(chat=agent)
             if dist.get_rank() == 0:
-                logger.info('\n{}'.format(score_df))
+                logger.info('\n%s', score_df)
     except Exception as e:
         logger.info(e)
 
 
 def gsm8k(eval_args, agent):
     data_path = None
-    answer = None 
+    answer = None
     score_df = None
     for path in eval_args.task_data_path:
         data_path = path
@@ -269,7 +293,7 @@ def gsm8k(eval_args, agent):
             gsm8k_eval = Gsm8kEval(test_dir=data_path, eval_args=eval_args)
             answer, score_df = gsm8k_eval.eval(chat=agent)
             if dist.get_rank() == 0:
-                logger.info('\n{}'.format(score_df))
+                logger.info('\n%s', score_df)
     except Exception as e:
         logger.info(e)
 
@@ -278,7 +302,7 @@ def gsm8k(eval_args, agent):
 
 def boolq(eval_args, agent):
     data_path = None
-    answer = None 
+    answer = None
     score_df = None
 
     for path in eval_args.task_data_path:
@@ -288,7 +312,7 @@ def boolq(eval_args, agent):
             boolq_eval = BoolqEval(test_dir=data_path, eval_args=eval_args)
             answer, score_df = boolq_eval.eval(chat=agent)
             if dist.get_rank() == 0:
-                logger.info('\n{}'.format(score_df))
+                logger.info('\n%s', score_df)
     except Exception as e:
         logger.info(e)
 
@@ -297,7 +321,7 @@ def boolq(eval_args, agent):
 
 def ceval(eval_args, agent):
     data_path = None
-    answer = None 
+    answer = None
     score_df = None
 
     for path in eval_args.task_data_path:
@@ -307,7 +331,7 @@ def ceval(eval_args, agent):
             ceval_exam = CEvalExam(test_dir=data_path, eval_args=eval_args)
             answer, score_df = ceval_exam.eval(chat=agent)
             if dist.get_rank() == 0:
-                logger.info('\n{}'.format(score_df))
+                logger.info('\n%s', score_df)
     except Exception as e:
         logger.info(e)
 
@@ -316,7 +340,7 @@ def ceval(eval_args, agent):
 
 def human_eval(eval_args, agent):
     data_path = None
-    answer = None 
+    answer = None
     score_df = None
 
     for path in eval_args.task_data_path:
@@ -326,7 +350,7 @@ def human_eval(eval_args, agent):
             human_eval_exam = HumanEval(test_dir=data_path, eval_args=eval_args)
             answer, score_df = human_eval_exam.eval(chat=agent)
             if dist.get_rank() == 0:
-                logger.info('\n{}'.format(score_df))
+                logger.info('\n%s', score_df)
     except Exception as e:
         logger.info(e)
 
@@ -335,7 +359,7 @@ def human_eval(eval_args, agent):
 
 def agi_eval(eval_args, agent):
     data_path = None
-    answer = None 
+    answer = None
     score_df = None
 
     for path in eval_args.task_data_path:
@@ -345,7 +369,7 @@ def agi_eval(eval_args, agent):
             agieval_exam = AGIEvalExam(test_dir=data_path, eval_args=eval_args)
             answer, score_df = agieval_exam.eval(chat=agent)
             if dist.get_rank() == 0:
-                logger.info('\n{}'.format(score_df))
+                logger.info('\n%s', score_df)
     except Exception as e:
         logger.info(e)
 
@@ -354,7 +378,7 @@ def agi_eval(eval_args, agent):
 
 def bbh_eval(eval_args, agent):
     data_path = None
-    answer = None 
+    answer = None
     score_df = None
 
     for path in eval_args.task_data_path:
@@ -364,7 +388,7 @@ def bbh_eval(eval_args, agent):
             bbh = BBHEval(test_dir=data_path, eval_args=eval_args)
             answer, score_df = bbh.eval(chat=agent)
             if dist.get_rank() == 0:
-                logger.info('\n{}'.format(score_df))
+                logger.info('\n%s', score_df)
     except Exception as e:
         logger.info(e)
 
@@ -373,14 +397,14 @@ def bbh_eval(eval_args, agent):
 
 @auto_coverage
 def main():
-    initialize_megatron(args_defaults={'no_load_rng': True,
-                                       'no_load_optim': True})
+    initialize_megatron(args_defaults={'no_load_rng': True, 'no_load_optim': True})
     args = get_args()
     model = MegatronModuleForCausalLM.from_pretrained(
-        model_provider=model_provider,
-        pretrained_model_name_or_path=args.load
+        model_provider=model_provider, pretrained_model_name_or_path=args.load
     )
-    tokenizer = AutoTokenizer.from_pretrained(args.tokenizer_name_or_path, trust_remote_code=True, local_files_only=True)
+    tokenizer = AutoTokenizer.from_pretrained(
+        args.tokenizer_name_or_path, trust_remote_code=True, local_files_only=True
+    )
 
     rank = dist.get_rank()
     if 'cmmlu' in args.task:
@@ -435,7 +459,5 @@ def main():
             logger.info(f'NeedleBench_eval Running Time: {time.time() - a}')
 
 
-
 if __name__ == "__main__":
     main()
-

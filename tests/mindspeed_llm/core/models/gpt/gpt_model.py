@@ -15,7 +15,7 @@ from megatron.core.models.common.language_module.language_module import Language
 from megatron.core.models.gpt import GPTModel as MegatronCoreGPTModel
 from megatron.core.packed_seq_params import PackedSeqParams
 from megatron.core.transformer import build_module
-from megatron.core.transformer.custom_layers.transformer_engine import TENorm
+from megatron.core.extensions.transformer_engine import TENorm
 from megatron.core.transformer import TransformerConfig, ModuleSpec
 from megatron.core.transformer.enums import ModelType
 from megatron.core.transformer.multi_token_prediction import MultiTokenPredictionBlock
@@ -24,13 +24,15 @@ from megatron.core.utils import deprecate_inference_params
 from megatron.core.inference.contexts import BaseInferenceContext
 from megatron.training import get_args
 from megatron.core.transformer.moe.router import TopKRouter
+from megatron.core.process_groups_config import ProcessGroupCollection
 
+from mindspeed.utils import compute_qkv_index
 from mindspeed_llm.core.tensor_parallel.layers import SegmentedColumnParallelLinear
 from mindspeed_llm.training.utils import (set_actual_seq_len_list, _CAN_RECORD_REGISTRY, 
                            check_model_inputs)
 from mindspeed_llm.training.utils import set_actual_seq_len_list
 from mindspeed.core.context_parallel.get_batch_utils import get_actual_seq_len
-from mindspeed.core.transformer.flash_attention.reset_attention_mask.adaptor import compute_qkv_index, get_position_ids
+from mindspeed.core.transformer.flash_attention.reset_attention_mask.adaptor import get_position_ids
 from mindspeed_llm.core.models.common.chunk_loss import chunk_loss, calculate_lm_loss
 from mindspeed_llm.training.utils import recompute_valid_actual_seq_len
 
@@ -55,13 +57,15 @@ class GPTModel(MegatronCoreGPTModel):
                  rotary_base: int = 10000,
                  seq_len_interpolation_factor: Optional[float] = None,
                  mtp_block_spec: Optional[ModuleSpec] = None,
+                 pg_collection: Optional[ProcessGroupCollection] = None,
+                 vp_stage: Optional[int] = None,
                  *args,
                  **kwargs,
                  ) -> None:
-        super(LanguageModule, self).__init__(config=config)
-
+        LanguageModule.__init__(self, config=config, pg_collection=pg_collection)
         global_args = get_args()
         post_layer_norm = kwargs.pop('post_layer_norm', True)
+        self.vp_stage = vp_stage
 
         if global_args.use_global_aux_loss:
             _CAN_RECORD_REGISTRY[str(self.__class__)] = { "router_logits": TopKRouter}
@@ -126,10 +130,17 @@ class GPTModel(MegatronCoreGPTModel):
             spec=transformer_layer_spec,
             pre_process=self.pre_process,
             post_process=self.post_process,
+            pg_collection=self.pg_collection,
+            vp_stage=vp_stage,
         )
 
         if self.mtp_process:
-            self.mtp = MultiTokenPredictionBlock(config=self.config, spec=self.mtp_block_spec)
+            self.mtp = MultiTokenPredictionBlock(
+                config=self.config,
+                spec=self.mtp_block_spec,
+                vp_stage=vp_stage,
+                pg_collection=self.pg_collection,
+            )
 
         if self.mtp_process:
             # move block main model final norm here when mtp enable

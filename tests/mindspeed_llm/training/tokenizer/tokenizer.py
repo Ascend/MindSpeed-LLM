@@ -18,9 +18,9 @@ from types import MethodType
 
 from transformers import AutoTokenizer, PreTrainedTokenizerBase
 from megatron.training import get_args
-from megatron.training.tokenizer import build_tokenizer as megatron_build_tokenizer
-from megatron.training.tokenizer.tokenizer import _vocab_size_with_padding
-from megatron.core.datasets.megatron_tokenizer import MegatronTokenizer
+from megatron.core.tokenizers.utils.build_tokenizer import build_tokenizer as megatron_build_tokenizer
+from megatron.core.tokenizers.utils.build_tokenizer import vocab_size_with_padding
+from megatron.core.tokenizers.base_tokenizer import MegatronTokenizerBase
 from mindspeed_llm.tasks.preprocess.templates import fix_model_tokenizer
 from mindspeed_llm.training.tokenizer.magistral_tokenizer import create_magistral_tokenizer
 
@@ -55,7 +55,7 @@ def build_tokenizer(args):
 
         # Add vocab size (if not already set from a checkpoint).
         if getattr(args, "padded_vocab_size", None) is None:
-            args.padded_vocab_size = _vocab_size_with_padding(tokenizer.vocab_size,
+            args.padded_vocab_size = vocab_size_with_padding(tokenizer.vocab_size,
                                                               args)
     elif args.tokenizer_type == 'MagistralTokenizer':
         if hasattr(args,'tokenizer_padding_side'):
@@ -126,12 +126,11 @@ class TokenizerAdaptor:
         return self.tokenizer.eos_token_id
 
 
-class _AutoTokenizer(MegatronTokenizer):
+class _AutoTokenizer(MegatronTokenizerBase):
     """AutoTokenizer for Hf Pretrained model loading."""
 
     def __init__(self, tokenizer_name_or_path, vocab_extra_ids, model_max_length, use_fast, prompt_type=None, **kwargs):
-        name = tokenizer_name_or_path
-        super().__init__(name)
+        self.tokenizer_name_or_path = tokenizer_name_or_path
         hf_tokenizer_kwargs = kwargs
         if vocab_extra_ids > 0:
             hf_tokenizer_kwargs["additional_special_tokens"] = [f"<extra_id_{_id}>" for _id in range(vocab_extra_ids)]
@@ -166,6 +165,11 @@ class _AutoTokenizer(MegatronTokenizer):
 
     def detokenize(self, token_ids):
         return self.tokenizer.decode(token_ids)
+
+    def apply_chat_template(self, conversation, **kwargs):
+        if hasattr(self.tokenizer, "apply_chat_template"):
+            return self.tokenizer.apply_chat_template(conversation, **kwargs)
+        raise NotImplementedError("The underlying HuggingFace tokenizer does not support apply_chat_template.")
 
     @property
     def eod(self):
@@ -223,6 +227,10 @@ class _AutoTokenizer(MegatronTokenizer):
         if candidate is None:
             raise AttributeError("Token doesn't exist")
         return candidate
+
+    @property
+    def unique_identifiers(self):
+        return self.tokenizer_name_or_path
 
 
 def GPTSentencePieceTokenizer_encode(input_token):

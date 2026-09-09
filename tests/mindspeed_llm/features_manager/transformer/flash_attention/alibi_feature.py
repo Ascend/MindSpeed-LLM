@@ -35,5 +35,5 @@ class AlibiFeature(MindSpeedFeature):
         if getattr(args, "position_embedding_type", None) == "alibi" and not getattr(args, "use_flash_attn", False) and not getattr(args, "context_parallel_size", 1) > 1 :
             patch_manager.register_patch('megatron.core.transformer.dot_product_attention.DotProductAttention',
                                           AlibiAttention)
-            patch_manager.register_patch('megatron.core.transformer.custom_layers.transformer_engine.TEDotProductAttention',
+            patch_manager.register_patch('megatron.core.extensions.transformer_engine.TEDotProductAttention',
                                           AlibiAttention)

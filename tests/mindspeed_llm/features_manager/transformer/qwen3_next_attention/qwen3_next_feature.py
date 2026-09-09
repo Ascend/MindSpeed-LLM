@@ -11,14 +11,6 @@ class Qwen3NextFeature(MindSpeedFeature):
 
         group.add_argument('--full-attention-interval', type=int, default=0,
                             help='full attention interval')
-        group.add_argument('--linear-key-head-dim', type=int, default=0,
-                            help='linear key head-dim')
-        group.add_argument('--linear-num-key-heads', type=int, default=0,
-                            help='linear num key heads')
-        group.add_argument('--linear-num-value-heads', type=int, default=0,
-                            help='linear num value heads')
-        group.add_argument('--linear-value-head-dim', type=int, default=0,
-                            help='linear value head dim')
         group.add_argument('--partial-rotary-factor', type=float, default=0.0,
                             help='partial rotary factor')
         group.add_argument('--use-triton-gdn', action="store_true", default=False,

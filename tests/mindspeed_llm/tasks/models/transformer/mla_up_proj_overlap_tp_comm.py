@@ -8,7 +8,7 @@ from mindspeed.core.transformer.moe.moe_feature.fb_overlap.modules.attention imp
 from mindspeed.core.pipeline_parallel.dualpipev.dualpipev_schedules import get_post_process_flag
 from mindspeed.core.transformer.moe.comm_utils import async_all_gather
 from mindspeed.core.tensor_parallel.random import CheckpointWithoutOutput
-from megatron.training.utils import get_args
+from megatron.training import get_args
 from megatron.core import mpu, parallel_state
 from megatron.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb
 from megatron.core.tensor_parallel.mappings import (

@@ -5,16 +5,16 @@ from copy import deepcopy
 from functools import wraps
 import torch
 import torch.nn.functional as F
-from mindspeed.moe.utils import MoEAuxLossAutoScaler
 
+from megatron.core.transformer.moe.moe_utils import MoEAuxLossAutoScaler
 from megatron.core.tensor_parallel import ColumnParallelLinear, RowParallelLinear
 from megatron.core.transformer import build_module
 from megatron.core.transformer.mlp import MLPSubmodules, MLP
 from megatron.core import parallel_state, tensor_parallel
 from megatron.core.transformer.moe.moe_layer import MoELayer, MoESubmodules
-from megatron.core.transformer.moe.experts import GroupedMLP, SequentialMLP
+from megatron.core.transformer.moe.experts import TEGroupedMLP, SequentialMLP
 from megatron.core.transformer.moe.moe_utils import save_to_aux_losses_tracker
-from megatron.core.transformer.moe.legacy_a2a_token_dispatcher import MoEAlltoAllSEQTokenDispatcher
+from megatron.core.transformer.moe.token_dispatcher import MoEAlltoAllTokenDispatcher
 from megatron.training import get_args
 from mindspeed.core.transformer.moe.moe_layer_overlap_all2all import MoELayerOverlapAll2All
 from mindspeed.core.transformer.moe.moe_layer_overlap_allgather import MoELayerOverlapAllGather
@@ -70,7 +70,7 @@ def moe_layer_init_wrapper(init_func):
                 from mindspeed_llm.tasks.posttrain.lora.moe.experts import LoraParallelGroupedMLP
                 self.experts = LoraParallelGroupedMLP(self.num_local_experts, moe_config, lora_config)
             else:
-                self.experts = GroupedMLP(self.num_local_experts, moe_config)
+                self.experts = TEGroupedMLP(self.num_local_experts, moe_config)
                 
         if global_args.n_shared_experts:
             shared_expert_config = deepcopy(moe_config)
@@ -118,7 +118,13 @@ def moe_layer_init_wrapper(init_func):
     return moe_layer_init
 
 
-def moe_layer_forward(self, hidden_states: torch.Tensor, input_ids: torch.Tensor = None):
+def moe_layer_forward(
+    self,
+    hidden_states: torch.Tensor,
+    intermediate_tensors=None,
+    padding_mask: torch.Tensor = None,
+    input_ids: torch.Tensor = None,
+):
     if (
             self.training
             and self.config.tensor_model_parallel_size > 1
@@ -129,8 +135,15 @@ def moe_layer_forward(self, hidden_states: torch.Tensor, input_ids: torch.Tensor
             "are enabled without also enabling sequence parallelism."
         )
 
-    # process MoE
-    def custom_forward(hidden_states, input_ids: torch.Tensor = None):
+    # Align with Megatron-Core 0.18: padding_mask from [B, S] -> [S, B]
+    if padding_mask is not None:
+        padding_mask = padding_mask.transpose(0, 1).bool()
+
+    def custom_forward(
+        hidden_states,
+        intermediate_tensors=None,
+        padding_mask=None,
+    ):
         args = get_args()
         if args.use_global_aux_loss:
             probs, routing_map, _ = self.router(hidden_states, input_ids)
@@ -145,7 +158,6 @@ def moe_layer_forward(self, hidden_states: torch.Tensor, input_ids: torch.Tensor
         )
         output, mlp_bias = self.token_dispatcher.token_unpermutation(expert_output, mlp_bias)
 
-        args = get_args()
         if args.moe_router_load_balancing_type == "group_limited_greedy":
             # forward only need no loss track
             if hasattr(args, "do_train") and args.do_train:
@@ -184,9 +196,19 @@ def moe_layer_forward(self, hidden_states: torch.Tensor, input_ids: torch.Tensor
         return output, mlp_bias
 
     if self.moe_layer_recompute:
-        output, mlp_bias = tensor_parallel.checkpoint(custom_forward, False, hidden_states)
+        output, mlp_bias = tensor_parallel.checkpoint(
+            custom_forward,
+            False,
+            hidden_states,
+            intermediate_tensors,
+            padding_mask,
+        )
     else:
-        output, mlp_bias = custom_forward(hidden_states, input_ids)
+        output, mlp_bias = custom_forward(
+            hidden_states,
+            intermediate_tensors,
+            padding_mask,
+        )
 
     return output, mlp_bias
 

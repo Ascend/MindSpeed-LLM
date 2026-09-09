@@ -37,6 +37,7 @@ from megatron.training import get_wandb_writer
 from megatron.training import one_logger_utils
 from megatron.core.num_microbatches_calculator import get_num_microbatches, update_num_microbatches
 from megatron.core import mpu, parallel_state
+from megatron.core.pipeline_parallel import get_forward_backward_func
 from megatron.core.utils import get_model_config
 from megatron.core.enums import ModelType
 from megatron.training.checkpointing import save_checkpoint
@@ -398,8 +399,7 @@ def build_train_args(*input_args):
     # Track if training is enabled. Can only be done once args.do_train is assigned after dataloader is built.
     # pylint: disable=too-many-function-args
     one_logger_utils.track_config_flags(args.train_iters, args.skip_train, args.do_train,
-                                        args.do_valid, args.do_test, args.dataloader_type,
-                                        args.retro_project_dir, args.retro_cyclic_train_iters)
+                                        args.do_valid, args.do_test, args.dataloader_type)
     # pylint: enable=too-many-function-args
 
     # Print setup timing.
@@ -463,8 +463,13 @@ def pretrain(train_valid_test_dataset_provider,  # pylint: disable=dangerous-def
     """
 
     # Initalize and get arguments, timers, and Tensorboard writer.
-    initialize_megatron(extra_args_provider=extra_args_provider,
-                        args_defaults=args_defaults)
+    from megatron.training.arguments import parse_and_validate_args
+    args = parse_and_validate_args(
+        extra_args_provider=extra_args_provider,
+        ignore_unknown_args=False,
+        args_defaults=args_defaults
+    )
+    initialize_megatron()
 
     args = get_args()
     timers = get_timers()
@@ -711,15 +716,18 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
         update_num_microbatches(args.consumed_train_samples, consistency_check=True)
 
         args.curr_iteration = iteration
+        forward_backward_func = get_forward_backward_func()
         msprobe_manager.start_step(model)
         model_io_trace_manager.start_step(model, iteration)
-        loss_dict, skipped_iter, should_checkpoint, should_exit, exit_code, grad_norm, num_zeros_in_grad = \
+        loss_dict, skipped_iter, should_checkpoint, should_exit, exit_code, grad_norm, num_zeros_in_grad, log_max_attention_logit = \
             train_step(forward_step_func,
                        train_data_iterator,
                        model,
                        optimizer,
                        opt_param_scheduler,
-                       config)
+                       config,
+                       forward_backward_func,
+                       iteration=iteration)
         msprobe_manager.end_step()
         model_io_trace_manager.end_step()
         _enable_npu_datadump_step_end()
@@ -913,7 +921,7 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
 
 def should_disable_forward_pre_hook(args):
     """Block forward pre-hook for certain configurations."""
-    return not args.use_custom_fsdp and args.use_distributed_optimizer and args.overlap_param_gather
+    return not getattr(args, 'use_custom_fsdp', False) and args.use_distributed_optimizer and args.overlap_param_gather
 
 
 def training_log(loss_dict, total_loss_dict, learning_rate, decoupled_learning_rate, iteration,

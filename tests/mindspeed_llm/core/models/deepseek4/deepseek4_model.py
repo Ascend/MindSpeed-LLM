@@ -14,7 +14,7 @@ from megatron.core.models.common.language_module.language_module import Language
 from megatron.core.models.gpt import GPTModel as MegatronCoreGPTModel
 from megatron.core.packed_seq_params import PackedSeqParams
 from megatron.core.transformer import build_module
-from megatron.core.transformer.custom_layers.transformer_engine import TENorm
+from megatron.core.extensions.transformer_engine import TENorm
 from megatron.core.transformer import TransformerConfig, ModuleSpec
 from megatron.core.transformer.enums import ModelType
 from megatron.core.transformer.multi_token_prediction import MultiTokenPredictionBlock

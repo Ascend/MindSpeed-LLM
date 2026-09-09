@@ -22,7 +22,7 @@ class ContextParallelFeature(MindspeedContextParallelFeature):
             '--context-parallel-algo',
             type=str,
             default='megatron_cp_algo',
-            choices=['megatron_cp_algo', 'hybrid_cp_algo', 'kvallgather_cp_algo'],
+            choices=['megatron_cp_algo', 'hybrid_cp_algo', 'kvallgather_cp_algo', 'ulysses_cp_algo'],
             help='context parallel algorithm',
         )
 

@@ -38,16 +38,6 @@ class InferenceFeature(MindSpeedFeature):
 
     def register_patches(self, patch_manager, args):
         from mindspeed_llm.inference.text_generation.tokenization import tokenize_prompts, _tokenize_prompts_and_batch
-        from mindspeed_llm.inference.text_generation.forward_step import inference_forward_step_init_wrapper, _forward_step_helper, _allocate_recv_buffer, \
-            _no_pipelining_forward_step_wrapper, _with_pipelining_forward_step_wrapper
-        from mindspeed_llm.inference.text_generation.generation import generate_tokens_probs_and_return_on_first_stage, beam_search_and_return_on_first_stage
 
-        patch_manager.register_patch('megatron.inference.text_generation.tokenization.tokenize_prompts', tokenize_prompts)
-        patch_manager.register_patch('megatron.inference.text_generation.tokenization._tokenize_prompts_and_batch', _tokenize_prompts_and_batch)
-        patch_manager.register_patch('megatron.inference.text_generation.generation.generate_tokens_probs_and_return_on_first_stage', generate_tokens_probs_and_return_on_first_stage)
-        patch_manager.register_patch('megatron.inference.text_generation.generation.beam_search_and_return_on_first_stage', beam_search_and_return_on_first_stage)
-        patch_manager.register_patch('megatron.inference.text_generation.forward_step.ForwardStep.__init__', inference_forward_step_init_wrapper)
-        patch_manager.register_patch('megatron.inference.text_generation.forward_step.ForwardStep._forward_step_helper', _forward_step_helper)
-        patch_manager.register_patch('megatron.inference.text_generation.forward_step.ForwardStep._no_pipelining_forward_step', _no_pipelining_forward_step_wrapper)
-        patch_manager.register_patch('megatron.inference.text_generation.forward_step.ForwardStep._with_pipelining_forward_step', _with_pipelining_forward_step_wrapper)
-        patch_manager.register_patch('megatron.inference.text_generation.forward_step._allocate_recv_buffer', _allocate_recv_buffer)
+        patch_manager.register_patch('megatron.core.inference.text_generation_server.dynamic_text_gen_server.tokenization', tokenize_prompts)
+        patch_manager.register_patch('megatron.core.inference.text_generation_server.tokenization._tokenize_prompts_and_batch', _tokenize_prompts_and_batch)

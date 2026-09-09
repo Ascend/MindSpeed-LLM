@@ -8,8 +8,8 @@ from einops import rearrange
 
 from megatron.core import tensor_parallel
 from megatron.core.tensor_parallel.utils import divide
-from megatron.core.transformer.moe.experts import GroupedMLP
-from megatron.core.transformer.moe import grouped_gemm_util as gg
+from megatron.core.transformer.moe.experts import TEGroupedMLP
+from mindspeed.core.transformer.moe import grouped_gemm_util as gg
 from megatron.training import get_args
 from megatron.core.jit import jit_fuser
 from mindspeed.core.fusions.fused_bias_swiglu import fused_swiglu
@@ -474,7 +474,7 @@ def lora_parallel_grouped_mlp_with_comp_and_comm_overlap_all2all_seq(
     )
 
 
-class LoraParallelGroupedMLP(GroupedMLP):
+class LoraParallelGroupedMLP(TEGroupedMLP):
     def __init__(self, num_local_experts, config, lora_config):
         super().__init__(num_local_experts, config=config)
         self.lora_r = lora_config.r

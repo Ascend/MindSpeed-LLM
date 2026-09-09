@@ -1,6 +1,6 @@
 from argparse import ArgumentParser
 
-from mindspeed.features_manager.megatron_basic.megatron_basic import MegatronBasicFeature as MindSpeedMegatronBasicFeature
+from megatron_adaptor.features_manager.megatron.megatron_basic import MegatronBasicFeature as MindSpeedMegatronBasicFeature
 
 
 class MegatronBasicFeature(MindSpeedMegatronBasicFeature):
@@ -39,17 +39,6 @@ class MegatronBasicFeature(MindSpeedMegatronBasicFeature):
                            help='Configuration for the output layer bias.')
 
     def register_mcore_basic_patches(self, pm, args):
-        # norm patches
-        from mindspeed_llm.core.transformer.custom_layers.transformer_engine import PTNorm
-        pm.register_patch('megatron.core.models.gpt.gpt_layer_specs.LNImpl',
-                           PTNorm)
-        pm.register_patch('megatron.core.transformer.torch_norm.WrappedTorchNorm',
-                           PTNorm)
-        pm.register_patch('megatron.core.transformer.transformer_block.LayerNormImpl',
-                           PTNorm)
-        pm.register_patch('megatron.core.extensions.transformer_engine.TENorm',
-                           PTNorm)
-
         # coalescing_manager patches
         from mindspeed.core.distributed.param_and_grad_buffer import start_param_sync, finish_param_sync, start_grad_sync, finish_grad_sync
         pm.register_patch('megatron.core.distributed.param_and_grad_buffer._ParamAndGradBucketGroup.start_param_sync',
@@ -60,11 +49,6 @@ class MegatronBasicFeature(MindSpeedMegatronBasicFeature):
                            start_grad_sync)
         pm.register_patch('megatron.core.distributed.param_and_grad_buffer._ParamAndGradBucketGroup.finish_grad_sync',
                            finish_grad_sync)
-
-        # fix param_and_grad_buffer when model having multi-bucket and MTP
-        from mindspeed_llm.core.distributed.param_and_grad_buffer import param_and_grad_buffer_init
-        pm.register_patch('megatron.core.distributed.param_and_grad_buffer._ParamAndGradBuffer.__init__',
-                           param_and_grad_buffer_init)
 
         # fix duplicate all-gather
         from mindspeed.core.optimizer.fix_duplicate_allgather import start_param_sync
@@ -81,11 +65,6 @@ class MegatronBasicFeature(MindSpeedMegatronBasicFeature):
         from mindspeed.core.fp8_utils import quantize_param_shard
         pm.register_patch('megatron.core.fp8_utils.quantize_param_shard',
                            quantize_param_shard)
-
-        # fix count_zeros in ChainedOptimizer for core_r0.12.1.
-        from mindspeed.core.megatron_basic.count_zero_fix import step
-        pm.register_patch('megatron.core.optimizer.optimizer.ChainedOptimizer.step',
-                           step)
 
         from mindspeed_llm.core import TransformerLayer
         pm.register_patch('megatron.core.transformer.transformer_layer.TransformerLayer', TransformerLayer)
@@ -112,15 +91,6 @@ class MegatronBasicFeature(MindSpeedMegatronBasicFeature):
                           transformer_config_post_init_wrapper)
 
         # initialization patches
-        from mindspeed.core.megatron_basic.megatron_basic import _set_cuda_rng_state, _compile_dependencies, \
-            get_device_wrapper
-        pm.register_patch('megatron.core.tensor_parallel.random._set_cuda_rng_state',
-                          _set_cuda_rng_state)
-        pm.register_patch('megatron.training.initialize._compile_dependencies',
-                          _compile_dependencies)
+        from mindspeed.core.megatron_basic.megatron_basic import get_device_wrapper
         pm.register_patch('megatron.training.dist_signal_handler.get_device',
                           get_device_wrapper)
-
-        from mindspeed.core.megatron_basic.megatron_basic import get_device_arch_version
-        pm.register_patch('megatron.training.utils.get_device_arch_version',
-                          get_device_arch_version)

@@ -13,13 +13,18 @@ import torch_npu
 
 from megatron.core import parallel_state
 from megatron.training import get_args
-from megatron.legacy.model import RMSNorm
+from mindspeed.core.fusions.fused_rms_norm import RMSNorm
 from megatron.core.transformer.identity_op import IdentityOp
 from megatron.core.transformer import TransformerConfig, ModuleSpec, build_module, MegatronModule
 from megatron.core import mpu
 from megatron.core.tensor_parallel.mappings import gather_from_sequence_parallel_region
 
 
+from transformer_engine.pytorch.attention.dot_product_attention.kvallgather_context_parallel import get_seq_chunk_ids_for_reordering_before_attn
+from transformer_engine.pytorch.attention.dot_product_attention.utils import (
+    get_distributed_rank,
+    get_distributed_world_size,
+)
 from mindspeed_llm.core.tensor_parallel.layers import LinearNoTP
 from megatron.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb
 from mindspeed_llm.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb_bshd_in_complex
@@ -31,11 +36,6 @@ from mindspeed_llm.tasks.models.transformer.deepseek4.deepseek_utils import (
     get_cmp_cu_seqlens,
 )
 from mindspeed_llm.ops.npu_lightning_indexer import npu_lightning_indexer
-from mindspeed.te.pytorch.attention.dot_product_attention.kvallgather_context_parallel import (
-    get_distributed_rank,
-    get_distributed_world_size,
-    get_seq_chunk_ids_for_reordering_before_attn,
-)
 
 
 @dataclass

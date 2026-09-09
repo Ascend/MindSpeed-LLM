@@ -26,7 +26,6 @@ import torch.nn.functional as F
 
 from megatron.training import print_rank_0, get_args
 from megatron.core import parallel_state, mpu
-from megatron.legacy.data.dataset_utils import get_train_valid_test_split_
 from mindspeed_llm.training.tokenizer import build_tokenizer
 from mindspeed_llm.tasks.utils.error_utils import check_equal
 from mindspeed_llm.tasks.preprocess.mtf_dataset import MTFDataset, get_packed_indexed_dataset
@@ -34,6 +33,34 @@ from mindspeed_llm.tasks.preprocess.templates import get_model_template
 from mindspeed_llm.training.utils import compute_actual_seq_len
 
 logger = logging.getLogger(__name__)
+
+
+def get_train_valid_test_split_(splits_string, size):
+    """ Get dataset splits from comma or '/' separated string list."""
+
+    splits = []
+    if splits_string.find(',') != -1:
+        splits = [float(s) for s in splits_string.split(',')]
+    elif splits_string.find('/') != -1:
+        splits = [float(s) for s in splits_string.split('/')]
+    else:
+        splits = [float(splits_string)]
+    while len(splits) < 3:
+        splits.append(0.)
+    splits = splits[:3]
+    splits_sum = sum(splits)
+    assert splits_sum > 0.0
+    splits = [split / splits_sum for split in splits]
+    splits_index = [0]
+    for index, split in enumerate(splits):
+        splits_index.append(splits_index[index] +
+                            int(round(split * float(size))))
+    diff = splits_index[-1] - size
+    for index in range(1, len(splits_index)):
+        splits_index[index] -= diff
+    assert len(splits_index) == 4
+    assert splits_index[-1] == size
+    return splits_index
 
 
 def build_train_valid_test_datasets(

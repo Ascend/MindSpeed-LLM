@@ -81,7 +81,7 @@ class RotaryPositionEmbeddingFeature(MindSpeedFeature):
 
     def register_patches(self, patch_manager, args):
         from mindspeed_llm.core import rotary_embedding_forward, apply_rotary_pos_emb_bshd, rotary_embedding_init_wrapper
-        from mindspeed.core.fusions.fused_rope import apply_rotary_pos_emb
+        from mindspeed.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb
 
         patch_manager.register_patch('megatron.core.models.common.embeddings.rope_utils._apply_rotary_pos_emb_bshd',
                                       apply_rotary_pos_emb_bshd)

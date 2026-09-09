@@ -18,7 +18,6 @@ from functools import wraps
 import torch
 import torch_npu
 from torch import nn
-from megatron.legacy.model.rms_norm import RMSNorm
 from megatron.training import get_args
 
 

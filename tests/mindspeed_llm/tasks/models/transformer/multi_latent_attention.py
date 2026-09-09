@@ -8,6 +8,7 @@ from typing import Union
 import torch
 import torch.nn.functional as F
 
+from megatron.core.transformer.attention import Attention
 from mindspeed.core.tensor_parallel.random import CheckpointWithoutOutput
 from mindspeed.core.transformer.transformer_block import _get_layer_offset
 from mindspeed.utils import set_position_ids, get_position_ids
@@ -27,7 +28,7 @@ from megatron.core.tensor_parallel.mappings import (
 )
 from megatron.core.transformer import TransformerConfig, ModuleSpec, build_module
 from megatron.core.transformer.attention import SelfAttention, SelfAttentionSubmodules
-from megatron.core.transformer.custom_layers.transformer_engine import TEColumnParallelLinear, TERowParallelLinear
+from megatron.core.extensions.transformer_engine import TEColumnParallelLinear, TERowParallelLinear
 from megatron.core.transformer.enums import AttnMaskType
 from megatron.core import mpu, parallel_state, tensor_parallel
 from megatron.training import get_args
@@ -53,10 +54,7 @@ from mindspeed_llm.tasks.models.transformer.mla_dot_product_attention import (
     MlaDotProductAttention,
     MlaTEDotProductAttention,
 )
-from mindspeed_llm.tasks.models.transformer.mla_up_proj_overlap_tp_comm import (
-    mla_up_projection_overlap_tp_comm,
-    should_recompute_mla_up_proj,
-)
+from mindspeed_llm.tasks.models.transformer.mla_up_proj_overlap_tp_comm import mla_up_projection_overlap_tp_comm
 from mindspeed_llm.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb_bshd_in_complex
 
 logger = logging.getLogger(__name__)
@@ -308,17 +306,26 @@ class CustomMLASelfAttention(SelfAttention):
 
     def __init__(
         self,
-        config: TransformerConfig,
-        submodules: CustomMLASelfAttentionSubmodules,
-        layer_number: int,
+        config,
+        submodules,
+        layer_number,
         attn_mask_type=AttnMaskType.padding,
-        cp_comm_type: str = None,
+        cp_comm_type=None,
+        pg_collection=None,
+        pp_layer_offset=None,
+        name=None,
     ):
-        super().__init__(
+        Attention.__init__(
+            self,
             config=config,
             submodules=submodules,
             layer_number=layer_number,
             attn_mask_type=attn_mask_type,
+            attention_type="self",
+            cp_comm_type=cp_comm_type,
+            pg_collection=pg_collection,
+            pp_layer_offset=pp_layer_offset,
+            name=name,
         )
         args = get_args()
 
@@ -358,11 +365,39 @@ class CustomMLASelfAttention(SelfAttention):
         max_dim = max(self.v_head_dim, self.q_head_dim)
         self.fa_padding_length = math.ceil(max_dim / args.padded_base_length) * args.padded_base_length
 
+        self.core_attention = build_module(
+            submodules.core_attention,
+            config=self.config,
+            layer_number=self.layer_number,
+            attn_mask_type=self.attn_mask_type,
+            attention_type=self.attention_type,
+            softmax_scale=self.config.softmax_scale,
+            k_channels=self.q_head_dim,
+            v_channels=self.config.v_head_dim,
+            cp_comm_type=cp_comm_type,
+            pg_collection=self.pg_collection,
+        )
         if self.q_lora_rank is None:
             self.q_rank = self.config.num_attention_heads * self.q_head_dim
-            self.q_layernorm = None
         else:
             self.q_rank = self.q_lora_rank
+
+        self.linear_qkv = build_module(
+            submodules.linear_qkv,
+            self.config.hidden_size,
+            self.q_rank + self.kv_lora_rank + self.qk_pos_emb_head_dim,
+            config=self.config,
+            init_method=self.config.init_method,
+            gather_output=False,
+            bias=self.config.add_bias_linear or self.config.add_qkv_bias,
+            skip_bias_add=False,
+            is_expert=False,
+            tp_comm_buffer_name="qkv",
+        )
+
+        if self.q_lora_rank is None:
+            self.q_layernorm = None
+        else:
             if submodules.q_layernorm is not None:
                 self.q_layernorm = build_module(
                     submodules.q_layernorm,
@@ -578,8 +613,11 @@ class CustomMLASelfAttention(SelfAttention):
                 ],
                 dim=-1,
             )
-
-            def mla_up_projection_no_tp_overlap(q_compressed, kv_compressed, k_pos_emb):
+            if self.mla_up_proj_tp_overlap:
+                query, key, value = mla_up_projection_overlap_tp_comm(
+                    q_compressed, kv_compressed, k_pos_emb, rotary_pos_emb, packed_seq_params, self
+                )
+            else:
                 if self.q_layernorm is not None:
                     q_compressed = self.q_layernorm(q_compressed)
                     if self.mla_scale_q_lora is not None:
@@ -653,61 +691,31 @@ class CustomMLASelfAttention(SelfAttention):
                     k_pos_emb.shape[0], k_pos_emb.shape[1], q_no_pe.shape[2], k_pos_emb.shape[3]
                 )
                 if args.mla_fa_divide_qk:
-                    return q_no_pe, q_pos_emb, k_no_pe, k_pos_emb, value
-
-                query = torch.cat([q_no_pe, q_pos_emb], dim=-1)
-                key = torch.cat([k_no_pe, k_pos_emb], dim=-1)
-
-                if self.use_flash_attn and self.q_head_dim != self.v_head_dim and not self.mla_fa_without_pad:
-                    if self.shape_order == "BNSD":
-                        value = F.pad(value, [0, self.q_head_dim - self.v_head_dim])
-                    else:
-                        query = F.pad(query, [0, self.fa_padding_length - self.q_head_dim])
-                        key = F.pad(key, [0, self.fa_padding_length - self.q_head_dim])
-                        value = F.pad(value, [0, self.fa_padding_length - self.v_head_dim])
-
-                # Do repeat KV to support GQA+Ulysses
-                should_kv_repeat_before_uly = (
-                    args.context_parallel_size > 1
-                    and args.context_parallel_algo in ["ulysses_cp_algo", "hybrid_cp_algo"]
-                    and args.kv_head_repeat_before_uly_alltoall
-                )
-                heads_per_gqa_group = self.num_attention_heads_per_partition // self.num_query_groups_per_partition
-                if should_kv_repeat_before_uly and heads_per_gqa_group > 1:
-                    key = key.repeat_interleave(heads_per_gqa_group, dim=2)
-                    value = value.repeat_interleave(heads_per_gqa_group, dim=2)
-
-                return query, key, value
-
-            should_recompute_no_tp_overlap = not self.mla_up_proj_tp_overlap and should_recompute_mla_up_proj(
-                args, self.recompute_mla_up_proj
-            )
-            if self.mla_up_proj_tp_overlap:
-                query, key, value = mla_up_projection_overlap_tp_comm(
-                    q_compressed, kv_compressed, k_pos_emb, rotary_pos_emb, packed_seq_params, self
-                )
-            elif not should_recompute_no_tp_overlap:
-                self.recompute_mla_up_proj_ckpt = None
-                if args.mla_fa_divide_qk:
-                    q_no_pe, q_pos_emb, k_no_pe, k_pos_emb, value = mla_up_projection_no_tp_overlap(
-                        q_compressed, kv_compressed, k_pos_emb
-                    )
                     query = [q_no_pe, q_pos_emb]
                     key = [k_no_pe, k_pos_emb]
                 else:
-                    query, key, value = mla_up_projection_no_tp_overlap(q_compressed, kv_compressed, k_pos_emb)
-            else:
-                self.recompute_mla_up_proj_ckpt = CheckpointWithoutOutput()
-                if args.mla_fa_divide_qk:
-                    q_no_pe, q_pos_emb, k_no_pe, k_pos_emb, value = self.recompute_mla_up_proj_ckpt.checkpoint(
-                        mla_up_projection_no_tp_overlap, False, q_compressed, kv_compressed, k_pos_emb
+                    query = torch.cat([q_no_pe, q_pos_emb], dim=-1)
+                    key = torch.cat([k_no_pe, k_pos_emb], dim=-1)
+
+                    if self.use_flash_attn and self.q_head_dim != self.v_head_dim and not self.mla_fa_without_pad:
+                        if self.shape_order == "BNSD":
+                            value = F.pad(value, [0, self.q_head_dim - self.v_head_dim])
+                        else:
+                            query = F.pad(query, [0, self.fa_padding_length - self.q_head_dim])
+                            key = F.pad(key, [0, self.fa_padding_length - self.q_head_dim])
+                            value = F.pad(value, [0, self.fa_padding_length - self.v_head_dim])
+
+                    # Do repeat KV to support GQA+Ulysses
+                    args = get_args()
+                    should_kv_repeat_before_uly = (
+                        args.context_parallel_size > 1
+                        and args.context_parallel_algo in ["ulysses_cp_algo", "hybrid_cp_algo"]
+                        and args.kv_head_repeat_before_uly_alltoall
                     )
-                    query = [q_no_pe, q_pos_emb]
-                    key = [k_no_pe, k_pos_emb]
-                else:
-                    query, key, value = self.recompute_mla_up_proj_ckpt.checkpoint(
-                        mla_up_projection_no_tp_overlap, False, q_compressed, kv_compressed, k_pos_emb
-                    )
+                    heads_per_gqa_group = self.num_attention_heads_per_partition // self.num_query_groups_per_partition
+                    if should_kv_repeat_before_uly and heads_per_gqa_group > 1:
+                        key = key.repeat_interleave(heads_per_gqa_group, dim=2)
+                        value = value.repeat_interleave(heads_per_gqa_group, dim=2)
 
             # DSAIndexer module computation
             nonlocal attention_mask

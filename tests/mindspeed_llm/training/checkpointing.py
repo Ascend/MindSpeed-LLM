@@ -24,7 +24,8 @@ from megatron.core import mpu, dist_checkpointing
 from megatron.core.rerun_state_machine import get_rerun_state_machine
 from megatron.core.dist_checkpointing.serialization import get_default_save_sharded_strategy
 from megatron.core.dist_checkpointing.strategies.fully_parallel import FullyParallelSaveStrategyWrapper
-from megatron.training.utils import print_rank_0, unwrap_model, append_to_progress_log, is_last_rank
+from megatron.training.utils import print_rank_0, append_to_progress_log, is_last_rank
+from megatron.core.utils import unwrap_model
 from megatron.training.async_utils import schedule_async_save
 from megatron.training.checkpointing import (
     _load_base_checkpoint,

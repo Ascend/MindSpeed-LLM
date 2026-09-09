@@ -50,7 +50,6 @@ def dualpipe_register_patches(MegatronAdaptation):
         MegatronAdaptation.register('megatron.training.training.train_step', train_step)
         MegatronAdaptation.register('megatron.core.pipeline_parallel.schedules.forward_backward_pipelining_without_interleaving',
                                     forward_backward_pipelining_with_cutinhalf)
-        MegatronAdaptation.register('megatron.legacy.model.module.Float16Module.forward', dualpipev_fp16forward)
         MegatronAdaptation.register('megatron.core.transformer.transformer_block.get_num_layers_to_build', get_num_layers_to_build)
         MegatronAdaptation.register('megatron.training.utils.print_rank_last', print_rank_0)
         MegatronAdaptation.register('megatron.core.distributed.finalize_model_grads._allreduce_embedding_grads',

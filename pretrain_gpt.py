@@ -7,39 +7,57 @@ from functools import partial
 from typing import Union
 
 import torch
-from mindspeed_llm import megatron_adaptor
-from megatron.training import get_args
-from megatron.training import print_rank_0
-from megatron.training import get_timers
-from megatron.training import get_tokenizer
-from megatron.core import mpu, tensor_parallel
-from megatron.core.enums import ModelType
+
+# MindSpeed patches must be applied before any Megatron modules.
+# isort: off
+from mindspeed_llm import megatron_adaptor  # noqa: F401  # pylint: disable=ungrouped-imports
+# isort: on
+
+import megatron.core.models.gpt.gpt_model
+from megatron.core import mpu
 from megatron.core.datasets.blended_megatron_dataset_builder import BlendedMegatronDatasetBuilder
 from megatron.core.datasets.gpt_dataset import GPTDatasetConfig
 from megatron.core.datasets.gpt_dataset import MockGPTDataset, GPTDataset
 from megatron.core.datasets.utils import get_blend_from_list
-from megatron.core.rerun_state_machine import get_rerun_state_machine
-import megatron.legacy.model
+from megatron.core.enums import ModelType
 from megatron.core.models.gpt import GPTModel
-from mindspeed_llm.training.training import pretrain
-from megatron.core.transformer.spec_utils import import_module
-from megatron.training.utils import (
-    get_batch_on_this_cp_rank,
-    get_batch_on_this_tp_rank,
-    average_losses_across_data_parallel_group
-)
-from megatron.training.arguments import core_transformer_config_from_args
-from megatron.training.yaml_arguments import core_transformer_config_from_yaml
 from megatron.core.models.gpt.gpt_layer_specs import (
     get_gpt_layer_local_spec,
     get_gpt_layer_with_transformer_engine_spec,
     get_gpt_mtp_block_spec,
 )
-from mindspeed_llm.training.utils import set_mtp_batch_list, get_mtp_batch_list, auto_coverage
+from megatron.core.rerun_state_machine import get_rerun_state_machine
+from megatron.core.transformer.spec_utils import import_module
+from megatron.training import get_args
+from megatron.training import get_timers
+from megatron.training import get_tokenizer
+from megatron.training import print_rank_0
+from megatron.training.arguments import core_transformer_config_from_args
+from megatron.training.yaml_arguments import core_transformer_config_from_yaml
+
 from mindspeed_llm.core.transformer.multi_token_prediction import generate_mtp_batch_list_on_this_tp_rank
+from mindspeed_llm.training.utils import set_mtp_batch_list, auto_coverage
+
+# Version-conditional imports (018 uses tests/mindspeed_llm codebase).
+_IS_018 = os.environ.get("MINDSPEED_LLM_VERSION", "012") == "018"
+if _IS_018:
+    # Apply optimizer reload monkey-patch before importing pretrain.
+    from mindspeed_llm.features_manager.optimizer import optimizer_reload_patch  # noqa: E402, F401  # pylint: disable=ungrouped-imports,no-name-in-module
+    from megatron.core.utils import get_batch_on_this_cp_rank, get_batch_on_this_tp_rank  # pylint: disable=ungrouped-imports
+else:
+    import megatron.legacy.model  # noqa: E402  # pylint: disable=ungrouped-imports
+    from megatron.training.utils import get_batch_on_this_cp_rank, get_batch_on_this_tp_rank
+
+from mindspeed_llm.training.training import pretrain  # noqa: E402  # pylint: disable=ungrouped-imports
 
 
-def model_provider(pre_process=True, post_process=True) -> Union[GPTModel, megatron.legacy.model.GPTModel]:
+def model_provider(
+    pre_process=True,
+    post_process=True,
+    vp_stage=None,
+    config=None,
+    pg_collection=None,
+) -> Union[GPTModel, megatron.core.models.gpt.gpt_model]:
     """Builds the model.
 
     If you set the use_mcore_models to True, it will return the mcore GPT model and if not the legacy GPT model.
@@ -47,33 +65,43 @@ def model_provider(pre_process=True, post_process=True) -> Union[GPTModel, megat
     Args:
         pre_process (bool, optional): Set to true if you need to compute embedings. Defaults to True.
         post_process (bool, optional): Set to true if you need to want to compute output logits/loss. Defaults to True.
-
+        vp_stage (int, optional): Virtual pipeline stage index. Defaults to None.
+        config (TransformerConfig, optional): Transformer config object passed from get_model. Defaults to None.
+        pg_collection (ProcessGroupCollection, optional): Process groups collection for parallel communication. Defaults to None.
 
     Returns:
-        Union[GPTModel, megatron.legacy.model.GPTModel]: The returned model
+        Union[GPTModel, megatron.core.models.gpt.gpt_model]: The returned model
     """
     args = get_args()
     use_te = args.transformer_impl == "transformer_engine"
 
     print_rank_0('building GPT model ...')
     # Experimental loading arguments from yaml
-    if args.yaml_cfg is not None:
-        config = core_transformer_config_from_yaml(args, "language_model")
-    else:
-        config = core_transformer_config_from_args(args)
-
-    if not args.use_legacy_models:
-        if args.spec is not None:
-            transformer_layer_spec = import_module(args.spec)
+    if config is None:
+        if args.yaml_cfg is not None:
+            config = core_transformer_config_from_yaml(args, "language_model")
         else:
-            if use_te:
-                transformer_layer_spec = get_gpt_layer_with_transformer_engine_spec(args.num_experts, args.moe_grouped_gemm)
-            else:
-                transformer_layer_spec = get_gpt_layer_local_spec(args.num_experts, args.moe_grouped_gemm)
-        mtp_block_spec = None
-        if args.mtp_num_layers is not None:
-            mtp_block_spec = get_gpt_mtp_block_spec(config, transformer_layer_spec, use_transformer_engine=use_te)
+            config = core_transformer_config_from_args(args)
 
+    if not _IS_018 and args.use_legacy_models:
+        if not args.context_parallel_size == 1:
+            raise ValueError("Context parallelism is only supported with Megatron Core!")
+        return megatron.legacy.model.GPTModel(
+            config, num_tokentypes=0, parallel_output=True, pre_process=pre_process, post_process=post_process
+        )
+
+    if args.spec is not None:
+        transformer_layer_spec = import_module(args.spec)
+    else:
+        if use_te:
+            transformer_layer_spec = get_gpt_layer_with_transformer_engine_spec(args.num_experts, args.moe_grouped_gemm)
+        else:
+            transformer_layer_spec = get_gpt_layer_local_spec(args.num_experts, args.moe_grouped_gemm)
+    mtp_block_spec = None
+    if args.mtp_num_layers is not None:
+        mtp_block_spec = get_gpt_mtp_block_spec(config, transformer_layer_spec, use_transformer_engine=use_te)
+
+    if _IS_018:
         model = GPTModel(
             config=config,
             transformer_layer_spec=transformer_layer_spec,
@@ -89,17 +117,25 @@ def model_provider(pre_process=True, post_process=True) -> Union[GPTModel, megat
             rotary_base=args.rotary_base,
             rope_scaling=args.use_rope_scaling,
             mtp_block_spec=mtp_block_spec,
+            pg_collection=pg_collection,
+            vp_stage=vp_stage,
         )
     else:
-        if not args.context_parallel_size == 1:
-            raise ValueError("Context parallelism is only supported with Megatron Core!")
-
-        model = megatron.legacy.model.GPTModel(
-            config,
-            num_tokentypes=0,
-            parallel_output=True,
+        model = GPTModel(
+            config=config,
+            transformer_layer_spec=transformer_layer_spec,
+            vocab_size=args.padded_vocab_size,
+            max_sequence_length=args.max_position_embeddings,
             pre_process=pre_process,
-            post_process=post_process
+            post_process=post_process,
+            fp16_lm_cross_entropy=args.fp16_lm_cross_entropy,
+            parallel_output=True,
+            share_embeddings_and_output_weights=not args.untie_embeddings_and_output_weights,
+            position_embedding_type=args.position_embedding_type,
+            rotary_percent=args.rotary_percent,
+            rotary_base=args.rotary_base,
+            rope_scaling=args.use_rope_scaling,
+            mtp_block_spec=mtp_block_spec,
         )
 
     return model
@@ -118,8 +154,17 @@ def get_batch(data_iterator):
     # get batches based on the TP rank you are on
     batch = get_batch_on_this_tp_rank(data_iterator)
 
-    if args.return_document_ids and mpu.get_context_parallel_rank() == 0 and mpu.get_tensor_model_parallel_rank() == 0 and mpu.get_pipeline_model_parallel_rank() == 0:
-        print("current idx: {}, current rank: {}, data_parallel_rank: {}, document_ids: {}".format(batch['idx'], torch.distributed.get_rank(), mpu.get_data_parallel_rank(), batch['document_ids']))
+    if (
+        args.return_document_ids
+        and mpu.get_context_parallel_rank() == 0
+        and mpu.get_tensor_model_parallel_rank() == 0
+        and mpu.get_pipeline_model_parallel_rank() == 0
+    ):
+        print(
+            "current idx: {}, current rank: {}, data_parallel_rank: {}, document_ids: {}".format(
+                batch['idx'], torch.distributed.get_rank(), mpu.get_data_parallel_rank(), batch['document_ids']
+            )
+        )
         batch.pop('document_ids', None)
         batch.pop('idx', None)
 
@@ -129,7 +174,12 @@ def get_batch(data_iterator):
         set_mtp_batch_list(mtp_batch_list)
 
     # slice batch along sequence dimension for context parallelism
-    batch = get_batch_on_this_cp_rank(batch)
+    if _IS_018:
+        batch = get_batch_on_this_cp_rank(
+            batch, is_hybrid_cp=args.context_parallel_size > 1, cp_group=mpu.get_context_parallel_group()
+        )
+    else:
+        batch = get_batch_on_this_cp_rank(batch)
     return batch.values()
 
 
@@ -167,14 +217,14 @@ def loss_func(loss_mask: torch.Tensor, output_tensor: torch.Tensor):
             result=loss[0],
             rejection_func=torch.isnan,
             message="found NaN in local forward loss calculation",
-            tolerance=0.0,        # forward pass calculations are determinisic
+            tolerance=0.0,  # forward pass calculations are determinisic
             fatal=True,
         )
         rerun_state_machine.validate_result(
             result=loss[0],
             rejection_func=torch.isinf,
             message="found Inf in local forward loss calculation",
-            tolerance=0.0,        # forward pass calculations are determinisic
+            tolerance=0.0,  # forward pass calculations are determinisic
             fatal=True,
         )
     # Check for spiky loss
@@ -187,18 +237,13 @@ def loss_func(loss_mask: torch.Tensor, output_tensor: torch.Tensor):
                 context="loss",
             ),
             message="Spiky loss",
-            tolerance=0.0,        # forward pass calculations are determinisic
+            tolerance=0.0,  # forward pass calculations are determinisic
             fatal=False,
         )
     # Reduce loss for logging.
     reporting_loss = loss.clone().detach()
     try:
-        if args.enable_elastic_training:
-            from mindspeed_llm.core.high_availability import elastic_training_common
-            if not elastic_training_common.zit_scale_in_running_state():
-                torch.distributed.all_reduce(reporting_loss, group=mpu.get_data_parallel_group())
-        else:
-            torch.distributed.all_reduce(reporting_loss, group=mpu.get_data_parallel_group())
+        torch.distributed.all_reduce(reporting_loss, group=mpu.get_data_parallel_group())
     except Exception:
         torch.distributed.all_reduce(reporting_loss, group=mpu.get_data_parallel_group())
 
@@ -206,10 +251,11 @@ def loss_func(loss_mask: torch.Tensor, output_tensor: torch.Tensor):
     # in core/pipeline_parallel/schedule.py::deallocate_output_tensor, calling .clone()
     # on loss[0] fixes this
     local_num_tokens = loss[1].clone().detach().to(torch.int)
+    loss_dict = {'lm loss': reporting_loss} if _IS_018 else {'lm loss': (reporting_loss[0], reporting_loss[1])}
     return (
         loss[0].clone(),
         local_num_tokens,
-        {'lm loss': (reporting_loss[0], reporting_loss[1])},
+        loss_dict,
     )
 
 
@@ -225,16 +271,13 @@ def forward_step(data_iterator, model: GPTModel):
 
     # Get the batch.
     timers('batch-generator', log_level=2).start()
-    tokens, labels, loss_mask, attention_mask, position_ids = get_batch(
-        data_iterator)
+    tokens, labels, loss_mask, attention_mask, position_ids = get_batch(data_iterator)
     timers('batch-generator').stop()
 
-    if args.use_legacy_models:
-        output_tensor = model(tokens, position_ids, attention_mask,
-                              labels=labels)
+    if not _IS_018 and args.use_legacy_models:
+        output_tensor = model(tokens, position_ids, attention_mask, labels=labels)
     else:
-        output_tensor = model(tokens, position_ids, attention_mask,
-                              labels=labels, loss_mask=loss_mask)
+        output_tensor = model(tokens, position_ids, attention_mask, labels=labels, loss_mask=loss_mask)
 
     return output_tensor, partial(loss_func, loss_mask)
 
@@ -253,7 +296,7 @@ def core_gpt_dataset_config_from_args(args):
         blend_per_split=[
             get_blend_from_list(args.train_data_path),
             get_blend_from_list(args.valid_data_path),
-            get_blend_from_list(args.test_data_path)
+            get_blend_from_list(args.test_data_path),
         ],
         split=args.split,
         path_to_cache=args.data_cache_path,
@@ -283,10 +326,7 @@ def train_valid_test_datasets_provider(train_val_test_num_samples):
     print_rank_0("> building train, validation, and test datasets for GPT ...")
 
     train_ds, valid_ds, test_ds = BlendedMegatronDatasetBuilder(
-        dataset_type,
-        train_val_test_num_samples,
-        is_dataset_built_on_rank,
-        config
+        dataset_type, train_val_test_num_samples, is_dataset_built_on_rank, config
     ).build()
 
     print_rank_0("> finished creating GPT datasets ...")
@@ -299,10 +339,7 @@ def main():
     # Temporary for transition to core datasets
     train_valid_test_datasets_provider.is_distributed = True
 
-    pretrain(train_valid_test_datasets_provider,
-             model_provider,
-             ModelType.encoder_or_decoder,
-             forward_step)
+    pretrain(train_valid_test_datasets_provider, model_provider, ModelType.encoder_or_decoder, forward_step)
 
 
 if __name__ == "__main__":

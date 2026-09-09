@@ -19,7 +19,7 @@ import torch
 
 from megatron.core import mpu
 from megatron.training import get_args
-from megatron.inference.text_generation.communication import broadcast_int_list, broadcast_tensor
+from megatron.core.inference.communication_utils import broadcast_int_list, broadcast_tensor
 from mindspeed_llm.tasks.preprocess.templates import Template, get_model_template
 
 

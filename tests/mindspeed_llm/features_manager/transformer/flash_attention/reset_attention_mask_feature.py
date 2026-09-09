@@ -19,8 +19,9 @@ class ResetAttentionMaskFeature(MindSpeedFeature):
         if getattr(args, self.feature_name, None):
             from mindspeed.core.transformer.flash_attention.reset_attention_mask.utils import (
                 _get_ltor_masks_and_position_ids, collate_wrapper, eod_gptdataset_getitem)
-            from mindspeed.core.transformer.flash_attention.reset_attention_mask.adaptor import (
-                _p2p_ops_eod, rotary_forward, Eod_get_rotary_seq_len)
+            from mindspeed.core.pipeline_parallel.p2p_communication import _p2p_ops_eod
+            from mindspeed.core.models.common.embeddings.rotary_pos_embedding import (
+                rotary_forward, Eod_get_rotary_seq_len)
 
             patch_manager.register_patch('megatron.core.datasets.gpt_dataset._get_ltor_masks_and_position_ids',
                                          _get_ltor_masks_and_position_ids)

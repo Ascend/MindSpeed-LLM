@@ -25,27 +25,16 @@ class MoERouter(MindSpeedFeature):
                             help='Compute router gating in float32.')
         group.add_argument("--moe-revert-type-after-topk", action='store_true',
                             help="revert the type of logits after the topk has been computed")
-        group.add_argument("--fix-router", action='store_true', 
-                            help="fix router for load balancing.")
         group.add_argument("--topk-softmax-in-fp32", action='store_true',
                             help="topk softmax in fp32.")
         group.add_argument('--num-zero-experts', type=int, default=None,
                        help='Number of Experts in MoE (None means no MoE)')
         group.add_argument('--n-hash-layers', type=int, default=0, help='expert hash layer num')
 
-    def pre_validate_args(self, args):
-        self.origin_spec = None
-        self.origin_spec = args.spec
-        args.spec = None
-
     def validate_args(self, args):
         self._validate_moe_args(args)
         self._validate_group_limited_greedy(args)
         self._validate_aux_loss_free(args)
-
-    def post_validate_args(self, args):
-        if self.origin_spec:
-            args.spec = self.origin_spec
 
     def _validate_moe_args(self, args):
         from mindspeed_llm.training.utils import print_rank0_by_args

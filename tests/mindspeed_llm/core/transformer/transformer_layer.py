@@ -26,7 +26,7 @@ from megatron.core.transformer import TransformerConfig, ModuleSpec, build_modul
 from megatron.core.transformer.identity_op import IdentityOp, IdentityFuncOp
 from megatron.core.packed_seq_params import PackedSeqParams
 from megatron.core.transformer.moe.moe_layer import MoELayer
-from megatron.core.transformer.moe.experts import GroupedMLP, SequentialMLP
+from megatron.core.transformer.moe.experts import TEGroupedMLP, SequentialMLP
 from megatron.core.utils import make_viewless_tensor
 from megatron.training import get_args
 
@@ -90,16 +90,23 @@ class TransformerLayer(MegatronTransformerLayer):
         layer_number: int = 1,
         hidden_dropout: float = None,
         is_mtp_layer: bool = False,
+        **kwargs,
     ):
-        super().__init__(config=config, submodules=submodules, layer_number=layer_number, hidden_dropout=hidden_dropout)
-
+        super().__init__(
+            config=config,
+            submodules=submodules,
+            layer_number=layer_number,
+            hidden_dropout=hidden_dropout,
+            is_mtp_layer=is_mtp_layer,
+            **kwargs,
+        )
         self.is_mtp = is_mtp_layer
         # build hash module for router
         if hasattr(self.mlp, 'router') and self.mlp.router is not None and (not is_mtp_layer):
             self.mlp.router.build_hash_module()
         # For mcore activation re-computation
         if self.mlp.__class__ is MoELayer:
-            if isinstance(self.mlp.experts, GroupedMLP):
+            if isinstance(self.mlp.experts, TEGroupedMLP):
                 self.mlp.experts.layer_number = self.layer_number
             if self.mlp.experts.__class__ is SequentialMLP:
                 for expert in self.mlp.experts.local_experts:
@@ -130,8 +137,11 @@ class TransformerLayer(MegatronTransformerLayer):
         self-attention, cross-attention (if applicable), and feed-forward operations.
         """
 
+        padding_mask = kwargs.pop("padding_mask", None)
+        input_ids = kwargs.get("input_ids", None)
+
         attention_out, residual, context = self._forward_attention(*args, **kwargs)
-        output = self._forward_mlp(attention_out, residual, kwargs.get("input_ids", None))
+        output = self._forward_mlp(attention_out, residual, input_ids=input_ids, padding_mask=padding_mask)
 
         return output, context
 
@@ -261,7 +271,7 @@ class TransformerLayer(MegatronTransformerLayer):
 
         return hidden_states, residual, context
 
-    def _forward_mlp(self, attn_output, residual, input_ids=None):
+    def _forward_mlp(self, attn_output, residual, input_ids=None, padding_mask=None):
         args = get_args()
 
         # mHC pre
@@ -277,14 +287,18 @@ class TransformerLayer(MegatronTransformerLayer):
         else:
             pre_mlp_layernorm_output = self.pre_mlp_layernorm(attn_output)
 
+        def mlp_forward(hidden_states):
+            if isinstance(self.mlp, MoELayer):
+                return self.mlp(hidden_states, padding_mask=padding_mask)
+            if args.n_hash_layers >= 1:
+                return self.mlp(hidden_states, input_ids)
+            return self.mlp(hidden_states)
+
         # MLP.
         if self.recompute_mlp:
-            mlp_output_with_bias = tensor_parallel.checkpoint(self.mlp, False, pre_mlp_layernorm_output, input_ids)
+            mlp_output_with_bias = tensor_parallel.checkpoint(mlp_forward, False, pre_mlp_layernorm_output)
         else:
-            if args.n_hash_layers >= 1:
-                mlp_output_with_bias = self.mlp(pre_mlp_layernorm_output, input_ids)
-            else:
-                mlp_output_with_bias = self.mlp(pre_mlp_layernorm_output)
+            mlp_output_with_bias = mlp_forward(pre_mlp_layernorm_output)
 
         if self.recompute_pre_mlp_layernorm:
             # discard the output of the pre-mlp layernorm and register the recompute

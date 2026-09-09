@@ -43,11 +43,10 @@ def extra_args_provider_decorator(extra_args_provider):
         1. Calls the original provider if it exists
         2. Adds MindSpeed-LLM v2 arguments via process_args_v2
     """
-    @wraps(extra_args_provider)
+    @wraps(extra_args_provider if extra_args_provider is not None else (lambda p: p))
     def wrapper(parser):
         if extra_args_provider is not None:
             parser = extra_args_provider(parser)
-        parser = process_args_v2(parser)
         return parser
 
     return wrapper
@@ -174,6 +173,7 @@ def _add_dummy_args_v2(args):
     args.attention_mask_on_cpu = False
     args.output_layer_slice_num = 1
     args.use_fused_mlp = False
+    args.is_pairwise_dataset= False
 
 
 def validate_args_v2_decorator(megatron_validate_args):

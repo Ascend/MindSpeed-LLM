@@ -71,7 +71,7 @@ def allreduce_layernorm_grads(model: List[torch.nn.Module], config: TransformerC
             buf.copy_(synced)
 
 
-def _allreduce_word_embedding_grads(model: List[torch.nn.Module], config: TransformerConfig):
+def _allreduce_word_embedding_grads(model: List[torch.nn.Module], config: TransformerConfig, embd_group=None, pp_group=None):
     """
     All-reduce word embedding grads.
 
@@ -116,7 +116,7 @@ def _allreduce_word_embedding_grads(model: List[torch.nn.Module], config: Transf
             setattr(weight, grad_attr, _reshard_if_dtensor(grad, orig_grad))
 
 
-def _update_router_expert_bias_for_patch(model: List[torch.nn.Module], config: TransformerConfig):
+def _update_router_expert_bias_for_patch(model: List[torch.nn.Module], config: TransformerConfig, tp_dp_cp_group: Optional[torch.distributed.ProcessGroup] = None,):
     """
     Update the expert bias of the router for a global batch.
     This requires all-reduce of local_tokens_per_expert across TPxCPxDP ranks

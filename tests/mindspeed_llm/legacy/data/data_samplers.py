@@ -22,7 +22,7 @@ from transformers import DataCollatorForSeq2Seq
 
 from megatron.training import get_args, get_tokenizer
 from megatron.core import parallel_state
-from megatron.legacy.data.data_samplers import MegatronPretrainingSampler, MegatronPretrainingRandomSampler
+from megatron.training.datasets.data_samplers import MegatronPretrainingSampler, MegatronPretrainingRandomSampler
 from mindspeed_llm.tasks.preprocess.collator import PairwiseDataCollatorWithPadding
 
 

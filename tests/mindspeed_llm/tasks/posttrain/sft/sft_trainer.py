@@ -14,10 +14,10 @@ from megatron.core.models.gpt.gpt_layer_specs import (
 from megatron.core.transformer.spec_utils import import_module
 from megatron.training import get_args, get_timers, print_rank_0
 from megatron.training.arguments import core_transformer_config_from_args
-from megatron.training.utils import average_losses_across_data_parallel_group, get_batch_on_this_cp_rank
+from megatron.training.utils import average_losses_across_data_parallel_group, get_batch_on_this_cp_rank, get_ring_degree
 from megatron.training.yaml_arguments import core_transformer_config_from_yaml
 
-from mindspeed.core.context_parallel.get_batch_utils import get_ring_degree, set_actual_seq_len
+from mindspeed.core.context_parallel.get_batch_utils import set_actual_seq_len
 from mindspeed.core.context_parallel.utils import pad_data
 
 try:

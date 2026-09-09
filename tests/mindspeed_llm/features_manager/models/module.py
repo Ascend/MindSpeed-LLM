@@ -53,8 +53,3 @@ class ModuleFeature(MindSpeedFeature):
                            help='no enable linear_qkv')
         group.add_argument('--fc-type', type=str, default=None,
                            help='Specifies the internal structure of the MLP module.')
-
-    def register_patches(self, patch_manager, args):
-        from mindspeed_llm.core.models.common.rms_norm import rms_norm_init_wrapper, rms_norm_forward
-        patch_manager.register_patch('megatron.legacy.model.rms_norm.RMSNorm.__init__', rms_norm_init_wrapper)
-        patch_manager.register_patch('megatron.legacy.model.rms_norm.RMSNorm.forward', rms_norm_forward)

@@ -5,7 +5,7 @@ from megatron.core.transformer.transformer_layer import TransformerLayerSubmodul
 from megatron.core.transformer.transformer_layer import TransformerLayer as MegatronTransformerLayer
 from megatron.core.transformer.transformer_config import TransformerConfig
 from megatron.core.transformer.moe.moe_layer import MoELayer
-from megatron.core.transformer.moe.experts import GroupedMLP, SequentialMLP
+from megatron.core.transformer.moe.experts import TEGroupedMLP, SequentialMLP
 from megatron.core.utils import make_viewless_tensor
 from megatron.training import get_args
 
@@ -29,7 +29,7 @@ class HunyuanLargeTransformerLayer(MegatronTransformerLayer):
  
         # For mcore activation re-computation
         if self.mlp.__class__ is MoELayer:
-            if self.mlp.experts.__class__ is GroupedMLP:
+            if self.mlp.experts.__class__ is TEGroupedMLP:
                 self.mlp.experts.layer_number = self.layer_number
             if self.mlp.experts.__class__ is SequentialMLP:
                 for expert in self.mlp.experts.local_experts:

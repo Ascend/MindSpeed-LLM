@@ -16,7 +16,7 @@
 import torch.nn as nn
 
 from megatron.core.transformer.transformer_config import TransformerConfig
-from megatron.legacy.model.rms_norm import RMSNorm
+from mindspeed.core.fusions.fused_rms_norm import RMSNorm
 from megatron.training import get_args
 from mindspeed.core.tensor_parallel.tp_2d.group_api_2d import TPYCollectiveComm
 from mindspeed.core.tensor_parallel.tp_2d.layernorm_2d import LayerNorm2D
@@ -57,6 +57,7 @@ class PTNorm:
                     dim=hidden_size,
                     eps=eps,
                     sequence_parallel=config.sequence_parallel,
+                    config=config,
                 )
         else:
             raise Exception('Only LayerNorm and RMSNorm are curently supported')

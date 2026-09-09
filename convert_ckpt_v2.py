@@ -2,12 +2,20 @@
 import argparse
 import logging as logger
 import time
-from mindspeed_llm.tasks.checkpoint.convert_hf2mg import Hf2MgConvert
-from mindspeed_llm.tasks.checkpoint.convert_mg2hf import Mg2HfConvert
-from mindspeed_llm.tasks.checkpoint.convert_ckpt_mamba2 import MambaConverter
-from mindspeed_llm.tasks.checkpoint.convert_ckpt_longcat import LongCatConverter
-from mindspeed_llm.tasks.checkpoint.convert_ckpt_deepseek4 import DeepSeek4Converter
-from mindspeed_llm.training.utils import auto_coverage
+import os
+import sys
+
+_IS_018 = os.environ.get("MINDSPEED_LLM_VERSION", "012") == "018"
+if _IS_018:
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "tests"))
+from mindspeed_llm.tasks.checkpoint.convert_hf2mg import Hf2MgConvert  # noqa: E402
+from mindspeed_llm.tasks.checkpoint.convert_mg2hf import Mg2HfConvert  # noqa: E402
+
+if not _IS_018:
+    from mindspeed_llm.tasks.checkpoint.convert_ckpt_mamba2 import MambaConverter
+from mindspeed_llm.tasks.checkpoint.convert_ckpt_longcat import LongCatConverter  # noqa: E402
+from mindspeed_llm.tasks.checkpoint.convert_ckpt_deepseek4 import DeepSeek4Converter  # noqa: E402
+from mindspeed_llm.training.utils import auto_coverage  # noqa: E402
 
 
 def get_args():
@@ -151,7 +159,9 @@ def main():
     args = get_args()
     logger.info(f"Arguments: {args}")
     if args.model_type_hf == 'mamba2':
-        converter = MambaConverter(args)
+        if _IS_018:
+            raise ValueError('mamba2 checkpoint conversion is not supported in 018 mode (MambaModel feature removed)')
+        converter = MambaConverter(args)  # pylint: disable=possibly-used-before-assignment
     elif args.model_type_hf == 'longcat':
         converter = LongCatConverter(args)
     elif args.model_type_hf in ('deepseek4', 'deepseek4_base'):

@@ -45,13 +45,14 @@ from megatron.core.parallel_state import is_pipeline_last_stage
 from tqdm import tqdm
 
 from mindspeed.core.context_parallel.utils import pad_data
-from mindspeed.core.context_parallel.get_batch_utils import set_actual_seq_len, get_ring_degree
+from mindspeed.core.context_parallel.get_batch_utils import set_actual_seq_len
 from mindspeed.utils import (
     set_position_ids,
     _get_batch_on_this_cp_rank_in_megatron_cp,
     _get_batch_on_this_cp_rank_in_hybrid_cp_general,
     _get_batch_on_this_cp_rank_in_hybrid_cp,
     broadcast_dynamic,
+    get_ring_degree
 )
 from mindspeed.core.tensor_parallel_y_union_cp import TensorParallelYUnionCP
 from mindspeed.model.transformer import set_attention_mask
@@ -410,7 +411,7 @@ def unwrap_model_wrapper(fn):
     @wraps(fn)
     def wrapper(model, module_instances=None):
         if not module_instances:
-            module_instances = megatron.training.utils.ALL_MODULE_WRAPPER_CLASSNAMES
+            return fn(model)
         return fn(model, module_instances)
 
     return wrapper

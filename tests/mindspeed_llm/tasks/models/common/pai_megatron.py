@@ -17,7 +17,7 @@ from functools import partial
 import torch
 from megatron.training import get_args
 from megatron.core.transformer.moe.moe_utils import switch_load_balancing_loss_func
-from megatron.core.transformer.moe.moe_utils import topk_softmax_with_capacity
+from megatron.elastification.flextron_elasticity_hooks import topk_softmax_with_capacity
 
 def pai_megatron_aux_loss(self, logits: torch.Tensor):
     probs, routing_map, tokens_per_expert = topk_softmax_with_capacity(
