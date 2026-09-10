@@ -1,6 +1,16 @@
 from mindspeed.features_manager.feature import MindSpeedFeature
 
 
+def _get_soc_name():
+    """Return the CANN runtime SoC name without importing ACL unless needed."""
+    try:
+        import acl
+    except ImportError as exc:
+        raise RuntimeError("--use-fused-compressor requires the CANN ACL Python package.") from exc
+
+    return acl.get_soc_name()
+
+
 class DSAIndexerFeature(MindSpeedFeature):
     def __init__(self):
         super().__init__(feature_name="dsa_indexer", optimization_level=0)
@@ -38,6 +48,12 @@ class DSAIndexerFeature(MindSpeedFeature):
         # compress arguments
         group.add_argument(
             '--kv-compress', action='store_true', default=False, help='Apply compress to kv computations.'
+        )
+        group.add_argument(
+            '--use-fused-compressor',
+            action='store_true',
+            default=False,
+            help='Use the A5-only fused Compressor/CompressorGrad operator for DeepSeek-V4 KV compression.',
         )
         group.add_argument('--compress-ratios', type=int, nargs='+', default=None, help='Compress ratios of layers.')
         group.add_argument('--max-batch-size', type=int, default=4, help='rope head dim.')
@@ -98,6 +114,15 @@ class DSAIndexerFeature(MindSpeedFeature):
         )
 
     def validate_args(self, args):
+        if getattr(args, 'use_fused_compressor', False):
+            if not args.kv_compress:
+                raise ValueError("--use-fused-compressor requires --kv-compress.")
+            soc_name = _get_soc_name()
+            if not isinstance(soc_name, str) or not soc_name.startswith('Ascend950'):
+                raise ValueError(
+                    f"--use-fused-compressor is supported only on A5 (Ascend 950), but the current SoC is {soc_name!r}."
+                )
+
         if args.use_fused_lightning_indexer != args.use_fused_lightning_indexer_loss:
             from mindspeed_llm.training.utils import print_rank0_by_args
 

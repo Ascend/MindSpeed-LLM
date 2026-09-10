@@ -116,6 +116,134 @@ class Compressor(MegatronModule):
                 self.x_float_checkpoint.discard_output_and_register_recompute(hook_tensor)
             self.x_float_checkpoint = None
 
+    def _forward_fused_tnd(self, x: torch.Tensor, start_pos: int, freqs_cis: torch.Tensor, packed_seq_params):
+        """Run stateless fused compression for packed TND input.
+
+        The fused operator covers projection, APE, optional overlap, softmax,
+        and weighted reduction. RMSNorm, RoPE, and activation rotation remain
+        here so this path has the same public output as :meth:`_forward_tnd`.
+        ``forward`` guarantees that ``start_pos`` is zero for this path.
+        """
+        from mindspeed_llm.ops.npu_compressor import npu_compressor
+
+        ratio, coff = self.compress_ratio, 1 + self.overlap
+        dtype = x.dtype
+        # Megatron packed metadata may contain cumulative sequence ends without
+        # the leading zero, whereas the fused TND operator requires [0, ...].
+        cu_seqlens = packed_seq_params.cu_seqlens_kv
+        if cu_seqlens[0] != 0:
+            cu_seqlens = torch.cat([cu_seqlens.new_zeros(1), cu_seqlens])
+
+        # Megatron represents TND hidden states as [T, 1, H]; aclnnCompressor
+        # uses the packed [T, H] form and obtains batch boundaries separately.
+        x_fused = x.squeeze(1) if x.dim() == 3 and x.shape[1] == 1 else x
+        if x_fused.dim() != 2:
+            raise ValueError(f"Packed fused compressor expects [T,1,H] or [T,H], got {tuple(x.shape)}.")
+
+        # All tokens in every packed segment participate in this stateless
+        # prefill. Each packed sequence starts at logical position zero, which
+        # matches the start_pos == 0 restriction enforced by forward().
+        seqused = cu_seqlens[1:] - cu_seqlens[:-1]
+        start_positions = torch.zeros_like(seqused, dtype=torch.int32)
+        kv = npu_compressor(
+            x_fused,
+            self.wkv.weight,
+            self.wgate.weight,
+            self.ape,
+            ratio,
+            coff,
+            cu_seqlens=cu_seqlens,
+            seqused=seqused,
+            start_pos=start_positions,
+        )
+
+        # Packed output capacity includes padding at the end. The useful prefix
+        # contains floor(sequence_length / ratio) rows for each sequence, in
+        # batch order; incomplete trailing windows must not reach attention.
+        valid_tokens = sum(int(length.item()) // ratio for length in seqused)
+        if valid_tokens == 0:
+            return None
+        kv = kv[:valid_tokens].unsqueeze(1)
+
+        # A compressed row is anchored at the first token of its window. Build
+        # the same packed RoPE positions as the eager implementation, resetting
+        # the window calculation at every cu_seqlens boundary.
+        compressed_freqs = []
+        for i in range(seqused.numel()):
+            seq_start = int(cu_seqlens[i].item())
+            seq_len = int(seqused[i].item())
+            cutoff = seq_start + seq_len - seq_len % ratio
+            compressed_freqs.append(freqs_cis[seq_start:cutoff:ratio])
+        freqs_cis = torch.cat(compressed_freqs, dim=0)
+        kv = self.norm(kv.to(dtype))
+        kv[..., -self.rope_head_dim :] = apply_rotary_emb_tnd(kv[..., -self.rope_head_dim :], freqs_cis)
+        if self.rotate:
+            kv = rotate_activation(kv)
+        return kv
+
+    def _forward_fused_sbh(self, x: torch.Tensor, start_pos: int, freqs_cis: torch.Tensor):
+        """Run stateless fused compression for fixed-length SBH input.
+
+        aclnnCompressor consumes BSH, so this method also owns the layout
+        conversion and mirrors the eager path's SP/CP gather-and-reshard rules.
+        RMSNorm, RoPE, and activation rotation are deliberately not fused.
+        """
+        from mindspeed_llm.ops.npu_compressor import npu_compressor
+
+        ratio, coff = self.compress_ratio, 1 + self.overlap
+        dtype = x.dtype
+
+        # Match the existing SP/CP compressor semantics: compress the globally
+        # ordered sequence, then return this rank's shard for the later gather.
+        x_sbh = x
+        use_sequence_parallel = mpu.get_tensor_and_context_parallel_world_size() > 1
+        if use_sequence_parallel:
+            x_sbh = gather_from_sp_cp(x_sbh)
+        # The non-packed operator contract is [B, S, H], while the model keeps
+        # activations in sequence-major [S, B, H] layout.
+        x_bsh = x_sbh.transpose(0, 1).contiguous()
+        batch_size, seq_len = x_bsh.shape[:2]
+        # Only complete compression windows produce attention-visible rows.
+        # The operator allocates ceil(S / ratio), so the result is sliced below.
+        valid_tokens = seq_len // ratio
+        if valid_tokens == 0:
+            return None
+        seqused = torch.full((batch_size,), seq_len, dtype=torch.int32, device=x.device)
+        start_positions = torch.zeros_like(seqused)
+        kv = npu_compressor(
+            x_bsh,
+            self.wkv.weight,
+            self.wgate.weight,
+            self.ape,
+            ratio,
+            coff,
+            seqused=seqused,
+            start_pos=start_positions,
+        )[:, :valid_tokens]
+
+        # Recreate the eager compressor's distributed output: first restore
+        # sequence-major order, then apply CP permutation and select this TP
+        # rank's sequence shard. CSA gathers these compressed shards later.
+        kv = kv.transpose(0, 1).contiguous()
+        if use_sequence_parallel:
+            kv = permute_cp_shard(kv, reorder=False)
+            tp_size = mpu.get_tensor_model_parallel_world_size()
+            local_len = kv.shape[0] // tp_size
+            tp_rank = mpu.get_tensor_model_parallel_rank()
+            kv = kv[tp_rank * local_len : (tp_rank + 1) * local_len]
+        kv = kv.transpose(0, 1).contiguous()
+        kv = self.norm(kv.to(dtype))
+
+        # Each output row represents one ratio-sized window and uses the RoPE
+        # position of that window's first token. After resharding only the local
+        # number of frequencies is required.
+        local_compressed_len = kv.shape[1]
+        freqs_cis = freqs_cis[: local_compressed_len * ratio : ratio]
+        kv[..., -self.rope_head_dim :] = apply_rotary_emb(kv[..., -self.rope_head_dim :], freqs_cis)
+        if self.rotate:
+            kv = rotate_activation(kv)
+        return kv.transpose(0, 1).contiguous()
+
     def _forward_tnd(self, x: torch.Tensor, start_pos: int, freqs_cis: torch.Tensor, packed_seq_params):
         assert start_pos == 0, "TND format only supports start_pos == 0"
 
@@ -182,6 +310,15 @@ class Compressor(MegatronModule):
         return kv
 
     def forward(self, x: torch.Tensor, start_pos: int, freqs_cis: torch.Tensor, packed_seq_params=None):
+        if getattr(get_args(), 'use_fused_compressor', False):
+            if start_pos != 0:
+                raise ValueError("--use-fused-compressor currently supports prefill/training with start_pos == 0 only.")
+            self.x_float_checkpoint = None
+            if packed_seq_params is not None:
+                return self._forward_fused_tnd(x, start_pos, freqs_cis, packed_seq_params)
+            else:
+                return self._forward_fused_sbh(x, start_pos, freqs_cis)
+
         if packed_seq_params is not None:
             self.x_float_checkpoint = None
             return self._forward_tnd(x, start_pos, freqs_cis, packed_seq_params)
