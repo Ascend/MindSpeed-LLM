@@ -1,4 +1,4 @@
-# MindSpeed LLM Evaluation Support
+# MindSpeed-LLM Evaluation Support
 
 ## Supported Benchmarks
 
@@ -6,16 +6,16 @@ MindSpeed LLM supports evaluating the accuracy of LLMs on public benchmark datas
 
 | Benchmark   | Download Link                                                               | Validation Set | MindSpeed LLM                                                               | OpenCompass                                                      |
 |-------------|---------------------------------------------------------------------------|------|-----------------------------------------------------------------------------|------------------------------------------------------------------|
-| MMLU        | [HuggingFace](https://huggingface.co/datasets/cais/mmlu/resolve/main/data.tar?utm_source=chatgpt.com)            | test | [45.73%](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.0.0/examples/mcore/llama2/evaluate_llama2_7b_mmlu_ptd.sh)     | [45.3%](https://hub.opencompass.org.cn/dataset-detail/MMLU)      |
-| CEval       | [HuggingFace](https://huggingface.co/datasets/ceval/ceval-exam/tree/main) | val  | [33.87%](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.0.0/examples/mcore/llama2/evaluate_llama2_7b_ceval_ptd.sh)    | [32.5%](https://hub.opencompass.org.cn/dataset-detail/C-Eval)    |
+| MMLU        | [MMLU Dataset](https://huggingface.co/datasets/cais/mmlu/resolve/main/data.tar?utm_source=chatgpt.com)     | test | [45.73%](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.0.0/examples/mcore/llama2/evaluate_llama2_7b_mmlu_ptd.sh)     | [45.3%](https://hub.opencompass.org.cn/dataset-detail/MMLU)      |
+| CEval       | [Hugging Face](https://huggingface.co/datasets/ceval/ceval-exam/tree/main) | val  | [33.87%](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.0.0/examples/mcore/llama2/evaluate_llama2_7b_ceval_ptd.sh)    | [32.5%](https://hub.opencompass.org.cn/dataset-detail/C-Eval)    |
 | BoolQ       | [GitHub](https://github.com/google-research-datasets/boolean-questions?tab=readme-ov-file#dataset-links)                       | dev  | [75.44%](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.0.0/examples/mcore/llama2/evaluate_llama2_7b_boolq_ptd.sh)    | [74.9%](https://hub.opencompass.org.cn/dataset-detail/BoolQ)     |
 | BBH         | [GitHub](https://github.com/suzgunmirac/BIG-Bench-Hard/tree/main/bbh)     | test | [34.4%](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.0.0/examples/mcore/llama2/evaluate_llama2_7b_bbh_ptd.sh)       | [32.5%](https://hub.opencompass.org.cn/dataset-detail/BBH)       |
 | AGIEval     | [GitHub](https://github.com/ruixiangcui/AGIEval/tree/main)                | test | [20.6%](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.0.0/examples/mcore/llama2/evaluate_llama2_7b_agieval_ptd.sh)   | [20.6%](https://hub.opencompass.org.cn/dataset-detail/AGIEval)   |
 | HumanEval   | [GitHub](https://github.com/openai/human-eval/tree/master/data)           | test | [12.8%](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.0.0/examples/mcore/llama2/evaluate_llama2_7b_humaneval_ptd.sh) | [12.2%](https://hub.opencompass.org.cn/dataset-detail/HumanEval) |
-| CMMLU       | [Kaggle](https://www.kaggle.com/datasets/ginrawin/ceval-exam)        | test | -- | -- |
+| CMMLU       | [GitHub](https://github.com/haonan-li/CMMLU)        | test | -- | -- |
 | GSM8k       | [GitHub](https://github.com/openai/grade-school-math/tree/master/grade_school_math/data)     | -- | -- | -- |
 | HellaSwag   | [GitHub](https://github.com/rowanz/hellaswag)                             | -- | -- | -- |
-| NeedleBench | [HuggingFace](https://huggingface.co/datasets/opencompass/NeedleBench/tree/main)     | -- | -- | -- |
+| NeedleBench | [Hugging Face](https://huggingface.co/datasets/opencompass/NeedleBench/tree/main)     | -- | -- | -- |
 
 The following table lists the supported model evaluation statistics for MindSpeed LLM.
 
@@ -38,12 +38,12 @@ The following table lists the supported model evaluation statistics for MindSpee
 | Llama-3.1-8B            | MMLU        | 65.3%     | --                                                                    | Llama-3.1-70B             | MMLU        | 81.8%     | --                                                                                 |
 | Llama-3.2-1B            | MMLU        | 31.8%     | [32.2%](https://modelscope.cn/models/LLM-Research/Llama-3.2-1B)       | Llama-3.2-3B              | MMLU        | 56.3%     | [58.0%](https://modelscope.cn/models/LLM-Research/Llama-3.2-3B)                    |
 | Mistral-7B             | MMLU        | 56.3%     | --                                                                    | Mixtral-8x7B             | MMLU        | 70.6%     | [70.6%](https://paperswithcode.com/sota/multi-task-language-understanding-on-mmlu) |
-| Mistral-8x22B          | MMLU        | 77%       | [77.8%](https://mistral.ai/news/mixtral-8x22b)                       | MiniCPM-MoE-8x2B         | BoolQ       | 83.9%     | --                                                                                 |
+| Mixtral-8x22B          | MMLU        | 77%       | [77.8%](https://mistral.ai/news/mixtral-8x22b)                       | MiniCPM-MoE-8x2B         | BoolQ       | 83.9%     | --                                                                                 |
 | Qwen-7B                | MMLU        | 58.1%     | [58.2%](https://huggingface.co/Qwen/Qwen-7B)                          | Qwen-14B                 | MMLU        | 65.3%     | [66.3%](https://huggingface.co/Qwen/Qwen-14B)                                      |
 | Qwen-72B               | MMLU        | 74.6%     | [77.4%](https://huggingface.co/Qwen/Qwen-72B)                         | Qwen1.5-0.5B             | MMLU        | 39.1%     | --                                                                                 |
 | Qwen1.5-1.8B           | MMLU        | 46.2%     | [46.8%](https://qwenlm.github.io/zh/blog/qwen1.5)                    | Qwen1.5-4B               | MMLU        | 59.0%     | [56.1%](https://qwenlm.github.io/zh/blog/qwen1.5)                                  |
 | Qwen1.5-7B             | MMLU        | 60.3%     | [61.0%](https://qwenlm.github.io/zh/blog/qwen1.5)                    | Qwen1.5-14B              | MMLU        | 67.3%     | [67.6%](https://qwenlm.github.io/zh/blog/qwen1.5)                                  |
-| Qwen1.5-32B            | MMLU        | 72.5%     | [73.4%](https://huggingface.co/Qwen/Qwen-72B)                         | Qwen1.5-72B              | MMLU        | 76.4%     | [77.5%](https://qwenlm.github.io/zh/blog/qwen1.5)                                  |
+| Qwen1.5-32B            | MMLU        | 72.5%     | [73.4%](https://qwenlm.github.io/zh/blog/qwen1.5)                         | Qwen1.5-72B              | MMLU        | 76.4%     | [77.5%](https://qwenlm.github.io/zh/blog/qwen1.5)                                  |
 | Qwen1.5-110B           | MMLU        | 80.4%     | [80.4%](https://qwenlm.github.io/zh/blog/qwen1.5-110b)               | Yi-34B                   | MMLU        | 76.3%     | [75.8%](https://hub.opencompass.org.cn/dataset-detail/MMLU)                        |
 | Qwen2-0.5B             | MMLU        | 44.6%     | [45.4%](https://qwenlm.github.io/zh/blog/qwen2)                      | Qwen2-1.5B               | MMLU        | 54.7%     | [56.5%](https://qwenlm.github.io/zh/blog/qwen2)                                   |
 | Qwen2-7B               | MMLU        | 70.3%     | [70.3%](https://qwenlm.github.io/zh/blog/qwen2)                      | Qwen2-57B-A14B           | MMLU        | 75.6%     | [76.5%](https://qwenlm.github.io/zh/blog/qwen2)                                   |
@@ -70,18 +70,20 @@ The MindSpeed LLM evaluation guide is available here: [Evaluation Guide](./evalu
 
 [MMLU Evaluation](./evaluation_datasets/mmlu_evaluation.md)
 
-[CMMLU Evaluation](./evaluation_datasets/cmmlu_evaluation.md)
+[CEval Evaluation](./evaluation_datasets/ceval_evaluation.md)
 
 [BoolQ Evaluation](./evaluation_datasets/boolq_evaluation.md)
 
-[CEval Evaluation](./evaluation_datasets/ceval_evaluation.md)
-
-[GSM8K Evaluation](./evaluation_datasets/gsm8k_evaluation.md)
-
 [BBH Evaluation](./evaluation_datasets/bbh_evaluation.md)
-
-[HellaSwag Evaluation](./evaluation_datasets/hellaswag_evaluation.md)
 
 [AGI Evaluation](./evaluation_datasets/agi_evaluation.md)
 
 [HumanEval Evaluation](./evaluation_datasets/human_eval_evaluation.md)
+
+[CMMLU Evaluation](./evaluation_datasets/cmmlu_evaluation.md)
+
+[GSM8K Evaluation](./evaluation_datasets/gsm8k_evaluation.md)
+
+[HellaSwag Evaluation](./evaluation_datasets/hellaswag_evaluation.md)
+
+[NeedleBench Accuracy Test](./evaluation_datasets/needlebench-evaluation.md)

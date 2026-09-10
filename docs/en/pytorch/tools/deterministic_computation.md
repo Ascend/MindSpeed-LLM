@@ -2,7 +2,9 @@
 
 ## Use Cases
 
-During training, random factors can make each run differ slightly, which prevents the loss curve, performance curve, and other results from matching exactly. However, repeated runs and comparison experiments sometimes require deterministic results to ensure reproducibility. To meet this need, this feature introduces deterministic computation, which lets users ensure consistent results across multiple training runs on Ascend chips and helps with performance tuning, comparison experiments, and other tasks.
+During training, random factors can make each run differ slightly, which prevents the loss curve, performance curve, and other results from matching exactly.
+However, repeated runs and comparison experiments sometimes require deterministic results to ensure reproducibility.
+To meet this need, this feature introduces deterministic computation, which lets users ensure consistent results across multiple training runs on Ascend chips and helps with performance tuning, comparison experiments, and other tasks.
 
 ## How to Use
 

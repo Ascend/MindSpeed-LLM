@@ -11,14 +11,12 @@ It improves training efficiency and memory utilization. By configuring a `Quanti
 
 | Parameter | Type | Default | Description |
 |------------------------------------------------|------|----------------------|--------------------|
-| `--model.quant_recipe_name` | str | `mxfp8` (required) | Name of the quantization recipe. |
-| `--model.quant_format` | str | `E4M3` | FP8 data format used for quantization. Supported values: `E4M3`, `E5M2`, `HIF8`. |
-| `--model.quant_block_size` | int | `32` | Block size for MXFP8 block-wise quantization. |
-| `--model.quant_apply_modules` | str | `'model.layers.{*}'` | Layers or modules to which quantization applies. |
-| `--model.quant_ignored_modules` | str | `'*lm_head'`, `'*gate'` | List of submodules to which quantization does not apply. |
-| `--model.quant_converters` | str | `'quantize.linear.mx'` | List of quantization converters to use. |
-| `--model.enable_fsdp_low_precision_all_gather` | bool | `True` | Whether to enable low-precision communication. |
-| `--model.fsdp_low_precision_all_gather_mode` | str | `'on-demand'` | FSDP low-precision all-gather mode. Aggregates the weights needed for the forward or backward pass on demand. |
+| --model.quant_recipe_name | str | mxfp8 (required) | Name of the quantization recipe. |
+| --model.quant_apply_modules | str | 'model.layers.{*}' | Layers or modules to which quantization applies. |
+| --model.quant_ignored_modules | str | '*lm_head', '*gate' | List of submodules to which quantization does not apply. |
+| --model.quant_converters | str | 'quantize.linear.mx' | List of quantization converters to use. |
+| --model.enable_fsdp_low_precision_all_gather | bool | True | Whether to enable low-precision communication. |
+| --model.fsdp_low_precision_all_gather_mode | str | 'on-demand' | FSDP low-precision all-gather mode. Aggregates the weights needed for the forward or backward pass on demand. |
 
 ### 2. Core Parameters
 
@@ -39,7 +37,7 @@ The format of `quant_recipe_name` is:
 
 #### Predefined Recipe Example
 
-- `mxfp8`: `dynamic_MX-1-1-32_E4M3_E4M3_E4M3`.
+- `mxfp8`: `dynamic_MX-1-1-32_E4M3_E4M3_E4M3`
   It supports the MX quantization strategy and suits most scenarios.
 
 > ⚠️ Currently, only the `MX` scaling strategy is supported. More strategies and recipes will be available later.
@@ -50,8 +48,8 @@ Specify the layers or modules to which quantization applies. Wildcards are suppo
 **Example:**
 
 ```python
-'model.layers.{*}'          # Applies to all Transformer layers.
-'model.layers.0.self_attn'  # Applies to the self-attention module in layer 0.
+'model.layers.{*}'          # Applies to all Transformer layers
+'model.layers.0.self_attn'  # Applies to the self-attention module in layer 0
 ```
 
 #### ✅ `quant_ignored_modules`
@@ -59,8 +57,8 @@ Specify the layers or modules to which quantization applies. Wildcards are suppo
 Specify the list of submodules to which quantization does not apply. Wildcards are supported.
 
 ```python
-'*q_proj'        # Does not apply quantization to all `q_proj` submodules.
-'*gate'          # Does not apply quantization to the gate part in MLP.
+'*q_proj'        # Does not apply quantization to all `q_proj` submodules
+'*gate'          # Does not apply quantization to the gate part in MLP
 ```
 
 #### ✅ `quant_converters`
@@ -96,15 +94,11 @@ The following example start-up script shows how to configure quantization parame
 ```bash
 QUANT_ARGS="
     --model.quant_recipe_name mxfp8 \
-    --model.quant_format E4M3 \
-    --model.quant_block_size 32 \
     --model.enable_fsdp_low_precision_all_gather \
     --model.quant_converters quantize.linear.mx quantize.moe.mx \
-    --parallel.efsdp_shard_placement_fn shard_by_dim_0 \
-    --parallel.fsdp_implementation custom
+    --parallel.efsdp_shard_placement_fn shard_by_dim_0
 "
 
-bash tests/tools/fsdp2/moe_hf_param_merge_experts.sh
 torchrun $DISTRIBUTED_ARGS train_fsdp2.py \
     examples/fsdp2/qwen3_moe/pretrain_qwen3_30b_4k_fsdp2_A3.yaml \
     $QUANT_ARGS \

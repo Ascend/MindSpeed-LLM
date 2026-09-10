@@ -28,7 +28,7 @@ The following computation-communication fused operators are already supported.
 
 1. `MATMUL_ALL_REDUCE`, which performs computation first and communication second, and its deterministic computation variant.
 2. `MATMUL_REDUCE_SCATTER`, which performs computation first and communication second, and its deterministic computation variant.
-3. `ALL_GATHER_MATMUL` and `ALL_GATHER_MATMUL_V2`s, which perform communication first and computation second. The `V2` interface supports access to the `ALL_GATHER` intermediate result.
+3. `ALL_GATHER_MATMUL` and `ALL_GATHER_MATMUL_V2`, which perform communication first and computation second. The `V2` interface supports access to the `ALL_GATHER` intermediate result.
 4. Quantization scenarios. `MATMUL_ALL_REDUCE` supports W8A16 pseudo-quantization in the FP16 format, with granularities that include per tensor, per channel, and per group.
 
 ## How to Use
@@ -41,9 +41,11 @@ Set `--use-ascend-coc` to enable computation-communication parallelism. Use the 
 
 ### 1. Enabling Computation-Communication Parallelism through a Python Script
 
-```shell
---use-ascend-coc
---coc-parallel-num 2 # or 4, or 8
+Add the following parameters to the script:
+
+```text
+    --use-ascend-coc \
+    --coc-parallel-num 2 # Can be 2, 4, or 8
 ```
 
 ### 2. Enabling Computation-Communication Parallelism through Fused Operators
@@ -54,9 +56,11 @@ ATB installation:
 
 - Install the binary package. After you install the CANN-NNAL package, run `source /usr/local/Ascend/nnal/atb/set_env.sh`.
 
-```shell
---use-ascend-coc
---coc-fused-kernel # Note: Currently, only the TP=8 scenario is supported.
+Add the following parameters to the script:
+
+```text
+    --use-ascend-coc \
+    --coc-fused-kernel # Note: Currently, only the TP=8 scenario is supported
 ```
 
 When you use both `coc-parallel-num > 1` and `coc-fused-kernel`, the `coc-fused-kernel` parameter takes priority and overrides `coc-parallel-num > 1`.
@@ -66,5 +70,7 @@ When you use both `coc-parallel-num > 1` and `coc-fused-kernel`, the `coc-fused-
 This feature is not yet compatible with `--use-ascend-mc2`.
 
 This feature is not yet adapted for MoE models.
+
+The Atlas A2 training series and Atlas A3 training series fully support this feature, while the Ascend 950 series does not support fused operators.
 
 HDK supports versions later than 2024 RC2. CANN supports versions later than 2024 RC4.

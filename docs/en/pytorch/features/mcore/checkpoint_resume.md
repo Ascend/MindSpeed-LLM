@@ -39,7 +39,7 @@ Example
 
 ```bash
 --save /your/checkpoint/path \
---save-interval 500   # Save every 500 steps.
+--save-interval 500   # Save every 500 steps
 ```
 
 Each save produces the following structure:
@@ -48,12 +48,12 @@ Each save produces the following structure:
 /your/checkpoint/path/
 |-- latest_checkpointed_iteration.txt
 |-- iter_0000001/
-|   |-- mp_rank_00_000
+|   |-- mp_rank_00_000/
 |   |   |-- distrib_optim.pt
 |   |   |-- model_optim_rng.pt
 |   |-- ...
 |-- iter_0000500/
-|   |-- mp_rank_00_000
+|   |-- mp_rank_00_000/
 |   |   |-- distrib_optim.pt
 |   |   |-- model_optim_rng.pt
 |   |-- ...
@@ -71,16 +71,13 @@ Key parameters:
 
 ### 3. Loading Weights to Resume Training
 
-To resume training after an interruption, specify `--load` in the pretraining script launch command and point it to the previous save path:
+To resume training after an interruption, specify `--load` in the pretraining script launch command and point it to the previous save path. The following shows a parameter snippet. Incorporate it into the complete pretraining command:
 
-```bash
---use-distributed-optimizer \  # Use the distributed optimizer. Required.
+```text
+CHECKPOINT_PATH=/your/checkpoint/path
 
-...
-
-torchrun ${DISTRIBUTED_ARGS} pretrain_gpt.py \
-    [other parameters...] \
-    --load $CHECKPOINT_PATH \
+--use-distributed-optimizer  # Use the distributed optimizer. Required
+--load ${CHECKPOINT_PATH}
 ```
 
 > The system automatically reads `latest_checkpointed_iteration.txt`, finds the latest iteration, and restores the model and optimizer states.

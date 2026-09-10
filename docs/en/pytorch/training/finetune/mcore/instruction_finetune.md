@@ -5,8 +5,7 @@
 Although LLMs have strong language capabilities after pretraining, they often lack task awareness or interaction skills. Instruction fine-tuning makes models more flexible and better able to generalize across tasks by training them on multi-task, diverse datasets.
 Instruction fine-tuning first collects datasets from multiple tasks and converts each task into instruction-form inputs. This helps LLMs improve generalization across diverse tasks. Specifically, it uses paired instruction and response samples in supervised learning. Therefore, the model learns to perform specific tasks. The basic principle of instruction fine-tuning is as follows.
 
-![General pipeline of instruction tuning](../../../figures/instruction_finetune/General_pipline_of_instruction_tuning.png)
-
+![General pipeline of instruction tuning](../../../figures/instruction_finetune/General_pipeline_of_instruction_tuning.png)
 *Source: [Instruction Tuning for Large Language Models: A Survey.](https://arxiv.org/pdf/2308.10792v5)*
 
 Based on the data format used for instruction fine-tuning, there are three common use cases.
@@ -45,7 +44,7 @@ To improve training efficiency, multiple samples are concatenated and packed int
 
 - Example of the packed input:
 
-    ```json
+    ```text
     <bos> Instruction: Please translate the following sentence into English: We are developing a new artificial intelligence assistant.
     Response: We are developing a new AI assistant. <eos>
     Instruction: Please list three examples of renewable energy.
@@ -71,7 +70,7 @@ This format trains the model for continuous conversation and preserves context i
 
 - Example of the constructed input:
 
-    ```json
+    ```text
     <user>: Hello
     <assistant>: Hello, what can I help you with?
     <user>: What is reinforcement learning?
@@ -82,7 +81,7 @@ This format trains the model for continuous conversation and preserves context i
 
 - The fine-tuning script and data preprocessing method vary by sequence type. The following table uses Qwen3 instruction fine-tuning as an example.
 
-    | Sequence length | Characteristics | Training script | Data preprocessing method |
+    | Sequence length | Characteristics | Training script | Data Preprocessing Method |
     |--------|--------------------------------|----|---------------------------------------------------------|
     | Fixed-length sequence | Low performance. Not recommended. | Do not use the `--no-pad-to-seq-lengths` parameter during training. | Use the default preprocessing script, such as `data_convert_qwen3_instruction.sh`. |
     | Dynamic-length sequence | High sample throughput. | The training script must use the `--no-pad-to-seq-lengths` parameter. | Use the default preprocessing script, such as `data_convert_qwen3_instruction.sh`. |

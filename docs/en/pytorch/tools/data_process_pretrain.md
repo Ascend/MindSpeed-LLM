@@ -23,7 +23,7 @@ cd ..
 ### Pretraining Dataset Processing Method
 
 ```shell
-source /usr/local/Ascend/cann/set_env.sh # Change this to the actual Toolkit package path.
+source /usr/local/Ascend/cann/set_env.sh # Change this to the actual Toolkit package path
 mkdir ./dataset
 
 python ./preprocess_data.py \

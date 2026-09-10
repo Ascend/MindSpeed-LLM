@@ -67,7 +67,6 @@ bash examples/mcore/deepseek3/ckpt_convert_deepseek3_hf2mcore.sh
 (2) Megatron to Hugging Face
 
 - The script converts trained distributed Megatron MCore weights back to the Hugging Face format.
-
 - Configure the <a href="../../mcore/deepseek3/ckpt_convert_deepseek3_mcore2hf.sh">ckpt_convert_deepseek3_mcore2hf.sh</a> script in the DeepSeek-V3 model directory with the same configuration as the training script, and then run the conversion:
 
 ```shell
@@ -182,8 +181,7 @@ Note that QLoRA and LoRA weight conversion does not support this parameter.</td>
     </tr>
     <tr>
       <td>--save-lora-to-hf</td>
-      <td>Add this parameter to convert separate LoRA weights that do not contain base weights to the Hugging Face format. This parameter is incompatible with <code>--moe-grouped-gemm</code>.<br>
-      During LoRA fine-tuning, do not add the <code>--moe-grouped-gemm</code> parameter to the script. You can add <code>--lora-ckpt-filter</code> to the fine-tuning script to save only LoRA weights.</td>
+      <td>Add this parameter to convert separate LoRA weights that do not contain base weights to the Hugging Face format. This parameter is incompatible with <code>--moe-grouped-gemm</code>.During LoRA fine-tuning, do not add the <code>--moe-grouped-gemm</code> parameter to the script. You can add <code>--lora-ckpt-filter</code> to the fine-tuning script to save only LoRA weights.</td>
       <td>✅</td>
     </tr>
   </tbody>
@@ -197,7 +195,7 @@ If LoRA weights contain base weights and they must be merged before conversion t
 
 Example
 
-```bash
+```shell
 python examples/mcore/deepseek3/convert_ckpt_deepseek3_mcore2hf.py \
     --source-tensor-parallel-size 1 \
     --source-pipeline-parallel-size 4 \
@@ -225,7 +223,7 @@ If base weights and separate LoRA weights must be merged and converted to the Hu
 
 Example
 
-```bash
+```shell
 python examples/mcore/deepseek3/convert_ckpt_deepseek3_mcore2hf.py \
     --source-tensor-parallel-size 1 \
     --source-pipeline-parallel-size 4 \
@@ -253,7 +251,7 @@ python examples/mcore/deepseek3/convert_ckpt_deepseek3_mcore2hf.py \
 
 If separate LoRA weights must be converted to the Hugging Face format:
 
-```bash
+```shell
 python examples/mcore/deepseek3/convert_ckpt_deepseek3_mcore2hf.py \
     --source-tensor-parallel-size 1 \
     --source-pipeline-parallel-size 4 \
@@ -295,7 +293,7 @@ If base weights and separate QLoRA weights must be merged and converted to the H
 
 Example
 
-```bash
+```shell
 python examples/mcore/deepseek3/convert_ckpt_deepseek3_mcore2hf.py \
     --source-tensor-parallel-size 1 \
     --source-pipeline-parallel-size 4 \

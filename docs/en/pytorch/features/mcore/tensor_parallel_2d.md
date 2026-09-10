@@ -1,6 +1,6 @@
 # High-Dimensional Tensor Parallelism
 
-Refer to [High-Dimensional Tensor Parallelism](https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/tensor-parallel-2d.md) for an introduction to this feature.
+Refer to [High-Dimensional Tensor Parallelism](https://gitcode.com/Ascend/MindSpeed/blob/26.1.0_core_r0.12.1/docs/en/features/tensor-parallel-2d.md) for an introduction to this feature.
 
 ## Use Cases
 
@@ -28,7 +28,6 @@ These parameters help hide communication overhead for the 2D tensor parallelism 
  - `--enable-overlap-matmul-with-rs`: Hides matmul computation behind reduce-scatter communication during the linear layer forward pass to improve performance.
  - `--coc-fused-kernel`: Enables a fused compute and communication operator during the linear layer forward pass. This fuses matmul with all-gather and reduce-scatter at the operator level for further acceleration. This feature is incompatible with the previous two features and depends on the ATB acceleration library.
  - `--enable-backward-overlap-ag-with-matmul`: Hides all-gather communication behind matmul when computing gradients in the linear layer backward pass to improve performance. This feature depends on the ATB acceleration library.
-
 **Note:** Only one of the three forward-pass optimization parameters, `--enable-overlap-ag-with-matmul`, `--enable-overlap-matmul-with-rs`, and `--coc-fused-kernel`, can be enabled at the same time.
 
 ## Usage Constraints
@@ -37,4 +36,4 @@ These parameters help hide communication overhead for the 2D tensor parallelism 
  - This feature does not yet support MoE models or related features.
  - This feature is recommended for ultra-large dense models and scenarios with a large TP domain, such as Llama-3-405B with `TP=16`. Smaller models and smaller TP settings may reduce performance. Adjust the configuration according to the actual environment.
  - When training Llama-3-405B with `TP=16`, use 2D tensor parallelism and set `tp-x=8` and `tp-y=2`. In other scenarios, you need to tune `tp-x` and `tp-y` based on differences in compute efficiency and communication group partitioning. Some configurations do not guarantee better performance.
- - The fused operator depends on CANN 8.0.1.B020 or later. Install CANN-NNAL and initialize the additional integration step. The fused-operator scenario currently supports only `micro-batch-size=1`.
+ - The fused operator depends on CANN 8.0.1.B020 or later. CANN-NNAL must be installed and initialized with environment variable configuration. The fused-operator scenario currently supports only `micro-batch-size=1`.

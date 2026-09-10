@@ -6,7 +6,7 @@ MindSpeed LLM，作为昇腾大模型训练框架，旨在为华为昇腾硬件�
 
 MindSpeed LLM支持基于Transformer的多种大语言模型（Large Language Model，LLM），包括Dense模型和MoE模型等，并提供超过100个主流开源模型及开箱即用的训练脚本，支持模型预训练、微调和高效分布式训练。
 
-MindSpeed LLM是MindSpeed体系下的大语言模型分布式训练框架，原生对接MindSpeed Core训练加速库，面向昇腾硬件，从并行优化、内存优化、通信优化、计算优化四个方面对大模型训练进行优化。
+MindSpeed LLM属于MindSpeed体系下的大语言模型分布式训练框架，提供Megatron训练后端（开启MindSpeed Core加速）与FSDP训练后端（开启FSDP Turbo加速）两种实现，面向昇腾硬件，从并行优化、内存优化、通信优化、计算优化四个维度完成大模型训练优化。
 
 ## MindSpeed LLM架构
 
@@ -20,7 +20,7 @@ MindSpeed LLM架构关系如[图1](#架构图)所示，整体分为四个层次�
     - 训练断点续训、训练最终权重保存
 - **MindSpeed LLM训练后端**
     - **Megatron训练后端**：以Megatron-LM为基座，提供以ModelSpec为模板的模型增量开发方案，支持以周或天为单位完成新模型开发。
-    - **FSDP2训练后端**：以MindSpeed-FSDP为基座，提供直接接入Transformers第三方库的模型增量开发方案，支持以天为单位完成新模型开发。
+    - **FSDP训练后端**：以MindSpeed-FSDP为基座，提供直接接入Transformers第三方库的模型增量开发方案，支持以天为单位完成新模型开发。
 - **MindSpeed LLM训练流程**
     - **分布式预训练**：支持端到端分布式预训练，包含数据处理与主流模型/数据切分方案。
     - **分布式指令微调**：支持多种业界主流的微调训练算法，来达成有竞争力的训练效果。

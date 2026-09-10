@@ -12,7 +12,7 @@
     </tr>
     <tr>
       <th class="firstcol" valign="top" width="26.25%"><p>Product Version</p></th>
-      <td class="cellrowborder" valign="top" width="73.75%"><p>26.0.0</p></td>
+      <td class="cellrowborder" valign="top" width="73.75%"><p>26.1.0</p></td>
     </tr>
     <tr>
       <th class="firstcol" valign="top" width="26.25%"><p>Version Type</p></th>
@@ -24,7 +24,7 @@
     </tr>
     <tr>
       <th class="firstcol" valign="top" width="26.25%"><p>Release Date</p></th>
-      <td class="cellrowborder" valign="top" width="73.75%"><p>April 2026</p></td>
+      <td class="cellrowborder" valign="top" width="73.75%"><p>July 2026</p></td>
     </tr>
     <tr>
       <th class="firstcol" valign="top" width="26.25%"><p>Maintenance</p></th>
@@ -35,34 +35,107 @@
 
 > [!NOTE]
 >
-> For version maintenance of MindSpeed LLM, see [Version Maintenance Policy](https://gitcode.com/Ascend/MindSpeed-LLM/tree/master#%E7%89%88%E6%9C%AC%E7%BB%B4%E6%8A%A4%E7%AD%96%E7%95%A5).
+> For version maintenance of MindSpeed LLM, see [Version Maintenance Policy](../../README_en.md#version-maintenance-policy).
 
 ### Related Product Version Mapping
 
 **Table 1** MindSpeed LLM software version compatibility matrix
 
-| MindSpeed LLM version | MindSpeed Core code branch name | Megatron version | PyTorch version | TorchNPU version | CANN version | Python version |
-| -------------------- | ------------------------------ | ---------------- | --------------- | ----------------------------------- | ------------ | -------------- |
-| master (under development) | master (under development) | core_v0.12.1 | 2.7.1 | In development | In development | Python 3.10 |
-| 26.0.0 (commercial) | 26.0.0_core_r0.12.1 | core_v0.12.1 | 2.7.1 | 26.0.0 | 9.0.0 | Python 3.10 |
-| 2.3.0 (commercial) | 2.3.0_core_r0.12.1 | core_v0.12.1 | 2.7.1 | 7.3.0 | 8.5.0 | Python 3.10 |
-| 2.2.0 (commercial) | 2.2.0_core_r0.12.1 | core_v0.12.1 | 2.7.1 | 7.2.0 | 8.3.RC1 | Python 3.10 |
+| MindSpeed LLM version | MindSpeed Core code branch name | Megatron version | PyTorch version | TorchNPU version | CANN version | Triton-Ascend version | Python version |
+| -------------------- | ------------------------------ | ---------------- | --------------- | ----------------------------------- | ------------ | --------------------- | -------------- |
+| 26.1.0               | 26.1.0_core_r0.12.1            | core_v0.12.1     | 2.7.1           | 26.1.0                             | 9.1.0        | 3.2.2                 | Python 3.10    |
+| 26.0.0               | 26.0.0_core_r0.12.1            | core_v0.12.1     | 2.7.1           | 26.0.0                             | 9.0.0        | 3.2.1                 | Python 3.10    |
 
 > [!NOTE]
 >
-> You can choose the MindSpeed LLM code branch as needed to download the source code and install it.
+> - You can choose the MindSpeed LLM code branch as needed to download the source code and install it.
+> - The Triton-Ascend version is strongly bound to the CANN version. The Triton-Ascend version must correspond to the CANN version one-to-one. For details, see [Triton-Ascend Compatibility](https://triton-ascend.readthedocs.io/en/latest/release_note.html#version-compatibility-matrix).
 
 ## Version Compatibility Information
 
-| MindSpeed LLM version | CANN version | TorchNPU version |
-| -- | -- | -- |
-| 26.0.0 | CANN 9.0.0<br>CANN 8.5.0<br>CANN 8.3.RC1<br>CANN 8.2.RC1<br>CANN 8.1.RC1 | 26.0.0 |
-| 2.3.0 | CANN 8.5.0<br>CANN 8.3.RC1<br>CANN 8.2.RC1<br>CANN 8.1.RC1<br>CANN 8.0.0<br> | 7.3.0 |
-| 2.2.0 | CANN 8.3.RC1<br>CANN 8.2.RC1<br>CANN 8.1.RC1<br>CANN 8.0.0<br>CANN 8.0.RC3<br>CANN 8.0.RC2 | 7.2.0 |
+> [!NOTE]
+>
+> In the tables in this section, "/" indicates incompatibility and "Y" indicates compatibility.
 
-## Version Usage Notes
+**Table 2** MindSpeed LLM and TorchNPU version compatibility
 
-None.
+<table style="table-layout: fixed; width: 750px; text-align:center">
+  <colgroup>
+    <col style="width: 150px">
+    <col style="width: 150px">
+    <col style="width: 150px">
+    <col style="width: 150px">
+    <col style="width: 150px">
+  </colgroup>
+  <thead>
+    <tr>
+      <th rowspan="2">MindSpeed LLM</th>
+      <th colspan="4">TorchNPU version</th>
+    </tr>
+    <tr>
+      <th>7.2.0</th>
+      <th>7.3.0</th>
+      <th>26.0.0</th>
+      <th>26.1.0</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>26.0.0</td>
+      <td>Y</td>
+      <td>Y</td>
+      <td>Y</td>
+      <td>/</td>
+    </tr>
+    <tr>
+      <td>26.1.0</td>
+      <td>Y</td>
+      <td>Y</td>
+      <td>Y</td>
+      <td>Y</td>
+    </tr>
+  </tbody>
+</table>
+
+**Table 3** MindSpeed LLM and CANN version compatibility
+
+<table style="table-layout: fixed; width: 750px; text-align:center">
+  <colgroup>
+    <col style="width: 150px">
+    <col style="width: 150px">
+    <col style="width: 150px">
+    <col style="width: 150px">
+    <col style="width: 150px">
+  </colgroup>
+  <thead>
+    <tr>
+      <th rowspan="2">MindSpeed LLM</th>
+      <th colspan="4">CANN version</th>
+    </tr>
+    <tr>
+      <th>8.3.RCX</th>
+      <th>8.5.X</th>
+      <th>9.0.X</th>
+      <th>9.1.X</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>26.0.0</td>
+      <td>Y</td>
+      <td>Y</td>
+      <td>Y</td>
+      <td>/</td>
+    </tr>
+    <tr>
+      <td>26.1.0</td>
+      <td>Y</td>
+      <td>Y</td>
+      <td>Y</td>
+      <td>Y</td>
+    </tr>
+  </tbody>
+</table>
 
 ## Update Notes
 
@@ -70,16 +143,16 @@ None.
 
 | Component | Description | Purpose |
 | -- | -- | -- |
-| MindSpeed LLM | Added FSDP2 training support | Supports Qwen3-30B, Qwen3-32B, Qwen3-235B, and Qwen3-Next model training |
-| MindSpeed LLM | Added 128K training support | Supports ultra-long sequence training for gpt-oss and DeepSeekV3.2 models |
-| MindSpeed LLM | Improved tool efficiency | Supports combined weight conversion and training, and combined data preprocessing and training |
-| MindSpeed LLM | Security hardening | Supports PMCC protection for LLM fine-tuning |
+| MindSpeed LLM | Added model support to the Megatron training backend | Supports Seed-OSS and GLM5 model training |
+| MindSpeed LLM | Improved tool efficiency | Supports asynchronous weight saving |
+| MindSpeed LLM | Added hardware support | Supports <term>Ascend 950 products</term> |
 
 ### Removed Features
 
 | Component | Description | Purpose |
 | -- | -- | -- |
-| MindSpeed LLM | Model retirement | Dense model retirement list:<br>Llama-2-34B<br>Llama-3-8B/70B<br>Llama-3.1-8B/50B/70B/200B<br>Llama-3.2-1B/3B<br>Llama-3.3-70B-Instruct<br>ChatGLM3-6B<br>GLM4-9B<br>Baichuan2-7B/13B<br>InternLM2.5-1.8B/7B/20B<br>Qwen2.5-0.5B/1.5B/3B/7B/14B/32B<br>Qwen3-8B (Megatron FSDP2)<br><br>MoE model retirement list:<br>Qwen3-30B (Megatron FSDP2)<br>GPT4-MoE-175B<br>Hunyuan-389B |
+| MindSpeed LLM | Model retirement | Model retirement list:<br>InternLM3-8B<br>Llama-2-7B/70B<br>Llama-3.1-405B<br>Mamba2-2.7B/8B<br>Mamba2-Hybrid-8B |
+| MindSpeed LLM | Feature retirement | Retired QLoRA and related scripts |
 
 ### API Changes
 
@@ -113,19 +186,20 @@ None.
 
 | Document | Summary | Update Notes |
 | -- | -- | -- |
-| [MindSpeed LLM Installation Guide](./pytorch/training/install_guide.md) | This guide helps you install MindSpeed LLM on an NPU. It covers hardware and operating system compatibility, driver firmware and CANN base software installation, and the complete installation process based on the PyTorch framework. It helps you quickly build a distributed LLM training environment. | - |
-| [Quick Start: Qwen3-8B Model Pretraining and Fine-Tuning](./pytorch/training/quick_start.md) | Using Qwen3-8B as an example, this guide helps developers who are new to MindSpeed LLM complete pretraining and fine-tuning tasks on the NPU. It helps you quickly get started with distributed LLM training. | - |
+| [MindSpeed LLM Installation](./pytorch/training/install_guide.md) | This guide helps you install MindSpeed LLM on an NPU. It covers hardware and operating system compatibility, driver firmware and CANN base software installation, and the complete installation process based on the PyTorch framework. It helps you quickly build a distributed LLM training environment. | The installation operations have been adapted for the version-compatible branch, and Triton-Ascend installation has been added. |
+| [MindSpeed LLM Quick Start (Megatron Training Backend)](./pytorch/training/quick_start.md) | Using Qwen3-8B as an example, this guide helps developers who are new to MindSpeed LLM complete pretraining and fine-tuning tasks on the NPU based on the Megatron training backend. It helps you quickly get started with distributed LLM training. | Data and weights can be loaded online for training on Qwen3 series models. Training operations have been optimized accordingly. |
+| [MindSpeed LLM Quick Start (FSDP2 Training Backend)](./pytorch/training/fsdp2_quick_start.md) | Using Qwen3-8B as an example, this guide helps developers who are new to MindSpeed LLM complete pretraining and fine-tuning tasks on the NPU based on the FSDP2 training backend. It helps you quickly get started with distributed LLM training. | New document. Describes model pretraining and fine-tuning using the FSDP2 backend in MindSpeed LLM. |
 
-## Virus Scan and Vulnerability Fix List
+## Virus Scan Results and Vulnerability Patch List
 
 ### Virus Scan Results
 
-| Antivirus Software Name | Antivirus Software Version | Virus Database Version | Scan Time | Scan Result |
+| Antivirus Software | Antivirus Software Version | Virus Database Version | Scan Time | Scan Result |
 | --- | --- | --- | --- | --- |
-| QiAnXin | 8.0.5.5260 | 2026-04-01 08:00:00.0 | 2026-04-02 | No viruses, no malware |
-| Kaspersky | 12.0.0.6672 | 2026-04-02 10:05:00.0 | 2026-04-02 | No viruses, no malware |
-| Bitdefender | 7.5.1.200224 | 7.100588 | 2026-04-02 | No viruses, no malware |
+| QiAnXin | 8.0.5.5260 | 2026-07-05 08:00:00.0 | 2026-07-06 | No viruses or malware |
+| Kaspersky | 12.0.0.6672 | 2026-07-06 10:03:00 | 2026-07-06 | No viruses or malware |
+| Bitdefender | 7.5.1.200224 | 7.101158 | 2026-07-06 | No viruses or malware |
 
-### Vulnerability Fix List
+### Fixed Vulnerabilities
 
-None.
+None

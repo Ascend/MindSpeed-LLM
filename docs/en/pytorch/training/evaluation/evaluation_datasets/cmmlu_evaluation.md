@@ -4,7 +4,7 @@
 
 ### Problem Description
 
-Chinese Multi-Modal Large-scale Understanding (CMMLU) is an evaluation set designed specifically for LLMs. It aims to comprehensively evaluate knowledge mastery, reasoning ability, and interdisciplinary understanding of an LLM in Chinese contexts. The following sections provide a detailed introduction to the CMMLU evaluation set, especially its subject classifications.
+Chinese Multi-Task Language Understanding (CMMLU) is an evaluation set designed specifically for LLMs. It aims to comprehensively evaluate knowledge mastery, reasoning ability, and interdisciplinary understanding of an LLM in Chinese contexts. The following sections provide a detailed introduction to the CMMLU evaluation set, especially its subject classifications.
 
 ### Features
 
@@ -23,10 +23,12 @@ At present, the MindSpeed LLM repository provides three evaluation modes for CMM
 
 ### 1. Direct Evaluation Mode (Default)
 
-#### Impact
+#### How It Works
 
 - This mode reads the [template file](../../../../../../mindspeed_llm/tasks/evaluation/eval_impl/fewshot_template/cmmlu_5shot_template.json) for public CMMLU evaluation as the evaluation template. It concatenates the template with the question the model needs to answer, then feeds the result to the model for direct evaluation.
+
 - In this mode, the first output of the model is taken as the answer.
+
 - The advantage of this mode is that it is direct and fast. Therefore, it can evaluate the pretrained weights of the model directly.
 
 #### Recommended Parameters
@@ -37,10 +39,12 @@ Set this to 1 or 2.
 
 ### 2. Fine-Tuned Template Evaluation Mode
 
-#### Impact
+#### How It Works
 
 - This mode reads the files with the `_dev.csv` suffix for the corresponding questions in the sibling `dev` folder under the `DATA_PATH` path in your startup script. It uses those files as template questions and processes them before feeding them to the model.
+
 - Unlike direct evaluation mode, this mode shuffles the template questions in the `dev` file based on the seed. After they are concatenated with the questions the model needs to answer and processed through the chat template, the resulting dialogue dictionary is fed into the model for evaluation.
+
 - The advantage of this mode is that evaluation is faster, and it is suitable for evaluating fine-tuned model weights.
 
 #### Recommended Parameters
@@ -59,8 +63,6 @@ Set it to `zh` by default. For English models, you can set it to `en` for evalua
 
 ### 3. Alternative Template Output Mode
 
-#### Impact
-
 Like fine-tuned template evaluation mode, this mode also uses the `_dev.csv` files for the corresponding questions in the sibling `dev` folder under the `DATA_PATH` path in your evaluation script, and uses them as template questions.
 
 Unlike the other modes, this mode does not shuffle the template questions. After the template questions are concatenated with the questions the model needs to answer, the dialogue dictionary is not processed, and the result is fed to the model directly to obtain the forward-pass output.
@@ -75,7 +77,7 @@ Set this to 128 or higher.
 
 `--alternative-prompt`
 
-Enable Alternative Template Output Mode.
+Set it to `true` to enable Alternative Template Output Mode.
 
 `--eval-language`
 
@@ -88,38 +90,49 @@ The tasks in the CMMLU evaluation set are classified by subject area and cover a
 ### Humanities and Social Sciences
 
 - History: Tests the understanding of the model of Chinese historical events, figures, and timelines.
+
 - Literature: Evaluates the understanding of the model of classic literary works, poetry, and idioms.
+
 - Philosophy: Tests the understanding of the model of philosophical ideas, ethics, and logical reasoning.
+
 - Law: Evaluates the understanding of the model of legal provisions, cases, and legal theory.
 
 ### Natural Sciences
 
 - Mathematics: Tests the mathematical calculation and logical reasoning abilities of the model.
+
 - Physics: Evaluates the understanding of the model of physical laws and phenomena.
+
 - Chemistry: Tests the understanding of the model of chemical elements, reactions, and molecular structures.
+
 - Biology: Evaluates the understanding of the model of biological concepts and ecosystems.
 
 ### Engineering and Technology
 
 - Computer science: Tests the understanding of the model of programming, algorithms, and computer system principles.
+
 - Engineering: Evaluates the understanding of the model of mechanical, electrical, and civil engineering principles.
 
 ### Medicine and Health
 
 - Medicine: Tests the understanding of the model of diseases, diagnosis, and treatment methods.
+
 - Psychology: Evaluates the understanding of the model of psychological phenomena and behavioral patterns.
 
 ### Economics and Management
 
 - Economics: Tests the understanding of the model of economic theory, market mechanisms, and policy.
+
 - Management: Evaluates the understanding of the model of business management, organizational behavior, and strategic planning.
 
 ### Arts and Culture
 
 - Art: Tests the understanding of the model of art forms such as painting, music, and film.
+
 - Culture: Evaluates the understanding of the model of Chinese traditional culture, customs, and social phenomena.
 
 ### General Knowledge and Interdisciplinary Topics
 
 - Common-sense reasoning: Tests the understanding of the model of everyday common sense and logical reasoning.
+
 - Interdisciplinary questions: Evaluates the ability of the model to perform integrated analysis across multiple subject areas.

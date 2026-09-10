@@ -6,11 +6,11 @@ To reduce NPU memory usage during LLM training, MindSpeed LLM supports multiple 
 
 For cases with very limited memory, full recomputation saves only the input activations for Transformer layers or layer groups, and it recomputes everything else. To enable full recomputation, set `--recompute-granularity full` and choose either the uniform or block method by setting `--recompute-method`.
 
-**Uniform method**:
+**Uniform Method**:
 
-`--recompute-method uniform`: Divides Transformer layers into groups of the equal size, with each group size set by `--recompute-num-layers`, and stores the input and activation values for each group.
+`--recompute-method uniform`: Divides Transformer layers into groups of equal size, with each group size set by `--recompute-num-layers`, and stores the input and activation values for each group.
 
-**Block method**:
+**Block Method**:
 
 `--recompute-method block`: Applies recomputation to the first `--recompute-num-layers` Transformer layers. The remaining layers do not participate in recomputation.
 
@@ -34,4 +34,4 @@ You can enable activation function recomputation together with full recomputatio
 
 Note: The execution priority is to compute the full recomputation layers first and then the activation function recomputation layers. When pipeline parallelism is disabled, the sum of the full recomputation layer count and the activation function recomputation layer count should equal the total number of layers.
 
-For detailed algorithm principles, see [Megatron recomputation](https://arxiv.org/abs/2205.05198) and the MindSpeed [activation function recomputation](https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/activation-function-recompute.md) section.
+For detailed algorithm principles, see [Megatron recomputation](https://arxiv.org/abs/2205.05198) and MindSpeed [activation function recomputation](https://gitcode.com/Ascend/MindSpeed/blob/26.1.0_core_r0.12.1/docs/en/features/activation-function-recompute.md).

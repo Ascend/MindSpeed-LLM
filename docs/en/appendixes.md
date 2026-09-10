@@ -2,7 +2,7 @@
 
 ## FAQ
 
-FAQ, please refer to [FAQ](./FAQ.md).
+Refer to [FAQ](./FAQ.md).
 
 ## Join the Ascend Developer Ecosystem
 
@@ -12,7 +12,7 @@ FAQ, please refer to [FAQ](./FAQ.md).
 
 ## Linearity
 
-Based on the dense `GPT3-175B` LLM, we scaled the MFU and linearity experiments from 128 NPUs to 7,968 NPUs. The experimental data is shown below.
+Based on the dense GPT3-175B LLM, we scaled the Model FLOPs Utilization (MFU) and linearity experiments from 128 NPUs to 7,968 NPUs. The experimental data is shown below.
 
 <p align="center"> <img src="./pytorch/figures/readme/linearity&mfu.png" height="490px" width="715px"> </p>
 

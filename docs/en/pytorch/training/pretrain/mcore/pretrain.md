@@ -17,7 +17,7 @@ Pretraining data is usually plain text and is not task-oriented. For example:
 > [!NOTE]
 >
 > - If you need to use Pack mode during data preprocessing, refer to [Pack Mode for Distributed LLM Pretraining](./pretrain_eod.md).
-> - During pretraining, you can skip loading initial weights. In this case, the model weights are randomly initialized. If you need to load weights, convert them in advance. For details, refer to [Checkpoint Conversion](../../../tools/checkpoint_convert_hf_mcore_large_params.md).
+> - During pretraining, you can skip loading initial weights. In this case, the model weights are randomly initialized. If you need to load weights, convert them in advance. For details, refer to [Weight Conversion](../../../tools/checkpoint_convert_hf_mcore_large_params.md).
 
 The following example uses the Qwen3-8B model to show how to start pretraining. The process for distributed pretraining is as follows:
 
@@ -27,12 +27,14 @@ The following example uses the Qwen3-8B model to show how to start pretraining. 
 
 1. Environment setup
 
-   Before starting pretraining, refer to [MindSpeed LLM Installation Guide](../../install_guide.md) to complete the environment setup, and ensure that the Ascend NPU toolkit environment variables are configured as follows:
+   Before starting pretraining, refer to [MindSpeed LLM Installation](../../install_guide.md) to complete the environment setup, and ensure that the Ascend NPU toolkit environment variables are configured as follows:
 
     ```shell
-    source /usr/local/Ascend/cann/set_env.sh     # Modify this to the actual installed Toolkit package path.
-    source /usr/local/Ascend/nnal/atb/set_env.sh # Modify this to the actual installed nnal package path.
+    source /usr/local/Ascend/cann/set_env.sh
+    source /usr/local/Ascend/nnal/atb/set_env.sh
     ```
+
+   The preceding commands use the default paths for a root user installation. Replace the paths with the actual `set_env.sh` paths.
 
 2. Pretraining data preprocessing
 
@@ -45,12 +47,12 @@ The following example uses the Qwen3-8B model to show how to start pretraining. 
    Then, use the [Enwiki Dataset](https://huggingface.co/datasets/lsb/enwiki20230101) as an example to run data preprocessing. For detailed script configuration, refer to [Qwen3 pretraining data processing script](../../../../../../examples/mcore/qwen3/data_convert_qwen3_pretrain.sh). Modify the following content in the script:
 
     ```bash
-    source /usr/local/Ascend/cann/set_env.sh # Modify this to the actual installed Toolkit package path.
+    source /usr/local/Ascend/cann/set_env.sh # Modify this to the actual installed Toolkit package path
 
     ......
-    --input ./dataset/train-00000-of-00042-d964455e17e96d5a.parquet  # Raw dataset path.
-    --tokenizer-name-or-path ./model_from_hf/qwen3_hf                # Hugging Face tokenizer path.
-    --output-prefix ./dataset/enwiki                                 # Save path.
+    --input ./dataset/train-00000-of-00042-d964455e17e96d5a.parquet  # Raw dataset path
+    --tokenizer-name-or-path ./model_from_hf/qwen3_hf                # Hugging Face tokenizer path
+    --output-prefix ./dataset/enwiki                                 # Save path
     ......
     ```
 
@@ -59,7 +61,7 @@ The following example uses the Qwen3-8B model to show how to start pretraining. 
    - `input`: You can point this parameter to a dataset directory or a specific file. If it is a directory, the tool processes all files. It supports the `.parquet`, `.csv`, `.json`, `.jsonl`, `.txt`, and `.arrow` formats. Files in the same folder must use the same format.
    - `handler-name`: The current pretraining pipeline uses `GeneralPretrainHandler` by default. It supports pretraining-style data and extracts the `text` column, as shown here:
 
-        ```shell
+        ```json
         [
             {"text": "document"},
             {"other keys": "optional content"}
@@ -89,8 +91,8 @@ The following example uses the Qwen3-8B model to show how to start pretraining. 
    - Single-node configuration
 
         ```bash
-        NPUS_PER_NODE=8  # Number of devices on a single node.
-        MASTER_ADDR=localhost
+        NPUS_PER_NODE=8        # Use 8 NPUs on a single node
+        MASTER_ADDR=localhost  # Use this node's IP address or localhost
         MASTER_PORT=6000
         NNODES=1
         NODE_RANK=0
@@ -100,39 +102,39 @@ The following example uses the Qwen3-8B model to show how to start pretraining. 
    - Multi-node configuration
 
         ```bash
-        # Configure distributed parameters according to the actual distributed cluster.
-        NPUS_PER_NODE=8                    # Number of devices on each node.
-        MASTER_ADDR="your master node IP"  # Change this to the IP address of the master node. It cannot be localhost.
+        # Configure distributed parameters according to the actual distributed cluster
+        NPUS_PER_NODE=8                    # Number of devices on each node
+        MASTER_ADDR="your master node IP"  # All nodes must be configured with the master node IP address. It cannot be localhost
         MASTER_PORT=6000
-        NNODES=2                           # Number of nodes in the cluster. Fill in the actual value.
-        NODE_RANK="current node id"        # The RANK of the current node. Different nodes cannot reuse the same value. The master node is 0, and other nodes can be 1, 2, and so on.
+        NNODES=2                           # Configure based on the number of participating nodes. Multi-machine means multi-node
+        NODE_RANK="current node id"        # For multi-node, use (0,NNODES-1). Different nodes cannot be duplicates. The node with NODE_RANK=0 is the master node
         WORLD_SIZE=$(($NPUS_PER_NODE * $NNODES))
         ```
 
    Then, modify the related path parameters and the model partition configuration in the script:
 
     ```bash
-    CKPT_SAVE_DIR="your model save ckpt path" # Path for saving the weights after training completes.
-    DATA_PATH="your data path"                # Dataset path. Fill in the path of the data saved during preprocessing.
-    TOKENIZER_PATH="your tokenizer path"      # Vocabulary path. Fill in the path of the downloaded open-source vocabulary.
-    CKPT_LOAD_DIR="your model ckpt path"      # Weight loading path. Fill in the path of the weights saved during weight conversion.
+    CKPT_SAVE_DIR="your model save ckpt path" # Path for saving the weights after training completes
+    DATA_PATH="your data path"                # Dataset path. Fill in the path of the data saved during preprocessing
+    TOKENIZER_PATH="your tokenizer path"      # Vocabulary path. Fill in the path of the downloaded open-source vocabulary
+    CKPT_LOAD_DIR="your model ckpt path"      # Weight loading path. Fill in the path of the weights saved during weight conversion
 
-    TP=1 # TP size for model weight conversion. In this example, it is 1.
-    PP=4 # PP size for model weight conversion. In this example, it is 4.
+    TP=1 # TP size for model partitioning. In this example, it is 1
+    PP=4 # PP size for model partitioning. In this example, it is 4
     ```
 
-   Other parameter descriptions in the script:
+   Other parameters in the script:
 
    - `DATA_PATH`: The dataset path. Note that the file generated by actual data preprocessing adds `_text_document` to the end. You only need to fill in the dataset file prefix. For example, if the actual relative dataset path is `./dataset/enwiki/enwiki_text_document.bin`, you only need to fill in `./dataset/enwiki/enwiki_text_document`.
    - `CKPT_LOAD_DIR`: Weight load path. During pretraining, you can choose to initialize the model weights randomly. In that case, you do not need to configure this parameter, and you must comment out the `--load ${CKPT_LOAD_DIR} \` line in the pretraining script.
    - `tokenizer-type`: When the parameter value is `PretrainedFromHF`, the tokenizer path only needs to point to the model folder and does not need to point to the `tokenizer.model` file. When the parameter value is not `PretrainedFromHF`, for example `Qwen3Tokenizer`, you need to point to the `tokenizer.model` file. The example is as follows:
 
         ```bash
-        # `tokenizer-type` is `PretrainedFromHF`.
+        # `tokenizer-type` is `PretrainedFromHF`
         TOKENIZER_PATH="./model_from_hf/Qwen3-8B/"
         --tokenizer-name-or-path ${TOKENIZER_PATH}
 
-        # `tokenizer-type` is not `PretrainedFromHF`.
+        # `tokenizer-type` is not `PretrainedFromHF`
         TOKENIZER_MODEL="./model_from_hf/Qwen3-8B/tokenizer.model"
         --tokenizer-model ${TOKENIZER_MODEL} \
         ```
@@ -152,4 +154,4 @@ The following example uses the Qwen3-8B model to show how to start pretraining. 
 
 ## Usage Constraints
 
-If you need to store logs in the script, create a `logs` folder in the run directory.
+If you want to save the training logs to a file, create a `logs` folder in the run directory.

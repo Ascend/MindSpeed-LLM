@@ -47,10 +47,9 @@ Pipeline scheduling scheme: With U-shaped model partitioning, compared with conv
 - Step 2. Merge the two logical pipeline stages. If the task queues of the two stages conflict, optimize the execution order of the tasks.
 
 Example: `PP = 3`, `mbn = 4`
-
 ![image](../../figures/ldt_sft/pipeline_chart.png 'pipeline_chart.png')
 
-The upper figure shows the two logical pipeline stages generated in Step 1, and the lower figure shows the final pipeline scheme after Step 2 merges them. When Step 2 merges the two edge logical pipeline stages, a task conflict appears. During optimization, reorder the tasks in `FS-FE-BS-BE` execution order. The basis for this optimization is that this execution order can increase the tolerable edge-cloud communication latency. For example, the communication for the forward pass of sample 3 can be hidden by the forward computation time of sample 5. This increases the tolerable communication latency and therefore reduces the compute efficiency loss in scenarios with long edge-cloud communication distances.
+In the preceding figure, figure 1  above shows the two logical pipeline stages generated in Step 1, and figure 2 shows the final pipeline scheme after Step 2 merges them. When Step 2 merges the two edge logical pipeline stages, a task conflict appears. During optimization, reorder the tasks in `FS-FE-BS-BE` execution order. The basis for this optimization is that this execution order can increase the tolerable edge-cloud communication latency. For example, the communication for the forward pass of sample 3 can be hidden by the forward computation time of sample 5. This increases the tolerable communication latency and therefore reduces the compute efficiency loss in scenarios with long edge-cloud communication distances.
 
 In summary, the edge pipeline scheduling rules are as follows. The cloud uses conventional PP scheduling for the middle layers.
 
@@ -85,7 +84,6 @@ Effect: Before P2P communication, the existing Megatron logic completes All-Redu
 ### Asymmetric DP
 
 Feature description: This feature supports the edge DP size being smaller than the cloud DP size when the edge does not have enough nodes.
-
 Implementation logic for asymmetric DP: In symmetric DP scenarios, devices in different DP domains process data from their respective DP domains through device multiplexing. Unlike symmetric DP, in asymmetric DP scenarios, the edge processes data from multiple DP domains through time-division multiplexing and communicates with the cloud separately for each domain.
 
 Example: PP=3, TP=8, DP=2, symmetric DP.

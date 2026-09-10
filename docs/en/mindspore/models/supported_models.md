@@ -5,12 +5,12 @@ MindSpore models fall into dense models and sparse models based on how they are 
 > **Table field descriptions**:
 >
 > - **Model**: Model name.
-> - **Download link**: Download address for the model weights. Click it to visit repositories such as Hugging Face directly.
-> - **Script location**: Training script path for the model in this project. You can use it to quickly locate and run the model.
-> - **Sequence length**: Maximum supported text sequence length.
-> - **Training backend**: Only models implemented with `mcore` are supported. Legacy implementations are not planned for support.
-> - **Cluster size**: Recommended cluster configuration for model training, in the format "number of nodes × number of devices".
-> - **Supported version**: Final supported maintenance version. A blank value means the model is maintained from launch through the current master branch.
+> - **Download Link**: Download address for the model weights. Click it to visit repositories such as Hugging Face directly.
+> - **Script Location**: Training script path for the model in this project. You can use it to quickly locate and run the model.
+> - **Sequence Length**: Maximum supported text sequence length.
+> - **Training Backend**: Only models implemented with `mcore` are supported. Legacy implementations are not planned for support.
+> - **Cluster Size**: Recommended cluster configuration for model training, in the format "number of nodes × number of devices".
+> - **Supported Version**: Final supported maintenance version. A blank value means the model is maintained from launch through the current master branch.
 
 ## Dense Models
 
@@ -20,12 +20,12 @@ Dense models are a traditional deep learning model structure. Their neurons are 
   <thead>
     <tr>
       <th>Model</th>
-      <th>Download link</th>
-      <th>Script location</th>
-      <th>Sequence length</th>
-      <th>Training backend</th>
-      <th>Cluster size</th>
-      <th>Supported version</th>
+      <th>Download Link</th>
+      <th>Script Location</th>
+      <th>Sequence Length</th>
+      <th>Training Backend</th>
+      <th>Cluster Size</th>
+      <th>Supported Version</th>
     </tr>
   </thead>
   <tbody>
@@ -323,7 +323,7 @@ Dense models are a traditional deep learning model structure. Their neurons are 
       <td>4K</td>
       <th>MCore</th>
       <td>1x8</td>
-      <td rowspan="1"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.3.0/">2.3.0</a> </td>
+      <td rowspan="1"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.3.0">2.3.0</a> </td>
     </tr>
     <tr>
       <td>32K</td>
@@ -404,7 +404,7 @@ Dense models are a traditional deep learning model structure. Their neurons are 
       <td> 4K</td>
       <th>MCore</th>
       <td>2x8</td>
-      <td rowspan="1"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0">2.2.0</a> </td>
+      <td rowspan="1"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
     </tr>
     <tr>
       <td rowspan="3"><a href="https://huggingface.co/01-ai">Yi1.5</a></td>
@@ -434,7 +434,7 @@ Dense models are a traditional deep learning model structure. Their neurons are 
       <td> 32K</td>
       <th>MCore</th>
       <td>1x8</td>
-      <td rowspan="1"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
+      <td rowspan="1"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0">2.2.0</a> </td>
     </tr>
     <tr>
       <td rowspan="2"><a href="https://huggingface.co/google">Gemma</a></td>
@@ -547,12 +547,12 @@ Sparse models use a sparsely connected neuron structure, where only a small numb
   <thead>
     <tr>
       <th>Model</th>
-      <th>Download link</th>
-      <th>Script location</th>
-      <th>Sequence length</th>
-      <th>Training backend</th>
-      <th>Cluster size</th>
-      <th>Supported version</th>
+      <th>Download Link</th>
+      <th>Script Location</th>
+      <th>Sequence Length</th>
+      <th>Training Backend</th>
+      <th>Cluster Size</th>
+      <th>Supported Version</th>
     </tr>
   </thead>
   <tbody>
@@ -588,7 +588,7 @@ Sparse models use a sparsely connected neuron structure, where only a small numb
       <td> 32K</td>
       <th>MCore</th>
       <td>8x8</td>
-      <td rowspan="3"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0">2.2.0</a> </td>
+      <td rowspan="3"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
     </tr>
     <tr>
       <td rowspan="2"><a href="https://huggingface.co/mistralai/Mixtral-8x22B-v0.1/tree/main">8x22B</a></td>
@@ -608,7 +608,7 @@ Sparse models use a sparsely connected neuron structure, where only a small numb
       <td> 8K </td>
       <th>MCore</th>
       <td> 20x8 </td>
-      <td rowspan="1"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0">2.2.0</a> </td>
+      <td rowspan="1"> <a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/">2.2.0</a> </td>
     </tr>
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/deepseek-ai/DeepSeek-Coder-V2-Base">DeepSeek-V2-coder</a></td>

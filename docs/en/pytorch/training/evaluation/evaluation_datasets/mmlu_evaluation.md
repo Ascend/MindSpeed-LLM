@@ -13,7 +13,7 @@ Massive Multitask Language Understanding (MMLU) evaluation includes a wide range
 
 Each domain also contains multiple specific tasks and questions. Through these diverse tasks, MMLU can evaluate mastery of knowledge and cross-domain generalization ability of a model.
 
-The subject sets included in [STEM](#stem-question-sets), [Humanities](#humanities-question-sets), and [Social Sciences](#social-sciences-question-sets) are listed at the end of this document.
+The subject sets included in [STEM](#STEM), [Humanities](#人文学科), and [Social Sciences](#社会科学) are listed at the end of this document.
 
 The MindSpeed LLM repository currently provides four evaluation modes for MMLU evaluation.
 
@@ -21,7 +21,7 @@ The MindSpeed LLM repository currently provides four evaluation modes for MMLU e
 
 ### 1. Direct Evaluation Mode
 
-#### Impact
+#### Working Principle
 
 This mode reads the publicly available [MMLU evaluation template file](../../../../../../mindspeed_llm/tasks/evaluation/eval_impl/fewshot_template/mmlu_5shot_template.json). It concatenates the template with the question the model needs to answer, then feeds the result to the model for direct evaluation.
 
@@ -37,7 +37,7 @@ Set this to 1 or 2.
 
 ### 2. Fine-Tuned Template Evaluation Mode
 
-#### Impact
+#### Working Principle
 
 This mode reads the files with the `_dev.csv` suffix for the corresponding questions in the sibling `dev` folder under the `DATA_PATH` path in your startup script. It uses those files as templates and preprocesses them before feeding them to the model.
 
@@ -57,7 +57,7 @@ This parameter specifies the model template type. It should match the `--prompt-
 
 ### 3. Alternative Template Output Mode
 
-#### Impact
+#### Instructions
 
 Like fine-tuned template evaluation mode, this mode also uses the `_dev.csv` files for the corresponding questions in the sibling `dev` folder under the `DATA_PATH` path in your evaluation script as template questions.
 
@@ -73,13 +73,13 @@ Set this to 128 or higher.
 
 `--alternative-prompt`
 
-Enable `Alternative Template Output Mode`.
+Set this to `true`.
 
 ### 4. PPL Mode
 
-#### Impact
+#### Instructions
 
-`ppl` is short for perplexity, which is a metric used to evaluate the language modeling ability of a model. This mode also uses the `_dev.csv` files for the corresponding questions in the sibling `dev` folder under the `DATA_PATH` path in your evaluation script as template questions. At this point, we concatenate the n options with the context to form n sequences, then compute the perplexity of the model over those n sequences. We treat the option corresponding to the sequence with the lowest perplexity as the inference result of the model for the question. This evaluation method uses simple post-processing and is highly deterministic.
+`ppl` is short for perplexity, which is a metric used to evaluate the language modeling ability of a model. This mode also uses the `_dev.csv` files for the corresponding questions in the sibling `dev` folder under the `DATA_PATH` path in your evaluation script as template questions. At this point, we concatenate the `n` options with the context to form `n` sequences, then compute the perplexity of the model over those `n` sequences. We treat the option corresponding to the sequence with the lowest perplexity as the inference result of the model for the question. This evaluation method uses simple post-processing and is highly deterministic.
 
 #### Recommended Parameters
 
@@ -89,57 +89,63 @@ Set this to `mmlu_ppl`.
 
 ## MMLU Subsets
 
+<a name="STEM"></a>
+
 ### STEM Question Sets
 
-1. **abstract_algebra** (abstract algebra)
-2. **astronomy** (astronomy)
-3. **college_biology** (college biology)
-4. **college_chemistry** (college chemistry)
-5. **college_computer_science** (college computer science)
-6. **college_mathematics** (college mathematics)
-7. **college_physics** (college physics)
-8. **computer_security** (computer security)
-9. **conceptual_physics** (conceptual physics)
-10. **electrical_engineering** (electrical engineering)
-11. **elementary_mathematics** (elementary mathematics)
-12. **high_school_biology** (high school biology)
-13. **high_school_chemistry** (high school chemistry)
-14. **high_school_computer_science** (high school computer science)
-15. **high_school_mathematics** (high school mathematics)
-16. **high_school_physics** (high school physics)
-17. **high_school_statistics** (high school statistics)
-18. **machine_learning** (machine learning)
+1. `abstract_algebra` (abstract algebra)
+2. `astronomy` (astronomy)
+3. `college_biology` (college biology)
+4. `college_chemistry` (college chemistry)
+5. `college_computer_science` (college computer science)
+6. `college_mathematics` (college mathematics)
+7. `college_physics` (college physics)
+8. `computer_security` (computer security)
+9. `conceptual_physics` (conceptual physics)
+10. `electrical_engineering` (electrical engineering)
+11. `elementary_mathematics` (elementary mathematics)
+12. `high_school_biology` (high school biology)
+13. `high_school_chemistry` (high school chemistry)
+14. `high_school_computer_science` (high school computer science)
+15. `high_school_mathematics` (high school mathematics)
+16. `high_school_physics` (high school physics)
+17. `high_school_statistics` (high school statistics)
+18. `machine_learning` (machine learning)
+
+<a name="人文学科"></a>
 
 ### Humanities Question Sets
 
-1. **formal_logic** (formal logic)
-2. **high_school_european_history** (high school European history)
-3. **high_school_us_history** (high school US history)
-4. **high_school_world_history** (high school world history)
-5. **international_law** (international law)
-6. **jurisprudence** (jurisprudence)
-7. **logical_fallacies** (logical fallacies)
-8. **moral_disputes** (moral disputes)
-9. **moral_scenarios** (moral scenarios)
-10. **philosophy** (philosophy)
-11. **prehistory** (prehistory)
-12. **professional_law** (professional law)
-13. **world_religions** (world religions)
+1. `formal_logic` (formal logic)
+2. `high_school_european_history` (high school European history)
+3. `high_school_us_history` (high school US history)
+4. `high_school_world_history` (high school world history)
+5. `international_law` (international law)
+6. `jurisprudence` (jurisprudence)
+7. `logical_fallacies` (logical fallacies)
+8. `moral_disputes` (moral disputes)
+9. `moral_scenarios` (moral scenarios)
+10. `philosophy` (philosophy)
+11. `prehistory` (prehistory)
+12. `professional_law` (professional law)
+13. `world_religions` (world religions)
+
+<a name="社会科学"></a>
 
 ### Social Sciences Question Sets
 
-1. **clinical_knowledge** (clinical knowledge)
-2. **college_medicine** (college medicine)
-3. **global_facts** (global facts)
-4. **human_aging** (human aging)
-5. **human_sexuality** (human sexuality)
-6. **marketing** (marketing)
-7. **medical_genetics** (medical genetics)
-8. **miscellaneous** (miscellaneous)
-9. **nutrition** (nutrition)
-10. **professional_accounting** (professional accounting)
-11. **professional_medicine** (professional medicine)
-12. **public_relations** (public relations)
-13. **security_studies** (security studies)
-14. **sociology** (sociology)
-15. **us_foreign_policy** (US foreign policy)
+1. `clinical_knowledge` (clinical knowledge)
+2. `college_medicine` (college medicine)
+3. `global_facts` (global facts)
+4. `human_aging` (human aging)
+5. `human_sexuality` (human sexuality)
+6. `marketing` (marketing)
+7. `medical_genetics` (medical genetics)
+8. `miscellaneous` (miscellaneous)
+9. `nutrition` (nutrition)
+10. `professional_accounting` (professional accounting)
+11. `professional_medicine` (professional medicine)
+12. `public_relations` (public relations)
+13. `security_studies` (security studies)
+14. `sociology` (sociology)
+15. `us_foreign_policy` (US foreign policy)

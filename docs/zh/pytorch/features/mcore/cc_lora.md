@@ -7,7 +7,8 @@ LoRA微调算法通过更新附加在冻结预训练模型权重上的低秩矩�
 ## 解决方案
 
 1. 将单一流水优化为通信计算双流水线：
-![Alt text](../../figures/cc_lora/cc_lora.png)
+
+   ![Alt text](../../figures/cc_lora/cc_lora.png)
 
 2. 数学等价方式，合并通信：
 

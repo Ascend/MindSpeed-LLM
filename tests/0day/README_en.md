@@ -106,6 +106,8 @@ The dependencies for these models are listed in the following table.
     <td>Ascend Transformer Boost acceleration library (NNAL)</td>
   </tr>
   <tr>
+  </tr>
+  <tr>
     <td>Python</td>
     <td>3.10</td>
   </tr>

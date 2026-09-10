@@ -17,7 +17,7 @@ The HellaSwag evaluation set focuses on the following aspects:
 5. **High-quality annotation**: The dataset undergoes strict human annotation and verification to ensure accuracy and consistency.
 6. **Suitable for multiple tasks**: It can be used for model training, evaluation, and optimization, and it performs especially well in practical applications such as dialogue systems and intelligent assistants.
 
-Currently, the MindSpeed LLM repository provides the following HellaSwag evaluation mode.
+Currently, the MindSpeed LLM repository supports the following evaluation mode for the HellaSwag evaluation set:
 
 ## Usage
 

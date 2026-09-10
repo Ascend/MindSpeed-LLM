@@ -1,6 +1,6 @@
 # Full Parameter Reference
 
-## Model Arguments (ModelArguments)
+## Model Arguments (`ModelArguments`)
 
 Contains parameters related to model and tokenizer loading and initialization.
 
@@ -24,7 +24,7 @@ Contains parameters related to model and tokenizer loading and initialization.
       <td>model_id</td>
       <td>Optional[Literal[&quot;gpt_oss&quot;, &quot;qwen3&quot;, &quot;qwen3_moe&quot;, &quot;qwen3_next&quot;, &quot;step35&quot;, &quot;mamba3&quot;, &quot;minimax_m27&quot;]]</td>
       <td>None</td>
-      <td>Model type identifier. If you do not configure it, the system runs the native Transformer model forward pass. If you configure it, the system runs the repository's custom model forward pass. To add a new model type, register it in the <code>ModelRegistry</code> class in <code>mindspeed_llm/fsdp2/models/model_registry.py</code>.</td>
+      <td>Model type identifier. If you do not configure it, the system runs the native Transformer model forward pass. If you configure it, the system runs the custom model forward pass of the repository. To add a new model type, register it in the <code>ModelRegistry</code> class in <code>mindspeed_llm/fsdp2/models/model_registry.py</code>.</td>
     </tr>
     <tr>
       <td>init_model_with_meta_device</td>
@@ -124,21 +124,9 @@ Contains parameters related to model and tokenizer loading and initialization.
     </tr>
     <tr>
       <td>quant_recipe_name</td>
-      <td>Literal[&quot;mxfp8&quot;]</td>
+      <td>Optional[Literal[&quot;mxfp8&quot;]]</td>
       <td>None</td>
       <td>The quantization strategy.</td>
-    </tr>
-    <tr>
-      <td>quant_format</td>
-      <td>str</td>
-      <td>&quot;E4M3&quot;</td>
-      <td>FP8 data format used for quantization. Supported values: <code>E4M3</code>, <code>E5M2</code>, <code>HIF8</code>.</td>
-    </tr>
-    <tr>
-      <td>quant_block_size</td>
-      <td>int</td>
-      <td>32</td>
-      <td>Block size for MXFP8 block-wise quantization.</td>
     </tr>
     <tr>
       <td>quant_apply_modules</td>
@@ -173,7 +161,7 @@ Contains parameters related to model and tokenizer loading and initialization.
   </tbody>
 </table>
 
-## Data Arguments (DataArguments)
+## Data Arguments (`DataArguments`)
 
 Contains parameters related to dataset loading, preprocessing, and data formats.
 
@@ -197,7 +185,7 @@ Contains parameters related to dataset loading, preprocessing, and data formats.
       <td>dataset</td>
       <td>Optional[Union[Dict[str, Any], str]]</td>
       <td>None</td>
-      <td>Training dataset. For fine-tuning scenarios, dataset configuration supports inline configuration and registration through <code>dataset_info.json</code>. For pretraining scenarios, enter the raw dataset path directly. For detailed configuration examples, see <a href="../../training/finetune/fsdp2/finetune_fsdp2.md">FSDP2 backend training guide</a>. A simple example is shown here:<pre style="text-align: left;"><code>dataset:<br>&nbsp;&nbsp;file_name: "./my_data.json"   # Data file path.<br>&nbsp;&nbsp;formatting: "alpaca"          # Data format.</code></pre></td>
+      <td>Training dataset. For fine-tuning scenarios, dataset configuration supports inline configuration and registration through <code>dataset_info.json</code>. For pretraining scenarios, enter the raw dataset path directly. For detailed configuration examples, see <a href="../../training/finetune/fsdp2/finetune_fsdp2.md">MindSpeed LLM FSDP2 Backend Training Guide</a>. A simple example is shown here:<pre style="text-align: left;"><code>dataset:<br>&nbsp;&nbsp;file_name: "./my_data.json"   # Data file path<br>&nbsp;&nbsp;formatting: "alpaca"          # Data format</code></pre></td>
     </tr>
     <tr>
       <td>eval_dataset</td>
@@ -329,7 +317,7 @@ Contains parameters related to dataset loading, preprocessing, and data formats.
       <td>enable_thinking</td>
       <td>Optional[bool]</td>
       <td>True</td>
-      <td>Whether to enable thinking mode for inference models. When enabled, the model generates intermediate reasoning steps. True means enabled, False means disabled, and None means the system does not remove the <code>cot</code> tag from the raw data. This is suitable when the raw data contains mixed types.</td>
+      <td>Whether to enable thinking mode for inference models. When enabled, the model generates intermediate reasoning steps. True means enabled, False means disabled, and None means the system does not remove the <code>CoT</code> tag from the raw data. This is suitable when the raw data contains mixed types.</td>
     </tr>
     <tr>
       <td>tokenized_path</td>
@@ -388,7 +376,7 @@ Contains parameters related to dataset loading, preprocessing, and data formats.
   </tbody>
 </table>
 
-## Parallel Arguments (ParallelArguments)
+## Parallel Arguments (`ParallelArguments`)
 
 Contains parameters related to distributed parallel strategies and memory optimization.
 
@@ -452,7 +440,7 @@ Contains parameters related to distributed parallel strategies and memory optimi
     </tr>
     <tr>
       <td>ignored_modules</td>
-      <td>List[str]</td>
+      <td>Optional[List[str]]</td>
       <td>None</td>
       <td>The list of modules that do not enable FSDP.</td>
     </tr>
@@ -537,7 +525,7 @@ Contains parameters related to distributed parallel strategies and memory optimi
   </tbody>
 </table>
 
-## Training Arguments (TrainingArguments)
+## Training Arguments (`TrainingArguments`)
 
 Contains parameters related to training hyperparameters, optimizers, model saving, and logging.
 
@@ -835,7 +823,7 @@ Contains parameters related to performance profiling data collection.
   </tbody>
 </table>
 
-## Inference Arguments (InferenceArguments)
+## Inference Arguments (`InferenceArguments`)
 
 Contains inference-related parameters.
 
@@ -870,7 +858,7 @@ Contains inference-related parameters.
 </tbody>
 </table>
 
-## Optimization Feature Parameters (OptimizationArguments)
+## Optimization Feature Parameters (`OptimizationArguments`)
 
 Contains parameters related to fused operator enablement, memory optimization features, and performance optimization features.
 
@@ -909,6 +897,42 @@ Contains parameters related to fused operator enablement, memory optimization fe
       <td>Whether to enable the FA operator.</td>
     </tr>
     <tr>
+      <td>use_sparse_flash_attn</td>
+      <td>bool</td>
+      <td>False</td>
+      <td>Whether to enable the SFA fused operator. Only supported for DeepSeek-V3.2 and GLM-5 series models.</td>
+    </tr>
+    <tr>
+      <td>use_fused_lightning_indexer</td>
+      <td>bool</td>
+      <td>False</td>
+      <td>Whether to enable the LI fused operator. Only supported for DeepSeek-V3.2 and GLM-5 series models.</td>
+    </tr>
+    <tr>
+      <td>use_fused_lightning_indexer_loss</td>
+      <td>bool</td>
+      <td>False</td>
+      <td>Whether to enable the sparse indexer KL loss fused operator. Only supported for DeepSeek-V3.2 and GLM-5 series models.</td>
+    </tr>
+    <tr>
+      <td>indexer_loss_coeff</td>
+      <td>float</td>
+      <td>1.0</td>
+      <td>The coefficient for the indexer loss.</td>
+    </tr>
+    <tr>
+      <td>pre_tokens</td>
+      <td>int</td>
+      <td>1048576</td>
+      <td>The pre-token dimension of the sliding window in attention computation.</td>
+    </tr>
+    <tr>
+      <td>next_tokens</td>
+      <td>int</td>
+      <td>0</td>
+      <td>The next-token dimension of the sliding window in attention computation.</td>
+    </tr>
+    <tr>
       <td>use_triton_gdn</td>
       <td>bool</td>
       <td>False</td>
@@ -918,11 +942,11 @@ Contains parameters related to fused operator enablement, memory optimization fe
       <td>use_flash_gdn</td>
       <td>bool</td>
       <td>False</td>
-      <td>Whether to enable the AscendC fused operator to accelerate Gated DeltaNet network computation. At most one of this parameter and <code>use_triton_gdn</code> can be enabled.</td>
+      <td>Whether to enable the Ascend C fused operator to accelerate Gated DeltaNet network computation. At most one of this parameter and <code>use_triton_gdn</code> can be enabled.</td>
     </tr>
     <tr>
     <td>chunk_loss_size</td>
-    <td>int</td>
+    <td>Optional[int]</td>
     <td>None</td>
     <td>The sequence length used each time loss is computed. Chunked loss computation can save memory.</td>
     </tr>
@@ -947,7 +971,7 @@ Contains parameters related to fused operator enablement, memory optimization fe
   </tbody>
 </table>
 
-# Megatron Parameter Mapping
+## Megatron Parameter Mapping
 
 <table>
   <thead>
@@ -1039,7 +1063,7 @@ Contains parameters related to fused operator enablement, memory optimization fe
       <td>--log-interval</td>
     </tr>
     <tr>
-      <td>Number of GPUs * per_device_train_batch_size * gradient_accumulation_steps</td>
+      <td>Number of GPUs × per_device_train_batch_size × gradient_accumulation_steps</td>
       <td>--global-batch-size</td>
     </tr>
   </tbody>

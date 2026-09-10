@@ -27,7 +27,7 @@ with async_save_on_cpu(
     depth=depth,
     custom_check_fn=your_check_fn
 ):
-    # The forward pass for one block of the model. This is only an example.
+    # The forward pass for one block of the model. This is only an example
     output = layer(input)
 ```
 

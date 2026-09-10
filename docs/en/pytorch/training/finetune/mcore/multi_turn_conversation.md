@@ -35,8 +35,8 @@ For a detailed introduction to the Alpaca dataset, see the [Alpaca-Style Dataset
 Use the Alpaca dataset with the `history` field to run the following [script](../../../../../../examples/mcore/gemma2/data_convert_gemma2_instruction.sh):
 
 ```shell
-# Download the Alpaca dataset according to the "Dataset Preparation and Processing" section in examples/README.md.
-source /usr/local/Ascend/cann/set_env.sh # Replace this with the actual Toolkit installation path.
+# Download the Alpaca dataset according to the "Dataset Preparation and Processing" section in examples/README.md
+source /usr/local/Ascend/cann/set_env.sh # Replace this with the actual Toolkit installation path
 mkdir ./finetune_dataset
 
 python ./preprocess_data.py \
@@ -49,7 +49,7 @@ python ./preprocess_data.py \
     --handler-name AlpacaStyleInstructionHandler \
     --prompt-type gemma \
     --map-keys '{"history":"histories"}'
-    # --map-keys '{"prompt":"instruction","query":"input","response":"output"}' # Default value. You can omit it.
+    # --map-keys '{"prompt":"instruction","query":"input","response":"output"}' # Default value. You can omit it
 ```
 
 `--map-keys '{"history":"histories"}'`
@@ -101,7 +101,7 @@ CKPT_LOAD_DIR="./model_weights/gemma2-9b-mcore/"
 **Run the multi-turn conversation instruction fine-tuning script.**
 
 ```shell
-bash examples/mcore/gemma2/chat_gemma2_9b_ptd.sh
+bash examples/mcore/gemma2/tune_gemma2_9b_full_ptd.sh
 ```
 
 ## Starting Multi-Turn Conversation

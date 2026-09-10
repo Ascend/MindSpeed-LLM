@@ -1,133 +1,137 @@
-# Training with Online Data and Weight Loading (Train_from_HF)
+# Training with Online Data and Weight Loading
 
 ## Use Cases
 
-In earlier versions, users had to perform weight conversion and data preprocessing offline first. They converted Hugging Face-format weights to the Megatron format, converted the raw dataset to a Megatron-formatted dataset, and then started training. This separate process increased complexity and time overhead.
+Generally, users need to perform weight conversion and data preprocessing offline first, convert Hugging Face-format weights to Megatron format, convert the raw dataset to a Megatron-formatted dataset, and then start the training task. This separate process increases complexity and time cost.
 
-This feature integrates data preprocessing, weight conversion, and training into a single workflow. You can start training with a single script.
+This feature integrates data preprocessing, weight conversion, and training flows. You can start training tasks with a single script.
 
-- The integrated weight conversion training feature supports loading from and saving to Hugging Face during training. If the loading directory contains `.safetensors` files or `.bin` files for a Mamba model, and you do not explicitly set conversion flags, the system automatically enables weight conversion. It converts Hugging Face weights to the Megatron format for training, and after each distributed weight save during training, it converts the weights back to the Hugging Face format. You do not need to run a separate weight conversion step. This provides one-click integration from Hugging Face weights into training tasks.
-- The data preprocessing feature automatically detects and converts raw data files during model training. You do not need to convert the raw data manually. The system determines whether the input path points to a raw data format, such as `.jsonl` or `.parquet`, and automatically completes the data format conversion during training initialization.
+- **Weight conversion and training integration:** Supports loading, converting, and saving weights from Hugging Face. By automatically detecting the weight file format in the load directory, the system can automatically enable relevant conversion functions to achieve bidirectional automatic conversion from Hugging Face weights to the Megatron format and training integration. You do not need to execute a separate weight conversion step, achieving one-click startup from Hugging Face weights to training tasks.
+- **Automatic data preprocessing:** The data preprocessing feature automatically identifies and converts raw data files during model training. You do not need to convert the raw data manually. The system determines whether the input path points to a raw data format (such as `.jsonl`, `.parquet`, and so on) based on the input path, and automatically completes the data format conversion during training initialization.
 
 ## How to Use
 
-### 1. Weight Conversion
+### Weight Conversion and Training Integration
 
-Currently, only standalone storage and shared storage are supported. During training initialization, the system automatically detects whether the training environment uses shared storage.
+Currently, only standalone storage and shared storage modes are supported. During training initialization, the system automatically detects whether the current environment uses shared storage.
 
-The system detects the weight files in the loading directory. If the loading directory contains `.safetensors` files or `.bin` files for a Mamba model, and the user does not explicitly set conversion flags, it automatically enables weight conversion. It converts Hugging Face weights to the Megatron format for training, and after each distributed weight save during training, it converts the weights back to the Hugging Face format.
+The system detects the weight files in the loading directory to infer whether automatic conversion is needed. When the loading directory contains `.safetensors` files or `.bin` format files for Mamba models, and the user does not explicitly set the conversion flag, the system automatically enables the weight conversion feature without requiring manual configuration of other parameters. The system converts Hugging Face-format weights to Megatron-format weights for training, and after each distributed weight save, converts them back to Hugging Face-format weights.
 
-When the `--load` parameter points to a Hugging Face weight path, the path must contain files such as `config.json` for loading parameters. If you do not specify `--model-type-hf`, the system tries to read `{load}/config.json` and infer the supported model type from the configuration file. You must set this parameter manually for Mamba models.
+When the `--load` parameter is set to a Hugging Face weight path, ensure that the path contains configuration files such as `config.json` for reading parameter configurations. If the `--model-type-hf` parameter is not specified, the system attempts to read the `{load}/config.json` file and automatically infer the supported model type from the configuration file. Note that for Mamba models, you must configure this parameter manually.
 
 #### Quick Start
 
-When the loading directory contains Hugging Face-format weights, the system automatically enables bidirectional conversion:
+When the loading directory contains Hugging Face-format weights (that is, `.safetensors` or `.bin` format files exist), the system automatically enables bidirectional conversion.
 
 ```bash
-# Load Hugging Face weights, convert automatically, and train.
-    --load /path/to/huggingface/model \
-    --save /path/to/save/training/results \
-    --model-type-hf <model_type>  # Optional. The system infers it automatically.
+# Load Hugging Face weights, convert automatically, and train
+    --load /path_to_huggingface_model \           # Set the Hugging Face weight path
+    --save /path_to_save_training_results \       # Set the weight save path after training
+    --model-type-hf <model_type>                  # Optional. The system infers it automatically
 ```
 
-#### Debugging Features
+#### Usage Notes
 
-**Scenario 1: Loading from Hugging Face and train**
+In the pretraining and fine-tuning scripts `pretrain_xxx.sh` or `tune_xxx.sh`, add parameters according to the usage scenario to enable weight conversion. For more details, see [Parameters](#parameters).
 
-In the pre-training and fine-tuning scripts `pretrain_xxx.sh` or `tune_xxx.sh`, add the following parameters to enable weight conversion:
+- Scenario 1: Loading from Hugging Face and training
 
-```bash
-# Load from the Hugging Face format and convert to the Megatron format for training.
---enable-hf2mg-convert \
---model-type-hf <model_type>
-```
+    ```bash
+    # Load from Hugging Face format, automatically convert to Megatron format for training
+    --enable-hf2mg-convert \
+    --model-type-hf <model_type>
+    ```
 
-**Scenario 2: Enabling bidirectional weight conversion**
+- Scenario 2: Enabling bidirectional weight conversion
 
-In the pre-training and fine-tuning scripts `pretrain_xxx.sh` or `tune_xxx.sh`, add the following parameters to enable weight conversion:
-
-```bash
-# Save weights in both formats during training. This is equivalent to enabling bidirectional conversion automatically.
+    ```bash
+    # Save weights in both formats during training, equivalent to automatically enabling bidirectional conversion
     --enable-hf2mg-convert \
     --enable-mg2hf-convert \
     --model-type-hf <model_type>
-```
+    ```
 
-**Scenario 3: Converting Megatron weights saved during training to Hugging Face format**
+- Scenario 3: Converting Megatron-format weights saved during training to Hugging Face format
 
-In the pre-training and fine-tuning scripts `pretrain_xxx.sh` or `tune_xxx.sh`, add the following parameters to enable weight conversion:
-
-```bash
-# Convert the Megatron-format weights saved during training to the Hugging Face format each time they are saved.
+    ```bash
+    # Convert Megatron-format weights saved each time during training to Hugging Face format
     --enable-mg2hf-convert \
     --model-type-hf  <model_type>
-```
+    ```
 
-**Scenario 4: Converting only the final saved model to Hugging Face format**
+- Scenario 4: Converting only the final saved model to Hugging Face format
 
-In the pre-training and fine-tuning scripts `pretrain_xxx.sh` or `tune_xxx.sh`, add the following parameters to enable weight conversion:
-
-```bash
-# Convert only the Megatron-format weights saved after training ends to the Hugging Face format, and do not convert the Megatron-format weights saved during training.
+    ```bash
+    # Convert only the Megatron-format weights saved after training ends to Hugging Face format, without converting Megatron-format weights saved during intermediate training steps
     --enable-mg2hf-convert \
     --only-convert-last-checkpoint \
     --model-type-hf  <model_type>
-```
+    ```
 
-**Parameters**
+#### Parameters
+
+**Table 1** Parameters
 
 | Parameter | Type | Default | Required | Description |
 |------|------|--------|------|------|
-| `--model-type-hf` | str | None | Optional* | Hugging Face model type. Multiple pretrained model types are supported. |
-| `--enable-hf2mg-convert` | flag | False | Optional | Enables Hugging Face-to-Megatron weight conversion only. |
-| `--enable-mg2hf-convert` | flag | False | Optional | Enables Megatron-to-Hugging Face weight conversion only. |
-| `--only-convert-last-checkpoint` | flag | False | Optional | Converts only the final distributed weights at the end of training. |
-| `--mg-save-dir` | str | None | Optional | When converting Hugging Face-to-Megatron weights, specify the Megatron weight save directory. |
-| `--hf-save-dir` | str | None | Optional | When converting Megatron-to-Hugging Face weights, specify the Hugging Face weight save directory. |
-| `--hf-cfg-dir` | str | None | Optional | Hugging Face configuration directory. Because Megatron-to-Hugging Face conversion generates only the weights and `model.safetensors.index.json`, and does not generate configuration files, the system copies the configuration files from the original Hugging Face model to the Hugging Face weight directory created by the conversion. |
+| `--load` | string | None | Yes | Directory for loading model weights. In online weight loading training scenarios, points to the Hugging Face weight path. |
+| `--save` | string | None | Yes | Directory for saving model weights after training. |
+| `--model-type-hf` | string | None | No | Hugging Face model type. Multiple pretrained model types are supported. |
+| `--enable-hf2mg-convert` | bool | False | No | Enables Hugging Face-to-Megatron weight conversion only. |
+| `--enable-mg2hf-convert` | bool | False | No | Enables Megatron-to-Hugging Face weight conversion only. |
+| `--only-convert-last-checkpoint` | bool | False | No | Converts only the final distributed weights at the end of training. |
+| `--mg-save-dir` | string | None | No | When converting Hugging Face-to-Megatron weights, specifies the Megatron weight save directory. |
+| `--hf-save-dir` | string | None | No | When converting Megatron-to-Hugging Face weights, specifies the Hugging Face weight save directory. |
+| `--hf-cfg-dir` | string | None | No | Hugging Face configuration file directory. |
 
-*Note: For special models such as Mamba, you must specify `--model-type-hf` manually.*
+> [!NOTE]
+>
+> - For special models such as Mamba, you must specify `--model-type-hf` manually.
+> - Because Megatron-to-Hugging Face conversion generates only the weights and `model.safetensors.index.json`, and does not generate configuration files, you must use the `--hf-cfg-dir` parameter to copy configuration files from the original Hugging Face model to the Hugging Face weight directory created by the conversion.
 
-#### Notes
+#### Resource Requirements
 
-1. System resource requirements
+System resource requirements are as follows:
 
-    - Drive space: Ensure that you have enough drive space to store the converted weights.
-    - Conversion time: After training initialization, weights are converted automatically. Depending on the model size, this process takes about 2 minutes to 2 hours. Please wait patiently.
-    - Permission requirements: Ensure that you have read and write permissions for all the following relevant paths:
-      - `{load}` - model loading path.
-      - `{save}` - training save path.
-      - `{mg-save-dir}` - Megatron weight save directory, if specified.
-      - `{hf-save-dir}` - Hugging Face weight save directory, if specified.
-      - `{hf-cfg-dir}` - Hugging Face configuration directory, if specified.
+- Disk space: Ensure that you have enough disk space to store the converted weights.
+- Conversion time: After training initialization, the system automatically performs weight conversion. Depending on the model size, the expected time ranges from 2 minutes to 2 hours. Please wait patiently.
+- Permission requirements: Ensure that you have read and write permissions for all the following relevant paths:
+    - `{load}` - model loading path
+    - `{save}` - training save path
+    - `{mg-save-dir}` - Megatron weight save directory, if specified
+    - `{hf-save-dir}` - Hugging Face weight save directory, if specified
+    - `{hf-cfg-dir}` - Hugging Face configuration directory, if specified
 
-2. Hugging Face-to-Megatron conversion (`--enable-hf2mg-convert`) constraints
+#### Constraints
 
-    - Loading path required: When you enable this feature, you must set the `--load` parameter to specify the Hugging Face weight source. Training from random initialization is not supported.
-    - Megatron weights not supported: After you enable this parameter, offline-converted Megatron-format weights are not supported.
-    - Storage path rules:
-      - If you specify `--mg-save-dir`, the converted Megatron weights are saved to that path.
-      - If you do not specify it, they are saved by default in the `{load}/megatron_cache_tp{TP}pp{PP}ep{EP}` directory.
-      - The training process automatically uses this path as the weight loading path.
+- Hugging Face-to-Megatron conversion (`--enable-hf2mg-convert`)
+  - Set the loading path. When enabling this feature, you must set the `--load` parameter to specify the Hugging Face weight directory. Training from random initialization is not supported.
+  - Megatron-format weights not supported. After you enable this parameter, offline-converted Megatron-format weights are not supported.
+  - Storage path rules:
+    - If you specify `--mg-save-dir`, the converted Megatron weights are saved to that path.
+    - If you do not specify it, they are saved by default in the `{load}/megatron_cache_tp{TP}pp{PP}ep{EP}` directory.
+    - The training process automatically uses this path as the weight loading path.
 
-3. Megatron-to-Hugging Face conversion (`--enable-mg2hf-convert`) constraints
+- Megatron-to-Hugging Face conversion (`--enable-mg2hf-convert`)
+  - Set the save path. When enabling this feature, you must set the `--save` parameter to specify the training output path.
+  - This feature is supported only in standalone storage or shared storage environments.
+  - LoRA not supported. Megatron-to-Hugging Face conversion for weights fine-tuned with LoRA is not supported.
+  - Storage path rules:
+    - If you specify `--hf-save-dir`, the converted Hugging Face weights are saved in the `{hf_save_dir}/mg2hf_iteration{iteration}/` directory.
+    - If you do not specify it, they are saved by default in the `{save}/mg2hf_iteration{iteration}` directory.
+    - Configuration file handling: If you specify `--hf-cfg-dir`, the system copies configuration files from this directory to the converted Hugging Face weight directory. If you do not specify it but bidirectional conversion is enabled, the system copies configuration files from the `{load}` directory.
 
-    - Save path required: When you enable this feature, you must set the `--save` parameter to specify the training output path.
-    - Shared storage only: This feature is supported only in a shared-storage environment.
-    - LoRA/QLoRA not supported: It does not support Megatron-to-Hugging Face conversion for weights fine-tuned with LoRA or QLoRA.
-    - Storage path rules:
-      - If you specify `--hf-save-dir`, the converted Hugging Face weights are saved in the `{hf-save-dir}/mg2hf_iteration{iteration}/` directory.
-      - If you do not specify it, they are saved by default in the `{save}/mg2hf_iteration{iteration}` directory.
-    - Configuration file handling:
-      - If you specify `--hf-cfg-dir`, the system copies configuration files from this directory to the converted Hugging Face weight directory.
-      - If you do not specify it but bidirectional conversion is enabled, the system copies configuration files from the `{load}` directory.
-      - Note: Megatron-to-Hugging Face conversion itself does not generate configuration files. It must copy them from an existing configuration source.
+> [!NOTE]
+>
+> Megatron-to-Hugging Face conversion itself does not generate configuration files. You must copy them from an existing configuration source.
 
-### 2. Data Preprocessing
+### Automatic Data Preprocessing
 
-#### Basic Command
+#### Quick Start
 
-If you want to use the data preprocessing feature, refer to the parameter descriptions and add the relevant parameters for your scenario. Then change the input dataset path specified by `--data-path` to control whether preprocessing runs. The currently supported forms are as follows:
+If you want to use the data preprocessing feature, refer to the parameters and add relevant parameters based on your usage scenario. Modify the `--data-path` parameter to specify the input dataset path to determine whether data preprocessing is performed.
+
+The currently supported forms are as follows:
 
 | Input Form | Example | Description |
 |-----------|-------|------|
@@ -136,45 +140,52 @@ If you want to use the data preprocessing feature, refer to the parameter descri
 
 #### Parameters
 
-| Parameter | Type | Required | Description |
-|------|------|------|------|
-| `--data-path` | `str / list` | Yes | Raw data path or converted prefix. |
-| `--handler-name` | `str` | Yes | Name of the data processing handler. |
-| `--append-eod` | `bool` | No | Whether to append the `<eod>` token to the end of documents. |
-| `--prompt-type` | `str` | Yes (fine-tuning) | Specify the fine-tuning prompt template. |
-| `--json-keys` | `list` | No | Fields to extract. The default is `["text"]`. |
-| `--workers` | `int` | No | Number of data processing threads. |
-| `--n-subs` | `int` | No | Number of data subsets. Multi-process sharding. |
-| `--pack` | `bool` | No | Whether to pack samples. Fine-tuning scenario. |
-| `--neat-pack` | `bool` | No | Switch that enables the use of a jagged `attention_mask` during computation in pack scenarios. Fine-tuning scenario. |
-| `--enable-thinking` | `str` | No | Whether to enable thinking mode. Fine-tuning scenario. |
-| `--output-prefix` | `str` | No | Prefix of the output dataset file after conversion. |
+**Table 2** Parameters
 
-Note:
+| Parameter | Type | Default | Required | Description |
+|------|------|------|------|------|
+| `--data-path` | string or list | None | Yes | Raw data path or converted prefix. |
+| `--handler-name` | string | "" | Yes | Name of the data processing handler. |
+| `--append-eod` | bool | False | No | Whether to append the `<eod>` token to the end of documents. |
+| `--prompt-type` | string | None | Yes (fine-tuning) | Specify the fine-tuning prompt template. |
+| `--json-keys` | list | `["text"]` | No | Fields to extract. |
+| `--workers` | int | 1 | No | Number of data processing threads. |
+| `--n-subs` | int | 1 | No | Number of data subsets (multi-process sharding). |
+| `--pack` | bool | False | No | Whether to pack samples (fine-tuning scenario). |
+| `--neat-pack` | bool | False | No | Switch that enables the use of a jagged `attention_mask` during computation in pack scenarios (fine-tuning scenario). |
+| `--enable-thinking` | string | None | No | Whether to enable thinking mode (fine-tuning scenario). |
+| `--output-prefix` | string | None | No | Prefix of the output dataset file after conversion. |
+| `--seq-length` | int | None | No | In pack mode, specifies the sequence length after data packing. |
+| `--reasoning-effort` | string | None | No | Used for DeepSeek-V4 model fine-tuning data processing. Options: max/high. max: inserts the maximum effort instruction prefix into the prompt; high: reserved, currently a no-op. |
+| `--drop-thinking` | bool | True | No | In DeepSeek-V4 fine-tuning scenarios, whether to discard historical thinking chains in multi-turn conversations. By default, only the last assistant reasoning is retained as the loss target. Set to False to retain all reasoning turns. |
 
-- If you do not specify `--output-prefix`, the processed data file is generated in the same directory as the raw dataset by default.
+> [!NOTE]
+>
+> If you do not specify `--output-prefix`, the processed data file is generated in the same directory as the raw dataset by default.
 
-### 3. Example
+### Example
 
-Using Qwen3-8B fine-tuning as an example, if you want to enable both data preprocessing and integrated weight-conversion training, add the following parameters to the [Qwen3-8B fine-tuning script](../../../../../../examples/mcore/qwen3/tune_qwen3_8b_4K_full_ptd.sh):
+Using Qwen3-8B model fine-tuning as an example, to enable both data preprocessing and integrated weight-conversion training, add the following parameters to the [Qwen3-8B fine-tuning script](../../../../../../examples/mcore/qwen3/tune_qwen3_8b_4K_full_ptd.sh):
 
 ```bash
-DATA_PATH="/path/your_dataset/xxx.parquet"
-CKPT_LOAD_DIR="/path/to/huggingface_model/Qwen3-8B"
---data-path "$DATA_PATH" \
---load "$CKPT_LOAD_DIR" \
---enable-hf2mg-convert \
---model-type-hf qwen3 \
---handler-name AlpacaStyleInstructionHandler \
---prompt-type qwen3 \
+DATA_PATH="/path_your_dataset/xxx.parquet"
+CKPT_LOAD_DIR="/path_to_huggingface_model/Qwen3-8B"
+
+bash examples/mcore/qwen3/tune_qwen3_8b_4K_full_ptd.sh \
+    --data-path "${DATA_PATH}" \
+    --load "${CKPT_LOAD_DIR}" \
+    --enable-hf2mg-convert \
+    --model-type-hf qwen3 \
+    --handler-name AlpacaStyleInstructionHandler \
+    --prompt-type qwen3
 ```
 
 ## Usage Constraints
 
-- The currently supported Hugging Face model types are `qwen3, qwen3-moe, deepseek3, glm45-air, bailing_mini, qwen3-next, seed-oss, deepseek32, magistral, deepseek2-lite`.
+- The currently supported Hugging Face model types are: `qwen3`, `qwen3-moe`, `deepseek3`, `glm45-air`, `bailing_mini`, `qwen3-next`, `seed-oss`, `deepseek32`, `magistral`, and `deepseek2-lite`.
 
-- The current automatic dataset conversion feature supports only the following raw data formats: `parquet, arrow, csv, json, jsonl, txt`.
+- The current automatic dataset conversion feature supports only the following raw data formats: `parquet`, `arrow`, `csv`, `json`, `jsonl`, and `txt`. Other formats are not supported yet.
 
 - The current weight conversion feature `--enable-mg2hf-convert` supports only standalone storage or shared storage environments.
 
-- The current weight conversion feature `--enable-mg2hf-convert` does not support Megatron-to-Hugging Face conversion for weights fine-tuned with LoRA or QLoRA.
+- The current weight conversion feature `--enable-mg2hf-convert` does not support Megatron-to-Hugging Face weight conversion for weights fine-tuned with LoRA.

@@ -38,7 +38,7 @@ cd ..
 Pairwise-format data preprocessing script:
 
 ```shell
-source /usr/local/Ascend/cann/set_env.sh # Change this to the actual Toolkit package path.
+source /usr/local/Ascend/cann/set_env.sh # Change this to the actual Toolkit package path
 mkdir ./pairwise_dataset
 
 python ./preprocess_data.py \

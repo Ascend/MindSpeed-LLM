@@ -1,231 +1,301 @@
-# MindSpeed LLM FSDP2 Backend Training Guide
+# FSDP2 Backend Fine-Tuning Guide
 
-This guide uses gpt-oss 20B as a fine-tuning example to explain how to use the FSDP2 backend of MindSpeed LLM for large language model training. It covers environment setup, configuration details, and the full training startup workflow.
+## Use Cases
 
-## 1. Environment Setup
+Supervised Fine-Tuning (SFT) continues training a pretrained model with high-quality instruction and response data, enabling the model to learn specific tasks, domain knowledge, or conversational styles. This method applies to scenarios such as question answering, text generation, summarization, translation, code generation, and domain adaptation.
 
-See the [MindSpeed LLM Installation Guide](../../install_guide.md) for environment setup.
+> [!NOTE]
+>
+> If this is your first time using the FSDP2 backend, we recommend that you first complete an end-to-end walkthrough following the [FSDP2 Quick Start](../../fsdp2_quick_start.md) (Qwen3-8B pretraining and fine-tuning). This document focuses on model, dataset, YAML configuration, and parameter descriptions for full-parameter fine-tuning. It is suitable for scenarios where you change models or use custom datasets.
 
-## 2. Directory Structure
+This document describes how to perform full-parameter fine-tuning based on a HuggingFace-format pretrained model using the FSDP2 backend of MindSpeed LLM. The example uses the Qwen3-8B model and a single `Atlas 900 A2 PoD` (1x8 cluster). The main workflow is as follows:
 
-The fine-tuning scripts are located in the following paths.
+**Figure 1** FSDP2 backend model fine-tuning workflow
+
+![Fine-tuning workflow](../../../figures/instruction_finetune/process_of_instruction_tuning_fsdp2.png)
+
+## Instructions
+
+### Environment Setup
+
+Before starting fine-tuning, complete the environment installation by referring to the [MindSpeed LLM Installation](../../install_guide.md).
+
+The common environment variables of the FSDP2 backend are located in `examples/fsdp2/env_config.sh`, which is automatically loaded by the example startup scripts. The configuration is as follows:
 
 ```bash
-MindSpeed-LLM/
-├── examples/fsdp2/gpt_oss/
-│   ├── tune_gpt_oss_20b_varlen_fsdp2_A3.yaml        # Fine-tuning configuration
-│   └── tune_gpt_oss_20b_varlen_fsdp2_A3.sh          # Startup script
-├── configs/fsdp2/data/dataset_info.json             # Dataset registry
-└── train_fsdp2.py                                   # FSDP2 training entry point
+export TRAINING_BACKEND=mindspeed_fsdp
+export HCCL_CONNECT_TIMEOUT=1800
+export TASK_QUEUE_ENABLE=2
+export CPU_AFFINITY_CONF=1
+export MULTI_STREAM_MEMORY_REUSE=2
+export PYTORCH_NPU_ALLOC_CONF=expandable_segments:True
+export TORCH_COMPILE_DEBUG=0
+export CUBLAS_WORKSPACE_CONFIG=:4096:8
+export PYTHONPATH=$PYTHONPATH:$(pwd)
 ```
 
-## 3. Configuration Changes
+### Model and Dataset Preparation
 
-### 3.1 Model Path Configuration
+**Model Preparation**
+
+For model weight download addresses, see the [Supported Models](../../../models/supported_models.md) list. This example uses the HuggingFace-format weights of [Qwen3-8B](https://huggingface.co/Qwen/Qwen3-8B/tree/main).
+
+A complete model directory should contain the model configuration, Tokenizer configuration, and all weight files. For example:
+
+```text
+Qwen3-8B/
+├── config.json
+├── generation_config.json
+├── merges.txt
+├── model-00001-of-00005.safetensors
+├── model-00002-of-00005.safetensors
+├── model-00003-of-00005.safetensors
+├── model-00004-of-00005.safetensors
+├── model-00005-of-00005.safetensors
+├── model.safetensors.index.json
+├── tokenizer.json
+├── tokenizer_config.json
+└── vocab.json
+```
+
+The FSDP2 backend can directly load HuggingFace-format weights. No model weight conversion is required before starting training. In version 26.1.0, the model weight directory is configured through `model.model_name_or_path` in the corresponding `examples/fsdp2/**/*.yaml` configuration file by default. For example, when fine-tuning Qwen3-8B, modify the following parameter in `examples/fsdp2/qwen3/tune_qwen3_8b_4k_fsdp2_A2.yaml`:
 
 ```yaml
 model:
-  model_name_or_path: /path/to/gpt-oss-20b-hf/      # Replace this with your local model path or Hugging Face model ID.
-  tokenizer_name_or_path: None                      # Specify this when the model and tokenizer paths differ.
+  model_name_or_path: /path/to/Qwen3-8B/
 ```
 
-### 3.2 Dataset Configuration
+**Dataset Preparation**
 
-#### Option 1: Inline Configuration (Quick Validation with a Single Dataset)
+FSDP2 fine-tuning uses the LLaMA Factory-style data processing workflow and can load data files in formats such as `.parquet`, `.csv`, `.json`, `.jsonl`, `.txt`, and `.arrow`. Data is loaded, format-aligned, and tokenized when the training task starts. No upfront conversion to the Megatron Indexed Dataset is required.
+
+The main data formats currently supported include:
+
+- Alpaca format: Usually contains the `instruction`, `input`, and `output` fields.
+- ShareGPT format: Usually stores conversation messages in the `conversations` field.
+- OpenAI format: Uses the `messages` field to store conversation messages. Each message usually contains `role` and `content`. The OpenAI format is a data field specification, not a specific dataset.
+
+For detailed format descriptions, see:
+
+- [Alpaca-style datasets](../../../tools/data_process_sft_alpaca_style.md)
+- [ShareGPT and OpenAI-style datasets](../../../tools/data_process_sft_sharegpt_style.md)
+
+### Configuring Datasets
+
+In version 26.1.0, the training dataset is configured through `data.dataset` in the corresponding `examples/fsdp2/**/*.yaml` configuration file by default. Dataset parameters support both inline configuration and dataset names registered in `dataset_info.json`.
+
+Take the Qwen3-8B fine-tuning configuration as an example. The `alpaca_full` dataset registered in `dataset_info.json` is used by default:
 
 ```yaml
+data:
+  dataset: alpaca_full
+```
+
+**Using Inline Configuration in YAML**
+
+Inline configuration is suitable for quickly validating local datasets. Modify `data.dataset` in the corresponding YAML file:
+
+```yaml
+data:
   dataset:
-    file_name: "./my_data.json"                     # Replace this with the data file path.
-    formatting: "alpaca"                            # Choose alpaca, sharegpt, or another format based on the data format.
-  cutoff_len: 2048                                  # Truncate input sequences after tokenization when they exceed this length.
+    file_name: ./dataset/train.json
+    formatting: alpaca
 ```
 
-#### Option 2: Registration through `dataset_info.json`
+**Using Registered Dataset Names in YAML**
 
-1. Edit `configs/fsdp2/data/dataset_info.json` and add dataset entries.
+When you need to reuse a dataset, edit `configs/fsdp2/data/dataset_info.json` to add the dataset configuration:
 
-    ```json
-    {
-      "alpaca_full": {
-        "file_name": "./train-00000-of-00001.parquet"
-      },
-      "sharegpt4_zh": {
-        "file_name": "./sharegpt_zh.jsonl",
-        "formatting": "sharegpt"
-      }
+```json
+{
+  "alpaca_demo": {
+    "file_name": "./alpaca_demo.json",
+    "formatting": "alpaca"
+  },
+  "sharegpt_demo": {
+    "file_name": "./sharegpt_demo.jsonl",
+    "formatting": "sharegpt"
+  },
+  "openai_demo": {
+    "file_name": "./openai_demo.jsonl",
+    "formatting": "openai",
+    "columns": {
+      "messages": "messages"
+    },
+    "tags": {
+      "role_tag": "role",
+      "content_tag": "content",
+      "user_tag": "user",
+      "assistant_tag": "assistant",
+      "system_tag": "system",
+      "observation_tag": "tool",
+      "function_tag": "function_call"
     }
-    ```
-
-2. Reference them in the YAML configuration.
-
-    ```yaml
-    data:
-      dataset: alpaca_full, sharegpt4_zh                # Fine-tuning datasets. You can enter comma-separated dataset names, and multiple datasets are supported.
-      template: gpt                                     # Template name for building prompts.
-      cutoff_len: 2048                                  # Truncate input sequences after tokenization when they exceed this length.
-    ```
-
-## 4. Distributed Training Startup Script
-
-`examples/fsdp2/gpt_oss/tune_gpt_oss_20b_varlen_fsdp2_A3.sh`
-
-```bash
-source examples/fsdp2/env_config.sh                 # Load the NPU environment variable configuration.
-
-NPUS_PER_NODE=8                                     # Number of NPUs per node.
-NNODES=1                                            # Total number of nodes.
-MASTER_ADDR=localhost                               # Master node IP address.
-MASTER_PORT=6499                                    # Master node communication port.
-
-torchrun \
-  --nproc_per_node $NPUS_PER_NODE \
-  # Start eight processes on each node.
-  --nnodes $NNODES \
-  # Use one node in total.
-  --node_rank 0 \
-  # Current node rank. Adjust this for multi-node training.
-  --master_addr $MASTER_ADDR \
-  # Master node address.
-  --master_port $MASTER_PORT \
-  # Master node port.
-  train_fsdp2.py examples/fsdp2/gpt_oss/tune_gpt_oss_20b_varlen_fsdp2_A3.yaml
-  # Start the training entry point.
+  }
+}
 ```
 
-## 5. Start Training
+Then modify `data.dataset` in the corresponding YAML file to specify the dataset by its registered name:
 
-Run the following command in the repository root.
-
-```bash
-bash examples/fsdp2/gpt_oss/tune_gpt_oss_20b_varlen_fsdp2_A3.sh
+```yaml
+data:
+  dataset: alpaca_demo
 ```
 
-This starts the training job.
+To mix multiple datasets, separate multiple registered names with commas:
 
-## 6. Other Configuration Parameters
+```yaml
+data:
+  dataset: alpaca_demo,sharegpt_demo
+```
 
-### 6.1 Model Configuration
+### Configuring Fine-Tuning Parameters
+
+Parameters such as the model weight path, training dataset, parallel scale, batch size, and output directory are all saved in the accompanying YAML file. For detailed configuration, see the [Qwen3-8B fine-tuning configuration file](../../../../../../examples/fsdp2/qwen3/tune_qwen3_8b_4k_fsdp2_A2.yaml). The YAML example content is as follows:
 
 ```yaml
 model:
-  model_id: gpt_oss                                 # Model type identifier. New model types must be registered in the `ModelRegistry` class in `mindspeed_llm/fsdp2/models/model_registry.py`.
-  model_name_or_path: /path/to/gpt-oss-20b-hf/      # Local path of the model. This field is required. An exception is raised if it is not specified.
-  trust_remote_code: False                          # Whether to allow models from custom modeling files on Hugging Face. Use this to adapt custom model architectures.
-  train_from_scratch: False                         # Whether to train the model from scratch with randomly initialized weights without loading model weights.
-  tokenizer_name_or_path: None                      # Path or name of the tokenizer. Specify this when it differs from model_name_or_path.
-```
+  model_name_or_path: /home/data/Qwen3-8B/
+  trust_remote_code: False
+  train_from_scratch: False
 
-### 6.2 Parallelism Strategy
+data:
+  dataset: alpaca_full
+  template: qwen3
+  cutoff_len: 4096
+  max_samples: 100000
+  overwrite_cache: True
+  preprocessing_num_workers: 1
 
-```yaml
 parallel:
-  fsdp_size: 8                                      # Fully Sharded Data Parallel (FSDP) size. Model parameters are sharded across eight devices.
-  fsdp_modules:                                     # List of model layer structures that enable FSDP. This field is required and must not be empty.
-    - model.layers.{*}                              # Enable FSDP sharding for all Transformer layers.
-    - model.embed_tokens                            # Enable FSDP sharding for the token embedding layer.
-    - lm_head                                       # Enable FSDP sharding for the language model output head.
-  tp_size: 1                                        # Tensor Parallel size. Model tensors are split across multiple devices by column or row.
-  ep_size: 1                                        # Expert Parallel size. This applies to MoE models and splits different experts across multiple devices.
-  ep_modules:                                       # Model layer structures that enable expert parallelism. This applies only to MoE models.
-    - model.layers.{*}.mlp.experts                  # Enable expert parallelism for the expert modules in all layers.
-  ep_fsdp_size: 1                                   # FSDP size within the expert parallel group. This shards the parameters of individual experts on top of expert parallelism.
-  ep_fsdp_modules:                                  # Model layer structures that enable FSDP within the expert parallel group.
-    - model.layers.{*}.mlp.experts                  # Further shard the parameters inside the expert modules.
-  ep_dispatcher: eager                              # MoE expert parallel dispatch strategy: eager, fused, or mc2.
-  recompute: True                                   # Whether to enable gradient checkpointing, which saves memory at the cost of extra computation.
-  recompute_modules:                                # Model layer structures that enable activation recomputation.
-    - model.layers.{*}                              # Enable recomputation for all Transformer layers.
-  cp_size: 1                                        # Context Parallel size. Input sequence context is split across multiple devices.
-  cp_type: ulysses                                  # Context parallel algorithm type. Currently only the ulysses algorithm is supported.
-```
+  fsdp_size: 8
+  fsdp_modules:
+    - model.layers.{*}
+    - model.embed_tokens
+    - lm_head
+  tp_size: 1
+  ep_size: 1
+  ep_modules:
+    - model.layers.{*}.mlp.experts
+  ep_fsdp_size: 1
+  ep_fsdp_modules:
+    - model.layers.{*}.mlp.experts
+  ep_dispatcher: eager
+  recompute: True
+  recompute_modules:
+    - model.layers.{*}
 
-### 6.3 Training Parameters
-
-```yaml
 training:
-  per_device_train_batch_size: 1                    # Training batch size per device.
-  gradient_accumulation_steps: 1                    # Number of gradient accumulation steps. Gradients from multiple batches are accumulated before backpropagation and parameter updates.
-  dataloader_num_workers: 1                         # Number of data loading subprocesses. This speeds up data preprocessing.
-  disable_shuffling: 1                              # Whether to disable shuffling of the training set.
-  seed: 42                                          # Random seed set at the start of training to keep experiments reproducible.
-  dataloader_drop_last: True                        # Whether to drop the last incomplete batch when the dataset size is not divisible by the batch size.
-  output_dir: ./output                              # Output directory for training results, including model checkpoints, logs, and prediction results. This field is required.
-  optimizer: adamw                                  # Optimizer type. Currently only AdamW is supported.
-  lr: 1e-05                                         # Initial learning rate for the AdamW optimizer.
-  weight_decay: 0.01                                # Weight decay coefficient for the AdamW optimizer.
-  adam_beta1: 0.9                                   # beta1 parameter of the AdamW optimizer. This controls the exponential decay rate of the first moment.
-  adam_beta2: 0.95                                  # beta2 parameter of the AdamW optimizer. This controls the exponential decay rate of the second moment.
-  adam_epsilon: 1e-08                               # epsilon parameter of the AdamW optimizer for numerical stability.
-  max_grad_norm: 1.0                                # Maximum norm for gradient clipping to prevent gradient explosion.
-  lr_scheduler_type: cosine                         # Learning rate scheduler type: cosine, linear, or constant.
-  warmup_ratio: 0.0                                 # Ratio of linear warmup steps to the total training steps.
-  min_lr: 1e-06                                     # Minimum learning rate for the cosine scheduler to avoid training stagnation caused by an excessively low learning rate.
-  num_train_epochs: 3.0                             # Total number of training epochs. This parameter is overridden when max_steps is greater than 0.
-  max_steps: -1                                     # Total number of training steps. This overrides num_train_epochs when greater than 0.
-  save_steps: 500                                   # Save a model checkpoint every 500 steps.
-  logging_steps: 1                                  # Record training logs every step.
+  per_device_train_batch_size: 1
+  gradient_accumulation_steps: 1
+  dataloader_num_workers: 4
+  seed: 42
+  dataloader_drop_last: True
+  output_dir: ./output
+  optimizer: adamw
+  lr: 1e-05
+  weight_decay: 0.01
+  adam_beta1: 0.9
+  adam_beta2: 0.95
+  adam_epsilon: 1e-08
+  max_grad_norm: 1.0
+  lr_scheduler_type: cosine
+  warmup_ratio: 0.0
+  min_lr: 1e-06
+  max_steps: 2000
+  save_steps: 500
+  logging_steps: 1
 ```
 
-### 6.4 Dataset Configuration for Fine-Tuning Scenarios
+The main parameters in the YAML file are described as follows:
 
-```yaml
-  dataset: alpaca_full                              # Training dataset. You can enter a configuration dictionary or a comma-separated list of dataset names.
-  template: gpt                                     # Template name for building prompts.
-  cutoff_len: 2048                                  # Truncate input sequences after tokenization when they exceed this length.
-  max_samples: 100000                               # For debugging. This truncates the number of samples in each dataset and is mutually exclusive with streaming.
-  overwrite_cache: True                             # Whether to overwrite the cached preprocessed dataset.
-  preprocessing_num_workers: 1                      # Number of processes for data preprocessing.
+| Parameter | Description | Default value |
+| --- | --- | --- |
+| `model_name_or_path` | Directory of HuggingFace model weights. | `/home/data/Qwen3-8B/` |
+| `dataset` | Inline configuration or registered name of the training dataset. | `alpaca_full` |
+| `template` | Prompt template selected based on the model. | `qwen3` |
+| `cutoff_len` | Maximum length of a training sequence after tokenization. Content exceeding this length is truncated. | `4096` |
+| `max_samples` | Maximum number of samples used from each dataset, mainly for debugging. | `100000` |
+| `overwrite_cache` | Whether to overwrite the generated data processing cache. | `True` |
+| `preprocessing_num_workers` | Number of processes used for data preprocessing. | `1` |
+| `fsdp_size` | Fully sharded data parallel size. It should be consistent with `NPUS_PER_NODE * NNODES`. | `8` |
+| `fsdp_modules` | Model modules sharded with FSDP. It cannot be empty. | `model.layers.{*}`, `model.embed_tokens`, `lm_head` |
+| `tp_size` | Tensor parallel size. | `1` |
+| `ep_size` | Expert parallel size. Set it to `1` for dense models. | `1` |
+| `ep_fsdp_size` | FSDP size within the expert parallel group. Set it to `1` for dense models. | `1` |
+| `recompute` | Whether to enable activation recomputation, trading computation overhead for memory space. | `True` |
+| `per_device_train_batch_size` | Training batch size per device. | `1` |
+| `gradient_accumulation_steps` | Number of gradient accumulation steps. | `1` |
+| `output_dir` | Output directory of training checkpoints. | `./output` |
+| `lr` | Initial learning rate. | `1e-05` |
+| `max_steps` | Maximum number of training steps. When greater than 0, it overrides `num_train_epochs`. | `2000` |
+| `save_steps` | Step interval for saving training checkpoints. | `500` |
+
+For a complete description of the parameters, see [FSDP2 Parameters](../../../features/fsdp2/arguments.md).
+
+### Configuring the Fine-Tuning Script
+
+Open the corresponding `.sh` file to configure distributed training parameters. Model weights, datasets, parallel scale, and the output directory are configured in the accompanying YAML file. For detailed configuration, see the [Qwen3-8B fine-tuning startup script](../../../../../../examples/fsdp2/qwen3/tune_qwen3_8b_4k_fsdp2_A2.sh).
+
+The single-node 8-NPU configuration is as follows:
+
+```bash
+NPUS_PER_NODE=8                              # Number of NPUs used on the current node
+MASTER_ADDR=localhost                        # IP address of the master node. Set it to localhost for single-node training
+MASTER_PORT=6499                             # Communication port of the master node
+NNODES=1                                     # Total number of nodes participating in training. Set it to 1 for single-node training
+NODE_RANK=0                                  # Index of the current node. Set it to 0 for single-node training
+WORLD_SIZE=$((NPUS_PER_NODE * NNODES))       # Total number of NPUs participating in training
 ```
 
-The `dataset` field supports two configuration methods. You are advised to use the **`dataset_info.json` registration method** to simplify mixed training with multiple datasets.
+The multi-node configuration example is as follows:
 
-#### Option 1: Inline Configuration (Suitable for Quick Validation with a Single Dataset)
-
-```yaml
-data:
-  dataset:
-    file_name: "./my_data.json"                     # Data file path.
-    formatting: "alpaca"                            # Data format template. Supported formats include alpaca and sharegpt.
+```bash
+NPUS_PER_NODE=8                              # Number of NPUs used on each node
+MASTER_ADDR="master node IP"                 # All nodes are configured with the master node IP. localhost is not allowed
+MASTER_PORT=6499                             # All nodes use the same master node communication port
+NNODES=2                                     # Total number of nodes participating in training
+NODE_RANK="current node index"               # Value range: 0 to NNODES-1. It cannot be duplicated across nodes
+WORLD_SIZE=$((NPUS_PER_NODE * NNODES))       # Total number of NPUs participating in training
 ```
 
-#### Option 2: Registration through `dataset_info.json`
+`MASTER_ADDR`, `MASTER_PORT`, and `NNODES` must be the same on different nodes. `NODE_RANK` starts from 0 and cannot be duplicated.
 
-1. Edit `configs/fsdp2/data/dataset_info.json` and add dataset entries.
+The startup script reads the accompanying YAML file with the following command. You do not need to repeatedly configure training parameters in the startup command:
 
-    ```json
-    {
-      "alpaca_full": {
-        "file_name": "./train-00000-of-00001.parquet"
-      },
-      "sharegpt4_zh": {
-        "file_name": "./sharegpt_zh.jsonl",
-        "formatting": "sharegpt"
-      }
-    }
-    ```
-
-2. Reference them in the YAML configuration.
-
-    ```yaml
-    data:
-      dataset: alpaca_full, sharegpt4_zh                # Fine-tuning datasets. You can enter comma-separated dataset names configured in dataset_info.json, and multiple datasets are supported.
-    ```
-
-### 6.5 Dataset Configuration for Pretraining Scenarios
-
-The dataset configuration method for pretraining scenarios differs from that for fine-tuning scenarios. The following example shows the setup.
-
-```yaml
-data:
-  dataset: "your original data path, example: /home/train-00000-of-a09b74b3ef9c3b56.parquet" # Enter the original dataset path directly.
-  template: gpt                                     # Template name for building prompts.
-  cutoff_len: 4096                                  # Truncate input sequences after tokenization when they exceed this length.
-  max_samples: 100000                               # For debugging. This truncates the number of samples in each dataset and is mutually exclusive with streaming.
-  overwrite_cache: True                             # Whether to overwrite the cached preprocessed dataset.
-  preprocessing_num_workers: 1                      # Number of processes for data preprocessing.
-  data_manager_type: mg                             # Data manager type. lf indicates fine-tuning data processing, and mg indicates pretraining.
+```bash
+torchrun $DISTRIBUTED_ARGS train_fsdp2.py \
+  examples/fsdp2/qwen3/tune_qwen3_8b_4k_fsdp2_A2.yaml
 ```
 
-For complete parameter descriptions, see [Full Parameter Reference](../../../features/fsdp2/arguments.md).
+> [!NOTE]
+>
+> - In this example, `fsdp_size` should be consistent with `NPUS_PER_NODE * NNODES`.
+> - During multi-node training, ensure that each node can correctly access the model and dataset paths.
 
----
+### Starting Fine-Tuning
+
+After configuring the parameters, run the following command in the repository root directory:
+
+```bash
+bash examples/fsdp2/qwen3/tune_qwen3_8b_4k_fsdp2_A2.sh
+```
+
+For multi-node training, run the startup script on all nodes and set the corresponding `NODE_RANK` on each node. Training logs are saved in the `logs/` directory by default, and training checkpoints are saved in the directory specified by `training.output_dir` in the YAML file.
+
+After the training runs for a while, you can see logs similar to the following in the terminal:
+
+```shell
+INFO [2026-06-22 19:25:37] >>  iteration        1/    2000 | consumed samples:          8 | consumed tokens:        564 | elapsed time per iteration (ms): 7827.39 | learning rate: 1.666667E-07 | global batch size:     8 | lm loss: 3.316887E+00 | grad norm: 70.959 | max_memory_allocated(GB): 19.07 | max_memory_reserved(GB): 20.90 |
+INFO [2026-06-22 19:25:38] >>  iteration        2/    2000 | consumed samples:         16 | consumed tokens:       1357 | elapsed time per iteration (ms): 1331.74 | learning rate: 3.333333E-07 | global batch size:     8 | lm loss: 2.443476E+00 | grad norm: 41.986 | max_memory_allocated(GB): 19.07 | max_memory_reserved(GB): 22.43 |
+INFO [2026-06-22 19:25:38] >>  iteration        3/    2000 | consumed samples:         24 | consumed tokens:       2113 | elapsed time per iteration (ms): 981.08 | learning rate: 5.000000E-07 | global batch size:     8 | lm loss: 2.669216E+00 | grad norm: 45.335 | max_memory_allocated(GB): 19.07 | max_memory_reserved(GB): 22.43 |
+```
+
+When the terminal continuously outputs information such as the iteration number, learning rate, loss value, gradient norm, and memory usage, the training task is running normally.
+
+## Usage Constraints
+
+- This guide applies to full-parameter SFT with the FSDP2 backend. It does not cover other post-training methods such as LoRA, DPO, PPO, and reward model training.
+- `model_name_or_path`, the dataset, and the output directory should be valid paths accessible in the training environment.
+- `template` should match the target model. Otherwise, the training input format may be inconsistent with the model's expectations.
+- The model scale, sequence length, batch size, and parallel scale need to be adjusted based on the number of devices and memory capacity.

@@ -55,7 +55,7 @@ ShareGPT-style example:
 Preprocessing script for ShareGPT-style data:
 
 ```shell
-source /usr/local/Ascend/cann/set_env.sh # Replace this with the actual Toolkit installation path.
+source /usr/local/Ascend/cann/set_env.sh # Replace this with the actual Toolkit installation path
 mkdir ./finetune_dataset
 
 python ./preprocess_data.py \
@@ -66,13 +66,13 @@ python ./preprocess_data.py \
     --log-interval 1000 \
     --tokenizer-type PretrainedFromHF \
     --handler-name SharegptStyleInstructionHandler \
-    --prompt-type llama2  # <-- Fill in the model template here.
-    # --map-keys '{"messages":"conversations", "tags":{"role_tag": "from","content_tag": "value","user_tag": "human","assistant_tag": "gpt","system_tag": "system", "observation_tag":"observation", "function_tag":"function_call"}}' # Default value. You can omit it.
+    --prompt-type llama2  # <-- Fill in the model template here
+    # --map-keys '{"messages":"conversations", "tags":{"role_tag": "from","content_tag": "value","user_tag": "human","assistant_tag": "gpt","system_tag": "system", "observation_tag":"observation", "function_tag":"function_call"}}' # Default value. You can omit it
 ```
 
 `--prompt-type`
 
-This option specifies the model template and helps the base model develop stronger conversational ability after fine-tuning. You can find the available `prompt-type` options in the [templates.json](../../../../configs/finetune/templates.json) file.
+This option specifies the model template and helps the base model develop stronger conversational ability after fine-tuning. You can find the available `prompt-type` options in the [templates](../../../../configs/finetune/templates.json) file.
 
 `--map-keys`
 
@@ -110,7 +110,7 @@ Example of the OpenAI format:
 OpenAI-format data preprocessing script:
 
 ```shell
-source /usr/local/Ascend/cann/set_env.sh # Replace this with the actual Toolkit installation path.
+source /usr/local/Ascend/cann/set_env.sh # Replace this with the actual Toolkit installation path
 mkdir ./finetune_dataset
 
 python ./preprocess_data.py \

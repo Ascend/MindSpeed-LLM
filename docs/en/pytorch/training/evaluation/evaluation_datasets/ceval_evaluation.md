@@ -7,8 +7,11 @@
 CEval is a Chinese, multidisciplinary benchmark dataset jointly built by Chinese universities and research institutions. It has the following core features:
 
 - **Dataset size**: It contains 13,468 multiple-choice questions across 52 subjects.
+
 - **Academic authority**: The questions come from Chinese higher education exams and professional qualification certifications. Therefore, they are representative of the subject areas.
+
 - **Knowledge depth**: Answering the questions requires both subject knowledge and logical reasoning ability.
+
 - **Subject coverage**: It covers four major categories, including humanities, social sciences, STEM, and interdisciplinary subjects.
 
 MindSpeed LLM evaluates the content in the CEval question set.
@@ -17,7 +20,7 @@ MindSpeed LLM evaluates the content in the CEval question set.
 
 ### 1. Direct Evaluation Mode (Default)
 
-#### Impact
+#### Usage Instructions
 
 This mode reads the external CEval [template file](../../../../../../mindspeed_llm/tasks/evaluation/eval_impl/fewshot_template/ceval_5shot_template.json) and uses it as the evaluation template. It concatenates the template with the question that the model needs to answer, then feeds the result to the model for direct evaluation.
 
@@ -33,7 +36,7 @@ Set this to 2 to ensure that a single option character is generated.
 
 ### 2. Fine-Tuned Template Evaluation Mode
 
-#### Impact
+#### Usage Instructions
 
 This mode reads the `_dev.csv` files for the corresponding questions in the sibling `dev` folder under the `DATA_PATH` path in your startup script. It uses those files as template questions and processes them before feeding them to the model.
 
@@ -53,7 +56,7 @@ This parameter specifies the model template type. It should match the `--prompt-
 
 ### 3. Alternative Template Output Mode
 
-#### Impact
+#### Usage Instructions
 
 Like fine-tuned template evaluation mode, this mode also uses the `_dev.csv` files for the corresponding questions in the sibling `dev` folder under the `DATA_PATH` path in your evaluation script as template questions.
 
@@ -69,4 +72,4 @@ Set this to 2 to ensure that a single option character is generated.
 
 `--alternative-prompt`
 
-Enable alternative template output mode.
+Set to true to enable alternative template output mode.

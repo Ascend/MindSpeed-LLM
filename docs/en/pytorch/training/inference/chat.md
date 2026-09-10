@@ -9,39 +9,39 @@ You can use the model [chat script](../../../../../examples/mcore/llama2/chat_ll
 ### Initialize Environment Variables
 
 ```shell
-source /usr/local/Ascend/cann/set_env.sh # Change this to the actual Toolkit package installation path.
-source /usr/local/Ascend/nnal/atb/set_env.sh # Change this to the actual nnal package installation path.
+source /usr/local/Ascend/cann/set_env.sh # Change this to the actual Toolkit package installation path
+source /usr/local/Ascend/nnal/atb/set_env.sh # Change this to the actual nnal package installation path
 ```
 
 ### Running the Script
 
-Use the [chat script](../../../../../examples/mcore/llama2/chat_llama2_13b_ptd.sh) in the Llama-2-13B model directory.
+Use the [chat script](../../../../../examples/mcore/llama2/chat_llama2_13b_ptd.sh) in the Llama-2 model directory.
 
 #### Filling in the Paths
 
-`CHECKPOINT`: Path where the converted weights are saved
+`CHECKPOINT`: path where the converted weights are saved
 
-`TOKENIZER_PATH`: Directory where the model tokenizer is stored
+`TOKENIZER_PATH`: directory where the model tokenizer is stored
 
-`TOKENIZER_MODEL`: Tokenizer file path for the model, for example `tokenizer.model`
+`TOKENIZER_MODEL`: tokenizer file path for the model, for example `tokenizer.model`
 
 Therefore, for the preceding example, set the paths as follows:
 
 ```shell
-CHECKPOINT="./model_weights/llama-2-13b-mcore/"
-TOKENIZER_PATH="./model_from_hf/llama-2-13b-hf-chat/"
-TOKENIZER_MODEL="./model_from_hf/llama-2-13b-hf-chat/tokenizer.model"
+CHECKPOINT="./model_weights/llama-2-7b-mcore/"
+TOKENIZER_PATH="./model_from_hf/llama-2-7b-hf-chat/"
+TOKENIZER_MODEL="./model_from_hf/llama-2-7b-hf-chat/tokenizer.model"
 ```
 
-`--tokenizer-type`
+`--tokenizer-name-or-path` and `--tokenizer-model`
 
 When the value is `PretrainedFromHF`, you only need to point `TOKENIZER_PATH` to the model folder. You do not need to point `TOKENIZER_PATH` to the `tokenizer.model` file.
 
 **Example**
 
 ```shell
-    TOKENIZER_PATH="./model_from_hf/llama-2-hf/"
-    --tokenizer-name-or-path ${TOKENIZER_PATH}
+TOKENIZER_PATH="./model_from_hf/llama-2-hf/"
+--tokenizer-name-or-path ${TOKENIZER_PATH}
 ```
 
 When the value is not `PretrainedFromHF`, for example `Llama2Tokenizer`, you must point `TOKENIZER_MODEL` to the `tokenizer.model` file.
@@ -49,8 +49,8 @@ When the value is not `PretrainedFromHF`, for example `Llama2Tokenizer`, you mus
 **Example**
 
 ```shell
-    TOKENIZER_MODEL="./model_from_hf/llama-2-hf/tokenizer.model"
-    --tokenizer-model ${TOKENIZER_MODEL} \
+TOKENIZER_MODEL="./model_from_hf/llama-2-hf/tokenizer.model"
+--tokenizer-model ${TOKENIZER_MODEL}
 ```
 
 #### Running the Script
@@ -69,7 +69,7 @@ The default value is `chat`, which specifies a multi-turn conversation task.
 
 `--history-turns`
 
-In multi-turn conversations, you can set `--history-turns` to change the number of previous conversation turns. The default is `3` turns.
+In multi-turn conversations, you can set `--history-turns` to change the number of previous conversation turns. The default is 3 turns.
 
 `--hf-chat-template`
 
@@ -83,10 +83,10 @@ The conversation template of the model has the same effect as `--hf-chat-templat
 
 After the chat program displays the `You >>` prompt, you can enter text to have a multi-turn conversation with the model.
 
-**Clearing chat history**
+**Clearing Chat History**
 
-If you need to clear the previous conversation history and start a new chat session, enter one of the `[clear, new]` commands in the dialog box.
+If you need to clear the previous conversation history and start a new chat session, enter one of the [`clear`, `new`] commands in the dialog box.
 
-**Exit the chat program**
+**Exiting the Chat Program**
 
-If you need to exit the chat program, enter one of the `[q, quit, exit]` commands in the dialog box.
+If you need to exit the chat program, enter one of the [`q`, `quit`, `exit`] commands in the dialog box.

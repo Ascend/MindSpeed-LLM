@@ -7,8 +7,11 @@
 BoolQ is a boolean question-answering dataset created by Google Research. It has the following core features:
 
 - Dataset size: It contains 15,942 triples of question, passage, and answer.
+
 - Natural generation: The questions come from real search scenarios rather than being created manually.
+
 - Complex context: The average passage length reaches 163 words, which requires deep semantic understanding.
+
 - Domain coverage: It spans more than 650 topics and includes knowledge from multiple domains.
 
 ### Features
@@ -26,9 +29,9 @@ The BoolQ dataset includes three `.jsonl` files, and each line is a JSON diction
 
 These files are:
 
-- **train.jsonl**: 9,427 labeled training examples.
-- **dev.jsonl**: 3,270 labeled development examples.
-- **test.jsonl**: 3,245 unlabeled test examples.
+- `train.jsonl`: 9,427 labeled training examples
+- `dev.jsonl`: 3,270 labeled development examples
+- `test.jsonl`: 3,245 unlabeled test examples
 
 MindSpeed LLM evaluates the content in the `dev` question set.
 
@@ -39,7 +42,9 @@ MindSpeed LLM evaluates the content in the `dev` question set.
 #### Impact
 
 - MindSpeed LLM does not use any prompt template for BoolQ evaluation. Instead, it evaluates the target question directly and outputs the final answer. In other words, the model receives the question-passage pair directly, without any prompt template.
+
 - The output layer computes the token probabilities of `Yes` and `No`. The final prediction is determined by comparing the probabilities. `P(Yes) > P(No)` maps to `True`, and all other cases map to `False`.
+
 - Note that the accuracy may be 3 to 5 percentage points too high.
 
 #### Recommended Parameters

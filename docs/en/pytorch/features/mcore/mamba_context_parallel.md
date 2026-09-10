@@ -8,7 +8,7 @@ Mamba is introduced to address the quadratic complexity of Transformer sequence 
 
 The recursive state space model (SSM) computation steps in Mamba are temporally dependent. Traditional CP must wait for the previous CP rank to complete its computation and pass the result to the next CP rank before it can execute the next step. This creates idle waiting. Therefore, we designed a parallel Mamba-CP scheme that allows all ranks to perform state transfer computation concurrently. Compared with traditional CP, it delivers substantial performance gains.
 
-See Figure 5 in the Mamba-2 paper for the traditional CP design.
+For traditional CP, refer to [Mamba-2 paper](https://arxiv.org/abs/2405.21060) Figure 5.
 
 ## Solution
 

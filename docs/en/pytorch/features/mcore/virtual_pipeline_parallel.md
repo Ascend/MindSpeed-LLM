@@ -12,7 +12,7 @@ Further subdivide the computation to reduce bubbles.
 
 With the number of devices unchanged, divide the workload into more pipeline stages and trade additional communication for a lower bubble ratio.
 
-![Alt text](../../figures/virtual_pipeline_parallel/virtual-pipeline.png)
+![Virtual pipeline parallel forward and backward scheduling diagram](../../figures/virtual_pipeline_parallel/virtual-pipeline.png)
 
 [Original paper link](https://arxiv.org/abs/2104.04473?utm_source=chatgpt.com)
 

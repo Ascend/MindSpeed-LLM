@@ -14,15 +14,15 @@ The LoRA fine-tuning algorithm updates low-rank matrices attached to frozen pret
 
    In the SP and Row scenarios, $B$ is a standard linear layer, and the parameters are identical on each device. The backward gradient of $A$ can be transformed as follows:
    $$
-   \mathrm{grad}_a = all\_gather(\mathrm{grad}_y * B) = all\_gather(\mathrm{grad}_y) * B \\
+   \mathrm{grad}_a = \mathrm{all\_gather}(\mathrm{grad}_y * B) = \mathrm{all\_gather}(\mathrm{grad}_y) * B \\
    $$
-   The gradient computation for $x$ can reuse $all_gather(\mathrm{grad}_y)$ obtained during MC2 computation:
+   The gradient computation for $x$ can reuse `all_gather`(grad_y) obtained during MC2 computation:
    $$
-   \mathrm{grad}_x = all\_gather(\mathrm{grad}_y) * X \\
+   \mathrm{grad}_x = \mathrm{all\_gather}(\mathrm{grad}_y) * X \\
    $$
    Therefore, after the transformation, you can omit the following communication:
    $$
-   all\_gather(\mathrm{grad}_y * B)
+   \mathrm{all\_gather}(\mathrm{grad}_y * B)
    $$
 
 3. Optimize the scaling logic through mathematically equivalent transformations.

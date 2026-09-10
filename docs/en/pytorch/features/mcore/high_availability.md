@@ -19,7 +19,6 @@ Ascend chips support real-time detection of uncorrectable errors (UCEs) in NPU m
 ### Elastic Training Feature
 
 After a failure occurs during training, if the cluster has no idle resources available for replacement, the system shrinks some nodes and continues training based on the optimizer-state replica mechanism. When idle resources become available in the training cluster, the system expands back to the original size and continues training based on the optimizer-state replica mechanism.
-
 Currently, the system supports only data parallel-level elastic training. That is, it shrinks or expands some data parallel domains at data parallel granularity.
 
 ### Working Principle
@@ -45,7 +44,7 @@ Compared with the distributed optimizer, the replica optimizer increases memory 
 
 MindIO features are provided as a wheel package.
 
-`mindio_ttp` download link: [MindIO TTP package download - Ascend Community](https://gitcode.com/Ascend/mind-cluster/blob/branch_v26.0.0/docs/zh/scheduling/fault_recovery_acceleration/02_installation_and_deployment.md#%E5%87%86%E5%A4%87%E8%BD%AF%E4%BB%B6%E5%8C%85).
+`mindio_ttp` download link: [MindIO TTP package download - Ascend Community](https://gitcode.com/Ascend/mind-cluster/blob/branch_v26.1.0/docs/en/scheduling/references/fault_recovery_acceleration/02_installation_and_deployment.md#preparing-the-software-package).
 
 ### Adding Launch Arguments to the Startup Script
 
@@ -73,7 +72,18 @@ To avoid configuring switches for multiple components when you use MindX, add en
 
 ## Usage Constraints
 
-Because of the fundamental limitations, ensure that the data parallel size is greater than 1 when you perform 3D parallel partitioning (P+T+D) so that complete optimizer state data remains available after a failure. When you use the MoE feature, you also need the data parallel size of both the dense layers and the sparse layers to be greater than 1. When you use long-sequence parallelism, `dp_cp_size` must also be greater than 1.
+1. Because of the fundamental limitations, ensure that the data parallel size is greater than 1 when you perform P+T+D 3D parallelism partitioning so that complete optimizer state data remains available after a failure. When you use the MoE feature, you also need the data parallel size of both the dense layers and the sparse layers to be greater than 1. When you use long-sequence parallelism, `dp_cp_size` must also be greater than 1.
+
+2. MindSpeed-llm high-availability features are adapted only for basic models and basic training features to help users quickly experience the feature. Full training feature compatibility has not been verified yet. If you need compatibility for a specific training feature, submit an issue in the community and we will complete the adaptation promptly.
+
+3. List of features that must be compatible with high availability (the model itself must support the following prerequisites):
+
+   - `--bf16` (covers mixed-precision computation, wide range)
+   - `--overlap-grad-reduce` (related to both gradients and optimizer)
+   - `--load` (weight-related parameter)
+   - `--save` (weight-related parameter)
+   - `--ckpt-format torch` (weight-related parameter)
+   - `--use-distributed-optimizer` (optimizer-related, supports both enabled and disabled)
 
 ### Elastic Training Usage Constraints
 
@@ -83,14 +93,14 @@ In addition to the usage constraints above, elastic training also requires the f
 
 2. Currently, the system supports only scenarios where `use-custom-fsdp` and `reuse-fp32-param` are disabled.
 
-3. Currently, the system supports only data parallelism, tensor parallelism, and pipeline parallelism.
+3. Currently, the system supports only `Data Parallel`, `Tensor Parallel`, and `Pipeline Parallel`.
 
 4. After a scale-down, the system cannot scale down again. Scaling out supports only a direct return to the original size.
 
-See: [MindIO TTP Constraints and Limitations - Ascend Community](https://gitcode.com/Ascend/mind-cluster/blob/branch_v26.0.0/docs/zh/scheduling/fault_recovery_acceleration/02_installation_and_deployment.md#%E7%BA%A6%E6%9D%9F%E9%99%90%E5%88%B6)
+See: [MindIO TTP Constraints and Limitations - Ascend Community](https://gitcode.com/Ascend/mind-cluster/blob/branch_v26.1.0/docs/en/scheduling/references/fault_recovery_acceleration/02_installation_and_deployment.md#constraints)
 
 ### Checkpoint Saving and Loading Optimization
 
 When `enable-high-availability` is enabled and the MindIO ACP SDK is installed in the environment, the system uses the first-level asynchronous checkpoint saving and loading optimization from `mindio_acp`.
 
-See: [MindIO TTP Constraints and Limitations - Ascend Community](https://gitcode.com/Ascend/mind-cluster/blob/branch_v26.0.0/docs/zh/scheduling/fault_recovery_acceleration/02_installation_and_deployment.md#%E7%BA%A6%E6%9D%9F%E9%99%90%E5%88%B6)
+See: [MindIO TTP Constraints and Limitations - Ascend Community](https://gitcode.com/Ascend/mind-cluster/blob/branch_v26.1.0/docs/en/scheduling/references/fault_recovery_acceleration/02_installation_and_deployment.md#constraints)

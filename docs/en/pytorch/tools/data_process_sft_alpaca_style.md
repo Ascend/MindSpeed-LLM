@@ -27,7 +27,7 @@ cd ..
 During instruction-supervised fine-tuning, the content in the `instruction` column is concatenated with the content in the `input` column and used as the human instruction. That is, the human instruction is `instruction\ninput`, where `\n` is the newline separator. The content in the `output` column becomes the model response. If you specify `history`, the historical conversation content is also included. If you specify the `system` column, its content is used as the system prompt.
 
 ```shell
-source /usr/local/Ascend/cann/set_env.sh # Change this to the actual Toolkit installation path.
+source /usr/local/Ascend/cann/set_env.sh # Change this to the actual Toolkit installation path
 mkdir ./finetune_dataset
 
 python ./preprocess_data.py \
@@ -38,8 +38,8 @@ python ./preprocess_data.py \
     --log-interval 1000 \
     --tokenizer-type PretrainedFromHF \
     --handler-name AlpacaStyleInstructionHandler \
-    --prompt-type llama2  # <-- Specify the model template here.
-    # --map-keys '{"prompt":"instruction","query":"input","response":"output"}' # Default value, optional.
+    --prompt-type llama2  # <-- Specify the model template here
+    # --map-keys '{"prompt":"instruction","query":"input","response":"output"}' # Default value, optional
 ```
 
 `--input`
@@ -73,13 +73,13 @@ For data in the format above, the complete `--map-keys` parameter should be:
 
 The key values `prompt`, `query`, `response`, `system`, and `history` represent the mapped dataset attributes. These names are fixed in the code and must not change. The values `instruction`, `input`, `output`, `system`, and `history` correspond to the dataset column names.
 
-Because most Alpaca datasets use the `instruction` / `input` / `output` format, we set default values for the `prompt`, `query`, and `response` keys. Therefore, the `--map-keys` parameter above can be simplified to `'{"system": "system","history": "history"}'`.
+Because most Alpaca datasets use the `instruction`/`input`/`output` format, we set default values for the `prompt`, `query`, and `response` keys. Therefore, the `--map-keys` parameter above can be simplified to `'{"system": "system","history": "history"}'`.
 
 If the dataset does not contain `system` or `history` columns, you can omit `--map-keys`.
 
 `--prompt-type`
 
-Use this to specify the model template. It helps a base model achieve stronger dialogue capabilities after fine-tuning. You can find the available `prompt-type` options in [templates](../../../../mindspeed_llm/tasks/preprocess/templates.py).
+Use this to specify the model template. It helps a base model achieve stronger dialogue capabilities after fine-tuning. You can find the available `prompt-type` options in [templates](../../../../configs/finetune/templates.json).
 
 `--handler-name`
 

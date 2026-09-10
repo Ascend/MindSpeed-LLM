@@ -32,7 +32,7 @@ Set this to 3.
 
 #### Impact
 
-- Unlike `Direct Evaluation Mode`, this mode also uses the fixed template in [agi_utils](../../../../../../mindspeed_llm/tasks/evaluation/eval_utils/agi_utils.py) from `template_mapping`. It concatenates that template with the question the model needs to answer, then feeds the result to the model for evaluation.
+- Unlike `Direct Evaluation Mode`, this mode uses the fixed template in [agi_utils](../../../../../../mindspeed_llm/tasks/evaluation/eval_utils/agi_utils.py) from `template_mapping`. It concatenates that template with the question the model needs to answer, then feeds the result to the model for evaluation.
 
 #### Recommended Parameters
 
@@ -42,7 +42,7 @@ Set this to 5 or higher.
 
 `--alternative-prompt`
 
-Enable `Alternative Template Output Mode`.
+Set this to true.
 
 ## References
 

@@ -4,14 +4,14 @@
 
 For sparse flash attention, lightning indexer, and lightning indexer loss, perform an All-Gather communication on the partitioned key and value tensors before computation to obtain the complete key and value tensors.
 
-For a detailed introduction, see [**kvallgather_cp_algo**](https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/kvallgather-context-parallel.md).
+For a detailed introduction, see [`kvallgather_cp_algo`](https://gitcode.com/Ascend/MindSpeed/blob/26.1.0_core_r0.12.1/docs/en/features/kvallgather-context-parallel.md).
 
 ## Usage
 
 | Key Parameter | Description |
 | --- | --- |
-| `--context-parallel-size [int]` | Number of context-parallel ranks to enable. The default is 1. Configure it based on your requirements. |
-| `--context-parallel-algo` <b>kvallgather_cp_algo</b> | Long-sequence parallelism algorithm option. Set it to `kvallgather_cp_algo` to enable KVAllGather long-sequence parallelism. |
+| `--context-parallel-size [int]` | Number of context-parallel ranks to set. The default is 1. Configure it based on your requirements. |
+| `--context-parallel-algo` `kvallgather_cp_algo` | Long-sequence parallelism algorithm option. Set it to `kvallgather_cp_algo` to enable KVAllGather long-sequence parallelism. |
 | `--seq-length [int]` | Input sequence length. |
 
 ## Notes

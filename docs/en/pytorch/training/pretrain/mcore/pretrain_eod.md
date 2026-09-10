@@ -16,11 +16,11 @@ The process for distributed LLM pretraining in pack mode is as follows:
 
 1. Environment setup
 
-    Before you start pretraining, follow the [MindSpeed LLM Installation Guide](../../install_guide.md) to complete the environment setup, and ensure that the Ascend NPU toolkit environment variables are configured as follows:
+    Before you start pretraining, follow the [MindSpeed LLM Installation](../../install_guide.md) to complete the environment setup, and ensure that the Ascend NPU toolkit environment variables are configured as follows:
 
     ```shell
-    source /usr/local/Ascend/cann/set_env.sh      # Modify to the actual installed Toolkit package path.
-    source /usr/local/Ascend/nnal/atb/set_env.sh  # Modify to the actual installed nnal package path.
+    source /usr/local/Ascend/cann/set_env.sh      # Modify to the actual installed Toolkit package path
+    source /usr/local/Ascend/nnal/atb/set_env.sh  # Modify to the actual installed nnal package path
     ```
 
 2. Pretraining data preprocessing
@@ -34,13 +34,13 @@ The process for distributed LLM pretraining in pack mode is as follows:
     Then, use the [Enwiki Dataset](https://huggingface.co/datasets/lsb/enwiki20230101) as an example to run data preprocessing. For detailed script configuration, see the [Qwen3 pretraining data processing script](../../../../../../examples/mcore/qwen3/data_convert_qwen3_pretrain.sh). You need to modify the following content in the script:
 
     ```bash
-    source /usr/local/Ascend/cann/set_env.sh # Modify to the actual installed Toolkit package path.
+    source /usr/local/Ascend/cann/set_env.sh # Modify to the actual installed Toolkit package path
 
     ......
-    --input ./dataset/train-00000-of-00042-d964455e17e96d5a.parquet # Raw dataset path.
-    --tokenizer-name-or-path ./model_from_hf/qwen3_hf               # Hugging Face tokenizer path.
-    --output-prefix ./dataset/enwiki                                # Save path.
-    --append-eod                                                    # Add this parameter to enable pack mode data preprocessing.
+    --input ./dataset/train-00000-of-00042-d964455e17e96d5a.parquet # Raw dataset path
+    --tokenizer-name-or-path ./model_from_hf/qwen3_hf               # Hugging Face tokenizer path
+    --output-prefix ./dataset/enwiki                                # Save path
+    --append-eod                                                    # Add this parameter to enable pack mode data preprocessing
     ......
     ```
 
@@ -82,7 +82,7 @@ The process for distributed LLM pretraining in pack mode is as follows:
     - Single-node configuration
 
         ```shell
-        NPUS_PER_NODE=8   # Number of devices on a single node.
+        NPUS_PER_NODE=8   # Number of devices on a single node
         MASTER_ADDR=localhost
         MASTER_PORT=6000
         NNODES=1
@@ -93,25 +93,25 @@ The process for distributed LLM pretraining in pack mode is as follows:
     - Multi-node configuration
 
         ```shell
-        # Configure the distributed parameters based on the actual cluster.
-        NPUS_PER_NODE=8                     # Number of devices on each node.
-        MASTER_ADDR="your master node IP"  # Change this to the IP address of the master node. It cannot be localhost.
+        # Configure the distributed parameters based on the actual cluster
+        NPUS_PER_NODE=8                     # Number of devices on each node
+        MASTER_ADDR="your master node IP"  # Change this to the IP address of the master node. It cannot be localhost
         MASTER_PORT=6000
-        NNODES=2                             # Number of nodes in the cluster. Fill in the actual value.
-        NODE_RANK="current node id"         # The current node rank. Ranks must be unique across nodes. The master node is 0, and other nodes can be 1, 2, and so on.
+        NNODES=2                             # Number of nodes in the cluster. Fill in the actual value
+        NODE_RANK="current node id"         # The current node rank. Ranks must be unique across nodes. The master node is 0, and other nodes can be 1, 2, and so on
         WORLD_SIZE=$(($NPUS_PER_NODE * $NNODES))
         ```
 
     Then, modify the related path parameters and the model partition configuration in the script:
 
     ```shell
-    CKPT_SAVE_DIR="your model save ckpt path"  # Weight save path after training.
-    DATA_PATH="your data path"                 # Dataset path. Fill in the path saved during data preprocessing.
-    TOKENIZER_PATH="your tokenizer path"       # Vocabulary path. Fill in the path to the vocabulary from the downloaded open-source weights.
-    CKPT_LOAD_DIR="your model ckpt path"       # Weight load path. Fill in the path saved during weight conversion.
+    CKPT_SAVE_DIR="your model save ckpt path"  # Weight save path after training
+    DATA_PATH="your data path"                 # Dataset path. Fill in the path saved during data preprocessing
+    TOKENIZER_PATH="your tokenizer path"       # Vocabulary path. Fill in the path to the vocabulary from the downloaded open-source weights
+    CKPT_LOAD_DIR="your model ckpt path"       # Weight load path. Fill in the path saved during weight conversion
 
-    TP=1 # TP size for model weight conversion. In this example, it is 1.
-    PP=4 # PP size for model weight conversion. In this example, it is 4.
+    TP=1 # TP size for model weight conversion. In this example, it is 1
+    PP=4 # PP size for model weight conversion. In this example, it is 4
     ```
 
     After you finish the common configuration, to enable pack mode training, add the `--reset-attention-mask` parameter based on the [Qwen3-8B pretraining script](../../../../../../examples/mcore/qwen3/pretrain_qwen3_8b_4K_ptd.sh). When this parameter is enabled, it computes sentence boundary positions from the EOD token and generates `actual_seq_len`. Passing that value to the FA operator has the same effect as jagged mask computation. The effect is as follows:
@@ -131,11 +131,11 @@ The process for distributed LLM pretraining in pack mode is as follows:
     - `tokenizer-type`: When the parameter value is `PretrainedFromHF`, the tokenizer path only needs to point to the model folder and does not need to point to the `tokenizer.model` file. When the parameter value is not `PretrainedFromHF`, for example `Qwen3Tokenizer`, you need to point to the `tokenizer.model` file. The example is as follows:
 
         ```bash
-        # tokenizer-type is PretrainedFromHF.
+        # tokenizer-type is PretrainedFromHF
         TOKENIZER_PATH="./model_from_hf/Qwen3-8B/"
         --tokenizer-name-or-path ${TOKENIZER_PATH}
 
-        # tokenizer-type is not PretrainedFromHF.
+        # tokenizer-type is not PretrainedFromHF
         TOKENIZER_MODEL="./model_from_hf/Qwen3-8B/tokenizer.model"
         --tokenizer-model ${TOKENIZER_MODEL}
         ```

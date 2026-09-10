@@ -12,7 +12,7 @@ MindSpeed LLM now supports integration with Huawei's in-house AI framework MindS
 
 ## Version Compatibility Table
 
-The dependency compatibility for MindSpeed LLM plus the MindSpore backend is listed below. For installation steps, see [MindSpeed LLM Installation Guide](../mindspore/install_guide.md).
+The dependency compatibility for MindSpeed LLM plus the MindSpore backend is listed below. For installation steps, see [MindSpeed LLM Installation](../mindspore/install_guide.md).
 
 <table>
   <tr>
@@ -203,7 +203,7 @@ The following table shows support for the key acceleration features of MindSpeed
       <td>✅</td>
     </tr>
     <tr>
-      <td><a href="../pytorch/features/mcore/yarn.md">YARN context extension</a></td>
+      <td><a href="../pytorch/features/mcore/yarn.md">YaRN</a></td>
       <td>✅</td>
     </tr>
   </tbody>
@@ -235,7 +235,7 @@ The MindSpore backend fully supports data preprocessing for MindSpeed LLM pretra
       <td><a href="../pytorch/tools/data_process_pretrain.md">Pretraining data processing</a></td>
       <td>✅</td>
       <td>✅</td>
-      <td rowspan="3">【Ascend】</td>
+      <td rowspan="3">[Ascend] </td>
     </tr>
     <tr>
       <td rowspan="2">Fine-tuning</td>
@@ -253,7 +253,7 @@ The MindSpore backend fully supports data preprocessing for MindSpeed LLM pretra
       <td><a href="../pytorch/tools/data_process_dpo_pairwise.md">Pairwise data processing</a></td>
       <td>✅</td>
       <td>✅</td>
-      <td rowspan="3">【NAIE】</td>
+      <td rowspan="3">[Ascend] </td>
     </tr>
   </tbody>
 </table>
@@ -274,15 +274,15 @@ The weight conversion for the MindSpeed MindSpore backend is consistent with the
   </thead>
   <tbody>
     <tr>
-      <td>huggingface</td>
+      <td>Hugging Face</td>
       <td>megatron-core</td>
       <td>tp, pp, dpp, vpp, cp, ep, loop layer</td>
       <td>❌</td>
-      <td rowspan="3">【Ascend】</td>
+      <td rowspan="3">[Ascend] </td>
     </tr>
     <tr>
       <td rowspan="2">megatron-core</td>
-      <td>huggingface</td>
+      <td>Hugging Face</td>
       <td></td>
       <td>✅</td>
     </tr>
@@ -310,7 +310,7 @@ The weight conversion for the MindSpeed MindSpore backend is consistent with the
       <td rowspan="1">Performance profiling</td>
       <td><a href="../pytorch/tools/profiling.md">Collect profiling data based on Ascend chips</a></td>
       <td>✅</td>
-      <td>【Ascend】</td>
+      <td>[Ascend] </td>
     </tr>
   </tbody>
 </table>
@@ -331,7 +331,7 @@ The weight conversion for the MindSpeed MindSpore backend is consistent with the
       <td rowspan="2">High availability</td>
       <td><a href="../pytorch/tools/deterministic_computation.md">Enable deterministic computation based on Ascend chips</a></td>
       <td>✅</td>
-      <td rowspan="2">【Ascend】</td>
+      <td rowspan="2">[Ascend] </td>
     </tr>
   </tbody>
 </table>

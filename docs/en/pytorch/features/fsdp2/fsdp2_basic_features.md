@@ -1,6 +1,6 @@
 # Introduction to PyTorch FSDP2 Backend Features
 
-FSDP2 is the next-generation paradigm for PyTorch distributed parallelism. It aims to address the pain points of FSDP1, which uses the `FlatParameter` wrapper pattern, in flexibility and composability. Instead of wrapping a model with a Python class, it performs in-place parallelization through the **`torch.distributed.fsdp.fully_shard`** API.
+FSDP2 is the next-generation paradigm for PyTorch distributed parallelism. It aims to address the pain points of FSDP1, which uses the `FlatParameter` wrapper pattern, in flexibility and composability. Instead of wrapping a model with a Python class, it performs in-place parallelization through the `torch.distributed.fsdp.fully_shard` API.
 
 ---
 
@@ -9,7 +9,7 @@ FSDP2 is the next-generation paradigm for PyTorch distributed parallelism. It ai
 Unlike FSDP1, which flattens multiple parameters into one large `FlatParameter`, FSDP2 adopts the **Per-Parameter Sharding** strategy.
 
 - **FSDP1 (legacy)**: It flattens and concatenates all parameters within a layer, then splits the resulting large 1D vector. This breaks the original parameter structure of the model, which makes some parameter operations, such as custom initialization and fine-tuning of specific layers, more complex.
-- **FSDP2 (new)**: It keeps the original parameter structure of the model unchanged. Each parameter (`nn.Parameter`) is sharded and managed separately. This design gives FSDP2 extremely strong composability, which makes it easy to combine with Tensor Parallel (TP) or checkpointing.
+- **FSDP2 (new)**: It keeps the original parameter structure of the model unchanged. Each parameter (`nn.Parameter`) is sharded and managed separately. This design gives FSDP2 extremely strong composability, which makes it easy to combine with tensor parallelism (TP) or checkpointing.
 
 ## Working Principle
 
@@ -25,21 +25,21 @@ As shown in the following figure, FSDP decomposes the DDP All-Reduce operation i
 <img src="../../figures/fsdp2/process.png" style="width:50%;">
 </div>
 
-1. **Fully Sharded (Quiescent State)**: Outside forward and backward computation, parameters are fully sharded. Each GPU stores only 1/N of them.
-2. **All-Gather (Preparation State)**: Before forward and backward passes begin, the sharded parameters are gathered into complete parameters through broadcast.
-3. **Compute (Computation State)**: Use the complete parameters for computation.
-4. **Reduce-Scatter (Synchronization State)**: During the backward pass, the computed full gradient is immediately reduced and sharded into gradient slices through Reduce-Scatter.
-5. **Update (Update State)**: The optimizer uses gradient slices to update sharded parameters. Therefore, the optimizer states are also sharded.
+1. **Fully Sharded (quiescent state)**: Outside forward and backward computation, parameters are fully sharded. Each GPU stores only 1/N of them.
+2. **All-Gather (preparation state)**: Before forward and backward passes begin, the sharded parameters are gathered into complete parameters through broadcast.
+3. **Compute (computation state)**: Use the complete parameters for computation.
+4. **Reduce-Scatter (synchronization state)**: During the backward pass, the computed full gradient is immediately reduced and sharded into gradient slices through Reduce-Scatter.
+5. **Update (update state)**: The optimizer uses gradient slices to update sharded parameters. Therefore, the optimizer states are also sharded.
 
 ## DTensor
 
-FSDP2's underlying foundation is **DTensor (`torch.distributed.tensor.DTensor`)**.
+The underlying foundation of FSDP2 is **DTensor (`torch.distributed.tensor.DTensor`)**.
 
 **Logical and physical view separation**:
 
-- **Logically**: The parameter still appears to be a complete tensor, for example `[4096, 4096]`, which preserves the same programming experience as single-GPU training.
+- **Logically**: The parameter still appears to be a complete tensor, for example [4096, 4096], which preserves the same programming experience as single-GPU training.
 
-- **Physically**: The parameter is actually sharded and distributed across the device group defined by the `DeviceMesh`, for example, each GPU holds only a `[512, 4096]` local tensor.
+- **Physically**: The parameter is actually sharded and distributed across the device group defined by the `DeviceMesh`, for example, each GPU holds only a [512, 4096] local tensor.
 
 **DeviceMesh**: FSDP2 relies on `DeviceMesh` to describe the topology of devices. Therefore, it natively supports multidimensional parallelism, for example 2D FSDP or FSDP + TP, by defining different mesh dimensions.
 
@@ -52,6 +52,9 @@ FSDP2 provides flexible precision control through `MixedPrecisionPolicy`, which 
 - **Buffer Dtype**: It independently controls the precision of buffers, such as BatchNorm statistics, to prevent overflow.
 
 ```python
+import torch
+from torch.distributed.fsdp import MixedPrecisionPolicy
+
 # FSDP2 mixed-precision conversion process
 mp_policy = MixedPrecisionPolicy(param_dtype=torch.bfloat16, reduce_dtype=torch.float32)
 # Forward: Parameters (FP32 storage) -> Cast to BF16 -> Compute
@@ -66,4 +69,6 @@ To maximize training efficiency, FSDP2 implements a highly optimized communicati
 <img src="../../figures/fsdp2/prefetch.png" width="610" height="207">
 </div>
 
-**Reference**: [PyTorch FSDP2 Documentation](https://docs.pytorch.org/docs/2.7/distributed.fsdp.fully_shard.html#pytorch-fsdp2-fully-shard)
+The examples in this article are based on PyTorch 2.7 and above. FSDP2 was introduced as a technology preview starting from PyTorch 2.4.
+
+**Reference**: [PyTorch FSDP2 Documentation](https://docs.pytorch.org/docs/stable/distributed.fsdp.fully_shard.html)

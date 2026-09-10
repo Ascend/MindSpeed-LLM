@@ -32,10 +32,10 @@ When the system upsamples the compressed `q_compressed` and `kv_compressed` tens
 
 ![image](../../figures/mla/image_03.png)
 
-- When you enable `--mla-mm-split`, the matrix used to multiply `q_compressed` is initialized as two matrices, `linear_qk_nope` and `linear_qk_rope`. Multiplying `q_compressed` by these two matrices directly produces `q_no_pe` and `q_pos_emb`. The matrix used to multiply `kv_compressed` is initialized as two matrices, `linear_kv_nope` and `linear_v`. Multiplying `kv_compressed` by these two matrices produces `k_no_pe` and `value`. This approach removes two `split` operations, which avoids non-contiguous tensors and optimizes the cost of converting tensors to contiguous layout. However, because it splits one large matrix multiplication into two, it reduces matrix multiplication efficiency. At the same time, in scenarios with heavy TP communication, it may introduce additional communication overhead.
+- When you enable `--mla-mm-split`, the matrix used to multiply `q_compressed` is initialized as two matrices, `linear_qk_nope` and `linear_qk_rope`. Multiplying `q_compressed` by these two matrices directly produces `q_no_pe` and `q_pos_emb`. The matrix used to multiply `kv_compressed` is initialized as two matrices, `linear_kv_nope` and `linear_v`. Multiplying `kv_compressed` by these two matrices produces `k_no_pe` and `value`. This approach removes two `split` operations, which avoids non-contiguous tensors and optimizes the cost of converting tensors to contiguous layout. However, because it splits one large matrix multiplication into two, it reduces matrix multiplication efficiency. At the same time, in multi-device TP communication scenarios, it may introduce additional communication overhead.
 - Without `--mla-mm-split`, the matrix used to multiply `q_compressed` is initialized as one matrix, `linear_q_up_proj`. Multiplying `q_compressed` by this large matrix produces the result, and then the system splits it into `q_no_pe` and `q_pos_emb`. The matrix used to multiply `kv_compressed` is initialized as one matrix, `linear_kv_up_proj`. Multiplying `kv_compressed` by this large matrix produces the result, and then the system splits it into `k_no_pe` and `value`. Compared with enabling `--mla-mm-split`, disabling this feature improves matrix computation efficiency, but it may introduce the cost of converting tensors to contiguous layout.
 
-**You are advised to this feature in scenarios without TP or in scenarios with low TP communication volume.**
+**You are advised to use this feature in scenarios without TP or in scenarios with low TP communication volume.**
 
 `--enable-mla-absorb`
 
@@ -58,5 +58,4 @@ When `--multi-latent-attention` is enabled, enable `--mla-swap-core-attn-out` to
 If you use the MLA feature, specify a spec that supports MLA in the shell script. The specs that currently support MLA in the repository are `deepseek_spec` and `minicpm_spec`. Also add `--multi-latent-attention` to the shell script.
 
 `--mla-swap-core-attn-out`
-
-If you use `--mla-swap-core-attn-out`, also enable `--moe-fb-overlap` and `dualpipev`.
+If you use `--mla-swap-core-attn-out`, also enable `--moe-fb-overlap` and `--schedules-method dualpipev`.

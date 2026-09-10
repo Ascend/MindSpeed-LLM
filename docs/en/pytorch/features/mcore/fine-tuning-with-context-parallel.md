@@ -4,7 +4,7 @@
 
 ### Data Preprocessing
 
-The data preprocessing method is the same as that used for [**Multi-Sample Pack Fine-Tuning**](../../training/finetune/mcore/multi_sample_pack_finetune.md).
+The data preprocessing method is the same as that used for [Multi-Sample Pack Fine-Tuning](../../training/finetune/mcore/multi_sample_pack_finetune.md).
 
 ### Fine-Tuning Parameters
 
@@ -26,7 +26,7 @@ Each data item is formed by concatenating different samples. Therefore, the atte
 
 `--context-parallel-size`
 
-Sets the number of parallel partitions for CP sharding. The configured value must evenly divide the sequence length.
+Sets the number of parallel partitions for CP sharding. The sequence length must be evenly divisible by the configured value.
 
 `--attention-mask-type`
 
@@ -39,14 +39,14 @@ The default value is `causal`, and the `causal` and `general` formats are suppor
 
 Use the specified parameter to select a CP algorithm. The available algorithms are as follows:
 
-1. [**megatron_cp_algo**](https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/ring-attention-context-parallel.md)
-2. [**ulysses_cp_algo**](https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/ulysses-context-parallel.md)
-3. [**hybrid_cp_algo**](https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/hybrid-context-parallel.md)
+1. [megatron_cp_algo](https://gitcode.com/Ascend/MindSpeed/blob/26.1.0_core_r0.12.1/docs/en/features/ring-attention-context-parallel.md)
+2. [ulysses_cp_algo](https://gitcode.com/Ascend/MindSpeed/blob/26.1.0_core_r0.12.1/docs/en/features/ulysses-context-parallel.md)
+3. [hybrid_cp_algo](https://gitcode.com/Ascend/MindSpeed/blob/26.1.0_core_r0.12.1/docs/en/features/hybrid-context-parallel.md)
 
 ```shell
     --seq-length 131072
     --context-parallel-size 8
-    --context-parallel-algo megatron_cp_algo  # When CP is small (CP <= 4), using ulysses_cp_algo is a good performance choice.
+    --context-parallel-algo megatron_cp_algo  # When CP is small (CP <= 4), using ulysses_cp_algo is a good performance choice
     --attention-mask-type general
 ```
 

@@ -15,7 +15,7 @@ The HumanEval dataset has several notable features:
 - Each problem in the dataset includes a detailed description and corresponding test cases, which provide a clear standard and basis for evaluation and ensure that the evaluation results are objective and accurate.
 - Its problem design emphasizes code readability and consistency, which encourages the model to generate high-quality, maintainable code that matches the requirements of real development. Therefore, the dataset provides a comprehensive assessment of code generation models from multiple angles and helps improve model performance so that it can adapt to complex and changing programming application scenarios.
 
-MindSpeed LLM evaluates the content in the HumanEval question set.
+MindSpeed-LLM evaluates the content in the `human_eval` problem set. `human_eval` is the task name of the HumanEval dataset in the code directory.
 
 ## Usage
 
@@ -23,8 +23,10 @@ MindSpeed LLM evaluates the content in the HumanEval question set.
 
 #### Impact
 
-- MindSpeed LLM does not use any prompt template for HumanEval evaluation. Instead, it evaluates the target question directly and outputs the final answer. In other words, the model receives the question directly, without any prompt template.
+- MindSpeed-LLM does not use any prompt template for `human_eval` evaluation. Instead, it evaluates the target question directly and outputs the final answer. In other words, the model directly receives the question-paragraph pair without any prompt template.
+
 - This mode uses beam search for model inference.
+
 - After the LLM outputs an answer for each question, the program uses `logger.info` to indicate whether the question passes evaluation.
 
 #### Recommended Parameters
@@ -37,15 +39,17 @@ Set this to 1024 to ensure that the code is output completely.
 
 #### Impact
 
-- Like direct evaluation mode, this evaluation mode also does not use a prompt template.
+- Like direct evaluation mode, this evaluation mode also does not use any custom prompt.
+
 - This mode uses the standard inference method for model output. Therefore, it does not use sampling or beam search for inference.
+
 - Unlike direct evaluation mode, this mode judges the inference results of the model only after all questions have finished inference.
 
 #### Recommended Parameters
 
 `--alternative-prompt`
 
-Enable alternative template output mode.
+Set to true to enable alternative template output mode.
 
 `--max-new-tokens`
 
