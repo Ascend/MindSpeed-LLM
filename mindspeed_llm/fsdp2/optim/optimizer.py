@@ -428,7 +428,7 @@ class OptimizerFactory:
             optimizer_type = "adamw"
             fused = True
 
-        foreach = False if is_torch_npu_available() else (not fused)
+        foreach = not fused
 
         if optimizer_type == "adamw":
             if fused and is_torch_npu_available():
