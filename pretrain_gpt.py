@@ -57,7 +57,7 @@ def model_provider(
     vp_stage=None,
     config=None,
     pg_collection=None,
-) -> Union[GPTModel, megatron.core.models.gpt.gpt_model]:
+) -> Union[GPTModel, megatron.core.models.gpt.gpt_model.GPTModel]:
     """Builds the model.
 
     If you set the use_mcore_models to True, it will return the mcore GPT model and if not the legacy GPT model.
