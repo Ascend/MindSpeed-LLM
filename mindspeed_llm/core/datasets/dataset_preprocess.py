@@ -1,22 +1,44 @@
 import os
 import sys
-import time
 import json
 import torch
-import glob
-import os, sys, time, subprocess
+import subprocess
 from megatron.training.utils import print_rank_0
 from mindspeed_llm.tasks.preprocess.data_handler import _get_data_format
 
 
-def convert_datasets(args, shared: bool):
-    IDX_EXT = ".idx"
-    BIN_EXT = ".bin"
+def _load_output_prefixes(manifest_path):
+    """Load and validate the exact bin/idx pairs emitted by preprocess_data.py."""
+    if not os.path.isfile(manifest_path):
+        raise FileNotFoundError(f"[DataConvert] Missing output manifest: {manifest_path}")
 
+    with open(manifest_path, "r", encoding="utf-8") as manifest_file:
+        manifest = json.load(manifest_file)
+
+    idx_files = manifest.get("idx_files")
+    if not isinstance(idx_files, list) or not idx_files:
+        raise ValueError(f"[DataConvert] Invalid output manifest: {manifest_path}")
+
+    prefixes = []
+    for idx_file in idx_files:
+        if not isinstance(idx_file, str) or not idx_file.endswith(".idx"):
+            raise ValueError(f"[DataConvert] Invalid index path in manifest: {idx_file!r}")
+        prefix = idx_file[: -len(".idx")]
+        if not os.path.isfile(idx_file) or not os.path.isfile(prefix + ".bin"):
+            raise FileNotFoundError(f"[DataConvert] Missing bin/idx output pair: {prefix}")
+        if prefix not in prefixes:
+            prefixes.append(prefix)
+
+    return prefixes
+
+
+def convert_datasets(args, shared: bool):
     was_list = isinstance(args.data_path, (list, tuple))
-    paths = [str(p).strip() for p in args.data_path] if was_list else [
-        p.strip() for p in str(args.data_path).split(",") if p.strip()
-    ]
+    paths = (
+        [str(p).strip() for p in args.data_path]
+        if was_list
+        else [p.strip() for p in str(args.data_path).split(",") if p.strip()]
+    )
     if not paths:
         return
 
@@ -61,6 +83,9 @@ def convert_datasets(args, shared: bool):
         out_map[p] = {
             "out_prefix": out_prefix,
             "base": out_prefix,
+            # Keep a non-dataset extension so directory inputs do not ingest the
+            # manifest as raw JSON on a later conversion.
+            "manifest": out_prefix + "_preprocess.manifest",
         }
 
     # Perform actual conversion only on designated rank
@@ -69,18 +94,33 @@ def convert_datasets(args, shared: bool):
             p = raw.strip().strip('"').strip("'")
             meta = out_map[p]
             out_prefix = meta["out_prefix"]
+            manifest_path = meta["manifest"]
+
+            # Never consume a manifest left by an earlier or failed conversion.
+            if os.path.exists(manifest_path):
+                os.remove(manifest_path)
 
             print_rank_0(f"[DataConvert] Converting: {p} -> {out_prefix}")
 
             cmd = [
-                sys.executable, os.path.abspath("preprocess_data.py"),
-                "--input", p,
-                "--tokenizer-type", args.tokenizer_type,
-                "--handler-name", args.handler_name,
-                "--output-prefix", out_prefix,
-                "--workers", str(getattr(args, "workers", 1)),
-                "--log-interval", "1000",
-                "--n-subs", str(getattr(args, "n_subs", 1)),
+                sys.executable,
+                os.path.abspath("preprocess_data.py"),
+                "--input",
+                p,
+                "--tokenizer-type",
+                args.tokenizer_type,
+                "--handler-name",
+                args.handler_name,
+                "--output-prefix",
+                out_prefix,
+                "--output-manifest",
+                manifest_path,
+                "--workers",
+                str(getattr(args, "workers", 1)),
+                "--log-interval",
+                "1000",
+                "--n-subs",
+                str(getattr(args, "n_subs", 1)),
             ]
             cmd += ["--json-keys"] + list(args.json_keys)
 
@@ -98,6 +138,10 @@ def convert_datasets(args, shared: bool):
                 cmd.append("--neat-pack")
             if getattr(args, "append_eod", False):
                 cmd.append("--append-eod")
+            if getattr(args, "split_sentences", False):
+                cmd.append("--split-sentences")
+            if getattr(args, "keep_newlines", False):
+                cmd.append("--keep-newlines")
             if getattr(args, "stage", False):
                 if getattr(args, "enable_thinking", None) is not None:
                     cmd += ["--enable-thinking", str(args.enable_thinking)]
@@ -115,7 +159,8 @@ def convert_datasets(args, shared: bool):
     if dist.is_initialized():
         dist.barrier()
 
-    # After conversion, find actual training prefix (.idx/.bin)
+    # Consume the exact output list reported by the converter. Directory scans
+    # are unsafe because unrelated datasets can use the same key/level suffix.
     new_paths = []
     for raw in paths:
         q = raw.strip().strip('"').strip("'")
@@ -123,39 +168,14 @@ def convert_datasets(args, shared: bool):
             continue
         meta = out_map[q]
         base = meta["base"]
+        output_prefixes = _load_output_prefixes(meta["manifest"])
 
-        # Case 1: direct .idx/.bin exists
-        if os.path.exists(base + IDX_EXT) and os.path.exists(base + BIN_EXT):
-            matched_prefix = base
+        if getattr(args, "stage", False):
+            # Packed dataset readers receive the common base and discover the
+            # handler-specific ``_packed_<key>_document`` pairs themselves.
+            new_paths.append(base)
         else:
-            dir_name = os.path.dirname(base) or "."
-            prefix_name = os.path.basename(base)
-            matched_prefix = None
-
-            # Stage = fine-tuning → search packed format
-            if getattr(args, "stage", False):
-                for f in os.listdir(dir_name):
-                    if f.startswith(prefix_name + "_packed") and f.endswith(IDX_EXT):
-                        cand = os.path.join(dir_name, f[:-len(IDX_EXT)])
-                        if os.path.exists(cand + BIN_EXT):
-                            matched_prefix = base
-                            break
-            else:
-                # Stage = pretraining → search text_document format
-                for f in os.listdir(dir_name):
-                    if (f.startswith(prefix_name + "_text_document") or 
-                        "_text_document" in f) and f.endswith(IDX_EXT):
-                        cand = os.path.join(dir_name, f[:-len(IDX_EXT)])
-                        if os.path.exists(cand + BIN_EXT):
-                            matched_prefix = cand
-                            break
-
-        if not matched_prefix:
-            raise FileNotFoundError(
-                f"[DataConvert] Missing output prefix for training: {base}[*_text_document or *_packed]"
-            )
-
-        new_paths.append(matched_prefix)
+            new_paths.extend(output_prefixes)
 
     args.data_path = new_paths if was_list else ",".join(new_paths)
 
