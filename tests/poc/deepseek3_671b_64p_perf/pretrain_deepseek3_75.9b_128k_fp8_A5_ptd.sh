@@ -165,7 +165,7 @@ TRAIN_ARGS="
     --lr-warmup-iters 0 \
     --attention-dropout 0.0 \
     --init-method-std 0.02 \
-    --hidden-dropout 0.0 \s
+    --hidden-dropout 0.0 \
     --clip-grad 1.0 \
     --adam-beta1 0.9 \
     --adam-beta2 0.999 \
@@ -200,4 +200,5 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     $TRAIN_ARGS \
     --load  ${CKPT_LOAD_DIR} \
     --save  ${CKPT_SAVE_DIR} \
+    --ckpt-format torch \
     --distributed-backend nccl | tee logs/deepseek3_75.9b_128k_fp8_A5_perf.log
