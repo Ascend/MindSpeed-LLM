@@ -467,13 +467,20 @@ def npu_sparse_flash_mla(
         cu_seqlens_q = cu_seqlens_q.int()
         cu_seqlens_kv = cu_seqlens_kv.int()
         cmp_residual_kv = cmp_residual_kv.int() if cmp_residual_kv is not None else None
-        cu_seqlens_cmp_kv, _ = get_cmp_cu_seqlens(cu_seqlens_kv, cmp_ratio, zero_based=True)
         if cu_seqlens_q[0] != 0:
             cu_seqlens_q = torch.cat((cu_seqlens_q.new_zeros(1), cu_seqlens_q))
             cu_seqlens_kv = torch.cat((cu_seqlens_kv.new_zeros(1), cu_seqlens_kv))
-        if cmp_residual_kv is None:
-            seqlens_k = cu_seqlens_kv[1:] - cu_seqlens_kv[:-1]
-            cmp_residual_kv = seqlens_k % cmp_ratio
+
+        if cmp_kv is not None:
+            cu_seqlens_cmp_kv, _ = get_cmp_cu_seqlens(cu_seqlens_kv, cmp_ratio, zero_based=True)
+            if cmp_residual_kv is None:
+                seqlens_k = cu_seqlens_kv[1:] - cu_seqlens_kv[:-1]
+                cmp_residual_kv = seqlens_k % cmp_ratio
+            else:
+                cmp_residual_kv.int()
+        else:
+            cu_seqlens_cmp_kv = None
+            cmp_residual_kv = None
         q = rearrange(q, "s b h d -> (b s) h d").contiguous()  # [S, B, N, D] --> [T, N, D]
         # [S, B, D] --> [T, 1, D]
         ori_kv = ori_kv.reshape(-1, 1, ori_kv.shape[2]).contiguous()
