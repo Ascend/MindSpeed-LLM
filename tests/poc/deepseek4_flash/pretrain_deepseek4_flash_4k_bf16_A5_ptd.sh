@@ -91,8 +91,8 @@ MOE_ARGS="
     --moe-grouped-gemm \
     --moe-permutation-async-comm \
     --moe-token-dispatcher-type alltoall \
-    --num-experts ${NUM_EXPERTS}
-    --moe-router-topk ${TOPK_EXPERTS}
+    --num-experts ${NUM_EXPERTS} \
+    --moe-router-topk ${TOPK_EXPERTS} \
     --moe-layer-freq 1 \
     --first-k-dense-replace -1 \
     --moe-ffn-hidden-size 2048 \
