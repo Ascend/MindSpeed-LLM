@@ -9,17 +9,17 @@
 - 权重和数据集准备：从HuggingFace下载Qwen3-8B开源模型权重，并获取Alpaca数据集
 - 启动训练任务：在昇腾NPU上进行模型预训练和微调
 
-> [!NOTE]
->
-> MindSpeed LLM支持<term>Ascend 950 系列产品</term>、<term>Atlas A3 训练系列产品</term>和<term>Atlas A2 训练系列产品</term>，且要求单NPU的片上内存为64GB及以上，详见[模型支持列表](../models/supported_models.md)。
->
-> 当前Qwen3-8B的示例脚本中`NPUS_PER_NODE=8`表示需要8个NPU，如果实际情况低于此配置，可能遇到OOM（Out of Memory，内存不足）问题。
-
 开发者入门基础：
 
 - 具备基础的PyTorch使用经验
 - 具备初级的Python开发经验
 - 对[Megatron-LM](https://github.com/NVIDIA/Megatron-LM)有基本的了解
+
+> [!NOTE]
+>
+> MindSpeed LLM支持<term>Ascend 950DT系列产品</term>、<term>Atlas A3 训练系列产品</term>和<term>Atlas A2 训练系列产品</term>，且要求单NPU的片上内存为64GB及以上，详见[模型支持列表](../models/supported_models.md)。
+>
+> 当前Qwen3-8B的示例脚本中`NPUS_PER_NODE=8`表示需要8个NPU，如果实际情况低于此配置，可能遇到OOM（Out of Memory，内存不足）问题。
 
 ## 环境准备
 

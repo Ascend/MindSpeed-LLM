@@ -7,9 +7,9 @@
 pairwise配对数据集样本示例：
 
 ```json
-{"system": "You are an AI assistant. You will be given a task. You must generate a detailed and long answer.", 
- "question": "Generate an approximately fifteen-word sentence that describes all this data: Midsummer House eatType restaurant; Midsummer House food Chinese; Midsummer House priceRange moderate; Midsummer House customer rating 3 out of 5; Midsummer House near All Bar One", 
- "chosen": "Midsummer House is a moderately priced Chinese restaurant with a 3/5 customer rating, located near All Bar One.", 
+{"system": "You are an AI assistant. You will be given a task. You must generate a detailed and long answer.",
+ "question": "Generate an approximately fifteen-word sentence that describes all this data: Midsummer House eatType restaurant; Midsummer House food Chinese; Midsummer House priceRange moderate; Midsummer House customer rating 3 out of 5; Midsummer House near All Bar One",
+ "chosen": "Midsummer House is a moderately priced Chinese restaurant with a 3/5 customer rating, located near All Bar One.",
  "rejected": " Sure! Here's a sentence that describes all the data you provided:\n\n\"Midsummer House is a moderately priced Chinese restaurant with a customer rating of 3 out of 5, located near All Bar One, offering a variety of delicious dishes.\""
  }
 ```
@@ -56,7 +56,7 @@ python ./preprocess_data.py \
 
 【--prompt-type】
 
-用于指定模型模板，能够让base模型微调后能具备更好的对话能力。`prompt-type`的可选项可以在[templates](../../../../mindspeed_llm/tasks/preprocess/templates.py)文件内查看。
+用于指定模型模板，能够让base模型微调后具备更好的对话能力。`prompt-type`的可选项可以在[templates](../../../../mindspeed_llm/tasks/preprocess/templates.py)文件内查看。
 
 【--handler-name】
 

@@ -25,7 +25,7 @@ torchrun ${DISTRIBUTED_ARGS} train_fsdp2.py ${CONFIG_YAML} \
   --training.log_throughput true
 ```
 
-| 参数 | 配值 | 作用 |
+| 参数 | 配置 | 作用 |
 | --- | --- | --- |
 | `--training.logging_steps` | `1` | 建议每个 optimizer step 打印一次训练日志，日志包含 `elapsed time per iteration (ms)`、loss、grad norm 和峰值显存 |
 | `--training.log_throughput` | `true` | 开启吞吐统计，在训练日志中增加 `tokens/s` 和 `mfu` |

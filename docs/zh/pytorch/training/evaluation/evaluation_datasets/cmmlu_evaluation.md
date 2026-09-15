@@ -25,7 +25,7 @@ CMMLU 评估集专注于以下几个方面：
 
 #### 工作原理
 
-- 此模式将会读取对外的 CMMLU 评估的[模板的文件](../../../../../../mindspeed_llm/tasks/evaluation/eval_impl/fewshot_template/cmmlu_5shot_template.json)作为评估模板，在与需要模型回答的问题连接后，输入到模型中，直接进行评估。
+- 此模式将会读取对外的 CMMLU 评估的[模板文件](../../../../../../mindspeed_llm/tasks/evaluation/eval_impl/fewshot_template/cmmlu_5shot_template.json)作为评估模板，在与需要模型回答的问题连接后，输入到模型中，直接进行评估。
 
 - 此种模式下，模型的第一个输出将会作为答案。
 

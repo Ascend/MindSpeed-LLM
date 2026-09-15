@@ -16,7 +16,7 @@
 |<term>Atlas 推理系列产品</term>|x|
 |<term>Atlas 训练系列产品</term>|x|
 
-> [!NOTE]  
+> [!NOTE]
 > 本节表格中“√”代表支持，“x”代表不支持。
 
 - 各硬件产品对应物理机部署场景支持的操作系统请参考[兼容性查询助手](https://www.hiascend.com/hardware/compatibility)。
@@ -44,11 +44,11 @@ source /usr/local/Ascend/nnal/atb/set_env.sh --cxx_abi=0
 以上命令以root用户安装后的默认路径为例，请用户根据set_env.sh的实际路径进行替换。
 
 > [!NOTICE]
-> 
+>
 > 安装运行程序建议使用非root用户，且建议对安装程序的目录文件做好权限管控：文件夹权限设置为750，文件权限设置为640。可以通过设置umask控制安装后文件的权限，如设置umask为0027。
 > 更多安全相关内容请参见《[安全声明](../SECURITYNOTE.md)》中各组件关于“文件权限控制”的说明。
 
-### 安装MindSpore框架 
+### 安装MindSpore框架
 
 参考[MindSpore官方安装指导](https://www.mindspore.cn/install)，根据系统类型、CANN版本及Python版本获取相应的安装命令以安装MindSpore 2.9.0，安装前请确保网络畅通。
 
@@ -66,13 +66,13 @@ source /usr/local/Ascend/nnal/atb/set_env.sh --cxx_abi=0
     以上命令以root用户安装后的默认路径为例，请用户根据set_env.sh的实际路径进行替换。
 
 2. 安装MindSpeed-Core-MS转换工具。
-   
+
     ```shell
     git clone https://gitcode.com/ascend/MindSpeed-Core-MS.git -b master
     ```
 
-3. 使用MindSpeed-Core-MS内部脚本提供配置环境。
-   
+3. 使用MindSpeed-Core-MS内部脚本配置环境。
+
     ```shell
     cd MindSpeed-Core-MS
     pip3 install -r requirements.txt  # 安装第三方依赖

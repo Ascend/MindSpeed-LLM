@@ -14,8 +14,8 @@
 | [PYTORCH_NPU_ALLOC_CONF](https://gitcode.com/Ascend/pytorch/blob/master/docs/zh/api/environment_variable/memory_management/PYTORCH_NPU_ALLOC_CONF.md) | 内存碎片优化开关，默认是`expandable_segments:False`，使能时配置为`expandable_segments:True`，用于内存管理和碎片回收。|
 | [ASCEND_RT_VISIBLE_DEVICES](https://gitcode.com/cann/runtime/blob/master/docs/zh/env_vars/ASCEND_RT_VISIBLE_DEVICES.md)| 指定哪些Device对当前进程可见，支持一次指定一个或多个Device ID。通过该环境变量，可实现不修改应用程序即可调整所用Device的功能。|
 | NPUS_PER_NODE | 配置一个计算节点上使用的NPU数量。|
-| [HCCL_SOCKET_IFNAME](https://gitcode.com/cann/hccl/blob/master/docs/zh/user_guide/hccl_env/HCCL_SOCKET_IFNAME.md) | 指定HCCL Socket通讯走的网卡配置。|
-| GLOO_SOCKET_IFNAME | 指定Gloo Socket通讯走的网卡配置。|
+| [HCCL_SOCKET_IFNAME](https://gitcode.com/cann/hccl/blob/master/docs/zh/user_guide/hccl_env/HCCL_SOCKET_IFNAME.md) | 指定HCCL Socket通信走的网卡配置。|
+| GLOO_SOCKET_IFNAME | 指定Gloo Socket通信走的网卡配置。|
 | [HCCL_LOGIC_SUPERPOD_ID](https://gitcode.com/cann/hccl/blob/master/docs/zh/user_guide/hccl_env/HCCL_LOGIC_SUPERPOD_ID.md) | 指定当前设备的逻辑超节点ID，如果走ROCE，不同多机超节点ID不同，0～N。|
 | [CPU_AFFINITY_CONF](https://gitcode.com/Ascend/pytorch/blob/master/docs/zh/api/environment_variable/performance_tuning/CPU_AFFINITY_CONF.md) | 开启粗/细粒度绑核。该配置能够避免线程间抢占，提高缓存命中，避免跨NUMA节点的内存访问，减少任务调度开销，优化任务执行效率。|
 | [NPU_ASD_ENABLE](https://gitcode.com/Ascend/pytorch/blob/master/docs/zh/api/environment_variable/eigenvalue_detection/NPU_ASD_ENABLE.md) | 0：关闭检测功能；<br>1：开启特征值检测功能，打印异常日志，不告警；<br>2：开启，并告警；<br>3：开启，告警，并在Device侧info级别日志中记录过程数据。|

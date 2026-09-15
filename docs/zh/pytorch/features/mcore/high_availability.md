@@ -27,7 +27,7 @@ Megatron原生的分布式优化器数据流及工作原理如下图：
 
 ![](../../figures/high_availability/grad_buffer_sharding.png)
 
-副本优化器通过设计优化器参数均匀分布在副本 DP 组，完成优化器状态的备份，从而为 TTP/UCE 功能提供机制支持：
+副本优化器通过将优化器参数均匀分布在副本 DP 组，完成优化器状态的备份，从而为 TTP/UCE 功能提供机制支持：
 
 ![](../../figures/high_availability/replica_optimizer.png)
 

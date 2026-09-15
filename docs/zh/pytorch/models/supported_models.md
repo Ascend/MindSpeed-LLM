@@ -18,7 +18,7 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
 
 > [!NOTE]
 >
-> - 仓库支持<term>Ascend 950 系列产品</term>、<term>Atlas A3 训练系列产品</term>和<term>Atlas A2 训练系列产品</term>，可通过[硬件信息查询](https://www.hiascend.com/cann/download)获取。并且要求单NPU的片上内存为64GB及以上，[安装驱动固件](../training/install_guide.md)后可通过npu-smi info查看单NPU的片上内存容量。
+> - MindSpeed LLM支持<term>Ascend 950DT系列产品</term>、<term>Atlas A3 训练系列产品</term>和<term>Atlas A2 训练系列产品</term>，可通过[硬件信息查询](https://www.hiascend.com/cann/download)获取。并且要求单NPU的片上内存为64GB及以上，[安装驱动固件](../training/install_guide.md)后可通过npu-smi info查看单NPU的片上内存容量。
 > - 提供[模型训练示例脚本](../../../../examples)，训练脚本命名为`pretrain_模型名_参数_文本序列长度_训练方案_训练产品.sh`，微调脚本命名为`tune_模型名_参数_文本序列长度_训练方案_训练产品.sh`。
 > - 提供的训练脚本中，[模型训练示例脚本](../../../../examples)旨在加载权重正常训练展示为主，[模型训练高性能脚本](../../../../tests/poc)旨在固定路由下高性能展示为主，用户可根据使用场景按需使用。
 > - 在模型训练示例脚本中可查看集群规模，其中`NNODES`指代机器数量，`NPUS_PER_NODE`指代每台机器上的NPU数量。如下表示需要32台机器，每台机器上有16个NPU：
@@ -1528,4 +1528,4 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
 
 ## 多模态模型
 
-多模态大模型（图文理解、文生视频/图、语音识别等）由MindSpeed-MM专项维护，如果需要进行多模态大模型的训练，请访问多模态仓库[MindSpeed-MM](https://gitcode.com/Ascend/MindSpeed-MM)获取详细的使用说明，当前MindSpeed-MM支持的主流模型请参考[MindSpeed-MM模型支持列表](https://gitcode.com/Ascend/MindSpeed-MM#%E9%85%8D%E5%A5%97%E7%89%88%E6%9C%AC%E4%B8%8E%E6%94%AF%E6%8C%81%E6%A8%A1%E5%9E%8B)。
+多模态大模型（图文理解、文生视频/图、语音识别等）由MindSpeed MM专项维护，如果需要进行多模态大模型的训练，请访问多模态仓库[MindSpeed MM](https://gitcode.com/Ascend/MindSpeed-MM)获取详细的使用说明，当前MindSpeed MM支持的主流模型请参考[MindSpeed MM模型支持列表](https://gitcode.com/Ascend/MindSpeed-MM#%E9%85%8D%E5%A5%97%E7%89%88%E6%9C%AC%E4%B8%8E%E6%94%AF%E6%8C%81%E6%A8%A1%E5%9E%8B)。

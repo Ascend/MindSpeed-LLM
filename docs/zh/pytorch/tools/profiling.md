@@ -105,7 +105,7 @@ MindSpeed LLM支持基于昇腾芯片采集profiling数据，以提供对模型�
 | `profile_step_start` | int | `0` | 开始采集的 global step（包含） |
 | `profile_step_end` | int | `-1` | 结束采集的 global step（不包含）；`-1` 表示采集到训练结束 |
 | `profile_ranks` | List[int] | `[-1]` | 要采集的 rank 列表；`[-1]` 表示所有 rank |
-| `profile_level` | string | `level0` | 采集级别：<br>• `level_none`：关闭<br>• `level0`：基础算子耗时<br>• `level1`：增加 AICore 利用率、通信算子（推荐）<br>• `level2`：更详细（含缓存、内存等） |
+| `profile_level` | string | `level0` | 采集级别：<br>• `level_none`：关闭<br>• `level0`：基础算子耗时<br>• `level1`：增加 AI Core 利用率、通信算子（推荐）<br>• `level2`：更详细（含缓存、内存等） |
 | `profile_export_type` | string | `text` | 导出格式：<br>• `text`：文本格式 <br>• `db`：数据库格式 |
 | `profile_data_simplification` | bool | `false` | 是否启用数据简化（减小 trace 文件体积） |
 | `profile_with_cpu` | bool | `false` | 是否同时采集 CPU 活动（如数据加载、调度） |
@@ -145,7 +145,7 @@ localhost.localdomain_3687609_20260129150104894_ascend_pt
 
 - **时间线（Timeline）**
 
-    时间线界面由工具栏（区域一）、时间线树状图（区域二）、图形化窗格（区域三）和数据窗格（区域四）四个部分组成，如图界面所示。
+    时间线界面由工具栏（区域一）、时间线树状图（区域二）、图形化窗格（区域三）和数据窗格（区域四）四个部分组成，如图所示。
 
     ![时间线](../figures/profiling/timeline.png)
 

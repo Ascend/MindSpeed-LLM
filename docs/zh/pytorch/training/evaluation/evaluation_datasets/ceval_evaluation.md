@@ -22,7 +22,7 @@ MindSpeed-LLM 会对 `CEval` 题目集中的内容进行评估。
 
 #### 使用说明
 
-此模式将会读取外部的 `ceval` 评估的[模板的文件](../../../../../../mindspeed_llm/tasks/evaluation/eval_impl/fewshot_template/ceval_5shot_template.json)作为评估模板，在与需要模型回答的问题连接后，输入到模型中，直接进行评估。
+此模式将会读取外部的 `ceval` 评估的[模板文件](../../../../../../mindspeed_llm/tasks/evaluation/eval_impl/fewshot_template/ceval_5shot_template.json)作为评估模板，在与需要模型回答的问题连接后，输入到模型中，直接进行评估。
 
 此种模式下，模型的第一个输出将会作为答案。
 

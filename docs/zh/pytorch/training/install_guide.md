@@ -8,7 +8,7 @@
 
 |产品|是否支持|
 |--|:-:|
-|<term>Ascend 950 系列产品</term>|√|
+|<term>Ascend 950DT系列产品</term>|√|
 |<term>Atlas A3 训练系列产品</term>|√|
 |<term>Atlas A3 推理系列产品</term>|x|
 |<term>Atlas A2 训练系列产品</term>|√|
@@ -51,16 +51,16 @@
 
    最新镜像均配套[MindSpeed LLM的26.1.0分支](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0)，请按需[获取镜像](https://www.hiascend.com/developer/ascendhub/detail/e26da9266559438b93354792f25b2f4a)。
 
-   <!-- npu="950" id5 -->
-   - <term>Ascend 950 系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-950-openeuler24.03-py3.12
+   <!-- npu="950" id1 -->
+   - <term>Ascend 950DT系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-950-openeuler24.03-py3.12
 
-   - <term>Ascend 950 系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-950-ubuntu22.04-py3.12
-   <!-- end id5 -->
-   <!-- npu="A3" id4 -->
+   - <term>Ascend 950DT系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-950-ubuntu22.04-py3.12
+   <!-- end id1 -->
+   <!-- npu="A3" id2 -->
    - <term>Atlas A3 训练系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-a3-openeuler24.03-py3.12
 
    - <term>Atlas A3 训练系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-a3-ubuntu22.04-py3.12
-   <!-- end id4 -->
+   <!-- end id2 -->
    <!-- npu="910b" id3 -->
    - <term>Atlas A2 训练系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-910b-openeuler24.03-py3.12
 

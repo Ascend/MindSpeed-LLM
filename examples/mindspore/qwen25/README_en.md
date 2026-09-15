@@ -1,4 +1,4 @@
-# MindSpore Backend Support for Qwen25 Series Models
+# MindSpore Backend Support for Qwen2.5 Series Models
 
 <table>
   <thead>
