@@ -220,7 +220,7 @@ class ModelFactory:
             apply_modules=parallel_args.chunk_mbs_modules,
             chunk_mbs=parallel_args.chunk_mbs,
             batch_dim=parallel_args.chunk_mbs_batch_dim,
-            chunk_arg_indexs=parallel_args.chunk_mbs_arg_indexs,
+            chunk_arg_indexes=parallel_args.chunk_mbs_arg_indexs,
             chunk_kwarg_names=parallel_args.chunk_mbs_kwarg_names,
         )
 
