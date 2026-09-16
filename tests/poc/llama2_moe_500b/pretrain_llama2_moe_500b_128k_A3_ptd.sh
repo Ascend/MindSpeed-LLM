@@ -87,8 +87,7 @@ GPT_ARGS="
     --enable-recompute-layers-per-pp-rank \
     --use-fused-ring-attention-update \
     --fix-router \
-    --bf16 \
-    --ckpt-format torch
+    --bf16
 "
 
 DATA_ARGS="

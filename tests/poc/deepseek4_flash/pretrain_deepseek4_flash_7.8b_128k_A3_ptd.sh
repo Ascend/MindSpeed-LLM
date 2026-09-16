@@ -178,7 +178,6 @@ GPT_ARGS="
     --distributed-timeout-minutes 120 \
     --no-shared-storage \
     --no-gradient-accumulation-fusion \
-    --ckpt-format torch \
     --fix-router
 "
 

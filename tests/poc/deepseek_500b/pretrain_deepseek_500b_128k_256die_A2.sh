@@ -104,8 +104,7 @@ GPT_ARGS="
     --recompute-in-advance \
     --fix-router \
     --distributed-timeout-minutes 120 \
-    --bf16 \
-    --ckpt-format torch
+    --bf16
 "
 
 CKPT_ARGS="

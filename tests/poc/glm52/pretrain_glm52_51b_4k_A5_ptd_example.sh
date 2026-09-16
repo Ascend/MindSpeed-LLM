@@ -170,8 +170,7 @@ GPT_ARGS="
     --no-load-rng \
     --bf16 \
     --distributed-timeout-minutes 120 \
-    --no-shared-storage \
-    --ckpt-format torch \
+    --no-shared-storage
 "
 
 

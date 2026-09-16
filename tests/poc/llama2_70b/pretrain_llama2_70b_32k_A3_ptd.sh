@@ -82,8 +82,7 @@ GPT_ARGS="
     --sequence-parallel \
     --use-fused-ring-attention-update \
     --recompute-activation-function \
-    --bf16 \
-    --ckpt-format torch
+    --bf16
 "
 
 DATA_ARGS="

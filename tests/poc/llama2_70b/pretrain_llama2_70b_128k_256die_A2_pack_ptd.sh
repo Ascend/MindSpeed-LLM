@@ -93,8 +93,7 @@ GPT_ARGS="
     --recompute-activation-function \
     --num-layers-per-virtual-pipeline-stage 2 \
     --reset-attention-mask \
-    --no-shared-storage \
-    --ckpt-format torch
+    --no-shared-storage
 "
 
 DATA_ARGS="

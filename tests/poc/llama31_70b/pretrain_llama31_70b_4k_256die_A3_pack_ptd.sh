@@ -77,8 +77,7 @@ MODEL_ARGS="
     --reset-attention-mask \
     --use-distributed-optimizer \
     --overlap-grad-reduce \
-    --overlap-param-gather \
-    --ckpt-format torch
+    --overlap-param-gather
 "
 
 TRAIN_ARGS="

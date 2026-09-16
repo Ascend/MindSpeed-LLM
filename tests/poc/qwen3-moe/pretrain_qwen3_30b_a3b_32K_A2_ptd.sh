@@ -124,8 +124,7 @@ GPT_ARGS="
     --num-query-groups 4 \
     --fix-router \
     --use-cp-send-recv-overlap \
-    --use-fused-ring-attention-update \
-    --ckpt-format torch
+    --use-fused-ring-attention-update
 "
 
 DATA_ARGS="

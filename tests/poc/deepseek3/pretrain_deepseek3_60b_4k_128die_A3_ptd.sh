@@ -133,8 +133,7 @@ GPT_ARGS="
     --rotary-base 10000 \
     --norm-epsilon 1e-6 \
     --manual-gc \
-    --manual-gc-interval 50 \
-    --ckpt-format torch
+    --manual-gc-interval 50
 "
 
 CKPT_ARGS="

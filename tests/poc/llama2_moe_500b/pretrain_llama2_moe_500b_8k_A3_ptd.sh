@@ -93,8 +93,7 @@ GPT_ARGS="
     --use-fused-moe-token-permute-and-unpermute \
     --recompute-in-advance \
     --fix-router \
-    --bf16 \
-    --ckpt-format torch
+    --bf16
 "
 
 DATA_ARGS="

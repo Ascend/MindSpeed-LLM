@@ -137,8 +137,7 @@ GPT_ARGS="
     --attention-softmax-in-fp32 \
     --no-gradient-accumulation-fusion \
     --group-query-attention \
-    --num-query-groups 8 \
-    --ckpt-format torch
+    --num-query-groups 8
 "
 
 DATA_ARGS="

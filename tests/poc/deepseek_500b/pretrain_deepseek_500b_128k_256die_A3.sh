@@ -104,8 +104,7 @@ GPT_ARGS="
     --use-fused-ring-attention-update \
     --fix-router \
     --distributed-timeout-minutes 120 \
-    --bf16 \
-    --ckpt-format torch
+    --bf16
 "
 
 CKPT_ARGS="

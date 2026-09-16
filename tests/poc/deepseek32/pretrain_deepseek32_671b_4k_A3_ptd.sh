@@ -175,8 +175,7 @@ GPT_ARGS="
     --no-load-optim \
     --no-load-rng \
     --bf16 \
-    --distributed-timeout-minutes 120 \
-    --ckpt-format torch
+    --distributed-timeout-minutes 120
 "
 
 DATA_ARGS="

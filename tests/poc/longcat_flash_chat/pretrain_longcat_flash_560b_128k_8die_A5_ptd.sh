@@ -143,8 +143,7 @@ GPT_ARGS="
     --recompute-method uniform \
     --recompute-num-layers 1 \
     --swap-optimizer \
-    --swap-attention \
-    --ckpt-format torch
+    --swap-attention
 "
 
 # FP8_ARGS="

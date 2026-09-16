@@ -122,8 +122,7 @@ GPT_ARGS="
     --tokenizer-name-or-path ${TOKENIZER_PATH} \
     --seq-length ${SEQ_LEN} \
     --no-load-optim \
-    --no-load-rng \
-    --ckpt-format torch
+    --no-load-rng
 "
 
 TRAIN_ARGS="

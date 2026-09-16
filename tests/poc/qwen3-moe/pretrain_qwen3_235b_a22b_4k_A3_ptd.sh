@@ -130,8 +130,7 @@ GPT_ARGS="
     --attention-softmax-in-fp32 \
     --group-query-attention \
     --num-query-groups 4 \
-    --no-shared-storage \
-    --ckpt-format torch
+    --no-shared-storage
 "
 
 DATA_ARGS="

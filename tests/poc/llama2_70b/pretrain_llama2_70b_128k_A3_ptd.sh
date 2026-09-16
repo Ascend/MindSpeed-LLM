@@ -83,8 +83,7 @@ GPT_ARGS="
     --use-fused-ring-attention-update \
     --recompute-activation-function \
     --swap-attention \
-    --bf16 \
-    --ckpt-format torch
+    --bf16
 "
 
 DATA_ARGS="

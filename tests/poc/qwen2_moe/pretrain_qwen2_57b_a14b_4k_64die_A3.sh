@@ -124,8 +124,7 @@ GPT_ARGS="
     --add-qkv-bias \
     --no-gradient-accumulation-fusion \
     --group-query-attention \
-    --num-query-groups 4 \
-    --ckpt-format torch
+    --num-query-groups 4
 "
 
 DATA_ARGS="

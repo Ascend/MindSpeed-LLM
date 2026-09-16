@@ -95,8 +95,7 @@ GPT_ARGS="
     --attention-dropout 0.0 \
     --hidden-dropout 0.0 \
     --no-shared-storage \
-    --bf16 \
-    --ckpt-format torch
+    --bf16
 "
 
 DATA_ARGS="

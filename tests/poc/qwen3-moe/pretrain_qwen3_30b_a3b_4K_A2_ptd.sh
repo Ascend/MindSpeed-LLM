@@ -116,8 +116,7 @@ GPT_ARGS="
     --attention-softmax-in-fp32 \
     --group-query-attention \
     --num-query-groups 4 \
-    --fix-router \
-    --ckpt-format torch
+    --fix-router
 "
 
 DATA_ARGS="
