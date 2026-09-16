@@ -256,7 +256,7 @@ See the [open dataset evaluation baselines](docs/en/pytorch/training/evaluation/
       <td>[Ascend] </td>
     </tr>
     <tr>
-      <td><a href="https://github.com/rowanz/hellaswag">HellaSwag</a></td>
+      <td><a href="https://rowanzellers.com/hellaswag">HellaSwag</a></td>
       <td>✅</td>
       <td>❌</td>
       <td>[Ascend] </td>

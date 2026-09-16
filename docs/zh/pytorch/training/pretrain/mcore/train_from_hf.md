@@ -7,7 +7,14 @@
 本功能集成了数据预处理、权重转换和训练流程，通过单脚本即可启动训练任务。
 
 - 权重转换与训练合一：实现了从HuggingFace权重的加载、转换和训练保存。通过自动检测加载目录中的权重文件格式，系统可自动启用相关转换功能，实现HuggingFace权重到Megatron格式的双向自动转换与训练合一。用户无需单独执行权重转换步骤，实现从HuggingFace权重到训练任务的一键式启动。
+
 - 自动数据预处理：数据预处理功能在模型训练时自动识别并转换原始数据文件，用户无需手动执行原始数据转换。系统将根据输入路径自动判断是否为原始数据格式（如 .jsonl、.parquet 等），并在训练初始化阶段自动完成数据格式转换。
+
+离线权重转换和数据预处理使用场景如下：
+
+- 权重转换：100B以上模型建议采用离线方式，防止每次在线转权重带来大量时间浪费，使用详情请参见[权重转换](../../../tools/checkpoint_convert_hf_mcore_large_params.md)。
+
+- 数据预处理：若存在已经转换好的数据，建议采用离线方式，直接填写数据路径，使用详情请参见[预训练数据集处理](../../../tools/data_process_pretrain.md)。
 
 ## 使用方法
 
@@ -194,45 +201,3 @@ bash examples/mcore/qwen3/tune_qwen3_8b_4K_full_ptd.sh \
 - 当前权重转换`--enable-mg2hf-convert`功能仅支持单机或者共享存储环境。
 
 - 当前权重转换`--enable-mg2hf-convert`功能不支持对LoRA微调后的权重进行Megatron→HF权重转换。
-
-## 离线权重与数据处理
-
-MindSpeed-LLM仍然支持传统的离线权重转换与数据处理方式，即先离线完成权重转换和数据预处理，再启动训练任务。
-
-### 离线权重转换
-
-单独运行权重转换脚本，将HuggingFace权重转换为Megatron格式后再启动训练。
-
-```shell
-# 启动权重转换脚本（以llama2为例）
-bash examples/mcore/llama2/ckpt_convert_llama2_hf2mcore.sh
-```
-
-转换完成后，在训练脚本中：
-
-- 将`--load`参数指向转换后的Megatron权重目录（如`./model_weights/llama-2-7b-mcore/`），而非HuggingFace权重目录。
-- 移除以下在线转换相关参数：`--enable-hf2mg-convert`、`--enable-mg2hf-convert`、`--only-convert-last-checkpoint`、`--mg-save-dir`、`--hf-save-dir`、`--hf-cfg-dir`。
-
-更多权重转换使用详情请参见[权重转换](../../../tools/checkpoint_convert_hf_mcore_large_params.md)。
-
-### 离线数据预处理
-
-单独运行数据预处理脚本，将原始数据集转换为Megatron格式的`.bin/.idx`文件后再启动训练。
-
-```shell
-# 启动数据预处理脚本（以llama2为例）
-bash examples/mcore/llama2/data_convert_llama2_pretrain.sh
-```
-
-转换完成后，在训练脚本中：
-
-- 将`--data-path`参数指向转换后的数据文件前缀（如`./dataset/alpaca_llama2_7b_text_document`），而非原始数据文件路径。
-- 移除以下在线数据预处理相关参数：`--handler-name`、`--append-eod`、`--prompt-type`、`--json-keys`、`--workers`、`--n-subs`、`--pack`、`--neat-pack`、`--enable-thinking`、`--output-prefix`、`--seq-length`、`--reasoning-effort`、`--drop-thinking`。
-
-更多数据预处理使用详情请参见[预训练数据集处理](../../../tools/data_process_pretrain.md)。
-
-### 离线方式使用场景
-
-- 权重转换：100B以上模型建议采用离线方式，防止每次在线转权重带来大量时间浪费
-
-- 数据预处理：若存在已经转换好的数据，建议采用离线方式，直接填写数据路径

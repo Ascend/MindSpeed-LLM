@@ -146,7 +146,7 @@
 |--|--|--|
 |MindSpeed LLM|Megatron训练后端新增模型支持|支持Seed-OSS、GLM5模型训练|
 |MindSpeed LLM|工具效率提升|支持异步保存权重|
-|MindSpeed LLM|新增硬件支持|支持<term>Ascend 950DT系列产品</term>|
+|MindSpeed LLM|新增硬件支持|支持<term>Ascend 950PR&950DT 系列产品</term>|
 
 ### 删除特性
 

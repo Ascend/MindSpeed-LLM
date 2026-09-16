@@ -256,7 +256,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案，具体�
       <td>【Ascend】</td>
     </tr>
     <tr>
-      <td><a href="https://github.com/rowanz/hellaswag">HellaSwag</a></td>
+      <td><a href="https://rowanzellers.com/hellaswag">HellaSwag</a></td>
       <td>✅</td>
       <td>❌</td>
       <td>【Ascend】</td>
