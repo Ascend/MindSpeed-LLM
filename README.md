@@ -28,17 +28,17 @@ MindSpeed LLM：基于昇腾生态的大语言模型分布式训练套件，旨�
 
 - [Jun. 18, 2026]: 🚀 [**GLM5.2** 定长数据预训练支持](./examples/mcore/glm52) 【beta】
 - [Apr. 25, 2026]: 🚀 [**DeepSeekV4-Flash** 定长数据预训练支持](./examples/mcore/deepseek4_flash/README.md) 【beta】
-- [Apr. 16, 2026]: 🚀 [**MiniMax_M27** 模型支持](./examples/fsdp2/minimax_m27/) 【beta】
-- [Mar. 28, 2026]: 🚀 [**Mamba3-block** demo模型支持](./examples/fsdp2/mamba3/) 【beta】
+- [Apr. 16, 2026]: 🚀 [**MiniMax_M27** 模型支持](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/fsdp2/minimax_m27) 【beta】
+- [Mar. 28, 2026]: 🚀 [**Mamba3-block** demo模型支持](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/fsdp2/mamba3) 【beta】
 - [Mar. 27, 2026]: 🌴 MindSpeed LLM发布[v26.0.0分支](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.0.0)，支持core_v0.12.1版本
 - [Mar. 10, 2026]: 🚀 MindSpeed LLM 模型下架[夕阳计划第二期](https://gitcode.com/Ascend/MindSpeed-LLM/issues/1224) 启动，感谢每一份曾经的贡献
 - [Feb. 12, 2026]: 🚀 [**GLM5** 模型支持](./examples/mcore/glm5) 【beta】
 
 <details><summary> 更多消息 </summary>
 
-- [Feb. 11, 2026]: 🚀 [**Step-3.5-Flash** 模型支持](./examples/fsdp2/step35) 【beta】
-- [Feb. 10, 2026]: 🚀 [FSDP2训练后端上线，支持**Qwen3-Next** 模型](./examples/fsdp2/qwen3_next) 【beta】
-- [Feb. 04, 2026]: 🚀 [**Qwen3-Coder-Next** 模型支持mcore后端](./examples/mcore/qwen3_coder_next) 【beta】
+- [Feb. 11, 2026]: 🚀 [**Step-3.5-Flash** 模型支持](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/fsdp2/step35) 【beta】
+- [Feb. 10, 2026]: 🚀 [FSDP2训练后端上线，支持**Qwen3-Next** 模型](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/fsdp2/qwen3_next) 【beta】
+- [Feb. 04, 2026]: 🚀 [**Qwen3-Coder-Next** 模型支持mcore后端](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/mcore/qwen3_coder_next) 【beta】
 - [Jan. 28, 2026]: 🌴 [社区版镜像配套2.3.0分支上线](https://gitcode.com/Ascend/MindSpeed-LLM/blob/2.3.0/docs/pytorch/install_guide.md) 【beta】
 - [Jan. 23, 2026]: 🌴 [社区版镜像配套2.2.0分支上线](https://gitcode.com/Ascend/MindSpeed-LLM/blob/2.2.0/docs/pytorch/install_guide.md) 【beta】
 - [Jan. 16, 2026]: 🌴 MindSpeed LLM发布[v2.3.0分支](https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.3.0)，支持core_v0.12.1版本
@@ -48,7 +48,6 @@ MindSpeed LLM：基于昇腾生态的大语言模型分布式训练套件，旨�
 - [Nov. 14, 2025]: 🚀 **magistral** 模型支持 【beta】
 - [Oct. 30, 2025]: 🚀 MindSpeed LLM 模型下架[夕阳计划](https://gitcode.com/Ascend/MindSpeed-LLM/issues/943) 启动，感谢每一份曾经的贡献
 - [Oct. 28, 2025]: 🌴 MindSpeed LLM发布[v2.2.0分支](https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.2.0)，支持core_v0.12.1版本
-- [Oct. 16, 2025]: 🚀 **Qwen3-30B**支持DPO训练
 - [Oct. 14, 2025]: 🚀 **DeepSeek-V3**预训练已支持基于 **[MindSpore AI框架](./docs/zh/mindspore/readme.md)** 运行
 - [Sep. 16, 2025]: 🚀 **Qwen3-Next** 模型支持
 - [Aug. 23, 2025]: 🚀 大参数模型[权重转换v2](./docs/zh/pytorch/tools/checkpoint_convert_hf_mcore_large_params.md)优化版本上线

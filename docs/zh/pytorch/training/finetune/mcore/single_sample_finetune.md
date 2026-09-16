@@ -80,7 +80,6 @@
 
     - [Alpaca微调数据使用文档](../../../tools/data_process_sft_alpaca_style.md)
     - [ShareGPT微调数据使用文档](../../../tools/data_process_sft_sharegpt_style.md)
-    - [Pairwise微调数据使用文档](../../../tools/data_process_dpo_pairwise.md)
 
     接下来将以Alpaca数据集为例执行数据预处理，详细配置请参考[Qwen3数据预处理脚本](../../../../../../examples/mcore/qwen3/data_convert_qwen3_instruction.sh)。需要修改脚本内的路径：
 

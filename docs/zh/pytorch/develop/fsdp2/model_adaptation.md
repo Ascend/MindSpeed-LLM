@@ -137,7 +137,7 @@ wget -O /home/data/alpaca/train-00000-of-00001-a09b74b3ef9c3b56.parquet \
 
 2. 复用任务YAML启动
 
-    原生Transformers适配不需要新增模型源码，准备好权重、数据集和`config.json`后，即可复用[配置任务脚本和YAML](#配置任务脚本和yaml文件)章节的任务脚本和YAML配置启动训练。MindSpeed LLM现有GPT-OSS配置结构可参考`examples/fsdp2/gpt_oss/pretrain_gpt_oss_20b_4k_fsdp2_A3.yaml`；如果使用原生Transformers路径，重点调整`model.model_name_or_path`、数据路径、并行切分和训练参数即可。
+    原生Transformers适配不需要新增模型源码，准备好权重、数据集和`config.json`后，即可复用[配置任务脚本和YAML](#配置任务脚本和yaml文件)章节的任务脚本和YAML配置启动训练。MindSpeed LLM现有GPT-OSS配置结构可参考[tests/poc/gpt_oss/pretrain_gpt_oss_20b_4k_fsdp2_A3.yaml](../../../../../tests/poc/gpt_oss/pretrain_gpt_oss_20b_4k_fsdp2_A3.yaml)；如果使用原生Transformers路径，重点调整`model.model_name_or_path`、数据路径、并行切分和训练参数即可。
 
     如果后续希望使用NPU融合算子、专家并行定制或替换GPT-OSS的MoE计算逻辑，则需要参见[路径二：自定义注册适配 GPT-OSS](#路径二自定义注册适配-gpt-oss)。
 
@@ -244,14 +244,14 @@ GPT-OSS在MindSpeed LLM中通过自定义注册方式接入。推荐从Transform
 MindSpeed LLM已经提供了GPT-OSS FSDP2预训练示例：
 
 ```text
-examples/fsdp2/gpt_oss/
+tests/poc/gpt_oss/
 ├── pretrain_gpt_oss_20b_4k_fsdp2_A3.sh
 └── pretrain_gpt_oss_20b_4k_fsdp2_A3.yaml
 ```
 
 ### 修改预训练YAML文件
 
-修改配置文件`examples/fsdp2/gpt_oss/pretrain_gpt_oss_20b_4k_fsdp2_A3.yaml`中的模型和数据路径：
+修改配置文件[tests/poc/gpt_oss/pretrain_gpt_oss_20b_4k_fsdp2_A3.yaml](../../../../../tests/poc/gpt_oss/pretrain_gpt_oss_20b_4k_fsdp2_A3.yaml)中的模型和数据路径：
 
 下面示例使用“路径二：自定义注册适配”，因此需要配置`model.model_id: gpt_oss`。如果使用“路径一：原生Transformers适配”，不要配置`model_id`，框架会根据`config.json`通过`AutoModelForCausalLM`自动加载模型。
 
@@ -331,7 +331,7 @@ training:
 
 ### 修改启动脚本
 
-确认预训练脚本`examples/fsdp2/gpt_oss/pretrain_gpt_oss_20b_4k_fsdp2_A3.sh`中的机器配置符合实际环境：
+确认预训练脚本[tests/poc/gpt_oss/pretrain_gpt_oss_20b_4k_fsdp2_A3.sh](../../../../../tests/poc/gpt_oss/pretrain_gpt_oss_20b_4k_fsdp2_A3.sh)中的机器配置符合实际环境：
 
 ```bash
 NPUS_PER_NODE=16
@@ -351,7 +351,7 @@ TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 mkdir -p logs
 
 torchrun $DISTRIBUTED_ARGS train_fsdp2.py \
-  examples/fsdp2/gpt_oss/pretrain_gpt_oss_20b_4k_fsdp2_A3.yaml \
+  tests/poc/gpt_oss/pretrain_gpt_oss_20b_4k_fsdp2_A3.yaml \
   --model.model_name_or_path /home/data/gpt-oss-20b-hf/ \
   --data.dataset '{"file_name": "/home/data/alpaca/train-00000-of-00001-a09b74b3ef9c3b56.parquet"}' \
   --parallel.fsdp_size 16 \
@@ -393,7 +393,7 @@ source /usr/local/Ascend/ascend-toolkit/set_env.sh
 启动单机16卡预训练：
 
 ```bash
-bash examples/fsdp2/gpt_oss/pretrain_gpt_oss_20b_4k_fsdp2_A3.sh
+bash tests/poc/gpt_oss/pretrain_gpt_oss_20b_4k_fsdp2_A3.sh
 ```
 
 脚本等价于执行：
@@ -406,7 +406,7 @@ torchrun \
   --master_addr localhost \
   --master_port 6499 \
   train_fsdp2.py \
-  examples/fsdp2/gpt_oss/pretrain_gpt_oss_20b_4k_fsdp2_A3.yaml
+  tests/poc/gpt_oss/pretrain_gpt_oss_20b_4k_fsdp2_A3.yaml
 ```
 
 日志会写入`logs/pretrain_gpt_oss_20b_4k_<timestamp>.log`。

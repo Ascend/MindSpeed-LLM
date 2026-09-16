@@ -8,7 +8,7 @@
 
 ### 使用说明
 
-可以直接使用[chat](../../../../../../examples/mcore/gemma2/chat_gemma2_9b_ptd.sh)或者[generate](../../../../../../examples/mcore/gemma2/generate_gemma2_9b_ptd.sh)脚本，并加载预置权重，与模型进行多轮对话，以达到预期效果。其中预置权重可以是大语言模型的chat权重，base权重或是微调后的权重。
+可以直接使用[chat](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/gemma2/chat_gemma2_9b_ptd.sh)或者[generate](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/gemma2/generate_gemma2_9b_ptd.sh)脚本，并加载预置权重，与模型进行多轮对话，以达到预期效果。其中预置权重可以是大语言模型的chat权重，base权重或是微调后的权重。
 
 ### 效果展示
 
@@ -32,7 +32,7 @@ Yes, I do remember. You came to buy flowers for your sister's birthday, and you 
 
 ### 多轮对话数据处理
 
-使用带有`history`字段的 Alpaca 数据集运行如下[脚本](../../../../../../examples/mcore/gemma2/data_convert_gemma2_instruction.sh)：
+使用带有`history`字段的 Alpaca 数据集运行如下[脚本](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/gemma2/data_convert_gemma2_instruction.sh)：
 
 ```shell
 # 请根据 examples/README.md 下 “数据集准备及处理” 章节下载 Alpaca 数据集
@@ -106,7 +106,7 @@ bash examples/mcore/gemma2/tune_gemma2_9b_full_ptd.sh
 
 ## 开始多轮对话
 
-使用[对话脚本](../../../../../../examples/mcore/gemma2/chat_gemma2_9b_ptd.sh)，加载模型分词器和微调过后的权重，进行多轮对话。
+使用[对话脚本](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/gemma2/chat_gemma2_9b_ptd.sh)，加载模型分词器和微调过后的权重，进行多轮对话。
 
 填写相关路径
 

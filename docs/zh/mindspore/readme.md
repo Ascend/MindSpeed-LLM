@@ -250,7 +250,7 @@ MindSpore后端已完全支持MindSpeed-LLM的预训练、指令微调、RLHF等
     </tr>
     <tr>
       <td>DPO</td>
-      <td rowspan="3"><a href="../pytorch/tools/data_process_dpo_pairwise.md">Pairwise数据集处理</a></td>
+      <td rowspan="3"><a href="https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/docs/zh/pytorch/tools/data_process_dpo_pairwise.md">Pairwise数据集处理</a></td>
       <td>✅</td>
       <td>✅</td>
       <td rowspan="3">【Ascend】</td>

@@ -4,7 +4,7 @@
 
 ### 使用说明
 
-可以使用模型的[chat脚本](../../../../../examples/mcore/llama2/chat_llama2_13b_ptd.sh)并加载预置模型权重，与模型进行多轮对话。其中预置模型权重可以是大语言模型的chat权重或是[指令微调](../finetune/mcore/instruction_finetune.md)后的权重。
+可以使用模型的[chat脚本](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/llama2/chat_llama2_13b_ptd.sh)并加载预置模型权重，与模型进行多轮对话。其中预置模型权重可以是大语言模型的chat权重或是[指令微调](../finetune/mcore/instruction_finetune.md)后的权重。
 
 ### 初始化环境变量
 
@@ -15,7 +15,7 @@ source /usr/local/Ascend/nnal/atb/set_env.sh # 修改为实际安装的nnal包�
 
 ### 启动脚本
 
-使用LLaMA2模型目录下的[chat脚本](../../../../../examples/mcore/llama2/chat_llama2_13b_ptd.sh)。
+使用LLaMA2模型目录下的[chat脚本](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/llama2/chat_llama2_13b_ptd.sh)。
 
 #### 填写相关路径
 

@@ -269,7 +269,7 @@ The measured instruction fine-tuning performance of MindSpeed LLM is as follows.
     <td rowspan="1">Atlas 900 A3 SuperPoD</td>
     <td rowspan="1">8x16</td>
     <td>Full Parameters</td>
-    <td><a href="../../../../examples/mcore/qwen3/tune_qwen3_32b_256K_full_pack_A3_ptd.sh">256K</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/qwen3/tune_qwen3_32b_256K_full_pack_A3_ptd.sh">256K</a></td>
     <td>1435.603</td>
   </tr>
   <tr>

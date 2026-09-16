@@ -8,11 +8,10 @@
 | --- | --- | --- | --- | --- | --- |
 | mcore 预训练 | [pretrain_gpt.py](../../pretrain_gpt.py) | [examples/mcore/qwen3/pretrain_qwen3_8b_4K_ptd.sh](../../examples/mcore/qwen3/pretrain_qwen3_8b_4K_ptd.sh) | shell 参数 | [mindspeed_llm/training](../../mindspeed_llm/training) | PyTorch mcore 后端预训练 |
 | mcore 后训练 | [posttrain_gpt.py](../../posttrain_gpt.py) | [examples/mcore/qwen3/tune_qwen3_8b_4K_full_ptd.sh](../../examples/mcore/qwen3/tune_qwen3_8b_4K_full_ptd.sh) | shell 参数、`--stage` | [mindspeed_llm/tasks/posttrain](../../mindspeed_llm/tasks/posttrain) | SFT 等后训练任务 |
-| DPO 后训练 | [posttrain_gpt.py](../../posttrain_gpt.py) | [examples/mcore/qwen3_moe/dpo_qwen3_30b_a3b_16K_A3_ptd.sh](../../examples/mcore/qwen3_moe/dpo_qwen3_30b_a3b_16K_A3_ptd.sh) | shell 参数、`--stage dpo` | [mindspeed_llm/tasks/posttrain/dpo](../../mindspeed_llm/tasks/posttrain/dpo) | mcore DPO 偏好对齐训练 |
 | FSDP2 训练 | [train_fsdp2.py](../../train_fsdp2.py) | [examples/fsdp2/qwen3/pretrain_qwen3_8b_4k_fsdp2_A3.sh](../../examples/fsdp2/qwen3/pretrain_qwen3_8b_4k_fsdp2_A3.sh) | shell + YAML | [mindspeed_llm/fsdp2](../../mindspeed_llm/fsdp2) | PyTorch FSDP2 后端训练 |
 | 推理 | [inference.py](../../inference.py)、[inference_fsdp2.py](../../inference_fsdp2.py) | [examples/mcore/qwen3/generate_qwen3_8b_ptd.sh](../../examples/mcore/qwen3/generate_qwen3_8b_ptd.sh) | shell 参数或 YAML | [mindspeed_llm/tasks/inference](../../mindspeed_llm/tasks/inference)、[mindspeed_llm/fsdp2/inference](../../mindspeed_llm/fsdp2/inference) | mcore 与 FSDP2 推理入口不同 |
 | 评估 | [evaluation.py](../../evaluation.py) | [examples/mcore/qwen3/evaluate_qwen3_8b_ptd.sh](../../examples/mcore/qwen3/evaluate_qwen3_8b_ptd.sh) | shell 参数、[configs/evaluate](../../configs/evaluate) | [mindspeed_llm/tasks/evaluation](../../mindspeed_llm/tasks/evaluation) | Benchmark 评估任务 |
-| 数据预处理 | [preprocess_data.py](../../preprocess_data.py) | [examples/mcore/qwen3/data_convert_qwen3_pretrain.sh](../../examples/mcore/qwen3/data_convert_qwen3_pretrain.sh) | shell 参数 | [mindspeed_llm/tasks/preprocess](../../mindspeed_llm/tasks/preprocess) | 预训练、SFT、DPO 等数据处理 |
+| 数据预处理 | [preprocess_data.py](../../preprocess_data.py) | [examples/mcore/qwen3/data_convert_qwen3_pretrain.sh](../../examples/mcore/qwen3/data_convert_qwen3_pretrain.sh) | shell 参数 | [mindspeed_llm/tasks/preprocess](../../mindspeed_llm/tasks/preprocess) | 预训练、SFT 等数据处理 |
 | 权重转换 | [convert_ckpt_v2.py](../../convert_ckpt_v2.py) | [examples/mcore/qwen3/ckpt_convert_qwen3_hf2mcore.sh](../../examples/mcore/qwen3/ckpt_convert_qwen3_hf2mcore.sh) | shell 参数、[configs/checkpoint](../../configs/checkpoint) | [mindspeed_llm/tasks/checkpoint](../../mindspeed_llm/tasks/checkpoint) | HF、Megatron、mcore 等格式转换 |
 
 ## mcore 任务链路
@@ -56,12 +55,6 @@ FSDP2 任务通常通过 shell 脚本启动分布式训练，并使用 YAML 文�
 
 修改 FSDP2 示例时，优先确认 shell 中的分布式参数和 YAML 中的模型、数据、并行、训练字段是否匹配。
 
-## DPO 任务链路
-
-DPO 属于 mcore DPO 后训练路径，通常通过 `posttrain_gpt.py`、`--stage dpo` 和 shell 参数启动。典型示例为 [examples/mcore/qwen3_moe/dpo_qwen3_30b_a3b_16K_A3_ptd.sh](../../examples/mcore/qwen3_moe/dpo_qwen3_30b_a3b_16K_A3_ptd.sh)，核心实现位于 [mindspeed_llm/tasks/posttrain/dpo](../../mindspeed_llm/tasks/posttrain/dpo)。
-
-修改 DPO 示例时，优先确认模型路径、偏好数据路径、tokenizer、并行参数、训练超参和输出路径。
-
 ## 推理、评估、数据预处理和权重转换
 
 | 任务 | 入口 | 常见修改点 |
@@ -85,15 +78,15 @@ MindSpeed-LLM 当前包含多种配置形态，使用时无需统一为单一格
 
 不同任务路径中的配置概念可以先按下表理解。该表只做概念级对照，具体字段仍以对应示例和专项文档为准。
 
-| 配置概念 | mcore shell | FSDP2 YAML | DPO 后训练 | 说明 |
-| --- | --- | --- | --- | --- |
-| 模型或权重路径 | 权重加载、保存相关 shell 变量或启动参数 | `model` 相关字段 | policy、reference 等相关模型路径 | 不同任务可能区分初始权重、训练输出和参考模型。 |
-| tokenizer | tokenizer 路径或名称参数 | `model` / tokenizer 相关字段 | tokenizer 路径或名称参数 | 需要与模型和数据处理方式保持一致。 |
-| 数据输入 | 数据路径、数据前缀或数据集参数 | `data` 相关字段 | 偏好数据路径或数据集参数 | 预训练、指令微调、偏好数据的格式要求不同。 |
-| 并行策略 | TP、PP、CP、EP 等 shell 参数 | `parallel` 相关字段 | TP、PP、CP 等 shell 参数 | 并行配置需要与硬件数量、权重切分方式匹配。 |
-| 训练超参 | batch size、lr、训练步数等启动参数 | `training` / `optimization` 相关字段 | DPO loss、beta、batch size、lr 等参数 | 同名概念在不同任务中的字段位置可能不同。 |
-| checkpoint 与输出 | 加载目录、保存目录、日志目录 | output、checkpoint 相关字段 | 加载目录、保存目录、日志目录 | 建议先确认路径是否存在且可写。 |
-| 评估或推理参数 | 推理、评估 shell 参数 | 推理 YAML 或启动参数 | 通常不作为 DPO 主链路配置 | 评估和推理通常需要单独确认数据、任务和输出设置。 |
+| 配置概念 | mcore shell | FSDP2 YAML | 说明 |
+| --- | --- | --- | --- |
+| 模型或权重路径 | 权重加载、保存相关 shell 变量或启动参数 | `model` 相关字段 | 不同任务可能区分初始权重、训练输出和参考模型。 |
+| tokenizer | tokenizer 路径或名称参数 | `model` / tokenizer 相关字段 | 需要与模型和数据处理方式保持一致。 |
+| 数据输入 | 数据路径、数据前缀或数据集参数 | `data` 相关字段 | 预训练、指令微调、偏好数据的格式要求不同。 |
+| 并行策略 | TP、PP、CP、EP 等 shell 参数 | `parallel` 相关字段 | 并行配置需要与硬件数量、权重切分方式匹配。 |
+| 训练超参 | batch size、lr、训练步数等启动参数 | `training` / `optimization` 相关字段 | 同名概念在不同任务中的字段位置可能不同。 |
+| checkpoint 与输出 | 加载目录、保存目录、日志目录 | output、checkpoint 相关字段 | 建议先确认路径是否存在且可写。 |
+| 评估或推理参数 | 推理、评估 shell 参数 | 推理 YAML 或启动参数 | 评估和推理通常需要单独确认数据、任务和输出设置。 |
 
 ## 常见修改点
 
@@ -136,7 +129,6 @@ MindSpeed-LLM 当前包含多种配置形态，使用时无需统一为单一格
 - [PyTorch 快速入门](./pytorch/training/quick_start.md)
 - [mcore 预训练](./pytorch/training/pretrain/mcore/pretrain.md)
 - [mcore 指令微调](./pytorch/training/finetune/mcore/instruction_finetune.md)
-- [mcore DPO 后训练](./pytorch/training/finetune/mcore/offline_dpo.md)
 - [FSDP2 微调](./pytorch/training/finetune/fsdp2/finetune_fsdp2.md)
 - [FSDP2 参数说明](./pytorch/features/fsdp2/arguments.md)
 - [模型评估](./pytorch/training/evaluation/evaluation_guide.md)

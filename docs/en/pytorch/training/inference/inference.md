@@ -37,7 +37,7 @@
 
 2. Obtain the launch script.
 
-    Use the [streaming inference script](../../../../../examples/mcore/llama2/generate_llama2_13b_ptd.sh) in the Llama-2 model directory.
+    Use the [streaming inference script](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/llama2/generate_llama2_13b_ptd.sh) in the Llama-2 model directory.
 
 3. Edit the example script.
 

@@ -50,4 +50,4 @@ MindSpeed-LLM 基于 Megatron 分布式 checkpoint 语义，提供 `torch_dist` 
 
 - 支持将权重以 `torch_dist` 格式异步保存；
 - 保存后的权重可直接用于推理，或加载后继续预训练；
-- 暂不支持 LoRA、微调、SFT、DPO 等下游任务。
+- 暂不支持 LoRA、微调、SFT 等下游任务。

@@ -108,7 +108,7 @@ Because the PMCC obfuscation feature currently supports only the Qwen3-32B model
 
 7. Start fine-tuning.
 
-    Configure the model fine-tuning script. For detailed configuration, see the [Qwen3-32B fine-tuning script](../../../../../../examples/mcore/qwen3/tune_qwen3_32b_4K_full_ptd.sh). Modify the related path parameters and model partitioning configuration. Note that the parallel configuration of training parameters, such as TP and PP, must match the configuration used during weight conversion in Step 5.
+    Configure the model fine-tuning script. For detailed configuration, see the [Qwen3-32B fine-tuning script](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/qwen3/tune_qwen3_32b_4K_full_ptd.sh). Modify the related path parameters and model partitioning configuration. Note that the parallel configuration of training parameters, such as TP and PP, must match the configuration used during weight conversion in Step 5.
 
     ```shell
     CKPT_LOAD_DIR="your model ckpt path"      # Weight load path. Enter the weight path saved during conversion

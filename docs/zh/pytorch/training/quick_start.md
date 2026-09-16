@@ -213,7 +213,7 @@
     |参数名|说明|
     |----|----|
     |`--finetune`|启动模型的微调模式。|
-    |`--stage`|训练方法，如 sft（监督微调）、dpo 等。|
+    |`--stage`|训练方法，如 sft（监督微调）。|
     |`--is-instruction-dataset`|用于指定微调过程中采用指令微调数据集，以确保模型依据特定指令数据进行微调。|
     |`--prompt-type`|用于指定模型模板，能够让base模型微调后能具备更好的对话能力。可在[templates.json](../../../../configs/finetune/templates.json)文件内查看`prompt-type`的可选项。|
     |`--no-pad-to-seq-lengths`|关闭固定序列长度padding，支持动态序列长度微调，默认按照8的倍数进行padding。|

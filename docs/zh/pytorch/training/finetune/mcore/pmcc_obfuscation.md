@@ -108,7 +108,7 @@ PMCC混淆是指对微调过程使用的模型文件和数据集进行混淆处�
 
 7. 启动微调。
 
-    配置模型微调脚本，详细配置请参考[Qwen3-32B微调脚本](../../../../../../examples/mcore/qwen3/tune_qwen3_32b_4K_full_ptd.sh)，需要修改相关路径参数和模型切分配置。注意：训练参数的并行配置，如TP/PP等需要与第五步权重转换时的配置保持一致。
+    配置模型微调脚本，详细配置请参考[Qwen3-32B微调脚本](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/qwen3/tune_qwen3_32b_4K_full_ptd.sh)，需要修改相关路径参数和模型切分配置。注意：训练参数的并行配置，如TP/PP等需要与第五步权重转换时的配置保持一致。
 
     ```shell
     CKPT_LOAD_DIR="your model ckpt path"      # 权重加载路径，填入权重转换时保存的权重路径

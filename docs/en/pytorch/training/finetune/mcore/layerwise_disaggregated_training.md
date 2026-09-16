@@ -113,7 +113,7 @@ Edge-cloud collaborative distributed trusted training supports four modes: symme
 
 2. Start fine-tuning.
 
-    Configure the model fine-tuning script. For detailed configuration, see [the Qwen3-32B fine-tuning script](../../../../../../examples/mcore/qwen3/tune_qwen3_32b_4K_full_ptd.sh). Modify the related path parameters and model partitioning configuration:
+    Configure the model fine-tuning script. For detailed configuration, see [the Qwen3-32B fine-tuning script](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/qwen3/tune_qwen3_32b_4K_full_ptd.sh). Modify the related path parameters and model partitioning configuration:
 
     ```shell
     CKPT_LOAD_DIR="./model_weights/qwen3_vpp_edge/"  # Path to load the edge-side weights
@@ -222,7 +222,7 @@ Edge-cloud collaborative distributed trusted training supports four modes: symme
 
 2. Start fine-tuning.
 
-    Configure the model fine-tuning script. For detailed configuration, see [the Qwen3-32B fine-tuning script](../../../../../../examples/mcore/qwen3/tune_qwen3_32b_4K_full_ptd.sh). Modify the related path parameters and model partitioning configuration:
+    Configure the model fine-tuning script. For detailed configuration, see [the Qwen3-32B fine-tuning script](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/qwen3/tune_qwen3_32b_4K_full_ptd.sh). Modify the related path parameters and model partitioning configuration:
 
     ```shell
     CKPT_LOAD_DIR="./model_weights/qwen3_vpp_edge/"  # Path to load the edge-side weights
@@ -262,7 +262,7 @@ Edge-cloud collaborative distributed trusted training supports four modes: symme
 
 2. Start fine-tuning.
 
-    Configure the model fine-tuning script. For detailed configuration, see [the Qwen3-32B fine-tuning script](../../../../../../examples/mcore/qwen3/tune_qwen3_32b_4K_full_ptd.sh). Modify the related path parameters and model partitioning configuration:
+    Configure the model fine-tuning script. For detailed configuration, see [the Qwen3-32B fine-tuning script](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/qwen3/tune_qwen3_32b_4K_full_ptd.sh). Modify the related path parameters and model partitioning configuration:
 
     ```shell
     WORLD_SIZE=40                                    # Total number of devices, including the edge side and the cloud side. For example, with one edge-side machine with 8 devices and four cloud-side machines with 8 devices each, WORLD_SIZE=40
@@ -303,7 +303,7 @@ Edge-cloud collaborative distributed trusted training supports four modes: symme
 
 2. Start fine-tuning.
 
-    Configure the model fine-tuning script. For detailed configuration, see [the Qwen3-32B fine-tuning script](../../../../../../examples/mcore/qwen3/tune_qwen3_32b_4K_full_ptd.sh). Modify the related path parameters and model partitioning configuration:
+    Configure the model fine-tuning script. For detailed configuration, see [the Qwen3-32B fine-tuning script](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/qwen3/tune_qwen3_32b_4K_full_ptd.sh). Modify the related path parameters and model partitioning configuration:
 
     ```shell
     WORLD_SIZE=33                                    # Total number of devices, including the edge side and the cloud side. For example, with one edge-side machine with 1 device and four cloud-side machines with 8 devices each, WORLD_SIZE=33

@@ -30,7 +30,7 @@ For more information about pairwise dataset preprocessing, see [Pairwise Dataset
 
 ### Training Parameters
 
-The DPO training script is [dpo_qwen3_30b_a3b_16K_A3_ptd.sh](../../../../../../examples/mcore/qwen3_moe/dpo_qwen3_30b_a3b_16K_A3_ptd.sh).
+The DPO training script is [dpo_qwen3_30b_a3b_16K_A3_ptd.sh](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/qwen3_moe/dpo_qwen3_30b_a3b_16K_A3_ptd.sh).
 
 Compared with ordinary pretraining, DPO requires the following additional parameters:
 

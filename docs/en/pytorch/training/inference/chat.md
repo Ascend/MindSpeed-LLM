@@ -4,7 +4,7 @@
 
 ### Instructions
 
-You can use the model [chat script](../../../../../examples/mcore/llama2/chat_llama2_13b_ptd.sh) and load the preset model weights to conduct a multi-turn conversation with the model. The preset model weights can be either the chat weights of an LLM or the weights after [Instruction Fine-Tuning for LLMs](../finetune/mcore/instruction_finetune.md).
+You can use the model [chat script](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/llama2/chat_llama2_13b_ptd.sh) and load the preset model weights to conduct a multi-turn conversation with the model. The preset model weights can be either the chat weights of an LLM or the weights after [Instruction Fine-Tuning for LLMs](../finetune/mcore/instruction_finetune.md).
 
 ### Initialize Environment Variables
 
@@ -15,7 +15,7 @@ source /usr/local/Ascend/nnal/atb/set_env.sh # Change this to the actual nnal pa
 
 ### Running the Script
 
-Use the [chat script](../../../../../examples/mcore/llama2/chat_llama2_13b_ptd.sh) in the Llama-2 model directory.
+Use the [chat script](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/llama2/chat_llama2_13b_ptd.sh) in the Llama-2 model directory.
 
 #### Filling in the Paths
 

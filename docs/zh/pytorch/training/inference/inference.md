@@ -37,7 +37,7 @@
 
 2. 获取启动脚本
 
-    使用LLaMA2模型目录下的[流式推理脚本](../../../../../examples/mcore/llama2/generate_llama2_13b_ptd.sh)。
+    使用LLaMA2模型目录下的[流式推理脚本](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/llama2/generate_llama2_13b_ptd.sh)。
 
 3. 编辑示例脚本
 

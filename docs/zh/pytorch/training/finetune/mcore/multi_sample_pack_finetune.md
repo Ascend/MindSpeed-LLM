@@ -20,7 +20,7 @@
 
 ## 使用说明
 
-本章节以[Qwen3-32B Pack微调脚本](../../../../../../examples/mcore/qwen3/tune_qwen3_32b_32K_full_pack_A3_ptd.sh)使用 Alpaca 数据集微调为例，介绍多样本 Pack 微调方法，**更多模型支持 Pack 模式，请参考 examples 目录使用**。
+本章节以[Qwen3-32B Pack微调脚本](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/qwen3/tune_qwen3_32b_32K_full_pack_A3_ptd.sh)使用 Alpaca 数据集微调为例，介绍多样本 Pack 微调方法，**更多模型支持 Pack 模式，请参考 examples 目录使用**。
 
 多样本Pack微调主要包含以下流程：
 
@@ -33,7 +33,7 @@
     ```
 
 2. 配置指令微调脚本
-    详细的参数配置请参考[Qwen3-32B Pack微调脚本](../../../../../../examples/mcore/qwen3/tune_qwen3_32b_32K_full_pack_A3_ptd.sh)。
+    详细的参数配置请参考[Qwen3-32B Pack微调脚本](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/qwen3/tune_qwen3_32b_32K_full_pack_A3_ptd.sh)。
 
     需要在脚本中修改相关路径参数：
 
@@ -61,7 +61,7 @@
     ```
 
 > [!NOTE]
-> [Qwen3-32B Pack微调脚本](../../../../../../examples/mcore/qwen3/tune_qwen3_32b_32K_full_pack_A3_ptd.sh)支持数据/权重在线加载训练，即集成了数据预处理、权重转换和训练于一体，单脚本即可启动训练任务。若需了解该功能的更多详情可参见[数据/权重在线加载训练](../../pretrain/mcore/train_from_hf.md)。
+> [Qwen3-32B Pack微调脚本](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/qwen3/tune_qwen3_32b_32K_full_pack_A3_ptd.sh)支持数据/权重在线加载训练，即集成了数据预处理、权重转换和训练于一体，单脚本即可启动训练任务。若需了解该功能的更多详情可参见[数据/权重在线加载训练](../../pretrain/mcore/train_from_hf.md)。
 >
 > - 权重转换合一训练：实现HuggingFace权重到Megatron格式的双向自动转换与训练合一，用户无需单独执行权重转换步骤，实现从HuggingFace权重到训练任务的一键式集成。
 > - 自动转换原始数据：数据预处理功能在模型训练时自动识别并转换原始数据文件，无需用户手动执行原始数据转换。系统将根据输入路径自动判断是否为原始数据格式（如`.jsonl`、`.parquet`等），并在训练初始化阶段自动完成数据格式转换。

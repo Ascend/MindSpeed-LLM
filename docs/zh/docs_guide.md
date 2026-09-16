@@ -77,7 +77,6 @@ docs/zh/
     │   │   │   ├── multi_sample_pack_finetune.md # 多样本Pack微调
     │   │   │   ├── single_sample_finetune.md    # 单样本微调
     │   │   │   ├── multi_turn_conversation.md   # 多轮对话微调
-    │   │   │   ├── offline_dpo.md               # 离线DPO
     │   │   │   ├── layerwise_disaggregated_training.md # 逐层分离训练微调
     │   │   │   └── pmcc_obfuscation.md          # PMCC混淆
     │   │   └── fsdp2/        # FSDP2 训练方案
@@ -95,7 +94,6 @@ docs/zh/
     └── tools/                # 工具文档
         ├── data_process_sft_alpaca_style.md   # Alpaca格式数据处理
         ├── data_process_sft_sharegpt_style.md # ShareGPT格式数据处理
-        ├── data_process_dpo_pairwise.md       # Pairwise数据处理
         ├── data_process_pretrain.md           # 预训练数据处理
         ├── checkpoint_convert_hf_mcore_large_params.md  # 权重转换
         ├── checkpoint_convert_hf_dcp.md       # HF-DCP权重转换
@@ -145,7 +143,6 @@ docs/zh/
 | | [multi_turn_conversation](pytorch/training/finetune/mcore/multi_turn_conversation.md) | 多轮对话微调方案 |
 | | [lora_finetune](pytorch/training/finetune/mcore/lora_finetune.md) | 模型LoRA微调方案 |
 | | [lu_lora_finetune](pytorch/training/finetune/mcore/lu_lora_finetune.md) | 模型LU-LoRA微调方案 |
-| | [offline_dpo](pytorch/training/finetune/mcore/offline_dpo.md) | 离线DPO对齐方案 |
 | | [layerwise_disaggregated_training](pytorch/training/finetune/mcore/layerwise_disaggregated_training.md) | 逐层分离训练微调方案 |
 | | [pmcc_obfuscation](pytorch/training/finetune/mcore/pmcc_obfuscation.md) | PMCC混淆方案 |
 | 推理 | [inference](pytorch/training/inference/inference.md) | 模型推理 |
@@ -187,7 +184,6 @@ docs/zh/
 | [data_process_pretrain](pytorch/tools/data_process_pretrain.md) | 预训练任务的数据预处理 |
 | [data_process_sft_alpaca_style](pytorch/tools/data_process_sft_alpaca_style.md) | 指令微调Alpaca风格数据预处理 |
 | [data_process_sft_sharegpt_style](pytorch/tools/data_process_sft_sharegpt_style.md) | 指令微调sharegpt风格数据预处理 |
-| [data_process_dpo_pairwise](pytorch/tools/data_process_dpo_pairwise.md) | 偏好对齐pairwise数据处理 |
 | [profiling](pytorch/tools/profiling.md) | 基于昇腾芯片采集profiling数据 |
 | [msprobe](pytorch/tools/msprobe.md) | FSDP2与Megatron训练过程中的精度数据采集 |
 | [model_io_trace](pytorch/tools/model_io_trace.md) | 基于Module Hook采集模型前反向输入输出与batch预览 |

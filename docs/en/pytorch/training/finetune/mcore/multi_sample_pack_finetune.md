@@ -20,7 +20,7 @@ Other pack modes are also used in the industry, such as lower-triangular pack mo
 
 ## Usage
 
-This section uses the [Qwen3-32B Pack fine-tuning script](../../../../../../examples/mcore/qwen3/tune_qwen3_32b_32K_full_pack_A3_ptd.sh) with the Alpaca dataset as an example to introduce multi-sample pack fine-tuning. **For more models that support pack mode, see the examples directory.**
+This section uses the [Qwen3-32B Pack fine-tuning script](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/qwen3/tune_qwen3_32b_32K_full_pack_A3_ptd.sh) with the Alpaca dataset as an example to introduce multi-sample pack fine-tuning. **For more models that support pack mode, see the examples directory.**
 
 Multi-sample pack fine-tuning mainly includes the following steps:
 
@@ -33,7 +33,7 @@ Multi-sample pack fine-tuning mainly includes the following steps:
     ```
 
 2. Configure the instruction fine-tuning script.
-    For detailed parameter configuration, see the [Qwen3-32B pack fine-tuning script](../../../../../../examples/mcore/qwen3/tune_qwen3_32b_32K_full_pack_A3_ptd.sh).
+    For detailed parameter configuration, see the [Qwen3-32B pack fine-tuning script](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/qwen3/tune_qwen3_32b_32K_full_pack_A3_ptd.sh).
 
     You need to modify the following path parameters in the script:
 
@@ -61,7 +61,7 @@ Multi-sample pack fine-tuning mainly includes the following steps:
     ```
 
 > [!NOTE]
-> The [Qwen3-32B pack fine-tuning script](../../../../../../examples/mcore/qwen3/tune_qwen3_32b_32K_full_pack_A3_ptd.sh) supports online data and weight loading during training. It integrates data preprocessing, weight conversion, and training into one script. Therefore, you can start a training job with a single command. For more details, see [Training With Online Data and Weight Loading (Train_from_HF)](../../pretrain/mcore/train_from_hf.md).
+> The [Qwen3-32B pack fine-tuning script](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/qwen3/tune_qwen3_32b_32K_full_pack_A3_ptd.sh) supports online data and weight loading during training. It integrates data preprocessing, weight conversion, and training into one script. Therefore, you can start a training job with a single command. For more details, see [Training With Online Data and Weight Loading (Train_from_HF)](../../pretrain/mcore/train_from_hf.md).
 >
 > - Integrated weight conversion and training: This provides bidirectional automatic conversion between Hugging Face weights and the Megatron format, together with training. Therefore, you do not need to run the weight conversion step separately. This enables one-click integration from Hugging Face weights to the training task.
 > - Automatic raw data conversion: The data preprocessing feature automatically identifies and converts raw data files during model training. Therefore, you do not need to convert raw data manually. The system automatically determines whether the input path points to raw data, such as `.jsonl` or `.parquet` files, and completes the data format conversion during training initialization.

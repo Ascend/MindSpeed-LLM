@@ -8,7 +8,7 @@ By retaining previous conversation context, the model can better understand user
 
 ### Usage
 
-You can directly use the [chat](../../../../../../examples/mcore/gemma2/chat_gemma2_9b_ptd.sh) or [generate](../../../../../../examples/mcore/gemma2/generate_gemma2_9b_ptd.sh) script, load the preset weights, and carry out multi-turn conversation with the model to achieve the expected result. The preset weights can be chat weights, base weights, or fine-tuned weights of an LLM.
+You can directly use the [chat](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/gemma2/chat_gemma2_9b_ptd.sh) or [generate](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/gemma2/generate_gemma2_9b_ptd.sh) script, load the preset weights, and carry out multi-turn conversation with the model to achieve the expected result. The preset weights can be chat weights, base weights, or fine-tuned weights of an LLM.
 
 ### Demo
 
@@ -32,7 +32,7 @@ For a detailed introduction to the Alpaca dataset, see the [Alpaca-Style Dataset
 
 ### Multi-Turn Conversation Data Processing
 
-Use the Alpaca dataset with the `history` field to run the following [script](../../../../../../examples/mcore/gemma2/data_convert_gemma2_instruction.sh):
+Use the Alpaca dataset with the `history` field to run the following [script](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/gemma2/data_convert_gemma2_instruction.sh):
 
 ```shell
 # Download the Alpaca dataset according to the "Dataset Preparation and Processing" section in examples/README.md
@@ -106,7 +106,7 @@ bash examples/mcore/gemma2/tune_gemma2_9b_full_ptd.sh
 
 ## Starting Multi-Turn Conversation
 
-Use the [conversation script](../../../../../../examples/mcore/gemma2/chat_gemma2_9b_ptd.sh), load the model tokenizer and the fine-tuned weights, and carry out multi-turn conversation.
+Use the [conversation script](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/gemma2/chat_gemma2_9b_ptd.sh), load the model tokenizer and the fine-tuned weights, and carry out multi-turn conversation.
 
 Fill in the relevant paths:
 
