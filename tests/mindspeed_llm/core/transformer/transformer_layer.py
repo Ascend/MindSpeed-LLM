@@ -1,5 +1,6 @@
-# coding=utf-8
+# Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
 # Copyright (c) 2024, HUAWEI CORPORATION.  All rights reserved.
+# coding=utf-8
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -25,7 +26,10 @@ from megatron.core.transformer.transformer_layer import TransformerLayer as Mega
 from megatron.core.transformer import TransformerConfig, ModuleSpec, build_module
 from megatron.core.transformer.identity_op import IdentityOp, IdentityFuncOp
 from megatron.core.packed_seq_params import PackedSeqParams
+from megatron.core.process_groups_config import ProcessGroupCollection
 from megatron.core.transformer.moe.moe_layer import MoELayer
+from megatron.core.transformer.torch_norm import LayerNormBuilder
+from megatron.core.transformer.transformer_layer import MlpBuilder
 from megatron.core.transformer.moe.experts import TEGroupedMLP, SequentialMLP
 from megatron.core.utils import make_viewless_tensor
 from megatron.training import get_args
@@ -59,16 +63,16 @@ class CustomTransformerLayerSubmodules:
             in the `sharded_state_dict` method.
     """
 
-    input_layernorm: Union[ModuleSpec, type] = IdentityOp
+    input_layernorm: LayerNormBuilder = IdentityOp
     self_attention: Union[ModuleSpec, type] = IdentityOp
     self_attn_bda: Union[ModuleSpec, type] = IdentityFuncOp
 
-    pre_cross_attn_layernorm: Union[ModuleSpec, type] = IdentityOp
+    pre_cross_attn_layernorm: LayerNormBuilder = IdentityOp
     cross_attention: Union[ModuleSpec, type] = IdentityOp
     cross_attn_bda: Union[ModuleSpec, type] = IdentityFuncOp
 
-    pre_mlp_layernorm: Union[ModuleSpec, type] = IdentityOp
-    mlp: Union[ModuleSpec, type] = IdentityOp
+    pre_mlp_layernorm: LayerNormBuilder = IdentityOp
+    mlp: MlpBuilder | type[IdentityOp] = IdentityOp
     mlp_bda: Union[ModuleSpec, type] = IdentityFuncOp
 
     # Mapping for sharded tensor keys to be applied in `sharded_state_dict` method
@@ -89,7 +93,12 @@ class TransformerLayer(MegatronTransformerLayer):
         submodules: TransformerLayerSubmodules,
         layer_number: int = 1,
         hidden_dropout: float = None,
+        pg_collection: Optional[ProcessGroupCollection] = None,
+        vp_stage: Optional[int] = None,
         is_mtp_layer: bool = False,
+        add_layer_offset: bool = True,
+        pp_layer_offset: Optional[int] = None,
+        name: str | None = None,
         **kwargs,
     ):
         super().__init__(
@@ -97,7 +106,12 @@ class TransformerLayer(MegatronTransformerLayer):
             submodules=submodules,
             layer_number=layer_number,
             hidden_dropout=hidden_dropout,
+            pg_collection=pg_collection,
+            vp_stage=vp_stage,
             is_mtp_layer=is_mtp_layer,
+            add_layer_offset=add_layer_offset,
+            pp_layer_offset=pp_layer_offset,
+            name=name,
             **kwargs,
         )
         self.is_mtp = is_mtp_layer

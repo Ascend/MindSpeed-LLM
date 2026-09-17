@@ -12,6 +12,7 @@ import torch
 from torch.utils.cpp_extension import _get_build_directory
 from torch_npu.contrib import transfer_to_npu
 from mindspeed.features_manager.features_manager import MindSpeedFeaturesManager
+from megatron_adaptor.features_manager.features_manager import FeaturesManager
 
 LOG = getLogger(__name__)
 
@@ -79,6 +80,7 @@ class FeatureAdaptor:
         """
 
         MindSpeedFeaturesManager.remove_patches()
+        FeaturesManager.remove_patches()
         args = FeatureAdaptor.get_mindspeed_llm_args()
         FeatureAdaptor.delete_lock_file()
 
@@ -95,6 +97,7 @@ class FeatureAdaptor:
 def repatch(config):
     LOG.info("repatch mindspeedllm features")
     MindSpeedFeaturesManager.remove_patches()
+    FeaturesManager.remove_patches()
     args = FeatureAdaptor.get_mindspeed_llm_args()
     for k, v in config.items():
         setattr(args, k, v)

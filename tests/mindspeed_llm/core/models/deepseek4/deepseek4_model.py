@@ -24,6 +24,7 @@ from megatron.core.inference.contexts import BaseInferenceContext
 from megatron.training import get_args
 from megatron.core.transformer.moe.router import TopKRouter
 from megatron.core.transformer.identity_op import IdentityOp
+from megatron.core.process_groups_config import ProcessGroupCollection
 
 from mindspeed.core.context_parallel.get_batch_utils import get_actual_seq_len
 from mindspeed.utils import compute_qkv_index, get_position_ids
@@ -54,12 +55,17 @@ class DeepSeek4Model(MegatronCoreGPTModel):
         position_embedding_type: Literal['learned_absolute', 'rope', 'deepseek4', 'none'] = 'learned_absolute',
         rotary_percent: float = 1.0,
         rotary_base: int = 10000,
+        rope_scaling: bool = False,
+        rope_scaling_factor: float = 8.0,
+        scatter_embedding_sequence_parallel: bool = True,
         seq_len_interpolation_factor: Optional[float] = None,
         mtp_block_spec: Optional[ModuleSpec] = None,
         hc_head_spec: Optional[ModuleSpec] = IdentityOp,
+        pg_collection: Optional[ProcessGroupCollection] = None,
+        vp_stage: Optional[int] = None,
         **kwargs,
     ) -> None:
-        super(LanguageModule, self).__init__(config=config)  # pylint: disable=E1003
+        LanguageModule.__init__(self, config=config, pg_collection=pg_collection)  # pylint: disable=E1003
 
         global_args = get_args()
         post_layer_norm = kwargs.pop('post_layer_norm', True)
@@ -79,7 +85,13 @@ class DeepSeek4Model(MegatronCoreGPTModel):
         self.config.pre_process = pre_process
         self.config.parallel_output = parallel_output
         self.config.share_embeddings_and_output_weights = share_embeddings_and_output_weights
-        self.config.position_embedding_type = position_embedding_type
+        self.vp_stage = vp_stage
+        self.disable_param_offloading = True
+
+        if hasattr(self.config, 'position_embedding_type'):
+            self.position_embedding_type = self.config.position_embedding_type
+        else:
+            self.position_embedding_type = position_embedding_type
         self.config.max_sequence_length = max_sequence_length
         # megatron core pipelining currently depends on model type
         self.model_type = ModelType.encoder_or_decoder
@@ -87,6 +99,10 @@ class DeepSeek4Model(MegatronCoreGPTModel):
         # These 2 attributes are needed for TensorRT-LLM export.
         self.max_position_embeddings = max_sequence_length
         self.rotary_percent = rotary_percent
+        if hasattr(self.config, 'rotary_base'):
+            self.rotary_base = self.config.rotary_base
+        else:
+            self.rotary_base = rotary_base
         self.mtp_block_spec = mtp_block_spec
         self.mtp_process = mtp_block_spec is not None
         self.hc_head_spec = hc_head_spec if self.parallel_output else IdentityOp
@@ -99,6 +115,8 @@ class DeepSeek4Model(MegatronCoreGPTModel):
                 vocab_size=self.vocab_size,
                 max_sequence_length=self.max_sequence_length,
                 position_embedding_type=position_embedding_type,
+                scatter_to_sequence_parallel=scatter_embedding_sequence_parallel,
+                tp_group=self.pg_collection.tp,
                 skip_weight_param_allocation=skip_embedding_allocation,
             )
         if skip_embedding_allocation:
@@ -121,7 +139,10 @@ class DeepSeek4Model(MegatronCoreGPTModel):
                 rotary_interleaved=self.config.rotary_interleaved,
                 seq_len_interpolation_factor=seq_len_interpolation_factor,
                 rotary_base=rotary_base,
+                rope_scaling=rope_scaling,
+                rope_scaling_factor=rope_scaling_factor,
                 use_cpu_initialization=self.config.use_cpu_initialization,
+                cp_group=self.pg_collection.cp,
             )
         elif self.position_embedding_type == 'deepseek4':
             self.rotary_pos_emb = apply_deepseek4_rotary_embedding
@@ -137,10 +158,17 @@ class DeepSeek4Model(MegatronCoreGPTModel):
             spec=transformer_layer_spec,
             pre_process=self.pre_process,
             post_process=self.post_process,
+            pg_collection=self.pg_collection,
+            vp_stage=vp_stage,
         )
 
         if self.mtp_process:
-            self.mtp = MultiTokenPredictionBlock(config=self.config, spec=self.mtp_block_spec)
+            self.mtp = MultiTokenPredictionBlock(
+                config=self.config,
+                spec=self.mtp_block_spec,
+                vp_stage=vp_stage,
+                pg_collection=self.pg_collection,
+            )
 
         if self.mtp_process or (self.post_process and global_args.enable_mhc):
             # move block main model final norm here when mtp enable

@@ -16,7 +16,7 @@
 import types
 from contextlib import nullcontext
 from functools import wraps
-from typing import Optional
+from typing import List, Optional, Set
 
 import torch
 from torch import Tensor
@@ -25,8 +25,11 @@ from megatron.core.packed_seq_params import PackedSeqParams
 from megatron.core.transformer.identity_op import IdentityOp
 from megatron.training import get_args
 from megatron.core.enums import Fp8Recipe
+from megatron.core.fp4_utils import get_fp4_context
 from megatron.core.fp8_utils import get_fp8_context
 from megatron.core.models.gpt.gpt_layer_specs import _get_mlp_module_spec
+from megatron.core.transformer.module import MegatronModule
+from megatron.core.transformer.transformer_layer import TransformerLayer
 from megatron.core.transformer import build_module
 from megatron.core.transformer.transformer_config import TransformerConfig
 from megatron.core.utils import make_viewless_tensor
@@ -193,6 +196,7 @@ def _transformer_block_build_layers(self):
             config=self.config,
             vp_stage=getattr(self, 'vp_stage', None),
             layer_number=layer_number,
+            pg_collection=self.pg_collection,
         )
 
     # offset is implicit in TransformerLayer
@@ -416,18 +420,25 @@ def transformer_block_forward(
     return hidden_states
 
 
-def _checkpointed_forward_patch_input_ids(
-    self,
+def checkpointed_forward_patch_input_ids(
+    self: MegatronModule,
     hidden_states: Tensor,
     attention_mask: Tensor,
-    context: Tensor,
-    context_mask: Tensor,
+    context: Optional[Tensor],
+    context_mask: Optional[Tensor],
     rotary_pos_emb: Tensor,
-    attention_bias: Tensor,
+    attention_bias: Optional[Tensor],
     packed_seq_params: PackedSeqParams,
+    use_inner_quantization_context: bool,
+    padding_mask: Optional[Tensor] = None,
+    extract_layer_indices: Optional[Set[int]] = None,
+    layer_offset: int = 0,
     input_ids: torch.Tensor = None,
 ):
     """Forward method with activation checkpointing."""
+    if extract_layer_indices is None:
+        extract_layer_indices = set()
+    intermediate_hidden_states: List[Tensor] = []
 
     def custom(start: int, end: int):
         def custom_forward(
@@ -436,11 +447,34 @@ def _checkpointed_forward_patch_input_ids(
             context,
             context_mask,
             rotary_pos_emb,
+            padding_mask=None,
             input_ids=None,
         ):
             for index in range(start, end):
-                layer = self._get_layer(index)
-                hidden_states, context = layer(
+                # Use self.layers[index] (not self._get_layer) so this
+                # function works for both TransformerBlock and HybridStack.
+                layer = self.layers[index]
+
+                # Get appropriate inner quantization context
+                if use_inner_quantization_context:
+                    if self.config.fp8:
+                        inner_quantization_context = get_fp8_context(
+                            self.config, layer.layer_number - 1
+                        )
+                    # TODO: check if fp4 is supported in this case
+                    elif self.config.fp4:
+                        inner_quantization_context = get_fp4_context(
+                            self.config, layer.layer_number - 1
+                        )
+                    else:
+                        inner_quantization_context = nullcontext()
+                else:
+                    inner_quantization_context = nullcontext()
+
+                # Build the full TransformerLayer kwarg set; for non-TL
+                # layers (currently MambaLayer in HybridStack) pop the kwargs
+                # they don't accept and treat the return as a single tensor.
+                layer_kwargs = dict(
                     hidden_states=hidden_states,
                     attention_mask=attention_mask,
                     context=context,
@@ -449,70 +483,87 @@ def _checkpointed_forward_patch_input_ids(
                     attention_bias=attention_bias,
                     inference_context=None,
                     packed_seq_params=packed_seq_params,
+                    padding_mask=padding_mask,
                     input_ids=input_ids,
                 )
+                with inner_quantization_context:
+                    if isinstance(layer, TransformerLayer):
+                        hidden_states, context = layer(**layer_kwargs)
+                    else:  # MambaLayer (HybridStack `M` slot)
+                        for k in ("context", "context_mask", "attention_bias", "padding_mask"):
+                            layer_kwargs.pop(k, None)
+                        hidden_states = layer(**layer_kwargs)
+                        context = None
+
+                # Some layer paths may still return a tuple (defensive).
+                if isinstance(hidden_states, tuple):
+                    hidden_states = hidden_states[0]
             return hidden_states, context
 
         return custom_forward
 
-    def checkpoint_handler(forward_func, input_ids: torch.Tensor = None):
-        """Determines whether to use the `te_checkpoint` or `tensor_parallel.checkpoint`"""
-        if self.config.fp8:
-            return te_checkpoint(
-                forward_func,
-                self.config.distribute_saved_activations,
-                tensor_parallel.random.get_cuda_rng_tracker,
-                parallel_state.get_tensor_model_parallel_group(),
-                hidden_states,
-                attention_mask,
-                context,
-                context_mask,
-                rotary_pos_emb,
-                input_ids,
-            )
+    def chunk_runner(start: int, end: int, use_checkpoint: bool):
+        nonlocal hidden_states, context
+        cf = custom(start, end)
+        args = (hidden_states, attention_mask, context, context_mask, rotary_pos_emb, padding_mask, input_ids)
+        if use_checkpoint:
+            # Precision-aware activation checkpoint: TE under FP8/FP4,
+            # tensor_parallel under BF16/FP16/FP32.
+            if self.config.fp8 or self.config.fp4:
+                hidden_states, context = te_checkpoint(
+                    cf,
+                    self.config.distribute_saved_activations,
+                    tensor_parallel.random.get_cuda_rng_tracker,
+                    self.pg_collection.tp,
+                    *args,
+                )
+            else:
+                hidden_states, context = tensor_parallel.checkpoint(
+                    cf, self.config.distribute_saved_activations, *args
+                )
         else:
-            return tensor_parallel.checkpoint(
-                forward_func,
-                self.config.distribute_saved_activations,
-                hidden_states,
-                attention_mask,
-                context,
-                context_mask,
-                rotary_pos_emb,
-                input_ids,
-            )
+            # Note: original block-branch no-checkpoint path omitted padding_mask
+            # (relied on its default=None); restored here for consistency.
+            hidden_states, context = cf(*args)
+
+        if self.config.recompute_method == "uniform":
+            if (end - 1 + layer_offset) in extract_layer_indices:
+                intermediate_hidden_states.append(hidden_states)
+        else:
+            if (start + layer_offset) in extract_layer_indices:
+                intermediate_hidden_states.append(hidden_states)
 
     if self.config.recompute_method == 'uniform':
-        # Uniformly divide the total number of Transformer layers and checkpoint
+        # Uniformly divide the total number of layers and checkpoint
         # the input activation of each divided chunk.
-        # A method to further reduce memory usage reducing checkpoints.
         layer_idx = 0
         while layer_idx < self.num_layers_per_pipeline_rank:
-            hidden_states, context = checkpoint_handler(
-                custom(layer_idx, layer_idx + self.config.recompute_num_layers), input_ids
+            chunk_end = min(
+                layer_idx + self.config.recompute_num_layers, self.num_layers_per_pipeline_rank
             )
-
+            chunk_runner(layer_idx, chunk_end, True)
             layer_idx += self.config.recompute_num_layers
-
     elif self.config.recompute_method == 'block':
         # Checkpoint the input activation of only a set number of individual
-        # Transformer layers and skip the rest.
-        # A method fully use the device memory removing redundant re-computation.
+        # layers and skip the rest. Need at least one input tensor with
+        # gradient computation for the re-entrant autograd engine, so under
+        # FP8/FP4 we skip checkpointing while hidden_states.requires_grad
+        # is False (these slots get pushed past the recompute window).
         recompute_skip_num_layers = 0
         for layer_idx in range(self.num_layers_per_pipeline_rank):
-            # Skip recomputation when input grad computation is not needed.
-            # Need to have at least one input tensor with gradient computation
-            # for re-enterant autograd engine.
-            if self.config.fp8 and not hidden_states.requires_grad:
+            if (self.config.fp8 or self.config.fp4) and not hidden_states.requires_grad:
                 recompute_skip_num_layers += 1
-            if recompute_skip_num_layers <= layer_idx < self.config.recompute_num_layers + recompute_skip_num_layers:
-                hidden_states, context = checkpoint_handler(custom(layer_idx, layer_idx + 1), input_ids)
-            else:
-                hidden_states, context = custom(layer_idx, layer_idx + 1)(
-                    hidden_states, attention_mask, context, context_mask, rotary_pos_emb, input_ids
-                )
+            use_checkpoint = (
+                layer_idx >= recompute_skip_num_layers
+                and layer_idx < self.config.recompute_num_layers + recompute_skip_num_layers
+            )
+            chunk_runner(layer_idx, layer_idx + 1, use_checkpoint)
     else:
         raise ValueError("Invalid activation recompute method.")
+
+    # Return intermediate hidden states if feature extraction was requested
+    if len(extract_layer_indices) > 0:
+        return hidden_states, intermediate_hidden_states
 
     return hidden_states
 

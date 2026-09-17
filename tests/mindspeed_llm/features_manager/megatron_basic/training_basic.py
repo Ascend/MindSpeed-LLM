@@ -28,28 +28,25 @@ class TrainingBasicFeature(MindSpeedFeature):
             or args.tokenizer_padding_side == "left"
         ):
             args.create_attention_mask_in_dataloader = True
+        no_create_attn_mask = False
         if reset_data and args.attention_mask_type == 'causal':
-            args.create_attention_mask_in_dataloader = False
-        print_rank0_by_args(
-            args,
-            f"[INFO] Setting args.create_attention_mask_in_dataloader to {args.create_attention_mask_in_dataloader} "
-            f"since (attention_mask_type={args.attention_mask_type} and reset_data={reset_data}) or alibi_without_flash_attn={alibi_without_flash_attn} or "
-            f"args.tokenizer_padding_side={args.tokenizer_padding_side}",
-        )
+            no_create_attn_mask = True
         # Temporary code modification
         if (
             args.attention_mask_type == 'general'
             and args.context_parallel_algo == 'ulysses_cp_algo'
             and args.reset_attention_mask
         ):
-            args.create_attention_mask_in_dataloader = False
+            no_create_attn_mask = True
 
-        print_rank0_by_args(
-            args,
-            f"[INFO] Setting args.create_attention_mask_in_dataloader to {args.create_attention_mask_in_dataloader} "
-            f"since reset_attention_mask={args.reset_attention_mask} or alibi_without_flash_attn={alibi_without_flash_attn} or "
-            f"args.tokenizer_padding_side={args.tokenizer_padding_side}",
-        )
+        if no_create_attn_mask and args.create_attention_mask_in_dataloader:
+            args.create_attention_mask_in_dataloader = False
+            print_rank0_by_args(
+                args,
+                f"[INFO] Setting args.create_attention_mask_in_dataloader to {args.create_attention_mask_in_dataloader} "
+                f"since reset_attention_mask={args.reset_attention_mask} or alibi_without_flash_attn={alibi_without_flash_attn} or "
+                f"args.tokenizer_padding_side={args.tokenizer_padding_side}",
+            )
         if not args.reset_attention_mask and args.neat_pack:
             raise ValueError("Require set `--reset-attention-mask` when `--neat-pack` is set.")
 
@@ -126,7 +123,6 @@ class TrainingBasicFeature(MindSpeedFeature):
         )
 
     def register_patches(self, patch_manager, args):
-        from mindspeed_llm.training.training import train
         from mindspeed_llm.training.checkpointing import load_checkpoint_wrapper
         from mindspeed_llm.legacy.data import build_pretraining_data_loader
         from mindspeed_llm.training.utils import get_batch_on_this_tp_rank
@@ -137,5 +133,4 @@ class TrainingBasicFeature(MindSpeedFeature):
         if not getattr(args, 'reset_attention_mask', None):
             patch_manager.register_patch('megatron.core.utils.get_batch_on_this_tp_rank', get_batch_on_this_tp_rank)
 
-        patch_manager.register_patch('megatron.training.training.train', train)
         patch_manager.register_patch('megatron.training.training.load_checkpoint', load_checkpoint_wrapper)

@@ -1,12 +1,13 @@
 # Copyright (c) 2024, NVIDIA CORPORATION. All rights reserved.
 #  Copyright (c) Huawei Technologies Co., Ltd. 2025-2025. All rights reserved.
-from typing import Literal
+from typing import Literal, Optional
 
 import torch
 
 from megatron.core import tensor_parallel
 from megatron.core.models.common.embeddings.language_model_embedding import LanguageModelEmbedding
 from megatron.core.transformer.transformer_config import TransformerConfig
+from megatron.core.utils import get_tensor_model_parallel_group_if_none
 
 
 def language_model_embedding_init_func(
@@ -18,6 +19,7 @@ def language_model_embedding_init_func(
         num_tokentypes: int = 0,
         skip_weight_param_allocation: bool = False,
         scatter_to_sequence_parallel: bool = True,
+        tp_group: Optional[torch.distributed.ProcessGroup] = None,
 ):
     """Patch language model embeddings init."""
     super(LanguageModelEmbedding, self).__init__(config=config)
@@ -28,6 +30,7 @@ def language_model_embedding_init_func(
     self.add_position_embedding: bool = position_embedding_type == 'learned_absolute'
     self.num_tokentypes = num_tokentypes
     self.scatter_to_sequence_parallel = scatter_to_sequence_parallel
+    self.tp_group = get_tensor_model_parallel_group_if_none(tp_group)
     self.reduce_scatter_embeddings = (
             (not self.add_position_embedding)
             and self.num_tokentypes <= 0
@@ -42,6 +45,7 @@ def language_model_embedding_init_func(
         init_method=self.config.init_method,
         reduce_scatter_embeddings=self.reduce_scatter_embeddings,
         config=self.config,
+        tp_group=self.tp_group,
         skip_weight_param_allocation=skip_weight_param_allocation,
     )
 

@@ -3,23 +3,24 @@ import warnings
 
 import torch
 
-from mindspeed.features_manager.feature import MindSpeedFeature
+from megatron_adaptor.features_manager import TransformerEngineBasicFeature as MATransformerEngineBasicFeature
+from mindspeed.arguments import add_parser_argument_choices_value
 from mindspeed.patch_utils import MindSpeedPatchesManager
 
-
-class TransformerEngineBasicFeature(MindSpeedFeature):
+class TransformerEngineBasicFeature(MATransformerEngineBasicFeature):
     def __init__(self):
-        super().__init__('transformer-engine-basic', optimization_level=0)
+        super().__init__()
 
     def register_args(self, parser):
-        group = parser.add_argument_group(title=self.feature_name)
-        self.add_parser_argument_choices_value(parser, "--fp8-format", 'hif8')
-        self.add_parser_argument_choices_value(parser, "--fp8-recipe", 'groupwise')
-        self.add_parser_argument_choices_value(parser, "--fp8-recipe", 'blockwise')
-        self.add_parser_argument_choices_value(parser, "--fp8-recipe", 'mxfp8-32x32')
-        self.add_parser_argument_choices_value(parser, "--moe-router-dtype", 'fp8')  # 穿刺验证参数
+        super().register_args(parser)
+        add_parser_argument_choices_value(parser, "--fp8-format", 'hif8')
+        add_parser_argument_choices_value(parser, "--fp8-recipe", 'groupwise')
+        add_parser_argument_choices_value(parser, "--fp8-recipe", 'blockwise')
+        add_parser_argument_choices_value(parser, "--fp8-recipe", 'mxfp8-32x32')
+        add_parser_argument_choices_value(parser, "--moe-router-dtype", 'fp8')  # 穿刺验证参数
 
     def validate_args(self, args):
+        super().validate_args(args)
         if args.fp8 and args.transformer_impl == 'local':
             raise AssertionError('FP8 just support TE implement.')
         if args.use_ascend_coc and args.transformer_impl == 'transformer_engine':

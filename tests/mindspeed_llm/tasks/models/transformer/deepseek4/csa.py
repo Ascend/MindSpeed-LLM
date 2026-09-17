@@ -4,8 +4,8 @@ import logging
 from contextlib import nullcontext
 from dataclasses import dataclass
 from enum import Enum, auto
-from functools import lru_cache
-from typing import Union
+from functools import lru_cache, wraps
+from typing import Union, Optional
 from einops import rearrange
 
 import torch
@@ -24,6 +24,9 @@ from megatron.core.transformer.enums import AttnMaskType
 from megatron.core import parallel_state
 from megatron.training import get_args
 from megatron.core.transformer.transformer_layer import get_transformer_layer_offset
+from megatron.core.process_groups_config import ProcessGroupCollection
+
+from mindspeed.core.transformer.transformer_block import _get_layer_offset
 
 from mindspeed_llm.core.tensor_parallel.layers import LinearNoTP
 from mindspeed_llm.core.transformer.custom_layers.transformer_engine import PTNorm
@@ -119,7 +122,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class DeepSeek4SelfAttentionSubmodules(SelfAttentionSubmodules):
+class DeepSeek4SelfAttentionSubmodules:
     """Submodules for the MLA self-attention layer with NPU."""
 
     linear_q: Union[ModuleSpec, type] = None
@@ -164,6 +167,9 @@ class DeepSeek4SelfAttention(MegatronModule):
         layer_number: int,
         attn_mask_type=AttnMaskType.padding,
         cp_comm_type=None,
+        pg_collection: ProcessGroupCollection | None = None,
+        pp_layer_offset: Optional[int] = None,
+        name: str | None = None,
     ):
         super().__init__(
             config=config,
@@ -182,7 +188,7 @@ class DeepSeek4SelfAttention(MegatronModule):
         self.n_groups = args.o_groups  # 8
         self.n_local_groups = args.o_groups // world_size
         self.dim = args.hidden_size  # 4096
-        self.layer_number = layer_number + get_transformer_layer_offset(self.config)
+        self.layer_number = layer_number
         self.mtp_idx = 0
         self.n_heads = args.num_attention_heads  # 64
         self.n_local_heads = self.n_heads // world_size
@@ -904,6 +910,9 @@ class DeepSeek4MTPSelfAttention(DeepSeek4SelfAttention):
         layer_number: int,
         attn_mask_type=AttnMaskType.padding,
         cp_comm_type=None,
+        pg_collection: ProcessGroupCollection | None = None,
+        pp_layer_offset: Optional[int] = None,
+        name: str | None = None,
     ):
         super().__init__(
             config=config,
@@ -911,6 +920,9 @@ class DeepSeek4MTPSelfAttention(DeepSeek4SelfAttention):
             layer_number=layer_number,
             attn_mask_type=attn_mask_type,
             cp_comm_type=cp_comm_type,
+            pg_collection=pg_collection,
+            pp_layer_offset=pp_layer_offset,
+            name=name,
         )
 
         self.indexer = None

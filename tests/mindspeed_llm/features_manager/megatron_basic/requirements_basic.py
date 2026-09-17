@@ -19,9 +19,10 @@ class RequirementsBasicFeature(MindspeedRequirementsBasicFeature):
         )
 
     def register_patches(self, patch_manager, args):
-        self.version_patch(patch_manager, args)
+        super().register_patches(patch_manager, args)
 
     def pre_register_patches(self, patch_manager, args):
+        super().pre_register_patches(patch_manager, args)
         self.load_checkpoint_patch(patch_manager, args)
 
     def optimizer_selection(self, pm, args):
@@ -39,11 +40,6 @@ class RequirementsBasicFeature(MindspeedRequirementsBasicFeature):
             elif args.optimizer_selection == 'fused_adamw':
                 pm.register_patch('apex.optimizers.FusedAdam', AdamW, create_dummy=True)
         pm.register_patch('apex.optimizers.FusedSGD', torch.optim.SGD, create_dummy=True)
-
-    def version_patch(self, pm, args):
-        from mindspeed_llm.tasks.megatron_basic.requirements_basic import version_wrapper
-
-        pm.register_patch('importlib.metadata.version', version_wrapper)
 
     def load_checkpoint_patch(self, pm, args):
         if hasattr(args, 'lora_target_modules') and args.lora_target_modules:

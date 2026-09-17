@@ -198,7 +198,7 @@ class MHC(MegatronModule):
         mix_hc = hc_mult if self.mhc_position == 'head' else (2 + hc_mult) * hc_mult
         hc_dim = hc_mult * args.hidden_size
         self.hc_sinkhorn_iters = args.hc_sinkhorn_iters
-        self.norm_eps = args.norm_epsilon
+        self.norm_eps = args.layernorm_epsilon
 
         self.enable_mhc = args.enable_mhc
         # self.hc_fn = nn.Parameter(torch.empty(hc_mult, hc_dim))

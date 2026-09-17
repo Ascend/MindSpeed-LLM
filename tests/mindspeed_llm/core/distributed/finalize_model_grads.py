@@ -134,7 +134,8 @@ def _update_router_expert_bias_for_patch(model: List[torch.nn.Module], config: T
     stacked_tokens_per_expert = torch.stack(tokens_per_expert_list, dim=0)
     stacked_expert_bias = torch.stack(expert_bias_list, dim=0)
     stacked_updated_expert_bias = get_updated_expert_bias(
-        stacked_tokens_per_expert, stacked_expert_bias, config.moe_router_bias_update_rate
+        stacked_tokens_per_expert, stacked_expert_bias, config.moe_router_bias_update_rate,
+    tp_dp_cp_group = tp_dp_cp_group,
     )
 
     for tokens_per_expert, expert_bias, updated_expert_bias in zip(

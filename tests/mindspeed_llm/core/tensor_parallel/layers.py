@@ -5,6 +5,15 @@ import torch.nn.functional as F
 from torch.nn.parameter import Parameter
 
 from megatron.core import parallel_state, ModelParallelConfig
+from megatron.core.utils import (
+    divide,
+    get_pg_rank,
+    get_pg_size,
+    get_tensor_model_parallel_group_if_none,
+    is_torch_min_version,
+    make_tp_sharded_tensor_for_checkpoint,
+    prepare_input_tensors_for_wgrad_compute,
+)
 from megatron.core.tensor_parallel import copy_to_tensor_model_parallel_region, gather_from_tensor_model_parallel_region
 from megatron.core.tensor_parallel.utils import VocabUtility
 from megatron.core.tensor_parallel.layers import (
@@ -14,6 +23,7 @@ from megatron.core.tensor_parallel.layers import (
     _initialize_affine_weight_cpu,
     _initialize_affine_weight_gpu,
     VocabParallelEmbedding,
+    set_tensor_model_parallel_attributes,
 )
 from megatron.training import get_args
 from megatron.core.tensor_parallel.mappings import (
@@ -31,6 +41,7 @@ def vocab_embedding_init_func(
     *,
     init_method: Callable,
     config: ModelParallelConfig,
+    tp_group: Optional[torch.distributed.ProcessGroup] = None,
     reduce_scatter_embeddings: bool = False,
     skip_weight_param_allocation: bool = False,
 ):
@@ -40,22 +51,26 @@ def vocab_embedding_init_func(
     self.num_embeddings = num_embeddings
     self.embedding_dim = embedding_dim
     self.reduce_scatter_embeddings = reduce_scatter_embeddings
-    self.tensor_model_parallel_size = parallel_state.get_tensor_model_parallel_world_size()
-    # Divide the weight matrix along the vocaburaly dimension.
-    (
-        self.vocab_start_index,
-        self.vocab_end_index,
-    ) = VocabUtility.vocab_range_from_global_vocab_size(
-        self.num_embeddings, parallel_state.get_tensor_model_parallel_rank(), self.tensor_model_parallel_size
+    self.tp_group = tp_group
+
+    self.tp_group = get_tensor_model_parallel_group_if_none(self.tp_group)
+
+    (self.vocab_start_index, self.vocab_end_index) = (
+        VocabUtility.vocab_range_from_global_vocab_size(
+            self.num_embeddings, get_pg_rank(self.tp_group), get_pg_size(self.tp_group)
+        )
     )
     self.num_embeddings_per_partition = self.vocab_end_index - self.vocab_start_index
     self.deterministic_mode = config.deterministic_mode
+    self.config = config
 
     # Allocate weights and initialize.
     if not skip_weight_param_allocation:
         if config.use_cpu_initialization:
             self.weight = Parameter(
-                torch.empty(self.num_embeddings_per_partition, self.embedding_dim, dtype=config.params_dtype)
+                torch.empty(
+                    self.num_embeddings_per_partition, self.embedding_dim, dtype=config.params_dtype
+                )
             )
             if config.perform_initialization:
                 _initialize_affine_weight_cpu(
@@ -66,6 +81,12 @@ def vocab_embedding_init_func(
                     0,
                     init_method,
                     params_dtype=config.params_dtype,
+                    rank=get_pg_rank(self.tp_group),
+                    world_size=get_pg_size(self.tp_group),
+                )
+            else:
+                set_tensor_model_parallel_attributes(
+                    tensor=self.weight, is_parallel=True, dim=0, stride=1
                 )
         else:
             self.weight = Parameter(
@@ -78,6 +99,10 @@ def vocab_embedding_init_func(
             )
             if config.perform_initialization:
                 _initialize_affine_weight_gpu(self.weight, init_method, partition_dim=0, stride=1)
+            else:
+                set_tensor_model_parallel_attributes(
+                    tensor=self.weight, is_parallel=True, dim=0, stride=1
+                )
     else:
         self.weight = None
 
@@ -91,7 +116,7 @@ def vocab_parallel_embedding_forward(self, input_, weight=None):
             )
         weight = self.weight
 
-    if self.tensor_model_parallel_size > 1:
+    if self.tp_group.size() > 1:
         # Build the mask.
         input_mask = (input_ < self.vocab_start_index) | (input_ >= self.vocab_end_index)
         # Mask the input.
@@ -105,15 +130,27 @@ def vocab_parallel_embedding_forward(self, input_, weight=None):
     output_parallel = F.embedding(masked_input, weight)
 
     # Mask the output embedding.
-    if self.tensor_model_parallel_size > 1:
+    if self.tp_group.size() > 1:
         output_parallel *= ~input_mask[..., None]
     if self.reduce_scatter_embeddings:
         # Data format change to avoid explicit tranposes : [b s h] --> [s b h].
         output_parallel = output_parallel.transpose(0, 1).contiguous()
-        output = reduce_scatter_to_sequence_parallel_region(output_parallel)
-    else:
+        if self.use_inference_optimized_reduce_scatter and not self.training:
+            # Deferred to avoid circular import: inference_layers 鈫?TE 鈫?layers.
+            from megatron.core.tensor_parallel.inference_layers import inference_reduce_scatter_to_sequence_parallel_region
+
+            output = inference_reduce_scatter_to_sequence_parallel_region(
+                output_parallel, self.tp_group, self.config
+            )
+        else:
+            output = reduce_scatter_to_sequence_parallel_region(
+                output_parallel, group=self.tp_group
+            )
+    elif self.tp_group.size() > 1:
         # Reduce across all the model parallel GPUs.
-        output = reduce_from_tensor_model_parallel_region(output_parallel)
+        output = reduce_from_tensor_model_parallel_region(output_parallel, group=self.tp_group)
+    else:
+        output = output_parallel
     args_ = get_args()
     if hasattr(self, 'norm'):
         output = self.norm(output)

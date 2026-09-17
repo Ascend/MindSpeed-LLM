@@ -59,7 +59,7 @@ class Compressor(MegatronModule):
         linear_config.bias = False
         self.wkv = build_module(submodules.wkv, self.dim, coff * self.head_dim, config=linear_config, bias=False)
         self.wgate = build_module(submodules.wgate, self.dim, coff * self.head_dim, config=linear_config, bias=False)
-        self.norm = RMSNorm(self.head_dim, args.norm_epsilon, config=config)
+        self.norm = RMSNorm(self.head_dim, args.layernorm_epsilon, config=config)
         self.kv_cache = None
 
         # If overlap is enabled, state[:, :ratio] for overlapping compression and state[:, ratio:] for normal compression.

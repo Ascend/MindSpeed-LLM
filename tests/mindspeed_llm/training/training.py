@@ -35,6 +35,7 @@ from megatron.training import get_signal_handler
 from megatron.training import get_tensorboard_writer
 from megatron.training import get_wandb_writer
 from megatron.training import one_logger_utils
+from megatron.training import ft_integration
 from megatron.core.num_microbatches_calculator import get_num_microbatches, update_num_microbatches
 from megatron.core import mpu, parallel_state
 from megatron.core.pipeline_parallel import get_forward_backward_func
@@ -87,6 +88,23 @@ except Exception as e:  # noqa: F841
     pass
 
 
+# Startup timestamp bookkeeping for E2E metrics. The upstream training.py this patch is
+# based on provides these helpers (paired with set_startup_timestamps() calls from the
+# entry script, e.g. pretrain_deepseek4.py, which is outside tests scope), so we keep
+# a local equivalent here to satisfy the patched pretrain() body.
+_STARTUP_TIMESTAMPS = {'program_start': None, 'main_entry': None, 'pretrain_entry': None}
+
+
+def set_startup_timestamps(**timestamps):
+    """Record local process startup timestamps for E2E startup metrics."""
+    for name, ts in timestamps.items():
+        _STARTUP_TIMESTAMPS[name] = ts
+
+
+# Legacy train-start time, kept for the backwards-compatible 'time to initialize megatron' print.
+_LEGACY_TRAIN_START_TIME = _TRAIN_START_TIME
+
+
 def _enable_npu_datadump_step_end():
     """
     Enable NPU data dump at the end of a training step.
@@ -95,7 +113,7 @@ def _enable_npu_datadump_step_end():
     if the npu_datadump flag is enabled.
 
     Note:
-        This is used for debugging and profiling NPU operations.
+        This is used for debugging NPU operations.
     """
     args = get_args()
     if not getattr(args, "npu_datadump", False):
@@ -229,9 +247,9 @@ def model_provider_func_wrapper(model_provider_func):
 
 def get_model_wrapper(fn):
     @wraps(fn)
-    def wrapper(model_provider_func, model_type=ModelType.encoder_or_decoder, wrap_with_ddp=True):
+    def wrapper(model_provider_func, model_type=ModelType.encoder_or_decoder, wrap_with_ddp=True, config=None, pg_collection=None):
         model_provider_func = model_provider_func_wrapper(model_provider_func)
-        model = fn(model_provider_func, model_type, wrap_with_ddp)
+        model = fn(model_provider_func, model_type, wrap_with_ddp, config, pg_collection)
         return model
 
     return wrapper
@@ -251,83 +269,6 @@ def build_train_valid_test_data_loaders_wrapper(fn):
                     _ = iter(dataloader)
         return train_dataloader, valid_dataloader, test_dataloader
     return wrapper
-
-
-def is_profile_enabled():
-    args = get_args()
-    if not args.profile:
-        return False
-    if args.profile_ranks == [-1]:
-        return True
-    if torch.distributed.get_rank() in args.profile_ranks:
-        return True
-    return False
-
-
-def get_profiler():
-    args = get_args()
-    if args.profile_level == 'level_none':
-        profiler_level = torch_npu.profiler.ProfilerLevel.Level_none
-    elif args.profile_level == 'level0':
-        profiler_level = torch_npu.profiler.ProfilerLevel.Level0
-    elif args.profile_level == 'level1':
-        profiler_level = torch_npu.profiler.ProfilerLevel.Level1
-    elif args.profile_level == 'level2':
-        profiler_level = torch_npu.profiler.ProfilerLevel.Level2
-    else:
-        raise ValueError(f"profiler_level only supports level0,"
-                         f" 1, 2, and level_none, but gets {args.profile_level}")
-
-    if args.profile_export_type == 'text':
-        profile_export_type = torch_npu.profiler.ExportType.Text
-    elif args.profile_export_type == 'db':
-        profile_export_type = torch_npu.profiler.ExportType.Db
-    else:
-        raise ValueError(f"profile_export_type only supports text or db,"
-                         f"but gets {args.export_type}")
-
-    experimental_config = torch_npu.profiler._ExperimentalConfig(
-        aic_metrics=torch_npu.profiler.AiCMetrics.PipeUtilization,
-        profiler_level=profiler_level,
-        export_type=profile_export_type,
-        data_simplification=args.profile_data_simplification,
-    )
-
-    skip_first = args.profile_step_start - args.iteration - 2
-    active = args.profile_step_end - args.profile_step_start
-
-    if args.profile_step_start == args.iteration + 1:
-        warmup = 0
-    elif args.profile_step_start > args.iteration + 1:
-        warmup = 1
-    else:
-        raise AssertionError(f'When loading checkpoint, iteration will be loaded from checkpoint, '
-                             f'profile_step_start should be greater than {args.iteration} but now it is {args.profile_step_start}.')
-
-    activites = [torch_npu.profiler.ProfilerActivity.NPU]
-    if args.profile_with_cpu:
-        activites.append(torch_npu.profiler.ProfilerActivity.CPU)
-
-    prof = torch_npu.profiler.profile(
-        with_stack=args.profile_with_stack,
-        record_shapes=args.profile_record_shapes,
-        profile_memory=args.profile_with_memory,
-        activities=activites,
-        schedule=torch_npu.profiler.schedule(wait=0, warmup=warmup, active=active, repeat=1, skip_first=skip_first),
-        on_trace_ready=torch_npu.profiler.tensorboard_trace_handler(args.profile_save_path),
-        experimental_config=experimental_config)
-
-    prof.add_metadata_json('distributed_args', json.dumps({
-        'tensor_model_parallel_size': args.tensor_model_parallel_size,
-        'pipeline_model_parallel_size': args.pipeline_model_parallel_size,
-        'data_parallel_size': args.data_parallel_size,
-        'context_parallel_size': args.context_parallel_size,
-        'expert_model_parallel_size': args.expert_model_parallel_size,
-        'sequence_parallel': args.sequence_parallel,
-        'rank': args.rank,
-        'world_size': args.world_size
-    }))
-    return prof
 
 
 def build_train_args(*input_args):
@@ -426,13 +367,19 @@ def get_model_provider_func(args, model_provider):
     return model_provider_func
 
 
-def pretrain(train_valid_test_dataset_provider,  # pylint: disable=dangerous-default-value
-             model_provider,
-             model_type,
-             forward_step_func,
-             process_non_loss_data_func=None,
-             extra_args_provider=None,
-             args_defaults={}):
+def pretrain(
+    cfg_container,
+    train_valid_test_dataset_provider,
+    model_provider,
+    model_type,
+    forward_step_func,
+    process_non_loss_data_func=None,
+    get_embedding_ranks=None,
+    get_position_embedding_ranks=None,
+    non_loss_data_func=None,
+    store=None,
+    inprocess_call_wrapper = None,
+):
     """Main training program.
 
     This function will run the followings in the order provided:
@@ -460,16 +407,44 @@ def pretrain(train_valid_test_dataset_provider,  # pylint: disable=dangerous-def
             to it. It is used for programs to add their own arguments.
         args_defaults: a dictionary from argument-name to argument-value. It
             to set already parse arguments.
+        get_embedding_ranks: a function that takes a list of ranks for a pipeline
+            group and returns those ranks that should have word embeddings.
+            For most models, these are the first and last pipeline stages.
+            If None, defaults to returning the first and last pipeline stages.
+        get_position_embedding_ranks: a function that takes a list of ranks for
+            a pipeline group and returns those ranks that should have position
+            embeddings. For most models, this is only the first pipeline stage.
+            If None, defaults to returning only the first pipeline stage.
+        non_loss_data_func (callable): A custom function to call during evaluation.
+            It can run e.g. benchmarks.
+        store: an optional instance of torch.distributed.Store, to be used by
+            torch.distributed.init_process_group
+        inprocess_call_wrapper: an optional instance of inprocess.CallWrapper,
+            it is automatically injected when in-process restart is in use
     """
 
+    # Capture timestamp right at top of pretrain, before initialize_megatron
+    _STARTUP_TIMESTAMPS['pretrain_entry'] = time.time()
+
+    if inprocess_call_wrapper is not None:
+        iteration = inprocess_call_wrapper.iteration
+        store = torch.distributed.PrefixStore(str(iteration), store)
+
+    timestamp_after_inprocess_setup = time.time()
+
+    # Early fault tolerance setup - must be done before initialize_megatron
+    # to enable monitoring of the initialization process
+    ft_integration.setup()
+    timestamp_after_in_job_setup = time.time()
+
     # Initalize and get arguments, timers, and Tensorboard writer.
-    from megatron.training.arguments import parse_and_validate_args
-    args = parse_and_validate_args(
-        extra_args_provider=extra_args_provider,
-        ignore_unknown_args=False,
-        args_defaults=args_defaults
+    initialize_megatron(
+        get_embedding_ranks=get_embedding_ranks,
+        get_position_embedding_ranks=get_position_embedding_ranks,
+        store=store,
     )
-    initialize_megatron()
+
+    timestamp_after_initialize_megatron = time.time()
 
     args = get_args()
     timers = get_timers()
@@ -478,33 +453,88 @@ def pretrain(train_valid_test_dataset_provider,  # pylint: disable=dangerous-def
         config_path=args.msprobe_config_path,
     )
 
+    if args.fine_grained_activation_offloading:
+        from megatron.core.pipeline_parallel.utils import set_ideal_affinity_for_current_gpu
+        set_ideal_affinity_for_current_gpu()
 
-    if args.log_progress:
-        append_to_progress_log("Starting job")
+
+    if cfg_container.logger.log_progress:
+        append_to_progress_log(args.save, "Starting job")
 
     # Set pytorch JIT layer fusion options and warmup JIT functions.
     set_jit_fusion_options()
 
-    # Adjust the startup time so it reflects the largest value.
+    timestamp_after_set_jit_fusion_options = time.time()
+
+    # Adjust the startup time so it reflects the global minimum.
     # This will be closer to what scheduler will see (outside of
-    # image ... launches.
-    global _TRAIN_START_TIME
-    start_time_tensor = torch.tensor([_TRAIN_START_TIME],
-                                     dtype=torch.float,
-                                     device='cuda')
-    torch.distributed.all_reduce(start_time_tensor,
-                                 op=torch.distributed.ReduceOp.MIN)
-    _TRAIN_START_TIME = start_time_tensor.item()
+    # image ... launches).
+    program_start = _STARTUP_TIMESTAMPS.get('program_start')
+    main_entry = _STARTUP_TIMESTAMPS.get('main_entry')
+    pretrain_entry = _STARTUP_TIMESTAMPS.get('pretrain_entry')
+
+    # Initialize program_start_global with a fallback value in case set_startup_timestamps() wasn't called
+    program_start_global = _TRAIN_START_TIME
+    if _STARTUP_TIMESTAMPS['program_start'] is not None:
+        program_start_global = torch.tensor([_STARTUP_TIMESTAMPS['program_start']], dtype=torch.float, device='cuda')
+        torch.distributed.all_reduce(program_start_global, op=torch.distributed.ReduceOp.MIN)
+        program_start_global = program_start_global.item()
+    set_startup_timestamps(program_start=program_start_global)
+
+    global _LEGACY_TRAIN_START_TIME
+    start_time_tensor = torch.tensor([_LEGACY_TRAIN_START_TIME], dtype=torch.float, device='cuda')
+    torch.distributed.all_reduce(start_time_tensor, op=torch.distributed.ReduceOp.MIN)
+    _LEGACY_TRAIN_START_TIME = start_time_tensor.item()
+
+    # Capture megatron init end time (matches original time.time() placement)
+    megatron_init_end = time.time()
 
     app_metrics = {}
-    app_metrics['app_start_time'] = round(_TRAIN_START_TIME * 1000.0)
-    app_metrics['app_model_init_start_time'] = round(_TRAIN_START_TIME * 1000.0)
+    app_metrics['app_start_time'] = round(program_start_global * 1000.0)
+    app_metrics['app_model_init_start_time'] = round(program_start_global * 1000.0)
 
-    print_rank_0('time to initialize megatron (seconds): {:.3f}'.format(
-        time.time() - _TRAIN_START_TIME))
+    # Print basic megatron init time (using global min start)
+    # NOTE(asolergi-nv): This is not entirely accurate, but we keep it for backwards compatibility.
+    print_rank_0(
+        'time to initialize megatron (seconds): {:.3f}'.format(megatron_init_end - _LEGACY_TRAIN_START_TIME)
+    )
+
+    # Note, not entirely accurate as rank 0 might not be the first or last to hit these timestamps
+    print_datetime('after in-process setup and before initialize_megatron', timestamp_after_inprocess_setup)
+    print_datetime('after in-job setup and before initialize_megatron', timestamp_after_in_job_setup)
+
+    if program_start is not None and main_entry is not None and pretrain_entry is not None:
+        # Inject startup deltas into timers
+        startup_timers = {
+            'startup-program-entry-spread': program_start - program_start_global, # Local program start timestamp vs the global earliest program start timestamp
+            'startup-library-setup': main_entry - program_start, # Local library imports
+            'startup-program-setup': pretrain_entry - main_entry, # Local __main__ entry to pretrain entry
+            'startup-in-process-setup': timestamp_after_inprocess_setup - pretrain_entry, # Local in-process setup
+            'startup-in-job-setup': timestamp_after_in_job_setup - timestamp_after_inprocess_setup, # Local in-job setup
+            'startup-initialize-megatron': timestamp_after_initialize_megatron - timestamp_after_in_job_setup, # Local initialize megatron
+            'startup-set-jit-fusion-options': timestamp_after_set_jit_fusion_options - timestamp_after_initialize_megatron, # Local set JIT fusion options
+            'all-reduce-start-timestamps-tensor': megatron_init_end - timestamp_after_set_jit_fusion_options, # 2x All-reduce, first collective call
+            'startup-megatron-init-local': megatron_init_end - pretrain_entry, # Local megatron init
+            'startup-megatron-init-global': megatron_init_end - program_start_global, # Local megatron init vs the global earliest program start timestamp
+        }
+        for name, delta in startup_timers.items():
+            timers(name, log_level=0).set_elapsed(delta)
+        timers.log(list(startup_timers.keys()), barrier=True)
+
+        # Print rank 0's absolute timestamps
+        startup_timestamps = {
+            'before library-setup': program_start,
+            'after library-setup': main_entry,
+            'before megatron-init': pretrain_entry,
+        }
+        for name, ts in startup_timestamps.items():
+            ts_str = datetime.fromtimestamp(ts).strftime('%Y-%m-%d %H:%M:%S.%f')
+            print_rank_0(f'[{name}] datetime: {ts_str}')
+
     print_datetime('after megatron is initialized')
     app_metrics['app_model_init_finish_time'] = one_logger_utils.get_timestamp_in_ms()
 
+    # Track E2E metrics on pretrain start
     one_logger_utils.on_pretrain_start()
 
     train_args, test_data_iterator_list = build_train_args(args, timers, train_valid_test_dataset_provider,
@@ -529,12 +559,15 @@ def pretrain(train_valid_test_dataset_provider,  # pylint: disable=dangerous-def
 
         iteration = 0
         if args.do_train and args.train_iters > 0:
+            # breakpoint()
             iteration, num_floating_point_operations_so_far = train(
                 forward_step_func,
                 model, optimizer, opt_param_scheduler,
                 train_data_iterator, valid_data_iterator,
                 process_non_loss_data_func, config,
-                msprobe_manager=msprobe_manager)
+                None, non_loss_data_func, None,
+                msprobe_manager=msprobe_manager,
+                )
 
         print_datetime('after training is done')
 
@@ -579,7 +612,9 @@ def pretrain(train_valid_test_dataset_provider,  # pylint: disable=dangerous-def
 
 def train(forward_step_func, model, optimizer, opt_param_scheduler,
           train_data_iterator, valid_data_iterator,
-          process_non_loss_data_func, config, msprobe_manager=None):
+          process_non_loss_data_func, config, checkpointing_context,
+    non_loss_data_func,
+    inference_model=None, msprobe_manager=None):
     """Train the model function."""
     args = get_args()
     timers = get_timers()
@@ -677,10 +712,6 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
     if one_logger:
         with one_logger.get_context_manager():
             one_logger.store_set('get_e2e_base_metrics', get_e2e_base_metrics)
-
-    if is_profile_enabled():
-        prof = get_profiler()
-        prof.start()
 
     start_iteration = iteration
     # Disable forward pre-hook to start training to ensure that errors in checkpoint loading
@@ -887,12 +918,6 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
         if args.manual_gc:
             if args.manual_gc_interval != 0 and iteration % args.manual_gc_interval == 0:
                 gc.collect()
-
-        if is_profile_enabled():
-            prof.step()
-
-    if is_profile_enabled():
-        prof.stop()
 
     one_logger_utils.track_e2e_metrics()
 

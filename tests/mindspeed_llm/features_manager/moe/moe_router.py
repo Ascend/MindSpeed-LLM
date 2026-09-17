@@ -82,7 +82,7 @@ class MoERouter(MindSpeedFeature):
         from mindspeed_llm.core.transformer.moe.moe_layer import moe_layer_forward
         from megatron.core.transformer.transformer_config import TransformerConfig
         from mindspeed_llm.core.distributed.finalize_model_grads import _update_router_expert_bias_for_patch
-        from mindspeed_llm.core.transformer.transformer_block import  _checkpointed_forward_patch_input_ids
+        from mindspeed_llm.core.transformer.transformer_block import  checkpointed_forward_patch_input_ids
 
         patch_manager.register_patch('megatron.core.transformer.transformer_config.TransformerConfig.__post_init__', 
                                       transformer_config_post_init_wrapper)
@@ -115,5 +115,5 @@ class MoERouter(MindSpeedFeature):
                                           topk_softmax_with_capacity)
 
         if args.n_hash_layers >= 1:
-            patch_manager.register_patch('megatron.core.transformer.transformer_block.TransformerBlock._checkpointed_forward',
-                                _checkpointed_forward_patch_input_ids)
+            patch_manager.register_patch('megatron.core.recompute.checkpointed_forward',
+                                checkpointed_forward_patch_input_ids)

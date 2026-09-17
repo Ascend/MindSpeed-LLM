@@ -1,21 +1,9 @@
 from argparse import ArgumentParser
 
-from megatron_adaptor.features_manager.megatron.megatron_basic import MegatronBasicFeature as MindSpeedMegatronBasicFeature
+from megatron_adaptor.features_manager.megatron.megatron_basic import MegatronBasicFeature as MAMegatronBasicFeature
 
 
-class MegatronBasicFeature(MindSpeedMegatronBasicFeature):
-
-    def register_patches(self, patch_manager, args):
-        try:
-            import megatron.training
-        except ModuleNotFoundError:
-            only_mcore = True
-        else:
-            only_mcore = False
-
-        self.register_mcore_basic_patches(patch_manager, args)
-        if not only_mcore:
-            self.register_non_mcore_basic_patches(patch_manager, args)
+class MegatronBasicFeature(MAMegatronBasicFeature):
 
     def register_args(self, parser: ArgumentParser):
         super().register_args(parser)
@@ -39,6 +27,7 @@ class MegatronBasicFeature(MindSpeedMegatronBasicFeature):
                            help='Configuration for the output layer bias.')
 
     def register_mcore_basic_patches(self, pm, args):
+        super().register_mcore_basic_patches(pm, args)
         # coalescing_manager patches
         from mindspeed.core.distributed.param_and_grad_buffer import start_param_sync, finish_param_sync, start_grad_sync, finish_grad_sync
         pm.register_patch('megatron.core.distributed.param_and_grad_buffer._ParamAndGradBucketGroup.start_param_sync',
@@ -73,24 +62,36 @@ class MegatronBasicFeature(MindSpeedMegatronBasicFeature):
         pm.register_patch('megatron.core.transformer.transformer_layer.TransformerLayerSubmodules', CustomTransformerLayerSubmodules)
 
     def register_non_mcore_basic_patches(self, pm, args):
+        from megatron_adaptor.patches.megatron.megatron_basic import (
+            _compile_dependencies,
+            get_device_wrapper,
+            get_device_arch_version,
+            get_device_capability,
+            _range_push_patch,
+            _range_pop_patch,
+        )
+
+        from megatron_adaptor.patches.megatron.arguments_basic import (
+            parse_args_wrapper,
+        )
+        from mindspeed_llm.training.arguments import validate_args_v2_decorator
+
+        # args parser patch
+        pm.register_patch('megatron.training.arguments.parse_args', parse_args_wrapper)
+        pm.register_patch('megatron.training.arguments.validate_args', validate_args_v2_decorator)
+        pm.register_patch('megatron.training.yaml_arguments.validate_yaml', validate_args_v2_decorator)
+
+        pm.register_patch('megatron.training.initialize._compile_dependencies', _compile_dependencies)
+        pm.register_patch('megatron.training.dist_signal_handler.get_device', get_device_wrapper)
+        pm.register_patch('megatron.training.utils.get_device_arch_version', get_device_arch_version)
+        pm.register_patch('torch.cuda.get_device_capability', get_device_capability)
+        pm.register_patch('torch.cuda.nvtx.range_push', _range_push_patch)
+        pm.register_patch('torch.cuda.nvtx.range_pop', _range_pop_patch)
+
         # args parser patch
         from mindspeed_llm.training.utils import print_args_wrapper
-        from mindspeed_llm.training.arguments import validate_args_v2_decorator, parse_args_decorator
-        from mindspeed_llm.core.transformer.transformer_config import transformer_config_post_init_wrapper
-        pm.register_patch('megatron.training.arguments.parse_args',
-                          parse_args_decorator)
-        pm.register_patch('megatron.training.arguments.validate_args',
-                          validate_args_v2_decorator)
+
         pm.register_patch('megatron.training.arguments._print_args',
                           print_args_wrapper)
-        pm.register_patch('megatron.training.yaml_arguments.validate_yaml',
-                          validate_args_v2_decorator)
         pm.register_patch('megatron.training.yaml_arguments._print_args',
                           print_args_wrapper)
-        pm.register_patch("megatron.core.transformer.transformer_config.TransformerConfig.__post_init__",
-                          transformer_config_post_init_wrapper)
-
-        # initialization patches
-        from mindspeed.core.megatron_basic.megatron_basic import get_device_wrapper
-        pm.register_patch('megatron.training.dist_signal_handler.get_device',
-                          get_device_wrapper)

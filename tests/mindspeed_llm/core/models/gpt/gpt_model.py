@@ -26,13 +26,12 @@ from megatron.training import get_args
 from megatron.core.transformer.moe.router import TopKRouter
 from megatron.core.process_groups_config import ProcessGroupCollection
 
-from mindspeed.utils import compute_qkv_index
+from mindspeed.utils import compute_qkv_index, get_position_ids
 from mindspeed_llm.core.tensor_parallel.layers import SegmentedColumnParallelLinear
 from mindspeed_llm.training.utils import (set_actual_seq_len_list, _CAN_RECORD_REGISTRY, 
                            check_model_inputs)
 from mindspeed_llm.training.utils import set_actual_seq_len_list
 from mindspeed.core.context_parallel.get_batch_utils import get_actual_seq_len
-from mindspeed.core.transformer.flash_attention.reset_attention_mask.adaptor import get_position_ids
 from mindspeed_llm.core.models.common.chunk_loss import chunk_loss, calculate_lm_loss
 from mindspeed_llm.training.utils import recompute_valid_actual_seq_len
 
