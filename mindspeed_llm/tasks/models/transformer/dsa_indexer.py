@@ -625,7 +625,15 @@ class DSAIndexer(MegatronModule):
     def all_gather_qk_weight_kvallgather(self, q, k, weights, tnd=False):
         if not tnd:
             k = gather_from_sp_cp(k)
-        if self.use_fused_lightning_indexer and not tnd:
+        # Align indexer q/weights to global seq dim for TP>1 SP TND (or BSND, which
+        # runs under SP too); the same gather serves both branches.
+        if self.use_fused_lightning_indexer and (
+            not tnd
+            or (
+                getattr(self.config, "sequence_parallel", False)
+                and parallel_state.get_tensor_model_parallel_world_size() > 1
+            )
+        ):
             group = parallel_state.get_tensor_model_parallel_group()
             q = gather_from_sequence_parallel_region(q, group=group)
             weights = gather_from_sequence_parallel_region(weights, group=group)

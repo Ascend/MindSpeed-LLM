@@ -725,10 +725,14 @@ class DeepSeek4SelfAttention(MegatronModule):
                 packed_seq_params = _select_per_layer_cu_seqlens(packed_seq_params, self.mtp_idx)
             # Prefix KV mode: keep prior ranks' KV as prefix; op derives CP offset from cu_q != cu_kv.
             if pre_gather_len is not None:
+                # Use the full CP window this rank covers for prefix KV offset/length under TP>1 SP.
+                full_local_len = (
+                    pre_gather_len * tp_size if tp_size > 1 and self.config.sequence_parallel else pre_gather_len
+                )
                 cp_size_inner = parallel_state.get_context_parallel_world_size()
                 if cp_size_inner > 1:
                     _local_len_t = torch.tensor(
-                        [pre_gather_len], dtype=torch.int, device="npu" if torch.npu.is_available() else "cpu"
+                        [full_local_len], dtype=torch.int, device="npu" if torch.npu.is_available() else "cpu"
                     )
                     _all_lens = torch.empty(cp_size_inner, dtype=torch.int, device=_local_len_t.device)
                     # Use CP group to keep sizes consistent under TP>1.
@@ -736,19 +740,10 @@ class DeepSeek4SelfAttention(MegatronModule):
                     torch.distributed.all_gather_into_tensor(_all_lens, _local_len_t, group=_cp_group)
                 else:
                     _all_lens = None
-                rank_offset = _get_rank_offset(pre_gather_len, all_lens=_all_lens)
-                # TP>1 SP: globalize cu_seqlens_kv to match the global q sequence.
+                rank_offset = _get_rank_offset(full_local_len, all_lens=_all_lens)
+                # Keep cu_seqlens_kv global: SP shards hidden states only, not cu_seqlens.
                 _cu_seqlens_kv_input = packed_seq_params.cu_seqlens_kv
-                _local_len_for_compute = pre_gather_len
-                if tp_size > 1 and self.config.sequence_parallel:
-                    _local_cu_kv = packed_seq_params.cu_seqlens_kv
-                    if _local_cu_kv.dim() <= 1 < _local_cu_kv.numel():
-                        _local_total_kv = _local_cu_kv[-1].item()
-                        _global_parts = [_local_cu_kv]
-                        for i in range(1, tp_size):
-                            _global_parts.append(_local_cu_kv[1:] + i * _local_total_kv)
-                        _cu_seqlens_kv_input = torch.cat(_global_parts).int()
-                        _local_len_for_compute = pre_gather_len * tp_size
+                _local_len_for_compute = full_local_len
                 local_cu_seqlens_q, local_cu_seqlens_kv, _fix_prefix_kv_segments = _compute_prefix_kv_cu_seqlens(
                     _cu_seqlens_kv_input, rank_offset, _local_len_for_compute
                 )
