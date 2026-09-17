@@ -21,7 +21,7 @@ fi
 # ============================================================
 BASE_IMAGE="swr.cn-south-1.myhuaweicloud.com/ascendhub/cann:9.1.0-910b-openeuler24.03-py3.12"
 TORCH_VERSION="2.10.0"
-TORCH_NPU_VERSION="2.10.0.post4"
+TORCH_NPU_VERSION="2.10.0.post6"
 TRITON_ASCEND_VERSION="3.2.2"
 MINDSPEED_BRANCH="master"
 MEGATRON_BRANCH="core_v0.12.1"
