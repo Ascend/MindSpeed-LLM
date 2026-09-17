@@ -20,7 +20,7 @@ DATA_PATH="your data path"
 TOKENIZER_PATH="your tokenizer path"
 CKPT_LOAD_DIR="your model ckpt path"
 
-TP=2
+TP=1
 PP=8
 EP=64
 CP=1
@@ -87,7 +87,9 @@ DSA_ARGS="
     --enable-dsa-indexer \
     --indexer-loss-coeff 1.0 \
     --use-sparse-flash-attn \
-    --index-topk 256 \
+    --use-fused-lightning-indexer-loss \
+    --use-fused-lightning-indexer \
+    --index-topk 2048 \
     --init-norm-weight-in-fp32 \
 "
 
