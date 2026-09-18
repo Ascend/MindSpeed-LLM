@@ -14,11 +14,11 @@
 
 【--prompt-type】
 
-用于指定模型模板，能够让base模型微调后能具备更好的对话能力。`prompt-type`的可选项可以在[templates.json](../../../../../configs/finetune/templates.json)文件内查看。
+用于指定模型模板，能够让base模型微调后具备更好的对话能力。`prompt-type`的可选项可以在[templates.json](../../../../../configs/finetune/templates.json)文件内查看。
 
 【--reset-position-ids】
 
-每条数据由不同的样本拼接而成，因此其位置 ID 并不连续。该参数用于将数据的position-ids按照eod结尾生成ids，而非连续的ids。模型将在每个EOD之后，将对position-ids从0开始重新编号，从而隔离不同句子间的位置计算，作用于attention中query和key的位置编码。
+每条数据由不同的样本拼接而成，因此其位置 ID 并不连续。该参数用于将数据的position-ids按照eod结尾生成ids，而非连续的ids。模型将在每个EOD之后，对position-ids从0开始重新编号，从而隔离不同句子间的位置计算，作用于attention中query和key的位置编码。
 
 【--reset-attention-mask】
 

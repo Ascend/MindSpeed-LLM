@@ -8,7 +8,7 @@
 
 |产品|是否支持|
 |--|:-:|
-|<term>Ascend 950PR&950DT 系列产品</term>|√|
+|<term>Ascend 950PR&950DT系列产品</term>|√|
 |<term>Atlas A3 训练系列产品</term>|√|
 |<term>Atlas A3 推理系列产品</term>|x|
 |<term>Atlas A2 训练系列产品</term>|√|
@@ -52,9 +52,9 @@
    最新镜像均配套[MindSpeed LLM的26.1.0分支](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0)，请按需[获取镜像](https://www.hiascend.com/developer/ascendhub/detail/e26da9266559438b93354792f25b2f4a)。
 
    <!-- npu="950" id1 -->
-   - <term>Ascend 950PR&950DT 系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-950-openeuler24.03-py3.12
+   - <term>Ascend 950PR&950DT系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-950-openeuler24.03-py3.12
 
-   - <term>Ascend 950PR&950DT 系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-950-ubuntu22.04-py3.12
+   - <term>Ascend 950PR&950DT系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-950-ubuntu22.04-py3.12
    <!-- end id1 -->
    <!-- npu="A3" id2 -->
    - <term>Atlas A3 训练系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-a3-openeuler24.03-py3.12
@@ -204,7 +204,7 @@
     cd ..
     ```
 
-6. 安装FSDPTurbo加速库
+6. （可选）安装FSDPTurbo加速库
 
     ```shell
     git clone https://gitcode.com/Ascend/FSDPTurbo.git
@@ -212,6 +212,10 @@
     pip3 install -e .
     cd ..
     ```
+
+   > [!NOTE]
+   >
+   > 若要使用FSDP训练后端进行模型训练，需先安装FSDPTurbo加速库。
 
 7. 准备MindSpeed LLM及Megatron-LM源码
 

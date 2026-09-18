@@ -17,7 +17,7 @@
 
 > [!NOTE]
 >
-> MindSpeed LLM 支持 <term>Ascend 950PR&950DT 系列产品</term>、<term>Atlas A3 训练系列产品</term> 和 <term>Atlas A2 训练系列产品</term>，且要求单 NPU 的片上内存为 64GB 及以上，详见[模型支持列表](../models/supported_models.md)。
+> MindSpeed LLM 支持 <term>Ascend 950PR&950DT系列产品</term>、<term>Atlas A3 训练系列产品</term> 和 <term>Atlas A2 训练系列产品</term>，且要求单 NPU 的片上内存为 64GB 及以上，详见[模型支持列表](../models/supported_models.md)。
 >
 > 本文档为 **快速入门跟练教程**。若需更换模型、注册自定义数据集或查阅更完整的 YAML 配置说明，请参考 [FSDP2 后端训练使用指南](./finetune/fsdp2/finetune_fsdp2.md)。
 >

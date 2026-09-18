@@ -77,7 +77,7 @@
 
 #### 参数说明
 
-**表 1**  参数说明
+**表 1** 参数说明
 
 | 参数 | 类型 | 默认值 | 是否必需 | 描述 |
 |------|------|--------|------|------|
@@ -148,7 +148,7 @@
 
 #### 参数说明
 
-**表 2**  参数说明
+**表 2** 参数说明
 
 | 参数 | 类型 | 默认值 |是否必需 | 描述 |
 |------|------|------|------|------|
@@ -164,12 +164,12 @@
 | `--enable-thinking` | string | None | 否 | 是否启用思维模式（微调场景） |
 | `--output-prefix` | string | None | 否 | 转换后输出的数据集文件的文件名前缀 |
 | `--seq-length` | int | None | 否 | Pack模式下指定数据打包后的序列长度 |
-| `--reasoning-effort` | string | None | 否 | 用于DeepSeek-V4模型微调数据处理，可选 max/high。max：在prompt中插入最大努力的指令前缀；high：预留，当前为空操作 |
+| `--reasoning-effort` | string | None | 否 | 用于DeepSeek-V4模型微调数据处理，可选max/high。<ul><li>max：在prompt中插入最大努力的指令前缀</li><li>high：预留，当前为空操作</li></ul> |
 | `--drop-thinking` | bool | True | 否 | DeepSeek-V4微调场景，是否丢弃多轮对话中的历史思维链。默认仅保留最后一轮assistant的reasoning作为loss目标；设为False则保留所有轮次的reasoning |
 
 > [!NOTE]
 >
-> - 若未指定`--output-prefix`, 处理后的数据文件将默认生成在原始数据集所在的目录下。
+> - 若未指定`--output-prefix`，处理后的数据文件将默认生成在原始数据集所在的目录下。
 > - `--handler-name`为数据处理 handler 名称：
 >   - 对于预训练脚本，一般可以在同模型目录下的`data_xxx_pretrain.sh`脚本中找到，一般统一为`GeneralPretrainHandler`。
 >   - 对于微调脚本，一般可以在同模型目录下的`data_xxx_instruction.sh`脚本中找到，一般统一为`AlpacaStyleInstructionHandler`。

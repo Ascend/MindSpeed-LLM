@@ -29,7 +29,7 @@ BBH 评估集专注于以下几个方面：
 
 【--max-new-tokens】
 
-设置为 32，确保 [word_sorting](https://github.com/suzgunmirac/BIG-Bench-Hard/blob/main/bbh/word_sorting.json) 等需要长输出任务可以输出完整。
+设置为32，确保 [word_sorting](https://github.com/suzgunmirac/BIG-Bench-Hard/blob/main/bbh/word_sorting.json) 等需要长输出任务可以输出完整。
 
 ### 2. 微调模板评估模式
 
@@ -43,7 +43,7 @@ BBH 评估集专注于以下几个方面：
 
 【--max-new-tokens】
 
-设置为 32，确保 [word_sorting](https://github.com/suzgunmirac/BIG-Bench-Hard/blob/main/bbh/word_sorting.json) 等需要长输出任务可以输出完整。
+设置为32，确保 [word_sorting](https://github.com/suzgunmirac/BIG-Bench-Hard/blob/main/bbh/word_sorting.json) 等需要长输出任务可以输出完整。
 
 【--prompt-type】
 
@@ -54,13 +54,13 @@ BBH 评估集专注于以下几个方面：
 #### 使用影响
 
 - 该模式会将思维链（CoT）提示应用于 BBH 任务。
-- 此模式将会读取 BBH 评估的 [CoT 模板的文件](../../../../../../mindspeed_llm/tasks/evaluation/eval_impl/fewshot_template/bbh_cot_template.json)作为评估模板，在与需要模型回答的问题连接后，输入到模型中，进行评估。
+- 此模式将会读取 BBH 评估的[CoT模板文件](../../../../../../mindspeed_llm/tasks/evaluation/eval_impl/fewshot_template/bbh_cot_template.json)作为评估模板，在与需要模型回答的问题连接后，输入到模型中，进行评估。
 
 #### 推荐参数配置
 
 【--max-new-tokens】
 
-设置为 512 或者以上
+设置为512或以上
 
 【--chain-of-thought】
 

@@ -125,7 +125,7 @@ CHECKPOINT="./ckpt/"
 bash examples/mcore/gemma2/chat_gemma2_9b_ptd.sh
 ```
 
-在确认成功加载上微调权重后，在出现`You >>`的提示后，可以进行对话。
+在确认成功加载微调权重，并出现`You >>`的提示后，可以进行对话。
 
 ## 使用约束
 

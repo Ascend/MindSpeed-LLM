@@ -89,7 +89,7 @@ docker/
 | `--base-image` | 完整基础镜像名称，当设置不为空时会原样传入拉取镜像           | 无 |
 | `--cleanup-on-fail` | 构建失败时清理悬空的镜像和容器           | 无 |
 
-**提示：** 最新发布的镜像 Tag 和 `image_build.sh` 构建脚本均支持 `910b`（Atlas A2 训练系列产品）、`a3`（Atlas A3 训练系列产品）和 `950`（Ascend 950PR&950DT 系列产品）。
+**提示：** 最新发布的镜像 Tag 和 `image_build.sh` 构建脚本均支持 `910b`（Atlas A2 训练系列产品）、`a3`（Atlas A3 训练系列产品）和 `950`（Ascend 950PR&950DT系列产品）。
 
 #### 基础构建示例
 
