@@ -1,4 +1,5 @@
 # coding=utf-8
+# Copyright (c) 2025, NVIDIA CORPORATION. All rights reserved.
 # Copyright (c) 2024, HUAWEI CORPORATION.  All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
