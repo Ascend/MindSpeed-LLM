@@ -173,8 +173,6 @@ class DecoderPackedMTFDataset(torch.utils.data.Dataset):
                                                    seq_length=seq_length,
                                                    seed=seed,
                                                    shuffle=not self.args.no_shuffle)
-        self.cur_batch_index = []
-        self.iteration = 1
 
     def __len__(self):
         return len(self.shuffle_index)
@@ -196,21 +194,8 @@ class DecoderPackedMTFDataset(torch.utils.data.Dataset):
     def __getitem__(self, idx):
         doc_idx = self.shuffle_index[idx]
 
-        # Consistent with pre-training
-        if self.args.return_document_ids and mpu.get_tensor_model_parallel_rank() == 0 and mpu.get_pipeline_model_parallel_rank() == 0 and mpu.get_context_parallel_rank() == 0:
-            self.cur_batch_index.append(doc_idx)
-            # No reward model is considered yet
-            # Print all data one iteration at a time
-            if len(self.cur_batch_index) == self.args.global_batch_size / self.args.data_parallel_size:
-                print("current iteration: {}, current rank:{}, data_parallel_rank:{}, document_ids:{}".format(
-                    self.iteration, torch.distributed.get_rank(), mpu.get_data_parallel_rank(), self.cur_batch_index))
-                self.cur_batch_index = []
-                self.iteration += 1
-
         item = self.mtf_dataset[doc_idx]
 
-        if self.args.is_pairwise_dataset:
-            return self._cut_pairwise_token(item, np.int64)
         data = torch.from_numpy(item['input_ids'])
         seq_length = data.numel()
         # Position ids.

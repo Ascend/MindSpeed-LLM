@@ -155,12 +155,6 @@ def model_provider_func_wrapper(model_provider_func):
     def wrapper(*args, **kwargs):
         model = model_provider_func(*args, **kwargs)
         args = get_args()
-        if args.use_fused_mlp:
-            from mindspeed_llm.tasks.models.transformer.fast_mlp import ParallelSwigluMLPForward
-            from megatron.legacy.model.transformer import ParallelMLP
-            from megatron.core.transformer.mlp import MLP
-            ParallelMLP.forward = ParallelSwigluMLPForward
-            MLP.forward = ParallelSwigluMLPForward
 
         if is_enable_lora():
             import peft
@@ -178,12 +172,6 @@ def model_provider_func_wrapper(model_provider_func):
                 from peft.tuners.lora.tp_layer import LoraParallelLinear
                 from mindspeed_llm.tasks.posttrain.lora.cc_lora_forward import CCLoraParallelLinearForward
                 LoraParallelLinear.forward = CCLoraParallelLinearForward
-                if args.use_fused_mlp:
-                    from mindspeed_llm.tasks.posttrain.lora.cc_lora_mlp_forward import ParallelSwigluMLPLoRAForward
-                    from megatron.legacy.model.transformer import ParallelMLP
-                    from megatron.core.transformer.mlp import MLP
-                    ParallelMLP.forward = ParallelSwigluMLPLoRAForward
-                    MLP.forward = ParallelSwigluMLPLoRAForward
 
             if args.lu_lora_final_layer_index is not None:
                 from mindspeed_llm.tasks.posttrain.lu_lora.layers.tp_lu_lora_linear import (

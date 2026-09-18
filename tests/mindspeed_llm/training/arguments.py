@@ -18,7 +18,6 @@ import argparse
 from pathlib import Path
 from functools import wraps
 from mindspeed.features_manager.features_manager import MindSpeedFeaturesManager
-from mindspeed_llm.features_manager import FEATURES_LIST
 
 
 cur_file_dir = Path(__file__).absolute().parent
@@ -41,7 +40,7 @@ def extra_args_provider_decorator(extra_args_provider):
 
     The wrapper:
         1. Calls the original provider if it exists
-        2. Adds MindSpeed-LLM v2 arguments via process_args_v2
+        2. Adds MindSpeed-LLM arguments via process_args
     """
     @wraps(extra_args_provider if extra_args_provider is not None else (lambda p: p))
     def wrapper(parser):
@@ -73,7 +72,7 @@ def parse_args_decorator(parse_args):
     return wrapper
 
 
-def process_args_v2(parser):
+def process_args(parser):
     """
     Process and register MindSpeed-LLM v2 feature arguments.
 
@@ -152,31 +151,7 @@ def core_transformer_config_from_args_wrapper(fn):
     return wrapper
 
 
-def _add_dummy_args_v2(args):
-    """
-    Add dummy arguments for features currently unsupported in MindSpeed-LLM.
-
-    This function initializes unsupported feature arguments to False or default values
-    to maintain compatibility with the broader codebase.
-
-    Args:
-        args: Arguments namespace to add dummy arguments to.
-
-    Note:
-        These arguments exist in the feature list but are not yet supported
-        in MindSpeed-LLM implementation.
-    """
-    args.unaligned_linear = False
-    args.embed_layernorm = False
-    args.enable_share_memory = False
-    args.return_document_ids = False
-    args.attention_mask_on_cpu = False
-    args.output_layer_slice_num = 1
-    args.use_fused_mlp = False
-    args.is_pairwise_dataset= False
-
-
-def validate_args_v2_decorator(megatron_validate_args):
+def validate_args_decorator(megatron_validate_args):
     """
     Decorator for Megatron arguments validation with MindSpeed-LLM extensions.
 
@@ -212,7 +187,6 @@ def validate_args_v2_decorator(megatron_validate_args):
         # make post validation after megatron validation.
         MindSpeedFeaturesManager.post_validate_features_args(args=args)
 
-        _add_dummy_args_v2(args)
         MindSpeedFeaturesManager.validate_features_args(args=args)
 
         from mindspeed_llm.training.utils import print_args

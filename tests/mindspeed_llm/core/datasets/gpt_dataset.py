@@ -21,30 +21,6 @@ from .blended_megatron_dataset_builder import need_to_build_dataset
 logger = logging.getLogger(__name__)
 
 
-def gpt_dataset_getitem_wrapper(fn):
-    @wraps(fn)
-    def wrapper(self, idx):
-        batch = fn(self, idx)
-        _args = get_args()
-        if _args.return_document_ids:
-            if idx is None:
-                # Batch padding sequence so the index does not matter
-                text, document_ids = self._query_document_sample_shuffle_indices(0)
-            else:
-                text, document_ids = self._query_document_sample_shuffle_indices(idx)
-
-            if mpu.get_context_parallel_rank() == 0 and mpu.get_tensor_model_parallel_rank() == 0 and mpu.get_pipeline_model_parallel_rank() == 0:
-                batch_idx = numpy.array([idx], dtype=numpy.int64)
-                document_ids = numpy.pad(document_ids, (0, len(text) - len(document_ids)), 'constant', constant_values=(-100, -100))
-                batch_idx = numpy.pad(batch_idx, (0, len(text) - len(batch_idx)), 'constant', constant_values=(-100, -100))
-                batch["document_ids"] = document_ids
-                batch["idx"] = batch_idx
-
-        return batch
-
-    return wrapper
-
-
 def _build_document_sample_shuffle_indices(
     self,
 ) -> Tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray]:

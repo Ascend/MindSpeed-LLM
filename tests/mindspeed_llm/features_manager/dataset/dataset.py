@@ -27,8 +27,6 @@ class DatasetFeature(MindSpeedFeature):
         from mindspeed_llm.core import (build_generic_dataset, _build_document_sample_shuffle_indices,
                                         indexed_dataset_builder_init_wrapper, add_item_wrapper, finalize_wrapper)
         from mindspeed_llm.training.training import build_train_valid_test_data_loaders_wrapper
-        from mindspeed_llm.core.datasets.gpt_dataset import (gpt_dataset_getitem_wrapper, 
-                                                            _get_ltor_masks_and_position_ids)
 
         patch_manager.register_patch('megatron.core.datasets.gpt_dataset.GPTDataset._build_document_sample_shuffle_indices',
                                     _build_document_sample_shuffle_indices)
@@ -36,8 +34,6 @@ class DatasetFeature(MindSpeedFeature):
                                     build_generic_dataset)
         patch_manager.register_patch('megatron.training.training.build_train_valid_test_data_loaders',
                                     build_train_valid_test_data_loaders_wrapper)
-        patch_manager.register_patch('megatron.core.datasets.gpt_dataset.GPTDataset.__getitem__',
-                                    gpt_dataset_getitem_wrapper)
         # data preprocess and finetune dataloader
         patch_manager.register_patch('megatron.core.datasets.indexed_dataset.IndexedDatasetBuilder.__init__',
                                     indexed_dataset_builder_init_wrapper)

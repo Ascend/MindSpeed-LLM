@@ -58,7 +58,7 @@ def train_valid_test_datasets_provider(train_val_test_num_samples):
         dataset_type = GPTDataset
     print_rank_0("> building train, validation, and test datasets for GPT ...")
 
-    if args.is_instruction_dataset or args.is_pairwise_dataset:
+    if args.is_instruction_dataset:
         train_ds, valid_ds, test_ds = build_instruction_dataset(
             data_prefix=args.data_path,
             splits_string=args.split,

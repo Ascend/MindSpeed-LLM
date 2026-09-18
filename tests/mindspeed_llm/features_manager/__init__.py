@@ -1,6 +1,11 @@
 from typing import List
 
 from megatron_adaptor.auto_execute import AutoExecuteFunction
+from megatron_adaptor.features_manager import (
+    NPUDeterministicFeature,
+    NPUDataDumpFeature,
+    ProfilerDefaultFeature,
+)
 from mindspeed.features_manager import (
     DisableGlooGroupFeature,
     FusedEmaAdamwFeature,
@@ -17,7 +22,6 @@ from mindspeed.features_manager import (
     ReuseFP32Param,
     RiPipeSchedulesAdvanceFeature,
     RiPipeSchedulesBubbleFeature,
-    UnalignedLinearFeature,
     UnalignedPipelineFeature,
     VirtualOptimizerFeature,
     HcclBufferAdaptiveFeature,
@@ -39,7 +43,6 @@ from mindspeed.features_manager import (
 from mindspeed.features_manager.feature import MindSpeedFeature
 from mindspeed.features_manager.features_manager import MindSpeedFeaturesManager
 from mindspeed.features_manager.npu_enhancement import NpuEnhancementFeature
-from megatron_adaptor.features_manager import NPUDeterministicFeature, NPUDataDumpFeature, ProfilerDefaultFeature
 
 from mindspeed_llm.features_manager.fusions.swiglu_limit_feature import SwigluLimitFeature
 from mindspeed_llm.features_manager.low_precision.low_precision_optimizer_feature import LowPrecisionOptimizerFeature
@@ -47,11 +50,9 @@ from mindspeed_llm.features_manager.affinity.affinity import AffinityFeature
 from mindspeed_llm.features_manager.context_parallel.context_parallel_feature import ContextParallelFeature
 from mindspeed_llm.features_manager.context_parallel.ulysses_context_parallel import UlyssesContextParallelFeature
 from mindspeed_llm.features_manager.context_parallel.mamba_context_parallel import MambaContextParallelFeature
-from mindspeed_llm.features_manager.common.data import DataFeature
 from mindspeed_llm.features_manager.models.module import ModuleFeature
 from mindspeed_llm.features_manager.common.embedding import LanguageModelEmbeddingFeature
 from mindspeed_llm.features_manager.common.rotary import RotaryPositionEmbeddingFeature
-from mindspeed_llm.features_manager.common.training import TrainingDefaultFeature
 from mindspeed_llm.features_manager.tensor_parallel.coc import CoCFeature
 from mindspeed_llm.features_manager.dataset.dataset import DatasetFeature
 from mindspeed_llm.features_manager.finetune.finetune import FinetuneFeature
@@ -94,23 +95,6 @@ from mindspeed_llm.features_manager.qat.qat_quant_engine import QATQuantEngineFe
 from mindspeed_llm.features_manager.optimizer.muon_optimizer_feature import MuonOptimizerFeature
 from mindspeed_llm.features_manager.transformer.mhc_feature import MHCFeature
 from mindspeed_llm.features_manager.transformer.multi_latent_attention.csa_feature import CSAFeature
-
-FEATURES_LIST = [
-    # MindSpeed Legacy Features
-    # MindSpeed Mcore Features
-    UnalignedLinearFeature(),
-    # MindSpeed-LLM Mcore Features
-    TrainingDefaultFeature(),
-    DataFeature(),
-    LoraFeature(),
-    DisableGlooGroupFeature(),
-    RotaryPositionEmbeddingFeature(),
-    LanguageModelEmbeddingFeature(),
-    MoERouter(),
-    CoCFeature(),
-    MultiTokenPredictionFeature(),
-    # MindSpeed-LLM Legacy Features
-]
 
 
 def add_megatron_basic_features(features_list: List[MindSpeedFeature]):

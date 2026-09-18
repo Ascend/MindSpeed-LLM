@@ -74,12 +74,12 @@ class MegatronBasicFeature(MAMegatronBasicFeature):
         from megatron_adaptor.patches.megatron.arguments_basic import (
             parse_args_wrapper,
         )
-        from mindspeed_llm.training.arguments import validate_args_v2_decorator
+        from mindspeed_llm.training.arguments import validate_args_decorator
 
         # args parser patch
         pm.register_patch('megatron.training.arguments.parse_args', parse_args_wrapper)
-        pm.register_patch('megatron.training.arguments.validate_args', validate_args_v2_decorator)
-        pm.register_patch('megatron.training.yaml_arguments.validate_yaml', validate_args_v2_decorator)
+        pm.register_patch('megatron.training.arguments.validate_args', validate_args_decorator)
+        pm.register_patch('megatron.training.yaml_arguments.validate_yaml', validate_args_decorator)
 
         pm.register_patch('megatron.training.initialize._compile_dependencies', _compile_dependencies)
         pm.register_patch('megatron.training.dist_signal_handler.get_device', get_device_wrapper)
