@@ -1,0 +1,132 @@
+{
+    "base_args": [
+        {
+            "params": {
+                "context_parallel_size": 2,
+                "context_parallel_algo": "deepseek_v4_cp_algo",
+                "attention_mask_type": "causal",
+                "position_embedding_type": "rope",
+                "use_kv_cache": false,
+                "sliding_window": null,
+                "seq_length": 1024,
+                "reset_attention_mask": false,
+                "use_sparse_flash_attn": true,
+                "use_fused_lightning_indexer": false,
+                "enable_dsa_indexer": false,
+                "indexer_loss_coeff": 0.0,
+                "use_fused_lightning_indexer_loss": false,
+                "kv_compress": false,
+                "recompute_csa_attention": false,
+                "indexer_qk_quant_scheme": null,
+                "compress_ratios": null,
+                "tp_2d": false,
+                "spec": ["mindspeed_llm.tasks.models.spec.deepseek4_spec", "layer_spec"],
+                "transformer_impl": "pytorch"
+            }
+        }
+    ],
+    "test_argument_parser_accepts_deepseek_v4_cp": [
+        {
+            "argv": ["--context-parallel-algo", "deepseek_v4_cp_algo"],
+            "expected": "deepseek_v4_cp_algo"
+        }
+    ],
+    "test_deepseek_v4_cp_validation_rejects_invalid_configuration": [
+        {
+            "overrides": {"attention_mask_type": "general"},
+            "message": "causal attention mask"
+        },
+        {
+            "overrides": {"position_embedding_type": "alibi"},
+            "message": "alibi"
+        },
+        {
+            "overrides": {"tp_2d": true},
+            "message": "tp_2d"
+        },
+        {
+            "overrides": {"seq_length": 1025},
+            "message": "divisible by context_parallel_size"
+        },
+        {
+            "overrides": {"use_sparse_flash_attn": false},
+            "message": "use-sparse-flash-attn"
+        },
+        {
+            "overrides": {"enable_dsa_indexer": true, "kv_compress": false},
+            "message": "requires --kv-compress"
+        },
+        {
+            "overrides": {"recompute_csa_attention": true},
+            "message": "recompute-csa-attention"
+        },
+        {
+            "overrides": {"indexer_qk_quant_scheme": "mxfp8"},
+            "message": "indexer-qk-quant-scheme"
+        },
+        {
+            "overrides": {"compress_ratios": [1, 8]},
+            "message": "compression ratios"
+        }
+    ],
+    "test_deepseek_v4_cp_validation_does_not_require_indexer_for_default_loss_coeff": [
+        {
+            "overrides": {
+                "indexer_loss_coeff": 1.0,
+                "enable_dsa_indexer": false
+            }
+        }
+    ],
+    "test_deepseek_v4_cp_validation_accepts_zero_compression_ratio": [
+        {
+            "overrides": {
+                "compress_ratios": [0, 0, 4, 128]
+            }
+        }
+    ],
+    "test_deepseek_v4_cp_validation_requires_fused_indexer_loss_when_enabled": [
+        {
+            "overrides": {
+                "enable_dsa_indexer": true,
+                "kv_compress": true,
+                "indexer_loss_coeff": 1.0
+            },
+            "message": "use-fused-lightning-indexer"
+        }
+    ],
+    "test_deepseek_v4_cp_validation_accepts_fused_indexer_without_two_cp_alignment": [
+        {
+            "overrides": {
+                "seq_length": 1026,
+                "use_fused_lightning_indexer": true
+            }
+        }
+    ],
+    "test_dsa_indexer_accepts_deepseek_v4_cp": [
+        {
+            "params": {
+                "use_fused_lightning_indexer": false,
+                "use_fused_lightning_indexer_loss": false,
+                "enable_dsa_indexer": true,
+                "multi_latent_attention": true,
+                "use_flash_attn": true,
+                "context_parallel_size": 2,
+                "context_parallel_algo": "deepseek_v4_cp_algo",
+                "reset_attention_mask": false,
+                "indexer_qk_quant_scheme": null
+            }
+        }
+    ],
+    "test_mhc_accepts_deepseek_v4_cp": [
+        {
+            "params": {
+                "enable_mhc": true,
+                "multi_latent_attention": true,
+                "use_flash_attn": true,
+                "context_parallel_size": 2,
+                "context_parallel_algo": "deepseek_v4_cp_algo",
+                "use_fused_mhc": false
+            }
+        }
+    ]
+}

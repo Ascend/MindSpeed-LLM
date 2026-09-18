@@ -1,0 +1,164 @@
+{
+    "contract": [
+        {
+            "params": {
+                "head_dim": 8,
+                "ratio_indexer": 4,
+                "ratio_compressor_only": 128,
+                "attn_prefix": "decoder.layers.0.self_attention",
+                "mtp_prefix": "mtp.layers.0.transformer_layer.self_attention",
+                "mg_compressor_keys": [
+                    "compressor.ape",
+                    "compressor.norm.weight",
+                    "compressor.wgate.weight",
+                    "compressor.wkv.weight"
+                ],
+                "mg_indexer_keys": [
+                    "indexer.kv_compressor.ape",
+                    "indexer.kv_compressor.norm.weight",
+                    "indexer.kv_compressor.wgate.weight",
+                    "indexer.kv_compressor.wkv.weight",
+                    "indexer.wq_b.weight",
+                    "indexer.weights_proj.weight"
+                ]
+            }
+        }
+    ],
+    "base_args": [
+        {
+            "params": {
+                "hidden_size": 16,
+                "qk_pos_emb_head_dim": 4,
+                "rope_head_dim": 4,
+                "norm_epsilon": 1e-6,
+                "fp8": null,
+                "kv_compress": true,
+                "index_n_heads": 4,
+                "index_head_dim": 8,
+                "index_topk": 8,
+                "q_lora_rank": 8,
+                "use_fused_lightning_indexer": false,
+                "compress_ratios": [4],
+                "scale_fmt": null
+            }
+        }
+    ],
+    "test_attention_modules_keep_converter_attribute_names": [
+        {
+            "modules": [
+                "mindspeed_llm.tasks.models.transformer.deepseek4.csa",
+                "mindspeed.core.transformer.deepseek_v4.attention"
+            ],
+            "fragments": [
+                "self.attn_sink =",
+                "self.linear_q =",
+                "self.linear_kv =",
+                "self.q_layernorm =",
+                "self.kv_layernorm =",
+                "self.linear_q_up_proj =",
+                "self.linear_o_down_proj =",
+                "self.linear_o_up_proj =",
+                "self.compressor =",
+                "self.indexer ="
+            ]
+        }
+    ],
+    "test_indexer_modules_keep_converter_attribute_names": [
+        {
+            "modules": [
+                "mindspeed_llm.tasks.models.transformer.dsa_indexer",
+                "mindspeed.core.transformer.deepseek_v4.indexer"
+            ],
+            "fragments": [
+                "self.wq_b =",
+                "self.weights_proj =",
+                "self.kv_compressor ="
+            ]
+        }
+    ],
+    "test_converter_source_still_reads_mg_and_hf_attention_keys": [
+        {
+            "module": "mindspeed_llm.tasks.checkpoint.convert_ckpt_deepseek4",
+            "fragments": [
+                "f\"{attn_prefix}.attn_sink\"",
+                "f\"{attn_prefix}.kv_layernorm.weight\"",
+                "f\"{attn_prefix}.q_layernorm.weight\"",
+                "f\"{attn_prefix}.linear_o_down_proj.weight\"",
+                "f\"{attn_prefix}.linear_kv.weight\"",
+                "f\"{attn_prefix}.linear_o_up_proj.weight\"",
+                "f\"{attn_prefix}.linear_q.weight\"",
+                "f\"{attn_prefix}.linear_q_up_proj.weight\"",
+                "f\"{attn_prefix}.compressor.ape\"",
+                "f\"{attn_prefix}.compressor.norm.weight\"",
+                "f\"{attn_prefix}.compressor.wgate.weight\"",
+                "f\"{attn_prefix}.compressor.wkv.weight\"",
+                "f\"{attn_prefix}.indexer.kv_compressor.ape\"",
+                "f\"{attn_prefix}.indexer.kv_compressor.norm.weight\"",
+                "f\"{attn_prefix}.indexer.kv_compressor.wgate.weight\"",
+                "f\"{attn_prefix}.indexer.kv_compressor.wkv.weight\"",
+                "f\"{attn_prefix}.indexer.wq_b.weight\"",
+                "f\"{attn_prefix}.indexer.weights_proj.weight\"",
+                "f\"{hf_prefix}.attn.attn_sink\"",
+                "f\"{hf_prefix}.attn.compressor.ape\"",
+                "f\"{hf_prefix}.attn.indexer.compressor.ape\"",
+                "f\"{prefix}.attn_sink\"",
+                "f\"{prefix}.linear_q.weight\"",
+                "f\"{prefix}.linear_kv.weight\"",
+                "f\"{prefix}.linear_q_up_proj.weight\"",
+                "f\"{prefix}.linear_o_down_proj.weight\"",
+                "f\"{prefix}.linear_o_up_proj.weight\"",
+                "f\"{prefix}.q_layernorm.weight\"",
+                "f\"{prefix}.kv_layernorm.weight\"",
+                "f\"{prefix}.compressor.ape\"",
+                "f\"{prefix}.indexer.kv_compressor.ape\""
+            ]
+        }
+    ],
+    "test_llm_and_ds_cp_compress_keys_match_converter_by_ratio": [
+        {"ratio": 0},
+        {"ratio": 4},
+        {"ratio": 128}
+    ],
+    "test_converter_mg_pop_consumes_both_attention_state_dicts": [
+        {"ratio": 4}
+    ],
+    "test_ratio_one_is_no_compress_in_attention_modules": [
+        {
+            "zero_ratio": 0,
+            "one_ratio": 1
+        }
+    ],
+    "test_mtp_state_dict_has_no_compressor_or_indexer_keys": [
+        {
+            "mtp": true,
+            "ratio": 4
+        }
+    ],
+    "test_llm_and_ds_cp_attention_dtypes_match_converter_contract": [
+        {
+            "dtypes": {
+                "compressor.ape": "float32",
+                "indexer.kv_compressor.ape": "float32",
+                "compressor.wkv.weight": "bfloat16",
+                "indexer.kv_compressor.wkv.weight": "bfloat16",
+                "compressor.norm.weight": "float32",
+                "indexer.kv_compressor.norm.weight": "float32"
+            }
+        }
+    ],
+    "test_compressor_only_layer_keeps_fp32_ape_and_bf16_wkv": [
+        {
+            "ratio": 128,
+            "ape_shape": [128, 8],
+            "ape_dtype": "float32",
+            "wkv_dtype": "bfloat16"
+        }
+    ],
+    "test_indexer_layer_overlap_doubles_ape_last_dim": [
+        {
+            "ratio": 4,
+            "compressor_ape_shape": [4, 16],
+            "indexer_ape_shape": [4, 16]
+        }
+    ]
+}
