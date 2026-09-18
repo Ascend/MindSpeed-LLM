@@ -90,7 +90,6 @@ from mindspeed_llm.features_manager.transformer.multi_latent_attention.mla_featu
 from mindspeed_llm.features_manager.transformer.qwen3_next_attention.qwen3_next_feature import Qwen3NextFeature
 from mindspeed_llm.features_manager.transformer.transformer_block import TransformerBlockFeature
 from mindspeed_llm.features_manager.pipeline_parallel.num_layer_list import NumLayerListFeature
-from mindspeed_llm.features_manager.ai_framework.ms_patch_feature import MindSporePatchFeature
 from mindspeed_llm.features_manager.tensor_parallel.tp_2d import TP2dFeature
 from mindspeed_llm.features_manager.arguments.deprecated_args import DeprecatedArgsFeature
 from mindspeed_llm.features_manager.convert_checkpoint.convert_checkpoint import CheckpointFeature
@@ -333,14 +332,6 @@ def add_finetune_feature(features_list: List[MindSpeedFeature]):
     )
 
 
-def add_ai_framework_feature(features_list: List[MindSpeedFeature]):
-    features_list.extend(
-        [
-            MindSporePatchFeature(),
-        ]
-    )
-
-
 def add_layerwise_disaggregated_training_feature(features_list: List[MindSpeedFeature]):
     features_list.extend(
         [
@@ -382,7 +373,6 @@ def create_features_list():
     add_disable_gloo_group_feature(features_list)
     add_high_availability_feature(features_list)
     add_finetune_feature(features_list)
-    add_ai_framework_feature(features_list)
     add_layerwise_disaggregated_training_feature(features_list)
     add_qat_features(features_list)
 

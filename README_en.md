@@ -28,17 +28,17 @@ MindSpeed LLM is a distributed large language model training toolkit built on th
 
 - [Jun. 18, 2026]: 🚀 [**GLM5.2** fixed-length data pretraining support](./examples/mcore/glm52) [Prototype]
 - [Apr. 25, 2026]: 🚀 [**DeepSeekV4-Flash** fixed-length data pretraining support](./examples/mcore/deepseek4_flash/README.md) [Prototype]
-- [Apr. 16, 2026]: 🚀 [**MiniMax_M27** model support](./examples/fsdp2/minimax_m27/) [Prototype]
-- [Mar. 28, 2026]: 🚀 [**Mamba3-block** demo model support](./examples/fsdp2/mamba3/) [Prototype]
+- [Apr. 16, 2026]: 🚀 [**MiniMax_M27** model support](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/fsdp2/minimax_m27) [Prototype]
+- [Mar. 28, 2026]: 🚀 [**Mamba3-block** demo model support](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/fsdp2/mamba3) [Prototype]
 - [Mar. 27, 2026]: 🌴 MindSpeed LLM released the [v26.0.0 branch](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.0.0), which supports core_v0.12.1.
 - [Mar. 10, 2026]: 🚀 MindSpeed LLM model sunset plan phase two ([link](https://gitcode.com/Ascend/MindSpeed-LLM/issues/1224)) started. Thank you for every contribution over the years.
 - [Feb. 12, 2026]: 🚀 [**GLM5** model support](./examples/mcore/glm5) [Prototype]
 
 <details><summary> More news </summary>
 
-- [Feb. 11, 2026]: 🚀 [**Step-3.5-Flash** model support](./examples/fsdp2/step35) [Prototype]
-- [Feb. 10, 2026]: 🚀 [FSDP2 training backend is now available, supporting the **Qwen3-Next** model](./examples/fsdp2/qwen3_next) [Prototype]
-- [Feb. 04, 2026]: 🚀 [**Qwen3-Coder-Next** model support for the mcore backend](./examples/mcore/qwen3_coder_next) [Prototype]
+- [Feb. 11, 2026]: 🚀 [**Step-3.5-Flash** model support](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/fsdp2/step35) [Prototype]
+- [Feb. 10, 2026]: 🚀 [FSDP2 training backend is now available, supporting the **Qwen3-Next** model](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/fsdp2/qwen3_next) [Prototype]
+- [Feb. 04, 2026]: 🚀 [**Qwen3-Coder-Next** model support for the mcore backend](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/mcore/qwen3_coder_next) [Prototype]
 - [Jan. 28, 2026]: 🌴 [Community image package 2.3.0 branch is now available](https://gitcode.com/Ascend/MindSpeed-LLM/blob/2.3.0/docs/pytorch/install_guide.md) [Prototype]
 - [Jan. 23, 2026]: 🌴 [Community image package 2.2.0 branch is now available](https://gitcode.com/Ascend/MindSpeed-LLM/blob/2.2.0/docs/pytorch/install_guide.md) [Prototype]
 - [Jan. 16, 2026]: 🌴 MindSpeed LLM released the [v2.3.0 branch](https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.3.0), which supports core_v0.12.1.
@@ -49,7 +49,6 @@ MindSpeed LLM is a distributed large language model training toolkit built on th
 - [Oct. 30, 2025]: 🚀 MindSpeed LLM model sunset plan ([link](https://gitcode.com/Ascend/MindSpeed-LLM/issues/943)) started. Thank you for every contribution over the years.
 - [Oct. 28, 2025]: 🌴 MindSpeed LLM released the [v2.2.0 branch](https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.2.0), which supports core_v0.12.1.
 - [Oct. 16, 2025]: 🚀 **Qwen3-30B** supports DPO training.
-- [Oct. 14, 2025]: 🚀 **DeepSeek-V3** pretraining now supports running based on the **[MindSpore AI framework](./docs/en/mindspore/readme.md)**.
 - [Sep. 16, 2025]: 🚀 **Qwen3-Next** model support
 - [Aug. 23, 2025]: 🚀 An optimized version of large-parameter model [weight conversion v2](./docs/en/pytorch/tools/checkpoint_convert_hf_mcore_large_params.md) is now available.
 - [Jul. 28, 2025]: 🚀 Simultaneous first-release support for the **GLM-4.5-Air** model series
