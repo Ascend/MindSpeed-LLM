@@ -737,14 +737,11 @@ class Mg2HfConvert(Convert):
             return qkv_bias_key
 
         # common params
-        # Match v1 (models.py) behavior: GQA is decided by num_key_value_heads
-        # presence and inequality with num_attention_heads, NOT by the
-        # group_query_attention flag saved in mg checkpoint (which is unreliable).
         nh = self.load_model.num_attention_heads
-        if hasattr(self.load_model, 'num_key_value_heads') and self.load_model.num_key_value_heads != nh:
-            ng = self.load_model.num_key_value_heads
+        if hasattr(self.load_model, 'num_query_groups'):
+            ng = self.load_model.num_query_groups
         else:
-            ng = nh
+            ng = self.load_model.num_key_value_heads
 
         if self.load_model.qkv_type == "pack_mla":
             linear_proj_list = []
