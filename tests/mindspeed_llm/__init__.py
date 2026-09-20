@@ -16,4 +16,4 @@ import os
 
 backend = os.environ.get("TRAINING_BACKEND", "mcore").lower()
 if backend == "mcore":
-    from mindspeed_llm.tasks import megatron_adaptor as megatron_adaptor
+    from mindspeed_llm.tasks import megatron_adaptor

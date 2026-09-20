@@ -39,8 +39,8 @@ from mindspeed_llm.core.transformer.multi_token_prediction import generate_mtp_b
 from mindspeed_llm.training.utils import set_mtp_batch_list, auto_coverage
 
 # Version-conditional imports (018 uses tests/mindspeed_llm codebase).
-_IS_018 = os.environ.get("MINDSPEED_LLM_VERSION", "012") == "018"
-if _IS_018:
+_VERSION_018 = os.environ.get("MINDSPEED_LLM_VERSION", "012") == "018"
+if _VERSION_018:
     # Apply optimizer reload monkey-patch before importing pretrain.
     from mindspeed_llm.features_manager.optimizer import optimizer_reload_patch  # noqa: E402, F401  # pylint: disable=ungrouped-imports,no-name-in-module
     from megatron.core.utils import get_batch_on_this_cp_rank, get_batch_on_this_tp_rank  # pylint: disable=ungrouped-imports
@@ -83,7 +83,7 @@ def model_provider(
         else:
             config = core_transformer_config_from_args(args)
 
-    if not _IS_018 and args.use_legacy_models:
+    if not _VERSION_018 and args.use_legacy_models:
         if not args.context_parallel_size == 1:
             raise ValueError("Context parallelism is only supported with Megatron Core!")
         return megatron.legacy.model.GPTModel(
@@ -101,7 +101,7 @@ def model_provider(
     if args.mtp_num_layers is not None:
         mtp_block_spec = get_gpt_mtp_block_spec(config, transformer_layer_spec, use_transformer_engine=use_te)
 
-    if _IS_018:
+    if _VERSION_018:
         model = GPTModel(
             config=config,
             transformer_layer_spec=transformer_layer_spec,
@@ -174,7 +174,7 @@ def get_batch(data_iterator):
         set_mtp_batch_list(mtp_batch_list)
 
     # slice batch along sequence dimension for context parallelism
-    if _IS_018:
+    if _VERSION_018:
         batch = get_batch_on_this_cp_rank(
             batch, is_hybrid_cp=args.context_parallel_size > 1, cp_group=mpu.get_context_parallel_group()
         )
@@ -251,7 +251,7 @@ def loss_func(loss_mask: torch.Tensor, output_tensor: torch.Tensor):
     # in core/pipeline_parallel/schedule.py::deallocate_output_tensor, calling .clone()
     # on loss[0] fixes this
     local_num_tokens = loss[1].clone().detach().to(torch.int)
-    loss_dict = {'lm loss': reporting_loss} if _IS_018 else {'lm loss': (reporting_loss[0], reporting_loss[1])}
+    loss_dict = {'lm loss': reporting_loss} if _VERSION_018 else {'lm loss': (reporting_loss[0], reporting_loss[1])}
     return (
         loss[0].clone(),
         local_num_tokens,
@@ -274,7 +274,7 @@ def forward_step(data_iterator, model: GPTModel):
     tokens, labels, loss_mask, attention_mask, position_ids = get_batch(data_iterator)
     timers('batch-generator').stop()
 
-    if not _IS_018 and args.use_legacy_models:
+    if not _VERSION_018 and args.use_legacy_models:
         output_tensor = model(tokens, position_ids, attention_mask, labels=labels)
     else:
         output_tensor = model(tokens, position_ids, attention_mask, labels=labels, loss_mask=loss_mask)
