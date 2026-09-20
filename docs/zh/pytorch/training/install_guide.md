@@ -9,13 +9,13 @@
 |产品|是否支持|
 |--|:-:|
 |<term>Ascend 950PR&950DT系列产品</term>|√|
-|<term>Atlas A3 训练系列产品</term>|√|
-|<term>Atlas A3 推理系列产品</term>|x|
-|<term>Atlas A2 训练系列产品</term>|√|
-|<term>Atlas A2 推理系列产品</term>|x|
-|<term>Atlas 200I/500 A2 推理产品</term>|x|
-|<term>Atlas 推理系列产品</term>|x|
-|<term>Atlas 训练系列产品</term>|x|
+|<term>Atlas A3训练系列产品</term>|√|
+|<term>Atlas A3推理系列产品</term>|x|
+|<term>Atlas A2训练系列产品</term>|√|
+|<term>Atlas A2推理系列产品</term>|x|
+|<term>Atlas 200I/500 A2推理产品</term>|x|
+|<term>Atlas推理系列产品</term>|x|
+|<term>Atlas训练系列产品</term>|x|
 
 > [!NOTE]
 >
@@ -57,14 +57,14 @@
    - <term>Ascend 950PR&950DT系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-950-ubuntu22.04-py3.12
    <!-- end id1 -->
    <!-- npu="A3" id2 -->
-   - <term>Atlas A3 训练系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-a3-openeuler24.03-py3.12
+   - <term>Atlas A3训练系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-a3-openeuler24.03-py3.12
 
-   - <term>Atlas A3 训练系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-a3-ubuntu22.04-py3.12
+   - <term>Atlas A3训练系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-a3-ubuntu22.04-py3.12
    <!-- end id2 -->
    <!-- npu="910b" id3 -->
-   - <term>Atlas A2 训练系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-910b-openeuler24.03-py3.12
+   - <term>Atlas A2训练系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-910b-openeuler24.03-py3.12
 
-   - <term>Atlas A2 训练系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-910b-ubuntu22.04-py3.12
+   - <term>Atlas A2训练系列产品</term>：v26.1.0-cann9.1.0-torch_npu2.7.1.post8-910b-ubuntu22.04-py3.12
    <!-- end id3 -->
 
    ```bash
