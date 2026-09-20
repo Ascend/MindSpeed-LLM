@@ -132,7 +132,6 @@ GPT_ARGS="
     --rotary-base 10000 \
     --norm-epsilon 1e-6 \
     --distributed-timeout-minutes 120 \
-    --ckpt-format torch \
     --transformer-impl local \
 "
 

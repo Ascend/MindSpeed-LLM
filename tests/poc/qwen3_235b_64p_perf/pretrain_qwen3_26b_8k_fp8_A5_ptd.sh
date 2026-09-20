@@ -142,8 +142,7 @@ GPT_ARGS="
     --group-query-attention \
     --num-query-groups 4 \
     --use-fused-ring-attention-update \
-    --swap-optimizer \
-    --ckpt-format torch
+    --swap-optimizer
     "
 
 

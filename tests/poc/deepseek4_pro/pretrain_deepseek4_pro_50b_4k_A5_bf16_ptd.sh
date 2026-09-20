@@ -205,8 +205,7 @@ GPT_ARGS="
     --bf16 \
     --distributed-timeout-minutes 120 \
     --no-shared-storage \
-    --no-gradient-accumulation-fusion \
-    --ckpt-format torch
+    --no-gradient-accumulation-fusion
 "
 
 DATA_ARGS="

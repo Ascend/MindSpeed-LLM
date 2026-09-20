@@ -199,7 +199,6 @@ GPT_ARGS="
     --no-shared-storage \
     --gemm-gradient-accumulation-fusion \
     --no-gradient-accumulation-fusion \
-    --ckpt-format torch \
 "
 
 DATA_ARGS="
