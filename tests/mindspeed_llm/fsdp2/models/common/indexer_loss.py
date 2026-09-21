@@ -72,9 +72,10 @@ class IndexerLossAutoScaler(torch.autograd.Function):
         1 / num_items_in_batch — the same global token count HF computes for the sft
         loss. This only collapses to 1/accum_steps when microbatches have equal
         token counts, which packed varlen batches do not; accum_steps is only the
-        fallback when the token count is unavailable (e.g. no labels in the batch).
+        fallback when the token count is unavailable (e.g. no labels in the batch)
+        or zero (e.g. every label in the window is ignore_index on every rank).
         """
-        if num_items_in_batch is not None:
+        if num_items_in_batch:
             scale = 1.0 / float(num_items_in_batch)
         else:
             scale = 1.0 / float(gradient_accumulation_steps)
