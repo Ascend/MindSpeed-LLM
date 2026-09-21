@@ -602,7 +602,11 @@ class DSAIndexer(MegatronModule):
         q = q.transpose(0, 1)
         q = rotate_activation(q)
         _freqs_cis_for_compressor = freqs_cis_for_kv if freqs_cis_for_kv is not None else freqs_cis
-        k = self.kv_compressor(x, start_pos, _freqs_cis_for_compressor, packed_seq_params).unsqueeze(2)
+        k_compress = self.kv_compressor(x, start_pos, _freqs_cis_for_compressor, packed_seq_params)
+        if k_compress is None:
+            # No compressible KV: degrade this indexer layer to pure attention.
+            return q, None, None, x
+        k = k_compress.unsqueeze(2)
         # weights_proj input must match local q length; prefer caller-provided local x.
         if x_for_weights is not None:
             _x_for_weights = x_for_weights

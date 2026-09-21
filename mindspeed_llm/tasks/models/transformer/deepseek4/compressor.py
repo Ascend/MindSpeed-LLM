@@ -291,14 +291,13 @@ class Compressor(MegatronModule):
             freqs_i = freqs_cis[start : start + cutoff : ratio]
             freqs_list.append(freqs_i)
 
-        if tensor_list_kv:
-            kv = torch.cat(tensor_list_kv, dim=0)
-            score = torch.cat(tensor_list_score, dim=0)
-
-        kv = (kv * score.softmax(dim=1)).sum(dim=1)
-
-        if not freqs_list:
+        if not tensor_list_kv:
+            # Nothing to compress when every doc is shorter than the ratio.
             return None
+
+        kv = torch.cat(tensor_list_kv, dim=0)
+        score = torch.cat(tensor_list_score, dim=0)
+        kv = (kv * score.softmax(dim=1)).sum(dim=1)
         freqs_cis = torch.cat(freqs_list, dim=0)
 
         kv = self.norm(kv.to(dtype))
