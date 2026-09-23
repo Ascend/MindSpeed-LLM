@@ -739,7 +739,7 @@ class Mg2HfConvert(Convert):
         # common params
         nh = self.load_model.num_attention_heads
         if hasattr(self.load_model, 'num_query_groups'):
-            ng = self.load_model.num_query_groups
+            ng = nh if self.load_model.num_query_groups == 1 else self.load_model.num_query_groups
         else:
             ng = self.load_model.num_key_value_heads
 
