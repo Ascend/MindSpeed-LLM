@@ -263,20 +263,6 @@ if _VERSION_018:
         # get batches based on the TP rank you are on
         batch = get_batch_on_this_tp_rank(data_iterator)
 
-        if (
-            args.return_document_ids
-            and mpu.get_context_parallel_rank() == 0
-            and mpu.get_tensor_model_parallel_rank() == 0
-            and mpu.get_pipeline_model_parallel_rank() == 0
-        ):
-            print(
-                "current idx: {}, current rank: {}, data_parallel_rank: {}, document_ids: {}".format(
-                    batch['idx'], torch.distributed.get_rank(), mpu.get_data_parallel_rank(), batch['document_ids']
-                )
-            )
-            batch.pop('document_ids', None)
-            batch.pop('idx', None)
-
         # get batch_list for mtp_block
         if args.mtp_num_layers:
             mtp_batch_list = generate_mtp_batch_list_on_this_tp_rank(batch)

@@ -3,6 +3,7 @@
 from functools import wraps
 from contextlib import nullcontext
 from typing import Optional
+import dataclasses
 
 import torch
 from torch import Tensor
@@ -131,7 +132,7 @@ def mtp_layer_forward(
         padding_mask=padding_mask,
         embedding=embedding,
         hidden_states=hidden_states,
-        packed_seq_params=packed_seq_params,
+        packed_seq_params=None,
     )
 
     hidden_states = make_viewless_tensor(inp=hidden_states, requires_grad=True, keep_graph=True)
@@ -162,6 +163,21 @@ def mtp_layer_forward(
             hidden_states = scatter_to_sequence_parallel_region(hidden_states)
         if pre_process:
             hidden_states = hc_repeat(hidden_states, args.enable_mhc, args.hc_mult)
+        _per_mtp = getattr(packed_seq_params, 'cu_seqlens_per_mtp', None)
+        if _per_mtp is not None and self.layer_number < len(_per_mtp):
+            _cu = _per_mtp[self.layer_number]
+            _max_len = int((_cu[1:] - _cu[:-1]).max().item())
+            _new = dataclasses.replace(
+                packed_seq_params,
+                cu_seqlens_q=_cu,
+                cu_seqlens_kv=_cu,
+                max_seqlen_q=_max_len,
+                max_seqlen_kv=_max_len,
+            )
+            for _attr in ('position_ids', 'q_index', 'kv_index', 'cu_seqlens_per_mtp'):
+                if hasattr(packed_seq_params, _attr):
+                    setattr(_new, _attr, getattr(packed_seq_params, _attr))
+            packed_seq_params = _new
         hidden_states, _ = self.mtp_model_layer(
             input_ids=input_ids,
             hidden_states=hidden_states,

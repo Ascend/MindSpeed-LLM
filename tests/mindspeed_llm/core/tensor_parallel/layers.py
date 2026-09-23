@@ -63,6 +63,9 @@ def vocab_embedding_init_func(
     self.num_embeddings_per_partition = self.vocab_end_index - self.vocab_start_index
     self.deterministic_mode = config.deterministic_mode
     self.config = config
+    self.use_inference_optimized_reduce_scatter = (
+        getattr(config, 'transformer_impl', None) == 'inference_optimized'
+    )
 
     # Allocate weights and initialize.
     if not skip_weight_param_allocation:

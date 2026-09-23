@@ -357,12 +357,6 @@ def gpt_forward_wrapper(fn):
         actual_seq_len = get_actual_seq_len()
         actual_seq_len = recompute_valid_actual_seq_len(actual_seq_len, _args.micro_batch_size)
 
-        packed_seq_params = PackedSeqParams(
-            qkv_format='thd',
-            cu_seqlens_q=actual_seq_len,
-            cu_seqlens_kv=actual_seq_len
-        )
-
         actual_seq_len_list = actual_seq_len.tolist()
         set_actual_seq_len_list(actual_seq_len_list)
         if _args.mtp_num_layers:
@@ -371,6 +365,22 @@ def gpt_forward_wrapper(fn):
         max_actual_seq_len = actual_seq_len_list[0]
         for i in range(1, len(actual_seq_len_list)):
             max_actual_seq_len = max(max_actual_seq_len, actual_seq_len_list[i] - actual_seq_len_list[i - 1])
+
+        cu_seqlens = torch.tensor(
+            [0] + actual_seq_len_list,
+            dtype=torch.int32,
+            device=actual_seq_len.device,
+        )
+        rows = actual_seq_len.tolist() if _args.mtp_num_layers else [actual_seq_len.tolist()]
+        packed_seq_params = PackedSeqParams(
+            qkv_format='thd',
+            cu_seqlens_q=cu_seqlens,
+            cu_seqlens_kv=cu_seqlens,
+        )
+        packed_seq_params.cu_seqlens_per_mtp = [
+            torch.tensor([0] + row, dtype=torch.int32, device=actual_seq_len.device)
+            for row in rows
+        ]
         packed_seq_params.max_seqlen_q = max_actual_seq_len
         packed_seq_params.max_seqlen_kv = max_actual_seq_len
 

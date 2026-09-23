@@ -8,6 +8,7 @@ from torch import Tensor
 import torch.nn.functional as F
 from einops import rearrange
 from functools import wraps
+import inspect
 
 import torch_npu
 
@@ -727,62 +728,32 @@ class DSAIndexerLossAutoScaler(torch.autograd.Function):
 def forward_step_dsa_wrapper(fn):
     """Forward step for passed-in model. Patch for DSA indexer loss."""
 
+    sig = inspect.signature(fn)
+
     @wraps(fn)
-    def wrapper(
-        forward_step_func,
-        data_iterator,
-        model,
-        num_microbatches,
-        input_tensor,
-        forward_data_store,
-        config,
-        collect_non_loss_data=False,
-        checkpoint_activations_microbatch=None,
-        is_first_microbatch=False,
-        current_microbatch=None,
-        encoder_decoder_xattn=False,
-        extra_block_kwargs=None,
-    ):
-        global_args = get_args()
-        common_kwargs = {
-            'forward_step_func': forward_step_func,
-            'data_iterator': data_iterator,
-            'model': model,
-            'num_microbatches': num_microbatches,
-            'input_tensor': input_tensor,
-            'forward_data_store': forward_data_store,
-            'config': config,
-            'collect_non_loss_data': collect_non_loss_data,
-            'checkpoint_activations_microbatch': checkpoint_activations_microbatch,
-            'is_first_microbatch': is_first_microbatch,
-            'current_microbatch': current_microbatch,
-        }
+    def wrapper(*args, **kwargs):
+        bound = sig.bind(*args, **{k: v for k, v in kwargs.items() if k in sig.parameters})
+        bound.apply_defaults()
 
-        if encoder_decoder_xattn:
-            common_kwargs['encoder_decoder_xattn'] = encoder_decoder_xattn
+        output_tensor, num_tokens = fn(*bound.args, **bound.kwargs)
 
-        if global_args.moe_fb_overlap:
-            common_kwargs['extra_block_kwargs'] = extra_block_kwargs
-
-        output_tensor, num_tokens = fn(**common_kwargs)
-
-        if not isinstance(output_tensor, (list, tuple)):
-            output_tensor_device = output_tensor.device
-        else:
-            output_tensor_device = output_tensor[0].device
         # Set the loss scale for DSA indexer loss.
-        if global_args.enable_dsa_indexer:
-            # Calculate the loss scale based on the grad_scale_func if available, else default to 1.
-            loss_scale = (
-                config.grad_scale_func(torch.ones(1, device=output_tensor_device))
-                if config.grad_scale_func is not None
-                else torch.ones(1, device=output_tensor_device)
+        if get_args().enable_dsa_indexer:
+            config = bound.arguments['config']
+            device = (
+                output_tensor.device
+                if not isinstance(output_tensor, (list, tuple))
+                else output_tensor[0].device
             )
-            # Set the loss scale
-            if config.calculate_per_token_loss:
-                DSAIndexerLossAutoScaler.set_loss_scale(loss_scale)
-            else:
-                DSAIndexerLossAutoScaler.set_loss_scale(loss_scale / num_microbatches)
+            loss_scale = (
+                config.grad_scale_func(torch.ones(1, device=device))
+                if config.grad_scale_func is not None
+                else torch.ones(1, device=device)
+            )
+            if not config.calculate_per_token_loss:
+                loss_scale = loss_scale / bound.arguments['num_microbatches']
+            DSAIndexerLossAutoScaler.set_loss_scale(loss_scale)
+
         return output_tensor, num_tokens
 
     return wrapper

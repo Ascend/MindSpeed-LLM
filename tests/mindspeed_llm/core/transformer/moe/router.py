@@ -22,7 +22,7 @@ from einops import rearrange
 from megatron.core.tensor_parallel import gather_from_sequence_parallel_region
 from megatron.core.tensor_parallel.mappings import _split_along_first_dim
 from megatron.core.transformer.moe.router import MoEAuxLossAutoScaler
-from megatron.core.transformer.moe.moe_utils import save_to_aux_losses_tracker
+from megatron.core.transformer.moe.moe_utils import save_to_aux_losses_tracker, compute_routing_scores_for_aux_loss
 from megatron.core import parallel_state
 from megatron.training import get_args
 from mindspeed.core.tensor_parallel.random import CheckpointWithoutOutput
@@ -554,7 +554,7 @@ def topk_router_routing(self, logits: torch.Tensor, input_ids: torch.Tensor = No
 
     if self.routing_type == "sinkhorn":
         scores, routing_map = self.sinkhorn_load_balancing(logits)
-    elif self.routing_type == "aux_loss":
+    elif self.routing_type in ("aux_loss", "seq_aux_loss"):
         scores, routing_map, _ = topk_softmax_with_capacity(
             logits,
             self.topk,
@@ -569,20 +569,33 @@ def topk_router_routing(self, logits: torch.Tensor, input_ids: torch.Tensor = No
             score_function=self.score_function,
             expert_bias=self.expert_bias,
         )
-        # Apply Megatron 0.18 aux loss via the new _apply_aux_loss method
-        if self.training and torch.is_grad_enabled() and hasattr(self, 'is_aux_loss_enabled') and self.is_aux_loss_enabled():
-            from megatron.core.transformer.moe.moe_utils import compute_routing_scores_for_aux_loss
+
+        # Apply Megatron 0.18 aux loss via the new method
+        if self.training and torch.is_grad_enabled() and self.is_aux_loss_enabled():
             routing_map_for_aux_loss, scores_for_aux_loss = compute_routing_scores_for_aux_loss(
-                logits, self.topk, self.score_function,
-                fused=getattr(self.config, 'moe_router_fusion', False),
+                logits,
+                self.topk,
+                self.score_function,
+                fused=self.config.moe_router_fusion,
             )
-            scores = self._apply_aux_loss(scores, scores_for_aux_loss, routing_map_for_aux_loss)
+            scores = self._apply_aux_loss(
+                scores,
+                scores_for_aux_loss,
+                routing_map_for_aux_loss,
+            )
+            scores = self._apply_seq_aux_loss(
+                scores,
+                scores_for_aux_loss,
+                routing_map_for_aux_loss,
+                seq_length,
+                bsz,
+            )
+
         if args.norm_topk_prob:
             scores = scores / scores.sum(dim=-1, keepdim=True)
+
         if args.topk_softmax_in_fp32:
             scores = scores.type_as(logits)
-    elif self.routing_type == "seq_aux_loss":
-        scores, routing_map = self.seq_aux_loss_load_balancing(logits, bsz, seq_length)
     # add softmax_topk for softmax before topk that difference form routing_type is none
     elif self.routing_type == "softmax_topk":
         if args.moe_revert_type_after_topk:

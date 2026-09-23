@@ -3,15 +3,21 @@
 """Pretrain GPT."""
 
 import os
+import time
 from functools import partial
-from typing import Union
+from typing import List, Union
 
 import torch
+
+# Captured as early as possible so that (main_entry - program_start) reflects
+# import/library setup time in the 018 startup timing report.
+_PROGRAM_START_TIME = time.time()
 
 # MindSpeed patches must be applied before any Megatron modules.
 # isort: off
 from mindspeed_llm import megatron_adaptor  # noqa: F401  # pylint: disable=ungrouped-imports
 # isort: on
+# ruff: noqa: E402
 
 import megatron.core.models.gpt.gpt_model
 from megatron.core import mpu
@@ -44,9 +50,19 @@ if _VERSION_018:
     # Apply optimizer reload monkey-patch before importing pretrain.
     from mindspeed_llm.features_manager.optimizer import optimizer_reload_patch  # noqa: E402, F401  # pylint: disable=ungrouped-imports,no-name-in-module
     from megatron.core.utils import get_batch_on_this_cp_rank, get_batch_on_this_tp_rank  # pylint: disable=ungrouped-imports
+    from megatron.training import inprocess_restart, set_startup_timestamps  # pylint: disable=ungrouped-imports
+    from megatron.training.arguments import parse_and_validate_args  # pylint: disable=ungrouped-imports
+    from megatron.training.argument_utils import pretrain_cfg_container_from_args  # pylint: disable=ungrouped-imports
+    from megatron.core.transformer.multi_token_prediction import get_mtp_ranks  # pylint: disable=ungrouped-imports
 else:
     import megatron.legacy.model  # noqa: E402  # pylint: disable=ungrouped-imports
     from megatron.training.utils import get_batch_on_this_cp_rank, get_batch_on_this_tp_rank
+try:
+    from megatron.post_training.arguments import add_modelopt_args
+
+    has_nvidia_modelopt = True
+except ImportError:
+    has_nvidia_modelopt = False
 
 from mindspeed_llm.training.training import pretrain  # noqa: E402  # pylint: disable=ungrouped-imports
 
@@ -98,10 +114,12 @@ def model_provider(
         else:
             transformer_layer_spec = get_gpt_layer_local_spec(args.num_experts, args.moe_grouped_gemm)
     mtp_block_spec = None
-    if args.mtp_num_layers is not None:
-        mtp_block_spec = get_gpt_mtp_block_spec(config, transformer_layer_spec, use_transformer_engine=use_te)
 
     if _VERSION_018:
+        if args.mtp_num_layers is not None:
+            mtp_block_spec = get_gpt_mtp_block_spec(
+                config, transformer_layer_spec, use_transformer_engine=use_te, vp_stage=vp_stage
+            )
         model = GPTModel(
             config=config,
             transformer_layer_spec=transformer_layer_spec,
@@ -121,6 +139,8 @@ def model_provider(
             vp_stage=vp_stage,
         )
     else:
+        if args.mtp_num_layers is not None:
+            mtp_block_spec = get_gpt_mtp_block_spec(config, transformer_layer_spec, use_transformer_engine=use_te)
         model = GPTModel(
             config=config,
             transformer_layer_spec=transformer_layer_spec,
@@ -155,7 +175,8 @@ def get_batch(data_iterator):
     batch = get_batch_on_this_tp_rank(data_iterator)
 
     if (
-        args.return_document_ids
+        not _VERSION_018
+        and args.return_document_ids
         and mpu.get_context_parallel_rank() == 0
         and mpu.get_tensor_model_parallel_rank() == 0
         and mpu.get_pipeline_model_parallel_rank() == 0
@@ -334,12 +355,63 @@ def train_valid_test_datasets_provider(train_val_test_num_samples):
     return train_ds, valid_ds, test_ds
 
 
+if _VERSION_018:
+
+    def get_embedding_ranks(pp_ranks: List[int]):
+        """Get the embedding ranks."""
+        embedding_ranks = [pp_ranks[0]]
+        if len(pp_ranks) > 1:
+            args = get_args()
+            if not args.untie_embeddings_and_output_weights:
+                embedding_ranks.append(pp_ranks[-1])
+            config = core_transformer_config_from_args(args)
+            mtp_ranks = get_mtp_ranks(pp_ranks, config)
+            embedding_ranks.extend(mtp_ranks)
+        return sorted(set(embedding_ranks))
+
+    def _main_018():
+        # Timestamp right after entering main (after all imports/library setup).
+        _main_entry_time = time.time()
+
+        # Register startup timestamps for the timing report in pretrain().
+        set_startup_timestamps(program_start=_PROGRAM_START_TIME, main_entry=_main_entry_time)
+
+        # Temporary for transition to core datasets
+        setattr(train_valid_test_datasets_provider, "is_distributed", True)
+
+        wrapped_pretrain, store = inprocess_restart.maybe_wrap_for_inprocess_restart(pretrain)
+
+        # 0.18.0: args are parsed by the caller, pretrain() no longer does it itself.
+        args = parse_and_validate_args(
+            extra_args_provider=add_modelopt_args if has_nvidia_modelopt else None,
+            args_defaults={'tokenizer_type': 'GPT2BPETokenizer'},
+        )
+        full_config = pretrain_cfg_container_from_args(args)
+
+        wrapped_pretrain(
+            full_config,
+            train_valid_test_datasets_provider,
+            model_provider,
+            ModelType.encoder_or_decoder,
+            forward_step,
+            store=store,
+            get_embedding_ranks=get_embedding_ranks,
+        )
+else:
+
+    def _main_012():
+        # Temporary for transition to core datasets
+        train_valid_test_datasets_provider.is_distributed = True
+
+        pretrain(train_valid_test_datasets_provider, model_provider, ModelType.encoder_or_decoder, forward_step)
+
+
 @auto_coverage
 def main():
-    # Temporary for transition to core datasets
-    train_valid_test_datasets_provider.is_distributed = True
-
-    pretrain(train_valid_test_datasets_provider, model_provider, ModelType.encoder_or_decoder, forward_step)
+    if _VERSION_018:
+        _main_018()
+    else:
+        _main_012()
 
 
 if __name__ == "__main__":

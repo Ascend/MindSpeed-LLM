@@ -29,7 +29,7 @@ class ResetAttentionMaskFeature(MindSpeedFeature):
             patch_manager.register_patch('megatron.core.datasets.gpt_dataset.GPTDataset.__getitem__',
                                          eod_gptdataset_getitem)
             from mindspeed_llm.training.utils import get_batch_on_this_cp_rank_wrapper
-            patch_manager.register_patch('megatron.training.utils.get_batch_on_this_cp_rank',
+            patch_manager.register_patch('megatron.core.utils.get_batch_on_this_cp_rank',
                                          get_batch_on_this_cp_rank_wrapper)
             from mindspeed_llm.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb_thd
             patch_manager.register_patch(
@@ -91,10 +91,21 @@ class ResetAttentionMaskFeature(MindSpeedFeature):
                     get_pos_emb_on_this_cp_rank)
 
             from mindspeed_llm.training.utils import get_batch_on_this_tp_rank
-            patch_manager.register_patch('megatron.training.utils.get_batch_on_this_tp_rank',
+            patch_manager.register_patch('megatron.core.utils.get_batch_on_this_tp_rank',
                                          get_batch_on_this_tp_rank)
 
             from mindspeed_llm.core import apply_rotary_pos_emb_bshd
             patch_manager.register_patch('mindspeed.core.fusions.fused_rope.apply_rotary_pos_emb_bshd',
                                          apply_rotary_pos_emb_bshd)
-
+            from mindspeed.core.transformer.flash_attention.reset_attention_mask.adaptor import (
+                p2p_communicate_eod_wrapper,
+                rotary_seq_len_eod_wrapper,
+            )
+            patch_manager.register_patch(
+                'megatron.core.pipeline_parallel.p2p_communication.P2PCommunicator._communicate',
+                p2p_communicate_eod_wrapper,
+            )
+            patch_manager.register_patch(
+                'megatron.core.models.common.embeddings.rotary_pos_embedding.RotaryEmbedding.get_rotary_seq_len',
+                rotary_seq_len_eod_wrapper,
+            )

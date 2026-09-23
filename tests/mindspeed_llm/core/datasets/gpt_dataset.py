@@ -336,3 +336,14 @@ def _get_ltor_masks_and_position_ids(
         attention_mask = attention_mask < 0.5
 
     return attention_mask, loss_mask, position_ids
+
+
+def gpt_dataset_init_wrapper(fn):
+    @wraps(fn)
+    def wrapper(self, *args, **kwargs):
+        fn(self, *args, **kwargs)
+        pad = getattr(self.config.tokenizer, "pad", None)
+        if pad is not None:
+            self._pad_token_id = pad
+
+    return wrapper

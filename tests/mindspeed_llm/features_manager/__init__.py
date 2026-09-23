@@ -10,7 +10,6 @@ from mindspeed.features_manager import (
     DisableGlooGroupFeature,
     FusedEmaAdamwFeature,
     FusedMoEPermuteFeature,
-    FusedSoftmaxFeature,
     MC2Feature,
     MoEAlltoAllOverLapFeature,
     MoEAllGatherOverLapFeature,
@@ -39,6 +38,7 @@ from mindspeed.features_manager import (
     MoEAlltoAllMC2Feature,
     PipelineModelParallelLayoutFeature,
     MoEFixRouterFeature,
+    DualpipeVFeature
 )
 from mindspeed.features_manager.feature import MindSpeedFeature
 from mindspeed.features_manager.features_manager import MindSpeedFeaturesManager
@@ -70,7 +70,6 @@ from mindspeed_llm.features_manager.transformer.multi_latent_attention.dsa_index
 from mindspeed_llm.features_manager.moe.moe_router import MoERouter
 from mindspeed_llm.features_manager.moe.shared_expert import MoESharedExpertsFeature
 from mindspeed_llm.features_manager.moe.tp_extend_ep import MoETpExtendEpFeature
-from mindspeed_llm.features_manager.pipeline_parallel.dualpipev_feature import DualpipeVFeature
 from mindspeed_llm.features_manager.pipeline_parallel.noop_layers import NoopLayersFeature
 from mindspeed_llm.features_manager.functional.profile import ProfileFeature
 from mindspeed_llm.features_manager.functional.msprobe import MsProbeFeature
@@ -153,7 +152,6 @@ def add_fusions_features(features_list: List[MindSpeedFeature]):
     features_list.extend(
         [
             SwigluLimitFeature(),
-            FusedSoftmaxFeature(),
             RotaryPositionEmbeddingFeature(),
             FusedMoEPermuteFeature(),
         ]

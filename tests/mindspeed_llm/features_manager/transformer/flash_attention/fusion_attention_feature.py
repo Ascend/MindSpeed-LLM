@@ -31,3 +31,5 @@ class FusionAttentionFeature(MindSpeedFusionAttentionFeature):
                                         attention_init_wrapper)
             patch_manager.register_patch('megatron.core.transformer.dot_product_attention.DotProductAttention',
                                           CustomDotProductAttention)
+            patch_manager.register_patch('megatron.core.extensions.transformer_engine.TEDotProductAttention',
+                                          CustomDotProductAttention)

@@ -150,13 +150,25 @@ def moe_layer_forward(
         else:
             probs, routing_map = self.router(hidden_states, input_ids)
             
-        (dispatched_input, tokens_per_expert, permuted_probs) = (
-            self.token_dispatcher.token_permutation(hidden_states, probs, routing_map)
+        dispatched_input, dispatched_probs = self.token_dispatcher.dispatch_preprocess(
+            hidden_states, routing_map, probs
         )
+        dispatched_input, dispatched_probs = self.token_dispatcher.token_dispatch(
+            dispatched_input, dispatched_probs
+        )
+        (dispatched_input, tokens_per_expert, permuted_probs) = (
+            self.token_dispatcher.dispatch_postprocess(dispatched_input, dispatched_probs)
+        )
+
         expert_output, mlp_bias = self.experts(
             dispatched_input, tokens_per_expert, permuted_probs
         )
-        output, mlp_bias = self.token_dispatcher.token_unpermutation(expert_output, mlp_bias)
+        assert mlp_bias is None, (
+            f"mlp_bias is not supported for {type(self.token_dispatcher)} in mcore 0.18"
+        )
+        output = self.token_dispatcher.combine_preprocess(expert_output)
+        output = self.token_dispatcher.token_combine(output)
+        output = self.token_dispatcher.combine_postprocess(output)
 
         if args.moe_router_load_balancing_type == "group_limited_greedy":
             # forward only need no loss track
@@ -211,8 +223,6 @@ def moe_layer_forward(
         )
 
     return output, mlp_bias
-
-
 
 
 def lora_moe_layer_init(self, config, submodules=None, layer_number=None):

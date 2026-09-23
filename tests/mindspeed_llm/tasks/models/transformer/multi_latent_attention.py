@@ -274,6 +274,7 @@ def get_mla_self_attn_submodules(qk_layernorm, mla_mm_split, enable_dsa_indexer)
         ColumnLinear = ColumnParallelLinear
         RowLinear = RowParallelLinear
         MlaCoreAttention = MlaDotProductAttention
+
     if not mla_mm_split:
         return CustomMLASelfAttentionSubmodules(
             linear_qkv=LinearNoTP,
@@ -809,7 +810,7 @@ class CustomMLASelfAttention(SelfAttention):
 
                 DSAIndexerLossLoggingHelper.save_loss_to_tracker(
                     loss,
-                    _get_layer_offset(args) + self.layer_number,
+                    self.layer_number,
                     self.config.num_layers,
                     avg_group=parallel_state.get_tensor_and_context_parallel_group(),
                 )
@@ -1144,7 +1145,7 @@ class CustomMLASelfAttention(SelfAttention):
 
                 DSAIndexerLossLoggingHelper.save_loss_to_tracker(
                     loss,
-                    _get_layer_offset(args) + self.layer_number,
+                    self.layer_number,
                     self.config.num_layers,
                     avg_group=parallel_state.get_tensor_and_context_parallel_group(),
                 )

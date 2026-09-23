@@ -322,11 +322,11 @@ def get_tune_attention_mask(attention_mask_1d):
 
 def get_batch_on_this_cp_rank_wrapper(fn):
     @wraps(fn)
-    def wrapper(batch):
-        batch = fn(batch)
+    def wrapper(batch, **kwargs):
+        batch = fn(batch, **kwargs)
         args = get_args()
         if 'position_ids' in batch:
-            if args.reset_position_ids:
+            if args.reset_attention_mask:
                 set_position_ids(batch['position_ids'].transpose(0, 1).contiguous())
             else:
                 set_position_ids(batch['position_ids'])

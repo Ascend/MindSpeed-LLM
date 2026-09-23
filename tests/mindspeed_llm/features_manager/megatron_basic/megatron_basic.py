@@ -90,8 +90,11 @@ class MegatronBasicFeature(MAMegatronBasicFeature):
 
         # args parser patch
         from mindspeed_llm.training.utils import print_args_wrapper
+        from mindspeed_llm.core.transformer.transformer_config import transformer_config_post_init_wrapper
 
         pm.register_patch('megatron.training.arguments._print_args',
                           print_args_wrapper)
         pm.register_patch('megatron.training.yaml_arguments._print_args',
                           print_args_wrapper)
+        pm.register_patch("megatron.core.transformer.transformer_config.TransformerConfig.__post_init__",
+                          transformer_config_post_init_wrapper)

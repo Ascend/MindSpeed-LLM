@@ -13,6 +13,7 @@ from megatron.core import parallel_state
 from megatron.core.models.common.embeddings.rotary_pos_embedding import _rotate_half, get_pos_emb_on_this_cp_rank
 from mindspeed.ops.npu_rotary_position_embedding import npu_rotary_position_embedding
 from mindspeed_llm.tasks.common.yarn_rope import YarnRotaryPositionEmbedding
+from mindspeed.utils import get_position_ids
 
 
 def apply_llama3_scaling(freqs: torch.Tensor):
@@ -275,6 +276,7 @@ def apply_rotary_pos_emb_thd(
     rotary_interleaved: bool = False,
     multi_latent_attention: bool = False,
     mscale: float = 1.0,
+    cp_group: torch.distributed.ProcessGroup = None,
 ) -> Tensor:
     """A baseline implementation of applying RoPE for `thd` format.
 
@@ -289,17 +291,45 @@ def apply_rotary_pos_emb_thd(
     """
     args = get_args()
 
-    if args.reset_position_ids:
-        position_ids = cu_seqlens.position_ids
-        block_size, bsz = position_ids.shape
-        freqs = freqs[position_ids.view(-1)].reshape(block_size, bsz, 1, -1)
-    else:
-        # when args.reset_position_ids is False, use chunk is faster.
+    if not args.reset_attention_mask:
         cp_size = parallel_state.get_context_parallel_world_size()
         cp_rank = parallel_state.get_context_parallel_rank()
         freqs = freqs.chunk(cp_size, dim=0)[cp_rank]
+        return apply_rotary_pos_emb_bshd(
+            t, freqs, rotary_interleaved, multi_latent_attention, mscale
+        )
 
-    return apply_rotary_pos_emb_bshd(t, freqs, rotary_interleaved, multi_latent_attention, mscale)
+    position_ids = get_position_ids()
+    if position_ids is None:
+        raise AssertionError('reset-attention-mask needs position_ids for THD EOD RoPE path.')
+
+    if t.dim() == 3:
+        if position_ids.dtype not in (torch.int32, torch.int64):
+            raise AssertionError(
+                f'THD EOD RoPE position_ids must use an integral dtype, got {position_ids.dtype}.'
+            )
+        flat_position_ids = position_ids.reshape(-1).to(
+            device=freqs.device, dtype=torch.long, non_blocking=True
+        )
+        if flat_position_ids.numel() != t.shape[0]:
+            raise AssertionError(
+                f'THD RoPE needs position_ids numel ({flat_position_ids.numel()}) '
+                f'to match token count ({t.shape[0]}).'
+            )
+        if torch.any(flat_position_ids < 0) or torch.any(flat_position_ids >= freqs.shape[0]):
+            raise AssertionError(
+                f'THD EOD RoPE position_ids exceed the frequency table: freqs length={freqs.shape[0]}.'
+            )
+        freqs = freqs[flat_position_ids]
+        return apply_rotary_pos_emb_bshd(
+            t.unsqueeze(1), freqs, rotary_interleaved, multi_latent_attention, mscale
+        ).squeeze(1)
+
+    block_size, bsz = position_ids.shape
+    freqs = freqs[position_ids.view(-1)].reshape(block_size, bsz, 1, -1)
+    return apply_rotary_pos_emb_bshd(
+        t, freqs, rotary_interleaved, multi_latent_attention, mscale
+    )
 
 
 def apply_rotary_pos_emb_bshd_in_complex(t: Tensor, freqs: Tensor, rotary_interleaved: bool = False) -> Tensor:

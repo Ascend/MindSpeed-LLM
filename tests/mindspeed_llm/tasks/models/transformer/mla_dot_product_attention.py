@@ -14,15 +14,18 @@ class MlaDotProductAttention(DotProductAttention):
     """
 
     def __init__(
-            self,
-            config: TransformerConfig,
-            layer_number: int,
-            attn_mask_type: AttnMaskType,
-            attention_type: str,
-            attention_dropout: float = None,
-            softmax_scale: float = None,
-            cp_comm_type: str = None,
-            pg_collection=None,
+        self,
+        config,
+        layer_number,
+        attn_mask_type,
+        attention_type,
+        attention_dropout=None, 
+        softmax_scale=None,
+        k_channels=None,
+        v_channels=None,
+        num_splits=None,
+        cp_comm_type=None,
+        pg_collection=None,
     ):
         super().__init__(
             config=config,
@@ -58,13 +61,8 @@ class MlaDotProductAttention(DotProductAttention):
             if self.scale_mask_softmax.scale is None else self.softmax_scale
 
 
-
-
 class MlaTEDotProductAttention(TEDotProductAttention):
-    """
-    A special type of Dot Product Attention based on DotProductAttention.
-    """
- 	 
+
     def __init__(
         self,
         config,
@@ -73,10 +71,10 @@ class MlaTEDotProductAttention(TEDotProductAttention):
         attention_type,
         attention_dropout=None,
         softmax_scale=None,
-        cp_comm_type=None,
-        pg_collection=None,
         k_channels=None,
         v_channels=None,
+        cp_comm_type=None,
+        pg_collection=None,
     ):
         args = get_args()
 
@@ -89,24 +87,26 @@ class MlaTEDotProductAttention(TEDotProductAttention):
             scaling_factor = args.rope_scaling_factor
 
             if mscale_all_dim:
-                mscale = YarnRotaryPositionEmbedding.yarn_get_mscale(scaling_factor, mscale_all_dim)
+                mscale = YarnRotaryPositionEmbedding.yarn_get_mscale(
+                    scaling_factor,
+                    mscale_all_dim
+                )
                 self.softmax_scale = self.softmax_scale * mscale * mscale
 
         self.norm_factor = 1.0 / self.softmax_scale
-        
+
         super().__init__(
             config=config,
             layer_number=layer_number,
             attn_mask_type=attn_mask_type,
             attention_type=attention_type,
             attention_dropout=attention_dropout,
-            softmax_scale=softmax_scale,
-            cp_comm_type=cp_comm_type,
-            pg_collection=pg_collection,
-            k_channels=k_channels,
-            v_channels=v_channels,
+            softmax_scale=self.softmax_scale
         )
 
         if hasattr(super(), "scale_mask_softmax"):
-            self.scale = 1.0 / math.sqrt(self.hidden_size_per_attention_head) \
-            if self.scale_mask_softmax.scale is None else self.softmax_scale
+            self.scale = (
+                1.0 / math.sqrt(self.hidden_size_per_attention_head)
+                if self.scale_mask_softmax.scale is None
+                else self.softmax_scale
+            )

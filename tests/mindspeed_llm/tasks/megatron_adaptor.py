@@ -13,6 +13,7 @@ from torch.utils.cpp_extension import _get_build_directory
 from torch_npu.contrib import transfer_to_npu
 from mindspeed.features_manager.features_manager import MindSpeedFeaturesManager
 from megatron_adaptor.features_manager.features_manager import FeaturesManager
+from mindspeed_llm.features_manager import set_default_features_list
 
 LOG = getLogger(__name__)
 
@@ -113,4 +114,5 @@ def repatch(config):
         del sys.modules["transformer_engine"]
 
 
+set_default_features_list()
 FeatureAdaptor.execute()
