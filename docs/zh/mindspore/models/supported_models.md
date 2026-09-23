@@ -240,7 +240,7 @@ MindSpore框架根据模型实现方式分为稠密模型和稀疏模型，详�
       <td> 8K </td>
       <th>Mcore</th>
       <td> 1x8 </td>
-    </tr>  
+    </tr>
     <tr>
       <td> <a href="https://huggingface.co/Qwen/Qwen1.5-14B/tree/main">14B</a> </td>
       <td> 8K </td>
@@ -430,7 +430,7 @@ MindSpore框架根据模型实现方式分为稠密模型和稀疏模型，详�
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/mistralai">Mistral</a></td>
       <td><a href="https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.2/tree/main">7B</a></td>
-      <td rowspan="1"><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.3.0/examples/mindspore/mistral">mistral</a></td>
+      <td rowspan="1"><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.2.0/examples/mindspore/mistral">mistral</a></td>
       <td> 32K</td>
       <th>Mcore</th>
       <td>1x8</td>

@@ -44,7 +44,7 @@ Compared with the distributed optimizer, the replica optimizer increases memory 
 
 MindIO features are provided as a wheel package.
 
-`mindio_ttp` download link: [MindIO TTP package download - Ascend Community](https://gitcode.com/Ascend/mind-cluster/blob/branch_v26.1.0/docs/en/scheduling/references/fault_recovery_acceleration/02_installation_and_deployment.md#preparing-the-software-package).
+`mindio_ttp` download link: [MindIO TTP package download - Ascend Community](https://gitcode.com/Ascend/mind-cluster/blob/branch_v26.1.0/docs/en/scheduling/07_references/00_fault_recovery_acceleration/02_installation_and_deployment.md#preparing-the-software-package).
 
 ### Adding Launch Arguments to the Startup Script
 
@@ -97,10 +97,10 @@ In addition to the usage constraints above, elastic training also requires the f
 
 4. After a scale-down, the system cannot scale down again. Scaling out supports only a direct return to the original size.
 
-See: [MindIO TTP Constraints and Limitations - Ascend Community](https://gitcode.com/Ascend/mind-cluster/blob/branch_v26.1.0/docs/en/scheduling/references/fault_recovery_acceleration/02_installation_and_deployment.md#constraints)
+See: [MindIO TTP Constraints and Limitations - Ascend Community](https://gitcode.com/Ascend/mind-cluster/blob/branch_v26.1.0/docs/en/scheduling/07_references/00_fault_recovery_acceleration/02_installation_and_deployment.md#constraints)
 
 ### Checkpoint Saving and Loading Optimization
 
 When `enable-high-availability` is enabled and the MindIO ACP SDK is installed in the environment, the system uses the first-level asynchronous checkpoint saving and loading optimization from `mindio_acp`.
 
-See: [MindIO TTP Constraints and Limitations - Ascend Community](https://gitcode.com/Ascend/mind-cluster/blob/branch_v26.1.0/docs/en/scheduling/references/fault_recovery_acceleration/02_installation_and_deployment.md#constraints)
+See: [MindIO TTP Constraints and Limitations - Ascend Community](https://gitcode.com/Ascend/mind-cluster/blob/branch_v26.1.0/docs/en/scheduling/07_references/00_fault_recovery_acceleration/02_installation_and_deployment.md#constraints)
