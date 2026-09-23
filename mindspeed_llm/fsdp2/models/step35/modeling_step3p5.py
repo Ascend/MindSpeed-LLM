@@ -338,12 +338,12 @@ class Step3p5Experts(nn.Module):
         return tensor.to_local() if hasattr(tensor, "to_local") else tensor
 
     def _get_grouped_gemm_weights(self, dtype):
-        """Return expert weights in the ``[expert, input, output]`` GMM layout."""
+        """Return expert weights in FSDPTurbo's ``[expert, output, input]`` layout."""
         gate_up_proj = self._as_local_tensor(self.gate_up_proj).to(dtype)
         down_proj = self._as_local_tensor(self.down_proj).to(dtype)
 
-        expected_gate_up = (self.hidden_size, 2 * self.moe_intermediate_size)
-        expected_down = (self.moe_intermediate_size, self.hidden_size)
+        expected_gate_up = (2 * self.moe_intermediate_size, self.hidden_size)
+        expected_down = (self.hidden_size, self.moe_intermediate_size)
 
         if gate_up_proj.shape[-2:] == expected_gate_up[::-1]:
             gate_up_proj = gate_up_proj.transpose(-1, -2)

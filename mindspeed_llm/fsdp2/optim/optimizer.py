@@ -593,6 +593,20 @@ class OptimizerFactory:
             adamw_params = None
             param_groups = groups
 
+            if optimizer_type == "adamw" and is_torch_npu_available():
+                # AdamW executes foreach kernels one parameter group at a time.
+                # Keep foreach enabled for homogeneous groups, and only disable it
+                # when a group mixes native Tensor and DTensor parameters.
+                param_groups = []
+                for group in groups:
+                    group = dict(group)
+                    params = group.get("params", [])
+                    has_dtensor = any(isinstance(param, DTensor) for param in params)
+                    has_tensor = any(not isinstance(param, DTensor) for param in params)
+                    if has_dtensor and has_tensor:
+                        group["foreach"] = False
+                    param_groups.append(group)
+
             if optimizer_type == "muon":
                 # Extract all parameters from weight decay groups, then split into Muon/AdamW parameters
                 all_params = [p for g in groups for p in g.get("params", [])]

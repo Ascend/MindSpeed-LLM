@@ -22,12 +22,9 @@ def get_experts_forward_fn(ep_group, fused, fixed_router=False):
         hidden_states_shape = hidden_states.shape
         hidden_states = hidden_states.view(-1, hidden_states_shape[-1])
 
-        if hasattr(self, "_get_grouped_gemm_weights"):
-            weights = self._get_grouped_gemm_weights(hidden_states.dtype)
-        else:
-            gate_up_proj = self.gate_up_proj.to_local() if isinstance(self.gate_up_proj, DTensor) else self.gate_up_proj
-            down_proj = self.down_proj.to_local() if isinstance(self.down_proj, DTensor) else self.down_proj
-            weights = (gate_up_proj, down_proj)
+        gate_up_proj = self.gate_up_proj.to_local() if isinstance(self.gate_up_proj, DTensor) else self.gate_up_proj
+        down_proj = self.down_proj.to_local() if isinstance(self.down_proj, DTensor) else self.down_proj
+        weights = (gate_up_proj, down_proj)
 
         act_fn = getattr(self, 'act_fn', None)
         num_global_experts = self.num_global_experts
@@ -89,7 +86,10 @@ def dispatch_mlp_combine(
     if expert_module is not None and hasattr(expert_module, 'ep_forward') and callable(expert_module.ep_forward):
         hidden_states = expert_module.ep_forward(hidden_states, tokens_per_expert)
     else:
-        gate_up_weights, down_weights = weights
+        if expert_module is not None and hasattr(expert_module, "_get_grouped_gemm_weights"):
+            gate_up_weights, down_weights = expert_module._get_grouped_gemm_weights(hidden_states.dtype)
+        else:
+            gate_up_weights, down_weights = weights
         hidden_states = experts_computation(
             hidden_states,
             permute_indices[0],
