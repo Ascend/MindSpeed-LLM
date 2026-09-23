@@ -110,6 +110,8 @@ MODEL_PARALLEL_ARGS="
 "
 
 GPT_ARGS="
+    --no-save-optim \
+    --no-save-rng \
     --kv-channels 128 \
     --spec mindspeed_llm.tasks.models.spec.qwen3_spec layer_spec \
     --qk-layernorm \
@@ -135,7 +137,8 @@ GPT_ARGS="
     --attention-softmax-in-fp32 \
     --group-query-attention \
     --num-query-groups 4 \
-    --no-shared-storage
+    --no-shared-storage \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

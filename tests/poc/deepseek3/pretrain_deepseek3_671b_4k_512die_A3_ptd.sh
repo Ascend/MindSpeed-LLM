@@ -170,7 +170,8 @@ GPT_ARGS="
     --no-load-rng \
     --bf16 \
     --fix-router \
-    --distributed-timeout-minutes 120
+    --distributed-timeout-minutes 120 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

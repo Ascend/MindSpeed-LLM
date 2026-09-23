@@ -115,6 +115,8 @@ MODEL_PARALLEL_ARGS="
     "
 
 GPT_ARGS="
+    --no-save-optim \
+    --no-save-rng \
     --disable-gloo-group \
     --hccl-op-mode cp:6;ep:2;tp_ep_mp:2;dp:2;tp_cp:2;dp_cp:2;default_group:2 \
     --use-mcore-models \
@@ -140,7 +142,8 @@ GPT_ARGS="
     --group-query-attention \
     --num-query-groups 4 \
     --use-fused-ring-attention-update \
-    --swap-optimizer
+    --swap-optimizer \
+    --ckpt-format torch
     "
 
 LAYOUT_ARGS="

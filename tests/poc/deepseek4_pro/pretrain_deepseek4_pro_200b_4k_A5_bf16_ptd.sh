@@ -209,7 +209,8 @@ GPT_ARGS="
     --distributed-timeout-minutes 120 \
     --no-shared-storage \
     --gemm-gradient-accumulation-fusion \
-    --no-gradient-accumulation-fusion
+    --no-gradient-accumulation-fusion \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

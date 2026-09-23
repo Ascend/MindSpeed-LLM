@@ -199,4 +199,5 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     $TRAIN_ARGS \
     --load  ${CKPT_LOAD_DIR} \
     --save  ${CKPT_SAVE_DIR} \
+    --ckpt-format torch \
     --distributed-backend nccl | tee logs/deepseek3_16.2b_256k_fp8_A5_perf.log

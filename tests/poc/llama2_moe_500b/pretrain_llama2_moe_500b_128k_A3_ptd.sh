@@ -23,6 +23,8 @@ NUM_LAYERS=32
 GBS=64
 
 GPT_ARGS="
+    --no-save-optim \
+    --no-save-rng \
     --use-mcore-models \
     --reuse-fp32-param \
     --tensor-model-parallel-size ${TP} \
@@ -87,7 +89,8 @@ GPT_ARGS="
     --enable-recompute-layers-per-pp-rank \
     --use-fused-ring-attention-update \
     --fix-router \
-    --bf16
+    --bf16 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

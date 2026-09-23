@@ -105,6 +105,8 @@ MODEL_PARALLEL_ARGS="
 "
 
 GPT_ARGS="
+    --no-save-optim \
+    --no-save-rng \
     --use-mcore-models \
     --spec mindspeed_llm.tasks.models.spec.longcat_spec layer_spec \
     --qk-layernorm \
@@ -127,7 +129,8 @@ GPT_ARGS="
     --attention-softmax-in-fp32 \
     --no-gradient-accumulation-fusion \
     --transformer-impl transformer_engine \
-    --no-bias-dropout-fusion
+    --no-bias-dropout-fusion \
+    --ckpt-format torch
 "
 
 # FP8_ARGS="

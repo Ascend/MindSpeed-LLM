@@ -119,6 +119,8 @@ MODEL_PARALLEL_ARGS="
 "
 
 GPT_ARGS="
+    --no-save-optim \
+    --no-save-rng \
     --disable-gloo-group \
     --use-mcore-models \
     --spec mindspeed_llm.tasks.models.spec.qwen3_spec layer_spec \
@@ -143,7 +145,8 @@ GPT_ARGS="
     --group-query-attention \
     --num-query-groups 4 \
     --use-fused-ring-attention-update \
-    --swap-optimizer
+    --swap-optimizer \
+    --ckpt-format torch
 "
 
 OVERLAP_ARGS="

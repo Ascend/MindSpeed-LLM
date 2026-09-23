@@ -168,4 +168,5 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     $FP8_ARGS \
     --load ${CKPT_LOAD_DIR} \
     --save ${CKPT_SAVE_DIR} \
+    --ckpt-format torch \
     --distributed-backend nccl | tee logs/pretrain_longcat_flash_0.3b_128k_fp8_A5_ptd_acc.log

@@ -114,6 +114,8 @@ MODEL_PARALLEL_ARGS="
 "
 
 GPT_ARGS="
+    --no-save-optim \
+    --no-save-rng \
     --use-mcore-models \
     --spec mindspeed_llm.tasks.models.spec.longcat_spec layer_spec \
     --qk-layernorm \
@@ -143,7 +145,8 @@ GPT_ARGS="
     --recompute-method uniform \
     --recompute-num-layers 1 \
     --swap-optimizer \
-    --swap-attention
+    --swap-attention \
+    --ckpt-format torch
 "
 
 # FP8_ARGS="

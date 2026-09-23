@@ -105,6 +105,8 @@ MODEL_PARALLEL_ARGS="
 "
 
 GPT_ARGS="
+    --no-save-optim \
+    --no-save-rng \
     --use-mcore-models \
     --spec mindspeed_llm.tasks.models.spec.qwen3_spec layer_spec \
     --kv-channels 128 \
@@ -128,7 +130,8 @@ GPT_ARGS="
     --attention-softmax-in-fp32 \
     --no-gradient-accumulation-fusion \
     --group-query-attention \
-    --num-query-groups 4
+    --num-query-groups 4 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

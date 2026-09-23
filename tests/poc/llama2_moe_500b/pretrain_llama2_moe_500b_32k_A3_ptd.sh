@@ -29,6 +29,8 @@ DISTRIBUTED_ARGS="
 "
 
 GPT_ARGS="
+    --no-save-optim \
+    --no-save-rng \
     --use-mcore-models \
     --no-shared-storage \
     --reuse-fp32-param \
@@ -93,7 +95,8 @@ GPT_ARGS="
     --use-fused-ring-attention-update \
     --use-fused-moe-token-permute-and-unpermute \
     --fix-router \
-    --bf16
+    --bf16 \
+    --ckpt-format torch
 "
 
 DATA_ARGS="

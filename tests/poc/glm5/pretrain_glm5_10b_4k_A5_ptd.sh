@@ -152,7 +152,8 @@ GPT_ARGS="
     --no-load-rng \
     --bf16 \
     --distributed-timeout-minutes 120 \
-    --position-embedding-type rope
+    --position-embedding-type rope \
+    --ckpt-format torch
 "
 
 DATA_ARGS="
