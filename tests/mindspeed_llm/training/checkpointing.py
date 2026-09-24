@@ -240,7 +240,7 @@ def save_checkpoint_wrapper(fn):
         )
 
         # Collect RNG state to ensure identical random sequences on restore.
-        rng_state = get_rng_state(args.ckpt_format)
+        rng_state = get_rng_state(args.ckpt_format, tp_group=tensor_rank, pp_group=pipeline_rank)
         rerun_state_machine = None
         rerun_state = None
 
@@ -330,7 +330,6 @@ def save_checkpoint_wrapper(fn):
                     optimizer,
                     opt_param_scheduler,
                     rng_state,
-                    args.use_dist_ckpt,
                     iteration,
                     optim_sd_kwargs=optim_sd_kwargs,
                 )
