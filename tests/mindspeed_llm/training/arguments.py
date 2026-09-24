@@ -123,6 +123,9 @@ def core_transformer_config_from_args_wrapper(fn):
     """
     @wraps(fn)
     def wrapper(args, config_class=None):
+        if args.num_layer_list and getattr(args, 'pipeline_model_parallel_layout', None) is not None:
+            raise ValueError("--num-layer-list and --pipeline-model-parallel-layout are mutually exclusive.")
+
         config = fn(args, config_class)
         # Turn down batch_p2p_comm only when pp2vpp
         if args.pipeline_model_parallel_size == 2 and args.num_layers_per_virtual_pipeline_stage is not None:

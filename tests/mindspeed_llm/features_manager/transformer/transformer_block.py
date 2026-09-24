@@ -11,6 +11,20 @@ class TransformerBlockFeature(MindSpeedFeature):
                             help='Set first k layer as dense layer')
 
     def validate_args(self, args):
+        if args.num_layer_list:
+            layer_partition = [int(num) for num in args.num_layer_list.split(',')]
+            first_pipeline_stage_num_layers = layer_partition[0]
+            if (args.first_k_dense_replace
+                    and args.pipeline_model_parallel_size > 1
+                    and args.first_k_dense_replace >= first_pipeline_stage_num_layers):
+                raise AssertionError(
+                    'When using first-k-dense-replace, the first PP stage must contain at least one MoE layer; '
+                    'first stage layers: {}, first-k-dense-replace: {}.'.format(
+                        first_pipeline_stage_num_layers, args.first_k_dense_replace
+                    )
+                )
+            args.num_layers = sum(layer_partition)
+
         if args.first_k_dense_replace and args.num_layers <= args.first_k_dense_replace:
             raise AssertionError('Num-layer ({}) must be greater than first-k-dense-replace ({}) when first-k-dense-replace is set.'.format(args.num_layers,
             args.first_k_dense_replace))

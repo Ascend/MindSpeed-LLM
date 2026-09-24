@@ -32,7 +32,7 @@ from megatron.core.transformer.module import MegatronModule
 from megatron.core.transformer.transformer_layer import TransformerLayer
 from megatron.core.transformer import build_module
 from megatron.core.transformer.transformer_config import TransformerConfig
-from megatron.core.utils import make_viewless_tensor
+from megatron.core.utils import get_pg_rank, make_viewless_tensor
 from megatron.core.utils import WrappedTensor, deprecate_inference_params
 from megatron.core.inference.contexts import BaseInferenceContext
 from megatron.core.extensions.transformer_engine import te_checkpoint
@@ -43,7 +43,9 @@ from megatron.core.recompute import checkpointed_forward
 from mindspeed.model.transformer import should_recompute_norm
 
 
-def get_num_layers_to_build(config: TransformerConfig) -> int:
+def get_num_layers_to_build(
+    config: TransformerConfig, vp_stage: Optional[int] = None, pp_rank: Optional[int] = None
+) -> int:
     """
     Calculate the number of layers to build for the current pipeline stage.
 
@@ -52,6 +54,9 @@ def get_num_layers_to_build(config: TransformerConfig) -> int:
 
     Args:
         config (TransformerConfig): Transformer configuration containing layer info.
+        vp_stage (Optional[int]): Virtual pipeline stage number. The legacy
+            num_layer_list mode does not support virtual pipeline parallelism.
+        pp_rank (Optional[int]): Pipeline rank whose local layer count is queried.
 
     Returns:
         int: Number of layers to build on this rank.
@@ -66,6 +71,13 @@ def get_num_layers_to_build(config: TransformerConfig) -> int:
         - 8 layers, 2 PP stages, 4 VP: Each chunk builds 1 layer
         - Custom: [3, 5] for 2 stages means stage 0 builds 3, stage 1 builds 5
     """
+    num_layer_list = config.num_layer_list
+    if num_layer_list:
+        pp_stage = pp_rank
+        if pp_stage is None:
+            pp_stage = parallel_state.get_pipeline_model_parallel_rank()
+        return num_layer_list[pp_stage]
+
     num_layers_per_pipeline_rank = config.num_layers // parallel_state.get_pipeline_model_parallel_world_size()
 
     if parallel_state.get_virtual_pipeline_model_parallel_world_size() is not None:
@@ -93,10 +105,6 @@ def get_num_layers_to_build(config: TransformerConfig) -> int:
 
         num_layers_to_build = num_layers_per_pipeline_rank
 
-    num_layer_list = config.num_layer_list
-    if num_layer_list:
-        pp_stage = parallel_state.get_pipeline_model_parallel_rank()
-        num_layers_to_build = num_layer_list[pp_stage]
     return num_layers_to_build
 
 
@@ -119,11 +127,13 @@ def get_layer_offset_wrapper(fn):
     """
 
     @wraps(fn)
-    def wrapper(config):
+    def wrapper(config, vp_stage=None, pp_rank=None):
         if config.num_layer_list:
-            pp_stage = parallel_state.get_pipeline_model_parallel_rank()
+            pp_stage = pp_rank
+            if pp_stage is None:
+                pp_stage = parallel_state.get_pipeline_model_parallel_rank()
             return config.layer_offset[pp_stage]
-        return fn(config)
+        return fn(config, vp_stage, pp_rank)
 
     return wrapper
 
@@ -162,7 +172,26 @@ def _transformer_block_build_layers(self):
     self.attention_layer_type = None
 
     def build_layer(layer_spec, layer_number):
-        global_layer_number = _get_layer_offset(args, getattr(self, "vp_stage", 0)) + layer_number
+        pipeline_layout = getattr(self.config, "pipeline_model_parallel_layout", None)
+        pp_group = getattr(getattr(self, "pg_collection", None), "pp", None)
+        pp_rank = (
+            get_pg_rank(pp_group)
+            if pp_group is not None
+            else parallel_state.get_pipeline_model_parallel_rank()
+        )
+        if self.config.num_layer_list:
+            layer_offset = self.config.layer_offset[pp_rank]
+            global_layer_number = layer_offset + layer_number
+        elif pipeline_layout is not None:
+            layer_offset = pipeline_layout.get_layer_offset(
+                vp_stage=getattr(self, "vp_stage", None),
+                pp_rank=pp_rank,
+            )
+            global_layer_number = layer_offset + layer_number
+        else:
+            global_layer_number = _get_layer_offset(
+                args, getattr(self, "vp_stage", 0)
+            ) + layer_number
         # For dense and moe mix
         if args.num_experts and args.first_k_dense_replace and args.moe_layer_freq:
             if (global_layer_number - 1) >= args.first_k_dense_replace and (

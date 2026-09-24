@@ -161,6 +161,9 @@ def load_args_from_checkpoint_wrapper(fn):
                 print_rank_0(f"Checkpoint did not provide arguments {arg_name}")
 
         _set_arg('num_layer_list', force=True)
+        _set_arg('pipeline_model_parallel_layout')
+        if getattr(args, 'num_layer_list', None) and getattr(args, 'pipeline_model_parallel_layout', None) is not None:
+            raise ValueError("--num-layer-list and --pipeline-model-parallel-layout are mutually exclusive.")
         _set_arg('post_norm', force=True)
         _set_arg('num_experts')
         _set_arg('sequence_parallel', force=True)

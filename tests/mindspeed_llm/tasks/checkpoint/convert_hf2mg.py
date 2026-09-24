@@ -66,13 +66,23 @@ class Hf2MgConvert(Convert):
         else:
             self.num_layers = self.num_layers + len([x for x in self.noop_layers.split(",") if x])
 
-        if self.schedules_method == 'dualpipev':
+        if self.pipeline_model_parallel_layout is not None:
+            self.initialize_pipeline_layout(self.num_layers, self.mtp_num_layers)
+            layout_layer_mapping = self.get_layout_layer_mapping()
+            if self.uses_virtual_pipeline():
+                self.vpprank_layer_idxs = layout_layer_mapping
+            else:
+                self.pprank_layer_idxs = defaultdict()
+                for pp_rank in range(self.pipeline_model_parallel_size):
+                    self.pprank_layer_idxs[pp_rank] = layout_layer_mapping[pp_rank][0]
+        elif self.schedules_method == 'dualpipev':
             self.vpp_size = 2
             self.num_layers_per_virtual_pipeline_stage = (
                 self.num_layers // self.pipeline_model_parallel_size // self.vpp_size
             )
-
-        if self.num_layers_per_virtual_pipeline_stage is None:
+            self.vpprank_layer_idxs = defaultdict(dict)
+            self.get_vpprank_hf_layeridxs()
+        elif self.num_layers_per_virtual_pipeline_stage is None:
             self.pprank_layer_idxs = defaultdict()
             self.get_pprank_hf_layeridxs()
         else:
@@ -106,7 +116,7 @@ class Hf2MgConvert(Convert):
             )
 
     def _valid_parameter(self):
-        if self.num_layer_list is None:
+        if self.pipeline_layout is None and self.num_layer_list is None:
             if self.num_layers % self.pipeline_model_parallel_size != 0:
                 raise ValueError('number of layers should be divisible by the pipeline parallel size')
 
@@ -122,7 +132,7 @@ class Hf2MgConvert(Convert):
                     != 0
                 ):
                     raise ValueError('number of pp_stage should bu divisible by the vpp_stage')
-        else:
+        elif self.pipeline_layout is None:
             layer_list = list(map(int, self.num_layer_list.split(',')))
             if self.num_layers_per_virtual_pipeline_stage is not None:
                 raise ValueError('num_layer_list and vpp cannot be configured at the same time')
@@ -1144,7 +1154,7 @@ class Hf2MgConvert(Convert):
         logger.info("Packaging Parameters......")
         args = self.__parameter_packaging()
 
-        if self.num_layers_per_virtual_pipeline_stage is None:
+        if not self.uses_virtual_pipeline():
             for pp_rank in range(self.pipeline_model_parallel_size):
                 mg_weight = defaultdict(lambda: defaultdict(lambda: defaultdict(dict)))
 
