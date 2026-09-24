@@ -39,6 +39,7 @@ from mindspeed.features_manager import (
     FusionAttentionV2Feature,
     MoEAlltoAllMC2Feature,
     PipelineModelParallelLayoutFeature,
+    VariableSequenceLengthFeature,
 )
 from mindspeed.features_manager.feature import MindSpeedFeature
 from mindspeed.features_manager.features_manager import MindSpeedFeaturesManager
@@ -200,6 +201,7 @@ def add_pipeline_parallel_features(features_list: List[MindSpeedFeature]):
             RiPipeSchedulesAdvanceFeature(),
             NoopLayersFeature(),
             OptimizeP2PCommFeature(),
+            VariableSequenceLengthFeature(),
             OptimizeSendRecvCommFeature(),
             UnalignedPipelineFeature(),
             DualpipeVFeature(),
