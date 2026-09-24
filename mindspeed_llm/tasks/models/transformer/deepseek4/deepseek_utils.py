@@ -63,10 +63,10 @@ def get_cmp_cu_seqlens(cu_seqlens, ratio, zero_based=False, return_maxlen=False)
     return cu_seqlens, max_seqlen
 
 
-def _compute_prefix_kv_cu_seqlens(global_cu_seqlens, rank_offset, local_len):
+def _compute_prefix_kv_cu_seqlens(global_cu_seqlens, rank_offset, local_len, compress_ratio):
     """Build cu_seqlens for prefix KV mode.
 
-    Returns (cu_q, cu_kv, kv_segments), one entry per batch:
+    Returns (cu_q, cu_kv, kv_segments, has_compressible_kv), one entry per batch:
       - seq fully local: q_len == kv_len
       - seq crosses rank boundary: q_len < kv_len (kv_len includes prefix)
       - seq not local: skipped
@@ -98,13 +98,14 @@ def _compute_prefix_kv_cu_seqlens(global_cu_seqlens, rank_offset, local_len):
 
     if not q_lens:
         result = torch.tensor([0], dtype=global_cu_seqlens.dtype, device=global_cu_seqlens.device)
-        return result, result, []
+        return result, result, [], False
 
     cu_q = torch.zeros(len(q_lens) + 1, dtype=global_cu_seqlens.dtype, device=global_cu_seqlens.device)
     cu_kv = torch.zeros(len(kv_lens) + 1, dtype=global_cu_seqlens.dtype, device=global_cu_seqlens.device)
     cu_q[1:] = torch.tensor(q_lens, dtype=global_cu_seqlens.dtype, device=global_cu_seqlens.device).cumsum(0)
     cu_kv[1:] = torch.tensor(kv_lens, dtype=global_cu_seqlens.dtype, device=global_cu_seqlens.device).cumsum(0)
-    return cu_q, cu_kv, kv_segments
+    has_compressible_kv = any(kv_len >= compress_ratio for kv_len in kv_lens)
+    return cu_q, cu_kv, kv_segments, has_compressible_kv
 
 
 def _rearrange_prefix_kv(kv, kv_segments):

@@ -45,13 +45,45 @@ from mindspeed_llm.tasks.models.transformer.deepseek4.deepseek_utils import (
     _compute_prefix_kv_cu_seqlens,
     _rearrange_prefix_kv,
 )
-from mindspeed_llm.ops.npu_sparse_flash_mla_with_indexer_loss import npu_sparse_flash_mla_with_indexer_loss
+from mindspeed_llm.ops.npu_sparse_flash_mla_with_indexer_loss import (
+    gather_tnd_local_num,
+    npu_sparse_flash_mla_with_indexer_loss,
+)
 from mindspeed_llm.ops.npu_sparse_flash_mla import npu_sparse_flash_mla
 
 
-def _is_cmp_kv_dummy(cmp_kv):
-    """True if cmp_kv is the shape-only stub installed for an empty/all-short rank."""
-    return cmp_kv is not None and cmp_kv.numel() > 0 and bool((cmp_kv == 0).all())
+class _ZeroGradientAnchor(torch.autograd.Function):
+    """Keep an empty-rank graph reachable while contributing no training signal."""
+
+    @staticmethod
+    def forward(ctx, *tensors):
+        # Metadata is sufficient because backward must return explicit zeros,
+        # not gradients derived from the input values.
+        ctx.input_metadata = [(tensor.shape, tensor.dtype, tensor.device) for tensor in tensors]
+        return tensors[0].new_zeros(())
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        del grad_output
+        # Explicit zero tensors keep parameter hooks and gradient buckets
+        # aligned with non-empty ranks; returning None would skip them.
+        return tuple(torch.zeros(shape, dtype=dtype, device=device) for shape, dtype, device in ctx.input_metadata)
+
+
+class _EmptyIndexerLossCommunicationAnchor(torch.autograd.Function):
+    """Match the fused TND indexer-loss backward collective on empty ranks."""
+
+    @staticmethod
+    def forward(ctx, anchor, local_num):
+        ctx.local_num = local_num
+        return anchor.clone()
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        # Non-empty ranks execute the same collective inside fused-loss
+        # backward. Empty ranks must join it to avoid a CP-group hang.
+        gather_tnd_local_num(ctx.local_num)
+        return grad_output, None
 
 
 class LayerCompressMode(Enum):
@@ -462,9 +494,7 @@ class DeepSeek4SelfAttention(MegatronModule):
                     zero_based=True,
                 )
                 assert len(cu_seqlens_q) == len(cu_seqlens_kv) == len(cu_seqlens_cmp_kv)
-        if cu_seqlens_cmp_kv is not None and not _is_cmp_kv_dummy(cmp_kv):
-            # Skip the row-count self-check for the all-zeros stub: logical
-            # compressed rows are 0 while the physical stub holds 1 zero row.
+        if cu_seqlens_cmp_kv is not None:
             assert cu_seqlens_cmp_kv[-1] == cmp_kv.shape[0]
 
         args = get_args()
@@ -521,6 +551,54 @@ class DeepSeek4SelfAttention(MegatronModule):
             self.config.num_layers,
             avg_group=parallel_state.get_tensor_and_context_parallel_group(),
         )
+
+    def _empty_indexer_outputs(self, x_for_indexer, attention_mask):
+        """Build checkpoint-compatible outputs for a rank with no compressed KV."""
+        # Anchor both the gathered input and all indexer parameters so checkpoint
+        # recompute, gather backward, and parameter hooks remain reachable.
+        anchor = _ZeroGradientAnchor.apply(x_for_indexer, *self.indexer.parameters())
+        # Checkpoint closures must return tensors with the same arity on every
+        # rank. The caller removes these placeholders before attention.
+        placeholder = torch.empty((), dtype=torch.int32, device=x_for_indexer.device)
+        if get_args().use_fused_lightning_indexer_loss:
+            return placeholder, anchor, anchor, anchor, anchor
+        return placeholder, anchor, attention_mask
+
+    def _finalize_empty_rank_paths(
+        self,
+        kv,
+        hidden_states,
+        empty_indexer_anchor,
+        empty_compressor_anchor,
+        packed_seq_params,
+    ):
+        """Attach empty-rank backward work to KV without changing its value."""
+        # Each anchor is a scalar zero in forward, but makes the corresponding
+        # checkpoint/gather/parameter path reachable from the main loss.
+        for anchor in (empty_indexer_anchor, empty_compressor_anchor):
+            if anchor is not None:
+                kv = kv + anchor.to(kv.dtype)
+
+        # Compressor-only layers need no indexer-loss communication or logging.
+        if empty_indexer_anchor is None:
+            return kv
+
+        args = get_args()
+        has_indexer_loss = args.indexer_loss_coeff > 0 and self.training and torch.is_grad_enabled()
+        if has_indexer_loss and args.use_fused_lightning_indexer_loss and packed_seq_params is not None:
+            local_num = packed_seq_params.cu_seqlens_q[-1].item()
+            kv = _EmptyIndexerLossCommunicationAnchor.apply(kv, local_num)
+
+        if has_indexer_loss:
+            # Keep tracker keys and the later reduction group identical across
+            # empty and non-empty ranks without adding a model-loss term.
+            DSAIndexerLossLoggingHelper.save_loss_to_tracker(
+                hidden_states.new_zeros((), dtype=torch.float32),
+                self.layer_number,
+                self.config.num_layers,
+                avg_group=parallel_state.get_tensor_and_context_parallel_group(),
+            )
+        return kv
 
     def _should_recompute(self, enabled):
         return enabled and not self.is_mtp_attention and self.training and torch.is_grad_enabled()
@@ -723,6 +801,7 @@ class DeepSeek4SelfAttention(MegatronModule):
             pre_gather_len = None
         _fix_prefix_kv_segments = None
         _prefix_freqs_cis = None
+        local_has_compressible_kv = True
         if packed_seq_params is not None:
             packed_seq_params = copy.copy(packed_seq_params)
             # Select per-layer cu_seqlens by mtp_idx for MTP+CP+pack.
@@ -750,8 +829,16 @@ class DeepSeek4SelfAttention(MegatronModule):
                 # Keep cu_seqlens_kv global: SP shards hidden states only, not cu_seqlens.
                 _cu_seqlens_kv_input = packed_seq_params.cu_seqlens_kv
                 _local_len_for_compute = full_local_len
-                local_cu_seqlens_q, local_cu_seqlens_kv, _fix_prefix_kv_segments = _compute_prefix_kv_cu_seqlens(
-                    _cu_seqlens_kv_input, rank_offset, _local_len_for_compute
+                (
+                    local_cu_seqlens_q,
+                    local_cu_seqlens_kv,
+                    _fix_prefix_kv_segments,
+                    local_has_compressible_kv,
+                ) = _compute_prefix_kv_cu_seqlens(
+                    _cu_seqlens_kv_input,
+                    rank_offset,
+                    _local_len_for_compute,
+                    self.compress_ratio,
                 )
                 packed_seq_params.cu_seqlens_q = local_cu_seqlens_q
                 packed_seq_params.cu_seqlens_kv = local_cu_seqlens_kv
@@ -763,6 +850,8 @@ class DeepSeek4SelfAttention(MegatronModule):
                 packed_seq_params.cu_seqlens_kv, self.compress_ratio, zero_based=True
             )
             cu_seqlens_cmp_kv = cu_seqlens_cmp_kv.int()
+            if pre_gather_len is None and self.indexer is not None:
+                local_has_compressible_kv = cu_seqlens_cmp_kv[-1].item() > 0
         else:
             cu_seqlens_cmp_kv = None
 
@@ -770,6 +859,7 @@ class DeepSeek4SelfAttention(MegatronModule):
         compress_topk_idxs = None
         compress_topk_score = None
         query_index = key_index = weights = None
+        empty_indexer_anchor = None
         if self.mode != LayerCompressMode.NO_COMPRESS:
             offset = 0 if self.use_sparse_flash_attn else kv.size(0)
             if self.indexer is not None:
@@ -790,6 +880,10 @@ class DeepSeek4SelfAttention(MegatronModule):
                     if packed_seq_params is not None and pre_gather_len is not None:
                         x_for_indexer = gather_from_sp_cp(x_for_indexer, tnd=True)
                         x_for_indexer = _rearrange_prefix_kv(x_for_indexer, _fix_prefix_kv_segments)
+                    if not local_has_compressible_kv:
+                        # Branch only after the common gather so every CP rank
+                        # executes the same checkpoint communication pattern.
+                        return self._empty_indexer_outputs(x_for_indexer, indexer_attention_mask)
                     query_index_, key_index_, weights_, dsa_hidden_states_ = self.indexer.forward_with_index_compress(
                         x_for_indexer,
                         q_compressed_.detach(),
@@ -800,40 +894,27 @@ class DeepSeek4SelfAttention(MegatronModule):
                         freqs_cis_for_kv=_freqs_cis_for_kv,
                         x_for_weights=x_local_for_weights,
                     )
-                    is_empty_indexer = key_index_ is None
-                    if is_empty_indexer:
-                        # Keep empty ranks on the same gather/fused path as real ranks.
-                        if not args.use_fused_lightning_indexer_loss:
-                            return None, None, indexer_attention_mask
-                        key_index_, weights_ = self._make_empty_rank_key_weights(query_index_)
                     # TND: key_index stays local; cu_seqlens_k is derived from the actual shape.
                     query_index_, key_index_, weights_ = self.indexer.all_gather_qk_weight_kvallgather(
                         query_index_, key_index_, weights_, tnd=packed_seq_params is not None
                     )
-                    if is_empty_indexer:
-                        compress_topk_idxs_, compress_topk_score_ = self._make_empty_rank_topk(
-                            weights_, self.indexer.index_topk
+                    dsa_indexer_context = torch.no_grad() if args.use_fused_lightning_indexer_loss else nullcontext()
+                    with dsa_indexer_context:
+                        compress_topk_idxs_, compress_topk_score_ = self.indexer.forward_with_scores_compress(
+                            dsa_hidden_states_,
+                            query_index_,
+                            key_index_,
+                            weights_,
+                            indexer_attention_mask,
+                            packed_seq_params,
+                            start_pos,
+                            self.indexer.index_topk,
+                            offset,
+                            self.indexer.compress_ratio,
                         )
-                    else:
-                        dsa_indexer_context = (
-                            torch.no_grad() if args.use_fused_lightning_indexer_loss else nullcontext()
+                        compress_topk_idxs_, compress_topk_score_ = self.indexer.post_process_index(
+                            compress_topk_idxs_, compress_topk_score_
                         )
-                        with dsa_indexer_context:
-                            compress_topk_idxs_, compress_topk_score_ = self.indexer.forward_with_scores_compress(
-                                dsa_hidden_states_,
-                                query_index_,
-                                key_index_,
-                                weights_,
-                                indexer_attention_mask,
-                                packed_seq_params,
-                                start_pos,
-                                self.indexer.index_topk,
-                                offset,
-                                self.indexer.compress_ratio,
-                            )
-                            compress_topk_idxs_, compress_topk_score_ = self.indexer.post_process_index(
-                                compress_topk_idxs_, compress_topk_score_
-                            )
                     if args.use_fused_lightning_indexer_loss:
                         return compress_topk_idxs_, compress_topk_score_, query_index_, key_index_, weights_
 
@@ -861,6 +942,13 @@ class DeepSeek4SelfAttention(MegatronModule):
                     compress_topk_idxs, compress_topk_score, query_index, key_index, weights = indexer_outputs
                 else:
                     compress_topk_idxs, compress_topk_score, attention_mask = indexer_outputs
+                if not local_has_compressible_kv:
+                    # The score slot carries the empty-rank anchor out of the
+                    # checkpoint; no placeholder may reach top-k or attention.
+                    empty_indexer_anchor = compress_topk_score
+                    compress_topk_idxs = None
+                    compress_topk_score = None
+                    query_index = key_index = weights = None
             else:
                 compress_topk_idxs = self.get_compress_topk_idxs(
                     self.compress_ratio, bsz, q_len_global, start_pos, offset, self.kv_allgather
@@ -868,6 +956,7 @@ class DeepSeek4SelfAttention(MegatronModule):
 
         # get kv compress
         kv_compress = None
+        empty_compressor_anchor = None
         if self.mode != LayerCompressMode.NO_COMPRESS:
             if packed_seq_params is not None and pre_gather_len is not None:
                 # compressor uses prefix hidden_states + prefix freqs_cis; output matches prefix cu_seqlens_kv.
@@ -875,10 +964,12 @@ class DeepSeek4SelfAttention(MegatronModule):
                 _hs_for_compressor = _rearrange_prefix_kv(_hs_gathered, _fix_prefix_kv_segments)
                 _freqs_for_compressor = _prefix_freqs_cis if _prefix_freqs_cis is not None else local_freqs_cis
                 kv_compress = self.compressor(_hs_for_compressor, start_pos, _freqs_for_compressor, packed_seq_params)
-                # Anchor kv's backward after the 4096-gather so both reduce-scatters enqueue in rank-consistent order.
-                if kv is not None and kv.requires_grad and _hs_for_compressor is not None and torch.is_grad_enabled():
-                    kv = 0.0 * _hs_for_compressor.sum(dim=-1, keepdim=True) + kv
-
+                if kv_compress is None:
+                    # Preserve the main gather backward and produce explicit
+                    # zero gradients for compressor parameters on this rank.
+                    empty_compressor_anchor = _ZeroGradientAnchor.apply(
+                        _hs_for_compressor, *self.compressor.parameters()
+                    )
             else:
                 kv_compress = self.compressor(hidden_states, start_pos, local_freqs_cis, packed_seq_params)
             if kv_compress is not None:
@@ -890,8 +981,18 @@ class DeepSeek4SelfAttention(MegatronModule):
                 if recompute_csa_attention and hasattr(self.compressor, 'discard_x_float_output'):
                     self.compressor.discard_x_float_output(kv_compress)
             else:
-                # Use a dummy cmp_kv on empty ranks to satisfy the fused op shape check.
-                kv_compress = self._make_empty_rank_kv_compress(hidden_states)
+                # Empty ranks retain pure sliding-window attention semantics.
+                compress_topk_idxs = None
+                cu_seqlens_cmp_kv = None
+
+        if empty_indexer_anchor is not None or empty_compressor_anchor is not None:
+            kv = self._finalize_empty_rank_paths(
+                kv,
+                hidden_states,
+                empty_indexer_anchor,
+                empty_compressor_anchor,
+                packed_seq_params,
+            )
 
         self.attn_sink = self.attn_sink.to(hidden_states.device)
 
@@ -906,7 +1007,7 @@ class DeepSeek4SelfAttention(MegatronModule):
             and self.training
             and torch.is_grad_enabled()
             and args.use_fused_lightning_indexer_loss
-            and not _is_cmp_kv_dummy(kv_compress)
+            and local_has_compressible_kv
         )
         sparse_attention_checkpoint = None
         if use_smla_with_slig:
@@ -990,17 +1091,7 @@ class DeepSeek4SelfAttention(MegatronModule):
             has_compress_results = (
                 kv_compress is not None and compress_topk_idxs is not None and compress_topk_score is not None
             )
-            if _is_cmp_kv_dummy(kv_compress):
-                # Empty rank: no valid compressed KV to distill indexer loss from. Skip the
-                # gather/get_attn_scores path (it would index shape-1 KV with seq-size indices)
-                # but keep the tracker all_reduce aligned with real ranks.
-                DSAIndexerLossLoggingHelper.save_loss_to_tracker(
-                    hidden_states.new_zeros((), dtype=torch.float32),
-                    self.layer_number,
-                    self.config.num_layers,
-                    avg_group=parallel_state.get_tensor_and_context_parallel_group(),
-                )
-            elif has_indexer_loss and has_compress_results and self.training and torch.is_grad_enabled():
+            if has_indexer_loss and has_compress_results and self.training and torch.is_grad_enabled():
                 compress_topk_idxs = (
                     torch.where(compress_topk_idxs == -1, compress_topk_idxs, compress_topk_idxs - offset)
                     if offset != 0
@@ -1096,25 +1187,6 @@ class DeepSeek4SelfAttention(MegatronModule):
                 return matrix.int()
 
         return _get_window_topk_idxs().unsqueeze(0).expand(bsz, -1, -1).int()
-
-    @staticmethod
-    def _make_empty_rank_key_weights(query_index_):
-        """Dummy key/weights that keep empty-rank gather/fused shape aligned with real ranks."""
-        key_index = query_index_.new_full(query_index_.shape, -1)  # invalid-index placeholder
-        weights = query_index_.new_zeros(query_index_.shape[:3])  # zero-weight placeholder
-        return key_index, weights
-
-    @staticmethod
-    def _make_empty_rank_topk(weights_, k):
-        """Dummy topk keeping count nonzero and shape consistent across ranks."""
-        b_, s_ = weights_.shape[:2]
-        idxs = torch.full((b_, s_, k), -1, dtype=torch.int32, device=weights_.device)
-        score = torch.zeros((b_, s_, k), dtype=weights_.dtype, device=weights_.device)
-        return idxs, score
-
-    def _make_empty_rank_kv_compress(self, hidden_states):
-        """Dummy compressed KV with one invalid segment, so empty ranks share dtype/shape with real ones."""
-        return hidden_states.new_zeros((1,) + (1,) + (self.head_dim,))
 
 
 class DeepSeek4MTPSelfAttention(DeepSeek4SelfAttention):

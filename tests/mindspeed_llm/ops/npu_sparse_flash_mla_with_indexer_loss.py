@@ -15,6 +15,25 @@ from mindspeed_llm.tasks.models.transformer.deepseek4.deepseek_utils import get_
 _CUSTOM_OPS = None
 
 
+def gather_tnd_local_num(local_num):
+    """Compute the global TND query count with the fused backward's CP group."""
+    from megatron.core import parallel_state
+
+    cp_size = parallel_state.get_context_parallel_world_size()
+    if cp_size <= 1:
+        return local_num
+
+    device = "npu" if torch.npu.is_available() else "cpu"
+    local_num_tensor = torch.tensor([local_num], dtype=torch.int64, device=device)
+    all_nums = torch.empty(cp_size, dtype=torch.int64, device=device)
+    torch.distributed.all_gather_into_tensor(
+        all_nums,
+        local_num_tensor,
+        group=parallel_state.get_context_parallel_group(),
+    )
+    return all_nums.sum().item()
+
+
 def _custom_ops():
     global _CUSTOM_OPS
     if _CUSTOM_OPS is not None:
@@ -387,16 +406,7 @@ class SparseFlashMlaWithIndexerLossFunction(torch.autograd.Function):
         cp_size = parallel_state.get_context_parallel_world_size()
         if ctx.layout_q == 'TND':
             local_num = cu_seqlens_q[-1].item()
-            if cp_size > 1:
-                _dev = "npu" if torch.npu.is_available() else "cpu"
-                _local_t = torch.tensor([local_num], dtype=torch.int64, device=_dev)
-                _all_nums = torch.empty(cp_size, dtype=torch.int64, device=_dev)
-                # Use CP group to keep sizes consistent under TP>1.
-                _cp_group = parallel_state.get_context_parallel_group()
-                torch.distributed.all_gather_into_tensor(_all_nums, _local_t, group=_cp_group)
-                num_seqs = _all_nums.sum().item()
-            else:
-                num_seqs = local_num
+            num_seqs = gather_tnd_local_num(local_num)
         else:
             if cp_size > 1:
                 # DeepSeek4 only supports kvallgather CP, where each BSND op call processes one of two local chunks.
