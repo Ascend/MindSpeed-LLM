@@ -22,6 +22,12 @@ MODEL_TYPE_HF_CHOICES = [
 class CheckpointFeature(MindSpeedFeature):
     def __init__(self):
         super().__init__(feature_name="ckeckpoint", optimization_level=0)
+        # 018 Megatron removed the `weights_only=False` argument in `torch.load`.
+        # For PyTorch ≥ 2.6, `weights_only=True` is enabled by default, which prevents checkpoint loading.
+        # resolved by setting environment variable:
+        # unset TORCH_FORCE_WEIGHTS_ONLY_LOAD && export TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD=1
+        os.environ.pop("TORCH_FORCE_WEIGHTS_ONLY_LOAD", None)
+        os.environ["TORCH_FORCE_NO_WEIGHTS_ONLY_LOAD"] = "1"
 
     def register_args(self, parser: ArgumentParser):
         group = parser.add_argument_group(title=self.feature_name)

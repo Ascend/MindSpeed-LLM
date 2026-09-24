@@ -260,9 +260,6 @@ def add_functional_features(features_list: List[MindSpeedFeature]):
             ProfileFeature(),
             MsProbeFeature(),
             ModelIOTraceFeature(),
-            NPUDeterministicFeature(),
-            NPUDataDumpFeature(),
-            ProfilerDefaultFeature(),
         ]
     )
 
@@ -308,8 +305,19 @@ def add_qat_features(features_list: List[MindSpeedFeature]):
     )
 
 
+def add_megatron_adaptor_base_features(features_list: List[MindSpeedFeature]):
+    features_list.extend(
+        [
+            NPUDeterministicFeature(),
+            NPUDataDumpFeature(),
+            ProfilerDefaultFeature(),
+        ]
+    )
+
+
 def create_features_list():
     features_list = []
+    add_megatron_adaptor_base_features(features_list)
     add_megatron_basic_features(features_list)
     add_context_parallel_features(features_list)
     add_llm_features(features_list)
