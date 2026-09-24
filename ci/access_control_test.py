@@ -9,7 +9,7 @@ def read_files_from_txt(txt_file):
 
 
 def is_examples(file):
-    return file.startswith("examples/") or file.startswith("tests/poc/")
+    return file.startswith("examples/") or file.startswith("tests/poc/") or file.startswith("tests/mindspeed_llm/")
 
 
 def is_poc(file):

@@ -38,7 +38,8 @@ from mindspeed.features_manager import (
     MoEAlltoAllMC2Feature,
     PipelineModelParallelLayoutFeature,
     MoEFixRouterFeature,
-    DualpipeVFeature
+    DualpipeVFeature,
+    MoENpuFastOpsFeature,
 )
 from mindspeed.features_manager.feature import MindSpeedFeature
 from mindspeed.features_manager.features_manager import MindSpeedFeaturesManager
@@ -219,6 +220,7 @@ def add_moe_features(features_list: List[MindSpeedFeature]):
             MoEGmmFeature(),
             MoEAlltoAllMC2Feature(),
             MoEFixRouterFeature(),
+            MoENpuFastOpsFeature(),
             # LLM feature
             MoERouter(),
             MoETpExtendEpFeature(),

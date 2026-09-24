@@ -86,7 +86,7 @@ def model_provider(
         pg_collection (ProcessGroupCollection, optional): Process groups collection for parallel communication. Defaults to None.
 
     Returns:
-        Union[GPTModel, megatron.core.models.gpt.gpt_model]: The returned model
+        Union[GPTModel, megatron.core.models.gpt.gpt_model.GPTModel]: The returned model
     """
     args = get_args()
     use_te = args.transformer_impl == "transformer_engine"
@@ -273,6 +273,8 @@ def loss_func(loss_mask: torch.Tensor, output_tensor: torch.Tensor):
     # on loss[0] fixes this
     local_num_tokens = loss[1].clone().detach().to(torch.int)
     loss_dict = {'lm loss': reporting_loss} if _VERSION_018 else {'lm loss': (reporting_loss[0], reporting_loss[1])}
+    if _VERSION_018 and args.context_parallel_size > 1:
+        loss[0] = loss[0] * args.context_parallel_size
     return (
         loss[0].clone(),
         local_num_tokens,

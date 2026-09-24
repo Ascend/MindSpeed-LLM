@@ -6,25 +6,7 @@ import torch
 from megatron.core import parallel_state
 from megatron.core.tensor_parallel.mappings import gather_from_sequence_parallel_region
 
-_seq_chunk_ids_cache_for_reordering_before_attn = {}
 _seq_chunk_ids_cache_for_sharding = {}
-
-
-def get_seq_chunk_ids_for_reordering_before_attn(cp_size, device):
-    """
-    Context parallelism assigns two discontiguous sequence chunks to each NPU for load balancing.
-    To make sure tokens are ordered correctly for compute, we need to reorder sequence chunks to
-    be contigupus before attention compute. This function is to compute sequence chunk ids for
-    reordering.
-    """
-    global _seq_chunk_ids_cache_for_reordering_before_attn
-    if (cp_size, device) not in _seq_chunk_ids_cache_for_reordering_before_attn:
-        chunk_ids = torch.empty(2 * cp_size, dtype=torch.int32, device=device)
-        for rank in range(cp_size):
-            chunk_ids[rank] = 2 * rank
-            chunk_ids[rank + cp_size] = 2 * cp_size - 2 * rank - 1
-        _seq_chunk_ids_cache_for_reordering_before_attn[(cp_size, device)] = chunk_ids
-    return _seq_chunk_ids_cache_for_reordering_before_attn[(cp_size, device)]
 
 
 def get_seq_chunk_ids_on_for_sharding(cp_size, device):
@@ -58,6 +40,8 @@ def permute_cp_shard(t: torch.Tensor, reorder=True) -> torch.Tensor:
     # [s, ...] -> [2 * cp, s // (cp * 2), ...]
     t = t.view(2 * cp_size, -1, *t.shape[1:])
     if reorder:
+        from transformer_engine.pytorch.attention.dot_product_attention.kvallgather_context_parallel import \
+            get_seq_chunk_ids_for_reordering_before_attn
         chunk_ids = get_seq_chunk_ids_for_reordering_before_attn(cp_size, t.device)
     else:
         chunk_ids = get_seq_chunk_ids_on_for_sharding(cp_size, t.device)

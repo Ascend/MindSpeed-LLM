@@ -12,6 +12,13 @@ from megatron.training import get_args
 from megatron.core import parallel_state
 from megatron.core.models.common.embeddings.rotary_pos_embedding import _rotate_half, get_pos_emb_on_this_cp_rank
 from mindspeed.ops.npu_rotary_position_embedding import npu_rotary_position_embedding
+from mindspeed.core.models.common.embeddings.rotary_pos_embedding import (
+    _get_pos_emb_on_this_cp_rank_in_ulysses_cp,
+    _get_pos_emb_on_this_tp_y_cp_rank_in_megatron_cp,
+    _get_pos_emb_on_this_cp_rank_in_megatron_cp,
+    _get_pos_emb_on_this_tp_y_cp_rank_in_ulysses_cp,
+    _get_pos_emb_on_this_cp_rank_in_hybrid_cp_general,
+    _get_pos_emb_on_this_cp_rank_in_hybrid_cp)
 from mindspeed_llm.tasks.common.yarn_rope import YarnRotaryPositionEmbedding
 from mindspeed.utils import get_position_ids
 
@@ -389,3 +396,36 @@ def apply_deepseek4_rotary_embedding(dim, seqlen, original_seq_len, base, factor
     freqs_cis = torch.polar(torch.ones_like(freqs), freqs)
 
     return freqs_cis
+
+
+def get_pos_emb_on_this_cp_rank(pos_emb, seq_dim):
+    args = get_args()
+
+    cp_expanded_by_2d_tp = args.tp_y > 1
+    if args.context_parallel_algo == 'megatron_cp_algo':
+        if args.attention_mask_type == 'general':
+            pos_emb = _get_pos_emb_on_this_cp_rank_in_ulysses_cp(pos_emb, seq_dim)
+        elif cp_expanded_by_2d_tp:
+            pos_emb = _get_pos_emb_on_this_tp_y_cp_rank_in_megatron_cp(pos_emb, seq_dim)
+        elif args.reset_position_ids and args.attention_mask_type == 'causal':
+            return pos_emb
+        else:
+            pos_emb = _get_pos_emb_on_this_cp_rank_in_megatron_cp(pos_emb, seq_dim)
+    elif args.context_parallel_algo == 'ulysses_cp_algo':
+        if cp_expanded_by_2d_tp:
+            pos_emb = _get_pos_emb_on_this_tp_y_cp_rank_in_ulysses_cp(pos_emb, seq_dim)
+        else:
+            pos_emb = _get_pos_emb_on_this_cp_rank_in_ulysses_cp(pos_emb, seq_dim)
+    elif args.context_parallel_algo == 'deepseek_v4_cp_algo':
+        pos_emb = _get_pos_emb_on_this_cp_rank_in_ulysses_cp(pos_emb, seq_dim)
+    elif args.context_parallel_algo == 'hybrid_cp_algo':
+        if args.attention_mask_type == 'general':
+            pos_emb = _get_pos_emb_on_this_cp_rank_in_hybrid_cp_general(pos_emb, seq_dim)
+        else:
+            pos_emb = _get_pos_emb_on_this_cp_rank_in_hybrid_cp(pos_emb, seq_dim)
+    elif args.context_parallel_algo == 'kvallgather_cp_algo':
+        if args.reset_position_ids:
+            pos_emb = _get_pos_emb_on_this_cp_rank_in_ulysses_cp(pos_emb, seq_dim)
+        else:
+            pos_emb = _get_pos_emb_on_this_cp_rank_in_megatron_cp(pos_emb, seq_dim)
+    return pos_emb
