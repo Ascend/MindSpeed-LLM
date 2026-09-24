@@ -3,8 +3,9 @@
 from typing import Optional, Union
 
 import torch
+
 try:
-    import torch_npu
+    import torch_npu  # noqa: F401
 except ImportError:
     pass
 import transformers
@@ -13,9 +14,9 @@ from transformers.modeling_outputs import BaseModelOutputWithPast, CausalLMOutpu
 from transformers.utils import can_return_tuple
 
 from mindspeed.patch_utils import MindSpeedPatchesManager as pm
-from mindspeed_llm.fsdp2.models.common.fusions import apply_rotary_pos_emb, \
-    fused_rmsnorm_forward
+from mindspeed_llm.fsdp2.models.common.fusions import apply_rotary_pos_emb, fused_rmsnorm_forward
 from mindspeed_llm.fsdp2.models.common.modules import LMHead
+from mindspeed_llm.fsdp2.utils.global_vars import get_args
 
 
 class Qwen3ForCausalLM(transformers.Qwen3PreTrainedModel):
@@ -35,18 +36,18 @@ class Qwen3ForCausalLM(transformers.Qwen3PreTrainedModel):
 
     @can_return_tuple
     def forward(
-            self,
-            input_ids: Optional[torch.LongTensor] = None,
-            attention_mask: Optional[torch.Tensor] = None,
-            position_ids: Optional[torch.LongTensor] = None,
-            past_key_values: Optional[Cache] = None,
-            inputs_embeds: Optional[torch.FloatTensor] = None,
-            labels: Optional[torch.LongTensor] = None,
-            use_cache: Optional[bool] = None,
-            cache_position: Optional[torch.LongTensor] = None,
-            logits_to_keep: Union[int, torch.Tensor] = 0,
-            loss_ctx: Optional[callable] = None,
-            **kwargs,
+        self,
+        input_ids: Optional[torch.LongTensor] = None,
+        attention_mask: Optional[torch.Tensor] = None,
+        position_ids: Optional[torch.LongTensor] = None,
+        past_key_values: Optional[Cache] = None,
+        inputs_embeds: Optional[torch.FloatTensor] = None,
+        labels: Optional[torch.LongTensor] = None,
+        use_cache: Optional[bool] = None,
+        cache_position: Optional[torch.LongTensor] = None,
+        logits_to_keep: Union[int, torch.Tensor] = 0,
+        loss_ctx: Optional[callable] = None,
+        **kwargs,
     ) -> CausalLMOutputWithPast:
         r"""
         labels (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):
@@ -69,7 +70,8 @@ class Qwen3ForCausalLM(transformers.Qwen3PreTrainedModel):
         >>> generate_ids = model.generate(inputs.input_ids, max_length=30)
         >>> tokenizer.batch_decode(generate_ids, skip_special_tokens=True, clean_up_tokenization_spaces=False)[0]
         "Hey, are you conscious? Can you talk to me?\nI'm not conscious, but I can talk to you."
-        ```"""
+        ```
+        """
         outputs: BaseModelOutputWithPast = self.model(
             input_ids=input_ids,
             attention_mask=attention_mask,
@@ -105,11 +107,10 @@ class Qwen3ForCausalLM(transformers.Qwen3PreTrainedModel):
     @staticmethod
     def register_patches(config):
         """patching the transformers model."""
-        if getattr(config, "use_fused_rmsnorm", False):
-            pm.register_patch("transformers.models.qwen3.modeling_qwen3.Qwen3RMSNorm.forward",
-                              fused_rmsnorm_forward)
-        if getattr(config, "use_fused_rotary_pos_emb", False):
-            pm.register_patch("transformers.models.qwen3.modeling_qwen3.apply_rotary_pos_emb",
-                              apply_rotary_pos_emb)
+        args = get_args()
+        if getattr(args, "use_fused_rmsnorm", False):
+            pm.register_patch("transformers.models.qwen3.modeling_qwen3.Qwen3RMSNorm.forward", fused_rmsnorm_forward)
+        if getattr(args, "use_fused_rotary_pos_emb", False):
+            pm.register_patch("transformers.models.qwen3.modeling_qwen3.apply_rotary_pos_emb", apply_rotary_pos_emb)
 
         pm.apply_patches()
