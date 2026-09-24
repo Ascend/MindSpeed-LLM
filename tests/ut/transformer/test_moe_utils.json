@@ -1,0 +1,22 @@
+{
+    "test_track_moe_metrics_gating": [
+        {
+            "label": "skips_for_none_without_seq_aux",
+            "load_balancing_type": "none",
+            "seq_aux": false,
+            "expected_called": false
+        },
+        {
+            "label": "runs_for_aux_loss",
+            "load_balancing_type": "aux_loss",
+            "seq_aux": false,
+            "expected_called": true
+        },
+        {
+            "label": "runs_for_none_with_seq_aux",
+            "load_balancing_type": "none",
+            "seq_aux": true,
+            "expected_called": true
+        }
+    ]
+}

@@ -1,0 +1,187 @@
+{
+    "test_recompute_decision": [
+        {
+            "label": "recompute_disabled",
+            "arg_overrides": {
+                "recompute_activation_function": false
+            },
+            "layer_number": 1,
+            "vpp_rank": null,
+            "expected": false
+        },
+        {
+            "label": "layer_number_none",
+            "arg_overrides": {},
+            "layer_number": null,
+            "vpp_rank": null,
+            "expected": false
+        },
+        {
+            "label": "activation_default_true",
+            "arg_overrides": {
+                "recompute_num_layers": null,
+                "recompute_activation_function_num_layers": null
+            },
+            "layer_number": 3,
+            "vpp_rank": null,
+            "expected": true
+        },
+        {
+            "label": "within_activation_cap",
+            "arg_overrides": {
+                "recompute_num_layers": null,
+                "recompute_activation_function_num_layers": 2
+            },
+            "layer_number": 2,
+            "vpp_rank": null,
+            "expected": true
+        },
+        {
+            "label": "outside_activation_cap",
+            "arg_overrides": {
+                "recompute_num_layers": null,
+                "recompute_activation_function_num_layers": 2
+            },
+            "layer_number": 5,
+            "vpp_rank": null,
+            "expected": false
+        },
+        {
+            "label": "full_recompute_priority",
+            "arg_overrides": {
+                "recompute_num_layers": 2,
+                "recompute_activation_function_num_layers": null
+            },
+            "layer_number": 1,
+            "vpp_rank": null,
+            "expected": false
+        },
+        {
+            "label": "full_then_activation_default",
+            "arg_overrides": {
+                "recompute_num_layers": 2,
+                "recompute_activation_function_num_layers": null
+            },
+            "layer_number": 4,
+            "vpp_rank": null,
+            "expected": true
+        },
+        {
+            "label": "full_plus_activation_window_true",
+            "arg_overrides": {
+                "recompute_num_layers": 2,
+                "recompute_activation_function_num_layers": 2
+            },
+            "layer_number": 4,
+            "vpp_rank": null,
+            "expected": true
+        },
+        {
+            "label": "full_plus_activation_window_false",
+            "arg_overrides": {
+                "recompute_num_layers": 2,
+                "recompute_activation_function_num_layers": 2
+            },
+            "layer_number": 6,
+            "vpp_rank": null,
+            "expected": false
+        },
+        {
+            "label": "layer_per_chunk_vpp",
+            "arg_overrides": {
+                "virtual_pipeline_model_parallel_size": 2,
+                "num_layers_per_virtual_pipeline_stage": 2,
+                "enable_recompute_layers_per_pp_rank": true,
+                "recompute_num_layers": null,
+                "recompute_activation_function_num_layers": null
+            },
+            "layer_number": 3,
+            "vpp_rank": 0,
+            "expected": true
+        },
+        {
+            "label": "layer_per_chunk_pp",
+            "arg_overrides": {
+                "transformer_pipeline_model_parallel_size": 2,
+                "num_layers": 8,
+                "recompute_num_layers": null,
+                "recompute_activation_function_num_layers": null
+            },
+            "layer_number": 3,
+            "vpp_rank": null,
+            "expected": true
+        },
+        {
+            "label": "layer_per_chunk_default",
+            "arg_overrides": {
+                "recompute_num_layers": null,
+                "recompute_activation_function_num_layers": 0
+            },
+            "layer_number": 1,
+            "vpp_rank": null,
+            "expected": false
+        }
+    ],
+    "test_core_mlp_init": [
+        {
+            "label": "dense",
+            "geglu": false,
+            "gelu_tanh": false,
+            "tp_2d": false,
+            "gated_linear_unit": false,
+            "shared_expert": false,
+            "input_size": null,
+            "expected_input_size": 64
+        },
+        {
+            "label": "geglu",
+            "geglu": true,
+            "gelu_tanh": false,
+            "tp_2d": false,
+            "gated_linear_unit": false,
+            "shared_expert": false,
+            "input_size": null,
+            "expected_input_size": 64
+        },
+        {
+            "label": "gelu_tanh",
+            "geglu": false,
+            "gelu_tanh": true,
+            "tp_2d": false,
+            "gated_linear_unit": false,
+            "shared_expert": false,
+            "input_size": null,
+            "expected_input_size": 64
+        },
+        {
+            "label": "shared_expert",
+            "geglu": false,
+            "gelu_tanh": false,
+            "tp_2d": false,
+            "gated_linear_unit": false,
+            "shared_expert": true,
+            "input_size": null,
+            "expected_input_size": 64
+        },
+        {
+            "label": "input_size",
+            "geglu": false,
+            "gelu_tanh": false,
+            "tp_2d": false,
+            "gated_linear_unit": false,
+            "shared_expert": false,
+            "input_size": 256,
+            "expected_input_size": 256
+        },
+        {
+            "label": "tp_2d",
+            "geglu": false,
+            "gelu_tanh": false,
+            "tp_2d": true,
+            "gated_linear_unit": true,
+            "shared_expert": false,
+            "input_size": null,
+            "expected_input_size": 64
+        }
+    ]
+}

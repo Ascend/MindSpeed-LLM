@@ -1,0 +1,58 @@
+{
+    "base_args": [
+        {
+            "args": {
+                "use_flash_attn": true,
+                "pre_tockens": 65536,
+                "mtp_num_layers": 0,
+                "use_nd_matmul": false,
+                "ampipe_degree": 0,
+                "position_embedding_type": "alibi",
+                "square_alibi_mask": true,
+                "fill_neg_inf": true
+            }
+        }
+    ],
+    "base_config": [
+        {
+            "config": {
+                "num_layers": 2,
+                "use_cpu_initialization": true,
+                "context_parallel_size": 1,
+                "bf16": true
+            }
+        }
+    ],
+    "test_construct_builds_alibi_bias": [
+        {
+            "label": "default",
+            "build_param": {
+                "n_head": 8,
+                "dim": 128,
+                "seq": 16
+            }
+        }
+    ],
+    "test_forward_shape": [
+        {
+            "label": "baseline",
+            "build_param": {"n_head": 8, "dim": 128, "seq": 16},
+            "bsz": 2
+        },
+        {
+            "label": "more_heads",
+            "build_param": {"n_head": 16, "dim": 128, "seq": 16},
+            "bsz": 2
+        },
+        {
+            "label": "smaller_head_dim",
+            "build_param": {"n_head": 8, "dim": 64, "seq": 16},
+            "bsz": 2
+        },
+        {
+            "label": "longer_seq_larger_batch",
+            "build_param": {"n_head": 8, "dim": 128, "seq": 32},
+            "bsz": 4
+        }
+    ]
+}

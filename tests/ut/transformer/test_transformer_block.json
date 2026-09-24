@@ -1,0 +1,64 @@
+{
+    "test_num_layers_to_build": [
+        {
+            "label": "single_stage",
+            "num_layers": 8,
+            "num_layer_list": null,
+            "pp_size": 1,
+            "vpp_size": null,
+            "pp_rank": 0,
+            "expected": 8
+        },
+        {
+            "label": "pipeline_split",
+            "num_layers": 8,
+            "num_layer_list": null,
+            "pp_size": 2,
+            "vpp_size": null,
+            "pp_rank": 0,
+            "expected": 4
+        },
+        {
+            "label": "vpp_four",
+            "num_layers": 8,
+            "num_layer_list": null,
+            "pp_size": 2,
+            "vpp_size": 4,
+            "pp_rank": 0,
+            "expected": 1
+        },
+        {
+            "label": "vpp_two",
+            "num_layers": 8,
+            "num_layer_list": null,
+            "pp_size": 2,
+            "vpp_size": 2,
+            "pp_rank": 0,
+            "expected": 2
+        },
+        {
+            "label": "explicit_stage_zero",
+            "num_layers": 8,
+            "num_layer_list": [
+                3,
+                5
+            ],
+            "pp_size": 2,
+            "vpp_size": null,
+            "pp_rank": 0,
+            "expected": 3
+        },
+        {
+            "label": "explicit_stage_one",
+            "num_layers": 8,
+            "num_layer_list": [
+                3,
+                5
+            ],
+            "pp_size": 2,
+            "vpp_size": null,
+            "pp_rank": 1,
+            "expected": 5
+        }
+    ]
+}

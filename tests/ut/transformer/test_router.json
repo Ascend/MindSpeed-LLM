@@ -1,0 +1,21 @@
+{
+    "test_score_function_saves_loss": [
+        {
+            "score_function": "softmax",
+            "expert_bias": null
+        },
+        {
+            "score_function": "sigmoid",
+            "expert_bias": [
+                0,
+                0,
+                0,
+                0
+            ]
+        },
+        {
+            "score_function": "sqrtsoftplus",
+            "expert_bias": null
+        }
+    ]
+}

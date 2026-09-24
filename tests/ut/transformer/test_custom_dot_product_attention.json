@@ -1,0 +1,40 @@
+{
+    "base_args": [
+        {
+            "args": {
+                "use_flash_attn": true,
+                "pre_tockens": 65536,
+                "mtp_num_layers": 0,
+                "use_nd_matmul": false,
+                "ampipe_degree": 0
+            }
+        }
+    ],
+    "base_config": [
+        {
+            "config": {
+                "num_layers": 2,
+                "use_cpu_initialization": true,
+                "context_parallel_size": 1,
+                "bf16": true
+            }
+        }
+    ],
+    "test_forward_arg_variants": [
+        {
+            "label": "bnsd_shape_order",
+            "arg_overrides": {"shape_order": "BNSD"},
+            "config_extra": {}
+        },
+        {
+            "label": "query_key_layer_scaling",
+            "arg_overrides": {},
+            "config_extra": {"apply_query_key_layer_scaling": true}
+        },
+        {
+            "label": "query_pre_attn_scalar",
+            "arg_overrides": {"query_pre_attn_scalar": 64},
+            "config_extra": {}
+        }
+    ]
+}

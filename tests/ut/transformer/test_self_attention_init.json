@@ -1,0 +1,34 @@
+{
+    "base_args": [
+        {
+            "args": {
+                "use_flash_attn": true,
+                "use_nd_matmul": false,
+                "ampipe_degree": 0
+            }
+        }
+    ],
+    "base_config": [
+        {
+            "config": {
+                "num_layers": 2,
+                "use_cpu_initialization": true,
+                "context_parallel_size": 1,
+                "bf16": true,
+                "add_bias_linear": false
+            }
+        }
+    ],
+    "test_linear_qkv_construction": [
+        {
+            "label": "linear_qkv_enabled",
+            "build_param": {"n_head": 8, "dim": 128, "no_enable_linear_qkv": false},
+            "expected_qkv": true
+        },
+        {
+            "label": "linear_qkv_disabled",
+            "build_param": {"n_head": 8, "dim": 128, "no_enable_linear_qkv": true},
+            "expected_qkv": false
+        }
+    ]
+}

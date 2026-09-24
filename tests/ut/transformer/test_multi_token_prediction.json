@@ -1,0 +1,49 @@
+{
+    "test_get_mtp_num_layers_to_build": [
+        {
+            "label": "last_stage_builds_mtp_layers",
+            "is_last_stage": true,
+            "is_first_stage": false,
+            "schedules_method": "1f1b",
+            "dualpipev_first_chunk": false,
+            "mtp_num_layers": 3,
+            "expected": 3
+        },
+        {
+            "label": "last_stage_zero_when_no_mtp_layers",
+            "is_last_stage": true,
+            "is_first_stage": false,
+            "schedules_method": "1f1b",
+            "dualpipev_first_chunk": false,
+            "mtp_num_layers": 0,
+            "expected": 0
+        },
+        {
+            "label": "non_last_stage_builds_nothing",
+            "is_last_stage": false,
+            "is_first_stage": false,
+            "schedules_method": "1f1b",
+            "dualpipev_first_chunk": false,
+            "mtp_num_layers": 3,
+            "expected": 0
+        },
+        {
+            "label": "dualpipev_first_stage_builds_mtp_layers",
+            "is_last_stage": false,
+            "is_first_stage": true,
+            "schedules_method": "dualpipev",
+            "dualpipev_first_chunk": false,
+            "mtp_num_layers": 2,
+            "expected": 2
+        },
+        {
+            "label": "dualpipev_first_chunk_builds_nothing",
+            "is_last_stage": false,
+            "is_first_stage": true,
+            "schedules_method": "dualpipev",
+            "dualpipev_first_chunk": true,
+            "mtp_num_layers": 2,
+            "expected": 0
+        }
+    ]
+}

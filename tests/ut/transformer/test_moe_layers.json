@@ -1,0 +1,36 @@
+{
+    "se_linear_config": [
+        {
+            "config": {
+                "num_layers": 2,
+                "hidden_size": 64,
+                "num_attention_heads": 8,
+                "use_cpu_initialization": true,
+                "context_parallel_size": 1,
+                "bf16": true,
+                "add_bias_linear": false,
+                "sequence_parallel": false,
+                "gradient_accumulation_fusion": false
+            }
+        }
+    ],
+    "lora_moe_config": [
+        {
+            "config": {
+                "num_layers": 2,
+                "hidden_size": 64,
+                "num_attention_heads": 4,
+                "num_query_groups": 4,
+                "kv_channels": 16,
+                "use_cpu_initialization": true,
+                "context_parallel_size": 1,
+                "bf16": true,
+                "add_bias_linear": false,
+                "num_moe_experts": 4,
+                "moe_router_topk": 2,
+                "moe_grouped_gemm": false,
+                "moe_token_dispatcher_type": "alltoall"
+            }
+        }
+    ]
+}

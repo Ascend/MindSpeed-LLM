@@ -1,0 +1,74 @@
+{
+    "test_post_init_wrapper": [
+        {
+            "label": "apply_rope_fusion_forced_false_then_restored",
+            "overrides": {"apply_rope_fusion": true},
+            "args_fields": {},
+            "seen_checks": {"apply_rope_fusion": false},
+            "cfg_checks": {"apply_rope_fusion": true}
+        },
+        {
+            "label": "topk1_softmax_forces_pre_softmax",
+            "overrides": {"moe_router_topk": 1, "moe_router_score_function": "softmax", "moe_router_pre_softmax": false, "moe_router_load_balancing_type": "aux_loss"},
+            "args_fields": {},
+            "seen_checks": {"moe_router_pre_softmax": true},
+            "cfg_checks": {"moe_router_pre_softmax": false}
+        },
+        {
+            "label": "topk1_sinkhorn_does_not_force_pre_softmax",
+            "overrides": {"moe_router_topk": 1, "moe_router_score_function": "softmax", "moe_router_pre_softmax": false, "moe_router_load_balancing_type": "sinkhorn"},
+            "args_fields": {},
+            "seen_checks": {"moe_router_pre_softmax": false},
+            "cfg_checks": {}
+        },
+        {
+            "label": "variable_seq_lengths_disabled_with_dispatcher",
+            "overrides": {"moe_token_dispatcher_type": "alltoall", "variable_seq_lengths": true},
+            "args_fields": {},
+            "seen_checks": {"variable_seq_lengths": false},
+            "cfg_checks": {"variable_seq_lengths": true}
+        },
+        {
+            "label": "add_bias_linear_disabled_with_experts",
+            "overrides": {"num_moe_experts": 8, "add_bias_linear": true},
+            "args_fields": {},
+            "seen_checks": {"add_bias_linear": false},
+            "cfg_checks": {"add_bias_linear": true}
+        },
+        {
+            "label": "gelu_forces_gated_linear_unit_then_restored",
+            "overrides": {"activation_func": "gelu", "gated_linear_unit": false, "add_bias_linear": false, "num_moe_experts": null},
+            "args_fields": {},
+            "seen_checks": {"gated_linear_unit": true},
+            "cfg_checks": {"gated_linear_unit": false}
+        },
+        {
+            "label": "expert_bias_forces_sigmoid_then_restored",
+            "overrides": {"moe_router_enable_expert_bias": true, "moe_router_score_function": "softmax"},
+            "args_fields": {},
+            "seen_checks": {"moe_router_score_function": "sigmoid"},
+            "cfg_checks": {"moe_router_score_function": "softmax"}
+        },
+        {
+            "label": "missing_args_fields_merged_onto_config",
+            "overrides": {},
+            "args_fields": {"custom_flag": 123, "another_field": "hello"},
+            "seen_checks": {},
+            "cfg_checks": {"custom_flag": 123, "another_field": "hello"}
+        },
+        {
+            "label": "existing_attrs_not_overwritten_by_args",
+            "overrides": {"apply_rope_fusion": true},
+            "args_fields": {"apply_rope_fusion": false},
+            "seen_checks": {},
+            "cfg_checks": {"apply_rope_fusion": true}
+        },
+        {
+            "label": "default_config_leaves_fields_untouched",
+            "overrides": {"moe_router_topk": 2, "moe_token_dispatcher_type": null, "num_moe_experts": null, "activation_func": "silu", "moe_router_enable_expert_bias": false},
+            "args_fields": {},
+            "seen_checks": {"moe_router_pre_softmax": false, "variable_seq_lengths": false, "add_bias_linear": false, "gated_linear_unit": false, "moe_router_score_function": "softmax"},
+            "cfg_checks": {}
+        }
+    ]
+}
