@@ -381,15 +381,15 @@ class SparseFlashMlaWithIndexerLossFunction(torch.autograd.Function):
         # ori/cmp_softmax_l1 are the attn_softmax_out for the kl_div side loss
         grad_scale = SparseFlashMlaWithIndexerLossFunction.indexer_grad_scale
         if grad_scale is None:
-            SparseFlashMlaWithIndexerLossFunction.set_loss_scale(torch.tensor(1.0))
-            grad_scale = SparseFlashMlaWithIndexerLossFunction.indexer_grad_scale
+            grad_scale = torch.ones(1, device=query_index.device)
         if ctx.layout_q == 'TND':
             num_seqs = query_index.shape[0]
         else:
             num_seqs = ctx.B * ctx.S1
-        d_query_index = d_query_index * grad_scale / num_seqs
-        d_key_index = d_key_index * grad_scale / num_seqs
-        d_weights = d_weights * grad_scale / num_seqs
+        indexer_scale = grad_scale * ctx.loss_coeff / num_seqs
+        d_query_index = d_query_index * indexer_scale
+        d_key_index = d_key_index * indexer_scale
+        d_weights = d_weights * indexer_scale
         loss = _compute_indexer_loss(
             F.normalize(cmp_softmax_l1, p=1, dim=-1),
             softmax_out,

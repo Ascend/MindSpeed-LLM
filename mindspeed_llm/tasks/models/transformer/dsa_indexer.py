@@ -646,11 +646,17 @@ def forward_step_dsa_wrapper(fn):
                 if config.grad_scale_func is not None
                 else torch.ones(1, device=output_tensor_device)
             )
-            # Set the loss scale
             if config.calculate_per_token_loss:
-                DSAIndexerLossAutoScaler.set_loss_scale(loss_scale)
+                indexer_loss_scale = loss_scale
             else:
-                DSAIndexerLossAutoScaler.set_loss_scale(loss_scale / num_microbatches)
+                indexer_loss_scale = loss_scale / num_microbatches
+            DSAIndexerLossAutoScaler.set_loss_scale(indexer_loss_scale)
+            if global_args.use_fused_lightning_indexer_loss:
+                from mindspeed_llm.ops.npu_sparse_flash_mla_with_indexer_loss import (
+                    SparseFlashMlaWithIndexerLossFunction,
+                )
+
+                SparseFlashMlaWithIndexerLossFunction.set_loss_scale(indexer_loss_scale)
         return output_tensor, num_tokens
 
     return wrapper
