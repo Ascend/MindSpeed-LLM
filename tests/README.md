@@ -98,7 +98,7 @@ CI门禁用例看护仓库重点模型和基本特性，覆盖冒烟测试场景
         <td>Y</td>
     </tr>
     <tr>
-        <td rowspan="4">UT</td>
+        <td rowspan="6">UT</td>
         <td>Inference</td>
         <td>greedy_search</td>
         <td><a href="ut/inference/test_inference.py">test_inference.py</a></td>
@@ -130,7 +130,21 @@ CI门禁用例看护仓库重点模型和基本特性，覆盖冒烟测试场景
         <td></td>
         <td></td>
     </tr>
-
+    <tr>
+        <td rowspan="2">FSDP2</td>
+        <td>parallel_engine_config</td>
+        <td><a href="ut/fsdp2/test_parallel_engine_config.py">test_parallel_engine_config.py</a></td>
+        <td>Y</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>clip_grad_norm</td>
+        <td><a href="ut/fsdp2/test_clip_grad_norm.py">test_clip_grad_norm.py</a></td>
+        <td>Y</td>
+        <td></td>
+        <td></td>
+    </tr>
 </table>
 
 ## Pipeline看护列表

@@ -1,0 +1,84 @@
+{
+    "test_parallel_engine_config": [
+        {
+            "params": {
+                "expected": {
+                    "ignored_modules": [],
+                    "colwise_parallel": [],
+                    "rowwise_parallel": [],
+                    "sequence_parallel": [],
+                    "apply_modules": [],
+                    "apply_efsdp_modules": [],
+                    "gradient_divide_factor": 1
+                }
+            }
+        },
+        {
+            "params": {
+                "fully_shard_parallel_size": 2,
+                "tensor_parallel_size": 2,
+                "fsdp_plan": {
+                    "ignored_modules": [
+                        "shared.module"
+                    ]
+                },
+                "tp_plan": {
+                    "colwise_parallel": [
+                        "*.q_proj"
+                    ],
+                    "rowwise_parallel": [
+                        "*.o_proj"
+                    ]
+                },
+                "expected": {
+                    "ignored_modules": [
+                        "shared.module",
+                        "*.q_proj",
+                        "*.o_proj"
+                    ],
+                    "colwise_parallel": [
+                        "*.q_proj"
+                    ],
+                    "rowwise_parallel": [
+                        "*.o_proj"
+                    ],
+                    "sequence_parallel": [],
+                    "apply_modules": [],
+                    "apply_efsdp_modules": [],
+                    "gradient_divide_factor": 1
+                }
+            }
+        },
+        {
+            "params": {
+                "expert_parallel_size": 2,
+                "expert_fully_shard_parallel_size": 2,
+                "expert_data_parallel_size": 3,
+                "context_parallel_type": "ring",
+                "ep_plan": {
+                    "apply_modules": [
+                        "model.layers.*.mlp.experts"
+                    ]
+                },
+                "expected": {
+                    "ignored_modules": [],
+                    "colwise_parallel": [],
+                    "rowwise_parallel": [],
+                    "sequence_parallel": [],
+                    "apply_modules": [
+                        "model.layers.*.mlp.experts"
+                    ],
+                    "apply_efsdp_modules": [
+                        "model.layers.*.mlp"
+                    ],
+                    "gradient_divide_factor": 1
+                }
+            }
+        }
+    ],
+    "test_invalid_context_parallel_type": [
+        {
+            "context_parallel_type": "invalid"
+        }
+    ]
+}

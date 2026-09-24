@@ -1,0 +1,120 @@
+{
+    "test_clip_grad_norm": [
+        {
+            "params": {
+                "gradients": [
+                    [
+                        3.0,
+                        4.0
+                    ],
+                    [
+                        0.0,
+                        12.0
+                    ]
+                ],
+                "max_norm": 5.0,
+                "expected_total_norm": 13.0,
+                "expected_gradients": [
+                    [
+                        1.1538461538461537,
+                        1.5384615384615385
+                    ],
+                    [
+                        0.0,
+                        4.615384615384615
+                    ]
+                ]
+            }
+        },
+        {
+            "params": {
+                "gradients": [
+                    [
+                        2.0,
+                        -4.0
+                    ],
+                    [
+                        8.0,
+                        1.0
+                    ]
+                ],
+                "max_norm": 4.0,
+                "norm_type": "inf",
+                "expected_total_norm": 8.0,
+                "expected_gradients": [
+                    [
+                        1.0,
+                        -2.0
+                    ],
+                    [
+                        4.0,
+                        0.5
+                    ]
+                ]
+            }
+        }
+    ],
+    "test_clip_grad_norm_wrapper": [
+        {
+            "params": {
+                "gradient": [
+                    6.0,
+                    8.0
+                ],
+                "max_norm": 5.0,
+                "expected_total_norm": 10.0,
+                "expected_gradient": [
+                    3.0,
+                    4.0
+                ]
+            }
+        }
+    ],
+    "test_ep_fsdp2_clip_grad_norm": [
+        {
+            "params": {
+                "ep_gradient": [
+                    3.0,
+                    4.0
+                ],
+                "non_ep_gradient": [
+                    0.0,
+                    12.0
+                ],
+                "max_norm": 5.0,
+                "expected_total_norm": 13.0,
+                "expected_ep_gradient": [
+                    1.1538461538461537,
+                    1.5384615384615385
+                ],
+                "expected_non_ep_gradient": [
+                    0.0,
+                    4.615384615384615
+                ]
+            }
+        },
+        {
+            "params": {
+                "ep_gradient": [
+                    2.0,
+                    -4.0
+                ],
+                "non_ep_gradient": [
+                    8.0,
+                    1.0
+                ],
+                "max_norm": 4.0,
+                "norm_type": "inf",
+                "expected_total_norm": 8.0,
+                "expected_ep_gradient": [
+                    1.0,
+                    -2.0
+                ],
+                "expected_non_ep_gradient": [
+                    4.0,
+                    0.5
+                ]
+            }
+        }
+    ]
+}
