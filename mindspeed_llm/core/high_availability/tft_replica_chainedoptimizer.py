@@ -24,8 +24,7 @@ class TTPReplicaChainedOptimizer(ChainedOptimizer):
     def load_state_dict_memory(self, state_dict):
         if len(self.chained_optimizers) != len(state_dict):
             raise RuntimeError(
-                f'Expected {len(self.chained_optimizers)} entries'
-                f' in state dict, but got {len(state_dict)}.'
+                f'Expected {len(self.chained_optimizers)} entries in state dict, but got {len(state_dict)}.'
             )
         if isinstance(state_dict, dict):
             state_dict = (v for k, v in sorted(state_dict.items()))
@@ -81,7 +80,11 @@ class TTPReplicaChainedOptimizer(ChainedOptimizer):
                     raise RuntimeError(f"optim index {optimizer_idx} is not update success, please check.")
                 if not len(optimizer.model_chunks) == 1:
                     raise RuntimeError(f"optim index {optimizer_idx} model chunks len not eq 1, please check.")
-                optimizer.model_chunks[0].start_param_sync(force_dispatch=True)
+                sync_group = getattr(optimizer, "is_moe_param", None)
+                if sync_group in ("dense", "moe"):
+                    optimizer.model_chunks[0].start_param_sync(force_dispatch=True, dense_or_moe_group=sync_group)
+                else:
+                    optimizer.model_chunks[0].start_param_sync(force_dispatch=True)
 
         return success
 
@@ -109,9 +112,7 @@ class TTPReplicaChainedOptimizer(ChainedOptimizer):
         # Count the zeros in the grads.
         num_zeros_in_grad = 0
         for optimizer in self.chained_optimizers:
-            num_zeros_in_grad += (
-                optimizer.count_zeros() if optimizer.config.log_num_zeros_in_grad else 0
-            )
+            num_zeros_in_grad += optimizer.count_zeros() if optimizer.config.log_num_zeros_in_grad else 0
         set_log_args(grad_norm, num_zeros_in_grad)
 
         update_successful = self.step_with_ready_grads()
@@ -143,6 +144,7 @@ class TTPReplicaChainedOptimizer(ChainedOptimizer):
         if save_states:
             if check_mindio_acp_available():
                 import mindio_acp
+
                 mindio_acp.save(states, filename)
             else:
                 torch.save(states, filename)

@@ -16,28 +16,30 @@ from megatron.core.transformer.module import MegatronModule
 from megatron.training import get_args
 from mindspeed_llm.tasks.high_availability.high_availability_helper import check_mindio_acp_available
 
-ttp_logger = getLogger(__name__)
 from mindio_ttp.framework_ttp import tft_start_updating_os, tft_end_updating_os
 from .tft_optimizer_data_repair import set_log_args
 from mindio_ttp.utils import tft_set_update_start_time, tft_set_update_end_time
 from .utils import FileUtils
 from .elastic_training_common import update_scale_in_flag, zit_scale_in_running_state
 
+ttp_logger = getLogger(__name__)
+
 
 class TTPReplicaOptimizer(DistributedOptimizer):
-    def __init__(self,
-                 optimizer: torch.optim.Optimizer,
-                 config: OptimizerConfig,
-                 grad_scaler: MegatronGradScaler,
-                 init_state_fn: Optional[Callable],
-                 model_chunks: List[MegatronModule],
-                 per_model_buffers: Dict[int, List[_ParamAndGradBuffer]],
-                 data_parallel_group: torch.distributed.ProcessGroup,
-                 data_parallel_group_gloo: Optional[torch.distributed.ProcessGroup],
-                 data_parallel_group_idx: int,
-                 distributed_optimizer_instance_id: int,
-                 ori_dp_group=None):
-
+    def __init__(
+        self,
+        optimizer: torch.optim.Optimizer,
+        config: OptimizerConfig,
+        grad_scaler: MegatronGradScaler,
+        init_state_fn: Optional[Callable],
+        model_chunks: List[MegatronModule],
+        per_model_buffers: Dict[int, List[_ParamAndGradBuffer]],
+        data_parallel_group: torch.distributed.ProcessGroup,
+        data_parallel_group_gloo: Optional[torch.distributed.ProcessGroup],
+        data_parallel_group_idx: int,
+        distributed_optimizer_instance_id: int,
+        ori_dp_group=None,
+    ):
         self.args = get_args()
         no_replica = getattr(self.args, 'distributed_optimizer_no_replica', False)
         if no_replica:
@@ -53,9 +55,18 @@ class TTPReplicaOptimizer(DistributedOptimizer):
 
         # init os sharded group
         # replace new method to get rank list
-        super().__init__(optimizer, config, grad_scaler, init_state_fn, model_chunks, per_model_buffers,
-                         data_parallel_group, data_parallel_group_gloo, data_parallel_group_idx,
-                         distributed_optimizer_instance_id)
+        super().__init__(
+            optimizer,
+            config,
+            grad_scaler,
+            init_state_fn,
+            model_chunks,
+            per_model_buffers,
+            data_parallel_group,
+            data_parallel_group_gloo,
+            data_parallel_group_idx,
+            distributed_optimizer_instance_id,
+        )
         # init dump argument
         self.error_dump = False
         self.save_args = {}
@@ -72,7 +83,7 @@ class TTPReplicaOptimizer(DistributedOptimizer):
     def get_index_map(dp_ranks, save_ranks_list, replica_num: int):
         dp_size = len(dp_ranks)
         replica_size = dp_size // replica_num
-        dp_ranks_tmp = [dp_ranks[i:i + replica_size] for i in range(0, dp_size, replica_size)]
+        dp_ranks_tmp = [dp_ranks[i : i + replica_size] for i in range(0, dp_size, replica_size)]
 
         dp_ranks_maps = {}
         for data_parallel_ranks in dp_ranks_tmp:
@@ -89,8 +100,9 @@ class TTPReplicaOptimizer(DistributedOptimizer):
         return ti_to_si
 
     @classmethod
-    def _build_gbuf_range_map(cls, param_and_grad_buffer: _ParamAndGradBuffer,
-                              os_shard_group: torch.distributed.ProcessGroup):
+    def _build_gbuf_range_map(
+        cls, param_and_grad_buffer: _ParamAndGradBuffer, os_shard_group: torch.distributed.ProcessGroup
+    ):
         return {
             (param_and_grad_buffer.param_dtype, param_and_grad_buffer.grad_dtype): [
                 cls._build_model_gbuf_range(param_and_grad_buffer, bucket_index, os_shard_group)
@@ -99,8 +111,12 @@ class TTPReplicaOptimizer(DistributedOptimizer):
         }
 
     @classmethod
-    def _build_model_gbuf_range(cls, param_and_grad_buffer: _ParamAndGradBuffer, bucket_index: int,
-                                os_shard_group: torch.distributed.ProcessGroup):
+    def _build_model_gbuf_range(
+        cls,
+        param_and_grad_buffer: _ParamAndGradBuffer,
+        bucket_index: int,
+        os_shard_group: torch.distributed.ProcessGroup,
+    ):
         """
         Build mapping between params and their grad buffers.
 
@@ -128,9 +144,7 @@ class TTPReplicaOptimizer(DistributedOptimizer):
             gbuf_world_start = r * max_gbuf_range_size
             gbuf_world_end = min(gbuf_size, gbuf_world_start + max_gbuf_range_size)
             # Add bucket's offset in grad buffer.
-            gbuf_world_range = Range(
-                gbuf_world_start + bucket.offset, gbuf_world_end + bucket.offset
-            )
+            gbuf_world_range = Range(gbuf_world_start + bucket.offset, gbuf_world_end + bucket.offset)
             gbuf_world_all_ranges.append(gbuf_world_range)
 
         # Local DP's ranges.
@@ -157,7 +171,7 @@ class TTPReplicaOptimizer(DistributedOptimizer):
 
         dp_size = len(self.ori_dp_list)
         replica_size = dp_size // self.replica_num
-        dp_ranks_tmp = [self.ori_dp_list[i:i + replica_size] for i in range(0, dp_size, replica_size)]
+        dp_ranks_tmp = [self.ori_dp_list[i : i + replica_size] for i in range(0, dp_size, replica_size)]
 
         dp_ranks_maps = {}
         for data_parallel_ranks in dp_ranks_tmp:
@@ -171,10 +185,7 @@ class TTPReplicaOptimizer(DistributedOptimizer):
 
     def need_write_file(self):
         cur_rank = torch.distributed.get_rank()
-        if self.error_dump and self.save_args['rank'] == cur_rank:
-            return True
-        else:
-            return False
+        return bool(self.error_dump and self.save_args['rank'] == cur_rank)
 
     def send_optim_param_state(self, dst, group, optim_idx=None):
         # send distributed optimizer state when UCE repair
@@ -182,8 +193,7 @@ class TTPReplicaOptimizer(DistributedOptimizer):
         self.fp16_tensor_to_fp32_tensor()
         self.send_param_state_impl(dst, group)
         self.fp32_tensor_to_fp16_tensor()
-        ttp_logger.info(f"[repair] rank:{get_args().rank} send optim param consumed: "
-                               f"{time.time() - start_time:.3f}s")
+        ttp_logger.info(f"[repair] rank:{get_args().rank} send optim param consumed: {time.time() - start_time:.3f}s")
 
     def send_param_state_impl(self, dst, group):
         for _, gbuf_range_maps in enumerate(self.gbuf_ranges):
@@ -206,8 +216,9 @@ class TTPReplicaOptimizer(DistributedOptimizer):
         self.fp16_tensor_to_fp32_tensor()
         self.recv_param_state_impl(src, group)
         self.fp32_tensor_to_fp16_tensor()
-        ttp_logger.info(f"[repair] rank:{get_args().rank} recv and load optim param consumed:"
-                               f"{time.time() - start_time:.3f}s")
+        ttp_logger.info(
+            f"[repair] rank:{get_args().rank} recv and load optim param consumed:{time.time() - start_time:.3f}s"
+        )
 
     def recv_param_state_impl(self, src, group):
         for _, gbuf_range_maps in enumerate(self.gbuf_ranges):
@@ -241,8 +252,9 @@ class TTPReplicaOptimizer(DistributedOptimizer):
         # ttp group will sort by torch
         sorted_save_rank_list = sorted(save_rank_list)
         ti_to_si = self.get_index_map(self.ori_dp_list, sorted_save_rank_list, self.replica_num)
-        save_group_gloo = torch.distributed.new_group(sorted_save_rank_list, backend="gloo",
-                                                      use_local_synchronization=True)
+        save_group_gloo = torch.distributed.new_group(
+            sorted_save_rank_list, backend="gloo", use_local_synchronization=True
+        )
         return self.collect_param_state(global_rank, data_parallel_world_size, save_rank, save_group_gloo, ti_to_si)
 
     def collect_param_state(self, global_rank, data_parallel_world_size, save_rank, save_group_gloo, ti_to_si):
@@ -282,12 +294,9 @@ class TTPReplicaOptimizer(DistributedOptimizer):
                         gbuf_local_start = param_range_map["gbuf_local"].start
                         gbuf_local_end = param_range_map["gbuf_local"].end
                         for key in local_shards:
-                            local_shards[key][gbuf_local_start:gbuf_local_end].data.copy_(
-                                tensors[key].detach().cpu()
-                            )
+                            local_shards[key][gbuf_local_start:gbuf_local_end].data.copy_(tensors[key].detach().cpu())
 
                     for key, send_tensor in local_shards.items():
-
                         # Gather tensor list.
                         if global_rank == save_rank:
                             recv_tensors = [
@@ -363,6 +372,7 @@ class TTPReplicaOptimizer(DistributedOptimizer):
             if torch.distributed.get_rank(self.ori_dp_group) == 0:
                 if check_mindio_acp_available():
                     import mindio_acp
+
                     mindio_acp.save(state_dict, filename)
                 else:
                     torch.save(state_dict, filename)
@@ -385,9 +395,7 @@ class TTPReplicaOptimizer(DistributedOptimizer):
 
         # Copy gradients from model params to main params.
         if timers is not None:
-            timers('optimizer-copy-to-main-grad', log_level=1).start(
-                barrier=self.config.barrier_with_L1_time
-            )
+            timers('optimizer-copy-to-main-grad', log_level=1).start(barrier=self.config.barrier_with_L1_time)
         if not self.is_stub_optimizer:
             self._copy_model_grads_to_main_grads()
         if timers is not None:
@@ -398,12 +406,9 @@ class TTPReplicaOptimizer(DistributedOptimizer):
         # Do unscale, check for inf, and update grad scaler only for
         # the case that grad scaler is provided.
         if self.grad_scaler:
-
             # Unscale and check for inf/nan.
             if timers is not None:
-                timers('optimizer-unscale-and-check-inf', log_level=1).start(
-                    barrier=self.config.barrier_with_L1_time
-                )
+                timers('optimizer-unscale-and-check-inf', log_level=1).start(barrier=self.config.barrier_with_L1_time)
             found_inf_flag = self._unscale_main_grads_and_check_for_nan()
             if timers is not None:
                 timers('optimizer-unscale-and-check-inf').stop()
@@ -422,9 +427,7 @@ class TTPReplicaOptimizer(DistributedOptimizer):
         timers = self.config.timers
         # Step the optimizer.
         if timers is not None:
-            timers('optimizer-inner-step', log_level=1).start(
-                barrier=self.config.barrier_with_L1_time
-            )
+            timers('optimizer-inner-step', log_level=1).start(barrier=self.config.barrier_with_L1_time)
         if not self.is_stub_optimizer:
             torch.distributed.barrier()
             self.begin_to_update(self.args.iteration)
@@ -436,9 +439,7 @@ class TTPReplicaOptimizer(DistributedOptimizer):
 
         # Update params from main params.
         if timers is not None:
-            timers('optimizer-copy-main-to-model-params', log_level=1).start(
-                barrier=self.config.barrier_with_L1_time
-            )
+            timers('optimizer-copy-main-to-model-params', log_level=1).start(barrier=self.config.barrier_with_L1_time)
         if not self.is_stub_optimizer:
             self.convert_or_copy_tensor()
         if timers is not None:
@@ -483,9 +484,7 @@ class TTPReplicaOptimizer(DistributedOptimizer):
         timers = self.config.timers
         # Step the optimizer.
         if timers is not None:
-            timers('optimizer-inner-step', log_level=1).start(
-                barrier=self.config.barrier_with_L1_time
-            )
+            timers('optimizer-inner-step', log_level=1).start(barrier=self.config.barrier_with_L1_time)
         if not self.is_stub_optimizer:
             self.optimizer.step()
 
@@ -499,9 +498,7 @@ class TTPReplicaOptimizer(DistributedOptimizer):
         timers = self.config.timers
         # Update params from main params.
         if timers is not None:
-            timers('optimizer-copy-main-to-model-params', log_level=1).start(
-                barrier=self.config.barrier_with_L1_time
-            )
+            timers('optimizer-copy-main-to-model-params', log_level=1).start(barrier=self.config.barrier_with_L1_time)
         if not self.is_stub_optimizer:
             self.convert_or_copy_tensor()
         if timers is not None:
@@ -510,9 +507,18 @@ class TTPReplicaOptimizer(DistributedOptimizer):
         if timers is not None:
             timers('params-all-gather', log_level=1).start(barrier=self.config.barrier_with_L1_time)
 
+        def start_model_param_sync(model_chunk):
+            # Dense and expert optimizers share model chunks. Do not gather the
+            # other leaf's bucket before its FP32 reuse view is converted.
+            sync_group = getattr(self, "is_moe_param", None)
+            if sync_group in ("dense", "moe"):
+                model_chunk.start_param_sync(dense_or_moe_group=sync_group)
+            else:
+                model_chunk.start_param_sync()
+
         if self.ddp_config.use_custom_fsdp:
             for model_chunk in self.model_chunks:
-                model_chunk.start_param_sync()
+                start_model_param_sync(model_chunk)
         else:
             # If not overlapping all-gather for parameters, launch synchronous all-gather
             # communication calls here. If overlapping all-gather for parameters, the following
@@ -520,7 +526,7 @@ class TTPReplicaOptimizer(DistributedOptimizer):
             # call and subsequent all-gathers are launched in the forward pre-hook.
             if not self.ddp_config.overlap_param_gather:
                 for model_chunk in self.model_chunks:
-                    model_chunk.start_param_sync()
+                    start_model_param_sync(model_chunk)
         if timers is not None:
             timers('params-all-gather').stop()
 
@@ -534,9 +540,7 @@ class TTPReplicaOptimizer(DistributedOptimizer):
 
         # Clip the main gradients.
         if timers is not None:
-            timers('optimizer-clip-main-grad', log_level=1).start(
-                barrier=self.config.barrier_with_L1_time
-            )
+            timers('optimizer-clip-main-grad', log_level=1).start(barrier=self.config.barrier_with_L1_time)
         grad_norm = 0.0
         if self.config.clip_grad > 0.0:
             grad_norm = self.clip_grad_norm(self.config.clip_grad)
@@ -545,9 +549,7 @@ class TTPReplicaOptimizer(DistributedOptimizer):
 
         # Count the zeros in the grads.
         if timers is not None:
-            timers('optimizer-count-zeros', log_level=1).start(
-                barrier=self.config.barrier_with_L1_time
-            )
+            timers('optimizer-count-zeros', log_level=1).start(barrier=self.config.barrier_with_L1_time)
         num_zeros_in_grad = self.count_zeros() if self.config.log_num_zeros_in_grad else 0
         if timers is not None:
             timers('optimizer-count-zeros').stop()
