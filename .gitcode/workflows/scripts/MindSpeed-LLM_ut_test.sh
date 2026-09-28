@@ -30,6 +30,18 @@ if [ ${branch} == "master" ]; then
     git checkout master
     cp -r mindspeed "${WORKSPACE}"/CODE/
 
+elif [ ${branch} == "26.2.0" ]; then
+    git clone https://gitcode.com/Ascend/FSDPTurbo.git
+    cd FSDPTurbo
+    git checkout 26.2.0
+    cp -r fsdp_turbo "${WORKSPACE}"/CODE/
+    cd ..
+
+    git clone https://gitcode.com/ascend/MindSpeed.git
+    cd MindSpeed
+    git checkout 26.2.0_core_r0.12.1
+    cp -r mindspeed "${WORKSPACE}"/CODE/
+
 elif [ ${branch} == "26.1.0" ]; then
     git clone https://gitcode.com/ascend/MindSpeed.git
     cd MindSpeed
