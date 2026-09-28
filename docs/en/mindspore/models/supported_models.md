@@ -430,7 +430,7 @@ Dense models are a traditional deep learning model structure. Their neurons are 
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/mistralai">Mistral</a></td>
       <td><a href="https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.2/tree/main">7B</a></td>
-      <td rowspan="1"><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.3.0/examples/mindspore/mistral">mistral</a></td>
+      <td rowspan="1"><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.2.0/examples/mindspore/mistral">mistral</a></td>
       <td> 32K</td>
       <th>MCore</th>
       <td>1x8</td>
