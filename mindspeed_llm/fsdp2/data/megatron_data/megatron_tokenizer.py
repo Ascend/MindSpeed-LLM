@@ -5,7 +5,8 @@ from collections import OrderedDict
 from typing import Any
 
 import numpy
-from transformers import AutoTokenizer
+from transformers import AutoTokenizer, GPT2Tokenizer, AutoConfig
+
 
 class MegatronTokenizer(ABC):
     """Abstract class for tokenizer
@@ -20,7 +21,6 @@ class MegatronTokenizer(ABC):
     """
 
     def __init__(self, *tokenizer_paths: str, **tokenizer_options: Any):
-
         self.unique_identifiers = OrderedDict()
         self.unique_identifiers["class"] = type(self).__name__
         self.unique_identifiers["tokenizer_path"] = list(tokenizer_paths)
@@ -167,7 +167,24 @@ class _AutoTokenizer(MegatronTokenizer):
         hf_tokenizer_kwargs["model_max_length"] = model_max_length
         hf_tokenizer_kwargs["use_fast"] = use_fast
         hf_tokenizer_kwargs["trust_remote_code"] = True
-        self.tokenizer = AutoTokenizer.from_pretrained(tokenizer_name_or_path, **hf_tokenizer_kwargs, local_files_only=True)
+        config = AutoConfig.from_pretrained(
+            tokenizer_name_or_path,
+            trust_remote_code=True,
+            local_files_only=True,
+        )
+
+        if config.model_type in ("minimax_m2", "step3p5"):
+            self.tokenizer = GPT2Tokenizer.from_pretrained(
+                tokenizer_name_or_path,
+                **hf_tokenizer_kwargs,
+                local_files_only=True,
+            )
+        else:
+            self.tokenizer = AutoTokenizer.from_pretrained(
+                tokenizer_name_or_path,
+                **hf_tokenizer_kwargs,
+                local_files_only=True,
+            )
         if (prompt_type is None) and (self.tokenizer.pad_token_id is None):
             self.tokenizer.pad_token_id = self.tokenizer.eos_token_id
         self.encoder = self.tokenizer.get_vocab()
@@ -180,8 +197,10 @@ class _AutoTokenizer(MegatronTokenizer):
     @property
     def vocab(self):
         return {
-            **{special_token: self.tokenizer.convert_tokens_to_ids(special_token)
-               for special_token in self.tokenizer.additional_special_tokens},
+            **{
+                special_token: self.tokenizer.convert_tokens_to_ids(special_token)
+                for special_token in self.tokenizer.additional_special_tokens
+            },
             **self.tokenizer.vocab,
         }
 
@@ -243,7 +262,7 @@ class _AutoTokenizer(MegatronTokenizer):
 
     @property
     def additional_special_tokens_ids(self):
-        """ All the additional special tokens you may want to use (list of strings)."""
+        """All the additional special tokens you may want to use (list of strings)."""
         return self.tokenizer.additional_special_tokens_ids
 
     @staticmethod
