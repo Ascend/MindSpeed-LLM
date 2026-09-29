@@ -152,7 +152,7 @@ The naming convention and startup method for MindSpeed LLM fine-tuning data proc
 ```shell
 # MCore
 # Naming and startup: examples/mcore/model_name/data_convert_xxx_instruction.sh
-bash examples/mcore/llama2/data_convert_llama2_instruction.sh
+bash tests/poc/llama2/data_convert_llama2_instruction.sh
 ```
 
 The instruction-tuning dataset processing results are as follows:

@@ -571,12 +571,7 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
     </tr>
     <tr>
         <td rowspan="30">UT</td>
-        <td rowspan="3">checkpoint</td>
-        <td>test_checkpoint_param</td>
-        <td><a href="pipeline/ut/checkpoint/test_checkpoint_param.py">test_checkpoint_param.py</a></td>
-        <td>Y</td>
-        <td></td>
-        <td></td>
+        <td rowspan="2">checkpoint</td>
     </tr>
     <tr>
         <td>test_checkpoint_v2</td>

@@ -21,7 +21,7 @@ MindSpeed LLM supports mixed low-parameter training with LU-LoRA for fine-tuning
 For the naming and startup method of the MindSpeed LLM fine-tuning data preprocessing script, see the corresponding data preprocessing document for other baseline tasks:
 
 ```shell
-bash examples/mcore/llama2/data_convert_llama2_instruction.sh
+bash tests/poc/llama2/data_convert_llama2_instruction.sh
 ```
 
 During data preprocessing, if `output-prefix` is `./finetune_dataset/llama-2-7b/alpaca`, use the following command:
@@ -43,7 +43,7 @@ python ./preprocess_data.py \
 The MindSpeed LLM LU-LoRA fine-tuning script can use normal MCore base weights for fine-tuning:
 
 ```shell
-bash examples/mcore/llama2/ckpt_convert_llama2_hf2mcore.sh
+bash tests/poc/llama2/ckpt_convert_llama2_hf2mcore.sh
 ```
 
 In the hf2mcore weight conversion script, use the following command:
@@ -157,7 +157,7 @@ The example launch script is as follows:
 
 ```shell
 # Start the job
-bash examples/mcore/llama2/ckpt_convert_llama2_mcore2hf_lora.sh
+bash tests/poc/llama2/ckpt_convert_llama2_mcore2hf_lora.sh
 ```
 
 **Note:** The value of the `lora` parameters should match the parameter settings used during fine-tuning to ensure that the converted model has the same performance and compatibility.

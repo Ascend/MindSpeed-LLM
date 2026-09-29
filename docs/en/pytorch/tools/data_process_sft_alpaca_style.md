@@ -107,7 +107,7 @@ The naming convention and launch method for the MindSpeed LLM fine-tuning data p
 
 ```shell
 # Naming and launch: examples/mcore/model_name/data_convert_xxx_instruction.sh
-bash examples/mcore/llama2/data_convert_llama2_instruction.sh
+bash tests/poc/llama2/data_convert_llama2_instruction.sh
 ```
 
 The instruction-tuning dataset processing output is as follows:

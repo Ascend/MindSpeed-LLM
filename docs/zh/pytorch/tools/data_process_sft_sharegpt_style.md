@@ -152,7 +152,7 @@ MindSpeed-LLM微调数据集处理脚本命名风格及启动方法为：
 ```shell
 # mcore
 # 命名及启动：examples/mcore/model_name/data_convert_xxx_instruction.sh
-bash examples/mcore/llama2/data_convert_llama2_instruction.sh
+bash tests/poc/llama2/data_convert_llama2_instruction.sh
 ```
 
 指令微调数据集处理结果如下：
