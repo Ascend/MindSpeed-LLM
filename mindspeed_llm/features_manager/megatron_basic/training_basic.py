@@ -131,6 +131,9 @@ class TrainingBasicFeature(MindSpeedFeature):
         from mindspeed_llm.training.checkpointing import load_checkpoint_wrapper
         from mindspeed_llm.legacy.data import build_pretraining_data_loader
         from mindspeed_llm.training.utils import get_batch_on_this_tp_rank
+        from mindspeed_llm.core.dist_checkpointing.filesystem_async import (
+            write_item_serialization_format_wrapper,
+        )
 
         patch_manager.register_patch(
             'megatron.training.training.build_pretraining_data_loader', build_pretraining_data_loader
@@ -140,3 +143,8 @@ class TrainingBasicFeature(MindSpeedFeature):
 
         patch_manager.register_patch('megatron.training.training.train', train)
         patch_manager.register_patch('megatron.training.training.load_checkpoint', load_checkpoint_wrapper)
+        # Megatron imports PyTorch's _write_item into this module, so patch the imported symbol.
+        patch_manager.register_patch(
+            'megatron.core.dist_checkpointing.strategies.filesystem_async._write_item',
+            write_item_serialization_format_wrapper,
+        )
