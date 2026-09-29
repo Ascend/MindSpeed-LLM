@@ -41,7 +41,7 @@ The naming convention and startup command for the MindSpeed LLM pretraining data
 
 ```shell
 # Naming and startup: examples/mcore/model_name/data_convert_xxx_pretrain.sh
-bash examples/mcore/llama2/data_convert_llama2_pretrain.sh
+bash tests/poc/llama2/data_convert_llama2_pretrain.sh
 ```
 
 ### Parameters

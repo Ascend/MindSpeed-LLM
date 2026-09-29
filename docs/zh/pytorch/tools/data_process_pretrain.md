@@ -41,7 +41,7 @@ MindSpeed-LLM预训练数据集处理脚本命名风格及启动方法为：
 
 ```shell
 # 命名及启动：examples/mcore/model_name/data_convert_xxx_pretrain.sh
-bash examples/mcore/llama2/data_convert_llama2_pretrain.sh
+bash tests/poc/llama2/data_convert_llama2_pretrain.sh
 ```
 
 ### 参数说明

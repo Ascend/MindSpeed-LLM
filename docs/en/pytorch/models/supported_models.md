@@ -316,7 +316,7 @@ Dense models are traditional deep learning architectures. Their neurons are dens
     <tr>
       <td rowspan="5"><a href="https://huggingface.co/meta-llama">Llama-2</a></td>
       <td><a href="https://huggingface.co/daryl149/llama-2-7b-hf/tree/main">7B</a></td>
-      <td rowspan="5"><a href="../../../../examples/mcore/llama2">llama2</a></td>
+      <td rowspan="5"><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/mcore/llama2">llama2</a></td>
       <td>4K</td>
       <th>MCore</th>
       <td>1x8</td>
@@ -652,7 +652,7 @@ Dense models are traditional deep learning architectures. Their neurons are dens
     <tr>
       <td rowspan="7"><a href="https://huggingface.co/Qwen">Qwen2.5</a></td>
       <td><a href="https://huggingface.co/Qwen/Qwen2.5-0.5B/tree/main">0.5B</a></td>
-      <td rowspan="7"><a href="../../../../examples/mcore/qwen25">qwen25</a></td>
+      <td rowspan="7"><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/mcore/qwen25">qwen25</a></td>
       <td> 32K </td>
       <th>MCore</th>
       <td>1x8</td>
@@ -909,7 +909,7 @@ Dense models are traditional deep learning architectures. Their neurons are dens
     <tr>
       <td rowspan="2"><a href="https://huggingface.co/google">Gemma2</a></td>
       <td><a href="https://huggingface.co/google/gemma-2-9b/tree/main">9B</a></td>
-      <td rowspan="2"><a href="../../../../examples/mcore/gemma2">gemma2</a></td>
+      <td rowspan="2"><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/mcore/gemma2">gemma2</a></td>
       <td> 8K </td>
       <th>MCore</th>
       <td>1x8</td>
@@ -951,7 +951,7 @@ Dense models are traditional deep learning architectures. Their neurons are dens
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/microsoft">Phi3.5</a></td>
       <td> <a href="https://huggingface.co/microsoft/Phi-3.5-mini-instruct/tree/main">mini-instruct</a> </td>
-      <td rowspan="1"><a href="../../../../examples/mcore/phi35">phi35</a></td>
+      <td rowspan="1"><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/mcore/phi35">phi35</a></td>
       <td> 4K </td>
       <th>MCore</th>
       <td> 1x8 </td>
@@ -1038,7 +1038,7 @@ Dense models are traditional deep learning architectures. Their neurons are dens
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/mistralai">Magistral</a></td>
       <td><a href="https://huggingface.co/mistralai/Magistral-Small-2506/tree/main">24B</a></td>
-      <td><a href="../../../../examples/mcore/magistral">magistral</a></td>
+      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/mcore/magistral">magistral</a></td>
       <td> 4K </td>
       <th> MCore </th>
       <td> 1x8 </td>
@@ -1049,7 +1049,7 @@ Dense models are traditional deep learning architectures. Their neurons are dens
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/PLM-Team">PLM</a></td>
       <td><a href="https://huggingface.co/PLM-Team/PLM-1.8B-Base/tree/main">1.8B</a></td>
-      <td><a href="../../../../examples/mcore/plm">plm</a></td>
+      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/mcore/plm">plm</a></td>
       <td> 2K </td>
       <th> MCore </th>
       <td> 1x8 </td>
@@ -1121,7 +1121,7 @@ Sparse models use a sparse neuron connectivity pattern. Therefore, only a small 
     <tr>
       <td rowspan="2"><a href="https://huggingface.co/collections/Qwen/qwen3-next">Qwen3-Next</a></td>
       <td rowspan="2"><a href="https://huggingface.co/Qwen/Qwen3-Next-80B-A3B-Instruct">80B-A3B</a></td>
-      <td><a href="../../../../examples/mcore/qwen3_next">qwen3_next</a></td>
+      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/mcore/qwen3_next">qwen3_next</a></td>
       <td> 16K </td>
       <th> MCore </th>
       <td> 4x16 </td>
@@ -1130,7 +1130,7 @@ Sparse models use a sparse neuron connectivity pattern. Therefore, only a small 
       <td>[Pass]</td>
     </tr>
     <tr>
-      <td><a href="../../../../examples/fsdp2/qwen3_next">qwen3_next</a></td>
+      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/fsdp2/qwen3_next">qwen3_next</a></td>
       <td> 16K </td>
       <th> FSDP2 </th>
       <td> 4x16 </td>
@@ -1141,7 +1141,7 @@ Sparse models use a sparse neuron connectivity pattern. Therefore, only a small 
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/Qwen/Qwen3-Coder-Next/tree/main">Qwen3-Coder-Next</a></td>
       <td><a href="https://huggingface.co/Qwen/Qwen3-Coder-Next/tree/main">80B-A3B</a></td>
-      <td><a href="../../../../examples/mcore/qwen3_coder_next">qwen3_coder_next</a></td>
+      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/mcore/qwen3_coder_next">qwen3_coder_next</a></td>
       <td> 16K </td>
       <th>MCore</th>
       <td>4x16</td>
@@ -1222,7 +1222,7 @@ Sparse models use a sparse neuron connectivity pattern. Therefore, only a small 
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/deepseek-ai/DeepSeek-V2-Lite">DeepSeek-V2-Lite</a></td>
       <td><a href="https://huggingface.co/deepseek-ai/DeepSeek-V2-Lite/tree/main">16B</a></td>
-      <td><a href="../../../../examples/mcore/deepseek2_lite">deepseek2_lite</a></td>
+      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/mcore/deepseek2_lite">deepseek2_lite</a></td>
       <td> 8K </td>
       <th>MCore</th>
       <td> 1x8 </td>
@@ -1288,7 +1288,7 @@ Sparse models use a sparse neuron connectivity pattern. Therefore, only a small 
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/inclusionAI/Ling-mini-2.0">Ling-mini-2.0</a></td>
       <td> <a href="https://huggingface.co/inclusionAI/Ling-mini-2.0/tree/main">16B</a> </td>
-      <td rowspan="2"><a href="../../../../examples/mcore/ling_v2">ling_v2</a></td>
+      <td rowspan="2"><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/mcore/ling_v2">ling_v2</a></td>
       <td> 4K </td>
       <th>MCore</th>
       <td> 1x8 </td>
@@ -1309,7 +1309,7 @@ Sparse models use a sparse neuron connectivity pattern. Therefore, only a small 
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/microsoft">Phi3.5</a></td>
       <td> <a href="https://huggingface.co/microsoft/Phi-3.5-MoE-instruct">MoE-instruct</a> </td>
-      <td><a href="../../../../examples/mcore/phi35">phi35</a></td>
+      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/mcore/phi35">phi35</a></td>
       <td> 4K </td>
       <th> MCore </th>
       <td> 2x8 </td>
@@ -1342,7 +1342,7 @@ Sparse models use a sparse neuron connectivity pattern. Therefore, only a small 
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/zai-org">GLM4.5-Air</a></td>
       <td> <a href="https://huggingface.co/zai-org/GLM-4.5-Air/tree/main">MoE-106B</a> </td>
-      <td><a href="../../../../examples/mcore/glm45-air">glm45-air</a></td>
+      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/mcore/glm45-air">glm45-air</a></td>
       <td> 4K </td>
       <th> MCore </th>
       <td> 8x8 </td>
@@ -1375,7 +1375,7 @@ Sparse models use a sparse neuron connectivity pattern. Therefore, only a small 
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/stepfun-ai">Step3.5-Flash</a></td>
       <td><a href="https://huggingface.co/stepfun-ai/Step-3.5-Flash">MoE-196B</a></td>
-      <td><a href="../../../../examples/fsdp2/step35">step35</a></td>
+      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/fsdp2/step35">step35</a></td>
       <td> 4K </td>
       <th> FSDP2 </th>
       <td> 12x16 </td>
@@ -1397,7 +1397,7 @@ Sparse models use a sparse neuron connectivity pattern. Therefore, only a small 
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/openai">gpt-oss</a></td>
       <td><a href="https://modelscope.cn/models/unsloth/gpt-oss-20b-BF16/">MoE-20B</a></td>
-      <td><a href="../../../../examples/fsdp2/gpt_oss">gpt_oss</a></td>
+      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/fsdp2/gpt_oss">gpt_oss</a></td>
       <td> 4K </td>
       <th> FSDP2 </th>
       <td> 1x16 </td>
@@ -1408,7 +1408,7 @@ Sparse models use a sparse neuron connectivity pattern. Therefore, only a small 
     <tr>
       <td rowspan="1"><a href="https://huggingface.co/MiniMaxAI">MiniMax-M2.7</a></td>
       <td><a href="https://huggingface.co/MiniMaxAI/MiniMax-M2.7">MoE-229B</a></td>
-      <td><a href="../../../../examples/fsdp2/minimax_m27">minimax_m27</a></td>
+      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/fsdp2/minimax_m27">minimax_m27</a></td>
       <td> 4K </td>
       <th> FSDP2 </th>
       <td> 8x16 </td>
@@ -1500,7 +1500,7 @@ SSMs are sequence models based on state-space representations and can efficientl
     <tr>
       <td rowspan="1">Mamba3</td>
       <td>/</td>
-       <td><a href="../../../../examples/fsdp2/mamba3">mamba3</a></td>
+       <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/fsdp2/mamba3">mamba3</a></td>
       <td> 4K</td>
       <th>MCore</th>
       <td>1x8</td>

@@ -21,7 +21,7 @@ MindSpeed-LLM 支持在微调等任务中使用 LU-LoRA 进行混合低参数训
 MindSpeed-LLM 微调数据预处理脚本的命名和启动方法（其他基准任务的数据预处理，请参考相应任务的数据预处理文档）：
 
 ```shell
-bash examples/mcore/llama2/data_convert_llama2_instruction.sh
+bash tests/poc/llama2/data_convert_llama2_instruction.sh
 ```
 
 在数据预处理过程中，如果 `output-prefix` 是 `./finetune_dataset/llama-2-7b/alpaca`，请使用以下命令：
@@ -43,7 +43,7 @@ python ./preprocess_data.py \
 MindSpeed-LLM LU-LoRA 微调脚本可以使用正常的 mcore 基础权重进行微调任务：
 
 ```shell
-bash examples/mcore/llama2/ckpt_convert_llama2_hf2mcore.sh
+bash tests/poc/llama2/ckpt_convert_llama2_hf2mcore.sh
 ```
 
 在 hf2mcore 权重转换脚本中，使用以下命令：
@@ -122,7 +122,7 @@ python convert_ckpt_v2.py \
 
 ```shell
 #启动任务
-bash examples/mcore/llama2/ckpt_convert_llama2_mcore2hf_lora.sh
+bash tests/poc/llama2/ckpt_convert_llama2_mcore2hf_lora.sh
 ```
 
 **注意：**`lora`参数的值应该与微调时的参数设置保持一致，以保证转换后的模型具有相同的性能和兼容性。
