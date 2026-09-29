@@ -18,6 +18,7 @@ from mindspeed_llm.tasks.high_availability.high_availability_helper import check
 
 from mindio_ttp.framework_ttp import tft_start_updating_os, tft_end_updating_os
 from .tft_optimizer_data_repair import set_log_args
+from .tft_tensor_recovery import update_optimizer_tensors_to_safe
 from mindio_ttp.utils import tft_set_update_start_time, tft_set_update_end_time
 from .utils import FileUtils
 from .elastic_training_common import update_scale_in_flag, zit_scale_in_running_state
@@ -616,19 +617,4 @@ class TTPReplicaOptimizer(DistributedOptimizer):
             self._copy_main_params_to_model_params()
 
     def update_npu_tensor_to_safe(self):
-        from torch_npu.npu._recovery import update_npu_tensor_to_safe
-
-        for _, gbuf_range_maps in enumerate(self.gbuf_ranges):
-            for _, gbuf_range_map_for_all_buckets in gbuf_range_maps.items():
-                for _, gbuf_range_map in enumerate(gbuf_range_map_for_all_buckets):
-                    for model_param, _ in gbuf_range_map["param_map"].items():
-                        group_index, group_order = self.model_param_group_index_map[model_param]
-                        main_param = self.optimizer.param_groups[group_index]["params"][group_order]
-                        optim_state = self.optimizer.state[main_param]
-                        tensors = {
-                            "param": main_param,
-                            **optim_state,
-                        }
-                        update_npu_tensor_to_safe(tensors["param"])
-                        update_npu_tensor_to_safe(tensors["exp_avg"])
-                        update_npu_tensor_to_safe(tensors["exp_avg_sq"])
+        update_optimizer_tensors_to_safe(self)

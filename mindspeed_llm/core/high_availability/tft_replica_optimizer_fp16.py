@@ -15,31 +15,33 @@ from mindio_ttp.framework_ttp import tft_start_updating_os, tft_end_updating_os
 from mindio_ttp.utils import tft_set_update_start_time, tft_set_update_end_time
 
 from .tft_optimizer_data_repair import set_log_args
+from .tft_tensor_recovery import update_optimizer_tensors_to_safe
 
 logger = getLogger(__name__)
 
 
 class TTPFP16ReplicaOptimizer(Float16OptimizerWithFloat16Params):
     def __init__(
-            self,
-            optimizer: torch.optim.Optimizer,
-            config: OptimizerConfig,
-            grad_scaler: MegatronGradScaler,
-            init_state_fn: Callable,
-            ori_dp_group=None
+        self,
+        optimizer: torch.optim.Optimizer,
+        config: OptimizerConfig,
+        grad_scaler: MegatronGradScaler,
+        init_state_fn: Callable,
+        ori_dp_group=None,
     ):
-
-        super().__init__(optimizer,
-                         config,
-                         grad_scaler,
-                         init_state_fn, )
+        super().__init__(
+            optimizer,
+            config,
+            grad_scaler,
+            init_state_fn,
+        )
         self.args = get_args()
         self.error_dump = False
         self.save_args = {}
         self.current_step = 0
         self.ori_dp_group = ori_dp_group
         self.reuse_fp32_isbf16 = True
-        self.state_dict_func = self.state_dict
+        self.state_dict_func = getattr(self, 'state_dict')
         self.state_dict = self.state_dict_wrap
 
     def state_dict_wrap(self, is_loading: bool = False):
@@ -54,10 +56,7 @@ class TTPFP16ReplicaOptimizer(Float16OptimizerWithFloat16Params):
 
     def need_write_file(self):
         cur_rank = torch.distributed.get_rank()
-        if self.error_dump and self.save_args['rank'] == cur_rank:
-            return True
-        else:
-            return False
+        return bool(self.error_dump and self.save_args['rank'] == cur_rank)
 
     def end_to_update(self):
         tft_set_update_end_time()
@@ -76,8 +75,7 @@ class TTPFP16ReplicaOptimizer(Float16OptimizerWithFloat16Params):
 
         # Copy gradients from model params to main params.
         if timers is not None:
-            timers('optimizer-copy-to-main-grad', log_level=1
-                   ).start(barrier=self.config.barrier_with_L1_time)
+            timers('optimizer-copy-to-main-grad', log_level=1).start(barrier=self.config.barrier_with_L1_time)
         if not self.is_stub_optimizer:
             self._copy_model_grads_to_main_grads()
         if timers is not None:
@@ -87,11 +85,9 @@ class TTPFP16ReplicaOptimizer(Float16OptimizerWithFloat16Params):
         # Do unscale, check for inf, and update grad scaler only for
         # the case that grad scaler is provided.
         if self.grad_scaler:
-
             # Unscale and check for inf/nan.
             if timers is not None:
-                timers('optimizer-unscale-and-check-inf', log_level=1
-                       ).start(barrier=self.config.barrier_with_L1_time)
+                timers('optimizer-unscale-and-check-inf', log_level=1).start(barrier=self.config.barrier_with_L1_time)
             found_inf_flag = self._unscale_main_grads_and_check_for_nan()
             if timers is not None:
                 timers('optimizer-unscale-and-check-inf').stop()
@@ -113,8 +109,7 @@ class TTPFP16ReplicaOptimizer(Float16OptimizerWithFloat16Params):
 
         # Clip the main gradients.
         if timers is not None:
-            timers('optimizer-clip-main-grad', log_level=1
-                   ).start(barrier=self.config.barrier_with_L1_time)
+            timers('optimizer-clip-main-grad', log_level=1).start(barrier=self.config.barrier_with_L1_time)
 
         grad_norm = 0.0
         if self.config.clip_grad > 0.0:
@@ -124,8 +119,7 @@ class TTPFP16ReplicaOptimizer(Float16OptimizerWithFloat16Params):
 
         # Count the zeros in the grads.
         if timers is not None:
-            timers('optimizer-count-zeros', log_level=1
-                   ).start(barrier=self.config.barrier_with_L1_time)
+            timers('optimizer-count-zeros', log_level=1).start(barrier=self.config.barrier_with_L1_time)
         num_zeros_in_grad = self.count_zeros() if self.config.log_num_zeros_in_grad else 0
         if timers is not None:
             timers('optimizer-count-zeros').stop()
@@ -142,8 +136,7 @@ class TTPFP16ReplicaOptimizer(Float16OptimizerWithFloat16Params):
         timers = self.config.timers
         # Step the optimizer.
         if timers is not None:
-            timers('optimizer-inner-step', log_level=1
-                   ).start(barrier=self.config.barrier_with_L1_time)
+            timers('optimizer-inner-step', log_level=1).start(barrier=self.config.barrier_with_L1_time)
 
         if not self.is_stub_optimizer:
             torch.distributed.barrier()
@@ -157,8 +150,7 @@ class TTPFP16ReplicaOptimizer(Float16OptimizerWithFloat16Params):
 
         # Update params from main params.
         if timers is not None:
-            timers('optimizer-copy-main-to-model-params', log_level=1
-                   ).start(barrier=self.config.barrier_with_L1_time)
+            timers('optimizer-copy-main-to-model-params', log_level=1).start(barrier=self.config.barrier_with_L1_time)
         if not self.is_stub_optimizer:
             self.convert_or_copy_tensor()
         if timers is not None:
@@ -171,8 +163,7 @@ class TTPFP16ReplicaOptimizer(Float16OptimizerWithFloat16Params):
         timers = self.config.timers
         # Step the optimizer.
         if timers is not None:
-            timers('optimizer-inner-step', log_level=1
-                   ).start(barrier=self.config.barrier_with_L1_time)
+            timers('optimizer-inner-step', log_level=1).start(barrier=self.config.barrier_with_L1_time)
 
         if not self.is_stub_optimizer:
             self.optimizer.step()
@@ -187,8 +178,7 @@ class TTPFP16ReplicaOptimizer(Float16OptimizerWithFloat16Params):
         timers = self.config.timers
         # Update params from main params.
         if timers is not None:
-            timers('optimizer-copy-main-to-model-params', log_level=1
-                   ).start(barrier=self.config.barrier_with_L1_time)
+            timers('optimizer-copy-main-to-model-params', log_level=1).start(barrier=self.config.barrier_with_L1_time)
         if not self.is_stub_optimizer:
             self.convert_or_copy_tensor()
         if timers is not None:
@@ -208,8 +198,7 @@ class TTPFP16ReplicaOptimizer(Float16OptimizerWithFloat16Params):
             torch.distributed.send(optim_state['exp_avg_sq'].detach().view(-1).npu(), dst=dst, group=group)
 
         self.fp32_tensor_to_fp16_tensor()
-        logger.info(f"[repair] rank:{get_args().rank} send optim param consumed: "
-                    f"{time.time() - start_time:.3f}s")
+        logger.info(f"[repair] rank:{get_args().rank} send optim param consumed: {time.time() - start_time:.3f}s")
 
     def recv_and_load_optim_param_state(self, src, group, optim_idx=None):
         start_time = time.time()
@@ -225,8 +214,9 @@ class TTPFP16ReplicaOptimizer(Float16OptimizerWithFloat16Params):
             torch.distributed.recv(optim_state['exp_avg_sq'].view(-1).data, src=src, group=group)
 
         self.fp32_tensor_to_fp16_tensor()
-        logger.info(f"[repair] rank:{get_args().rank} recv and load optim param consumed:"
-                    f"{time.time() - start_time:.3f}s")
+        logger.info(
+            f"[repair] rank:{get_args().rank} recv and load optim param consumed:{time.time() - start_time:.3f}s"
+        )
 
     def state_dict_memory(self):
         state_dict = {}
@@ -238,7 +228,10 @@ class TTPFP16ReplicaOptimizer(Float16OptimizerWithFloat16Params):
     def load_state_dict_memory(self, state_dict):
         inner_state_dict = self.optimizer.state_dict()
         state_dict_param_groups = [
-            {**group, "params": list(inner_state_dict["param_groups"][idx]["params"]), }
+            {
+                **group,
+                "params": list(inner_state_dict["param_groups"][idx]["params"]),
+            }
             for idx, group in enumerate(state_dict["optimizer"]["param_groups"])
         ]
 
@@ -254,15 +247,16 @@ class TTPFP16ReplicaOptimizer(Float16OptimizerWithFloat16Params):
 
         # Optimizer.
         self.optimizer.load_state_dict(
-            {"state": state_dict_state, "param_groups": state_dict_param_groups, }
+            {
+                "state": state_dict_state,
+                "param_groups": state_dict_param_groups,
+            }
         )
 
         # Grad scaler.
         if 'grad_scaler' not in state_dict:
             if self.config.fp16:
-                logger.info(
-                    '***WARNING*** found an old checkpoint, will not ' 'load grad scaler ...'
-                )
+                logger.info('***WARNING*** found an old checkpoint, will not load grad scaler ...')
         else:
             if self.grad_scaler:
                 self.grad_scaler.load_state_dict(state_dict['grad_scaler'])
@@ -307,9 +301,4 @@ class TTPFP16ReplicaOptimizer(Float16OptimizerWithFloat16Params):
         pass
 
     def update_npu_tensor_to_safe(self):
-        from torch_npu.npu._recovery import update_npu_tensor_to_safe as update_tensor_to_safe
-
-        for main_param, optim_state in self.optimizer.state.items():
-            update_tensor_to_safe(main_param)
-            update_tensor_to_safe(optim_state['exp_avg'])
-            update_tensor_to_safe(optim_state['exp_avg_sq'])
+        update_optimizer_tensors_to_safe(self)
