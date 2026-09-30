@@ -2,10 +2,11 @@
 
 import json
 import os
-from enum import Enum, unique
+from enum import Enum
 from abc import abstractmethod
 from dataclasses import dataclass
-from typing import Any, Optional, Union
+from typing import Any, Union
+import torch
 import torch.distributed as dist
 from datasets import Dataset, IterableDataset
 from transformers import Seq2SeqTrainingArguments
@@ -14,6 +15,7 @@ from ..utils.arguments import DataArguments
 from .parser import DatasetAttr
 
 from mindspeed_llm.fsdp2.utils.logging import get_logger
+
 logger = get_logger(__name__)
 
 
@@ -33,7 +35,6 @@ class DatasetConverter:
     @abstractmethod
     def __call__(self, example: dict[str, Any]) -> dict[str, Any]:
         r"""Convert a single example in the dataset to the standard format."""
-        ...
 
 
 @dataclass
@@ -65,7 +66,7 @@ class AlpacaDatasetConverter(DatasetConverter):
             self.dataset_attr.ranking
             and isinstance(example[self.dataset_attr.chosen], str)
             and isinstance(example[self.dataset_attr.rejected], str)
-        ):  
+        ):
             # pairwise example
             response = [
                 {"role": Role.ASSISTANT.value, "content": example[self.dataset_attr.chosen]},
@@ -221,7 +222,7 @@ class OpenAIDatasetConverter(DatasetConverter):
             if role == self.dataset_attr.observation_tag:
                 tool_responses.append(content)
                 continue
-            elif len(tool_responses) > 0:
+            if len(tool_responses) > 0:
                 _content = "\n</tool_response>\n<tool_response>\n".join(tool_responses)
                 aligned_messages.append(
                     {
@@ -296,7 +297,7 @@ class OpenAIDatasetConverter(DatasetConverter):
             response = aligned_messages[-1:]
 
         tools = example.get(self.dataset_attr.tools, "") if self.dataset_attr.tools else ""
-        if isinstance(tools, dict) or isinstance(tools, list):
+        if isinstance(tools, (dict, list)):
             tools = json.dumps(tools, ensure_ascii=False)
 
         short_system_prompt = "detailed thinking off"
@@ -329,6 +330,7 @@ DATASET_CONVERTERS = {
     "openai": OpenAIDatasetConverter,
 }
 
+
 def register_dataset_converter(name: str, dataset_converter: type["DatasetConverter"]) -> None:
     r"""Register a new dataset converter."""
     if name in DATASET_CONVERTERS:
@@ -351,6 +353,7 @@ def get_local_rank():
         local_rank = int(os.environ["LOCAL_RANK"])
     else:
         local_rank = rank % max(1, (torch.cuda.device_count() if torch.cuda.is_available() else 1))
+    return local_rank
 
 
 def align_dataset(
@@ -375,7 +378,7 @@ def align_dataset(
             load_from_cache_file=(not data_args.overwrite_cache) or (get_local_rank() != 0),
             desc="Converting format of dataset",
         )
-        
+
     dataset_converter = get_dataset_converter(dataset_attr.formatting, dataset_attr, data_args)
     return dataset.map(
         dataset_converter,
