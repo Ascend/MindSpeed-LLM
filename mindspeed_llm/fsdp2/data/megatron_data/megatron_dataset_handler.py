@@ -21,28 +21,20 @@ import time
 import glob
 import json
 import logging
-from typing import Dict, List
 
 import torch
 import numpy as np
 from datasets import load_dataset
 
-from mindspeed_llm.fsdp2.data.megatron_data.indexed_dataset import IndexedDatasetBuilder, IndexedDatasetBuilder
+from mindspeed_llm.fsdp2.data.megatron_data.indexed_dataset import IndexedDatasetBuilder
 
-from mindspeed_llm.tasks.preprocess.utils import (
-    get_dataset_list,
-    get_handler_dataset_attr,
-    load_single_dataset,
-    merge_dataset,
-    align_dataset,
-    greedy_knapsack
-)
+from mindspeed_llm.tasks.preprocess.utils import get_dataset_list, load_single_dataset, merge_dataset, greedy_knapsack
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class BaseDatasetHandler(object):
+class BaseDatasetHandler:
     """
     a base handler to tokenize or/and prompt your own dataset
     """
@@ -96,6 +88,7 @@ class BaseDatasetHandler(object):
         key_data_dict = {key: [] for key in self.args.json_keys}
         lengths = []
         from collections import defaultdict
+
         length2indexes = defaultdict(list)
         for _, doc in enumerate(iter(self.tokenized_dataset), start=1):
             batch = doc["input_ids"]
@@ -106,18 +99,20 @@ class BaseDatasetHandler(object):
                 else:
                     if length >= self.args.seq_length:
                         logger.warning(f"Sequence length {length} >= {self.args.seq_length}.")
-                        sample = sample[:self.args.seq_length - 1]
+                        sample = sample[: self.args.seq_length - 1]
                         length = len(sample)
                     lengths.append(length)
                     length2indexes[length].append(valid_num)
                     for key in self.args.json_keys:
                         key_data_dict[key].append(
-                            sample if key == 'input_ids' else doc[key][idx][:self.args.seq_length - 1]
+                            sample if key == 'input_ids' else doc[key][idx][: self.args.seq_length - 1]
                         )
                     valid_num += 1
 
-        logger.info(f"valid_num = {valid_num}, total_num = {len(self.tokenized_dataset)}, "
-                    f"percentage : {valid_num / len(self.tokenized_dataset) * 100}%")
+        logger.info(
+            f"valid_num = {valid_num}, total_num = {len(self.tokenized_dataset)}, "
+            f"percentage : {valid_num / len(self.tokenized_dataset) * 100}%"
+        )
 
         knapsacks = greedy_knapsack(lengths, self.args.seq_length - 1)  # reserved for the padding token
         logger.info(f"new samples num : {len(knapsacks)}")
@@ -128,13 +123,14 @@ class BaseDatasetHandler(object):
                 index = length2indexes[length].pop()
                 for key in self.args.json_keys:
                     key_data = key_data_dict[key][index]
-                    packed_data_dict[key] += [i + 1] * len(key_data) \
-                        if (self.args.neat_pack and "attention_mask" in key) else key_data
+                    packed_data_dict[key] += (
+                        [i + 1] * len(key_data) if (self.args.neat_pack and "attention_mask" in key) else key_data
+                    )
 
             if k % self.args.log_interval == 0:
                 current = time.time()
                 elapsed = current - proc_start
-                logger.info("Processed %s documents (%s docs/s).", k, self.args.log_interval / elapsed)
+                logger.info("Processed %s documents (%s docs/s).", k, self.args.log_interval / max(elapsed, 1e-6))
 
             pad_length = self.args.seq_length - len(packed_data_dict['input_ids'])
             if hasattr(self.tokenizer, "pad_token_id"):
@@ -228,8 +224,10 @@ class BaseDatasetHandler(object):
         """save idx and bin to disk"""
         if self.args.pack:
             if len(self.args.json_keys) == 1:  # PretrainHandler
-                raise ValueError("Pre-training data processing does not need to be packed. "
-                                 "Therefore, the --pack parameter is not required.")
+                raise ValueError(
+                    "Pre-training data processing does not need to be packed. "
+                    "Therefore, the --pack parameter is not required."
+                )
             else:
                 self._pack_serialize_to_disk()
         else:
@@ -275,7 +273,9 @@ class GeneralPretrainHandler(BaseDatasetHandler):
             if len(doc_ids) > 0 and self.args.pad_to_multiple_of > 1:
                 # padding each of the input data in the case of context parallel
                 local_length = len(doc_ids[-1]['input_ids'])
-                num_tokens_to_pad = (((local_length // self.args.pad_to_multiple_of) + 1) * self.args.pad_to_multiple_of) - local_length
+                num_tokens_to_pad = (
+                    ((local_length // self.args.pad_to_multiple_of) + 1) * self.args.pad_to_multiple_of
+                ) - local_length
                 if self.args.append_eod:
                     num_tokens_to_pad = num_tokens_to_pad - 1
                 doc_ids[-1]['input_ids'].extend([self.tokenizer.vocab_size] * num_tokens_to_pad)
@@ -321,7 +321,7 @@ def _get_data_format(files):
         'csv': 'csv',
         'json': 'json',
         'jsonl': 'json',
-        'txt': 'text'
+        'txt': 'text',
     }
     format_num = {}
     for file in files:
@@ -339,15 +339,9 @@ def _get_data_format(files):
 def _has_py_script(input_name):
     if os.path.isdir(input_name):
         dir_name = os.path.basename(input_name)
-        if os.path.exists(os.path.join(input_name, dir_name + '.py')):
-            has_py_script = True
-        else:
-            has_py_script = False
+        has_py_script = os.path.exists(os.path.join(input_name, dir_name + '.py'))
     else:
-        if input_name.split('.')[-1] == 'py':
-            has_py_script = True
-        else:
-            has_py_script = False
+        has_py_script = input_name.split('.')[-1] == 'py'
     return has_py_script
 
 
@@ -360,11 +354,11 @@ def build_dataset(args):
             all_datasets.append(load_single_dataset(dataset_attr, args))
         raw_datasets = merge_dataset(all_datasets, args)
     else:
-        if args.handler_name == "MOSSInstructionHandler" or args.handler_name == "MOSSMultiTurnHandler":
+        if args.handler_name in ("MOSSInstructionHandler", "MOSSMultiTurnHandler"):
             # for MOSS, streaming is needed.
             args.streaming = True
         if args.hf_datasets_params:
-            with open(args.hf_datasets_params, 'r') as fin:
+            with open(args.hf_datasets_params, 'r', encoding='utf-8') as fin:
                 param_dict = json.load(fin)
             return load_dataset(**param_dict)
         cache_dir = args.cache_dir
@@ -380,16 +374,14 @@ def build_dataset(args):
                     num_proc=None if args.streaming else args.workers,
                     cache_dir=cache_dir,
                     streaming=args.streaming,
-                    trust_remote_code=False
+                    trust_remote_code=False,
                 )
             else:
-                data_files = [args.input] if os.path.isfile(args.input) else \
-                    glob.glob(os.path.join(args.input, '*'))
+                data_files = [args.input] if os.path.isfile(args.input) else glob.glob(os.path.join(args.input, '*'))
                 ext, data_format = _get_data_format(data_files)
                 filtered_data_files = list(filter(lambda x: x.split('.')[-1] == ext, data_files))
                 if filtered_data_files:
-                    logger.info("loading data from local file, format: %s,"
-                                " file num: %s", data_format, len(data_files))
+                    logger.info("loading data from local file, format: %s, file num: %s", data_format, len(data_files))
                     raw_datasets = load_dataset(
                         data_format,
                         split=split_flag,
@@ -397,7 +389,7 @@ def build_dataset(args):
                         num_proc=None if args.streaming else args.workers,
                         cache_dir=cache_dir,
                         streaming=args.streaming,
-                        trust_remote_code=False
+                        trust_remote_code=False,
                     )
                 else:
                     raise Exception("unknown local data!")
@@ -409,7 +401,7 @@ def build_dataset(args):
                 num_proc=None if args.streaming else args.workers,
                 cache_dir=cache_dir,
                 streaming=args.streaming,
-                trust_remote_code=False
+                trust_remote_code=False,
             )
         if raw_datasets is None:
             raise Exception("unknown data!")
