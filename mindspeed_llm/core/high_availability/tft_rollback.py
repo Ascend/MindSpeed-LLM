@@ -6,10 +6,15 @@ from logging import getLogger
 from typing import Optional
 
 import megatron.training.global_vars
+import megatron.training.training as megatron_training
 import torch
 from megatron.core import mpu
-from megatron.legacy.data.data_samplers import build_pretraining_data_loader
-from megatron.training import get_args
+from megatron.legacy.data.data_samplers import (
+    MegatronPretrainingSampler,
+    MegatronPretrainingRandomSampler,
+    RandomSeedDataset,
+)
+from megatron.training import get_args, get_timers
 from megatron.training.training import training_log
 from megatron.training.utils import calc_params_l2_norm
 
@@ -82,17 +87,19 @@ def feature_rollback():
         moe_utils.AG_SHARED_EXPERTS_INPUTS = []
 
 
-def _get_dataloader_iter(dataloader_type, dataloader):
+def _get_dataloader_iter(dataloader_type, dataloader, first_iterator=None):
     """Return dataloader iterator."""
 
-    def cyclic_iter(iterable):
+    def cyclic_iter(loader, initial_iterator):
+        if initial_iterator is not None:
+            yield from initial_iterator
         while True:
-            yield from iterable
+            yield from loader
 
     if dataloader_type == "single":
         return iter(dataloader)
     elif dataloader_type == "cyclic":
-        return iter(cyclic_iter(dataloader))
+        return iter(cyclic_iter(dataloader, first_iterator))
     else:
         raise RuntimeError('{} dataloader type is not supported.'.format(dataloader_type))
 
@@ -119,6 +126,22 @@ def _extract_dataset_from_iterable(iterable) -> Optional[torch.utils.data.Datase
     return None
 
 
+def _extract_dataloader_from_iterable(iterable) -> Optional[torch.utils.data.DataLoader]:
+    dataloader = getattr(iterable, '_ha_dataloader', None)
+    if dataloader is not None:
+        return dataloader
+    if isinstance(iterable, torch.utils.data.DataLoader):
+        return iterable
+    if isinstance(iterable, types.GeneratorType):
+        frame = getattr(iterable, 'gi_frame', None)
+        if frame is not None:
+            for value in frame.f_locals.values():
+                dataloader = _extract_dataloader_from_iterable(value)
+                if dataloader is not None:
+                    return dataloader
+    return None
+
+
 def _rebuild_dataloader_iter(ds_iterator, consumed_train_samples):
     if ds_iterator is None:
         return
@@ -129,17 +152,63 @@ def _rebuild_dataloader_iter(ds_iterator, consumed_train_samples):
             _rebuild_dataloader_iter(it, consumed_train_samples)
         return
 
-    # get dataloader type and dataset
-    dl_type = get_args().dataloader_type
+    args = get_args()
     dataset = _extract_dataset_from_iterable(ds_iterator.iterable)
+    if (
+        args.enable_high_availability
+        and args.dataloader_type in ('single', 'cyclic')
+        and args.num_workers > 0
+        and not isinstance(dataset, RandomSeedDataset)
+    ):
+        dataloader = _extract_dataloader_from_iterable(ds_iterator.iterable)
+        if dataloader is None:
+            raise RuntimeError('TFT rollback cannot access the DataLoader for worker reuse.')
+        if not dataloader.persistent_workers:
+            raise RuntimeError('TFT rollback requires the persistent HA DataLoader for worker reuse.')
+        sampler = dataloader.batch_sampler
+        expected_sampler = (
+            MegatronPretrainingSampler if args.dataloader_type == 'single' else MegatronPretrainingRandomSampler
+        )
+        if not isinstance(sampler, expected_sampler):
+            raise RuntimeError('TFT rollback cannot rewind an unsupported batch sampler.')
+        if consumed_train_samples < 0 or (
+            args.dataloader_type == 'single' and consumed_train_samples >= sampler.total_samples
+        ):
+            raise RuntimeError(f'TFT rollback consumed samples out of range: {consumed_train_samples}')
+        if args.dataloader_type == 'cyclic':
+            active_total = sampler.total_samples - sampler.last_batch_size
+            if (
+                active_total <= 0
+                or consumed_train_samples % active_total % sampler.micro_batch_times_data_parallel_size
+            ):
+                raise RuntimeError(f'TFT rollback consumed samples not batch aligned: {consumed_train_samples}')
 
+        previous_consumed_samples = sampler.consumed_samples
+        sampler.consumed_samples = consumed_train_samples
+        try:
+            new_iterator = iter(dataloader)
+        except Exception:
+            sampler.consumed_samples = previous_consumed_samples
+            raise
+        ds_iterator.iterable = (
+            new_iterator
+            if args.dataloader_type == 'single'
+            else _get_dataloader_iter('cyclic', dataloader, first_iterator=new_iterator)
+        )
+        ds_iterator.saved_microbatches = []
+        ds_iterator.replaying = False
+        ds_iterator.replay_pos = 0
+        return
+
+    # get dataloader type and dataset
+    dl_type = args.dataloader_type
     if dataset is None:
         raise RuntimeError(
             f"Cannot rebuild dataloader for type '{dl_type}': "
             "dataset not accessible. Please ensure dataset reference is saved."
         )
     # Rebuild the dataloader iterator with the current dataset and consumed samples.
-    new_data_loader = build_pretraining_data_loader(dataset, consumed_train_samples)
+    new_data_loader = megatron_training.build_pretraining_data_loader(dataset, consumed_train_samples)
     # reset the dataloader iterator
     ds_iterator.iterable = _get_dataloader_iter(dl_type, new_data_loader)
     ds_iterator.saved_microbatches = []
@@ -206,6 +275,11 @@ def training_log_repair(iteration: int, train_args: list):
             f"rank:{args.rank} Skip the train log repair. repair_step:{iteration} args.iteration:{args.iteration}."
         )
         return
+
+    interval_timer = get_timers()('interval-time', log_level=0)
+    if not interval_timer._started:
+        # This is synthetic rollback logging. Avoid a conditional barrier across ranks.
+        interval_timer.start(barrier=False)
 
     # Get necessary parameters
     loss_scale = train_args[ha_constant.OPTIM_INDEX].get_loss_scale().item()

@@ -133,6 +133,20 @@ class HighAvailabilityFeature(MindSpeedFeature):
         from mindspeed_llm.core.pipeline_parallel.schedules import high_availability_get_forward_backward_func_wrapper
 
         if args.enable_high_availability:
+            from mindspeed_llm.tasks.high_availability.dataloader_patch import (
+                ha_build_pretraining_data_loader,
+                ha_build_train_valid_test_data_loaders_wrapper,
+            )
+
+            patch_manager.register_patch(
+                'megatron.training.training.build_pretraining_data_loader',
+                ha_build_pretraining_data_loader,
+                force_patch=True,
+            )
+            patch_manager.register_patch(
+                'megatron.training.training.build_train_valid_test_data_loaders',
+                ha_build_train_valid_test_data_loaders_wrapper,
+            )
             no_replica = getattr(args, 'distributed_optimizer_no_replica', False)
             if not no_replica:
                 patch_manager.register_patch(
