@@ -2,7 +2,7 @@
 
 import os
 from enum import Enum
-from typing import List, Optional, Tuple, Iterable, Any, Optional
+from typing import List, Tuple, Optional
 import socket
 import time
 
@@ -10,9 +10,9 @@ import numpy
 import torch
 from torch import distributed as dist
 
-from mindspeed_llm.fsdp2.distributed.parallel_state import ParallelState
 from mindspeed_llm.fsdp2.utils.logging import get_logger
 from mindspeed_llm.fsdp2.utils.global_vars import get_args
+
 logger = get_logger(__name__)
 
 
@@ -24,11 +24,10 @@ class Split(Enum):
 
 def compile_helpers():
     """Compile C++ helper functions at runtime. Make sure this is invoked on a single process."""
-    import os
     import subprocess
 
     command = ["make", "-C", os.path.abspath(os.path.dirname(__file__))]
-    if subprocess.run(command).returncode != 0:
+    if subprocess.run(command, check=False).returncode != 0:
         import sys
 
         logger.info_rank0("Failed to compile the C++ dataset helper functions")
@@ -80,7 +79,7 @@ def get_blend_from_list(
                 weight = None
             weight_per_dataset.append(weight)
 
-        is_none = map(lambda _: _ is None, weight_per_dataset)
+        is_none = [_ is None for _ in weight_per_dataset]
         if any(is_none):
             assert all(is_none)
             weight_per_dataset = None
@@ -120,7 +119,7 @@ def is_shared_path(path: str, retry: int = 3, wait: float = 0.5) -> bool:
 
     try:
         if local_rank == 0:
-            with open(marker_file, "w") as f:
+            with open(marker_file, "w", encoding="utf-8") as f:
                 f.write(f"marker from {hostname}")
         torch.distributed.barrier()
 
@@ -133,26 +132,32 @@ def is_shared_path(path: str, retry: int = 3, wait: float = 0.5) -> bool:
 
         visible_count = len(visible_files)
         visible_tensor = torch.tensor(
-            [visible_count],
-            dtype=torch.int,
-            device=torch.accelerator.current_accelerator().type
+            [visible_count], dtype=torch.int, device=torch.accelerator.current_accelerator().type
         )
         torch.distributed.all_reduce(visible_tensor, op=torch.distributed.ReduceOp.MAX)
         total_visible = visible_tensor.item()
 
         if rank == 0:
             if total_visible > 1:
-                logger.info_rank0(f"[is_shared_path] Detection result: Shared storage ({path}), detected {total_visible} node marker files.")
+                logger.info_rank0(
+                    f"[is_shared_path] Detection result: Shared storage ({path}), detected {total_visible} node marker files."
+                )
                 shared = True
             elif total_visible == 1:
-                logger.info_rank0(f"[is_shared_path] Detection result: Non-shared storage ({path}), only local node can access its own marker.")
+                logger.info_rank0(
+                    f"[is_shared_path] Detection result: Non-shared storage ({path}), only local node can access its own marker."
+                )
                 shared = False
             else:
-                raise RuntimeError(f"[is_shared_path] Detection failed: No visible marker files, please check mount configuration.")
+                raise RuntimeError(
+                    "[is_shared_path] Detection failed: No visible marker files, please check mount configuration."
+                )
         else:
             shared = None
 
-        shared = torch.tensor([1 if shared else 0], dtype=torch.int, device=torch.accelerator.current_accelerator().type)
+        shared = torch.tensor(
+            [1 if shared else 0], dtype=torch.int, device=torch.accelerator.current_accelerator().type
+        )
         torch.distributed.broadcast(shared, src=0)
 
         torch.distributed.barrier()
