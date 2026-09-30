@@ -2,7 +2,6 @@
 
 import hashlib
 import json
-import logging
 import os
 import time
 from collections import OrderedDict
@@ -48,18 +47,16 @@ class BlendedDataset(torch.utils.data.Dataset):
     ) -> None:
         assert len(datasets) == len(weights)
         assert len(datasets) < 32767
-        assert all(map(lambda _: type(_) == type(datasets[0]), datasets))
+        assert all(map(lambda _: type(_) is type(datasets[0]), datasets))
         assert all(map(lambda _: _.index_split == datasets[0].index_split, datasets))
         assert all(map(lambda _: _ > 0, weights))
-        assert all(map(lambda _: type(_) == type(weights[0]), weights))
+        assert all(map(lambda _: type(_) is type(weights[0]), weights))
         if size is None and isinstance(weights[0], float):
             assert all(map(lambda _: _ == int(_), weights))
 
         # Alert user to unnecessary blending
         if len(datasets) == 1:
-            logger.info_rank0(
-                f"Building a BlendedDataset for a single MegatronDataset"
-            )
+            logger.info_rank0("Building a BlendedDataset for a single MegatronDataset")
 
         if size is not None:
             weights = normalize(weights)
@@ -77,11 +74,9 @@ class BlendedDataset(torch.utils.data.Dataset):
         unique_identifiers["weights"] = self.weights
         unique_identifiers["size"] = self.size
 
-        self.unique_description = json.dumps(
-            unique_identifiers, indent=4, default=lambda obj: obj.unique_identifiers
-        )
+        self.unique_description = json.dumps(unique_identifiers, indent=4, default=lambda obj: obj.unique_identifiers)
         self.unique_description_hash = hashlib.md5(
-            self.unique_description.encode("utf-8")
+            self.unique_description.encode("utf-8"), usedforsecurity=False
         ).hexdigest()
 
         self.built_anew_on_cache_miss = False
@@ -109,10 +104,13 @@ class BlendedDataset(torch.utils.data.Dataset):
         path_to_cache = self.config.path_to_cache
 
         if path_to_cache:
-            get_path_to = lambda suffix: os.path.join(
-                path_to_cache,
-                f"{self.unique_description_hash}-{type(self).__name__}-{self.split.name}-{suffix}",
-            )
+
+            def get_path_to(suffix):
+                return os.path.join(
+                    path_to_cache,
+                    f"{self.unique_description_hash}-{type(self).__name__}-{self.split.name}-{suffix}",
+                )
+
             path_to_description = get_path_to("description.txt")
             path_to_dataset_index = get_path_to("dataset_index.npy")
             path_to_dataset_sample_index = get_path_to("dataset_sample_index.npy")
@@ -126,21 +124,17 @@ class BlendedDataset(torch.utils.data.Dataset):
             cache_hit = False
 
         if not path_to_cache or (not cache_hit and torch.distributed.get_rank() == 0):
-            logger.info_rank0(
-                f"Build and save the {type(self).__name__} indices"
-            )
+            logger.info_rank0(f"Build and save the {type(self).__name__} indices")
             self.built_anew_on_cache_miss = True
 
             # Build the dataset and dataset sample indexes
-            logger.info_rank0(
-                f"\tBuild and save the dataset and dataset sample indexes"
-            )
+            logger.info_rank0("\tBuild and save the dataset and dataset sample indexes")
             t_beg = time.time()
 
             target_dir = os.path.abspath("mindspeed_llm/fsdp2/data/megatron_data")
-            cmd = ["make"] 
+            cmd = ["make"]
             subprocess.run(cmd, cwd=target_dir, check=True)
-            
+
             from mindspeed_llm.fsdp2.data.megatron_data import helpers
 
             if self.size is not None:
@@ -155,7 +149,7 @@ class BlendedDataset(torch.utils.data.Dataset):
                     _VERBOSE,
                 )
             else:
-                size = sum(self.weights)
+                size = int(sum(self.weights))
                 dataset_index = numpy.zeros(size, dtype=numpy.int16)
                 dataset_sample_index = numpy.zeros(size, dtype=numpy.int64)
                 helpers.build_exhaustive_blending_indices(
@@ -165,7 +159,7 @@ class BlendedDataset(torch.utils.data.Dataset):
             if path_to_cache:
                 os.makedirs(path_to_cache, exist_ok=True)
                 # Write the description
-                with open(path_to_description, "wt") as writer:
+                with open(path_to_description, "wt", encoding="utf-8") as writer:
                     writer.write(self.unique_description)
                 # Save the indexes
                 numpy.save(path_to_dataset_index, dataset_index, allow_pickle=True)
@@ -182,9 +176,7 @@ class BlendedDataset(torch.utils.data.Dataset):
 
         logger.info_rank0(f"Load the {type(self).__name__} indices")
 
-        logger.info_rank0(
-            f"\tLoad the dataset index from {path_to_dataset_index}"
-        )
+        logger.info_rank0(f"\tLoad the dataset index from {path_to_dataset_index}")
         t_beg = time.time()
         dataset_index = numpy.load(path_to_dataset_index, allow_pickle=True, mmap_mode='r')
         t_end = time.time()
@@ -194,9 +186,7 @@ class BlendedDataset(torch.utils.data.Dataset):
             f"\tLoad the dataset sample index from {path_to_dataset_sample_index}",
         )
         t_beg = time.time()
-        dataset_sample_index = numpy.load(
-            path_to_dataset_sample_index, allow_pickle=True, mmap_mode='r'
-        )
+        dataset_sample_index = numpy.load(path_to_dataset_sample_index, allow_pickle=True, mmap_mode='r')
         t_end = time.time()
         logger.info_rank0(f"\t> time elapsed: {t_end - t_beg:4f} seconds")
 
