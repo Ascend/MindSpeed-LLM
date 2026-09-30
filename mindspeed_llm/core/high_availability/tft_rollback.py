@@ -13,8 +13,13 @@ from megatron.training import get_args
 from megatron.training.training import training_log
 from megatron.training.utils import calc_params_l2_norm
 
-from .tft_optimizer_data_repair import (LogArgs, unset_memory_ckpt, set_load_ckpt,
-                                        average_losses_across_microbatches, get_load_ckpt)
+from .tft_optimizer_data_repair import (
+    LogArgs,
+    unset_memory_ckpt,
+    set_load_ckpt,
+    average_losses_across_microbatches,
+    get_load_ckpt,
+)
 from .tft_replica_group import destroy_repair_group
 from .utils import ha_constant
 
@@ -53,10 +58,12 @@ def rollback_callback(step: int, train_args, ctx):
     training_log_repair(step, train_args)
     rebuild_global_vars(step, args)
     t7 = time.time()
-    ttp_logger.info(f"[rollback] rank {rank} rollback total time consumed:{t7 - t1:.3f}s, "
-                           f"feature rollback:{t3 - t2:.3f}s, gather:{t4 - t3:.3f}s, "
-                           f"build dataset:{t5 - t4:.3f}s, destroy repair group:{t6 - t5:.3f}s, "
-                           f"repair log:{t7 - t6:.3f}s")
+    ttp_logger.info(
+        f"[rollback] rank {rank} rollback total time consumed:{t7 - t1:.3f}s, "
+        f"feature rollback:{t3 - t2:.3f}s, gather:{t4 - t3:.3f}s, "
+        f"build dataset:{t5 - t4:.3f}s, destroy repair group:{t6 - t5:.3f}s, "
+        f"repair log:{t7 - t6:.3f}s"
+    )
 
 
 def feature_rollback():
@@ -71,16 +78,16 @@ def feature_rollback():
 
     if hasattr(args, "moe_permutation_async_comm") and args.moe_permutation_async_comm:
         from mindspeed.core.transformer.moe import moe_utils
+
         moe_utils.AG_SHARED_EXPERTS_INPUTS = []
 
 
 def _get_dataloader_iter(dataloader_type, dataloader):
     """Return dataloader iterator."""
 
-    def cyclic_iter(iter):
+    def cyclic_iter(iterable):
         while True:
-            for x in iter:
-                yield x
+            yield from iterable
 
     if dataloader_type == "single":
         return iter(dataloader)
@@ -152,10 +159,32 @@ def rebuild_global_vars(step, args):
     args.iteration = step
 
     from megatron.training.global_vars import _set_timers
+
     megatron.training.global_vars._GLOBAL_TIMERS = None
     _set_timers(args)
     from megatron.core.rerun_state_machine import destroy_rerun_state_machine
+
     destroy_rerun_state_machine()
+
+
+def _should_repair_training_log(step: int, local_step: int, has_losses: bool, logged_step: Optional[int]) -> bool:
+    """Use the training-log output rank's decision on every rank.
+
+    training_log performs model-parallel collectives, so local rollback progress
+    must not decide independently whether a rank enters it.
+    """
+    writer_rank = torch.distributed.get_world_size() - 1
+    repair = torch.tensor(
+        [
+            int(step not in (local_step, logged_step) and has_losses)
+            if torch.distributed.get_rank() == writer_rank
+            else 0
+        ],
+        dtype=torch.int32,
+        device="npu",
+    )
+    torch.distributed.broadcast(repair, src=writer_rank)
+    return bool(repair.item())
 
 
 def training_log_repair(iteration: int, train_args: list):
@@ -163,18 +192,19 @@ def training_log_repair(iteration: int, train_args: list):
     repair train log: Log training information such as losses, grad, ....
     iteration: repair step
     train_args: args from train
-    losses_reduced is None means MindIO TFT doesn't get losses_reduced
+    The output rank's completed log step decides whether all ranks replay logging.
     """
 
     # Average losses across microbatches.
-    if LogArgs.losses_reduced_ and isinstance(LogArgs.losses_reduced_[0]["lm loss"], tuple):
+    if LogArgs.losses_reduced_ and isinstance(LogArgs.losses_reduced_[0]["lm loss"], tuple):  # pylint: disable=unsubscriptable-object
         LogArgs.losses_reduced_ = average_losses_across_microbatches(LogArgs.losses_reduced_)
 
     args = get_args()
     losses_reduced = LogArgs.losses_reduced_
-    if iteration == args.iteration or losses_reduced is None:
-        ttp_logger.info(f"rank:{args.rank} Skip the train log repair. repair_step:{iteration} "
-                               f"args.iteration:{args.iteration}.")
+    if not _should_repair_training_log(iteration, args.iteration, bool(losses_reduced), LogArgs.last_logged_iteration_):
+        ttp_logger.info(
+            f"rank:{args.rank} Skip the train log repair. repair_step:{iteration} args.iteration:{args.iteration}."
+        )
         return
 
     # Get necessary parameters
@@ -201,14 +231,27 @@ def training_log_repair(iteration: int, train_args: list):
         if len(LogArgs.losses_reduced_) == 1:
             loss_dict = LogArgs.losses_reduced_[0]
         else:
-            ttp_logger.warning(f"lm loss might be not correct, please check the usage of tft_set_losses_reduced."
-                                      f"loss_dict:{LogArgs.losses_reduced_}")
+            ttp_logger.warning(
+                f"lm loss might be not correct, please check the usage of tft_set_losses_reduced."
+                f"loss_dict:{LogArgs.losses_reduced_}"
+            )
 
     # do repair log
     ttp_logger.info(f"rank:{args.rank} repair training log at iteration: {iteration}")
-    training_log(loss_dict, total_loss_dict, learning_rate, decoupled_learning_rate, iteration,
-                 loss_scale, report_memory_flag, skipped_iter,
-                 LogArgs.grad_norm_, params_norm, LogArgs.num_zeros_in_grad_)
+    training_log(
+        loss_dict,
+        total_loss_dict,
+        learning_rate,
+        decoupled_learning_rate,
+        iteration,
+        loss_scale,
+        report_memory_flag,
+        skipped_iter,
+        LogArgs.grad_norm_,
+        params_norm,
+        LogArgs.num_zeros_in_grad_,
+    )
+    LogArgs.last_logged_iteration_ = iteration
     return
 
 

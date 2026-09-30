@@ -792,6 +792,10 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
                                           grad_norm, params_norm, num_zeros_in_grad)
 
         if args.enable_high_availability:
+            from mindspeed_llm.core.high_availability.tft_optimizer_data_repair import LogArgs
+
+            # A crash before logging returns must leave this step eligible for replay.
+            LogArgs.last_logged_iteration_ = iteration
             args.num_floating_point_operations_so_far = num_floating_point_operations_so_far
             args.iteration = iteration
 
