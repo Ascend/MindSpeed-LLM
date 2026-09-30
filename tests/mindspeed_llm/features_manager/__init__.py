@@ -5,6 +5,7 @@ from megatron_adaptor.features_manager import (
     NPUDeterministicFeature,
     NPUDataDumpFeature,
     ProfilerDefaultFeature,
+    MegatronFixFeature,
 )
 from mindspeed.features_manager import (
     DisableGlooGroupFeature,
@@ -311,6 +312,7 @@ def add_megatron_adaptor_base_features(features_list: List[MindSpeedFeature]):
             NPUDeterministicFeature(),
             NPUDataDumpFeature(),
             ProfilerDefaultFeature(),
+            MegatronFixFeature(),
         ]
     )
 
