@@ -97,6 +97,7 @@ class GPTModel(MegatronCoreGPTModel):
                 max_sequence_length=self.max_sequence_length,
                 position_embedding_type=position_embedding_type,
                 skip_weight_param_allocation=skip_embedding_allocation,
+                tp_group=self.pg_collection.tp,
             )
         if skip_embedding_allocation:
             def remove_shared_embedding_check(self, incompatible_keys):
@@ -118,6 +119,7 @@ class GPTModel(MegatronCoreGPTModel):
                 seq_len_interpolation_factor=seq_len_interpolation_factor,
                 rotary_base=rotary_base,
                 use_cpu_initialization=self.config.use_cpu_initialization,
+                cp_group=self.pg_collection.cp,
             )
 
         # Cache for RoPE tensors which do not change between iterations.
@@ -182,6 +184,7 @@ class GPTModel(MegatronCoreGPTModel):
                                                  and self.share_embeddings_and_output_weights,
                     embedding_activation_buffer=self.embedding_activation_buffer,
                     grad_output_buffer=self.grad_output_buffer,
+                    tp_group=self.pg_collection.tp,
                 )
             else:
                 self.output_layer = tensor_parallel.ColumnParallelLinear(
@@ -196,6 +199,7 @@ class GPTModel(MegatronCoreGPTModel):
                     and self.share_embeddings_and_output_weights,
                     embedding_activation_buffer=self.embedding_activation_buffer,
                     grad_output_buffer=self.grad_output_buffer,
+                    tp_group=self.pg_collection.tp,
                 )
         if not post_layer_norm:
             self.decoder.post_layer_norm = False
@@ -242,7 +246,14 @@ class GPTModel(MegatronCoreGPTModel):
             rotary_seq_len = self.rotary_pos_emb.get_rotary_seq_len(
                 inference_context, self.decoder, decoder_input, self.config, packed_seq_params
             )
-            rotary_pos_emb = self.rotary_pos_emb(rotary_seq_len)
+            is_packed_thd = (
+                packed_seq_params is not None and packed_seq_params.qkv_format == 'thd'
+            )
+            rotary_pos_emb = self.rotary_pos_emb(
+                rotary_seq_len,
+                packed_seq=is_packed_thd,
+                cp_group=packed_seq_params.cp_group if packed_seq_params is not None else None,
+            )
 
 
         # Run decoder.

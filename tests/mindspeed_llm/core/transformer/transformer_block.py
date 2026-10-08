@@ -203,19 +203,22 @@ def _transformer_block_build_layers(self):
             else:
                 layer_spec.submodules.mlp = _get_mlp_module_spec(use_te=use_te, moe_grouped_gemm=args.moe_grouped_gemm)
 
-        # For qwen3_next attention
-        from mindspeed_llm.tasks.models.spec.qwen3_next_spec import linear_attention_spec, full_attention_spec
-
         if args.full_attention_interval:
+            # Keep Qwen3-Next-only dependencies out of standard Qwen3 startup.
+            from mindspeed_llm.tasks.models.spec.qwen3_next_spec import (
+                full_attention_spec,
+                linear_attention_spec,
+            )
+
             self.attention_layer_type = (
                 "linear_attention" if bool((global_layer_number) % args.full_attention_interval) else "full_attention"
             )
 
-        if args.full_attention_interval and self.attention_layer_type == "linear_attention":
-            layer_spec.submodules.self_attention = linear_attention_spec
+            if self.attention_layer_type == "linear_attention":
+                layer_spec.submodules.self_attention = linear_attention_spec
 
-        elif args.full_attention_interval and self.attention_layer_type == "full_attention":
-            layer_spec.submodules.self_attention = full_attention_spec
+            elif self.attention_layer_type == "full_attention":
+                layer_spec.submodules.self_attention = full_attention_spec
 
         # For noop layer
         if args.noop_layers and isinstance(args.noop_layers, set) and global_layer_number - 1 in args.noop_layers:

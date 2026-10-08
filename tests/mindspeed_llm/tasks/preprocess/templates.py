@@ -44,7 +44,7 @@ logger = logging.getLogger(__name__)
 
 cur_file_dir = Path(__file__).absolute().parent
 
-TEMPLATES_DIR = os.path.join(cur_file_dir.parent.parent.parent, "configs/finetune/templates.json")
+TEMPLATES_DIR = os.path.join(cur_file_dir.parent.parent.parent.parent, "configs/finetune/templates.json")
 
 
 @dataclass

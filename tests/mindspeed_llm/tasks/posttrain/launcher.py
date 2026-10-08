@@ -2,6 +2,7 @@
 import logging
 
 from megatron.training import get_args
+from megatron.training.arguments import parse_and_validate_args
 from megatron.training.initialize import initialize_megatron
 from mindspeed_llm.tasks.posttrain.sft import SFTTrainer, DeepSeek4SFTTrainer
 
@@ -40,8 +41,8 @@ class AutoTrainer:
         - Retrieves the 'stage' argument.
         - Uses the 'stage' to select the correct trainer.
         """
+        self.args = parse_and_validate_args()
         initialize_megatron()
-        self.args = get_args()
         self.trainer = get_trainer(self.args.stage)
 
     def train(self):

@@ -20,7 +20,6 @@ from mindspeed.core.models.common.embeddings.rotary_pos_embedding import (
     _get_pos_emb_on_this_cp_rank_in_hybrid_cp_general,
     _get_pos_emb_on_this_cp_rank_in_hybrid_cp)
 from mindspeed_llm.tasks.common.yarn_rope import YarnRotaryPositionEmbedding
-from mindspeed.utils import get_position_ids
 
 
 def apply_llama3_scaling(freqs: torch.Tensor):
@@ -115,13 +114,20 @@ def rotary_embedding_init_wrapper(fn):
     return wrapper
 
 
-def rotary_embedding_forward(self, max_seq_len: int, offset: int = 0, packed_seq: bool = False):
+def rotary_embedding_forward(
+    self,
+    max_seq_len: int,
+    offset: int = 0,
+    packed_seq: bool = False,
+    cp_group=None,
+):
     """Forward pass of RoPE embedding.
 
     Args:
         max_seq_len (int): Maximum size of sequence
         offset (int, optional): RoPE offset. Defaults to 0.
         packed_seq (bool, optional): Whether to use packed sequence. Defaults to False.
+        cp_group (ProcessGroup, optional): Context parallel process group. Defaults to None.
 
     Returns:
         Tensor: Embeddings after applying RoPE.
@@ -169,7 +175,9 @@ def rotary_embedding_forward(self, max_seq_len: int, offset: int = 0, packed_seq
     # emb [seq_length, .., dim]
     emb = emb[:, None, None, :]
 
-    cp = parallel_state.get_context_parallel_world_size()
+    if cp_group is None:
+        cp_group = getattr(self, 'cp_group', None)
+    cp = cp_group.size() if cp_group is not None else 1
     if args.tp_2d:
         tp_y_cp_sz = cp * args.tp_y
     else:
@@ -297,46 +305,74 @@ def apply_rotary_pos_emb_thd(
         Tensor: Shape [t, h, d]. The input tensor after applying RoPE.
     """
     args = get_args()
+    if t.dim() not in (3, 4):
+        raise AssertionError(f'THD RoPE only supports 3D or 4D input, got shape={tuple(t.shape)}.')
 
-    if not args.reset_attention_mask:
-        cp_size = parallel_state.get_context_parallel_world_size()
-        cp_rank = parallel_state.get_context_parallel_rank()
-        freqs = freqs.chunk(cp_size, dim=0)[cp_rank]
-        return apply_rotary_pos_emb_bshd(
-            t, freqs, rotary_interleaved, multi_latent_attention, mscale
-        )
-
-    position_ids = get_position_ids()
-    if position_ids is None:
-        raise AssertionError('reset-attention-mask needs position_ids for THD EOD RoPE path.')
-
-    if t.dim() == 3:
+    input_is_thd = t.dim() == 3
+    if args.reset_position_ids:
+        position_ids = getattr(cu_seqlens, 'position_ids', None)
+        if position_ids is None:
+            raise AssertionError('THD RoPE needs position_ids when reset-position-ids is enabled.')
         if position_ids.dtype not in (torch.int32, torch.int64):
             raise AssertionError(
-                f'THD EOD RoPE position_ids must use an integral dtype, got {position_ids.dtype}.'
+                f'THD RoPE position_ids must use an integral dtype, got {position_ids.dtype}.'
             )
+        if not input_is_thd and tuple(position_ids.shape) != tuple(t.shape[:2]):
+            raise AssertionError(
+                f'THD RoPE position_ids shape {tuple(position_ids.shape)} does not match '
+                f'input shape {tuple(t.shape[:2])}.'
+            )
+
         flat_position_ids = position_ids.reshape(-1).to(
-            device=freqs.device, dtype=torch.long, non_blocking=True
+            device=freqs.device,
+            dtype=torch.long,
+            non_blocking=True,
         )
-        if flat_position_ids.numel() != t.shape[0]:
+        expected_token_count = t.shape[0] if input_is_thd else t.shape[0] * t.shape[1]
+        if flat_position_ids.numel() != expected_token_count:
             raise AssertionError(
                 f'THD RoPE needs position_ids numel ({flat_position_ids.numel()}) '
-                f'to match token count ({t.shape[0]}).'
+                f'to match token count ({expected_token_count}).'
             )
         if torch.any(flat_position_ids < 0) or torch.any(flat_position_ids >= freqs.shape[0]):
             raise AssertionError(
-                f'THD EOD RoPE position_ids exceed the frequency table: freqs length={freqs.shape[0]}.'
+                f'THD RoPE position_ids exceed the frequency table: freqs length={freqs.shape[0]}.'
             )
-        freqs = freqs[flat_position_ids]
-        return apply_rotary_pos_emb_bshd(
-            t.unsqueeze(1), freqs, rotary_interleaved, multi_latent_attention, mscale
-        ).squeeze(1)
 
-    block_size, bsz = position_ids.shape
-    freqs = freqs[position_ids.view(-1)].reshape(block_size, bsz, 1, -1)
-    return apply_rotary_pos_emb_bshd(
-        t, freqs, rotary_interleaved, multi_latent_attention, mscale
+        freqs = freqs.index_select(0, flat_position_ids)
+        if input_is_thd:
+            freqs = freqs.reshape(t.shape[0], 1, 1, -1)
+        else:
+            freqs = freqs.reshape(t.shape[0], t.shape[1], 1, -1)
+    else:
+        if cp_group is None:
+            cp_size = parallel_state.get_context_parallel_world_size()
+            cp_rank = parallel_state.get_context_parallel_rank()
+        else:
+            cp_size = cp_group.size()
+            cp_rank = cp_group.rank()
+        if cp_size <= 0 or not 0 <= cp_rank < cp_size:
+            raise AssertionError(f'Invalid THD RoPE CP rank/size: rank={cp_rank}, size={cp_size}.')
+        if freqs.shape[0] % cp_size != 0:
+            raise AssertionError(
+                f'THD RoPE frequency length ({freqs.shape[0]}) must be divisible by CP size ({cp_size}).'
+            )
+        freqs = freqs.chunk(cp_size, dim=0)[cp_rank]
+        if freqs.shape[0] != t.shape[0]:
+            raise AssertionError(
+                f'THD RoPE local frequency length ({freqs.shape[0]}) '
+                f'does not match input token dimension ({t.shape[0]}).'
+            )
+
+    rotary_input = t.unsqueeze(1) if input_is_thd else t
+    output = apply_rotary_pos_emb_bshd(
+        rotary_input,
+        freqs,
+        rotary_interleaved,
+        multi_latent_attention,
+        mscale,
     )
+    return output.squeeze(1) if input_is_thd else output
 
 
 def apply_rotary_pos_emb_bshd_in_complex(t: Tensor, freqs: Tensor, rotary_interleaved: bool = False) -> Tensor:

@@ -454,7 +454,10 @@ class Hf2MgConvert(Convert):
                 post_norm_key = mg_weight_key["layers_self_attention_pre_mlp_layernorm"]
                 extra_post_norm_key = mg_weight_key["layers_self_attention_post_attention_layernorm"]
                 post_mlp_norm_key = mg_weight_key["layers_self_attention_post_mlp_layernorm"]
-            elif self.transformer_impl == "transformer_engine" and hf_layer_idx < first_k_dense_replace:
+            elif self.transformer_impl == "transformer_engine" and (
+                not getattr(self.load_model, "num_experts", None)
+                or hf_layer_idx < first_k_dense_replace
+            ):
                 post_norm_key = mg_weight_key["layers_self_attention_pre_mlp_layernorm_te_dense"]
                 extra_post_norm_key = None
                 post_mlp_norm_key = None

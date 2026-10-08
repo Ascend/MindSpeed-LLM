@@ -1,9 +1,8 @@
 # Copyright (c) 2024, HUAWEI CORPORATION.  All rights reserved.
 import os
 from functools import partial
-from typing import Union
 
-import megatron
+import megatron.core.utils as megatron_core_utils
 import torch
 from megatron.core import mpu, parallel_state, tensor_parallel
 from megatron.core.models.gpt.gpt_layer_specs import (
@@ -14,11 +13,12 @@ from megatron.core.models.gpt.gpt_layer_specs import (
 from megatron.core.transformer.spec_utils import import_module
 from megatron.training import get_args, get_timers, print_rank_0
 from megatron.training.arguments import core_transformer_config_from_args
-from megatron.training.utils import average_losses_across_data_parallel_group, get_batch_on_this_cp_rank, get_ring_degree
+from megatron.training.utils import average_losses_across_data_parallel_group
 from megatron.training.yaml_arguments import core_transformer_config_from_yaml
 
 from mindspeed.core.context_parallel.get_batch_utils import set_actual_seq_len
 from mindspeed.core.context_parallel.utils import pad_data
+from mindspeed.utils import get_ring_degree
 
 try:
     from mindspeed.core.pipeline_parallel.dualpipev.dualpipev_schedules import set_post_process_flag
@@ -37,6 +37,15 @@ from mindspeed_llm.training.utils import (
 )
 
 IGNORE_INDEX = -100
+
+
+def _get_batch_on_this_cp_rank(batch, args):
+    return megatron_core_utils.get_batch_on_this_cp_rank(
+        batch,
+        is_hybrid_cp=getattr(args, 'hybrid_context_parallel', False),
+        cp_group=parallel_state.get_context_parallel_group(),
+        hybrid_cp_group_func=parallel_state.get_hybrid_data_context_parallel_groups,
+    )
 
 
 class SFTTrainer(BaseTrainer):
@@ -85,19 +94,21 @@ class SFTTrainer(BaseTrainer):
                         and args.context_parallel_algo == 'megatron_cp_algo'
                     ):
                         actual_seq_len = pad_data(
-                            data_b['actual_seq_len'].view(-1),
+                            actual_seq_len,
                             batch,
                             args.context_parallel_size,
                             args.tensor_model_parallel_size,
                         )
-                        actual_seq_len /= get_ring_degree()
+                        actual_seq_len = torch.div(
+                            actual_seq_len, get_ring_degree(), rounding_mode='floor'
+                        )
                     set_actual_seq_len(actual_seq_len)
                     batch = {'attention_mask': None}
                 else:
                     attention_mask_1d = data_b.get('attention_mask').long()
                     attention_mask = get_tune_attention_mask(attention_mask_1d)
                     batch = {'attention_mask': attention_mask}
-                batch = get_batch_on_this_cp_rank(batch)
+                batch = _get_batch_on_this_cp_rank(batch, args)
                 return None, None, None, batch['attention_mask'], None
 
         data_b = tensor_parallel.broadcast_data(keys, next(data_iterator), data_type)
@@ -147,15 +158,17 @@ class SFTTrainer(BaseTrainer):
                     and args.context_parallel_algo == 'megatron_cp_algo'
                 ):
                     actual_seq_len = pad_data(
-                        data_b['actual_seq_len'].view(-1),
+                        actual_seq_len,
                         batch,
                         args.context_parallel_size,
                         args.tensor_model_parallel_size,
                     )
-                    actual_seq_len /= get_ring_degree()
+                    actual_seq_len = torch.div(
+                        actual_seq_len, get_ring_degree(), rounding_mode='floor'
+                    )
                 set_actual_seq_len(actual_seq_len)
 
-                batch = get_batch_on_this_cp_rank(batch)
+                batch = _get_batch_on_this_cp_rank(batch, args)
 
                 return batch.values()
 
@@ -172,7 +185,7 @@ class SFTTrainer(BaseTrainer):
         if args.mtp_num_layers:
             mtp_batch_list = generate_mtp_batch_list_on_this_tp_rank(batch)
             set_mtp_batch_list(mtp_batch_list)
-        batch = get_batch_on_this_cp_rank(batch)
+        batch = _get_batch_on_this_cp_rank(batch, args)
         return batch.values()
 
     @staticmethod
@@ -245,7 +258,7 @@ class SFTTrainer(BaseTrainer):
 class DeepSeek4SFTTrainer(SFTTrainer):
     def model_provider(
         self, pre_process=True, post_process=True, use_dualpipe_mtp=False
-    ) -> Union[DeepSeek4Model, megatron.legacy.model.GPTModel]:
+    ) -> DeepSeek4Model:
         """Builds the model.
 
         If you set the use_mcore_models to True, it will return the mcore GPT model and if not the legacy GPT model.
@@ -256,7 +269,7 @@ class DeepSeek4SFTTrainer(SFTTrainer):
 
 
         Returns:
-            Union[DeepSeek4Model, megatron.legacy.model.DeepSeek4Model]: The returned model
+            DeepSeek4Model: The returned model.
         """
         args = get_args()
         use_te = args.transformer_impl == "transformer_engine"

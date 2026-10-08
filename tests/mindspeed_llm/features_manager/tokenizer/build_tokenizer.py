@@ -4,7 +4,7 @@ from pathlib import Path
 from mindspeed.features_manager.tokenizer.build_tokenizer import BuildTokenizerFeature as MindSpeedBuildTokenizerFeature
 
 TEMPLATES_DIR = str(
-    Path(__file__).resolve().parent.parents[2]
+    Path(__file__).resolve().parent.parents[3]
     / "configs/finetune/templates.json"
 )
 
@@ -32,4 +32,7 @@ class BuildTokenizerFeature(MindSpeedBuildTokenizerFeature):
 
     def register_patches(self, patch_manager, args):
         from mindspeed_llm.training.tokenizer import build_tokenizer
-        patch_manager.register_patch('megatron.core.tokenizers.utils.build_tokenizer', build_tokenizer)
+        patch_manager.register_patch(
+            'megatron.core.tokenizers.utils.build_tokenizer.build_tokenizer',
+            build_tokenizer,
+        )

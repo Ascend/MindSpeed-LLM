@@ -91,7 +91,14 @@ class BaseTrainer(ABC):
         torch.distributed.all_reduce(start_time_tensor, op=torch.distributed.ReduceOp.MIN)
         _TRAIN_START_TIME = start_time_tensor.item()
 
-    def model_provider(self, pre_process, post_process):
+    def model_provider(
+        self,
+        pre_process=True,
+        post_process=True,
+        vp_stage=None,
+        config=None,
+        pg_collection=None,
+    ):
         """
         Builds the model.
 
@@ -111,10 +118,11 @@ class BaseTrainer(ABC):
 
         print_rank_0('building GPT model ...')
         # Experimental loading arguments from yaml
-        if args.yaml_cfg is not None:
-            config = core_transformer_config_from_yaml(args, "language_model")
-        else:
-            config = core_transformer_config_from_args(args)
+        if config is None:
+            if args.yaml_cfg is not None:
+                config = core_transformer_config_from_yaml(args, "language_model")
+            else:
+                config = core_transformer_config_from_args(args)
 
         if args.use_mcore_models:
             if args.spec is not None:
@@ -143,6 +151,8 @@ class BaseTrainer(ABC):
                 rotary_percent=args.rotary_percent,
                 seq_len_interpolation_factor=args.rotary_seq_len_interpolation_factor,
                 mtp_block_spec=mtp_block_spec,
+                pg_collection=pg_collection,
+                vp_stage=vp_stage,
             )
         else:
             if not args.context_parallel_size == 1:
@@ -199,7 +209,11 @@ class BaseTrainer(ABC):
 
             iteration = 0
             if args.do_train and args.train_iters > 0:
-                iteration, num_floating_point_operations_so_far = train(*self.train_args)
+                iteration, num_floating_point_operations_so_far = train(
+                    *self.train_args,
+                    checkpointing_context=None,
+                    non_loss_data_func=None,
+                )
 
             print_datetime('after training is done')
 

@@ -15,25 +15,33 @@ class ResetAttentionMaskFeature(MindSpeedFeature):
         group.add_argument('--fix-sub-seq-length', type=int, default=-1,
                             help='[only for test] set sub-seq-length, when it > 0, the subseqlen of the seqlens is fixed')
 
+    def validate_args(self, args):
+        if getattr(args, 'reset_attention_mask', False) and getattr(args, 'apply_rope_fusion', False):
+            args.apply_rope_fusion = False
+
     def register_patches(self, patch_manager, args):
         if getattr(args, self.feature_name, None):
             from mindspeed.core.transformer.flash_attention.reset_attention_mask.utils import (
-                _get_ltor_masks_and_position_ids, collate_wrapper, eod_gptdataset_getitem)
-            from mindspeed.core.pipeline_parallel.p2p_communication import _p2p_ops_eod
-            from mindspeed.core.models.common.embeddings.rotary_pos_embedding import (
-                rotary_forward, Eod_get_rotary_seq_len)
+                _get_ltor_masks_and_position_ids,
+                collate_wrapper,
+                eod_gptdataset_getitem,
+                get_batch_on_this_cp_rank_wrapper,
+            )
+            from mindspeed.core.models.common.embeddings.rotary_pos_embedding import Eod_get_rotary_seq_len
 
             patch_manager.register_patch('megatron.core.datasets.gpt_dataset._get_ltor_masks_and_position_ids',
                                          _get_ltor_masks_and_position_ids)
             patch_manager.register_patch('torch.utils.data._utils.collate.default_collate', collate_wrapper)
             patch_manager.register_patch('megatron.core.datasets.gpt_dataset.GPTDataset.__getitem__',
                                          eod_gptdataset_getitem)
-            from mindspeed_llm.training.utils import get_batch_on_this_cp_rank_wrapper
             patch_manager.register_patch('megatron.core.utils.get_batch_on_this_cp_rank',
                                          get_batch_on_this_cp_rank_wrapper)
-            from mindspeed_llm.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb_thd
+            from mindspeed_llm.core.models.common.embeddings.rotary_pos_embedding import (
+                apply_rotary_pos_emb_thd,
+                rotary_embedding_forward,
+            )
             patch_manager.register_patch(
-                'megatron.core.models.common.embeddings.rotary_pos_embedding._apply_rotary_pos_emb_thd',
+                'megatron.core.models.common.embeddings.rope_utils._apply_rotary_pos_emb_thd',
                 apply_rotary_pos_emb_thd)
             from mindspeed_llm.core.models.gpt.gpt_model import gpt_forward_wrapper
             patch_manager.register_patch('megatron.core.models.gpt.gpt_model.GPTModel.forward', gpt_forward_wrapper)
@@ -41,15 +49,14 @@ class ResetAttentionMaskFeature(MindSpeedFeature):
             patch_manager.register_patch('megatron.core.transformer.attention.Attention.forward', attention_forward)
 
             patch_manager.register_patch(
-                'megatron.core.models.common.embeddings.rotary_pos_embedding.RotaryEmbedding.forward', rotary_forward)
+                'megatron.core.models.common.embeddings.rotary_pos_embedding.RotaryEmbedding.forward',
+                rotary_embedding_forward,
+            )
             patch_manager.register_patch(
                 'megatron.core.models.common.embeddings.rotary_pos_embedding.RotaryEmbedding.get_rotary_seq_len',
                 Eod_get_rotary_seq_len)
 
             if int(getattr(args, 'context_parallel_size', 1)) > 1:
-                patch_manager.register_patch('megatron.core.pipeline_parallel.p2p_communication._p2p_ops', _p2p_ops_eod)
-                patch_manager.register_patch('megatron.core.pipeline_parallel.p2p_communication._batched_p2p_ops',
-                                             _p2p_ops_eod)
                 if args.transformer_impl == 'transformer_engine':
                     from mindspeed_llm.te.pytorch.attention.dot_product_attention.te_cp_dot_product_attention import (
                           TECPDotProductAttention,
@@ -81,13 +88,8 @@ class ResetAttentionMaskFeature(MindSpeedFeature):
                                          apply_rotary_pos_emb_bshd)
             from mindspeed.core.transformer.flash_attention.reset_attention_mask.adaptor import (
                 p2p_communicate_eod_wrapper,
-                rotary_seq_len_eod_wrapper,
             )
             patch_manager.register_patch(
                 'megatron.core.pipeline_parallel.p2p_communication.P2PCommunicator._communicate',
                 p2p_communicate_eod_wrapper,
-            )
-            patch_manager.register_patch(
-                'megatron.core.models.common.embeddings.rotary_pos_embedding.RotaryEmbedding.get_rotary_seq_len',
-                rotary_seq_len_eod_wrapper,
             )

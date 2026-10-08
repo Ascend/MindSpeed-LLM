@@ -15,6 +15,8 @@ class TrainingBasicFeature(MindSpeedFeature):
         super().__init__(feature_name="training", optimization_level=0)
 
     def pre_validate_args(self, args):
+        args.use_legacy_models = getattr(args, "use_legacy_models", False)
+        args.use_mcore_models = not args.use_legacy_models
         if args.reset_attention_mask:
             args.shape_order = 'TND'
             print_rank0_by_args(args, "When reset_attention_mask is enabled, shape_order should be TND.")

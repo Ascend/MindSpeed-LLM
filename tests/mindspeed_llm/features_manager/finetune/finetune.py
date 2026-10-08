@@ -14,8 +14,6 @@ class FinetuneFeature(MindSpeedFeature):
 
         group.add_argument('--is-instruction-dataset', action='store_true',
                             help='use instruction dataset or not')
-        group.add_argument('--variable-seq-lengths', action='store_true',
-                            help='Use variable seq lengths or not.')
         group.add_argument('--no-cut-token', action='store_true', default=False,
                             help='Used for not cut token in finetune.')
         group.add_argument('--full-shuffle-instruction-dataset', action='store_true',

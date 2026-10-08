@@ -7,6 +7,7 @@ from megatron_adaptor.features_manager import TransformerEngineBasicFeature as M
 from mindspeed.arguments import add_parser_argument_choices_value
 from mindspeed.patch_utils import MindSpeedPatchesManager
 
+
 class TransformerEngineBasicFeature(MATransformerEngineBasicFeature):
     def __init__(self):
         super().__init__()
@@ -63,21 +64,17 @@ class TransformerEngineBasicFeature(MATransformerEngineBasicFeature):
                         dualpipev_fb_overlap_mtp_layer_forward_te_without_overlap,
                     )
         else:
-            from megatron.core.tensor_parallel.layers import ColumnParallelLinear, RowParallelLinear
-
             if not getattr(args, 'use_ascend_mc2', False):
-                pm.register_patch(
-                    'megatron.core.extensions.transformer_engine.TEColumnParallelLinear', ColumnParallelLinear
-                )
-                pm.register_patch('megatron.core.extensions.transformer_engine.TERowParallelLinear', RowParallelLinear)
-            else:
-                from mindspeed.core.tensor_parallel.mc2_feature.adaptor import MindSpeedMC2ColumnParallelLinear
-                from mindspeed.core.tensor_parallel.mc2_feature.adaptor import MindSpeedMC2RowParallelLinear
+                return
 
-                pm.register_patch(
-                    'megatron.core.extensions.transformer_engine.TEColumnParallelLinear',
-                    MindSpeedMC2ColumnParallelLinear,
-                )
-                pm.register_patch(
-                    'megatron.core.extensions.transformer_engine.TERowParallelLinear', MindSpeedMC2RowParallelLinear
-                )
+            from mindspeed.core.tensor_parallel.mc2_feature.adaptor import MindSpeedMC2ColumnParallelLinear
+            from mindspeed.core.tensor_parallel.mc2_feature.adaptor import MindSpeedMC2RowParallelLinear
+
+            pm.register_patch(
+                'megatron.core.extensions.transformer_engine.TEColumnParallelLinear',
+                MindSpeedMC2ColumnParallelLinear,
+            )
+            pm.register_patch(
+                'megatron.core.extensions.transformer_engine.TERowParallelLinear',
+                MindSpeedMC2RowParallelLinear,
+            )
