@@ -2,8 +2,6 @@
 export HCCL_HOST_SOCKET_PORT_RANGE=auto
 export HCCL_BUFFSIZE=200
 export HCCL_XN_RES_NUM=2000
-export HCCL_DISABLE_NHR=1
-export HCCL_DFS_CONFIG="task_exception:off"
 set -euo pipefail
 
 export HCCL_CONNECT_TIMEOUT=3600
