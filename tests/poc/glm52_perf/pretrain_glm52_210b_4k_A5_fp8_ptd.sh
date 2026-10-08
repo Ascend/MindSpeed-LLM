@@ -209,4 +209,4 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS pretrain_gpt.py \
     $PIPELINE_ARGS \
     $FP8 \
     ${OTHERS_ARGS[@]} \
-    --distributed-backend nccl | tee logs/pretrain_glm52_210b_4k_A5_ptd_fp8.log
+    --distributed-backend nccl | tee logs/pretrain_glm52_210b_4k_A5_fp8_ptd.log
