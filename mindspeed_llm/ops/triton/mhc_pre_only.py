@@ -389,6 +389,7 @@ def hc_pre_bmm_forward(H_pre: torch.Tensor, x: torch.Tensor) -> torch.Tensor:
         GROUP=GROUP,
         BLOCK_D=BLOCK_D,
         DIVISIBLE_D=DIV_D,
+        multibuffer=False,
     )
 
     return Y.view(B, S, D)
