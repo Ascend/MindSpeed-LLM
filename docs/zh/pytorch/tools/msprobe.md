@@ -164,5 +164,5 @@ dump_path/
 
 更多配置与定位流程请参考：
 
-- [msProbe 配置文件介绍](https://gitcode.com/Ascend/msprobe/blob/master/docs/zh/user_guide/dump/config_json_introduct.md)
-- [msProbe 大模型训练精度定位指南](https://gitcode.com/Ascend/msprobe/blob/master/docs/zh/best_practices/train_debug_guide.md)
+- [msProbe 配置文件介绍](https://gitcode.com/Ascend/msprobe/blob/26.2.0/docs/zh/user_guide/dump/config_json_introduct.md)
+- [msProbe 大模型训练精度定位指南](https://gitcode.com/Ascend/msprobe/blob/26.2.0/docs/zh/best_practices/train_debug_guide.md)

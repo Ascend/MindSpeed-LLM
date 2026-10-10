@@ -6,7 +6,7 @@
 
 > [!NOTE]
 >
-> 若您是首次使用 FSDP2 后端，建议先按 [FSDP2 快速入门](../../fsdp2_quick_start.md)（Qwen3-8B 预训练与微调）完成一次端到端跟练。本文档侧重全参数微调的模型、数据集、YAML 配置与参数说明，适用于更换模型或自定义数据集场景。
+> 若您是首次使用 FSDP2 后端，建议先按 [MindSpeed LLM快速入门（基于Megatron训练后端）](../../fsdp2_quick_start.md)（Qwen3-8B 预训练与微调）完成一次端到端跟练。本文档侧重全参数微调的模型、数据集、YAML 配置与参数说明，适用于更换模型或自定义数据集场景。
 
 本文介绍如何基于 HuggingFace 格式的预训练模型，使用 MindSpeed LLM FSDP2 后端完成全参数微调。示例采用 Qwen3-8B 模型和单台 `Atlas 900 A2 PoD`（1x8 集群），主要流程如下：
 
