@@ -163,12 +163,12 @@ FLA NPU 算子列表在 `docker/image_build.sh` 的 `FLA_NPU_OPS` 数组中统�
 
 ```bash
 # 基本运行
-docker run -it --rm \
+docker run -it \
   mindspeed-llm:v26.1.0-cann9.1.0-torch_npu2.7.1.post8-910b-openeuler24.03-py3.12 bash
 
 # 使用 NPU 设备运行（示例：设备 /dev/davinci1）
 # 假设您的 NPU 设备安装在 /dev/davinci1 上，并且 NPU 驱动程序安装在 /usr/local/Ascend 上：
-docker run -it --rm \
+docker run -it \
   --name mindspeed-llm \
   --privileged \
   --network host \
@@ -217,7 +217,7 @@ WORKDIR /workspace/your-project
 
 ```bash
 docker build -t my-mindspeed-app:latest .
-docker run -it --rm \
+docker run -it \
   --device=/dev/davinci1 \
   --device=/dev/davinci_manager \
   --device=/dev/devmm_svm \
@@ -259,9 +259,11 @@ MindSpeed LLM 基于 Apache License 2.0 许可证发布。详见 [LICENSE](https
 
 ## 安全风险
 
-在使用 Docker 容器运行时，需要注意以下安全风险：
+在运行容器时，需要注意以下安全风险：
 
-- **使用 root 用户运行：** 容器默认以 root 用户身份运行，可能带来安全隐患。建议在生产环境中创建非特权用户来运行应用程序。
+- 使用 `root` 用户运行：容器默认以 `root` 用户身份运行，可能带来安全隐患。建议在生产环境中创建非特权用户来运行应用程序。
+- 缺少 CPU 和内存资源限制：未设置资源限制可能导致容器消耗过多系统资源，影响宿主机性能。建议使用 `--cpus` 和 `--memory` 参数限制资源使用。
+- 设备使用 `rwm` 权限：为 NPU 设备分配了读写和 `mknod` 权限，虽然功能运行需要，但在安全敏感环境中应谨慎评估权限范围。
 
 ## 免责声明
 

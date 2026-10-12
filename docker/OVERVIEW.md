@@ -161,12 +161,12 @@ Image names use the `REPOSITORY:TAG` from `docker images`, for example, `mindspe
 
 ```bash
 # Basic run
-docker run -it --rm \
+docker run -it \
     mindspeed-llm:v26.1.0-cann9.1.0-torch_npu2.7.1.post8-910b-openeuler24.03-py3.12 bash
 
 # Run with NPU device (Example: /dev/davinci1)
 # Assume NPU device /dev/davinci1 and NPU driver installed at /usr/local/Ascend
-docker run -it --rm \
+docker run -it \
     --name mindspeed-llm \
     --privileged \
     --network host \
@@ -215,7 +215,7 @@ Build and run (Example: /dev/davinci1):
 
 ```bash
 docker build -t my-mindspeed-app:latest .
-docker run -it --rm \
+docker run -it \
     --device=/dev/davinci1 \
     --device=/dev/davinci_manager \
     --device=/dev/devmm_svm \
@@ -258,9 +258,11 @@ Users of pre-built images shall be responsible for ensuring that all usage of th
 
 ## Security Risks
 
-Please be aware of the following security risks when running in Docker containers:
+When running containers with these images, be aware of the following security risks:
 
-- **Running as the root user:** Containers run as the root user by default, which may introduce security risks. It is recommended to create a non-privileged user for running applications in production environments.
+- Running as the `root` user: Containers run as the `root` user by default, which can introduce security risks. In production environments, it is recommended to create a non-privileged user to run the application.
+- Lack of CPU and memory resource limits: Not setting resource limits may cause a container to consume excessive system resources and affect host performance. It is recommended to use the `--cpus` and `--memory` parameters to limit resource usage.
+- Device use with `rwm` permissions: The NPU device is assigned read, write, and `mknod` permissions. Although these are required for functionality, the scope of permissions should be carefully evaluated in security-sensitive environments.
 
 ## Disclaimer
 
