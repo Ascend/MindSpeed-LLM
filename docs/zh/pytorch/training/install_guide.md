@@ -248,8 +248,8 @@ MindSpeed LLM支持镜像安装和源码安装。
 
 MindSpeed LLM支持通过Git Submodule统一管理三方依赖仓库，便于版本追踪与协同开发。子模块统一放置在`3rdparty/`目录下，其中：
 
-- **MindSpeed**：默认拉取远端master分支最新代码。
-- **FSDPTurbo**：默认拉取远端main分支最新代码。
+- **MindSpeed**：默认拉取远端26.2.0_core_r0.12.1分支最新代码。
+- **FSDPTurbo**：默认拉取远端26.2.0分支最新代码。
 - **Megatron-LM**：固定在tag `core_v0.12.1`。
 
 1. 准备基础环境
@@ -261,7 +261,7 @@ MindSpeed LLM支持通过Git Submodule统一管理三方依赖仓库，便于版
    在完成MindSpeed LLM源码克隆后，初始化并拉取全部子模块：
 
    ```shell
-   git clone https://gitcode.com/ascend/MindSpeed-LLM.git
+   git clone -b 26.2.0 https://gitcode.com/ascend/MindSpeed-LLM.git
    cd MindSpeed-LLM
    git submodule update --init --recursive
    git submodule update --init --remote 3rdparty/MindSpeed 3rdparty/FSDPTurbo
