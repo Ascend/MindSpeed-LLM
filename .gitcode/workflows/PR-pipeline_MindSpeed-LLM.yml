@@ -15,7 +15,7 @@ on:
 
   pull_request_comment:
     types: [created]
-    branches: ["master", "26.1.0", "26.0.0"]
+    branches: ["master", "26.2.0", "26.1.0", "26.0.0"]
     comments: ["^compile$"]
 
 env:
