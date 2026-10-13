@@ -1,13 +1,14 @@
-# 快速入门：Qwen3-8B 模型 FSDP2 后端训练
+# 快速入门：Qwen3-8B模型FSDP2后端训练
 
 ## 概述
 
-本文档提供了一个简易示例，帮助初次接触 MindSpeed LLM 的开发者快速启动模型训练任务，并使用 FSDP2 后端完成大语言模型的预训练和微调任务。
-以下将以 Qwen3-8B 模型为例，指导开发者完成大语言模型的预训练和微调任务，主要步骤包括：
+本文档提供了一个简易示例，帮助初次接触MindSpeed LLM并使用FSDP2后端的开发者快速启动模型训练任务。
+
+以下将以Qwen3-8B模型为例，指导开发者完成大语言模型的预训练和微调任务，主要步骤包括：
 
 - 环境准备：根据安装指引进行搭建环境
 - 权重和数据集准备：从HuggingFace下载Qwen3-8B开源模型权重，并获取Alpaca数据集
-- 启动训练任务：在昇腾 NPU 上使用 FSDP2 后端进行模型预训练和微调
+- 启动训练任务：在昇腾NPU上使用FSDP2后端进行模型预训练和微调
 
 开发者入门基础：
 
@@ -17,11 +18,11 @@
 
 > [!NOTE]
 >
-> MindSpeed LLM 支持 <term>Ascend 950PR&950DT系列产品</term>、<term>Atlas A3训练系列产品</term> 和 <term>Atlas A2训练系列产品</term>，且要求单 NPU 的片上内存为 64GB 及以上，详见[模型支持列表](../models/supported_models.md)。
+> MindSpeed LLM 支持<term>Ascend 950PR&950DT系列产品</term>、<term>Atlas A3训练系列产品</term>和<term>Atlas A2训练系列产品</term>，且要求单NPU的片上内存为64GB及以上，详见[模型支持列表](../models/supported_models.md)。
 >
-> 本文档为 **快速入门跟练教程**。若需更换模型、注册自定义数据集或查阅更完整的 YAML 配置说明，请参考 [FSDP2 后端训练使用指南](./finetune/fsdp2/finetune_fsdp2.md)。
+> 本文档为**快速入门跟练教程**。若需更换模型、注册自定义数据集或查阅更完整的YAML配置说明，请参考[FSDP2后端微调使用指南](./finetune/fsdp2/finetune_fsdp2.md)。
 >
-> 当前 Qwen3-8B 的示例脚本中 `NPUS_PER_NODE=8` 表示需要 8 个 NPU，如果实际情况低于此配置，可能遇到OOM（Out of Memory，内存不足）问题。
+> 当前Qwen3-8B的示例脚本中`NPUS_PER_NODE=8`表示需要8个NPU，如果实际情况低于此配置，可能遇到OOM（Out of Memory，内存不足）问题。
 
 ## 环境准备
 
@@ -31,7 +32,7 @@
 
 1. 获取开源模型权重
 
-    创建一个目录存储权重文件。
+    在MindSpeed LLM根目录下创建一个目录存储权重文件。
 
     ```shell
     mkdir -p ./model_from_hf/qwen3_hf
@@ -40,41 +41,41 @@
 
     通过HuggingFace或ModelScope获取模型权重文件（择一获取）。
 
-    方式一：通过HuggingFace获取
+    - 方式一：通过HuggingFace获取
 
-    ```shell
-    # wget获取权重文件
-    wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/config.json
-    wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/generation_config.json
-    wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/merges.txt
-    wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/model-00001-of-00005.safetensors
-    wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/model-00002-of-00005.safetensors
-    wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/model-00003-of-00005.safetensors
-    wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/model-00004-of-00005.safetensors
-    wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/model-00005-of-00005.safetensors
-    wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/model.safetensors.index.json
-    wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/tokenizer.json
-    wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/tokenizer_config.json
-    wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/vocab.json
-    ```
+      ```shell
+      # wget获取权重文件
+      wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/config.json
+      wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/generation_config.json
+      wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/merges.txt
+      wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/model-00001-of-00005.safetensors
+      wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/model-00002-of-00005.safetensors
+      wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/model-00003-of-00005.safetensors
+      wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/model-00004-of-00005.safetensors
+      wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/model-00005-of-00005.safetensors
+      wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/model.safetensors.index.json
+      wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/tokenizer.json
+      wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/tokenizer_config.json
+      wget https://huggingface.co/Qwen/Qwen3-8B/resolve/main/vocab.json
+      ```
 
-    方式二：通过ModelScope获取（国内推荐）
+    - 方式二：通过ModelScope获取（国内推荐）
 
-    ```shell
-    # wget获取权重文件（从ModelScope下载）
-    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/config.json
-    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/generation_config.json
-    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/merges.txt
-    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/model-00001-of-00005.safetensors
-    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/model-00002-of-00005.safetensors
-    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/model-00003-of-00005.safetensors
-    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/model-00004-of-00005.safetensors
-    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/model-00005-of-00005.safetensors
-    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/model.safetensors.index.json
-    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/tokenizer.json
-    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/tokenizer_config.json
-    wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/vocab.json
-    ```
+      ```shell
+      # wget获取权重文件（从ModelScope下载）
+      wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/config.json
+      wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/generation_config.json
+      wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/merges.txt
+      wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/model-00001-of-00005.safetensors
+      wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/model-00002-of-00005.safetensors
+      wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/model-00003-of-00005.safetensors
+      wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/model-00004-of-00005.safetensors
+      wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/model-00005-of-00005.safetensors
+      wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/model.safetensors.index.json
+      wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/tokenizer.json
+      wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/tokenizer_config.json
+      wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/vocab.json
+      ```
 
     利用sha256sum计算sha256数值校验权重文件正确性和完整性。
 
@@ -90,14 +91,14 @@
 
 2. 获取数据集
 
-    通过 HuggingFace 获取 Alpaca 数据集。
+    通过HuggingFace或ModelScope获取Alpaca数据集。
 
     ```shell
     mkdir dataset
     cd dataset/
-    # HuggingFace 数据集链接（择一获取）
+    # HuggingFace数据集链接（择一获取）
     wget https://huggingface.co/datasets/tatsu-lab/alpaca/resolve/main/data/train-00000-of-00001-a09b74b3ef9c3b56.parquet
-    # ModelScope 数据集链接（择一获取）
+    # ModelScope数据集链接（择一获取）
     wget https://www.modelscope.cn/datasets/angelala00/tatsu-lab-alpaca/resolve/master/train-00000-of-00001-a09b74b3ef9c3b56.parquet
     cd ..
     ```
@@ -109,7 +110,7 @@
     source /usr/local/Ascend/nnal/atb/set_env.sh
     ```
 
-    以上命令以 root 用户安装后的默认路径为例，请用户根据 set_env.sh 的实际路径进行替换。
+    以上命令以root用户安装后的默认路径为例，请用户根据set_env.sh的实际路径进行替换。
 
 ## 启动预训练
 
@@ -126,7 +127,7 @@
     配置示例如下：
 
     ```bash
-    source examples/fsdp2/env_config.sh                 # 加载 NPU 环境变量配置
+    source examples/fsdp2/env_config.sh                 # 加载NPU环境变量配置
 
     NPUS_PER_NODE=8             # 使用单节点的8卡NPU
     MASTER_ADDR=localhost       # 单机使用本节点IP地址或者localhost，多机所有节点都配置为主节点IP地址
@@ -192,7 +193,7 @@
         - model.layers.{*}
 
     training:
-      stage: pt                                          # 训练阶段，pt 为预训练
+      stage: pt                                          # 训练阶段，pt为预训练
       dataloader_num_workers: 4
       seed: 42
       dataloader_drop_last: True
@@ -211,7 +212,7 @@
 
     执行后一段时间可见终端显示。
 
-    ```shell
+    ```Output
     INFO [2026-06-22 19:28:40] >>  iteration        1/    2000 | consumed samples:          8 | consumed tokens:      32768 | elapsed time per iteration (ms): 10520.60 | learning rate: 9.999994E-06 | global batch size:     8 | lm loss: 1.304194E+00 | grad norm: 8.515 | max_memory_allocated(GB): 19.07 | max_memory_reserved(GB): 20.87 |
     INFO [2026-06-22 19:28:41] >>  iteration        2/    2000 | consumed samples:         16 | consumed tokens:      65536 | elapsed time per iteration (ms): 1879.90 | learning rate: 9.999978E-06 | global batch size:     8 | lm loss: 1.232217E+00 | grad norm: 4.346 | max_memory_allocated(GB): 19.65 | max_memory_reserved(GB): 25.59 |
     INFO [2026-06-22 19:28:43] >>  iteration        3/    2000 | consumed samples:         24 | consumed tokens:      98304 | elapsed time per iteration (ms): 1769.99 | learning rate: 9.999950E-06 | global batch size:     8 | lm loss: 1.134654E+00 | grad norm: 1.550 | max_memory_allocated(GB): 19.65 | max_memory_reserved(GB): 25.59 |
@@ -305,7 +306,7 @@
 
     training:
       dataloader_num_workers: 4
-      disable_shuffling: 1
+      disable_shuffling: True
       seed: 42
       dataloader_drop_last: True
       optimizer: adamw
@@ -328,7 +329,7 @@
 
     执行后一段时间可见终端显示。
 
-    ```shell
+    ```Output
     INFO [2026-06-22 19:25:37] >>  iteration        1/    2000 | consumed samples:          8 | consumed tokens:        564 | elapsed time per iteration (ms): 7827.39 | learning rate: 1.666667E-07 | global batch size:     8 | lm loss: 3.316887E+00 | grad norm: 70.959 | max_memory_allocated(GB): 19.07 | max_memory_reserved(GB): 20.90 |
     INFO [2026-06-22 19:25:38] >>  iteration        2/    2000 | consumed samples:         16 | consumed tokens:       1357 | elapsed time per iteration (ms): 1331.74 | learning rate: 3.333333E-07 | global batch size:     8 | lm loss: 2.443476E+00 | grad norm: 41.986 | max_memory_allocated(GB): 19.07 | max_memory_reserved(GB): 22.43 |
     INFO [2026-06-22 19:25:38] >>  iteration        3/    2000 | consumed samples:         24 | consumed tokens:       2113 | elapsed time per iteration (ms): 981.08 | learning rate: 5.000000E-07 | global batch size:     8 | lm loss: 2.669216E+00 | grad norm: 45.335 | max_memory_allocated(GB): 19.07 | max_memory_reserved(GB): 22.43 |
@@ -339,9 +340,9 @@
 > [!NOTE]
 >
 > - 多机微调需在多个终端同时启动微调脚本（每个终端的微调脚本只有 `NODE_RANK` 参数不同，MASTER_ADDR均为主节点的IP地址，其他参数均相同）。
-> - 微调默认使用 Alpaca 数据集格式。如需使用其他数据集，请参考[FSDP2 后端训练使用指南](./finetune/fsdp2/finetune_fsdp2.md) 中的数据集配置说明，或[全量参数介绍（基于FSDP2训练后端）](../features/fsdp2/arguments.md)中的“数据参数（DataArguments）”相关介绍。
+> - 微调默认使用 Alpaca 数据集格式。如需使用其他数据集，请参考[FSDP2后端微调使用指南](./finetune/fsdp2/finetune_fsdp2.md) 中的数据集配置说明，或[全量参数介绍（基于FSDP2训练后端）](../features/fsdp2/arguments.md)中的“数据参数（DataArguments）”相关介绍。
 
-脚本中包含训练参数，下表为部分参数解释。
+预训练和微调脚本中包含训练参数，下表为部分参数解释。
 
 **表 1** 训练脚本参数说明
 
@@ -350,11 +351,11 @@
 |`model_name_or_path`|HuggingFace 权重目录路径，替换为实际模型路径|`./model_from_hf/qwen3_hf/`|
 |`trust_remote_code`|是否允许加载HuggingFace上自定义建模文件中的模型|`True` / `False`|
 |`train_from_scratch`|是否使用随机权重从头开始训练模型，不加载模型权重|`True` / `False`|
-|`dataset`|数据集：JSON 字符串指定本地路径，或使用数据集注册表中的名称|`'{"file_name": "..."}`'、`alpaca_full`|
-|`template`|微调构建prompt的模板名称|`qwen3`、`gpt`|
+|`dataset`|数据集：JSON 字符串指定本地路径，或使用[dataset_info.json](../../../../configs/fsdp2/data/dataset_info.json)中的名称|`'{"file_name": "..."}`'、`alpaca_full`|
+|`template`|构建prompt的模板名称|`qwen3`、`gpt`|
 |`cutoff_len`|分词后输入序列的截断长度，超过该长度的序列会被截断|`2048`、`4096`、`16384`|
 |`data_manager_type`|数据管理器类型，mg表示预训练场景，微调时无需配置|预训练：`mg`，微调：不配置|
-|`fsdp_size`|全分片数据并行大小，必须等于 world size（即 `NPUS_PER_NODE * NNODES`）|正整数，如 `8`、`16`|
+|`fsdp_size`|全分片数据并行大小，必须等于world size（即 `NPUS_PER_NODE * NNODES`）|正整数，如 `8`、`16`|
 |`fsdp_modules`|启用FSDP的模型层结构列表|`["model.layers.{*}", "model.embed_tokens", "lm_head"]`|
 |`ep_size`|专家并行大小|正整数，如 `1`、`4`|
 |`ep_fsdp_size`|专家并行组内的FSDP大小|正整数，如 `1`、`4`|
@@ -367,4 +368,4 @@
 > [!NOTE]
 >
 > - 完整参数说明请参见[全量参数介绍（基于FSDP2训练后端）](../features/fsdp2/arguments.md)。
-> - YAML 配置与数据集注册示例请参考 [FSDP2 后端微调使用指南](./finetune/fsdp2/finetune_fsdp2.md)。
+> - YAML配置与数据集注册示例请参考[FSDP2后端微调使用指南](./finetune/fsdp2/finetune_fsdp2.md)。
