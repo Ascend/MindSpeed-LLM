@@ -1,0 +1,43 @@
+{
+  "_comment": "复制为 .push_config.json 并填入真实值。含 token 不入仓（.gitignore 排除）。用于 9 PATCH 的 CLA commit 身份、Step 2.5 幂等 Issue/PR、11 CI_REPORT 推送。",
+  "gitcode_api_base": "https://api.gitcode.com/api/v5",
+  "gitcode_username": "<your-gitcode-username>",
+  "gitcode_token": "<your-gitcode-access-token>",
+  "fork_user": "<your-gitcode-username>",
+  "issue_owner": "Ascend",
+  "repos": {
+    "mindspeed_llm": {
+      "repo": "MindSpeed-LLM",
+      "ci_fork_url": "https://gitcode.com/Rostellaria/MindSpeed-LLM_ci.git",
+      "ci_fork_note": "配置后走 CI fork 闭环：每次先同步上游 master 到该 fork，修复分支 ci_repair_<YYMMDD>，Issue/PR 均提此 fork；置空则走 fork→上游主仓",
+      "ws_dirname": "MindSpeed-LLM",
+      "base_branch": "master",
+      "author_name": "<CLA-signed-name>",
+      "author_email": "<CLA-signed-email>"
+    },
+    "mindspeed": {
+      "repo": "MindSpeed",
+      "ci_fork_url": "",
+      "ws_dirname": "MindSpeed",
+      "base_branch": "master",
+      "author_name": "<CLA-signed-name>",
+      "author_email": "<CLA-signed-email>"
+    },
+    "fsdpturbo": {
+      "repo": "FSDPTurbo",
+      "ci_fork_url": "",
+      "ws_dirname": "FSDPTurbo",
+      "base_branch": "main",
+      "author_name": "<CLA-signed-name>",
+      "author_email": "<CLA-signed-email>"
+    }
+  },
+  "ci_repo": {
+    "_note": "enabled=false 时 11 CI_REPORT 仅本地生成报告（默认）；true 才推送",
+    "enabled": false,
+    "url": "https://gitcode.com/<org>/<ci-report-repo>.git",
+    "repo_dir": "/home/llm_nightly/ci_report_clone",
+    "author_name": "<report-repo-name>",
+    "author_email": "<report-repo-email>"
+  }
+}

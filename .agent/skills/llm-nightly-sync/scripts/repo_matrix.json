@@ -1,0 +1,50 @@
+{
+  "_note": "仓库配套唯一权威来源。track=remote 的仓每日滚动、参与 delta 归因；track=pinned 的仓固定版本、日常 delta=0，仅 tag 升级时进组合验证。重验 workspace 组装、安装门控、FETCH_MRS 均读此表。",
+  "repos": {
+    "mindspeed_llm": {
+      "url": "https://gitcode.com/ascend/MindSpeed-LLM.git",
+      "ref": "master",
+      "track": "remote",
+      "role": "巡检主体，tests/pipeline 每夜全量用例"
+    },
+    "mindspeed": {
+      "url": "https://gitcode.com/ascend/MindSpeed.git",
+      "ref": "master",
+      "track": "remote",
+      "role": "每日滚动，delta 归因第一嫌疑（features_manager/算子演进）",
+      "install": "pip3 install -r requirements.txt && pip3 install -e ."
+    },
+    "fsdpturbo": {
+      "url": "https://gitcode.com/Ascend/FSDPTurbo.git",
+      "ref": "main",
+      "track": "remote",
+      "role": "每日滚动，影响 fsdp2 系用例",
+      "install": "pip3 install -e ."
+    },
+    "megatron_lm": {
+      "url": "https://github.com/NVIDIA/Megatron-LM.git",
+      "ref": "core_v0.12.1",
+      "track": "pinned",
+      "role": "固定 tag，不安装，megatron/ 目录随 LLM 使用",
+      "install": "none (cp -r megatron 或 ln -s)"
+    }
+  },
+  "combos": [
+    {
+      "name": "master",
+      "mindspeed_llm": "master",
+      "mindspeed": "master",
+      "fsdpturbo": "main",
+      "megatron_lm": "core_v0.12.1",
+      "note": "默认组合，与现有夜间 PIPELINE(test_run.sh) 的取版一致"
+    }
+  ],
+  "combo_notes": "可为 26.x 版本分支新增组合行；现有 PIPELINE 固定跑 master 组合，不做多分支。",
+  "env": {
+    "cann": "/usr/local/Ascend/ascend-toolkit/set_env.sh",
+    "nnal": "/usr/local/Ascend/nnal/atb/set_env.sh",
+    "shared_data": "/data/ci",
+    "pipeline_log_base": "/home/pipeline_log",
+    "reverify_workspace": "/home/llm_nightly/workspace"
+  }
+}

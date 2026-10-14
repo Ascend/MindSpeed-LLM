@@ -1,0 +1,45 @@
+# Claude Code + GLM Coding Plan cron 安全环境文件模板
+# 用法（二选一）：
+#   A. 交互生成（推荐）：bash gen_cc_env.sh
+#   B. 手动复制：cp .cc_env.example .cc_env && chmod 600 .cc_env，再填入真实 key
+#
+# 为什么需要本文件：cron 为非交互 shell，不加载 ~/.bashrc（setup-cc-ds.sh 写入的
+# ANTHROPIC_* 因交互守卫不生效），且 cron 默认 PATH 不含 /usr/local/bin（claude 软链
+# 所在）。orchestrator 启动时显式 source .cc_env，变量与 PATH 一次到位。
+# .cc_env 含 token，已被 .gitignore 排除，严禁入仓/外发。
+#
+# Provider 切换（两家均为 Anthropic 兼容端点、国内可达，换两行即可）：
+#   GLM (默认)      BASE_URL=https://open.bigmodel.cn/api/anthropic   key=智谱平台 Coding Plan API Key
+#   DeepSeek (备选) BASE_URL=https://api.deepseek.com/anthropic        key=DeepSeek API Key
+
+# cron 默认 PATH 通常不含 /usr/local/bin，补上以找到 node/claude
+export PATH=/usr/local/bin:$PATH
+
+# ---- GLM Coding Plan（智谱，默认）----
+export ANTHROPIC_BASE_URL='https://open.bigmodel.cn/api/anthropic'
+export ANTHROPIC_AUTH_TOKEN='<your-glm-coding-plan-api-key>'
+# 主模型：夜间诊断修复用旗舰；1M 上下文加 [1m] 后缀（需 claude code 较新版本识别）
+export ANTHROPIC_MODEL='glm-5.3[1m]'
+export ANTHROPIC_DEFAULT_OPUS_MODEL='glm-5.3[1m]'
+export ANTHROPIC_DEFAULT_SONNET_MODEL='glm-5.3[1m]'
+# 快速模型：子代理/轻量任务（flash 便宜快速）
+export ANTHROPIC_DEFAULT_HAIKU_MODEL='glm-5.3-flash'
+export CLAUDE_CODE_SUBAGENT_MODEL='glm-5.3-flash'
+# GLM 1M 上下文配套压缩窗口；effort=max 对应 GLM 最深推理（官方映射，coding 任务推荐）
+export CLAUDE_CODE_AUTO_COMPACT_WINDOW='1000000'
+export CLAUDE_CODE_EFFORT_LEVEL='max'
+# 官方建议：长推理超时放宽 + 关闭非必要遥测流量（蓝区网络友好）
+export API_TIMEOUT_MS='3000000'
+export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
+
+# ---- DeepSeek（备选，切换时注释掉上面 GLM 段、放开本段）----
+# export ANTHROPIC_BASE_URL='https://api.deepseek.com/anthropic'
+# export ANTHROPIC_AUTH_TOKEN='<your-deepseek-api-key>'
+# export ANTHROPIC_MODEL='deepseek-v4-pro[1m]'
+# export ANTHROPIC_DEFAULT_OPUS_MODEL='deepseek-v4-pro[1m]'
+# export ANTHROPIC_DEFAULT_SONNET_MODEL='deepseek-v4-pro[1m]'
+# export ANTHROPIC_DEFAULT_HAIKU_MODEL='deepseek-v4-flash'
+# export CLAUDE_CODE_SUBAGENT_MODEL='deepseek-v4-flash'
+# export API_TIMEOUT_MS='3000000'
+# export CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1
+# export CLAUDE_CODE_AUTO_COMPACT_WINDOW='786432'

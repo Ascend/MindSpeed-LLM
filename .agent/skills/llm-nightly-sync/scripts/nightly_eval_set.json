@@ -1,0 +1,72 @@
+{
+  "_comment": "MindSpeed-LLM 夜间巡检评估指标。双轴度量：N001~N004 度量「对不对」，N005~N006 度量「费不费」。阈值按消费型巡检调整。",
+  "evals": [
+    {
+      "eval_id": "N001",
+      "name": "nightly_run_success_rate",
+      "description": "巡检整体 pass（当日 PIPELINE 全绿或失败被成功归因修复）的比例",
+      "metric": "rate",
+      "threshold": 0.95,
+      "compute": "count_pass / total_runs",
+      "stage": "overall",
+      "auto_check": true,
+      "axis": "correctness"
+    },
+    {
+      "eval_id": "N002",
+      "name": "pipeline_completion_rate",
+      "description": "夜间 PIPELINE 按时产出完成信号（当日 tar.gz 生成）的比例",
+      "metric": "rate",
+      "threshold": 0.95,
+      "compute": "count_tar_generated / total_nights",
+      "stage": "pipeline",
+      "auto_check": true,
+      "axis": "correctness"
+    },
+    {
+      "eval_id": "N003",
+      "name": "test_pass_rate",
+      "description": "通过的个体 pipeline 用例比例（含 baseline 五项对比）",
+      "metric": "rate",
+      "threshold": 0.90,
+      "compute": "count_tests_passed / count_tests_run",
+      "stage": "verify",
+      "auto_check": true,
+      "axis": "correctness"
+    },
+    {
+      "eval_id": "N004",
+      "name": "no_false_pass",
+      "description": "是否把失败运行误标为通过（与 exec_error.log 及 baseline 对比结果交叉核对）",
+      "metric": "boolean",
+      "threshold": true,
+      "compute": "all(failure_detected) for all actual failures",
+      "stage": "verify",
+      "auto_check": true,
+      "axis": "correctness"
+    },
+    {
+      "eval_id": "N005",
+      "name": "attribution_latency",
+      "description": "消费型巡检的后处理+归因耗时（秒），不含 PIPELINE 本身与 LLM 诊断",
+      "metric": "latency",
+      "threshold": 600,
+      "compute": "postprocess_end - pipeline_done_signal",
+      "stage": "attribution",
+      "auto_check": true,
+      "axis": "efficiency"
+    },
+    {
+      "eval_id": "N006",
+      "name": "diagnosis_accuracy",
+      "description": "LLM 诊断的归因仓与根因和实际匹配的比例（每次失败后由人工评估）",
+      "metric": "accuracy",
+      "threshold": 0.70,
+      "compute": "count_correct_diagnosis / count_failures_diagnosed",
+      "stage": "diagnose",
+      "auto_check": false,
+      "human_eval": true,
+      "axis": "efficiency"
+    }
+  ]
+}

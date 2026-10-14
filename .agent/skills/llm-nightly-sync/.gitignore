@@ -1,0 +1,6 @@
+# 运行数据不入仓（见 SKILL.md「文件」小节）
+state/
+# 个人凭据（含 token），由 .push_config.example.json 复制生成
+scripts/.push_config.json
+# agent 运行环境（含 token），由 gen_cc_env.sh 生成或从 .cc_env.example 复制
+scripts/.cc_env
