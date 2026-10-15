@@ -41,6 +41,7 @@ from mindspeed.features_manager import (
     MoEFixRouterFeature,
     DualpipeVFeature,
     MoENpuFastOpsFeature,
+    VariableSequenceLengthFeature,
 )
 from mindspeed.features_manager.feature import MindSpeedFeature
 from mindspeed.features_manager.features_manager import MindSpeedFeaturesManager
@@ -175,6 +176,7 @@ def add_pipeline_parallel_features(features_list: List[MindSpeedFeature]):
             UnalignedPipelineFeature(),
             DualpipeVFeature(),
             PipelineModelParallelLayoutFeature(),
+            VariableSequenceLengthFeature(),
         ]
     )
 

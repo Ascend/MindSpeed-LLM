@@ -225,7 +225,9 @@ class SFTTrainer(BaseTrainer):
             torch.distributed.all_reduce(total_loss_sum, group=parallel_state.get_data_parallel_group())
             torch.distributed.all_reduce(total_loss_mask_sum, group=parallel_state.get_data_parallel_group())
 
-            return loss_sum, loss_mask_sum.to(torch.int32), {'lm loss': [total_loss_sum, total_loss_mask_sum]}
+            loss_report = torch.stack([total_loss_sum, total_loss_mask_sum])
+            return loss_sum, loss_mask_sum.to(torch.int32), {'lm loss': loss_report}
+
         else:
             loss = loss_sum / loss_mask_sum
             # Reduce loss for logging.
