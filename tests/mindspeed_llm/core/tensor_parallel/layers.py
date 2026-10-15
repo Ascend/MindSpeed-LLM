@@ -3,6 +3,7 @@ from typing import Optional, Callable
 import torch
 import torch.nn.functional as F
 from torch.nn.parameter import Parameter
+from transformer_engine.pytorch import Linear as TELinear
 
 from megatron.core import parallel_state, ModelParallelConfig
 from megatron.core.utils import (
@@ -315,7 +316,7 @@ def checkpoint_backward_wrapper(fn):
     return wrapper
 
 
-class LinearNoTP(torch.nn.Linear):
+class LinearNoTP(TELinear):
     def __init__(
         self,
         input_size,
@@ -327,7 +328,7 @@ class LinearNoTP(torch.nn.Linear):
             input_size,
             output_size,
             bias=kwargs.get('bias', True),
-            dtype=config.params_dtype,
+            params_dtype=config.params_dtype,
         )
         self.config = config
 
@@ -338,26 +339,3 @@ class LinearNoTP(torch.nn.Linear):
         torch.random.manual_seed(current_seed)
         setattr(self.weight, 'sequence_parallel', config.sequence_parallel)
         setattr(self.weight, 'all_reduce', True)
-
-        self._register_load_state_dict_pre_hook(
-            lambda state_dict, prefix, *args, **kwargs: state_dict.pop(f'{prefix}_extra_state', None)
-        )
-
-    def forward(self, input_):
-        if get_args().fp8 and input_.dtype != torch.float32:
-            from mindspeed.te.pytorch.fp8.recipes import matmul_fp8
-
-            output = matmul_fp8(input_, self.weight)
-            if self.bias is not None:
-                output = output + self.bias
-        else:
-            output = torch.matmul(input_, self.weight.t())
-            if self.bias is not None:
-                output = output + self.bias
-        return output
-
-    def _save_to_state_dict(self, destination, prefix, keep_vars):
-        super()._save_to_state_dict(destination, prefix, keep_vars)
-        if getattr(self.weight, "quant_state", None) is not None:
-            for k, v in self.weight.quant_state.as_dict(packed=True).items():
-                destination[prefix + "weight." + k] = v if keep_vars else v.detach()

@@ -318,7 +318,6 @@ def save_checkpoint_wrapper(fn):
                     optimizer,
                     opt_param_scheduler,
                     rng_state,
-                    args.use_dist_ckpt,
                     iteration,
                     optim_sd_kwargs=optim_sd_kwargs,
                     rerun_state=rerun_state,

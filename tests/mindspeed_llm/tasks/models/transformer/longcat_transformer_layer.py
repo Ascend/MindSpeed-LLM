@@ -42,11 +42,15 @@ class LongCatFlashTransformerLayer(TransformerLayer):
             submodules: TransformerLayerSubmodules,
             layer_number: int = 1,
             hidden_dropout: float = None,
+            pg_collection=None,
+            vp_stage=None,
     ):
         super().__init__(config=config,
                          submodules=submodules,
                          layer_number=layer_number,
-                         hidden_dropout=hidden_dropout)
+                         hidden_dropout=hidden_dropout,
+                         pg_collection=pg_collection,
+                         vp_stage=vp_stage)
 
         # Different from megatron, we add post norm and post mlp layer norm.
         self.input_layernorm_0 = build_module(
@@ -76,10 +80,13 @@ class LongCatFlashTransformerLayer(TransformerLayer):
             hidden_size=self.config.hidden_size,
             eps=self.config.layernorm_epsilon,
         )
-        self.mlp = build_module(
-            submodules.mlp,
+        # 0.18: submodules.mlp is a partial (from get_mlp_module_spec) and must be
+        # called directly; build_module no longer accepts partial objects.
+        self.mlp = submodules.mlp(
             config = self.config
         )
+        if hasattr(self.mlp, 'set_layer_number'):
+            self.mlp.set_layer_number(self.layer_number)
         self.mlps_0 = build_module(
             submodules.mlps_0,
             config = self.config
@@ -126,6 +133,7 @@ class LongCatFlashTransformerLayer(TransformerLayer):
         inference_context: Optional[Any] = None,
         packed_seq_params: Optional[PackedSeqParams] = None,
         sequence_len_offset: Optional[Tensor] = None,
+        padding_mask: Optional[Tensor] = None,
         *,
         inference_params: Optional[Any] = None,
     ):
@@ -324,6 +332,9 @@ class LongCatFlashTransformerLayerSubmodules(TransformerLayerSubmodules):
     Based on megatron.core.transformer.transformer_layer.TransformerLayerSubmodules,
     we add post_attn_norm and post_mlp_layernorm.
     """
+    # MHC hooks required by the LLM TransformerLayer (IdentityOp = disabled)
+    attn_mhc: Union[ModuleSpec, type] = IdentityOp
+    mlp_mhc: Union[ModuleSpec, type] = IdentityOp
     input_layernorm_0: Union[ModuleSpec, type] = IdentityOp
     self_attention_0: Union[ModuleSpec, type] = IdentityOp
     self_attn_bda_0: Union[ModuleSpec, type] = IdentityFuncOp
