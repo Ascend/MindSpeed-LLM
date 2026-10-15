@@ -1,0 +1,294 @@
+{
+    "test_agi_default_instruction_handles_labels_and_free_form_answers": [
+        {
+            "item": {
+                "passage": "材料",
+                "question": "问题？",
+                "options": ["A. 甲", "B. 乙"],
+                "label": ["A", "B"],
+                "answer": null
+            },
+            "expected": ["材料\n问题？", "A. 甲\nB. 乙", "A,B"]
+        },
+        {
+            "item": {
+                "passage": "",
+                "question": "Compute it.",
+                "options": [],
+                "label": null,
+                "answer": "$42$"
+            },
+            "expected": ["Compute it.", "", "42"]
+        },
+        {
+            "item": {
+                "passage": "",
+                "question": "Unknown",
+                "options": null,
+                "label": null,
+                "answer": null
+            },
+            "expected": ["Unknown", "", null]
+        },
+        {
+            "item": {
+                "passage": "",
+                "question": "Scalar label",
+                "options": ["A. yes", "B. no"],
+                "label": "A",
+                "answer": null
+            },
+            "expected": ["Scalar label", "A. yes\nB. no", "A"]
+        }
+    ],
+    "test_agi_alternative_prompt_handles_list_label_and_missing_answer": [
+        {
+            "label": ["A", "C"],
+            "expected_correct": "A,C"
+        },
+        {
+            "label": null,
+            "expected_correct": null
+        }
+    ],
+    "test_agi_generate_alphabet_string": [
+        {
+            "length": 4,
+            "expected": "ABCD"
+        },
+        {
+            "length": 1,
+            "expected": "A"
+        },
+        {
+            "length": 0,
+            "expected": ""
+        },
+        {
+            "length": -2,
+            "expected": ""
+        }
+    ],
+    "test_agi_first_option_postprocess_matches_chinese_and_english": [
+        {
+            "text": "推理完成，答案是： B",
+            "expected": "B"
+        },
+        {
+            "text": "The correct answer is D",
+            "expected": "D"
+        },
+        {
+            "text": "D.",
+            "expected": "D"
+        },
+        {
+            "text": "No selectable option appears.",
+            "expected": ""
+        }
+    ],
+    "test_agi_multiple_choice_postprocess": [
+        {
+            "text": "result: BCD",
+            "expected": "BCD"
+        },
+        {
+            "text": "no capital choice",
+            "expected": ""
+        }
+    ],
+    "test_agi_parse_math_answer_handles_common_answer_notations": [
+        {
+            "raw_answer": "old result. The answer is therefore \\boxed{x = 17}",
+            "expected": "17"
+        },
+        {
+            "raw_answer": "The final expression is \\boxed{\\frac{1}{2}}",
+            "expected": "\\frac{1}{2}"
+        },
+        {
+            "raw_answer": "work $1$ and finally $x = 2.5$",
+            "expected": "2.5"
+        },
+        {
+            "raw_answer": "答案是 y = 12\\nextra explanation",
+            "expected": "12"
+        },
+        {
+            "raw_answer": "the candidates are 3 and 4.5",
+            "expected": "4.5"
+        },
+        {
+            "raw_answer": "there is no numeric result",
+            "expected": null
+        }
+    ],
+    "test_agi_remove_few_shot_prefix_uses_latest_answer": [
+        {
+            "text": "The answer is therefore 7",
+            "expected": "7"
+        },
+        {
+            "text": "first 答案是 1; revised 答案是 2",
+            "expected": "2"
+        },
+        {
+            "text": "plain response",
+            "expected": "plain response"
+        }
+    ],
+    "test_mmlu_postprocess_fallback_patterns": [
+        {
+            "text": "Answer the question by replying A, B, C or D.\nAnswer:\n D",
+            "origin_postprocess": true,
+            "expected": "D"
+        },
+        {
+            "text": "The answer is B",
+            "origin_postprocess": true,
+            "expected": "B"
+        },
+        {
+            "text": "No option was produced",
+            "origin_postprocess": true,
+            "expected": ""
+        }
+    ],
+    "test_cmmlu_format_example_supports_chinese_and_english": [
+        {
+            "language": "zh",
+            "expected_prefix": "以下是关于农学的单项选择题，请直接给出正确答案的选项。\n题目："
+        },
+        {
+            "language": "en",
+            "expected_prefix": "There is a single choice question about agronomy. Answer the question by replying A, B, C or D. \nQuestion: "
+        }
+    ],
+    "test_ceval_and_boolq_first_capital_postprocessors": [
+        {
+            "postprocessor_name": "ceval",
+            "text": "answer is c, then B",
+            "container_type": "str",
+            "expected": "B"
+        },
+        {
+            "postprocessor_name": "ceval",
+            "text": ["  D follows", "ignored"],
+            "container_type": "tuple",
+            "expected": "D"
+        },
+        {
+            "postprocessor_name": "ceval",
+            "text": ["no uppercase"],
+            "container_type": "list",
+            "expected": ""
+        },
+        {
+            "postprocessor_name": "boolq",
+            "text": "reasoning: T",
+            "container_type": "str",
+            "expected": "T"
+        },
+        {
+            "postprocessor_name": "boolq",
+            "text": [" F", "ignored"],
+            "container_type": "tuple",
+            "expected": "F"
+        },
+        {
+            "postprocessor_name": "boolq",
+            "text": ["unknown"],
+            "container_type": "list",
+            "expected": ""
+        }
+    ],
+    "test_bbh_multiple_choice_postprocess": [
+        {
+            "text": "after reasoning, the answer is (C)",
+            "expected": "C"
+        },
+        {
+            "text": "reasoning concludes D",
+            "expected": "D"
+        },
+        {
+            "text": "answer is 42",
+            "expected": "42"
+        }
+    ],
+    "test_bbh_freeform_postprocess": [
+        {
+            "text": "the answer is 42.\nextra detail",
+            "subject": "object_counting",
+            "expected": "42"
+        },
+        {
+            "text": "answer is **red, blue**",
+            "subject": "word_sorting",
+            "expected": "red, blue"
+        },
+        {
+            "text": "answer is **True, because x**",
+            "subject": "navigate",
+            "expected": "True"
+        },
+        {
+            "text": "answer is plain response.",
+            "subject": "dyck_languages",
+            "expected": "plain response"
+        }
+    ],
+    "test_gsm8k_postprocess_returns_last_number_before_next_question": [
+        {
+            "text": "work: -3, then -2.5\nQuestion: next problem gives 99",
+            "expected": "-2.5"
+        },
+        {
+            "text": "1 + 1 = 2, so the answer is 2",
+            "expected": "2"
+        },
+        {
+            "text": "No number was generated.",
+            "expected": "NULL"
+        }
+    ],
+    "test_needlebench_trim_prediction_uses_reference_length_and_terminator": [
+        {
+            "prediction": "abcdefghijZZmore",
+            "reference": "abcdefghij",
+            "expected": "abcdefghij"
+        },
+        {
+            "prediction": "abcdefghijklmnop",
+            "reference": "abcdefghiZ",
+            "expected": "abcdefghijkl"
+        },
+        {
+            "prediction": "short",
+            "reference": "abcdefghij",
+            "expected": "short"
+        }
+    ],
+    "test_needlebench_levenshtein_distance": [
+        {
+            "left": "kitten",
+            "right": "sitting",
+            "expected": 3
+        },
+        {
+            "left": "abc",
+            "right": "",
+            "expected": 3
+        },
+        {
+            "left": "same",
+            "right": "same",
+            "expected": 0
+        },
+        {
+            "left": "flaw",
+            "right": "lawn",
+            "expected": 2
+        }
+    ]
+}

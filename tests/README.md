@@ -108,8 +108,15 @@ CI门禁用例看护仓库重点模型和基本特性，覆盖冒烟测试场景
     </tr>
     <tr>
         <td>Evaluation</td>
-        <td>qwen2_mmlu</td>
-        <td><a href="ut/evaluation/test_evaluate.py">test_evaluate.py</a></td>
+        <td>qwen2_mmlu, data_utils, file_utils, eval_template, eval_postprocess, human_utils</td>
+        <td>
+            <a href="ut/evaluation/test_evaluate.py">test_evaluate.py</a><br>
+            <a href="ut/evaluation/test_data_utils.py">test_data_utils.py</a><br>
+            <a href="ut/evaluation/test_file_utils.py">test_file_utils.py</a><br>
+            <a href="ut/evaluation/test_eval_template.py">test_eval_template.py</a><br>
+            <a href="ut/evaluation/test_eval_postprocess.py">test_eval_postprocess.py</a><br>
+            <a href="ut/evaluation/test_human_utils.py">test_human_utils.py</a>
+        </td>
         <td>Y</td>
         <td></td>
         <td></td>

@@ -1,0 +1,48 @@
+{
+    "test_builtin_templates_are_registered": [
+        {
+            "name": "en",
+            "expected_answer": "\nAnswer: "
+        },
+        {
+            "name": "zh",
+            "expected_answer": "\n答案："
+        }
+    ],
+    "test_get_eval_template_rejects_unknown_name": [
+        {
+            "name": "missing"
+        }
+    ],
+    "test_parse_example_includes_only_available_choices": [
+        {
+            "example": {
+                "question": "Question?",
+                "A": "first",
+                "B": "second",
+                "C": "third",
+                "answer": "B"
+            },
+            "expected_prompt": "Question?\nA. first\nB. second\nC. third\nAnswer: ",
+            "expected_response": "B"
+        }
+    ],
+    "test_format_example_builds_few_shot_conversation": [
+        {
+            "support_question": "Support question?",
+            "support_answer": "A",
+            "target_question": "Target question?",
+            "target_answer": "D",
+            "subject": "computer science",
+            "expected_roles": ["user", "assistant", "user"]
+        }
+    ],
+    "test_format_example_supports_zero_shot_prompt": [
+        {
+            "question": "目标问题？",
+            "answer": "C",
+            "subject": "计算机",
+            "expected_content": "以下是中国关于计算机考试的单项选择题，请选出其中的正确答案。\n\n目标问题？\nA. first\nB. second\nC. third\nD. fourth\n答案："
+        }
+    ]
+}

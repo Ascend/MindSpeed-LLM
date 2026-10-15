@@ -1,0 +1,64 @@
+{
+    "test_check_owner_accepts_root_owner_or_group": [
+        {
+            "effective_uid": 0,
+            "effective_gid": 999
+        },
+        {
+            "effective_uid": 101,
+            "effective_gid": 999
+        },
+        {
+            "effective_uid": 999,
+            "effective_gid": 202
+        }
+    ],
+    "test_check_other_write_permission_accepts_private_modes": [
+        {
+            "mode": 256
+        },
+        {
+            "mode": 384
+        }
+    ],
+    "test_check_path_permission_honors_environment_switch": [
+        {
+            "environment_value": null,
+            "is_internal_file": false,
+            "should_check": true
+        },
+        {
+            "environment_value": "1",
+            "is_internal_file": false,
+            "should_check": true
+        },
+        {
+            "environment_value": "0",
+            "is_internal_file": false,
+            "should_check": false
+        },
+        {
+            "environment_value": "0",
+            "is_internal_file": true,
+            "should_check": true
+        }
+    ],
+    "test_check_file_safety_requires_read_target_to_exist": [
+        {
+            "mode": "r"
+        },
+        {
+            "mode": "r+"
+        }
+    ],
+    "test_has_owner_write_permission": [
+        {
+            "mode": 384,
+            "expected": 128
+        },
+        {
+            "mode": 256,
+            "expected": 0
+        }
+    ]
+}

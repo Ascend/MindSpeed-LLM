@@ -1,0 +1,57 @@
+{
+    "test_write_only_string_io_rejects_reads": [
+        {
+            "method_name": "read"
+        },
+        {
+            "method_name": "readline"
+        },
+        {
+            "method_name": "readlines"
+        }
+    ],
+    "test_humaneval_postprocess_extracts_first_fenced_block": [
+        {
+            "text": "```python\ndef answer():\n    return 42\n```",
+            "expected": "def answer():\n    return 42\n"
+        },
+        {
+            "text": "prefix\n```\nfirst block\n```\n```python\nsecond block\n```",
+            "expected": "first block\n"
+        },
+        {
+            "text": "def answer():\n    return 42",
+            "expected": "def answer():\n    return 42"
+        }
+    ],
+    "test_check_correctness_isolates_pass_fail_and_timeout": [
+        {
+            "completion": "    return left + right\n",
+            "expected_passed": true,
+            "expected_result": "passed"
+        },
+        {
+            "completion": "    return 0\n",
+            "expected_passed": false,
+            "expected_result": "failed:"
+        },
+        {
+            "completion": "    while True:\n        pass\n",
+            "expected_passed": false,
+            "expected_result": "timed out"
+        }
+    ],
+    "test_reliability_guard_disables_unsafe_operations": [
+        {
+            "maximum_memory_bytes": 4096
+        }
+    ],
+    "test_write_and_stream_jsonl_support_plain_and_gzip": [
+        {
+            "suffix": ".jsonl"
+        },
+        {
+            "suffix": ".jsonl.gz"
+        }
+    ]
+}

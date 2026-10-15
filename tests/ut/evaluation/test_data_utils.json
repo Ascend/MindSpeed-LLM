@@ -1,0 +1,26 @@
+{
+    "test_get_index_by_rank": [
+        {
+            "rank": 5,
+            "expected_index": 0
+        },
+        {
+            "rank": 6,
+            "expected_index": 1
+        }
+    ],
+    "test_get_final_dataset_selects_dataframe_for_rank": [
+        {
+            "rank": 0,
+            "samples": ["a", "b", "c", "d", "e", "f"],
+            "expected_samples": ["a", "b", "c"],
+            "expected_align_start": -1
+        },
+        {
+            "rank": 6,
+            "samples": ["a", "b", "c", "d", "e"],
+            "expected_samples": ["d", "e", "a"],
+            "expected_align_start": 1
+        }
+    ]
+}
