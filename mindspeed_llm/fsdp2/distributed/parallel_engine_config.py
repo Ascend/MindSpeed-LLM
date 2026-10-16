@@ -60,7 +60,7 @@ class QuantizeConfig(_BaseQuantizeConfig):
         return self._recipe
 
     def get_key_dtype(self, key: str) -> torch.dtype:
-        return self.recipe().get_key_dtype(key)
+        return self.recipe.get_key_dtype(key)
 
 
 @dataclass

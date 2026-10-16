@@ -1,0 +1,30 @@
+{
+    "test_quantize_defaults": [
+        {
+            "params": {
+                "expected": {
+                    "quant_format": null,
+                    "quant_recipe": null,
+                    "block_size": 32,
+                    "quant_apply_modules": null,
+                    "quant_ignored_modules": null,
+                    "converters": null,
+                    "enable_fsdp_low_precision_all_gather": true,
+                    "fsdp_low_precision_all_gather_mode": "on-demand",
+                    "fsdp_world_size": 1,
+                    "quant_gmm": false,
+                    "gemm_gradient_accumulation_fusion": false,
+                    "extra_args": {}
+                }
+            }
+        }
+    ],
+    "test_fsdp_world_size_derivation": [
+        {
+            "params": {
+                "fully_shard_parallel_size": 8,
+                "expected_fsdp_world_size": 8
+            }
+        }
+    ]
+}

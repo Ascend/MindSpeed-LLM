@@ -95,8 +95,16 @@ class MindSpeedParallelEngine(torch.nn.Module):
         if not self.config.quantization_plan.quant_recipe:
             return
         try:
-            if self.config.recompute:
-                self.config.quantization_plan.fsdp_low_precision_all_gather_mode = "all"
+            # Mirrors FSDPTurbo's engine: the on-demand all-gather branch picks
+            # a single weight version per phase, so phase tracking must be on
+            # exactly when that branch can run under activation recompute.
+            plan = self.config.quantization_plan
+            plan._recompute_aware = (
+                self.config.recompute
+                and plan.quant_recipe == "mxfp8"
+                and plan.enable_fsdp_low_precision_all_gather
+                and plan.fsdp_low_precision_all_gather_mode == "on-demand"
+            )
 
             from fsdp_turbo.quantization.converter.model_converter import build_model_converter
 
