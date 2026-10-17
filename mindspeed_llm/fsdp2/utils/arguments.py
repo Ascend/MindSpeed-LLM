@@ -40,6 +40,7 @@ class ModelArguments:
             "longcat_flash_ngram",
             "glm52",
             "deepseek_v4",
+            "ling_mini",
         ]
     ] = field(
         default=None,

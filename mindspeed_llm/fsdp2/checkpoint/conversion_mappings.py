@@ -185,6 +185,7 @@ class MappingRuleRegistry:
 # ==============================================================================
 
 _MODELS_WITH_2D_MERGED_EXPERTS = [
+    "bailing_moe",
     "qwen2_moe",
     "qwen3_moe",
     "qwen3_next",
@@ -292,6 +293,8 @@ def register_custom_conversion_mappings() -> None:
             "longcat_flash_ngram",
             get_checkpoint_conversion_mapping("longcat_flash"),
         )
+    if get_checkpoint_conversion_mapping("bailing_moe") is None:
+        register_checkpoint_conversion_mapping("bailing_moe", get_checkpoint_conversion_mapping("qwen3_moe"))
 
 
 def apply_custom_mappings(conversions: list, model_type: str) -> None:

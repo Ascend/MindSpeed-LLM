@@ -12,8 +12,12 @@ class ModelRegistry:
     # Core data mapping
     if version.parse(transformers.__version__) >= version.parse("5.8.1"):
         from mindspeed_llm.fsdp2.models.deepseek_v4.modeling_deepseek_v4 import DeepseekV4ForCausalLM
+        from mindspeed_llm.fsdp2.models.ling_mini.modeling_bailing_moe_v2 import LingMiniForCausalLM
 
-        _REGISTRY: Dict[str, Type[Any]] = {"deepseek_v4": DeepseekV4ForCausalLM}
+        _REGISTRY: Dict[str, Type[Any]] = {
+            "deepseek_v4": DeepseekV4ForCausalLM,
+            "ling_mini": LingMiniForCausalLM,
+        }
     else:
         from mindspeed_llm.fsdp2.models.gpt_oss.modeling_gpt_oss import GptOssForCausalLM
         from mindspeed_llm.fsdp2.models.step35.modeling_step3p5 import Step3p5ForCausalLM
@@ -24,6 +28,7 @@ class ModelRegistry:
         from mindspeed_llm.fsdp2.models.minimax_m27.modeling_minimax_m2 import MiniMaxM2ForCausalLM
         from mindspeed_llm.fsdp2.models.longcat_flash.modeling_longcat_flash import LongcatFlashNgramForCausalLM
         from mindspeed_llm.fsdp2.models.glm52.modeling_glm_moe_dsa import GlmMoeDsaForCausalLM
+        from mindspeed_llm.fsdp2.models.ling_mini.modeling_bailing_moe_v2 import LingMiniForCausalLM
 
         _REGISTRY: Dict[str, Type[Any]] = {
             "gpt_oss": GptOssForCausalLM,
@@ -35,6 +40,7 @@ class ModelRegistry:
             "minimax_m27": MiniMaxM2ForCausalLM,
             "longcat_flash_ngram": LongcatFlashNgramForCausalLM,
             "glm52": GlmMoeDsaForCausalLM,
+            "ling_mini": LingMiniForCausalLM,
         }
 
     @classmethod
