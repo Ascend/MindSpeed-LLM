@@ -1,0 +1,105 @@
+{
+    "test_encode_data_example": [
+        {
+            "label": "single_turn_masks_prompt_by_default",
+            "cutoff_len": 64,
+            "train_on_prompt": false,
+            "mask_history": false,
+            "efficient_eos": false,
+            "prompt": [{"role": "user", "content": "a b"}],
+            "response": [{"role": "assistant", "content": "c d"}],
+            "expected_input_ids": [4, 5, 6, 7],
+            "expected_labels": [-100, -100, 6, 7]
+        },
+        {
+            "label": "train_on_prompt_keeps_source_labels",
+            "cutoff_len": 64,
+            "train_on_prompt": true,
+            "mask_history": false,
+            "efficient_eos": false,
+            "prompt": [{"role": "user", "content": "a b"}],
+            "response": [{"role": "assistant", "content": "c d"}],
+            "expected_input_ids": [4, 5, 6, 7],
+            "expected_labels": [4, 5, 6, 7]
+        },
+        {
+            "label": "efficient_eos_appends_eos_and_masks_later_prompts",
+            "cutoff_len": 64,
+            "train_on_prompt": false,
+            "mask_history": false,
+            "efficient_eos": true,
+            "prompt": [
+                {"role": "user", "content": "a"},
+                {"role": "assistant", "content": "b"},
+                {"role": "user", "content": "c"}
+            ],
+            "response": [{"role": "assistant", "content": "d"}],
+            "expected_input_ids": [4, 5, 6, 7, 1],
+            "expected_labels": [-100, 5, 1, 7, 1]
+        },
+        {
+            "label": "cutoff_len_stops_adding_later_turns",
+            "cutoff_len": 3,
+            "train_on_prompt": false,
+            "mask_history": false,
+            "efficient_eos": false,
+            "prompt": [
+                {"role": "user", "content": "a a"},
+                {"role": "assistant", "content": "b b"},
+                {"role": "user", "content": "c c"}
+            ],
+            "response": [{"role": "assistant", "content": "d d"}],
+            "expected_input_ids": [4, 4, 5],
+            "expected_labels": [-100, -100, 5]
+        },
+        {
+            "label": "long_source_is_truncated_to_budget",
+            "cutoff_len": 6,
+            "train_on_prompt": false,
+            "mask_history": false,
+            "efficient_eos": false,
+            "prompt": [{"role": "user", "content": "a b c d e f g h i j"}],
+            "response": [{"role": "assistant", "content": "z"}],
+            "expected_input_ids": [4, 5, 6, 7, 8, 29],
+            "expected_labels": [-100, -100, -100, -100, -100, 29]
+        },
+        {
+            "label": "mask_history_trains_on_last_turn_only",
+            "cutoff_len": 64,
+            "train_on_prompt": false,
+            "mask_history": true,
+            "efficient_eos": false,
+            "prompt": [
+                {"role": "user", "content": "a a"},
+                {"role": "assistant", "content": "b b"},
+                {"role": "user", "content": "c c"}
+            ],
+            "response": [{"role": "assistant", "content": "d d"}],
+            "expected_input_ids": [4, 4, 5, 5, 6, 6, 7, 7],
+            "expected_labels": [-100, -100, -100, -100, -100, -100, 7, 7]
+        }
+    ],
+    "test_pretrain_no_packing": [
+        {
+            "label": "no_packing_appends_eos",
+            "cutoff_len": 16,
+            "add_bos_token": false,
+            "prompt_text": "a b",
+            "expected_input_ids": [[4, 5, 1]]
+        },
+        {
+            "label": "no_packing_prepends_bos_when_add_bos_token",
+            "cutoff_len": 16,
+            "add_bos_token": true,
+            "prompt_text": "a b",
+            "expected_input_ids": [[2, 4, 5, 1]]
+        },
+        {
+            "label": "no_packing_truncates_to_cutoff_len",
+            "cutoff_len": 3,
+            "add_bos_token": false,
+            "prompt_text": "a b c d",
+            "expected_input_ids": [[4, 5, 6]]
+        }
+    ]
+}

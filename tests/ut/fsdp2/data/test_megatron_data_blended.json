@@ -1,0 +1,22 @@
+{
+    "test_blended_dataset_build_cases": [
+        {
+            "label": "weighted_blend_with_size",
+            "weights": [1.0, 3.0],
+            "size": 8,
+            "expected_len": 8
+        },
+        {
+            "label": "exhaustive_blending_without_size",
+            "weights": [2, 4],
+            "size": null,
+            "expected_len": 6
+        },
+        {
+            "label": "exhaustive_integral_float_weights",
+            "weights": [2.0, 4.0],
+            "size": null,
+            "expected_len": 6
+        }
+    ]
+}

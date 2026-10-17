@@ -1,0 +1,117 @@
+{
+    "test_normalize": [
+        {
+            "label": "normalizes_to_one",
+            "weights": [1.0, 3.0],
+            "expected": [0.25, 0.75]
+        },
+        {
+            "label": "preserves_equal_weights",
+            "weights": [2.0, 2.0, 2.0],
+            "expected": [0.3333333333333333, 0.3333333333333333, 0.3333333333333333]
+        },
+        {
+            "label": "zero_weight_stays_zero",
+            "weights": [99.0, 1.0, 0.0],
+            "expected": [0.99, 0.01, 0.0]
+        }
+    ],
+    "test_get_blend_from_list": [
+        {
+            "label": "none_returns_none",
+            "entries": null,
+            "expected_prefixes": null,
+            "expected_weights": null
+        },
+        {
+            "label": "odd_list_has_no_weights",
+            "entries": ["30", "path/a", "70"],
+            "expected_prefixes": ["30", "path/a", "70"],
+            "expected_weights": null
+        },
+        {
+            "label": "even_list_parses_weights",
+            "entries": ["30", "path/a", "70", "path/b"],
+            "expected_prefixes": ["path/a", "path/b"],
+            "expected_weights": [30.0, 70.0]
+        },
+        {
+            "label": "non_numeric_even_list_drops_all_weights",
+            "entries": ["path/a", "path/b"],
+            "expected_prefixes": ["path/a", "path/b"],
+            "expected_weights": null
+        },
+        {
+            "label": "prefixes_are_stripped",
+            "entries": [" path/a ", "path/b"],
+            "expected_prefixes": ["path/a", "path/b"],
+            "expected_weights": null
+        }
+    ],
+    "test_parse_and_normalize_split": [
+        {
+            "label": "two_values_pad_test_with_zero",
+            "split": "99,1",
+            "expected": [0.99, 0.01, 0.0]
+        },
+        {
+            "label": "three_values_are_normalized",
+            "split": "50,50,0",
+            "expected": [0.5, 0.5, 0.0]
+        },
+        {
+            "label": "single_value_becomes_full_train",
+            "split": "1",
+            "expected": [1.0, 0.0, 0.0]
+        }
+    ],
+    "test_convert_split_vector_to_split_matrix": [
+        {
+            "label": "standard_conversion",
+            "vector": [0.99, 0.01, 0.0],
+            "vector_b": null,
+            "expected_matrix": [[0.0, 0.99], [0.99, 1.0], null]
+        },
+        {
+            "label": "two_vector_overlap_conversion",
+            "vector": [0.99, 0.01, 0.0],
+            "vector_b": [0.98, 0.02, 0.0],
+            "expected_matrix": [[0.0, 0.98], [0.99, 1.0], null]
+        },
+        {
+            "label": "empty_vector_gives_empty_matrix",
+            "vector": [],
+            "vector_b": null,
+            "expected_matrix": []
+        }
+    ],
+    "test_config_mock_and_split_matrix": [
+        {
+            "label": "no_blend_enables_mock_mode",
+            "blend": null,
+            "split": null,
+            "blend_per_split": null,
+            "expected_mock": true,
+            "expected_split": "1,1,1",
+            "expected_matrix": null
+        },
+        {
+            "label": "blend_with_split_keeps_mock_off",
+            "blend": [["path/a", "path/b"], null],
+            "split": "90,5,5",
+            "blend_per_split": null,
+            "expected_mock": false,
+            "expected_split": "90,5,5",
+            "expected_matrix": [[0.0, 0.9], [0.9, 0.95], [0.95, 1.0]]
+        },
+        {
+            "label": "all_none_blend_per_split_falls_back_to_mock",
+            "blend": null,
+            "split": null,
+            "blend_per_split": [null, null, null],
+            "expected_mock": true,
+            "expected_split": "1,1,1",
+            "expected_matrix": null
+        }
+    ]
+}

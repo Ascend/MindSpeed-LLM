@@ -1,0 +1,59 @@
+{
+    "test_mode_accessors": [
+        {
+            "label": "default_mode_is_disabled",
+            "operation": "default",
+            "mode": null,
+            "expected_mode": "DISABLED"
+        },
+        {
+            "label": "set_mode",
+            "operation": "set",
+            "mode": "VALIDATE_RESULTS",
+            "expected_mode": "VALIDATE_RESULTS"
+        },
+        {
+            "label": "get_rerun_state_machine_implicitly_initializes",
+            "operation": "module_getter",
+            "mode": null,
+            "expected_mode": "DISABLED"
+        }
+    ],
+    "test_sanitize_data_iterators": [
+        {
+            "label": "disabled_mode_drops_iterators",
+            "mode": "DISABLED",
+            "iterators": "single",
+            "expected_len": 0,
+            "expect_raise": false
+        },
+        {
+            "label": "single_iterator_is_wrapped_in_list",
+            "mode": "VALIDATE_RESULTS",
+            "iterators": "single",
+            "expected_len": 1,
+            "expect_raise": false
+        },
+        {
+            "label": "none_entries_are_filtered",
+            "mode": "VALIDATE_RESULTS",
+            "iterators": "list_with_none",
+            "expected_len": 1,
+            "expect_raise": false
+        },
+        {
+            "label": "none_input_yields_empty_list",
+            "mode": "VALIDATE_RESULTS",
+            "iterators": "none",
+            "expected_len": 0,
+            "expect_raise": false
+        },
+        {
+            "label": "unwrapped_iterator_raises",
+            "mode": "VALIDATE_RESULTS",
+            "iterators": "unwrapped",
+            "expected_len": 0,
+            "expect_raise": true
+        }
+    ]
+}

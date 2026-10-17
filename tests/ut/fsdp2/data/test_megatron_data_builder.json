@@ -1,0 +1,180 @@
+{
+    "test_get_size_per_split_per_dataset": [
+        {
+            "label": "sizes_are_proportional_to_weights",
+            "weights": [
+                0.25,
+                0.75
+            ],
+            "targets": [
+                100,
+                10,
+                0
+            ],
+            "margin": 0.0,
+            "expected_sizes": [
+                [
+                    25,
+                    3,
+                    0
+                ],
+                [
+                    75,
+                    8,
+                    0
+                ]
+            ]
+        },
+        {
+            "label": "margin_inflates_sizes",
+            "weights": [
+                0.25,
+                0.75
+            ],
+            "targets": [
+                100,
+                10,
+                0
+            ],
+            "margin": 0.5,
+            "expected_sizes": [
+                [
+                    26,
+                    4,
+                    0
+                ],
+                [
+                    76,
+                    9,
+                    0
+                ]
+            ]
+        },
+        {
+            "label": "zero_targets_stay_zero",
+            "weights": [
+                0.5,
+                0.5
+            ],
+            "targets": [
+                0,
+                0,
+                0
+            ],
+            "margin": 0.5,
+            "expected_sizes": [
+                [
+                    0,
+                    0,
+                    0
+                ],
+                [
+                    0,
+                    0,
+                    0
+                ]
+            ]
+        }
+    ],
+    "test_builder_init_configs": [
+        {
+            "label": "mock_config_skips_blend_validation",
+            "config_overrides": {},
+            "use_mock_config": true,
+            "sizes": [
+                null,
+                null,
+                null
+            ]
+        },
+        {
+            "label": "weighted_blend_with_sizes_is_accepted",
+            "config_overrides": {},
+            "use_mock_config": false,
+            "sizes": [
+                100,
+                50,
+                10
+            ]
+        },
+        {
+            "label": "unweighted_blend_allows_none_sizes",
+            "config_overrides": {
+                "blend": [
+                    [
+                        "path/a",
+                        "path/b"
+                    ],
+                    null
+                ]
+            },
+            "use_mock_config": false,
+            "sizes": [
+                null,
+                null,
+                null
+            ]
+        },
+        {
+            "label": "blend_per_split_none_entries_are_skipped",
+            "config_overrides": {
+                "blend": null,
+                "split": null,
+                "blend_per_split": [
+                    [
+                        [
+                            "path/a"
+                        ],
+                        null
+                    ],
+                    null,
+                    null
+                ]
+            },
+            "use_mock_config": false,
+            "sizes": [
+                null,
+                null,
+                null
+            ]
+        }
+    ],
+    "test_mock_build_splits": [
+        {
+            "label": "uniform_sizes",
+            "sizes": [
+                9,
+                9,
+                9
+            ],
+            "expected_indices_lengths": [
+                33,
+                34,
+                33
+            ],
+            "expected_num_samples": [
+                9,
+                9,
+                9
+            ]
+        },
+        {
+            "label": "distinct_sizes",
+            "sizes": [
+                5,
+                6,
+                7
+            ],
+            "expected_indices_lengths": [
+                33,
+                34,
+                33
+            ],
+            "expected_num_samples": [
+                5,
+                6,
+                7
+            ]
+        }
+    ]
+}

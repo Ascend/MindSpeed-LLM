@@ -1,0 +1,135 @@
+{
+    "test_lf_collator_config": [
+        {
+            "label": "defaults",
+            "cp_size": 1,
+            "ignore_pad_token_for_loss": true,
+            "expected_label_pad_token_id": -100,
+            "expected_pad_to_multiple_of": 8
+        },
+        {
+            "label": "context_parallel_size_doubles_pad_multiple",
+            "cp_size": 2,
+            "ignore_pad_token_for_loss": true,
+            "expected_label_pad_token_id": -100,
+            "expected_pad_to_multiple_of": 4
+        },
+        {
+            "label": "pad_token_id_used_when_not_ignoring_pad_labels",
+            "cp_size": 1,
+            "ignore_pad_token_for_loss": false,
+            "expected_label_pad_token_id": 0,
+            "expected_pad_to_multiple_of": 8
+        }
+    ],
+    "test_lf_sampler_config": [
+        {
+            "label": "train_sampler_none_without_dataset",
+            "sampler_kind": "train",
+            "dataset_present": false,
+            "rank": 0,
+            "size": 1,
+            "disable_shuffling": false,
+            "expected_sampler": "none",
+            "expected_num_replicas": null,
+            "expected_rank": null,
+            "expected_shuffle": null
+        },
+        {
+            "label": "eval_sampler_none_without_dataset",
+            "sampler_kind": "eval",
+            "dataset_present": false,
+            "rank": 0,
+            "size": 1,
+            "disable_shuffling": false,
+            "expected_sampler": "none",
+            "expected_num_replicas": null,
+            "expected_rank": null,
+            "expected_shuffle": null
+        },
+        {
+            "label": "train_sampler_uses_parallel_state_dp_group",
+            "sampler_kind": "train",
+            "dataset_present": true,
+            "rank": 1,
+            "size": 2,
+            "disable_shuffling": false,
+            "expected_sampler": "distributed",
+            "expected_num_replicas": 2,
+            "expected_rank": 1,
+            "expected_shuffle": true
+        },
+        {
+            "label": "train_sampler_shuffling_can_be_disabled",
+            "sampler_kind": "train",
+            "dataset_present": true,
+            "rank": 0,
+            "size": 1,
+            "disable_shuffling": true,
+            "expected_sampler": "distributed",
+            "expected_num_replicas": 1,
+            "expected_rank": 0,
+            "expected_shuffle": false
+        },
+        {
+            "label": "eval_sampler_uses_parallel_state_dp_group",
+            "sampler_kind": "eval",
+            "dataset_present": true,
+            "rank": 0,
+            "size": 1,
+            "disable_shuffling": false,
+            "expected_sampler": "distributed",
+            "expected_num_replicas": 1,
+            "expected_rank": 0,
+            "expected_shuffle": true
+        }
+    ],
+    "test_build_dataloader_config": [
+        {
+            "label": "train_map_dataset_uses_sampler_and_training_params",
+            "num_workers": 1,
+            "drop_last": true,
+            "prefetch_factor": 2,
+            "is_training": true,
+            "expected_drop_last": true,
+            "expected_prefetch_factor": 2,
+            "expect_worker_init": true
+        },
+        {
+            "label": "eval_dataloader_has_no_worker_init",
+            "num_workers": 0,
+            "drop_last": false,
+            "prefetch_factor": null,
+            "is_training": false,
+            "expected_drop_last": false,
+            "expected_prefetch_factor": null,
+            "expect_worker_init": false
+        }
+    ],
+    "test_megatron_train_dataloader_config": [
+        {
+            "label": "no_workers_disables_persistent_workers",
+            "num_workers": 0,
+            "expected_persistent_workers": false
+        },
+        {
+            "label": "multiple_workers_enable_persistent_workers",
+            "num_workers": 1,
+            "expected_persistent_workers": true
+        }
+    ],
+    "test_data_factory_positive_combinations": [
+        {
+            "label": "sft_with_lf_creates_lf_manager",
+            "data_manager_type": "lf",
+            "stage": "sft",
+            "expected_manager": "LFDataManager"
+        },
+        {
+            "label": "pt_with_mg_creates_megatron_manager",
+            "data_manager_type": "mg",
+            "stage": "pt",
+            "expected_manager": "MegatronDataManager"
+        }
+    ]
+}

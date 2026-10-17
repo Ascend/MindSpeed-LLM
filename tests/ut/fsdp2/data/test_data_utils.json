@@ -1,0 +1,507 @@
+{
+    "test_merge_dataset": [
+        {
+            "label": "single_dataset_is_returned_as_is",
+            "sizes": [
+                2
+            ],
+            "iterable": false,
+            "dataset_name": "dummy",
+            "mix_strategy": null,
+            "streaming": false,
+            "interleave_probs": null,
+            "expected_len": 2,
+            "expected_min_len": null,
+            "expected_identity": true
+        },
+        {
+            "label": "concat_merges_all_rows",
+            "sizes": [
+                2,
+                3
+            ],
+            "iterable": false,
+            "dataset_name": "dummy",
+            "mix_strategy": "concat",
+            "streaming": false,
+            "interleave_probs": null,
+            "expected_len": 5,
+            "expected_min_len": null,
+            "expected_identity": false
+        },
+        {
+            "label": "concat_in_streaming_mode_still_concatenates",
+            "sizes": [
+                2,
+                2
+            ],
+            "iterable": false,
+            "dataset_name": "dummy",
+            "mix_strategy": "concat",
+            "streaming": true,
+            "interleave_probs": null,
+            "expected_len": 4,
+            "expected_min_len": null,
+            "expected_identity": false
+        },
+        {
+            "label": "interleave_under_stops_at_first_exhausted",
+            "sizes": [
+                2,
+                3
+            ],
+            "iterable": false,
+            "dataset_name": "dummy",
+            "mix_strategy": "interleave_under",
+            "streaming": false,
+            "interleave_probs": null,
+            "expected_len": 4,
+            "expected_min_len": null,
+            "expected_identity": false
+        },
+        {
+            "label": "interleave_over_exhausts_all_datasets",
+            "sizes": [
+                2,
+                3
+            ],
+            "iterable": false,
+            "dataset_name": "dummy",
+            "mix_strategy": "interleave_over",
+            "streaming": false,
+            "interleave_probs": null,
+            "expected_len": 6,
+            "expected_min_len": null,
+            "expected_identity": false
+        },
+        {
+            "label": "interleave_with_probabilities_yields_samples",
+            "sizes": [
+                2,
+                3
+            ],
+            "iterable": true,
+            "dataset_name": "ab",
+            "mix_strategy": "interleave_under",
+            "streaming": true,
+            "interleave_probs": "0.7,0.3",
+            "expected_len": null,
+            "expected_min_len": 1,
+            "expected_identity": false
+        }
+    ],
+    "test_split_dataset": [
+        {
+            "label": "no_val_size_produces_train_only",
+            "n_train": 4,
+            "n_eval": null,
+            "val_size": 0.0,
+            "streaming": false,
+            "buffer_size": null,
+            "expected_keys": [
+                "train"
+            ],
+            "expected_train_len": 4,
+            "expected_validation_len": null
+        },
+        {
+            "label": "fractional_val_size_splits_train_and_validation",
+            "n_train": 4,
+            "n_eval": null,
+            "val_size": 0.25,
+            "streaming": false,
+            "buffer_size": null,
+            "expected_keys": [
+                "train",
+                "validation"
+            ],
+            "expected_train_len": 3,
+            "expected_validation_len": 1
+        },
+        {
+            "label": "integer_val_size_greater_than_one",
+            "n_train": 4,
+            "n_eval": null,
+            "val_size": 2.0,
+            "streaming": false,
+            "buffer_size": null,
+            "expected_keys": [
+                "train",
+                "validation"
+            ],
+            "expected_train_len": 2,
+            "expected_validation_len": 2
+        },
+        {
+            "label": "eval_dataset_dict_becomes_named_validations",
+            "n_train": 4,
+            "n_eval": {
+                "a": 1,
+                "b": 2
+            },
+            "val_size": 0.0,
+            "streaming": false,
+            "buffer_size": null,
+            "expected_keys": [
+                "train",
+                "validation_a",
+                "validation_b"
+            ],
+            "expected_train_len": null,
+            "expected_validation_len": null
+        },
+        {
+            "label": "eval_dataset_becomes_validation",
+            "n_train": 4,
+            "n_eval": 2,
+            "val_size": 0.0,
+            "streaming": false,
+            "buffer_size": null,
+            "expected_keys": [
+                "train",
+                "validation"
+            ],
+            "expected_train_len": null,
+            "expected_validation_len": null
+        },
+        {
+            "label": "none_dataset_with_eval_only",
+            "n_train": 0,
+            "n_eval": 2,
+            "val_size": 0.0,
+            "streaming": false,
+            "buffer_size": null,
+            "expected_keys": [
+                "validation"
+            ],
+            "expected_train_len": null,
+            "expected_validation_len": null
+        },
+        {
+            "label": "streaming_dataset_splits_by_take_and_skip",
+            "n_train": 4,
+            "n_eval": null,
+            "val_size": 2.0,
+            "streaming": true,
+            "buffer_size": null,
+            "expected_keys": [
+                "train",
+                "validation"
+            ],
+            "expected_train_len": 2,
+            "expected_validation_len": 2
+        },
+        {
+            "label": "streaming_eval_dataset_is_shuffled_then_kept",
+            "n_train": 2,
+            "n_eval": 3,
+            "val_size": 0.0,
+            "streaming": true,
+            "buffer_size": 8,
+            "expected_keys": [
+                "train",
+                "validation"
+            ],
+            "expected_train_len": null,
+            "expected_validation_len": 3
+        }
+    ],
+    "test_has_tokenized_data": [
+        {
+            "label": "empty_directory_has_no_tokenized_data",
+            "scenario": "empty_dir",
+            "expected": false
+        },
+        {
+            "label": "directory_with_file_has_tokenized_data",
+            "scenario": "dir_with_file",
+            "expected": true
+        },
+        {
+            "label": "missing_path_has_no_tokenized_data",
+            "scenario": "missing",
+            "expected": false
+        },
+        {
+            "label": "plain_file_path_has_no_tokenized_data",
+            "scenario": "plain_file",
+            "expected": false
+        }
+    ],
+    "test_read_json_with_fs": [
+        {
+            "label": "reads_whole_json_document",
+            "filename": "s3://bucket/data.json",
+            "read_data": "{\"a\": 1}",
+            "expected": {
+                "a": 1
+            }
+        },
+        {
+            "label": "reads_jsonl_lines_and_skips_blank_lines",
+            "filename": "s3://bucket/data.jsonl",
+            "read_data": "{\"a\": 1}\n\n{\"b\": 2}\n",
+            "expected": [
+                {
+                    "a": 1
+                },
+                {
+                    "b": 2
+                }
+            ]
+        }
+    ],
+    "test_setup_fs": [
+        {
+            "label": "existing_s3_path_returns_filesystem",
+            "path": "s3://bucket/data.json",
+            "anon": true,
+            "fs_exists": true,
+            "factory_args": [
+                "s3"
+            ],
+            "factory_kwargs": {
+                "anon": true
+            }
+        },
+        {
+            "label": "gcs_path_without_anon_has_no_storage_options",
+            "path": "gs://bucket/data.json",
+            "anon": null,
+            "fs_exists": true,
+            "factory_args": [
+                "gcs"
+            ],
+            "factory_kwargs": {}
+        }
+    ],
+    "test_read_cloud_json": [
+        {
+            "label": "single_file_read_with_anonymous_access",
+            "path": "s3://bucket/data.json",
+            "is_dir": false,
+            "listdir": null,
+            "json_data": "[{\"a\": 1}]",
+            "jsonl_data": null,
+            "anon_fails": false,
+            "expected": [
+                {
+                    "a": 1
+                }
+            ],
+            "expected_setup_calls": 1
+        },
+        {
+            "label": "falls_back_to_credentials_when_anonymous_fails",
+            "path": "gs://bucket/data.json",
+            "is_dir": false,
+            "listdir": null,
+            "json_data": "[{\"a\": 1}]",
+            "jsonl_data": null,
+            "anon_fails": true,
+            "expected": [
+                {
+                    "a": 1
+                }
+            ],
+            "expected_setup_calls": 2
+        },
+        {
+            "label": "directory_reads_only_json_and_jsonl_files",
+            "path": "s3://bucket",
+            "is_dir": true,
+            "listdir": [
+                "s3://bucket/a.json",
+                "s3://bucket/notes.txt",
+                "s3://bucket/b.jsonl"
+            ],
+            "json_data": "[{\"x\": 1}]",
+            "jsonl_data": "{\"x\": 1}\n",
+            "anon_fails": false,
+            "expected": [
+                {
+                    "x": 1
+                },
+                {
+                    "x": 1
+                }
+            ],
+            "expected_setup_calls": 1
+        }
+    ],
+    "test_check_version": [
+        {
+            "label": "disabled_version_check_skips_requirement",
+            "env_enabled": true,
+            "requirement": "numpy>=1.0",
+            "mandatory": false,
+            "expected_called": false,
+            "hint_contains": null,
+            "hint_not_contains": null
+        },
+        {
+            "label": "mandatory_gptmodel_requirement_builds_isolated_pip_hint",
+            "env_enabled": false,
+            "requirement": "gptmodel>=1.0",
+            "mandatory": true,
+            "expected_called": true,
+            "hint_contains": [
+                "pip install gptmodel>=1.0 --no-build-isolation"
+            ],
+            "hint_not_contains": null
+        },
+        {
+            "label": "non_mandatory_hint_mentions_disable_version_check",
+            "env_enabled": false,
+            "requirement": "numpy>=1.0",
+            "mandatory": false,
+            "expected_called": true,
+            "hint_contains": [
+                "DISABLE_VERSION_CHECK=1"
+            ],
+            "hint_not_contains": [
+                "--no-build-isolation"
+            ]
+        }
+    ],
+    "test_main_process_first": [
+        {
+            "label": "single_process_yields_without_barriers",
+            "world_size": 1,
+            "local_rank": null,
+            "expected_order": [
+                "body"
+            ]
+        },
+        {
+            "label": "main_process_runs_first_then_releases_replicas",
+            "world_size": 2,
+            "local_rank": 0,
+            "expected_order": [
+                "body",
+                "barrier"
+            ]
+        },
+        {
+            "label": "replica_waits_before_running",
+            "world_size": 2,
+            "local_rank": 1,
+            "expected_order": [
+                "barrier",
+                "body"
+            ]
+        }
+    ],
+    "test_get_dataset_module": [
+        {
+            "label": "dataset_dict_with_train_and_validation",
+            "splits": {
+                "train": 2,
+                "validation": 1
+            },
+            "expected_has_train": true,
+            "expected_train_len": 2,
+            "expected_eval_keys": null,
+            "expected_eval_len": 1
+        },
+        {
+            "label": "dataset_dict_with_only_named_validations",
+            "splits": {
+                "validation_a": 1,
+                "validation_b": 2
+            },
+            "expected_has_train": false,
+            "expected_train_len": null,
+            "expected_eval_keys": [
+                "a",
+                "b"
+            ],
+            "expected_eval_len": null
+        },
+        {
+            "label": "single_dataset_becomes_train_dataset",
+            "splits": {
+                "train": 3
+            },
+            "expected_has_train": true,
+            "expected_train_len": 3,
+            "expected_eval_keys": null,
+            "expected_eval_len": null
+        }
+    ],
+    "test_get_dataset_processor": [
+        {
+            "label": "pt_stage_uses_pretrain_processor",
+            "stage": "pt",
+            "packing": false,
+            "neat_packing": false,
+            "do_generate": false,
+            "expected_processor": "pretrain"
+        },
+        {
+            "label": "sft_stage_uses_sft_processor",
+            "stage": "sft",
+            "packing": false,
+            "neat_packing": false,
+            "do_generate": false,
+            "expected_processor": "sft"
+        },
+        {
+            "label": "sft_stage_with_packing_uses_packed_processor",
+            "stage": "sft",
+            "packing": true,
+            "neat_packing": false,
+            "do_generate": false,
+            "expected_processor": "packed"
+        },
+        {
+            "label": "sft_stage_with_neat_packing_uses_packed_processor",
+            "stage": "sft",
+            "packing": false,
+            "neat_packing": true,
+            "do_generate": false,
+            "expected_processor": "packed"
+        }
+    ],
+    "test_get_merged_dataset": [
+        {
+            "label": "none_names_return_none",
+            "names": null,
+            "stage": "sft",
+            "ranking": false,
+            "return_dict": false,
+            "expected_none": true,
+            "expected_keys": null,
+            "expected_len": null
+        },
+        {
+            "label": "return_dict_returns_datasets_by_name",
+            "names": [
+                "a",
+                "b"
+            ],
+            "stage": "sft",
+            "ranking": false,
+            "return_dict": true,
+            "expected_none": false,
+            "expected_keys": [
+                "a",
+                "b"
+            ],
+            "expected_len": null
+        },
+        {
+            "label": "datasets_are_merged_by_mix_strategy",
+            "names": [
+                "a",
+                "b"
+            ],
+            "stage": "sft",
+            "ranking": false,
+            "return_dict": false,
+            "expected_none": false,
+            "expected_keys": null,
+            "expected_len": 4
+        }
+    ]
+}

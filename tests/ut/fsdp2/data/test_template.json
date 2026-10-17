@@ -1,0 +1,1095 @@
+{
+    "test_encode_oneturn": [
+        {
+            "label": "splits_prompt_and_response",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "hi"
+                },
+                {
+                    "role": "assistant",
+                    "content": "yo"
+                }
+            ],
+            "system": null,
+            "tools": null,
+            "default_system": null,
+            "observation_slot": null,
+            "expected_prompt_exact": "<s>User: hi\n",
+            "expected_prompt_contains": null,
+            "expected_prompt_not_contains": null,
+            "expected_prompt_startswith": null,
+            "expected_response_exact": "Assistant: yo\n",
+            "expected_response_contains": null
+        },
+        {
+            "label": "system_and_tools_are_encoded_into_first_turn",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "hi"
+                },
+                {
+                    "role": "assistant",
+                    "content": "ok"
+                }
+            ],
+            "system": "Be nice",
+            "tools": "[{\"name\": \"calculator\", \"description\": \"A simple calculator\", \"parameters\": {\"type\": \"object\", \"properties\": {\"expression\": {\"type\": \"string\", \"description\": \"the math expression\"}}, \"required\": [\"expression\"]}}]",
+            "default_system": null,
+            "observation_slot": null,
+            "expected_prompt_exact": null,
+            "expected_prompt_contains": [
+                "System: Be nice",
+                "Tool Name: calculator",
+                "User: hi"
+            ],
+            "expected_prompt_not_contains": null,
+            "expected_prompt_startswith": "<s>",
+            "expected_response_exact": null,
+            "expected_response_contains": null
+        },
+        {
+            "label": "default_system_is_used_when_none_given",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "hi"
+                },
+                {
+                    "role": "assistant",
+                    "content": "ok"
+                }
+            ],
+            "system": null,
+            "tools": null,
+            "default_system": "Be polite",
+            "observation_slot": null,
+            "expected_prompt_exact": null,
+            "expected_prompt_contains": [
+                "System: Be polite"
+            ],
+            "expected_prompt_not_contains": null,
+            "expected_prompt_startswith": null,
+            "expected_response_exact": null,
+            "expected_response_contains": null
+        },
+        {
+            "label": "explicit_system_overrides_default",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "hi"
+                },
+                {
+                    "role": "assistant",
+                    "content": "ok"
+                }
+            ],
+            "system": "Be kind",
+            "tools": null,
+            "default_system": "Be polite",
+            "observation_slot": null,
+            "expected_prompt_exact": null,
+            "expected_prompt_contains": [
+                "System: Be kind"
+            ],
+            "expected_prompt_not_contains": [
+                "Be polite"
+            ],
+            "expected_prompt_startswith": null,
+            "expected_response_exact": null,
+            "expected_response_contains": null
+        },
+        {
+            "label": "function_role_is_encoded_through_tool_format",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "call it"
+                },
+                {
+                    "role": "function",
+                    "content": "[{\"name\": \"calculator\", \"arguments\": {\"expression\": \"1+1\"}}]"
+                }
+            ],
+            "system": null,
+            "tools": null,
+            "default_system": null,
+            "observation_slot": null,
+            "expected_prompt_exact": null,
+            "expected_prompt_contains": null,
+            "expected_prompt_not_contains": null,
+            "expected_prompt_startswith": null,
+            "expected_response_exact": null,
+            "expected_response_contains": [
+                "Action: calculator",
+                "Action Input: {\"expression\": \"1+1\"}"
+            ]
+        },
+        {
+            "label": "observation_role_uses_observation_formatter",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "look"
+                },
+                {
+                    "role": "observation",
+                    "content": "42"
+                }
+            ],
+            "system": null,
+            "tools": null,
+            "default_system": null,
+            "observation_slot": "Obs: {{content}}\n",
+            "expected_prompt_exact": null,
+            "expected_prompt_contains": null,
+            "expected_prompt_not_contains": null,
+            "expected_prompt_startswith": null,
+            "expected_response_exact": null,
+            "expected_response_contains": [
+                "Obs: 42"
+            ]
+        }
+    ],
+    "test_encode_multiturn": [
+        {
+            "label": "returns_one_pair_per_turn",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "q1"
+                },
+                {
+                    "role": "assistant",
+                    "content": "a1"
+                },
+                {
+                    "role": "user",
+                    "content": "q2"
+                },
+                {
+                    "role": "assistant",
+                    "content": "a2"
+                }
+            ],
+            "expected_pairs": [
+                [
+                    "<s>User: q1\n",
+                    "Assistant: a1\n"
+                ],
+                [
+                    "User: q2\n",
+                    "Assistant: a2\n"
+                ]
+            ]
+        }
+    ],
+    "test_reasoning_encode_oneturn": [
+        {
+            "label": "adds_empty_thought_to_response",
+            "enable_thinking": true,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "q1"
+                },
+                {
+                    "role": "assistant",
+                    "content": "<think>r1</think>a1"
+                },
+                {
+                    "role": "user",
+                    "content": "q2"
+                },
+                {
+                    "role": "assistant",
+                    "content": "a2"
+                }
+            ],
+            "expected_prompt_contains": [
+                "Assistant: a1"
+            ],
+            "expected_prompt_not_contains": [
+                "r1"
+            ],
+            "expected_prompt_endswith": null,
+            "expected_response_exact": "<think></think>Assistant: a2\n"
+        },
+        {
+            "label": "nothink_puts_thought_in_prompt",
+            "enable_thinking": false,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "q"
+                },
+                {
+                    "role": "assistant",
+                    "content": "a"
+                }
+            ],
+            "expected_prompt_contains": null,
+            "expected_prompt_not_contains": null,
+            "expected_prompt_endswith": "<think></think>",
+            "expected_response_exact": "Assistant: a\n"
+        },
+        {
+            "label": "nothink_removes_existing_thought",
+            "enable_thinking": false,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "q"
+                },
+                {
+                    "role": "assistant",
+                    "content": "<think>cot</think>a"
+                }
+            ],
+            "expected_prompt_contains": null,
+            "expected_prompt_not_contains": null,
+            "expected_prompt_endswith": null,
+            "expected_response_exact": "Assistant: a\n"
+        }
+    ],
+    "test_reasoning_encode_multiturn": [
+        {
+            "label": "adds_empty_thought_per_turn",
+            "enable_thinking": true,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "q1"
+                },
+                {
+                    "role": "assistant",
+                    "content": "<think>r1</think>a1"
+                },
+                {
+                    "role": "user",
+                    "content": "q2"
+                },
+                {
+                    "role": "assistant",
+                    "content": "a2"
+                }
+            ],
+            "expected_pairs": [
+                {
+                    "response_exact": null,
+                    "response_contains": [
+                        "r1"
+                    ],
+                    "response_not_contains": null,
+                    "response_endswith": null
+                },
+                {
+                    "response_exact": "<think></think>Assistant: a2\n",
+                    "response_contains": null,
+                    "response_not_contains": null,
+                    "response_endswith": null
+                }
+            ]
+        },
+        {
+            "label": "nothink_strips_history_thoughts",
+            "enable_thinking": false,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "q1"
+                },
+                {
+                    "role": "assistant",
+                    "content": "<think>r1</think>a1"
+                },
+                {
+                    "role": "user",
+                    "content": "q2"
+                },
+                {
+                    "role": "assistant",
+                    "content": "a2"
+                }
+            ],
+            "expected_pairs": [
+                {
+                    "response_exact": null,
+                    "response_contains": null,
+                    "response_not_contains": [
+                        "r1"
+                    ],
+                    "response_endswith": "Assistant: a1\n"
+                },
+                {
+                    "response_exact": null,
+                    "response_contains": null,
+                    "response_not_contains": null,
+                    "response_endswith": null
+                }
+            ]
+        }
+    ],
+    "test_normalize_to_v4_schema": [
+        {
+            "label": "system_synthesized_when_no_system_message",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "hi"
+                }
+            ],
+            "system": "SYS",
+            "tools": null,
+            "expected_subset": [
+                {
+                    "role": "system",
+                    "content": "SYS"
+                },
+                {
+                    "role": "user"
+                }
+            ]
+        },
+        {
+            "label": "system_merges_into_first_system_message",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "first"
+                }
+            ],
+            "system": "SYS",
+            "tools": null,
+            "expected_subset": [
+                {
+                    "content": "SYS\n\nfirst"
+                }
+            ]
+        },
+        {
+            "label": "tools_merge_into_first_system_message",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "first"
+                }
+            ],
+            "system": null,
+            "tools": "[{\"type\": \"function\", \"function\": {\"name\": \"f\"}}]",
+            "expected_subset": [
+                {
+                    "tools": [
+                        {
+                            "type": "function",
+                            "function": {
+                                "name": "f"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "label": "assistant_think_block_is_split",
+            "messages": [
+                {
+                    "role": "assistant",
+                    "content": "<think> why </think> answer"
+                }
+            ],
+            "system": null,
+            "tools": null,
+            "expected_subset": [
+                {
+                    "reasoning_content": "why",
+                    "content": "answer"
+                }
+            ]
+        },
+        {
+            "label": "assistant_explicit_reasoning_content",
+            "messages": [
+                {
+                    "role": "assistant",
+                    "content": "c",
+                    "reasoning_content": null
+                }
+            ],
+            "system": null,
+            "tools": null,
+            "expected_subset": [
+                {
+                    "reasoning_content": "",
+                    "content": "c"
+                }
+            ]
+        },
+        {
+            "label": "tool_role_becomes_tool",
+            "messages": [
+                {
+                    "role": "tool",
+                    "content": "r",
+                    "tool_call_id": "t1"
+                }
+            ],
+            "system": null,
+            "tools": null,
+            "expected_subset": [
+                {
+                    "role": "tool",
+                    "content": "r",
+                    "tool_call_id": "t1"
+                }
+            ]
+        },
+        {
+            "label": "function_role_becomes_tool",
+            "messages": [
+                {
+                    "role": "function",
+                    "content": "r",
+                    "tool_call_id": "t1"
+                }
+            ],
+            "system": null,
+            "tools": null,
+            "expected_subset": [
+                {
+                    "role": "tool",
+                    "content": "r",
+                    "tool_call_id": "t1"
+                }
+            ]
+        },
+        {
+            "label": "observation_role_becomes_tool",
+            "messages": [
+                {
+                    "role": "observation",
+                    "content": "r",
+                    "tool_call_id": "t1"
+                }
+            ],
+            "system": null,
+            "tools": null,
+            "expected_subset": [
+                {
+                    "role": "tool",
+                    "content": "r",
+                    "tool_call_id": "t1"
+                }
+            ]
+        },
+        {
+            "label": "system_message_keeps_tools_key",
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "s",
+                    "tools": [
+                        {
+                            "type": "function",
+                            "function": {
+                                "name": "f"
+                            }
+                        }
+                    ]
+                }
+            ],
+            "system": null,
+            "tools": null,
+            "expected_subset": [
+                {
+                    "tools": [
+                        {
+                            "type": "function",
+                            "function": {
+                                "name": "f"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "label": "developer_and_latest_reminder_pass_through",
+            "messages": [
+                {
+                    "role": "developer",
+                    "content": "dev"
+                },
+                {
+                    "role": "latest_reminder",
+                    "content": "rem"
+                }
+            ],
+            "system": null,
+            "tools": null,
+            "expected_subset": [
+                {
+                    "role": "developer"
+                },
+                {
+                    "role": "latest_reminder"
+                }
+            ]
+        },
+        {
+            "label": "user_extra_keys_are_kept",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "u",
+                    "task": "query",
+                    "mask": true,
+                    "wo_eos": true
+                }
+            ],
+            "system": null,
+            "tools": null,
+            "expected_subset": [
+                {
+                    "task": "query",
+                    "mask": true,
+                    "wo_eos": true
+                }
+            ]
+        },
+        {
+            "label": "assistant_tool_calls_are_kept",
+            "messages": [
+                {
+                    "role": "assistant",
+                    "content": "",
+                    "tool_calls": [
+                        {
+                            "id": "t1",
+                            "function": {
+                                "name": "f",
+                                "arguments": "{}"
+                            }
+                        }
+                    ]
+                }
+            ],
+            "system": null,
+            "tools": null,
+            "expected_subset": [
+                {
+                    "tool_calls": [
+                        {
+                            "id": "t1",
+                            "function": {
+                                "name": "f",
+                                "arguments": "{}"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "label": "attaches_tools_to_synthesized_system",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "u"
+                }
+            ],
+            "system": null,
+            "tools": "[{\"type\": \"function\", \"function\": {\"name\": \"f\"}}]",
+            "expected_subset": [
+                {
+                    "role": "system",
+                    "tools": [
+                        {
+                            "type": "function",
+                            "function": {
+                                "name": "f"
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "label": "keeps_assistant_task_and_wo_eos",
+            "messages": [
+                {
+                    "role": "assistant",
+                    "content": "a",
+                    "task": "query",
+                    "wo_eos": true,
+                    "mask": true
+                }
+            ],
+            "system": null,
+            "tools": null,
+            "expected_subset": [
+                {
+                    "task": "query",
+                    "wo_eos": true,
+                    "mask": true
+                }
+            ]
+        }
+    ],
+    "test_render_message": [
+        {
+            "label": "system_message_renders_plain_content",
+            "index": 0,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "S"
+                }
+            ],
+            "thinking_mode": "chat",
+            "drop_thinking": true,
+            "reasoning_effort": null,
+            "expected_exact": "S",
+            "expected_contains": null,
+            "expected_startswith": null,
+            "expected_endswith": null
+        },
+        {
+            "label": "system_message_with_tools_and_response_format",
+            "index": 0,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "S",
+                    "tools": [
+                        {
+                            "type": "function",
+                            "function": {
+                                "name": "f",
+                                "parameters": {
+                                    "properties": {}
+                                }
+                            }
+                        }
+                    ],
+                    "response_format": {
+                        "type": "json_object"
+                    }
+                }
+            ],
+            "thinking_mode": "chat",
+            "drop_thinking": true,
+            "reasoning_effort": null,
+            "expected_exact": null,
+            "expected_contains": [
+                "S",
+                "## Tools",
+                "\"name\": \"f\"",
+                "## Response Format"
+            ],
+            "expected_startswith": null,
+            "expected_endswith": null
+        },
+        {
+            "label": "developer_message_with_content",
+            "index": 0,
+            "messages": [
+                {
+                    "role": "developer",
+                    "content": "dev"
+                }
+            ],
+            "thinking_mode": "chat",
+            "drop_thinking": true,
+            "reasoning_effort": null,
+            "expected_exact": "{USER}dev{ASSISTANT}</think>",
+            "expected_contains": null,
+            "expected_startswith": null,
+            "expected_endswith": null
+        },
+        {
+            "label": "user_message_renders_header_and_transition",
+            "index": 0,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "hi"
+                }
+            ],
+            "thinking_mode": "chat",
+            "drop_thinking": true,
+            "reasoning_effort": null,
+            "expected_exact": "{USER}hi{ASSISTANT}</think>",
+            "expected_contains": null,
+            "expected_startswith": null,
+            "expected_endswith": null
+        },
+        {
+            "label": "user_message_with_content_blocks",
+            "index": 0,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "",
+                    "content_blocks": [
+                        {
+                            "type": "text",
+                            "text": "T"
+                        },
+                        {
+                            "type": "tool_result",
+                            "content": "R"
+                        },
+                        {
+                            "type": "tool_result",
+                            "content": [
+                                {
+                                    "type": "text",
+                                    "text": "A"
+                                },
+                                {
+                                    "type": "img"
+                                }
+                            ]
+                        },
+                        {
+                            "type": "audio"
+                        }
+                    ]
+                }
+            ],
+            "thinking_mode": "chat",
+            "drop_thinking": true,
+            "reasoning_effort": null,
+            "expected_exact": null,
+            "expected_contains": [
+                "T",
+                "<tool_result>R</tool_result>",
+                "<tool_result>A\n\n[Unsupported img]</tool_result>",
+                "[Unsupported audio]"
+            ],
+            "expected_startswith": null,
+            "expected_endswith": null
+        },
+        {
+            "label": "latest_reminder_renders_special_token",
+            "index": 0,
+            "messages": [
+                {
+                    "role": "latest_reminder",
+                    "content": "note"
+                }
+            ],
+            "thinking_mode": "chat",
+            "drop_thinking": true,
+            "reasoning_effort": null,
+            "expected_exact": "{LATEST_REMINDER}note",
+            "expected_contains": null,
+            "expected_startswith": null,
+            "expected_endswith": null
+        },
+        {
+            "label": "assistant_chat_mode_appends_eos",
+            "index": 1,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "u"
+                },
+                {
+                    "role": "assistant",
+                    "content": "a"
+                }
+            ],
+            "thinking_mode": "chat",
+            "drop_thinking": true,
+            "reasoning_effort": null,
+            "expected_exact": "a{EOS}",
+            "expected_contains": null,
+            "expected_startswith": null,
+            "expected_endswith": null
+        },
+        {
+            "label": "assistant_wo_eos_skips_eos",
+            "index": 1,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "u"
+                },
+                {
+                    "role": "assistant",
+                    "content": "a",
+                    "wo_eos": true
+                }
+            ],
+            "thinking_mode": "chat",
+            "drop_thinking": true,
+            "reasoning_effort": null,
+            "expected_exact": "a",
+            "expected_contains": null,
+            "expected_startswith": null,
+            "expected_endswith": null
+        },
+        {
+            "label": "assistant_thinking_mode_keeps_reasoning_after_last_user",
+            "index": 1,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "u"
+                },
+                {
+                    "role": "assistant",
+                    "content": "a",
+                    "reasoning_content": "R"
+                }
+            ],
+            "thinking_mode": "thinking",
+            "drop_thinking": false,
+            "reasoning_effort": null,
+            "expected_exact": "R</think>a{EOS}",
+            "expected_contains": null,
+            "expected_startswith": null,
+            "expected_endswith": null
+        },
+        {
+            "label": "assistant_tool_calls_rendered_as_dsml",
+            "index": 1,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "u"
+                },
+                {
+                    "role": "assistant",
+                    "content": "",
+                    "tool_calls": [
+                        {
+                            "function": {
+                                "name": "f",
+                                "arguments": "{\"x\": \"1\"}"
+                            }
+                        }
+                    ]
+                }
+            ],
+            "thinking_mode": "chat",
+            "drop_thinking": true,
+            "reasoning_effort": null,
+            "expected_exact": null,
+            "expected_contains": [
+                "<\uff5cDSML\uff5ctool_calls>",
+                "<\uff5cDSML\uff5cinvoke name=\"f\">",
+                "<\uff5cDSML\uff5cparameter name=\"x\" string=\"true\">1</\uff5cDSML\uff5cparameter>"
+            ],
+            "expected_startswith": null,
+            "expected_endswith": null
+        },
+        {
+            "label": "user_task_query_appends_task_token",
+            "index": 0,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "u",
+                    "task": "query"
+                }
+            ],
+            "thinking_mode": "chat",
+            "drop_thinking": true,
+            "reasoning_effort": null,
+            "expected_exact": "{USER}u<\uff5cquery\uff5c>",
+            "expected_contains": null,
+            "expected_startswith": null,
+            "expected_endswith": null
+        },
+        {
+            "label": "user_task_action_appends_thinking_and_action_token",
+            "index": 0,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "u",
+                    "task": "action"
+                }
+            ],
+            "thinking_mode": "thinking",
+            "drop_thinking": false,
+            "reasoning_effort": null,
+            "expected_exact": "{USER}u{ASSISTANT}<think><\uff5caction\uff5c>",
+            "expected_contains": null,
+            "expected_startswith": null,
+            "expected_endswith": null
+        },
+        {
+            "label": "reasoning_effort_max_prepends_instruction",
+            "index": 0,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": "S"
+                }
+            ],
+            "thinking_mode": "thinking",
+            "drop_thinking": true,
+            "reasoning_effort": "max",
+            "expected_exact": null,
+            "expected_contains": null,
+            "expected_startswith": "Reasoning Effort: Absolute maximum",
+            "expected_endswith": null
+        },
+        {
+            "label": "developer_with_tools_and_response_format",
+            "index": 0,
+            "messages": [
+                {
+                    "role": "developer",
+                    "content": "d",
+                    "tools": [
+                        {
+                            "type": "function",
+                            "function": {
+                                "name": "f"
+                            }
+                        }
+                    ],
+                    "response_format": {
+                        "type": "json_object"
+                    }
+                }
+            ],
+            "thinking_mode": "chat",
+            "drop_thinking": null,
+            "reasoning_effort": null,
+            "expected_exact": null,
+            "expected_contains": [
+                "## Tools",
+                "## Response Format"
+            ],
+            "expected_startswith": "{USER}d",
+            "expected_endswith": null
+        },
+        {
+            "label": "user_keeps_think_start_when_drop_disabled",
+            "index": 0,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "u"
+                }
+            ],
+            "thinking_mode": "thinking",
+            "drop_thinking": false,
+            "reasoning_effort": null,
+            "expected_exact": null,
+            "expected_contains": null,
+            "expected_startswith": null,
+            "expected_endswith": "{ASSISTANT}{THINKING_START}"
+        }
+    ],
+    "test_encode_arguments_to_dsml": [
+        {
+            "label": "mixed_types",
+            "arguments": "{\"a\": \"x\", \"b\": 2}",
+            "expected_contains": [
+                "<\uff5cDSML\uff5cparameter name=\"a\" string=\"true\">x</\uff5cDSML\uff5cparameter>",
+                "<\uff5cDSML\uff5cparameter name=\"b\" string=\"false\">2</\uff5cDSML\uff5cparameter>"
+            ]
+        },
+        {
+            "label": "invalid_json_falls_back",
+            "arguments": "raw text",
+            "expected_contains": [
+                "<\uff5cDSML\uff5cparameter name=\"arguments\" string=\"true\">raw text</\uff5cDSML\uff5cparameter>"
+            ]
+        }
+    ],
+    "test_deepseek4_encode_oneturn": [
+        {
+            "label": "chat_mode",
+            "enable_thinking": false,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "hi"
+                },
+                {
+                    "role": "assistant",
+                    "content": "hello"
+                }
+            ],
+            "expected_prompt_exact": "{BOS}<\uff5cUser\uff5c>hi<\uff5cAssistant\uff5c></think>",
+            "expected_prompt_endswith": null,
+            "expected_response_exact": "hello{EOS}"
+        },
+        {
+            "label": "thinking_mode_keeps_reasoning_in_response",
+            "enable_thinking": null,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "hi"
+                },
+                {
+                    "role": "assistant",
+                    "content": "<think>why</think>hello"
+                }
+            ],
+            "expected_prompt_exact": null,
+            "expected_prompt_endswith": "<\uff5cAssistant\uff5c><think>",
+            "expected_response_exact": "why</think>hello{EOS}"
+        },
+        {
+            "label": "prompt_keeps_text_after_last_assistant",
+            "enable_thinking": null,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "q"
+                },
+                {
+                    "role": "assistant",
+                    "content": "a"
+                },
+                {
+                    "role": "user",
+                    "content": "next"
+                }
+            ],
+            "expected_prompt_exact": "{BOS}<\uff5cUser\uff5c>q<\uff5cAssistant\uff5c></think><\uff5cUser\uff5c>next<\uff5cAssistant\uff5c><think>",
+            "expected_prompt_endswith": null,
+            "expected_response_exact": "a{EOS}"
+        }
+    ],
+    "test_deepseek4_encode_multiturn": [
+        {
+            "label": "returns_pairs_per_assistant_turn",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "q1"
+                },
+                {
+                    "role": "assistant",
+                    "content": "<think>r</think>a1"
+                },
+                {
+                    "role": "user",
+                    "content": "q2"
+                },
+                {
+                    "role": "assistant",
+                    "content": "a2"
+                }
+            ],
+            "expected_response_exacts": [
+                "a1{EOS}",
+                "</think>a2{EOS}"
+            ]
+        }
+    ]
+}

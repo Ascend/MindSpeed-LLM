@@ -1,0 +1,174 @@
+{
+    "test_dataset_attr_defaults": [
+        {
+            "label": "basic_defaults",
+            "load_from": "hf_hub",
+            "dataset_name": "org/name",
+            "expected": {
+                "load_from": "hf_hub", "dataset_name": "org/name", "formatting": "alpaca",
+                "ranking": false, "subset": null, "split": "train", "folder": null, "num_samples": null
+            }
+        },
+        {
+            "label": "common_column_defaults",
+            "load_from": "file",
+            "dataset_name": "data.json",
+            "expected": {
+                "system": null, "tools": null, "prompt": "instruction",
+                "query": "input", "response": "output", "history": null
+            }
+        },
+        {
+            "label": "sharegpt_tag_defaults",
+            "load_from": "file",
+            "dataset_name": "data.json",
+            "expected": {
+                "messages": "conversations", "role_tag": "from", "content_tag": "value",
+                "user_tag": "human", "assistant_tag": "gpt", "observation_tag": "observation",
+                "function_tag": "function_call", "system_tag": "system"
+            }
+        }
+    ],
+    "test_set_attr": [
+        {"label": "reads_key_from_dict", "key": "split", "config": {"split": "val"}, "use_default": true, "default": "train", "expected": "val"},
+        {"label": "falls_back_to_default_when_key_missing", "key": "split", "config": {}, "use_default": true, "default": "train", "expected": "train"},
+        {"label": "defaults_to_none_when_no_default_given", "key": "subset", "config": {}, "use_default": false, "default": null, "expected": null}
+    ],
+    "test_join": [
+        {
+            "label": "join_top_level_fields",
+            "config": {"formatting": "sharegpt", "ranking": true, "subset": "subset1", "split": "test", "folder": "sub", "num_samples": 10},
+            "expected": {"formatting": "sharegpt", "ranking": true, "subset": "subset1", "split": "test", "folder": "sub", "num_samples": 10}
+        },
+        {
+            "label": "join_defaults_when_keys_missing",
+            "config": {},
+            "expected": {"formatting": "alpaca", "ranking": false, "split": "train", "subset": null, "folder": null, "num_samples": null}
+        },
+        {
+            "label": "join_columns_overrides_and_resets_missing",
+            "config": {"columns": {"prompt": "instr", "messages": "msgs"}},
+            "expected": {"prompt": "instr", "messages": "msgs", "response": null, "query": null, "chosen": null, "kto_tag": null}
+        },
+        {
+            "label": "join_tags",
+            "config": {"tags": {"role_tag": "role", "user_tag": "USER", "assistant_tag": "BOT"}},
+            "expected": {"role_tag": "role", "user_tag": "USER", "assistant_tag": "BOT", "content_tag": null, "system_tag": null}
+        },
+        {
+            "label": "join_columns_and_tags_together",
+            "config": {
+                "columns": {"chosen": "chosen", "rejected": "rejected", "kto_tag": "label"},
+                "tags": {"observation_tag": "tool", "function_tag": "call"}
+            },
+            "expected": {"chosen": "chosen", "rejected": "rejected", "kto_tag": "label", "observation_tag": "tool", "function_tag": "call"}
+        }
+    ],
+    "test_is_env_enabled": [
+        {"label": "truthy_true", "value": "true", "use_default": false, "default": null, "expected": true},
+        {"label": "truthy_y", "value": "y", "use_default": false, "default": null, "expected": true},
+        {"label": "truthy_1", "value": "1", "use_default": false, "default": null, "expected": true},
+        {"label": "truthy_upper_true", "value": "TRUE", "use_default": false, "default": null, "expected": true},
+        {"label": "truthy_upper_y", "value": "Y", "use_default": false, "default": null, "expected": true},
+        {"label": "falsy_false", "value": "false", "use_default": false, "default": null, "expected": false},
+        {"label": "falsy_0", "value": "0", "use_default": false, "default": null, "expected": false},
+        {"label": "falsy_n", "value": "n", "use_default": false, "default": null, "expected": false},
+        {"label": "falsy_no", "value": "no", "use_default": false, "default": null, "expected": false},
+        {"label": "falsy_empty", "value": "", "use_default": false, "default": null, "expected": false},
+        {"label": "unset_uses_default_zero", "value": null, "use_default": false, "default": null, "expected": false},
+        {"label": "unset_with_custom_default", "value": null, "use_default": true, "default": "1", "expected": true}
+    ],
+    "test_hub_flag": [
+        {"label": "modelscope_unset", "func": "use_modelscope", "env_name": "USE_MODELSCOPE_HUB", "env_value": null, "expected": false},
+        {"label": "modelscope_enabled", "func": "use_modelscope", "env_name": "USE_MODELSCOPE_HUB", "env_value": "1", "expected": true},
+        {"label": "openmind_unset", "func": "use_openmind", "env_name": "USE_OPENMIND_HUB", "env_value": null, "expected": false},
+        {"label": "openmind_enabled", "func": "use_openmind", "env_name": "USE_OPENMIND_HUB", "env_value": "true", "expected": true}
+    ],
+    "test_get_dataset_list": [
+        {"label": "none_input_returns_empty_list", "dataset": null, "dataset_dir": "unused_dir", "expected_names": [], "expected_load_from": null},
+        {"label": "empty_name_list_returns_empty", "dataset": " , ,", "dataset_dir": "unused_dir", "expected_names": [], "expected_load_from": null},
+        {
+            "label": "names_are_stripped",
+            "dataset": " a , b ",
+            "dataset_dir": {"a": {"file_name": "a.json"}, "b": {"file_name": "b.json"}},
+            "expected_names": ["a.json", "b.json"],
+            "expected_load_from": null
+        },
+        {
+            "label": "dict_dataset_dir_is_used_directly",
+            "dataset": "alpaca",
+            "dataset_dir": {"alpaca": {"file_name": "alpaca.json", "formatting": "alpaca"}},
+            "expected_names": ["alpaca.json"],
+            "expected_load_from": "file"
+        },
+        {
+            "label": "dict_input_builds_single_attr",
+            "dataset": {"file_name": "alpaca.json"},
+            "dataset_dir": "unused_dir",
+            "expected_names": ["alpaca.json"],
+            "expected_load_from": "file"
+        }
+    ],
+    "test_online_hub": [
+        {"label": "defaults_to_hf", "ms_env": null, "om_env": null, "expected_load_from": "hf_hub"},
+        {"label": "modelscope_flag", "ms_env": "1", "om_env": null, "expected_load_from": "ms_hub"},
+        {"label": "openmind_flag", "ms_env": null, "om_env": "y", "expected_load_from": "om_hub"}
+    ],
+    "test_build_dataset_attr_from_dict": [
+        {
+            "label": "file_name",
+            "config": {"file_name": "alpaca.json"},
+            "expected": {"load_from": "file", "dataset_name": "alpaca.json"}
+        },
+        {
+            "label": "script_url",
+            "config": {"script_url": "https://example.com/data.py"},
+            "expected": {"load_from": "script", "dataset_name": "https://example.com/data.py"}
+        },
+        {
+            "label": "cloud_file_name",
+            "config": {"cloud_file_name": "obs://bucket/data.json"},
+            "expected": {"load_from": "cloud_file", "dataset_name": "obs://bucket/data.json"}
+        },
+        {
+            "label": "hf_hub_url",
+            "config": {"hf_hub_url": "org/dataset"},
+            "expected": {"load_from": "hf_hub", "dataset_name": "org/dataset"}
+        },
+        {
+            "label": "ms_hub_url",
+            "config": {"ms_hub_url": "org/dataset"},
+            "expected": {"load_from": "ms_hub", "dataset_name": "org/dataset"}
+        },
+        {
+            "label": "om_hub_url",
+            "config": {"om_hub_url": "org/dataset"},
+            "expected": {"load_from": "om_hub", "dataset_name": "org/dataset"}
+        },
+        {"label": "missing_source_key_raises", "config": {"formatting": "alpaca"}, "expected": null},
+        {
+            "label": "source_key_priority_follows_declaration_order",
+            "config": {"file_name": "a.json", "hf_hub_url": "org/ds"},
+            "expected": {"load_from": "file", "dataset_name": "a.json"}
+        },
+        {
+            "label": "full_config_with_columns_and_tags",
+            "config": {
+                "file_name": "sharegpt.json",
+                "formatting": "sharegpt",
+                "ranking": true,
+                "columns": {"messages": "conversations", "chosen": "chosen"},
+                "tags": {"role_tag": "role", "user_tag": "human"}
+            },
+            "expected": {
+                "load_from": "file", "formatting": "sharegpt", "ranking": true,
+                "messages": "conversations", "chosen": "chosen", "role_tag": "role", "user_tag": "human"
+            }
+        },
+        {
+            "label": "subset_and_num_samples_pass_through",
+            "config": {"hf_hub_url": "org/ds", "subset": "s1", "num_samples": 5},
+            "expected": {"subset": "s1", "num_samples": 5}
+        }
+    ]
+}

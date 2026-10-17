@@ -1,0 +1,108 @@
+{
+    "test_get_blend_from_list": [
+        {
+            "label": "none_returns_none",
+            "entries": null,
+            "expected_prefixes": null,
+            "expected_weights": null
+        },
+        {
+            "label": "odd_list_means_prefixes_only",
+            "entries": ["a", "b", "c"],
+            "expected_prefixes": ["a", "b", "c"],
+            "expected_weights": null
+        },
+        {
+            "label": "weighted_pairs",
+            "entries": ["30", " path/a ", "70", "path/b"],
+            "expected_prefixes": ["path/a", "path/b"],
+            "expected_weights": [30.0, 70.0]
+        },
+        {
+            "label": "even_list_without_weights_falls_back",
+            "entries": ["path/a", "path/b"],
+            "expected_prefixes": ["path/a", "path/b"],
+            "expected_weights": null
+        }
+    ],
+    "test_get_document_dataset": [
+        {
+            "label": "cached_prefixes_skip_preprocessing",
+            "file_name": "{tmp}/data",
+            "write_cached": true,
+            "expect_conversion": false,
+            "expected_file_name": ["{tmp}/data"]
+        },
+        {
+            "label": "raw_path_triggers_conversion",
+            "file_name": "{tmp}/data.json",
+            "write_cached": false,
+            "expect_conversion": true,
+            "expected_file_name": null
+        },
+        {
+            "label": "non_raw_string_is_split_into_list",
+            "file_name": "prefix_a, prefix_b ,",
+            "write_cached": false,
+            "expect_conversion": false,
+            "expected_file_name": ["prefix_a", "prefix_b"]
+        },
+        {
+            "label": "non_raw_list_passes_through",
+            "file_name": ["prefix_a"],
+            "write_cached": false,
+            "expect_conversion": false,
+            "expected_file_name": ["prefix_a"]
+        }
+    ],
+    "test_global_batch_size": [
+        {
+            "label": "without_distributed",
+            "per_device_train_batch_size": 2,
+            "gradient_accumulation_steps": 3,
+            "expected": 6
+        }
+    ],
+    "test_is_dataset_built_on_rank": [
+        {
+            "label": "non_zero_fsdp_group_size",
+            "fsdp_group_size": 8,
+            "expected": true
+        },
+        {
+            "label": "zero_fsdp_group_size",
+            "fsdp_group_size": 0,
+            "expected": false
+        }
+    ],
+    "test_num_samples": [
+        {
+            "label": "from_max_steps",
+            "global_batch_size": 4,
+            "max_steps": 5,
+            "num_train_epochs": 1,
+            "indexed_documents": 0,
+            "expected": [20, 0, 0]
+        },
+        {
+            "label": "from_epoch_scans_indexed_datasets",
+            "global_batch_size": 4,
+            "max_steps": 0,
+            "num_train_epochs": 1,
+            "indexed_documents": 3,
+            "expected": [12, 0, 0]
+        }
+    ],
+    "test_provider_dataset_class": [
+        {
+            "label": "mock_dataset",
+            "mock": true,
+            "expected_dataset": "MockGPTDataset"
+        },
+        {
+            "label": "gpt_dataset",
+            "mock": false,
+            "expected_dataset": "GPTDataset"
+        }
+    ]
+}

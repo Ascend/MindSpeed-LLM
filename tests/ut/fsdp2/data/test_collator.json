@@ -1,0 +1,38 @@
+{
+    "test_mask_layouts_match_reference": [
+        {
+            "label": "two_segments_no_padding",
+            "mask_rows": [[1, 1, 2, 2]]
+        },
+        {
+            "label": "two_packed_segments_with_padding",
+            "mask_rows": [[1, 1, 2, 2, 2, 0]]
+        },
+        {
+            "label": "all_padding",
+            "mask_rows": [[0, 0, 0]]
+        },
+        {
+            "label": "single_token",
+            "mask_rows": [[1]]
+        },
+        {
+            "label": "repeated_single_segment",
+            "mask_rows": [[3, 3, 3, 0]]
+        }
+    ],
+    "test_attention_mask_2d_configs": [
+        {
+            "label": "block_diag_disabled_eager",
+            "block_diag_attn": false,
+            "attn_implementation": "eager",
+            "expected_dim": 2
+        },
+        {
+            "label": "flash_attention_keeps_2d",
+            "block_diag_attn": true,
+            "attn_implementation": "flash_attention_2",
+            "expected_dim": 2
+        }
+    ]
+}

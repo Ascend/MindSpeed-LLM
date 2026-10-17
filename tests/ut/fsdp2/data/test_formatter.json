@@ -1,0 +1,225 @@
+{
+    "test_get_tool_utils": [
+        {"label": "returns_default_tool_utils", "name": "default", "expected": "default"},
+        {"label": "returns_qwen_tool_utils", "name": "qwen", "expected": "qwen"},
+        {"label": "unknown_name_raises", "name": "nope", "expected": null}
+    ],
+    "test_default_tool_formatter": [
+        {
+            "label": "renders_tool_block",
+            "tools": [
+                {
+                    "name": "calculator",
+                    "description": "A simple calculator",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "expression": {
+                                "type": "string",
+                                "description": "the math expression",
+                                "enum": ["add", "sub"],
+                                "items": {"type": "integer"}
+                            }
+                        },
+                        "required": ["expression"]
+                    }
+                }
+            ],
+            "expected_substrings": [
+                "Tool Name: calculator",
+                "Tool Description: A simple calculator",
+                "[calculator]",
+                "- expression (string, required)",
+                "should be one of [add, sub]",
+                "where each item should be integer"
+            ]
+        },
+        {
+            "label": "accepts_wrapped_function_schema",
+            "tools": [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "calculator",
+                        "description": "A simple calculator",
+                        "parameters": {"type": "object", "properties": {}, "required": []}
+                    }
+                }
+            ],
+            "expected_substrings": ["Tool Name: calculator"]
+        },
+        {
+            "label": "defaults_for_optional_params",
+            "tools": [
+                {"name": "noop", "parameters": {"properties": {"flag": {"type": "boolean"}}}}
+            ],
+            "expected_substrings": ["- flag (boolean): "]
+        }
+    ],
+    "test_default_function_formatter": [
+        {
+            "label": "joins_actions",
+            "calls": [
+                {"name": "calculator", "arguments": "{\"expression\": \"1+1\"}"},
+                {"name": "clock", "arguments": "{\"tz\": \"utc\"}"}
+            ],
+            "expected": "Action: calculator\nAction Input: {\"expression\": \"1+1\"}\nAction: clock\nAction Input: {\"tz\": \"utc\"}"
+        }
+    ],
+    "test_default_tool_extractor": [
+        {"label": "returns_content_without_actions", "content": "just plain text", "expected": null},
+        {
+            "label": "parses_single_action",
+            "content": "Action: calculator\nAction Input: {\"expression\": \"1+1\"}",
+            "expected": [{"name": "calculator", "arguments": "{\"expression\": \"1+1\"}"}]
+        },
+        {
+            "label": "parses_multiple_actions",
+            "content": "Action: calculator\nAction Input: {\"expression\": \"1+1\"}\nAction: clock\nAction Input: {\"tz\": \"utc\"}",
+            "expected": [
+                {"name": "calculator", "arguments": "{\"expression\": \"1+1\"}"},
+                {"name": "clock", "arguments": "{\"tz\": \"utc\"}"}
+            ]
+        },
+        {"label": "returns_content_on_invalid_json", "content": "Action: calculator\nAction Input: {not json}", "expected": null},
+        {
+            "label": "strips_quotes_and_code_fences",
+            "content": "Action: calculator\nAction Input: \"\"```{\"expression\": \"1+1\"}```\"\"",
+            "expected": [{"name": "calculator", "arguments": "{\"expression\": \"1+1\"}"}]
+        }
+    ],
+    "test_qwen_tool_formatter": [
+        {
+            "label": "wraps_bare_tool_in_function_tag",
+            "tools": [
+                {
+                    "name": "calculator",
+                    "description": "A simple calculator",
+                    "parameters": {"type": "object", "properties": {}, "required": []}
+                }
+            ],
+            "expected_substrings": ["# Tools", "<tools>", "\"name\": \"calculator\""]
+        },
+        {
+            "label": "keeps_pre_wrapped_tool",
+            "tools": [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "calculator",
+                        "description": "A simple calculator",
+                        "parameters": {"type": "object", "properties": {}, "required": []}
+                    }
+                }
+            ],
+            "expected_substrings": ["\"name\": \"calculator\""]
+        }
+    ],
+    "test_qwen_function_formatter": [
+        {
+            "label": "emits_tool_call_tags",
+            "calls": [{"name": "calculator", "arguments": "{\"expression\": \"1+1\"}"}],
+            "expected": "<tool_call>\n{\"name\": \"calculator\", \"arguments\": {\"expression\": \"1+1\"}}\n</tool_call>"
+        }
+    ],
+    "test_qwen_tool_extractor": [
+        {"label": "returns_content_without_tool_calls", "content": "no tool call here", "expected": null},
+        {
+            "label": "parses_tool_call",
+            "content": "<tool_call>\n{\"name\": \"calculator\", \"arguments\": {\"expression\": \"1+1\"}}\n</tool_call>",
+            "expected": [{"name": "calculator", "arguments": "{\"expression\": \"1+1\"}"}]
+        },
+        {
+            "label": "parses_multiple_tool_calls",
+            "content": "<tool_call>\n{\"name\": \"calculator\", \"arguments\": {}}\n</tool_call>\n<tool_call>\n{\"name\": \"clock\", \"arguments\": {\"tz\": \"utc\"}}\n</tool_call>",
+            "expected": [
+                {"name": "calculator", "arguments": "{}"},
+                {"name": "clock", "arguments": "{\"tz\": \"utc\"}"}
+            ]
+        },
+        {"label": "returns_content_on_invalid_json", "content": "<tool_call>\n{bad json}\n</tool_call>", "expected": null},
+        {"label": "returns_content_when_keys_missing", "content": "<tool_call>\n{\"name\": \"calculator\"}\n</tool_call>", "expected": null}
+    ],
+    "test_function_formatter_apply": [
+        {
+            "label": "single_dict_content",
+            "tool_format": "default",
+            "content": "{\"name\": \"calculator\", \"arguments\": {\"expression\": \"1+1\"}}",
+            "thought_words": null,
+            "expected": ["Action: calculator\nAction Input: {\"expression\": \"1+1\"}"]
+        },
+        {
+            "label": "list_content",
+            "tool_format": "default",
+            "content": "[{\"name\": \"calculator\", \"arguments\": {\"expression\": \"1+1\"}}, {\"name\": \"clock\", \"arguments\": {\"tz\": \"utc\"}}]",
+            "thought_words": null,
+            "expected": ["Action: calculator\nAction Input: {\"expression\": \"1+1\"}\nAction: clock\nAction Input: {\"tz\": \"utc\"}"]
+        },
+        {
+            "label": "with_thought_words",
+            "tool_format": "default",
+            "content": "<think>I should use the tool</think>{\"name\": \"calculator\", \"arguments\": {\"expression\": \"1+1\"}}",
+            "thought_words": ["<think>", "</think>"],
+            "expected": ["<think>I should use the tool</think>Action: calculator\nAction Input: {\"expression\": \"1+1\"}"]
+        },
+        {
+            "label": "unmatched_thought_words_keeps_plain_content",
+            "tool_format": "default",
+            "content": "{\"name\": \"calculator\", \"arguments\": {}}",
+            "thought_words": ["<think>", "</think>"],
+            "expected": ["Action: calculator\nAction Input: {}"]
+        },
+        {
+            "label": "ignores_thought_words_without_pair",
+            "tool_format": "default",
+            "content": "{\"name\": \"calculator\", \"arguments\": {}}",
+            "thought_words": ["<think>"],
+            "expected": ["Action: calculator\nAction Input: {}"]
+        },
+        {
+            "label": "qwen_tool_format",
+            "tool_format": "qwen",
+            "content": "{\"name\": \"calculator\", \"arguments\": {\"expression\": \"1+1\"}}",
+            "thought_words": null,
+            "expected": ["<tool_call>\n{\"name\": \"calculator\", \"arguments\": {\"expression\": \"1+1\"}}\n</tool_call>"]
+        }
+    ],
+    "test_tool_formatter_apply": [
+        {
+            "label": "renders_tool_prompt",
+            "tool_format": "default",
+            "content": "[{\"name\": \"calculator\", \"description\": \"A simple calculator\", \"parameters\": {\"type\": \"object\", \"properties\": {}, \"required\": []}}]",
+            "expected_substrings": ["Tool Name: calculator"],
+            "expected_exact": null
+        },
+        {
+            "label": "empty_tools_returns_empty_string",
+            "tool_format": "default",
+            "content": "[]",
+            "expected_substrings": null,
+            "expected_exact": [""]
+        },
+        {
+            "label": "qwen_tool_format",
+            "tool_format": "qwen",
+            "content": "[{\"name\": \"calculator\", \"description\": \"A simple calculator\", \"parameters\": {\"type\": \"object\", \"properties\": {}, \"required\": []}}]",
+            "expected_substrings": ["# Tools"],
+            "expected_exact": null
+        }
+    ],
+    "test_tool_formatter_extract": [
+        {
+            "label": "delegates_to_default_extractor",
+            "tool_format": "default",
+            "content": "Action: calculator\nAction Input: {\"expression\": \"1+1\"}",
+            "expected": [{"name": "calculator", "arguments": "{\"expression\": \"1+1\"}"}]
+        },
+        {
+            "label": "delegates_to_qwen_extractor",
+            "tool_format": "qwen",
+            "content": "<tool_call>\n{\"name\": \"clock\", \"arguments\": {\"tz\": \"utc\"}}\n</tool_call>",
+            "expected": [{"name": "clock", "arguments": "{\"tz\": \"utc\"}"}]
+        },
+        {"label": "plain_content_passes_through", "tool_format": "default", "content": "plain answer", "expected": null}
+    ]
+}

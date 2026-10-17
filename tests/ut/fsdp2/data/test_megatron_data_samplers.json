@@ -1,0 +1,145 @@
+{
+    "test_pretraining_sampler_batches": [
+        {
+            "label": "rank0_drop_last_true",
+            "total_samples": 10,
+            "consumed_samples": 0,
+            "micro_batch_size": 2,
+            "data_parallel_rank": 0,
+            "data_parallel_size": 2,
+            "drop_last": true,
+            "expected_batches": [[0, 1], [4, 5]],
+            "expected_len": 10
+        },
+        {
+            "label": "rank1_drop_last_true",
+            "total_samples": 10,
+            "consumed_samples": 0,
+            "micro_batch_size": 2,
+            "data_parallel_rank": 1,
+            "data_parallel_size": 2,
+            "drop_last": true,
+            "expected_batches": [[2, 3], [6, 7]],
+            "expected_len": 10
+        },
+        {
+            "label": "rank1_drop_last_false_partial_batch",
+            "total_samples": 10,
+            "consumed_samples": 0,
+            "micro_batch_size": 2,
+            "data_parallel_rank": 1,
+            "data_parallel_size": 2,
+            "drop_last": false,
+            "expected_batches": [[2, 3], [6, 7], []],
+            "expected_len": 10
+        },
+        {
+            "label": "rank0_drop_last_false",
+            "total_samples": 10,
+            "consumed_samples": 0,
+            "micro_batch_size": 2,
+            "data_parallel_rank": 0,
+            "data_parallel_size": 2,
+            "drop_last": false,
+            "expected_batches": [[0, 1], [4, 5], [8, 9]],
+            "expected_len": 10
+        },
+        {
+            "label": "consumed_samples_skips_prefix",
+            "total_samples": 12,
+            "consumed_samples": 4,
+            "micro_batch_size": 2,
+            "data_parallel_rank": 0,
+            "data_parallel_size": 2,
+            "drop_last": true,
+            "expected_batches": [[4, 5], [8, 9]],
+            "expected_len": 12
+        }
+    ],
+    "test_pretraining_sampler_start_end_idx": [
+        {
+            "label": "rank0",
+            "total_samples": 10,
+            "consumed_samples": 0,
+            "micro_batch_size": 2,
+            "data_parallel_rank": 0,
+            "data_parallel_size": 2,
+            "expected_start_end_idx": [0, 2]
+        },
+        {
+            "label": "rank1",
+            "total_samples": 10,
+            "consumed_samples": 0,
+            "micro_batch_size": 2,
+            "data_parallel_rank": 1,
+            "data_parallel_size": 2,
+            "expected_start_end_idx": [2, 4]
+        }
+    ],
+    "test_random_seed_dataset_seeds": [
+        {
+            "label": "uses_args_seed",
+            "dataset_size": 4,
+            "epoch": null,
+            "expected_base_seed": 42,
+            "expected_curr_seed": 42
+        },
+        {
+            "label": "set_epoch_advances_seed",
+            "dataset_size": 4,
+            "epoch": 3,
+            "expected_base_seed": 42,
+            "expected_curr_seed": 45
+        }
+    ],
+    "test_random_sampler_batches": [
+        {
+            "label": "sharded_rank0_bucket",
+            "total_samples": 8,
+            "consumed_samples": 0,
+            "micro_batch_size": 2,
+            "data_parallel_rank": 0,
+            "data_parallel_size": 2,
+            "data_sharding": true,
+            "expected_batch_count": 2,
+            "expected_flat_len": 4,
+            "rank_bucket": [0, 4]
+        },
+        {
+            "label": "sharded_rank1_bucket",
+            "total_samples": 8,
+            "consumed_samples": 0,
+            "micro_batch_size": 2,
+            "data_parallel_rank": 1,
+            "data_parallel_size": 2,
+            "data_sharding": true,
+            "expected_batch_count": 2,
+            "expected_flat_len": 4,
+            "rank_bucket": [4, 8]
+        },
+        {
+            "label": "non_sharded_stride_slices",
+            "total_samples": 8,
+            "consumed_samples": 0,
+            "micro_batch_size": 2,
+            "data_parallel_rank": 1,
+            "data_parallel_size": 2,
+            "data_sharding": false,
+            "expected_batch_count": 2,
+            "expected_flat_len": 4,
+            "rank_bucket": null
+        },
+        {
+            "label": "consumed_samples_offset_into_epoch",
+            "total_samples": 8,
+            "consumed_samples": 4,
+            "micro_batch_size": 2,
+            "data_parallel_rank": 0,
+            "data_parallel_size": 2,
+            "data_sharding": true,
+            "expected_batch_count": 1,
+            "expected_flat_len": 2,
+            "rank_bucket": [0, 4]
+        }
+    ]
+}

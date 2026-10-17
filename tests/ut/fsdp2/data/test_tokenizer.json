@@ -1,0 +1,52 @@
+{
+    "test_get_init_kwargs": [
+        {
+            "label": "all_fields_mapped",
+            "arg_overrides": {
+                "trust_remote_code": true,
+                "cache_dir": "/tmp/cache",
+                "model_revision": "v2",
+                "hf_hub_token": "secret"
+            },
+            "expected": {
+                "trust_remote_code": true,
+                "cache_dir": "/tmp/cache",
+                "revision": "v2",
+                "token": "secret"
+            }
+        },
+        {
+            "label": "defaults",
+            "arg_overrides": {},
+            "expected": {
+                "trust_remote_code": false,
+                "cache_dir": null,
+                "revision": "main",
+                "token": null
+            }
+        }
+    ],
+    "test_patch_tokenizer_token_args": [
+        {
+            "label": "add_tokens_resizes_vocab",
+            "add_tokens": "x1,x2",
+            "add_special_tokens": null,
+            "expected_resize_vocab": true,
+            "expect_added_token_registered": true
+        },
+        {
+            "label": "add_existing_token_keeps_resize_false",
+            "add_tokens": "a",
+            "add_special_tokens": null,
+            "expected_resize_vocab": false,
+            "expect_added_token_registered": true
+        },
+        {
+            "label": "add_special_tokens_resizes_vocab",
+            "add_tokens": null,
+            "add_special_tokens": "<|s|>",
+            "expected_resize_vocab": true,
+            "expect_added_token_registered": true
+        }
+    ]
+}

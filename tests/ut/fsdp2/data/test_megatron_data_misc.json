@@ -1,0 +1,514 @@
+{
+    "test_safe_get_rank": [
+        {
+            "label": "defaults_to_zero",
+            "rank_env": null,
+            "expected": 0
+        },
+        {
+            "label": "reads_env",
+            "rank_env": "3",
+            "expected": 3
+        },
+        {
+            "label": "survives_garbage",
+            "rank_env": "abc",
+            "expected": 0
+        }
+    ],
+    "test_compare_floats": [
+        {
+            "label": "equal_values_match",
+            "a": "1.0",
+            "b": "1.0",
+            "expected": "match"
+        },
+        {
+            "label": "nan_equals_nan",
+            "a": "nan",
+            "b": "nan",
+            "expected": "match"
+        },
+        {
+            "label": "value_vs_nan_mismatch",
+            "a": "1.0",
+            "b": "nan",
+            "expected": "mismatch"
+        },
+        {
+            "label": "inf_vs_value_mismatch",
+            "a": "inf",
+            "b": "1.0",
+            "expected": "mismatch"
+        }
+    ],
+    "test_parse_data_paths": [
+        {
+            "label": "splits_comma_string",
+            "file_name": "a.json, b.json ,",
+            "expected": [
+                "a.json",
+                "b.json"
+            ]
+        },
+        {
+            "label": "keeps_list",
+            "file_name": [
+                " a.json ",
+                "b.json"
+            ],
+            "expected": [
+                "a.json",
+                "b.json"
+            ]
+        }
+    ],
+    "test_derive_output_prefix": [
+        {
+            "label": "for_file",
+            "kind": "file",
+            "count": 1,
+            "output": null,
+            "expected_path": "{tmp}/data.json",
+            "expected_prefix": "{tmp}/data"
+        },
+        {
+            "label": "for_dir",
+            "kind": "dir",
+            "count": 1,
+            "output": null,
+            "expected_path": "{tmp}/corpus",
+            "expected_prefix": "{tmp}/corpus/corpus"
+        },
+        {
+            "label": "user_output_single",
+            "kind": "file",
+            "count": 1,
+            "output": "out",
+            "expected_path": null,
+            "expected_prefix": "out"
+        },
+        {
+            "label": "user_output_multi",
+            "kind": "file",
+            "count": 2,
+            "output": "out",
+            "expected_path": null,
+            "expected_prefix": "out_data"
+        }
+    ],
+    "test_find_bin_idx_prefixes": [
+        {
+            "label": "exact_pair",
+            "files": [
+                "ds.bin",
+                "ds.idx"
+            ],
+            "prefix": "ds",
+            "expected": [
+                "{tmp}/ds"
+            ]
+        },
+        {
+            "label": "scans_text_document",
+            "files": [
+                "pre_text_document.bin",
+                "pre_text_document.idx"
+            ],
+            "prefix": "pre",
+            "expected": [
+                "{tmp}/pre_text_document"
+            ]
+        },
+        {
+            "label": "empty_dir",
+            "files": [],
+            "prefix": "nothing",
+            "expected": []
+        }
+    ],
+    "test_is_raw_data_path": [
+        {
+            "label": "existing_json_is_raw",
+            "name": "data.json",
+            "create": true,
+            "expected": true
+        },
+        {
+            "label": "unknown_extension_is_not_raw",
+            "name": "data.xyz",
+            "create": false,
+            "expected": false
+        },
+        {
+            "label": "missing_file_is_not_raw",
+            "name": "missing.json",
+            "create": false,
+            "expected": false
+        }
+    ],
+    "test_find_cached_prefixes": [
+        {
+            "label": "all_cached",
+            "files": [
+                "data.json",
+                "data.bin",
+                "data.idx"
+            ],
+            "expected": [
+                "{tmp}/data"
+            ]
+        },
+        {
+            "label": "missing_cache",
+            "files": [
+                "data.json"
+            ],
+            "expected": null
+        }
+    ],
+    "test_get_data_format": [
+        {
+            "label": "majority_wins",
+            "files": [
+                "a.json",
+                "b.json",
+                "c.txt"
+            ],
+            "expected": [
+                "json",
+                "json"
+            ]
+        },
+        {
+            "label": "unsupported",
+            "files": [
+                "a.xyz"
+            ],
+            "expected": [
+                null,
+                null
+            ]
+        }
+    ],
+    "test_has_py_script": [
+        {
+            "label": "py_file",
+            "scenario": "py_file",
+            "expected": true
+        },
+        {
+            "label": "json_file",
+            "scenario": "json_file",
+            "expected": false
+        },
+        {
+            "label": "empty_directory",
+            "scenario": "empty_dir",
+            "expected": false
+        },
+        {
+            "label": "directory_with_py_script",
+            "scenario": "dir_with_py",
+            "expected": true
+        }
+    ],
+    "test_get_handler_cls": [
+        {
+            "label": "unknown_name_falls_back",
+            "name": "NoSuchHandler",
+            "expected": "general"
+        },
+        {
+            "label": "known_name",
+            "name": "GeneralPretrainHandler",
+            "expected": "general"
+        },
+        {
+            "label": "none_name_raises",
+            "name": null,
+            "expected": "error"
+        }
+    ],
+    "test_cut_range_to_subs": [
+        {
+            "label": "with_remainder",
+            "total": 10,
+            "size": 3,
+            "expected": [
+                [
+                    0,
+                    3
+                ],
+                [
+                    3,
+                    6
+                ],
+                [
+                    6,
+                    9
+                ],
+                [
+                    9,
+                    10
+                ]
+            ]
+        },
+        {
+            "label": "exact",
+            "total": 9,
+            "size": 3,
+            "expected": [
+                [
+                    0,
+                    3
+                ],
+                [
+                    3,
+                    6
+                ],
+                [
+                    6,
+                    9
+                ]
+            ]
+        }
+    ],
+    "test_quick_stats": [
+        {
+            "label": "record_zero_counts_separately",
+            "records": [
+                0.0,
+                0.0,
+                1.0
+            ],
+            "combine_records": null,
+            "reset": false,
+            "expected_samples": [
+                1.0
+            ],
+            "expected_zero_cnt": 2,
+            "expected_max": 1.0
+        },
+        {
+            "label": "combine_merges_samples_and_extrema",
+            "records": [
+                3.0
+            ],
+            "combine_records": [
+                4.0,
+                0.0
+            ],
+            "reset": false,
+            "expected_samples": [
+                3.0,
+                4.0
+            ],
+            "expected_zero_cnt": 1,
+            "expected_max": 4.0
+        },
+        {
+            "label": "combine_empty_list_is_noop",
+            "records": [
+                1.0
+            ],
+            "combine_records": [],
+            "reset": false,
+            "expected_samples": [
+                1.0
+            ],
+            "expected_zero_cnt": 0,
+            "expected_max": 1.0
+        },
+        {
+            "label": "reset_clears_everything",
+            "records": [
+                5.0,
+                0.0
+            ],
+            "combine_records": null,
+            "reset": true,
+            "expected_samples": [],
+            "expected_zero_cnt": 0,
+            "expected_max": 0.0
+        }
+    ],
+    "test_quick_stats_print": [
+        {
+            "label": "print_stats_with_samples",
+            "records": [
+                1.0,
+                2.0,
+                0.0
+            ],
+            "expected_contains": [
+                "total/identical samples",
+                "avg",
+                "max"
+            ]
+        },
+        {
+            "label": "print_stats_all_identical",
+            "records": [
+                0.0,
+                0.0
+            ],
+            "expected_contains": [
+                "all identical"
+            ]
+        }
+    ],
+    "test_maybe_miscompare": [
+        {
+            "label": "defers_without_injection",
+            "injected_type": null,
+            "compare": "mismatch",
+            "state": "in_place",
+            "expected": "mismatch",
+            "expected_cleared": false
+        },
+        {
+            "label": "transient_error_mismatches_on_first_rerun",
+            "injected_type": "transient",
+            "compare": "match",
+            "state": "in_place",
+            "expected": "mismatch",
+            "expected_cleared": true
+        },
+        {
+            "label": "persistent_error_mismatches_on_checkpoint_rerun",
+            "injected_type": "persistent",
+            "compare": "match",
+            "state": "from_checkpoint",
+            "expected": "mismatch",
+            "expected_cleared": true
+        }
+    ],
+    "test_handler_filter": [
+        {
+            "label": "filter_tokenizes_text",
+            "handler_overrides": {},
+            "text": "abc",
+            "expected": [
+                [
+                    97,
+                    98,
+                    99
+                ]
+            ]
+        },
+        {
+            "label": "filter_appends_eod",
+            "handler_overrides": {
+                "append_eod": true
+            },
+            "text": "abc",
+            "expected": [
+                [
+                    97,
+                    98,
+                    99,
+                    2
+                ]
+            ]
+        },
+        {
+            "label": "filter_pads_to_multiple_of",
+            "handler_overrides": {
+                "pad_to_multiple_of": 4
+            },
+            "text": "abc",
+            "expected": [
+                [
+                    97,
+                    98,
+                    99,
+                    50000
+                ]
+            ]
+        },
+        {
+            "label": "filter_pad_budget_yields_to_eod",
+            "handler_overrides": {
+                "pad_to_multiple_of": 4,
+                "append_eod": true
+            },
+            "text": "abc",
+            "expected": [
+                [
+                    97,
+                    98,
+                    99,
+                    2
+                ]
+            ]
+        }
+    ],
+    "test_serialize_documents": [
+        {
+            "label": "writes_documents_and_skips_oversize",
+            "seq_length": 5,
+            "docs": [
+                [
+                    [
+                        1,
+                        2,
+                        3
+                    ],
+                    [
+                        4,
+                        5
+                    ]
+                ],
+                [
+                    [
+                        6
+                    ]
+                ],
+                [
+                    [
+                        1,
+                        2,
+                        3,
+                        4,
+                        5,
+                        6
+                    ]
+                ]
+            ],
+            "expected_docs": [
+                [
+                    1,
+                    2,
+                    3
+                ],
+                [
+                    4,
+                    5
+                ],
+                [
+                    6
+                ]
+            ]
+        },
+        {
+            "label": "drops_empty_documents",
+            "seq_length": 5,
+            "docs": [
+                [],
+                [
+                    [
+                        1,
+                        2
+                    ]
+                ]
+            ],
+            "expected_docs": [
+                [
+                    1,
+                    2
+                ]
+            ]
+        }
+    ]
+}

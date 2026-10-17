@@ -1,0 +1,128 @@
+{
+    "test_dtype_code_mapping": [
+        {
+            "label": "uint8",
+            "dtype_name": "uint8",
+            "expected_code": 1
+        },
+        {
+            "label": "int8",
+            "dtype_name": "int8",
+            "expected_code": 2
+        },
+        {
+            "label": "int16",
+            "dtype_name": "int16",
+            "expected_code": 3
+        },
+        {
+            "label": "int32",
+            "dtype_name": "int32",
+            "expected_code": 4
+        },
+        {
+            "label": "int64",
+            "dtype_name": "int64",
+            "expected_code": 5
+        },
+        {
+            "label": "float64",
+            "dtype_name": "float64",
+            "expected_code": 6
+        },
+        {
+            "label": "float32",
+            "dtype_name": "float32",
+            "expected_code": 7
+        },
+        {
+            "label": "uint16",
+            "dtype_name": "uint16",
+            "expected_code": 8
+        }
+    ],
+    "test_dtype_size": [
+        {
+            "label": "int32_is_four_bytes",
+            "dtype": "int32",
+            "expected_size": 4
+        },
+        {
+            "label": "uint16_is_two_bytes",
+            "dtype": "uint16",
+            "expected_size": 2
+        },
+        {
+            "label": "float64_is_eight_bytes",
+            "dtype": "float64",
+            "expected_size": 8
+        },
+        {
+            "label": "code_five_maps_to_int64_size",
+            "dtype": 5,
+            "expected_size": 8
+        }
+    ],
+    "test_optimal_dtype": [
+        {
+            "label": "below_uint16_limit",
+            "value": 65499,
+            "expected_dtype_name": "uint16"
+        },
+        {
+            "label": "at_uint16_limit",
+            "value": 65500,
+            "expected_dtype_name": "int32"
+        },
+        {
+            "label": "none_value_defaults_to_int32",
+            "value": null,
+            "expected_dtype_name": "int32"
+        }
+    ],
+    "test_path_helpers": [
+        {
+            "label": "idx_suffix",
+            "helper": "idx",
+            "prefix": "prefix",
+            "expected_path": "prefix.idx"
+        },
+        {
+            "label": "bin_suffix",
+            "helper": "bin",
+            "prefix": "prefix",
+            "expected_path": "prefix.bin"
+        }
+    ],
+    "test_round_trip_reads": [
+        {
+            "label": "mmap_multi_sequence",
+            "sequences": [[1, 2, 3], [4, 5], [6, 7, 8, 9, 10]],
+            "mmap": true
+        },
+        {
+            "label": "file_reader",
+            "sequences": [[1, 2, 3], [4, 5]],
+            "mmap": false
+        },
+        {
+            "label": "single_short_sequence",
+            "sequences": [[9, 9, 9]],
+            "mmap": true
+        }
+    ],
+    "test_sequence_and_document_indices": [
+        {
+            "label": "mixed_lengths",
+            "sequences": [[1, 2, 3], [4, 5], [6]],
+            "expected_sequence_lengths": [3, 2, 1],
+            "expected_document_indices": [0, 1, 2, 3]
+        },
+        {
+            "label": "two_sequences",
+            "sequences": [[1, 2], [3, 4]],
+            "expected_sequence_lengths": [2, 2],
+            "expected_document_indices": [0, 1, 2]
+        }
+    ]
+}

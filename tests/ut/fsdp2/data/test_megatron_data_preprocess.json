@@ -1,0 +1,155 @@
+{
+    "test_data_args_parsing": [
+        {
+            "label": "defaults",
+            "argv": ["--input", "x.json"],
+            "expected_attrs": {
+                "input": "x.json",
+                "handler_name": "",
+                "json_keys": ["text"],
+                "mix_strategy": "concat",
+                "seed": 1234,
+                "enable_thinking": null,
+                "pad_to_multiple_of": 1,
+                "pack": false,
+                "neat_pack": false
+            }
+        },
+        {
+            "label": "enable_thinking_false",
+            "argv": ["--input", "x.json", "--enable-thinking", "false"],
+            "expected_attrs": {
+                "enable_thinking": false
+            }
+        },
+        {
+            "label": "enable_thinking_none",
+            "argv": ["--input", "x.json", "--enable-thinking", "none"],
+            "expected_attrs": {
+                "enable_thinking": null
+            }
+        },
+        {
+            "label": "full_values",
+            "argv": [
+                "--input", "x.json",
+                "--handler-name", "GeneralPretrainHandler",
+                "--streaming",
+                "--hf-datasets-params", "params.json",
+                "--datasets", "a.json", "b.json",
+                "--json-keys", "text", "labels",
+                "--split-sentences",
+                "--keep-newlines",
+                "--prompt-type", "qwen",
+                "--dataset-additional-keys", "extra",
+                "--interleave-probs", "0.5,0.5",
+                "--mix-strategy", "interleave_under",
+                "--dataset-dir", "data/",
+                "--overwrite-cache",
+                "--max-samples", "10",
+                "--seed", "42",
+                "--cache-dir", "/tmp/cache",
+                "--map-keys", "{\"text\": \"content\"}",
+                "--pack",
+                "--neat-pack",
+                "--script-data-dir", "scripts/",
+                "--enable-thinking", "true",
+                "--pad-to-multiple-of", "16"
+            ],
+            "expected_attrs": {
+                "streaming": true,
+                "datasets": ["a.json", "b.json"],
+                "json_keys": ["text", "labels"],
+                "split_sentences": true,
+                "keep_newlines": true,
+                "prompt_type": "qwen",
+                "dataset_additional_keys": ["extra"],
+                "interleave_probs": "0.5,0.5",
+                "mix_strategy": "interleave_under",
+                "overwrite_cache": true,
+                "max_samples": 10,
+                "map_keys": {"text": "content"},
+                "pack": true,
+                "neat_pack": true,
+                "enable_thinking": true,
+                "pad_to_multiple_of": 16
+            }
+        }
+    ],
+    "test_tokenizer_and_output_args": [
+        {
+            "label": "tokenizer_values",
+            "builder": "tokenizer",
+            "argv": [
+                "--tokenizer-type", "GPT2BPETokenizer",
+                "--vocab-file", "vocab.json",
+                "--merge-file", "merges.txt",
+                "--append-eod",
+                "--model-name-or-path", "model-dir",
+                "--tokenizer-model", "tok.model",
+                "--seq-length", "1024",
+                "--make-vocab-size-divisible-by", "64",
+                "--pad-vocab-size-to", "100000",
+                "--reward-tokens", "good", "bad"
+            ],
+            "expected_attrs": {
+                "tokenizer_type": "GPT2BPETokenizer",
+                "vocab_file": "vocab.json",
+                "append_eod": true,
+                "seq_length": 1024,
+                "make_vocab_size_divisible_by": 64,
+                "pad_vocab_size_to": 100000,
+                "reward_tokens": ["good", "bad"]
+            }
+        },
+        {
+            "label": "output_and_merge_values",
+            "builder": "output",
+            "argv": [
+                "--output-prefix", "out",
+                "--dataset-impl", "cached",
+                "--workers", "8",
+                "--n-subs", "4",
+                "--log-interval", "10",
+                "--merge-group-keys", "text", "labels"
+            ],
+            "expected_attrs": {
+                "output_prefix": "out",
+                "dataset_impl": "cached",
+                "workers": 8,
+                "n_subs": 4,
+                "merge_group_keys": ["text", "labels"]
+            }
+        }
+    ],
+    "test_build_splitter_cases": [
+        {
+            "label": "no_split_returns_identity",
+            "split_sentences": false,
+            "nltk_available": true,
+            "keep_newlines": false,
+            "expected_splitter": "identity"
+        },
+        {
+            "label": "nltk_missing_raises",
+            "split_sentences": true,
+            "nltk_available": false,
+            "keep_newlines": false,
+            "expected_splitter": "raise"
+        },
+        {
+            "label": "nltk_splitter_without_keep_newlines",
+            "split_sentences": true,
+            "nltk_available": true,
+            "keep_newlines": false,
+            "expected_splitter": "load"
+        },
+        {
+            "label": "nltk_splitter_with_keep_newlines",
+            "split_sentences": true,
+            "nltk_available": true,
+            "keep_newlines": true,
+            "expected_splitter": "punkt"
+        }
+    ]
+}

@@ -1,0 +1,101 @@
+{
+    "test_build_document_index": [
+        {
+            "label": "multi_epoch_shuffle_preserves_multiset",
+            "docs": [2, 0, 1],
+            "epochs": 2,
+            "separate_last_epoch": false,
+            "expected_dtype": "int32",
+            "expected_sorted": [0, 0, 1, 1, 2, 2]
+        },
+        {
+            "label": "separate_final_epoch_appends_unshuffled_epoch",
+            "docs": [1, 0],
+            "epochs": 3,
+            "separate_last_epoch": true,
+            "expected_dtype": "int32",
+            "expected_sorted": [0, 0, 0, 1, 1, 1]
+        }
+    ],
+    "test_build_shuffle_index": [
+        {
+            "label": "equal_sizes_yield_single_permutation",
+            "size": 5,
+            "shuffled_size": 5,
+            "expected_sorted": [0, 1, 2, 3, 4]
+        },
+        {
+            "label": "two_ranges_are_both_shuffled",
+            "size": 3,
+            "shuffled_size": 6,
+            "expected_sorted": [0, 1, 2, 3, 4, 5]
+        }
+    ],
+    "test_ltor_masks_and_position_ids": [
+        {
+            "label": "default_masks",
+            "reset_position_ids": false,
+            "reset_attention_mask": false,
+            "eod_mask_loss": false,
+            "create_attention_mask": true,
+            "expected_attention_mask_present": true,
+            "expected_shape": [1, 4, 4],
+            "expected_loss_mask": [1.0, 1.0, 1.0, 1.0],
+            "expected_position_ids": [0, 1, 2, 3],
+            "expected_actual_seq_len": null,
+            "expected_mask_probes": [[3, 0, false], [0, 3, true]]
+        },
+        {
+            "label": "no_attention_mask",
+            "reset_position_ids": false,
+            "reset_attention_mask": false,
+            "eod_mask_loss": false,
+            "create_attention_mask": false,
+            "expected_attention_mask_present": false,
+            "expected_shape": null,
+            "expected_loss_mask": null,
+            "expected_position_ids": null,
+            "expected_actual_seq_len": null,
+            "expected_mask_probes": null
+        },
+        {
+            "label": "eod_mask_loss_zeroes_eod_positions",
+            "reset_position_ids": false,
+            "reset_attention_mask": false,
+            "eod_mask_loss": true,
+            "create_attention_mask": true,
+            "expected_attention_mask_present": true,
+            "expected_shape": null,
+            "expected_loss_mask": [1.0, 0.0, 1.0, 0.0],
+            "expected_position_ids": null,
+            "expected_actual_seq_len": null,
+            "expected_mask_probes": null
+        },
+        {
+            "label": "reset_attention_mask_builds_actual_seq_len",
+            "reset_position_ids": false,
+            "reset_attention_mask": true,
+            "eod_mask_loss": false,
+            "create_attention_mask": true,
+            "expected_attention_mask_present": true,
+            "expected_shape": null,
+            "expected_loss_mask": null,
+            "expected_position_ids": null,
+            "expected_actual_seq_len": [2, 4],
+            "expected_mask_probes": [[2, 1, true], [1, 0, false]]
+        },
+        {
+            "label": "reset_position_ids_restarts_positions_at_documents",
+            "reset_position_ids": true,
+            "reset_attention_mask": false,
+            "eod_mask_loss": false,
+            "create_attention_mask": true,
+            "expected_attention_mask_present": true,
+            "expected_shape": null,
+            "expected_loss_mask": null,
+            "expected_position_ids": [0, 1, 0, 1],
+            "expected_actual_seq_len": null,
+            "expected_mask_probes": null
+        }
+    ]
+}

@@ -1,0 +1,396 @@
+{
+    "test_alpaca_converter": [
+        {
+            "label": "normal_example_joins_prompt_and_query",
+            "attr_overrides": {},
+            "example": {"instruction": "Do X", "input": "on Y", "output": "done", "history": []},
+            "expected": {
+                "_prompt": [{"role": "user", "content": "Do X\non Y"}],
+                "_response": [{"role": "assistant", "content": "done"}],
+                "_system": "",
+                "_tools": ""
+            }
+        },
+        {
+            "label": "history_is_expanded_before_current_turn",
+            "attr_overrides": {},
+            "example": {"instruction": "next?", "input": "", "output": "ok", "history": [["q1", "a1"], ["q2", "a2"]]},
+            "expected": {
+                "_prompt": [
+                    {"role": "user", "content": "q1"},
+                    {"role": "assistant", "content": "a1"},
+                    {"role": "user", "content": "q2"},
+                    {"role": "assistant", "content": "a2"},
+                    {"role": "user", "content": "next?"}
+                ]
+            }
+        },
+        {
+            "label": "empty_history_field_is_ignored",
+            "attr_overrides": {},
+            "example": {"instruction": "hi", "input": "", "output": "hello", "history": ""},
+            "expected": {"_prompt": [{"role": "user", "content": "hi"}]}
+        },
+        {
+            "label": "system_and_tools_columns",
+            "attr_overrides": {"system": "system_col", "tools": "tools_col"},
+            "example": {"instruction": "hi", "input": "", "output": "hello", "history": [], "system_col": "be nice", "tools_col": "tool list"},
+            "expected": {"_system": "be nice", "_tools": "tool list"}
+        },
+        {
+            "label": "unsupervised_example_has_empty_response",
+            "attr_overrides": {},
+            "example": {"instruction": "", "input": "", "output": null, "history": []},
+            "expected": {"_prompt": [{"role": "user", "content": ""}], "_response": []}
+        },
+        {
+            "label": "ranking_pairwise_example",
+            "attr_overrides": {"ranking": true, "chosen": "chosen", "rejected": "rejected"},
+            "example": {"instruction": "q", "input": "", "chosen": "good answer", "rejected": "bad answer", "history": []},
+            "expected": {
+                "_response": [
+                    {"role": "assistant", "content": "good answer"},
+                    {"role": "assistant", "content": "bad answer"}
+                ]
+            }
+        },
+        {
+            "label": "kto_tag_true_appends_empty_response",
+            "attr_overrides": {"kto_tag": "label"},
+            "example": {"instruction": "q", "input": "", "output": "yes", "label": true, "history": []},
+            "expected": {
+                "_response": [
+                    {"role": "assistant", "content": "yes"},
+                    {"role": "assistant", "content": ""}
+                ]
+            }
+        },
+        {
+            "label": "kto_tag_false_prepends_empty_response",
+            "attr_overrides": {"kto_tag": "label"},
+            "example": {"instruction": "q", "input": "", "output": "yes", "label": false, "history": []},
+            "expected": {
+                "_response": [
+                    {"role": "assistant", "content": ""},
+                    {"role": "assistant", "content": "yes"}
+                ]
+            }
+        }
+    ],
+    "test_sharegpt_converter": [
+        {
+            "label": "normal_two_turn_example",
+            "attr_overrides": {},
+            "example": {"conversations": [{"from": "human", "value": "hi"}, {"from": "gpt", "value": "hello"}]},
+            "expected": {
+                "_prompt": [{"role": "user", "content": "hi"}],
+                "_response": [{"role": "assistant", "content": "hello"}],
+                "_system": "",
+                "_tools": ""
+            }
+        },
+        {
+            "label": "leading_system_message_moves_to_system_field",
+            "attr_overrides": {},
+            "example": {"conversations": [{"from": "system", "value": "be nice"}, {"from": "human", "value": "hi"}, {"from": "gpt", "value": "hello"}]},
+            "expected": {"_system": "be nice", "_prompt": [{"role": "user", "content": "hi"}]}
+        },
+        {
+            "label": "system_column_used_when_no_system_message",
+            "attr_overrides": {"system": "system_col"},
+            "example": {"conversations": [{"from": "human", "value": "hi"}, {"from": "gpt", "value": "hello"}], "system_col": "from column"},
+            "expected": {"_system": "from column"}
+        },
+        {
+            "label": "odd_turn_count_marks_data_broken",
+            "attr_overrides": {},
+            "example": {"conversations": [{"from": "human", "value": "hi"}]},
+            "expected": {"_prompt": [], "_response": []}
+        },
+        {
+            "label": "invalid_role_order_marks_data_broken",
+            "attr_overrides": {},
+            "example": {"conversations": [{"from": "gpt", "value": "hello"}, {"from": "human", "value": "hi"}]},
+            "expected": {"_prompt": [], "_response": []}
+        },
+        {
+            "label": "function_and_observation_roles_map_correctly",
+            "attr_overrides": {},
+            "example": {"conversations": [
+                {"from": "human", "value": "call it"},
+                {"from": "function_call", "value": "fn()"},
+                {"from": "observation", "value": "result"},
+                {"from": "gpt", "value": "done"}
+            ]},
+            "expected": {
+                "_prompt": [
+                    {"role": "user", "content": "call it"},
+                    {"role": "function", "content": "fn()"},
+                    {"role": "observation", "content": "result"}
+                ],
+                "_response": [{"role": "assistant", "content": "done"}]
+            }
+        },
+        {
+            "label": "ranking_requires_odd_aligned_count",
+            "attr_overrides": {"ranking": true},
+            "example": {"conversations": [{"from": "human", "value": "q"}, {"from": "gpt", "value": "a"}]},
+            "expected": {"_prompt": [], "_response": []}
+        },
+        {
+            "label": "ranking_pairwise_with_chosen_rejected_dicts",
+            "attr_overrides": {"ranking": true, "chosen": "chosen", "rejected": "rejected"},
+            "example": {
+                "conversations": [{"from": "human", "value": "q"}],
+                "chosen": {"from": "gpt", "value": "good"},
+                "rejected": {"from": "gpt", "value": "bad"}
+            },
+            "expected": {
+                "_prompt": [{"role": "user", "content": "q"}],
+                "_response": [
+                    {"role": "assistant", "content": "good"},
+                    {"role": "assistant", "content": "bad"}
+                ]
+            }
+        },
+        {
+            "label": "kto_flag_extends_response",
+            "attr_overrides": {"kto_tag": "label"},
+            "example": {"conversations": [{"from": "human", "value": "q"}, {"from": "gpt", "value": "a"}], "label": true},
+            "expected": {
+                "_prompt": [{"role": "user", "content": "q"}],
+                "_response": [
+                    {"role": "assistant", "content": "a"},
+                    {"role": "assistant", "content": ""}
+                ]
+            }
+        },
+        {
+            "label": "kto_flag_false_prepends_empty_response",
+            "attr_overrides": {"kto_tag": "label"},
+            "example": {"conversations": [{"from": "human", "value": "q"}, {"from": "gpt", "value": "a"}], "label": false},
+            "expected": {
+                "_response": [
+                    {"role": "assistant", "content": ""},
+                    {"role": "assistant", "content": "a"}
+                ]
+            }
+        },
+        {
+            "label": "invalid_pairwise_role_tag_is_recorded_but_output_kept",
+            "attr_overrides": {"ranking": true, "chosen": "chosen", "rejected": "rejected"},
+            "example": {
+                "conversations": [{"from": "human", "value": "q"}],
+                "chosen": {"from": "human", "value": "good"},
+                "rejected": {"from": "human", "value": "bad"}
+            },
+            "expected": {
+                "_response": [
+                    {"role": "user", "content": "good"},
+                    {"role": "user", "content": "bad"}
+                ]
+            }
+        },
+        {
+            "label": "tools_column",
+            "attr_overrides": {"tools": "tools_col"},
+            "example": {"conversations": [{"from": "human", "value": "hi"}, {"from": "gpt", "value": "hello"}], "tools_col": "[]"},
+            "expected": {"_tools": "[]"}
+        }
+    ],
+    "test_openai_converter": [
+        {
+            "label": "normal_two_turn_example",
+            "attr_overrides": {},
+            "example": {"messages": [{"role": "user", "content": "hi"}, {"role": "assistant", "content": "hello"}]},
+            "expected": {
+                "_prompt": [{"role": "user", "content": "hi"}],
+                "_response": [{"role": "assistant", "content": "hello"}]
+            }
+        },
+        {
+            "label": "leading_system_message_moves_to_system_field",
+            "attr_overrides": {},
+            "example": {"messages": [
+                {"role": "system", "content": "be nice"},
+                {"role": "user", "content": "hi"},
+                {"role": "assistant", "content": "hello"}
+            ]},
+            "expected": {"_system": "be nice\ndetailed thinking off", "_prompt": [{"role": "user", "content": "hi"}]}
+        },
+        {
+            "label": "tool_calls_become_function_message",
+            "attr_overrides": {},
+            "example": {"messages": [
+                {"role": "user", "content": "weather?"},
+                {"role": "assistant", "content": "", "tool_calls": [{"function": {"name": "get_weather", "arguments": "{\"city\": \"x\"}"}}]},
+                {"role": "tool", "content": "sunny"},
+                {"role": "assistant", "content": "it is sunny"}
+            ]},
+            "expected": {
+                "_prompt": [
+                    {"role": "user", "content": "weather?"},
+                    {"role": "function", "content": "[{\"name\": \"get_weather\", \"arguments\": \"{\\\"city\\\": \\\"x\\\"}\"}]"},
+                    {"role": "observation", "content": "sunny"}
+                ],
+                "_response": [{"role": "assistant", "content": "it is sunny"}]
+            }
+        },
+        {
+            "label": "consecutive_observations_are_joined",
+            "attr_overrides": {},
+            "example": {"messages": [
+                {"role": "user", "content": "weather?"},
+                {"role": "assistant", "content": "", "tool_calls": [{"function": {"name": "f"}}]},
+                {"role": "tool", "content": "sunny"},
+                {"role": "tool", "content": "warm"},
+                {"role": "assistant", "content": "ok"}
+            ]},
+            "expected": {
+                "_prompt": [
+                    {"role": "user", "content": "weather?"},
+                    {"role": "function", "content": "[{\"name\": \"f\"}]"},
+                    {"role": "observation", "content": "sunny\n</tool_response>\n<tool_response>\nwarm"}
+                ],
+                "_response": [{"role": "assistant", "content": "ok"}]
+            }
+        },
+        {
+            "label": "odd_turn_count_marks_data_broken",
+            "attr_overrides": {},
+            "example": {"messages": [{"role": "user", "content": "hi"}]},
+            "expected": {"_prompt": [], "_response": []}
+        },
+        {
+            "label": "invalid_role_order_marks_data_broken",
+            "attr_overrides": {},
+            "example": {"messages": [{"role": "assistant", "content": "hello"}, {"role": "user", "content": "hi"}]},
+            "expected": {"_prompt": [], "_response": []}
+        },
+        {
+            "label": "ranking_pairwise_with_chosen_rejected_dicts",
+            "attr_overrides": {"ranking": true, "chosen": "chosen", "rejected": "rejected"},
+            "example": {
+                "messages": [{"role": "user", "content": "q"}],
+                "chosen": {"role": "assistant", "content": "good"},
+                "rejected": {"role": "assistant", "content": "bad"}
+            },
+            "expected": {
+                "_prompt": [{"role": "user", "content": "q"}],
+                "_response": [
+                    {"role": "assistant", "content": "good"},
+                    {"role": "assistant", "content": "bad"}
+                ]
+            }
+        },
+        {
+            "label": "invalid_pairwise_role_tag_is_recorded_but_output_kept",
+            "attr_overrides": {"ranking": true, "chosen": "chosen", "rejected": "rejected"},
+            "example": {
+                "messages": [{"role": "user", "content": "q"}],
+                "chosen": {"role": "user", "content": "good"},
+                "rejected": {"role": "user", "content": "bad"}
+            },
+            "expected": {
+                "_response": [
+                    {"role": "user", "content": "good"},
+                    {"role": "user", "content": "bad"}
+                ]
+            }
+        },
+        {
+            "label": "kto_flag_extends_response",
+            "attr_overrides": {"kto_tag": "label"},
+            "example": {"messages": [{"role": "user", "content": "q"}, {"role": "assistant", "content": "a"}], "label": true},
+            "expected": {
+                "_response": [
+                    {"role": "assistant", "content": "a"},
+                    {"role": "assistant", "content": ""}
+                ]
+            }
+        },
+        {
+            "label": "kto_flag_false_prepends_empty_response",
+            "attr_overrides": {"kto_tag": "label"},
+            "example": {"messages": [{"role": "user", "content": "q"}, {"role": "assistant", "content": "a"}], "label": false},
+            "expected": {
+                "_response": [
+                    {"role": "assistant", "content": ""},
+                    {"role": "assistant", "content": "a"}
+                ]
+            }
+        },
+        {
+            "label": "tools_list_is_serialized_to_json",
+            "attr_overrides": {"tools": "tools_col"},
+            "example": {
+                "messages": [{"role": "user", "content": "hi"}, {"role": "assistant", "content": "hello"}],
+                "tools_col": [{"name": "get_weather"}]
+            },
+            "expected": {"_tools": "[{\"name\": \"get_weather\"}]"}
+        },
+        {
+            "label": "tools_dict_is_serialized_to_json",
+            "attr_overrides": {"tools": "tools_col"},
+            "example": {
+                "messages": [{"role": "user", "content": "hi"}, {"role": "assistant", "content": "hello"}],
+                "tools_col": {"weather": {"desc": "d"}}
+            },
+            "expected": {"_tools": "{\"weather\": {\"desc\": \"d\"}}"}
+        },
+        {
+            "label": "missing_tools_column_defaults_to_empty_string",
+            "attr_overrides": {"tools": "tools_col"},
+            "example": {"messages": [{"role": "user", "content": "hi"}, {"role": "assistant", "content": "hello"}]},
+            "expected": {"_tools": ""}
+        },
+        {
+            "label": "system_default_off_when_no_system_and_no_tools",
+            "attr_overrides": {},
+            "example": {"messages": [{"role": "user", "content": "hi"}, {"role": "assistant", "content": "hello"}]},
+            "expected": {"_system": "detailed thinking off"}
+        },
+        {
+            "label": "system_stays_empty_when_tools_present",
+            "attr_overrides": {"tools": "tools_col"},
+            "example": {
+                "messages": [{"role": "user", "content": "hi"}, {"role": "assistant", "content": "hello"}],
+                "tools_col": "[]"
+            },
+            "expected": {"_system": ""}
+        },
+        {
+            "label": "system_without_thinking_keyword_appends_off",
+            "attr_overrides": {},
+            "example": {"messages": [
+                {"role": "system", "content": "be nice"},
+                {"role": "user", "content": "hi"},
+                {"role": "assistant", "content": "hello"}
+            ]},
+            "expected": {"_system": "be nice\ndetailed thinking off"}
+        },
+        {
+            "label": "system_with_thinking_keyword_unchanged",
+            "attr_overrides": {},
+            "example": {"messages": [
+                {"role": "system", "content": "be nice, detailed thinking on"},
+                {"role": "user", "content": "hi"},
+                {"role": "assistant", "content": "hello"}
+            ]},
+            "expected": {"_system": "be nice, detailed thinking on"}
+        },
+        {
+            "label": "system_with_tools_appends_newline_only",
+            "attr_overrides": {"tools": "tools_col"},
+            "example": {
+                "messages": [
+                    {"role": "system", "content": "be nice"},
+                    {"role": "user", "content": "hi"},
+                    {"role": "assistant", "content": "hello"}
+                ],
+                "tools_col": "[]"
+            },
+            "expected": {"_system": "be nice\n"}
+        }
+    ]
+}
