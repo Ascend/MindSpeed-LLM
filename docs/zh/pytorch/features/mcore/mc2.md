@@ -43,4 +43,4 @@ MC2算子接口参见[torch_npu.npu_mm_all_reduce_base接口说明](https://www.
 
 1. mcore场景下（开启`--use-mcore-models`），MoE模型，MLP部分不使能MC2。
 
-2. A5机型暂不支持该特性。
+2. Ascend 950PR&950DT系列产品暂不支持该特性。
