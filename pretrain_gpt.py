@@ -47,8 +47,6 @@ from mindspeed_llm.training.utils import set_mtp_batch_list, auto_coverage
 # Version-conditional imports (018 uses tests/mindspeed_llm codebase).
 _VERSION_018 = os.environ.get("MINDSPEED_LLM_VERSION", "012") == "018"
 if _VERSION_018:
-    # Apply optimizer reload monkey-patch before importing pretrain.
-    from mindspeed_llm.features_manager.optimizer import optimizer_reload_patch  # noqa: E402, F401  # pylint: disable=ungrouped-imports,no-name-in-module
     from megatron.core.utils import get_batch_on_this_cp_rank, get_batch_on_this_tp_rank  # pylint: disable=ungrouped-imports
     from megatron.training import inprocess_restart, set_startup_timestamps  # pylint: disable=ungrouped-imports
     from megatron.training.arguments import parse_and_validate_args  # pylint: disable=ungrouped-imports
