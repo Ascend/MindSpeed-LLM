@@ -43,4 +43,4 @@ In training scenarios that enable TP and SP, MC2 can reduce memory overhead and 
 
 1. In MCore scenarios with `--use-mcore-models` enabled, the MLP part of MoE models does not enable MC2.
 
-2. The A5 model does not yet support this feature.
+2. The Ascend 950 products does not yet support this feature.
