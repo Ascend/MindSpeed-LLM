@@ -82,14 +82,14 @@ MindSpeed LLM新增支持GLM5.2模型训练和DeepSeekV4长序列，且权重/�
     <tr>
       <th>7.2.0</th>
       <th>7.3.0</th>
-      <th>26.0.0</th>
+      <th>26.0.X</th>
       <th>26.1.X</th>
       <th>26.2.X</th>
     </tr>
   </thead>
   <tbody>
     <tr>
-      <td>26.0.0</td>
+      <td>26.0.X</td>
       <td>Y</td>
       <td>Y</td>
       <td>Y</td>
@@ -97,7 +97,7 @@ MindSpeed LLM新增支持GLM5.2模型训练和DeepSeekV4长序列，且权重/�
       <td>Y</td>
     </tr>
     <tr>
-      <td>26.1.0</td>
+      <td>26.1.X</td>
       <td>Y</td>
       <td>Y</td>
       <td>Y</td>
@@ -105,7 +105,7 @@ MindSpeed LLM新增支持GLM5.2模型训练和DeepSeekV4长序列，且权重/�
       <td>Y</td>
     </tr>
     <tr>
-      <td>26.2.0</td>
+      <td>26.2.X</td>
       <td>Y</td>
       <td>Y</td>
       <td>Y</td>
@@ -133,7 +133,7 @@ MindSpeed LLM新增支持GLM5.2模型训练和DeepSeekV4长序列，且权重/�
     </tr>
     <tr>
       <th>8.3.RCX</th>
-      <th>8.5.X</th>
+      <th>8.5.0</th>
       <th>9.0.X</th>
       <th>9.1.X</th>
       <th>9.2.X</th>
@@ -141,7 +141,7 @@ MindSpeed LLM新增支持GLM5.2模型训练和DeepSeekV4长序列，且权重/�
   </thead>
   <tbody>
     <tr>
-      <td>26.0.0</td>
+      <td>26.0.X</td>
       <td>Y</td>
       <td>Y</td>
       <td>Y</td>
@@ -149,7 +149,7 @@ MindSpeed LLM新增支持GLM5.2模型训练和DeepSeekV4长序列，且权重/�
       <td>Y</td>
     </tr>
     <tr>
-      <td>26.1.0</td>
+      <td>26.1.X</td>
       <td>Y</td>
       <td>Y</td>
       <td>Y</td>
@@ -157,7 +157,7 @@ MindSpeed LLM新增支持GLM5.2模型训练和DeepSeekV4长序列，且权重/�
       <td>Y</td>
     </tr>
     <tr>
-      <td>26.2.0</td>
+      <td>26.2.X</td>
       <td>Y</td>
       <td>Y</td>
       <td>Y</td>
