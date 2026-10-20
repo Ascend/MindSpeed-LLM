@@ -194,6 +194,13 @@ def model_provider_func_wrapper(model_provider_func):
             model = get_peft_model(model, lora_config)
             model.add_module('module', model.get_base_model())
 
+            # PEFT >= 0.21 only keeps parameters from PEFT tuner layers
+            # trainable. Routed-expert LoRA is implemented by MindSpeed-LLM's
+            # custom grouped MLP, so restore only those adapter parameters.
+            from mindspeed_llm.tasks.posttrain.lora.moe.experts import LoraParallelGroupedMLP
+            from mindspeed_llm.tasks.posttrain.lora.trainable import enable_grouped_mlp_lora_parameters
+            enable_grouped_mlp_lora_parameters(model, LoraParallelGroupedMLP)
+
             if args.lu_lora_final_layer_index is not None:
                 from mindspeed_llm.tasks.posttrain.lu_lora.bootstrap import activate_lu_lora_layers
 
