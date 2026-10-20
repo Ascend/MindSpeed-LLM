@@ -18,7 +18,7 @@ NeedleBench 是由上海人工智能实验室和清华大学的研究团队开�
 
 NeedleBench 精度测试如下：
 
-| 模型                                                                 | 任务     | MindSpeed-LLM | 社区([OpenCompass](https://opencompass.readthedocs.io/en/latest/advanced_guides/needleinahaystack_eval.html)) |
+| 模型                                                                 | 任务     | MindSpeed-LLM | 社区([OpenCompass](https://doc.opencompass.org.cn/faq/needleinahaystack_eval.html)) |
 |--------------------------------------------------------------------|--------|---------------|---------------------|
 | [Qwen2-7B-Instruct](https://huggingface.co/Qwen/Qwen2-7B-Instruct) | NeedleBench-128K-Single-Needle-Retrieval   | 70.19%        | 70.25%              |
 | [Qwen2-7B-Instruct](https://huggingface.co/Qwen/Qwen2-7B-Instruct) + YARN                                       | NeedleBench-128K-Single-Needle-Retrieval | 87.03%        | 88.63%              |

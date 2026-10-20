@@ -18,7 +18,7 @@ Currently, the MindSpeed LLM repository supports only the Single-Needle-Retrieva
 
 The NeedleBench accuracy test results are as follows:
 
-| Model | Task | MindSpeed LLM | Community Version ([OpenCompass](https://opencompass.readthedocs.io/en/latest/advanced_guides/needleinahaystack_eval.html)) |
+| Model | Task | MindSpeed LLM | Community Version ([OpenCompass](https://doc.opencompass.org.cn/faq/needleinahaystack_eval.html)) |
 |---|---|---|---|
 | [Qwen2-7B-Instruct](https://huggingface.co/Qwen/Qwen2-7B-Instruct) | NeedleBench-128K-Single-Needle-Retrieval | 70.19% | 70.25% |
 | [Qwen2-7B-Instruct](https://huggingface.co/Qwen/Qwen2-7B-Instruct) + YaRN | NeedleBench-128K-Single-Needle-Retrieval | 87.03% | 88.63% |

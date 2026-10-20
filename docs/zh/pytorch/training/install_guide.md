@@ -196,7 +196,7 @@ MindSpeed LLM支持镜像安装和源码安装。
    可参考如下安装命令：
 
    ```shell
-   pip install triton-ascend==3.2.2 --extra-index-url=https://mirrors.huaweicloud.com/ascend/repos/pypi
+   pip install triton-ascend==3.6.0 --extra-index-url=https://mirrors.huaweicloud.com/ascend/repos/pypi
    ```
 
    > [!NOTE]
