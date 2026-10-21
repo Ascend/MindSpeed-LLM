@@ -45,3 +45,12 @@ class CSAFeature(MindSpeedFeature):
         # Restore the custom type so model construction still uses DeepSeek-V4 position embedding.
         if self.origin_position_embedding_type is not None:
             args.position_embedding_type = self.origin_position_embedding_type
+
+    def register_patches(self, patch_manager, args):
+        super().register_patches(patch_manager, args)
+
+        if args.kv_compress:
+            from mindspeed_llm.tasks.models.transformer.deepseek4.compressor import compressor2fp32_fp16module_init_wrapper
+            patch_manager.register_patch(
+                'megatron.core.transformer.module.Float16Module.__init__', compressor2fp32_fp16module_init_wrapper
+            )

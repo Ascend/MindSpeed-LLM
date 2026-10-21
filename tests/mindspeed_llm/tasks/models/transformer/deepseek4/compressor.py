@@ -1,6 +1,7 @@
 from copy import deepcopy
 from dataclasses import dataclass
 from typing import Union
+from functools import wraps
 
 import torch
 
@@ -28,6 +29,20 @@ class CompressorSubmodules:
 def get_compressor_spec():
     """Helper function to get module spec for dsa_compressor"""
     return ModuleSpec(module=Compressor, submodules=CompressorSubmodules(wkv=LinearNoTP, wgate=LinearNoTP))
+
+
+def compressor2fp32_fp16module_init_wrapper(fn):
+    @wraps(fn)
+    def wrapper(self, *args, **kwargs):
+        fn(self, *args, **kwargs)
+
+        args = get_args()
+        for _, module in self.module.named_modules():
+            if isinstance(module, Compressor):
+                module.wkv.weight.data = module.wkv.weight.data.to(torch.float32)
+                module.wgate.weight.data = module.wgate.weight.data.to(torch.float32)
+
+    return wrapper
 
 
 class Compressor(MegatronModule):
