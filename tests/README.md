@@ -98,7 +98,7 @@ CI门禁用例看护仓库重点模型和基本特性，覆盖冒烟测试场景
         <td>Y</td>
     </tr>
     <tr>
-        <td rowspan="6">UT</td>
+        <td rowspan="7">UT</td>
         <td>Inference</td>
         <td>greedy_search</td>
         <td><a href="ut/inference/test_inference.py">test_inference.py</a></td>
@@ -149,6 +149,18 @@ CI门禁用例看护仓库重点模型和基本特性，覆盖冒烟测试场景
         <td>clip_grad_norm</td>
         <td><a href="ut/fsdp2/test_clip_grad_norm.py">test_clip_grad_norm.py</a></td>
         <td>Y</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>Training</td>
+        <td>AutoBridge 参数映射、入口调用、模型加载保护、状态恢复和 checkpoint 兼容；CPU/mock 用例，无需 Bridge 仓、NPU、模型权重或数据集</td>
+        <td>
+            <a href="ut/training/test_autobridge.py">test_autobridge.py</a><br>
+            <a href="ut/training/test_autobridge_entrypoint.py">test_autobridge_entrypoint.py</a><br>
+            <a href="ut/training/test_autobridge_compat.py">test_autobridge_compat.py</a>
+        </td>
+        <td></td>
         <td></td>
         <td></td>
     </tr>
