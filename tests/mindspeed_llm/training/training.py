@@ -38,7 +38,7 @@ from megatron.training import one_logger_utils
 from megatron.training import ft_integration
 from megatron.core.num_microbatches_calculator import get_num_microbatches, update_num_microbatches
 from megatron.core import mpu, parallel_state
-from megatron.core.pipeline_parallel import get_forward_backward_func
+from megatron.core.pipeline_parallel import schedules as mcore_schedules
 from megatron.core.utils import get_model_config
 from megatron.core.enums import ModelType
 from megatron.training.checkpointing import save_checkpoint
@@ -49,8 +49,13 @@ from megatron.training.initialize import write_args_to_tensorboard
 from megatron.training.arguments import core_transformer_config_from_args
 from megatron.training.theoretical_memory_usage import report_theoretical_memory
 from megatron.training.training import disable_forward_pre_hook, enable_forward_pre_hook
+# Likewise, resolve train_step through the module at call time: several features
+# (dualpipev, tflops_calculate, async_log_allreduce, smart_swap) patch
+# megatron.training.training.train_step, and `from ... import train_step` would
+# freeze whichever version existed when this module was first imported.
+from megatron.training import training as megatron_training
 from megatron.training.training import (
-    train_step, calc_params_l2_norm,
+    calc_params_l2_norm,
     evaluate_and_print_results,
     save_checkpoint_and_time, print_datetime,
     get_one_logger,
@@ -348,8 +353,8 @@ def get_model_provider_func(args, model_provider):
     if args.spec and 'deepseek4_spec' in args.spec[0]:
         model_provider_func = model_provider
     elif args.mtp_num_layers is not None and args.schedules_method == "dualpipev":
-        from mindspeed.core.pipeline_parallel.dualpipev.mtp_utils import model_provider_mtp
-        model_provider_func = model_provider_mtp
+        from mindspeed_llm.core.pipeline_parallel.dualpipe.adaptor import dualpipev_mtp_model_provider_wrapper
+        model_provider_func = dualpipev_mtp_model_provider_wrapper(model_provider)
     else:
         model_provider_func = model_provider
     return model_provider_func
@@ -735,11 +740,11 @@ def train(forward_step_func, model, optimizer, opt_param_scheduler,
         update_num_microbatches(args.consumed_train_samples, consistency_check=True)
 
         args.curr_iteration = iteration
-        forward_backward_func = get_forward_backward_func()
+        forward_backward_func = mcore_schedules.get_forward_backward_func()
         msprobe_manager.start_step(model)
         model_io_trace_manager.start_step(model, iteration)
         loss_dict, skipped_iter, should_checkpoint, should_exit, exit_code, grad_norm, num_zeros_in_grad, log_max_attention_logit = \
-            train_step(forward_step_func,
+            megatron_training.train_step(forward_step_func,
                        train_data_iterator,
                        model,
                        optimizer,

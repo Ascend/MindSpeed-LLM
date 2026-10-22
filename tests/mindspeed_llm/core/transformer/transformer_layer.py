@@ -14,9 +14,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import inspect
 import math
 from typing import Any, Dict, Optional, Union
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from torch import Tensor
 
 from megatron.core import tensor_parallel
@@ -82,6 +83,28 @@ class CustomTransformerLayerSubmodules:
     mlp_mhc: Union[ModuleSpec, type] = IdentityOp
 
 
+def _with_mtp_self_attention_spec(submodules, is_mtp_layer):
+    """Tell self-attention it belongs to an MTP layer, via its build params.
+
+    MCore numbers MTP inner layers by prediction depth instead of continuing the
+    decoder numbering, so attention needs this marker to map its layer number
+    back to model-global metadata. Decoder and MTP blocks may share one spec
+    object, so clone it instead of mutating the shared params in place.
+    """
+
+    spec = getattr(submodules, "self_attention", None)
+    if not (
+        is_mtp_layer
+        and isinstance(spec, ModuleSpec)
+        and isinstance(spec.module, type)
+        and "is_mtp_layer" in inspect.signature(spec.module.__init__).parameters
+    ):
+        return submodules
+
+    params = {**spec.params, "is_mtp_layer": True}
+    return replace(submodules, self_attention=replace(spec, params=params))
+
+
 class TransformerLayer(MegatronTransformerLayer):
     """
     Inherited from megatron TransformerLayer.
@@ -101,6 +124,7 @@ class TransformerLayer(MegatronTransformerLayer):
         name: str | None = None,
         **kwargs,
     ):
+        submodules = _with_mtp_self_attention_spec(submodules, is_mtp_layer)
         super().__init__(
             config=config,
             submodules=submodules,

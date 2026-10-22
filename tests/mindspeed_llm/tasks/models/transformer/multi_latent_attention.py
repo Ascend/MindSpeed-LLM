@@ -20,7 +20,7 @@ from mindspeed.core.transformer.moe.moe_feature.fb_overlap.modules.utils import 
 
 from megatron.core.transformer.identity_op import IdentityOp
 from megatron.core.models.common.embeddings.rotary_pos_embedding import apply_rotary_pos_emb
-from megatron.core.tensor_parallel import ColumnParallelLinear, RowParallelLinear
+from megatron.core.tensor_parallel.layers import ColumnParallelLinear, RowParallelLinear
 from megatron.core.tensor_parallel.mappings import (
     gather_from_sequence_parallel_region,
     gather_from_tensor_model_parallel_region,
@@ -216,37 +216,53 @@ def _resolve_dsa_source_and_end(args, global_layer_number):
     return source, group_end
 
 
-def resolve_dsa_indexer_build_config(args, layer_number, config=None):
+def resolve_dsa_indexer_build_config(args, layer_number, config=None, is_mtp_layer=False):
     """Resolve PP-local and global DSA Compute/Share metadata.
 
     Megatron-Core 0.18 passes the global, 1-based decoder layer number to
-    SelfAttention. Do not add the pipeline offset a second time here.
+    SelfAttention. Do not add the pipeline offset a second time here. MTP is
+    the exception: MCore numbers MTP inner layers by prediction depth, starting
+    from one, so map that depth behind the decoder layers. MTP owns an
+    independent full indexer and must not participate in decoder C/S sharing.
     """
 
     pp_rank = parallel_state.get_pipeline_model_parallel_rank()
     vp_rank = parallel_state.get_virtual_pipeline_model_parallel_rank()
-    layer_offset = _get_pipeline_layer_offset(args, config=config, vp_rank=vp_rank)
-    global_layer_number = int(layer_number)
-    local_layer_idx = global_layer_number - layer_offset - 1
-    if local_layer_idx < 0 or global_layer_number > int(args.num_layers):
-        raise ValueError(
-            "DSA received a layer number outside the current PP/VPP block: "
-            f"pp_rank={pp_rank}, vp_rank={vp_rank}, layer_number={global_layer_number}, "
-            f"layer_offset={layer_offset}, num_layers={args.num_layers}."
-        )
-    global_layer_idx = global_layer_number - 1
-    source_layer, group_end_layer = _resolve_dsa_source_and_end(args, global_layer_number)
-    skip_dsa_topk = source_layer != global_layer_number
 
-    # The holder is process-local, so a Share layer cannot read across PP/VPP boundaries.
-    first_global_layer_on_stage = layer_offset + 1
-    if source_layer < first_global_layer_on_stage:
-        raise ValueError(
-            "A DSA share group is split across pipeline stages: "
-            f"pp_rank={pp_rank}, current_layer={global_layer_number}, source_layer={source_layer}, "
-            f"stage_first_layer={first_global_layer_on_stage}. Adjust --num-layer-list / PP placement so every "
-            "stage starts with a Compute layer."
-        )
+    if is_mtp_layer:
+        mtp_num_layers = int(getattr(args, "mtp_num_layers", 0) or 0)
+        local_layer_idx = int(layer_number) - 1
+        if not 0 <= local_layer_idx < mtp_num_layers:
+            raise ValueError(
+                "DSA received an invalid MTP depth: "
+                f"pp_rank={pp_rank}, vp_rank={vp_rank}, mtp_layer_number={layer_number}, "
+                f"mtp_num_layers={mtp_num_layers}."
+            )
+        # An independent full indexer: source == current layer, so no C/S sharing.
+        layer_offset = int(args.num_layers)
+        global_layer_number = layer_offset + int(layer_number)
+        source_layer = group_end_layer = global_layer_number
+    else:
+        layer_offset = _get_pipeline_layer_offset(args, config=config, vp_rank=vp_rank)
+        global_layer_number = int(layer_number)
+        local_layer_idx = global_layer_number - layer_offset - 1
+        if local_layer_idx < 0 or global_layer_number > int(args.num_layers):
+            raise ValueError(
+                "DSA received a layer number outside the current PP/VPP block: "
+                f"pp_rank={pp_rank}, vp_rank={vp_rank}, layer_number={global_layer_number}, "
+                f"layer_offset={layer_offset}, num_layers={args.num_layers}."
+            )
+        source_layer, group_end_layer = _resolve_dsa_source_and_end(args, global_layer_number)
+
+        # The holder is process-local, so a Share layer cannot read across PP/VPP boundaries.
+        first_global_layer_on_stage = layer_offset + 1
+        if source_layer < first_global_layer_on_stage:
+            raise ValueError(
+                "A DSA share group is split across pipeline stages: "
+                f"pp_rank={pp_rank}, current_layer={global_layer_number}, source_layer={source_layer}, "
+                f"stage_first_layer={first_global_layer_on_stage}. Adjust --num-layer-list / PP placement so every "
+                "stage starts with a Compute layer."
+            )
 
     return {
         "pp_rank": pp_rank,
@@ -254,10 +270,10 @@ def resolve_dsa_indexer_build_config(args, layer_number, config=None):
         "layer_offset": layer_offset,
         "local_layer_idx": local_layer_idx,
         "global_layer_number": global_layer_number,
-        "global_layer_idx": global_layer_idx,
+        "global_layer_idx": global_layer_number - 1,
         "source_layer": source_layer,
         "group_end_layer": group_end_layer,
-        "skip_dsa_topk": skip_dsa_topk,
+        "skip_dsa_topk": source_layer != global_layer_number,
     }
 
 
@@ -340,6 +356,7 @@ class CustomMLASelfAttention(SelfAttention):
         pg_collection=None,
         pp_layer_offset=None,
         name=None,
+        is_mtp_layer=False,
     ):
         Attention.__init__(
             self,
@@ -550,7 +567,12 @@ class CustomMLASelfAttention(SelfAttention):
 
         self.dsa_indexer = IdentityOp()
         if args.enable_dsa_indexer:
-            dsa_cfg = resolve_dsa_indexer_build_config(args, layer_number, config=self.config)
+            dsa_cfg = resolve_dsa_indexer_build_config(
+                args,
+                layer_number,
+                config=self.config,
+                is_mtp_layer=is_mtp_layer,
+            )
             self._skip_dsa_topk = dsa_cfg["skip_dsa_topk"]
             self._dsa_global_layer_number = dsa_cfg["global_layer_number"]
             self._dsa_source_layer = dsa_cfg["source_layer"]
@@ -835,8 +857,8 @@ class CustomMLASelfAttention(SelfAttention):
 
                 DSAIndexerLossLoggingHelper.save_loss_to_tracker(
                     loss,
-                    self.layer_number,
-                    self.config.num_layers,
+                    self._dsa_global_layer_number,
+                    self.config.num_layers + (self.config.mtp_num_layers or 0),
                     avg_group=parallel_state.get_tensor_and_context_parallel_group(),
                 )
                 core_attn_out = DSAIndexerLossAutoScaler.apply(core_attn_out, loss)
@@ -1170,8 +1192,8 @@ class CustomMLASelfAttention(SelfAttention):
 
                 DSAIndexerLossLoggingHelper.save_loss_to_tracker(
                     loss,
-                    self.layer_number,
-                    self.config.num_layers,
+                    self._dsa_global_layer_number,
+                    self.config.num_layers + (self.config.mtp_num_layers or 0),
                     avg_group=parallel_state.get_tensor_and_context_parallel_group(),
                 )
                 core_attn_out = DSAIndexerLossAutoScaler.apply(core_attn_out, loss)

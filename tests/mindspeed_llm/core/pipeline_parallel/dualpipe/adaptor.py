@@ -102,3 +102,21 @@ def dualpipe_forward_step_wrapper(fn):
         return output, num_tokens
 
     return wrapper
+
+
+def dualpipev_mtp_model_provider_wrapper(model_provider):
+    """Adapt mindspeed_llm's model_provider to DualPipeV's calling convention.
+
+    DualPipeV's get_model passes an extra ``use_dualpipe_mtp``, and the chunk
+    hosting MTP must be built with ``post_process=True``. Wrapping keeps the
+    mindspeed_llm GPTModel instead of falling back to the Megatron class; how
+    many MTP layers are built stays DualPipeV's decision.
+    """
+
+    @wraps(model_provider)
+    def wrapper(pre_process=True, post_process=True, use_dualpipe_mtp=False, **kwargs):
+        return model_provider(
+            pre_process=pre_process, post_process=post_process or use_dualpipe_mtp, **kwargs
+        )
+
+    return wrapper

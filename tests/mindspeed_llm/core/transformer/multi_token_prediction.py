@@ -11,7 +11,7 @@ from torch import Tensor
 from megatron.core import InferenceParams, mpu, parallel_state, tensor_parallel
 from megatron.core.fp8_utils import get_fp8_context
 from megatron.core.packed_seq_params import PackedSeqParams
-from megatron.core.tensor_parallel import (
+from megatron.core.tensor_parallel.mappings import (
     all_gather_last_dim_from_tensor_parallel_region,
     scatter_to_sequence_parallel_region,
 )
@@ -118,6 +118,14 @@ def mtp_layer_forward(
     args = get_args()
     if context is not None:
         raise NotImplementedError("multi token prediction + cross attention is not yet supported.")
+
+    if position_ids is None:
+        # SFT batches carry no position_ids (rope needs none), but Megatron-Core 0.18
+        # rolls position_ids unconditionally in _get_embeddings. Rebuild the implicit
+        # arange positions that the pretrain data path would have provided.
+        position_ids = torch.arange(
+            input_ids.size(1), dtype=torch.long, device=input_ids.device
+        ).unsqueeze(0).expand_as(input_ids)
 
     # MCore 0.18 contract: prepare decoder_input inside MultiTokenPredictionLayer.
     (
