@@ -85,12 +85,12 @@ class SFTTrainer(BaseTrainer):
                         and args.context_parallel_algo == 'megatron_cp_algo'
                     ):
                         actual_seq_len = pad_data(
-                            data_b['actual_seq_len'].view(-1),
+                            actual_seq_len,
                             batch,
                             args.context_parallel_size,
                             args.tensor_model_parallel_size,
                         )
-                        actual_seq_len /= get_ring_degree()
+                        actual_seq_len = torch.div(actual_seq_len, get_ring_degree(), rounding_mode='floor')
                     set_actual_seq_len(actual_seq_len)
                     batch = {'attention_mask': None}
                 else:
@@ -147,12 +147,12 @@ class SFTTrainer(BaseTrainer):
                     and args.context_parallel_algo == 'megatron_cp_algo'
                 ):
                     actual_seq_len = pad_data(
-                        data_b['actual_seq_len'].view(-1),
+                        actual_seq_len,
                         batch,
                         args.context_parallel_size,
                         args.tensor_model_parallel_size,
                     )
-                    actual_seq_len /= get_ring_degree()
+                    actual_seq_len = torch.div(actual_seq_len, get_ring_degree(), rounding_mode='floor')
                 set_actual_seq_len(actual_seq_len)
 
                 batch = get_batch_on_this_cp_rank(batch)
