@@ -1266,12 +1266,21 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
       <td>【Test】</td>
     </tr>
     <tr>
-      <td rowspan="1"><a href="https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash-Base">DeepSeek-V4-Flash</a></td>
-      <td><a href="https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash-Base/tree/main">284B</a></td>
+      <td rowspan="2"><a href="https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash-Base">DeepSeek-V4-Flash</a></td>
+      <td rowspan="2"><a href="https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash-Base/tree/main">284B</a></td>
       <td><a href="../../../../examples/mcore/deepseek4_flash">deepseekv4-flash</a></td>
       <td>4k</td>
       <th>Mcore</th>
       <td>8x16</td>
+      <td>  </td>
+      <td>【Ascend】</td>
+      <td>【Test】</td>
+    </tr>
+    <tr>
+      <td><a href="../../../../examples/fsdp2/deepseek4">deepseek4</a></td>
+      <td>4k</td>
+      <th>FSDP2</th>
+      <td>16x16</td>
       <td>  </td>
       <td>【Ascend】</td>
       <td>【Test】</td>
