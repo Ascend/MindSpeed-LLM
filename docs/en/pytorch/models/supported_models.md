@@ -1485,7 +1485,7 @@ Multimodal models, including image-text understanding, text-to-video/image gener
       <td rowspan="46"> Multimodal generation </td>
       </tr>
       <tr>
-      <td><a href="https://gitcode.com/Ascend/MindSpeed-MM/blob/master/examples/lumina">Lumina-mGPT 2.0</a></td>
+      <td><a href="https://gitcode.com/Ascend/MindSpeed-MM/tree/26.0.0/examples/lumina">Lumina-mGPT 2.0</a></td>
       <td><a href="https://huggingface.co/Alpha-VLLM/Lumina-mGPT-2.0">7B</a></td>
       <td> Fine-tuning </td>
       <td> 1x8</td>
@@ -1655,7 +1655,7 @@ Multimodal models, including image-text understanding, text-to-video/image gener
       <td>[Pass]</td>
     </tr>
     <tr>
-      <td><a href="https://gitcode.com/Ascend/MindSpeed-MM/tree/26.0.0/examples/hunyuanvideo1.5">HunyuanVideo1.5-T2V</a></td>
+      <td><a href="https://gitcode.com/Ascend/MindSpeed-MM/tree/26.0.0/examples/hunyuanvideo_1.5">HunyuanVideo1.5-T2V</a></td>
       <td><a href="https://huggingface.co/tencent/HunyuanVideo1.5-T2V">8B</a></td>
       <td> Pretraining </td>
       <td> 1x8</td>
@@ -2239,7 +2239,7 @@ Multimodal models, including image-text understanding, text-to-video/image gener
     </tr>
     <tr>
       <td> Speech generation </td>
-      <td><a href="https://gitcode.com/Ascend/MindSpeed-MM/tree/26.0.0/examples/fsdp2/cosyvoice3">CosyVoice3</a></td>
+      <td><a href="https://gitcode.com/Ascend/MindSpeed-MM/tree/26.0.0/examples/cosyvoice3">CosyVoice3</a></td>
       <td><a href="https://huggingface.co/FunAudioLLM/Fun-CosyVoice3-0.5B-2512">0.5B</a></td>
       <td> Pretraining </td>
       <td> 1x8</td>
