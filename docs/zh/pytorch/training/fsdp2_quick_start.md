@@ -210,7 +210,7 @@
     bash examples/fsdp2/qwen3/pretrain_qwen3_8b_4k_fsdp2_A2.sh
     ```
 
-    执行后一段时间可见终端显示。
+    执行后一段时间可见终端类似显示如下。
 
     ```Output
     INFO [2026-06-22 19:28:40] >>  iteration        1/    2000 | consumed samples:          8 | consumed tokens:      32768 | elapsed time per iteration (ms): 10520.60 | learning rate: 9.999994E-06 | global batch size:     8 | lm loss: 1.304194E+00 | grad norm: 8.515 | max_memory_allocated(GB): 19.07 | max_memory_reserved(GB): 20.87 |
@@ -327,7 +327,7 @@
     bash examples/fsdp2/qwen3/tune_qwen3_8b_4k_fsdp2_A2.sh
     ```
 
-    执行后一段时间可见终端显示。
+    执行后一段时间可见终端类似显示如下。
 
     ```Output
     INFO [2026-06-22 19:25:37] >>  iteration        1/    2000 | consumed samples:          8 | consumed tokens:        564 | elapsed time per iteration (ms): 7827.39 | learning rate: 1.666667E-07 | global batch size:     8 | lm loss: 3.316887E+00 | grad norm: 70.959 | max_memory_allocated(GB): 19.07 | max_memory_reserved(GB): 20.90 |
@@ -351,7 +351,7 @@
 |`model_name_or_path`|HuggingFace 权重目录路径，替换为实际模型路径|`./model_from_hf/qwen3_hf/`|
 |`trust_remote_code`|是否允许加载HuggingFace上自定义建模文件中的模型|`True` / `False`|
 |`train_from_scratch`|是否使用随机权重从头开始训练模型，不加载模型权重|`True` / `False`|
-|`dataset`|数据集：JSON 字符串指定本地路径，或使用[dataset_info.json](../../../../configs/fsdp2/data/dataset_info.json)中的名称|`'{"file_name": "..."}`'、`alpaca_full`|
+|`dataset`|数据集：JSON 字符串指定本地路径，或使用[dataset_info.json](../../../../configs/fsdp2/data/dataset_info.json)中的名称|`'{"file_name": "..."}'`、`alpaca_full`|
 |`template`|构建prompt的模板名称|`qwen3`、`gpt`|
 |`cutoff_len`|分词后输入序列的截断长度，超过该长度的序列会被截断|`2048`、`4096`、`16384`|
 |`data_manager_type`|数据管理器类型，mg表示预训练场景，微调时无需配置|预训练：`mg`，微调：不配置|

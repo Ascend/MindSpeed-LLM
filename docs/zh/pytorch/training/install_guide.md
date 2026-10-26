@@ -293,7 +293,7 @@ MindSpeed LLM支持通过Git Submodule统一管理三方依赖仓库，便于版
 
    # 将依赖仓库源码软链接到MindSpeed LLM根目录
    ln -s 3rdparty/MindSpeed/mindspeed mindspeed
-   ln -s 3rdparty/FSDPTurbo/fsdpturbo fsdpturbo
+   ln -s 3rdparty/FSDPTurbo/fsdp_turbo fsdp_turbo
    ln -s 3rdparty/Megatron-LM/megatron megatron
 
    # 安装MindSpeed LLM其余依赖
@@ -306,7 +306,16 @@ MindSpeed LLM支持通过Git Submodule统一管理三方依赖仓库，便于版
    > - Megatron-LM子模块包含完整仓库，需将`megatron/`源码目录链接至MindSpeed LLM根目录下使用。
    > - 若需使用`pip3 install -e .`方式安装MindSpeed或FSDPTurbo，可分别进入对应子模块目录执行。
 
-4. （可选）切换子模块版本<div id="checkout_submodules"/>
+4. 创建日志目录
+
+   进入MindSpeed LLM代码根目录创建日志目录。
+
+   ```shell
+   cd ../MindSpeed-LLM
+   mkdir logs
+   ```
+
+5. （可选）切换子模块版本<div id="checkout_submodules"/>
 
    如需切换某个子模块到指定分支或标签，例如将Megatron-LM切换到其他版本：
 
