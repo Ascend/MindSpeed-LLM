@@ -13,7 +13,7 @@ Massive Multitask Language Understanding (MMLU) evaluation includes a wide range
 
 Each domain also contains multiple specific tasks and questions. Through these diverse tasks, MMLU can evaluate mastery of knowledge and cross-domain generalization ability of a model.
 
-The subject sets included in [STEM](#STEM), [Humanities](#人文学科), and [Social Sciences](#社会科学) are listed at the end of this document.
+The subject sets included in [STEM](#STEM), [Humanities](#humanities), and [Social Sciences](#social-sciences) are listed at the end of this document.
 
 The MindSpeed LLM repository currently provides four evaluation modes for MMLU evaluation.
 
@@ -112,7 +112,7 @@ Set this to `mmlu_ppl`.
 17. `high_school_statistics` (high school statistics)
 18. `machine_learning` (machine learning)
 
-<a name="人文学科"></a>
+<a name="humanities"></a>
 
 ### Humanities Question Sets
 
@@ -130,7 +130,7 @@ Set this to `mmlu_ppl`.
 12. `professional_law` (professional law)
 13. `world_religions` (world religions)
 
-<a name="社会科学"></a>
+<a name="social-sciences"></a>
 
 ### Social Sciences Question Sets
 

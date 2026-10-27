@@ -80,7 +80,6 @@ This section explains how to use single-sample data to perform instruction fine-
 
     - [Alpaca-Style Datasets](../../../tools/data_process_sft_alpaca_style.md)
     - [ShareGPT Datasets](../../../tools/data_process_sft_sharegpt_style.md)
-    - [Pairwise Dataset Processing](../../../tools/data_process_dpo_pairwise.md)
 
     Next, use the Alpaca dataset as an example for data preprocessing. For detailed configuration, see the [Qwen3 data preprocessing script](../../../../../../examples/mcore/qwen3/data_convert_qwen3_instruction.sh). Modify the paths in the script:
 
@@ -155,10 +154,10 @@ This section explains how to use single-sample data to perform instruction fine-
     - `no-pad-to-seq-lengths`: Supports dynamic sequence-length fine-tuning across mini-batches. By default, padding is rounded up to a multiple of 8, and you can change the multiple with `pad-to-multiple-of`. If you set the sequence length to 1024 during fine-tuning and enable `--no-pad-to-seq-lengths`, the sequence length is padded to the smallest value that is greater than or equal to the true data length and is a multiple of 8.
 
         **Figure 2** Variable sequence lengths
+
         ![Variable sequence lengths](../../../figures/instruction_finetune/variable_seq_lengths.png)
 
     > [!NOTE]
-    >
     > - The provided paths must be enclosed in double quotation marks.
     > - For multi-node training, ensure that the model path and dataset path on each machine are correct.
     > - The parallel configuration (including TP, PP, EP, VPP, and so on) used in the fine-tuning script must be consistent with the configuration used during weight conversion; otherwise, weight loading or conversion errors may occur. For specific parallel configuration, see [Converting Hugging Face Weights to the MCore Format](../../../tools/checkpoint_convert_hf_mcore_large_params.md#converting-hugging-face-weights-to-the-mcore-format).

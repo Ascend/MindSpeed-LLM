@@ -26,29 +26,28 @@ MindSpeed LLM is a distributed large language model training toolkit built on th
 
 ---
 
-- [Jun. 18, 2026]: 🚀 [**GLM5.2** fixed-length data pretraining support](./examples/mcore/glm52) [Prototype]
-- [Apr. 25, 2026]: 🚀 [**DeepSeekV4-Flash** fixed-length data pretraining support](./examples/mcore/deepseek4_flash/README.md) [Prototype]
-- [Apr. 16, 2026]: 🚀 [**MiniMax_M27** model support](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/fsdp2/minimax_m27) [Prototype]
-- [Mar. 28, 2026]: 🚀 [**Mamba3-block** demo model support](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/fsdp2/mamba3) [Prototype]
+- [Jun. 18, 2026]: 🚀 [**GLM5.2** fixed-length data pretraining support](./examples/mcore/glm52) [beta]
+- [Apr. 25, 2026]: 🚀 [**DeepSeekV4-Flash** fixed-length data pretraining support](./examples/mcore/deepseek4_flash/README_en.md) [beta]
+- [Apr. 16, 2026]: 🚀 [**MiniMax_M27** model support](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/fsdp2/minimax_m27) [beta]
+- [Mar. 28, 2026]: 🚀 [**Mamba3-block** demo model support](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/fsdp2/mamba3) [beta]
 - [Mar. 27, 2026]: 🌴 MindSpeed LLM released the [v26.0.0 branch](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.0.0), which supports core_v0.12.1.
 - [Mar. 10, 2026]: 🚀 MindSpeed LLM model sunset plan phase two ([link](https://gitcode.com/Ascend/MindSpeed-LLM/issues/1224)) started. Thank you for every contribution over the years.
-- [Feb. 12, 2026]: 🚀 [**GLM5** model support](./examples/mcore/glm5) [Prototype]
+- [Feb. 12, 2026]: 🚀 [**GLM5** model support](./examples/mcore/glm5) [beta]
 
 <details><summary> More news </summary>
 
-- [Feb. 11, 2026]: 🚀 [**Step-3.5-Flash** model support](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/fsdp2/step35) [Prototype]
-- [Feb. 10, 2026]: 🚀 [FSDP2 training backend is now available, supporting the **Qwen3-Next** model](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/fsdp2/qwen3_next) [Prototype]
-- [Feb. 04, 2026]: 🚀 [**Qwen3-Coder-Next** model support for the mcore backend](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/mcore/qwen3_coder_next) [Prototype]
-- [Jan. 28, 2026]: 🌴 [Community image package 2.3.0 branch is now available](https://gitcode.com/Ascend/MindSpeed-LLM/blob/2.3.0/docs/pytorch/install_guide.md) [Prototype]
-- [Jan. 23, 2026]: 🌴 [Community image package 2.2.0 branch is now available](https://gitcode.com/Ascend/MindSpeed-LLM/blob/2.2.0/docs/pytorch/install_guide.md) [Prototype]
+- [Feb. 11, 2026]: 🚀 [**Step-3.5-Flash** model support](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/fsdp2/step35) [beta]
+- [Feb. 10, 2026]: 🚀 [FSDP2 training backend is now available, supporting the **Qwen3-Next** model](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/fsdp2/qwen3_next) [beta]
+- [Feb. 04, 2026]: 🚀 [**Qwen3-Coder-Next** model support for the mcore backend](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/mcore/qwen3_coder_next) [beta]
+- [Jan. 28, 2026]: 🌴 [Community image package 2.3.0 branch is now available](https://gitcode.com/Ascend/MindSpeed-LLM/blob/2.3.0/docs/pytorch/install_guide.md) [beta]
+- [Jan. 23, 2026]: 🌴 [Community image package 2.2.0 branch is now available](https://gitcode.com/Ascend/MindSpeed-LLM/blob/2.2.0/docs/pytorch/install_guide.md) [beta]
 - [Jan. 16, 2026]: 🌴 MindSpeed LLM released the [v2.3.0 branch](https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.3.0), which supports core_v0.12.1.
 - [Dec. 24, 2025]: 🚀 **gpt-oss** model support
-- [Dec. 11, 2025]: 🚀 **Qwen3-Next** model training supports Triton fusion to accelerate GDN module computation [Prototype]
+- [Dec. 11, 2025]: 🚀 **Qwen3-Next** model training supports Triton fusion to accelerate GDN module computation [beta]
 - [Nov. 25, 2025]: 🚀 [Online data and weight loading for training](./docs/en/pytorch/training/pretrain/mcore/train_from_hf.md)
-- [Nov. 14, 2025]: 🚀 **magistral** model support [Prototype]
+- [Nov. 14, 2025]: 🚀 **magistral** model support [beta]
 - [Oct. 30, 2025]: 🚀 MindSpeed LLM model sunset plan ([link](https://gitcode.com/Ascend/MindSpeed-LLM/issues/943)) started. Thank you for every contribution over the years.
 - [Oct. 28, 2025]: 🌴 MindSpeed LLM released the [v2.2.0 branch](https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.2.0), which supports core_v0.12.1.
-- [Oct. 16, 2025]: 🚀 **Qwen3-30B** supports DPO training.
 - [Sep. 16, 2025]: 🚀 **Qwen3-Next** model support
 - [Aug. 23, 2025]: 🚀 An optimized version of large-parameter model [weight conversion v2](./docs/en/pytorch/tools/checkpoint_convert_hf_mcore_large_params.md) is now available.
 - [Jul. 28, 2025]: 🚀 Simultaneous first-release support for the **GLM-4.5-Air** model series
@@ -60,7 +59,7 @@ MindSpeed LLM is a distributed large language model training toolkit built on th
 
 </details>
 
-Note: [Prototype] indicates that the feature has not been fully validated. If you encounter any issues while using it, please report them in the [issue tracker](https://gitcode.com/Ascend/MindSpeed-LLM/issues).
+Note: [beta] indicates that the feature has not been fully validated. If you encounter any issues while using it, please report them in the [issue tracker](https://gitcode.com/Ascend/MindSpeed-LLM/issues).
 
 - [MindSpeed LLM takes the lead in supporting MiniMax M2.7 training reproduction and accelerates model iteration to complete complex tasks](https://mp.weixin.qq.com/s/FWcQLu8InQvLh6YBd5Sq2w)
 - [Say goodbye to tedious preprocessing. MindSpeed LLM launches Train_from_HF to enable load-and-train](https://mp.weixin.qq.com/s/kMUVWyCYLGKgceHzYXjigg)
@@ -411,17 +410,17 @@ MindSpeed LLM released version maintenance policy:
 
 | MindSpeed LLM Version | Corresponding Tag | Maintenance Policy | Current Status | Release Date | Next Status | EOL Date |
 | --------------------- | ------------| ------------ | ------------ | ------------ | ---------------------- | ----------- |
-| 26.1.0                | v26.1.0      | Regular release     | Maintenance         | 2026/6/30   | Expected to enter no-maintenance status starting 2026/12/30 |             |
-| 26.0.0                | v26.0.0      | Regular release     | Maintenance         | 2026/3/30   | Expected to enter no-maintenance status starting 2026/9/30    |             |
-| 2.3.0                 | v2.3.0       | Regular release     | EOL         | 2025/12/30   | End of life            | 2026/6/30   |
-| 2.2.0                 | v2.2.0       | Regular release     | EOL         | 2025/9/30    | End of life            | 2026/3/30    |
-| 2.1.0                 | v2.1.0       | Regular release     | EOL         | 2025/6/30    | End of life  |     2025/12/30        |
-| 2.0.0                 | v2.0.0       | Regular release     | EOL          | 2025/3/30    | End of life           | 2025/9/30    |
-| 1.0.0                 | v1.0.0       | Regular release     | EOL          | 2024/12/30   | End of life           | 2025/6/30    |
-| 1.0.RC3               | v1.0.RC3.0   | Regular release     | EOL          | 2024/09/30   | End of life           | 2025/3/30    |
-| 1.0.RC2               | v1.0.RC2.0   | Regular release     | EOL          | 2024/06/30   | End of life           | 2024/12/30   |
-| 1.0.RC1               | v1.0.RC1.0   | Regular release     | EOL          | 2024/03/30   | End of life           | 2024/9/30    |
-| bk_origin_23          | \            | Demo        | EOL          | 2023         | End of life           | 2024/6/30     |
+| 26.1.0                | v26.1.0      | Regular release     | Development         | Expected to be released on Jun. 30, 2026   | Expected to enter no-maintenance status starting Dec. 30, 2026 |             |
+| 26.0.0                | v26.0.0      | Regular release     | Maintenance         | Mar. 30, 2026   | Expected to enter no-maintenance status starting Sep. 30, 2026    |             |
+| 2.3.0                 | v2.3.0       | Regular release     | Maintenance         | Dec. 30, 2025   | Expected to enter no-maintenance status starting Jun. 30, 2026   |             |
+| 2.2.0                 | v2.2.0       | Regular release     | EOL         | Sep. 30, 2025    | End of life            | Mar. 30, 2026    |
+| 2.1.0                 | v2.1.0       | Regular release     | EOL         | Jun. 30, 2025    | End of life  |     Dec. 30, 2025        |
+| 2.0.0                 | v2.0.0       | Regular release     | EOL          | Mar. 30, 2025    | End of life           | Sep. 30, 2025    |
+| 1.0.0                 | v1.0.0       | Regular release     | EOL          | Dec. 30, 2024   | End of life           | Jun. 30, 2025    |
+| 1.0.RC3               | v1.0.RC3.0   | Regular release     | EOL          | Sep. 30, 2024   | End of life           | Mar. 30, 2025    |
+| 1.0.RC2               | v1.0.RC2.0   | Regular release     | EOL          | Jun. 30, 2024   | End of life           | Dec. 30, 2024   |
+| 1.0.RC1               | v1.0.RC1.0   | Regular release     | EOL          | Mar. 30, 2024   | End of life           | Sep. 30, 2024    |
+| bk_origin_23          | \            | Demo        | EOL          | 2023         | End of life           | Jun. 30, 2024     |
 
 # Roadmap
 

@@ -7,7 +7,14 @@ Generally, users need to perform weight conversion and data preprocessing offlin
 This feature integrates data preprocessing, weight conversion, and training flows. You can start training tasks with a single script.
 
 - **Weight conversion and training integration:** Supports loading, converting, and saving weights from Hugging Face. By automatically detecting the weight file format in the load directory, the system can automatically enable relevant conversion functions to achieve bidirectional automatic conversion from Hugging Face weights to the Megatron format and training integration. You do not need to execute a separate weight conversion step, achieving one-click startup from Hugging Face weights to training tasks.
+
 - **Automatic data preprocessing:** The data preprocessing feature automatically identifies and converts raw data files during model training. You do not need to convert the raw data manually. The system determines whether the input path points to a raw data format (such as `.jsonl`, `.parquet`, and so on) based on the input path, and automatically completes the data format conversion during training initialization.
+
+The following use cases apply to offline weight conversion and data preprocessing:
+
+- Weight conversion: For models with 100B or more parameters, you are advised to use offline mode to avoid wasting a large amount of time on online weight conversion each time. For details, see [Weight Conversion](../../../tools/checkpoint_convert_hf_mcore_large_params.md).
+
+- Data preprocessing: If converted data is already available, you are advised to use offline mode and specify the data path directly. For details, see [Pretraining Dataset Processing](../../../tools/data_process_pretrain.md).
 
 ## How to Use
 
@@ -88,12 +95,13 @@ In the pretraining and fine-tuning scripts `pretrain_xxx.sh` or `tune_xxx.sh`, a
 >
 > - For special models such as Mamba, you must specify `--model-type-hf` manually.
 > - Because Megatron-to-Hugging Face conversion generates only the weights and `model.safetensors.index.json`, and does not generate configuration files, you must use the `--hf-cfg-dir` parameter to copy configuration files from the original Hugging Face model to the Hugging Face weight directory created by the conversion.
+> - The `--model-type-hf` parameter is a weight conversion parameter. You can generally find it in the `ckpt_xxx.sh` script in the same model directory. The full set of parameters is located in `mindspeed_llm/features_manager/convert_checkpoint/convert_checkpoint.py`.
 
 #### Resource Requirements
 
 System resource requirements are as follows:
 
-- Disk space: Ensure that you have enough disk space to store the converted weights.
+- Drive space: Ensure that you have enough drive space to store the converted weights.
 - Conversion time: After training initialization, the system automatically performs weight conversion. Depending on the model size, the expected time ranges from 2 minutes to 2 hours. Please wait patiently.
 - Permission requirements: Ensure that you have read and write permissions for all the following relevant paths:
     - `{load}` - model loading path
@@ -156,12 +164,16 @@ The currently supported forms are as follows:
 | `--enable-thinking` | string | None | No | Whether to enable thinking mode (fine-tuning scenario). |
 | `--output-prefix` | string | None | No | Prefix of the output dataset file after conversion. |
 | `--seq-length` | int | None | No | In pack mode, specifies the sequence length after data packing. |
-| `--reasoning-effort` | string | None | No | Used for DeepSeek-V4 model fine-tuning data processing. Options: max/high. max: inserts the maximum effort instruction prefix into the prompt; high: reserved, currently a no-op. |
+| `--reasoning-effort` | string | None | No | Used for DeepSeek-V4 model fine-tuning data processing. Options: max/high.<ul><li>max: Inserts the maximum effort instruction prefix into the prompt.</li><li>high: Reserved, currently a no-op.</li></ul> |
 | `--drop-thinking` | bool | True | No | In DeepSeek-V4 fine-tuning scenarios, whether to discard historical thinking chains in multi-turn conversations. By default, only the last assistant reasoning is retained as the loss target. Set to False to retain all reasoning turns. |
 
 > [!NOTE]
 >
-> If you do not specify `--output-prefix`, the processed data file is generated in the same directory as the raw dataset by default.
+> - If you do not specify `--output-prefix`, the processed data file is generated in the same directory as the raw dataset by default.
+> - `--handler-name` specifies the data processing handler name:
+>   - For pretraining scripts, you can generally find it in the `data_xxx_pretrain.sh` script in the same model directory, and its value is generally `GeneralPretrainHandler`.
+>   - For fine-tuning scripts, you can generally find it in the `data_xxx_instruction.sh` script in the same model directory, and its value is generally `AlpacaStyleInstructionHandler`.
+> - `--prompt-type` specifies the fine-tuning prompt template. You can generally find it in the `data_xxx_instruction.sh` script in the same model directory. The full set of parameters is located in `preprocess_data.py`.
 
 ### Example
 

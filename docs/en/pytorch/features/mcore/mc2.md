@@ -19,13 +19,13 @@ Ascend developed the MC2 solution for Matmul computations and communication oper
 
 MC2 uses operator fusion to combine Matmul computation and collective communication operations. It splits large computation and communication tasks into smaller computation subtasks and communication subtasks. It then uses a pipeline so that communication subtasks and computation subtasks can overlap, which reduces waiting and idle time and improves utilization.
 
-## Approach
+### Approach
 
 On the Python script side, MC2 fuses the original sequential Matmul and All-Gather/Reduce-Scatter operations through the MC2 operator interface.
 
 For details, see the [code implementation](https://gitcode.com/ascend/MindSpeed/blob/core_r0.8.0/mindspeed/core/tensor_parallel/ascend_turbo/mc2_linears_seq_parallel.py).
 
-For the MC2 operator interface, see the [`torch_npu.npu_mm_all_reduce_base` interface documentation](https://www.hiascend.com/document/detail/zh/Pytorch/60RC1/apiref/apilist/ptaoplist_000449.html).
+For the MC2 operator interface, see the [`torch_npu.npu_mm_all_reduce_base` interface documentation](https://gitcode.com/Ascend/op-plugin/blob/26.2.0/docs/en/custom_APIs/torch_npu/torch_npu-npu_mm_all_reduce_base.md).
 
 ## Use Cases
 
@@ -43,4 +43,4 @@ In training scenarios that enable TP and SP, MC2 can reduce memory overhead and 
 
 1. In MCore scenarios with `--use-mcore-models` enabled, the MLP part of MoE models does not enable MC2.
 
-2. The Ascend 950 products does not yet support this feature.
+2. The Ascend 950PR&950DT products do not yet support this feature.

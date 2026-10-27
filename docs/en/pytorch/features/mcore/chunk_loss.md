@@ -44,8 +44,8 @@ class LMHead(nn.Linear):
 
 **Step 2**: Add the `loss_ctx` argument to the `forward` function of the model, and add an enablement check in the forward implementation.
 
-See the FSDP2 `Qwen3ForCausalLM` implementation: [Qwen3ForCausalLM FSDP2 implementation reference](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/mindspeed_llm/fsdp2/models/qwen3/qwen3.py).
-In addition, pay attention to the loss calculation method of the specific model. If you introduce a new loss calculation method, adapt the `_build_chunk_loss` logic accordingly. The change point is the Trainer `_build_chunk_loss` method, [modification location](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/mindspeed_llm/fsdp2/train/trainer.py#L86).
+See the FSDP2 `Qwen3ForCausalLM` implementation: [Qwen3ForCausalLM FSDP2 implementation reference](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.2.0/mindspeed_llm/fsdp2/models/qwen3/qwen3.py).
+In addition, pay attention to the loss calculation method of the specific model. If you introduce a new loss calculation method, adapt the `_build_chunk_loss` logic accordingly. The change point is the Trainer `_build_chunk_loss` method, [modification location](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.2.0/mindspeed_llm/fsdp2/train/trainer.py#L86).
 
 **Step 3**: Add the enablement arguments to the launch script.
 

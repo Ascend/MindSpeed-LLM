@@ -28,4 +28,4 @@ Before locating a precision issue, you need to first rule out interference from 
 |Weight initialization alignment|Ensure that the initialization weights before training are consistent. Confirm that the same pretrained model is loaded or that the same initialization random seed is used.|
 |Data loading alignment|Check whether the data read from the dataset and fed into model training is consistent.|
 
-After the preliminary check is complete, you can use the [msProbe accuracy tool](https://gitcode.com/Ascend/msprobe) to analyze and locate different problem scenarios. The tool provides usage guidance and a [large model training accuracy locating guide](https://gitcode.com/Ascend/msprobe/blob/master/docs/en/best_practices/train_debug_guide.md).
+After the preliminary check is complete, you can use the [msProbe accuracy tool](https://gitcode.com/Ascend/msprobe) to analyze and locate different problem scenarios. The tool provides usage guidance and a [large model training accuracy locating guide](https://gitcode.com/Ascend/msprobe/blob/26.2.0/docs/en/best_practices/train_debug_guide.md).

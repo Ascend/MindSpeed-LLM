@@ -12,8 +12,10 @@ It improves training efficiency and memory utilization. By configuring a `Quanti
 | Parameter | Type | Default | Description |
 |------------------------------------------------|------|----------------------|--------------------|
 | --model.quant_recipe_name | str | mxfp8 (required) | Name of the quantization recipe. |
+| --model.quant_format | str | E4M3 | FP8 data format used for quantization. The supported formats are `E4M3`, `E5M2`, and `HIF8`. |
+| --model.quant_block_size | int | 32 | Block size for MXFP8 block quantization. |
 | --model.quant_apply_modules | str | 'model.layers.{*}' | Layers or modules to which quantization applies. |
-| --model.quant_ignored_modules | str | '*lm_head', '*gate' | List of submodules to which quantization does not apply. |
+| --model.quant_ignored_modules | str | '*lm_head' '*gate' | List of submodules to which quantization does not apply. |
 | --model.quant_converters | str | 'quantize.linear.mx' | List of quantization converters to use. |
 | --model.enable_fsdp_low_precision_all_gather | bool | True | Whether to enable low-precision communication. |
 | --model.fsdp_low_precision_all_gather_mode | str | 'on-demand' | FSDP low-precision all-gather mode. Aggregates the weights needed for the forward or backward pass on demand. |
@@ -94,9 +96,12 @@ The following example start-up script shows how to configure quantization parame
 ```bash
 QUANT_ARGS="
     --model.quant_recipe_name mxfp8 \
+    --model.quant_format E4M3 \
+    --model.quant_block_size 32 \
     --model.enable_fsdp_low_precision_all_gather \
     --model.quant_converters quantize.linear.mx quantize.moe.mx \
-    --parallel.efsdp_shard_placement_fn shard_by_dim_0
+    --parallel.efsdp_shard_placement_fn shard_by_dim_0 \
+    --parallel.fsdp_implementation custom
 "
 
 torchrun $DISTRIBUTED_ARGS train_fsdp2.py \

@@ -76,7 +76,7 @@ MindSpeed LLM新增支持GLM5.2模型训练和DeepSeekV4长序列，且权重/�
   </colgroup>
   <thead>
     <tr>
-      <th rowspan="3">MindSpeed LLM</th>
+      <th rowspan="2">MindSpeed LLM</th>
       <th colspan="5">TorchNPU版本</th>
     </tr>
     <tr>

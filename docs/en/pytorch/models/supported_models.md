@@ -1,8 +1,8 @@
-# Supported Models
+# Supported Models for the PyTorch Framework
 
 PyTorch models are divided into three categories based on architecture: dense models, sparse models, and state space models (SSMs). See the support lists below for details.
 
-**Table fields**
+**Table Fields**
 
 | Field | Description |
 | :--- | :--- |
@@ -18,7 +18,7 @@ PyTorch models are divided into three categories based on architecture: dense mo
 
 > [!NOTE]
 >
-> - The repository supports the Ascend 950 products, Atlas A3 training series products, and Atlas A2 training series products. You can obtain hardware information from [Hardware Information Query](https://www.hiascend.com/en/cann/download). It also requires at least 64 GB of on-chip memory on a single NPU. After you [install the driver firmware](../training/install_guide.md), you can use `npu-smi info` to check the on-chip memory capacity of a single NPU.
+> - MindSpeed LLM supports <term>Ascend 950PR&950DT products</term>, <term>Atlas A3 training products</term>, and <term>Atlas A2 training products</term>. You can obtain hardware information from [Hardware Information Query](https://www.hiascend.com/cann/download). It also requires at least 64 GB of on-chip memory on a single NPU. After you [install the driver firmware](../training/install_guide.md), you can use `npu-smi info` to check the on-chip memory capacity of a single NPU.
 > - [Model training example scripts](../../../../examples) are available. Training scripts are named `pretrain_model_name_parameter_sequence_length_training_scheme_training_product.sh`, and fine-tuning scripts are named `tune_model_name_parameter_sequence_length_training_scheme_training_product.sh`.
 > - Among the provided training scripts, [model training example scripts](../../../../examples) are designed for demonstrating normal weight loading and training, while [model training high-performance scripts](../../../../tests/poc) are designed for demonstrating high performance under fixed routes. You can choose the appropriate ones based on your usage scenario.
 > - You can check the cluster size in the model training example scripts. `NNODES` indicates the number of machines, and `NPUS_PER_NODE` indicates the number of NPUs on each machine. The following example uses 32 nodes, each with 16 NPUs:
@@ -168,7 +168,7 @@ Dense models are traditional deep learning architectures. Their neurons are dens
       <td>[Pass]</td>
     </tr>
     <tr>
-      <td rowspan="2"><a href="https://huggingface.co/THUDM">GLM4</a></td>
+      <td rowspan="2"><a href="https://huggingface.co/THUDM">GLM-4</a></td>
       <td rowspan="2"><a href="https://huggingface.co/THUDM/glm-4-9b">9B</a></td>
       <td rowspan="2"><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/2.3.0/examples/mcore/glm4">glm4</a></td>
       <td> 8K </td>
@@ -276,7 +276,7 @@ Dense models are traditional deep learning architectures. Their neurons are dens
       <td>[Pass]</td>
     </tr>
     <tr>
-      <td rowspan="4"><a href="https://huggingface.co/meta-llama">Llama</a></td>
+      <td rowspan="4"><a href="https://huggingface.co/meta-llama">Llama-</a></td>
       <td><a href="https://huggingface.co/huggyllama/llama-7b/tree/main">7B</a></td>
       <td rowspan="4"><a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.0.0/examples/legacy/llama">llama</a></td>
       <td>2K</td>
@@ -329,7 +329,7 @@ Dense models are traditional deep learning architectures. Their neurons are dens
       <td>4K</td>
       <th>MCore</th>
       <td>1x8</td>
-      <td> </td>
+      <td> <a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0">26.1.0</a> </td>
       <td>[Ascend]</td>
       <td>[Pass]</td>
     </tr>
@@ -710,18 +710,18 @@ Dense models are traditional deep learning architectures. Their neurons are dens
       <td>32K</td>
       <th>MCore</th>
       <td>16x8</td>
-      <td> </td>
+      <td> <a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0">26.1.0</a> </td>
       <td>[Ascend]</td>
       <td>[Pass]</td>
     </tr>
     <tr>
       <td rowspan="7"> <a href="https://huggingface.co/collections/Qwen/qwen3-67dd247413f0e2e4f653967f">Qwen3</a> </td>
       <td><a href="https://huggingface.co/Qwen/Qwen3-0.6B-Base">0.6B</a></td>
-      <td rowspan="6"><a href="../../../../examples/mcore/qwen3">qwen3</a></td>
+      <td rowspan="3"><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/mcore/qwen3">qwen3</a></td>
       <td> 4K </td>
       <th> MCore </th>
       <td> 1x8 </td>
-      <td> </td>
+      <td> <a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0">26.1.0</a> </td>
       <td>[Ascend]</td>
       <td>[Pass]</td>
     </tr>
@@ -730,7 +730,7 @@ Dense models are traditional deep learning architectures. Their neurons are dens
       <td> 4K </td>
       <th> MCore </th>
       <td> 1x8 </td>
-      <td> </td>
+      <td> <a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0">26.1.0</a> </td>
       <td>[Ascend]</td>
       <td>[Pass]</td>
     </tr>
@@ -739,12 +739,13 @@ Dense models are traditional deep learning architectures. Their neurons are dens
       <td> 4K </td>
       <th> MCore </th>
       <td> 1x8 </td>
-      <td> </td>
+      <td> <a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0">26.1.0</a> </td>
       <td>[Ascend]</td>
       <td>[Pass]</td>
     </tr>
     <tr>
       <td><a href="https://huggingface.co/Qwen/Qwen3-8B-Base">8B</a></td>
+      <td><a href="../../../../examples/mcore/qwen3">qwen3</a></td>
       <td> 4K </td>
       <th> MCore </th>
       <td> 1x8 </td>
@@ -754,10 +755,11 @@ Dense models are traditional deep learning architectures. Their neurons are dens
     </tr>
     <tr>
       <td><a href="https://huggingface.co/Qwen/Qwen3-14B-Base">14B</a></td>
+      <td rowspan="2"><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/mcore/qwen3">qwen3</a></td>
       <td> 4K </td>
       <th> MCore </th>
       <td> 1x8 </td>
-      <td> </td>
+      <td> <a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0">26.1.0</a> </td>
       <td>[Ascend]</td>
       <td>[Pass]</td>
     </tr>
@@ -766,17 +768,17 @@ Dense models are traditional deep learning architectures. Their neurons are dens
       <td> 4K </td>
       <th> MCore </th>
       <td> 2x8 </td>
-      <td> </td>
+      <td> <a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0">26.1.0</a> </td>
       <td>[Ascend]</td>
       <td>[Pass]</td>
     </tr>
     <tr>
       <td><a href="https://huggingface.co/Qwen/Qwen3-32B">32B</a></td>
-      <td><a href="../../../../examples/fsdp2/qwen3">qwen3</a></td>
+      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/fsdp2/qwen3">qwen3</a></td>
       <td> 4K </td>
       <th> FSDP2 </th>
       <td> 1x16 </td>
-      <td> </td>
+      <td> <a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0">26.1.0</a> </td>
       <td>[Ascend]</td>
       <td>[Test]</td>
     </tr>
@@ -913,7 +915,7 @@ Dense models are traditional deep learning architectures. Their neurons are dens
       <td> 8K </td>
       <th>MCore</th>
       <td>1x8</td>
-      <td> </td>
+      <td> <a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0">26.1.0</a> </td>
       <td>[Ascend]</td>
       <td>[Pass]</td>
     </tr>
@@ -922,7 +924,7 @@ Dense models are traditional deep learning architectures. Their neurons are dens
       <td> 8K </td>
       <th>MCore</th>
       <td>2x8</td>
-      <td> </td>
+      <td> <a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0">26.1.0</a> </td>
       <td>[Ascend]</td>
       <td>[Pass]</td>
     </tr>
@@ -955,7 +957,7 @@ Dense models are traditional deep learning architectures. Their neurons are dens
       <td> 4K </td>
       <th>MCore</th>
       <td> 1x8 </td>
-      <td> </td>
+      <td> <a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0">26.1.0</a> </td>
       <td>[Ascend]</td>
       <td>[Test]</td>
     </tr>
@@ -1006,7 +1008,7 @@ Dense models are traditional deep learning architectures. Their neurons are dens
       <td>[Pass]</td>
     </tr>
     <tr>
-      <td rowspan="2"><a href="https://huggingface.co/deepseek-ai">DeepSeek-R1-Distill-Llama</a></td>
+      <td rowspan="2"><a href="https://huggingface.co/deepseek-ai">DeepSeek-R1-Distill-Llama-</a></td>
       <td><a href="https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Llama-8B">8B</a></td>
       <td rowspan="2"><a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.2.0/examples/mcore/deepseek_r1_distill_llama">deepseek_r1_distill_llama</a></td>
       <td> 8K </td>
@@ -1042,7 +1044,7 @@ Dense models are traditional deep learning architectures. Their neurons are dens
       <td> 4K </td>
       <th> MCore </th>
       <td> 1x8 </td>
-      <td> </td>
+      <td> <a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0">26.1.0</a> </td>
       <td>[Ascend]</td>
       <td>[Test]</td>
     </tr>
@@ -1053,7 +1055,7 @@ Dense models are traditional deep learning architectures. Their neurons are dens
       <td> 2K </td>
       <th> MCore </th>
       <td> 1x8 </td>
-      <td> </td>
+      <td> <a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0">26.1.0</a> </td>
       <td>[Ascend]</td>
       <td>[Test]</td>
     </tr>
@@ -1125,7 +1127,7 @@ Sparse models use a sparse neuron connectivity pattern. Therefore, only a small 
       <td> 16K </td>
       <th> MCore </th>
       <td> 4x16 </td>
-      <td>  </td>
+      <td> <a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0">26.1.0</a> </td>
       <td>[Ascend]</td>
       <td>[Pass]</td>
     </tr>
@@ -1134,7 +1136,7 @@ Sparse models use a sparse neuron connectivity pattern. Therefore, only a small 
       <td> 16K </td>
       <th> FSDP2 </th>
       <td> 4x16 </td>
-      <td>  </td>
+      <td> <a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0">26.1.0</a> </td>
       <td>[Ascend]</td>
       <td>[Test]</td>
     </tr>
@@ -1145,7 +1147,7 @@ Sparse models use a sparse neuron connectivity pattern. Therefore, only a small 
       <td> 16K </td>
       <th>MCore</th>
       <td>4x16</td>
-      <td rowspan="1"> </td>
+      <td rowspan="1"> <a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0">26.1.0</a> </td>
       <td>[Ascend]</td>
       <td>[Test]</td>
     </tr>
@@ -1226,7 +1228,7 @@ Sparse models use a sparse neuron connectivity pattern. Therefore, only a small 
       <td> 8K </td>
       <th>MCore</th>
       <td> 1x8 </td>
-      <td> </td>
+      <td> <a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0">26.1.0</a> </td>
       <td>[Ascend]</td>
       <td>[Pass]</td>
     </tr>
@@ -1292,7 +1294,7 @@ Sparse models use a sparse neuron connectivity pattern. Therefore, only a small 
       <td> 4K </td>
       <th>MCore</th>
       <td> 1x8 </td>
-      <td rowspan="1"></td>
+      <td rowspan="1"> <a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0">26.1.0</a> </td>
       <td>[Ascend]</td>
       <td>[Test]</td>
     </tr>
@@ -1302,7 +1304,7 @@ Sparse models use a sparse neuron connectivity pattern. Therefore, only a small 
       <td> 32K </td>
       <th>MCore</th>
       <td> 32x8 </td>
-      <td rowspan="1"></td>
+      <td rowspan="1"> <a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0">26.1.0</a> </td>
       <td>[Ascend]</td>
       <td>[Test]</td>
     </tr>
@@ -1313,7 +1315,7 @@ Sparse models use a sparse neuron connectivity pattern. Therefore, only a small 
       <td> 4K </td>
       <th> MCore </th>
       <td> 2x8 </td>
-      <td>  </td>
+      <td> <a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0">26.1.0</a> </td>
       <td>[Ascend]</td>
       <td>[Test]</td>
     </tr>
@@ -1340,18 +1342,18 @@ Sparse models use a sparse neuron connectivity pattern. Therefore, only a small 
       <td>[Pass]</td>
     </tr>
     <tr>
-      <td rowspan="1"><a href="https://huggingface.co/zai-org">GLM4.5-Air</a></td>
+      <td rowspan="1"><a href="https://huggingface.co/zai-org">GLM-4.5-Air</a></td>
       <td> <a href="https://huggingface.co/zai-org/GLM-4.5-Air/tree/main">MoE-106B</a> </td>
       <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/mcore/glm45-air">glm45-air</a></td>
       <td> 4K </td>
       <th> MCore </th>
       <td> 8x8 </td>
-      <td>  </td>
+      <td> <a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0">26.1.0</a> </td>
       <td>[Ascend]</td>
       <td>[Test]</td>
     </tr>
     <tr>
-      <td rowspan="1"><a href="https://huggingface.co/zai-org">GLM5</a></td>
+      <td rowspan="1"><a href="https://huggingface.co/zai-org">GLM-5</a></td>
       <td><a href="https://huggingface.co/zai-org/GLM-5">MoE-744B</a></td>
       <td><a href="../../../../examples/mcore/glm5">glm5</a></td>
       <td> 4K </td>
@@ -1362,7 +1364,7 @@ Sparse models use a sparse neuron connectivity pattern. Therefore, only a small 
       <td>[Pass]</td>
     </tr>
     <tr>
-      <td rowspan="1"><a href="https://huggingface.co/zai-org">GLM5.2</a></td>
+      <td rowspan="1"><a href="https://huggingface.co/zai-org">GLM-5.2</a></td>
       <td><a href="https://huggingface.co/zai-org/GLM-5.2">MoE-744B</a></td>
       <td><a href="../../../../examples/mcore/glm52">glm52</a></td>
       <td> 4K </td>
@@ -1379,7 +1381,7 @@ Sparse models use a sparse neuron connectivity pattern. Therefore, only a small 
       <td> 4K </td>
       <th> FSDP2 </th>
       <td> 12x16 </td>
-      <td>  </td>
+      <td> <a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0">26.1.0</a> </td>
       <td>[Ascend]</td>
       <td>[Test]</td>
     </tr>
@@ -1401,7 +1403,7 @@ Sparse models use a sparse neuron connectivity pattern. Therefore, only a small 
       <td> 4K </td>
       <th> FSDP2 </th>
       <td> 1x16 </td>
-      <td>  </td>
+      <td> <a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0">26.1.0</a> </td>
       <td>[Ascend]</td>
       <td>[Test]</td>
     </tr>
@@ -1412,7 +1414,7 @@ Sparse models use a sparse neuron connectivity pattern. Therefore, only a small 
       <td> 4K </td>
       <th> FSDP2 </th>
       <td> 8x16 </td>
-      <td>  </td>
+      <td> <a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0">26.1.0</a> </td>
       <td>[Ascend]</td>
       <td>[Test]</td>
     </tr>
@@ -1420,7 +1422,6 @@ Sparse models use a sparse neuron connectivity pattern. Therefore, only a small 
 </table>
 
 > [!NOTE]
->
 > GPT model vocabulary files differ from those of standard models. Configure them as follows:
 >
 > ```shell
@@ -1500,11 +1501,11 @@ SSMs are sequence models based on state-space representations and can efficientl
     <tr>
       <td rowspan="1">Mamba3</td>
       <td>/</td>
-       <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/fsdp2/mamba3">mamba3</a></td>
+      <td><a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0/examples/fsdp2/mamba3">mamba3</a></td>
       <td> 4K</td>
       <th>MCore</th>
       <td>1x8</td>
-      <td> </td>
+      <td> <a href="https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0">26.1.0</a> </td>
       <td>[Ascend]</td>
       <td>[Test]</td>
     </tr>
@@ -1529,4 +1530,4 @@ SSMs are sequence models based on state-space representations and can efficientl
 
 ## Multimodal Models
 
-Multimodal models, including image-text understanding, text-to-video/image generation, and speech recognition, are maintained separately by MindSpeed MM. If you need to train a multimodal model, visit the multimodal repository [MindSpeed MM](https://gitcode.com/Ascend/MindSpeed-MM) for detailed instructions. For the current supported models by MindSpeed MM, refer to the [MindSpeed MM model support list](https://gitcode.com/Ascend/MindSpeed-MM/blob/26.1.0/docs/en/pytorch/supported_models.md).
+Multimodal models, including image-text understanding, text-to-video/image generation, and speech recognition, are maintained separately by MindSpeed MM. If you need to train a multimodal model, visit the multimodal repository [MindSpeed MM](https://gitcode.com/Ascend/MindSpeed-MM) for detailed instructions. For the current supported models by MindSpeed MM, refer to the [MindSpeed MM model support list](https://gitcode.com/Ascend/MindSpeed-MM#%E9%85%8D%E5%A5%97%E7%89%88%E6%9C%AC%E4%B8%8E%E6%94%AF%E6%8C%81%E6%A8%A1%E5%9E%8B).
