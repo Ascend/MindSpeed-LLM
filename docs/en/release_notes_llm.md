@@ -128,7 +128,7 @@ MindSpeed LLM now supports GLM-5.2 model training and long-sequence training for
   </colgroup>
   <thead>
     <tr>
-      <th rowspan="3">MindSpeed LLM</th>
+      <th rowspan="2">MindSpeed LLM</th>
       <th colspan="5">CANN Version</th>
     </tr>
     <tr>
