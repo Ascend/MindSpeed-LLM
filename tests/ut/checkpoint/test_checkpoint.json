@@ -1,4 +1,11 @@
 {
+    "test_deepseek4_flash_l1_bf16_roundtrip": [
+        {
+            "param": {
+                "load-dir": "/data/ci/models/DeepSeek-V4-Flash/hf/DeepSeek-V4-Flash-L1-BF16"
+            }
+        }
+    ],
     "test_deepseek3_hf2mcore_tp2pp2vpp1ep2nooplayer": [
         {
             "param": {

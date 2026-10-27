@@ -122,10 +122,17 @@ CI门禁用例看护仓库重点模型和基本特性，覆盖冒烟测试场景
         <td></td>
     </tr>
     <tr>
-        <td rowspan="1">Checkpoint</td>
-        <td>hf2mcore, TP, PP, EP, VPP, noop_layers, deepseek3</td>
+        <td rowspan="2">Checkpoint</td>
+        <td>hf2mcore, TP, PP, EP, VPP, noop_layers, deepseek3, deepseek4</td>
         <td><a href="ut/checkpoint/test_checkpoint.py">test_checkpoint.py</a></td>
         <td>Y</td>
+        <td></td>
+        <td></td>
+    </tr>
+    <tr>
+        <td>deepseek4, deepseek4_base, online conversion routing, from_train</td>
+        <td><a href="ut/checkpoint/test_deepseek4_online_conversion.py">test_deepseek4_online_conversion.py</a></td>
+        <td></td>
         <td></td>
         <td></td>
     </tr>

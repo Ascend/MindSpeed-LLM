@@ -47,6 +47,10 @@ from mindspeed_llm.tasks.posttrain.utils import load_checkpoint_loosely
 from mindspeed_llm.tasks.checkpoint.convert_hf2mg import Hf2MgConvert
 from mindspeed_llm.tasks.checkpoint.convert_mg2hf import Mg2HfConvert
 from mindspeed_llm.tasks.checkpoint.convert_ckpt_mamba2 import MambaConverter
+from mindspeed_llm.tasks.checkpoint.convert_ckpt_deepseek4 import (
+    DeepSeek4Hf2MgConvert,
+    DeepSeek4Mg2hfConvert,
+)
 
 try:
     from modelopt.torch.opt.plugins import (
@@ -477,6 +481,8 @@ def _convert_weights_if_needed(args, shared: bool):
             start = time.time()
             if args.model_type_hf == 'mamba2':
                 converter = MambaConverter(args, convert="hf2mg")
+            elif args.model_type_hf in ('deepseek4', 'deepseek4_base'):
+                converter = DeepSeek4Hf2MgConvert(args, from_train=True)
             else:
                 converter = Hf2MgConvert(args, from_train=True)
             converter.run()
@@ -494,6 +500,8 @@ def _convert_weights_if_needed(args, shared: bool):
         start = time.time()
         if args.model_type_hf == 'mamba2':
             converter = MambaConverter(args, convert="hf2mg")
+        elif args.model_type_hf in ('deepseek4', 'deepseek4_base'):
+            converter = DeepSeek4Hf2MgConvert(args, from_train=True)
         else:
             converter = Hf2MgConvert(args, from_train=True)
         converter.run()
@@ -520,6 +528,8 @@ def _convert_weights_mg2hf(args, iteration):
         start = time.time()
         if args.model_type_hf == 'mamba2':
             converter = MambaConverter(args, convert="mg2hf")
+        elif args.model_type_hf in ('deepseek4', 'deepseek4_base'):
+            converter = DeepSeek4Mg2hfConvert(args, from_train=True)
         else:
             converter = Mg2HfConvert(args, from_train=True)
         converter.run()

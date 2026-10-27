@@ -182,6 +182,11 @@ DATA_ARGS="
     --split 100,0,0 \
 "
 
+CKPT_ARGS="
+    --enable-hf2mg-convert \
+    --model-type-hf deepseek4
+"
+
 OUTPUT_ARGS="
     --log-interval 1 \
     --save-interval 50 \
@@ -216,5 +221,6 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS posttrain_gpt.py \
     $DSA_ARGS \
     $CA_ARGS \
     $MEM_ARGS \
+    $CKPT_ARGS \
     $FINETUNE_ARGS \
     --distributed-backend nccl 2>&1 | tee logs/lora_finetune_deepseek4_flash_4k_A3_ptd.log

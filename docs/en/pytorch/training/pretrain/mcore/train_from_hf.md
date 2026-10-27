@@ -182,7 +182,7 @@ bash examples/mcore/qwen3/tune_qwen3_8b_4K_full_ptd.sh \
 
 ## Usage Constraints
 
-- The currently supported Hugging Face model types are: `qwen3`, `qwen3-moe`, `deepseek3`, `glm45-air`, `bailing_mini`, `qwen3-next`, `seed-oss`, `deepseek32`, `magistral`, and `deepseek2-lite`.
+- The currently supported Hugging Face model types are: `qwen3`, `qwen3-moe`, `deepseek3`, `deepseek4`, `deepseek4_base`, `glm45-air`, `bailing_mini`, `qwen3-next`, `seed-oss`, `deepseek32`, `magistral`, and `deepseek2-lite`.
 
 - The current automatic dataset conversion feature supports only the following raw data formats: `parquet`, `arrow`, `csv`, `json`, `jsonl`, and `txt`. Other formats are not supported yet.
 

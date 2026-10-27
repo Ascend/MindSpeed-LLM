@@ -189,6 +189,7 @@ DATA_ARGS="
 
 CKPT_ARGS="
     --enable-hf2mg-convert \
+    --enable-mg2hf-convert \
     --model-type-hf deepseek4
 "
 

@@ -42,8 +42,8 @@ def _is_mtp_ref(x: Any) -> bool:
 
 
 class DeepSeek4Hf2MgConvert(Hf2MgConvert):
-    def __init__(self, args):
-        super().__init__(args)
+    def __init__(self, args, from_train=False):
+        super().__init__(args, from_train=from_train)
 
         self.hf_model_path = self.load_dir
         self.iter_save_dir = self.save_dir
@@ -1039,8 +1039,8 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
 
 
 class DeepSeek4Mg2hfConvert(Mg2HfConvert):
-    def __init__(self, args):
-        super().__init__(args)
+    def __init__(self, args, from_train=False):
+        super().__init__(args, from_train=from_train)
         self.n_hash_layers = getattr(self.load_model, "n_hash_layers", 0)
         self.compress_ratios = getattr(self.load_model, "compress_ratios")
         self.expert_tensor_parallel_size = args.expert_tensor_parallel_size

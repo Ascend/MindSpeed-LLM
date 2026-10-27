@@ -248,7 +248,7 @@ def initialize_megatron_wrapper(fn):
                 )
 
             # Supported model types
-            unsupported_models = ['deepseek3', 'deepseek4', 'longcat']
+            unsupported_models = ['deepseek3', 'longcat']
             if args.model_type_hf in unsupported_models:
                 raise ValueError(
                     f"Current --enable-hf2mg-convert does not support model type '{args.model_type_hf}'. "

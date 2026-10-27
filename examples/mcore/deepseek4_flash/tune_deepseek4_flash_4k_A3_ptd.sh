@@ -192,6 +192,12 @@ DATA_ARGS="
     --split 100,0,0 \
 "
 
+CKPT_ARGS="
+    --enable-hf2mg-convert \
+    --enable-mg2hf-convert \
+    --model-type-hf deepseek4
+"
+
 OUTPUT_ARGS="
     --log-interval 1 \
     --save $CKPT_SAVE_DIR \
@@ -222,4 +228,5 @@ python -m torch.distributed.launch $DISTRIBUTED_ARGS posttrain_gpt.py \
     $MEM_ARGS \
     $MTP_ARGS \
     $FINETUNE_ARGS \
+    $CKPT_ARGS \
     --distributed-backend nccl 2>&1 | tee logs/tune_deepseek4_flash_4k_A3_ptd.log

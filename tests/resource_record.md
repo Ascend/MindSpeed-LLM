@@ -81,6 +81,15 @@
         <th>缓存文件路径</th>
     </tr>
     <tr>
+        <td>test_deepseek4_flash_l1_bf16_roundtrip</td>
+        <td>/data/ci/models/DeepSeek-V4-Flash/hf/DeepSeek-V4-Flash-L1-BF16</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/</td>
+        <td>/</td>
+    </tr>
+    <tr>
         <td>test_deepseek3_hf2mcore_tp2ep8etp1</td>
         <td>/data/ci/models/deepseek3/hf/deepseek3-hf-L2-mtp</td>
         <td>/</td>

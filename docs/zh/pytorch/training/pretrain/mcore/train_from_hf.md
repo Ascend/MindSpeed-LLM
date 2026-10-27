@@ -194,7 +194,7 @@ bash examples/mcore/qwen3/tune_qwen3_8b_4K_full_ptd.sh \
 
 ## 使用约束
 
-- 当前支持的HuggingFace模型类型：`qwen3`、`qwen3-moe`、`deepseek3`、`glm45-air`、`bailing_mini`、`qwen3-next`、`seed-oss`、`deepseek32`、`magistral`以及`deepseek2-lite`。
+- 当前支持的HuggingFace模型类型：`qwen3`、`qwen3-moe`、`deepseek3`、`deepseek4`、`deepseek4_base`、`glm45-air`、`bailing_mini`、`qwen3-next`、`seed-oss`、`deepseek32`、`magistral`以及`deepseek2-lite`。
 
 - 当前数据集自动转换功能仅支持以下原始数据格式：`parquet`、`arrow`、`csv`、`json`、`jsonl`以及`txt`，暂不支持其他的格式。
 
