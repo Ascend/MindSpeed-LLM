@@ -118,13 +118,13 @@ MindSpeed LLM支持基于昇腾芯片采集profiling数据，以提供对模型�
 
 训练结束后，指定路径下将生成profiling文件，命名格式示例：
 
-```shell
+```text
 localhost.localdomain_3687609_20260129150104894_ascend_pt
 ```
 
 该文件的目录结构如下：
 
-```shell
+```text
  localhost.localdomain_3687609_20260129150104894_ascend_pt
     ├─ASCEND_PROFILER_OUTPUT
     ├─logs

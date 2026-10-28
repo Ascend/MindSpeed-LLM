@@ -276,7 +276,7 @@ Dense models are traditional deep learning architectures. Their neurons are dens
       <td>[Pass]</td>
     </tr>
     <tr>
-      <td rowspan="4"><a href="https://huggingface.co/meta-llama">Llama-</a></td>
+      <td rowspan="4"><a href="https://huggingface.co/meta-llama">LLaMA</a></td>
       <td><a href="https://huggingface.co/huggyllama/llama-7b/tree/main">7B</a></td>
       <td rowspan="4"><a href="https://gitcode.com/ascend/MindSpeed-LLM/tree/2.0.0/examples/legacy/llama">llama</a></td>
       <td>2K</td>

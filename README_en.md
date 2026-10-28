@@ -20,7 +20,7 @@
 
 ---
 
-MindSpeed LLM is a distributed large language model training toolkit built on the Ascend ecosystem. It aims to provide ecosystem partners in the Huawei [Ascend chips](https://www.hiascend.com/) ecosystem with an end-to-end large language model training solution, including distributed pretraining, distributed instruction fine-tuning, and the corresponding development toolchain, such as data preprocessing, weight conversion, online inference, and baseline evaluation.
+MindSpeed LLM is a distributed large language model training toolkit built on the Ascend ecosystem. MindSpeed LLM aims to provide ecosystem partners in the Huawei [Ascend chips](https://www.hiascend.com/) ecosystem with an end-to-end large language model training solution, including distributed pretraining, distributed instruction fine-tuning, and the corresponding development toolchain, such as data preprocessing, weight conversion, online inference, and baseline evaluation.
 
 # Latest News
 
@@ -73,7 +73,7 @@ Note: [beta] indicates that the feature has not been fully validated. If you enc
 
 The MindSpeed LLM project code is organized according to modular design principles. For details, see the [Project Guide](./docs/en/project_guide.md).
 
-``` shell
+``` text
 MindSpeed-LLM/
  ├── ci                        # CI watchdog
  ├── configs                   # Configuration files

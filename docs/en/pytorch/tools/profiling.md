@@ -118,13 +118,13 @@ Here are two configuration examples that show common usage scenarios. Add the pr
 
 After training ends, a profiling file is generated in the specified path. Example:
 
-```shell
+```text
 localhost.localdomain_3687609_20260129150104894_ascend_pt
 ```
 
 The directory structure of this file is as follows:
 
-```shell
+```text
  localhost.localdomain_3687609_20260129150104894_ascend_pt
     ├─ASCEND_PROFILER_OUTPUT
     ├─logs

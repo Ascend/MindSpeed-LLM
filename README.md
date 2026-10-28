@@ -73,7 +73,7 @@ MindSpeed LLM：基于昇腾生态的大语言模型分布式训练套件，旨�
 
 MindSpeed LLM 项目代码按照模块化设计原则进行组织，详细介绍参见 [项目导读](./docs/zh/project_guide.md)。
 
-``` shell
+``` text
 MindSpeed-LLM/
  ├── ci                        # 门禁看护
  ├── configs                   # 配置文件目录

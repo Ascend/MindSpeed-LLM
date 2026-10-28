@@ -191,7 +191,7 @@ gpt-oss is integrated into MindSpeed LLM through the custom registry approach. Y
     | Adaptation Point | Description |
     | --- | --- |
     | Model class | `GptOssForCausalLM` must be exported for registration with `ModelRegistry`. |
-    | Attention | If FlashAttention, long-sequence CP, or NPU-fused operators are needed, the corresponding `forward` must be replaced. |
+    | Attention | If Flash Attention, long-sequence CP, or NPU-fused operators are needed, the corresponding `forward` must be replaced. |
     | MLP/Expert | MoE models typically need to adapt expert parallelism, token dispatch, and grouped GEMM. |
     | Norm/RoPE | If fused RMSNorm or fused RoPE is to be used, the corresponding operators must be connected in the model implementation. |
     | Weight names | Keep aligned with the key names in the Hugging Face weight file to avoid missing or unexpected keys during weight loading. |

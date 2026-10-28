@@ -191,7 +191,7 @@ GPT-OSS在MindSpeed LLM中通过自定义注册方式接入。推荐从Transform
     | 适配点 | 说明 |
     | --- | --- |
     | 模型类 | 需要导出`GptOssForCausalLM`，用于注册到`ModelRegistry`。 |
-    | Attention | 如需FlashAttention、长序列CP或NPU融合算子，需要替换对应`forward`。 |
+    | Attention | 如需Flash Attention、长序列CP或NPU融合算子，需要替换对应`forward`。 |
     | MLP/Expert | MoE模型通常需要适配专家并行、token dispatch、grouped GEMM。 |
     | Norm/RoPE | 如果要使用融合RMSNorm、融合RoPE，需要在模型实现中接入对应算子。 |
     | 权重名 | 保持和HuggingFace权重文件中的key对齐，避免加载权重时缺失或unexpected key。 |
