@@ -43,7 +43,7 @@ training:
 
 - `msprobe_config_path`：可选参数，需要覆盖默认rank、step、采集级别或输出路径时可进行自定义配置。
 
-> [!NOTE]
+> [!NOTE] 说明
 >
 > - `msprobe_config_path`参数未配置时，MindSpeed LLM默认使用[`msprobe_config.json`](../../../../mindspeed_llm/tools/msprobe_config.json)。
 > - 自定义配置文件`custom_msprobe_config.json`必须是所有训练进程均可访问的文件。
@@ -91,7 +91,7 @@ training:
 
 - `--msprobe-config-path`：可选参数，需要覆盖默认rank、step、采集级别或输出路径时可进行自定义配置。
 
-  > [!NOTE]
+  > [!NOTE] 说明
   >
   > `--msprobe-config-path`参数未配置时，MindSpeed LLM默认使用[`msprobe_config.json`](../../../../mindspeed_llm/tools/msprobe_config.json)。
 

@@ -71,6 +71,6 @@ This feature is not yet compatible with `--use-ascend-mc2`.
 
 This feature is not yet adapted for MoE models.
 
-The Atlas A2 training series and Atlas A3 training series fully support this feature, while the Ascend 950 series does not support fused operators.
+The Atlas A2 training series and Atlas A3 training series fully support this feature, while the Atlas 950 series does not support fused operators.
 
 HDK supports versions later than 2024 RC2. CANN supports versions later than 2024 RC4.

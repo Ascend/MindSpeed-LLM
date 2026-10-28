@@ -16,7 +16,7 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
 | **贡献方** | 模型贡献来源。|
 | **认证** | `【Pass】` 已通过官方测试；`【Test】` 内部测试中，如有问题请反馈至 [issues](https://gitcode.com/ascend/MindSpeed-LLM/issues) |
 
-> [!NOTE]
+> [!NOTE] 说明
 >
 > - MindSpeed LLM支持<term>Ascend 950PR&950DT系列产品</term>、<term>Atlas A3训练系列产品</term>和<term>Atlas A2训练系列产品</term>，可通过[硬件信息查询](https://www.hiascend.com/cann/download)获取。并且要求单NPU的片上内存为64GB及以上，[安装驱动固件](../training/install_guide.md)后可通过npu-smi info查看单NPU的片上内存容量。
 > - 提供[模型训练示例脚本](../../../../examples)，训练脚本命名为`pretrain_模型名_参数_文本序列长度_训练方案_训练产品.sh`，微调脚本命名为`tune_模型名_参数_文本序列长度_训练方案_训练产品.sh`。
@@ -1430,7 +1430,7 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
   </tbody>
 </table>
 
-> [!NOTE]
+> [!NOTE] 说明
 > GPT模型词表文件与常规模型不同，需按以下步骤配置：
 >
 > ```shell
@@ -1521,7 +1521,7 @@ PyTorch框架根据模型架构特点分为稠密模型、稀疏模型和状态�
   </tbody>
 </table>
 
-> [!NOTE]
+> [!NOTE] 说明
 >
 > Mamba2系列开源模型未提供词表文件。内部测试使用的词表文件 `mamba2_2.7b_from_8b.model` 为自定义设计，建议用户自行构建词表，训练效果不做保证。
 >

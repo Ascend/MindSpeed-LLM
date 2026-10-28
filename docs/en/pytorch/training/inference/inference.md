@@ -55,7 +55,7 @@
 
     - `TOKENIZER_MODEL`: Specifies the tokenizer file path for the model, for example `tokenizer.model`.
 
-    > [!NOTE]
+    > [!NOTE] Note
     >
     > Apart from the path configuration, all other parameters in the inference script must match the training parameters, including the parallel partition settings for TP, PP, EP, and VPP, and custom model structure parameters such as `--noop-layers` and `--num-layer-list`. Otherwise, the model weights may fail to load.
 

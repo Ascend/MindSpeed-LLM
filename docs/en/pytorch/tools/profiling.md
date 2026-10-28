@@ -118,13 +118,13 @@ Here are two configuration examples that show common usage scenarios. Add the pr
 
 After training ends, a profiling file is generated in the specified path. Example:
 
-```shell
+```text
 localhost.localdomain_3687609_20260129150104894_ascend_pt
 ```
 
 The directory structure of this file is as follows:
 
-```shell
+```text
  localhost.localdomain_3687609_20260129150104894_ascend_pt
     ├─ASCEND_PROFILER_OUTPUT
     ├─logs
@@ -139,7 +139,7 @@ The directory structure of this file is as follows:
 
 ## Visual Performance Analysis
 
-Using the MindStudio Insight tool as an example, refer to the [MindStudio Insight installation guide](https://gitcode.com/Ascend/msinsight/blob/26.1.0/docs/en/install_guide/mindstudio_insight_install_guide.md) to deploy the tool, then import the generated profiling file into the tool for performance breakdown analysis.
+Using the MindStudio Insight tool as an example, refer to the [MindStudio Insight installation guide](https://gitcode.com/Ascend/msinsight/blob/master/docs/en/install_guide/mindstudio_insight_install_guide.md) to deploy the tool, then import the generated profiling file into the tool for performance breakdown analysis.
 
 The following briefly introduces the main interfaces of MindStudio Insight:
 
@@ -161,7 +161,7 @@ The following briefly introduces the main interfaces of MindStudio Insight:
 
     ![Operator](../figures/profiling/operator.png)
 
-> [!NOTE]
+> [!NOTE] Note
 >
-> - If you want to learn more about how to use the tool, refer to the [MindStudio Insight system tuning](https://gitcode.com/Ascend/msinsight/blob/26.1.0/docs/en/user_guide/system_tuning.md#usage-description) section in the official MindStudio Insight documentation.
-> - If you need a more customized profiling collection method, refer to the ["Performance Data Collection and Automatic Parsing"](https://www.hiascend.com/document/detail/en/CANNCommunityEdition/910/devaids/Profiling/atlasprofiling_16_0033.html) section in the *CANN Performance Tuning Tool User Guide* to customize data collection and analysis by modifying the collection code.
+> - If you want to learn more about how to use the tool, refer to the [MindStudio Insight system tuning](https://gitcode.com/Ascend/msinsight/blob/master/docs/en/user_guide/system_tuning.md#usage-description) section in the official MindStudio Insight documentation.
+> - If you need a more customized profiling collection method, refer to the ["Performance Data Collection and Automatic Parsing"](https://www.hiascend.com/document/detail/en/CANNCommunityEdition/920/devaids/Profiling/atlasprofiling_16_0033.html) section in the *CANN Performance Tuning Tool User Guide* to customize data collection and analysis by modifying the collection code.

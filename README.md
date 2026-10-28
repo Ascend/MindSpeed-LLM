@@ -73,7 +73,7 @@ MindSpeed LLM：基于昇腾生态的大语言模型分布式训练套件，旨�
 
 MindSpeed LLM 项目代码按照模块化设计原则进行组织，详细介绍参见 [项目导读](./docs/zh/project_guide.md)。
 
-``` shell
+``` text
 MindSpeed-LLM/
  ├── ci                        # 门禁看护
  ├── configs                   # 配置文件目录
@@ -124,7 +124,7 @@ MindSpeed-LLM/
 
 ---
 
-- 详细的安装步骤和环境配置请参考[MindSpeed LLM软件安装（基于PyTorch）](./docs/zh/pytorch/training/install_guide.md)。
+- 详细的安装步骤和环境配置请参考[MindSpeed LLM软件安装](./docs/zh/pytorch/training/install_guide.md)。
 
 # 快速上手
 
@@ -184,7 +184,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案，具体�
   </tbody>
 </table>
 
-> [!NOTE]
+> [!NOTE] 说明
 >
 > 文档表格中的“Released”代表商用版本已发布，“✅”代表支持，“❌”代表不支持。
 
@@ -500,13 +500,6 @@ MindSpeed LLM仓库基本使用过程中常见问题可以参考[MindSpeed LLM F
 ---
 
 MindSpeed LLM由华为公司的下列部门以及昇腾生态合作伙伴联合贡献 ：
-
-华为公司：
-
-- 计算产品线：Ascend
-- 公共开发部：NAIE
-- 全球技术服务部：GTS
-- 华为云计算：Cloud
 
 生态合作伙伴：
 

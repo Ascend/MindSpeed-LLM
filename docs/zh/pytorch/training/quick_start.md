@@ -15,7 +15,7 @@
 - 具备初级的Python开发经验
 - 对[Megatron-LM](https://github.com/NVIDIA/Megatron-LM)有基本的了解
 
-> [!NOTE]
+> [!NOTE] 说明
 >
 > MindSpeed LLM支持<term>Ascend 950PR&950DT系列产品</term>、<term>Atlas A3训练系列产品</term>和<term>Atlas A2训练系列产品</term>，且要求单NPU的片上内存为64GB及以上，详见[模型支持列表](../models/supported_models.md)。
 >
@@ -162,7 +162,7 @@
     |`--untie-embeddings-and-output-weights`|根据原模型要求将output层和embedding层的权重解耦|
     |`--bf16`|昇腾芯片对bf16精度支持良好，可显著提升训练速度|
 
-> [!NOTE]
+> [!NOTE] 说明
 >
 > - 多机训练需在多个终端同时启动预训练脚本（每个终端的预训练脚本只有NODE_RANK参数不同，MASTER_ADDR均为主节点的IP地址，其他参数均相同）。
 > - 如果使用多机训练，且多节点间未配置NFS等共享存储，必须在训练启动脚本中增加`--no-shared-storage`参数。开启此参数之后，非主节点将自动在本地生成并缓存数据预处理结果，以避免跨节点读取数据时报错。

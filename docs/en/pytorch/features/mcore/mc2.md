@@ -19,7 +19,7 @@ Ascend developed the MC2 solution for Matmul computations and communication oper
 
 MC2 uses operator fusion to combine Matmul computation and collective communication operations. It splits large computation and communication tasks into smaller computation subtasks and communication subtasks. It then uses a pipeline so that communication subtasks and computation subtasks can overlap, which reduces waiting and idle time and improves utilization.
 
-## Approach
+### Approach
 
 On the Python script side, MC2 fuses the original sequential Matmul and All-Gather/Reduce-Scatter operations through the MC2 operator interface.
 
@@ -43,4 +43,4 @@ In training scenarios that enable TP and SP, MC2 can reduce memory overhead and 
 
 1. In MCore scenarios with `--use-mcore-models` enabled, the MLP part of MoE models does not enable MC2.
 
-2. The Ascend 950 products does not yet support this feature.
+2. The Ascend 950PR&950DT products do not yet support this feature.

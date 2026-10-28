@@ -66,7 +66,7 @@ cd ../../
 
 - ModelScope下载指南：<https://modelscope.cn/docs/models/download>
 
-> [!NOTE]
+> [!NOTE] 说明
 >
 > 如果出现下载速度太慢或者无法访问下载的情况，请配置可用的代理或国内镜像源重试。
 
@@ -84,7 +84,7 @@ cd ../../
 
 权重转换实现了HuggingFace权重到Megatron-Mcore格式的转换，支持多种并行策略（如张量并行、流水并行等），确保转换后可以在MindSpeed LLM框架下继续训练和推理。
 
-> [!NOTE]
+> [!NOTE] 说明
 >
 > 在做权重转换前，请先确认训练时的参数配置，根据您的训练配置修改仓上的权重转换脚本（因为这些配置会改变权重的结构，如果与训练的参数不一致的话，会导致训练无法加载权重），需要确认的训练配置见[表 1](#table1)。
 
@@ -148,7 +148,7 @@ MindSpeed LLM提供预置的模型权重转换脚本。以下列出HuggingFace�
 bash examples/mcore/qwen3_moe/ckpt_convert_qwen3_moe_235b_hf2mcore.sh
 ```
 
-> [!NOTE]
+> [!NOTE] 说明
 >
 > 需在权重转换脚本中配置并行参数、权重词表路径、权重加载路径（包括词表等配置文件）以及权重保存的路径。
 
@@ -193,7 +193,7 @@ MindSpeed LLM提供预置的模型权重转换脚本。以下列出Megatron-Mcor
 bash examples/mcore/qwen3_moe/ckpt_convert_qwen3_moe_235b_mcore2hf.sh
 ```
 
-> [!NOTE]
+> [!NOTE] 说明
 >
 > 需在权重转换脚本中配置并行参数、权重词表路径、权重加载路径（包括词表等配置文件）以及权重保存的路径。
 

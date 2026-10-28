@@ -11,7 +11,7 @@ MindSpeed LLM builds on the distributed checkpoint semantics of Megatron and pro
 
 ### Feature Overview
 
-#### Core Capability
+\[Core Capability\]
 
 This feature provides asynchronous saving for `torch_dist` checkpoints:
 
@@ -19,7 +19,7 @@ This feature provides asynchronous saving for `torch_dist` checkpoints:
 - Sharded writes run in the background.
 - Training can continue, which reduces checkpoint-related pauses.
 
-#### Saving Format and Saving Mode
+\[Saving Format and Saving Mode\]
 
 Currently, checkpoints support only `torch` and `torch_dist`.
 Only the `torch_dist` format supports asynchronous saving. The `torch` format supports only synchronous saving, which blocks the main training flow. The `torch_dist` format also supports synchronous saving.
@@ -30,7 +30,7 @@ Therefore, the `torch_dist` format supports two save modes:
 
 Asynchronous saving increases CPU usage. For LLMs and frequent saves, synchronous saving is recommended.
 
-#### Asynchronous Saving Flow
+\[Asynchronous Saving Flow\]
 
 After you enable `--async-save`:
 
@@ -40,15 +40,14 @@ After you enable `--async-save`:
 
 ## Usage Constraints
 
-### Asynchronous Saving Format Constraints
+\[Asynchronous Saving Format Constraints\]
 
 - `--async-save` supports only checkpoints whose final format is `torch_dist`.
 - If the format is legacy `torch` or any other distributed format, the unsupported-mode check triggers.
 
-### Usage Scenario Constraints
-
+\[Usage Scenario Constraints\]
 This feature applies only to pretraining:
 
 - It supports asynchronously saving weights in `torch_dist` format.
 - You can use the saved weights directly for inference, or load them and continue pretraining.
-- It does not yet support LoRA, fine-tuning, SFT, DPO, or other downstream tasks.
+- It does not yet support LoRA, fine-tuning, SFT, or other downstream tasks.

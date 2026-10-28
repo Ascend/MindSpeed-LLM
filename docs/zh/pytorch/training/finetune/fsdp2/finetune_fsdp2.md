@@ -4,9 +4,9 @@
 
 监督微调（Supervised Fine-Tuning，SFT）通过高质量的指令和回复数据继续训练预训练模型，使模型学习特定任务、领域知识或对话方式。该方法适用于问答、文本生成、摘要、翻译、代码生成和领域适配等场景。
 
-> [!NOTE]
+> [!NOTE] 说明
 >
-> 若您是首次使用 FSDP2 后端，建议先按 [FSDP2 快速入门](../../fsdp2_quick_start.md)（Qwen3-8B 预训练与微调）完成一次端到端跟练。本文档侧重全参数微调的模型、数据集、YAML 配置与参数说明，适用于更换模型或自定义数据集场景。
+> 若您是首次使用 FSDP2 后端，建议先按 [MindSpeed LLM快速入门（基于FSDP2训练后端）](../../fsdp2_quick_start.md)（Qwen3-8B 预训练与微调）完成一次端到端跟练。本文档侧重全参数微调的模型、数据集、YAML 配置与参数说明，适用于更换模型或自定义数据集场景。
 
 本文介绍如何基于 HuggingFace 格式的预训练模型，使用 MindSpeed LLM FSDP2 后端完成全参数微调。示例采用 Qwen3-8B 模型和单台 `Atlas 900 A2 PoD`（1x8 集群），主要流程如下：
 
@@ -273,7 +273,7 @@ torchrun $DISTRIBUTED_ARGS train_fsdp2.py \
   --training.output_dir ./output
 ```
 
-> [!NOTE]
+> [!NOTE] 说明
 >
 > - 本示例中 `fsdp_size` 应与 `NPUS_PER_NODE * NNODES` 保持一致。
 > - 多机训练时，请确保各节点均能正确访问模型和数据集路径。
@@ -291,7 +291,7 @@ bash examples/fsdp2/qwen3/tune_qwen3_8b_4k_fsdp2_A2.sh
 
 执行一段时间后，可在终端看到如下日志：
 
-```shell
+```text
 INFO [2026-06-22 19:25:37] >>  iteration        1/    2000 | consumed samples:          8 | consumed tokens:        564 | elapsed time per iteration (ms): 7827.39 | learning rate: 1.666667E-07 | global batch size:     8 | lm loss: 3.316887E+00 | grad norm: 70.959 | max_memory_allocated(GB): 19.07 | max_memory_reserved(GB): 20.90 |
 INFO [2026-06-22 19:25:38] >>  iteration        2/    2000 | consumed samples:         16 | consumed tokens:       1357 | elapsed time per iteration (ms): 1331.74 | learning rate: 3.333333E-07 | global batch size:     8 | lm loss: 2.443476E+00 | grad norm: 41.986 | max_memory_allocated(GB): 19.07 | max_memory_reserved(GB): 22.43 |
 INFO [2026-06-22 19:25:38] >>  iteration        3/    2000 | consumed samples:         24 | consumed tokens:       2113 | elapsed time per iteration (ms): 981.08 | learning rate: 5.000000E-07 | global batch size:     8 | lm loss: 2.669216E+00 | grad norm: 45.335 | max_memory_allocated(GB): 19.07 | max_memory_reserved(GB): 22.43 |

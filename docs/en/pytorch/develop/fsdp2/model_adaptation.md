@@ -13,7 +13,7 @@ gpt-oss in MindSpeed LLM uses the second path: first, migrate the model file fro
 
 ## Obtaining Weights and Datasets
 
-The following commands use `gpt-oss-20b` and Alpaca parquet data as examples. Adjust the model and data directories according to your actual machine disk paths.
+The following commands use `gpt-oss-20b` and Alpaca parquet data as examples. Adjust the model and data directories according to your actual machine drive paths.
 
 ### Downloading gpt-oss Weights
 
@@ -137,7 +137,7 @@ If the current `transformers` version already supports the target model, such as
 
 2. Reuse the task YAML for startup.
 
-    Native Transformers adaptation does not require adding new model source code. After preparing the weights, dataset, and `config.json`, you can reuse the task scripts and YAML configuration from [Configuring Task Scripts and YAML Files](#configuring-task-scripts-and-yaml-files) to start training. For the existing gpt-oss configuration structure in MindSpeed LLM, refer to `examples/fsdp2/gpt_oss/pretrain_gpt_oss_20b_4k_fsdp2_A3.yaml`. If you use the Native Transformers path, focus on adjusting `model.model_name_or_path`, the data path, parallelism settings, and training parameters.
+    Native Transformers adaptation does not require adding new model source code. After preparing the weights, dataset, and `config.json`, you can reuse the task scripts and YAML configuration from [Configuring Task Scripts and YAML Files](#configuring-task-scripts-and-yaml-files) to start training. For the existing gpt-oss configuration structure in MindSpeed LLM, refer to [pretrain_gpt_oss_20b_4k_fsdp2_A3.yaml](../../../../../tests/poc/gpt_oss/pretrain_gpt_oss_20b_4k_fsdp2_A3.yaml). If you use the Native Transformers path, focus on adjusting `model.model_name_or_path`, the data path, parallelism settings, and training parameters.
 
     If you later want to use NPU-fused operators, expert parallelism customization, or replace the MoE computation logic of gpt-oss, refer to [Path 2: Custom Registry Adaptation for gpt-oss](#path-2-custom-registry-adaptation-for-gpt-oss).
 
@@ -191,7 +191,7 @@ gpt-oss is integrated into MindSpeed LLM through the custom registry approach. Y
     | Adaptation Point | Description |
     | --- | --- |
     | Model class | `GptOssForCausalLM` must be exported for registration with `ModelRegistry`. |
-    | Attention | If FlashAttention, long-sequence CP, or NPU-fused operators are needed, the corresponding `forward` must be replaced. |
+    | Attention | If Flash Attention, long-sequence CP, or NPU-fused operators are needed, the corresponding `forward` must be replaced. |
     | MLP/Expert | MoE models typically need to adapt expert parallelism, token dispatch, and grouped GEMM. |
     | Norm/RoPE | If fused RMSNorm or fused RoPE is to be used, the corresponding operators must be connected in the model implementation. |
     | Weight names | Keep aligned with the key names in the Hugging Face weight file to avoid missing or unexpected keys during weight loading. |
@@ -244,28 +244,29 @@ gpt-oss is integrated into MindSpeed LLM through the custom registry approach. Y
 MindSpeed LLM has already provided an FSDP2 pretraining example for gpt-oss:
 
 ```text
-examples/fsdp2/gpt_oss/
+tests/poc/gpt_oss/
 ├── pretrain_gpt_oss_20b_4k_fsdp2_A3.sh
 └── pretrain_gpt_oss_20b_4k_fsdp2_A3.yaml
 ```
 
 ### Modifying the Pretraining YAML File
 
-Modify the model and data paths in the configuration file `examples/fsdp2/gpt_oss/pretrain_gpt_oss_20b_4k_fsdp2_A3.yaml`:
+Modify the model and data paths in the configuration file [pretrain_gpt_oss_20b_4k_fsdp2_A3.yaml](../../../../../tests/poc/gpt_oss/pretrain_gpt_oss_20b_4k_fsdp2_A3.yaml):
 
-The example below uses "Path 2: Custom Registry Adaptation". Therefore, `model.model_id: gpt_oss` must be configured. If "Path 1: Native Transformers Adaptation" is used, do not configure `model_id`. The framework will load the model automatically via `AutoModelForCausalLM` based on `config.json`.
+The example below uses "Path 2: Custom Registry Adaptation for gpt-oss". Therefore, `model.model_id: gpt_oss` must be configured. If "Path 1: Native Transformers Adaptation" is used, do not configure `model_id`. The framework will load the model automatically via `AutoModelForCausalLM` based on `config.json`.
+
+> [!NOTE] Note
+>
+> Before starting training, we recommend verifying the pipeline with smaller `max_steps` and `max_samples` values first, then scaling up the training.
 
 ```yaml
 model:
   model_id: gpt_oss                               # Enable the gpt-oss custom implementation registered in ModelRegistry
-  model_name_or_path: /home/data/gpt-oss-20b-hf/  # Hugging Face weight directory
   trust_remote_code: false                        # Usually set to false when a local model implementation already exists
   train_from_scratch: false                       # false means load existing weights
   tokenizer_name_or_path: null                    # Tokenizer path; null means model_name_or_path is used by default
 
 data:
-  dataset:
-    file_name: /home/data/alpaca/train-00000-of-00001-a09b74b3ef9c3b56.parquet  # Raw parquet data path
   template: gpt                              # Data template; the gpt-oss example uses gpt
   cutoff_len: 4096                           # Maximum token length per sample
   max_samples: 100000                        # Maximum number of samples to read; can be reduced for debugging
@@ -274,16 +275,12 @@ data:
   data_manager_type: mg                      # The pretraining example uses mg data management
 
 parallel:
-  fsdp_size: 16                              # FSDP sharding size, usually matching the number of training cards
   fsdp_modules:
     - model.layers.{*}                       # Transformer layers wrapped by FSDP per layer
     - model.embed_tokens                     # Embedding layer participates in FSDP
     - lm_head                                # Output head participates in FSDP
-  tp_size: 1                                 # Tensor parallelism size
-  ep_size: 4                                 # Expert parallelism size
   ep_modules:
     - model.layers.{*}.mlp.experts           # Expert module path for expert parallelism
-  ep_fsdp_size: 4                            # FSDP sharding size within the expert module
   ep_fsdp_modules:
     - model.layers.{*}.mlp.experts           # FSDP wrapping path within the expert module
   ep_dispatcher: eager                       # Expert token dispatch method
@@ -295,12 +292,9 @@ parallel:
 
 training:
   stage: pt                                  # Training stage; pt stands for pretraining
-  per_device_train_batch_size: 1             # Per-device batch size
-  gradient_accumulation_steps: 1             # Gradient accumulation steps
   dataloader_num_workers: 1                  # Number of dataloader workers
   disable_shuffling: 1                       # Whether to disable data shuffling
   seed: 42                                   # Random seed
-  output_dir: ./output                       # Checkpoint and output directory
   optimizer: adamw                           # Optimizer type
   lr: 1.25e-06                               # Learning rate
   weight_decay: 0.0                          # Weight decay
@@ -309,11 +303,6 @@ training:
   max_steps: 2000                            # Maximum training steps
   save_steps: 500                            # Checkpoint saving interval
   logging_steps: 1                           # Log printing interval
-
-optimization:
-  use_fused_rmsnorm: true                    # Use fused RMSNorm
-  moe_grouped_gemm: true                     # Use grouped GEMM expert computation path
-  use_fused_rotary_pos_emb: true             # Use fused RoPE
 ```
 
 Common parameter options:
@@ -321,18 +310,19 @@ Common parameter options:
 | Configuration | Common Values | Description |
 | --- | --- | --- |
 | `model.model_id` | `gpt_oss`, `qwen3`, `qwen3_moe`, `qwen3_next`, `step35`, `mamba3`, `minimax_m27` | Specifies the custom registered model. Only needed for Path 2. Do not configure this item when using Path 1 Native Transformers Adaptation. |
-| `model.model_name_or_path` | Local Hugging Face weight directory | Required. Points to the directory containing `config.json`, tokenizer, and weight files. |
-| `model.trust_remote_code` | `true`/`false` | Set to `true` when the model depends on custom code on the Hub; usually `false` when using the built-in model implementation in MindSpeed LLM. |
+| `model.model_name_or_path` | Local Hugging Face weight directory | Required. Points to the directory containing `config.json`, tokenizer, and weight files. It is already configured in the CLI parameters. |
+| `model.trust_remote_code` | `true`/`false` | Set to `true` when the model depends on custom code on the Hub, and usually `false` when using the built-in model implementation in MindSpeed LLM. |
 | `model.train_from_scratch` | `true`/`false` | `true` means random initialization based on config. `false` means load existing weights. |
 | `model.tokenizer_name_or_path` | `null` or tokenizer directory | `null` means `model_name_or_path` is used by default. |
-| `data.dataset.file_name` | Local parquet, json, or jsonl path | Raw data path. The example uses Alpaca parquet. |
+| `data.dataset` | JSON string or dataset name | Raw data path (for example, `{"file_name": "..."}`) or the dataset name registered in `dataset_info.json`. |
 | `data.template` | `gpt`, and so on | Specifies the sample concatenation template. The gpt-oss example uses `gpt`. |
-| `data.data_manager_type` | `mg`/`lf` | `mg` for Megatron-style pretraining data; `lf` for LlamaFactory-style SFT data. |
+| `data.data_manager_type` | `mg`/`lf` | `mg` for Megatron-style pretraining data, and `lf` for LlamaFactory-style SFT data. |
 | `training.stage` | `pt`/`sft` | `pt` stands for pretraining. `sft` stands for supervised fine-tuning. |
 | `parallel.fsdp_size` | Positive integer | FSDP sharding size, usually must match the actual number of training devices, `ep_size`, and other parallelism settings. |
 | `parallel.fsdp_modules` | List of module paths | Modules wrapped by FSDP. Common patterns are `model.layers.{*}`, `model.embed_tokens`, `lm_head`. |
 | `parallel.tp_size` | Positive integer | Tensor parallelism size. Set to `1` when TP is not used. |
 | `parallel.ep_size` | Positive integer | Expert parallelism size, configured for MoE models based on the number of experts and devices. |
+| `parallel.ep_fsdp_size` | Positive integer | FSDP parallelism size for expert parameters. It must match `fsdp_size`, `ep_size`, and the actual number of training devices. |
 | `parallel.ep_modules` | List of module paths | Expert module paths for expert parallelism. For gpt-oss, it is `model.layers.{*}.mlp.experts`. |
 | `parallel.ep_dispatcher` | `eager`/`fused`/`mc2` | Expert token dispatch method. `fused` triggers the fused expert path. |
 | `parallel.recompute` | `true`/`false` | Whether to enable recomputation to save memory. |
@@ -346,7 +336,7 @@ Common parameter options:
 
 ### Modifying the Startup Script
 
-Verify that the machine configuration in the pretraining script `examples/fsdp2/gpt_oss/pretrain_gpt_oss_20b_4k_fsdp2_A3.sh` matches the actual environment:
+Verify that the machine configuration in the pretraining script [pretrain_gpt_oss_20b_4k_fsdp2_A3.sh](../../../../../tests/poc/gpt_oss/pretrain_gpt_oss_20b_4k_fsdp2_A3.sh) matches the actual environment:
 
 ```bash
 NPUS_PER_NODE=16
@@ -366,13 +356,18 @@ TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 mkdir -p logs
 
 torchrun $DISTRIBUTED_ARGS train_fsdp2.py \
-  examples/fsdp2/gpt_oss/pretrain_gpt_oss_20b_4k_fsdp2_A3.yaml \
+  tests/poc/gpt_oss/pretrain_gpt_oss_20b_4k_fsdp2_A3.yaml \
   --model.model_name_or_path /home/data/gpt-oss-20b-hf/ \
-  --data.dataset.file_name /home/data/alpaca/train-00000-of-00001-a09b74b3ef9c3b56.parquet \
+  --data.dataset '{"file_name": "/home/data/alpaca/train-00000-of-00001-a09b74b3ef9c3b56.parquet"}' \
   --parallel.fsdp_size 16 \
   --parallel.ep_size 4 \
   --parallel.ep_fsdp_size 4 \
+  --training.per_device_train_batch_size 1 \
+  --training.gradient_accumulation_steps 1 \
   --training.output_dir ./output/gpt_oss_20b \
+  --optimization.use_fused_rmsnorm True \
+  --optimization.moe_grouped_gemm True \
+  --optimization.use_fused_rotary_pos_emb True \
   --training.max_steps 2000 \
   | tee logs/pretrain_gpt_oss_20b_4k_${TIMESTAMP}.log
 ```
@@ -381,30 +376,35 @@ If using "Path 2: Custom Registry Adaptation", you can keep `model.model_id: gpt
 
 ## Starting gpt-oss Training
 
-The FSDP2 example script first loads the common environment variables:
-
-```bash
-source examples/fsdp2/env_config.sh
-```
-
-This sets:
-
-```bash
-export TRAINING_BACKEND=mindspeed_fsdp
-export PYTHONPATH=$PYTHONPATH:$(pwd)
-```
-
-If your Ascend environment requires manually loading the toolkit, execute the following before launching:
+If the Ascend environment requires manually loading the toolkit, run the following command before startup:
 
 ```bash
 source /usr/local/Ascend/ascend-toolkit/set_env.sh
 ```
 
-Start single-node 16-device pretraining:
+The preceding command uses the default installation path as the root user. Replace it with the actual path to `set_env.sh`.
+
+To start single-node 16-device pretraining, run the following command in the root directory of MindSpeed LLM:
 
 ```bash
-bash examples/fsdp2/gpt_oss/pretrain_gpt_oss_20b_4k_fsdp2_A3.sh
+bash tests/poc/gpt_oss/pretrain_gpt_oss_20b_4k_fsdp2_A3.sh
 ```
+
+> [!NOTE] Note
+>
+> The FSDP2 example script first loads the common environment variables:
+>
+> ```bash
+> source examples/fsdp2/env_config.sh
+> ```
+>
+> This sets:
+>
+> ```bash
+> export TRAINING_BACKEND=mindspeed_fsdp
+> export PYTHONPATH=$PYTHONPATH:$(pwd)
+> ```
+>
 
 The script is equivalent to executing:
 
@@ -416,7 +416,7 @@ torchrun \
   --master_addr localhost \
   --master_port 6499 \
   train_fsdp2.py \
-  examples/fsdp2/gpt_oss/pretrain_gpt_oss_20b_4k_fsdp2_A3.yaml
+  tests/poc/gpt_oss/pretrain_gpt_oss_20b_4k_fsdp2_A3.yaml
 ```
 
 The logs will be written to `logs/pretrain_gpt_oss_20b_4k_<timestamp>.log`.
@@ -428,19 +428,18 @@ After completing the gpt-oss adaptation, you are advised to check in the followi
 1. `GptOssForCausalLM` exists in `mindspeed_llm/fsdp2/models/gpt_oss/modeling_gpt_oss.py`.
 2. `mindspeed_llm/fsdp2/models/model_registry.py` has imported `GptOssForCausalLM` and added `"gpt_oss"` to `_REGISTRY`.
 3. The `ModelArguments.model_id` enumeration in `mindspeed_llm/fsdp2/utils/arguments.py` includes `"gpt_oss"`.
-4. When using "Path 2: Custom Registry Adaptation", explicitly set `model.model_id: gpt_oss` in the YAML. When using "Path 1: Native Transformers Adaptation", do not configure `model_id`.
+4. When using "Path 2: Custom Registry Adaptation for gpt-oss", explicitly set `model.model_id: gpt_oss` in the YAML. When using "Path 1: Native Transformers Adaptation", do not configure `model_id`.
 5. The `model.model_name_or_path` in the YAML file points to the local Hugging Face weight directory.
 6. For MoE models, correctly configure `parallel.ep_modules`, `parallel.ep_size`, and `parallel.ep_fsdp_modules`.
 7. When using fused operators, confirm that the switches in `optimization` are consistent with the model code path. For example, `moe_grouped_gemm: true` triggers `GptOssFusedExperts`.
-8. Before launching, first verify the pipeline with smaller `max_steps` and `max_samples`, then scale up the training.
 
 ## Frequently Asked Questions
 
-- How to choose between native Transformers adaptation and custom registry adaptation?
+- How to choose between native Transformers adaptation and custom registry adaptation
 
   If you only need to verify the training pipeline and do not need to modify the gpt-oss model source code, use Native Transformers Adaptation. If you need NPU-fused operators, expert parallelism customization, or modification of the MoE computation logic, use Custom Registry Adaptation.
 
-- Why is the model not found after setting `model_id: gpt_oss`?
+- Why is the model not found after setting `model_id: gpt_oss`
 
   There are usually three reasons:
 
@@ -448,11 +447,11 @@ After completing the gpt-oss adaptation, you are advised to check in the followi
   2. `"gpt_oss"` is not included in the `Literal[...]` in `mindspeed_llm/fsdp2/utils/arguments.py`, causing the parameter parsing stage to fail.
   3. The `model_id` in the YAML does not exactly match the key in `_REGISTRY`.
 
-- How to handle missing key or unexpected key errors during weight loading?
+- How to handle missing key or unexpected key errors during weight loading
 
   First check whether the parameter names in `mindspeed_llm/fsdp2/models/gpt_oss/modeling_gpt_oss.py` are consistent with the Hugging Face weights. When developing further from the native `modeling_gpt_oss.py`, you are advised to keep the module hierarchy and parameter names stable, and only replace the computation logic inside the modules that need optimization.
 
-- How to configure the expert parallelism module for gpt-oss?
+- How to configure the expert parallelism module for gpt-oss
 
   The example YAML uses:
 

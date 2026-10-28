@@ -9,9 +9,9 @@ Using Qwen3-8B as an example, this document guides you through the pretraining a
 - Prepare weights and datasets: Download the Qwen3-8B open-source model weights from Hugging Face and obtain the Alpaca dataset.
 - Start training tasks: Run pretraining and fine-tuning on Ascend NPUs.
 
-> [!NOTE]
+> [!NOTE] Note
 >
-> MindSpeed LLM supports <term>Ascend 950 products</term>, <term>Atlas A3 training products</term>, and <term>Atlas A2 training products</term>. Single-NPU on-chip memory of 64 GB or more is required. For details, see [Supported Models in the PyTorch Framework](../models/supported_models.md).
+> MindSpeed LLM supports <term>Atlas 950 products</term>, <term>Atlas A3 training products</term>, and <term>Atlas A2 training products</term>. Single-NPU on-chip memory of 64 GB or more is required. For details, see [Supported Models in the PyTorch Framework](../models/supported_models.md).
 >
 > The current Qwen3-8B example script uses `NPUS_PER_NODE=8`, which requires 8 NPUs. If your actual configuration is lower than this, you may encounter OOM (Out of Memory) issues.
 
@@ -162,7 +162,7 @@ At this stage, we modify the pretraining example script and launch model pretrai
     | `--untie-embeddings-and-output-weights` | Untie the weights of the output layer and the embedding layer as required by the original model. |
     | `--bf16` | Ascend chips support the `bf16` precision type well, which can significantly improve training speed. |
 
-> [!NOTE]
+> [!NOTE] Note
 >
 > - For multi-node training, start the pretraining script in multiple terminals at the same time. The pretraining script in each terminal differs only in the `NODE_RANK` parameter. `MASTER_ADDR` is the IP address of the master node for all terminals. All other parameters stay the same.
 > - If you use multi-node training and have not configured shared storage such as NFS between the nodes, you must add the `--no-shared-storage` parameter to the training launch script. After you set this parameter, non-master nodes will automatically generate and cache data preprocessing results locally to avoid errors when reading data across nodes.

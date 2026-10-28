@@ -115,6 +115,7 @@ python convert_ckpt_v2.py \
     --lora-r 16 \
     --lora-alpha 32 \
     --lora-target-modules linear_qkv linear_proj linear_fc1 linear_fc2 \
+    --model-type-hf llama2 \
     --save-dir ./model_from_hf/llama-2-7b-hf/
 ```
 

@@ -103,7 +103,7 @@ training:
 
 - `model_io_trace_config_path`：可选参数，自定义模型输入输出采集配置文件路径。
 
-  > [!NOTE]
+  > [!NOTE] 说明
   >
   > - `model_io_trace_config_path`参数未配置时，MindSpeed LLM默认使用[`model_io_trace_config.json`](../../../../mindspeed_llm/tools/model_io_trace_config.json)。
   > - 自定义配置文件`custom_config.json`必须是所有训练进程均可访问的文件。
@@ -154,7 +154,7 @@ training:
 
 - `--model-io-trace-config-path`：可选参数，自定义模型输入输出采集配置文件路径。
 
-  > [!NOTE]
+  > [!NOTE] 说明
   >
   > - `--model-io-trace-config-path`参数未配置时，MindSpeed LLM默认使用[`model_io_trace_config.json`](../../../../mindspeed_llm/tools/model_io_trace_config.json)。
   > - 自定义配置文件`custom_config.json`必须是所有训练进程均可访问的文件。

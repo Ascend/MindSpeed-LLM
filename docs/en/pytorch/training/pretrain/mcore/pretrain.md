@@ -14,7 +14,7 @@ Pretraining data is usually plain text and is not task-oriented. For example:
 
 ## Usage Instructions
 
-> [!NOTE]
+> [!NOTE] Note
 >
 > - If you need to use Pack mode during data preprocessing, refer to [Pack Mode for Distributed LLM Pretraining](./pretrain_eod.md).
 > - During pretraining, you can skip loading initial weights. In this case, the model weights are randomly initialized. If you need to load weights, convert them in advance. For details, refer to [Weight Conversion](../../../tools/checkpoint_convert_hf_mcore_large_params.md).
@@ -139,7 +139,7 @@ The following example uses the Qwen3-8B model to show how to start pretraining. 
         --tokenizer-model ${TOKENIZER_MODEL} \
         ```
 
-   > [!NOTE]
+   > [!NOTE] Note
    >
    > - Enclose the provided paths in double quotation marks.
    > - For multi-node training, ensure that the model path and dataset path on each machine are correct. If data sharing is not configured, add the `no-shared-storage` parameter to the training launch script. After you set this parameter, the system determines whether a non-master node needs to load data based on the distributed parameters and checks the corresponding cache and generated data.

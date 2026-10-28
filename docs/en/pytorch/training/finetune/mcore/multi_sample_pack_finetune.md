@@ -60,7 +60,7 @@ Multi-sample pack fine-tuning mainly includes the following steps:
     bash examples/mcore/qwen3/tune_qwen3_32b_32K_full_pack_A3_ptd.sh
     ```
 
-> [!NOTE]
+> [!NOTE] Note
 > The [Qwen3-32B pack fine-tuning script](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/qwen3/tune_qwen3_32b_32K_full_pack_A3_ptd.sh) supports online data and weight loading during training. It integrates data preprocessing, weight conversion, and training into one script. Therefore, you can start a training job with a single command. For more details, see [Training With Online Data and Weight Loading (Train_from_HF)](../../pretrain/mcore/train_from_hf.md).
 >
 > - Integrated weight conversion and training: This provides bidirectional automatic conversion between Hugging Face weights and the Megatron format, together with training. Therefore, you do not need to run the weight conversion step separately. This enables one-click integration from Hugging Face weights to the training task.

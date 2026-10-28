@@ -21,7 +21,7 @@ Key parameters
 | `--no-load-optim` | ❌ Do not set this option. Otherwise, the system does not restore the optimizer state, such as the learning rate and momentum. |
 | `--no-load-rng` | ❌ Do not set this option. Otherwise, the system does not restore the random state. |
 
-> [!NOTE]
+> [!NOTE] Note
 > If you set `--finetune`, `--no-load-optim`, or `--no-load-rng`, the system does not restore the optimizer state or the random state. Therefore, it cannot truly resume training.
 
 ---
@@ -46,17 +46,17 @@ Each save produces the following structure:
 
 ```shell
 /your/checkpoint/path/
-|-- latest_checkpointed_iteration.txt
-|-- iter_0000001/
-|   |-- mp_rank_00_000/
-|   |   |-- distrib_optim.pt
-|   |   |-- model_optim_rng.pt
-|   |-- ...
-|-- iter_0000500/
-|   |-- mp_rank_00_000/
-|   |   |-- distrib_optim.pt
-|   |   |-- model_optim_rng.pt
-|   |-- ...
+├── latest_checkpointed_iteration.txt
+├── iter_0000001/
+│   ├── mp_rank_00_000/
+│   │   ├── distrib_optim.pt
+│   │   └── model_optim_rng.pt
+│   └── ...
+└── iter_0000500/
+    ├── mp_rank_00_000/
+    │   ├── distrib_optim.pt
+    │   └── model_optim_rng.pt
+    └── ...
 ```
 
 Key parameters:

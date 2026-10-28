@@ -91,7 +91,7 @@
 | `--hf-save-dir` | string | None | 否 |  Megatron→HF权重转换时，HuggingFace权重保存目录 |
 | `--hf-cfg-dir` | string | None | 否 | HuggingFace配置文件目录 |
 
-> [!NOTE]
+> [!NOTE] 说明
 >
 > - 对于Mamba等特殊模型，必须手动指定 `--model-type-hf`。
 > - 由于Megatron→HF权重转换仅生成权重以及`model.safetensors.index.json`，不会生成配置文件，因此需要通过指定`--hf-cfg-dir`参数，将原HuggingFace模型的配置文件复制到权重转换所生成的HuggingFace权重目录中。
@@ -129,7 +129,7 @@
     - 如果未指定，则默认保存至`{save}/mg2hf_iteration{iteration}`目录。
     - 配置文件处理：指定`--hf-cfg-dir`时，从该目录复制配置文件至转换后的HuggingFace权重目录；未指定但启用双向转换时，从`{load}`目录复制配置文件。
 
-> [!NOTE]
+> [!NOTE] 说明
 >
 > MG→HF转换本身不会生成配置文件，必须从现有配置文件复制。
 
@@ -167,7 +167,7 @@
 | `--reasoning-effort` | string | None | 否 | 用于DeepSeek-V4模型微调数据处理，可选max/high。<ul><li>max：在prompt中插入最大努力的指令前缀</li><li>high：预留，当前为空操作</li></ul> |
 | `--drop-thinking` | bool | True | 否 | DeepSeek-V4微调场景，是否丢弃多轮对话中的历史思维链。默认仅保留最后一轮assistant的reasoning作为loss目标；设为False则保留所有轮次的reasoning |
 
-> [!NOTE]
+> [!NOTE] 说明
 >
 > - 若未指定`--output-prefix`，处理后的数据文件将默认生成在原始数据集所在的目录下。
 > - `--handler-name`为数据处理 handler 名称：

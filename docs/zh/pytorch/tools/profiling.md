@@ -118,13 +118,13 @@ MindSpeed LLM支持基于昇腾芯片采集profiling数据，以提供对模型�
 
 训练结束后，指定路径下将生成profiling文件，命名格式示例：
 
-```shell
+```text
 localhost.localdomain_3687609_20260129150104894_ascend_pt
 ```
 
 该文件的目录结构如下：
 
-```shell
+```text
  localhost.localdomain_3687609_20260129150104894_ascend_pt
     ├─ASCEND_PROFILER_OUTPUT
     ├─logs
@@ -161,7 +161,7 @@ localhost.localdomain_3687609_20260129150104894_ascend_pt
 
     ![算子](../figures/profiling/operator.png)
 
-> [!NOTE]
+> [!NOTE] 说明
 >
 > - 如果想要更多了解工具的使用方法，可以参考MindStudio Insight官方文档中的[MindStudio Insight系统调优](https://gitcode.com/Ascend/msinsight/blob/master/docs/zh/user_guide/system_tuning.md#%E4%BD%BF%E7%94%A8%E8%AF%B4%E6%98%8E)。
 > - 如果您希望更加定制化的profiling采集方式，可参考《CANN性能调优工具用户指南》中的“[性能数据采集和自动解析](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/latest/devaids/Profiling/atlasprofiling_16_0033.html)”章节，通过修改采集代码进行自定义采集和拆解分析。

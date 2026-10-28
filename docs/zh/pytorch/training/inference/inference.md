@@ -55,7 +55,7 @@
 
     - `TOKENIZER_MODEL`：指定模型的分词器文件路径（例如`tokenizer.model`）。
 
-    > [!NOTE]
+    > [!NOTE] 说明
     >
     > 除了路径的配置，推理脚本中的其他参数应与训练时的参数保持一致（例如，TP/PP/EP/VPP等并行切分，`--noop-layers`和`--num-layer-list`等自定义模型结构参数），否则会出现模型权重加载失败的情况。
 

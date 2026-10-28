@@ -16,7 +16,7 @@
 - 具备初级的 Python 开发经验
 - 对FSDP（Fully Sharded Data Parallel，全分片数据并行）有基本了解
 
-> [!NOTE]
+> [!NOTE] 说明
 >
 > MindSpeed LLM 支持<term>Ascend 950PR&950DT系列产品</term>、<term>Atlas A3训练系列产品</term>和<term>Atlas A2训练系列产品</term>，且要求单NPU的片上内存为64GB及以上，详见[模型支持列表](../models/supported_models.md)。
 >
@@ -220,7 +220,7 @@
 
     进入迭代，说明训练正常进行。
 
-> [!NOTE]
+> [!NOTE] 说明
 >
 > - 多机训练需在多个终端同时启动预训练脚本（每个终端的预训练脚本只有 `NODE_RANK` 参数不同，MASTER_ADDR均为主节点的IP地址，其他参数均相同）。
 > - FSDP2 后端会自动将模型参数分片到各 NPU，确保每个 NPU 只存储部分参数，从而支持超大规模模型训练。
@@ -337,7 +337,7 @@
 
     进入迭代，说明训练正常进行。
 
-> [!NOTE]
+> [!NOTE] 说明
 >
 > - 多机微调需在多个终端同时启动微调脚本（每个终端的微调脚本只有`NODE_RANK`参数不同，MASTER_ADDR均为主节点的IP地址，其他参数均相同）。
 > - 微调默认使用Alpaca数据集格式。如需使用其他数据集，请参考[FSDP2后端微调使用指南](./finetune/fsdp2/finetune_fsdp2.md) 中的数据集配置说明，或[全量参数介绍（基于FSDP2训练后端）](../features/fsdp2/arguments.md)中的“数据参数（DataArguments）”相关介绍。
@@ -365,7 +365,7 @@
 |`gradient_accumulation_steps`|梯度累积步数|正整数，如 `1`、`8`|
 |`output_dir`|训练保存权重输出目录|`./output`|
 
-> [!NOTE]
+> [!NOTE] 说明
 >
 > - 完整参数说明请参见[全量参数介绍（基于FSDP2训练后端）](../features/fsdp2/arguments.md)。
 > - YAML配置与数据集注册示例请参考 [FSDP2后端微调使用指南](./finetune/fsdp2/finetune_fsdp2.md)。

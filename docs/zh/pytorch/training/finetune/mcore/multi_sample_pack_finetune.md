@@ -60,7 +60,7 @@
     bash examples/mcore/qwen3/tune_qwen3_32b_32K_full_pack_A3_ptd.sh
     ```
 
-> [!NOTE]
+> [!NOTE] 说明
 > [Qwen3-32B Pack微调脚本](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/qwen3/tune_qwen3_32b_32K_full_pack_A3_ptd.sh)支持数据/权重在线加载训练，即集成了数据预处理、权重转换和训练于一体，单脚本即可启动训练任务。若需了解该功能的更多详情可参见[数据/权重在线加载训练](../../pretrain/mcore/train_from_hf.md)。
 >
 > - 权重转换合一训练：实现HuggingFace权重到Megatron格式的双向自动转换与训练合一，用户无需单独执行权重转换步骤，实现从HuggingFace权重到训练任务的一键式集成。

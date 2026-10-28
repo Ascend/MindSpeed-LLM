@@ -191,7 +191,7 @@ GPT-OSS在MindSpeed LLM中通过自定义注册方式接入。推荐从Transform
     | 适配点 | 说明 |
     | --- | --- |
     | 模型类 | 需要导出`GptOssForCausalLM`，用于注册到`ModelRegistry`。 |
-    | Attention | 如需FlashAttention、长序列CP或NPU融合算子，需要替换对应`forward`。 |
+    | Attention | 如需Flash Attention、长序列CP或NPU融合算子，需要替换对应`forward`。 |
     | MLP/Expert | MoE模型通常需要适配专家并行、token dispatch、grouped GEMM。 |
     | Norm/RoPE | 如果要使用融合RMSNorm、融合RoPE，需要在模型实现中接入对应算子。 |
     | 权重名 | 保持和HuggingFace权重文件中的key对齐，避免加载权重时缺失或unexpected key。 |
@@ -255,7 +255,7 @@ tests/poc/gpt_oss/
 
 下面示例使用“路径二：自定义注册适配GPT-OSS”，因此需要配置`model.model_id: gpt_oss`。如果使用“路径一：原生Transformers适配”，不要配置`model_id`，框架会根据`config.json`通过`AutoModelForCausalLM`自动加载模型。
 
-> [!NOTE]
+> [!NOTE] 说明
 >
 > 启动训练前建议先用较小的`max_steps`和`max_samples`验证链路，再放大训练规模。
 
@@ -390,7 +390,7 @@ source /usr/local/Ascend/ascend-toolkit/set_env.sh
 bash tests/poc/gpt_oss/pretrain_gpt_oss_20b_4k_fsdp2_A3.sh
 ```
 
-> [!NOTE]
+> [!NOTE] 说明
 >
 > FSDP2示例脚本会先加载公共环境变量：
 >

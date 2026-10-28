@@ -6,7 +6,7 @@ MindSpeed LLM, as the Ascend large language model (LLM) training framework, aims
 
 MindSpeed LLM supports multiple LLMs based on Transformer, including Dense models and MoE models, and provides more than 100 mainstream open-source models and ready-to-use training scripts, supporting model pretraining, fine-tuning, and efficient distributed training.
 
-MindSpeed LLM is a distributed training framework for LLMs within the MindSpeed ecosystem. It integrates natively with the MindSpeed Core training acceleration library and is designed for Ascend hardware to optimize LLM training from four aspects: parallel optimization, memory optimization, communication optimization, and computation optimization.
+MindSpeed LLM is a distributed training framework for LLMs within the MindSpeed ecosystem. It provides two implementations: the Megatron training backend (with MindSpeed Core acceleration enabled) and the FSDP training backend (with FSDP Turbo acceleration enabled). It is designed for Ascend hardware and optimizes LLM training from four dimensions: parallel optimization, memory optimization, communication optimization, and computation optimization.
 
 ## MindSpeed LLM Architecture
 
@@ -20,7 +20,7 @@ The MindSpeed LLM architecture is shown in [Figure 1](#architecture) and consist
   - Checkpoint-based training resumption and final weight saving at the end of training.
 - **MindSpeed LLM training backends**.
   - **Megatron training backend**: Based on Megatron-LM, it provides an incremental model development solution that uses ModelSpec as the template. You can develop a new model in weeks or days.
-  - **FSDP2 training backend**: Based on MindSpeed-FSDP, it provides an incremental model development solution that directly integrates with third-party Transformers libraries. You can develop a new model in days.
+  - **FSDP training backend**: Based on MindSpeed-FSDP, it provides an incremental model development solution that directly integrates with third-party Transformers libraries. You can develop a new model in days.
 - **MindSpeed LLM training workflows**.
   - **Distributed pretraining**: Supports end-to-end distributed pretraining, including data processing and mainstream model and data partitioning schemes.
   - **Distributed instruction fine-tuning**: Supports multiple mainstream fine-tuning algorithms in the industry to achieve competitive training results.

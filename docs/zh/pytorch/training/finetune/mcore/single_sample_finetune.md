@@ -157,7 +157,7 @@
 
         ![variable-seq-lengths图示](../../../figures/instruction_finetune/variable_seq_lengths.png)
 
-    > [!NOTE]
+    > [!NOTE] 说明
     > - 提供的路径需要加双引号。
     > - 多机训练中请确保每台机器上的模型路径和数据集路径等无误。
     > - 微调脚本中使用的并行配置（包括TP/PP/EP/VPP等），应与权重转换时使用的配置保持一致，否则可能导致权重加载或转换异常。具体的并行配置请参考[权重转换指南](../../../tools/checkpoint_convert_hf_mcore_large_params.md#huggingface权重转换至megatron-mcore格式)。

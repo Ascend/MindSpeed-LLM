@@ -105,7 +105,6 @@ MindSpeed-LLM/
  │   │   ├── context_parallel/    # Context parallelism features
  │   │   ├── convert_checkpoint/  # Weight conversion
  │   │   ├── dataset/             # Dataset features
- │   │   ├── dpo/                 # DPO training
  │   │   ├── evaluation/          # Evaluation features
  │   │   ├── finetune/            # Fine-tuning features
  │   │   ├── fsdp2/               # FSDP2 features
@@ -204,7 +203,7 @@ The directory tree above shows the overall project structure, where `mindspeed_l
 
 - `core/`: Low-level core functionality implementation, including basic capabilities such as parallel strategies (context parallelism, tensor parallelism, pipeline parallelism), model definitions, Transformer components, dataset processing, and high availability.
 - `features_manager/`: Feature registration and management module. It injects various training features (such as Flash Attention, MoE routing, quantization-aware training, and so on) into the training process through a patching mechanism, enabling on-demand combination and activation of features.
-- `tasks/`: Training task entry points and service logic. It contains implementations of specific tasks such as evaluation, inference, fine-tuning, DPO alignment, and weight conversion. It serves as the execution layer for your training process.
+- `tasks/`: Training task entry points and service logic. It contains implementations of specific tasks such as evaluation, inference, fine-tuning, and weight conversion. It serves as the execution layer for your training process.
 - `training/`: Training framework initialization and main loop. It is responsible for training lifecycle management including parameter parsing, distributed initialization, checkpoint management, and training loop control.
 - `fsdp2/`: Independent FSDP2 backend implementation. It includes the complete training pipeline such as model definitions, data processing, distributed strategies, and inference engine, providing parallel support alongside the MCore backend.
 

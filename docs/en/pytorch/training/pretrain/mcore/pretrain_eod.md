@@ -140,7 +140,7 @@ The process for distributed LLM pretraining in pack mode is as follows:
         --tokenizer-model ${TOKENIZER_MODEL}
         ```
 
-    > [!NOTE]
+    > [!NOTE] Note
     >
     > - Enclose the provided paths in double quotes.
     > - In multi-node training, ensure that the model path and dataset path on each machine are correct. If you do not configure data sharing, add the `no-shared-storage` parameter to the training launch script. After you set this parameter, the system determines whether a non-master node needs to load data based on the distributed parameters, and it checks the corresponding cache and generated data.
