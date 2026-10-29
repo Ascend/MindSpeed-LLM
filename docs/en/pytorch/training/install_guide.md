@@ -8,7 +8,7 @@ This document explains how to quickly install MindSpeed LLM, the PyTorch-based d
 
 | Product | Supported |
 |--|:-:|
-| <term>Atlas 950PR&950DT products</term> | √ |
+| <term>Ascend 950PR&950DT products</term> | √ |
 | <term>Atlas A3 training products</term> | √ |
 | <term>Atlas A3 inference products</term> | x |
 | <term>Atlas A2 training products</term> | √ |
@@ -62,9 +62,9 @@ Installation from source (unified installation using submodules): This optional 
    The latest images correspond to the [MindSpeed LLM 26.1.0 branch](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.1.0). Click [Obtain the image](https://www.hiascend.com/developer/ascendhub/detail/e26da9266559438b93354792f25b2f4a) as needed.
 
    <!-- npu="950" id1 -->
-   - <term>Atlas 950PR&950DT products</term>: `v26.1.0-cann9.1.0-torch_npu2.7.1.post8-950-openeuler24.03-py3.12`
+   - <term>Ascend 950PR&950DT products</term>: `v26.1.0-cann9.1.0-torch_npu2.7.1.post8-950-openeuler24.03-py3.12`
 
-   - <term>Atlas 950PR&950DT products</term>: `v26.1.0-cann9.1.0-torch_npu2.7.1.post8-950-ubuntu22.04-py3.12`
+   - <term>Ascend 950PR&950DT products</term>: `v26.1.0-cann9.1.0-torch_npu2.7.1.post8-950-ubuntu22.04-py3.12`
    <!-- end id1 -->
    <!-- npu="A3" id2 -->
    - <term>Atlas A3 training products</term>: `v26.1.0-cann9.1.0-torch_npu2.7.1.post8-a3-openeuler24.03-py3.12`

@@ -18,7 +18,7 @@ Developer prerequisites:
 
 > [!NOTE] Note
 >
-> MindSpeed LLM supports <term>Atlas 950PR&950DT products</term>, <term>Atlas A3 training products</term>, and <term>Atlas A2 training products</term>. Single-NPU on-chip memory of 64 GB or more is required. For details, see [Supported Models in the PyTorch Framework](../models/supported_models.md).
+> MindSpeed LLM supports <term>Ascend 950PR&950DT products</term>, <term>Atlas A3 training products</term>, and <term>Atlas A2 training products</term>. Single-NPU on-chip memory of 64 GB or more is required. For details, see [Supported Models in the PyTorch Framework](../models/supported_models.md).
 >
 > This document is a **quick start follow-along tutorial**. If you need to change the model, register a custom dataset, or review a more complete description of the YAML configuration, see the [FSDP2 Backend Fine-Tuning Guide](./finetune/fsdp2/finetune_fsdp2.md).
 >
