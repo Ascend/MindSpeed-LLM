@@ -445,6 +445,7 @@ def _checkpointed_forward_patch_input_ids(
     attention_bias: Tensor,
     packed_seq_params: PackedSeqParams,
     input_ids: torch.Tensor = None,
+    use_inner_fp8_context=None,
 ):
     """Forward method with activation checkpointing."""
 
@@ -459,17 +460,21 @@ def _checkpointed_forward_patch_input_ids(
         ):
             for index in range(start, end):
                 layer = self._get_layer(index)
-                hidden_states, context = layer(
-                    hidden_states=hidden_states,
-                    attention_mask=attention_mask,
-                    context=context,
-                    context_mask=context_mask,
-                    rotary_pos_emb=rotary_pos_emb,
-                    attention_bias=attention_bias,
-                    inference_context=None,
-                    packed_seq_params=packed_seq_params,
-                    input_ids=input_ids,
+                inner_fp8_context = (
+                    get_fp8_context(self.config, layer.layer_number - 1) if use_inner_fp8_context else nullcontext()
                 )
+                with inner_fp8_context:
+                    hidden_states, context = layer(
+                        hidden_states=hidden_states,
+                        attention_mask=attention_mask,
+                        context=context,
+                        context_mask=context_mask,
+                        rotary_pos_emb=rotary_pos_emb,
+                        attention_bias=attention_bias,
+                        inference_context=None,
+                        packed_seq_params=packed_seq_params,
+                        input_ids=input_ids,
+                    )
             return hidden_states, context
 
         return custom_forward
