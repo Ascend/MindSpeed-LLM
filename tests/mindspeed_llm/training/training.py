@@ -1193,8 +1193,8 @@ def training_log(loss_dict, total_loss_dict, learning_rate, decoupled_learning_r
                            nan_iters_key]:
                 avg = total_loss_dict[key].item() / \
                       float(max(1, total_loss_dict[advanced_iters_key]))
-                if avg > 0.0:
-                    log_string += ' {}: {:.6E} |'.format(key, avg)
+                # Keep zero and non-finite losses visible for diagnosis.
+                log_string += ' {}: {:.6E} |'.format(key, avg)
                 total_loss_dict[key] = torch.tensor([0.0], dtype=torch.float, device='cuda')
         log_string += f' loss scale: {loss_scale:.1f} |'
         if grad_norm is not None:
@@ -1212,7 +1212,10 @@ def training_log(loss_dict, total_loss_dict, learning_rate, decoupled_learning_r
         total_loss_dict[advanced_iters_key] = 0
         total_loss_dict[skipped_iters_key] = 0
         total_loss_dict[nan_iters_key] = 0
-        print_rank_last(log_string)
+        # DualPipeV computes the final loss on the physical first stage.
+        # Resolve the patched printer at call time instead of keeping an
+        # alias imported before feature patches were applied.
+        megatron.training.utils.print_rank_last(log_string)
         if report_memory_flag:
             # Report memory after optimizer state has been initialized.
             if torch.distributed.get_rank() == 0:
