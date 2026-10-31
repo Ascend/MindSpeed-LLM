@@ -1,0 +1,403 @@
+{
+    "test_optimizer_construction": [
+        {
+            "case": {
+                "config": {},
+                "has_params": true,
+                "new_te": false,
+                "scaler": "none",
+                "name": "adam_bf16"
+            }
+        },
+        {
+            "case": {
+                "config": {
+                    "optimizer": "sgd"
+                },
+                "has_params": true,
+                "new_te": false,
+                "scaler": "none",
+                "name": "sgd"
+            }
+        },
+        {
+            "case": {
+                "config": {},
+                "has_params": false,
+                "new_te": false,
+                "scaler": "none",
+                "name": "empty_parameters"
+            }
+        },
+        {
+            "case": {
+                "config": {
+                    "use_precision_aware_optimizer": true
+                },
+                "has_params": true,
+                "new_te": false,
+                "scaler": "none",
+                "name": "precision_aware_old_te"
+            }
+        },
+        {
+            "case": {
+                "config": {
+                    "use_precision_aware_optimizer": true
+                },
+                "has_params": true,
+                "new_te": true,
+                "scaler": "none",
+                "name": "precision_aware_new_te"
+            }
+        },
+        {
+            "case": {
+                "config": {
+                    "loss_scale": 16
+                },
+                "has_params": true,
+                "new_te": false,
+                "scaler": "constant",
+                "name": "constant_scaler"
+            }
+        },
+        {
+            "case": {
+                "config": {
+                    "fp16": true,
+                    "bf16": false,
+                    "loss_scale": 32
+                },
+                "has_params": true,
+                "new_te": false,
+                "scaler": "constant",
+                "name": "constant_overrides_fp16"
+            }
+        },
+        {
+            "case": {
+                "config": {
+                    "fp16": true,
+                    "bf16": false
+                },
+                "has_params": true,
+                "new_te": false,
+                "scaler": "dynamic",
+                "name": "fp16_dynamic"
+            }
+        },
+        {
+            "case": {
+                "config": {
+                    "bf16": false
+                },
+                "has_params": true,
+                "new_te": false,
+                "scaler": "none",
+                "name": "distributed_fp32_params"
+            }
+        },
+        {
+            "case": {
+                "config": {
+                    "fp16": true,
+                    "bf16": false,
+                    "use_distributed_optimizer": false
+                },
+                "has_params": true,
+                "new_te": false,
+                "scaler": "dynamic",
+                "name": "fp16_local"
+            }
+        },
+        {
+            "case": {
+                "config": {
+                    "use_distributed_optimizer": false
+                },
+                "has_params": true,
+                "new_te": false,
+                "scaler": "none",
+                "name": "bf16_local"
+            }
+        },
+        {
+            "case": {
+                "config": {
+                    "fp16": true,
+                    "bf16": false,
+                    "use_distributed_optimizer": false
+                },
+                "has_params": false,
+                "new_te": false,
+                "scaler": "dynamic",
+                "name": "empty_fp16_local"
+            }
+        }
+    ],
+    "test_adam_state": [
+        {
+            "case": {
+                "name": "normal",
+                "precision_aware": false,
+                "existing": false,
+                "omit_config": false
+            }
+        },
+        {
+            "case": {
+                "name": "no_config",
+                "precision_aware": false,
+                "existing": false,
+                "omit_config": true
+            }
+        },
+        {
+            "case": {
+                "name": "precision_aware",
+                "precision_aware": true,
+                "existing": false,
+                "omit_config": false
+            }
+        },
+        {
+            "case": {
+                "name": "preserve_normal",
+                "precision_aware": false,
+                "existing": true,
+                "omit_config": false
+            }
+        },
+        {
+            "case": {
+                "name": "preserve_precision_aware",
+                "precision_aware": true,
+                "existing": true,
+                "omit_config": false
+            }
+        },
+        {
+            "case": {
+                "name": "precision_aware_without_config",
+                "precision_aware": true,
+                "existing": false,
+                "omit_config": true
+            }
+        }
+    ],
+    "test_adam_state_multiple_groups": [
+        {
+            "case": {
+                "name": "float32_mixed_state",
+                "dtype": "float32",
+                "values": [
+                    [
+                        [
+                            1.0,
+                            2.0
+                        ],
+                        [
+                            3.0,
+                            4.0
+                        ]
+                    ],
+                    [
+                        5.0,
+                        6.0
+                    ],
+                    [
+                        [
+                            7.0,
+                            8.0,
+                            9.0
+                        ]
+                    ]
+                ]
+            }
+        },
+        {
+            "case": {
+                "name": "float16_mixed_state",
+                "dtype": "float16",
+                "values": [
+                    [
+                        [
+                            1.0,
+                            2.0
+                        ],
+                        [
+                            3.0,
+                            4.0
+                        ]
+                    ],
+                    [
+                        5.0,
+                        6.0
+                    ],
+                    [
+                        [
+                            7.0,
+                            8.0,
+                            9.0
+                        ]
+                    ]
+                ]
+            }
+        },
+        {
+            "case": {
+                "name": "bfloat16_mixed_state",
+                "dtype": "bfloat16",
+                "values": [
+                    [
+                        [
+                            1.0,
+                            2.0
+                        ],
+                        [
+                            3.0,
+                            4.0
+                        ]
+                    ],
+                    [
+                        5.0,
+                        6.0
+                    ],
+                    [
+                        [
+                            7.0,
+                            8.0,
+                            9.0
+                        ]
+                    ]
+                ]
+            }
+        }
+    ],
+    "test_cpu_offload": [
+        {
+            "case": {
+                "name": "adam_old_torch",
+                "config": {
+                    "optimizer": "adam"
+                },
+                "torch_version": "2.2.0",
+                "warn": true
+            }
+        },
+        {
+            "case": {
+                "name": "adam_full_offload",
+                "config": {
+                    "optimizer": "adam",
+                    "optimizer_offload_fraction": 1.0,
+                    "pin_cpu_params": true
+                },
+                "torch_version": "2.3.0",
+                "warn": false
+            }
+        },
+        {
+            "case": {
+                "name": "sgd_old_torch",
+                "config": {
+                    "optimizer": "sgd"
+                },
+                "torch_version": "2.2.0",
+                "warn": true
+            }
+        },
+        {
+            "case": {
+                "name": "sgd_no_overlap",
+                "config": {
+                    "optimizer": "sgd",
+                    "optimizer_offload_fraction": 0.0,
+                    "overlap_cpu_optimizer_d2h_h2d": false,
+                    "pin_cpu_grads": false
+                },
+                "torch_version": "2.7.1",
+                "warn": false
+            }
+        }
+    ],
+    "test_invalid_optimizer": [
+        {
+            "case": {
+                "name": "unsupported",
+                "config": {
+                    "optimizer": "invalid"
+                },
+                "error": "invalid optimizer is not supported"
+            }
+        },
+        {
+            "case": {
+                "name": "ha_fp32",
+                "config": {
+                    "fp16": false,
+                    "bf16": false,
+                    "use_distributed_optimizer": false
+                },
+                "error": "High availability do not support FP32"
+            }
+        }
+    ],
+    "test_model_grouping": [
+        {
+            "case": {
+                "name": "single_dense",
+                "overlap": false,
+                "custom_fsdp": false,
+                "moe": false,
+                "full_size": 4
+            }
+        },
+        {
+            "case": {
+                "name": "dense_and_expert",
+                "overlap": false,
+                "custom_fsdp": false,
+                "moe": true,
+                "full_size": 8
+            }
+        },
+        {
+            "case": {
+                "name": "overlap_dense",
+                "overlap": true,
+                "custom_fsdp": false,
+                "moe": false,
+                "full_size": 8
+            }
+        },
+        {
+            "case": {
+                "name": "overlap_and_expert",
+                "overlap": true,
+                "custom_fsdp": false,
+                "moe": true,
+                "full_size": 4
+            }
+        },
+        {
+            "case": {
+                "name": "custom_fsdp_single",
+                "overlap": false,
+                "custom_fsdp": true,
+                "moe": true,
+                "full_size": 4
+            }
+        },
+        {
+            "case": {
+                "name": "custom_fsdp_overlap",
+                "overlap": true,
+                "custom_fsdp": true,
+                "moe": false,
+                "full_size": 8
+            }
+        }
+    ]
+}

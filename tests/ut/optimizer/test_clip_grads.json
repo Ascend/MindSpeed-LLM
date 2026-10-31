@@ -1,0 +1,325 @@
+{
+    "test_wrapper_dispatch": [
+        {
+            "case": {
+                "name": "distributed",
+                "enabled": true
+            }
+        },
+        {
+            "case": {
+                "name": "passthrough",
+                "enabled": false
+            }
+        }
+    ],
+    "test_norm_dispatch": [
+        {
+            "case": {
+                "name": "normal",
+                "scale_in": false,
+                "missing_dependency": false
+            }
+        },
+        {
+            "case": {
+                "name": "scale_in",
+                "scale_in": true,
+                "missing_dependency": false
+            }
+        },
+        {
+            "case": {
+                "name": "import_fallback",
+                "scale_in": false,
+                "missing_dependency": true
+            }
+        }
+    ],
+    "test_replica_norm": [
+        {
+            "case": {
+                "name": "default_l2",
+                "replicas": 4,
+                "norm": 16,
+                "positional": null,
+                "keyword": null,
+                "expected": 8
+            }
+        },
+        {
+            "case": {
+                "name": "single_replica",
+                "replicas": 1,
+                "norm": 7,
+                "positional": null,
+                "keyword": 2,
+                "expected": 7
+            }
+        },
+        {
+            "case": {
+                "name": "keyword_l1",
+                "replicas": 4,
+                "norm": 16,
+                "positional": null,
+                "keyword": 1,
+                "expected": 4
+            }
+        },
+        {
+            "case": {
+                "name": "positional_l4",
+                "replicas": 16,
+                "norm": 16,
+                "positional": 4,
+                "keyword": null,
+                "expected": 8
+            }
+        },
+        {
+            "case": {
+                "name": "positional_precedence",
+                "replicas": 4,
+                "norm": 16,
+                "positional": "1",
+                "keyword": 2,
+                "expected": 4
+            }
+        },
+        {
+            "case": {
+                "name": "infinity_norm",
+                "replicas": 4,
+                "norm": 16,
+                "positional": null,
+                "keyword": "inf",
+                "expected": 16
+            }
+        },
+        {
+            "case": {
+                "name": "zero_norm",
+                "replicas": 4,
+                "norm": 0,
+                "positional": null,
+                "keyword": null,
+                "expected": 0
+            }
+        }
+    ],
+    "test_scale_in_norm": [
+        {
+            "case": {
+                "fault_in_group": false,
+                "fault_replica": false,
+                "positional": false,
+                "explicit_group": false,
+                "supply_group": false,
+                "local_norm": 3,
+                "norm_type": 2,
+                "replica_sum": 7,
+                "scale_in_sum": 16,
+                "expected_groups": [
+                    "replica"
+                ],
+                "expected_inputs": [
+                    9
+                ],
+                "expected": 4,
+                "name": "missing_keyword_group"
+            }
+        },
+        {
+            "case": {
+                "fault_in_group": false,
+                "fault_replica": false,
+                "positional": false,
+                "explicit_group": false,
+                "supply_group": true,
+                "local_norm": 3,
+                "norm_type": 2,
+                "replica_sum": 7,
+                "scale_in_sum": 16,
+                "expected_groups": [
+                    "replica"
+                ],
+                "expected_inputs": [
+                    9
+                ],
+                "expected": 4,
+                "name": "none_keyword_group"
+            }
+        },
+        {
+            "case": {
+                "fault_in_group": false,
+                "fault_replica": false,
+                "positional": false,
+                "explicit_group": true,
+                "supply_group": true,
+                "local_norm": 3,
+                "norm_type": 2,
+                "replica_sum": 7,
+                "scale_in_sum": 16,
+                "expected_groups": [
+                    "replica"
+                ],
+                "expected_inputs": [
+                    9
+                ],
+                "expected": 4,
+                "name": "explicit_keyword_group"
+            }
+        },
+        {
+            "case": {
+                "fault_in_group": false,
+                "fault_replica": false,
+                "positional": true,
+                "explicit_group": false,
+                "supply_group": false,
+                "local_norm": 3,
+                "norm_type": 2,
+                "replica_sum": 7,
+                "scale_in_sum": 16,
+                "expected_groups": [
+                    "replica"
+                ],
+                "expected_inputs": [
+                    9
+                ],
+                "expected": 4,
+                "name": "none_positional_group"
+            }
+        },
+        {
+            "case": {
+                "fault_in_group": false,
+                "fault_replica": false,
+                "positional": true,
+                "explicit_group": true,
+                "supply_group": false,
+                "local_norm": 3,
+                "norm_type": 2,
+                "replica_sum": 7,
+                "scale_in_sum": 16,
+                "expected_groups": [
+                    "replica"
+                ],
+                "expected_inputs": [
+                    9
+                ],
+                "expected": 4,
+                "name": "explicit_positional_group"
+            }
+        },
+        {
+            "case": {
+                "fault_in_group": true,
+                "fault_replica": false,
+                "positional": false,
+                "explicit_group": false,
+                "supply_group": false,
+                "local_norm": 3,
+                "norm_type": 2,
+                "replica_sum": 7,
+                "scale_in_sum": 16,
+                "expected_groups": [
+                    "scale_in"
+                ],
+                "expected_inputs": [
+                    9
+                ],
+                "expected": 5,
+                "name": "fault_in_group"
+            }
+        },
+        {
+            "case": {
+                "fault_in_group": false,
+                "fault_replica": true,
+                "positional": false,
+                "explicit_group": false,
+                "supply_group": false,
+                "local_norm": 3,
+                "norm_type": 2,
+                "replica_sum": 7,
+                "scale_in_sum": 16,
+                "expected_groups": [
+                    "replica",
+                    "scale_in"
+                ],
+                "expected_inputs": [
+                    9,
+                    9
+                ],
+                "expected": 5,
+                "name": "fault_replica"
+            }
+        },
+        {
+            "case": {
+                "fault_in_group": true,
+                "fault_replica": true,
+                "positional": false,
+                "explicit_group": false,
+                "supply_group": false,
+                "local_norm": 3,
+                "norm_type": 2,
+                "replica_sum": 7,
+                "scale_in_sum": 16,
+                "expected_groups": [
+                    "scale_in"
+                ],
+                "expected_inputs": [
+                    9
+                ],
+                "expected": 5,
+                "name": "both_fault_flags"
+            }
+        },
+        {
+            "case": {
+                "fault_in_group": false,
+                "fault_replica": false,
+                "positional": false,
+                "explicit_group": false,
+                "supply_group": false,
+                "local_norm": 3,
+                "norm_type": 1,
+                "replica_sum": 7,
+                "scale_in_sum": 16,
+                "expected_groups": [
+                    "replica"
+                ],
+                "expected_inputs": [
+                    3
+                ],
+                "expected": 10,
+                "name": "l1_reduction"
+            }
+        },
+        {
+            "case": {
+                "fault_in_group": false,
+                "fault_replica": false,
+                "positional": false,
+                "explicit_group": false,
+                "supply_group": false,
+                "local_norm": 0,
+                "norm_type": 2,
+                "replica_sum": 0,
+                "scale_in_sum": 16,
+                "expected_groups": [
+                    "replica"
+                ],
+                "expected_inputs": [
+                    0
+                ],
+                "expected": 0,
+                "name": "zero_reduction"
+            }
+        }
+    ]
+}

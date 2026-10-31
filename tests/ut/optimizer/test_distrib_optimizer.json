@@ -1,0 +1,534 @@
+{
+    "test_init_validation": [
+        {
+            "case": {
+                "optimizer": "none",
+                "custom_fsdp": false,
+                "mismatch": false,
+                "logging": false,
+                "error": null,
+                "name": "stub"
+            }
+        },
+        {
+            "case": {
+                "optimizer": "none",
+                "custom_fsdp": false,
+                "mismatch": false,
+                "logging": true,
+                "error": null,
+                "name": "stub_logging"
+            }
+        },
+        {
+            "case": {
+                "optimizer": "adam",
+                "custom_fsdp": true,
+                "mismatch": false,
+                "logging": false,
+                "error": null,
+                "name": "custom_fsdp"
+            }
+        },
+        {
+            "case": {
+                "optimizer": "adam",
+                "custom_fsdp": false,
+                "mismatch": true,
+                "logging": false,
+                "error": "DDP config mismatch",
+                "name": "ddp_mismatch"
+            }
+        },
+        {
+            "case": {
+                "optimizer": "unsupported",
+                "custom_fsdp": false,
+                "mismatch": false,
+                "logging": false,
+                "error": "Only Adam and HybridDeviceOptimizer",
+                "name": "unsupported_optimizer"
+            }
+        },
+        {
+            "case": {
+                "optimizer": "adam",
+                "custom_fsdp": false,
+                "mismatch": false,
+                "logging": false,
+                "error": "per_model_buffers must be provided",
+                "name": "missing_buffers"
+            }
+        }
+    ],
+    "test_init_buffers": [
+        {
+            "case": {
+                "parameters": [
+                    [
+                        "torch.cuda.HalfTensor",
+                        true
+                    ],
+                    [
+                        "torch.cuda.BFloat16Tensor",
+                        true
+                    ],
+                    [
+                        "torch.cuda.FloatTensor",
+                        true
+                    ],
+                    [
+                        "torch.cuda.HalfTensor",
+                        false
+                    ]
+                ],
+                "expected_marked": [
+                    true,
+                    true,
+                    false,
+                    false
+                ],
+                "bucket_sizes": [
+                    [
+                        4,
+                        8
+                    ],
+                    [
+                        6
+                    ],
+                    [
+                        2
+                    ]
+                ],
+                "unpadded_sizes": [
+                    [
+                        3,
+                        7
+                    ],
+                    [
+                        5
+                    ],
+                    [
+                        1
+                    ]
+                ],
+                "name": "adam_reload",
+                "hybrid": false
+            }
+        },
+        {
+            "case": {
+                "parameters": [
+                    [
+                        "torch.cuda.HalfTensor",
+                        true
+                    ],
+                    [
+                        "torch.cuda.BFloat16Tensor",
+                        true
+                    ],
+                    [
+                        "torch.cuda.FloatTensor",
+                        true
+                    ],
+                    [
+                        "torch.cuda.HalfTensor",
+                        false
+                    ]
+                ],
+                "expected_marked": [
+                    true,
+                    true,
+                    false,
+                    false
+                ],
+                "bucket_sizes": [
+                    [
+                        4,
+                        8
+                    ],
+                    [
+                        6
+                    ],
+                    [
+                        2
+                    ]
+                ],
+                "unpadded_sizes": [
+                    [
+                        3,
+                        7
+                    ],
+                    [
+                        5
+                    ],
+                    [
+                        1
+                    ]
+                ],
+                "name": "hybrid_rebuild",
+                "hybrid": true
+            }
+        }
+    ],
+    "test_init_wrappers": [
+        {
+            "case": {
+                "name": "normal",
+                "reuse": false
+            }
+        },
+        {
+            "case": {
+                "name": "reuse_fp32",
+                "reuse": true
+            }
+        }
+    ],
+    "test_gather_early_return": [
+        {
+            "case": {
+                "name": "single_rank",
+                "has_buffers": true,
+                "world_size": 1
+            }
+        },
+        {
+            "case": {
+                "name": "missing_buffers",
+                "has_buffers": false,
+                "world_size": 2
+            }
+        }
+    ],
+    "test_gather_state": [
+        {
+            "case": {
+                "payloads": [
+                    [
+                        [
+                            1.5,
+                            -2.25
+                        ],
+                        [
+                            3.5,
+                            4.25
+                        ]
+                    ],
+                    [
+                        [
+                            0.5,
+                            6.0,
+                            -8.0
+                        ],
+                        [
+                            2.0,
+                            -3.0,
+                            9.0
+                        ]
+                    ]
+                ],
+                "expected": [
+                    [
+                        3.5,
+                        4.25,
+                        1.5,
+                        -2.25
+                    ],
+                    [
+                        2.0,
+                        -3.0,
+                        9.0,
+                        0.5,
+                        6.0,
+                        -8.0
+                    ]
+                ],
+                "name": "gloo_saving",
+                "hccl": false,
+                "saving_rank": true
+            }
+        },
+        {
+            "case": {
+                "payloads": [
+                    [
+                        [
+                            1.5,
+                            -2.25
+                        ],
+                        [
+                            3.5,
+                            4.25
+                        ]
+                    ],
+                    [
+                        [
+                            0.5,
+                            6.0,
+                            -8.0
+                        ],
+                        [
+                            2.0,
+                            -3.0,
+                            9.0
+                        ]
+                    ]
+                ],
+                "expected": [
+                    [
+                        3.5,
+                        4.25,
+                        1.5,
+                        -2.25
+                    ],
+                    [
+                        2.0,
+                        -3.0,
+                        9.0,
+                        0.5,
+                        6.0,
+                        -8.0
+                    ]
+                ],
+                "name": "gloo_sending",
+                "hccl": false,
+                "saving_rank": false
+            }
+        },
+        {
+            "case": {
+                "payloads": [
+                    [
+                        [
+                            1.5,
+                            -2.25
+                        ],
+                        [
+                            3.5,
+                            4.25
+                        ]
+                    ],
+                    [
+                        [
+                            0.5,
+                            6.0,
+                            -8.0
+                        ],
+                        [
+                            2.0,
+                            -3.0,
+                            9.0
+                        ]
+                    ]
+                ],
+                "expected": [
+                    [
+                        3.5,
+                        4.25,
+                        1.5,
+                        -2.25
+                    ],
+                    [
+                        2.0,
+                        -3.0,
+                        9.0,
+                        0.5,
+                        6.0,
+                        -8.0
+                    ]
+                ],
+                "name": "hccl_saving",
+                "hccl": true,
+                "saving_rank": true
+            }
+        },
+        {
+            "case": {
+                "payloads": [
+                    [
+                        [
+                            1.5,
+                            -2.25
+                        ],
+                        [
+                            3.5,
+                            4.25
+                        ]
+                    ],
+                    [
+                        [
+                            0.5,
+                            6.0,
+                            -8.0
+                        ],
+                        [
+                            2.0,
+                            -3.0,
+                            9.0
+                        ]
+                    ]
+                ],
+                "expected": [
+                    [
+                        3.5,
+                        4.25,
+                        1.5,
+                        -2.25
+                    ],
+                    [
+                        2.0,
+                        -3.0,
+                        9.0,
+                        0.5,
+                        6.0,
+                        -8.0
+                    ]
+                ],
+                "name": "hccl_sending",
+                "hccl": true,
+                "saving_rank": false
+            }
+        },
+        {
+            "case": {
+                "name": "empty_buffers",
+                "hccl": false,
+                "saving_rank": true,
+                "payloads": [],
+                "expected": []
+            }
+        },
+        {
+            "case": {
+                "name": "gloo_storage_edge_values",
+                "hccl": false,
+                "saving_rank": true,
+                "payloads": [
+                    [
+                        [
+                            0.0,
+                            -0.0,
+                            131072.0
+                        ],
+                        [
+                            -65536.0,
+                            2.350988701644575e-38,
+                            1e+38
+                        ]
+                    ]
+                ],
+                "expected": [
+                    [
+                        -65536.0,
+                        2.350988701644575e-38,
+                        1e+38,
+                        0.0,
+                        -0.0,
+                        131072.0
+                    ]
+                ]
+            }
+        },
+        {
+            "case": {
+                "name": "hccl_storage_edge_values",
+                "hccl": true,
+                "saving_rank": true,
+                "payloads": [
+                    [
+                        [
+                            0.0,
+                            -0.0,
+                            131072.0
+                        ],
+                        [
+                            -65536.0,
+                            2.350988701644575e-38,
+                            1e+38
+                        ]
+                    ]
+                ],
+                "expected": [
+                    [
+                        -65536.0,
+                        2.350988701644575e-38,
+                        1e+38,
+                        0.0,
+                        -0.0,
+                        131072.0
+                    ]
+                ]
+            }
+        }
+    ],
+    "test_scale_in_state": [
+        {
+            "case": {
+                "name": "normal",
+                "scale_in": false,
+                "fault_in_group": false,
+                "fault_replica": false,
+                "groups": [
+                    "original"
+                ]
+            }
+        },
+        {
+            "case": {
+                "name": "inactive_fault_flags",
+                "scale_in": false,
+                "fault_in_group": true,
+                "fault_replica": true,
+                "groups": [
+                    "original"
+                ]
+            }
+        },
+        {
+            "case": {
+                "name": "unaffected",
+                "scale_in": true,
+                "fault_in_group": false,
+                "fault_replica": false,
+                "groups": [
+                    "original"
+                ]
+            }
+        },
+        {
+            "case": {
+                "name": "fault_in_group",
+                "scale_in": true,
+                "fault_in_group": true,
+                "fault_replica": false,
+                "groups": [
+                    "scale_in"
+                ]
+            }
+        },
+        {
+            "case": {
+                "name": "fault_replica",
+                "scale_in": true,
+                "fault_in_group": false,
+                "fault_replica": true,
+                "groups": [
+                    "original",
+                    "scale_in"
+                ]
+            }
+        },
+        {
+            "case": {
+                "name": "both_flags",
+                "scale_in": true,
+                "fault_in_group": true,
+                "fault_replica": true,
+                "groups": [
+                    "scale_in"
+                ]
+            }
+        }
+    ]
+}
