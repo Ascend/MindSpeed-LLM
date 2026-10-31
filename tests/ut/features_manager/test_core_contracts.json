@@ -1,0 +1,322 @@
+{
+    "test_lora_conflicts": [
+        {
+            "targets": [],
+            "experts": 8,
+            "dispatcher": "allgather",
+            "extend": true,
+            "error": null
+        },
+        {
+            "targets": [
+                "linear_qkv"
+            ],
+            "experts": null,
+            "dispatcher": "allgather",
+            "extend": false,
+            "error": null
+        },
+        {
+            "targets": [
+                "linear_qkv"
+            ],
+            "experts": 8,
+            "dispatcher": "alltoall_seq",
+            "extend": false,
+            "error": null
+        },
+        {
+            "targets": [
+                "linear_qkv"
+            ],
+            "experts": 8,
+            "dispatcher": "allgather",
+            "extend": false,
+            "error": "only enable the alltoall_seq"
+        },
+        {
+            "targets": [
+                "linear_qkv"
+            ],
+            "experts": null,
+            "dispatcher": "alltoall_seq",
+            "extend": true,
+            "error": "not supported with moe-tp-extend-ep"
+        }
+    ],
+    "test_num_layer_list_lifecycle": [
+        {
+            "overrides": {},
+            "error": null
+        },
+        {
+            "overrides": {
+                "pipeline_model_parallel_layout": "Et|tL"
+            },
+            "error": "mutually exclusive"
+        },
+        {
+            "overrides": {
+                "num_layer_list": "4,4,4"
+            },
+            "error": "len"
+        },
+        {
+            "overrides": {
+                "pipeline_model_parallel_size": 1,
+                "num_layer_list": "8"
+            },
+            "error": "pipeline parallel"
+        },
+        {
+            "overrides": {
+                "num_layers_per_virtual_pipeline_stage": 2
+            },
+            "error": "virtual pipeline"
+        },
+        {
+            "overrides": {
+                "schedules_method": "dualpipev"
+            },
+            "error": "dualpipev"
+        },
+        {
+            "overrides": {
+                "num_layer_list": "4,4,4",
+                "save_model_type": "hf"
+            },
+            "error": null
+        },
+        {
+            "overrides": {
+                "num_layer_list": null
+            },
+            "error": null
+        }
+    ],
+    "test_finetune_variable_sequence_restore": [
+        {
+            "no_pad": false,
+            "variable": false,
+            "throughput": true
+        },
+        {
+            "no_pad": false,
+            "variable": true,
+            "throughput": false
+        },
+        {
+            "no_pad": true,
+            "variable": false,
+            "throughput": false
+        },
+        {
+            "no_pad": true,
+            "variable": true,
+            "throughput": true
+        }
+    ],
+    "test_mtp_state_is_restored": [
+        {
+            "cp": 1,
+            "mtp": null
+        },
+        {
+            "cp": 1,
+            "mtp": 2
+        },
+        {
+            "cp": 2,
+            "mtp": null
+        },
+        {
+            "cp": 2,
+            "mtp": 2
+        }
+    ],
+    "test_virtual_tp_world_size_restore": [
+        {
+            "world": 6,
+            "ldt": true,
+            "cp": 1,
+            "expected": 8
+        },
+        {
+            "world": 8,
+            "ldt": true,
+            "cp": 1,
+            "expected": 8
+        },
+        {
+            "world": 6,
+            "ldt": false,
+            "cp": 1,
+            "expected": 6
+        },
+        {
+            "world": 6,
+            "ldt": true,
+            "cp": 2,
+            "expected": 16
+        },
+        {
+            "world": 6,
+            "ldt": true,
+            "cp": null,
+            "expected": 8
+        },
+        {
+            "world": null,
+            "ldt": true,
+            "cp": 1,
+            "expected": null
+        }
+    ],
+    "test_invalid_feature_configuration": [
+        {
+            "path": "common.data",
+            "cls": "DataFeature",
+            "values": {
+                "enable_share_memory": true,
+                "reset_attention_mask": true
+            },
+            "error_type": "AssertionError",
+            "message": "reset-attention-mask"
+        },
+        {
+            "path": "common.data",
+            "cls": "DataFeature",
+            "values": {
+                "enable_share_memory": true,
+                "reset_attention_mask": false,
+                "position_embedding_type": "alibi"
+            },
+            "error_type": "AssertionError",
+            "message": "alibi"
+        },
+        {
+            "path": "functional.model_io_trace",
+            "cls": "ModelIOTraceFeature",
+            "values": {
+                "model_io_trace": true,
+                "model_io_trace_output_path": null
+            },
+            "error_type": "ValueError",
+            "message": "output-path"
+        },
+        {
+            "path": "functional.profiling",
+            "cls": "ProfilingFeature",
+            "values": {
+                "profile_step_start": 0
+            },
+            "error_type": "AssertionError",
+            "message": "greater than 0"
+        },
+        {
+            "path": "dpo.dpo",
+            "cls": "DPOFeature",
+            "values": {
+                "use_wandb": false,
+                "wandb_exp_name": "experiment"
+            },
+            "error_type": "ValueError",
+            "message": "use_wandb"
+        },
+        {
+            "path": "context_parallel.mamba_context_parallel",
+            "cls": "MambaContextParallelFeature",
+            "values": {
+                "context_parallel_size": 2,
+                "context_parallel_algo": "mamba_cp_algo",
+                "seq_length": 7
+            },
+            "error_type": "AssertionError",
+            "message": "sequence length"
+        },
+        {
+            "path": "context_parallel.mamba_context_parallel",
+            "cls": "MambaContextParallelFeature",
+            "values": {
+                "context_parallel_size": 2,
+                "context_parallel_algo": "mamba_cp_algo",
+                "seq_length": 8,
+                "num_attention_heads": 3,
+                "tensor_model_parallel_size": 2
+            },
+            "error_type": "AssertionError",
+            "message": "num_attention_heads"
+        }
+    ],
+    "test_valid_feature_configuration": [
+        {
+            "path": "common.data",
+            "cls": "DataFeature",
+            "values": {
+                "enable_share_memory": false,
+                "reset_attention_mask": true
+            }
+        },
+        {
+            "path": "common.data",
+            "cls": "DataFeature",
+            "values": {
+                "enable_share_memory": true,
+                "reset_attention_mask": false,
+                "position_embedding_type": "rope"
+            }
+        },
+        {
+            "path": "functional.model_io_trace",
+            "cls": "ModelIOTraceFeature",
+            "values": {
+                "model_io_trace": false,
+                "model_io_trace_output_path": null
+            }
+        },
+        {
+            "path": "functional.model_io_trace",
+            "cls": "ModelIOTraceFeature",
+            "values": {
+                "model_io_trace": true,
+                "model_io_trace_output_path": "trace"
+            }
+        },
+        {
+            "path": "functional.profiling",
+            "cls": "ProfilingFeature",
+            "values": {
+                "profile_step_start": 1
+            }
+        },
+        {
+            "path": "functional.profiling",
+            "cls": "ProfilingFeature",
+            "values": {}
+        },
+        {
+            "path": "dpo.dpo",
+            "cls": "DPOFeature",
+            "values": {
+                "use_wandb": true,
+                "wandb_exp_name": "experiment"
+            }
+        },
+        {
+            "path": "dpo.dpo",
+            "cls": "DPOFeature",
+            "values": {
+                "use_wandb": false,
+                "wandb_exp_name": null
+            }
+        },
+        {
+            "path": "context_parallel.mamba_context_parallel",
+            "cls": "MambaContextParallelFeature",
+            "values": {
+                "context_parallel_size": 1,
+                "context_parallel_algo": "mamba_cp_algo"
+            }
+        }
+    ]
+}

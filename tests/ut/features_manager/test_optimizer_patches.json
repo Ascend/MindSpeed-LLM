@@ -1,0 +1,31 @@
+{
+    "test_low_precision_registers_state_and_gradient_routes": [
+        {
+            "states": null,
+            "grads": false
+        },
+        {
+            "states": "fp8",
+            "grads": false
+        },
+        {
+            "states": null,
+            "grads": true
+        },
+        {
+            "states": "mxfp8",
+            "grads": true
+        }
+    ],
+    "test_muon_registers_dummy_and_checkpoint_routes": [
+        {
+            "optimizer": "adam"
+        },
+        {
+            "optimizer": "muon"
+        },
+        {
+            "optimizer": "dist_muon"
+        }
+    ]
+}

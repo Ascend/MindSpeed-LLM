@@ -1,0 +1,104 @@
+{
+    "test_rejects_invalid_case_configuration": [
+        {
+            "payload": "[",
+            "argnames": "value",
+            "options": {},
+            "message": "Expecting value"
+        },
+        {
+            "payload": "{}",
+            "argnames": "value",
+            "options": {},
+            "message": "Missing JSON testcase"
+        },
+        {
+            "payload": "[]",
+            "argnames": "value",
+            "options": {},
+            "message": "Missing JSON testcase"
+        },
+        {
+            "payload": "{\"test_case\": []}",
+            "argnames": "value",
+            "options": {},
+            "message": "nonempty case array"
+        },
+        {
+            "payload": "{\"test_case\": {\"value\": 1}}",
+            "argnames": "value",
+            "options": {},
+            "message": "nonempty case array"
+        },
+        {
+            "payload": "{\"test_case\": [1]}",
+            "argnames": "value",
+            "options": {},
+            "message": "Case fields"
+        },
+        {
+            "payload": "{\"test_case\": [{\"other\": 1}]}",
+            "argnames": "value",
+            "options": {},
+            "message": "Case fields"
+        },
+        {
+            "payload": "{\"test_case\": [{\"second\": 2, \"first\": 1}]}",
+            "argnames": "first,second",
+            "options": {},
+            "message": "parameter order"
+        },
+        {
+            "payload": "{\"test_case\": [{\"value\": 1, \"value\": 2}]}",
+            "argnames": "value",
+            "options": {},
+            "message": "Duplicate JSON field"
+        },
+        {
+            "payload": "{\"test_case\": [{\"value\": 1}]}",
+            "argnames": "value,value",
+            "options": {},
+            "message": "nonempty and unique"
+        },
+        {
+            "payload": "{\"test_case\": [{\"value\": 1}]}",
+            "argnames": "value",
+            "options": {
+                "exceptions": [
+                    "missing"
+                ]
+            },
+            "message": "declared parameters"
+        },
+        {
+            "payload": "{\"test_case\": [{\"exception\": \"RuntimeError\"}]}",
+            "argnames": "exception",
+            "options": {
+                "exceptions": [
+                    "exception"
+                ]
+            },
+            "message": "Unsupported exception"
+        },
+        {
+            "payload": "{\"test_case\": [{\"exception\": {}}]}",
+            "argnames": "exception",
+            "options": {
+                "exceptions": [
+                    "exception"
+                ]
+            },
+            "message": "Unsupported exception"
+        },
+        {
+            "payload": "{\"test_case\": [{\"expected\": {\"callback\": \"text\"}}]}",
+            "argnames": "expected",
+            "options": {
+                "tuple_values": [
+                    "expected"
+                ]
+            },
+            "message": "must contain arrays"
+        }
+    ]
+}

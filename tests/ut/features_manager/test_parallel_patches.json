@@ -1,0 +1,117 @@
+{
+    "test_cp_registration_gates": [
+        {
+            "size": 1,
+            "reset": false,
+            "algo": "megatron_cp_algo",
+            "impl": "local"
+        },
+        {
+            "size": 2,
+            "reset": true,
+            "algo": "megatron_cp_algo",
+            "impl": "local"
+        },
+        {
+            "size": 2,
+            "reset": false,
+            "algo": "megatron_cp_algo",
+            "impl": "local"
+        },
+        {
+            "size": 2,
+            "reset": false,
+            "algo": "kvallgather_cp_algo",
+            "impl": "transformer_engine"
+        }
+    ],
+    "test_fusion_attention_defers_to_cp": [
+        {
+            "size": 1
+        },
+        {
+            "size": 2
+        }
+    ],
+    "test_reset_mask_patch_cp_and_training_routes": [
+        {
+            "enabled": false,
+            "size": 1,
+            "impl": "local",
+            "algo": "megatron_cp_algo",
+            "training": false
+        },
+        {
+            "enabled": true,
+            "size": 1,
+            "impl": "local",
+            "algo": "megatron_cp_algo",
+            "training": false
+        },
+        {
+            "enabled": true,
+            "size": 2,
+            "impl": "local",
+            "algo": "megatron_cp_algo",
+            "training": false
+        },
+        {
+            "enabled": true,
+            "size": 2,
+            "impl": "transformer_engine",
+            "algo": "megatron_cp_algo",
+            "training": true
+        },
+        {
+            "enabled": true,
+            "size": 2,
+            "impl": "transformer_engine",
+            "algo": "kvallgather_cp_algo",
+            "training": true
+        }
+    ],
+    "test_layerwise_split_and_virtual_dp_routes": [
+        {
+            "enabled": false,
+            "layers": null
+        },
+        {
+            "enabled": true,
+            "layers": null
+        },
+        {
+            "enabled": true,
+            "layers": "3,5"
+        }
+    ],
+    "test_coc_and_tp2d_patch_paths": [
+        {
+            "enabled": false
+        },
+        {
+            "enabled": true
+        }
+    ],
+    "test_swiglu_limit_inherits_fusion_and_selects_kernel": [
+        {
+            "limit": 0,
+            "triton": false
+        },
+        {
+            "limit": 2.0,
+            "triton": false
+        },
+        {
+            "limit": 2.0,
+            "triton": true
+        }
+    ],
+    "test_dualpipev_registers_mtp_and_schedule_routes": [
+        {
+            "schedule": "default"
+        },
+        {
+            "schedule": "dualpipev"
+        }
+    ]
+}

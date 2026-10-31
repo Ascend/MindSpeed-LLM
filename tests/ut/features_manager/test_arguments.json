@@ -1,0 +1,601 @@
+{
+    "test_argument_defaults_and_overrides": [
+        {
+            "path": "common.data",
+            "cls": "DataFeature",
+            "argv": [
+                "--enable-share-memory"
+            ],
+            "defaults": {
+                "enable_share_memory": false
+            },
+            "expected": {
+                "enable_share_memory": true
+            }
+        },
+        {
+            "path": "common.rotary",
+            "cls": "RotaryPositionEmbeddingFeature",
+            "argv": [
+                "--rope-scaling-type",
+                "longrope",
+                "--long-factor",
+                "1,2"
+            ],
+            "defaults": {
+                "rope_scaling_type": null,
+                "beta_fast": 32
+            },
+            "expected": {
+                "rope_scaling_type": "longrope",
+                "long_factor": "1,2"
+            }
+        },
+        {
+            "path": "dataset.dataset",
+            "cls": "DatasetFeature",
+            "argv": [
+                "--enable-thinking",
+                "NONE",
+                "--pad-to-multiple-of",
+                "16"
+            ],
+            "defaults": {
+                "enable_thinking": null,
+                "pad_to_multiple_of": 8
+            },
+            "expected": {
+                "enable_thinking": null,
+                "pad_to_multiple_of": 16
+            }
+        },
+        {
+            "path": "dataset.data_preprocess",
+            "cls": "DatasetPreprocessFeature",
+            "argv": [
+                "--map-keys",
+                "{\"prompt\":\"query\"}",
+                "--drop-thinking",
+                "FALSE"
+            ],
+            "defaults": {
+                "drop_thinking": true,
+                "json_keys": [
+                    "text"
+                ]
+            },
+            "expected": {
+                "map_keys": {
+                    "prompt": "query"
+                },
+                "drop_thinking": false
+            }
+        },
+        {
+            "path": "dpo.dpo",
+            "cls": "DPOFeature",
+            "argv": [
+                "--dpo-loss-type",
+                "ipo",
+                "--dpo-beta",
+                "0.2",
+                "--is-pairwise-dataset"
+            ],
+            "defaults": {
+                "dpo_loss_type": "sigmoid",
+                "dpo_beta": 0.1
+            },
+            "expected": {
+                "dpo_loss_type": "ipo",
+                "dpo_beta": 0.2,
+                "is_pairwise_dataset": true
+            }
+        },
+        {
+            "path": "finetune.finetune",
+            "cls": "FinetuneFeature",
+            "argv": [
+                "--dataset-additional-keys",
+                "prompt",
+                "response",
+                "--no-pad-to-seq-lengths"
+            ],
+            "defaults": {
+                "dataset_additional_keys": [],
+                "no_pad_to_seq_lengths": false
+            },
+            "expected": {
+                "dataset_additional_keys": [
+                    "prompt",
+                    "response"
+                ],
+                "no_pad_to_seq_lengths": true
+            }
+        },
+        {
+            "path": "finetune.lu_lora",
+            "cls": "LuLoraFeature",
+            "argv": [
+                "--lu-lora-final-layer-index",
+                "4",
+                "--lu-lora-lr-ratio",
+                "2"
+            ],
+            "defaults": {
+                "lu_lora_final_layer_index": null,
+                "lu_lora_lr_ratio": 1.0
+            },
+            "expected": {
+                "lu_lora_final_layer_index": 4,
+                "lu_lora_lr_ratio": 2.0
+            }
+        },
+        {
+            "path": "functional.model_io_trace",
+            "cls": "ModelIOTraceFeature",
+            "argv": [
+                "--model-io-trace",
+                "--model-io-trace-output-path",
+                "trace"
+            ],
+            "defaults": {
+                "model_io_trace": false
+            },
+            "expected": {
+                "model_io_trace": true,
+                "model_io_trace_output_path": "trace"
+            }
+        },
+        {
+            "path": "functional.msprobe",
+            "cls": "MsProbeFeature",
+            "argv": [
+                "--msprobe",
+                "--msprobe-config-path",
+                "config.json"
+            ],
+            "defaults": {
+                "msprobe": false,
+                "msprobe_config_path": null
+            },
+            "expected": {
+                "msprobe": true,
+                "msprobe_config_path": "config.json"
+            }
+        },
+        {
+            "path": "functional.profiling",
+            "cls": "ProfilingFeature",
+            "argv": [
+                "--profile-export-type",
+                "db",
+                "--profile-level",
+                "level2"
+            ],
+            "defaults": {
+                "profile_export_type": "text",
+                "profile_level": "level0"
+            },
+            "expected": {
+                "profile_export_type": "db",
+                "profile_level": "level2"
+            }
+        },
+        {
+            "path": "high_availability.high_availability",
+            "cls": "HighAvailabilityFeature",
+            "argv": [
+                "--enable-high-availability",
+                "--enable-elastic-training"
+            ],
+            "defaults": {
+                "enable_high_availability": false
+            },
+            "expected": {
+                "enable_high_availability": true,
+                "enable_elastic_training": true
+            }
+        },
+        {
+            "path": "inference.inference",
+            "cls": "InferenceFeature",
+            "argv": [
+                "--task",
+                "mmlu",
+                "ceval",
+                "--top-k",
+                "2",
+                "--use-kv-cache"
+            ],
+            "defaults": {
+                "task": null,
+                "top_k": 50
+            },
+            "expected": {
+                "task": [
+                    "mmlu",
+                    "ceval"
+                ],
+                "top_k": 2,
+                "use_kv_cache": true
+            }
+        },
+        {
+            "path": "layerwise_disaggregated_training.u_shaped_split_feature",
+            "cls": "UShapedSplitFeature",
+            "argv": [
+                "--layerwise-disaggregated-training"
+            ],
+            "defaults": {
+                "layerwise_disaggregated_training": false
+            },
+            "expected": {
+                "layerwise_disaggregated_training": true
+            }
+        },
+        {
+            "path": "low_precision.low_precision_optimizer_feature",
+            "cls": "LowPrecisionOptimizerFeature",
+            "argv": [
+                "--quant-states",
+                "mxfp8",
+                "--quant-grads"
+            ],
+            "defaults": {
+                "quant_states": null,
+                "quant_grads": false
+            },
+            "expected": {
+                "quant_states": "mxfp8",
+                "quant_grads": true
+            }
+        },
+        {
+            "path": "megatron_basic.training_basic",
+            "cls": "TrainingBasicFeature",
+            "argv": [
+                "--jit-compile",
+                "--load-checkpoint-loosely"
+            ],
+            "defaults": {
+                "jit_compile": false
+            },
+            "expected": {
+                "jit_compile": true,
+                "load_checkpoint_loosely": true
+            }
+        },
+        {
+            "path": "memory.chunk_loss",
+            "cls": "ChunkLossFeature",
+            "argv": [
+                "--loss-compute-mode",
+                "chunk",
+                "--loss-chunk-size",
+                "256"
+            ],
+            "defaults": {
+                "loss_compute_mode": "default",
+                "loss_chunk_size": 1024
+            },
+            "expected": {
+                "loss_compute_mode": "chunk",
+                "loss_chunk_size": 256
+            }
+        },
+        {
+            "path": "memory.swap_layer_input",
+            "cls": "SwapLayerInputFeature",
+            "argv": [
+                "--swap-layer-input"
+            ],
+            "defaults": {
+                "swap_layer_input": false
+            },
+            "expected": {
+                "swap_layer_input": true
+            }
+        },
+        {
+            "path": "models.mamba",
+            "cls": "MambaModel",
+            "argv": [
+                "--mamba-chunk-size",
+                "128",
+                "--mamba-d-ssm",
+                "64"
+            ],
+            "defaults": {
+                "mamba_chunk_size": 256,
+                "mamba_d_ssm": null
+            },
+            "expected": {
+                "mamba_chunk_size": 128,
+                "mamba_d_ssm": 64
+            }
+        },
+        {
+            "path": "models.module",
+            "cls": "ModuleFeature",
+            "argv": [
+                "--input-jitter",
+                "--skip-bias-add",
+                "--post-norm"
+            ],
+            "defaults": {
+                "input_jitter": true,
+                "skip_bias_add": true
+            },
+            "expected": {
+                "input_jitter": false,
+                "skip_bias_add": false,
+                "post_norm": true
+            }
+        },
+        {
+            "path": "pipeline_parallel.num_layer_list",
+            "cls": "NumLayerListFeature",
+            "argv": [
+                "--num-layer-list",
+                "2,6"
+            ],
+            "defaults": {
+                "num_layer_list": null
+            },
+            "expected": {
+                "num_layer_list": "2,6"
+            }
+        },
+        {
+            "path": "qat.qat_quant_engine",
+            "cls": "QATQuantEngineFeature",
+            "argv": [
+                "--qat-scheme",
+                "w4a8-moe-only",
+                "--qat-quant-block-size",
+                "128"
+            ],
+            "defaults": {
+                "qat_scheme": null,
+                "qat_quant_block_size": null
+            },
+            "expected": {
+                "qat_scheme": "w4a8-moe-only",
+                "qat_quant_block_size": 128
+            }
+        },
+        {
+            "path": "transformer.mhc_feature",
+            "cls": "MHCFeature",
+            "argv": [
+                "--enable-mhc",
+                "--use-fused-mhc"
+            ],
+            "defaults": {
+                "enable_mhc": false,
+                "hc_mult": 4,
+                "hc_sinkhorn_iters": 20
+            },
+            "expected": {
+                "enable_mhc": true,
+                "use_fused_mhc": true
+            }
+        },
+        {
+            "path": "transformer.mtp",
+            "cls": "MultiTokenPredictionFeature",
+            "argv": [
+                "--mtp-spec",
+                "custom.spec",
+                "get_spec",
+                "--mtp-mem-efficient-logits"
+            ],
+            "defaults": {
+                "mtp_spec": null,
+                "mtp_mem_efficient_logits": false
+            },
+            "expected": {
+                "mtp_spec": [
+                    "custom.spec",
+                    "get_spec"
+                ],
+                "mtp_mem_efficient_logits": true
+            }
+        },
+        {
+            "path": "transformer.multi_latent_attention.csa_feature",
+            "cls": "CSAFeature",
+            "argv": [
+                "--o-groups",
+                "4",
+                "--recompute-csa-attention"
+            ],
+            "defaults": {
+                "o_groups": 8,
+                "recompute_csa_attention": false
+            },
+            "expected": {
+                "o_groups": 4,
+                "recompute_csa_attention": true
+            }
+        },
+        {
+            "path": "transformer.multi_latent_attention.dsa_indexer_feature",
+            "cls": "DSAIndexerFeature",
+            "argv": [
+                "--compress-ratios",
+                "0",
+                "4",
+                "128"
+            ],
+            "defaults": {
+                "compress_ratios": null,
+                "index_topk": 2048
+            },
+            "expected": {
+                "compress_ratios": [
+                    0,
+                    4,
+                    128
+                ]
+            }
+        },
+        {
+            "path": "transformer.multi_latent_attention.mla_feature",
+            "cls": "MLAFeature",
+            "argv": [
+                "--padded-base-length",
+                "64",
+                "--mla-mm-split"
+            ],
+            "defaults": {
+                "padded_base_length": 128
+            },
+            "expected": {
+                "padded_base_length": 64,
+                "mla_mm_split": true
+            }
+        },
+        {
+            "path": "transformer.transformer_block",
+            "cls": "TransformerBlockFeature",
+            "argv": [
+                "--first-k-dense-replace",
+                "2"
+            ],
+            "defaults": {
+                "first_k_dense_replace": null
+            },
+            "expected": {
+                "first_k_dense_replace": 2
+            }
+        },
+        {
+            "path": "transformer.flash_attention.alibi_feature",
+            "cls": "AlibiFeature",
+            "argv": [
+                "--square-alibi-mask",
+                "--alibi-fusion-attn-type",
+                "2"
+            ],
+            "defaults": {
+                "square_alibi_mask": false
+            },
+            "expected": {
+                "square_alibi_mask": true,
+                "alibi_fusion_attn_type": 2
+            }
+        },
+        {
+            "path": "transformer.flash_attention.reset_attention_mask_feature",
+            "cls": "ResetAttentionMaskFeature",
+            "argv": [
+                "--fix-sub-seq-length",
+                "8"
+            ],
+            "defaults": {
+                "fix_sub_seq_length": -1
+            },
+            "expected": {
+                "fix_sub_seq_length": 8
+            }
+        },
+        {
+            "path": "transformer.flash_attention.fusion_attention_feature",
+            "cls": "FusionAttentionFeature",
+            "argv": [
+                "--shape-order",
+                "BSND"
+            ],
+            "defaults": {
+                "shape_order": "SBH",
+                "pre_tockens": 1048576
+            },
+            "expected": {
+                "shape_order": "BSND"
+            }
+        },
+        {
+            "path": "convert_checkpoint.convert_checkpoint",
+            "cls": "CheckpointFeature",
+            "argv": [
+                "--model-type-hf",
+                "qwen3",
+                "--enable-hf2mg-convert"
+            ],
+            "defaults": {
+                "model_type_hf": null
+            },
+            "expected": {
+                "model_type_hf": "qwen3",
+                "enable_hf2mg_convert": true
+            }
+        }
+    ],
+    "test_argument_rejects_invalid_values": [
+        {
+            "path": "qat.qat_quant_engine",
+            "cls": "QATQuantEngineFeature",
+            "argv": [
+                "--qat-quant-block-size",
+                "64"
+            ]
+        },
+        {
+            "path": "memory.chunk_loss",
+            "cls": "ChunkLossFeature",
+            "argv": [
+                "--loss-compute-mode",
+                "unknown"
+            ]
+        },
+        {
+            "path": "dataset.data_preprocess",
+            "cls": "DatasetPreprocessFeature",
+            "argv": [
+                "--mix-strategy",
+                "unknown"
+            ]
+        },
+        {
+            "path": "dataset.data_preprocess",
+            "cls": "DatasetPreprocessFeature",
+            "argv": [
+                "--map-keys",
+                "{invalid}"
+            ]
+        },
+        {
+            "path": "functional.profiling",
+            "cls": "ProfilingFeature",
+            "argv": [
+                "--profile-level",
+                "level3"
+            ]
+        },
+        {
+            "path": "transformer.flash_attention.fusion_attention_feature",
+            "cls": "FusionAttentionFeature",
+            "argv": [
+                "--shape-order",
+                "TND"
+            ]
+        },
+        {
+            "path": "transformer.multi_latent_attention.dsa_indexer_feature",
+            "cls": "DSAIndexerFeature",
+            "argv": [
+                "--indexer-qk-quant-scheme",
+                "int8"
+            ]
+        },
+        {
+            "path": "convert_checkpoint.convert_checkpoint",
+            "cls": "CheckpointFeature",
+            "argv": [
+                "--model-type-hf",
+                "unknown"
+            ]
+        }
+    ]
+}

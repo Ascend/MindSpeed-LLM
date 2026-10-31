@@ -1,0 +1,16 @@
+{
+    "test_csa_mtp_bypass_and_reuse": [
+        {
+            "mtp": null,
+            "position": "deepseek4"
+        },
+        {
+            "mtp": 1,
+            "position": "deepseek4"
+        },
+        {
+            "mtp": 1,
+            "position": "rope"
+        }
+    ]
+}

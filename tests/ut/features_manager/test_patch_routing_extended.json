@@ -1,0 +1,163 @@
+{
+    "test_default_patch_destinations": [
+        {
+            "path": "affinity.affinity",
+            "cls": "AffinityFeature",
+            "values": {},
+            "expected": {
+                "megatron.core.tensor_parallel.cross_entropy.VocabParallelCrossEntropy.calculate_predicted_logits": [
+                    "calculate_predicted_logits"
+                ]
+            }
+        },
+        {
+            "path": "common.embedding",
+            "cls": "LanguageModelEmbeddingFeature",
+            "values": {},
+            "expected": {
+                "megatron.core.models.common.embeddings.language_model_embedding.LanguageModelEmbedding.__init__": [
+                    "language_model_embedding_init_func"
+                ]
+            }
+        },
+        {
+            "path": "convert_checkpoint.convert_checkpoint",
+            "cls": "CheckpointFeature",
+            "values": {},
+            "expected": {
+                "megatron.training.initialize.initialize_megatron": [
+                    "initialize_megatron_wrapper"
+                ]
+            }
+        },
+        {
+            "path": "tokenizer.build_tokenizer",
+            "cls": "BuildTokenizerFeature",
+            "values": {},
+            "expected": {
+                "megatron.training.tokenizer.tokenizer.build_tokenizer": [
+                    "build_tokenizer"
+                ]
+            }
+        },
+        {
+            "path": "dpo.dpo",
+            "cls": "DPOFeature",
+            "values": {},
+            "expected": {
+                "megatron.core.pipeline_parallel.schedules.forward_backward_pipelining_with_interleaving": [
+                    "forward_backward_pipelining_with_interleaving_wrapper"
+                ]
+            }
+        },
+        {
+            "path": "models.module",
+            "cls": "ModuleFeature",
+            "values": {},
+            "expected": {
+                "megatron.legacy.model.rms_norm.RMSNorm.__init__": [
+                    "rms_norm_init_wrapper"
+                ],
+                "megatron.legacy.model.rms_norm.RMSNorm.forward": [
+                    "rms_norm_forward"
+                ]
+            }
+        },
+        {
+            "path": "common.training",
+            "cls": "TrainingDefaultFeature",
+            "values": {},
+            "expected": {
+                "megatron.training.training.build_pretraining_data_loader": [
+                    "build_pretraining_data_loader"
+                ],
+                "megatron.training.training.train": [
+                    "train"
+                ],
+                "megatron.training.training.load_checkpoint": [
+                    "load_checkpoint_wrapper"
+                ]
+            }
+        }
+    ],
+    "test_training_and_rotary_patch_ownership": [
+        {
+            "reset": false
+        },
+        {
+            "reset": true
+        }
+    ],
+    "test_dynamic_pipeline_patch_gate": [
+        {
+            "layers": null
+        },
+        {
+            "layers": "2,6"
+        }
+    ],
+    "test_transformer_block_shared_kv_patch": [
+        {
+            "shared": false
+        },
+        {
+            "shared": true
+        }
+    ],
+    "test_router_selects_zero_expert_and_overlap_routes": [
+        {
+            "experts": 0,
+            "overlap": false,
+            "fp32": false,
+            "hash_layers": 0
+        },
+        {
+            "experts": 2,
+            "overlap": false,
+            "fp32": true,
+            "hash_layers": 1
+        },
+        {
+            "experts": 0,
+            "overlap": true,
+            "fp32": false,
+            "hash_layers": 0
+        }
+    ],
+    "test_mtp_memory_and_overlap_patch_precedence": [
+        {
+            "mem": false,
+            "overlap": false
+        },
+        {
+            "mem": true,
+            "overlap": false
+        },
+        {
+            "mem": false,
+            "overlap": true
+        }
+    ],
+    "test_tp_extend_ep_defers_to_overlap": [
+        {
+            "enabled": false,
+            "overlap": false
+        },
+        {
+            "enabled": true,
+            "overlap": false
+        },
+        {
+            "enabled": true,
+            "overlap": true
+        }
+    ],
+    "test_noop_layers_patch_gate": [
+        {
+            "noop": null
+        },
+        {
+            "noop": "1,2"
+        }
+    ]
+}

@@ -1,0 +1,100 @@
+{
+    "test_te_precision_comm_and_checkpoint_precedence": [
+        {
+            "fp8": null,
+            "mc2": false,
+            "cp": 1,
+            "mode": "compatible",
+            "blocker": null,
+            "overlap": false,
+            "mtp": null
+        },
+        {
+            "fp8": null,
+            "mc2": true,
+            "cp": 2,
+            "mode": "performance",
+            "blocker": null,
+            "overlap": false,
+            "mtp": null
+        },
+        {
+            "fp8": "e4m3",
+            "mc2": false,
+            "cp": 1,
+            "mode": "compatible",
+            "blocker": null,
+            "overlap": false,
+            "mtp": 1
+        },
+        {
+            "fp8": "e4m3",
+            "mc2": false,
+            "cp": 2,
+            "mode": "performance",
+            "blocker": "swap_attention",
+            "overlap": false,
+            "mtp": null
+        },
+        {
+            "fp8": "e4m3",
+            "mc2": false,
+            "cp": 1,
+            "mode": "performance",
+            "blocker": "recompute_method",
+            "overlap": false,
+            "mtp": null
+        },
+        {
+            "fp8": "e4m3",
+            "mc2": false,
+            "cp": 1,
+            "mode": "performance",
+            "blocker": "n_hash_layers",
+            "overlap": true,
+            "mtp": 1
+        }
+    ],
+    "test_availability_replica_reuse_and_elastic_patch_routes": [
+        {
+            "enabled": false,
+            "no_replica": false,
+            "reuse": false,
+            "reboot": false,
+            "elastic": false,
+            "mtp": null
+        },
+        {
+            "enabled": true,
+            "no_replica": false,
+            "reuse": false,
+            "reboot": false,
+            "elastic": false,
+            "mtp": null
+        },
+        {
+            "enabled": true,
+            "no_replica": true,
+            "reuse": false,
+            "reboot": false,
+            "elastic": false,
+            "mtp": null
+        },
+        {
+            "enabled": true,
+            "no_replica": false,
+            "reuse": true,
+            "reboot": true,
+            "elastic": false,
+            "mtp": 1
+        },
+        {
+            "enabled": true,
+            "no_replica": false,
+            "reuse": false,
+            "reboot": false,
+            "elastic": true,
+            "mtp": 1
+        }
+    ]
+}

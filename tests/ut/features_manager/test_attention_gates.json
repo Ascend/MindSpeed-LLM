@@ -1,0 +1,402 @@
+{
+    "test_context_parallel_llm_conflicts": [
+        {
+            "values": {
+                "position_embedding_type": "alibi"
+            },
+            "message": "does not support alibi"
+        },
+        {
+            "values": {
+                "use_kv_cache": true
+            },
+            "message": "use_kv_cache"
+        },
+        {
+            "values": {
+                "sliding_window": 4
+            },
+            "message": "sliding_windows"
+        },
+        {
+            "values": {
+                "spec": "custom.deepseek4_spec"
+            },
+            "message": "DeepSeek4 only supports"
+        },
+        {
+            "values": {
+                "spec": [
+                    "custom.deepseek4_spec",
+                    "get_spec"
+                ]
+            },
+            "message": "DeepSeek4 only supports"
+        }
+    ],
+    "test_context_parallel_inherited_acceptance": [
+        {
+            "values": {}
+        },
+        {
+            "values": {
+                "sliding_window": 8
+            }
+        },
+        {
+            "values": {
+                "context_parallel_size": 1,
+                "use_kv_cache": true
+            }
+        },
+        {
+            "values": {
+                "context_parallel_algo": "kvallgather_cp_algo",
+                "reset_attention_mask": true,
+                "seq_length": 6,
+                "spec": "custom.deepseek4_spec"
+            }
+        }
+    ],
+    "test_shared_expert_dimension_inference": [
+        {
+            "experts": null,
+            "moe_ffn": 64,
+            "ffn": 128,
+            "configured": null,
+            "expected": null
+        },
+        {
+            "experts": 2,
+            "moe_ffn": 64,
+            "ffn": 128,
+            "configured": null,
+            "expected": 128
+        },
+        {
+            "experts": 2,
+            "moe_ffn": null,
+            "ffn": 128,
+            "configured": null,
+            "expected": 256
+        },
+        {
+            "experts": 2,
+            "moe_ffn": 64,
+            "ffn": 128,
+            "configured": 512,
+            "expected": 512
+        }
+    ],
+    "test_transformer_block_conflicts": [
+        {
+            "values": {
+                "first_k_dense_replace": 8
+            },
+            "message": "must be greater"
+        },
+        {
+            "values": {
+                "first_k_dense_replace": 4
+            },
+            "message": "all layers within a pp stage"
+        },
+        {
+            "values": {
+                "num_experts": 4,
+                "use_ascend_mc2": true,
+                "moe_grouped_gemm": true
+            },
+            "message": "Grouped Gemm"
+        },
+        {
+            "values": {
+                "num_layer_list": "2,2,4"
+            },
+            "message": "len"
+        },
+        {
+            "values": {
+                "pipeline_model_parallel_size": 1,
+                "num_layer_list": "8"
+            },
+            "message": "pipeline parallel"
+        },
+        {
+            "values": {
+                "num_layer_list": "4,4",
+                "num_layers_per_virtual_pipeline_stage": 2
+            },
+            "message": "virtual pipeline"
+        },
+        {
+            "values": {
+                "use_ascend_mc2": true,
+                "use_ascend_coc": true
+            },
+            "message": "can not be used together"
+        }
+    ],
+    "test_mhc_rejects_unsupported_configs": [
+        {
+            "values": {
+                "multi_latent_attention": false
+            },
+            "message": "only supported in MLA"
+        },
+        {
+            "values": {
+                "use_flash_attn": false
+            },
+            "message": "only supported in FA"
+        },
+        {
+            "values": {
+                "context_parallel_size": 2,
+                "context_parallel_algo": "megatron_cp_algo"
+            },
+            "message": "when use context parallel"
+        },
+        {
+            "values": {
+                "use_fused_mhc": true,
+                "hc_mult": 8
+            },
+            "message": "hc-mult 4"
+        },
+        {
+            "values": {
+                "use_fused_mhc": true,
+                "hc_sinkhorn_iters": 10
+            },
+            "message": "sinkhorn-iters 20"
+        }
+    ],
+    "test_dsa_dependencies_and_quantization": [
+        {
+            "values": {
+                "multi_latent_attention": false
+            },
+            "message": "only supported in MLA"
+        },
+        {
+            "values": {
+                "use_flash_attn": false
+            },
+            "message": "only supported in FA"
+        },
+        {
+            "values": {
+                "context_parallel_size": 2,
+                "context_parallel_algo": "megatron_cp_algo"
+            },
+            "message": "when use context parallel"
+        },
+        {
+            "values": {
+                "reset_attention_mask": true
+            },
+            "message": "requires --use-fused-lightning-indexer"
+        },
+        {
+            "values": {
+                "reset_attention_mask": true,
+                "use_fused_lightning_indexer": true,
+                "use_fused_lightning_indexer_loss": true
+            },
+            "message": "requires --use-sparse-flash-attn"
+        },
+        {
+            "values": {
+                "indexer_qk_quant_scheme": "mxfp8",
+                "enable_dsa_indexer": false
+            },
+            "message": "requires --enable-dsa-indexer"
+        },
+        {
+            "values": {
+                "indexer_qk_quant_scheme": "mxfp8"
+            },
+            "message": "requires --kv-compress"
+        },
+        {
+            "values": {
+                "indexer_qk_quant_scheme": "mxfp8",
+                "kv_compress": true,
+                "use_fused_lightning_indexer": true,
+                "use_fused_lightning_indexer_loss": true
+            },
+            "message": "not compatible"
+        }
+    ],
+    "test_inference_prevalidation_errors": [
+        {
+            "values": {
+                "prompt_type": "qwen3",
+                "hf_chat_template": true
+            },
+            "exception": "AssertionError",
+            "message": "forbidden"
+        },
+        {
+            "values": {
+                "history_turns": -1
+            },
+            "exception": "AssertionError",
+            "message": "History turns"
+        },
+        {
+            "values": {
+                "prompt_type": "qwen3",
+                "task": "mmlu",
+                "task_data_path": "missing/test"
+            },
+            "exception": "ValueError",
+            "message": "dev directory"
+        }
+    ],
+    "test_indexer_quantization_valid_nonfused_modes": [
+        {
+            "scheme": "mxfp4"
+        },
+        {
+            "scheme": "mxfp8"
+        }
+    ],
+    "test_deepseek_cp_rejects_incompatible_features": [
+        {
+            "values": {
+                "use_sparse_flash_attn": false
+            },
+            "message": "requires --use-sparse-flash-attn"
+        },
+        {
+            "values": {
+                "recompute_csa_attention": true
+            },
+            "message": "does not support --recompute-csa-attention"
+        },
+        {
+            "values": {
+                "enable_dsa_indexer": true,
+                "kv_compress": false
+            },
+            "message": "requires --kv-compress"
+        },
+        {
+            "values": {
+                "indexer_qk_quant_scheme": "mxfp8"
+            },
+            "message": "does not support --indexer-qk-quant-scheme"
+        },
+        {
+            "values": {
+                "compress_ratios": [
+                    2
+                ]
+            },
+            "message": "only supports compression ratios 0, 1, 4, and 128"
+        },
+        {
+            "values": {
+                "compress_ratios": [
+                    0,
+                    4,
+                    32
+                ]
+            },
+            "message": "got \\[32\\]"
+        },
+        {
+            "values": {
+                "enable_dsa_indexer": true,
+                "kv_compress": true,
+                "indexer_loss_coeff": 1.0,
+                "use_fused_lightning_indexer": false
+            },
+            "message": "requires --use-fused-lightning-indexer$"
+        },
+        {
+            "values": {
+                "enable_dsa_indexer": true,
+                "kv_compress": true,
+                "indexer_loss_coeff": "0.5",
+                "use_fused_lightning_indexer": true,
+                "use_fused_lightning_indexer_loss": false
+            },
+            "message": "requires --use-fused-lightning-indexer-loss"
+        }
+    ],
+    "test_deepseek_cp_accepts_supported_features": [
+        {
+            "values": {}
+        },
+        {
+            "values": {
+                "spec": "custom.deepseek4_spec"
+            }
+        },
+        {
+            "values": {
+                "spec": [
+                    "custom.deepseek4_spec",
+                    "get_spec"
+                ]
+            }
+        },
+        {
+            "values": {
+                "compress_ratios": null
+            }
+        },
+        {
+            "values": {
+                "compress_ratios": []
+            }
+        },
+        {
+            "values": {
+                "compress_ratios": [
+                    0,
+                    1,
+                    4,
+                    128
+                ]
+            }
+        },
+        {
+            "values": {
+                "compress_ratios": [
+                    "4",
+                    "128"
+                ]
+            }
+        },
+        {
+            "values": {
+                "enable_dsa_indexer": true,
+                "kv_compress": true,
+                "indexer_loss_coeff": 0.0
+            }
+        },
+        {
+            "values": {
+                "enable_dsa_indexer": true,
+                "kv_compress": true,
+                "indexer_loss_coeff": 1.0,
+                "use_fused_lightning_indexer": true,
+                "use_fused_lightning_indexer_loss": true
+            }
+        },
+        {
+            "values": {
+                "context_parallel_size": 1,
+                "use_sparse_flash_attn": false,
+                "recompute_csa_attention": true,
+                "compress_ratios": [
+                    2
+                ]
+            }
+        }
+    ]
+}

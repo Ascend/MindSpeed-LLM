@@ -1,0 +1,361 @@
+{
+    "test_longrope_requires_scaling_inputs": [
+        {
+            "missing": "rope_scaling_original_max_position_embeddings"
+        },
+        {
+            "missing": "long_factor"
+        },
+        {
+            "missing": "short_factor"
+        }
+    ],
+    "test_longrope_parsing_and_scale_pair": [
+        {
+            "short": null,
+            "long": null,
+            "error": false
+        },
+        {
+            "short": 1.0,
+            "long": 2.0,
+            "error": false
+        },
+        {
+            "short": null,
+            "long": 2.0,
+            "error": true
+        },
+        {
+            "short": 1.0,
+            "long": null,
+            "error": true
+        }
+    ],
+    "test_high_availability_conflicts": [
+        {
+            "values": {
+                "enable_hbmfault_repair": true
+            },
+            "message": "enable high availability"
+        },
+        {
+            "values": {
+                "enable_elastic_training": true
+            },
+            "message": "enable high availability"
+        },
+        {
+            "values": {
+                "enable_high_availability": true,
+                "use_dist_ckpt": true
+            },
+            "message": "unsupported"
+        },
+        {
+            "values": {
+                "enable_high_availability": true,
+                "swap_attention": true
+            },
+            "message": "swap attention"
+        },
+        {
+            "values": {
+                "enable_high_availability": true,
+                "disable_gloo_group": true
+            },
+            "message": "disable-gloo-group"
+        },
+        {
+            "values": {
+                "enable_high_availability": true,
+                "swap_optimizer": true
+            },
+            "message": "unsupported"
+        },
+        {
+            "values": {
+                "enable_high_availability": true,
+                "lora_target_modules": [
+                    "linear_qkv"
+                ]
+            },
+            "message": "lora-target-modules"
+        },
+        {
+            "values": {
+                "enable_high_availability": true,
+                "enable_elastic_training": true,
+                "use_distributed_optimizer": false
+            },
+            "message": "use-distributed-optimizer"
+        },
+        {
+            "values": {
+                "enable_high_availability": true,
+                "enable_elastic_training": true,
+                "use_custom_fsdp": true
+            },
+            "message": "reuse-fp32-param"
+        },
+        {
+            "values": {
+                "enable_high_availability": true,
+                "enable_elastic_training": true,
+                "reuse_fp32_param": true
+            },
+            "message": "reuse-fp32-param"
+        },
+        {
+            "values": {
+                "enable_high_availability": true,
+                "enable_elastic_training": true,
+                "expert_model_parallel_size": 2
+            },
+            "message": "parallel size"
+        },
+        {
+            "values": {
+                "enable_high_availability": true,
+                "enable_elastic_training": true,
+                "context_parallel_size": 2
+            },
+            "message": "parallel size"
+        }
+    ],
+    "test_transformer_engine_invalid_modes": [
+        {
+            "values": {
+                "fp8": "e4m3",
+                "transformer_impl": "local"
+            },
+            "exception": "AssertionError",
+            "message": "T\u0045 implement"
+        },
+        {
+            "values": {
+                "use_ascend_coc": true
+            },
+            "exception": "AssertionError",
+            "message": "ascend coc"
+        },
+        {
+            "values": {
+                "use_ascend_mc2": true,
+                "fp8": "e4m3",
+                "fp8_recipe": "delayed"
+            },
+            "exception": "AssertionError",
+            "message": "mxfp8 recipe"
+        },
+        {
+            "values": {
+                "use_legacy_models": true
+            },
+            "exception": "AssertionError",
+            "message": "mcore models"
+        },
+        {
+            "values": {
+                "fp8": "hif8",
+                "fp8_recipe": "delayed"
+            },
+            "exception": "ValueError",
+            "message": "tensorwise"
+        },
+        {
+            "values": {
+                "fp8_reuse_quantized_weight": true
+            },
+            "exception": "ValueError",
+            "message": "only valid"
+        },
+        {
+            "values": {
+                "mxfp8_defer_backward_quant": true
+            },
+            "exception": "ValueError",
+            "message": "only valid"
+        }
+    ],
+    "test_fused_compressor_soc_gate": [
+        {
+            "soc": "Ascend950PR_9599",
+            "valid": true
+        },
+        {
+            "soc": "Ascend910B2",
+            "valid": false
+        },
+        {
+            "soc": null,
+            "valid": false
+        },
+        {
+            "soc": 950,
+            "valid": false
+        }
+    ],
+    "test_indexer_paired_fused_flags": [
+        {
+            "indexer": true,
+            "loss": false
+        },
+        {
+            "indexer": false,
+            "loss": true
+        },
+        {
+            "indexer": true,
+            "loss": true
+        },
+        {
+            "indexer": false,
+            "loss": false
+        }
+    ],
+    "test_deprecated_alias_migration": [
+        {
+            "key": "--use-deter-comp",
+            "old": "deprecated_use_deter_comp",
+            "new": "npu_deterministic",
+            "value": true
+        },
+        {
+            "key": "--use-mc2",
+            "old": "deprecated_use_mc2",
+            "new": "use_ascend_mc2",
+            "value": true
+        },
+        {
+            "key": "--cp-attention-mask-type",
+            "old": "deprecated_cp_attention_mask_type",
+            "new": "attention_mask_type",
+            "value": "general"
+        },
+        {
+            "key": "--moe-intermediate-size",
+            "old": "deprecated_moe_intermediate_size",
+            "new": "moe_ffn_hidden_size",
+            "value": 64
+        },
+        {
+            "key": "--n-group",
+            "old": "deprecated_n_group",
+            "new": "moe_router_num_groups",
+            "value": 4
+        },
+        {
+            "key": "--topk-group",
+            "old": "deprecated_topk_group",
+            "new": "moe_router_group_topk",
+            "value": 2
+        },
+        {
+            "key": "--routed-scaling-factor",
+            "old": "deprecated_routed_scaling_factor",
+            "new": "moe_router_topk_scaling_factor",
+            "value": 1.5
+        },
+        {
+            "key": "--qk-rope-head-dim",
+            "old": "deprecated_qk_rope_head_dim",
+            "new": "qk_pos_emb_head_dim",
+            "value": 32
+        },
+        {
+            "key": "--qk-nope-head-dim",
+            "old": "deprecated_qk_nope_head_dim",
+            "new": "qk_head_dim",
+            "value": 64
+        },
+        {
+            "key": "--multi-head-latent-attention",
+            "old": "deprecated_multi_head_latent_attention",
+            "new": "multi_latent_attention",
+            "value": true
+        },
+        {
+            "key": "--rope-scaling-beta-fast",
+            "old": "deprecated_rope_scaling_beta_fast",
+            "new": "beta_fast",
+            "value": 16
+        },
+        {
+            "key": "--rope-scaling-beta-slow",
+            "old": "deprecated_rope_scaling_beta_slow",
+            "new": "beta_slow",
+            "value": 2
+        }
+    ],
+    "test_training_mask_and_vpp_lifecycle": [
+        {
+            "values": {},
+            "mask": false
+        },
+        {
+            "values": {
+                "attention_mask_type": "general"
+            },
+            "mask": true
+        },
+        {
+            "values": {
+                "tokenizer_padding_side": "left"
+            },
+            "mask": true
+        },
+        {
+            "values": {
+                "position_embedding_type": "alibi",
+                "use_flash_attn": false
+            },
+            "mask": true
+        },
+        {
+            "values": {
+                "reset_attention_mask": true,
+                "tokenizer_padding_side": "left"
+            },
+            "mask": false
+        },
+        {
+            "values": {
+                "reset_attention_mask": true,
+                "attention_mask_type": "general",
+                "context_parallel_algo": "ulysses_cp_algo"
+            },
+            "mask": false
+        }
+    ],
+    "test_training_invalid_vpp_and_pack": [
+        {
+            "values": {
+                "neat_pack": true
+            },
+            "exception": "ValueError",
+            "message": "reset-attention-mask"
+        },
+        {
+            "values": {
+                "num_layer_list": "4,4"
+            },
+            "exception": "AssertionError",
+            "message": "num_layer_list"
+        },
+        {
+            "values": {
+                "num_layers_per_virtual_pipeline_stage": 3
+            },
+            "exception": "AssertionError",
+            "message": "divisible"
+        },
+        {
+            "values": {
+                "num_layers_per_virtual_pipeline_stage": 4
+            },
+            "exception": "ValueError",
+            "message": "less than pp stage"
+        }
+    ]
+}

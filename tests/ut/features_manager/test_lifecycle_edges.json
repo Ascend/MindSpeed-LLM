@@ -1,0 +1,20 @@
+{
+    "test_coc_lora_guard_with_real_base_validation": [
+        {
+            "enabled": false,
+            "targets": [
+                "linear_qkv"
+            ]
+        },
+        {
+            "enabled": true,
+            "targets": []
+        },
+        {
+            "enabled": true,
+            "targets": [
+                "linear_qkv"
+            ]
+        }
+    ]
+}

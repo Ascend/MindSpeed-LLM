@@ -1,0 +1,20 @@
+{
+    "test_megatron_basic_separates_core_and_training": [
+        {
+            "training_available": false
+        },
+        {
+            "training_available": true
+        }
+    ],
+    "test_requirements_version_and_lora_checkpoint_patches": [
+        {
+            "lora": []
+        },
+        {
+            "lora": [
+                "linear_qkv"
+            ]
+        }
+    ]
+}

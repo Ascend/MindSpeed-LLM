@@ -1,0 +1,248 @@
+{
+    "test_data_patch_respects_reset_attention": [
+        {
+            "enabled": false
+        },
+        {
+            "enabled": true
+        }
+    ],
+    "test_lora_patch_routes_and_moe_gate": [
+        {
+            "targets": []
+        },
+        {
+            "targets": [
+                "linear_qkv"
+            ]
+        }
+    ],
+    "test_swap_layer_input_patch_routes": [
+        {
+            "enabled": false,
+            "overlap": false
+        },
+        {
+            "enabled": true,
+            "overlap": false
+        },
+        {
+            "enabled": true,
+            "overlap": true
+        }
+    ],
+    "test_csa_patch_three_way_gate": [
+        {
+            "position": "rope",
+            "overlap": true,
+            "recompute": true,
+            "balanced": false
+        },
+        {
+            "position": "deepseek4",
+            "overlap": false,
+            "recompute": true,
+            "balanced": false
+        },
+        {
+            "position": "deepseek4",
+            "overlap": true,
+            "recompute": false,
+            "balanced": false
+        },
+        {
+            "position": "deepseek4",
+            "overlap": true,
+            "recompute": true,
+            "balanced": false
+        },
+        {
+            "position": "deepseek4",
+            "overlap": true,
+            "recompute": true,
+            "balanced": true
+        }
+    ],
+    "test_mhc_patch_vpp_gate": [
+        {
+            "enabled": false,
+            "vpp": null
+        },
+        {
+            "enabled": true,
+            "vpp": null
+        },
+        {
+            "enabled": true,
+            "vpp": 2
+        }
+    ],
+    "test_dsa_patch_independent_gates": [
+        {
+            "enabled": false,
+            "overlap": false,
+            "norm": false
+        },
+        {
+            "enabled": true,
+            "overlap": false,
+            "norm": false
+        },
+        {
+            "enabled": true,
+            "overlap": true,
+            "norm": false
+        },
+        {
+            "enabled": false,
+            "overlap": false,
+            "norm": true
+        }
+    ],
+    "test_alibi_patch_gate": [
+        {
+            "position": "rope",
+            "flash": false,
+            "cp": 1,
+            "expected": false
+        },
+        {
+            "position": "alibi",
+            "flash": true,
+            "cp": 1,
+            "expected": false
+        },
+        {
+            "position": "alibi",
+            "flash": false,
+            "cp": 2,
+            "expected": false
+        },
+        {
+            "position": "alibi",
+            "flash": false,
+            "cp": 1,
+            "expected": true
+        }
+    ],
+    "test_qat_patch_optimized_linear_gate": [
+        {
+            "optimized": false,
+            "scheme": null
+        },
+        {
+            "optimized": false,
+            "scheme": "w4a16-mxfp4"
+        },
+        {
+            "optimized": false,
+            "scheme": "w4a4-mxfp4"
+        },
+        {
+            "optimized": true,
+            "scheme": null
+        },
+        {
+            "optimized": true,
+            "scheme": "w4a16-mxfp4"
+        },
+        {
+            "optimized": true,
+            "scheme": "w4a4-mxfp4"
+        }
+    ],
+    "test_qat_warnings": [
+        {
+            "scheme": "w4a16-mxfp4",
+            "message": "not support T\u0045"
+        },
+        {
+            "scheme": "w4a4-mxfp4",
+            "message": "not support T\u0045"
+        },
+        {
+            "scheme": null,
+            "message": "will be ignored"
+        },
+        {
+            "scheme": "w4a8-moe-only",
+            "message": "forced to False"
+        }
+    ],
+    "test_requirements_optimizer_selection_and_sgd": [
+        {
+            "selection": "fused_torch_adamw",
+            "o2": false,
+            "expected": "FusedTorchAdamW"
+        },
+        {
+            "selection": "fused_adamw",
+            "o2": false,
+            "expected": "AdamW"
+        },
+        {
+            "selection": "fused_ema_adamw",
+            "o2": false,
+            "expected": null
+        },
+        {
+            "selection": "fused_torch_adamw",
+            "o2": true,
+            "expected": "O2AdamW"
+        }
+    ],
+    "test_virtual_tp_registration": [
+        {
+            "enabled": false,
+            "overlap": false
+        },
+        {
+            "enabled": true,
+            "overlap": false
+        },
+        {
+            "enabled": true,
+            "overlap": true
+        }
+    ],
+    "test_qwen_global_aux_registration_conflicts": [
+        {
+            "global_aux": false,
+            "values": {},
+            "error": null
+        },
+        {
+            "global_aux": true,
+            "values": {},
+            "error": null
+        },
+        {
+            "global_aux": true,
+            "values": {
+                "pipeline_model_parallel_size": 2
+            },
+            "error": "pipeline-model-parallel-size"
+        },
+        {
+            "global_aux": true,
+            "values": {
+                "moe_alltoall_overlap_comm": true
+            },
+            "error": "moe-alltoall-overlap-comm"
+        },
+        {
+            "global_aux": true,
+            "values": {
+                "moe_allgather_overlap_comm": true
+            },
+            "error": "moe-allgather-overlap-comm"
+        },
+        {
+            "global_aux": true,
+            "values": {
+                "moe_fb_overlap": true
+            },
+            "error": "moe-fb-overlap"
+        }
+    ]
+}

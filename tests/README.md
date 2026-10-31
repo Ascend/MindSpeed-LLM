@@ -98,7 +98,7 @@ CI门禁用例看护仓库重点模型和基本特性，覆盖冒烟测试场景
         <td>Y</td>
     </tr>
     <tr>
-        <td rowspan="10">UT</td>
+        <td rowspan="12">UT</td>
         <td>Inference</td>
         <td>greedy_search</td>
         <td><a href="ut/inference/test_inference.py">test_inference.py</a></td>
@@ -190,6 +190,30 @@ CI门禁用例看护仓库重点模型和基本特性，覆盖冒烟测试场景
             <a href="ut/training/test_autobridge_compat.py">test_autobridge_compat.py</a>
         </td>
         <td></td>
+        <td></td>
+        <td></td>
+    </tr>
+
+    <tr>
+        <td>FeaturesManager</td>
+        <td>CLI 参数、JSON 用例加载、生命周期、参数校验、运行时适配与补丁注册；包括 Context Parallel、DeepSeek V4、Attention、Optimizer 等特性。各 Python 文件使用同名 JSON 用例配置；无需模型权重或数据集。</td>
+        <td>
+            <a href="ut/features_manager/test_arguments.py">test_arguments.py</a><br>
+            <a href="ut/features_manager/test_attention_gates.py">test_attention_gates.py</a><br>
+            <a href="ut/features_manager/test_basic_adaptation.py">test_basic_adaptation.py</a><br>
+            <a href="ut/features_manager/test_core_contracts.py">test_core_contracts.py</a><br>
+            <a href="ut/features_manager/test_integration_contracts.py">test_integration_contracts.py</a><br>
+            <a href="ut/features_manager/test_json_config.py">test_json_config.py</a><br>
+            <a href="ut/features_manager/test_lifecycle_edges.py">test_lifecycle_edges.py</a><br>
+            <a href="ut/features_manager/test_optimizer_patches.py">test_optimizer_patches.py</a><br>
+            <a href="ut/features_manager/test_parallel_patches.py">test_parallel_patches.py</a><br>
+            <a href="ut/features_manager/test_patch_contracts.py">test_patch_contracts.py</a><br>
+            <a href="ut/features_manager/test_patch_routing_extended.py">test_patch_routing_extended.py</a><br>
+            <a href="ut/features_manager/test_runtime_adaptation.py">test_runtime_adaptation.py</a><br>
+            <a href="ut/features_manager/test_validation.py">test_validation.py</a><br>
+            <a href="ut/features_manager/test_validation_extended.py">test_validation_extended.py</a>
+        </td>
+        <td>Y</td>
         <td></td>
         <td></td>
     </tr>

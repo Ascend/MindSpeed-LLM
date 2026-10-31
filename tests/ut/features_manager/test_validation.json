@@ -1,0 +1,397 @@
+{
+    "test_quant_optimizer_supported_modes": [
+        {
+            "states": "fp8",
+            "grads": false,
+            "dtype": null
+        },
+        {
+            "states": "hif8",
+            "grads": false,
+            "dtype": null
+        },
+        {
+            "states": null,
+            "grads": true,
+            "dtype": "fp16"
+        },
+        {
+            "states": null,
+            "grads": false,
+            "dtype": null
+        }
+    ],
+    "test_quant_optimizer_conflicts": [
+        {
+            "values": {
+                "quant_states": "int8"
+            },
+            "message": "only supports quant_states"
+        },
+        {
+            "values": {
+                "quant_grads": true,
+                "moe_fb_overlap": true,
+                "gradient_accumulation_fusion": true
+            },
+            "message": "fb-overlap"
+        },
+        {
+            "values": {
+                "quant_grads": true,
+                "swap_optimizer": true
+            },
+            "message": "swap-optimizer"
+        },
+        {
+            "values": {
+                "quant_states": "fp8",
+                "swap_optimizer": true
+            },
+            "message": "swap-optimizer"
+        }
+    ],
+    "test_muon_conflicts": [
+        {
+            "values": {
+                "fp16": true
+            },
+            "message": "does not support fp16"
+        },
+        {
+            "values": {
+                "use_custom_fsdp": true
+            },
+            "message": "does not support FSDP"
+        },
+        {
+            "values": {
+                "use_torch_fsdp2": true
+            },
+            "message": "does not support FSDP"
+        },
+        {
+            "values": {
+                "overlap_param_gather": true
+            },
+            "message": "requires layer-wise"
+        },
+        {
+            "values": {
+                "overlap_param_gather": true,
+                "use_layer_wise_distributed_optimizer": true
+            },
+            "message": "overlap-grad-reduce"
+        }
+    ],
+    "test_muon_post_validation_normalization": [
+        {
+            "optimizer": "muon",
+            "distributed": true
+        },
+        {
+            "optimizer": "dist_muon",
+            "distributed": false
+        },
+        {
+            "optimizer": "adam",
+            "distributed": true
+        }
+    ],
+    "test_router_validation_boundaries": [
+        {
+            "values": {
+                "moe_expert_capacity_factor": 1,
+                "moe_token_dispatcher_type": "allgather"
+            },
+            "exception": "ValueError",
+            "message": "allgather"
+        },
+        {
+            "values": {
+                "moe_expert_capacity_factor": 1,
+                "moe_router_load_balancing_type": "seq_aux_loss"
+            },
+            "exception": "ValueError",
+            "message": "aux_loss or none"
+        },
+        {
+            "values": {
+                "moe_expert_capacity_factor": 1,
+                "shared_expert_gate_output_dimension": 2
+            },
+            "exception": "AssertionError",
+            "message": "gate output dimension"
+        },
+        {
+            "values": {
+                "moe_router_load_balancing_type": "group_limited_greedy",
+                "moe_router_group_topk": null
+            },
+            "exception": "AssertionError",
+            "message": "topk-group"
+        },
+        {
+            "values": {
+                "moe_router_load_balancing_type": "group_limited_greedy",
+                "moe_router_topk_scaling_factor": null
+            },
+            "exception": "AssertionError",
+            "message": "scaling-factor"
+        },
+        {
+            "values": {
+                "moe_router_load_balancing_type": "group_limited_greedy",
+                "moe_router_group_topk": 4
+            },
+            "exception": "AssertionError",
+            "message": "less than"
+        },
+        {
+            "values": {
+                "moe_router_enable_expert_bias": true,
+                "moe_router_score_function": "invalid"
+            },
+            "exception": "ValueError",
+            "message": "Expert bias"
+        },
+        {
+            "values": {
+                "n_hash_layers": 5
+            },
+            "exception": "ValueError",
+            "message": "one PP stage"
+        },
+        {
+            "values": {
+                "n_hash_layers": 3,
+                "num_layers_per_virtual_pipeline_stage": 2
+            },
+            "exception": "ValueError",
+            "message": "one VPP stage"
+        }
+    ],
+    "test_router_restores_custom_spec": [
+        {
+            "values": {}
+        },
+        {
+            "values": {
+                "moe_expert_capacity_factor": 1,
+                "shared_expert_gate_output_dimension": 128
+            }
+        },
+        {
+            "values": {
+                "moe_router_load_balancing_type": "group_limited_greedy"
+            }
+        },
+        {
+            "values": {
+                "n_hash_layers": 4
+            }
+        },
+        {
+            "values": {
+                "n_hash_layers": 2,
+                "num_layers_per_virtual_pipeline_stage": 2
+            }
+        },
+        {
+            "values": {
+                "moe_router_enable_expert_bias": true,
+                "moe_router_score_function": "sqrtsoftplus"
+            }
+        },
+        {
+            "values": {
+                "moe_router_enable_expert_bias": true,
+                "moe_router_score_function": "softmax"
+            }
+        }
+    ],
+    "test_mla_conflicts": [
+        {
+            "values": {
+                "kv_lora_rank": null
+            },
+            "exception": "AssertionError",
+            "message": "kv-lora-rank"
+        },
+        {
+            "values": {
+                "v_head_dim": null
+            },
+            "exception": "AssertionError",
+            "message": "v-head-dim"
+        },
+        {
+            "values": {
+                "qk_pos_emb_head_dim": null
+            },
+            "exception": "AssertionError",
+            "message": "qk-pos-emb-head-dim"
+        },
+        {
+            "values": {
+                "qk_head_dim": null
+            },
+            "exception": "AssertionError",
+            "message": "qk-head-dim"
+        },
+        {
+            "values": {
+                "padded_base_length": 0
+            },
+            "exception": "AssertionError",
+            "message": "cannot be less than 1"
+        },
+        {
+            "values": {
+                "mla_up_proj_tp_overlap": true
+            },
+            "exception": "ValueError",
+            "message": "mla-mm-split"
+        },
+        {
+            "values": {
+                "mla_up_proj_tp_overlap": true,
+                "mla_mm_split": true
+            },
+            "exception": "ValueError",
+            "message": "sequence parallel"
+        },
+        {
+            "values": {
+                "recompute_mla_up_proj": true,
+                "tensor_model_parallel_size": 2
+            },
+            "exception": "ValueError",
+            "message": "parallel size is 1"
+        },
+        {
+            "values": {
+                "recompute_mla_up_proj": true,
+                "mla_zero_memory": true
+            },
+            "exception": "ValueError",
+            "message": "incompatible"
+        },
+        {
+            "values": {
+                "mla_swap_core_attn_out": true
+            },
+            "exception": "AssertionError",
+            "message": "dualpipev"
+        },
+        {
+            "values": {
+                "mla_swap_core_attn_out": true,
+                "schedules_method": "dualpipev"
+            },
+            "exception": "AssertionError",
+            "message": "moe-fb-overlap"
+        }
+    ],
+    "test_mla_valid_modes": [
+        {
+            "values": {}
+        },
+        {
+            "values": {
+                "multi_latent_attention": false
+            }
+        },
+        {
+            "values": {
+                "padded_base_length": 1
+            }
+        },
+        {
+            "values": {
+                "recompute_mla_up_proj": true
+            }
+        },
+        {
+            "values": {
+                "mla_up_proj_tp_overlap": true,
+                "mla_mm_split": true,
+                "sequence_parallel": true
+            }
+        },
+        {
+            "values": {
+                "recompute_mla_up_proj": true,
+                "tensor_model_parallel_size": 2,
+                "mla_up_proj_tp_overlap": true,
+                "mla_mm_split": true,
+                "sequence_parallel": true
+            }
+        },
+        {
+            "values": {
+                "mla_swap_core_attn_out": true,
+                "schedules_method": "dualpipev",
+                "moe_fb_overlap": true
+            }
+        }
+    ],
+    "test_checkpoint_detects_hf_weights": [
+        {
+            "filename": "model.safetensors"
+        },
+        {
+            "filename": "pytorch_model.bin"
+        },
+        {
+            "filename": "pytorch_model-00001-of-00002.bin"
+        }
+    ],
+    "test_checkpoint_missing_weights": [
+        {
+            "load_kind": "none",
+            "convert": false
+        },
+        {
+            "load_kind": "missing",
+            "convert": false
+        },
+        {
+            "load_kind": "file",
+            "convert": false
+        },
+        {
+            "load_kind": "empty",
+            "convert": false
+        },
+        {
+            "load_kind": "empty",
+            "convert": true
+        }
+    ],
+    "test_checkpoint_conversion_conflicts": [
+        {
+            "values": {
+                "ckpt_format": "torch_dist",
+                "enable_hf2mg_convert": true
+            },
+            "message": "torch_dist"
+        },
+        {
+            "values": {
+                "save": null,
+                "enable_mg2hf_convert": true
+            },
+            "message": "set save dir"
+        },
+        {
+            "values": {
+                "lora_target_modules": [
+                    "linear_qkv"
+                ],
+                "enable_mg2hf_convert": true
+            },
+            "message": "Lora"
+        }
+    ]
+}
