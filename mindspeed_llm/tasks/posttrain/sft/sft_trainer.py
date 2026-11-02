@@ -74,7 +74,10 @@ class SFTTrainer(BaseTrainer):
                         'attention_mask': None,
                         'position_ids': position_ids,
                     }
-                    if args.micro_batch_size > 1:
+                    if args.mtp_num_layers and args.micro_batch_size == 1:
+                        # Remove the batch dimension, preserving the per-MTP-layer rows.
+                        actual_seq_len = data_b['actual_seq_len'].squeeze(0)
+                    elif args.micro_batch_size > 1:
                         actual_seq_len = compute_actual_seq_len_form_list(data_b['actual_seq_len'])
                     else:
                         actual_seq_len = data_b['actual_seq_len']
@@ -136,7 +139,10 @@ class SFTTrainer(BaseTrainer):
                     'attention_mask': None,
                     'position_ids': position_ids,
                 }
-                if args.micro_batch_size > 1:
+                if args.mtp_num_layers and args.micro_batch_size == 1:
+                    # Remove the batch dimension, preserving the per-MTP-layer rows.
+                    actual_seq_len = data_b['actual_seq_len'].squeeze(0)
+                elif args.micro_batch_size > 1:
                     actual_seq_len = compute_actual_seq_len_form_list(data_b['actual_seq_len'])
                 else:
                     actual_seq_len = data_b['actual_seq_len']

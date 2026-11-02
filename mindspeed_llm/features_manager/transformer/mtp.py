@@ -1,3 +1,5 @@
+from argparse import Namespace
+
 from mindspeed.features_manager.feature import MindSpeedFeature
 
 
@@ -72,8 +74,25 @@ class MultiTokenPredictionFeature(MindSpeedFeature):
             'megatron.core.transformer.multi_token_prediction.MultiTokenPredictionBlock.forward', mtp_block_forward
         )
 
-    def pre_validate_args(self, args):
+    def pre_validate_args(self, args: Namespace) -> None:
+        """Check packed SFT compatibility before temporarily disabling MTP for CP validation."""
         self.origin_mtp_num_layers = None
+        if getattr(args, 'stage', None) == 'sft' and args.reset_attention_mask and args.mtp_num_layers:
+            if args.micro_batch_size > 1:
+                raise ValueError(
+                    "Packed SFT with --mtp-num-layers and --reset-attention-mask "
+                    "currently requires --micro-batch-size 1; multi-sample MTP boundaries are not supported."
+                )
+            if (
+                args.attention_mask_type == 'causal'
+                and args.context_parallel_size > 1
+                and args.context_parallel_algo == 'megatron_cp_algo'
+            ):
+                raise ValueError(
+                    "Packed SFT with --mtp-num-layers and --reset-attention-mask does not support "
+                    "causal attention with --context-parallel-size > 1 and "
+                    "--context-parallel-algo megatron_cp_algo; CP padding requires one-dimensional boundaries."
+                )
         if args.mtp_num_layers and args.context_parallel_size > 1:
             self.origin_mtp_num_layers = args.mtp_num_layers
             args.mtp_num_layers = None
