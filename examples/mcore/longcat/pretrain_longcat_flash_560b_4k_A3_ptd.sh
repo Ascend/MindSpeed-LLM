@@ -142,6 +142,12 @@ DATA_ARGS="
     --split 100,0,0
 "
 
+CKPT_ARGS="
+    --enable-hf2mg-convert \
+    --enable-mg2hf-convert \
+    --model-type-hf longcat
+"
+
 OUTPUT_ARGS="
     --log-interval 1 \
     --save-interval ${TRAIN_ITERS} \
@@ -160,6 +166,7 @@ torchrun $DISTRIBUTED_ARGS pretrain_gpt.py \
     $OPTIMIZE_ARGS \
     $TRAIN_ARGS \
     $MODEL_PARALLEL_ARGS \
+    $CKPT_ARGS \
     --load ${CKPT_LOAD_DIR} \
     --save ${CKPT_SAVE_DIR} \
     --distributed-backend nccl \

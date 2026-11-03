@@ -16,6 +16,7 @@
 
 import os
 import shutil
+import json
 import sys
 from pathlib import Path
 
@@ -61,3 +62,36 @@ class TestCheckpoint:
         actual = load_safetensors_to_dict(hf_dir)
         assert expected
         torch.testing.assert_close(actual, expected, rtol=0, atol=0)
+
+    @pytest.mark.parametrize("params", test_config["test_longcat_flash_l1_8experts_bf16_roundtrip"])
+    def test_longcat_flash_l1_8experts_bf16_roundtrip(self, params, tmp_path):
+        """Check real single-layer, eight-expert HF-to-MG-to-HF conversion."""
+        load_dir = params["load-dir"]
+        mg_dir = str(tmp_path / "mg")
+        hf_dir = str(tmp_path / "hf")
+        for source, target, kind in [(load_dir, mg_dir, "hf"), (mg_dir, hf_dir, "mg")]:
+            command = [sys.executable, CKPTV2_PYPATH] + self.test_config_cmd[
+                "test_longcat_flash_l1_8experts_bf16_roundtrip"
+            ]
+            command[command.index("--load-dir") + 1] = source
+            command += ["--load-model-type", kind, "--save-dir", target]
+            command += ["--save-model-type", "mg" if kind == "hf" else "hf"]
+            if kind == "mg":
+                command += ["--hf-cfg-dir", load_dir]
+            assert run_cmd(command) == 0
+        expected = load_safetensors_to_dict(load_dir)
+        actual = load_safetensors_to_dict(hf_dir)
+        assert expected
+        torch.testing.assert_close(actual, expected, rtol=0, atol=0)
+        with open(os.path.join(load_dir, "config.json"), encoding="utf-8") as source_config:
+            config = json.load(source_config)
+        assert config["num_layers"] == 1
+        assert config["n_routed_experts"] == 8
+        with open(os.path.join(hf_dir, "config.json"), encoding="utf-8") as output_config:
+            assert json.load(output_config) == config
+        with open(os.path.join(hf_dir, "model.safetensors.index.json"), encoding="utf-8") as output_index:
+            index = json.load(output_index)
+        assert index["weight_map"].keys() == actual.keys()
+        assert index["metadata"]["total_size"] == sum(
+            tensor.numel() * tensor.element_size() for tensor in actual.values()
+        )

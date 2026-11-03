@@ -6,6 +6,18 @@
             }
         }
     ],
+    "test_longcat_flash_l1_8experts_bf16_roundtrip": [
+        {
+            "param": {
+                "model-type-hf": "longcat",
+                "target-tensor-parallel-size": "1",
+                "target-pipeline-parallel-size": "1",
+                "target-expert-parallel-size": "1",
+                "expert-tensor-parallel-size": "1",
+                "load-dir": "/data/ci/models/LongCat-Flash-Chat/hf/LongCat-Flash-Chat-L1-BF16-8Experts"
+            }
+        }
+    ],
     "test_deepseek3_hf2mcore_tp2pp2vpp1ep2nooplayer": [
         {
             "param": {

@@ -83,6 +83,15 @@
     <tr>
         <td>test_deepseek4_flash_l1_bf16_roundtrip</td>
         <td>/data/ci/models/DeepSeek-V4-Flash/hf/DeepSeek-V4-Flash-L1-BF16</td>
+    <td>/</td>
+    <td>/</td>
+    <td>/</td>
+    <td>/</td>
+    <td>/</td>
+    </tr>
+    <tr>
+    <td>test_longcat_flash_l1_8experts_bf16_roundtrip</td>
+    <td>/data/ci/models/LongCat-Flash-Chat/hf/LongCat-Flash-Chat-L1-BF16-8Experts</td>
         <td>/</td>
         <td>/</td>
         <td>/</td>
