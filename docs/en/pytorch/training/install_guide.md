@@ -21,14 +21,11 @@ This document explains how to quickly install MindSpeed LLM, the PyTorch-based d
 >
 > The "√" in the table indicates support, and "x" indicates no support.
 
-- For the OSs supported by each hardware product in physical machine deployment scenarios, see the [Compatibility Query Assistant](https://www.hiascend.com/hardware/compatibility).
-- For the OSs supported by each hardware product in VM and container deployment scenarios, see [OS Compatibility](https://www.hiascend.com/document/detail/zh/CANNCommunityEdition/920/softwareinst/instg/instg_0101.html?OS=openEuler&InstallType=netyum) in *CANN Software Installation*.
-
 ## Preparation Before Installation
 
 See [Related Product Version Mapping](../../release_notes_llm.md#related-product-version-mapping) in the *Release Notes* to download and install the corresponding software version.
 
-Click [Firmware and Drivers](https://www.hiascend.com/hardware/firmware-drivers) and follow the guidance to install the firmware and drivers.
+Click [Firmware and Drivers](https://www.hiascend.com/en-sg/hardware/firmware-drivers) and follow the guidance to install the firmware and drivers.
 
 > [!NOTICE]
 >
@@ -59,7 +56,7 @@ Installation from source (unified installation using submodules): This optional 
 
 1. Obtain the image.
 
-   The latest images correspond to the [MindSpeed LLM 26.2.0 branch](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.2.0). This image will be released soon. For now, you can use the image corresponding to the MindSpeed LLM 26.1.0 branch. Click [Obtain the image](https://www.hiascend.com/developer/ascendhub/detail/e26da9266559438b93354792f25b2f4a) as needed.
+   The latest images correspond to the [MindSpeed LLM 26.2.0 branch](https://gitcode.com/Ascend/MindSpeed-LLM/tree/26.2.0). This image will be released soon. For now, you can use the image corresponding to the MindSpeed LLM 26.1.0 branch. Click [Obtain the image](https://www.hiascend.com/en-sg/developer/ascendhub/detail/e26da9266559438b93354792f25b2f4a) as needed.
 
    <!-- npu="950" id1 -->
    - <term>Ascend 950PR&950DT products</term>: `v26.1.0-cann9.1.0-torch_npu2.7.1.post8-950-openeuler24.03-py3.12`
