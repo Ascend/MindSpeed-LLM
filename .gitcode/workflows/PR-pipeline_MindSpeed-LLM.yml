@@ -15,7 +15,7 @@ on:
 
   pull_request_comment:
     types: [created]
-    branches: ["master", "26.2.0", "26.1.0", "26.0.0"]
+    branches: ["*"]
     comments: ["^compile$"]
 
 env:
@@ -38,9 +38,9 @@ stages:
     jobs:
       Detect_file_changes:
         name: Detect_file_changes
-        runs-on: [self-hosted, default, x86, cpu=16]
+        runs-on: [self-hosted, default, x86, cpu=2]
         container:
-          image: swr.cn-north-4.myhuaweicloud.com/pytorch_images_x86/pytorchx86:v_03
+          image: swr.cn-north-4.myhuaweicloud.com/atlas-ci/common:latest
         outputs:
           need_build_ut: ${{ steps.set-skip.outputs.need_build_ut }}
         steps:
@@ -96,7 +96,7 @@ stages:
       associate_pr_comment:
         name: associate_pr_comment
         select: selected_by_default
-        runs-on: [ self-hosted, default, x86, cpu=16 ]
+        runs-on: [ self-hosted, default, x86, cpu=2 ]
         steps:
           - name: associate-pr-comment
             uses: associate-pr-comment
@@ -118,7 +118,7 @@ stages:
       CodeCheck_pre_commit:
         name: pre-commit
         if : ${{ jobs.Detect_file_changes.outputs.need_build_ut == 'yes' }}
-        runs-on: [ self-hosted, default, x86, cpu=16 ]
+        runs-on: [ self-hosted, default, x86, cpu=2 ]
         container:
           image: swr.cn-north-4.myhuaweicloud.com/atlas-ci/common:latest
         steps:
@@ -146,7 +146,7 @@ stages:
 
       sca-pr:
         if : ${{ jobs.Detect_file_changes.outputs.need_build_ut == 'yes' }}
-        runs-on: [ self-hosted, default, x86, cpu=16 ]
+        runs-on: [ self-hosted, default, x86, cpu=2 ]
         steps:
           - name: checkout
             uses: checkout
@@ -157,7 +157,7 @@ stages:
 
       malicious-scan:
         if : ${{ jobs.Detect_file_changes.outputs.need_build_ut == 'yes' }}
-        runs-on: [ self-hosted, default, x86, cpu=16 ]
+        runs-on: [ self-hosted, default, x86, cpu=2 ]
         steps:
           - name: checkout
             uses: checkout

@@ -1,0 +1,97 @@
+name: test_Nightly-MindSpeed-LLM-buildkit
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 4 * * *'
+
+env:
+  NIGHTLY_IMAGE: "swr.cn-north-4.myhuaweicloud.com/atlas-ci/test-mindspeed-llm-nightly"
+
+permissions:
+  project: read
+  repository: read
+  id-token: write
+
+stages:
+  stage_prepare:
+    name: 生成镜像标签
+    select: selected_by_default
+    jobs:
+      Prepare_image_tag:
+        runs-on: [self-hosted, buildkitTest]
+        outputs:
+          image_tag: ${{ steps.timestamp.outputs.image_tag }}
+        steps:
+          - name: generate timestamp
+            id: timestamp
+            run: |
+              set -eu
+              image_tag="$(TZ=Asia/Shanghai date +%Y%m%d%H%M%S)"
+              output_file="$(printenv ATOMGIT_OUTPUT)"
+              printf 'image_tag=%s\n' "$image_tag" >> "$output_file"
+              printf 'Image tag: %s\n' "$image_tag"
+
+  stage_0:
+    name: 镜像构建
+    select: selected_by_default
+    jobs:
+      Build_nightly_image:
+        name: Build_nightly_image
+        uses: pipelineascode/buildkit-dev/.gitcode/workflows/reusable-build-image.yml@v1.0.1
+        with:
+          dockerfile_url: "https://gitcode.com/AscendTest/pytest-infra/blob/main/resources/dockerfile/Dockerfile.mindspeed_llm"
+          harbor_registry: "swr.cn-north-4.myhuaweicloud.com"
+          harbor_image: "atlas-ci/test-mindspeed-llm-nightly"
+          harbor_tag: "${{ jobs.Prepare_image_tag.outputs.image_tag }}"
+          oidc_account_id: "0d336831568090260fd5c01450729240"
+          region: "cn-north-4"
+          provider_name: "pta_swr_nightly"
+          audience: "pta_swr_nightly"
+          agency_name: "pta_swr_nightly"
+          duration_seconds: "3600"
+          runner_label: "buildkitTest"
+          target_platforms: "linux/arm64"
+          build_context: "resources/dockerfile"
+
+  stage_publish:
+    name: 更新 latest
+    select: selected_by_default
+    jobs:
+      Publish_latest:
+        runs-on: [self-hosted, buildkitTest]
+        env:
+          DOCKER_CONFIG: /home/user/.docker
+          PATH: /root/.cache/buildkit/bin/amd64:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+          SOURCE_IMAGE: "${{ env.NIGHTLY_IMAGE }}:${{ jobs.Prepare_image_tag.outputs.image_tag }}"
+          LATEST_IMAGE: "${{ env.NIGHTLY_IMAGE }}:latest"
+        steps:
+          - name: swr login via oidc
+            uses: pipelineascode/buildkit-dev/.gitcode/actions/swr-login@v1.0.1
+            with:
+              account_id: "0d336831568090260fd5c01450729240"
+              registry: "swr.cn-north-4.myhuaweicloud.com"
+              region: "cn-north-4"
+              provider_name: "pta_swr_nightly"
+              audience: "pta_swr_nightly"
+              agency_name: "pta_swr_nightly"
+              duration_seconds: "3600"
+          - name: tag built image as latest
+            run: |
+              set -eu
+              source_image="$(printenv SOURCE_IMAGE)"
+              latest_image="$(printenv LATEST_IMAGE)"
+              docker buildx imagetools create --tag "$latest_image" "$source_image"
+              docker buildx imagetools inspect "$source_image"
+              docker buildx imagetools inspect "$latest_image"
+
+  stage_1:
+    name: 冒烟测试
+    select: selected_by_default
+    jobs:
+      Test_nightly_smoke:
+        name: Test_nightly_smoke
+        uses: .gitcode/workflows/.test_nightly_smoke_llm.yml
+        with:
+          testcase_config_file: "resources/pytest_mindspeed_llm.ini"
+          image_label: "${{ env.NIGHTLY_IMAGE }}:${{ jobs.Prepare_image_tag.outputs.image_tag }}"

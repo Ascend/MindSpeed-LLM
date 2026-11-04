@@ -1,0 +1,114 @@
+name: Test_nightly_smoke
+
+on:
+  workflow_call:
+    inputs:
+      testcase_config_file:
+        required: false
+        type: string
+        default: "resources/pytest_mindspeed_llm.ini"
+        description: "pytest-infra 中的 MindSpeed-LLM 冒烟用例配置"
+      image_label:
+        required: true
+        type: string
+        description: "stage_0 本次构建并推送的 nightly 镜像完整地址"
+
+permissions:
+  repository: read
+  id-token: write
+
+jobs:
+  JOB_test_nightly:
+    name: Test_nightly_smoke
+    select: selected_by_default
+    runs-on: [ self-hosted, arch=x86, k8s=public ]
+    outputs:
+      testcase-obs-url: ${{ steps.run-nightly-smoke.outputs.testcase-obs-url }}
+      env-log-file: ${{ steps.run-nightly-smoke.outputs.env-log-file }}
+      testcase-file: ${{ steps.run-nightly-smoke.outputs.testcase-file }}
+      case-logs: ${{ steps.run-nightly-smoke.outputs.case-logs }}
+      case-env-log: ${{ steps.run-nightly-smoke.outputs.case-env-log }}
+      case-logs-fail: ${{ steps.run-nightly-smoke.outputs.case-logs-fail }}
+      case-env-log-fail: ${{ steps.run-nightly-smoke.outputs.case-env-log-fail }}
+    steps:
+      - name: fast_checkout
+        uses: checkout
+
+      - name: run nightly smoke test
+        id: run-nightly-smoke
+        uses: openlibing/test-action/pytest-orch@v1.0.8
+        continue-on-error: true
+        with:
+          testcase-config-file: ${{ inputs.testcase_config_file }}
+          scheduler-secret: ${{ secrets.SCHEDULER_SECRET }}
+          testcase-repo: AscendTest/pytest-infra
+          testcase-branch: main
+          image-label: ${{ inputs.image_label }}
+          archive-log-dir: /tmp/pytest-orch/workspace/nightly-artifacts
+
+      - name: 上传所有用例执行日志
+        id: upload-case-logs
+        identifier: upload-case-logs
+        if: ${{ steps.run-nightly-smoke.outputs.case-logs != '' }}
+        uses: upload-artifact
+        continue-on-error: true
+        with:
+          name: 所有用例执行日志
+          path: ${{ steps.run-nightly-smoke.outputs.case-logs }}
+          overwrite: true
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: 上传所有用例环境日志
+        id: upload-case-env-log
+        identifier: upload-case-env-log
+        if: ${{ steps.run-nightly-smoke.outputs.case-env-log != '' }}
+        uses: upload-artifact
+        continue-on-error: true
+        with:
+          name: 所有用例环境日志
+          path: ${{ steps.run-nightly-smoke.outputs.case-env-log }}
+          overwrite: true
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: 上传所有失败用例执行日志
+        id: upload-case-logs-fail
+        identifier: upload-case-logs-fail
+        if: ${{ steps.run-nightly-smoke.outputs.case-logs-fail != '' }}
+        uses: upload-artifact
+        continue-on-error: true
+        with:
+          name: 所有失败用例执行日志
+          path: ${{ steps.run-nightly-smoke.outputs.case-logs-fail }}
+          overwrite: true
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: 上传所有失败用例环境日志
+        id: upload-case-env-log-fail
+        identifier: upload-case-env-log-fail
+        if: ${{ steps.run-nightly-smoke.outputs.case-env-log-fail != '' }}
+        uses: upload-artifact
+        continue-on-error: true
+        with:
+          name: 所有失败用例环境日志
+          path: ${{ steps.run-nightly-smoke.outputs.case-env-log-fail }}
+          overwrite: true
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: cleanup case-logs dirs
+        continue-on-error: true
+        env:
+          CASE_LOGS: ${{ steps.run-nightly-smoke.outputs.case-logs }}
+          CASE_ENV_LOG: ${{ steps.run-nightly-smoke.outputs.case-env-log }}
+          CASE_LOGS_FAIL: ${{ steps.run-nightly-smoke.outputs.case-logs-fail }}
+          CASE_ENV_LOG_FAIL: ${{ steps.run-nightly-smoke.outputs.case-env-log-fail }}
+        run: |
+          for d in "$CASE_LOGS" "$CASE_ENV_LOG" "$CASE_LOGS_FAIL" "$CASE_ENV_LOG_FAIL"; do
+            if [ -n "$d" ]; then
+              echo "removing: $d"
+              rm -rf "$d" || true
+            fi
+          done
