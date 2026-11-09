@@ -4,6 +4,7 @@ export HCCL_BUFFSIZE=200
 export HCCL_HOST_SOCKET_PORT_RANGE=auto
 export HCCL_CONNECT_TIMEOUT=7200
 export HCCL_EXEC_TIMEOUT=7200
+export HCCL_DETERMINISTIC=True
 
 export CUDA_DEVICE_MAX_CONNECTIONS=1
 export TASK_QUEUE_ENABLE=2
@@ -209,6 +210,7 @@ DATA_ARGS="
     --data-path $DATA_PATH \
     --handler-name GeneralPretrainHandler \
     --split 100,0,0 \
+    --npu-deterministic \
 "
 
 OUTPUT_ARGS="
