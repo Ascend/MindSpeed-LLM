@@ -224,7 +224,7 @@ examples/
 
 每个训练框架下都提供了核心模型的完整训练脚本，用户可以根据需求选择相应的脚本进行训练：
 
-1. FSDP2 训练后端GPT OSS 模型示例
+1. FSDP2 训练后端GPT-OSS模型示例
 
     - 微调：运行 `examples/fsdp2/gpt_oss/tune_gpt_oss_20b_a3b_4K_fsdp2_mindspeed.sh` 脚本进行模型微调
     - 详细指南：参考 [finetune_fsdp2.md](pytorch/training/finetune/fsdp2/finetune_fsdp2.md) 获取完整使用说明

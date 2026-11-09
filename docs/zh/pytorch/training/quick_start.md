@@ -1,8 +1,9 @@
-# 快速入门：Qwen3-8B 模型预训练及微调
+# 快速入门：Qwen3-8B模型预训练及微调
 
 ## 概述
 
-本文档提供了一个简易示例，帮助初次接触MindSpeed LLM的开发者快速启动模型训练任务，并基于预训练语言模型，使用单样本格式数据完成指令单机微调任务。
+本文档提供了一个简易示例，帮助初次接触MindSpeed LLM的开发者快速启动模型训练任务，并基于预训练语言模型，使用单样本格式数据完成单机指令微调任务。
+
 以下将以Qwen3-8B模型为例，指导开发者完成大语言模型的预训练和微调任务，主要步骤包括：
 
 - 环境准备：根据安装指引进行搭建环境
@@ -215,7 +216,7 @@
     |`--finetune`|启动模型的微调模式。|
     |`--stage`|训练方法，如 sft（监督微调）。|
     |`--is-instruction-dataset`|用于指定微调过程中采用指令微调数据集，以确保模型依据特定指令数据进行微调。|
-    |`--prompt-type`|用于指定模型模板，能够让base模型微调后能具备更好的对话能力。可在[templates.json](../../../../configs/finetune/templates.json)文件内查看`prompt-type`的可选项。|
+    |`--prompt-type`|用于指定模型模板，能够让base模型微调后具备更好的对话能力。可在[templates.json](../../../../configs/finetune/templates.json)文件内查看`prompt-type`的可选项。|
     |`--no-pad-to-seq-lengths`|关闭固定序列长度padding，支持动态序列长度微调，默认按照8的倍数进行padding。|
     |`--sequence-parallel`|开启序列并行。|
     |`--use-distributed-optimizer`|启用分布式优化器。|

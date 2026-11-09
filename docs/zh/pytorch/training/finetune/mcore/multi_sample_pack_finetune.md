@@ -47,7 +47,7 @@
     微调相关参数说明：
 
     - `--is-instruction-dataset`：用于指定微调过程中采用指令微调数据集，以确保模型依据特定指令数据进行微调。
-    - `--prompt-type`：用于指定模型模板，能够让base模型微调后能具备更好的对话能力。`prompt-type`的可选项可以在[templates.json](../../../../../../configs/finetune/templates.json)文件内查看。
+    - `--prompt-type`：用于指定模型模板，能够让base模型微调后具备更好的对话能力。`prompt-type`的可选项可以在[templates.json](../../../../../../configs/finetune/templates.json)文件内查看。
     - `--reset-attention-mask`：启用该参数时，将根据EOD计算句子的分隔位置，生成`actual_seq_len`，并将其传入FA算子，实现类似锯齿状的mask计算效果，FA算子随后进行TND格式的计算。
     - `--neat-pack`：是Pack场景下使用锯齿状的`attention_mask`参与计算的开关，其作用是利用数据集处理阶段生成的`attention_mask`生成对应的`actual_seq_len`。
     - `--padded-samples`【可选参数】：将样本总数凑成`batch-size`的整数倍。

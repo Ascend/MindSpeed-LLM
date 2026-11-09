@@ -72,7 +72,7 @@ PMCC混淆是指对微调过程使用的模型文件和数据集进行混淆处�
 
 5. 进行权重转换，即将混淆后的HF权重转换成Megatron权重。
 
-    以Qwen3-32B模型在TP8PP2切分为例，详细配置请参考[Qwen3权重转换脚本](../../../../../../examples/mcore/qwen3/ckpt_convert_qwen3_hf2mcore.sh)。需要修改相关路径参数和模型切分配置：
+    以Qwen3-32B模型在TP8PP2（TP=8、PP=2）切分为例，详细配置请参考[Qwen3权重转换脚本](../../../../../../examples/mcore/qwen3/ckpt_convert_qwen3_hf2mcore.sh)。需要修改相关路径参数和模型切分配置：
 
     ```shell
     --target-tensor-parallel-size 8          # TP切分大小

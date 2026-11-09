@@ -35,7 +35,7 @@ BBH 评估集专注于以下几个方面：
 
 #### 使用影响
 
-- 此模式将会读取 BBH 评估的[模板的文件](../../../../../../mindspeed_llm/tasks/evaluation/eval_impl/fewshot_template/bbh_template.json)作为评估模板，在与需要模型回答的问题连接后，输入到模型中，直接进行评估。
+- 此模式将会读取[BBH评估模板文件](../../../../../../mindspeed_llm/tasks/evaluation/eval_impl/fewshot_template/bbh_template.json)作为评估模板，在与需要模型回答的问题连接后，输入到模型中，直接进行评估。
 
 - 请注意该模式使用的模板，不是思维链（Chain-of-Thought）的模板风格
 

@@ -94,7 +94,7 @@
 
 ![image](../../figures/ldt_sft/ldt_vdp.png 'ldt_vdp.png')
 
-针对通讯组初始化的处理，复用现有megatron生成rank组的逻辑，首先基于对称DP场景将边云分开进行rank组生成；再将边侧的rank组进行重计算合并；云侧的rank组整体偏移边侧卡数。
+针对通信组初始化的处理，复用现有megatron生成rank组的逻辑，首先基于对称DP场景将边云分开进行rank组生成；再将边侧的rank组进行重计算合并；云侧的rank组整体偏移边侧卡数。
 
 ![image](../../figures/ldt_sft/ldt_vdp_gen_ranks.png 'ldt_vdp_gen_ranks.png')
 

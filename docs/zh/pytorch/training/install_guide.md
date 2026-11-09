@@ -254,7 +254,7 @@ MindSpeed LLM支持通过Git Submodule统一管理三方依赖仓库，便于版
 
 1. 准备基础环境
 
-   准备虚拟环境、CANN、TorchNPU、Triton-Ascend等基础环境准备，详情请参考[方式二：源码安装](#方式二源码安装)的步骤1-4。
+   准备虚拟环境、CANN、TorchNPU、Triton-Ascend等基础环境，详情请参考[方式二：源码安装](#方式二源码安装)的步骤1-4。
 
 2. 下载源码
 
@@ -270,7 +270,7 @@ MindSpeed LLM支持通过Git Submodule统一管理三方依赖仓库，便于版
    > [!NOTE]
    >
    > 如需更新Submodule，详见如下操作：
-   > - MindSpeed和FSDPTurbo默认跟踪远端最新，初始化时已完成刷新，后需继续拉取最新提交可执行`git submodule update --init --remote 3rdparty/MindSpeed 3rdparty/FSDPTurbo`。(3rdparty目录下commit可不关注)
+   > - MindSpeed和FSDPTurbo默认跟踪远端最新，初始化时已完成刷新，后续继续拉取最新提交可执行`git submodule update --init --remote 3rdparty/MindSpeed 3rdparty/FSDPTurbo`。(3rdparty目录下commit可不关注)
    > - Megatron-LM固定在相应版本，执行`git submodule update --init`会始终检出该版本，不会自动更新。如需切换版本，参见下方章节[（可选）切换子模块版本](#checkout_submodules)。
 
    源码结构如下：

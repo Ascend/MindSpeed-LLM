@@ -38,7 +38,7 @@ export PYTHONPATH=$PYTHONPATH:$(pwd)
 
 **模型准备**
 
-模型权重下载地址请参考 [模型支持列表](../../../models/supported_models.md)。本示例使用 [Qwen3-8B](https://huggingface.co/Qwen/Qwen3-8B/tree/main) 的 HuggingFace 格式权重。
+模型权重下载地址请参考[模型支持列表](../../../models/supported_models.md)。本示例使用[Qwen3-8B](https://huggingface.co/Qwen/Qwen3-8B/tree/main) 的HuggingFace格式权重。
 
 完整模型目录应包含模型配置、Tokenizer 配置和全部权重文件，例如：
 
@@ -58,7 +58,7 @@ Qwen3-8B/
 └── vocab.json
 ```
 
-FSDP2 后端可直接加载 HuggingFace 格式权重，开始训练前不需要执行模型权重转换。当前仓库默认在对应的 `examples/fsdp2/**/*.sh` 启动脚本中，通过 `--model.model_name_or_path` 配置模型权重目录。例如，Qwen3-8B 微调时需要修改 `examples/fsdp2/qwen3/tune_qwen3_8b_4k_fsdp2_A2.sh` 中的以下参数：
+FSDP2后端可直接加载HuggingFace格式权重，开始训练前不需要执行模型权重转换。当前仓库默认在对应的 `examples/fsdp2/**/*.sh` 启动脚本中，通过 `--model.model_name_or_path` 配置模型权重目录。例如，Qwen3-8B 微调时需要修改 `examples/fsdp2/qwen3/tune_qwen3_8b_4k_fsdp2_A2.sh` 中的以下参数：
 
 ```bash
 --model.model_name_or_path /path/to/Qwen3-8B/
@@ -66,7 +66,7 @@ FSDP2 后端可直接加载 HuggingFace 格式权重，开始训练前不需要�
 
 **数据集准备**
 
-FSDP2 微调使用 LLaMA Factory 风格的数据处理流程，可加载 `.parquet`、`.csv`、`.json`、`.jsonl`、`.txt` 和 `.arrow` 等格式的数据文件。数据在训练任务启动时完成加载、格式对齐和 Tokenize，无需提前转换为 Megatron Indexed Dataset。
+FSDP2微调使用LLaMA Factory风格的数据处理流程，可加载 `.parquet`、`.csv`、`.json`、`.jsonl`、`.txt` 和 `.arrow` 等格式的数据文件。数据在训练任务启动时完成加载、格式对齐和 Tokenize，无需提前转换为 Megatron Indexed Dataset。
 
 当前支持的主要数据格式包括：
 

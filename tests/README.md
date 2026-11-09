@@ -425,7 +425,7 @@ Pipeline用例看护全量覆盖仓库所有模型和所有特性，每天夜里
         <td>Y</td>
     </tr>
     <tr>
-        <td rowspan="1">interlm3</td>
+        <td rowspan="1">internlm3</td>
         <td>internlm3, distributed_optimizer, fused_ring_attention_update</td>
         <td><a href="pipeline/st/interlm3/internlm3_8b_tp1_pp4_cp2_ptd.sh">internlm3_8b_tp1_pp4_cp2_ptd.sh</a></td>
         <td>Y</td>

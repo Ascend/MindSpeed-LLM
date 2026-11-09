@@ -128,7 +128,7 @@ wget -O /home/data/alpaca/train-00000-of-00001-a09b74b3ef9c3b56.parquet \
       "torch_dtype": "bfloat16",
       // 导出该配置时对应的Transformers版本。
       "transformers_version": "4.56.0.dev0",
-      // 推理时是否启用KVcache。
+      // 推理时是否启用KV Cache。
       "use_cache": true,
       // tokenizer 词表大小。
       "vocab_size": 201088
