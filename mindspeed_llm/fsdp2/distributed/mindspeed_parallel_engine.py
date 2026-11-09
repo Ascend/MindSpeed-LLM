@@ -83,7 +83,28 @@ class MindSpeedParallelEngine(torch.nn.Module):
     def apply_recompute_modules(self):
         if not self.config.recompute:
             return
-        self.model = recompute_modules(self.model, self.config.recompute_plan)
+
+        from contextlib import nullcontext
+        from fsdp_turbo.quantization.core.recompute_phase import (
+            mark_module_for_recompute,
+            mxfp8_recompute_context,
+        )
+
+        def mxfp8_context_factory(module):
+            if module is None:
+                return None
+
+            mark_module_for_recompute(module)
+            return lambda: (
+                nullcontext(),
+                mxfp8_recompute_context(module),
+            )
+
+        self.model = recompute_modules(
+            self.model,
+            self.config.recompute_plan,
+            context_fn_factory=mxfp8_context_factory,
+        )
 
     def apply_chunk_batch_modules(self):
         if not self.config.enable_chunk_batch:
