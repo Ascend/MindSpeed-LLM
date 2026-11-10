@@ -14,11 +14,11 @@
 
 ## 使用说明
 
-MindSpeed-LLM 支持在微调等任务中使用 LU-LoRA 进行混合低参数训练。使用方法是通过在基准任务中添加 LU-LoRA 参数来启用它。这里，我们以微调任务为例，说明如何在基准任务中使用 LU-LoRA。
+MindSpeed LLM 支持在微调等任务中使用 LU-LoRA 进行混合低参数训练。使用方法是通过在基准任务中添加 LU-LoRA 参数来启用它。这里，我们以微调任务为例，说明如何在基准任务中使用 LU-LoRA。
 
 ### 数据预处理示例
 
-MindSpeed-LLM 微调数据预处理脚本的命名和启动方法（其他基准任务的数据预处理，请参考相应任务的数据预处理文档）：
+MindSpeed LLM 微调数据预处理脚本的命名和启动方法（其他基准任务的数据预处理，请参考相应任务的数据预处理文档）：
 
 ```shell
 bash tests/poc/llama2/data_convert_llama2_instruction.sh
@@ -40,7 +40,7 @@ python ./preprocess_data.py \
 
 ### hf2mcore 权重转换示例
 
-MindSpeed-LLM LU-LoRA 微调脚本可以使用正常的 mcore 基础权重进行微调任务：
+MindSpeed LLM LU-LoRA 微调脚本可以使用正常的 mcore 基础权重进行微调任务：
 
 ```shell
 bash tests/poc/llama2/ckpt_convert_llama2_hf2mcore.sh
@@ -69,7 +69,7 @@ DATA_PATH="./finetune_dataset/llama-2-7b/alpaca" # 数据集路径
 CKPT_LOAD_DIR="./model_weights/llama2-mcore/" # 权重路径
 ```
 
-MindSpeed-LLM LU-LoRA微调脚本命名及启动方式：
+MindSpeed LLM LU-LoRA微调脚本命名及启动方式：
 
 ```shell
 # 初始化环境变量
@@ -83,7 +83,7 @@ bash examples/mcore/llama2/tune_llama2_7b_lu_lora_ptd.sh
 参数描述：
 
 - **`--lu-lora-final-layer-index`**
- 使用LU-LoRA训练的最后一层的索引，例如，入参为11，表示模型的前12层（0层-11层）使用LU-LoRA算法，其余层使用LoRA算法。具有更多层的模型应更新更多层以进行局部学习，从而减少计算和内存消耗。然而，LU-LoRA覆盖的层数过多可能会限制模型的泛化能力。建议首先选择37.5%的层数以获得适当的内存消耗减少。进一步调整超参数可以进一步改善。
+ 使用LU-LoRA训练的最后一层的索引，例如，入参为11，表示模型的前12层（0层-11层）使用LU-LoRA算法，其余层使用LoRA算法。具有更多层的模型应更新更多层以进行局部学习，从而减少计算和内存消耗。然而，LU-LoRA覆盖的层数过多可能会限制模型的泛化能力。建议首先选择37.5%的层数以获得适当的内存消耗减少。调整超参数可以进一步改善效果。
 - **`--lu-lora-lr-ratio`**
  LU-LoRA B与LU-LoRA A适配器的学习率比值，通常建议设置为24（默认），但根据特定模型的实验结果，可能会更小。
 - **`--lu-lora-lr`**
@@ -130,7 +130,7 @@ bash tests/poc/llama2/ckpt_convert_llama2_mcore2hf_lora.sh
 
 ### LU-LoRA推理
 
-MindSpeed-LLM推理脚本命名及启动方法：
+MindSpeed LLM推理脚本命名及启动方法：
 
 ```shell
 # 初始化环境变量

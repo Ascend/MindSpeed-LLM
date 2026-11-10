@@ -14,7 +14,7 @@
 
 - **学科分布**：覆盖人文科学、社会科学、STEM（科学/技术/工程/数学）和交叉学科四大门类
 
-MindSpeed-LLM 会对 `CEval` 题目集中的内容进行评估。
+MindSpeed LLM 会对 `CEval` 题目集中的内容进行评估。
 
 ## 使用方法
 
@@ -52,7 +52,7 @@ MindSpeed-LLM 会对 `CEval` 题目集中的内容进行评估。
 
 【--prompt-type】
 
-该参数用于指定模型模板类型，应与你在使用 MindSpeed-LLM 仓库进行微调时配置的 `--prompt-type` 参数保持一致。
+该参数用于指定模型模板类型，应与你在使用 MindSpeed LLM 仓库进行微调时配置的 `--prompt-type` 参数保持一致。
 
 ### 3. 平替模板输出模式
 

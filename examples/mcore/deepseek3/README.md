@@ -1,6 +1,6 @@
 # DeepSeek-V3模型训练
 
-若需使用DeepSeek-V3训练，先根据预训练/微调任务查看使用指导文档示例，配置<a href="../../mcore/deepseek3/">DeepSeek-V3训练脚本</a>，然后执行训练过程。
+若需使用DeepSeek-V3训练，先根据预训练/微调任务查看使用指导文档，配置<a href="../../mcore/deepseek3/">DeepSeek-V3训练脚本</a>，然后执行训练过程。
 
 ## 1. 预训练使用指导
 

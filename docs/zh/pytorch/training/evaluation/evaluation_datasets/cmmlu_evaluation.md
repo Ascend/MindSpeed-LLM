@@ -17,7 +17,7 @@ CMMLU 评估集专注于以下几个方面：
 
 每个领域下又包含多个具体的任务和问题，通过这些多样化的任务，CMMLU 能够评估模型在不同领域的知识掌握情况和跨领域的泛化能力。
 
-目前 MindSpeed-LLM 仓库对 CMMLU 评估有三种评估模式：
+目前 MindSpeed LLM 仓库对 CMMLU 评估有三种评估模式：
 
 ## 使用方法
 
@@ -55,7 +55,7 @@ CMMLU 评估集专注于以下几个方面：
 
 【--prompt-type】
 
-该参数用于指定模型模板类型，应与你在使用 MindSpeed-LLM 仓库进行微调时配置的 `--prompt-type` 参数保持一致。
+该参数用于指定模型模板类型，应与你在使用 MindSpeed LLM 仓库进行微调时配置的 `--prompt-type` 参数保持一致。
 
 【--eval-language】
 

@@ -57,8 +57,8 @@ Docker 项目目录遵循清晰的分层结构，便于维护和扩展：
 docker/
 ├── Dockerfile                 # 统一 Dockerfile，支持多 NPU 类型
 ├── image_build.sh             # 镜像构建脚本
-├── configure_yum_repo.sh      # 配置 yum 软件源库脚本
-├── configure_apt_repo.sh      # 配置 apt 软件源库脚本
+├── configure_yum_repo.sh      # 配置 yum 软件源脚本
+├── configure_apt_repo.sh      # 配置 apt 软件源脚本
 ├── supported_tags.md          # 已发布及历史镜像 Tag
 ├── OVERVIEW.md                # 英文版说明文档
 ├── OVERVIEW.zh.md             # 中文版说明文档

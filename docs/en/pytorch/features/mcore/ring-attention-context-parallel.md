@@ -19,7 +19,7 @@ When training GPT-like models, once data enters MoE layers, the actual sequence 
 
 Unlike the Ulysses approach, this method does not require `head_size` to be divisible by `cp_size`.
 
-It is compatible with FlashAttention, which is enabled by default.
+It is compatible with Flash Attention, which is enabled by default.
 
 To overlap computation and communication, in theory you need to ensure that the sequence length assigned to each compute block satisfies `c >= F/B`. Here, `F` is the FLOPS of each device and `B` is the bandwidth between devices. See the original paper for the detailed derivation. In practice, ensure that each compute block receives a sufficiently large sequence length to achieve good overlap.
 
@@ -39,6 +39,6 @@ By splitting the input sequence across multiple compute devices in parallel, mem
 
 ## Notes
 
-1. When Context Parallel is enabled, you must also enable FlashAttention. Otherwise, this feature is not supported.
+1. When Context Parallel is enabled, you must also enable Flash Attention. Otherwise, this feature is not supported.
 2. When training GPT-like models, you are advised to set `attention-mask-type` to `causal`.
 3. With an 8K sequence length, computation time becomes shorter. Therefore, the send and receive time after CP partitioning may exceed the computation time, which degrades performance. Therefore, you are advised to configure `seq-length / context-parallel-size > 8K` for the best results. The specific formula is `S/(T*alpha) >= 1/(W*beta)`, where `S = seq-length / context-parallel-size`, `T` is the theoretical compute capability of the chip, `alpha` is computation efficiency, `W` is the theoretical communication bandwidth, and `beta` is bandwidth utilization.

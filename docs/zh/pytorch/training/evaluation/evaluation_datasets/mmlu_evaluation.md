@@ -15,7 +15,7 @@ MMLU（Massive Multitask Language Understanding）评估包含一系列多样化
 
 其中，[STEM](#STEM)、[人文学科](#人文学科)和[社会科学](#社会科学)所包含的学科问题集会在文末说明。
 
-目前 MindSpeed-LLM 仓库对 MMLU 评估有四种评估模式：
+目前 MindSpeed LLM 仓库对 MMLU 评估有四种评估模式：
 
 ## 使用方法
 
@@ -23,7 +23,7 @@ MMLU（Massive Multitask Language Understanding）评估包含一系列多样化
 
 #### 工作原理
 
-此模式将会读取对外公开的 [MMLU 评估模板的文件](../../../../../../mindspeed_llm/tasks/evaluation/eval_impl/fewshot_template/mmlu_5shot_template.json)，在与需要模型回答的问题连接后，输入到模型中，直接进行评估。
+此模式将会读取对外公开的[MMLU评估模板文件](../../../../../../mindspeed_llm/tasks/evaluation/eval_impl/fewshot_template/mmlu_5shot_template.json)，在与需要模型回答的问题连接后，输入到模型中，直接进行评估。
 
 此种模式下，模型的第一个输出将会作为答案。
 
@@ -53,7 +53,7 @@ MMLU（Massive Multitask Language Understanding）评估包含一系列多样化
 
 【--prompt-type】
 
-该参数用于指定模型模板类型，应与你在使用 MindSpeed-LLM 仓库进行微调时配置的 `--prompt-type` 参数保持一致。
+该参数用于指定模型模板类型，应与你在使用 MindSpeed LLM 仓库进行微调时配置的 `--prompt-type` 参数保持一致。
 
 ### 3. 平替模板输出模式
 
@@ -79,7 +79,7 @@ MMLU（Massive Multitask Language Understanding）评估包含一系列多样化
 
 #### 使用说明
 
-`ppl` 是困惑度 (perplexity) 的缩写，是一种评价模型进行语言建模能力的指标。该模式也会使用您评估脚本中的`DATA_PATH`路径中`dev`文件夹中对应问题的以`_dev.csv`为后缀的文件，并作为模板问题。此时，我们会将 n 个选项拼接上上下文后，形成 n 个序列，然后计算模型对这 n 个序列的 perplexity，我们认为其中 perplexity 最低的序列所对应的选项即为模型在这道题上面的推理结果，该种评测方法的后处理简单直接、确定性高。
+`ppl` 是困惑度 (perplexity) 的缩写，是一种评价模型语言建模能力的指标。该模式也会使用您评估脚本中的`DATA_PATH`路径中`dev`文件夹中对应问题的以`_dev.csv`为后缀的文件，并作为模板问题。此时，我们会将 n 个选项拼接上上下文后，形成 n 个序列，然后计算模型对这 n 个序列的 perplexity，我们认为其中 perplexity 最低的序列所对应的选项即为模型在这道题上面的推理结果，该种评测方法的后处理简单直接、确定性高。
 
 #### 推荐参数配置
 

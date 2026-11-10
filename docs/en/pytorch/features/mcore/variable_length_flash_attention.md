@@ -6,7 +6,7 @@ Within a batch, the input text sequence usually comes from concatenating multipl
 
 ## Solution
 
-The variable-length mode of the underlying FlashAttention operator supports this training scenario.
+The variable-length mode of the underlying Flash Attention operator supports this training scenario.
 
 ## Usage
 

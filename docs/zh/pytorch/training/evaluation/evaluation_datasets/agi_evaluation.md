@@ -12,7 +12,7 @@
 
 ![AGIEval](../../../figures/evaluation/AGIEval_tasks.png)
 
-目前 MindSpeed-LLM 仓库对 AGI 评估有两种评估模式：
+目前 MindSpeed LLM 仓库对 AGI 评估有两种评估模式：
 
 ## 使用方法
 

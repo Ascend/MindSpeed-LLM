@@ -106,7 +106,7 @@ bash examples/mcore/gemma2/tune_gemma2_9b_full_ptd.sh
 
 ## 开始多轮对话
 
-使用[对话脚本](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/gemma2/chat_gemma2_9b_ptd.sh)，加载模型分词器和微调过后的权重，进行多轮对话。
+使用[对话脚本](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/gemma2/chat_gemma2_9b_ptd.sh)，加载模型分词器和微调后的权重，进行多轮对话。
 
 填写相关路径
 

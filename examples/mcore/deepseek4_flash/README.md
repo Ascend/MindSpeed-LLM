@@ -88,7 +88,7 @@
 
     ```
 
-    MindSpeed LLM提供[脚本](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/examples/mcore/deepseek4_flash)将已经huggingface开源权重转换为mcore权重，用于训练、推理、评估等任务。
+    MindSpeed LLM提供[脚本](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/examples/mcore/deepseek4_flash)将已经开源的huggingface权重转换为mcore权重，用于训练、推理、评估等任务。
     使用方法如下，请根据实际需要的TP/PP等切分策略和权重路径修改权重转换脚本
 
     ```sh

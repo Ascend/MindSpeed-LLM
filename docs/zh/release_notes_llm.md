@@ -175,7 +175,7 @@ MindSpeed LLM新增支持GLM5.2模型训练和DeepSeekV4长序列，且权重/�
 |组件|描述|目的|
 |--|--|--|
 |MindSpeed LLM|新增模型支持|支持GLM5.2模型训练|
-|MindSpeed LLM|模型训练场景扩充|新增DSeepSeekV4长序列支持|
+|MindSpeed LLM|模型训练场景扩充|新增DeepSeekV4长序列支持|
 |MindSpeed LLM|易用性提升|权重/数据合一功能覆盖全量模型用例|
 
 ### 删除特性

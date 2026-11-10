@@ -156,7 +156,7 @@ bash examples/mcore/qwen3/evaluate_qwen3_8b_lora_ptd.sh
 
 ## 6、LoRA权重与Base权重的合并与转换
 
-当前仓库支持将LoRA微调权重与基础模型权重合并，转换为Huggingface格式。在权重转换脚本中添加以下LoRA参数即可：
+当前仓库支持将LoRA微调权重与基础模型权重合并，转换为HuggingFace格式。在权重转换脚本中添加以下LoRA参数即可：
 
 ```shell
 --lora-load ${CHECKPOINT_LORA}  \

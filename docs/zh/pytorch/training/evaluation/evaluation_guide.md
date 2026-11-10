@@ -1,6 +1,6 @@
 # 评估指导手册
 
-MindSpeed-LLM 支持大模型在公开基准数据集上进行准确率评估，当前支持的 Benchmark
+MindSpeed LLM 支持大模型在公开基准数据集上进行准确率评估，当前支持的 Benchmark
  详细统计信息可参考[models_evaluation.md](./models_evaluation.md)。
 
 ## 环境变量
@@ -11,7 +11,7 @@ MindSpeed-LLM 支持大模型在公开基准数据集上进行准确率评估，
 
 ### 1. 基准评估
 
-MindSpeed-LLM 基准评估脚本命名风格及启动方法为：
+MindSpeed LLM 基准评估脚本命名风格及启动方法为：
 
 ```shell
 # 命名及启动：examples/mcore/model_name/evaluate_xxx.sh

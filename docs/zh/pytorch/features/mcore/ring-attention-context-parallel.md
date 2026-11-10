@@ -19,9 +19,9 @@ Ring Attention借鉴了分块Softmax原理，在不需要获取整个序列的�
 
 不同于Ulysses方案，该方案不需要确保head_size被cp_size整除。
 
-可兼容FlashAttention，目前已默认开启FlashAttention。
+可兼容Flash Attention，目前已默认开启Flash Attention。
 
-如果想要使得计算和通信可以互相掩盖，理论上需要确保每个计算块分到的序列长度$c \geq F/B$。其中F是每个device的FLOPS，B是每个device间的带宽。具体推导过程参见原文。在实践中，需要确保每个计算块分到的序列长度足够大，才能较好掩盖。
+如果想要使得计算和通信可以互相掩盖，理论上需要确保每个计算块分到的序列长度$c \geq F/B$。其中F是每个device的FLOPS，B是device间的带宽。具体推导过程参见原文。在实践中，需要确保每个计算块分到的序列长度足够大，才能较好掩盖。
 
 ## 使用方法
 

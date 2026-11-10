@@ -119,7 +119,7 @@ PP=2                                      # 权重转换时target-pipeline-paral
 
 - `DATA_PATH`：数据集路径。请注意实际数据预处理生成文件末尾会增加`_input_ids_document`等后缀，该参数填写到数据集的前缀即可。例如实际的数据集相对路径是`./finetune_dataset/alpaca/alpaca_packed_input_ids_document.bin`等，那么只需要填`./finetune_dataset/alpaca/alpaca`即可。
 - `is-instruction-dataset`：用于指定微调过程中采用指令微调数据集，以确保模型依据特定指令数据进行微调。
-- `prompt-type`：指定模型模板，使 base 模型在微调后具备更好的对话能力。
+- `prompt-type`：指定模型模板，使base模型在微调后具备更好的对话能力。
 - `no-pad-to-seq-lengths`：支持动态序列长度微调，默认按 8 的倍数进行 padding，可以通过 `--pad-to-multiple-of` 参数修改 padding 的倍数。
 - `lora-r`：LoRA rank，表示低秩矩阵的维度。较低的 rank 值模型在训练时会使用更少的参数更新，从而减少计算量和内存消耗。然而，过低的 rank 可能限制模型的表达能力。
 - `lora-alpha`：控制 LoRA 权重对原始权重的影响比例，数值越高则影响越大。一般保持 `α/r` 为 2。

@@ -274,7 +274,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案，具体�
 
 ## 权重转换
 
-MindSpeed LLM支持Huggingface、Megatron-core两种格式的权重互转，支持LoRA权重合并。权重转换特性参数和使用说明参考[权重转换](docs/zh/pytorch/tools/checkpoint_convert_hf_mcore_large_params.md)。
+MindSpeed LLM支持HuggingFace、Megatron-core两种格式的权重互转，支持LoRA权重合并。权重转换特性参数和使用说明参考[权重转换](docs/zh/pytorch/tools/checkpoint_convert_hf_mcore_large_params.md)。
 
 <table>
   <thead>

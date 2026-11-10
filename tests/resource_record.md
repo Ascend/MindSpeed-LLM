@@ -416,7 +416,7 @@
         <td>/data/ci/models/deepseek4-flash/hf/DeepSeek-V4-Flash/</td>
         <td>/data/ci/models/deepseek4-flash/mg/deepseekv4-flash-tp1-pp1-ep8-16experts/</td>
         <td>/data/ci/datasets/origin/train-00000-of-00001-a09b74b3ef9c3b56.parquet</td>
-        <td>/data/ci/cache/deepseek4-flash-dataset/deepsee4-flash</td>
+        <td>/data/ci/cache/deepseek4-flash-dataset/deepseek4-flash</td>
         <td>/</td>
         <td>/</td>
     </tr>
