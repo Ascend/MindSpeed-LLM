@@ -21,27 +21,27 @@ All MindSpeed-LLM tags follow this format: `v{MindSpeed LLM Version}-cann{CANN V
 
 | Field | Example Value | Description |
 | ------ | ------ | -------- |
-| MindSpeed LLM Version | `26.1.0` | MindSpeed LLM version label, also serves as Git branch name |
-| CANN Version | `9.1.0` | CANN base image version |
-| TorchNPU Version | `2.7.1.post8` | TorchNPU package version |
+| MindSpeed LLM Version | `26.2.0` | MindSpeed LLM version label, also serves as Git branch name |
+| CANN Version | `9.2.0` | CANN base image version |
+| TorchNPU Version | `2.10.0.post7` | TorchNPU package version |
 | Chip Type | `910b`, `a3`, `950` | NPU chip type (lowercase) |
 | OS | `openeuler24.03`, `ubuntu22.04` | Operating system version |
 | Python Version | `3.12` | Python runtime version |
 
 > The latest tags in the image registry are multi-architecture images combining `x86_64` and `aarch64`, so they do not include an `-x86_64` or `-aarch64` architecture suffix. When the image is built locally from the Dockerfile, the build script still generates a tag with the host architecture suffix by default.
 
-### Latest Version 26.1.0
+### Latest Version 26.2.0
 
-The following table lists all multi-architecture image tags for the latest MindSpeed LLM 26.1.0 release. Each tag combines `x86_64` and `aarch64` images. For all historical tags, see [Supported Tags](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/docker/supported_tags.md).
+The following table lists all multi-architecture image tags for the latest MindSpeed LLM 26.2.0 release. Each tag combines `x86_64` and `aarch64` images. For all historical tags, see [Supported Tags](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/docker/supported_tags.md).
 
 | Tag | Dockerfile | Content |
 | --- | --- | --- |
-| `v26.1.0-cann9.1.0-torch_npu2.7.1.post8-910b-openeuler24.03-py3.12` | [Dockerfile](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/docker/Dockerfile) | CANN 9.1.0/PyTorch 2.7.1/Triton-Ascend 3.2.2/MindSpeed 26.1.0_core_r0.12.1/MindSpeed-LLM 26.1.0/Megatron-LM core_v0.12.1/FSDPTurbo main |
-| `v26.1.0-cann9.1.0-torch_npu2.7.1.post8-910b-ubuntu22.04-py3.12` | [Dockerfile](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/docker/Dockerfile) | CANN 9.1.0/PyTorch 2.7.1/Triton-Ascend 3.2.2/MindSpeed 26.1.0_core_r0.12.1/MindSpeed-LLM 26.1.0/Megatron-LM core_v0.12.1/FSDPTurbo main |
-| `v26.1.0-cann9.1.0-torch_npu2.7.1.post8-a3-openeuler24.03-py3.12` | [Dockerfile](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/docker/Dockerfile) | CANN 9.1.0/PyTorch 2.7.1/Triton-Ascend 3.2.2/MindSpeed 26.1.0_core_r0.12.1/MindSpeed-LLM 26.1.0/Megatron-LM core_v0.12.1/FSDPTurbo main |
-| `v26.1.0-cann9.1.0-torch_npu2.7.1.post8-a3-ubuntu22.04-py3.12` | [Dockerfile](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/docker/Dockerfile) | CANN 9.1.0/PyTorch 2.7.1/Triton-Ascend 3.2.2/MindSpeed 26.1.0_core_r0.12.1/MindSpeed-LLM 26.1.0/Megatron-LM core_v0.12.1/FSDPTurbo main |
-| `v26.1.0-cann9.1.0-torch_npu2.7.1.post8-950-openeuler24.03-py3.12` | [Dockerfile](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/docker/Dockerfile) | CANN 9.1.0/PyTorch 2.7.1/Triton-Ascend 3.2.2/MindSpeed 26.1.0_core_r0.12.1/MindSpeed-LLM 26.1.0/Megatron-LM core_v0.12.1/FSDPTurbo main |
-| `v26.1.0-cann9.1.0-torch_npu2.7.1.post8-950-ubuntu22.04-py3.12` | [Dockerfile](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/docker/Dockerfile) | CANN 9.1.0/PyTorch 2.7.1/Triton-Ascend 3.2.2/MindSpeed 26.1.0_core_r0.12.1/MindSpeed-LLM 26.1.0/Megatron-LM core_v0.12.1/FSDPTurbo main |
+| `v26.2.0-cann9.2.0-torch_npu2.10.0.post7-910b-openeuler24.03-py3.12` | [Dockerfile](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.2.0/docker/Dockerfile) | CANN 9.2.0/PyTorch 2.10.0/Triton-Ascend 3.6.0/MindSpeed 26.2.0_core_r0.12.1/MindSpeed-LLM 26.2.0/Megatron-LM core_v0.12.1/FSDPTurbo 26.2.0 |
+| `v26.2.0-cann9.2.0-torch_npu2.10.0.post7-910b-ubuntu22.04-py3.12` | [Dockerfile](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.2.0/docker/Dockerfile) | CANN 9.2.0/PyTorch 2.10.0/Triton-Ascend 3.6.0/MindSpeed 26.2.0_core_r0.12.1/MindSpeed-LLM 26.2.0/Megatron-LM core_v0.12.1/FSDPTurbo 26.2.0 |
+| `v26.2.0-cann9.2.0-torch_npu2.10.0.post7-a3-openeuler24.03-py3.12` | [Dockerfile](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.2.0/docker/Dockerfile) | CANN 9.2.0/PyTorch 2.10.0/Triton-Ascend 3.6.0/MindSpeed 26.2.0_core_r0.12.1/MindSpeed-LLM 26.2.0/Megatron-LM core_v0.12.1/FSDPTurbo 26.2.0 |
+| `v26.2.0-cann9.2.0-torch_npu2.10.0.post7-a3-ubuntu22.04-py3.12` | [Dockerfile](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.2.0/docker/Dockerfile) | CANN 9.2.0/PyTorch 2.10.0/Triton-Ascend 3.6.0/MindSpeed 26.2.0_core_r0.12.1/MindSpeed-LLM 26.2.0/Megatron-LM core_v0.12.1/FSDPTurbo 26.2.0 |
+| `v26.2.0-cann9.2.0-torch_npu2.10.0.post7-950-openeuler24.03-py3.12` | [Dockerfile](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.2.0/docker/Dockerfile) | CANN 9.2.0/PyTorch 2.10.0/Triton-Ascend 3.6.0/MindSpeed 26.2.0_core_r0.12.1/MindSpeed-LLM 26.2.0/Megatron-LM core_v0.12.1/FSDPTurbo 26.2.0 |
+| `v26.2.0-cann9.2.0-torch_npu2.10.0.post7-950-ubuntu22.04-py3.12` | [Dockerfile](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.2.0/docker/Dockerfile) | CANN 9.2.0/PyTorch 2.10.0/Triton-Ascend 3.6.0/MindSpeed 26.2.0_core_r0.12.1/MindSpeed-LLM 26.2.0/Megatron-LM core_v0.12.1/FSDPTurbo 26.2.0 |
 
 ## Dockerfile Archive Path
 
@@ -75,15 +75,16 @@ The `image_build.sh` script supports flexible parameter configuration. Its defau
 | `-t, --npu-type`          | NPU type: `910b`, `a3`, or `950`                | `910b` |
 | `-o, --os`                | OS：`openeuler24.03`or`ubuntu22.04` | `openeuler24.03` |
 | `--no-cache`              | Build without using Docker build cache                          | None |
-| `--mindspeed-llm-branch`  |MindSpeed LLM version tag, also used as Git branch name    | `26.1.0` |
-| `--mindspeed-branch`      | MindSpeed version tag, also used as Git branch name        | `26.1.0_core_r0.12.1` |
+| `--mindspeed-llm-branch`  |MindSpeed LLM version tag, also used as Git branch name    | `26.2.0` |
+| `--mindspeed-branch`      | MindSpeed version tag, also used as Git branch name        | `26.2.0_core_r0.12.1` |
 | `--megatron-branch`       | Megatron-LM version tag, also used as Git branch name      | `core_v0.12.1` |
+| `--fsdpturbo-branch`      | FSDPTurbo Git branch | `26.2.0` |
 | `--python-version`        | Python version                           | `3.12` |
-| `--torch-version`         | PyTorch version                          | `2.7.1` |
-| `--torch-npu-version`     | TorchNPU package version                   | `2.7.1.post8` |
-| `--triton-ascend-version` | Triton-Ascend version                        | `3.2.2` |
+| `--torch-version`         | PyTorch version                          | `2.10.0` |
+| `--torch-npu-version`     | TorchNPU package version                   | `2.10.0.post7` |
+| `--triton-ascend-version` | Triton-Ascend version                        | `3.6.0` |
 |  `--fla-npu-branch`       | flash-linear-attention-npu version tag, also used as Git branch name       | `v26.1.0` |
-| `--base-image-version`    | Base image CANN version                        | `9.1.0` |
+| `--base-image-version`    | Base image CANN version                        | `9.2.0` |
 | `--base-image`            | Full base image name, passed as-is to pull the image if not empty           | None |
 | `--cleanup-on-fail`       | Clean up dangling images/containers when build fails           | None |
 
@@ -104,14 +105,14 @@ bash image_build.sh -t 950 -o ubuntu22.04
 
 # Customize the CANN, PyTorch, and TorchNPU package versions
 bash image_build.sh \
-  --base-image-version 9.1.0 \
-  --torch-version 2.7.1 \
-  --torch-npu-version 2.7.1.post8
+  --base-image-version 9.2.0 \
+  --torch-version 2.10.0 \
+  --torch-npu-version 2.10.0.post7
 
 # Change the source branches
 bash image_build.sh \
-  --mindspeed-llm-branch 26.1.0 \
-  --mindspeed-branch 26.1.0_core_r0.12.1 \
+  --mindspeed-llm-branch 26.2.0 \
+  --mindspeed-branch 26.2.0_core_r0.12.1 \
   --megatron-branch core_v0.12.1
 
 # Change the output image name
@@ -128,7 +129,7 @@ The build script supports automatic downloading of the following resources. Plea
 # Specify a 910b base image; the script automatically detects the NPU type
 cd docker
 bash image_build.sh \
-  --base-image swr.cn-south-1.myhuaweicloud.com/ascendhub/cann:9.1.0-910b-openeuler24.03-py3.12
+  --base-image swr.cn-south-1.myhuaweicloud.com/ascendhub/cann:9.2.0-910b-openeuler24.03-py3.12
 ```
 
 #### flash-linear-attention-npu Ops Build
@@ -157,16 +158,16 @@ The FLA NPU operator list is maintained in the `FLA_NPU_OPS` array in `docker/im
 
 #### Run the Container
 
-Image names use the `REPOSITORY:TAG` from `docker images`, for example, `mindspeed-llm:v26.1.0-cann9.1.0-torch_npu2.7.1.post8-910b-openeuler24.03-py3.12`.
+Image names use the `REPOSITORY:TAG` from `docker images`, for example, `mindspeed-llm:v26.2.0-cann9.2.0-torch_npu2.10.0.post7-910b-openeuler24.03-py3.12`.
 
 ```bash
 # Basic run
-docker run -it --rm \
-    mindspeed-llm:v26.1.0-cann9.1.0-torch_npu2.7.1.post8-910b-openeuler24.03-py3.12 bash
+docker run -it \
+    mindspeed-llm:v26.2.0-cann9.2.0-torch_npu2.10.0.post7-910b-openeuler24.03-py3.12 bash
 
 # Run with NPU device (Example: /dev/davinci1)
 # Assume NPU device /dev/davinci1 and NPU driver installed at /usr/local/Ascend
-docker run -it --rm \
+docker run -it \
     --name mindspeed-llm \
     --privileged \
     --network host \
@@ -182,7 +183,7 @@ docker run -it --rm \
     -v /home/:/home/ \
     -v /data:/data \
     -v /mnt:/mnt \
-    mindspeed-llm:v26.1.0-cann9.1.0-torch_npu2.7.1.post8-910b-openeuler24.03-py3.12 \
+    mindspeed-llm:v26.2.0-cann9.2.0-torch_npu2.10.0.post7-910b-openeuler24.03-py3.12 \
     /bin/bash
 
 # Enter the running container
@@ -202,7 +203,7 @@ The image contains the following pre-configured environment:
 Create a custom Dockerfile based on this image:
 
 ```dockerfile
-FROM mindspeed-llm:v26.1.0-cann9.1.0-torch_npu2.7.1.post8-910b-openeuler24.03-py3.12
+FROM mindspeed-llm:v26.2.0-cann9.2.0-torch_npu2.10.0.post7-910b-openeuler24.03-py3.12
 
 RUN pip install your-package==1.0.0
 
@@ -215,7 +216,7 @@ Build and run (Example: /dev/davinci1):
 
 ```bash
 docker build -t my-mindspeed-app:latest .
-docker run -it --rm \
+docker run -it \
     --device=/dev/davinci1 \
     --device=/dev/davinci_manager \
     --device=/dev/devmm_svm \
@@ -232,18 +233,18 @@ docker run -it --rm \
 
 | Component | Version |
 | ------ | ------ |
-| CANN | 9.1.0 |
+| CANN | 9.2.0 |
 | Python | 3.12 |
-| PyTorch | 2.7.1 |
-| TorchNPU | 26.1.0 |
-| torch-npu package | 2.7.1.post8 |
-| Triton-Ascend | 3.2.2 |
-| MindSpeed LLM | 26.1.0 |
+| PyTorch | 2.10.0 |
+| TorchNPU | 26.2.0 |
+| torch-npu package | 2.10.0.post7 |
+| Triton-Ascend | 3.6.0 |
+| MindSpeed LLM | 26.2.0 |
 
 ### Compatibility Change Notes
 
 - The current version uses a unified Dockerfile + build script structure and supports configurable CANN base image selection.
-- The latest published images use `CANN 9.1.0`, `TorchNPU 2.7.1.post8`, and `Python 3.12`.
+- The latest published images use `CANN 9.2.0`, `TorchNPU 2.10.0.post7`, and `Python 3.12`.
 - Published image variants cover `910b`, `a3`, and `950` on both `openEuler24.03` and `ubuntu22.04`. Registry tags combine `x86_64` and `aarch64` images through a multi-architecture manifest and omit the architecture suffix, while locally built images retain the host architecture suffix by default.
 - `MindSpeed-LLM` is cloned to `/workspace/MindSpeed-LLM`, `MindSpeed` is cloned to `/workspace/MindSpeed`, and `Megatron-LM` is cloned to `/workspace/Megatron-LM`.
 - The image installs `PyTorch`, `TorchNPU`, `MindSpeed-LLM`, `MindSpeed`, `Megatron-LM`, and the `Python` dependency from `requirements.txt`.

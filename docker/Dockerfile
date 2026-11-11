@@ -7,7 +7,7 @@
 
 # Global arguments for base image selection
 ARG OS=openeuler24.03
-ARG BASE_IMAGE_VERSION=9.1.0
+ARG BASE_IMAGE_VERSION=9.2.0
 ARG NPU_TYPE=910b
 ARG PYTHON_VERSION=3.12
 ARG BASE_IMAGE=""
@@ -106,9 +106,9 @@ RUN PYTHON_INC=$(python3 -c "import sysconfig; print(sysconfig.get_path('include
 # ------------------------------
 FROM base AS builder
 
-ARG TORCH_VERSION=2.7.1
-ARG TORCH_NPU_VERSION=2.7.1.post8
-ARG TRITON_ASCEND_VERSION=3.2.2
+ARG TORCH_VERSION=2.10.0
+ARG TORCH_NPU_VERSION=2.10.0.post7
+ARG TRITON_ASCEND_VERSION=3.6.0
 
 WORKDIR /tmp
 
@@ -157,9 +157,10 @@ RUN pip cache purge
 FROM builder AS final
 
 # Arguments for MindSpeed-LLM
-ARG MINDSPEED_LLM_BRANCH=26.1.0
-ARG MINDSPEED_BRANCH=26.1.0_core_r0.12.1
+ARG MINDSPEED_LLM_BRANCH=26.2.0
+ARG MINDSPEED_BRANCH=26.2.0_core_r0.12.1
 ARG MEGATRON_BRANCH=core_v0.12.1
+ARG FSDPTURBO_BRANCH=26.2.0
 ARG FLASH_LINEAR_ATTENTION_NPU_BRANCH=v26.1.0
 ARG FLA_NPU_SOC=ascend910b
 ARG FLA_NPU_OPS="causal_conv1d,chunk_bwd_dv_local,chunk_bwd_dqkwg,chunk_gated_delta_rule_bwd_dhu,prepare_wy_repr_bwd_da,prepare_wy_repr_bwd_full,chunk_fwd_o,chunk_gated_delta_rule_fwd_h,recurrent_gated_delta_rule,recompute_wu_fwd"
@@ -211,6 +212,9 @@ RUN git clone https://gitcode.com/ascend/MindSpeed.git && \
 # Install FSDPTurbo
 RUN git clone https://gitcode.com/Ascend/FSDPTurbo.git && \
     cd FSDPTurbo && \
+    if [ -n "${FSDPTURBO_BRANCH}" ]; then \
+        git checkout "${FSDPTURBO_BRANCH}"; \
+    fi && \
     pip3 install --no-cache-dir -e . && \
     cd ..
 
@@ -233,5 +237,4 @@ RUN echo 'cd /workspace/MindSpeed-LLM' >> /root/.bashrc && \
     echo '[ -f /usr/local/Ascend/ascend-toolkit/set_env.sh ] && source /usr/local/Ascend/ascend-toolkit/set_env.sh' >> /root/.bashrc && \
     echo '[ -f /usr/local/Ascend/nnal/atb/set_env.sh ] && source /usr/local/Ascend/nnal/atb/set_env.sh' >> /root/.bashrc
 
-    # Environment variables
-ENV ASCEND_TOOLKIT_HOME=/usr/local/Ascend/ascend-toolkit
+ENV ASCEND_TOOLKIT_HOME=${ASCEND_TOOLKIT_HOME:-/usr/local/Ascend/ascend-toolkit}
