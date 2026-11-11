@@ -4,7 +4,18 @@ A full list of tags that are supported with MindSpeed LLM
 
 All images are available from the [MindSpeed-LLM image repository on AscendHub](https://www.hiascend.com/developer/ascendhub/detail/e26da9266559438b93354792f25b2f4a).
 
-## MindSpeed-LLM 26.1.0 (Latest)
+## MindSpeed-LLM 26.2.0 (Latest)
+
+| Tag | Dockerfile | Content |
+| --- | --- | --- |
+| `v26.2.0-cann9.2.0-torch_npu2.10.0.post7-910b-openeuler24.03-py3.12` | [Dockerfile](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.2.0/docker/Dockerfile) | CANN 9.2.0/PyTorch 2.10.0/Triton-Ascend 3.6.0/MindSpeed 26.2.0_core_r0.12.1/MindSpeed-LLM 26.2.0/Megatron-LM core_v0.12.1/FSDPTurbo 26.2.0 |
+| `v26.2.0-cann9.2.0-torch_npu2.10.0.post7-910b-ubuntu22.04-py3.12` | [Dockerfile](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.2.0/docker/Dockerfile) | CANN 9.2.0/PyTorch 2.10.0/Triton-Ascend 3.6.0/MindSpeed 26.2.0_core_r0.12.1/MindSpeed-LLM 26.2.0/Megatron-LM core_v0.12.1/FSDPTurbo 26.2.0 |
+| `v26.2.0-cann9.2.0-torch_npu2.10.0.post7-a3-openeuler24.03-py3.12` | [Dockerfile](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.2.0/docker/Dockerfile) | CANN 9.2.0/PyTorch 2.10.0/Triton-Ascend 3.6.0/MindSpeed 26.2.0_core_r0.12.1/MindSpeed-LLM 26.2.0/Megatron-LM core_v0.12.1/FSDPTurbo 26.2.0 |
+| `v26.2.0-cann9.2.0-torch_npu2.10.0.post7-a3-ubuntu22.04-py3.12` | [Dockerfile](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.2.0/docker/Dockerfile) | CANN 9.2.0/PyTorch 2.10.0/Triton-Ascend 3.6.0/MindSpeed 26.2.0_core_r0.12.1/MindSpeed-LLM 26.2.0/Megatron-LM core_v0.12.1/FSDPTurbo 26.2.0 |
+| `v26.2.0-cann9.2.0-torch_npu2.10.0.post7-950-openeuler24.03-py3.12` | [Dockerfile](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.2.0/docker/Dockerfile) | CANN 9.2.0/PyTorch 2.10.0/Triton-Ascend 3.6.0/MindSpeed 26.2.0_core_r0.12.1/MindSpeed-LLM 26.2.0/Megatron-LM core_v0.12.1/FSDPTurbo 26.2.0 |
+| `v26.2.0-cann9.2.0-torch_npu2.10.0.post7-950-ubuntu22.04-py3.12` | [Dockerfile](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.2.0/docker/Dockerfile) | CANN 9.2.0/PyTorch 2.10.0/Triton-Ascend 3.6.0/MindSpeed 26.2.0_core_r0.12.1/MindSpeed-LLM 26.2.0/Megatron-LM core_v0.12.1/FSDPTurbo 26.2.0 |
+
+## MindSpeed-LLM 26.1.0
 
 | Tag | Dockerfile | Content |
 | --- | --- | --- |

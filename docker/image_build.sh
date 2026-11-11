@@ -31,13 +31,14 @@ IMAGE_NAME=""
 OS="openEuler24.03"
 BASE_IMAGE=""
 PYTHON_VERSION="3.12"
-TORCH_VERSION="2.7.1"
-TORCH_NPU_VERSION="2.7.1.post8"
-BASE_IMAGE_VERSION="9.1.0"
-MINDSPEED_LLM_BRANCH="26.1.0"
-MINDSPEED_BRANCH="26.1.0_core_r0.12.1"
+TORCH_VERSION="2.10.0"
+TORCH_NPU_VERSION="2.10.0.post7"
+BASE_IMAGE_VERSION="9.2.0"
+MINDSPEED_LLM_BRANCH="26.2.0"
+MINDSPEED_BRANCH="26.2.0_core_r0.12.1"
 MEGATRON_BRANCH="core_v0.12.1"
-TRITON_ASCEND_VERSION="3.2.2"
+FSDPTURBO_BRANCH="26.2.0"
+TRITON_ASCEND_VERSION="3.6.0"
 FLASH_LINEAR_ATTENTION_NPU_BRANCH="v26.1.0"
 FLA_NPU_SOC=""
 FLA_NPU_OPS=(
@@ -71,19 +72,20 @@ Required:
 
 Optional:
     -i, --image-name NAME    Custom output image full name
-                             Default rule: mindspeed-llm:{version}-cann{cann_ver}-torch_npu{torch_npu_ver}-{chip}-{os}-py{py_ver}-{arch}
+                             Default rule: mindspeed-llm:v{version}-cann{cann_ver}-torch_npu{torch_npu_ver}-{chip}-{os}-py{py_ver}-{arch}
     -o, --os OS              OS type: openEuler24.03 or ubuntu22.04 (default: openEuler24.03)
     --no-cache               Build without using Docker build cache
     --base-image IMAGE       Full base image name, passed directly to FROM as-is
-                             Example: swr.cn-south-1.myhuaweicloud.com/ascendhub/cann:9.1.0-950-openeuler24.03-py3.12
-    --base-image-version VER CANN base image version (default: 9.1.0)
+                             Example: swr.cn-south-1.myhuaweicloud.com/ascendhub/cann:9.2.0-950-openeuler24.03-py3.12
+    --base-image-version VER CANN base image version (default: 9.2.0)
     --python-version VER     Python version (default: 3.12)
-    --torch-version VER      PyTorch version for online installation (default: 2.7.1)
-    --torch-npu-version VER  TorchNPU package version (default: 2.7.1.post8)
-    --mindspeed-llm-branch   MindSpeed-LLM git branch/version (default: 26.1.0)
-    --mindspeed-branch       MindSpeed git branch/version (default: 26.1.0_core_r0.12.1)
+    --torch-version VER      PyTorch version for online installation (default: 2.10.0)
+    --torch-npu-version VER  TorchNPU package version (default: 2.10.0.post7)
+    --mindspeed-llm-branch   MindSpeed-LLM git branch/version (default: 26.2.0)
+    --mindspeed-branch       MindSpeed git branch/version (default: 26.2.0_core_r0.12.1)
     --megatron-branch        Megatron-LM git branch/version (default: core_v0.12.1)
-    --triton-ascend-version  Triton-Ascend version (default: 3.2.2)
+    --fsdpturbo-branch REF   FSDPTurbo git ref (default: 26.2.0)
+    --triton-ascend-version  Triton-Ascend version (default: 3.6.0)
     --fla-npu-branch VER             flash-linear-attention-npu git branch/version (default: v26.1.0)
     --fla-npu-soc SOC                flash-linear-attention-npu build soc. Default is mapped from NPU type:
     --cleanup-on-fail        Clean up dangling <none> images/containers when build fails
@@ -92,18 +94,18 @@ Optional:
 Image Tag Convention:
     v{mindspeed_llm_branch}-cann{base_image_version}-torch_npu{torch_npu_version}-{npu_type_lower}-{os}-py{python_version}-{arch}
     Example:
-        v26.1.0-cann9.1.0-torch_npu2.7.1.post8-a3-openeuler24.03-py3.12-aarch64
-        v26.1.0-cann9.1.0-torch_npu2.7.1.post8-950-ubuntu22.04-py3.12-x86_64
+        v26.2.0-cann9.2.0-torch_npu2.10.0.post7-a3-openeuler24.03-py3.12-aarch64
+        v26.2.0-cann9.2.0-torch_npu2.10.0.post7-950-ubuntu22.04-py3.12-x86_64
 
 Examples:
     bash $0 -t A3
     bash $0 -t 910B
     bash $0 -t 950
     bash $0 -t A3 -o openEuler24.03
-    bash $0 -t A3 --torch-version 2.7.1 --torch-npu-version 2.7.1.post8
-    bash $0 -t A3 --base-image-version 9.1.0
-    bash $0 --base-image swr.cn-south-1.myhuaweicloud.com/ascendhub/cann:9.1.0-950-openeuler24.03-py3.12
-    bash $0 -t 950 -i myproject/mindspeed-llm:v26.1.0-950
+    bash $0 -t A3 --torch-version 2.10.0 --torch-npu-version 2.10.0.post7
+    bash $0 -t A3 --base-image-version 9.2.0
+    bash $0 --base-image swr.cn-south-1.myhuaweicloud.com/ascendhub/cann:9.2.0-950-openeuler24.03-py3.12
+    bash $0 -t 950 -i myproject/mindspeed-llm:v26.2.0-950
     bash $0 -t A3 --no-cache --cleanup-on-fail
 EOF
 }
@@ -146,6 +148,7 @@ while [[ $# -gt 0 ]]; do
         --mindspeed-llm-branch) MINDSPEED_LLM_BRANCH="$2"; shift 2 ;;
         --mindspeed-branch)     MINDSPEED_BRANCH="$2"; shift 2 ;;
         --megatron-branch)      MEGATRON_BRANCH="$2"; shift 2 ;;
+        --fsdpturbo-branch)     FSDPTURBO_BRANCH="$2"; shift 2 ;;
         --triton-ascend-version) TRITON_ASCEND_VERSION="$2"; shift 2 ;;
         --base-image)           BASE_IMAGE="$2"; shift 2 ;;
         --python-version)       PYTHON_VERSION="$2"; PYTHON_VERSION_EXPLICIT=true; shift 2 ;;
@@ -237,6 +240,7 @@ BUILD_ARGS="$BUILD_ARGS --build-arg TORCH_NPU_VERSION=${TORCH_NPU_VERSION}"
 BUILD_ARGS="$BUILD_ARGS --build-arg MINDSPEED_LLM_BRANCH=${MINDSPEED_LLM_BRANCH}"
 BUILD_ARGS="$BUILD_ARGS --build-arg MINDSPEED_BRANCH=${MINDSPEED_BRANCH}"
 BUILD_ARGS="$BUILD_ARGS --build-arg MEGATRON_BRANCH=${MEGATRON_BRANCH}"
+BUILD_ARGS="$BUILD_ARGS --build-arg FSDPTURBO_BRANCH=${FSDPTURBO_BRANCH}"
 BUILD_ARGS="$BUILD_ARGS --build-arg TRITON_ASCEND_VERSION=${TRITON_ASCEND_VERSION}"
 BUILD_ARGS="$BUILD_ARGS --build-arg FLASH_LINEAR_ATTENTION_NPU_BRANCH=${FLASH_LINEAR_ATTENTION_NPU_BRANCH}"
 BUILD_ARGS="$BUILD_ARGS --build-arg FLA_NPU_SOC=${FLA_NPU_SOC}"
@@ -267,6 +271,7 @@ echo "TorchNPU Version:   ${TORCH_NPU_VERSION}"
 echo "MindSpeed LLM Ver:  ${MINDSPEED_LLM_BRANCH}"
 echo "MindSpeed Ver:      ${MINDSPEED_BRANCH}"
 echo "Megatron Ver:       ${MEGATRON_BRANCH}"
+echo "FSDPTurbo Ref:      ${FSDPTURBO_BRANCH}"
 echo "Triton-Ascend Ver:  ${TRITON_ASCEND_VERSION}"
 echo "FLA NPU Ver:           ${FLASH_LINEAR_ATTENTION_NPU_BRANCH}"
 echo "FLA NPU SOC:           ${FLA_NPU_SOC}"

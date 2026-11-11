@@ -21,27 +21,27 @@ MindSpeed-LLM 所有 Tag 遵循以下格式：`v{MindSpeed LLM版本}-cann{CANN�
 
 | 字段 | 示例值 | 说明 |
 | ------ | ------ | -------- |
-| MindSpeed LLM版本 | `26.1.0` | MindSpeed LLM 版本标识，同时也是 Git 分支名称 |
-| CANN版本 | `9.1.0` | CANN 基础镜像版本 |
-| TorchNPU版本 | `2.7.1.post8` | TorchNPU 安装包版本 |
+| MindSpeed LLM版本 | `26.2.0` | MindSpeed LLM 版本标识，同时也是 Git 分支名称 |
+| CANN版本 | `9.2.0` | CANN 基础镜像版本 |
+| TorchNPU版本 | `2.10.0.post7` | TorchNPU 安装包版本 |
 | 芯片信息 | `910b`, `a3`, `950` | NPU 芯片类型（小写） |
 | 操作系统 | `openeuler24.03`, `ubuntu22.04` | 操作系统类型 |
 | Python版本 | `3.12` | Python 版本 |
 
 > 镜像仓库中的最新 Tag 为 `x86_64` 与 `aarch64` 二合一的多架构镜像，**不包含** `-x86_64` 或 `-aarch64` 架构后缀。通过 Dockerfile 在本地构建镜像时，构建脚本默认仍会生成带宿主机架构后缀的 Tag。
 
-### 最新版本 26.1.0
+### 最新版本 26.2.0
 
-如下所示是 MindSpeed LLM 最新发布的 26.1.0 版本多架构镜像 Tag，每个 Tag 均为 `x86_64` 与 `aarch64` 二合一镜像。历史版本所有 Tag 请参考 [Supported Tags](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/docker/supported_tags.md)。
+如下所示是 MindSpeed LLM 最新发布的 26.2.0 版本多架构镜像 Tag，每个 Tag 均为 `x86_64` 与 `aarch64` 二合一镜像。历史版本所有 Tag 请参考 [Supported Tags](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/docker/supported_tags.md)。
 
 | Tag | Dockerfile | Content |
 | --- | --- | --- |
-| `v26.1.0-cann9.1.0-torch_npu2.7.1.post8-910b-openeuler24.03-py3.12` | [Dockerfile](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/docker/Dockerfile) | CANN 9.1.0/PyTorch 2.7.1/Triton-Ascend 3.2.2/MindSpeed 26.1.0_core_r0.12.1/MindSpeed-LLM 26.1.0/Megatron-LM core_v0.12.1/FSDPTurbo main |
-| `v26.1.0-cann9.1.0-torch_npu2.7.1.post8-910b-ubuntu22.04-py3.12` | [Dockerfile](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/docker/Dockerfile) | CANN 9.1.0/PyTorch 2.7.1/Triton-Ascend 3.2.2/MindSpeed 26.1.0_core_r0.12.1/MindSpeed-LLM 26.1.0/Megatron-LM core_v0.12.1/FSDPTurbo main |
-| `v26.1.0-cann9.1.0-torch_npu2.7.1.post8-a3-openeuler24.03-py3.12` | [Dockerfile](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/docker/Dockerfile) | CANN 9.1.0/PyTorch 2.7.1/Triton-Ascend 3.2.2/MindSpeed 26.1.0_core_r0.12.1/MindSpeed-LLM 26.1.0/Megatron-LM core_v0.12.1/FSDPTurbo main |
-| `v26.1.0-cann9.1.0-torch_npu2.7.1.post8-a3-ubuntu22.04-py3.12` | [Dockerfile](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/docker/Dockerfile) | CANN 9.1.0/PyTorch 2.7.1/Triton-Ascend 3.2.2/MindSpeed 26.1.0_core_r0.12.1/MindSpeed-LLM 26.1.0/Megatron-LM core_v0.12.1/FSDPTurbo main |
-| `v26.1.0-cann9.1.0-torch_npu2.7.1.post8-950-openeuler24.03-py3.12` | [Dockerfile](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/docker/Dockerfile) | CANN 9.1.0/PyTorch 2.7.1/Triton-Ascend 3.2.2/MindSpeed 26.1.0_core_r0.12.1/MindSpeed-LLM 26.1.0/Megatron-LM core_v0.12.1/FSDPTurbo main |
-| `v26.1.0-cann9.1.0-torch_npu2.7.1.post8-950-ubuntu22.04-py3.12` | [Dockerfile](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/docker/Dockerfile) | CANN 9.1.0/PyTorch 2.7.1/Triton-Ascend 3.2.2/MindSpeed 26.1.0_core_r0.12.1/MindSpeed-LLM 26.1.0/Megatron-LM core_v0.12.1/FSDPTurbo main |
+| `v26.2.0-cann9.2.0-torch_npu2.10.0.post7-910b-openeuler24.03-py3.12` | [Dockerfile](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.2.0/docker/Dockerfile) | CANN 9.2.0/PyTorch 2.10.0/Triton-Ascend 3.6.0/MindSpeed 26.2.0_core_r0.12.1/MindSpeed-LLM 26.2.0/Megatron-LM core_v0.12.1/FSDPTurbo 26.2.0 |
+| `v26.2.0-cann9.2.0-torch_npu2.10.0.post7-910b-ubuntu22.04-py3.12` | [Dockerfile](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.2.0/docker/Dockerfile) | CANN 9.2.0/PyTorch 2.10.0/Triton-Ascend 3.6.0/MindSpeed 26.2.0_core_r0.12.1/MindSpeed-LLM 26.2.0/Megatron-LM core_v0.12.1/FSDPTurbo 26.2.0 |
+| `v26.2.0-cann9.2.0-torch_npu2.10.0.post7-a3-openeuler24.03-py3.12` | [Dockerfile](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.2.0/docker/Dockerfile) | CANN 9.2.0/PyTorch 2.10.0/Triton-Ascend 3.6.0/MindSpeed 26.2.0_core_r0.12.1/MindSpeed-LLM 26.2.0/Megatron-LM core_v0.12.1/FSDPTurbo 26.2.0 |
+| `v26.2.0-cann9.2.0-torch_npu2.10.0.post7-a3-ubuntu22.04-py3.12` | [Dockerfile](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.2.0/docker/Dockerfile) | CANN 9.2.0/PyTorch 2.10.0/Triton-Ascend 3.6.0/MindSpeed 26.2.0_core_r0.12.1/MindSpeed-LLM 26.2.0/Megatron-LM core_v0.12.1/FSDPTurbo 26.2.0 |
+| `v26.2.0-cann9.2.0-torch_npu2.10.0.post7-950-openeuler24.03-py3.12` | [Dockerfile](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.2.0/docker/Dockerfile) | CANN 9.2.0/PyTorch 2.10.0/Triton-Ascend 3.6.0/MindSpeed 26.2.0_core_r0.12.1/MindSpeed-LLM 26.2.0/Megatron-LM core_v0.12.1/FSDPTurbo 26.2.0 |
+| `v26.2.0-cann9.2.0-torch_npu2.10.0.post7-950-ubuntu22.04-py3.12` | [Dockerfile](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.2.0/docker/Dockerfile) | CANN 9.2.0/PyTorch 2.10.0/Triton-Ascend 3.6.0/MindSpeed 26.2.0_core_r0.12.1/MindSpeed-LLM 26.2.0/Megatron-LM core_v0.12.1/FSDPTurbo 26.2.0 |
 
 ## Dockerfile 归档路径
 
@@ -77,15 +77,16 @@ docker/
 | `-t, --npu-type` | NPU 类型：`910b`、`a3` 或 `950`                | `910b` |
 | `-o, --os` | 操作系统：`openeuler24.03`或`ubuntu22.04` | `openeuler24.03` |
 | `--no-cache` | 构建时不使用 Docker 构建缓存                          | 无 |
-| `--mindspeed-llm-branch` | MindSpeed LLM 版本标识，同时作为 Git 分支名称    | `26.1.0` |
-| `--mindspeed-branch` | MindSpeed 版本标识，同时作为 Git 分支名称        | `26.1.0_core_r0.12.1` |
+| `--mindspeed-llm-branch` | MindSpeed LLM 版本标识，同时作为 Git 分支名称    | `26.2.0` |
+| `--mindspeed-branch` | MindSpeed 版本标识，同时作为 Git 分支名称        | `26.2.0_core_r0.12.1` |
 | `--megatron-branch` | Megatron-LM 版本标识，同时作为 Git 分支名称      | `core_v0.12.1` |
+| `--fsdpturbo-branch` | FSDPTurbo 分支 | `26.2.0` |
 | `--python-version` | Python 版本                           | `3.12` |
-| `--torch-version` | PyTorch 版本                          | `2.7.1` |
-| `--torch-npu-version` | TorchNPU 安装包版本                            | `2.7.1.post8` |
-| `--triton-ascend-version` | Triton-Ascend 版本                        | `3.2.2` |
+| `--torch-version` | PyTorch 版本                          | `2.10.0` |
+| `--torch-npu-version` | TorchNPU 安装包版本                            | `2.10.0.post7` |
+| `--triton-ascend-version` | Triton-Ascend 版本                        | `3.6.0` |
 | `--fla-npu-branch` | flash-linear-attention-npu 分支       | `v26.1.0` |
-| `--base-image-version` | 基础镜像 CANN 版本                        | `9.1.0` |
+| `--base-image-version` | 基础镜像 CANN 版本                        | `9.2.0` |
 | `--base-image` | 完整基础镜像名称，当设置不为空时会原样传入拉取镜像           | 无 |
 | `--cleanup-on-fail` | 构建失败时清理悬空的镜像和容器           | 无 |
 
@@ -106,14 +107,14 @@ bash image_build.sh -t 950 -o ubuntu22.04
 
 # 自定义 CANN、PyTorch 和 TorchNPU 软件包版本
 bash image_build.sh \
-  --base-image-version 9.1.0 \
-  --torch-version 2.7.1 \
-  --torch-npu-version 2.7.1.post8
+  --base-image-version 9.2.0 \
+  --torch-version 2.10.0 \
+  --torch-npu-version 2.10.0.post7
 
 # 修改源码分支
 bash image_build.sh \
-  --mindspeed-llm-branch 26.1.0 \
-  --mindspeed-branch 26.1.0_core_r0.12.1 \
+  --mindspeed-llm-branch 26.2.0 \
+  --mindspeed-branch 26.2.0_core_r0.12.1 \
   --megatron-branch core_v0.12.1
 
 # 修改输出镜像名称
@@ -130,7 +131,7 @@ bash image_build.sh -i myproject/mindspeed-llm:custom
 # 指定 910b 基础镜像，脚本会自动识别 NPU 类型
 cd docker
 bash image_build.sh \
-  --base-image swr.cn-south-1.myhuaweicloud.com/ascendhub/cann:9.1.0-910b-openeuler24.03-py3.12
+  --base-image swr.cn-south-1.myhuaweicloud.com/ascendhub/cann:9.2.0-910b-openeuler24.03-py3.12
 ```
 
 #### flash-linear-attention-npu 算子编译
@@ -159,12 +160,12 @@ FLA NPU 算子列表在 `docker/image_build.sh` 的 `FLA_NPU_OPS` 数组中统�
 
 #### 运行容器
 
-镜像名使用`docker images`中的`REPOSITORY:TAG`，例如`mindspeed-llm:v26.1.0-cann9.1.0-torch_npu2.7.1.post8-910b-openeuler24.03-py3.12`。
+镜像名使用`docker images`中的`REPOSITORY:TAG`，例如`mindspeed-llm:v26.2.0-cann9.2.0-torch_npu2.10.0.post7-910b-openeuler24.03-py3.12`。
 
 ```bash
 # 基本运行
 docker run -it \
-  mindspeed-llm:v26.1.0-cann9.1.0-torch_npu2.7.1.post8-910b-openeuler24.03-py3.12 bash
+  mindspeed-llm:v26.2.0-cann9.2.0-torch_npu2.10.0.post7-910b-openeuler24.03-py3.12 bash
 
 # 使用 NPU 设备运行（示例：设备 /dev/davinci1）
 # 假设您的 NPU 设备安装在 /dev/davinci1 上，并且 NPU 驱动程序安装在 /usr/local/Ascend 上：
@@ -184,7 +185,7 @@ docker run -it \
   -v /home/:/home/ \
   -v /data:/data \
   -v /mnt:/mnt \
-  mindspeed-llm:v26.1.0-cann9.1.0-torch_npu2.7.1.post8-910b-openeuler24.03-py3.12 \
+  mindspeed-llm:v26.2.0-cann9.2.0-torch_npu2.10.0.post7-910b-openeuler24.03-py3.12 \
   /bin/bash
 
 # 进入已启动容器
@@ -204,7 +205,7 @@ docker exec -it mindspeed-llm /bin/bash
 基于此镜像创建自定义Dockerfile：
 
 ```dockerfile
-FROM mindspeed-llm:v26.1.0-cann9.1.0-torch_npu2.7.1.post8-910b-openeuler24.03-py3.12
+FROM mindspeed-llm:v26.2.0-cann9.2.0-torch_npu2.10.0.post7-910b-openeuler24.03-py3.12
 
 RUN pip install your-package==1.0.0
 
@@ -234,17 +235,17 @@ docker run -it \
 
 | 组件 | 版本       |
 | ------ |----------|
-| CANN | 9.1.0    |
+| CANN | 9.2.0    |
 | Python | 3.12     |
-| PyTorch | 2.7.1    |
-| TorchNPU | 26.1.0    |
-| Triton-Ascend | 3.2.2    |
-| MindSpeed LLM | 26.1.0   |
+| PyTorch | 2.10.0    |
+| TorchNPU | 26.2.0    |
+| Triton-Ascend | 3.6.0    |
+| MindSpeed LLM | 26.2.0   |
 
 ### 兼容性说明
 
 - 当前版本采用统一 Dockerfile + 构建脚本结构，支持可配置的 CANN 基础镜像选择。
-- 最新发布镜像使用 `CANN 9.1.0`、`TorchNPU 2.7.1.post8` 和 `Python 3.12`。
+- 最新发布镜像使用 `CANN 9.2.0`、`TorchNPU 2.10.0.post7` 和 `Python 3.12`。
 - 已发布镜像覆盖 `910b`、`a3`、`950`，并同时提供 `openEuler24.03`、`ubuntu22.04`。镜像仓库中的 Tag 通过多架构 manifest 合并 `x86_64` 与 `aarch64` 镜像且不带架构后缀，本地构建的镜像默认仍保留宿主机架构后缀。
 - `MindSpeed-LLM`克隆到 `/workspace/MindSpeed-LLM`，`MindSpeed` 克隆到 `/workspace/MindSpeed`，`Megatron-LM`克隆到 `/workspace/Megatron-LM`。
 - 镜像安装`PyTorch`、`TorchNPU`、`MindSpeed-LLM`、`MindSpeed`、`Megatron-LM` 以及 `requirements.txt` 中的 `Python`依赖。
