@@ -1,4 +1,6 @@
 #!/bin/bash
+# Remarks: Requires transformers==5.8.1 (repo-wide requirements.txt pins 5.2.0).
+#          Install manually before running: pip install transformers==5.8.1
 
 set -eo pipefail
 
