@@ -4,39 +4,96 @@ import logging
 import os
 import time
 from functools import wraps
-from typing import Tuple
+from typing import Dict, Optional, Tuple
 
 import numpy
 import torch
 
 from megatron.core import mpu
+from megatron.core.datasets import gpt_dataset as megatron_gpt_dataset
 from megatron.training import get_args
 from megatron.core.datasets.utils import Split, log_single_rank
-from megatron.core.datasets.gpt_dataset import (_build_document_index,
-                                                _build_shuffle_index
-                                                )
+from megatron.core.datasets.gpt_dataset import _build_document_index, _build_shuffle_index
 from mindspeed_llm.tasks.utils.error_utils import GPTDatasetSampleIndexError
 from .blended_megatron_dataset_builder import need_to_build_dataset
 
 logger = logging.getLogger(__name__)
 
 
+def _getitem_with_cached_masks(self, idx: Optional[int], text: numpy.ndarray) -> Dict[str, torch.Tensor]:
+    """Build a sample with a private copy of the cached loss mask."""
+    text = torch.from_numpy(text).long()
+    if self.config.add_extra_token_to_sequence:
+        tokens = text[:-1].contiguous()
+        labels = text[1:].contiguous()
+    else:
+        tokens = text
+        labels = torch.roll(text, shifts=-1, dims=0)
+        labels[-1] = self._pad_token_id
+
+    if not self.masks_and_position_ids_are_cached:
+        (
+            self.cached_attention_mask,
+            self.cached_loss_mask,
+            self.cached_position_ids,
+        ) = megatron_gpt_dataset._get_ltor_masks_and_position_ids(
+            tokens,
+            self.config.tokenizer.eod,
+            self.config.reset_position_ids,
+            self.config.reset_attention_mask,
+            self.config.eod_mask_loss,
+            self.config.create_attention_mask,
+        )
+        self.masks_and_position_ids_are_cached = True
+
+    loss_mask = self.cached_loss_mask.clone()
+    loss_mask[labels == self._pad_token_id] = 0.0
+
+    # Map padding to a token ID accepted by the embedding layer.
+    tokens[tokens == self._pad_token_id] = 0
+    labels[labels == self._pad_token_id] = 0
+
+    # Batch-padding samples contribute no loss.
+    if idx is None:
+        loss_mask.zero_()
+
+    batch = {"tokens": tokens, "labels": labels}
+    if self.config.create_attention_mask:
+        batch["attention_mask"] = self.cached_attention_mask
+    batch["loss_mask"] = loss_mask
+    batch["position_ids"] = self.cached_position_ids
+    return batch
+
+
 def gpt_dataset_getitem_wrapper(fn):
     @wraps(fn)
     def wrapper(self, idx):
-        batch = fn(self, idx)
-        _args = get_args()
-        if _args.return_document_ids:
-            if idx is None:
-                # Batch padding sequence so the index does not matter
-                text, document_ids = self._query_document_sample_shuffle_indices(0)
-            else:
-                text, document_ids = self._query_document_sample_shuffle_indices(idx)
+        use_cached_masks = (
+            getattr(self, "masks_and_position_ids_are_cacheable", False) and not self.config.reset_attention_mask
+        )
+        sample_index = 0 if idx is None else idx
+        if use_cached_masks:
+            text, document_ids = self._query_document_sample_shuffle_indices(sample_index)
+            batch = _getitem_with_cached_masks(self, idx, text)
+        else:
+            batch = fn(self, idx)
 
-            if mpu.get_context_parallel_rank() == 0 and mpu.get_tensor_model_parallel_rank() == 0 and mpu.get_pipeline_model_parallel_rank() == 0:
+        if get_args().return_document_ids:
+            if not use_cached_masks:
+                text, document_ids = self._query_document_sample_shuffle_indices(sample_index)
+
+            if (
+                mpu.get_context_parallel_rank() == 0
+                and mpu.get_tensor_model_parallel_rank() == 0
+                and mpu.get_pipeline_model_parallel_rank() == 0
+            ):
                 batch_idx = numpy.array([idx], dtype=numpy.int64)
-                document_ids = numpy.pad(document_ids, (0, len(text) - len(document_ids)), 'constant', constant_values=(-100, -100))
-                batch_idx = numpy.pad(batch_idx, (0, len(text) - len(batch_idx)), 'constant', constant_values=(-100, -100))
+                document_ids = numpy.pad(
+                    document_ids, (0, len(text) - len(document_ids)), 'constant', constant_values=(-100, -100)
+                )
+                batch_idx = numpy.pad(
+                    batch_idx, (0, len(text) - len(batch_idx)), 'constant', constant_values=(-100, -100)
+                )
                 batch["document_ids"] = document_ids
                 batch["idx"] = batch_idx
 
@@ -67,18 +124,14 @@ def _build_document_sample_shuffle_indices(
     """
     path_to_cache = self.config.path_to_cache
     if path_to_cache is None and not self.config.mock:
-        path_to_cache = os.path.join(
-            self.dataset.path_prefix, "cache", f"{type(self).__name__}_indices"
-        )
+        path_to_cache = os.path.join(self.dataset.path_prefix, "cache", f"{type(self).__name__}_indices")
 
     # start of megatron_adaptation,
     # here we change from (class)GPTDataset._build_document_sample_shuffle_indices
     # end of megatron_adaptation
 
     def get_path_temp_func(suffix):
-        return os.path.join(
-            path_to_cache, f"{self.unique_description_hash}-{type(self).__name__}-{suffix}"
-        )
+        return os.path.join(path_to_cache, f"{self.unique_description_hash}-{type(self).__name__}-{suffix}")
 
     if path_to_cache:
         get_path_to = get_path_temp_func
@@ -100,11 +153,7 @@ def _build_document_sample_shuffle_indices(
     else:
         cache_hit = False
 
-    if not path_to_cache or (
-            not cache_hit
-            and (not torch.distributed.is_initialized() or need_to_build_dataset())
-    ):
-
+    if not path_to_cache or (not cache_hit and (not torch.distributed.is_initialized() or need_to_build_dataset())):
         log_single_rank(
             logger,
             logging.INFO,
@@ -122,13 +171,10 @@ def _build_document_sample_shuffle_indices(
         else:
             # Get the number of samples for the last epoch
             num_samples_sans_final_epoch = (
-                                                   (num_epochs - 1) * num_tokens_per_epoch
-                                                   - self.config.add_extra_token_to_sequence
-                                           ) // sequence_length
+                (num_epochs - 1) * num_tokens_per_epoch - self.config.add_extra_token_to_sequence
+            ) // sequence_length
             num_samples_from_final_epoch = self.num_samples - num_samples_sans_final_epoch
-            num_samples_per_epoch = (
-                                            num_tokens_per_epoch - self.config.add_extra_token_to_sequence
-                                    ) // sequence_length
+            num_samples_per_epoch = (num_tokens_per_epoch - self.config.add_extra_token_to_sequence) // sequence_length
 
             # num_samples_from_final_epoch should be non-negative
             if num_samples_from_final_epoch < 0:
@@ -140,9 +186,7 @@ def _build_document_sample_shuffle_indices(
 
             # Separate the final epoch if it falls below the threshold
             threshold = 0.80
-            separate_final_epoch = num_samples_from_final_epoch < int(
-                threshold * num_samples_per_epoch
-            )
+            separate_final_epoch = num_samples_from_final_epoch < int(threshold * num_samples_per_epoch)
 
             log_single_rank(
                 logger,
@@ -150,27 +194,19 @@ def _build_document_sample_shuffle_indices(
                 f"> num_samples_from_final_epoch: {num_samples_from_final_epoch}",
             )
             log_single_rank(logger, logging.DEBUG, f"> threshold: {threshold}")
-            log_single_rank(
-                logger, logging.DEBUG, f"> num_samples_per_epoch: {num_samples_per_epoch}"
-            )
+            log_single_rank(logger, logging.DEBUG, f"> num_samples_per_epoch: {num_samples_per_epoch}")
 
-        log_single_rank(
-            logger, logging.DEBUG, f"> separate_final_epoch: {separate_final_epoch}"
-        )
+        log_single_rank(logger, logging.DEBUG, f"> separate_final_epoch: {separate_final_epoch}")
 
         numpy_random_state = numpy.random.RandomState(self.config.random_seed)
 
         # Build the document index
-        document_index = _build_document_index(
-            self.indices, num_epochs, numpy_random_state, separate_final_epoch
-        )
+        document_index = _build_document_index(self.indices, num_epochs, numpy_random_state, separate_final_epoch)
         drop_last_partial_sequence = True
         if self.index_split == Split.valid:
             drop_last_partial_sequence = self.config.drop_last_partial_validation_sequence
 
         # Build the sample index
-        from mindspeed_llm.core.datasets import helpers
-
         if self.index_split == Split.valid:
             drop_last_partial_sequence = self.config.drop_last_partial_validation_sequence
         else:
@@ -179,7 +215,9 @@ def _build_document_sample_shuffle_indices(
         if document_index.dtype != numpy.int32:
             raise ValueError(f"Expected document_index dtype to be int32, but got {document_index.dtype}")
         if self.dataset.sequence_lengths.dtype != numpy.int32:
-            raise ValueError(f"Expected sequence_lengths dtype to be int32, but got {self.dataset.sequence_lengths.dtype}")
+            raise ValueError(
+                f"Expected sequence_lengths dtype to be int32, but got {self.dataset.sequence_lengths.dtype}"
+            )
         if len(document_index) * 2 > len(self.dataset.sequence_lengths):
             # Heuristic: if "access density" of sequence_lengths is relatively high,
             # force loading the mmap-ed array into memory by taking a copy.
@@ -191,6 +229,7 @@ def _build_document_sample_shuffle_indices(
             sequence_lengths_for_cpp = self.dataset.sequence_lengths
 
         from megatron.core.datasets import helpers
+
         sample_index = helpers.build_sample_idx(
             sequence_lengths_for_cpp,
             document_index,
@@ -218,7 +257,7 @@ def _build_document_sample_shuffle_indices(
         if path_to_cache:
             os.makedirs(path_to_cache, exist_ok=True)
             # Write the description
-            with open(path_to_description, "wt") as writer:
+            with open(path_to_description, "wt", encoding="utf-8") as writer:
                 writer.write(self.unique_description)
             numpy.save(path_to_document_index, document_index, allow_pickle=True)
             numpy.save(path_to_sample_index, sample_index, allow_pickle=True)
@@ -232,16 +271,12 @@ def _build_document_sample_shuffle_indices(
         t_end = time.time()
         log_single_rank(logger, logging.DEBUG, f"\t> time elapsed: {t_end - t_beg:4f} seconds")
 
-        log_single_rank(
-            logger, logging.INFO, f"> total number of samples: {sample_index.shape[0] - 1}"
-        )
+        log_single_rank(logger, logging.INFO, f"> total number of samples: {sample_index.shape[0] - 1}")
         log_single_rank(logger, logging.INFO, f"> total number of epochs: {num_epochs}")
 
         return document_index, sample_index, shuffle_index
 
-    log_single_rank(
-        logger, logging.INFO, f"Load the {type(self).__name__} {self.index_split.name} indices"
-    )
+    log_single_rank(logger, logging.INFO, f"Load the {type(self).__name__} {self.index_split.name} indices")
 
     log_single_rank(
         logger,
@@ -278,9 +313,7 @@ def _build_document_sample_shuffle_indices(
     t_end = time.time()
     log_single_rank(logger, logging.DEBUG, f"\t> time elapsed: {t_end - t_beg:4f} seconds")
 
-    log_single_rank(
-        logger, logging.INFO, f"> total number of samples: {sample_index.shape[0] - 1}"
-    )
+    log_single_rank(logger, logging.INFO, f"> total number of samples: {sample_index.shape[0] - 1}")
 
     return document_index, sample_index, shuffle_index
 
@@ -315,13 +348,10 @@ def _get_ltor_masks_and_position_ids(
 
         torch.Tensor: The position ID's of the token
     """
-    args = get_args()
     seq_length = data.numel()
 
     if create_attention_mask:
-        attention_mask = torch.tril(
-            torch.ones((seq_length, seq_length), device=data.device)
-        ).unsqueeze(0)
+        attention_mask = torch.tril(torch.ones((seq_length, seq_length), device=data.device)).unsqueeze(0)
     else:
         attention_mask = None
 
