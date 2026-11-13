@@ -8,6 +8,7 @@ import dataclasses
 import torch
 from torch import Tensor
 
+import megatron.core.utils as megatron_core_utils
 from megatron.core import InferenceParams, mpu, parallel_state, tensor_parallel
 from megatron.core.fp8_utils import get_fp8_context
 from megatron.core.packed_seq_params import PackedSeqParams
@@ -18,7 +19,7 @@ from megatron.core.tensor_parallel.mappings import (
 from megatron.core.transformer.spec_utils import build_module
 from megatron.core.transformer.multi_token_prediction import MTPLossLoggingHelper, roll_tensor, MTPLossAutoScaler
 from megatron.core.transformer.transformer_config import TransformerConfig
-from megatron.core.utils import make_viewless_tensor, get_batch_on_this_cp_rank
+from megatron.core.utils import make_viewless_tensor
 from megatron.training import get_args
 
 from mindspeed.core.context_parallel.get_batch_utils import set_actual_seq_len, get_actual_seq_len
@@ -416,7 +417,12 @@ def generate_mtp_batch_list_on_this_tp_rank(batch):
         mtp_batch['attention_mask'] = batch['attention_mask'].clone() if batch['attention_mask'] is not None else None
         mtp_batch['position_ids'] = batch['position_ids'].clone() if batch['position_ids'] is not None else None
 
-        mtp_batch = get_batch_on_this_cp_rank(mtp_batch)
+        mtp_batch = megatron_core_utils.get_batch_on_this_cp_rank(
+            mtp_batch,
+            is_hybrid_cp=getattr(args, 'hybrid_context_parallel', False),
+            cp_group=parallel_state.get_context_parallel_group(),
+            hybrid_cp_group_func=parallel_state.get_hybrid_data_context_parallel_groups,
+        )
 
         mtp_batch_list.append(mtp_batch)
 

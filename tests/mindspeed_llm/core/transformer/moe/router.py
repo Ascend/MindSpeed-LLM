@@ -435,7 +435,7 @@ def topk_router_forward_patch(  # pylint: disable=redefined-builtin
 
 def apply_seq_aux_loss(self, activation, logits, topk_idx):
     """
-    Apply complementary sequence-wise auxiliary loss
+    Apply sequence auxiliary loss to a [sequence * batch, experts] routing mask.
     """
 
     args = get_args()
@@ -461,14 +461,11 @@ def apply_seq_aux_loss(self, activation, logits, topk_idx):
         raise ValueError(f"Invalid score_function: {self.score_function}")
 
     scores_for_aux = scores  # [s*b, n_global_experts]
-    topk_idx_for_aux_loss = topk_idx.view(args.micro_batch_size, -1)  # [b, s*top_k]
-    scores_for_seq_aux = scores_for_aux.view(args.micro_batch_size, seq_length, -1)
-    ce = torch.stack(
-        [
-            torch.histc(x.to(torch.int32), bins=args.num_experts, min=0, max=args.num_experts)
-            for x in topk_idx_for_aux_loss
-        ]
-    )
+    # The local Top-K helper returns a boolean dispatch matrix, not expert
+    # indices. Keep the sequence-major batch layout used by the 0.12 path.
+    topk_idx_for_aux_loss = topk_idx.view(seq_length, args.micro_batch_size, -1)
+    scores_for_seq_aux = scores_for_aux.view(seq_length, args.micro_batch_size, -1)
+    ce = topk_idx_for_aux_loss.sum(dim=0, dtype=torch.float32)
 
     num_sub_sequence = 1
     sequence_partition_group = parallel_state.get_context_parallel_group()
@@ -478,8 +475,8 @@ def apply_seq_aux_loss(self, activation, logits, topk_idx):
         torch.distributed.all_reduce(ce, group=sequence_partition_group)
 
     num_tokens = seq_length * num_sub_sequence
-    fi = ce.div(num_sub_sequence * num_tokens * args.moe_router_topk / args.num_experts)  # [b, n_global_experts]
-    Pi = scores_for_seq_aux.mean(dim=1)  # [b, n_global_experts]
+    fi = ce.div(num_tokens * args.moe_router_topk / args.num_experts)  # [b, n_global_experts]
+    Pi = scores_for_seq_aux.mean(dim=0)  # [b, n_global_experts]
     aux_loss = (Pi * fi).sum(dim=1).mean() * moe_aux_loss_coeff
 
     save_to_aux_losses_tracker(

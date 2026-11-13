@@ -174,6 +174,12 @@ class SFTTrainer(BaseTrainer):
 
             attention_mask = get_tune_attention_mask(attention_mask_1d)
             position_ids = None
+            if args.mtp_num_layers:
+                # MCore MTP rolls position_ids together with tokens. Use the actual
+                # padded batch length; leave the shift to MTP's _get_embeddings.
+                position_ids = torch.arange(
+                    tokens.size(1), dtype=torch.long, device=tokens.device
+                ).unsqueeze(0).expand(tokens.size(0), -1).contiguous()
             batch = {
                 'tokens': tokens,
                 'labels': labels,

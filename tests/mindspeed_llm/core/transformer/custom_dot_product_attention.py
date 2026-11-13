@@ -46,6 +46,8 @@ class CustomDotProductAttentionImpl:
         softmax_scale: float = None,
         cp_comm_type: str = None,
         pg_collection=None,
+        k_channels=None,
+        v_channels=None,
     ):
         """
         Args:
@@ -56,6 +58,9 @@ class CustomDotProductAttentionImpl:
             attention_dropout (float, optional): Attention dropout probability. If None, read from config.
             softmax_scale (float, optional): External softmax scaling factor; if None, computed internally.
             cp_comm_type (str, optional): Context-parallel comm type (unused because CP is disabled).
+            k_channels (int, optional): Accepted for the MCore 0.18 TE wrapper.
+                Sparse MLA derives effective dimensions from runtime tensors.
+            v_channels (int, optional): See ``k_channels``.
         """
         # ---------------------------------------------------------------------
         # Preconditions: Only non-CP and FlashAttention are supported
