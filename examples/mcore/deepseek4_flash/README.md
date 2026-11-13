@@ -24,7 +24,7 @@
       <td>DOING</td>
     </tr>
     <tr>
-      <td>Lora微调</td>
+      <td>LoRA微调</td>
       <td>DOING</td>
     </tr>
   </tbody>
@@ -70,17 +70,17 @@
 
 ## 安装指导
 
-请参考仓库 [MindSpeed LLM软件安装](../../../docs/zh/pytorch/training/install_guide.md)文档配置环境和拉取仓库代码
+请参考[MindSpeed LLM软件安装](../../../docs/zh/pytorch/training/install_guide.md)文档配置环境和拉取仓库代码。
 
 ## 权重转换
 
 1. 权重下载
 
-    从 [huggingface](https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash-Base) 下载权重和配置文件
+    从 [huggingface](https://huggingface.co/deepseek-ai/DeepSeek-V4-Flash-Base) 下载权重和配置文件。
 
 2. 权重转换
 
-    开源DeepSeekV4-Flash权重为FP8 mixed数据格式，训练前需要对原始权重做反量化后获得bf16格式的权重，反量化方法请参考下述脚本
+    开源DeepSeekV4-Flash权重为FP8 mixed数据格式，训练前需要对原始权重做反量化后获得bf16格式的权重，反量化方法请参考下述脚本。
 
     ```sh
     cd MindSpeed-LLM
@@ -89,7 +89,7 @@
     ```
 
     MindSpeed LLM提供[脚本](https://gitcode.com/ascend/MindSpeed-LLM/blob/master/examples/mcore/deepseek4_flash)将已经开源的huggingface权重转换为mcore权重，用于训练、推理、评估等任务。
-    使用方法如下，请根据实际需要的TP/PP等切分策略和权重路径修改权重转换脚本
+    使用方法如下，请根据实际需要的TP/PP等切分策略和权重路径修改权重转换脚本。
 
     ```sh
     cd MindSpeed-LLM
@@ -98,7 +98,7 @@
 
 ## 数据预处理
 
-MindSpeed LLM提供[脚本](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/examples/mcore/deepseek4_flash) 进行数据集处理
+MindSpeed LLM提供[脚本](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/examples/mcore/deepseek4_flash) 进行数据集处理。
 
 使用方法如下，请根据实际需要修改以下参数
 
@@ -115,14 +115,14 @@ bash examples/mcore/deepseek4_flash/data_convert_deepseek4_pretrain.sh
 
 ## 预训练
 
-MindSpeed LLM提供[脚本](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/examples/mcore/deepseek4_flash) 进行模型训练
+MindSpeed LLM提供[脚本](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/examples/mcore/deepseek4_flash) 进行模型训练。
 
 ```sh
 cd MindSpeed-LLM
 bash examples/mcore/deepseek4_flash/pretrain_deepseek4_flash_4k_A3_ptd.sh
 ```
 
-用户需要根据实际情况修改脚本中以下变量
+用户需要根据实际情况修改脚本中以下变量：
 
   | 变量名  | 含义                |
   |--------|-----------------|

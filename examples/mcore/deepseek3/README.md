@@ -111,13 +111,13 @@ bash examples/mcore/deepseek3/ckpt_convert_deepseek3_merge_lora2hf.sh
     </tr>
     <tr>
       <td>--num-layers-per-virtual-pipeline-stage</td>
-      <td>虚拟流水线并行，默认值为None, 注意参数--num-layers-per-virtual-pipeline-stage 和 --num-layer-list 不能同时使用。</td>
+      <td>虚拟流水线并行，默认值为None，注意参数--num-layers-per-virtual-pipeline-stage 和 --num-layer-list 不能同时使用。</td>
       <td>✅</td>
     </tr>
     <tr>
       <td>--moe-grouped-gemm</td>
       <td>当每个专家组有多个专家时，可以使用Grouped GEMM功能来提高利用率和性能。
-注意，不能和--save-lora-to-hf同时使用，即开启gemm后，不支持仅将单独的lora权重转为huggingface格式。</td>
+注意，不能和--save-lora-to-hf同时使用，即开启gemm后，不支持仅将单独的LoRA权重转为huggingface格式。</td>
       <td>✅</td>
     </tr>
     <tr>
@@ -133,7 +133,7 @@ bash examples/mcore/deepseek3/ckpt_convert_deepseek3_merge_lora2hf.sh
     <tr>
       <td>--mtp-num-layers</td>
       <td>MTP层的层数。如不需要MTP层，可设置为0。最大可设置为1。默认值为0。
-MTP层权重默认存储在最后一个pp stage。
+MTP层权重默认存储在最后一个PP stage。
 注意，LoRA权重转换不支持MTP。</td>
       <td>✅</td>
     </tr>
@@ -145,12 +145,12 @@ MTP层权重默认存储在最后一个pp stage。
     </tr>
     <tr>
       <td>--first-k-dense-replace</td>
-      <td>moe层前的dense层数，最大可设置为3。默认值为3。</td>
+      <td>MoE层前的dense层数，最大可设置为3。默认值为3。</td>
       <td>✅</td>
     </tr>
     <tr>
       <td>--num-layer-list</td>
-      <td>指定每个pp的层数，相加要等于num-layers。当前仅支持 num-layers = 61 时使用此参数。与--noop-layers互斥，二者选其一使用。默认值为None。</td>
+      <td>指定每个PP的层数，相加要等于num-layers。当前仅支持 num-layers = 61 时使用此参数。与--noop-layers互斥，二者选其一使用。默认值为None。</td>
       <td>✅</td>
     </tr>
     <tr>
@@ -177,7 +177,7 @@ MTP层权重默认存储在最后一个pp stage。
     <tr>
       <td>--save-lora-to-hf</td>
       <td>加入此参数将单独的不含base权重的LoRA权重转为huggingface格式，与--moe-grouped-gemm不兼容；<br>
-在LoRA微调时,脚本中不能加入--moe-grouped-gemm参数，可以在微调脚本中加入--lora-ckpt-filter仅保存LoRA权重。</td>
+在LoRA微调时，脚本中不能加入--moe-grouped-gemm参数，可以在微调脚本中加入--lora-ckpt-filter仅保存LoRA权重。</td>
       <td>✅</td>
     </tr>
   </tbody>
@@ -211,7 +211,7 @@ python examples/mcore/deepseek3/convert_ckpt_deepseek3_mcore2hf.py \
 
 --lora-alpha：缩放因子，缩放低秩矩阵的贡献，需要与LoRA微调时配置相同
 
-【适用场景】在LoRA微调时没有加参数'--lora-ckpt-filter'，则保存的权重包括base权重和LoRA权重
+【适用场景】在LoRA微调时没有加参数'--lora-ckpt-filter'，则保存的权重包括base权重和LoRA权重。
 
 ### 2.2 LoRA 权重与 base 权重分开加载
 
@@ -241,7 +241,7 @@ python examples/mcore/deepseek3/convert_ckpt_deepseek3_mcore2hf.py \
 
 --lora-r、--lora-alpha：与LoRA微调时配置相同
 
-【适用场景】在LoRA微调时加参数'--lora-ckpt-filter'，保存的权重只包含LoRA权重，需要将LoRA和base权重合并
+【适用场景】在LoRA微调时加参数'--lora-ckpt-filter'，保存的权重只包含LoRA权重，需要将LoRA和base权重合并。
 
 ### 2.3 只将LoRA权重转为huggingface格式
 
@@ -267,6 +267,6 @@ python examples/mcore/deepseek3/convert_ckpt_deepseek3_mcore2hf.py \
 
 --lora-target-modules：定义了LoRA目标模块，字符串列表，由空格隔开，无默认值。每一个字符串是需要进行LoRA微调的层的名称。
 
---save-lora-to-hf：指定此参数,仅将LoRA权重转为huggingface格式,注意该权重仅为LoRA权重，在LoRA微调中加入'--lora-ckpt-filter'，只保存LoRA权重
+--save-lora-to-hf：指定此参数，仅将LoRA权重转为huggingface格式，注意该权重仅为LoRA权重，在LoRA微调中加入'--lora-ckpt-filter'，只保存LoRA权重
 
-【适用场景】在LoRA微调时加参数'--lora-ckpt-filter'，则保存的权重只包含LoRA权重，仅将LoRA权重转为HF格式
+【适用场景】在LoRA微调时加参数'--lora-ckpt-filter'，则保存的权重只包含LoRA权重，仅将LoRA权重转为HF格式。
