@@ -178,7 +178,7 @@ PyTorch 训练数据支持导入以 `_ascend_pt` 结尾的性能数据目录。�
 
 时间线（Timeline）将训练过程中 Host、Device 上的运行情况平铺在时间轴上，直观呈现 Host 侧的 API 耗时和 Device 侧的 Task 耗时。
 
-**图 1**  时间线常用泳道与界面
+**图 1** 时间线常用泳道与界面
 
 <img alt="时间线常用泳道与界面" src="../figures/performance_tuning/timeline_overview.png" width="80%"/>
 
@@ -305,7 +305,7 @@ PyTorch 训练数据支持导入以 `_ascend_pt` 结尾的性能数据目录。�
 
 更新详细信息请参考[算子性能问题优化方案](https://gitcode.com/Ascend/docs/blob/master/MindStudio/26.1.0/zh/cases/general_performance_issue_troubleshooting_guide/solution_to_top2.md)。
 
-**表 1**  常见优化案例
+**表 1** 常见优化案例
 
 | 问题类型   | 模型问题                                                     | 代码优化建议                                                 |
 | ---------- | ------------------------------------------------------------ | ------------------------------------------------------------ |
@@ -446,7 +446,7 @@ export CPU_AFFINITY_CONF=1,npu0:0-1,npu1:2-5,npu3:6-6
 | 特性 | 适用模型/业务 | 主要收益 | 启用方式 | 约束与风险 |
 | --- | --- | --- | --- | --- |
 | ChunkLoss | Causal LM 预训练，`[batch, seq, vocab]` logits 造成显存尖刺；大词表或长序列尤为有效 | 分块计算 LM Head 与 loss，降低 logits 峰值 | `--optimization.chunk_loss_size 1024` | 当前训练入口只在 `stage=pt` 使用；模型 forward/LM Head 必须支持 `loss_ctx` |
-| CP-Ulysses | 长序列、Head 数可整除 CP，Attention 激活或计算量过大 | 切分序列并用 all-to-all 重排 Head | `--parallel.cp_size N --parallel.cp_type ulysses` | `num_attention_heads % N == 0`；短序列可能通信大于收益 |
+| CP-Ulysses | 长序列、Head 数可整除 CP，Attention 激活或计算量过大 | 切分序列并用 all-to-all 重排 Head | `--parallel.cp_size N --parallel.cp_type ulysses` | `num_attention_heads % N == 0`；短序列可能通信开销大于收益 |
 | CP-Ring | 超长序列，期望 Attention 计算覆盖点对点通信 | 序列切分并流水交换 KV | `--parallel.cp_size N --parallel.cp_type ring` | 当前定长切分通常要求序列能被 `2 * N` 整除；建议每 rank 局部序列足够长再启用 |
 | EP | MoE 专家参数或专家计算过大 | 按专家维切分参数和计算 | `--parallel.ep_size N` | 专家总数必须能被 `N` 整除；会引入 token dispatch/combine |
 | EP 内 FSDP | EP 后单 rank 的本地专家参数/优化器状态仍过大 | 继续切分专家参数、梯度和状态 | `--parallel.ep_fsdp_size N` | 增加专家参数 all-gather/reduce-scatter；需满足 world size 的 mesh 整除关系 |
@@ -458,7 +458,7 @@ export CPU_AFFINITY_CONF=1,npu0:0-1,npu1:2-5,npu3:6-6
 
 | 特性 | 适用模型/业务 | 主要收益 | 启用方式 | 约束与风险 |
 | --- | --- | --- | --- | --- |
-| FSDP 前向预取 | 每层参数 all-gather 未掩盖通信时间较长，且存在可用显存 | 提前拉取后续模块参数，以计算覆盖通信 | `--parallel.num_to_forward_prefetch 2` | 从 `1 -> 2` 逐步试；过大增加瞬时参数/通信 buffer 和拥塞 |
+| FSDP 前向预取 | 每层参数 all-gather 未掩盖通信时间较长，且存在可用显存 | 提前拉取后续模块参数，以计算覆盖通信 | `--parallel.num_to_forward_prefetch 2` | 从 `1 -> 2` 逐步试；过大会增加瞬时参数/通信 buffer 和拥塞 |
 | FSDP 反向预取 | reduce-scatter 或下一层参数准备存在未掩盖通信时间 | 提高反向通算重叠 | `--parallel.num_to_backward_prefetch 2` | 与前向预取同样需要观察峰值显存和链路拥塞 |
 | Fused Dispatcher | MoE token dispatch/combine 由较多分散操作组成 | 融合 token 分发与合并操作，降低 EP 通信调度开销 | `--parallel.ep_dispatcher fused` | 只适用于已适配 MoE；需要检查专家负载均衡和端到端收益 |
 | EP MC2 | MoE EP 的 all-to-all 与专家 GroupedMatMul 都很重，未掩盖通信时间较长 | 融合 all-to-all 与 GroupedMatMul，流水掩盖通信 | `--parallel.ep_dispatcher mc2` | 依赖 `fsdp_turbo.ops.grouped_matmul_mc2` 和匹配的软件/硬件；专家数需整除 EP |

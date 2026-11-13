@@ -28,7 +28,7 @@ MindSpeed LLM架构关系如[图1](#架构图)所示，整体分为四个层次�
     - **预置100+开源模型**：涵盖Dense/MoE/SSM主流系列模型，提供高性能模型训练脚本，开箱即用。
     - **兼容多种主流LLM架构**：支持基于Transformer/SSM架构的LLM模型。
 
-**图 1**  MindSpeed LLM架构图<a id="架构图"></a>
+**图 1** MindSpeed LLM架构图<a id="架构图"></a>
 
 <img src="./pytorch/figures/introduction/architecture_mindspeed_llm.png" width="60%"/>
 

@@ -61,7 +61,7 @@ python3 tests/tools/replace_ascend_path.py --dry-run
 
 输出示例：
 
-```bash
+```output
 [DRY RUN] Path replacement: /usr/local/Ascend/driver -> /usr/local/npu/driver
 Scan directory : /path/to/MindSpeed-LLM
 File types     : .md, .py, .rst, .sh, .txt + Dockerfile
@@ -144,7 +144,7 @@ python3 -c "import torch_npu; print('NPU available:', torch_npu.npu.is_available
 
 ### 4. 核心功能冒烟验证
 
-参考对应模型的readme进行配置，验证训练流程可正常启动
+参考对应模型的readme进行配置，验证训练流程可正常启动。
 
 ```bash
 source /usr/local/Ascend/ascend-toolkit/set_env.sh

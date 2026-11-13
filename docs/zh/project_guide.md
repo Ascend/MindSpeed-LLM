@@ -9,7 +9,7 @@ MindSpeed LLM 项目代码按照模块化设计原则进行组织，主要包含
 - **mindspeed_llm/**：核心代码目录，包含模型训练、特性管理、权重转换、在线推理和评估工具链等核心功能实现
 - **docs/**：项目文档目录，提供项目介绍、快速入门、安装指南和特性说明等
 - **configs/**：配置文件目录，提供权重转换、评估、微调、FSDP2和RLHF等相关配置
-- **examples/**：模型示例脚本，涵盖fsdp2、mcore和rlhf等多种训练后端和场景
+- **examples/**：模型示例脚本，涵盖FSDP2、mcore和RLHF等多种训练后端和场景
 - **docker/**：Docker镜像构建配置，提供Dockerfile和镜像构建脚本
 - **pre-commit/**：代码质量钩子配置，包含拼写检查和代码规范
 - **tests/**：测试用例目录，包含单元测试、系统测试和覆盖率测试等
@@ -156,7 +156,7 @@ MindSpeed-LLM/
  │       ├── inference/         # 推理模块
  │       ├── models/            # 模型实现
  │       │   ├── common/          # 通用模型组件
- │       │   ├── gpt_oss/         # GPT OSS模型
+ │       │   ├── gpt_oss/         # GPT-OSS模型
  │       │   ├── longcat_flash/   # LongCat Flash模型
  │       │   ├── mamba3/          # Mamba3模型
  │       │   ├── minimax_m27/     # MiniMax M2模型
@@ -216,7 +216,7 @@ MindSpeed-LLM/
 ``` shell
 examples/
 ├── fsdp2/                # FSDP2 训练后端
-│   ├── gpt_oss/          # GPT OSS 模型示例
+│   ├── gpt_oss/          # GPT-OSS 模型示例
 ├── mcore/                # mcore 训练后端
 │   ├── qwen3/            # Qwen3 模型示例，包含预训练、微调、评估等脚本
 └── rlhf/                 # RLHF 相关示例，包含数据预处理和训练脚本
@@ -229,7 +229,7 @@ examples/
     - 微调：运行 `examples/fsdp2/gpt_oss/tune_gpt_oss_20b_a3b_4K_fsdp2_mindspeed.sh` 脚本进行模型微调
     - 详细指南：参考 [finetune_fsdp2.md](pytorch/training/finetune/fsdp2/finetune_fsdp2.md) 获取完整使用说明
 
-2. mcore 训练后端 Qwen3 8B模型预训练示例
+2. mcore训练后端Qwen3 8B模型预训练示例
 
     - 数据处理：运行 `data_convert_qwen3_pretrain.sh` 脚本进行预训练数据处理
     - 预训练：运行 `pretrain_qwen3_8b_4k.sh` 脚本进行模型预训练
@@ -254,9 +254,9 @@ examples/
 
 MindSpeed LLM 项目提供了一个完整的大语言模型训练解决方案，具有以下核心特点：
 
-- **多框架支持**：同时支持基于 PyTorch 的 mcore 和 fsdp2 两种训练后端
+- **多框架支持**：同时支持基于 PyTorch 的 mcore 和 FSDP2 两种训练后端
 - **模块化设计**：代码按照功能模块进行组织，便于维护和扩展
-- **丰富的模型支持**：涵盖 dense、MoE、SSM、Linear 等多种模型架构，支持主流开源大模型
+- **丰富的模型支持**：涵盖 Dense、MoE、SSM、Linear 等多种模型架构，支持主流开源大模型
 - **完整的工具链**：提供从数据预处理、模型训练、评估到在线推理的全流程工具
 - **完善的文档体系**：按照训练框架和功能模块组织文档，便于用户快速上手
 

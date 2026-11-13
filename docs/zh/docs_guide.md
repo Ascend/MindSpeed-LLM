@@ -12,7 +12,7 @@ MindSpeed LLM 文档按照不同的训练框架进行组织，主要包含以下
 
 MindSpeed LLM 文档目录层级介绍如下：
 
-``` shell
+```output
 docs/zh/
 
 ├── introduction.md           # 项目介绍
@@ -173,7 +173,7 @@ docs/zh/
 | 分类 | 内容 | 说明 |
 |------|------|------|
 | 快速入门 | [fsdp2_quick_start](pytorch/training/fsdp2_quick_start.md) | Qwen3-8B 模型预训练及微调快速入门（跟练教程） |
-| 微调 | [finetune_fsdp2](pytorch/training/finetune/fsdp2/finetune_fsdp2.md) | FSDP2 全参数微调使用指南（模型、数据集、YAML 配置与参数说明） |
+| 微调 | [finetune_fsdp2](pytorch/training/finetune/fsdp2/finetune_fsdp2.md) | FSDP2 全参微调使用指南（模型、数据集、YAML 配置与参数说明） |
 
 ### 工具链
 

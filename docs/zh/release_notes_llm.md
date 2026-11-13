@@ -2,7 +2,7 @@
 
 ## 关键特性
 
-MindSpeed LLM新增支持GLM5.2模型训练和DeepSeekV4长序列，且权重/数据合一功能覆盖全量模型，显著提升模型训练能力。
+MindSpeed LLM新增支持GLM5.2模型训练和DeepSeek-V4长序列，且权重/数据合一功能覆盖全量模型，显著提升模型训练能力。
 
 ## 版本配套说明
 
@@ -55,7 +55,7 @@ MindSpeed LLM新增支持GLM5.2模型训练和DeepSeekV4长序列，且权重/�
 > [!NOTE] 说明
 >
 > - 用户可根据需要选择MindSpeed LLM代码分支下载源码并进行安装。
-> - Triton-Ascend版本与CANN版本强绑定，Triton-Ascend的使用应该与CANN版本一一对应，详见[Triton-Ascend兼容性](https://triton-ascend.readthedocs.io/zh-cn/latest/release_note.html#id13)。
+> - Triton-Ascend版本与CANN版本强绑定，Triton-Ascend的使用应该与CANN版本一一对应，请参见[Triton-Ascend兼容性](https://triton-ascend.readthedocs.io/zh-cn/latest/release_note.html#id13)。
 > - 26.1.0及26.0.0版本未使用FSDPTurbo组件，表中“/”表示不配套。
 
 ## 版本兼容性说明
@@ -175,7 +175,7 @@ MindSpeed LLM新增支持GLM5.2模型训练和DeepSeekV4长序列，且权重/�
 |组件|描述|目的|
 |--|--|--|
 |MindSpeed LLM|新增模型支持|支持GLM5.2模型训练|
-|MindSpeed LLM|模型训练场景扩充|新增DeepSeekV4长序列支持|
+|MindSpeed LLM|模型训练场景扩充|新增DeepSeek-V4长序列支持|
 |MindSpeed LLM|易用性提升|权重/数据合一功能覆盖全量模型用例|
 
 ### 删除特性

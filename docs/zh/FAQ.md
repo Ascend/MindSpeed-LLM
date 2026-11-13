@@ -2,7 +2,7 @@
 
 - **问题1**
 
-  Q：训练日志显示"Checkpoint path not found"？
+  Q：训练日志显示“Checkpoint path not found”？
 
   A：检查`CKPT_LOAD_DIR`是否指向正确的权重转换后路径，确认文件夹内包含`.ckpt`或`.bin`文件，否则请更正权重路径的设置。
 
@@ -26,7 +26,7 @@
 
   Q：启动训练时报 dataset xxx not exists 或 AssertionError: alpaca_text_document not exists？
 
-  A：请先完成数据预处理流程，并确认训练脚本中的 DATA_PATH 或 --data-path 配置正确。对于预训练场景，需要保证 .bin/.idx 文件已成功生成。
+  A：请先完成数据预处理流程，并确认训练脚本中的 `DATA_PATH` 或 `--data-path` 配置正确。对于预训练场景，需要保证 .bin/.idx 文件已成功生成。
 
 - **问题5**
 
@@ -36,7 +36,7 @@
 
 - **问题6**
 
-  Q：训练过程中出现 NPU out of memory (OOM)？
+  Q：训练过程中出现 NPU out of memory （OOM）？
 
   A：可通过减小 micro-batch-size、缩短 seq-length、降低并行规模或开启重计算来降低显存占用。同时确认当前硬件规格是否满足对应模型的训练要求。
 
@@ -50,4 +50,4 @@
 
   Q：训练启动时报 Invalid device ID、SetDevice failed 或 NPU 初始化失败？
 
-  A：当前可见 NPU 数量与启动参数不匹配。例如仅有 2 张 NPU，却使用了 torchrun --nproc_per_node=8。请检查 npu-smi info 输出，并确保 nproc_per_node 与实际设备数量一致。
+  A：当前可见 NPU 数量与启动参数不匹配。例如仅有 2 个 NPU，却使用了 torchrun --nproc_per_node=8。请检查 npu-smi info 输出，并确保 nproc_per_node 与实际设备数量一致。
