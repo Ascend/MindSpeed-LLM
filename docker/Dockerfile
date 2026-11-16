@@ -139,14 +139,15 @@ RUN echo "Installing PyTorch and torch_npu from PyPI..." && \
         done;
 
 # Install Triton-Ascend
-RUN echo "Installing Triton-Ascend..." && \
-    mkdir -p /tmp/triton-ascend && \
-    pip download --no-cache-dir --no-deps \
-        triton-ascend==${TRITON_ASCEND_VERSION} \
-        --index-url=https://mirrors.huaweicloud.com/ascend/repos/pypi \
-        --dest /tmp/triton-ascend && \
-    pip install --no-cache-dir /tmp/triton-ascend/triton_ascend-*.whl && \
-    rm -rf /tmp/triton-ascend
+RUN echo "Installing triton-ascend..." && \
+    MAX_RETRIES=3 && \
+    for retry in $(seq 1 "$MAX_RETRIES"); do \
+        echo ">>> Installing triton-ascend, attempt $retry of $MAX_RETRIES"; \
+        pip cache purge 2>/dev/null || true; \
+        rm -rf /root/.cache/pip; \
+        pip install --no-cache-dir "triton-ascend==${TRITON_ASCEND_VERSION}" \
+            --extra-index-url=https://triton-ascend.osinfra.cn/pypi/simple && break; \
+    done
 
 # Clean pip cache
 RUN pip cache purge
