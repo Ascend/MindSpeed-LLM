@@ -52,10 +52,10 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
 
         self.ep_size = self.expert_model_parallel_size
         self.n_hash_layers = self.load_model.n_hash_layers
-        self.num_layers = self.load_model.num_layers
+        # Keep the target layer count (including noop slots) set by Hf2MgConvert.
         self.num_experts = self.load_model.num_experts
         self.compress_ratios = list(self.load_model.compress_ratios)
-        expected_compress_ratios = self.num_layers + self.load_model.num_nextn_predict_layers
+        expected_compress_ratios = self.load_model.num_layers + self.load_model.num_nextn_predict_layers
         # DeepSeek-V4-0731 configs append two reserved zero entries. They do not
         # correspond to transformer or MTP layers, so discard only this known
         # suffix while retaining the strict validation for all other layouts.
@@ -66,11 +66,6 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
 
         self.num_layer_list = getattr(args, "num_layer_list", None)
         self.noop_layers = getattr(args, "noop_layers", None)
-
-        num_noop_layers = (
-            0 if self.noop_layers is None else len([int(x) for x in str(self.noop_layers).split(",") if x.strip()])
-        )
-        self.num_layers = self.num_layers + num_noop_layers
 
         self.num_layers_per_virtual_pipeline_stage = getattr(args, "num_layers_per_virtual_pipeline_stage", None)
         self.dualpipe = getattr(args, "schedules_method", None) == "dualpipev"
@@ -713,6 +708,8 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
         mg_model,
         mtp_layer_flag: bool = False,
     ):
+        use_te_grouped = self.moe_grouped_gemm and self.transformer_impl == "transformer_engine"
+
         def _interleave_gate_up(gate: torch.Tensor, up: torch.Tensor, parts: int) -> torch.Tensor:
             if parts <= 1:
                 return torch.cat([gate, up], dim=0).contiguous()
@@ -723,6 +720,8 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
         hf_prefix = f"mtp.{hf_layer_idx}" if mtp_layer_flag else f"layers.{hf_layer_idx}"
 
         router_w = weights_dict.pop(f"{hf_prefix}.ffn.gate.weight")
+        if not 0 < self.num_experts <= router_w.shape[0]:
+            raise ValueError(f"Target num-experts={self.num_experts} exceeds source router size {router_w.shape[0]}")
         router_w = router_w[: self.num_experts, :]
         tid2eid = None
         router_bias = None
@@ -735,6 +734,22 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
                 tid2eid = weights_dict.pop(f"{hf_prefix}.ffn.gate.tid2eid")
             else:
                 router_bias = weights_dict.pop(f"{hf_prefix}.ffn.gate.bias")
+
+        if router_bias is not None:
+            router_bias = router_bias[: self.num_experts]
+        if tid2eid is not None:
+            if self.num_experts < tid2eid.shape[1]:
+                raise ValueError("Target num-experts must be at least the hash router top-k")
+            # Retain valid assignments. Fold removed expert IDs into the target
+            # range, resolving collisions so a token still selects distinct experts.
+            tid2eid = tid2eid.remainder(self.num_experts)
+            for column in range(1, tid2eid.shape[1]):
+                candidate = tid2eid[:, column]
+                previous = tid2eid[:, :column]
+                for _ in range(column):
+                    collision = (previous == candidate.unsqueeze(1)).any(dim=1)
+                    candidate = torch.where(collision, (candidate + 1) % self.num_experts, candidate)
+                tid2eid[:, column] = candidate
 
         hc_attn_base = weights_dict.pop(f"{hf_prefix}.hc_attn_base")
         hc_attn_fn = weights_dict.pop(f"{hf_prefix}.hc_attn_fn")
@@ -787,6 +802,10 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
         experts_linear_fc2_list: List[torch.Tensor] = []
 
         interleave_parts = self.expert_tp_size if not self.moe_tp_extend_ep else self.tensor_model_parallel_size
+        if use_te_grouped:
+            # Extended EP assigns whole experts to TP ranks; TE FC1 still
+            # expects contiguous [gate, up], not TP-interleaved rows.
+            interleave_parts = 1 if self.moe_tp_extend_ep else self.expert_tp_size
 
         for global_e in range(self.num_experts):
             w1 = self._pop_any(
@@ -803,10 +822,28 @@ class DeepSeek4Hf2MgConvert(Hf2MgConvert):
             )
 
             fc1_weight = _interleave_gate_up(w1, w3, interleave_parts)
-            experts_linear_fc1_list.append(fc1_weight.t().contiguous())
-            experts_linear_fc2_list.append(w2.t().contiguous())
+            # Keep TE weights in their native [out, in] layout. Transposing
+            # them into the local layout and back copies every expert twice.
+            experts_linear_fc1_list.append(fc1_weight if use_te_grouped else fc1_weight.t().contiguous())
+            experts_linear_fc2_list.append(w2 if use_te_grouped else w2.t().contiguous())
 
-        if self.moe_grouped_gemm:
+        if use_te_grouped:
+            # TE stores each expert as [out_features, in_features], without
+            # the transpose/packing used by the local GroupedMLP.
+            for ep_rank in range(self.ep_size):
+                for tp_rank in range(self.tensor_model_parallel_size):
+                    start_e, end_e = self._expert_range(ep_rank, tp_rank)
+                    sd = mg_model[ep_rank][tp_rank]
+                    for local_e, global_e in enumerate(range(start_e, end_e)):
+                        fc1 = experts_linear_fc1_list[global_e]
+                        fc2 = experts_linear_fc2_list[global_e]
+                        if not self.moe_tp_extend_ep:
+                            etp_rank = self._expert_tp_rank(tp_rank)
+                            fc1 = _chunk_or_single(fc1, self.expert_tp_size, dim=0)[etp_rank]
+                            fc2 = _chunk_or_single(fc2, self.expert_tp_size, dim=1)[etp_rank]
+                        sd[f"{mg_prefix}.mlp.experts.linear_fc1.weight{local_e}"] = fc1.clone()
+                        sd[f"{mg_prefix}.mlp.experts.linear_fc2.weight{local_e}"] = fc2.clone()
+        elif self.moe_grouped_gemm:
             experts_weight1_key = f"{mg_prefix}.mlp.experts.weight1"
             experts_weight2_key = f"{mg_prefix}.mlp.experts.weight2"
 
@@ -1293,7 +1330,47 @@ class DeepSeek4Mg2hfConvert(Mg2HfConvert):
         # Experts
         num_local_experts = self.load_model.num_experts // self.expert_model_parallel_size
 
-        if self.moe_grouped_gemm:
+        if self.moe_grouped_gemm and self.transformer_impl == "transformer_engine":
+            # ETP=1 checkpoints can use a different attention TP rank for
+            # each EP rank. Read one valid shard per EP, not always TP rank 0.
+            if self.moe_tp_extend_ep:
+                rank_pairs = product(self.tp_rank_list, self.ep_rank_list)
+                num_local_experts = self.load_model.num_experts // (
+                    self.tensor_model_parallel_size * self.expert_model_parallel_size
+                )
+            elif self.expert_tensor_parallel_size == 1:
+                rank_pairs = self.moe_ep_ckpts_list
+            else:
+                rank_pairs = ((self.tp_rank_list[0], ep_rank) for ep_rank in self.ep_rank_list)
+            for tp_rank, ep_rank in rank_pairs:
+                expert_rank = ep_rank * self.tensor_model_parallel_size + tp_rank if self.moe_tp_extend_ep else ep_rank
+                sd = mg_weight[(tp_rank, ep_rank)]
+                for local_idx in range(num_local_experts):
+                    expert_idx = expert_rank * num_local_experts + local_idx
+                    fc1_key = f"{mg_prefix}.mlp.experts.linear_fc1.weight{local_idx}"
+                    fc2_key = f"{mg_prefix}.mlp.experts.linear_fc2.weight{local_idx}"
+                    if self.moe_tp_extend_ep or self.expert_tensor_parallel_size == 1:
+                        fc1 = sd.pop(fc1_key)
+                        down = sd.pop(fc2_key)
+                        gate, up = torch.chunk(fc1, 2, dim=0)
+                    else:
+                        # Each ETP shard stores [gate_shard, up_shard].
+                        # Read one representative per ETP rank, excluding replicas.
+                        etp_size = self.expert_tensor_parallel_size or self.tensor_model_parallel_size
+                        gate_parts, up_parts, down_parts = [], [], []
+                        for expert_tp_rank in self.tp_rank_list[:etp_size]:
+                            expert_sd = mg_weight[(expert_tp_rank, ep_rank)]
+                            gate_part, up_part = torch.chunk(expert_sd.pop(fc1_key), 2, dim=0)
+                            gate_parts.append(gate_part)
+                            up_parts.append(up_part)
+                            down_parts.append(expert_sd.pop(fc2_key))
+                        gate = torch.cat(gate_parts, dim=0)
+                        up = torch.cat(up_parts, dim=0)
+                        down = torch.cat(down_parts, dim=1)
+                    hf_weight[f"{hf_prefix}.ffn.experts.{expert_idx}.w1.weight"] = gate.clone()
+                    hf_weight[f"{hf_prefix}.ffn.experts.{expert_idx}.w3.weight"] = up.clone()
+                    hf_weight[f"{hf_prefix}.ffn.experts.{expert_idx}.w2.weight"] = down.clone()
+        elif self.moe_grouped_gemm:
             experts_weight1_key = f"{mg_prefix}.mlp.experts.weight1"
             experts_weight2_key = f"{mg_prefix}.mlp.experts.weight2"
 

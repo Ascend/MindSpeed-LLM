@@ -17,9 +17,9 @@ TOKENIZER_PATH="your tokenizer path"
 CKPT_LOAD_DIR="your model ckpt path"
 
 TP=1
-PP=4
+PP=2
 EP=4
-CP=8
+CP=16
 CP_TYPE='kvallgather_cp_algo'
 NUM_LAYERS=20
 SEQ_LEN=131072
@@ -120,7 +120,7 @@ ROPE_ARGS="
 
 GPT_ARGS="
     --noop-layers 19 \
-    --transformer-impl local \
+    --transformer-impl transformer_engine \
     --spec mindspeed_llm.tasks.models.spec.deepseek4_spec layer_spec \
     --mtp-spec mindspeed_llm.tasks.models.spec.deepseek4_spec mtp_spec \
     --manual-gc \

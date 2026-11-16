@@ -120,7 +120,7 @@ ROPE_ARGS="
 
 GPT_ARGS="
     --noop-layers 43 \
-    --transformer-impl local \
+    --transformer-impl transformer_engine \
     --spec mindspeed_llm.tasks.models.spec.deepseek4_spec layer_spec \
     --mtp-spec mindspeed_llm.tasks.models.spec.deepseek4_spec mtp_spec \
     --manual-gc \
