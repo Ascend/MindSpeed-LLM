@@ -1,3 +1,4 @@
+# Copyright 2024 Huawei Technologies Co., Ltd.
 #                🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨🚨
 # MindSpeed-LLM adaptation note:
 # This file is based on Transformers 5.12.0

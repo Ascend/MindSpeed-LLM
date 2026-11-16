@@ -1,0 +1,4 @@
+project: Ascend/MindSpeed-LLM
+directories:
+  - path: "./mindspeed_llm/"
+    type: source

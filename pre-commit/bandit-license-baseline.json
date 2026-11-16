@@ -1,0 +1,540 @@
+{
+  "results": [
+    {
+      "code": "",
+      "col_offset": 106,
+      "end_col_offset": 117,
+      "filename": "./mindspeed_llm/core/transformer/moe/moe_layer.py",
+      "issue_confidence": "MEDIUM",
+      "issue_cwe": {
+        "id": 259,
+        "link": "https://cwe.mitre.org/data/definitions/259.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Possible hardcoded password: 'allgather'",
+      "line_number": 112,
+      "line_range": [
+        112
+      ],
+      "test_id": "B105",
+      "test_name": "hardcoded_password_string"
+    },
+    {
+      "code": "",
+      "col_offset": 106,
+      "end_col_offset": 117,
+      "filename": ".\\mindspeed_llm/core/transformer/moe/moe_layer.py",
+      "issue_confidence": "MEDIUM",
+      "issue_cwe": {
+        "id": 259,
+        "link": "https://cwe.mitre.org/data/definitions/259.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Possible hardcoded password: 'allgather'",
+      "line_number": 112,
+      "line_range": [
+        112
+      ],
+      "test_id": "B105",
+      "test_name": "hardcoded_password_string"
+    },
+    {
+      "code": "",
+      "col_offset": 92,
+      "end_col_offset": 106,
+      "filename": "./mindspeed_llm/features_manager/moe/tp_extend_ep.py",
+      "issue_confidence": "MEDIUM",
+      "issue_cwe": {
+        "id": 259,
+        "link": "https://cwe.mitre.org/data/definitions/259.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Possible hardcoded password: 'alltoall_seq'",
+      "line_number": 9,
+      "line_range": [
+        9
+      ],
+      "test_id": "B105",
+      "test_name": "hardcoded_password_string"
+    },
+    {
+      "code": "",
+      "col_offset": 92,
+      "end_col_offset": 106,
+      "filename": ".\\mindspeed_llm/features_manager/moe/tp_extend_ep.py",
+      "issue_confidence": "MEDIUM",
+      "issue_cwe": {
+        "id": 259,
+        "link": "https://cwe.mitre.org/data/definitions/259.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Possible hardcoded password: 'alltoall_seq'",
+      "line_number": 9,
+      "line_range": [
+        9
+      ],
+      "test_id": "B105",
+      "test_name": "hardcoded_password_string"
+    },
+    {
+      "code": "",
+      "col_offset": 39,
+      "end_col_offset": 9,
+      "filename": "./mindspeed_llm/fsdp2/data/megatron_data/megatron_dataset.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 327,
+        "link": "https://cwe.mitre.org/data/definitions/327.html"
+      },
+      "issue_severity": "HIGH",
+      "issue_text": "Use of weak MD5 hash for security. Consider usedforsecurity=False",
+      "line_number": 64,
+      "line_range": [
+        64,
+        65,
+        66
+      ],
+      "test_id": "B324",
+      "test_name": "hashlib"
+    },
+    {
+      "code": "",
+      "col_offset": 39,
+      "end_col_offset": 9,
+      "filename": ".\\mindspeed_llm/fsdp2/data/megatron_data/megatron_dataset.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 327,
+        "link": "https://cwe.mitre.org/data/definitions/327.html"
+      },
+      "issue_severity": "HIGH",
+      "issue_text": "Use of weak MD5 hash for security. Consider usedforsecurity=False",
+      "line_number": 64,
+      "line_range": [
+        64,
+        65,
+        66
+      ],
+      "test_id": "B324",
+      "test_name": "hashlib"
+    },
+    {
+      "code": "",
+      "col_offset": 72,
+      "end_col_offset": 94,
+      "filename": "./mindspeed_llm/fsdp2/utils/coverage.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 330,
+        "link": "https://cwe.mitre.org/data/definitions/330.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Standard pseudo-random generators are not suitable for security/cryptographic purposes.",
+      "line_number": 19,
+      "line_range": [
+        19
+      ],
+      "test_id": "B311",
+      "test_name": "blacklist"
+    },
+    {
+      "code": "",
+      "col_offset": 72,
+      "end_col_offset": 94,
+      "filename": ".\\mindspeed_llm/fsdp2/utils/coverage.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 330,
+        "link": "https://cwe.mitre.org/data/definitions/330.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Standard pseudo-random generators are not suitable for security/cryptographic purposes.",
+      "line_number": 19,
+      "line_range": [
+        19
+      ],
+      "test_id": "B311",
+      "test_name": "blacklist"
+    },
+    {
+      "code": "",
+      "col_offset": 26,
+      "end_col_offset": 46,
+      "filename": "./mindspeed_llm/tasks/evaluation/eval_impl/needlebench_single.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 330,
+        "link": "https://cwe.mitre.org/data/definitions/330.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Standard pseudo-random generators are not suitable for security/cryptographic purposes.",
+      "line_number": 71,
+      "line_range": [
+        71
+      ],
+      "test_id": "B311",
+      "test_name": "blacklist"
+    },
+    {
+      "code": "",
+      "col_offset": 26,
+      "end_col_offset": 46,
+      "filename": ".\\mindspeed_llm/tasks/evaluation/eval_impl/needlebench_single.py",
+      "issue_confidence": "HIGH",
+      "issue_cwe": {
+        "id": 330,
+        "link": "https://cwe.mitre.org/data/definitions/330.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Standard pseudo-random generators are not suitable for security/cryptographic purposes.",
+      "line_number": 71,
+      "line_range": [
+        71
+      ],
+      "test_id": "B311",
+      "test_name": "blacklist"
+    },
+    {
+      "code": "",
+      "col_offset": 41,
+      "end_col_offset": 52,
+      "filename": "./mindspeed_llm/tasks/models/common/pai_megatron.py",
+      "issue_confidence": "MEDIUM",
+      "issue_cwe": {
+        "id": 259,
+        "link": "https://cwe.mitre.org/data/definitions/259.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Possible hardcoded password: 'allgather'",
+      "line_number": 41,
+      "line_range": [
+        41
+      ],
+      "test_id": "B105",
+      "test_name": "hardcoded_password_string"
+    },
+    {
+      "code": "",
+      "col_offset": 41,
+      "end_col_offset": 52,
+      "filename": ".\\mindspeed_llm/tasks/models/common/pai_megatron.py",
+      "issue_confidence": "MEDIUM",
+      "issue_cwe": {
+        "id": 259,
+        "link": "https://cwe.mitre.org/data/definitions/259.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Possible hardcoded password: 'allgather'",
+      "line_number": 41,
+      "line_range": [
+        41
+      ],
+      "test_id": "B105",
+      "test_name": "hardcoded_password_string"
+    },
+    {
+      "code": "",
+      "col_offset": 59,
+      "end_col_offset": 70,
+      "filename": "./mindspeed_llm/tasks/models/transformer/zero_experts_moe_layer.py",
+      "issue_confidence": "MEDIUM",
+      "issue_cwe": {
+        "id": 259,
+        "link": "https://cwe.mitre.org/data/definitions/259.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Possible hardcoded password: 'allgather'",
+      "line_number": 40,
+      "line_range": [
+        40
+      ],
+      "test_id": "B105",
+      "test_name": "hardcoded_password_string"
+    },
+    {
+      "code": "",
+      "col_offset": 59,
+      "end_col_offset": 70,
+      "filename": ".\\mindspeed_llm/tasks/models/transformer/zero_experts_moe_layer.py",
+      "issue_confidence": "MEDIUM",
+      "issue_cwe": {
+        "id": 259,
+        "link": "https://cwe.mitre.org/data/definitions/259.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Possible hardcoded password: 'allgather'",
+      "line_number": 40,
+      "line_range": [
+        40
+      ],
+      "test_id": "B105",
+      "test_name": "hardcoded_password_string"
+    },
+    {
+      "code": "",
+      "col_offset": 61,
+      "end_col_offset": 71,
+      "filename": "./mindspeed_llm/tasks/models/transformer/zero_experts_moe_layer.py",
+      "issue_confidence": "MEDIUM",
+      "issue_cwe": {
+        "id": 259,
+        "link": "https://cwe.mitre.org/data/definitions/259.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Possible hardcoded password: 'alltoall'",
+      "line_number": 44,
+      "line_range": [
+        44
+      ],
+      "test_id": "B105",
+      "test_name": "hardcoded_password_string"
+    },
+    {
+      "code": "",
+      "col_offset": 61,
+      "end_col_offset": 71,
+      "filename": ".\\mindspeed_llm/tasks/models/transformer/zero_experts_moe_layer.py",
+      "issue_confidence": "MEDIUM",
+      "issue_cwe": {
+        "id": 259,
+        "link": "https://cwe.mitre.org/data/definitions/259.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Possible hardcoded password: 'alltoall'",
+      "line_number": 44,
+      "line_range": [
+        44
+      ],
+      "test_id": "B105",
+      "test_name": "hardcoded_password_string"
+    },
+    {
+      "code": "",
+      "col_offset": 61,
+      "end_col_offset": 75,
+      "filename": "./mindspeed_llm/tasks/models/transformer/zero_experts_moe_layer.py",
+      "issue_confidence": "MEDIUM",
+      "issue_cwe": {
+        "id": 259,
+        "link": "https://cwe.mitre.org/data/definitions/259.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Possible hardcoded password: 'alltoall_seq'",
+      "line_number": 48,
+      "line_range": [
+        48
+      ],
+      "test_id": "B105",
+      "test_name": "hardcoded_password_string"
+    },
+    {
+      "code": "",
+      "col_offset": 61,
+      "end_col_offset": 75,
+      "filename": ".\\mindspeed_llm/tasks/models/transformer/zero_experts_moe_layer.py",
+      "issue_confidence": "MEDIUM",
+      "issue_cwe": {
+        "id": 259,
+        "link": "https://cwe.mitre.org/data/definitions/259.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Possible hardcoded password: 'alltoall_seq'",
+      "line_number": 48,
+      "line_range": [
+        48
+      ],
+      "test_id": "B105",
+      "test_name": "hardcoded_password_string"
+    },
+    {
+      "code": "",
+      "col_offset": 61,
+      "end_col_offset": 67,
+      "filename": "./mindspeed_llm/tasks/models/transformer/zero_experts_moe_layer.py",
+      "issue_confidence": "MEDIUM",
+      "issue_cwe": {
+        "id": 259,
+        "link": "https://cwe.mitre.org/data/definitions/259.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Possible hardcoded password: 'flex'",
+      "line_number": 52,
+      "line_range": [
+        52
+      ],
+      "test_id": "B105",
+      "test_name": "hardcoded_password_string"
+    },
+    {
+      "code": "",
+      "col_offset": 61,
+      "end_col_offset": 67,
+      "filename": ".\\mindspeed_llm/tasks/models/transformer/zero_experts_moe_layer.py",
+      "issue_confidence": "MEDIUM",
+      "issue_cwe": {
+        "id": 259,
+        "link": "https://cwe.mitre.org/data/definitions/259.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Possible hardcoded password: 'flex'",
+      "line_number": 52,
+      "line_range": [
+        52
+      ],
+      "test_id": "B105",
+      "test_name": "hardcoded_password_string"
+    },
+    {
+      "code": "",
+      "col_offset": 18,
+      "end_col_offset": 31,
+      "filename": "./mindspeed_llm/training/tokenizer/magistral_tokenizer.py",
+      "issue_confidence": "MEDIUM",
+      "issue_cwe": {
+        "id": 259,
+        "link": "https://cwe.mitre.org/data/definitions/259.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Possible hardcoded password: 'token_bytes'",
+      "line_number": 51,
+      "line_range": [
+        51
+      ],
+      "test_id": "B105",
+      "test_name": "hardcoded_password_string"
+    },
+    {
+      "code": "",
+      "col_offset": 18,
+      "end_col_offset": 31,
+      "filename": ".\\mindspeed_llm/training/tokenizer/magistral_tokenizer.py",
+      "issue_confidence": "MEDIUM",
+      "issue_cwe": {
+        "id": 259,
+        "link": "https://cwe.mitre.org/data/definitions/259.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Possible hardcoded password: 'token_bytes'",
+      "line_number": 51,
+      "line_range": [
+        51
+      ],
+      "test_id": "B105",
+      "test_name": "hardcoded_password_string"
+    },
+    {
+      "code": "",
+      "col_offset": 16,
+      "end_col_offset": 27,
+      "filename": "./mindspeed_llm/training/tokenizer/magistral_tokenizer.py",
+      "issue_confidence": "MEDIUM",
+      "issue_cwe": {
+        "id": 259,
+        "link": "https://cwe.mitre.org/data/definitions/259.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Possible hardcoded password: 'token_str'",
+      "line_number": 52,
+      "line_range": [
+        52
+      ],
+      "test_id": "B105",
+      "test_name": "hardcoded_password_string"
+    },
+    {
+      "code": "",
+      "col_offset": 16,
+      "end_col_offset": 27,
+      "filename": ".\\mindspeed_llm/training/tokenizer/magistral_tokenizer.py",
+      "issue_confidence": "MEDIUM",
+      "issue_cwe": {
+        "id": 259,
+        "link": "https://cwe.mitre.org/data/definitions/259.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Possible hardcoded password: 'token_str'",
+      "line_number": 52,
+      "line_range": [
+        52
+      ],
+      "test_id": "B105",
+      "test_name": "hardcoded_password_string"
+    },
+    {
+      "code": "",
+      "col_offset": 33,
+      "end_col_offset": 53,
+      "filename": "./mindspeed_llm/training/tokenizer/magistral_tokenizer.py",
+      "issue_confidence": "MEDIUM",
+      "issue_cwe": {
+        "id": 259,
+        "link": "https://cwe.mitre.org/data/definitions/259.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Possible hardcoded password: 'special_token_mask'",
+      "line_number": 268,
+      "line_range": [
+        268
+      ],
+      "test_id": "B105",
+      "test_name": "hardcoded_password_string"
+    },
+    {
+      "code": "",
+      "col_offset": 33,
+      "end_col_offset": 53,
+      "filename": ".\\mindspeed_llm/training/tokenizer/magistral_tokenizer.py",
+      "issue_confidence": "MEDIUM",
+      "issue_cwe": {
+        "id": 259,
+        "link": "https://cwe.mitre.org/data/definitions/259.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Possible hardcoded password: 'special_token_mask'",
+      "line_number": 268,
+      "line_range": [
+        268
+      ],
+      "test_id": "B105",
+      "test_name": "hardcoded_password_string"
+    },
+    {
+      "code": "",
+      "col_offset": 29,
+      "end_col_offset": 45,
+      "filename": "./mindspeed_llm/training/tokenizer/magistral_tokenizer.py",
+      "issue_confidence": "MEDIUM",
+      "issue_cwe": {
+        "id": 259,
+        "link": "https://cwe.mitre.org/data/definitions/259.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Possible hardcoded password: 'token_type_ids'",
+      "line_number": 269,
+      "line_range": [
+        269
+      ],
+      "test_id": "B105",
+      "test_name": "hardcoded_password_string"
+    },
+    {
+      "code": "",
+      "col_offset": 29,
+      "end_col_offset": 45,
+      "filename": ".\\mindspeed_llm/training/tokenizer/magistral_tokenizer.py",
+      "issue_confidence": "MEDIUM",
+      "issue_cwe": {
+        "id": 259,
+        "link": "https://cwe.mitre.org/data/definitions/259.html"
+      },
+      "issue_severity": "LOW",
+      "issue_text": "Possible hardcoded password: 'token_type_ids'",
+      "line_number": 269,
+      "line_range": [
+        269
+      ],
+      "test_id": "B105",
+      "test_name": "hardcoded_password_string"
+    }
+  ]
+}

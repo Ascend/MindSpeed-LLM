@@ -1,5 +1,5 @@
 # coding=utf-8
-# Copyright (c) 2026, HUAWEI CORPORATION. All rights reserved.
+# Copyright 2024 Huawei Technologies Co., Ltd.
 # Copyright 2025 Antgroup and The HuggingFace Inc. team. All rights reserved.
 #
 # This code is based on EleutherAI's GPT-NeoX library and the GPT-NeoX

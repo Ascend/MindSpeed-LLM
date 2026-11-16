@@ -60,6 +60,15 @@ NDArray = "NDArray"
 EOFError = "EOFError"
 
 [type.py.extend-words]
+# Evaluation dataset name and elastic training message tag.
+lsat = "lsat"
+ptd = "ptd"
+# Existing spellings deferred during the license update. Remove after merge.
+backpropogation = "backpropogation"
+boradcast = "boradcast"
+gloabl = "gloabl"
+instantion = "instantion"
+trian = "trian"
 
 [type.cpp]
 extend-glob = []

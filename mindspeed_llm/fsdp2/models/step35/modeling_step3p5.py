@@ -1,3 +1,4 @@
+# Copyright 2024 Huawei Technologies Co., Ltd.
 # Copyright 2025 The LLAMA4 and HuggingFace Inc. team. All rights reserved.
 #
 #

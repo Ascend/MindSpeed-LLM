@@ -1,4 +1,4 @@
-# Copyright (c) 2026, HUAWEI CORPORATION. All rights reserved.
+# Copyright 2024 Huawei Technologies Co., Ltd.
 #
 # This file is derived from modeling_deepseek_v4.py in the HuggingFace
 # Transformers project (Copyright 2026 The HuggingFace Inc. team. All

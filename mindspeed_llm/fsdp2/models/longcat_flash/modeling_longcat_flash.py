@@ -1,4 +1,4 @@
-# Copyright (c) 2026, HUAWEI CORPORATION. All rights reserved.
+# Copyright 2024 Huawei Technologies Co., Ltd.
 # Copyright 2025 Meituan and the HuggingFace Inc. team. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
