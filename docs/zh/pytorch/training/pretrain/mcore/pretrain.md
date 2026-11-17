@@ -56,9 +56,9 @@
     ......
     ```
 
-    数据预处理相关参数说明:
+    数据预处理相关参数说明：
 
-    - `input`：可以直接输入到数据集目录或具体文件，如果是目录，则处理全部文件, 支持`.parquet`、`.csv`、`.json`、`.jsonl`、`.txt`以及`.arrow`格式，同一个文件夹下的数据格式需要保持一致。
+    - `input`：可以直接输入到数据集目录或具体文件，如果是目录，则处理全部文件，支持`.parquet`、`.csv`、`.json`、`.jsonl`、`.txt`以及`.arrow`格式，同一个文件夹下的数据格式需要保持一致。
     - `handler-name`：当前预训练默认使用`GeneralPretrainHandler`，支持的是预训练数据风格，提取数据的`text`列，格式如下：
 
         ```json
@@ -74,7 +74,7 @@
         --json-keys text input output
         ```
 
-    - `n-subs`：数据预处理并行加速参数。当需要预处理的数据集比较大时，可以通过并行处理进行加速，方法为设置参数`--n-subs`，通过该参数设置并行处理数量。在数据预处理过程会将原始数据集切分为`n-subs`个子集，对子集进行并行处理，然后合并，从而实现加速。建议预处理数据集超过GB级别时加上该参数。
+    - `n-subs`：数据预处理并行加速参数。当需要预处理的数据集比较大时，可以通过并行处理进行加速，方法为设置参数`--n-subs`，通过该参数设置并行处理数量。在数据预处理过程中会将原始数据集切分为`n-subs`个子集，对子集进行并行处理，然后合并，从而实现加速。建议预处理数据集超过GB级别时加上该参数。
 
     最后，相关参数设置完毕后可运行数据预处理脚本：
 
@@ -123,11 +123,11 @@
     PP=4 # 模型切分的pp大小，在本例中是4
     ```
 
-    脚本内的其他参数说明:
+    脚本内的其他参数说明：
 
     - `DATA_PATH`：数据集路径。请注意实际数据预处理生成文件末尾会增加`_text_document`，该参数填写到数据集的文件前缀即可。例如实际的数据集相对路径是`./dataset/enwiki/enwiki_text_document.bin`等，那么只需填`./dataset/enwiki/enwiki_text_document`即可。
-    - `CKPT_LOAD_DIR`: 权重加载路径。预训练时可以选择随机初始化模型权重，此时该参数不用配置，同时需要注释掉预训练脚本中的`--load ${CKPT_LOAD_DIR} \`代码行。
-    - `tokenizer-type`：参数值为PretrainedFromHF时， 词表路径仅需要填到模型文件夹即可，不需要到tokenizer.model文件；参数值不为PretrainedFromHF时，例如Qwen3Tokenizer，需要指定到tokenizer.model文件。示例如下：
+    - `CKPT_LOAD_DIR`：权重加载路径。预训练时可以选择随机初始化模型权重，此时该参数不用配置，同时需要注释掉预训练脚本中的`--load ${CKPT_LOAD_DIR} \`代码行。
+    - `tokenizer-type`：参数值为PretrainedFromHF时，词表路径仅需要填到模型文件夹即可，不需要到tokenizer.model文件；参数值不为PretrainedFromHF时，例如Qwen3Tokenizer，需要指定到tokenizer.model文件。示例如下：
 
         ```bash
         # tokenizer-type为PretrainedFromHF

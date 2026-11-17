@@ -1,5 +1,7 @@
 # GSM8K 评估
 
+本文档介绍MindSpeed LLM中GSM8K评估集的使用方法，涵盖直接评估模式与思维链（CoT）评估模式的参数配置，适用于需要对大语言模型的小学数学多步推理能力进行评测的用户。
+
 ## 使用场景
 
 ### 问题描述
@@ -21,7 +23,7 @@ GSM8K 评估集专注于以下方面：
 
 #### 使用影响
 
-- 此模式将会直接将[模板提示](../../../../../../mindspeed_llm/tasks/evaluation/eval_impl/fewshot_template/gsm8k_3shot_template.json)和需要回答的问题输入到模型中，进行评估
+- 此模式将会直接将[模板提示](../../../../../../mindspeed_llm/tasks/evaluation/eval_impl/fewshot_template/gsm8k_3shot_template.json)和需要回答的问题输入到模型中，进行评估。
 
 #### 推荐参数配置
 
@@ -33,7 +35,7 @@ GSM8K 评估集专注于以下方面：
 
 #### 使用影响
 
-- 该模式会将思维链（CoT）提示应用于 GSM8K 任务。
+- 此模式会将思维链（CoT）提示应用于 GSM8K 任务。
 - 此模式将会读取 GSM8K 评估的 CoT 模板的 prompt 作为评估模板，在与需要模型回答的问题连接后，输入到模型中，进行评估。
 
 #### 推荐参数配置
@@ -44,7 +46,7 @@ GSM8K 评估集专注于以下方面：
 
 【--chain-of-thought】
 
-使能思维链（CoT）评估模式
+使能思维链（CoT）评估模式。
 
 ## 参考文献
 

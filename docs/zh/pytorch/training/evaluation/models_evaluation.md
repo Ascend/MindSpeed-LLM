@@ -1,4 +1,6 @@
-# MindSpeed-LLM 评估支持
+# MindSpeed LLM 评估支持
+
+本文档介绍MindSpeed LLM的大模型评估支持，列举当前支持的Benchmark数据集及各模型在MindSpeed LLM与公开榜单上的评估分数，适用于需要评估大模型精度的用户。
 
 ## 支持列表
 

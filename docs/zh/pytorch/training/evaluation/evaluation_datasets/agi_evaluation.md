@@ -1,5 +1,7 @@
 # AGI 评估
 
+本文档介绍AGI评估，说明AGIEval基准测试的20项任务构成，以及直接评估模式、平替模板输出模式两种评估模式的使用影响与推荐参数配置，适用于使用MindSpeed LLM评估基础模型综合能力的用户。
+
 ## 使用场景
 
 ### 问题描述
@@ -12,7 +14,7 @@
 
 ![AGIEval](../../../figures/evaluation/AGIEval_tasks.png)
 
-目前 MindSpeed LLM 仓库对 AGI 评估有两种评估模式：
+目前 MindSpeed LLM 仓库对 AGI 评估有两种评估模式，即直接评估模式和平替模板输出模式。
 
 ## 使用方法
 
@@ -20,7 +22,7 @@
 
 #### 使用影响
 
-- 此模式将会直接将[模板提示](../../../../../../mindspeed_llm/tasks/evaluation/eval_impl/fewshot_template/AGI_fewshot.json)和需要回答的问题连接起来输入到模型中，进行评估
+- 此模式将会直接将[模板提示](../../../../../../mindspeed_llm/tasks/evaluation/eval_impl/fewshot_template/AGI_fewshot.json)和需要回答的问题连接起来输入到模型中，进行评估。
 
 #### 推荐参数配置
 
@@ -32,7 +34,7 @@
 
 #### 使用影响
 
-- 与`直接评估模式`不同，该模式使用 [agi_utils](../../../../../../mindspeed_llm/tasks/evaluation/eval_utils/agi_utils.py) 中的 `template_mapping` 中的固定模板和需要回答的问题连接起来输入到模型中，进行评估
+- 与`直接评估模式`不同，该模式使用 [agi_utils](../../../../../../mindspeed_llm/tasks/evaluation/eval_utils/agi_utils.py) 中的 `template_mapping` 中的固定模板和需要回答的问题连接起来输入到模型中，进行评估。
 
 #### 推荐参数配置
 

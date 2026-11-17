@@ -44,7 +44,7 @@
     ......
     ```
 
-    数据预处理相关参数说明:
+    数据预处理相关参数说明：
 
     - `input`：可以直接输入到数据集目录或具体文件，如果是目录，则处理全部文件，支持`.parquet`、`.csv`、`.json`、`.jsonl`、`.txt`、`.arrow`格式，同一个文件夹下的数据格式需要保持一致。
     - `handler-name`：当前预训练默认使用 `GeneralPretrainHandler`，支持的是预训练数据风格，提取数据的`text`列，格式如下：
@@ -124,11 +124,11 @@
 
     可选功能：`--reset-position-ids`参数，在开启EOD功能之后，每条数据由不同的样本拼接而成，因此其位置ID并不连续。该参数用于将数据的position-ids按照EOD结尾生成ids，而非连续的ids。模型将在每个EOD之后，对position-ids从0开始重新编号，从而隔离不同句子间的位置计算，作用于attention中query和key的位置编码。
 
-    脚本内的其他相关参数说明:
+    脚本内的其他相关参数说明：
 
     - `DATA_PATH`：数据集路径。请注意实际数据预处理生成文件末尾会增加`_text_document`，该参数填写到数据集的文件前缀即可。例如实际的数据集相对路径是`./dataset/enwiki/enwiki_text_document.bin`等，那么只需填写`./dataset/enwiki/enwiki_text_document`即可。
     - `CKPT_LOAD_DIR`: 权重加载路径。预训练时可以选择随机初始化模型权重，此时该参数不用配置，同时需要注释掉预训练脚本中的`--load ${CKPT_LOAD_DIR} \`代码行。
-    - `tokenizer-type`：参数值为PretrainedFromHF时， 词表路径仅需要填到模型文件夹即可，不需要到tokenizer.model文件；参数值不为PretrainedFromHF时，例如Qwen3Tokenizer，需要指定到tokenizer.model文件。示例如下：
+    - `tokenizer-type`：参数值为PretrainedFromHF时，词表路径仅需要填到模型文件夹即可，不需要到tokenizer.model文件；参数值不为PretrainedFromHF时，例如Qwen3Tokenizer，需要指定到tokenizer.model文件。示例如下：
 
         ```bash
         # tokenizer-type为PretrainedFromHF
