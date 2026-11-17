@@ -52,7 +52,7 @@
         ```
 
     - 数据集准备
-        数据集准备请参考[Alpaca风格数据集](../../../tools/data_process_sft_alpaca_style.md)和[ShareGPT风格数据集](../../../tools/data_process_sft_sharegpt_style.md)的相关内容，目前已支持`.parquet`、`.csv`、 `.json`、`.jsonl`、`.txt`以及`.arrow`格式的数据文件。
+        数据集准备请参考[Alpaca风格数据集](../../../tools/data_process_sft_alpaca_style.md)和[ShareGPT风格数据集](../../../tools/data_process_sft_sharegpt_style.md)的相关内容，目前已支持`.parquet`、`.csv`、`.json`、`.jsonl`、`.txt`以及`.arrow`格式的数据文件。
 
 3. 模型权重转换
 

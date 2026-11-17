@@ -4,7 +4,7 @@
 
 LoRA（Low-Rank Adaptation）是一种高效的模型微调方法，广泛应用于预训练的深度学习模型。通过在权重上添加低秩矩阵，LoRA 使得微调过程更为轻量，节省计算资源和存储空间。LoRA 的核心思想是将模型的参数更新分解为低秩的形式。具体步骤如下：
 
-- **分解权重更新**：在传统的微调方法中，直接对模型的权重进行更新。而 LoRA 通过在每一层的权重矩阵中引入两个低秩矩阵 $A$ 和 $B$ 进行替代。即：
+- **分解权重更新**：在传统的微调方法中，直接对模型的权重进行更新。而 LoRA 通过在每一层的权重矩阵中引入两个低秩矩阵 $A$ 和 $B$ 进行替代，即：
 $
 W' = W + A \cdot B
 $
@@ -77,7 +77,7 @@ source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路
 
 数据预处理相关参数说明：
 
-- `handler-name`：指定数据集的处理类，常用的有`AlpacaStyleInstructionHandler`，`SharegptStyleInstructionHandler`，`AlpacaStylePairwiseHandler`等。
+- `handler-name`：指定数据集的处理类，常用的有`AlpacaStyleInstructionHandler`、`SharegptStyleInstructionHandler`、`AlpacaStylePairwiseHandler`等。
 - `tokenizer-type`：指定处理数据的tokenizer，常用`PretrainedFromHF`。
 - `workers`：处理数据集的并行数。
 - `log-interval`：处理进度更新的间隔步数。
@@ -124,7 +124,7 @@ PP=2                                      # 权重转换时target-pipeline-paral
 - `lora-r`：LoRA rank，表示低秩矩阵的维度。较低的 rank 值模型在训练时会使用更少的参数更新，从而减少计算量和内存消耗。然而，过低的 rank 可能限制模型的表达能力。
 - `lora-alpha`：控制 LoRA 权重对原始权重的影响比例，数值越高则影响越大。一般保持 `α/r` 为 2。
 - `lora-fusion`：是否启用[CCLoRA](../../../features/mcore/cc_lora.md)算法，该算法通过计算通信掩盖提高性能。当前GLM-4.5模型不支持开启该参数。
-- `lora-target-modules`：选择需要添加 LoRA 的模块。当前可选模块： `linear_qkv`, `linear_proj`, `linear_fc1`, `linear_fc2`
+- `lora-target-modules`：选择需要添加 LoRA 的模块。当前可选模块：`linear_qkv`, `linear_proj`, `linear_fc1`, `linear_fc2`。
 
 第六步，启动LoRA微调脚本。参数配置完毕后，如果是单机运行场景，只需要在一台机器上启动LoRA微调脚本：
 

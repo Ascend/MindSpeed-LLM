@@ -1,13 +1,13 @@
 # LU-LoRA 微调介绍
 
-局部更新的 LoRA（LU-LoRA）是一种新颖的参数高效微调（PEFT）方法，与全量微调和 PEFT 方法（如 LoRA）相比，它显著减少了内存占用并加速了微调时间。该方法有效地将局部学习规则与参数高效方法 LoRA 相结合。图 1a 展示了使用反向传播更新适配器的常规方法。LU-LoRA 提议在部分适配器中，用局部更新替代反向传播更新权重。整体方案如图 1b 所示。
+局部更新的 LoRA（LU-LoRA）是一种新颖的参数高效微调（PEFT）方法，与全量微调和 PEFT 方法（如 LoRA）相比，它显著减少了内存占用并缩短了微调时间。该方法有效地将局部学习规则与参数高效方法 LoRA 相结合。图 1a 展示了使用反向传播更新适配器的常规方法。LU-LoRA 提议在部分适配器中，用局部更新替代反向传播更新权重。整体方案如图 1b 所示。
 
 ## LU-LoRA 如何工作
 
 该方法的主要组成部分包括：
 
-1. 微调过程中基于反向传播和局部学习的有效结合，
-2. 使用 Hebb 规则更新的 LoRA 适配器的特殊初始化，
+1. 微调过程中基于反向传播和局部学习的有效结合。
+2. 使用 Hebb 规则更新的 LoRA 适配器的特殊初始化。
 3. LoRA 适配器的不同学习率。
 ![alt text](../../../figures/lu_lora_finetune/lu_lora_model.png)
 *图 1：微调方案。*
@@ -102,7 +102,7 @@ bash examples/mcore/llama2/tune_llama2_7b_lu_lora_ptd.sh
 
 #### 合并LU-LoRA权重并转换为Hugging Face权重
 
-如果要合并LU-LoRA权重并将权重转换为Hugging Face (HF)格式，可以使用相同的LoRA命令：
+如果要合并LU-LoRA权重并将权重转换为Hugging Face（HF）格式，可以使用相同的LoRA命令：
 
 ```shell
 source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路径

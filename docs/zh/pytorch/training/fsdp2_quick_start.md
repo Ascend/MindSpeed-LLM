@@ -6,7 +6,7 @@
 
 以下将以Qwen3-8B模型为例，指导开发者完成大语言模型的预训练和微调任务，主要步骤包括：
 
-- 环境准备：根据安装指引进行搭建环境
+- 环境准备：根据安装指引进行环境搭建
 - 权重和数据集准备：从HuggingFace下载Qwen3-8B开源模型权重，并获取Alpaca数据集
 - 启动训练任务：在昇腾NPU上使用FSDP2后端进行模型预训练和微调
 
@@ -77,7 +77,7 @@
       wget https://www.modelscope.cn/models/Qwen/Qwen3-8B/resolve/master/vocab.json
       ```
 
-    利用sha256sum计算sha256数值校验权重文件正确性和完整性。
+    利用sha256sum计算SHA256数值校验权重文件正确性和完整性。
 
     ```shell
     # 打开文件明细可获取sha256值，https://huggingface.co/Qwen/Qwen3-8B/blob/main/model-00001-of-00005.safetensors 或者 https://www.modelscope.cn/models/Qwen/Qwen3-8B/file/view/master/model-00001-of-00005.safetensors

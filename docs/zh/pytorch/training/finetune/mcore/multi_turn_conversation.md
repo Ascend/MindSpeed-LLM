@@ -8,7 +8,7 @@
 
 ### 使用说明
 
-可以直接使用[chat](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/gemma2/chat_gemma2_9b_ptd.sh)或者[generate](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/gemma2/generate_gemma2_9b_ptd.sh)脚本，并加载预置权重，与模型进行多轮对话，以达到预期效果。其中预置权重可以是大语言模型的chat权重，base权重或是微调后的权重。
+可以直接使用[chat](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/gemma2/chat_gemma2_9b_ptd.sh)或者[generate](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/gemma2/generate_gemma2_9b_ptd.sh)脚本，并加载预置权重，与模型进行多轮对话，以达到预期效果。其中预置权重可以是大语言模型的chat权重、base权重或是微调后的权重。
 
 ### 效果展示
 
@@ -68,7 +68,7 @@ bash examples/mcore/gemma2/data_convert_gemma2_instruction.sh
 
 指令微调数据集处理结果如下：
 
-```shell
+```output
 ./finetune_dataset/alpaca_packed_attention_mask_document.bin
 ./finetune_dataset/alpaca_packed_attention_mask_document.idx
 ./finetune_dataset/alpaca_packed_input_ids_document.bin
@@ -108,7 +108,7 @@ bash examples/mcore/gemma2/tune_gemma2_9b_full_ptd.sh
 
 使用[对话脚本](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/gemma2/chat_gemma2_9b_ptd.sh)，加载模型分词器和微调后的权重，进行多轮对话。
 
-填写相关路径
+填写相关路径：
 
 `TOKENIZER_PATH`：指定模型的分词器路径（例如`tokenizer.model`）。
 

@@ -28,14 +28,14 @@ source /usr/local/Ascend/nnal/atb/set_env.sh # 修改为实际安装的nnal包�
 因此，根据之前的示例，路径应填写如下：
 
 ```shell
-CHECKPOINT="./model_weights/llama-2-7b-mcore/"
-TOKENIZER_PATH="./model_from_hf/llama-2-7b-hf-chat/"
-TOKENIZER_MODEL="./model_from_hf/llama-2-7b-hf-chat/tokenizer.model"
+CHECKPOINT="./model_weights/llama-2-13b-mcore/"
+TOKENIZER_PATH="./model_from_hf/llama-2-13b-hf-chat/"
+TOKENIZER_MODEL="./model_from_hf/llama-2-13b-hf-chat/tokenizer.model"
 ```
 
 【--tokenizer-name-or-path】与【--tokenizer-model】
 
-参数值为PretrainedFromHF时， 词表路径仅需要填到模型文件夹即可，不需要到tokenizer.model文件
+参数值为PretrainedFromHF时，词表路径仅需要填到模型文件夹即可，不需要到tokenizer.model文件。
 
 **示例：**
 
@@ -44,7 +44,7 @@ TOKENIZER_PATH="./model_from_hf/llama-2-hf/"
 --tokenizer-name-or-path ${TOKENIZER_PATH}
 ```
 
-参数值不为PretrainedFromHF时，例如Llama2Tokenizer，需要指定到tokenizer.model文件
+参数值不为PretrainedFromHF时，例如Llama2Tokenizer，需要指定到tokenizer.model文件。
 
 **示例：**
 
@@ -65,19 +65,19 @@ bash examples/mcore/llama2/chat_llama2_13b_ptd.sh
 
 【--task】
 
-默认参数为"chat", 用于指定进行多轮对话任务。
+默认参数为"chat"，用于指定进行多轮对话任务。
 
 【--history-turns】
 
-在多轮对话中，可以指定参数`--history-turns`来改变历史对话记录轮数，默认为记录`3`轮
+在多轮对话中，可以指定参数`--history-turns`来改变历史对话记录轮数，默认为记录`3`轮。
 
 【--hf-chat-template】
 
-如果模型的tokenizer已经具备`chat_template`属性，则可以选择通过添加`--hf-chat-template`来使用模型内置的对话模板
+如果模型的tokenizer已经具备`chat_template`属性，则可以选择通过添加`--hf-chat-template`来使用模型内置的对话模板。
 
 【--prompt-type】
 
-模型对话模板，作用与`--hf-chat-template`一致，但不需要模型的tokenizer已经具备`chat_template`属性，微调后推理对话时应选择模型对应的对话模板， `prompt-type`的可选项可以在[templates.json](../../../../../configs/finetune/templates.json)文件内查看。
+模型对话模板，作用与`--hf-chat-template`一致，但不需要模型的tokenizer已经具备`chat_template`属性，微调后推理对话时应选择模型对应的对话模板，`prompt-type`的可选项可以在[templates.json](../../../../../configs/finetune/templates.json)文件内查看。
 
 #### Chat对话程序相关命令
 
@@ -85,7 +85,7 @@ bash examples/mcore/llama2/chat_llama2_13b_ptd.sh
 
 【清空对话记录】
 
-如果需要清空之前的对话记录新建一个Chat对话程序，可以在对话框中输入  [clear, new] 其中的一个命令
+如果需要清空之前的对话记录新建一个Chat对话程序，可以在对话框中输入[clear, new]其中的一个命令。
 
 【退出对话程序】
 

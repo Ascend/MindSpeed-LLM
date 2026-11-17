@@ -70,9 +70,9 @@
 
     - `--num-layer-list`：配置非均匀PP切分，传参为各级流水的隐藏层数`L0,...,LPP`，其中L0和LPP表示首尾隐藏层数。以PP=3为例，传参`1,31,31,1`表示首层1层、中间层31+31层、尾层1层。
 
-    以边侧1卡，云侧16卡为例，按照PP=3，边侧TP=1，云侧TP=8来进行权重转换的具体步骤如下。
+    以边侧1卡、云侧16卡为例，按照PP=3、边侧TP=1、云侧TP=8来进行权重转换的具体步骤如下。
 
-    步骤一：边侧按照TP=1，PP=3来进行权重转换，需要修改相关路径参数和模型切分配置
+    步骤一：边侧按照TP=1，PP=3来进行权重转换，需要修改相关路径参数和模型切分配置。
 
     ```shell
     --target-tensor-parallel-size 1          # TP切分大小
@@ -88,7 +88,7 @@
     bash examples/mcore/qwen3/ckpt_convert_qwen3_hf2mcore.sh
     ```
 
-    步骤二：通过首尾层合并脚本将Megatron-Mcore格式模型转换为VPP格式
+    步骤二：通过首尾层合并脚本将Megatron-Mcore格式模型转换为VPP格式。
 
     边云协同分布式训练需要将首尾层权重合并为VPP格式，调用权重转换脚本`convert_ckpt_pp_vpp.py`进行操作：
 
@@ -161,9 +161,9 @@
 
     - `--num-layer-list`：配置非均匀PP切分，传参为各级流水的隐藏层数`L0,...,LPP`，其中L0和LPP表示首尾隐藏层数。以PP=3为例，传参`1,31,31,1`表示首层1层、中间层31+31层、尾层1层。
 
-    以边侧1卡，云侧16卡为例，按照PP=3，边侧TP=1，云侧TP=8来进行权重转换的具体步骤如下。
+    以边侧1卡、云侧16卡为例，按照PP=3、边侧TP=1、云侧TP=8来进行权重转换的具体步骤如下。
 
-    步骤一：边侧按照TP=1，PP=3来进行权重转换，需要修改相关路径参数和模型切分配置
+    步骤一：边侧按照TP=1，PP=3来进行权重转换，需要修改相关路径参数和模型切分配置。
 
     ```shell
     --target-tensor-parallel-size 1          # TP切分大小
@@ -179,7 +179,7 @@
     bash examples/mcore/qwen3/ckpt_convert_qwen3_hf2mcore.sh
     ```
 
-    步骤二：云侧按照TP=8，PP=3来进行权重转换，需要修改相关路径参数和模型切分配置
+    步骤二：云侧按照TP=8，PP=3来进行权重转换，需要修改相关路径参数和模型切分配置。
 
     ```shell
     --target-tensor-parallel-size 8          # TP切分大小
@@ -195,7 +195,7 @@
     bash examples/mcore/qwen3/ckpt_convert_qwen3_hf2mcore.sh
     ```
 
-    步骤三：通过首尾层合并脚本将Megatron-Mcore格式模型转换为VPP格式
+    步骤三：通过首尾层合并脚本将Megatron-Mcore格式模型转换为VPP格式。
 
     边云协同分布式训练需要将首尾层权重合并为VPP格式，调用权重转换脚本`convert_ckpt_pp_vpp.py`进行操作：
 

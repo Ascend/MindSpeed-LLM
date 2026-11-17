@@ -67,7 +67,7 @@
 
 ## 流式推理脚本相关参数
 
-**表 1**  推理脚本参数说明
+**表 1** 推理脚本参数说明
 
 |参数名|说明|
 |----|----|
@@ -81,4 +81,4 @@
 |`--temperature`| 默认为1.0，采样策略中的温度系数。|
 |`--num-beams`| 使用束搜索（Beam Search）策略时，设置束的大小。|
 |`--use-kv-cache`| 在线推理过程中设置使用kv-cache来加速生成。|
-|`--use-flash-attn`| 在线推理过程中设置使用prompt_flash_attention和incre_flash_attention来加速推理生成，需要在kv-cache开启的前提下使用，目前支持MHA，GQA和Alibi。|
+|`--use-flash-attn`| 在线推理过程中设置使用prompt_flash_attention和incre_flash_attention来加速推理生成，需要在kv-cache开启的前提下使用，目前支持MHA、GQA和Alibi。|

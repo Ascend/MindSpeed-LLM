@@ -2,9 +2,9 @@
 
 ## 使用场景
 
-由于计算资源紧缺，训练过程中加载的每个批次的样本长度不一。大部分的数据都需要在结尾padding到 `seq-length` 的长度，这导致训练效率低，造成计算资源浪费。多样本Pack将多个样本（如文本序列）打包成一个“Pack”，会将指定数据集中，不同长度的数据组合成指定长度，并尽可能地填充有效的数据内容。若拼接的数据无法达到指定的 `seq-length` 的长度，则该数据将会被Pad到指定的长度。因此，**每条Pack数据集的长度都一致**，从而减少训练过程中的样本数量，提高训练效率。
+由于计算资源紧缺，训练过程中加载的每个批次的样本长度不一。大部分的数据都需要在结尾padding到 `seq-length` 的长度，这导致训练效率低，造成计算资源浪费。多样本Pack将多个样本（如文本序列）打包成一个“Pack”，会将指定数据集中不同长度的数据组合成指定长度，并尽可能地填充有效的数据内容。若拼接的数据无法达到指定的 `seq-length` 的长度，则该数据将会被Pad到指定的长度。因此，**每个Pack数据集的长度都一致**，从而减少训练过程中的样本数量，提高训练效率。
 
-如图所示，新样本是由多个初始样本合并而成，每个block是一个新的样本：
+如图所示，新样本是由多个初始样本合并而成，每个Block是一个新的样本：
 
 <img src="../../../figures/multi_sample_pack_fine_tuning/samples_pack.png" width="60%"/>
 
@@ -14,7 +14,7 @@
 
 <img src="../../../figures/multi_sample_pack_fine_tuning/zigzag_attn_mask.png" width="20%"/>
 
-在非Pack场景下，矩阵是完整下三角矩阵，多个样本之间的self-attention没有掩盖，所有token均参与计算，而Pack场景下数据为锯齿状白色三角，其余区域为mask，样本之间保持独立，不能互相作self-attention，减少了微调数据的处理量，同时可以保持样本之间的独立性，提升训练效率。
+在非Pack场景下，矩阵是完整的下三角矩阵，多个样本之间的self-attention没有掩盖，所有token均参与计算，而Pack场景下数据为锯齿状白色三角，其余区域为mask，样本之间保持独立，不能互相作self-attention，减少了微调数据的处理量，同时可以保持样本之间的独立性，提升训练效率。
 
 业界还有其他Pack模式（下三角Pack等），敬请期待支持。
 
@@ -61,7 +61,7 @@
     ```
 
 > [!NOTE] 说明
-> [Qwen3-32B Pack微调脚本](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/qwen3/tune_qwen3_32b_32K_full_pack_A3_ptd.sh)支持数据/权重在线加载训练，即集成了数据预处理、权重转换和训练于一体，单脚本即可启动训练任务。若需了解该功能的更多详情可参见[数据/权重在线加载训练](../../pretrain/mcore/train_from_hf.md)。
+> [Qwen3-32B Pack微调脚本](https://gitcode.com/Ascend/MindSpeed-LLM/blob/26.1.0/examples/mcore/qwen3/tune_qwen3_32b_32K_full_pack_A3_ptd.sh)支持数据/权重在线加载训练，即集数据预处理、权重转换和训练于一体，单脚本即可启动训练任务。若需了解该功能的更多详情可参见[数据/权重在线加载训练](../../pretrain/mcore/train_from_hf.md)。
 >
 > - 权重转换合一训练：实现HuggingFace权重到Megatron格式的双向自动转换与训练合一，用户无需单独执行权重转换步骤，实现从HuggingFace权重到训练任务的一键式集成。
 > - 自动转换原始数据：数据预处理功能在模型训练时自动识别并转换原始数据文件，无需用户手动执行原始数据转换。系统将根据输入路径自动判断是否为原始数据格式（如`.jsonl`、`.parquet`等），并在训练初始化阶段自动完成数据格式转换。
