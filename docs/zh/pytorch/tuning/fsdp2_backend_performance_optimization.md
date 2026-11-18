@@ -194,7 +194,7 @@ PyTorch 训练数据支持导入以 `_ascend_pt` 结尾的性能数据目录。�
 | 6 | Overlap Analysis（覆盖分析） | 将 Ascend Hardware 的计算、通信任务垂直投影，得到计算、通信和空闲时间的拆分 |
 | 7 | Stats System View（统计视图） | 单卡维度统计汇总信息，可通过左侧“卡序号”下拉框切换不同卡 |
 
-上表列出了定位过程中最常用的 Timeline 泳道。每条泳道可展开查看具体细节，完整界面介绍参见 [MindStudio Insight 时间线](https://gitcode.com/Ascend/msinsight/blob/master/docs/zh/user_guide/system_tuning.md#%E6%97%B6%E9%97%B4%E7%BA%BFtimeline)。
+上表列出了定位过程中最常用的 Timeline 泳道。每条泳道可展开查看具体细节，完整界面介绍请参见 [MindStudio Insight 时间线](https://gitcode.com/Ascend/msinsight/blob/master/docs/zh/user_guide/system_tuning/timeline.md)。
 
 **图 2**  泳道展开后的详细信息
 

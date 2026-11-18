@@ -318,7 +318,7 @@
 
     **注意：非对称TP和DP场景下，边侧和云侧的TP size必须配置成一致，边侧TP size不能按实际情况来配置。且需要指定WORLD_SIZE为边侧卡数+云侧卡数，不能使用默认的WORLD_SIZE=$(($NPUS_PER_NODE*$NODES))来计算。**
 
-       在训练脚本中增加以下参数开启边云协同分布式训练特性：
+    在训练脚本中增加以下参数开启边云协同分布式训练特性：
 
     ```shell
     --layerwise-disaggregated-training               # 开启边云协同分布式可信训练

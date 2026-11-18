@@ -20,7 +20,7 @@ PMCC混淆是指对微调过程使用的模型文件和数据集进行混淆处�
 
     完整的[Qwen3-32B](https://huggingface.co/Qwen/Qwen3-32B/tree/main)模型文件夹应该包括以下内容：
 
-    ```shell
+    ```text
     .
     ├── README.md                    # 模型说明文档
     ├── config.json                  # 模型结构配置文件

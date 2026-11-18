@@ -127,7 +127,7 @@
     脚本内的其他相关参数说明：
 
     - `DATA_PATH`：数据集路径。请注意实际数据预处理生成文件末尾会增加`_text_document`，该参数填写到数据集的文件前缀即可。例如实际的数据集相对路径是`./dataset/enwiki/enwiki_text_document.bin`等，那么只需填写`./dataset/enwiki/enwiki_text_document`即可。
-    - `CKPT_LOAD_DIR`: 权重加载路径。预训练时可以选择随机初始化模型权重，此时该参数不用配置，同时需要注释掉预训练脚本中的`--load ${CKPT_LOAD_DIR} \`代码行。
+    - `CKPT_LOAD_DIR`：权重加载路径。预训练时可以选择随机初始化模型权重，此时该参数不用配置，同时需要注释掉预训练脚本中的`--load ${CKPT_LOAD_DIR} \`代码行。
     - `tokenizer-type`：参数值为PretrainedFromHF时，词表路径仅需要填到模型文件夹即可，不需要到tokenizer.model文件；参数值不为PretrainedFromHF时，例如Qwen3Tokenizer，需要指定到tokenizer.model文件。示例如下：
 
         ```bash

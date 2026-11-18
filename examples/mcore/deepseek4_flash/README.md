@@ -100,7 +100,7 @@
 
 MindSpeed LLM提供[脚本](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/examples/mcore/deepseek4_flash) 进行数据集处理。
 
-使用方法如下，请根据实际需要修改以下参数
+使用方法如下，请根据实际需要修改以下参数：
 
 ```sh
 cd MindSpeed-LLM
@@ -142,7 +142,7 @@ cd MindSpeed-LLM
 bash examples/mcore/deepseek4_flash/tune_deepseek4_flash_4k_A3_ptd.sh
 ```
 
-用户需要根据实际情况修改脚本中以下变量
+用户需要根据实际情况修改脚本中以下变量：
 
   | 变量名  | 含义                |
   |--------|-----------------|

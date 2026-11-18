@@ -5,8 +5,8 @@
 ## 相关文档
 
 - [MindSpeed LLM软件安装](../../../docs/zh/pytorch/training/install_guide.md)
-- [mcore 预训练](../../../docs/zh/pytorch/training/pretrain/mcore/pretrain.md)
-- [mcore 指令微调](../../../docs/zh/pytorch/training/finetune/mcore/instruction_finetune.md)
+- [Mcore 预训练](../../../docs/zh/pytorch/training/pretrain/mcore/pretrain.md)
+- [Mcore 指令微调](../../../docs/zh/pytorch/training/finetune/mcore/instruction_finetune.md)
 - [模型推理](../../../docs/zh/pytorch/training/inference/inference.md)
 - [模型评估](../../../docs/zh/pytorch/training/evaluation/evaluation_guide.md)
 - [预训练数据处理](../../../docs/zh/pytorch/tools/data_process_pretrain.md)
@@ -18,10 +18,10 @@
 | --- | --- | --- |
 | 预训练数据处理 | [data_convert_qwen3_pretrain.sh](./data_convert_qwen3_pretrain.sh) | 将预训练数据处理为训练入口可读取的数据格式。 |
 | 指令数据处理 | [data_convert_qwen3_instruction.sh](./data_convert_qwen3_instruction.sh) | 处理指令微调场景的数据。 |
-| HF 到 mcore 权重转换 | [ckpt_convert_qwen3_hf2mcore.sh](./ckpt_convert_qwen3_hf2mcore.sh) | 将 Hugging Face 权重转换为 mcore 训练、推理或评估可用格式。 |
-| mcore 到 HF 权重转换 | [ckpt_convert_qwen3_mcore2hf.sh](./ckpt_convert_qwen3_mcore2hf.sh) | 将 mcore 权重转换回 Hugging Face 格式。 |
+| HF 到 Mcore 权重转换 | [ckpt_convert_qwen3_hf2mcore.sh](./ckpt_convert_qwen3_hf2mcore.sh) | 将 Hugging Face 权重转换为 Mcore 训练、推理或评估可用格式。 |
+| Mcore 到 HF 权重转换 | [ckpt_convert_qwen3_mcore2hf.sh](./ckpt_convert_qwen3_mcore2hf.sh) | 将 Mcore 权重转换回 Hugging Face 格式。 |
 | LoRA 权重转换 | [ckpt_convert_qwen3_mcore2hf_lora.sh](./ckpt_convert_qwen3_mcore2hf_lora.sh) | 将 LoRA 相关权重转换为 Hugging Face 格式。 |
-| 预训练 | [pretrain_qwen3_8b_4K_ptd.sh](./pretrain_qwen3_8b_4K_ptd.sh) | Qwen3 8B mcore 预训练示例。 |
+| 预训练 | [pretrain_qwen3_8b_4K_ptd.sh](./pretrain_qwen3_8b_4K_ptd.sh) | Qwen3 8B Mcore 预训练示例。 |
 | 全参微调 | [tune_qwen3_8b_4K_full_ptd.sh](./tune_qwen3_8b_4K_full_ptd.sh) | Qwen3 8B 全参微调示例。 |
 | LoRA 微调 | [tune_qwen3_8b_4K_lora_ptd.sh](./tune_qwen3_8b_4K_lora_ptd.sh) | Qwen3 8B LoRA 微调示例。 |
 | 推理 | [generate_qwen3_8b_ptd.sh](./generate_qwen3_8b_ptd.sh) | 使用训练或转换后的权重进行文本生成。 |

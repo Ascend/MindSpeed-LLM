@@ -61,7 +61,7 @@ python3 tests/tools/replace_ascend_path.py --dry-run
 
 Sample output:
 
-```bash
+```output
 [DRY RUN] Path replacement: /usr/local/Ascend/driver -> /usr/local/npu/driver
 Scan directory : /path/to/MindSpeed-LLM
 File types     : .md, .py, .rst, .sh, .txt + Dockerfile

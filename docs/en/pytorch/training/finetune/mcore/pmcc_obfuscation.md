@@ -20,7 +20,7 @@ Because the PMCC obfuscation feature currently supports only the Qwen3-32B model
 
     The complete [Qwen3-32B](https://huggingface.co/Qwen/Qwen3-32B/tree/main) model directory should contain the following files:
 
-    ```shell
+    ```text
     .
     ├── README.md                    # Model documentation
     ├── config.json                  # Model architecture configuration file

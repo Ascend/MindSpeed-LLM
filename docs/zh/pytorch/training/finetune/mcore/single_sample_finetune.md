@@ -132,7 +132,7 @@
         MASTER_ADDR="your master node IP"  # 都需要修改为主节点的IP地址（不能为localhost）
         MASTER_PORT=6000
         NNODES=2                     # 集群里的节点数，以实际情况填写
-        NODE_RANK="current node id"  # 当前节点的RANK，多个节点不能重复，主节点为0, 其他节点可以是1、2...
+        NODE_RANK="current node id"  # 当前节点的RANK，多个节点不能重复，主节点为0，其他节点可以是1、2...
         WORLD_SIZE=$(($NPUS_PER_NODE * $NNODES))
         ```
 
