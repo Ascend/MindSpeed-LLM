@@ -1,5 +1,7 @@
 # Alpaca风格数据集
 
+本文档介绍Alpaca风格数据集，涵盖常用的Alpaca对话指令微调数据集清单以及数据集下载、字段映射与数据预处理方法，适用于需要基于Alpaca风格数据集完成微调数据预处理的用户。
+
 ## 常用的Alpaca数据集
 
 常用的对话指令微调数据集有：
@@ -24,7 +26,7 @@ cd ..
 
 ### Alpaca风格数据集处理
 
-在指令监督微调时，`instruction` 列对应的内容会与 `input` 列对应的内容拼接后作为人类指令，即人类指令为 `instruction\ninput`其中 `\n`为用于连接的换行符。而 `output` 列对应的内容为模型回答。如果指定了history，则会将历史对话内容也加入进来。如果指定system 列，则对应的内容将被作为系统提示词。
+在指令监督微调时，`instruction` 列对应的内容会与 `input` 列对应的内容拼接后作为人类指令，即人类指令为 `instruction\ninput`，其中 `\n`为用于连接的换行符。而 `output` 列对应的内容为模型回答。如果指定了history，则会将历史对话内容也加入进来。如果指定system 列，则对应的内容将被作为系统提示词。
 
 ```shell
 source /usr/local/Ascend/cann/set_env.sh # 修改为实际安装的Toolkit包路径
@@ -44,7 +46,7 @@ python ./preprocess_data.py \
 
 【--input】
 
-可以直接输入到数据集目录或具体文件，则处理全部文件，支持.parquet/.csv/.json/.jsonl/.txt/.arrow格式，同一个文件夹下的数据格式需要保持一致
+可以直接输入到数据集目录或具体文件，如果是目录，则处理全部文件，支持.parquet/.csv/.json/.jsonl/.txt/.arrow格式，同一个文件夹下的数据格式需要保持一致。
 
 【--map-keys】
 
@@ -67,13 +69,13 @@ Alpaca风格示例：
 ]
 ```
 
-对于上面格式的数据，`--map-keys`参数完整应为
+对于上面格式的数据，`--map-keys`参数完整应为：
 
 `'{"prompt":"instruction","query":"input","response":"output","system":"system","history":"history"}'`
 
 其中参数的key值`"prompt"、"query"、"response"、"system"、"history"`代表数据集列映射后的属性，在代码中是固定的，不应改变，value值`"instruction"、"input"、"output"、"system"、"history"`对应数据集的列名。
 
-考虑到alpaca数据集大部分都是`["instruction", "input", "output"]`型格式，因此我们为key值`["prompt", "query", "response"]`设置了默认值。因此上面格式`--map-keys`参数可简略为`'{"system": "system","history": "history"}'`
+考虑到Alpaca数据集大部分都是`["instruction", "input", "output"]`型格式，因此我们为key值`["prompt", "query", "response"]`设置了默认值。因此上面格式`--map-keys`参数可简化为`'{"system": "system","history": "history"}'`。
 
 若数据集中无`system`与`history`列，则`--map-keys`可省略。
 
@@ -121,4 +123,4 @@ bash tests/poc/llama2/data_convert_llama2_instruction.sh
 ./finetune_dataset/alpaca_packed_labels_document.idx
 ```
 
-微调时，数据集路径输入 `./finetune_dataset/alpaca` 即可
+微调时，数据集路径输入 `./finetune_dataset/alpaca` 即可。

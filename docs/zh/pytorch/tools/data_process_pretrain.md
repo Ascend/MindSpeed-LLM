@@ -1,5 +1,7 @@
 # 预训练数据集处理
 
+本文档介绍预训练数据集处理，涵盖常用预训练数据集说明、数据集下载方式、预处理脚本与参数说明及处理结果，适用于需要为大语言模型预训练准备数据集的用户。
+
 ## 常用的预训练数据集
 
 - [Alpaca数据集](https://huggingface.co/datasets/tatsu-lab/alpaca)
@@ -48,19 +50,19 @@ bash tests/poc/llama2/data_convert_llama2_pretrain.sh
 
 【--input】
 
-可以直接输入到数据集目录或具体文件，如果是目录，则处理全部文件，支持.parquet/.csv/.json/.jsonl/.txt/.arrow格式，同一个文件夹下的数据格式需要保持一致
+可以直接输入到数据集目录或具体文件，如果是目录，则处理全部文件，支持.parquet/.csv/.json/.jsonl/.txt/.arrow格式，同一个文件夹下的数据格式需要保持一致。
 
 【--tokenizer-type】
 
-说明使用tokenizer类别，参数值为PretrainedFromHF时，词表路径填写模型目录即可。否则需要配置`--tokenizer-model`参数，指定分词器模型的路径，路径具体到tokenizer.model文件
+说明使用tokenizer类别，参数值为PretrainedFromHF时，词表路径填写模型目录即可。否则需要配置`--tokenizer-model`参数，指定分词器模型的路径，路径具体到tokenizer.model文件。
 
 【--tokenizer-name-or-path】
 
-词表路径，当tokenizer类别为PretrainedFromHF时，只需配置到目标模型的tokenizer所在目录即可
+词表路径，当tokenizer类别为PretrainedFromHF时，只需配置到目标模型的tokenizer所在目录即可。
 
 【--output-prefix】
 
-转换后输出的数据集文件的文件名前缀
+转换后输出的数据集文件的文件名前缀。
 
 【--handler-name】
 
@@ -73,7 +75,7 @@ bash tests/poc/llama2/data_convert_llama2_pretrain.sh
 ]
 ```
 
-用户可结合具体数据处理需求添加新的Handler进行数据处理
+用户可结合具体数据处理需求添加新的Handler进行数据处理。
 
 【--json-keys】
 
@@ -89,7 +91,7 @@ bash tests/poc/llama2/data_convert_llama2_pretrain.sh
 
 【--n-subs】
 
-数据预处理并行加速参数。当需要预处理的数据集比较大时，可以通过并行处理进行加速，方法为设置参数`--n-subs`，通过该参数设置并行处理数量。在数据预处理过程会将原始数据集切分为`n-subs`个子集，对子集进行并行处理，然后合并，从而实现加速。建议预处理数据集超过GB级别时加上该参数。
+数据预处理并行加速参数。当需要预处理的数据集比较大时，可以通过并行处理进行加速，方法为设置参数`--n-subs`，通过该参数设置并行处理数量。在数据预处理过程中会将原始数据集切分为`n-subs`个子集，对子集进行并行处理，然后合并，从而实现加速。建议预处理数据集超过GB级别时加上该参数。
 
 ### 处理结果
 
@@ -100,4 +102,4 @@ bash tests/poc/llama2/data_convert_llama2_pretrain.sh
 ./dataset/alpaca_llama2_7b_text_document.idx
 ```
 
-预训练时，数据集路径`--data-path`参数传入 `./dataset/alpaca_llama2_7b_text_document` 即可
+预训练时，数据集路径`--data-path`参数传入 `./dataset/alpaca_llama2_7b_text_document` 即可。

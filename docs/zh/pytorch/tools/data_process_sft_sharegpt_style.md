@@ -1,12 +1,14 @@
 # ShareGPT 数据集
 
+本文档介绍ShareGPT数据集，涵盖常用的ShareGPT对话指令微调数据集、ShareGPT风格数据集的下载方法与ShareGPT数据格式及预处理脚本的使用，适用于使用MindSpeed LLM进行指令微调的用户。
+
 ## 常用的ShareGPT数据集
 
 常用的对话指令微调数据集有：
 
 - [Roleplay多轮对话：ShareGPT数据集](https://huggingface.co/datasets/shibing624/roleplay-zh-sharegpt-gpt4-data)
-- [Chain-of-thought: ShareGPT数据集](https://huggingface.co/datasets/isaiahbjork/chain-of-thought-sharegpt)
-- [Capybara: ShareGPT数据集](https://huggingface.co/datasets/Undi95/Capybara-ShareGPT)
+- [Chain-of-thought：ShareGPT数据集](https://huggingface.co/datasets/isaiahbjork/chain-of-thought-sharegpt)
+- [Capybara：ShareGPT数据集](https://huggingface.co/datasets/Undi95/Capybara-ShareGPT)
 
 ## ShareGPT风格数据集下载
 
@@ -21,7 +23,7 @@ cd ..
 
 ## ShareGPT风格数据集处理方法
 
-`ShareGPT` 格式支持更多的角色种类，例如 `human、gpt、observation、function_call`等等。它们构成一个对象列表呈现在`conversations`列中。
+`ShareGPT` 风格支持更多的角色种类，例如 `human、gpt、observation、function_call`等等。它们构成一个对象列表呈现在`conversations`列中。
 
 `ShareGPT`风格示例：
 
@@ -76,13 +78,13 @@ python ./preprocess_data.py \
 
 【--map-keys】
 
-`--map-keys`参数用于配置字段映射来使用数据集。默认值为
+`--map-keys`参数用于配置字段映射来使用数据集。默认值为：
 
 `'{"messages":"conversations", "tags":{"role_tag": "from","content_tag": "value","user_tag": "human","assistant_tag": "gpt","system_tag": "system", "observation_tag":"observation", "function_tag":"function_call"}}'`
 
 其中key值`"messages"、"tags"`代表数据集列映射后的属性，在代码中是固定的，不应改变。value值中`"conversations"`对应数据集的列名、`"from"`对应角色标志、`"human"、"gpt"、"system"、"observation"、"function_call"`对应角色种类、`"value"`对应具体内容标志。
 
-以OpenAI格式为例，OpenAI 格式是 ShareGPT 格式的一种特殊情况，其中第一条消息可能是系统提示词。
+以OpenAI格式为例，OpenAI格式是ShareGPT格式的一种特殊情况，其中第一条消息可能是系统提示词。
 
 OpenAI格式示例：
 
@@ -135,7 +137,7 @@ python ./preprocess_data.py \
 --map-keys '{"messages":"chat"}'
 ```
 
-则会提取数据集里的`"chat"`列，其中`"tags"`属性包含角色格式和内容格式，作为默认值隐式存在，角色格式可以为：`"from": "human"、"from": "gpt"、"from": "observation"、"from": "function_call"`，内容格式为`"value": "具体内容"`
+则会提取数据集里的`"chat"`列，其中`"tags"`属性包含角色格式和内容格式，作为默认值隐式存在，角色格式可以为：`"from": "human"、"from": "gpt"、"from": "observation"、"from": "function_call"`，内容格式为`"value": "具体内容"`。
 
 **示例2：**
 
@@ -143,7 +145,7 @@ python ./preprocess_data.py \
 --map-keys '{"messages":"messages", "tags":{"role_tag": "role","content_tag": "content","user_tag": "user","assistant_tag": "assistant"}}'
 ```
 
-则会提取数据集里的`"messages"`列，其中角色格式可以为：`"role": "user"、"role": "assistant"`，内容格式为`"content": "具体内容"`
+则会提取数据集里的`"messages"`列，其中角色格式可以为：`"role": "user"、"role": "assistant"`，内容格式为`"content": "具体内容"`。
 
 ### 启动脚本
 
@@ -166,4 +168,4 @@ bash tests/poc/llama2/data_convert_llama2_instruction.sh
 ./finetune_dataset/openai_packed_labels_document.idx
 ```
 
-微调时，数据集路径输入 `./finetune_dataset/openai` 即可
+微调时，数据集路径输入 `./finetune_dataset/openai` 即可。

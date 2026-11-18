@@ -10,7 +10,7 @@ MindSpeed LLM支持基于昇腾芯片采集profiling数据，以提供对模型�
 
 这里给出两组需要追加到训练命令后的参数片段，展示比较常用的使用场景：
 
-- 初步简单分析性能时，可以只采集0号卡的CPU信息，查看通信和计算时间占比，各类算子占比以及算子调度信息，推荐配置如下：
+- 初步简单分析性能时，可以只采集0号卡的CPU信息，查看通信和计算时间占比、各类算子占比以及算子调度信息，推荐配置如下：
 
     ```text
     --profile                            # 打开profiling采集数据开关
@@ -62,7 +62,7 @@ MindSpeed LLM支持基于昇腾芯片采集profiling数据，以提供对模型�
 
 这里给出两种配置示例，展示比较常用的使用场景。在训练配置文件（YAML）的 `training` 字段下添加 profiling 参数：
 
-1. 初步分析性能时，可以只采集0号卡的CPU信息，查看通信和计算时间占比，各类算子占比以及算子调度信息，推荐配置如下：
+1. 初步分析性能时，可以只采集0号卡的CPU信息，查看通信和计算时间占比、各类算子占比以及算子调度信息，推荐配置如下：
 
     ```yaml
     training:
@@ -101,7 +101,7 @@ MindSpeed LLM支持基于昇腾芯片采集profiling数据，以提供对模型�
 
 | 参数 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
-| `profile` | bool | `false` | 是否启用 profiling |
+| `profile` | bool | `false` | 是否启用profiling |
 | `profile_step_start` | int | `0` | 开始采集的 global step（包含） |
 | `profile_step_end` | int | `-1` | 结束采集的 global step（不包含）；`-1` 表示采集到训练结束 |
 | `profile_ranks` | List[int] | `[-1]` | 要采集的 rank 列表；`[-1]` 表示所有 rank |

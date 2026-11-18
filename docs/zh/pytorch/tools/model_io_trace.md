@@ -136,7 +136,7 @@ training:
     bash examples/fsdp2/qwen3/pretrain_qwen3_8b_4k_fsdp2_A3.sh
     ```
 
-首个训练step完成后，rank 0的采集结果位于`/data/model_io_trace/qwen3_8b/rank0/step0/`。可先查看`output.txt`和`token_ids.log`，若定位到可疑 Module后，再通过`module.include`缩小采集范围。
+首个训练step完成后，rank 0的采集结果位于`/data/model_io_trace/qwen3_8b/rank0/step0/`。可先查看`output.txt`和`token_ids.log`，若定位到可疑 Module，再通过`module.include`缩小采集范围。
 
 ## 基于Megatron后端开启采集
 

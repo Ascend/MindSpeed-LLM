@@ -95,13 +95,13 @@ training:
   >
   > `--msprobe-config-path`参数未配置时，MindSpeed LLM默认使用[`msprobe_config.json`](../../../../mindspeed_llm/tools/msprobe_config.json)。
 
-Megatron后端会在每次`train_step()`前开启采集，并在该训练迭代结束后依次调用`stop()`和`step()`。PP/VPP场景会将当前 rank上的全部模型分块作为一个列表传入msProbe。
+Megatron后端会在每次`train_step()`前开启采集，并在该训练迭代结束后依次调用`stop()`和`step()`。PP/VPP场景会将当前rank上的全部模型分块作为一个列表传入msProbe。
 
 断点续训时，msProbe的起始step会使用checkpoint恢复后的`args.iteration`。全新训练的第一次迭代对应msProbe `step0`，训练日志在该次迭代完成后显示`iteration 1`。
 
 ## config.json示例
 
-大模型进行首次定位时，建议只采集目标rank、目标step的Module级统计量。config.json配置示例如下：
+对大模型进行首次定位时，建议只采集目标rank、目标step的Module级统计量。config.json配置示例如下：
 
 ```json
 {
