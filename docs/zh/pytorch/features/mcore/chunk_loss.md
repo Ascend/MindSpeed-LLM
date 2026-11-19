@@ -2,7 +2,7 @@
 
 ## 背景与挑战
 
-通过fsdp2训练模型时，`lm_head` 的输出维度（即词表大小 `vocab_size`）通常远大于模型的隐空间维度 `hidden_size`，传统损失计算方式需要在中间显式构造一个形状为 `[bs, seq, vocab_size]` 的 logits 张量，这会带来显著的显存尖刺，影响显存的利用率。
+通过FSDP2训练模型时，`lm_head` 的输出维度（即词表大小 `vocab_size`）通常远大于模型的隐藏层维度 `hidden_size`，传统损失计算方式需要在中间显式构造一个形状为 `[bs, seq, vocab_size]` 的 logits 张量，这会带来显著的显存尖刺，影响显存的利用率。
 
 ## 解决方案
 
@@ -11,7 +11,7 @@
 ## 使用方法
 
 **第1步** 替换模型的lm_head(output_layer)实现（原实现为nn.Linear）
-当前所有模型的lm_head都是没有bias的线性层，可改为以下实现
+当前所有模型的lm_head都是没有bias的线性层，可改为以下实现：
 
 ```python
 class LMHead(nn.Linear):
@@ -42,12 +42,12 @@ class LMHead(nn.Linear):
             return None, loss_ctx(hidden_states, w, b)
 ```
 
-**第2步**在模型的forward函数里添加loss_ctx入参，并在forward实现里添加使能判断
+**第2步** 在模型的forward函数里添加loss_ctx入参，并在forward实现里添加使能判断
 
-参考fsdp2 Qwen3ForCausalLM实现，[Qwen3ForCausalLM FSDP2实现参考](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/mindspeed_llm/fsdp2/models/qwen3/qwen3.py)
+参考FSDP2 Qwen3ForCausalLM实现，[Qwen3ForCausalLM FSDP2实现参考](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/mindspeed_llm/fsdp2/models/qwen3/qwen3.py)
 此外，具体模型需要注意loss计算方式，如有新的loss计算方式，应在 _build_chunk_loss 里适配修改，[修改位置在Trainer的_build_chunk_loss方法](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/mindspeed_llm/fsdp2/train/trainer.py#L86)
 
-**第3步**在启动脚本中添加使能参数
+**第3步** 在启动脚本中添加使能参数
 
 ```shell
 --loss-compute-mode chunk \

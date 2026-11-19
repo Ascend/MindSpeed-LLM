@@ -2,7 +2,7 @@
 
 ## 特性介绍
 
-针对 sparse flash attention、lightning indexer、lightning indexer loss，在计算前对已切分的key和value执行allgather通信操作获得完整的key和value。
+针对 Sparse Flash Attention、lightning indexer、lightning indexer loss，在计算前对已切分的key和value执行allgather通信操作获得完整的key和value。
 
 详细介绍请参考[**kvallgather_cp_algo**](https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/kvallgather-context-parallel.md)。
 
@@ -16,6 +16,6 @@
 
 ## 注意事项
 
-1. 当前仅适配了sparse flash attention、lightning indexer融合算子、lightning indexer loss融合算子。
+1. 当前仅适配了Sparse Flash Attention、lightning indexer融合算子、lightning indexer loss融合算子。
 2. 当前仅支持`attention-mask-type`为`causal`。
 3. 仅支持定长padding训练场景，采用负载均衡的序列切分方式，`--seq-length`要求能被 2 * context-parallel-size整除。

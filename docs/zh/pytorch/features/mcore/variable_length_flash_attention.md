@@ -36,7 +36,7 @@ python ./preprocess_data.py \
 
 ### 1.使能前
 
-初始化attn_mask为压缩下三角矩阵（2048*2048）；
+初始化attn_mask为压缩下三角矩阵（2048*2048）。
 
 <img alt="使能前的下三角因果注意力掩码示意图" src="../../figures/variable_length_flash_attention/causal_mask.png" width="261"/>
 
@@ -45,7 +45,7 @@ python ./preprocess_data.py \
 ### 2.使能后
 
 不初始化mask，根据eod位置生成actual_seq_len，假设一个序列中真实的文本长度分别为[2,2,0,2,2]，则actual_seq_len为[2,4,4,6,8]；
-实际计算量由actual_seq_len决定；
+实际计算量由actual_seq_len决定。
 
 attn_mask可以类似地表示为（实际计算时不生成）：
 

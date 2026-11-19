@@ -6,13 +6,13 @@
 
 对于内存非常有限的情况，全量重计算只保存 Transformer 层或层组的输入激活值，其他部分全部重新计算。要启用全量重计算，请使用 `--recompute-granularity full`。在该模式下，有两种重计算方法：均匀（uniform）和分块（block），可以通过 `--recompute-method` 参数选择。
 
-**均匀方法**: 
+**均匀方法**： 
 
-`--recompute-method uniform`：将Transformer 层均匀划分组（每组大小--recompute-num-layers），按组存储输入和激活值。
+`--recompute-method uniform`：将Transformer 层均匀划分组（每组大小 `--recompute-num-layers`），按组存储输入和激活值。
 
-**分块方法**: 
+**分块方法**： 
 
-`--recompute-method block`：将前 --recompute-num-layers 个 Transformer 层重计算，剩余层不进行重计算。
+`--recompute-method block`：将前 `--recompute-num-layers` 个 Transformer 层重计算，剩余层不进行重计算。
 
 ## 选择性重计算
 
@@ -28,7 +28,7 @@
 
 激活函数重计算可以与全重计算同时开启：
 
-1. 同时开启时，仅支持 --recompute-method 为 `block`
+1. 同时开启时，仅支持 `--recompute-method` 为 `block`
 
 2. 同时开启时，会按照指定的全重计算和激活函数重计算的层数做各自类型的重计算，即不会有一层既做全重计算又做激活函数重计算。
 

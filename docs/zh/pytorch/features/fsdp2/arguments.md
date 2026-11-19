@@ -1120,7 +1120,7 @@
     <td>gdn_chunk_size</td>
     <td>int</td>
     <td>64</td>
-    <td>Gated DeltaNet网络计算时矩阵的分块的数量。</td>
+    <td>Gated DeltaNet网络计算时矩阵的分块数量。</td>
     </tr>
     <tr>
     <td>use_triton_rmsnormgated</td>

@@ -12,7 +12,7 @@
 
 #### Python脚本侧实现
 
-将张量进行进一步切分（2/4/8份），通过Python脚本的方式实现每个子tensor之间计算和通信的并行，从而增大计算和通信流的利用率；
+将张量进行进一步切分（2/4/8份），通过Python脚本的方式实现每个子tensor之间计算和通信的并行，从而增大计算和通信流的利用率。
 
 #### 融合算子实现
 
@@ -22,18 +22,18 @@
 
 该特性目前主要用于训练场景，当Attention模块和MLP模块串行执行且计算通信存在顺序依赖与位置毗邻关系时适用。
 
-使用Python脚本侧实现时，对Matmul左矩阵的m轴有一定要求，必须是切分数（2/4/8）的倍数，且不适用于计算与通信片段耗时相差较大的情况。需要注意的是，脚本侧实现在切分矩阵、切分数量较大时，容易出现host bound问题，从而不能得到预期的收益。支持ALL_REDUCE, ALL_GATHER, REDUCE_SCATTER三个通信场景，支持灵活设置先通信或先计算。
+使用Python脚本侧实现时，对Matmul左矩阵的m轴有一定要求，必须是切分数（2/4/8）的倍数，且不适用于计算与通信片段耗时相差较大的情况。需要注意的是，脚本侧实现在切分矩阵、切分数量较大时，容易出现host bound问题，从而不能得到预期的收益。支持ALL_REDUCE、ALL_GATHER、REDUCE_SCATTER三个通信场景，支持灵活设置先通信或先计算。
 
 对于计算通信融合算子，目前已支持：
 
 1. MATMUL_ALL_REDUCE融合算子（先计算后通信）及其确定性计算；
 2. MATMUL_REDUCE_SCATTER融合算子（先计算后通信）及其确定性计算；
-3. ALL_GATHER_MATMUL, ALL_GATHER_MATMUL_V2融合算子（先通信后计算）（V2版本接口支持ALL_GATHER中间结果获取）；
-4. 量化场景：MATMUL_ALL_REDUCE融合算子支持fp16格式的w8A16伪量化，粒度包含per tensor / per channel / per group；
+3. ALL_GATHER_MATMUL、ALL_GATHER_MATMUL_V2融合算子（先通信后计算）（V2版本接口支持ALL_GATHER中间结果获取）；
+4. 量化场景：MATMUL_ALL_REDUCE融合算子支持FP16格式的w8A16伪量化，粒度包含per tensor / per channel / per group；
 
 ## 使用方法
 
-当前计算通信并行有两种实现方法：python脚本使能、融合算子使能，两者选其一即可。
+当前计算通信并行有两种实现方法：Python脚本使能、融合算子使能，两者选其一即可。
 
 请根据需要选择下列两种场景中的一个进行使用。
 
@@ -63,7 +63,7 @@ ATB安装方法：
     --coc-fused-kernel # 注意:当前只支持TP=8的场景!
 ```
 
-同时使用coc-parallel-num > 1和coc-fused-kernel参数时，coc-fused-kernel参数优先级更高，会覆盖coc-parallel-num > 1
+同时使用coc-parallel-num > 1和coc-fused-kernel参数时，coc-fused-kernel参数优先级更高，会覆盖coc-parallel-num > 1。
 
 ## 注意事项
 

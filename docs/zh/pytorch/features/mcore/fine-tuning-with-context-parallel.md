@@ -4,7 +4,7 @@
 
 ### 数据预处理
 
-数据预处理方法同[**多样本pack微调**](../../training/finetune/mcore/multi_sample_pack_finetune.md)。
+数据预处理方法同[**多样本Pack微调**](../../training/finetune/mcore/multi_sample_pack_finetune.md)。
 
 ### 微调参数
 
@@ -18,11 +18,11 @@
 
 【--reset-position-ids】
 
-每条数据由不同的样本拼接而成，因此其位置 ID 并不连续。该参数用于将数据的position-ids按照eod结尾生成ids，而非连续的ids。模型将在每个EOD之后，对position-ids从0开始重新编号，从而隔离不同句子间的位置计算，作用于attention中query和key的位置编码。
+每条数据由不同的样本拼接而成，因此其位置 ID 并不连续。该参数用于将数据的position-ids按照EOD结尾生成ids，而非连续的ids。模型将在每个EOD之后，对position-ids从0开始重新编号，从而隔离不同句子间的位置计算，作用于attention中query和key的位置编码。
 
 【--reset-attention-mask】
 
-每条数据由不同的样本拼接而成，因此其attention mask不再是单纯的下三角形状。该参数开启时，会按照EOD计算句子的分隔位置并生成actual-seq-len。传入FA算子中产生锯齿状的mask计算效果，FA随后进行TND格式计算。
+每条数据由不同的样本拼接而成，因此其attention mask不再是单纯的下三角形状。该参数开启时，会按照EOD计算句子的分隔位置并生成actual-seq-len，传入FA算子中产生锯齿状的mask计算效果，FA随后进行TND格式计算。
 
 【--context-parallel-size】
 

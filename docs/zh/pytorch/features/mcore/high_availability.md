@@ -27,7 +27,7 @@ Megatron原生的分布式优化器数据流及工作原理如下图：
 
 ![](../../figures/high_availability/grad_buffer_sharding.png)
 
-副本优化器通过将优化器参数均匀分布在副本 DP 组，完成优化器状态的备份，从而为 TTP/UCE 功能提供机制支持：
+副本优化器通过将优化器参数均匀分布在副本数据并行组，完成优化器状态的备份，从而为 TTP/UCE 功能提供机制支持：
 
 ![](../../figures/high_availability/replica_optimizer.png)
 
@@ -50,7 +50,7 @@ mindio_ttp下载地址：[MindIO TTP 下载软件包-昇腾社区](https://gitco
 
 `--enable-high-availability`  # 使能开启高可用功能的总开关，并使能TTP临终遗言功能，保存 checkpoint 时要求全局至少存在一份完整的优化器数据；
 
-`--enable-hbmfault-repair` # 使能进行片上内存故障，Step 级重计算功能的开关；本功能将在线进行 worker 级修复，修复时要求全局至少存在一个故障卡的副本卡。
+`--enable-hbmfault-repair` # 使能进行片上内存故障修复，Step 级重计算功能的开关；本功能将在线进行 worker 级修复，修复时要求全局至少存在一个故障卡的副本卡。
 
 `--enable-worker-reboot` # 使能空中加油功能，配合支持相关功能的 MindCluster 组件共同使能后，在发生一般性故障时，进行进程级重启修复，继续训练。本功能会将故障卡所在节点进行重启，修复时要求未故障节点中至少存在一份完整的优化器数据。
 
@@ -76,14 +76,14 @@ mindio_ttp下载地址：[MindIO TTP 下载软件包-昇腾社区](https://gitco
 
 2、MindSpeed-llm 的高可用特性仅针对基础模型和基础训练特性进行适配以帮助用户快速体验该特性，暂未进行全量训练特性兼容，如用户对某个训练特性存在兼容需求，请在社区提出 issue 后我们将快速完成适配。
 
-3、 高可用必须兼容的特性清单（前提需要模型本身支持）
+3、高可用必须兼容的特性清单（前提需要模型本身支持）
 
    - `--bf16` （覆盖混精计算，范围广）
    - `--overlap-grad-reduce` （梯度、优化器都涉及）
    - `--load` （权重相关参数）
    - `--save` （权重相关参数）
    - `--ckpt-format torch` （权重相关参数）
-   - `--use-distributed-optimizer`(优化器相关，开和未开都支持)
+   - `--use-distributed-optimizer`（优化器相关，开和未开都支持）
 
 ### 弹性训练功能使用约束
 
@@ -91,7 +91,7 @@ mindio_ttp下载地址：[MindIO TTP 下载软件包-昇腾社区](https://gitco
 
 1、当前仅支持开启 `enable-high-availability`、`use-distributed-optimizer`
 
-2、当前仅支持不开启 `use-custom-fsdp`、 `reuse-fp32-param` 的场景
+2、当前仅支持不开启 `use-custom-fsdp`、`reuse-fp32-param` 的场景
 
 3、当前仅支持 `Data Parallel`、`Tensor Parallel`、`Pipeline Parallel` 并行
 
@@ -101,6 +101,6 @@ mindio_ttp下载地址：[MindIO TTP 下载软件包-昇腾社区](https://gitco
 
 ### Checkpoint 保存与加载优化
 
-开启 `enable-high-availability` 时，若环境上安装了 MindIO ACP SDK ，则会使用mindio_acp的一级异步 checkpoint 保存与加载优化
+开启 `enable-high-availability` 时，若环境上安装了 MindIO ACP SDK，则会使用mindio_acp的一级异步 checkpoint 保存与加载优化。
 
 详见：[MindIO TTP 约束限制](https://gitcode.com/Ascend/mind-cluster/blob/branch_v26.1.0/docs/zh/scheduling/07_references/00_fault_recovery_acceleration/02_installation_and_deployment.md#%E7%BA%A6%E6%9D%9F%E9%99%90%E5%88%B6)

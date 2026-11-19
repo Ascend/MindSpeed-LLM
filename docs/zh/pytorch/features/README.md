@@ -127,13 +127,13 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
     <td>✅</td>
   </tr>
   <tr>
-    <td rowspan="2">MOE</td>
-    <td><a href="https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/core/transformer/moe/README.md">MOE 专家并行</a></td>
+    <td rowspan="2">MoE</td>
+    <td><a href="https://github.com/NVIDIA/Megatron-LM/blob/main/megatron/core/transformer/moe/README.md">MoE 专家并行</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/megatron_moe/megatron-moe-allgather-dispatcher.md">MOE 重排通信优化</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/megatron_moe/megatron-moe-allgather-dispatcher.md">MoE 重排通信优化</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
@@ -175,12 +175,12 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
   </tr>
   <tr>
     <td rowspan="7">融合算子</td>
-    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/flash-attention.md">Flash attention</a></td>
+    <td><a href="https://gitcode.com/Ascend/MindSpeed/blob/master/docs/zh/features/flash-attention.md">Flash Attention</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
   <tr>
-    <td><a href="mcore/variable_length_flash_attention.md">Flash attention variable length</a></td>
+    <td><a href="mcore/variable_length_flash_attention.md">Flash Attention variable length</a></td>
     <td>✅</td>
     <td>✅</td>
   </tr>
@@ -256,7 +256,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
   <tr>
     <th>模型</th>
     <th>硬件</th>
-    <th>集群</th>
+    <th>集群规模</th>
     <th>方案</th>
     <th>序列</th>
     <th>吞吐（tokens/s）</th>
@@ -326,7 +326,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
 <table><thead>
   <tr>
     <th>场景</th>
-    <th>特性</th>
+    <th>特性名称</th>
     <th>Mcore</th>
     <th>Released</th>
     <th>贡献方</th>

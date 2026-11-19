@@ -6,8 +6,8 @@
 
 若在非指定版本中尝试采用该配置，可能触发系统级的异常行为，包括但不限于运行时错误。
 
-MindSpeed-LLM 中 MC2 功能默认关闭，如需开启MC2，需将 `mindspeed_llm/training/arguments.py` 文件下，`validate_args_decorator`函数中的`args.use_ascend_mc2 = False`语句注释掉。
-**注意：使能MC2可能在部分模型带来精度问题。**
+MindSpeed-LLM 中 MC2 功能默认关闭，如需开启MC2，需将 `mindspeed_llm/training/arguments.py` 文件下`validate_args_decorator`函数中的`args.use_ascend_mc2 = False`语句注释掉。
+**注意：使能MC2可能在部分模型上带来精度问题。**
 
 ## 问题分析
 
@@ -15,13 +15,13 @@ MindSpeed-LLM 中 MC2 功能默认关闭，如需开启MC2，需将 `mindspeed_l
 
 ## 解决方案
 
-针对存在强依赖关系的matmul计算和通信操作，昇腾自研MC2解决方案。
+针对存在强依赖关系的matmul计算和通信操作，昇腾自研了MC2解决方案。
 
 MC2通过融合算子的方式将matmul计算和集合通信操作进行融合，将较大的计算和通信任务切分成了较小的计算子任务和通信子任务，并通过流水的方式使得通信子任务和计算子任务可以互相掩盖，从而减少等待和闲置时间，提高利用率。
 
 ### 解决思路
 
-在python脚本侧将原本串行的matmul和all_gather/reduce_scatter操作通过MC2融合算子接口进行了融合。
+在Python脚本侧将原本串行的matmul和all_gather/reduce_scatter操作通过MC2融合算子接口进行了融合。
 
 具体参见[代码实现](https://gitcode.com/ascend/MindSpeed/blob/core_r0.8.0/mindspeed/core/tensor_parallel/ascend_turbo/mc2_linears_seq_parallel.py)。
 

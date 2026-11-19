@@ -39,7 +39,7 @@ CSA重计算与MHC重计算相互独立，可以单独开启，也可以同时�
 ## 注意事项
 
 1. 当前特性仅用于DeepSeek V4的Mcore训练场景，默认关闭。
-2. `--recompute-csa-attention`与`--mhc-recompute`没有参数依赖关系；同时开启时会协调中间激活值的释放时机。
+2. `--recompute-csa-attention`与`--mhc-recompute`没有参数依赖关系，同时开启时会协调中间激活值的释放时机。
 3. `--mhc-recompute`仅对融合NPU MHC实现生效，因此需要同时开启`--enable-mhc`和`--use-fused-mhc`。
 4. 细粒度重计算仅在训练且开启梯度计算时生效，MTP层当前不启用该重计算。
 5. 开启后会以额外计算开销换取显存节省，实际收益与模型规模、序列长度和并行配置有关。

@@ -85,14 +85,14 @@ CHECKPOINT_PATH=/your/checkpoint/path
 
 ### 4. 确认续训结果
 
-自动恢复内容包括
+自动恢复内容包括：
 
 - 模型参数
-- 优化器状态（Adam momentum, variance 等）
+- 优化器状态（Adam momentum、variance 等）
 - 学习率调度器状态
 - 已完成的训练步数（避免重复训练）
 
-恢复后训练将继续从断点开始，打印如下日志内容
+恢复后训练将继续从断点开始，打印如下日志内容：
 
 ```shell
 successfully loaded checkpoint from xx at iteration x
@@ -106,4 +106,4 @@ load-checkpoint ....................:(9289.88, 9288.22)
 
 1. **文件完整性**：确保 `$CHECKPOINT_PATH` 下的检查点文件完整无损。
 2. **训练配置一致性**：恢复训练时，batch size、模型结构、训练步数、优化器类型等应与保存时一致。
-3. **分布式环境匹配**：NPU 数量和并行策略（TP/DP）要保持不变，否则会导致加载失败。
+3. **分布式环境匹配**：NPU 数量和并行策略（张量并行/数据并行，TP/DP）要保持不变，否则会导致加载失败。
