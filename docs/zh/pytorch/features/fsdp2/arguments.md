@@ -1,5 +1,7 @@
 # 全量参数说明
 
+本文档介绍FSDP2后端训练与推理的全量参数，按模型、数据、并行、训练、profiling、msProbe、模型输入输出采集、推理、优化特性等参数类分别说明参数名称、类型、默认值与含义，并给出Megatron参数对照，适用于需要配置FSDP2训练与推理参数的用户。
+
 ## 模型参数（ModelArguments）
 
 包含模型与分词器加载、初始化相关参数。
@@ -168,7 +170,7 @@
       <td>fsdp_low_precision_all_gather_mode</td>
       <td>Literal["on-demand", "all"]</td>
       <td>on-demand</td>
-      <td>FSDP低精度all-gather，按需聚合前向或反向权重</td>
+      <td>FSDP低精度all-gather，按需聚合前向或反向权重。</td>
     </tr>
   </tbody>
 </table>
@@ -341,7 +343,7 @@
       <td>drop_thinking</td>
       <td>Optional[bool]</td>
       <td>True</td>
-      <td>多轮对话训练时是否丢弃历史轮次中的思考内容（reasoning_content）。True（默认）时剥离历史轮的思考内容，仅最后一轮assistant回复的推理部分作为loss目标；False时保留所有轮次的思考内容。仅DeepSeek-V4模板生效，且消息中包含工具调用（tools）时不执行丢弃，与Megatron的<code>--drop-thinking</code>参数对应。</td>
+      <td>多轮对话训练时是否丢弃历史轮次中的思考内容（reasoning_content）。True（默认）时剥离历史轮次的思考内容，仅最后一轮assistant回复的推理部分作为loss目标；False时保留所有轮次的思考内容。仅DeepSeek-V4模板生效，且消息中包含工具调用（tools）时不执行丢弃，与Megatron的<code>--drop-thinking</code>参数对应。</td>
     </tr>
     <tr>
       <td>tokenized_path</td>
@@ -377,7 +379,7 @@
       <td>no_shared_storage</td>
       <td>Optional[bool]</td>
       <td>False</td>
-      <td>是否设置共享存储。</td>
+      <td>是否禁用共享存储，True表示不使用共享存储，False表示使用共享存储。</td>
     </tr>
     <tr>
       <td>dataloader_type</td>
@@ -819,13 +821,13 @@
       <td>mtp_loss_scaling_factor</td>
       <td>float</td>
       <td>0.3</td>
-      <td>MTP（Multi Token Prediction）损失缩放因子。</td>
+      <td>MTP（Multi-Token Prediction）损失缩放因子。</td>
     </tr>
     <tr>
       <td>deterministic</td>
       <td>bool</td>
       <td>True</td>
-      <td>是否开启确定性计算</td>
+      <td>是否开启确定性计算。</td>
     </tr>
   </tbody>
 </table>
@@ -1084,7 +1086,7 @@
       <td>use_triton_swiglu_limit</td>
       <td>bool</td>
       <td>False</td>
-      <td>是否使能swiglu limit融合算子。仅支持DeepSeek-V4系列模型。</td>
+      <td>是否启用SwiGLU limit融合算子。仅支持DeepSeek-V4系列模型。</td>
     </tr>
     <tr>
       <td>pre_tokens</td>
@@ -1126,7 +1128,7 @@
     <td>use_triton_rmsnormgated</td>
     <td>bool</td>
     <td>False</td>
-    <td>是否使能triton融合算子加速RMSNorm_gated计算。</td>
+    <td>是否启用Triton融合算子加速RMSNorm_gated计算。</td>
     </tr>
     <tr>
     <td>fix_router</td>

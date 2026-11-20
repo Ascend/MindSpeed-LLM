@@ -1,6 +1,6 @@
 # PyTorch FSDP2 后端特性介绍
 
-FSDP2 是 PyTorch 分布式并行的下一代范式，旨在解决 FSDP1（`FlatParameter` 包装器模式）在灵活性与组合性上的痛点。它不再通过 Python 类包装模型，而是通过 **`torch.distributed.fsdp.fully_shard`** API 对模型进行原位（In-place）的并行化处理。
+FSDP2 是 PyTorch 分布式并行的下一代范式，旨在解决 FSDP1（`FlatParameter` 包装器模式）在灵活性与组合性上的痛点。FSDP2 不再通过 Python 类包装模型，而是通过 **`torch.distributed.fsdp.fully_shard`** API 对模型进行原位（In-place）的并行化处理。
 
 ---
 
@@ -9,7 +9,7 @@ FSDP2 是 PyTorch 分布式并行的下一代范式，旨在解决 FSDP1（`Flat
 与 FSDP1 将多个参数打平（Flatten）为一个巨大的 `FlatParameter` 不同，FSDP2 采用了 **Per-Parameter Sharding（逐参数分片）** 的策略。
 
 - **FSDP1 (Legacy)**：将层内的所有参数拉平拼接，切分这个巨大的 1D 向量。这破坏了原始模型的参数结构，导致对参数的某些操作（如自定义初始化、特定层微调）变得复杂。
-- **FSDP2 (New)**：保持模型原始的参数结构不变。每个参数（`nn.Parameter`）被单独切分并管理。这种设计使得 FSDP2 具有极高的组合性（Composability），可以轻松与 Tensor Parallel (TP) 或 Checkpointing 结合。
+- **FSDP2 (New)**：保持模型原始的参数结构不变。每个参数（`nn.Parameter`）被单独切分并管理。这种设计使得 FSDP2 具有极高的组合性（Composability），可以轻松与 Tensor Parallelism (TP) 或 Checkpointing 结合。
 
 ## 工作原理
 
@@ -63,7 +63,7 @@ mp_policy = MixedPrecisionPolicy(param_dtype=torch.bfloat16, reduce_dtype=torch.
 
 ## 通信与计算掩盖
 
-为了极致的训练效率，FSDP2 实现了高度优化的 **通信计算掩盖（Overlap）** 机制，即 **Prefetching**。
+为了极致的训练效率，FSDP2 实现了高度优化的 **通信与计算掩盖（Overlap）** 机制，即 **Prefetching**。
 
 <div align="center">
 <img src="../../figures/fsdp2/prefetch.png" width="610" height="207">

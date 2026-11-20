@@ -17,7 +17,7 @@ MindSpeed LLM：基于昇腾生态的大语言模型分布式训练套件，旨�
 
 ## 支持的 Tags 及 Dockerfile 链接
 
-MindSpeed-LLM 所有 Tag 遵循以下格式：`v{MindSpeed LLM版本}-cann{CANN版本}-torch_npu{TorchNPU版本}-{芯片信息}-{操作系统}-py{Python版本}`
+MindSpeed-LLM 所有 Tag 遵循以下格式：`v{MindSpeed LLM版本}-cann{CANN版本}-torch_npu{TorchNPU版本}-{芯片信息}-{操作系统}-py{Python版本}`。
 
 | 字段 | 示例值 | 说明 |
 | ------ | ------ | -------- |
@@ -32,7 +32,7 @@ MindSpeed-LLM 所有 Tag 遵循以下格式：`v{MindSpeed LLM版本}-cann{CANN�
 
 ### 最新版本 26.2.0
 
-如下所示是 MindSpeed LLM 最新发布的 26.2.0 版本多架构镜像 Tag，每个 Tag 均为 `x86_64` 与 `aarch64` 二合一镜像。历史版本所有 Tag 请参考 [Supported Tags](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/docker/supported_tags.md)。
+如下所示是 MindSpeed LLM 最新发布的 26.2.0 版本多架构镜像 Tag，每个 Tag 均为 `x86_64` 与 `aarch64` 二合一镜像。历史版本所有 Tag 请参见 [Supported Tags](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/docker/supported_tags.md)。
 
 | Tag | Dockerfile | Content |
 | --- | --- | --- |

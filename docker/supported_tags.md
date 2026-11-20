@@ -1,6 +1,6 @@
 # Supported Tags
 
-A full list of tags that are supported with MindSpeed LLM
+A full list of tags that are supported with MindSpeed LLM.
 
 All images are available from the [MindSpeed-LLM image repository on AscendHub](https://www.hiascend.com/developer/ascendhub/detail/e26da9266559438b93354792f25b2f4a).
 

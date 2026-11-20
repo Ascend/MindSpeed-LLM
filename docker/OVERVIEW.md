@@ -73,7 +73,7 @@ The `image_build.sh` script supports flexible parameter configuration. Its defau
 | Parameter                 | Description                                  | Default Value |
 |---------------------------|-------------------------------------| ------------ |
 | `-t, --npu-type`          | NPU type: `910b`, `a3`, or `950`                | `910b` |
-| `-o, --os`                | OS：`openeuler24.03`or`ubuntu22.04` | `openeuler24.03` |
+| `-o, --os`                | OS: `openeuler24.03` or `ubuntu22.04` | `openeuler24.03` |
 | `--no-cache`              | Build without using Docker build cache                          | None |
 | `--mindspeed-llm-branch`  |MindSpeed LLM version tag, also used as Git branch name    | `26.2.0` |
 | `--mindspeed-branch`      | MindSpeed version tag, also used as Git branch name        | `26.2.0_core_r0.12.1` |
