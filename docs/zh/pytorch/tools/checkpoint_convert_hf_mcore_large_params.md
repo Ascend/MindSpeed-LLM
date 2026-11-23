@@ -95,7 +95,7 @@ cd ../../
 | `--load-model-type` | 源模型类型，可选项为'hf'或'mg' | 'hf' | ❌ |
 | `--save-model-type` | 转换后模型类型，可选项为'hf'或'mg' | 'mg'  | ❌ |
 | `--load-dir` | 源模型路径 | None | ❌ |
-| `--save-dir` | 转换后模型权重的储存路径 | None | ❌ |
+| `--save-dir` | 转换后模型权重的存储路径 | None | ❌ |
 | `--hf-cfg-dir` | 源HuggingFace权重配置文件目录，可选参数<br>在mg2hf转换过程中，将必要配置文件拷贝至权重保存目录，生成开箱即用的hf格式权重。 | None | ❌ |
 | `--model-type-hf` | HuggingFace模型类别<br>对于已经支持的模型，脚本内已经配置好，使用者无需更改。 | 'qwen3' | ❌ |
 | `--target-tensor-parallel-size` | TP，指定张量并行数量 | 1 | ✅ |

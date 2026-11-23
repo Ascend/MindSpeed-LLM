@@ -51,7 +51,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
 <table>
   <thead>
     <tr>
-      <th>方案类别</th>
+      <th>方案名称</th>
       <th>Mcore</th>
       <th>Released</th>
       <th>贡献方</th>
@@ -281,7 +281,7 @@ MindSpeed LLM包含分布式预训练、分布式微调等训练方案。
     <td rowspan="1">DeepSeek-V3-671B</td>
     <td rowspan="1">Atlas 900 A2 PODc</td>
     <td rowspan="1">8x8</td>
-    <td>LoRA</td>
+    <td>LoRA微调</td>
     <td><a href="../../../../examples/mcore/deepseek3/tune_deepseek3_671b_4k_lora_ptd.sh">4K</a></td>
     <td>978.914</td>
   </tr>

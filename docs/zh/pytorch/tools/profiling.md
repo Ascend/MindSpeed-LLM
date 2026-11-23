@@ -29,7 +29,7 @@ MindSpeed LLM支持基于昇腾芯片采集profiling数据，以提供对模型�
     --profile-step-start  5                         # 从第5步开始采集
     --profile-step-end 6                            # 到第6步结束，不包括第6步
     --profile-ranks 0                               # 采集0号卡的数据
-    --profile-level level1                          # 采集上层应用数据，底层NPU数据，NPU计算算子耗时和通信算子耗时信息，CANN层AscendCL数据信息，NPU AI Core性能指标信息，通信小算子耗时信息
+    --profile-level level1                          # 采集上层应用数据、底层NPU数据、NPU计算算子耗时和通信算子耗时信息、CANN层AscendCL数据信息、NPU AI Core性能指标信息、通信小算子耗时信息
     --profile-with-cpu                              # 采集CPU数据，用于分析通信和调度
     --profile-with-stack                            # 采集指令运行堆栈信息
     --profile-with-memory                           # 采集算子内存信息

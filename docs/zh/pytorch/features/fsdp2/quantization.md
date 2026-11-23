@@ -114,4 +114,4 @@ torchrun $DISTRIBUTED_ARGS train_fsdp2.py \
 
 ## 注意事项
 
-- 在开启efsdp时，由于底层框架的限制，'efsdp_shard_placement_fn' 需要设置为 'shard_by_dim_0'，以确保量化权重的正确切分与通信。
+- 在开启efsdp时，由于底层框架的限制，`--parallel.efsdp_shard_placement_fn` 需要设置为 `shard_by_dim_0`，以确保量化权重的正确切分与通信。

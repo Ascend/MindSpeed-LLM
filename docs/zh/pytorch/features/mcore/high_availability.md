@@ -2,7 +2,7 @@
 
 ## 说明
 
-本文档仅提供特性介绍，若需使用完整的高可用特性请参考 MindCluster 官方指导文档：[[MindCluster指导文档](https://www.hiascend.com/software/mindcluster)]
+本文档仅提供特性介绍，若需使用完整的高可用特性请参见[MindCluster指导文档](https://www.hiascend.com/software/mindcluster)。
 
 ## 使用场景
 
@@ -48,19 +48,19 @@ mindio_ttp下载地址：[MindIO TTP 下载软件包-昇腾社区](https://gitco
 
 ### 启动脚本中添加启动参数
 
-`--enable-high-availability`  # 使能开启高可用功能的总开关，并使能TTP临终遗言功能，保存 checkpoint 时要求全局至少存在一份完整的优化器数据；
+- `--enable-high-availability`：使能开启高可用功能的总开关，并使能TTP临终遗言功能，保存 checkpoint 时要求全局至少存在一份完整的优化器数据。
 
-`--enable-hbmfault-repair` # 使能进行片上内存故障修复，Step 级重计算功能的开关；本功能将在线进行 worker 级修复，修复时要求全局至少存在一个故障卡的副本卡。
+- `--enable-hbmfault-repair`：使能进行片上内存故障修复，Step 级重计算功能的开关；本功能将在线进行 worker 级修复，修复时要求全局至少存在一个故障卡的副本卡。
 
-`--enable-worker-reboot` # 使能空中加油功能，配合支持相关功能的 MindCluster 组件共同使能后，在发生一般性故障时，进行进程级重启修复，继续训练。本功能会将故障卡所在节点进行重启，修复时要求未故障节点中至少存在一份完整的优化器数据。
+- `--enable-worker-reboot`：使能空中加油功能，配合支持相关功能的 MindCluster 组件共同使能后，在发生一般性故障时，进行进程级重启修复，继续训练。本功能会将故障卡所在节点进行重启，修复时要求未故障节点中至少存在一份完整的优化器数据。
 
-`--distributed-optimizer-no-replica`  # 不使用副本优化器而使用 CKPT 文件进行重计算和空中加油修复，需要在故障时存在 CKPT 文件。
+- `--distributed-optimizer-no-replica`：不使用副本优化器而使用 CKPT 文件进行重计算和空中加油修复，需要在故障时存在 CKPT 文件。
 
-`--enable-elastic-training` # 使能弹性训练功能，配合支持相关功能的 MindCluster 组件共同使能后，在发生一般性故障且无空闲芯片资源时，缩掉部分节点后继续训练，待有可用芯片资源时扩容回原有规模继续训练。本功能会将故障卡所在 Data Parallel 域对应节点剔除，修复时要求未故障节点中至少存在一份完整的优化器数据。
+- `--enable-elastic-training`：使能弹性训练功能，配合支持相关功能的 MindCluster 组件共同使能后，在发生一般性故障且无空闲芯片资源时，缩掉部分节点后继续训练，待有可用芯片资源时扩容回原有规模继续训练。本功能会将故障卡所在 Data Parallel 域对应节点剔除，修复时要求未故障节点中至少存在一份完整的优化器数据。
 
 ### 启动脚本中添加环境变量
 
-为避免在结合 mindx 使用时需配置多个组件的开关，添加环境变量，环境变量优先级高于 args，设置环境变量会被优先使用。
+为避免在结合 MindX 使用时需配置多个组件的开关，添加环境变量，环境变量优先级高于 args，设置环境变量会被优先使用。
 
 `export HIGH_AVAILABILITY=dump` 启用 `--enable-high-availability`
 
@@ -89,7 +89,7 @@ mindio_ttp下载地址：[MindIO TTP 下载软件包-昇腾社区](https://gitco
 
 除上述使用约束外，针对弹性训练功能还需遵守以下使用约束：
 
-1、当前仅支持开启 `enable-high-availability`、`use-distributed-optimizer`
+1、当前仅支持开启 `--enable-high-availability`、`--use-distributed-optimizer`
 
 2、当前仅支持不开启 `use-custom-fsdp`、`reuse-fp32-param` 的场景
 
@@ -101,6 +101,6 @@ mindio_ttp下载地址：[MindIO TTP 下载软件包-昇腾社区](https://gitco
 
 ### Checkpoint 保存与加载优化
 
-开启 `enable-high-availability` 时，若环境上安装了 MindIO ACP SDK，则会使用mindio_acp的一级异步 checkpoint 保存与加载优化。
+开启 `--enable-high-availability` 时，若环境上安装了 MindIO ACP SDK，则会使用mindio_acp的一级异步 checkpoint 保存与加载优化。
 
 详见：[MindIO TTP 约束限制](https://gitcode.com/Ascend/mind-cluster/blob/branch_v26.1.0/docs/zh/scheduling/07_references/00_fault_recovery_acceleration/02_installation_and_deployment.md#%E7%BA%A6%E6%9D%9F%E9%99%90%E5%88%B6)

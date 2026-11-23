@@ -4,7 +4,7 @@
 
 ## 使用场景
 
-当集群规模较大且设置TP域很大时，例如A3训练llama3-405B，TP=16时。
+当集群规模较大且设置TP域很大时，例如基于Atlas A3训练系列产品训练llama3-405B、TP=16，建议开启高维张量并行。
 
 ## 使用方法
 
@@ -28,6 +28,7 @@
  - --enable-overlap-matmul-with-rs: 在linear层forward计算时，开启matmul计算和reduce-scatter通信进行隐藏，以便加速。
  - --coc-fused-kernel: 在linear层forward计算时，开启计算通信融合算子，将matmul计算与all-gather、reduce-scatter都进行算子级融合，实现进一步加速（该特性不与前两个特性兼容，依赖ATB加速库）。
  - --enable-backward-overlap-ag-with-matmul: 在linear层backward计算梯度时，开启all-gather通信和matmul进行隐藏，以便加速（该特性依赖ATB加速库）。
+ 
 **注意**：上述3个forward计算优化参数--enable-overlap-ag-with-matmul、--enable-overlap-matmul-with-rs、--coc-fused-kernel只能同时开启1个。
 
 ## 使用约束

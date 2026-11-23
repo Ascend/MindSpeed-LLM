@@ -6,7 +6,6 @@
 
 若在非指定版本中尝试采用该配置，可能触发系统级的异常行为，包括但不限于运行时错误。
 
-MindSpeed-LLM 中 MC2 功能默认关闭，如需开启MC2，需将 `mindspeed_llm/training/arguments.py` 文件下`validate_args_decorator`函数中的`args.use_ascend_mc2 = False`语句注释掉。
 **注意：使能MC2可能在部分模型上带来精度问题。**
 
 ## 问题分析
@@ -23,9 +22,9 @@ MC2通过融合算子的方式将matmul计算和集合通信操作进行融合�
 
 在Python脚本侧将原本串行的matmul和all_gather/reduce_scatter操作通过MC2融合算子接口进行了融合。
 
-具体参见[代码实现](https://gitcode.com/ascend/MindSpeed/blob/core_r0.8.0/mindspeed/core/tensor_parallel/ascend_turbo/mc2_linears_seq_parallel.py)。
+具体参见[代码实现](https://gitcode.com/Ascend/MindSpeed/blob/26.2.0_core_r0.12.1/mindspeed/core/tensor_parallel/ascend_turbo/mc2_linears_seq_parallel.py)。
 
-MC2算子接口参见[torch_npu.npu_mm_all_reduce_base接口说明](https://www.hiascend.com/document/detail/zh/Pytorch/60RC1/apiref/apilist/ptaoplist_000449.html)。
+MC2算子接口参见[torch_npu.npu_mm_all_reduce_base接口说明](https://gitcode.com/Ascend/op-plugin/blob/master/docs/zh/custom_APIs/torch_npu/torch_npu-npu_mm_all_reduce_base.md)。
 
 ## 使用场景
 
@@ -33,7 +32,7 @@ MC2算子接口参见[torch_npu.npu_mm_all_reduce_base接口说明](https://www.
 
 ## 使用方法
 
-设置`--use-ascend-mc2`即可使能MC2算子。
+设置`--use-ascend-mc2`即可启用MC2算子。
 
 ## 使用效果
 
@@ -41,6 +40,6 @@ MC2算子接口参见[torch_npu.npu_mm_all_reduce_base接口说明](https://www.
 
 ## 注意事项
 
-1. mcore场景下（开启`--use-mcore-models`），MoE模型，MLP部分不使能MC2。
+1. Mcore场景下（开启`--use-mcore-models`），MoE模型，MLP部分不启用MC2。
 
 2. Ascend 950PR&950DT系列产品暂不支持该特性。

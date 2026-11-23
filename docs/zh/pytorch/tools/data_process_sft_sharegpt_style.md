@@ -159,7 +159,7 @@ bash tests/poc/llama2/data_convert_llama2_instruction.sh
 
 指令微调数据集处理结果如下：
 
-```shell
+```output
 ./finetune_dataset/openai_packed_attention_mask_document.bin
 ./finetune_dataset/openai_packed_attention_mask_document.idx
 ./finetune_dataset/openai_packed_input_ids_document.bin

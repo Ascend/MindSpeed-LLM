@@ -68,7 +68,7 @@ python mindspeed_llm/fsdp2/checkpoint/merge_dcp_to_hf.py \
 
 ## 输出说明
 
-1. 当模型总大小不超过`shard-size`时，输出为单文件：
+1. 当模型总大小不超过`--shard-size`时，输出为单文件：
 
     ```text
     output_directory/
@@ -77,7 +77,7 @@ python mindspeed_llm/fsdp2/checkpoint/merge_dcp_to_hf.py \
     └── tokenizer.json
     ```
 
-2. 当模型总大小超过`shard-size`时，输出为分片形式：
+2. 当模型总大小超过`--shard-size`时，输出为分片形式：
 
     ```text
     output_directory/

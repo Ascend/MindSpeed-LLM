@@ -309,7 +309,7 @@ training:
 
 | 配置 | 常见取值 | 说明 |
 | --- | --- | --- |
-| `model.model_id` | `gpt_oss`、`qwen3`、`qwen3_moe`、`qwen3_next`、`step35`、`mamba3`、`minimax_m27` | 指定自定义注册模型。仅路径二需要配置；使用路径一原生 Transformers 适配时不要配置该项。 |
+| `model.model_id` | `gpt_oss`、`qwen3`、`qwen3_moe`、`qwen3_next`、`step35`、`mamba3`、`minimax_m27` | 指定自定义注册模型。仅路径二需要配置；使用路径一原生Transformers适配时不要配置该项。 |
 | `model.model_name_or_path` | 本地HuggingFace权重目录 | 必填，指向包含`config.json`、tokenizer 和权重文件的目录，已配置在CLI参数中。 |
 | `model.trust_remote_code` | `true` / `false` | 模型依赖Hub上自定义代码时设为`true`；使用MindSpeed LLM内置模型实现时通常为`false`。 |
 | `model.train_from_scratch` | `true` / `false` | `true`表示按config随机初始化；`false`表示加载已有权重。 |

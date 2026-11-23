@@ -45,7 +45,7 @@
 
 每次保存生成如下结构：
 
-```shell
+```output
 /your/checkpoint/path/
 ├── latest_checkpointed_iteration.txt
 ├── iter_0000001/
