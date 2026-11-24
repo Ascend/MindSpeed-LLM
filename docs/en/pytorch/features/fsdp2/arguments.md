@@ -377,7 +377,7 @@ Contains parameters related to dataset loading, preprocessing, and data formats.
       <td>no_shared_storage</td>
       <td>Optional[bool]</td>
       <td>False</td>
-      <td>Whether to enable shared storage.</td>
+      <td>Whether to disable shared storage. True indicates shared storage is not used. False indicates otherwise.</td>
     </tr>
     <tr>
       <td>dataloader_type</td>

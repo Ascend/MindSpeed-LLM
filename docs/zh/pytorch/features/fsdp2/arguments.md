@@ -341,7 +341,7 @@
       <td>drop_thinking</td>
       <td>Optional[bool]</td>
       <td>True</td>
-      <td>多轮对话训练时是否丢弃历史轮次中的思考内容（reasoning_content）。True（默认）时剥离历史轮的思考内容，仅最后一轮assistant回复的推理部分作为loss目标；False时保留所有轮次的思考内容。仅DeepSeek-V4模板生效，且消息中包含工具调用（tools）时不执行丢弃，与Megatron的<code>--drop-thinking</code>参数对应。</td>
+      <td>多轮对话训练时是否丢弃历史轮次中的思考内容（reasoning_content）。True（默认）时剥离历史轮次的思考内容，仅最后一轮assistant回复的推理部分作为loss目标；False时保留所有轮次的思考内容。仅DeepSeek-V4模板生效，且消息中包含工具调用（tools）时不执行丢弃，与Megatron的<code>--drop-thinking</code>参数对应。</td>
     </tr>
     <tr>
       <td>tokenized_path</td>
@@ -377,7 +377,7 @@
       <td>no_shared_storage</td>
       <td>Optional[bool]</td>
       <td>False</td>
-      <td>是否设置共享存储。</td>
+      <td>是否禁用共享存储，True表示不使用共享存储，False表示使用共享存储。</td>
     </tr>
     <tr>
       <td>dataloader_type</td>

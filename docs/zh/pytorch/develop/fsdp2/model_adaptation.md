@@ -437,7 +437,7 @@ torchrun \
 
 - 如何选择原生Transformers适配和自定义注册适配
 
-  只验证训练链路、且不需要修改GPT-OSS模型源码时，可以使用原生Transformers适配。需要NPU融合算子、专家并行定制或修改MoE计算逻辑时，使用自定义注册适配。
+  只验证训练链路，且不需要修改GPT-OSS模型源码时，可以使用原生Transformers适配。需要NPU融合算子、专家并行定制或修改MoE计算逻辑时，使用自定义注册适配。
 
 - 为何设置了`model_id: gpt_oss`后找不到模型
 

@@ -112,7 +112,7 @@ Installation from source (unified installation using submodules): This optional 
    > - By default, the driver and firmware are installed in `/usr/local/Ascend`. If the paths differ, modify the command accordingly.
    > - Before copying the startup command, replace the `/data` and `/weights` paths in the `-v` parameters with the actual local directories on the host. Otherwise, the container fails to start.
    > - The container initializes the NPU driver and CANN environment by default. To install new ones, replace or source them manually. See `~/.bashrc` in the container for details.
-   > - `v26.2.0-cann9.2.0-torch_npu2.10.0.post7-a3-openeuler24.03-py3.12` is the image name and tag. Modify it based on your requirements. Run `docker images` on the host to view existing images.
+   > - `mindspeed-llm:v26.2.0-cann9.2.0-torch_npu2.10.0.post7-a3-openeuler24.03-py3.12` is the image name and tag. Modify it based on your requirements. Run `docker images` on the host to view existing images.
 
    **Table 2** Parameters <a id="table1"></a>
 
