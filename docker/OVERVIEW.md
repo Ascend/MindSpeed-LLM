@@ -17,7 +17,7 @@ MindSpeed-LLM is a distributed training suite for large language models tailored
 
 ## Supported Tags and Dockerfile Links
 
-All MindSpeed-LLM tags follow this format: `v{MindSpeed LLM Version}-cann{CANN Version}-torch_npu{TorchNPU Version}-{ChipType}-{OS}-py{Python Version}`
+Tags of MindSpeed-LLM **26.1.0 and later** follow this format: `v{MindSpeed LLM Version}-cann{CANN Version}-torch_npu{TorchNPU Version}-{ChipType}-{OS}-py{Python Version}`. Historical tags of **26.0.0 and earlier** use a different naming scheme without the `v` prefix and without the CANN and TorchNPU segments; see [Supported Tags](https://gitcode.com/Ascend/MindSpeed-LLM/blob/master/docker/supported_tags.md) for the full list.
 
 | Field | Example Value | Description |
 | ------ | ------ | -------- |
