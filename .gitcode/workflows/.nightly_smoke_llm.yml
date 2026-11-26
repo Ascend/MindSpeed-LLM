@@ -1,4 +1,4 @@
-name: Test_nightly_smoke
+name: Nightly_smoke
 
 on:
   workflow_call:
@@ -19,7 +19,7 @@ permissions:
 
 jobs:
   JOB_test_nightly:
-    name: Test_nightly_smoke
+    name: Nightly_smoke
     select: selected_by_default
     runs-on: [ self-hosted, arch=x86, k8s=public ]
     outputs:
@@ -36,7 +36,7 @@ jobs:
 
       - name: run nightly smoke test
         id: run-nightly-smoke
-        uses: openlibing/test-action/pytest-orch@v1.0.8
+        uses: openlibing/test-action/pytest-orch@v1.0.10
         continue-on-error: true
         with:
           testcase-config-file: ${{ inputs.testcase_config_file }}

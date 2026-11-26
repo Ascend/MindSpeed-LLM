@@ -1,12 +1,12 @@
-name: test_Nightly-MindSpeed-LLM-buildkit
+name: Nightly-CI-Component-pipeline_MindSpeed-LLM_master
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 4 * * *'
+    - cron: '0 3 * * *'
 
 env:
-  NIGHTLY_IMAGE: "swr.cn-north-4.myhuaweicloud.com/atlas-ci/test-mindspeed-llm-nightly"
+  NIGHTLY_IMAGE: "swr.cn-north-4.myhuaweicloud.com/atlas-ci/mindspeed-llm-nightly"
 
 permissions:
   project: read
@@ -36,13 +36,13 @@ stages:
     name: 镜像构建
     select: selected_by_default
     jobs:
-      Build_nightly_image:
-        name: Build_nightly_image
+      image_update:
+        name: image_update
         uses: pipelineascode/buildkit-dev/.gitcode/workflows/reusable-build-image.yml@v1.0.1
         with:
           dockerfile_url: "https://gitcode.com/AscendTest/pytest-infra/blob/main/resources/dockerfile/Dockerfile.mindspeed_llm"
           harbor_registry: "swr.cn-north-4.myhuaweicloud.com"
-          harbor_image: "atlas-ci/test-mindspeed-llm-nightly"
+          harbor_image: "atlas-ci/mindspeed-llm-nightly"
           harbor_tag: "${{ jobs.Prepare_image_tag.outputs.image_tag }}"
           oidc_account_id: "0d336831568090260fd5c01450729240"
           region: "cn-north-4"
@@ -89,9 +89,9 @@ stages:
     name: 冒烟测试
     select: selected_by_default
     jobs:
-      Test_nightly_smoke:
-        name: Test_nightly_smoke
-        uses: .gitcode/workflows/.test_nightly_smoke_llm.yml
+      Nightly_smoke:
+        name: Nightly_smoke
+        uses: .gitcode/workflows/.nightly_smoke_llm.yml
         with:
           testcase_config_file: "resources/pytest_mindspeed_llm.ini"
           image_label: "${{ env.NIGHTLY_IMAGE }}:${{ jobs.Prepare_image_tag.outputs.image_tag }}"
