@@ -10,3 +10,4 @@ peft
 tiktoken
 ray
 mistral_common
+torchao==0.18.0

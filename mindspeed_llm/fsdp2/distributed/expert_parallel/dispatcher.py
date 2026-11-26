@@ -173,7 +173,7 @@ def experts_computation(
     use_triton_swiglu_limit=False,
 ):
     if quant_config is not None:
-        from fsdp_turbo.quantization.mx_formats.mx_gmm import mx_quant_group_gemm
+        from fsdp_turbo.ops.moe import mx_quant_group_gemm
 
         group_list = torch.cumsum(split_list, dim=0)
 

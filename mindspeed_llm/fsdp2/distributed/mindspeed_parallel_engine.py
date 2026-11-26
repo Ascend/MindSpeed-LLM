@@ -98,7 +98,7 @@ class MindSpeedParallelEngine(torch.nn.Module):
             return
 
         from contextlib import nullcontext
-        from fsdp_turbo.quantization.core.recompute_phase import (
+        from fsdp_turbo.quantization import (
             mark_module_for_recompute,
             mxfp8_recompute_context,
         )
@@ -140,7 +140,7 @@ class MindSpeedParallelEngine(torch.nn.Module):
                 and plan.fsdp_low_precision_all_gather_mode == "on-demand"
             )
 
-            from fsdp_turbo.quantization.converter.model_converter import build_model_converter
+            from fsdp_turbo.quantization import build_model_converter
 
             model_converters = build_model_converter(self.config.quantization_plan)
             model_converters.convert(self.model)
@@ -150,7 +150,7 @@ class MindSpeedParallelEngine(torch.nn.Module):
     def apply_optimizer_hook(self, optimizer: torch.optim.Optimizer):
         if not self.config.quantization_plan.quant_recipe:
             return
-        from mindspeed.fsdp.quantization.core.cache import hook_optimizer_step
+        from fsdp_turbo.quantization import hook_optimizer_step
 
         hook_optimizer_step(self.model, optimizer)
 

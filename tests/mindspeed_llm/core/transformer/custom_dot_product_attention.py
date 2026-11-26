@@ -328,8 +328,8 @@ class CustomDotProductAttentionImpl:
                 # Incremental decode kernel: append a single step using cached K/V
                 res = torch_npu.npu_fused_infer_attention_score_v2(
                     query,
-                    key,
-                    value,
+                    key.contiguous(),
+                    value.contiguous(),
                     num_query_heads=n_head,
                     num_key_value_heads=n_head,
                     input_layout="BSH",
@@ -341,8 +341,8 @@ class CustomDotProductAttentionImpl:
                 # Prompt + decode kernel: extend using both prompt and cached segments
                 res = torch_npu.npu_fused_infer_attention_score_v2(
                     query,
-                    key,
-                    value,
+                    key.contiguous(),
+                    value.contiguous(),
                     num_query_heads=n_head,
                     num_key_value_heads=n_head,
                     input_layout="BSH",

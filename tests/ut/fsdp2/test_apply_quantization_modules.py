@@ -37,10 +37,10 @@ def _build_engine(quant_recipe=None, recompute=False, enable_lp=True, mode="on-d
 
 
 def _stub_model_converter(monkeypatch, builder):
-    """Inject a fake ``build_model_converter`` module."""
-    module = types.ModuleType("fsdp_turbo.quantization.converter.model_converter")
+    """Inject a fake ``fsdp_turbo.quantization`` package root exposing ``build_model_converter``."""
+    module = types.ModuleType("fsdp_turbo.quantization")
     module.build_model_converter = builder
-    monkeypatch.setitem(sys.modules, "fsdp_turbo.quantization.converter.model_converter", module)
+    monkeypatch.setitem(sys.modules, "fsdp_turbo.quantization", module)
     return module
 
 
@@ -50,7 +50,7 @@ def test_noop_when_quant_recipe_missing(monkeypatch):
     Remarks: a poisoned sys.modules entry makes any stray import attempt fail
              loudly instead of passing silently.
     """
-    monkeypatch.setitem(sys.modules, "fsdp_turbo.quantization.converter.model_converter", None)
+    monkeypatch.setitem(sys.modules, "fsdp_turbo.quantization", None)
     engine = _build_engine(quant_recipe=None)
 
     assert engine.apply_quantization_modules() is None

@@ -19,6 +19,12 @@ cp -r megatron "${WORKSPACE}"/CODE/
 cd ..
 
 if [ ${branch} == "master" ]; then
+    TORCHAO_ASCEND_TAG="${TORCHAO_ASCEND_TAG:-TorchAO-Ascend-CI-1120}"
+    git clone --depth 1 -b "${TORCHAO_ASCEND_TAG}" \
+        https://gitcode.com/Ascend/torchao-ascend.git "${WORKSPACE}/torchao-ascend"
+    pip install -e "${WORKSPACE}/torchao-ascend" --no-build-isolation --no-deps
+    echo "[CI] torchao-ascend pinned: ${TORCHAO_ASCEND_TAG} @ $(git -C "${WORKSPACE}/torchao-ascend" rev-parse HEAD)"
+
     git clone https://gitcode.com/Ascend/FSDPTurbo.git
     cd FSDPTurbo
     git checkout main

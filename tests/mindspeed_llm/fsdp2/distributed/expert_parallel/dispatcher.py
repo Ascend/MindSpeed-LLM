@@ -9,7 +9,7 @@ from fsdp_turbo.distributed.expert_parallel.utils import (
     normalize_expert_args,
 )
 from fsdp_turbo.ops.moe import grouped_matmul, permute, unpermute
-from fsdp_turbo.quantization.mx_formats.mx_gmm import mx_quant_group_gemm
+from fsdp_turbo.ops.moe import mx_quant_group_gemm
 from fsdp_turbo.distributed.dist_ops import gather_along_first_dim_expert_parallel
 
 from mindspeed_llm.fsdp2.ops.triton_swiglu_with_limit import apply_swiglu_activation
