@@ -142,7 +142,7 @@ The FLA NPU `--soc` value is mapped from the selected NPU type by default:
 | ------ | ------ |
 | `910b` | `ascend910b` |
 | `a3` | `ascend910_93` |
-| `950` | `ascend950` |
+| `950` | `Ascend950` |
 
 Override the mapping if needed:
 

@@ -203,7 +203,7 @@ if [ -z "$FLA_NPU_SOC" ]; then
     case "$NPU_TYPE_LOWER" in
         910b) FLA_NPU_SOC="ascend910b" ;;
         a3)   FLA_NPU_SOC="ascend910_93" ;;
-        950)  FLA_NPU_SOC="ascend950" ;;
+        950)  FLA_NPU_SOC="Ascend950" ;;
     esac
 fi
 
