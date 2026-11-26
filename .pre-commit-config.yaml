@@ -12,10 +12,7 @@ repos:
     rev: v4.6.0
     hooks:
       - id: trailing-whitespace
-        # Temporary for the license update. Restore source formatting checks after merge.
-        exclude: \.(py|cpp)$
       - id: end-of-file-fixer
-        exclude: \.(py|cpp)$
       - id: check-yaml
         args: ["--allow-multiple-documents"]
       - id: check-added-large-files
@@ -34,8 +31,7 @@ repos:
       - id: ruff-format
         args: ["--config", "pre-commit/pyproject.toml"]
         types: [python]
-        # Temporary for the license update. Restore the original exclude after merge.
-        exclude: \.py$
+        exclude: ^mindspeed_llm/training/training\.py$
 
   # codespell
   - repo: https://gitcode.com/gh_mirrors/co/codespell
@@ -68,8 +64,6 @@ repos:
         types: [python]
         args: [
           "--config=pre-commit/pyproject.toml",
-          # Temporary baseline for findings reproduced on master. Remove after merge.
-          "--baseline=pre-commit/bandit-license-baseline.json",
           "--quiet",
         ]
 
@@ -86,8 +80,6 @@ repos:
     hooks:
       - id: clang-format
         files: \.(c|h|cpp|hpp|cc|hh|cxx|hxx)$
-        # Temporary for the license update. Restore C++ formatting after merge.
-        exclude: \.cpp$
         args:
           - "--style=file"  # Load .clang-format configuration file
           - "--verbose"
@@ -97,37 +89,12 @@ repos:
     hooks:
       - id: gitleaks-offline-scan
         name: Gitleaks Secret Scan(Local Binary)
-        # The GitCode action fetches the target into FETCH_HEAD. A temporary
-        # commit exposes the PR diff even in a depth-one merge checkout.
-        entry: |-
-          python -c '
-          import os, shutil, subprocess, sys, tempfile
-          from pathlib import Path
-
-          binary = Path.cwd() / ("gitleaks.exe" if os.name == "nt" else "gitleaks")
-          command = [str(binary), "git", "--verbose", "--redact", "--config=pre-commit/.gitleaks.toml"]
-          event = os.environ.get("ATOMGIT_EVENT_NAME", "").lower()
-          if event not in {"mr", "note", "pull_request"} or not os.environ.get("ATOMGIT_BASE_REF"):
-              sys.exit(subprocess.call([*command, "--pre-commit", "--staged"], timeout=120))
-
-          git = shutil.which("git")
-          if git is None:
-              sys.exit("Gitleaks PR scan requires Git on PATH")
-          objects = subprocess.check_output(
-              [git, "rev-parse", "--path-format=absolute", "--git-path", "objects"], text=True
-          ).strip()
-          with tempfile.TemporaryDirectory() as temporary_objects:
-              env = {**os.environ, "GIT_OBJECT_DIRECTORY": temporary_objects}
-              alternates = env.get("GIT_ALTERNATE_OBJECT_DIRECTORIES")
-              env["GIT_ALTERNATE_OBJECT_DIRECTORIES"] = os.pathsep.join(filter(None, (objects, alternates)))
-              commit = subprocess.check_output([
-                  git, "-c", "user.name=Gitleaks", "-c", "user.email=gitleaks@localhost",
-                  "-c", "commit.gpgSign=false", "commit-tree", "HEAD^{tree}",
-                  "-p", "FETCH_HEAD", "-m", "PR changes for Gitleaks",
-              ], env=env, text=True).strip()
-              log_options = f"--log-opts=-1 --no-ext-diff --no-textconv {commit}"
-              sys.exit(subprocess.call([*command, log_options], env=env, timeout=120))
-          '
+        entry: ./gitleaks
         language: system
-        pass_filenames: false
+        pass_filenames: true
+        args:
+          - protect
+          - --verbose
+          - --redact
+          - --config=pre-commit/.gitleaks.toml
         stages: [pre-commit]
