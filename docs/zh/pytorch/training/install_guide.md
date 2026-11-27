@@ -214,7 +214,17 @@ MindSpeed LLM支持镜像安装和源码安装。
     cd ..
     ```
 
-6. 安装FSDPTurbo加速库
+6. 安装Ascend for TorchAO
+
+    ```shell
+    git clone https://gitcode.com/Ascend/torchao-ascend.git
+    cd torchao-ascend
+    git checkout TorchAO-Ascend-CI-1120
+    pip3 install -e . --no-build-isolation --no-deps
+    cd ..
+    ```
+
+7. 安装FSDPTurbo加速库
 
     ```shell
     git clone https://gitcode.com/Ascend/FSDPTurbo.git
@@ -223,7 +233,7 @@ MindSpeed LLM支持镜像安装和源码安装。
     cd ..
     ```
 
-7. 准备MindSpeed LLM及Megatron-LM源码
+8. 准备MindSpeed LLM及Megatron-LM源码
 
     ```shell
     git clone https://gitcode.com/ascend/MindSpeed-LLM.git
@@ -248,6 +258,7 @@ MindSpeed LLM支持镜像安装和源码安装。
 MindSpeed LLM支持通过Git Submodule统一管理三方依赖仓库，便于版本追踪与协同开发。子模块统一放置在`3rdparty/`目录下，其中：
 
 - **MindSpeed**：默认拉取远端master分支最新代码。
+- **torchao-ascend**：固定在tag `TorchAO-Ascend-CI-1120`。
 - **FSDPTurbo**：默认拉取远端main分支最新代码。
 - **Megatron-LM**：固定在tag `core_v0.12.1`。
 
@@ -270,7 +281,7 @@ MindSpeed LLM支持通过Git Submodule统一管理三方依赖仓库，便于版
    >
    > 如需更新Submodule，详见如下操作：
    > - MindSpeed和FSDPTurbo默认跟踪远端最新，初始化时已完成刷新，后续需继续拉取最新提交可执行`git submodule update --init --remote 3rdparty/MindSpeed 3rdparty/FSDPTurbo`。(3rdparty目录下commit可不关注)
-   > - Megatron-LM固定在相应版本，执行`git submodule update --init`会始终检出该版本，不会自动更新。如需切换版本，参见下方章节[（可选）切换子模块版本](#checkout_submodules)。
+   > - Ascend for TorchAO和Megatron-LM固定在相应版本，执行`git submodule update --init`会始终检出该版本，不会自动更新。如需切换版本，参见下方章节[（可选）切换子模块版本](#checkout_submodules)。
 
    源码结构如下：
 
@@ -278,8 +289,9 @@ MindSpeed LLM支持通过Git Submodule统一管理三方依赖仓库，便于版
    MindSpeed-LLM/
    ├── 3rdparty/
    │   ├── MindSpeed/          # 加速库（对应方式二步骤5）
-   │   ├── FSDPTurbo/          # FSDP加速库（对应方式二步骤6）
-   │   └── Megatron-LM/        # Megatron-LM核心代码（对应方式二步骤7）
+   │   ├── torchao-ascend/     # Ascend for TorchAO（对应方式二步骤6）
+   │   ├── FSDPTurbo/          # FSDP加速库（对应方式二步骤7）
+   │   └── Megatron-LM/        # Megatron-LM核心代码（对应方式二步骤8）
    └── ...
    ```
 
@@ -290,6 +302,9 @@ MindSpeed LLM支持通过Git Submodule统一管理三方依赖仓库，便于版
    ```shell
    # 安装MindSpeed依赖
    pip3 install -r 3rdparty/MindSpeed/requirements.txt
+
+   # 安装torchao-ascend
+   pip3 install -e 3rdparty/torchao-ascend --no-build-isolation --no-deps
 
    # 将依赖仓库源码软链接到MindSpeed LLM根目录
    ln -s 3rdparty/MindSpeed/mindspeed mindspeed

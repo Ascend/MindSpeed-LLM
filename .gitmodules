@@ -2,6 +2,10 @@
 	path = 3rdparty/MindSpeed
 	url = https://gitcode.com/ascend/MindSpeed.git
 	branch = master
+[submodule "3rdparty/torchao-ascend"]
+	path = 3rdparty/torchao-ascend
+	url = https://gitcode.com/Ascend/torchao-ascend.git
+	branch = TorchAO-Ascend-CI-1120
 [submodule "3rdparty/FSDPTurbo"]
 	path = 3rdparty/FSDPTurbo
 	url = https://gitcode.com/Ascend/FSDPTurbo.git
